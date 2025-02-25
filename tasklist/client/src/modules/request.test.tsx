@@ -10,7 +10,7 @@ import {http, HttpResponse} from 'msw';
 import {nodeMockServer} from './mockServer/nodeMockServer';
 import {request} from './request';
 
-const MOCK_URL = '/api/login';
+const MOCK_URL = '/login';
 
 describe('request', () => {
   it('should handle a successful request', async () => {

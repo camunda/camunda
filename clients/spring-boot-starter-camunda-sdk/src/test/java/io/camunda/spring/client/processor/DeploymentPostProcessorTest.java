@@ -34,6 +34,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.core.io.Resource;
 
@@ -50,11 +51,13 @@ public class DeploymentPostProcessorTest {
 
   @Mock private DeploymentEvent deploymentEvent;
 
+  @Mock private ApplicationEventPublisher applicationEventPublisher;
+
   @InjectMocks private DeploymentAnnotationProcessor deploymentPostProcessor;
 
   @BeforeEach
   public void init() {
-    deploymentPostProcessor = spy(new DeploymentAnnotationProcessor());
+    deploymentPostProcessor = spy(new DeploymentAnnotationProcessor(applicationEventPublisher));
   }
 
   @Test
@@ -107,6 +110,7 @@ public class DeploymentPostProcessorTest {
         .thenReturn(new Resource[] {resources[1]});
 
     when(deployStep1.addResourceStream(any(), anyString())).thenReturn(deployStep2);
+    when(deployStep2.addResourceStream(any(), anyString())).thenReturn(deployStep2);
 
     when(deployStep2.send()).thenReturn(camundaFuture);
 
@@ -120,7 +124,44 @@ public class DeploymentPostProcessorTest {
 
     // then
     verify(deployStep1).addResourceStream(any(), eq("1.bpmn"));
-    verify(deployStep1).addResourceStream(any(), eq("1.bpmn"));
+    verify(deployStep2).addResourceStream(any(), eq("2.bpmn"));
+
+    verify(deployStep2).send();
+    verify(camundaFuture).join();
+  }
+
+  @Test
+  public void shouldDeployDistinctResources() {
+    // given
+    final ClassInfo classInfo = ClassInfo.builder().bean(new WithDoubleClassPathResource()).build();
+    final Resource resource = mock(FileSystemResource.class);
+    final Resource[] resources = {resource, resource};
+
+    when(resources[0].getFilename()).thenReturn("1.bpmn");
+    when(resources[1].getFilename()).thenReturn("1.bpmn");
+
+    when(client.newDeployResourceCommand()).thenReturn(deployStep1);
+
+    when(deploymentPostProcessor.getResources("classpath*:/1.bpmn"))
+        .thenReturn(new Resource[] {resources[0]});
+
+    when(deploymentPostProcessor.getResources("classpath*:/2.bpmn"))
+        .thenReturn(new Resource[] {resources[1]});
+
+    when(deployStep1.addResourceStream(any(), anyString())).thenReturn(deployStep2);
+
+    when(deployStep2.send()).thenReturn(camundaFuture);
+
+    when(camundaFuture.join()).thenReturn(deploymentEvent);
+
+    when(deploymentEvent.getProcesses()).thenReturn(Collections.singletonList(getProcess()));
+
+    // when
+    deploymentPostProcessor.configureFor(classInfo);
+    deploymentPostProcessor.start(client);
+
+    // then
+    verify(deployStep1, times(1)).addResourceStream(any(), eq("1.bpmn"));
 
     verify(deployStep2).send();
     verify(camundaFuture).join();
@@ -134,8 +175,6 @@ public class DeploymentPostProcessorTest {
           // given
           final ClassInfo classInfo =
               ClassInfo.builder().bean(new WithNoClassPathResource()).build();
-
-          when(client.newDeployResourceCommand()).thenReturn(deployStep1);
 
           // when
           deploymentPostProcessor.configureFor(classInfo);

@@ -25,6 +25,8 @@ import org.springframework.stereotype.Component;
       + OperateProfileService.SSO_AUTH_PROFILE
       + " & !"
       + OperateProfileService.IDENTITY_AUTH_PROFILE
+      + " & !"
+      + OperateProfileService.CONSOLIDATED_AUTH
 })
 public class AuthUserService extends AbstractUserService<UsernamePasswordAuthenticationToken> {
 

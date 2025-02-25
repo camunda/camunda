@@ -97,24 +97,6 @@ describe('Process table', () => {
     expect(processRawData({report: {reportType: 'process', data, result}})).toMatchSnapshot();
   });
 
-  it('should make the processInstanceId a link', () => {
-    const cell = processRawData({
-      report: {
-        reportType: 'process',
-        result: {data: [{processInstanceId: '123', engineName: '1'}]},
-        data: {
-          configuration: {
-            tableColumns: {includedColumns: ['processInstanceId', 'engineName'], columnOrder: []},
-          },
-        },
-      },
-      camundaEndpoints: {1: {endpoint: 'http://camunda.com', engineName: 'a'}},
-    }).body[0][0];
-
-    expect(cell.type).toBe('a');
-    expect(cell.props.href).toBe('http://camunda.com/app/cockpit/a/#/process-instance/123');
-  });
-
   it('should format start and end dates', () => {
     // using format here to dynamically return date with client timezone
     const startDate = format(parseISO('2019-06-07'), 'yyyy-MM-dd');
@@ -155,7 +137,7 @@ describe('Process table', () => {
     expect(cells[0]).toBe('1d 10h 10min 23s 423ms');
   });
 
-  it('should not make the processInstanceId a link if no endpoint is specified', () => {
+  it('should display the processInstanceId as text', () => {
     const cell = processRawData({
       report: {
         reportType: 'process',

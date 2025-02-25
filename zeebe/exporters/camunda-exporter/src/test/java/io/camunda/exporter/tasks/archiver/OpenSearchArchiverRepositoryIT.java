@@ -9,20 +9,22 @@ package io.camunda.exporter.tasks.archiver;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.amazonaws.regions.DefaultAwsRegionProviderChain;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.exporter.config.ExporterConfiguration.ArchiverConfiguration;
 import io.camunda.exporter.config.ExporterConfiguration.RetentionConfiguration;
 import io.camunda.exporter.metrics.CamundaExporterMetrics;
 import io.camunda.exporter.schema.opensearch.OpensearchEngineClient;
+import io.camunda.exporter.utils.SearchDBExtension;
 import io.camunda.exporter.utils.TestObjectMapper;
 import io.camunda.search.connect.configuration.ConnectConfiguration;
 import io.camunda.webapps.schema.descriptors.AbstractIndexDescriptor;
 import io.camunda.webapps.schema.descriptors.operate.template.BatchOperationTemplate;
 import io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate;
-import io.camunda.zeebe.test.util.testcontainers.TestSearchContainers;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.net.URI;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.ZoneId;
@@ -36,9 +38,10 @@ import java.util.Optional;
 import java.util.UUID;
 import org.apache.http.HttpHost;
 import org.awaitility.Awaitility;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
+import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.opensearch.client.RestClient;
@@ -52,22 +55,21 @@ import org.opensearch.client.opensearch.generic.Body;
 import org.opensearch.client.opensearch.generic.OpenSearchGenericClient;
 import org.opensearch.client.opensearch.generic.Request;
 import org.opensearch.client.opensearch.generic.Requests;
+import org.opensearch.client.transport.aws.AwsSdk2Transport;
+import org.opensearch.client.transport.aws.AwsSdk2TransportOptions;
 import org.opensearch.client.transport.rest_client.RestClientTransport;
-import org.opensearch.testcontainers.OpensearchContainer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
+import software.amazon.awssdk.http.SdkHttpClient;
+import software.amazon.awssdk.http.apache.ApacheHttpClient;
+import software.amazon.awssdk.regions.Region;
 
 @SuppressWarnings("resource")
-@Testcontainers
 final class OpenSearchArchiverRepositoryIT {
   private static final Logger LOGGER =
       LoggerFactory.getLogger(OpenSearchArchiverRepositoryIT.class);
 
-  @Container
-  private static final OpensearchContainer<?> OPENSEARCH =
-      TestSearchContainers.createDefaultOpensearchContainer();
+  @RegisterExtension private static SearchDBExtension searchDB = SearchDBExtension.create();
 
   private static final ObjectMapper MAPPER = TestObjectMapper.objectMapper();
   @AutoClose private final RestClientTransport transport = createRestClient();
@@ -77,21 +79,7 @@ final class OpenSearchArchiverRepositoryIT {
   private final RetentionConfiguration retention = new RetentionConfiguration();
   private final String processInstanceIndex = "process-instance-" + UUID.randomUUID();
   private final String batchOperationIndex = "batch-operation-" + UUID.randomUUID();
-  private final OpenSearchClient testClient = new OpenSearchClient(transport);
-
-  @AfterEach
-  void afterEach() throws IOException {
-    // wipes all data in OS between tests
-    testClient.generic().execute(new DeleteRequest("_all"));
-
-    // however the above does not delete ISM policies, so we need to do that in a separate request
-    // unlike with ES
-    if (retention.getPolicyName() != null && !retention.getPolicyName().isEmpty()) {
-      testClient
-          .generic()
-          .execute(new DeleteRequest("_plugins/_ism/policies/" + retention.getPolicyName()));
-    }
-  }
+  private final OpenSearchClient testClient = createOpenSearchClient();
 
   @Test
   void shouldDeleteDocuments() throws IOException {
@@ -146,6 +134,10 @@ final class OpenSearchArchiverRepositoryIT {
 
   @ParameterizedTest
   @ValueSource(strings = {"", "test"})
+  @DisabledIfSystemProperty(
+      named = SearchDBExtension.IT_OPENSEARCH_AWS_INSTANCE_URL_PROPERTY,
+      matches = "^(?=\\s*\\S).*$",
+      disabledReason = "Excluding from AWS OS IT CI - policy modification not allowed")
   void shouldSetIndexLifeCycleOnAllValidIndexes(final String prefix) throws IOException {
     // given
     final var formattedPrefix = AbstractIndexDescriptor.formatIndexPrefix(prefix);
@@ -156,7 +148,8 @@ final class OpenSearchArchiverRepositoryIT {
     final var untouchedIndices =
         new ArrayList<>(
             List.of(
-                formattedPrefix + "operate-record-8.2.1_", "other-" + "tasklist-record-8.3.0_"));
+                formattedPrefix + "operate-record-8.2.1_",
+                formattedPrefix + "other-" + "tasklist-record-8.3.0_"));
 
     // we cannot test the case with multiple different prefixes when no prefix is given, since it
     // will just match everything from the other prefixes...
@@ -170,7 +163,7 @@ final class OpenSearchArchiverRepositoryIT {
     indices.addAll(untouchedIndices);
 
     retention.setEnabled(true);
-    retention.setPolicyName("operate_delete_archived_indices");
+    retention.setPolicyName(prefix + "operate_delete_archived_indices");
 
     createLifeCyclePolicy();
     for (final var index : indices) {
@@ -191,7 +184,7 @@ final class OpenSearchArchiverRepositoryIT {
                   assertThat(fetchPolicyForIndex(index))
                       .as("policy applied for %s", index)
                       .isNotNull()
-                      .isEqualTo("operate_delete_archived_indices"));
+                      .isEqualTo(prefix + "operate_delete_archived_indices"));
     }
 
     for (final var index : untouchedIndices) {
@@ -402,7 +395,7 @@ final class OpenSearchArchiverRepositoryIT {
 
   // no need to close resource returned here, since the transport is closed above anyway
   private OpenSearchArchiverRepository createRepository() {
-    final var client = new OpenSearchAsyncClient(transport);
+    final var client = createOpenSearchAsyncClient();
     final var metrics = new CamundaExporterMetrics(meterRegistry);
 
     return new OpenSearchArchiverRepository(
@@ -438,9 +431,48 @@ final class OpenSearchArchiverRepositoryIT {
   }
 
   private RestClientTransport createRestClient() {
-    final var restClient =
-        RestClient.builder(HttpHost.create(OPENSEARCH.getHttpHostAddress())).build();
+    final var restClient = RestClient.builder(HttpHost.create(searchDB.osUrl())).build();
     return new RestClientTransport(restClient, new JacksonJsonpMapper());
+  }
+
+  private OpenSearchClient createOpenSearchClient() {
+    final var isAWSRun =
+        System.getProperty(SearchDBExtension.IT_OPENSEARCH_AWS_INSTANCE_URL_PROPERTY, "");
+    if (isAWSRun.isEmpty()) {
+      return new OpenSearchClient(transport);
+    } else {
+      final URI uri = URI.create(isAWSRun);
+      final SdkHttpClient httpClient = ApacheHttpClient.builder().build();
+      final String region = new DefaultAwsRegionProviderChain().getRegion();
+      return new OpenSearchClient(
+          new AwsSdk2Transport(
+              httpClient,
+              uri.getHost(),
+              Region.of(region),
+              AwsSdk2TransportOptions.builder()
+                  .setMapper(new JacksonJsonpMapper(new ObjectMapper()))
+                  .build()));
+    }
+  }
+
+  private OpenSearchAsyncClient createOpenSearchAsyncClient() {
+    final var isAWSRun =
+        System.getProperty(SearchDBExtension.IT_OPENSEARCH_AWS_INSTANCE_URL_PROPERTY, "");
+    if (isAWSRun.isEmpty()) {
+      return new OpenSearchAsyncClient(transport);
+    } else {
+      final URI uri = URI.create(isAWSRun);
+      final SdkHttpClient httpClient = ApacheHttpClient.builder().build();
+      final String region = new DefaultAwsRegionProviderChain().getRegion();
+      return new OpenSearchAsyncClient(
+          new AwsSdk2Transport(
+              httpClient,
+              uri.getHost(),
+              Region.of(region),
+              AwsSdk2TransportOptions.builder()
+                  .setMapper(new JacksonJsonpMapper(new ObjectMapper()))
+                  .build()));
+    }
   }
 
   private record TestBatchOperation(String id, String endDate) implements TDocument {}

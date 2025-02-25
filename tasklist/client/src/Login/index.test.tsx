@@ -53,7 +53,7 @@ describe('<Login />', () => {
   it('should redirect to the initial page on success', async () => {
     nodeMockServer.use(
       http.post(
-        '/api/login',
+        '/login',
         () => {
           return new HttpResponse('');
         },
@@ -85,7 +85,7 @@ describe('<Login />', () => {
   it('should redirect to the referrer page', async () => {
     nodeMockServer.use(
       http.post(
-        '/api/login',
+        '/login',
         () => {
           return new HttpResponse('');
         },
@@ -113,7 +113,7 @@ describe('<Login />', () => {
   it('should show an error for wrong credentials', async () => {
     nodeMockServer.use(
       http.post(
-        '/api/login',
+        '/login',
         () => {
           return new HttpResponse('', {
             status: 401,
@@ -140,7 +140,7 @@ describe('<Login />', () => {
   it('should show a generic error message', async () => {
     nodeMockServer.use(
       http.post(
-        '/api/login',
+        '/login',
         () => {
           return new HttpResponse('', {
             status: 404,
@@ -164,7 +164,7 @@ describe('<Login />', () => {
     ).toBeInTheDocument();
 
     nodeMockServer.use(
-      http.post('/api/login', () => {
+      http.post('/login', () => {
         return HttpResponse.error();
       }),
     );
@@ -181,7 +181,7 @@ describe('<Login />', () => {
   it('should show a loading state while the login form is submitting', async () => {
     nodeMockServer.use(
       http.post(
-        '/api/login',
+        '/login',
         () => {
           return new HttpResponse('');
         },
@@ -225,7 +225,7 @@ describe('<Login />', () => {
   it('should not allow the form to be submitted with empty fields', async () => {
     nodeMockServer.use(
       http.post(
-        '/api/login',
+        '/login',
         () => {
           return new HttpResponse('');
         },
@@ -234,7 +234,7 @@ describe('<Login />', () => {
         },
       ),
       http.post(
-        '/api/login',
+        '/login',
         () => {
           return new HttpResponse('');
         },

@@ -34,7 +34,6 @@ import java.time.Instant;
 import java.util.HashMap;
 import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -87,8 +86,6 @@ public class CredentialsProviderSelfManagedWithSSLTest {
           .getClassLoader()
           .getResource("idp-ssl/localhost.p12")
           .getPath();
-  private static final String ACCESS_TOKEN =
-      JWT.create().withExpiresAt(Instant.now().plusSeconds(300)).sign(Algorithm.none());
 
   @MockBean CamundaClientExecutorService zeebeClientExecutorService;
   @Autowired CredentialsProvider credentialsProvider;
@@ -96,7 +93,7 @@ public class CredentialsProviderSelfManagedWithSSLTest {
   @DynamicPropertySource
   static void registerPgProperties(final DynamicPropertyRegistry registry) {
     final String issuer = "https://localhost:" + wm.getHttpsPort() + "/auth-server";
-    registry.add("camunda.client.auth.issuer", () -> issuer);
+    registry.add("camunda.client.auth.token-url", () -> issuer);
     registry.add("camunda.client.auth.keystore-path", () -> VALID_CLIENT_PATH);
     registry.add("camunda.client.auth.truststore-path", () -> VALID_TRUSTSTORE_PATH);
   }
@@ -116,23 +113,23 @@ public class CredentialsProviderSelfManagedWithSSLTest {
   }
 
   @Test
-  @Disabled
   void shouldHaveZeebeAuth() throws IOException {
     final Map<String, String> headers = new HashMap<>();
-
+    final String accessToken =
+        JWT.create().withExpiresAt(Instant.now().plusSeconds(300)).sign(Algorithm.none());
     wm.stubFor(
         post("/auth-server")
             .willReturn(
                 ok().withJsonBody(
                         JsonNodeFactory.instance
                             .objectNode()
-                            .put("access_token", ACCESS_TOKEN)
+                            .put("access_token", accessToken)
                             .put("token_type", "bearer")
                             .put("expires_in", 300))));
 
     credentialsProvider.applyCredentials(headers::put);
     assertThat(credentialsProvider).isExactlyInstanceOf(OAuthCredentialsProvider.class);
-    assertThat(headers).containsEntry("Authorization", "Bearer " + ACCESS_TOKEN);
+    assertThat(headers).containsEntry("Authorization", "Bearer " + accessToken);
     assertThat(headers).hasSize(1);
   }
 }

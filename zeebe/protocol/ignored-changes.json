@@ -176,6 +176,114 @@
           "code": "java.class.removed",
           "old": "enum io.camunda.zeebe.protocol.record.value.UserType",
           "justification": "Enum was released in 8.6, but didn't have any uses."
+        },
+        {
+          "ignore": true,
+          "code": "java.field.removed",
+          "old": "field io.camunda.zeebe.protocol.record.intent.AuthorizationIntent.ADD_PERMISSION",
+          "justification": "Identity release got postponed to 8.8. This intent was already merged, but it was impossible to use it. We can safely remove it without breaking backwards compatibility."
+        },
+        {
+          "ignore": true,
+          "code": "java.field.removed",
+          "old": "field io.camunda.zeebe.protocol.record.intent.AuthorizationIntent.PERMISSION_ADDED",
+          "justification": "Identity release got postponed to 8.8. This intent was already merged, but it was impossible to use it. We can safely remove it without breaking backwards compatibility."
+        },
+        {
+          "ignore": true,
+          "code": "java.method.removed",
+          "old": "method java.lang.Long io.camunda.zeebe.protocol.record.value.AuthorizationRecordValue::getOwnerKey()",
+          "justification": "Identity release got postponed to 8.8. This intent was already merged, but it was impossible to use it. We can safely remove it without breaking backwards compatibility."
+        },
+        {
+          "ignore": true,
+          "code": "java.method.removed",
+          "old": "method java.util.List<io.camunda.zeebe.protocol.record.value.AuthorizationRecordValue.PermissionValue> io.camunda.zeebe.protocol.record.value.AuthorizationRecordValue::getPermissions()",
+          "justification": "Identity release got postponed to 8.8. This record was already merged, but it was impossible to use it. We can safely change it without breaking backwards compatibility."
+        },
+        {
+          "ignore": true,
+          "code": "java.method.removed",
+          "old": "method io.camunda.zeebe.protocol.record.value.ImmutableAuthorizationRecordValue.Builder io.camunda.zeebe.protocol.record.value.ImmutableAuthorizationRecordValue.Builder::addAllPermissionBuilders(io.camunda.zeebe.protocol.record.value.ImmutablePermissionValue.Builder[])",
+          "justification": "Identity release got postponed to 8.8. This record was already merged, but it was impossible to use it. We can safely change it without breaking backwards compatibility."
+        },
+        {
+          "ignore": true,
+          "code": "java.method.removed",
+          "old": "method io.camunda.zeebe.protocol.record.value.ImmutableAuthorizationRecordValue.Builder io.camunda.zeebe.protocol.record.value.ImmutableAuthorizationRecordValue.Builder::addAllPermissionBuilders(java.lang.Iterable<io.camunda.zeebe.protocol.record.value.ImmutablePermissionValue.Builder>)",
+          "justification": "Identity release got postponed to 8.8. This record was already merged, but it was impossible to use it. We can safely change it without breaking backwards compatibility."
+        },
+        {
+          "ignore": true,
+          "code": "java.method.removed",
+          "old": "method io.camunda.zeebe.protocol.record.value.ImmutableAuthorizationRecordValue.Builder io.camunda.zeebe.protocol.record.value.ImmutableAuthorizationRecordValue.Builder::addAllPermissions(java.lang.Iterable<? extends io.camunda.zeebe.protocol.record.value.AuthorizationRecordValue.PermissionValue>)",
+          "justification": "Identity release got postponed to 8.8. This record was already merged, but it was impossible to use it. We can safely change it without breaking backwards compatibility."
+        },
+        {
+          "ignore": true,
+          "code": "java.method.removed",
+          "old": "method io.camunda.zeebe.protocol.record.value.ImmutableAuthorizationRecordValue.Builder io.camunda.zeebe.protocol.record.value.ImmutableAuthorizationRecordValue.Builder::addPermission(io.camunda.zeebe.protocol.record.value.AuthorizationRecordValue.PermissionValue)",
+          "justification": "Identity release got postponed to 8.8. This record was already merged, but it was impossible to use it. We can safely change it without breaking backwards compatibility."
+        },
+        {
+          "ignore": true,
+          "code": "java.method.removed",
+          "old": "method io.camunda.zeebe.protocol.record.value.ImmutablePermissionValue.Builder io.camunda.zeebe.protocol.record.value.ImmutableAuthorizationRecordValue.Builder::addPermissionBuilder()",
+          "justification": "Identity release got postponed to 8.8. This record was already merged, but it was impossible to use it. We can safely change it without breaking backwards compatibility."
+        },
+        {
+          "ignore": true,
+          "code": "java.method.removed",
+          "old": "method io.camunda.zeebe.protocol.record.value.ImmutableAuthorizationRecordValue.Builder io.camunda.zeebe.protocol.record.value.ImmutableAuthorizationRecordValue.Builder::addPermissions(io.camunda.zeebe.protocol.record.value.AuthorizationRecordValue.PermissionValue[])",
+          "justification": "Identity release got postponed to 8.8. This record was already merged, but it was impossible to use it. We can safely change it without breaking backwards compatibility."
+        },
+        {
+          "ignore": true,
+          "code": "java.method.removed",
+          "old": "method java.util.List<io.camunda.zeebe.protocol.record.value.ImmutablePermissionValue.Builder> io.camunda.zeebe.protocol.record.value.ImmutableAuthorizationRecordValue.Builder::permissionBuilders()",
+          "justification": "Identity release got postponed to 8.8. This record was already merged, but it was impossible to use it. We can safely change it without breaking backwards compatibility."
+        },
+        {
+          "ignore": true,
+          "code": "java.method.removed",
+          "old": "method io.camunda.zeebe.protocol.record.value.ImmutableAuthorizationRecordValue.Builder io.camunda.zeebe.protocol.record.value.ImmutableAuthorizationRecordValue.Builder::withOwnerKey(java.lang.Long)",
+          "justification": "Identity release got postponed to 8.8. This record was already merged, but it was impossible to use it. We can safely change it without breaking backwards compatibility."
+        },
+        {
+          "ignore": true,
+          "code": "java.method.removed",
+          "old": "method io.camunda.zeebe.protocol.record.value.ImmutableAuthorizationRecordValue.Builder io.camunda.zeebe.protocol.record.value.ImmutableAuthorizationRecordValue.Builder::withPermissions(java.lang.Iterable<? extends io.camunda.zeebe.protocol.record.value.AuthorizationRecordValue.PermissionValue>)",
+          "justification": "Identity release got postponed to 8.8. This record was already merged, but it was impossible to use it. We can safely change it without breaking backwards compatibility."
+        },
+        {
+          "ignore": true,
+          "code": "java.method.removed",
+          "old": "method java.lang.Long io.camunda.zeebe.protocol.record.value.ImmutableAuthorizationRecordValue::getOwnerKey()",
+          "justification": "Identity release got postponed to 8.8. This record was already merged, but it was impossible to use it. We can safely change it without breaking backwards compatibility."
+        },
+        {
+          "ignore": true,
+          "code": "java.method.removed",
+          "old": "method java.util.List<io.camunda.zeebe.protocol.record.value.AuthorizationRecordValue.PermissionValue> io.camunda.zeebe.protocol.record.value.ImmutableAuthorizationRecordValue::getPermissions()",
+          "justification": "Identity release got postponed to 8.8. This record was already merged, but it was impossible to use it. We can safely change it without breaking backwards compatibility."
+        },
+        {
+          "ignore": true,
+          "code": "java.method.removed",
+          "old": "method io.camunda.zeebe.protocol.record.value.ImmutableAuthorizationRecordValue io.camunda.zeebe.protocol.record.value.ImmutableAuthorizationRecordValue::withOwnerKey(java.lang.Long)",
+          "justification": "Identity release got postponed to 8.8. This record was already merged, but it was impossible to use it. We can safely change it without breaking backwards compatibility."
+        },
+        {
+          "ignore": true,
+          "code": "java.method.removed",
+          "old": "method io.camunda.zeebe.protocol.record.value.ImmutableAuthorizationRecordValue io.camunda.zeebe.protocol.record.value.ImmutableAuthorizationRecordValue::withPermissions(io.camunda.zeebe.protocol.record.value.AuthorizationRecordValue.PermissionValue[])",
+          "justification": "Identity release got postponed to 8.8. This record was already merged, but it was impossible to use it. We can safely change it without breaking backwards compatibility."
+        },
+        {
+          "ignore": true,
+          "code": "java.method.removed",
+          "old": "method io.camunda.zeebe.protocol.record.value.ImmutableAuthorizationRecordValue io.camunda.zeebe.protocol.record.value.ImmutableAuthorizationRecordValue::withPermissions(java.lang.Iterable<? extends io.camunda.zeebe.protocol.record.value.AuthorizationRecordValue.PermissionValue>)",
+          "justification": "Identity release got postponed to 8.8. This record was already merged, but it was impossible to use it. We can safely change it without breaking backwards compatibility."
         }
       ]
     }

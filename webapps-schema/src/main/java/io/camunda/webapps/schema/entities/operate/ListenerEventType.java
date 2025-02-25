@@ -15,6 +15,7 @@ public enum ListenerEventType {
   END,
   COMPLETING,
   ASSIGNING,
+  UPDATING,
   UNKNOWN,
   UNSPECIFIED;
 

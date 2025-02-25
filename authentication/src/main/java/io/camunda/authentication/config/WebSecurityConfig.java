@@ -33,7 +33,6 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Primary;
 import org.springframework.context.annotation.Profile;
 import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpHeaders;
@@ -56,13 +55,13 @@ import org.springframework.security.web.util.matcher.RequestMatcher;
 @Profile("consolidated-auth")
 public class WebSecurityConfig {
   public static final String SESSION_COOKIE = "camunda-session";
-
+  private static final int ORDER_WEBAPP_API_PROTECTION = 1;
+  private static final int ORDER_UNPROTECTED_API = 2;
+  private static final int ORDER_LOGIN_LOGOUT_HANDLING = 3;
   private static final Logger LOG = LoggerFactory.getLogger(WebSecurityConfig.class);
-
   private static final String LOGIN_URL = "/login";
   private static final String LOGOUT_URL = "/logout";
-
-  private static final Set<String> API_PATHS = Set.of("/v1/**", "/v2/**", "/api/**");
+  private static final Set<String> API_PATHS = Set.of("/v1/**", "/v2/**");
   private static final Set<String> UNAUTHENTICATED_PATHS =
       Set.of(
           LOGIN_URL,
@@ -112,8 +111,8 @@ public class WebSecurityConfig {
   }
 
   @Bean
-  @Primary
   @ConditionalOnAuthenticationMethod(AuthenticationMethod.OIDC)
+  @Order(ORDER_WEBAPP_API_PROTECTION)
   public SecurityFilterChain oidcHttpSecurity(
       final HttpSecurity httpSecurity,
       final AuthFailureHandler authFailureHandler,
@@ -149,7 +148,7 @@ public class WebSecurityConfig {
 
   @Bean
   @ConditionalOnAuthenticationMethod(AuthenticationMethod.BASIC)
-  @Order(1)
+  @Order(ORDER_WEBAPP_API_PROTECTION)
   public SecurityFilterChain httpBasicAuthSecurityFilterChain(
       final HttpSecurity httpSecurity,
       final AuthFailureHandler authFailureHandler,
@@ -162,13 +161,13 @@ public class WebSecurityConfig {
                 request ->
                     isBasicAuthRequest(request)
                         // If authentication isn't disabled for the API, all API requests without a
-                        // session cookie are treated as basic auth requests to work around a
-                        // limitation of Java's HTTP client, which only sends an Authorization
-                        // header after the server sends a WWW-Authenticate header in a 401
-                        // response.
-                        || !securityConfiguration.isUnauthenticatedApiAccessAllowed()
+                        // session cookie or Referer header are treated as basic auth requests to
+                        // work around a limitation of Java's HTTP client, which only sends an
+                        // Authorization header after the server sends a WWW-Authenticate header in
+                        // a 401 response.
+                        || securityConfiguration.isApiProtected()
                             && isApiRequest(request)
-                            && !hasSessionCookie(request)),
+                            && !isFrontendRequest(request)),
             authFailureHandler,
             UNAUTHENTICATED_PATHS)
         .httpBasic(Customizer.withDefaults())
@@ -176,16 +175,16 @@ public class WebSecurityConfig {
   }
 
   @Bean
-  @ConditionalOnAuthenticationMethod(AuthenticationMethod.BASIC)
-  @Order(2)
+  @Order(ORDER_UNPROTECTED_API)
   public SecurityFilterChain unprotectedApiAccessSecurityFilterChain(
       final HttpSecurity httpSecurity,
       final AuthFailureHandler authFailureHandler,
       final SecurityConfiguration securityConfiguration)
       throws Exception {
-    if (!securityConfiguration.isUnauthenticatedApiAccessAllowed()) {
+    if (securityConfiguration.isApiProtected()) {
       return null;
     }
+
     LOG.warn(
         "The API is accessible without authentication. Please disable {} for any deployment.",
         AuthenticationProperties.API_UNPROTECTED);
@@ -199,7 +198,7 @@ public class WebSecurityConfig {
 
   @Bean
   @ConditionalOnAuthenticationMethod(AuthenticationMethod.BASIC)
-  @Order(3)
+  @Order(ORDER_LOGIN_LOGOUT_HANDLING)
   public SecurityFilterChain loginAuthSecurityFilterChain(
       final HttpSecurity httpSecurity, final AuthFailureHandler authFailureHandler)
       throws Exception {
@@ -242,6 +241,10 @@ public class WebSecurityConfig {
     final String authorizationHeader = request.getHeader(HttpHeaders.AUTHORIZATION);
     // If the client sends an `Authorization: Basic` header, treat this as a basic auth request.
     return authorizationHeader != null && authorizationHeader.startsWith("Basic ");
+  }
+
+  private static boolean isFrontendRequest(final HttpServletRequest request) {
+    return hasSessionCookie(request) || request.getHeader(HttpHeaders.REFERER) != null;
   }
 
   private static boolean hasSessionCookie(final HttpServletRequest request) {

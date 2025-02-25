@@ -9,15 +9,11 @@
 import React, {runAllEffects} from 'react';
 import {shallow} from 'enzyme';
 
-import {getWebappEndpoints} from 'config';
-
 import RawDataTable from './RawDataTable';
 import processRawData from './processRawData';
 import ObjectVariableModal from './ObjectVariableModal';
 
 jest.mock('./processRawData', () => jest.fn().mockReturnValue({}));
-
-jest.mock('config', () => ({getWebappEndpoints: jest.fn()}));
 
 jest.mock('services', () => {
   return {
@@ -57,14 +53,6 @@ const props = {
   error: '',
   report,
 };
-
-it('should get the camunda endpoints for raw data', () => {
-  getWebappEndpoints.mockClear();
-  shallow(<RawDataTable {...props} />);
-  runAllEffects();
-
-  expect(getWebappEndpoints).toHaveBeenCalled();
-});
 
 it('should process raw data', () => {
   shallow(<RawDataTable {...props} />);
@@ -141,13 +129,4 @@ it('should update configuration when arranging columns', () => {
   expect(spy).toHaveBeenCalledWith({
     configuration: {tableColumns: {columnOrder: {$set: ['col2', 'col3', 'col1']}}},
   });
-});
-
-it('should show loading indicator when loading camunda endpoints', () => {
-  getWebappEndpoints.mockReturnValueOnce(null);
-  const node = shallow(<RawDataTable {...props} />);
-
-  runAllEffects();
-
-  expect(node.find('Loading')).toBeDefined();
 });

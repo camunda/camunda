@@ -23,11 +23,13 @@ const useTranslate = (ns?: string) => {
   const Translate: FC<Omit<TransProps<string>, "ns" | "t">> = ({
     children,
     ...transProps
-  }) => (
-    <Trans {...transProps} t={t} ns={translationOptions[0]}>
-      {children}
-    </Trans>
-  );
+  }) => {
+    return (
+      <Trans {...transProps} i18n={i18n} t={t} ns={translationOptions[0]}>
+        {children}
+      </Trans>
+    );
+  };
 
   return { t, Translate };
 };

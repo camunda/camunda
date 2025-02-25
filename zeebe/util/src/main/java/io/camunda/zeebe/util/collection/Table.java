@@ -124,7 +124,7 @@ public interface Table<RowT, ColT, T> {
 
     @Override
     public void put(final RowT rowKey, final ColT columnKey, final T value) {
-      table.computeIfAbsent(rowKey, ignored -> new HashMap<>()).put(columnKey, value);
+      table.computeIfAbsent(rowKey, ignored -> (Map<ColT, T>) supplier.get()).put(columnKey, value);
     }
 
     @Override

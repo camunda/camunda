@@ -23,7 +23,6 @@ import {
   processInstancesStore,
 } from 'modules/stores/processInstances';
 import {processInstancesSelectionStore} from 'modules/stores/processInstancesSelection';
-import {authenticationStore} from 'modules/stores/authentication';
 import {processesStore} from 'modules/stores/processes/processes.list';
 import {notificationsStore} from 'modules/stores/notifications';
 import {batchModificationStore} from 'modules/stores/batchModification';
@@ -157,9 +156,7 @@ const InstancesTable: React.FC = observer(() => {
       <SortableTable
         state={getTableState()}
         columnsWithNoContentPadding={['operations']}
-        selectionType={
-          authenticationStore.hasPermission(['write']) ? 'checkbox' : 'none'
-        }
+        selectionType="checkbox"
         onSelectAll={processInstancesSelectionStore.selectAllProcessInstances}
         onSelect={(rowId) => {
           processInstancesSelectionStore.selectProcessInstance(rowId);
@@ -268,7 +265,7 @@ const InstancesTable: React.FC = observer(() => {
                 )}
               </>
             ),
-            operations: authenticationStore.hasPermission(['write']) ? (
+            operations: (
               <Operations
                 instance={instance}
                 onOperation={(operationType) =>
@@ -308,7 +305,7 @@ const InstancesTable: React.FC = observer(() => {
                   instance.tenantId,
                 )}
               />
-            ) : undefined,
+            ),
           };
         })}
         headerColumns={[
@@ -364,15 +361,12 @@ const InstancesTable: React.FC = observer(() => {
             header: 'Parent Process Instance Key',
             key: 'parentInstanceId',
           },
-          ...(authenticationStore.hasPermission(['write'])
-            ? [
-                {
-                  header: 'Operations',
-                  key: 'operations',
-                  isDisabled: true,
-                },
-              ]
-            : []),
+
+          {
+            header: 'Operations',
+            key: 'operations',
+            isDisabled: true,
+          },
         ]}
         batchOperationId={batchOperationId}
       />

@@ -23,7 +23,7 @@ import {mockFetchProcessInstance} from 'modules/mocks/api/processInstances/fetch
 import {mockFetchProcessXML} from 'modules/mocks/api/processes/fetchProcessXML';
 import {useEffect} from 'react';
 import {Paths} from 'modules/Routes';
-import {mockGetUser} from 'modules/mocks/api/getUser';
+import {mockMe} from 'modules/mocks/api/v2/me';
 
 jest.mock('modules/stores/process', () => ({
   processStore: {state: {process: {}}, fetchProcess: jest.fn()},
@@ -60,7 +60,7 @@ describe('InstanceHeader', () => {
 
     mockFetchProcessInstance().withSuccess(mockInstanceWithoutOperations);
     mockFetchProcessXML().withSuccess(mockProcessXML);
-    mockGetUser().withSuccess(
+    mockMe().withSuccess(
       createUser({
         tenants: [
           {tenantId: '<default>', name: 'Default Tenant'},
@@ -100,7 +100,7 @@ describe('InstanceHeader', () => {
   it('should hide multi tenancy column and exclude tenant from version link', async () => {
     mockFetchProcessInstance().withSuccess(mockInstanceWithoutOperations);
     mockFetchProcessXML().withSuccess(mockProcessXML);
-    mockGetUser().withSuccess(
+    mockMe().withSuccess(
       createUser({
         tenants: [
           {tenantId: '<default>', name: 'Default Tenant'},

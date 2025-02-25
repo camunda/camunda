@@ -221,9 +221,7 @@ public class OpensearchAdapter implements Adapter {
     final var sorted = items.stream().sorted(Comparator.comparing(BulkResponseItem::id)).toList();
     for (int i = 0; i < sorted.size(); i++) {
       if (sorted.get(i).error() != null) {
-        return i > 0
-            ? Objects.requireNonNull(sorted.get(i - 1).id())
-            : Objects.requireNonNull(sorted.get(i).id());
+        return i == 0 ? null : Objects.requireNonNull(sorted.get(i - 1).id());
       }
     }
 

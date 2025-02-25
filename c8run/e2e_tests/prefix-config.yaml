@@ -1,0 +1,7 @@
+camunda:
+  operate:
+    zeebeElasticsearch:
+      prefix: "extra-prefix-zeebe-record"
+  tasklist:
+    zeebeElasticsearch:
+      prefix: "extra-prefix-zeebe-record"

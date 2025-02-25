@@ -144,7 +144,7 @@ public class RecordsReaderOpenSearch extends RecordsReaderAbstract {
 
     } catch (final OpenSearchException ex) {
       if (ex.getMessage().contains("no such index")) {
-        LOGGER.warn("No index found for alias '{}'", aliasName);
+        LOGGER.debug("No index found for alias '{}'", aliasName);
         throw new NoSuchIndexException();
       } else {
         final String message =

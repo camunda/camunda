@@ -23,7 +23,7 @@ describe('license note', () => {
   beforeEach(() => {
     nodeMockServer.use(
       http.get(
-        '/v1/internal/users/current',
+        '/v2/authentication/me',
         () => {
           return HttpResponse.json(userMocks.currentUser);
         },

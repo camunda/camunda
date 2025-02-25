@@ -18,7 +18,7 @@ describe('<Header />', () => {
   it('should render a header', async () => {
     nodeMockServer.use(
       http.get(
-        '/v1/internal/users/current',
+        '/v2/authentication/me',
         () => {
           return HttpResponse.json(userMocks.currentUser);
         },

@@ -16,6 +16,7 @@ import {
 } from '../mocks/dashboard.mocks';
 import {Paths} from 'modules/Routes';
 import {validateResults} from './validateResults';
+import {URL_API_PATTERN} from '../constants';
 
 test.describe('dashboard', () => {
   for (const theme of ['light', 'dark']) {
@@ -28,7 +29,7 @@ test.describe('dashboard', () => {
       await commonPage.changeTheme(theme);
 
       await page.route(
-        /^.*\/api.*$/i,
+        URL_API_PATTERN,
         mockResponses({
           statistics: mockStatistics,
           incidentsByError: mockIncidentsByError,
@@ -51,7 +52,7 @@ test.describe('dashboard', () => {
       await commonPage.changeTheme(theme);
 
       await page.route(
-        /^.*\/api.*$/i,
+        URL_API_PATTERN,
         mockResponses({
           statistics: mockStatistics,
           incidentsByError: mockIncidentsByError,

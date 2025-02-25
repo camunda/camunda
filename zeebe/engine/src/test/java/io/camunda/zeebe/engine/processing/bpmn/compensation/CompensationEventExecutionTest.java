@@ -29,6 +29,7 @@ import io.camunda.zeebe.protocol.record.intent.VariableIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.BpmnEventType;
 import io.camunda.zeebe.protocol.record.value.CompensationSubscriptionRecordValue;
+import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import io.camunda.zeebe.protocol.record.value.VariableRecordValue;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
@@ -177,6 +178,14 @@ public class CompensationEventExecutionTest {
         .complete();
 
     // then
+    final var compensationThrowEventActivating =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATING)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementType(BpmnElementType.INTERMEDIATE_THROW_EVENT)
+            .withEventType(BpmnEventType.COMPENSATION)
+            .getFirst();
+    assertHasTreePath(compensationThrowEventActivating, processInstanceKey);
+
     final var compensationActivityActivated =
         RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
             .withProcessInstanceKey(processInstanceKey)
@@ -266,6 +275,22 @@ public class CompensationEventExecutionTest {
         .complete();
 
     // then
+    final var compensationThrowEvent =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATING)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementType(BpmnElementType.INTERMEDIATE_THROW_EVENT)
+            .withEventType(BpmnEventType.COMPENSATION)
+            .getFirst();
+    assertHasTreePath(compensationThrowEvent, processInstanceKey);
+
+    final var compensationBoundaryEvent =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATING)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementType(BpmnElementType.BOUNDARY_EVENT)
+            .withEventType(BpmnEventType.COMPENSATION)
+            .getFirst();
+    assertHasTreePath(compensationBoundaryEvent, processInstanceKey);
+
     assertThat(
             RecordingExporter.processInstanceRecords()
                 .withProcessInstanceKey(processInstanceKey)
@@ -352,6 +377,14 @@ public class CompensationEventExecutionTest {
         .complete();
 
     // then
+    final var compensationEndEvent =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATING)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementType(BpmnElementType.END_EVENT)
+            .withEventType(BpmnEventType.COMPENSATION)
+            .getFirst();
+    assertHasTreePath(compensationEndEvent, processInstanceKey);
+
     assertThat(
             RecordingExporter.processInstanceRecords()
                 .withProcessInstanceKey(processInstanceKey)
@@ -3315,5 +3348,14 @@ public class CompensationEventExecutionTest {
         .limit(number)
         .map(Record::getKey)
         .forEach(jobKey -> ENGINE.job().withKey(jobKey).complete());
+  }
+
+  private void assertHasTreePath(
+      final Record<ProcessInstanceRecordValue> eventActivating, final long processInstanceKey) {
+    final ProcessInstanceRecordValue recordValue = eventActivating.getValue();
+    Assertions.assertThat(recordValue)
+        .hasOnlyElementInstancePath(List.of(processInstanceKey, eventActivating.getKey()));
+    Assertions.assertThat(recordValue)
+        .hasOnlyProcessDefinitionPath(recordValue.getProcessDefinitionKey());
   }
 }

@@ -13,7 +13,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.github.dockerjava.api.command.CreateContainerCmd;
 import com.github.dockerjava.api.model.Capability;
 import com.github.dockerjava.api.model.HostConfig;
-import io.camunda.authentication.config.AuthenticationProperties;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.response.BrokerInfo;
 import io.camunda.client.api.response.PartitionInfo;
@@ -264,8 +263,7 @@ final class AsymmetricNetworkPartitionIT {
         .self()
         .withCreateContainerCmdModifier(AsymmetricNetworkPartitionIT::configureNetAdmin)
         .withEnv("ZEEBE_BROKER_NETWORK_MAXMESSAGESIZE", "1MB")
-        .withEnv("ZEEBE_BROKER_DATA_LOGSEGMENTSIZE", "16MB")
-        .withEnv(AuthenticationProperties.getAllowUnauthenticatedApiAccessEnvVar(), "true");
+        .withEnv("ZEEBE_BROKER_DATA_LOGSEGMENTSIZE", "16MB");
   }
 
   private static void configureNetAdmin(final CreateContainerCmd command) {

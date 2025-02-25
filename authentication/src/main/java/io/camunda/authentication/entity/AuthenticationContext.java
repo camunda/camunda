@@ -9,10 +9,12 @@ package io.camunda.authentication.entity;
 
 import io.camunda.search.entities.RoleEntity;
 import io.camunda.service.TenantServices.TenantDTO;
+import java.io.Serializable;
 import java.util.List;
 
 public record AuthenticationContext(
     List<RoleEntity> roles,
     List<String> authorizedApplications,
     List<TenantDTO> tenants,
-    List<String> groups) {}
+    List<String> groups)
+    implements Serializable {}

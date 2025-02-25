@@ -12,7 +12,6 @@ import {useRemoveFormReference} from 'modules/queries/useTask';
 import {getSchemaVariables} from '@bpmn-io/form-js-viewer';
 import {DetailsFooter} from 'modules/components/DetailsFooter';
 import {type InlineLoadingProps, Layer} from '@carbon/react';
-import {usePermissions} from 'modules/hooks/usePermissions';
 import {notificationsStore} from 'modules/stores/notifications';
 import {FormManager} from 'modules/formManager';
 import {
@@ -89,7 +88,6 @@ const FormJS: React.FC<Props> = ({
       refetchOnWindowFocus: false,
     },
   );
-  const {hasPermission} = usePermissions(['write']);
   const {schema} = data;
   const extractedVariables = extractVariablesFromFormSchema(schema);
   const {data: variablesData, status} = useVariables(
@@ -110,10 +108,7 @@ const FormJS: React.FC<Props> = ({
   const hasFetchedVariables =
     extractedVariables.length === 0 || status === 'success';
   const canCompleteTask =
-    user.userId === assignee &&
-    taskState === 'CREATED' &&
-    hasPermission &&
-    hasFetchedVariables;
+    user.userId === assignee && taskState === 'CREATED' && hasFetchedVariables;
   const {removeFormReference} = useRemoveFormReference(task);
 
   return (

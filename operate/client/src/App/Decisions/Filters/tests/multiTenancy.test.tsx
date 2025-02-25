@@ -20,7 +20,7 @@ import {
   selectTenant,
 } from 'modules/testUtils/selectComboBoxOption';
 import {Paths} from 'modules/Routes';
-import {mockGetUser} from 'modules/mocks/api/getUser';
+import {mockMe} from 'modules/mocks/api/v2/me';
 import {createUser} from 'modules/testUtils';
 import {authenticationStore} from 'modules/stores/authentication';
 
@@ -68,7 +68,7 @@ const MOCK_FILTERS_PARAMS = {
 describe('<Filters />', () => {
   beforeEach(async () => {
     mockFetchGroupedDecisions().withSuccess(groupedDecisions);
-    mockGetUser().withSuccess(
+    mockMe().withSuccess(
       createUser({
         tenants: [
           {tenantId: '<default>', name: 'Default Tenant'},

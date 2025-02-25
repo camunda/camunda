@@ -9,12 +9,13 @@
 import {expect} from '@playwright/test';
 import {test} from '../test-fixtures';
 import {
-  mockDecisionInstances,
-  mockGroupedDecisions,
   mockBatchOperations,
+  mockDecisionInstances,
   mockDecisionXml,
+  mockGroupedDecisions,
   mockResponses,
 } from '../mocks/decisions.mocks';
+import {URL_API_PATTERN} from '../constants';
 import {clientConfigMock} from '../mocks/clientConfig';
 
 test.beforeEach(async ({context}) => {
@@ -44,7 +45,7 @@ test.describe('decisions page', () => {
       }, theme);
 
       await page.route(
-        /^.*\/api.*$/i,
+        URL_API_PATTERN,
         mockResponses({
           batchOperations: [],
           groupedDecisions: mockGroupedDecisions,
@@ -83,7 +84,7 @@ test.describe('decisions page', () => {
       }, theme);
 
       await page.route(
-        /^.*\/api.*$/i,
+        URL_API_PATTERN,
         mockResponses({
           groupedDecisions: mockGroupedDecisions,
         }),
@@ -112,7 +113,7 @@ test.describe('decisions page', () => {
       await commonPage.changeTheme(theme);
 
       await page.route(
-        /^.*\/api.*$/i,
+        URL_API_PATTERN,
         mockResponses({
           groupedDecisions: mockGroupedDecisions,
           batchOperations: mockBatchOperations,
@@ -152,7 +153,7 @@ test.describe('decisions page', () => {
       }, theme);
 
       await page.route(
-        /^.*\/api.*$/i,
+        URL_API_PATTERN,
         mockResponses({
           groupedDecisions: mockGroupedDecisions,
           batchOperations: mockBatchOperations,
@@ -192,7 +193,7 @@ test.describe('decisions page', () => {
       }, theme);
 
       await page.route(
-        /^.*\/api.*$/i,
+        URL_API_PATTERN,
         mockResponses({
           groupedDecisions: mockGroupedDecisions,
           batchOperations: mockBatchOperations,

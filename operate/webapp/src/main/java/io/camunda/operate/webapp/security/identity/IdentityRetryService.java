@@ -7,7 +7,7 @@
  */
 package io.camunda.operate.webapp.security.identity;
 
-import io.camunda.identity.sdk.exception.IdentityException;
+import io.camunda.identity.sdk.impl.rest.exception.RestException;
 import io.camunda.operate.util.RetryOperation;
 import java.util.concurrent.TimeUnit;
 import org.springframework.stereotype.Component;
@@ -21,7 +21,7 @@ public class IdentityRetryService {
     return RetryOperation.<T>newBuilder()
         .noOfRetry(10)
         .delayInterval(500, TimeUnit.MILLISECONDS)
-        .retryOn(IdentityException.class)
+        .retryOn(RestException.class)
         .retryConsumer(retryConsumer)
         .message(operationName)
         .build()

@@ -9,16 +9,14 @@ package io.camunda.authentication.config;
 
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.security.entity.AuthenticationMethod;
-import java.util.Optional;
 
 public final class AuthenticationProperties {
   public static final String METHOD = "camunda.security.authentication.method";
-  public static final String API_UNPROTECTED =
-      "camunda.security.authentication.basic.allow-unauthenticated-api-access";
+  public static final String API_UNPROTECTED = "camunda.security.authentication.unprotected-api";
 
   private AuthenticationProperties() {}
 
-  public static String getAllowUnauthenticatedApiAccessEnvVar() {
+  public static String getUnprotectedApiEnvVar() {
     return API_UNPROTECTED.replace(".", "_").replace("-", "").toUpperCase();
   }
 
@@ -26,13 +24,12 @@ public final class AuthenticationProperties {
       final SecurityConfiguration securityConfig, final String key, final Object value) {
     switch (key) {
       case METHOD ->
-          Optional.ofNullable(AuthenticationMethod.parse(String.valueOf(value)))
+          AuthenticationMethod.parse(String.valueOf(value))
               .ifPresent(securityConfig.getAuthentication()::setMethod);
       case API_UNPROTECTED ->
           securityConfig
               .getAuthentication()
-              .getBasic()
-              .setAllowUnauthenticatedApiAccess(Boolean.parseBoolean(String.valueOf(value)));
+              .setUnprotectedApi(Boolean.parseBoolean(String.valueOf(value)));
       default -> {}
     }
   }

@@ -13,7 +13,7 @@ import io.camunda.search.entities.VariableEntity;
 import io.camunda.util.ObjectBuilder;
 import java.util.List;
 
-public interface VariableMapper {
+public interface VariableMapper extends HistoryCleanupMapper {
 
   void insert(VariableDbModel variable);
 
@@ -32,12 +32,12 @@ public interface VariableMapper {
       private Long variableKey;
       private String processDefinitionId;
 
-      public Builder variableKey(Long variableKey) {
+      public Builder variableKey(final Long variableKey) {
         this.variableKey = variableKey;
         return this;
       }
 
-      public Builder processDefinitionId(String processDefinitionId) {
+      public Builder processDefinitionId(final String processDefinitionId) {
         this.processDefinitionId = processDefinitionId;
         return this;
       }

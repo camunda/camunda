@@ -15,6 +15,7 @@ import io.camunda.zeebe.scheduler.testing.ActorSchedulerRule;
 import io.camunda.zeebe.snapshots.SnapshotMetadata;
 import io.camunda.zeebe.test.util.asserts.DirectoryAssert;
 import io.camunda.zeebe.util.FileUtil;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
@@ -360,7 +361,8 @@ public class FileBasedTransientSnapshotTest {
   }
 
   private FileBasedSnapshotStore createStore(final Path root) throws IOException {
-    final var store = new FileBasedSnapshotStore(0, 1, root, snapshotPath -> Map.of());
+    final var store =
+        new FileBasedSnapshotStore(0, 1, root, snapshotPath -> Map.of(), new SimpleMeterRegistry());
     scheduler.submitActor(store);
     return store;
   }

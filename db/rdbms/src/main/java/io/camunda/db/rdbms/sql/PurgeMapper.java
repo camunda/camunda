@@ -9,5 +9,9 @@ package io.camunda.db.rdbms.sql;
 
 public interface PurgeMapper {
 
+  void disableForeignKeyChecks();
+
+  void enableForeignKeyChecks();
+
   void truncateTable(String tableName);
 }

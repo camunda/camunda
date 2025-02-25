@@ -46,7 +46,6 @@ describe('IncidentsTable', () => {
     await processInstanceDetailsDiagramStore.fetchProcessXml('1');
     authenticationStore.setUser({
       displayName: 'demo',
-      permissions: ['read'],
       canLogout: true,
       userId: 'demo',
       roles: null,
@@ -62,7 +61,7 @@ describe('IncidentsTable', () => {
     expect(screen.getByText('Job Id')).toBeInTheDocument();
     expect(screen.getByText('Creation Date')).toBeInTheDocument();
     expect(screen.getByText('Error Message')).toBeInTheDocument();
-    expect(screen.queryByText('Operations')).not.toBeInTheDocument();
+    expect(screen.getByText('Operations')).toBeInTheDocument();
     expect(screen.getByText('Root Cause Instance')).toBeInTheDocument();
   });
 
@@ -77,7 +76,6 @@ describe('IncidentsTable', () => {
     await processInstanceDetailsDiagramStore.fetchProcessXml('1');
     authenticationStore.setUser({
       displayName: 'demo',
-      permissions: ['write'],
       canLogout: true,
       userId: 'demo',
       roles: null,
@@ -148,75 +146,7 @@ describe('IncidentsTable', () => {
     ).toBeInTheDocument();
   });
 
-  it('should render incident details for restricted user', async () => {
-    mockFetchProcessXML().withSuccess(mockCallActivityProcessXML);
-    await processInstanceDetailsDiagramStore.fetchProcessXml('1');
-
-    incidentsStore.setIncidents(incidentsMock);
-    authenticationStore.setUser({
-      displayName: 'demo',
-      permissions: ['read'],
-      canLogout: true,
-      userId: 'demo',
-      roles: null,
-      salesPlanType: null,
-      c8Links: {},
-      tenants: [],
-    });
-
-    render(<IncidentsTable />, {wrapper: Wrapper});
-    let withinRow = within(
-      screen.getByRole('row', {
-        name: new RegExp(firstIncident.errorType.name),
-      }),
-    );
-
-    expect(
-      withinRow.getByText(firstIncident.errorType.name),
-    ).toBeInTheDocument();
-    expect(withinRow.getByText(firstIncident.flowNodeId)).toBeInTheDocument();
-    expect(withinRow.getByText(firstIncident.jobId!)).toBeInTheDocument();
-    expect(
-      withinRow.getByText(formatDate(firstIncident.creationTime) || '--'),
-    ).toBeInTheDocument();
-    expect(withinRow.getByText(firstIncident.errorMessage)).toBeInTheDocument();
-
-    expect(
-      withinRow.getByRole('link', {
-        description: /view root cause instance/i,
-      }),
-    ).toBeInTheDocument();
-    expect(
-      withinRow.queryByRole('button', {name: 'Retry Incident'}),
-    ).not.toBeInTheDocument();
-
-    withinRow = within(
-      screen.getByRole('row', {
-        name: new RegExp(secondIncident.errorType.name),
-      }),
-    );
-    expect(
-      withinRow.getByText(secondIncident.errorType.name),
-    ).toBeInTheDocument();
-    expect(withinRow.getByText(secondIncident.flowNodeId)).toBeInTheDocument();
-    expect(withinRow.getByText(secondIncident.jobId!)).toBeInTheDocument();
-    expect(
-      withinRow.getByText(formatDate(secondIncident.creationTime) || '--'),
-    ).toBeInTheDocument();
-    expect(
-      withinRow.getByText(secondIncident.errorMessage),
-    ).toBeInTheDocument();
-    expect(
-      withinRow.queryByRole('button', {name: 'Retry Incident'}),
-    ).not.toBeInTheDocument();
-    expect(
-      withinRow.queryByRole('link', {
-        description: /view root cause instance/i,
-      }),
-    ).not.toBeInTheDocument();
-  });
-
-  it('should render incident details for restricted user (with resource-based permissions)', async () => {
+  it('should render incident details (with resource-based permissions enabled)', async () => {
     window.clientConfig = {
       resourcePermissionsEnabled: true,
     };
@@ -227,7 +157,6 @@ describe('IncidentsTable', () => {
     incidentsStore.setIncidents(incidentsMock);
     authenticationStore.setUser({
       displayName: 'demo',
-      permissions: ['write'],
       canLogout: true,
       userId: 'demo',
       roles: null,

@@ -12,6 +12,7 @@ import io.camunda.zeebe.logstreams.impl.flowcontrol.RateLimit;
 import io.camunda.zeebe.logstreams.log.LogStream;
 import io.camunda.zeebe.logstreams.log.LogStreamBuilder;
 import io.camunda.zeebe.logstreams.storage.LogStorage;
+import io.micrometer.core.instrument.MeterRegistry;
 import java.time.InstantSource;
 import java.util.Objects;
 
@@ -24,6 +25,7 @@ public final class LogStreamBuilderImpl implements LogStreamBuilder {
   private InstantSource clock;
   private Limit requestLimit;
   private RateLimit writeRateLimit;
+  private MeterRegistry meterRegistry;
 
   @Override
   public LogStreamBuilder withMaxFragmentSize(final int maxFragmentSize) {
@@ -68,16 +70,30 @@ public final class LogStreamBuilderImpl implements LogStreamBuilder {
   }
 
   @Override
+  public LogStreamBuilder withMeterRegistry(final MeterRegistry meterRegistry) {
+    this.meterRegistry = meterRegistry;
+    return this;
+  }
+
+  @Override
   public LogStream build() {
     validate();
 
     return new LogStreamImpl(
-        logName, partitionId, maxFragmentSize, logStorage, clock, requestLimit, writeRateLimit);
+        logName,
+        partitionId,
+        maxFragmentSize,
+        logStorage,
+        clock,
+        requestLimit,
+        writeRateLimit,
+        meterRegistry);
   }
 
   private void validate() {
     Objects.requireNonNull(logStorage, "Must specify a log storage");
     Objects.requireNonNull(clock, "Must specify a clock source");
+    Objects.requireNonNull(meterRegistry, "Must specify a meter registry");
 
     if (maxFragmentSize < MINIMUM_FRAGMENT_SIZE) {
       throw new IllegalArgumentException(

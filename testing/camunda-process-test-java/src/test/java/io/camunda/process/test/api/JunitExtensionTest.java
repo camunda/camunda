@@ -26,6 +26,8 @@ import io.camunda.process.test.impl.containers.CamundaContainer;
 import io.camunda.process.test.impl.containers.ConnectorsContainer;
 import io.camunda.process.test.impl.runtime.CamundaContainerRuntime;
 import io.camunda.process.test.impl.runtime.CamundaContainerRuntimeBuilder;
+import io.camunda.zeebe.client.ZeebeClient;
+import io.camunda.zeebe.client.ZeebeClientConfiguration;
 import java.net.URI;
 import java.util.Collections;
 import java.util.HashMap;
@@ -63,6 +65,7 @@ public class JunitExtensionTest {
 
   // to be injected
   private CamundaClient client;
+  private ZeebeClient zeebeClient;
   private CamundaProcessTestContext camundaProcessTestContext;
 
   @BeforeEach
@@ -80,7 +83,7 @@ public class JunitExtensionTest {
   }
 
   @Test
-  void shouldInjectZeebeClient() throws Exception {
+  void shouldInjectCamundaClientAndZeebeClient() throws Exception {
     // given
     final CamundaProcessTestExtension extension =
         new CamundaProcessTestExtension(camundaContainerRuntimeBuilder, NOOP);
@@ -90,10 +93,14 @@ public class JunitExtensionTest {
 
     // then
     assertThat(client).isNotNull();
+    assertThat(zeebeClient).isNotNull();
 
     final CamundaClientConfiguration configuration = client.getConfiguration();
     assertThat(configuration.getGrpcAddress()).isEqualTo(GRPC_API_ADDRESS);
     assertThat(configuration.getRestAddress()).isEqualTo(REST_API_ADDRESS);
+    final ZeebeClientConfiguration zeebeClientConfiguration = zeebeClient.getConfiguration();
+    assertThat(zeebeClientConfiguration.getGrpcAddress()).isEqualTo(GRPC_API_ADDRESS);
+    assertThat(zeebeClientConfiguration.getRestAddress()).isEqualTo(REST_API_ADDRESS);
   }
 
   @Test
@@ -117,7 +124,7 @@ public class JunitExtensionTest {
   }
 
   @Test
-  void shouldCreateZeebeClientFromContext() throws Exception {
+  void shouldCreateCamundaClientFromContext() throws Exception {
     // given
     final CamundaProcessTestExtension extension =
         new CamundaProcessTestExtension(camundaContainerRuntimeBuilder, NOOP);
@@ -135,7 +142,25 @@ public class JunitExtensionTest {
   }
 
   @Test
-  void shouldCreateCustomZeebeClientFromContext() throws Exception {
+  void shouldCreateZeebeClientFromContext() throws Exception {
+    // given
+    final CamundaProcessTestExtension extension =
+        new CamundaProcessTestExtension(camundaContainerRuntimeBuilder, NOOP);
+
+    // when
+    extension.beforeEach(extensionContext);
+
+    // then
+    final ZeebeClient newZeebeClient = camundaProcessTestContext.createZeebeClient();
+    assertThat(newZeebeClient).isNotNull();
+
+    final ZeebeClientConfiguration configuration = newZeebeClient.getConfiguration();
+    assertThat(configuration.getGrpcAddress()).isEqualTo(GRPC_API_ADDRESS);
+    assertThat(configuration.getRestAddress()).isEqualTo(REST_API_ADDRESS);
+  }
+
+  @Test
+  void shouldCreateCustomCamundaClientFromContext() throws Exception {
     // given
     final CamundaProcessTestExtension extension =
         new CamundaProcessTestExtension(camundaContainerRuntimeBuilder, NOOP);
@@ -149,6 +174,27 @@ public class JunitExtensionTest {
     assertThat(newCamundaClient).isNotNull();
 
     final CamundaClientConfiguration configuration = newCamundaClient.getConfiguration();
+    assertThat(configuration.getGrpcAddress()).isEqualTo(GRPC_API_ADDRESS);
+    assertThat(configuration.getRestAddress()).isEqualTo(REST_API_ADDRESS);
+    assertThat(configuration.getDefaultJobWorkerName()).isEqualTo("test");
+  }
+
+  @Test
+  void shouldCreateCustomZeebeClientFromContext() throws Exception {
+    // given
+    final CamundaProcessTestExtension extension =
+        new CamundaProcessTestExtension(camundaContainerRuntimeBuilder, NOOP);
+
+    // when
+    extension.beforeEach(extensionContext);
+
+    // then
+    final ZeebeClient newZeebeClient =
+        camundaProcessTestContext.createZeebeClient(
+            builder -> builder.defaultJobWorkerName("test"));
+    assertThat(newZeebeClient).isNotNull();
+
+    final ZeebeClientConfiguration configuration = newZeebeClient.getConfiguration();
     assertThat(configuration.getGrpcAddress()).isEqualTo(GRPC_API_ADDRESS);
     assertThat(configuration.getRestAddress()).isEqualTo(REST_API_ADDRESS);
     assertThat(configuration.getDefaultJobWorkerName()).isEqualTo("test");

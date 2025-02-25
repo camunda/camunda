@@ -141,6 +141,11 @@ public interface JobRecordValue
     boolean isDenied();
 
     /**
+     * @return a reason provided by Task Listener for denying the work
+     */
+    String getDeniedReason();
+
+    /**
      * May only contain the attribute names of {@link JobResultCorrectionsValue} as entries. Those
      * attributes that are contained in this list are the ones that were corrected by the worker.
      * Others are considered not corrected.

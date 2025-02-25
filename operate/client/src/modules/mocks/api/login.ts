@@ -8,6 +8,6 @@
 
 import {mockPostRequest} from './mockRequest';
 
-const mockLogin = () => mockPostRequest('/api/login');
+const mockLogin = () => mockPostRequest('/login');
 
 export {mockLogin};

@@ -23,7 +23,6 @@ public class UIConfigurationResponseDto {
   private String optimizeDocsVersion;
   private boolean isEnterpriseMode;
   private OptimizeProfile optimizeProfile;
-  private Map<String, WebappsEndpointDto> webappsEndpoints;
   private Map<AppName, String> webappsLinks; // links for the app switcher
   private String notificationsUrl;
   private List<String> webhooks;
@@ -50,7 +49,6 @@ public class UIConfigurationResponseDto {
       final String optimizeDocsVersion,
       final boolean isEnterpriseMode,
       final OptimizeProfile optimizeProfile,
-      final Map<String, WebappsEndpointDto> webappsEndpoints,
       final Map<AppName, String> webappsLinks,
       final String notificationsUrl,
       final List<String> webhooks,
@@ -71,7 +69,6 @@ public class UIConfigurationResponseDto {
     this.optimizeDocsVersion = optimizeDocsVersion;
     this.isEnterpriseMode = isEnterpriseMode;
     this.optimizeProfile = optimizeProfile;
-    this.webappsEndpoints = webappsEndpoints;
     this.webappsLinks = webappsLinks;
     this.notificationsUrl = notificationsUrl;
     this.webhooks = webhooks;
@@ -157,14 +154,6 @@ public class UIConfigurationResponseDto {
 
   public void setOptimizeProfile(final OptimizeProfile optimizeProfile) {
     this.optimizeProfile = optimizeProfile;
-  }
-
-  public Map<String, WebappsEndpointDto> getWebappsEndpoints() {
-    return webappsEndpoints;
-  }
-
-  public void setWebappsEndpoints(final Map<String, WebappsEndpointDto> webappsEndpoints) {
-    this.webappsEndpoints = webappsEndpoints;
   }
 
   public Map<AppName, String> getWebappsLinks() {
@@ -305,8 +294,6 @@ public class UIConfigurationResponseDto {
         + isEnterpriseMode()
         + ", optimizeProfile="
         + getOptimizeProfile()
-        + ", webappsEndpoints="
-        + getWebappsEndpoints()
         + ", webappsLinks="
         + getWebappsLinks()
         + ", notificationsUrl="

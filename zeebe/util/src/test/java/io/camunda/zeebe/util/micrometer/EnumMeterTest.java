@@ -10,7 +10,6 @@ package io.camunda.zeebe.util.micrometer;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.micrometer.common.docs.KeyName;
-import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.Meter.Type;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import org.junit.jupiter.api.Test;
@@ -50,14 +49,14 @@ final class EnumMeterTest {
     EnumMeter.register(States.class, DOC, TAG, registry);
 
     // then
-    assertThat(registry.get(DOC.getName()).tagKeys(TAG.asString()).gauges())
+    assertThat(registry.get(DOC.getName()).tagKeys(TAG.asString()).meters())
         .hasSameSizeAs(States.values());
-    assertThat(registry.get(DOC.getName()).tag(TAG.asString(), "A").gauge())
-        .returns(0.0, Gauge::value);
-    assertThat(registry.get(DOC.getName()).tag(TAG.asString(), "B").gauge())
-        .returns(0.0, Gauge::value);
-    assertThat(registry.get(DOC.getName()).tag(TAG.asString(), "C").gauge())
-        .returns(0.0, Gauge::value);
+    assertThat((StatefulGauge) registry.get(DOC.getName()).tag(TAG.asString(), "A").meter())
+        .returns(0.0, StatefulGauge::value);
+    assertThat((StatefulGauge) registry.get(DOC.getName()).tag(TAG.asString(), "B").meter())
+        .returns(0.0, StatefulGauge::value);
+    assertThat((StatefulGauge) registry.get(DOC.getName()).tag(TAG.asString(), "C").meter())
+        .returns(0.0, StatefulGauge::value);
   }
 
   @Test
@@ -69,8 +68,8 @@ final class EnumMeterTest {
     meter.state(States.B);
 
     // then
-    final var gauge = registry.get(DOC.getName()).tag(TAG.asString(), "B").gauge();
-    assertThat(gauge).returns(1.0, Gauge::value);
+    final var gauge = (StatefulGauge) registry.get(DOC.getName()).tag(TAG.asString(), "B").meter();
+    assertThat(gauge).returns(1.0, StatefulGauge::value);
   }
 
   @Test
@@ -83,12 +82,12 @@ final class EnumMeterTest {
     meter.state(States.B);
 
     // then
-    assertThat(registry.get(DOC.getName()).tag(TAG.asString(), "A").gauge())
-        .returns(0.0, Gauge::value);
-    assertThat(registry.get(DOC.getName()).tag(TAG.asString(), "B").gauge())
-        .returns(1.0, Gauge::value);
-    assertThat(registry.get(DOC.getName()).tag(TAG.asString(), "C").gauge())
-        .returns(0.0, Gauge::value);
+    assertThat((StatefulGauge) registry.get(DOC.getName()).tag(TAG.asString(), "A").meter())
+        .returns(0.0, StatefulGauge::value);
+    assertThat((StatefulGauge) registry.get(DOC.getName()).tag(TAG.asString(), "B").meter())
+        .returns(1.0, StatefulGauge::value);
+    assertThat((StatefulGauge) registry.get(DOC.getName()).tag(TAG.asString(), "C").meter())
+        .returns(0.0, StatefulGauge::value);
   }
 
   private enum States {

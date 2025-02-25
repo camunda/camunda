@@ -73,7 +73,7 @@ public interface Map3D<RowT, ColT, FaceT, T> {
       final TriFunction<RowT, ColT, FaceT, T> computer);
 
   /**
-   * Returns a basic implementation of a table. If using bounded types for rows, columns, and face
+   * Returns a basic implementation of a 3D map. If using bounded types for rows, columns, and face
    * keys (e.g. enums), use {@link #ofEnum(Class, Class, Class, IntFunction)} instead.
    */
   static <RowT, ColT, FaceT, T> Map3D<RowT, ColT, FaceT, T> simple() {
@@ -81,8 +81,8 @@ public interface Map3D<RowT, ColT, FaceT, T> {
   }
 
   /**
-   * Returns a basic implementation of a concurrent table. If using bounded types for rows, columns,
-   * and face keys (e.g. enums), use {@link #ofEnum(Class, Class, Class, IntFunction)} instead.
+   * Returns a basic implementation of a 3D map. If using bounded types for rows, columns, and face
+   * keys (e.g. enums), use {@link #ofEnum(Class, Class, Class, IntFunction)} instead.
    */
   static <RowT, ColT, FaceT, T> Map3D<RowT, ColT, FaceT, T> concurrent() {
     return new HashMap3D<>(ConcurrentHashMap::new);

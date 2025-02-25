@@ -19,6 +19,8 @@ import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotStore;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.composite.CompositeMeterRegistry;
 import java.nio.file.Path;
 
 public final class PartitionStartupContext {
@@ -33,9 +35,11 @@ public final class PartitionStartupContext {
   private final ZeebePartitionFactory zeebePartitionFactory;
   private final BrokerCfg brokerConfig;
   private final DynamicPartitionConfig initialPartitionConfig;
+  private final MeterRegistry brokerMeterRegistry;
 
   private Path partitionDirectory;
 
+  private CompositeMeterRegistry partitionMeterRegistry;
   private FileBasedSnapshotStore snapshotStore;
   private RaftPartition raftPartition;
   private ZeebePartition zeebePartition;
@@ -51,7 +55,8 @@ public final class PartitionStartupContext {
       final RaftPartitionFactory raftPartitionFactory,
       final ZeebePartitionFactory zeebePartitionFactory,
       final BrokerCfg brokerConfig,
-      final DynamicPartitionConfig initialPartitionConfig) {
+      final DynamicPartitionConfig initialPartitionConfig,
+      final MeterRegistry brokerMeterRegistry) {
     this.schedulingService = schedulingService;
     this.topologyManager = topologyManager;
     this.concurrencyControl = concurrencyControl;
@@ -63,6 +68,7 @@ public final class PartitionStartupContext {
     this.zeebePartitionFactory = zeebePartitionFactory;
     this.brokerConfig = brokerConfig;
     this.initialPartitionConfig = initialPartitionConfig;
+    this.brokerMeterRegistry = brokerMeterRegistry;
   }
 
   @Override
@@ -148,5 +154,19 @@ public final class PartitionStartupContext {
 
   public DynamicPartitionConfig initialPartitionConfig() {
     return initialPartitionConfig;
+  }
+
+  public PartitionStartupContext partitionMeterRegistry(
+      final CompositeMeterRegistry partitionMeterRegistry) {
+    this.partitionMeterRegistry = partitionMeterRegistry;
+    return this;
+  }
+
+  public CompositeMeterRegistry partitionMeterRegistry() {
+    return partitionMeterRegistry;
+  }
+
+  public MeterRegistry brokerMeterRegistry() {
+    return brokerMeterRegistry;
   }
 }

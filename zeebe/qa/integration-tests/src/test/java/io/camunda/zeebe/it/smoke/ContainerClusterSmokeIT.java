@@ -10,7 +10,6 @@ package io.camunda.zeebe.it.smoke;
 import static io.camunda.zeebe.it.util.ZeebeContainerUtil.newClientBuilder;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.authentication.config.AuthenticationProperties;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.response.DeploymentEvent;
 import io.camunda.client.api.response.ProcessInstanceResult;
@@ -34,10 +33,6 @@ final class ContainerClusterSmokeIT {
           .withPartitionsCount(1)
           .withEmbeddedGateway(false)
           .withImage(ZeebeTestContainerDefaults.defaultTestImage())
-          .withGatewayConfig(
-              gateway ->
-                  gateway.withEnv(
-                      AuthenticationProperties.getAllowUnauthenticatedApiAccessEnvVar(), "true"))
           .build();
 
   /** A smoke test which checks that a gateway of a cluster can be accessed. */

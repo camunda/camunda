@@ -11,7 +11,6 @@ import type {CurrentUser} from 'modules/types';
 const currentUser: CurrentUser = {
   userId: 'demo',
   displayName: 'Demo User',
-  permissions: ['read', 'write'],
   salesPlanType: null,
   roles: [],
   c8Links: [],
@@ -22,7 +21,6 @@ const currentUser: CurrentUser = {
 const currentUserWithC8Links: CurrentUser = {
   userId: 'demo',
   displayName: 'Demo User',
-  permissions: ['read', 'write'],
   salesPlanType: null,
   roles: [],
   c8Links: [
@@ -51,45 +49,9 @@ const currentUserWithC8Links: CurrentUser = {
   groups: [],
 };
 
-const currentRestrictedUser: CurrentUser = {
-  userId: 'demo',
-  displayName: 'Demo User',
-  permissions: ['read'],
-  salesPlanType: null,
-  roles: [],
-  c8Links: [],
-  tenants: [],
-  groups: [],
-};
-
-const currentUserWithUnknownRole: CurrentUser = {
-  userId: 'demo',
-  displayName: 'Demo User',
-  // @ts-expect-error done on purpose
-  permissions: ['unknown'],
-  salesPlanType: null,
-  roles: [],
-  c8Links: [],
-  tenants: [],
-  groups: [],
-};
-
-const currentUserWithoutRole: CurrentUser = {
-  userId: 'demo',
-  displayName: 'Demo User',
-  // @ts-expect-error done on purpose
-  permissions: [],
-  salesPlanType: null,
-  roles: [],
-  c8Links: [],
-  tenants: [],
-  groups: [],
-};
-
 const currentUserWithTenants: CurrentUser = {
   userId: 'demo',
   displayName: 'Demo User',
-  permissions: ['read', 'write'],
   salesPlanType: null,
   roles: [],
   c8Links: [],
@@ -109,7 +71,6 @@ const currentUserWithTenants: CurrentUser = {
 const currentUserWithGroups: CurrentUser = {
   userId: 'demo',
   displayName: 'Demo User',
-  permissions: ['read', 'write'],
   salesPlanType: null,
   roles: [],
   c8Links: [],
@@ -119,9 +80,6 @@ const currentUserWithGroups: CurrentUser = {
 
 export {
   currentUser,
-  currentRestrictedUser,
-  currentUserWithoutRole,
-  currentUserWithUnknownRole,
   currentUserWithC8Links,
   currentUserWithTenants,
   currentUserWithGroups,

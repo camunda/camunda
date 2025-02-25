@@ -26,8 +26,8 @@ public final class UserClient {
     return new UserCreationClient(writer, username);
   }
 
-  public UpdateUserClient updateUser(final Long userKey) {
-    return new UpdateUserClient(writer, userKey);
+  public UpdateUserClient updateUser() {
+    return new UpdateUserClient(writer);
   }
 
   public UpdateUserClient updateUser(final long userKey, final UserRecord userRecord) {
@@ -119,10 +119,9 @@ public final class UserClient {
     private final UserRecord userRecord;
     private Function<Long, Record<UserRecordValue>> expectation = SUCCESS_SUPPLIER;
 
-    public UpdateUserClient(final CommandWriter writer, final long userKey) {
+    public UpdateUserClient(final CommandWriter writer) {
       this.writer = writer;
       userRecord = new UserRecord();
-      userRecord.setUserKey(userKey);
     }
 
     public UpdateUserClient(

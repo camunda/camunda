@@ -79,6 +79,13 @@ public final class UserTaskFixtures extends CommonFixtures {
     return createAndSaveUserTasks(rdbmsService.createWriter(1L), List.of(processInstance));
   }
 
+  public static UserTaskDbModel createAndSaveUserTask(
+      final RdbmsWriter rdbmsWriter, final Function<Builder, Builder> builderFunction) {
+    final var randomized = createRandomized(builderFunction);
+    createAndSaveUserTasks(rdbmsWriter, List.of(randomized));
+    return randomized;
+  }
+
   public static RdbmsWriter createAndSaveUserTask(
       final RdbmsWriter rdbmsWriter, final UserTaskDbModel processInstance) {
     return createAndSaveUserTasks(rdbmsWriter, List.of(processInstance));

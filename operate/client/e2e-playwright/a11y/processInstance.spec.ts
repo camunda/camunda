@@ -13,6 +13,7 @@ import {
   runningInstance,
 } from '../mocks/processInstance';
 import {validateResults} from './validateResults';
+import {URL_API_PATTERN} from '../constants';
 
 test.describe('process detail', () => {
   for (const theme of ['light', 'dark']) {
@@ -25,7 +26,7 @@ test.describe('process detail', () => {
       await commonPage.changeTheme(theme);
 
       await page.route(
-        /^.*\/api.*$/i,
+        URL_API_PATTERN,
         mockResponses({
           processInstanceDetail: runningInstance.detail,
           flowNodeInstances: runningInstance.flowNodeInstances,
@@ -69,7 +70,7 @@ test.describe('process detail', () => {
       await commonPage.changeTheme(theme);
 
       await page.route(
-        /^.*\/api.*$/i,
+        URL_API_PATTERN,
         mockResponses({
           processInstanceDetail: instanceWithIncident.detail,
           flowNodeInstances: instanceWithIncident.flowNodeInstances,
@@ -135,7 +136,7 @@ test.describe('process detail', () => {
       await commonPage.changeTheme(theme);
 
       await page.route(
-        /^.*\/api.*$/i,
+        URL_API_PATTERN,
         mockResponses({
           processInstanceDetail: runningInstance.detail,
           flowNodeInstances: runningInstance.flowNodeInstances,

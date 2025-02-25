@@ -6,6 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 import { FC, useState } from "react";
+import { InlineNotification } from "@carbon/react";
 import TextField from "src/components/form/TextField";
 import { useApiCall } from "src/utility/api";
 import useTranslate from "src/utility/localization";
@@ -21,7 +22,9 @@ const EditTenantModal: FC<UseEntityModalProps<UpdateTenantParams>> = ({
 }) => {
   const { t } = useTranslate();
   const { enqueueNotification } = useNotifications();
-  const [apiCall, { loading, namedErrors }] = useApiCall(updateTenant);
+  const [apiCall, { loading, error }] = useApiCall(updateTenant, {
+    suppressErrorNotification: true,
+  });
   const [name, setName] = useState(currentName);
   const [description, setDescription] = useState(currentDescription);
 
@@ -59,7 +62,6 @@ const EditTenantModal: FC<UseEntityModalProps<UpdateTenantParams>> = ({
         value={name}
         placeholder={t("Name")}
         onChange={setName}
-        errors={namedErrors?.name}
         autoFocus
       />
       <TextField
@@ -67,8 +69,16 @@ const EditTenantModal: FC<UseEntityModalProps<UpdateTenantParams>> = ({
         value={description}
         placeholder={t("Tenant description")}
         onChange={setDescription}
-        errors={namedErrors?.description}
       />
+      {error && (
+        <InlineNotification
+          kind="error"
+          role="alert"
+          lowContrast
+          title={error.title}
+          subtitle={error.detail}
+        />
+      )}
     </FormModal>
   );
 };

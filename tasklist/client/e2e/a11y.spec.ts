@@ -41,7 +41,7 @@ const MOCK_TASK = {
 
 test.describe('a11y', () => {
   test('have no violations', async ({page, makeAxeBuilder}) => {
-    await page.route(/^.*\/v1.*$/i, (route) => {
+    await page.route(/^.*\/(v1|v2).*$/i, (route) => {
       if (route.request().url().includes('v1/tasks/task123/variables/search')) {
         return route.fulfill({
           status: 200,
@@ -92,13 +92,13 @@ test.describe('a11y', () => {
         });
       }
 
-      if (route.request().url().includes('v1/internal/users/current')) {
+      if (route.request().url().includes('v2/authentication/me')) {
         return route.fulfill({
           status: 200,
           body: JSON.stringify({
             userId: 'demo',
             displayName: 'demo',
-            permissions: ['READ', 'WRITE'],
+
             salesPlanType: null,
             roles: null,
             c8Links: [],

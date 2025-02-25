@@ -55,7 +55,7 @@ public class StandaloneCamunda {
             .listeners(new ApplicationErrorListener())
             .build(args);
 
-    standaloneCamundaApplication.run();
+    standaloneCamundaApplication.run(args);
   }
 
   public static Map<String, Object> getDefaultActiveProfiles() {

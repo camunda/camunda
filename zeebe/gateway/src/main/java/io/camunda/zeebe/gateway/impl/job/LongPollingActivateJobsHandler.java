@@ -19,8 +19,6 @@ import io.camunda.zeebe.gateway.impl.broker.request.BrokerActivateJobsRequest;
 import io.camunda.zeebe.gateway.metrics.LongPollingMetrics;
 import io.camunda.zeebe.scheduler.ActorControl;
 import io.camunda.zeebe.scheduler.ScheduledTimer;
-import io.micrometer.core.instrument.MeterRegistry;
-import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.time.Duration;
 import java.util.Map;
 import java.util.Objects;
@@ -65,7 +63,7 @@ public final class LongPollingActivateJobsHandler<T> implements ActivateJobsHand
       final Function<JobActivationResponse, JobActivationResult<T>> activationResultMapper,
       final Function<String, Exception> noJobsReceivedExceptionProvider,
       final Function<String, Throwable> requestCanceledExceptionProvider,
-      final MeterRegistry meterRegistry) {
+      final LongPollingMetrics metrics) {
     this.brokerClient = brokerClient;
     activateJobsHandler =
         new RoundRobinActivateJobsHandler<>(
@@ -74,7 +72,7 @@ public final class LongPollingActivateJobsHandler<T> implements ActivateJobsHand
     this.longPollingTimeout = Duration.ofMillis(longPollingTimeout);
     this.probeTimeoutMillis = probeTimeoutMillis;
     this.failedAttemptThreshold = failedAttemptThreshold;
-    metrics = new LongPollingMetrics(meterRegistry);
+    this.metrics = metrics;
   }
 
   @Override
@@ -386,7 +384,7 @@ public final class LongPollingActivateJobsHandler<T> implements ActivateJobsHand
     private Function<JobActivationResponse, JobActivationResult<T>> activationResultMapper;
     private Function<String, Exception> noJobsReceivedExceptionProvider;
     private Function<String, Throwable> requestCanceledExceptionProvider;
-    private MeterRegistry meterRegistry = new SimpleMeterRegistry();
+    private LongPollingMetrics metrics;
 
     public Builder<T> setBrokerClient(final BrokerClient brokerClient) {
       this.brokerClient = brokerClient;
@@ -431,8 +429,8 @@ public final class LongPollingActivateJobsHandler<T> implements ActivateJobsHand
       return this;
     }
 
-    public Builder<T> setMeterRegistry(final MeterRegistry meterRegistry) {
-      this.meterRegistry = meterRegistry;
+    public Builder<T> setMetrics(final LongPollingMetrics metrics) {
+      this.metrics = metrics;
       return this;
     }
 
@@ -447,7 +445,7 @@ public final class LongPollingActivateJobsHandler<T> implements ActivateJobsHand
           activationResultMapper,
           noJobsReceivedExceptionProvider,
           requestCanceledExceptionProvider,
-          meterRegistry);
+          metrics);
     }
   }
 }

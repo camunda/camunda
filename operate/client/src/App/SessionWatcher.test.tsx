@@ -50,7 +50,6 @@ describe('<SessionWatcher />', () => {
       authenticationStore.setUser({
         displayName: 'Jon',
         canLogout: true,
-        permissions: ['read', 'write'],
         userId: 'jon',
         roles: null,
         salesPlanType: null,
@@ -74,7 +73,6 @@ describe('<SessionWatcher />', () => {
     act(() => {
       authenticationStore.setUser({
         displayName: 'Jon Doe',
-        permissions: ['read', 'write'],
         canLogout: true,
         userId: 'jon',
         roles: null,
@@ -98,7 +96,6 @@ describe('<SessionWatcher />', () => {
       authenticationStore.setUser({
         displayName: 'Jon',
         canLogout: true,
-        permissions: [],
         userId: 'jon',
         roles: null,
         salesPlanType: null,
@@ -129,7 +126,6 @@ describe('<SessionWatcher />', () => {
       authenticationStore.setUser({
         displayName: 'Jon',
         canLogout: true,
-        permissions: [],
         userId: 'jon',
         roles: null,
         salesPlanType: null,

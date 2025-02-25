@@ -116,8 +116,16 @@ public class CamundaAssert {
    * @return the assertion object
    */
   public static ProcessInstanceAssert assertThat(final ProcessInstanceEvent processInstanceEvent) {
-    return new ProcessInstanceAssertj(
-        getDataSource(), processInstanceEvent.getProcessInstanceKey(), elementSelector);
+    return createProcessInstanceAssertj(processInstanceEvent.getProcessInstanceKey());
+  }
+
+  /**
+   * @deprecated, for removal, use {@link #assertThat(ProcessInstanceEvent)} instead
+   */
+  @Deprecated
+  public static ProcessInstanceAssert assertThat(
+      final io.camunda.zeebe.client.api.response.ProcessInstanceEvent processInstanceEvent) {
+    return createProcessInstanceAssertj(processInstanceEvent.getProcessInstanceKey());
   }
 
   /**
@@ -128,8 +136,21 @@ public class CamundaAssert {
    */
   public static ProcessInstanceAssert assertThat(
       final ProcessInstanceResult processInstanceResult) {
-    return new ProcessInstanceAssertj(
-        getDataSource(), processInstanceResult.getProcessInstanceKey(), elementSelector);
+    return createProcessInstanceAssertj(processInstanceResult.getProcessInstanceKey());
+  }
+
+  /**
+   * @deprecated, for removal, use {@link #assertThat(ProcessInstanceResult)} instead
+   */
+  @Deprecated
+  public static ProcessInstanceAssert assertThat(
+      final io.camunda.zeebe.client.api.response.ProcessInstanceResult processInstanceResult) {
+    return createProcessInstanceAssertj(processInstanceResult.getProcessInstanceKey());
+  }
+
+  private static ProcessInstanceAssertj createProcessInstanceAssertj(
+      final long processInstanceKey) {
+    return new ProcessInstanceAssertj(getDataSource(), processInstanceKey, elementSelector);
   }
 
   /**

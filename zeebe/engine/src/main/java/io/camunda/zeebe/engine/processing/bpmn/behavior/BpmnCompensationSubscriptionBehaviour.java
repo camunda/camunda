@@ -291,6 +291,14 @@ public class BpmnCompensationSubscriptionBehaviour {
         .setBpmnElementType(boundaryEvent.getElementType())
         .setBpmnEventType(boundaryEvent.getEventType());
 
+    final var elementTreePath =
+        stateBehavior.getElementTreePath(
+            boundaryEventKey, context.getFlowScopeKey(), boundaryEventRecord);
+    boundaryEventRecord
+        .setElementInstancePath(elementTreePath.elementInstancePath())
+        .setProcessDefinitionPath(elementTreePath.processDefinitionPath())
+        .setCallingElementPath(elementTreePath.callingElementPath());
+
     stateWriter.appendFollowUpEvent(
         boundaryEventKey, ProcessInstanceIntent.ELEMENT_ACTIVATING, boundaryEventRecord);
     stateWriter.appendFollowUpEvent(

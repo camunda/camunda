@@ -106,6 +106,9 @@
                     "denied": {
                       "type": "boolean"
                     },
+                    "deniedReason": {
+                      "type": "text"
+                    },
                     "correctedAttributes": {
                       "type": "text"
                     },

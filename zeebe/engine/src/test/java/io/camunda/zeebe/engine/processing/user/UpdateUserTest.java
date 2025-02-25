@@ -44,7 +44,7 @@ public class UpdateUserTest {
     final var updatedUser =
         ENGINE
             .user()
-            .updateUser(userRecord.getKey())
+            .updateUser()
             .withUsername(userRecord.getValue().getUsername())
             .withName("Bar Foo")
             .withEmail("foo@bar.blah")
@@ -67,7 +67,7 @@ public class UpdateUserTest {
     final var userNotFoundRejection =
         ENGINE
             .user()
-            .updateUser(-1L)
+            .updateUser()
             .withUsername(username)
             .withName("Foo Bar")
             .withEmail("bar@foo")
@@ -98,7 +98,7 @@ public class UpdateUserTest {
 
     ENGINE
         .user()
-        .updateUser(userRecord.getKey())
+        .updateUser()
         .withUsername(userRecord.getValue().getUsername())
         .withName("Bar Foo")
         .withEmail("foo@bar.blah")

@@ -13,6 +13,7 @@ import io.camunda.db.rdbms.write.queue.ContextType;
 import io.camunda.db.rdbms.write.queue.ExecutionQueue;
 import io.camunda.db.rdbms.write.queue.QueueItem;
 import io.camunda.db.rdbms.write.queue.UpsertMerger;
+import io.camunda.db.rdbms.write.queue.WriteStatementType;
 import java.util.function.Function;
 
 public class TenantWriter {
@@ -27,6 +28,7 @@ public class TenantWriter {
     executionQueue.executeInQueue(
         new QueueItem(
             ContextType.TENANT,
+            WriteStatementType.INSERT,
             tenant.tenantId(),
             "io.camunda.db.rdbms.sql.TenantMapper.insert",
             tenant));
@@ -45,6 +47,7 @@ public class TenantWriter {
       executionQueue.executeInQueue(
           new QueueItem(
               ContextType.TENANT,
+              WriteStatementType.UPDATE,
               tenant.tenantId(),
               "io.camunda.db.rdbms.sql.TenantMapper.update",
               tenant));
@@ -55,6 +58,7 @@ public class TenantWriter {
     executionQueue.executeInQueue(
         new QueueItem(
             ContextType.TENANT,
+            WriteStatementType.INSERT,
             member.tenantId(),
             "io.camunda.db.rdbms.sql.TenantMapper.insertMember",
             member));
@@ -64,6 +68,7 @@ public class TenantWriter {
     executionQueue.executeInQueue(
         new QueueItem(
             ContextType.TENANT,
+            WriteStatementType.DELETE,
             member.tenantId(),
             "io.camunda.db.rdbms.sql.TenantMapper.deleteMember",
             member));
@@ -73,12 +78,14 @@ public class TenantWriter {
     executionQueue.executeInQueue(
         new QueueItem(
             ContextType.TENANT,
+            WriteStatementType.DELETE,
             tenant.tenantId(),
             "io.camunda.db.rdbms.sql.TenantMapper.delete",
             tenant.tenantId()));
     executionQueue.executeInQueue(
         new QueueItem(
             ContextType.TENANT,
+            WriteStatementType.DELETE,
             tenant.tenantId(),
             "io.camunda.db.rdbms.sql.TenantMapper.deleteAllMembers",
             tenant.tenantId()));

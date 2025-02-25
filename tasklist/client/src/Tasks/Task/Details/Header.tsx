@@ -13,7 +13,6 @@ import {Stack} from '@carbon/react';
 import {CheckmarkFilled} from '@carbon/react/icons';
 import {AssigneeTag} from 'Tasks/AssigneeTag';
 import {AsyncActionButton} from 'modules/components/AsyncActionButton';
-import {Restricted} from 'modules/components/Restricted';
 import type {CurrentUser, Task} from 'modules/types';
 import {
   useAssignTask,
@@ -100,15 +99,13 @@ const Header: React.FC<Props> = ({task, user, onAssignmentError}) => {
           </span>
         )}
         {taskState === 'CREATED' && (
-          <Restricted scopes={['write']}>
-            <span className={styles.assignButtonContainer}>
-              <AssignButton
-                id={id}
-                assignee={assignee}
-                onAssignmentError={onAssignmentError}
-              />
-            </span>
-          </Restricted>
+          <span className={styles.assignButtonContainer}>
+            <AssignButton
+              id={id}
+              assignee={assignee}
+              onAssignmentError={onAssignmentError}
+            />
+          </span>
         )}
       </div>
     </header>

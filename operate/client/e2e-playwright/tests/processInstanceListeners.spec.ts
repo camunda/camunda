@@ -104,22 +104,16 @@ test.describe('Process Instance Listeners', () => {
     // select flow node again, it should have 2 listeners (1 for each instance)
     await processInstancePage.diagram.clickFlowNode('Service Task B');
     await processInstancePage.listenersTabButton.click();
-    expect(
-      await page
-        .getByRole('row')
-        .filter({hasText: /execution listener/i})
-        .count(),
-    ).toBe(2);
+    await expect(
+      page.getByRole('row').filter({hasText: /execution listener/i}),
+    ).toHaveCount(2);
 
     // select a flow node instance, check it has only 1 corresponding listener
     await instanceHistoryPanel.getByText('Service Task B').first().click();
     await processInstancePage.listenersTabButton.click();
-    expect(
-      await page
-        .getByRole('row')
-        .filter({hasText: /execution listener/i})
-        .count(),
-    ).toBe(1);
+    await expect(
+      page.getByRole('row').filter({hasText: /execution listener/i}),
+    ).toHaveCount(1);
   });
 
   test('Listeners list filtered by listener type @roundtrip', async ({
@@ -232,7 +226,15 @@ test.describe('Process Instance Listeners', () => {
         await processInstancePage.instanceHistory
           .getByText(/processWithListenerOnRoot/i)
           .click();
-        return processInstancePage.listenersTabButton.isVisible();
+
+        try {
+          await expect(processInstancePage.listenersTabButton).toBeVisible({
+            timeout: 500,
+          });
+        } catch {
+          return false;
+        }
+        return true;
       })
       .toBe(true);
 

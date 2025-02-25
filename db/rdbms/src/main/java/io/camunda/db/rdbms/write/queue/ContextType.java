@@ -8,20 +8,30 @@
 package io.camunda.db.rdbms.write.queue;
 
 public enum ContextType {
-  AUTHORIZATION,
-  EXPORTER_POSITION,
-  DECISION_DEFINITION,
-  DECISION_INSTANCE,
-  GROUP,
-  PROCESS_DEFINITION,
-  PROCESS_INSTANCE,
-  FLOW_NODE,
-  TENANT,
-  INCIDENT,
-  VARIABLE,
-  ROLE,
-  USER,
-  USER_TASK,
-  FORM,
-  MAPPING
+  AUTHORIZATION(true),
+  EXPORTER_POSITION(false),
+  DECISION_DEFINITION(false),
+  DECISION_INSTANCE(false),
+  GROUP(false),
+  PROCESS_DEFINITION(false),
+  PROCESS_INSTANCE(false),
+  FLOW_NODE(false),
+  TENANT(false),
+  INCIDENT(false),
+  VARIABLE(false),
+  ROLE(false),
+  USER(false),
+  USER_TASK(true),
+  FORM(false),
+  MAPPING(false);
+
+  private final boolean preserveOrder;
+
+  ContextType(boolean preserveOrder) {
+    this.preserveOrder = preserveOrder;
+  }
+
+  public boolean preserveOrder() {
+    return preserveOrder;
+  }
 }

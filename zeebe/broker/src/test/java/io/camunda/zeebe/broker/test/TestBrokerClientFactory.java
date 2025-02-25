@@ -11,16 +11,22 @@ import static io.camunda.zeebe.gateway.impl.configuration.ConfigurationDefaults.
 
 import io.atomix.cluster.AtomixCluster;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
+import io.camunda.zeebe.broker.client.api.BrokerClientRequestMetrics;
+import io.camunda.zeebe.broker.client.api.BrokerClientTopologyMetrics;
 import io.camunda.zeebe.broker.client.impl.BrokerClientImpl;
 import io.camunda.zeebe.broker.client.impl.BrokerTopologyManagerImpl;
 import io.camunda.zeebe.scheduler.ActorScheduler;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 
 public final class TestBrokerClientFactory {
   public static BrokerClient createBrokerClient(
       final AtomixCluster atomixCluster, final ActorScheduler actorScheduler) {
+    final var meterRegistry = new SimpleMeterRegistry();
     final var topologyManager =
-        new BrokerTopologyManagerImpl(() -> atomixCluster.getMembershipService().getMembers());
+        new BrokerTopologyManagerImpl(
+            () -> atomixCluster.getMembershipService().getMembers(),
+            new BrokerClientTopologyMetrics(meterRegistry));
     actorScheduler.submitActor(topologyManager).join();
     atomixCluster.getMembershipService().addListener(topologyManager);
 
@@ -30,7 +36,8 @@ public final class TestBrokerClientFactory {
             atomixCluster.getMessagingService(),
             atomixCluster.getEventService(),
             actorScheduler,
-            topologyManager);
+            topologyManager,
+            new BrokerClientRequestMetrics(meterRegistry));
     client.start().forEach(ActorFuture::join);
     return client;
   }

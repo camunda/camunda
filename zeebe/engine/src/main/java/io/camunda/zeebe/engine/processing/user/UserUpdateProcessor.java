@@ -53,9 +53,8 @@ public class UserUpdateProcessor implements DistributedTypedRecordProcessor<User
 
   @Override
   public void processNewCommand(final TypedRecord<UserRecord> command) {
-    final var user = command.getValue();
-    final long userKey = user.getUserKey();
-    final String username = user.getUsername();
+    final var record = command.getValue();
+    final String username = record.getUsername();
     final var persistedUserOptional = userState.getUser(username);
 
     if (persistedUserOptional.isEmpty()) {
@@ -81,10 +80,11 @@ public class UserUpdateProcessor implements DistributedTypedRecordProcessor<User
       return;
     }
 
-    final var updatedUser = overlayUser(persistedUser.getUser(), command.getValue());
+    final var updatedUser = overlayUser(persistedUser.getUser(), record);
 
-    stateWriter.appendFollowUpEvent(userKey, UserIntent.UPDATED, updatedUser);
-    responseWriter.writeEventOnCommand(userKey, UserIntent.UPDATED, updatedUser, command);
+    stateWriter.appendFollowUpEvent(persistedUser.getUserKey(), UserIntent.UPDATED, updatedUser);
+    responseWriter.writeEventOnCommand(
+        persistedUser.getUserKey(), UserIntent.UPDATED, updatedUser, command);
 
     final long distributionKey = keyGenerator.nextKey();
     distributionBehavior

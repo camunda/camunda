@@ -80,7 +80,6 @@ const DiagramHeader: React.FC<DiagramHeaderProps> = observer(
 
         {isVersionSelected && processDefinitionId !== undefined && (
           <Restricted
-            scopes={['write']}
             resourceBasedRestrictions={{
               scopes: ['DELETE'],
               permissions: processesStore.getPermissions(bpmnProcessId, tenant),

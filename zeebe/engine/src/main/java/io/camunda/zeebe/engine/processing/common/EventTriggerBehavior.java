@@ -10,6 +10,7 @@ package io.camunda.zeebe.engine.processing.common;
 import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContext;
 import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContextImpl;
 import io.camunda.zeebe.engine.processing.bpmn.ProcessInstanceLifecycle;
+import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateBehavior;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowElement;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableStartEvent;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
@@ -38,6 +39,7 @@ public class EventTriggerBehavior {
   private final StateWriter stateWriter;
   private final ElementInstanceState elementInstanceState;
   private final EventScopeInstanceState eventScopeInstanceState;
+  private final BpmnStateBehavior stateBehavior;
 
   private final VariableBehavior variableBehavior;
 
@@ -45,7 +47,8 @@ public class EventTriggerBehavior {
       final KeyGenerator keyGenerator,
       final CatchEventBehavior catchEventBehavior,
       final Writers writers,
-      final ProcessingState processingState) {
+      final ProcessingState processingState,
+      final BpmnStateBehavior stateBehavior) {
     this.keyGenerator = keyGenerator;
     this.catchEventBehavior = catchEventBehavior;
     commandWriter = writers.command();
@@ -56,6 +59,7 @@ public class EventTriggerBehavior {
 
     variableBehavior =
         new VariableBehavior(processingState.getVariableState(), writers.state(), keyGenerator);
+    this.stateBehavior = stateBehavior;
   }
 
   public void triggerEventSubProcess(
@@ -234,6 +238,14 @@ public class EventTriggerBehavior {
         .setBpmnEventType(triggeredEvent.getEventType());
 
     final var eventInstanceKey = keyGenerator.nextKey();
+
+    final var elementTreePath =
+        stateBehavior.getElementTreePath(eventInstanceKey, flowScopeKey, elementRecord);
+    eventRecord
+        .setElementInstancePath(elementTreePath.elementInstancePath())
+        .setProcessDefinitionPath(elementTreePath.processDefinitionPath())
+        .setCallingElementPath(elementTreePath.callingElementPath());
+
     // transition to activating and activated directly to pass the variables to this instance
     stateWriter.appendFollowUpEvent(
         eventInstanceKey, ProcessInstanceIntent.ELEMENT_ACTIVATING, eventRecord);

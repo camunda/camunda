@@ -7,6 +7,7 @@
  */
 package io.camunda.db.rdbms.write.service;
 
+import io.camunda.db.rdbms.config.VendorDatabaseProperties;
 import io.camunda.db.rdbms.sql.PurgeMapper;
 import java.util.List;
 
@@ -40,14 +41,24 @@ public class RdbmsPurger {
           "GROUPS");
 
   private final PurgeMapper purgeMapper;
+  private final VendorDatabaseProperties vendorDatabaseProperties;
 
-  public RdbmsPurger(final PurgeMapper purgeMapper) {
+  public RdbmsPurger(
+      final PurgeMapper purgeMapper, final VendorDatabaseProperties vendorDatabaseProperties) {
     this.purgeMapper = purgeMapper;
+    this.vendorDatabaseProperties = vendorDatabaseProperties;
   }
 
   public void purgeRdbms() {
+    if (vendorDatabaseProperties.disableFkBeforeTruncate()) {
+      purgeMapper.disableForeignKeyChecks();
+    }
+
     for (final String tableName : TABLE_NAMES) {
       purgeMapper.truncateTable(tableName);
+    }
+    if (vendorDatabaseProperties.disableFkBeforeTruncate()) {
+      purgeMapper.enableForeignKeyChecks();
     }
   }
 }

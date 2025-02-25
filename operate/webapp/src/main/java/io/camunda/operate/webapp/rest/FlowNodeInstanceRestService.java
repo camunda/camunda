@@ -17,8 +17,8 @@ import io.camunda.operate.webapp.rest.dto.activity.FlowNodeInstanceRequestDto;
 import io.camunda.operate.webapp.rest.dto.activity.FlowNodeInstanceResponseDto;
 import io.camunda.operate.webapp.rest.exception.InvalidRequestException;
 import io.camunda.operate.webapp.rest.exception.NotAuthorizedException;
-import io.camunda.operate.webapp.security.identity.IdentityPermission;
 import io.camunda.operate.webapp.security.permission.PermissionsService;
+import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import java.util.Map;
@@ -83,7 +83,7 @@ public class FlowNodeInstanceRestService extends InternalAPIErrorController {
     if (permissionsService.permissionsEnabled()
         && !permissionsService.hasPermissionForProcess(
             processInstanceReader.getProcessInstanceByKey(processInstanceKey).getBpmnProcessId(),
-            IdentityPermission.READ_PROCESS_INSTANCE)) {
+            PermissionType.READ_PROCESS_INSTANCE)) {
       throw new NotAuthorizedException(
           String.format("No read permission for process instance %s", processInstanceKey));
     }

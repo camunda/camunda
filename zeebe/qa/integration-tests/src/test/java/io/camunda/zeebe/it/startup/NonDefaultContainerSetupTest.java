@@ -10,7 +10,6 @@ package io.camunda.zeebe.it.startup;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.github.dockerjava.api.command.CreateContainerCmd;
-import io.camunda.authentication.config.AuthenticationProperties;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.response.ProcessInstanceResult;
 import io.camunda.zeebe.model.bpmn.Bpmn;
@@ -77,7 +76,6 @@ public class NonDefaultContainerSetupTest {
                 .withNetwork(broker.getNetwork())
                 .withCreateContainerCmdModifier(containerModifier)
                 .dependsOn(broker)
-                .withEnv(AuthenticationProperties.getAllowUnauthenticatedApiAccessEnvVar(), "true")
                 .withEnv(
                     "ZEEBE_GATEWAY_CLUSTER_INITIALCONTACTPOINTS",
                     broker.getInternalClusterAddress())) {

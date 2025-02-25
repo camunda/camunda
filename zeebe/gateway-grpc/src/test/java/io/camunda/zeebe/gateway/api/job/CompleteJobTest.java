@@ -102,6 +102,37 @@ public final class CompleteJobTest extends GatewayTest {
   }
 
   @Test
+  public void shouldMapRequestAndResponseWithResultWithDeniedTrueAndDeniedReason() {
+    // given
+    final CompleteJobStub stub = new CompleteJobStub();
+    stub.registerWith(brokerClient);
+
+    final JobResult jobResult =
+        JobResult.newBuilder()
+            .setDenied(true)
+            .setDeniedReason("Reason to deny lifecycle transition")
+            .build();
+
+    final CompleteJobRequest request =
+        CompleteJobRequest.newBuilder().setJobKey(stub.getKey()).setResult(jobResult).build();
+
+    // when
+    final CompleteJobResponse response = client.completeJob(request);
+
+    // then
+    assertThat(response).isNotNull();
+
+    final BrokerCompleteJobRequest brokerRequest = brokerClient.getSingleBrokerRequest();
+    assertThat(brokerRequest.getKey()).isEqualTo(stub.getKey());
+
+    final JobRecord jobRecord = brokerRequest.getRequestWriter();
+
+    assertThat(jobRecord.getResult().isDenied()).isTrue();
+    assertThat(jobRecord.getResult().getDeniedReason())
+        .isEqualTo("Reason to deny lifecycle transition");
+  }
+
+  @Test
   public void shouldMapRequestAndResponseWithResultSetDeniedFalse() {
     // given
     final CompleteJobStub stub = new CompleteJobStub();
@@ -124,6 +155,7 @@ public final class CompleteJobTest extends GatewayTest {
     final JobRecord jobRecord = brokerRequest.getRequestWriter();
 
     assertThat(jobRecord.getResult().isDenied()).isFalse();
+    assertThat(jobRecord.getResult().getDeniedReason()).isEqualTo("");
   }
 
   @Test
@@ -161,6 +193,7 @@ public final class CompleteJobTest extends GatewayTest {
     assertThat(brokerRequestValue.getResult().getCorrections().getPriority()).isEqualTo(-1);
 
     assertThat(brokerRequestValue.getResult().getCorrectedAttributes()).isEqualTo(List.of());
+    assertThat(brokerRequestValue.getResult().getDeniedReason()).isEqualTo("");
   }
 
   @Test
@@ -271,6 +304,57 @@ public final class CompleteJobTest extends GatewayTest {
 
     verifyJobResultCorrections(
         expectedCorrections, expectedCorrectedAttributes, brokerRequestValue);
+  }
+
+  @Test
+  public void
+      shouldMapRequestAndResponseWithResultDeniedTrueWithDeniedReasonWithResultCorrections() {
+    // given
+    final CompleteJobStub stub = new CompleteJobStub();
+    stub.registerWith(brokerClient);
+
+    final JobResult jobResult =
+        JobResult.newBuilder()
+            .setDenied(true)
+            .setDeniedReason("Reason to deny lifecycle transition")
+            .setCorrections(
+                io.camunda.zeebe.gateway.protocol.GatewayOuterClass.JobResultCorrections
+                    .newBuilder()
+                    .setAssignee("Assignee")
+                    .build())
+            .build();
+
+    final CompleteJobRequest request =
+        CompleteJobRequest.newBuilder().setJobKey(stub.getKey()).setResult(jobResult).build();
+
+    // when
+    final CompleteJobResponse response = client.completeJob(request);
+
+    // then
+    assertThat(response).isNotNull();
+
+    final BrokerCompleteJobRequest brokerRequest = brokerClient.getSingleBrokerRequest();
+    assertThat(brokerRequest.getKey()).isEqualTo(stub.getKey());
+
+    final JobRecord brokerRequestValue = brokerRequest.getRequestWriter();
+
+    final List<String> expectedCorrectedAttributes = List.of(UserTaskRecord.ASSIGNEE);
+
+    final JobResultCorrections expectedCorrections =
+        new JobResultCorrections()
+            .setAssignee("Assignee")
+            .setDueDate("")
+            .setFollowUpDate("")
+            .setCandidateUsersList(List.of())
+            .setCandidateGroupsList(List.of())
+            .setPriority(-1);
+
+    verifyJobResultCorrections(
+        expectedCorrections, expectedCorrectedAttributes, brokerRequestValue);
+
+    assertThat(brokerRequestValue.getResult().isDenied()).isTrue();
+    assertThat(brokerRequestValue.getResult().getDeniedReason())
+        .isEqualTo("Reason to deny lifecycle transition");
   }
 
   private static void verifyJobResultCorrections(

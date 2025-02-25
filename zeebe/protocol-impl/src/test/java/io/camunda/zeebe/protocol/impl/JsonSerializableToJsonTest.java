@@ -684,6 +684,7 @@ final class JsonSerializableToJsonTest {
               final JobResult result =
                   new JobResult()
                       .setDenied(true)
+                      .setDeniedReason("Reason to deny lifecycle transition")
                       .setCorrections(
                           new JobResultCorrections()
                               .setAssignee("frodo")
@@ -758,6 +759,7 @@ final class JsonSerializableToJsonTest {
               "changedAttributes": ["bar", "foo"],
               "result": {
                 "denied": true,
+                "deniedReason": "Reason to deny lifecycle transition",
                 "correctedAttributes": [
                   "assignee",
                   "dueDate",
@@ -828,6 +830,7 @@ final class JsonSerializableToJsonTest {
               final JobResult result =
                   new JobResult()
                       .setDenied(true)
+                      .setDeniedReason("Reason to deny lifecycle transition")
                       .setCorrections(
                           new JobResultCorrections()
                               .setAssignee("frodo")
@@ -901,6 +904,7 @@ final class JsonSerializableToJsonTest {
           "changedAttributes": ["bar", "foo"],
           "result": {
             "denied": true,
+            "deniedReason": "Reason to deny lifecycle transition",
             "correctedAttributes": [
               "assignee",
               "dueDate",
@@ -953,6 +957,7 @@ final class JsonSerializableToJsonTest {
           "changedAttributes": [],
           "result": {
             "denied": false,
+            "deniedReason": "",
             "correctedAttributes": [],
             "corrections": {
               "assignee": "",
@@ -1003,6 +1008,7 @@ final class JsonSerializableToJsonTest {
           "changedAttributes": [],
           "result": {
             "denied": false,
+            "deniedReason": "",
             "correctedAttributes": [],
             "corrections": {
               "assignee": "",

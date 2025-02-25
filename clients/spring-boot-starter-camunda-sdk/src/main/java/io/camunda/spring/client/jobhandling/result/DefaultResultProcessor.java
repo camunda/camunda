@@ -17,7 +17,7 @@ package io.camunda.spring.client.jobhandling.result;
 
 public class DefaultResultProcessor implements ResultProcessor {
   @Override
-  public Object process(Object result) {
-    return result;
+  public Object process(final ResultProcessorContext context) {
+    return context.getResult();
   }
 }

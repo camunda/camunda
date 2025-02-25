@@ -87,6 +87,7 @@ public class SimpleDocumentStoreRegistry implements DocumentStoreRegistry {
     for (final DocumentStoreConfigurationRecord configuration : configurations) {
       final DocumentStoreProvider provider = findProvider(loader, configuration);
       final DocumentStore store = provider.createDocumentStore(configuration, executor);
+      store.validateSetup();
       stores.put(configuration.id(), store);
     }
   }

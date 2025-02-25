@@ -7,7 +7,6 @@
  */
 package io.camunda.zeebe.broker.system.monitoring;
 
-import io.camunda.zeebe.util.micrometer.MicrometerUtil.PartitionKeyNames;
 import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -15,11 +14,10 @@ import java.util.concurrent.atomic.AtomicInteger;
 public final class HealthMetrics {
   private final AtomicInteger health = new AtomicInteger();
 
-  public HealthMetrics(final MeterRegistry registry, final int partitionId) {
+  public HealthMetrics(final MeterRegistry registry) {
     final var meterDoc = HealthMetricsDoc.HEALTH;
     Gauge.builder(meterDoc.getName(), health, AtomicInteger::intValue)
         .description(meterDoc.getDescription())
-        .tag(PartitionKeyNames.PARTITION.asString(), String.valueOf(partitionId))
         .register(registry);
   }
 

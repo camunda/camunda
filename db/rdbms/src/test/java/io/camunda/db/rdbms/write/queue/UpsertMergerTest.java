@@ -42,7 +42,12 @@ class UpsertMergerTest {
                     .endDate(NOW.minusDays(1))
                     .state(ProcessInstanceState.ACTIVE));
     final var queueItem =
-        new QueueItem(ContextType.PROCESS_INSTANCE, 1L, "statement", insertParameter);
+        new QueueItem(
+            ContextType.PROCESS_INSTANCE,
+            WriteStatementType.INSERT,
+            1L,
+            "statement",
+            insertParameter);
     final var newQueueItem = merger.merge(queueItem);
 
     assertThat(queueItem)
@@ -73,12 +78,27 @@ class UpsertMergerTest {
     return Stream.of(
         Arguments.of(
             new QueueItem(
-                ContextType.PROCESS_INSTANCE, 1L, "statement1", mock(ProcessInstanceDbModel.class)),
+                ContextType.PROCESS_INSTANCE,
+                WriteStatementType.INSERT,
+                1L,
+                "statement1",
+                mock(ProcessInstanceDbModel.class)),
             true),
-        Arguments.of(new QueueItem(ContextType.PROCESS_INSTANCE, 1L, "statement1", "bla"), false),
-        Arguments.of(new QueueItem(ContextType.PROCESS_INSTANCE, 1L, "statement1", null), false),
-        Arguments.of(new QueueItem(ContextType.PROCESS_INSTANCE, 2L, "statement1", null), false),
-        Arguments.of(new QueueItem(ContextType.FLOW_NODE, 1L, "statement1", null), false));
+        Arguments.of(
+            new QueueItem(
+                ContextType.PROCESS_INSTANCE, WriteStatementType.INSERT, 1L, "statement1", "bla"),
+            false),
+        Arguments.of(
+            new QueueItem(
+                ContextType.PROCESS_INSTANCE, WriteStatementType.INSERT, 1L, "statement1", null),
+            false),
+        Arguments.of(
+            new QueueItem(
+                ContextType.PROCESS_INSTANCE, WriteStatementType.INSERT, 2L, "statement1", null),
+            false),
+        Arguments.of(
+            new QueueItem(ContextType.FLOW_NODE, WriteStatementType.INSERT, 1L, "statement1", null),
+            false));
   }
 
   public static ProcessInstanceDbModel createRandomized(

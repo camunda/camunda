@@ -16,6 +16,7 @@ import {
   mockOrderProcessInstances,
 } from '../mocks/processes.mocks';
 import {open} from 'modules/mocks/diagrams';
+import {URL_API_PATTERN} from '../constants';
 
 test.beforeEach(async ({page, commonPage, context}) => {
   await commonPage.mockClientConfig(context);
@@ -30,7 +31,7 @@ test.describe('selections and operations', () => {
     processesPage: {filtersPanel},
   }) => {
     await page.route(
-      /^.*\/api.*$/i,
+      URL_API_PATTERN,
       mockProcessesResponses({
         groupedProcesses: mockGroupedProcesses,
         batchOperations: mockBatchOperations,
@@ -79,7 +80,7 @@ test.describe('selections and operations', () => {
     processesPage: {filtersPanel},
   }) => {
     await page.route(
-      /^.*\/api.*$/i,
+      URL_API_PATTERN,
       mockProcessesResponses({
         groupedProcesses: mockGroupedProcesses,
         batchOperations: mockBatchOperations,

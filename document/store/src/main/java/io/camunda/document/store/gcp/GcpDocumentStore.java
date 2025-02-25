@@ -13,6 +13,7 @@ import com.google.cloud.storage.Blob;
 import com.google.cloud.storage.BlobId;
 import com.google.cloud.storage.BlobInfo;
 import com.google.cloud.storage.Storage;
+import com.google.cloud.storage.StorageException;
 import com.google.cloud.storage.StorageOptions;
 import io.camunda.document.api.DocumentContent;
 import io.camunda.document.api.DocumentCreationRequest;
@@ -37,8 +38,12 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 import org.apache.commons.codec.digest.MessageDigestAlgorithms;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class GcpDocumentStore implements DocumentStore {
+
+  private static final Logger LOGGER = LoggerFactory.getLogger(GcpDocumentStore.class);
 
   private static final String CONTENT_HASH_METADATA_KEY = "contentHash";
   private static final String METADATA_PROCESS_DEFINITION_ID = "camunda.processDefinitionId";
@@ -109,6 +114,29 @@ public class GcpDocumentStore implements DocumentStore {
       final String documentId, final String contentHash) {
     return CompletableFuture.supplyAsync(
         () -> verifyContentHashInternal(documentId, contentHash), executor);
+  }
+
+  @Override
+  public void validateSetup() {
+    try {
+      if (storage.get(bucketName).exists()) {
+        LOGGER.info("Successfully accessed bucket '{}'", bucketName);
+      } else {
+        LOGGER.warn("Bucket '{}' does not exist. {}", bucketName, SETUP_VALIDATION_FAILURE_MESSAGE);
+      }
+    } catch (final StorageException e) {
+      LOGGER.warn(
+          "Could not access bucket '{}' with the given credentials. {}",
+          bucketName,
+          SETUP_VALIDATION_FAILURE_MESSAGE,
+          e);
+    } catch (final Exception e) {
+      LOGGER.warn(
+          "Unexpected error while accessing bucket '{}'. {}",
+          bucketName,
+          SETUP_VALIDATION_FAILURE_MESSAGE,
+          e);
+    }
   }
 
   private Either<DocumentError, DocumentReference> createDocumentInternal(

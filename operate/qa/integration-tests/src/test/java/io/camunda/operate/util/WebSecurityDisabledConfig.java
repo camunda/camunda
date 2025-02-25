@@ -19,13 +19,15 @@ import org.springframework.stereotype.Component;
     "!"
         + OperateProfileService.AUTH_PROFILE
         + " && !"
-        + OperateProfileService.IDENTITY_AUTH_PROFILE)
+        + OperateProfileService.IDENTITY_AUTH_PROFILE
+        + " && !"
+        + OperateProfileService.CONSOLIDATED_AUTH)
 @EnableWebSecurity
 @Component("webSecurityConfig")
 public class WebSecurityDisabledConfig {
 
   @Bean
-  public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+  public SecurityFilterChain filterChain(final HttpSecurity http) throws Exception {
     return http.build();
   }
 }

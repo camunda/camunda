@@ -58,12 +58,15 @@ jobs:
       matrix:
         branch:
           - 'main'
+          - 'stable/8.7'
           - ${{ format('stable/{0}', needs.get-versions.outputs.latest-major-minor-version) }}
           - ${{ format('stable/{0}', needs.get-versions.outputs.previous-latest-major-minor-version) }}
           - ${{ format('stable/{0}', needs.get-versions.outputs.previous-previous-latest-major-minor-version) }}
         include:
           - branch: 'main'
             generation_template: 'Zeebe SNAPSHOT'
+          - branch: 'stable/8.7'
+            generation_template: 'Camunda 8.7.0-alpha4'
           - branch: ${{ format('stable/{0}', needs.get-versions.outputs.latest-major-minor-version) }}
             generation_template: ${{ format('Camunda {0}+gen1', needs.get-versions.outputs.latest-major-minor-version) }}
           - branch: ${{ format('stable/{0}', needs.get-versions.outputs.previous-latest-major-minor-version) }}
@@ -87,7 +90,7 @@ jobs:
       generation: Zeebe SNAPSHOT
       maxTestDuration: P1D
       clusterPlan: Multiregion test simulation
-      fault: \"2-region-dataloss-failover\"
+      fault: '"2-region-dataloss-failover"'
       maxInstanceDuration: 40m
     secrets: inherit
 
@@ -99,6 +102,6 @@ jobs:
       generation: Zeebe SNAPSHOT
       maxTestDuration: PT4H
       clusterPlan: Production - M
-      fault: \"scale-brokers\"
+      fault: '"scale-brokers"'
       maxInstanceDuration: 40m
     secrets: inherit

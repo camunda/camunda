@@ -54,13 +54,14 @@ public record TenantFilter(
       return this;
     }
 
-    public Builder memberType(final EntityType value) {
+    public Builder entityType(final EntityType value) {
       entityType = value;
       return this;
     }
 
-    public Builder memberKey(final Long value) {
-      return memberKeys(Set.of(value));
+    public Builder memberType(final EntityType value) {
+      entityType = value;
+      return this;
     }
 
     public Builder memberKeys(final Set<Long> value) {

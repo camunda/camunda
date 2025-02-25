@@ -48,7 +48,8 @@ export default function CollectionEnitiesList({
   const [creating, setCreating] = useState(null);
   const fileInput = useRef(null);
   const {mightFail} = useErrorHandling();
-  const {1: id} = useParams();
+  const {1: rawId} = useParams();
+  const id = rawId.replace(/\/$/, '');
 
   function closeCreationModal() {
     setCreating(null);

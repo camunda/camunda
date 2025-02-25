@@ -256,6 +256,7 @@ public final class TestStandaloneCamunda extends TestSpringApplication<TestStand
   }
 
   /** Returns the broker configuration */
+  @Override
   public BrokerBasedProperties brokerConfig() {
     return brokerProperties;
   }

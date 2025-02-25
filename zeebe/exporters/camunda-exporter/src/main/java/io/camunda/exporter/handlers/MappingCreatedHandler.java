@@ -55,7 +55,8 @@ public class MappingCreatedHandler implements ExportHandler<MappingEntity, Mappi
     entity
         .setKey(value.getMappingKey())
         .setClaimName(value.getClaimName())
-        .setClaimValue(value.getClaimValue());
+        .setClaimValue(value.getClaimValue())
+        .setName(value.getName());
   }
 
   @Override

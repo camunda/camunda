@@ -41,6 +41,7 @@ Define your endpoint and any required data models in the [OpenAPI description](.
          - Example: use "The decision definition search query failed." instead of "The Decision Definition Search Query failed."
    5. For multi-line path `description` properties, use a complete sentence with no line breaks for the first line.
       - Reason: The documentation generator uses only the first line as the `meta description` on the endpoint's page. Incomplete sentences on the first line create a confusing `meta description`.
+4. The OpenAPI spec is owned by the @camunda/docs-api-reviewers team, so please await a review from them before merging your changes. The team will be assigned for review automatically.
 
 ### REST controller implementation
 

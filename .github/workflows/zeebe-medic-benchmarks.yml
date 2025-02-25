@@ -16,7 +16,7 @@ jobs:
         with:
           workload_identity_provider: 'projects/628707732411/locations/global/workloadIdentityPools/zeebe-gh-actions/providers/gha-provider'
           service_account: 'zeebe-gh-actions@zeebe-io.iam.gserviceaccount.com'
-      - uses: google-github-actions/get-gke-credentials@v2.3.0
+      - uses: google-github-actions/get-gke-credentials@v2.3.1
         with:
           cluster_name: zeebe-cluster
           location: europe-west1-b
@@ -44,8 +44,6 @@ jobs:
         run: |
           echo "full-ref"=$(git rev-parse HEAD) >> $GITHUB_OUTPUT
           echo "benchmark=medic-y-$(date +%Y)-cw-$(date +%V)-$(git rev-parse --short HEAD)-benchmark" >> $GITHUB_OUTPUT
-          echo "operate=operate-y-$(date +%Y)-cw-$(date +%V)" >> $GITHUB_OUTPUT
-
 
   setup-normal-benchmark:
     name: Normal Benchmark
@@ -72,11 +70,8 @@ jobs:
       cluster: zeebe-cluster
       cluster-region: europe-west1-b
       ref: ${{ needs.benchmark-data.outputs.full-ref }}
-      operate-tag: ${{ needs.benchmark-data.outputs.operate }}
       benchmark-load: >
         -f https://raw.githubusercontent.com/camunda/zeebe-benchmark-helm/refs/heads/main/charts/zeebe-benchmark/values-realistic-benchmark.yaml
-        --set camunda-platform.operate.image.repository=gcr.io/zeebe-io/operate
-        --set camunda-platform.operate.image.tag=${{ needs.benchmark-data.outputs.operate }}
   setup-latency-benchmark:
     name: Latency Benchmark
     uses: ./.github/workflows/zeebe-benchmark.yml

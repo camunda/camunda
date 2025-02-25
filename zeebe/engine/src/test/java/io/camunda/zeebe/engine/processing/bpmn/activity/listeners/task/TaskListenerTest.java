@@ -417,7 +417,7 @@ public class TaskListenerTest {
   }
 
   @Test
-  public void shouldRejectUserTaskAssignmentWhenTaskListenerRejectsTheOperation() {
+  public void shouldRejectUserTaskAssignmentWhenTaskListenerDeniesTheTransition() {
     // given
     final long processInstanceKey =
         createProcessInstance(createProcessWithAssigningTaskListeners(listenerType));
@@ -430,7 +430,7 @@ public class TaskListenerTest {
         .withResult(new JobResult().setDenied(true))
         .complete();
 
-    // then: ensure that `REJECT_TASK_LISTENER` and `ASSIGNMENT_DENIED`
+    // then: ensure that `DENY_TASK_LISTENER` and `ASSIGNMENT_DENIED`
     // are written after `ASSIGNING` event
     assertUserTaskIntentsSequence(
         UserTaskIntent.ASSIGNING,
@@ -449,7 +449,7 @@ public class TaskListenerTest {
 
   @Test
   public void
-      shouldCompleteAllAssignmentTaskListenersWhenFirstTaskListenerAcceptOperationAfterRejection() {
+      shouldCompleteAllAssignmentTaskListenersWhenFirstTaskListenerAcceptTransitionAfterDenial() {
     // given
     final long processInstanceKey =
         createProcessInstance(
@@ -487,6 +487,59 @@ public class TaskListenerTest {
             tuple(UserTaskIntent.COMPLETE_TASK_LISTENER, "new_assignee"),
             tuple(UserTaskIntent.COMPLETE_TASK_LISTENER, "new_assignee"),
             tuple(UserTaskIntent.ASSIGNED, "new_assignee"));
+  }
+
+  @Test
+  public void shouldUpdateTaskWhenUpdatingTaskListenerAcceptsTransitionAfterDenial() {
+    // given
+    final long processInstanceKey =
+        createProcessInstance(
+            createUserTaskWithTaskListeners(ZeebeTaskListenerEventType.updating, listenerType));
+
+    // when: attempting to update the user task priority for the first time
+    ENGINE
+        .userTask()
+        .ofInstance(processInstanceKey)
+        .update(new UserTaskRecord().setPriority(80).setPriorityChanged());
+
+    // and: task listener denies the first update attempt
+    ENGINE
+        .job()
+        .ofInstance(processInstanceKey)
+        .withType(listenerType)
+        .withResult(new JobResult().setDenied(true))
+        .complete();
+
+    // when: retrying the update operation with a new priority value
+    ENGINE
+        .userTask()
+        .ofInstance(processInstanceKey)
+        .update(new UserTaskRecord().setPriority(100).setPriorityChanged());
+
+    // and: completing the re-created task listener job
+    completeRecreatedJobWithType(ENGINE, processInstanceKey, listenerType);
+
+    // then
+    assertThat(
+            RecordingExporter.userTaskRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .limit(r -> r.getIntent() == UserTaskIntent.UPDATED))
+        .extracting(Record::getIntent, r -> r.getValue().getPriority())
+        .describedAs(
+            "Verify intents sequence and state of the `priority` property through the user task transitions")
+        .containsSequence(
+            // Initial state of the user task
+            tuple(UserTaskIntent.CREATED, 50),
+            // First update attempt and rejection by the listener
+            tuple(UserTaskIntent.UPDATING, 80),
+            tuple(UserTaskIntent.DENY_TASK_LISTENER, 80),
+            // Priority reverts after rejection
+            tuple(UserTaskIntent.UPDATE_DENIED, 50),
+            // Second update attempt and successful completion
+            tuple(UserTaskIntent.UPDATING, 100),
+            tuple(UserTaskIntent.COMPLETE_TASK_LISTENER, 100),
+            // Update was performed successfully
+            tuple(UserTaskIntent.UPDATED, 100));
   }
 
   @Test
@@ -1330,7 +1383,33 @@ public class TaskListenerTest {
   }
 
   @Test
-  public void shouldRejectUserTaskCompletionWhenTaskListenerRejectsTheOperation() {
+  public void shouldRejectUserTaskUpdateWhenUpdatingTaskListenerDeniesTheTransition() {
+    // given
+    final long processInstanceKey =
+        createProcessInstance(
+            createUserTaskWithTaskListeners(ZeebeTaskListenerEventType.updating, listenerType));
+
+    ENGINE
+        .userTask()
+        .ofInstance(processInstanceKey)
+        .update(new UserTaskRecord().setPriority(99).setPriorityChanged());
+
+    // when: complete `updating` a listener job with a denied result
+    ENGINE
+        .job()
+        .ofInstance(processInstanceKey)
+        .withType(listenerType)
+        .withResult(new JobResult().setDenied(true))
+        .complete();
+
+    // then: ensure that `DENY_TASK_LISTENER` and `UPDATE_DENIED`
+    // are written right after `UPDATING` event
+    assertUserTaskIntentsSequence(
+        UserTaskIntent.UPDATING, UserTaskIntent.DENY_TASK_LISTENER, UserTaskIntent.UPDATE_DENIED);
+  }
+
+  @Test
+  public void shouldRejectUserTaskCompletionWhenCompletingTaskListenerDeniesTheTransition() {
     // given
     final long processInstanceKey =
         createProcessInstance(createProcessWithCompletingTaskListeners(listenerType));
@@ -1343,7 +1422,7 @@ public class TaskListenerTest {
         .withResult(new JobResult().setDenied(true))
         .complete();
 
-    // then: ensure that `REJECT_TASK_LISTENER` and `COMPLETION_DENIED`
+    // then: ensure that `DENY_TASK_LISTENER` and `COMPLETION_DENIED`
     // are written after `COMPLETING` event
     assertUserTaskIntentsSequence(
         UserTaskIntent.COMPLETING,
@@ -1352,7 +1431,7 @@ public class TaskListenerTest {
   }
 
   @Test
-  public void shouldCompleteTaskWhenTaskListenerAcceptsOperationAfterRejection() {
+  public void shouldCompleteTaskWhenCompletingTaskListenerAcceptsTransitionAfterDenial() {
     // given
     final long processInstanceKey =
         createProcessInstance(createProcessWithCompletingTaskListeners(listenerType));
@@ -1370,7 +1449,7 @@ public class TaskListenerTest {
     completeRecreatedJobWithType(ENGINE, processInstanceKey, listenerType);
 
     // then: ensure that `COMPLETING` `COMPLETE_TASK_LISTENER` and `COMPLETED events
-    // are present after `REJECT_TASK_LISTENER` and `COMPLETION_DENIED` events
+    // are present after `DENY_TASK_LISTENER` and `COMPLETION_DENIED` events
     assertUserTaskIntentsSequence(
         UserTaskIntent.COMPLETING,
         UserTaskIntent.DENY_TASK_LISTENER,
@@ -1382,7 +1461,7 @@ public class TaskListenerTest {
   }
 
   @Test
-  public void shouldCompleteAllTaskListenersWhenFirstTaskListenerAcceptOperationAfterRejection() {
+  public void shouldCompleteAllTaskListenersWhenFirstTaskListenerAcceptTransitionAfterDenial() {
     // given
     final long processInstanceKey =
         createProcessInstance(
@@ -1416,7 +1495,7 @@ public class TaskListenerTest {
   }
 
   @Test
-  public void shouldAssignAndCompleteTaskAfterTaskListenerRejectsTheCompletion() {
+  public void shouldAssignAndCompleteTaskAfterTaskListenerDeniesTheCompletion() {
     // given
     final long processInstanceKey =
         createProcessInstance(createProcessWithCompletingTaskListeners(listenerType));
@@ -1477,6 +1556,15 @@ public class TaskListenerTest {
         u -> u,
         userTask -> userTask.withAssignee("initial_assignee").claim(),
         "claim");
+  }
+
+  @Test
+  public void shouldAppendUserTaskCorrectedWhenUpdatingTaskListenerCompletesWithCorrections() {
+    testAppendUserTaskCorrectedWhenTaskListenerCompletesWithCorrections(
+        ZeebeTaskListenerEventType.updating,
+        u -> u,
+        userTask -> userTask.update(new UserTaskRecord()),
+        "update");
   }
 
   @Test
@@ -1660,6 +1748,29 @@ public class TaskListenerTest {
             UserTaskIntent.CORRECTED,
             UserTaskIntent.COMPLETE_TASK_LISTENER,
             UserTaskIntent.ASSIGNED));
+  }
+
+  @Test
+  public void shouldPropagateCorrectedDataToUpdatingListenerJobHeaders() {
+    verifyUserTaskDataPropagationAcrossListenerJobHeaders(
+        ZeebeTaskListenerEventType.updating,
+        false,
+        userTask ->
+            userTask.update(
+                new UserTaskRecord()
+                    .setCandidateUsersList(List.of("initial_candidate_user"))
+                    .setCandidateGroupsList(List.of("initial_candidate_group"))
+                    .setDueDate("2085-09-21T11:22:33+02:00")
+                    .setFollowUpDate("2095-09-21T11:22:33+02:00")),
+        List.of(
+            UserTaskIntent.UPDATE,
+            UserTaskIntent.UPDATING,
+            UserTaskIntent.COMPLETE_TASK_LISTENER,
+            UserTaskIntent.CORRECTED,
+            UserTaskIntent.COMPLETE_TASK_LISTENER,
+            UserTaskIntent.CORRECTED,
+            UserTaskIntent.COMPLETE_TASK_LISTENER,
+            UserTaskIntent.UPDATED));
   }
 
   @Test
@@ -1852,6 +1963,15 @@ public class TaskListenerTest {
         false,
         userTask -> userTask.withAssignee("initial_assignee").claim(),
         UserTaskIntent.ASSIGNED);
+  }
+
+  @Test
+  public void shouldTrackChangedAttributesOnlyForActuallyCorrectedValuesOnTaskUpdate() {
+    verifyChangedAttributesAreTrackedOnlyForActuallyCorrectedValues(
+        ZeebeTaskListenerEventType.updating,
+        false,
+        userTask -> userTask.update(new UserTaskRecord()),
+        UserTaskIntent.UPDATED);
   }
 
   @Test
@@ -2128,6 +2248,15 @@ public class TaskListenerTest {
   }
 
   @Test
+  public void shouldPersistCorrectedUserTaskDataWhenUpdatingTaskListenerCompletes() {
+    testPersistCorrectedUserTaskDataWhenAllTaskListenersCompleted(
+        ZeebeTaskListenerEventType.updating,
+        u -> u,
+        userTask -> userTask.update(new UserTaskRecord()),
+        UserTaskIntent.UPDATED);
+  }
+
+  @Test
   public void shouldPersistCorrectedUserTaskDataWhenAllTaskListenersCompleted() {
     testPersistCorrectedUserTaskDataWhenAllTaskListenersCompleted(
         ZeebeTaskListenerEventType.completing,
@@ -2235,6 +2364,15 @@ public class TaskListenerTest {
         u -> u,
         userTask -> userTask.withAssignee("initial_assignee").claim(),
         UserTaskIntent.ASSIGNMENT_DENIED);
+  }
+
+  @Test
+  public void shouldRevertCorrectedUserTaskDataWhenUpdatingTaskListenerDenies() {
+    testRevertCorrectedUserTaskDataWhenTaskListenerDenies(
+        ZeebeTaskListenerEventType.updating,
+        u -> u,
+        userTask -> userTask.update(new UserTaskRecord()),
+        UserTaskIntent.UPDATE_DENIED);
   }
 
   @Test

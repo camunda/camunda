@@ -35,6 +35,8 @@ import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import org.apache.commons.codec.digest.MessageDigestAlgorithms;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import software.amazon.awssdk.core.ResponseInputStream;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.http.HttpStatusCode;
@@ -42,8 +44,10 @@ import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
 import software.amazon.awssdk.services.s3.model.GetObjectRequest;
 import software.amazon.awssdk.services.s3.model.GetObjectResponse;
+import software.amazon.awssdk.services.s3.model.HeadBucketRequest;
 import software.amazon.awssdk.services.s3.model.HeadObjectRequest;
 import software.amazon.awssdk.services.s3.model.HeadObjectResponse;
+import software.amazon.awssdk.services.s3.model.NoSuchBucketException;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 import software.amazon.awssdk.services.s3.model.S3Exception;
 import software.amazon.awssdk.services.s3.model.Tag;
@@ -59,6 +63,7 @@ public class AwsDocumentStore implements DocumentStore {
   public static final String FILENAME_METADATA_KEY = "filename";
   public static final String SIZE_METADATA_KEY = "size";
   public static final String CONTENT_TYPE_METADATA_KEY = "content-type";
+  private static final Logger LOGGER = LoggerFactory.getLogger(AwsDocumentStore.class);
   private static final Tag NO_AUTO_DELETE_TAG =
       Tag.builder().key("NoAutoDelete").value("true").build();
 
@@ -124,6 +129,25 @@ public class AwsDocumentStore implements DocumentStore {
       final String documentId, final String contentHash) {
     return CompletableFuture.supplyAsync(
         () -> verifyContentHashInternal(documentId, contentHash), executor);
+  }
+
+  @Override
+  public void validateSetup() {
+    try {
+      client.headBucket(HeadBucketRequest.builder().bucket(bucketName).build());
+      LOGGER.info("Successfully accessed bucket '{}'", bucketName);
+    } catch (final NoSuchBucketException e) {
+      LOGGER.warn("Bucket '{}' does not exist. {}", bucketName, SETUP_VALIDATION_FAILURE_MESSAGE);
+    } catch (final S3Exception e) {
+      LOGGER.warn(
+          "Could not access bucket '{}'. {}", bucketName, SETUP_VALIDATION_FAILURE_MESSAGE, e);
+    } catch (final Exception e) {
+      LOGGER.warn(
+          "Unexpected error while accessing bucket '{}'. {}",
+          bucketName,
+          SETUP_VALIDATION_FAILURE_MESSAGE,
+          e);
+    }
   }
 
   private Either<DocumentError, DocumentReference> createDocumentInternal(

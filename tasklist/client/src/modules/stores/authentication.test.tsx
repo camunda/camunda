@@ -22,7 +22,7 @@ describe('authentication store', () => {
 
   it('should login', async () => {
     nodeMockServer.use(
-      http.post('/api/login', () => new HttpResponse(''), {once: true}),
+      http.post('/login', () => new HttpResponse(''), {once: true}),
     );
 
     authenticationStore.disableSession();
@@ -36,7 +36,7 @@ describe('authentication store', () => {
 
   it('should handle login failure', async () => {
     nodeMockServer.use(
-      http.post('/api/login', () => new HttpResponse('', {status: 401}), {
+      http.post('/login', () => new HttpResponse('', {status: 401}), {
         once: true,
       }),
     );
@@ -68,8 +68,8 @@ describe('authentication store', () => {
     };
 
     nodeMockServer.use(
-      http.post('/api/login', () => new HttpResponse(''), {once: true}),
-      http.post('/api/logout', () => new HttpResponse(''), {once: true}),
+      http.post('/login', () => new HttpResponse(''), {once: true}),
+      http.post('/logout', () => new HttpResponse(''), {once: true}),
     );
 
     await authenticationStore.handleLogin('demo', 'demo');
@@ -181,9 +181,9 @@ describe('authentication store', () => {
           };
 
           nodeMockServer.use(
-            http.post('/api/login', () => new HttpResponse(''), {once: true}),
-            http.post('/api/logout', () => new HttpResponse(''), {once: true}),
-            http.post('/api/login', () => new HttpResponse(''), {once: true}),
+            http.post('/login', () => new HttpResponse(''), {once: true}),
+            http.post('/logout', () => new HttpResponse(''), {once: true}),
+            http.post('/login', () => new HttpResponse(''), {once: true}),
           );
 
           await authenticationStore.handleLogin('demo', 'demo');

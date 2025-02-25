@@ -6,10 +6,9 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {useCallback, useEffect, useState} from 'react';
+import {useCallback, useState} from 'react';
 
-import {getWebappEndpoints} from 'config';
-import {Table as TableRenderer, Loading, NoDataNotice} from 'components';
+import {Table as TableRenderer, NoDataNotice} from 'components';
 import {t} from 'translation';
 
 import processRawData from './processRawData';
@@ -20,7 +19,6 @@ import {rearrangeColumns} from './service';
 export default function RawDataTable({
   report,
   updateReport,
-  mightFail,
   loadReport,
   updateSorting,
   processVariables,
@@ -34,13 +32,6 @@ export default function RawDataTable({
   const [error, setError] = useState(false);
   const [pageLoading, setPageLoading] = useState(false);
   const [objectVariable, setObjectVariable] = useState();
-  const [camundaEndpoints, setCamundaEndpoints] = useState(null);
-
-  useEffect(() => {
-    if (result) {
-      mightFail(getWebappEndpoints(), setCamundaEndpoints);
-    }
-  }, [mightFail, result]);
 
   const fetchData = useCallback(
     async ({pageIndex, pageSize}) => {
@@ -59,10 +50,6 @@ export default function RawDataTable({
     [loadReport]
   );
 
-  if (result && camundaEndpoints === null) {
-    return <Loading />;
-  }
-
   const onVariableView = (name, processInstanceId, processDefinitionKey) => {
     const {versions, tenantIds} = definitions.find(({key}) => key === processDefinitionKey);
     setObjectVariable({
@@ -75,7 +62,7 @@ export default function RawDataTable({
   };
 
   const tableProps = {
-    ...processRawData({report, camundaEndpoints, processVariables, onVariableView}),
+    ...processRawData({report, processVariables, onVariableView}),
     fetchData,
     loading: pageLoading || loading,
     defaultPageSize: result.pagination.limit,

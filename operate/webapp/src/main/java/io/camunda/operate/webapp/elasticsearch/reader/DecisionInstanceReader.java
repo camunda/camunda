@@ -53,12 +53,12 @@ import io.camunda.operate.webapp.rest.dto.dmn.list.DecisionInstanceListQueryDto;
 import io.camunda.operate.webapp.rest.dto.dmn.list.DecisionInstanceListRequestDto;
 import io.camunda.operate.webapp.rest.dto.dmn.list.DecisionInstanceListResponseDto;
 import io.camunda.operate.webapp.rest.exception.NotFoundException;
-import io.camunda.operate.webapp.security.identity.IdentityPermission;
 import io.camunda.operate.webapp.security.permission.PermissionsService;
 import io.camunda.webapps.schema.descriptors.operate.index.DecisionIndex;
 import io.camunda.webapps.schema.descriptors.operate.template.DecisionInstanceTemplate;
 import io.camunda.webapps.schema.entities.operate.dmn.DecisionInstanceEntity;
 import io.camunda.webapps.schema.entities.operate.dmn.DecisionInstanceState;
+import io.camunda.zeebe.protocol.record.value.PermissionType;
 import java.io.IOException;
 import java.time.format.DateTimeFormatter;
 import java.util.Collections;
@@ -339,7 +339,8 @@ public class DecisionInstanceReader extends AbstractReader
     if (!permissionsService.permissionsEnabled()) {
       return null;
     }
-    final var allowed = permissionsService.getDecisionsWithPermission(IdentityPermission.READ);
+    final var allowed =
+        permissionsService.getDecisionsWithPermission(PermissionType.READ_DECISION_INSTANCE);
     if (allowed == null) {
       return null;
     }

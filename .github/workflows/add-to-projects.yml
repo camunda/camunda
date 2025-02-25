@@ -77,4 +77,11 @@ jobs:
           project-url: https://github.com/orgs/camunda/projects/23
           github-token: ${{ secrets.GH_PROJECT_AUTOMATION_TOKEN }}
           labeled: component/connectors
-
+      - id: add-to-identity
+        name: Add to Identity project
+        uses: actions/add-to-project@v1.0.2
+        if: ${{ steps.has-project.outputs.result == 'false' }}
+        with:
+          project-url: https://github.com/orgs/camunda/projects/120
+          github-token: ${{ secrets.GH_PROJECT_AUTOMATION_TOKEN }}
+          labeled: component/identity

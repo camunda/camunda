@@ -9,6 +9,8 @@ package io.camunda.db.rdbms.write.queue;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -41,7 +43,7 @@ class DefaultExecutionQueueTest {
             ExecutorType.BATCH, TransactionIsolationLevel.READ_UNCOMMITTED))
         .thenReturn(session);
 
-    executionQueue = new DefaultExecutionQueue(sqlSessionFactory, 1, 5, metrics);
+    executionQueue = new DefaultExecutionQueue(sqlSessionFactory, 1, 10, metrics);
   }
 
   @Test
@@ -62,16 +64,31 @@ class DefaultExecutionQueueTest {
 
   @Test
   public void whenFlushLimitIsActivatedFlushShouldHappen() {
-    final var item1 = new QueueItem(ContextType.PROCESS_INSTANCE, 1L, "statement1", "parameter1");
-    final var item2 = new QueueItem(ContextType.PROCESS_INSTANCE, 1L, "statement2", "parameter2");
-    final var item3 = new QueueItem(ContextType.PROCESS_INSTANCE, 1L, "statement3", "parameter3");
-    final var item4 = new QueueItem(ContextType.PROCESS_INSTANCE, 1L, "statement4", "parameter4");
-    final var item5 = new QueueItem(ContextType.PROCESS_INSTANCE, 1L, "statement5", "parameter5");
+    executionQueue = new DefaultExecutionQueue(sqlSessionFactory, 1, 3, metrics);
+    final var item1 =
+        new QueueItem(
+            ContextType.PROCESS_INSTANCE,
+            WriteStatementType.INSERT,
+            1L,
+            "statement1",
+            "parameter1");
+    final var item2 =
+        new QueueItem(
+            ContextType.PROCESS_INSTANCE,
+            WriteStatementType.INSERT,
+            1L,
+            "statement2",
+            "parameter2");
+    final var item3 =
+        new QueueItem(
+            ContextType.PROCESS_INSTANCE,
+            WriteStatementType.INSERT,
+            1L,
+            "statement3",
+            "parameter3");
     executionQueue.executeInQueue(item1);
     executionQueue.executeInQueue(item2);
     executionQueue.executeInQueue(item3);
-    executionQueue.executeInQueue(item4);
-    executionQueue.executeInQueue(item5);
 
     verify(sqlSessionFactory)
         .openSession(ExecutorType.BATCH, TransactionIsolationLevel.READ_UNCOMMITTED);
@@ -83,7 +100,13 @@ class DefaultExecutionQueueTest {
 
   @Test
   public void whenFlushIsCalledFlushShouldHappen() {
-    final var item1 = new QueueItem(ContextType.PROCESS_INSTANCE, 1L, "statement1", "parameter1");
+    final var item1 =
+        new QueueItem(
+            ContextType.PROCESS_INSTANCE,
+            WriteStatementType.INSERT,
+            1L,
+            "statement1",
+            "parameter1");
     executionQueue.executeInQueue(item1);
 
     // when
@@ -107,7 +130,13 @@ class DefaultExecutionQueueTest {
 
   @Test
   public void whenFlushIsCalledFlushListenersAreCalled() {
-    final var item1 = new QueueItem(ContextType.PROCESS_INSTANCE, 1L, "statement1", "parameter1");
+    final var item1 =
+        new QueueItem(
+            ContextType.PROCESS_INSTANCE,
+            WriteStatementType.INSERT,
+            1L,
+            "statement1",
+            "parameter1");
     executionQueue.executeInQueue(item1);
 
     final var preFlushListener = mock(PreFlushListener.class);
@@ -125,7 +154,13 @@ class DefaultExecutionQueueTest {
 
   @Test
   public void whenFlushIsExceptionalSessionIsRolledBack() {
-    final var item1 = new QueueItem(ContextType.PROCESS_INSTANCE, 1L, "statement1", "parameter1");
+    final var item1 =
+        new QueueItem(
+            ContextType.PROCESS_INSTANCE,
+            WriteStatementType.INSERT,
+            1L,
+            "statement1",
+            "parameter1");
     executionQueue.executeInQueue(item1);
 
     final var preFlushListener = mock(PreFlushListener.class);
@@ -148,8 +183,20 @@ class DefaultExecutionQueueTest {
 
   @Test
   public void whenMatchingItemFoundShouldMergeItems() {
-    final var item1 = new QueueItem(ContextType.PROCESS_INSTANCE, 1L, "statement1", "parameter1");
-    final var item2 = new QueueItem(ContextType.PROCESS_INSTANCE, 2L, "statement2", "parameter2");
+    final var item1 =
+        new QueueItem(
+            ContextType.PROCESS_INSTANCE,
+            WriteStatementType.INSERT,
+            1L,
+            "statement1",
+            "parameter1");
+    final var item2 =
+        new QueueItem(
+            ContextType.PROCESS_INSTANCE,
+            WriteStatementType.INSERT,
+            2L,
+            "statement2",
+            "parameter2");
     executionQueue.executeInQueue(item1);
     executionQueue.executeInQueue(item2);
 
@@ -163,7 +210,12 @@ class DefaultExecutionQueueTest {
 
               @Override
               public QueueItem merge(final QueueItem originalItem) {
-                return new QueueItem(originalItem.contextType(), 1L, "statement1", "parameter1+");
+                return new QueueItem(
+                    originalItem.contextType(),
+                    WriteStatementType.INSERT,
+                    1L,
+                    "statement1",
+                    "parameter1+");
               }
             });
 
@@ -176,8 +228,20 @@ class DefaultExecutionQueueTest {
 
   @Test
   public void whenNoMatchingItemFoundShouldNotMergeItems() {
-    final var item1 = new QueueItem(ContextType.PROCESS_INSTANCE, 1L, "statement1", "parameter1");
-    final var item2 = new QueueItem(ContextType.PROCESS_INSTANCE, 2L, "statement2", "parameter2");
+    final var item1 =
+        new QueueItem(
+            ContextType.PROCESS_INSTANCE,
+            WriteStatementType.INSERT,
+            1L,
+            "statement1",
+            "parameter1");
+    final var item2 =
+        new QueueItem(
+            ContextType.PROCESS_INSTANCE,
+            WriteStatementType.INSERT,
+            2L,
+            "statement2",
+            "parameter2");
     executionQueue.executeInQueue(item1);
     executionQueue.executeInQueue(item2);
 
@@ -191,7 +255,12 @@ class DefaultExecutionQueueTest {
 
               @Override
               public QueueItem merge(final QueueItem originalItem) {
-                return new QueueItem(originalItem.contextType(), 1L, "statement1", "parameter1+");
+                return new QueueItem(
+                    originalItem.contextType(),
+                    WriteStatementType.INSERT,
+                    1L,
+                    "statement1",
+                    "parameter1+");
               }
             });
 
@@ -199,5 +268,58 @@ class DefaultExecutionQueueTest {
     assertThat(executionQueue.getQueue()).hasSize(2);
     assertThat(executionQueue.getQueue().get(0)).isSameAs(item1);
     assertThat(executionQueue.getQueue().get(1)).isSameAs(item2);
+  }
+
+  @Test
+  public void shouldSortQueueItemsDuringFlush() {
+    executionQueue.executeInQueue(
+        new QueueItem(
+            ContextType.PROCESS_INSTANCE,
+            WriteStatementType.UPDATE,
+            1L,
+            "statement1",
+            "parameter1"));
+    executionQueue.executeInQueue(
+        new QueueItem(
+            ContextType.PROCESS_INSTANCE,
+            WriteStatementType.INSERT,
+            1L,
+            "statement2",
+            "parameter2"));
+    executionQueue.executeInQueue(
+        new QueueItem(
+            ContextType.PROCESS_INSTANCE,
+            WriteStatementType.DELETE,
+            1L,
+            "statement3",
+            "parameter3"));
+    executionQueue.executeInQueue(
+        new QueueItem(
+            ContextType.FLOW_NODE, WriteStatementType.UPDATE, 1L, "statement4", "parameter4"));
+    executionQueue.executeInQueue(
+        new QueueItem(
+            ContextType.FLOW_NODE, WriteStatementType.INSERT, 1L, "statement5", "parameter5"));
+    executionQueue.executeInQueue(
+        new QueueItem(
+            ContextType.USER_TASK, WriteStatementType.DELETE, 1L, "statement6", "parameter6"));
+    executionQueue.executeInQueue(
+        new QueueItem(
+            ContextType.USER_TASK, WriteStatementType.INSERT, 1L, "statement7", "parameter7"));
+    executionQueue.executeInQueue(
+        new QueueItem(
+            ContextType.USER_TASK, WriteStatementType.DELETE, 1L, "statement8", "parameter8"));
+
+    // when
+    executionQueue.flush();
+
+    // then
+    verify(session).update(eq("statement5"), any());
+    verify(session).update(eq("statement2"), any());
+    verify(session).update(eq("statement6"), any());
+    verify(session).update(eq("statement7"), any());
+    verify(session).update(eq("statement8"), any());
+    verify(session).update(eq("statement4"), any());
+    verify(session).update(eq("statement1"), any());
+    verify(session).update(eq("statement3"), any());
   }
 }

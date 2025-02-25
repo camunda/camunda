@@ -20,6 +20,7 @@ import io.camunda.zeebe.scheduler.ActorScheduler;
 import io.camunda.zeebe.snapshots.ConstructableSnapshotStore;
 import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotStore;
 import io.camunda.zeebe.util.FileUtil;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
@@ -37,6 +38,7 @@ final class TestState {
   private static final int KEY_VALUE_SIZE = 8096;
 
   TestContext generateContext(final long sizeInBytes) throws Exception {
+    final var meterRegistry = new SimpleMeterRegistry();
     final var tempDirectory = Files.createTempDirectory("statePerf");
     final var actorScheduler =
         ActorScheduler.newActorScheduler()
@@ -46,7 +48,7 @@ final class TestState {
     actorScheduler.start();
 
     final var snapshotStore =
-        new FileBasedSnapshotStore(0, 1, tempDirectory, snapshotPath -> Map.of());
+        new FileBasedSnapshotStore(0, 1, tempDirectory, snapshotPath -> Map.of(), meterRegistry);
     actorScheduler.submitActor(snapshotStore).join();
 
     generateSnapshot(snapshotStore, sizeInBytes);

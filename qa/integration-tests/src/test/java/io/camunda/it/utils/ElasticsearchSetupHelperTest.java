@@ -155,7 +155,7 @@ public class ElasticsearchSetupHelperTest {
                 // We don't want to have this as part of the #validateSchemaCreation
                 // as they are only created when data is exported. This would mean we need to
                 // generate additional data, to trigger such, which we don't want for most tests
-                final String esExporterPrefix = indexPrefix + "_";
+                final String esExporterPrefix = multiDbConfigurator.zeebeIndexPrefix() + "_";
                 final int indexCount =
                     elasticOpenSearchSetupHelper.getCountOfIndicesWithPrefix(
                         elasticSearchUrl, esExporterPrefix);

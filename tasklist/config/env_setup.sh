@@ -43,6 +43,9 @@ eval CAMUNDA_TASKLIST_ZEEBE_RESTADDRESS=\${EXT_CAMUNDA_TASKLIST_ZEEBE_RESTADDRES
 ./config/write_or_replace_var.sh "CAMUNDA_TASKLIST_ZEEBE_RESTADDRESS" "$CAMUNDA_TASKLIST_ZEEBE_RESTADDRESS" $MAVEN_CONTEXT
 ./config/write_or_replace_var.sh "CAMUNDA_DATABASE_URL" "$DATABASE_URL" $MAVEN_CONTEXT
 
+# Replace Zeebe database config with Docker external URLs for running Zeebe in single app
+./config/write_or_replace_var.sh "ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_CONNECT_URL" "$DATABASE_URL" $MAVEN_CONTEXT
+
 # Cleanup temporary files
 for file in $IDENTITY_CONFIG $IDENTITY_OAUTH_CONFIG $DATABASE_CONFIG $MULTI_TENANCY_CONFIG; do
   if [ -e "$file" ]; then

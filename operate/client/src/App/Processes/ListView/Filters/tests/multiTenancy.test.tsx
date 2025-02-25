@@ -24,7 +24,7 @@ import {
   selectProcess,
   selectTenant,
 } from 'modules/testUtils/selectComboBoxOption';
-import {mockGetUser} from 'modules/mocks/api/getUser';
+import {mockMe} from 'modules/mocks/api/v2/me';
 import {authenticationStore} from 'modules/stores/authentication';
 
 jest.unmock('modules/utils/date/formatDate');
@@ -34,7 +34,7 @@ describe('Filters', () => {
     mockFetchGroupedProcesses().withSuccess(groupedProcessesMock);
     mockFetchProcessInstancesStatistics().withSuccess(mockProcessStatistics);
     mockFetchProcessXML().withSuccess(mockProcessXML);
-    mockGetUser().withSuccess(
+    mockMe().withSuccess(
       createUser({
         tenants: [
           {tenantId: '<default>', name: 'Default Tenant'},

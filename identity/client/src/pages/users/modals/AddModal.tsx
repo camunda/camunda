@@ -1,17 +1,22 @@
 import { FC, useState } from "react";
+import { InlineNotification } from "@carbon/react";
 import TextField from "src/components/form/TextField";
 import { useApiCall } from "src/utility/api";
 import useTranslate from "src/utility/localization";
 import { FormModal, UseModalProps } from "src/components/modal";
 import { createUser } from "src/utility/api/users";
+import { isValidEmail } from "./isValidEmail";
 
 const AddModal: FC<UseModalProps> = ({ open, onClose, onSuccess }) => {
   const { t } = useTranslate();
-  const [apiCall, { loading, namedErrors }] = useApiCall(createUser);
+  const [apiCall, { loading, error }] = useApiCall(createUser, {
+    suppressErrorNotification: true,
+  });
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+  const [emailValid, setEmailValid] = useState(true);
 
   const handleSubmit = async () => {
     const { success } = await apiCall({
@@ -26,6 +31,10 @@ const AddModal: FC<UseModalProps> = ({ open, onClose, onSuccess }) => {
     }
   };
 
+  function validateEmail() {
+    setEmailValid(isValidEmail(email));
+  }
+
   return (
     <FormModal
       open={open}
@@ -33,39 +42,48 @@ const AddModal: FC<UseModalProps> = ({ open, onClose, onSuccess }) => {
       onClose={onClose}
       onSubmit={handleSubmit}
       loading={loading}
-      loadingDescription={t("Adding user")}
+      submitDisabled={!name || !email || !username || !password}
+      loadingDescription={t("Creating user...")}
       confirmLabel={t("Create user")}
     >
       <TextField
+        label={t("Username")}
+        value={username}
+        placeholder={t("Enter username or user ID")}
+        onChange={setUsername}
+        autoFocus
+      />
+      <TextField
         label={t("Name")}
         value={name}
-        placeholder={t("Name")}
+        placeholder={t("Enter name")}
         onChange={setName}
-        errors={namedErrors?.name}
-        autoFocus
       />
       <TextField
         label={t("Email")}
         value={email}
-        placeholder={t("Email")}
+        placeholder={t("Enter email address")}
         onChange={setEmail}
-        errors={namedErrors?.email}
-      />
-      <TextField
-        label={t("Username")}
-        value={username}
-        placeholder={t("Username")}
-        onChange={setUsername}
-        errors={namedErrors?.username}
+        type="email"
+        onBlur={validateEmail}
+        errors={!emailValid ? [t("Please enter a valid email")] : []}
       />
       <TextField
         label={t("Password")}
         value={password}
         placeholder={t("Password")}
         onChange={setPassword}
-        errors={namedErrors?.password}
         type="password"
       />
+      {error && (
+        <InlineNotification
+          kind="error"
+          role="alert"
+          lowContrast
+          title={error.title}
+          subtitle={error.detail}
+        />
+      )}
     </FormModal>
   );
 };

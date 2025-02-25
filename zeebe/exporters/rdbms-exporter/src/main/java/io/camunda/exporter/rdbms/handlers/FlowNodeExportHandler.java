@@ -7,6 +7,8 @@
  */
 package io.camunda.exporter.rdbms.handlers;
 
+import static io.camunda.exporter.rdbms.utils.ExportUtil.buildTreePath;
+
 import io.camunda.db.rdbms.write.domain.FlowNodeInstanceDbModel;
 import io.camunda.db.rdbms.write.domain.FlowNodeInstanceDbModel.FlowNodeInstanceDbModelBuilder;
 import io.camunda.db.rdbms.write.service.FlowNodeInstanceWriter;
@@ -20,7 +22,6 @@ import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import io.camunda.zeebe.util.DateUtil;
-import java.util.List;
 import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -34,6 +35,7 @@ public class FlowNodeExportHandler implements RdbmsExportHandler<ProcessInstance
           ProcessInstanceIntent.ELEMENT_ACTIVATING,
           ProcessInstanceIntent.ELEMENT_COMPLETED,
           ProcessInstanceIntent.ELEMENT_MIGRATED,
+          ProcessInstanceIntent.ANCESTOR_MIGRATED,
           ProcessInstanceIntent.ELEMENT_TERMINATED);
 
   private static final Set<BpmnElementType> UNHANDLED_BPMN_TYPES =
@@ -57,7 +59,8 @@ public class FlowNodeExportHandler implements RdbmsExportHandler<ProcessInstance
     final var value = record.getValue();
     if (record.getIntent() == ProcessInstanceIntent.ELEMENT_ACTIVATING) {
       flowNodeInstanceWriter.create(map(record, value));
-    } else if (record.getIntent() == ProcessInstanceIntent.ELEMENT_MIGRATED) {
+    } else if (record.getIntent() == ProcessInstanceIntent.ELEMENT_MIGRATED
+        || record.getIntent() == ProcessInstanceIntent.ANCESTOR_MIGRATED) {
       flowNodeInstanceWriter.update(map(record, value));
     } else if (record.getIntent() == ProcessInstanceIntent.ELEMENT_COMPLETED) {
       flowNodeInstanceWriter.finish(
@@ -85,7 +88,9 @@ public class FlowNodeExportHandler implements RdbmsExportHandler<ProcessInstance
         .startDate(DateUtil.toOffsetDateTime(record.getTimestamp()))
         .type(mapFlowNodeType(value))
         .partitionId(record.getPartitionId())
-        .treePath(buildTreePath(record))
+        .treePath(
+            buildTreePath(
+                record.getKey(), value.getProcessInstanceKey(), value.getElementInstancePath()))
         .build();
   }
 
@@ -97,31 +102,6 @@ public class FlowNodeExportHandler implements RdbmsExportHandler<ProcessInstance
       return FlowNodeType.valueOf(recordValue.getBpmnElementType().name());
     } catch (final IllegalArgumentException ex) {
       return FlowNodeType.UNKNOWN;
-    }
-  }
-
-  protected static String buildTreePath(final Record<ProcessInstanceRecordValue> record) {
-    final ProcessInstanceRecordValue value = record.getValue();
-    if (value.getElementInstancePath() != null && !value.getElementInstancePath().isEmpty()) {
-      // Build the intra treePath in the format:
-      // <pre>
-      //   <processInstanceKey>/<flowNodeInstanceKey>/.../<flowNodeInstanceKey>
-      // </pre>
-      //
-      // Where upper level flowNodeInstanceKeys are normally subprocess(es) or multi-instance
-      // bodies.
-      // This is an intra tree path that shows position of flow node instance inside one process
-      // instance.
-      // We take last entry, as in intra path we're not interested in upper level process instance
-      // scope hierarchies.
-      final List<String> treePathEntries =
-          value.getElementInstancePath().getLast().stream().map(String::valueOf).toList();
-      return String.join("/", treePathEntries);
-    } else {
-      LOG.warn(
-          "No elementInstancePath is provided for flow node instance id: {}. TreePath will be set to default value.",
-          record.getKey());
-      return value.getProcessInstanceKey() + "/" + record.getKey();
     }
   }
 }

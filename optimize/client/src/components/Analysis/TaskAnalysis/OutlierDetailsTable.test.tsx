@@ -8,6 +8,7 @@
 
 import {shallow} from 'enzyme';
 import OutlierDetailsTable from './OutlierDetailsTable';
+import {Button} from "@carbon/react";
 
 const props = {
   flowNodeNames: {
@@ -36,20 +37,25 @@ it('should render the table properly', () => {
   const tableBody = node.find('Table').prop<(string | JSX.Element)[][]>('body');
 
   expect(tableBody.length).toBe(2);
-  expect(tableBody[0]?.length).toBe(6);
+  expect(tableBody[0]?.length).toBe(5);
 
   // task 1 with name and variable
   expect(tableBody[0]?.[0]).toBe('Task 1');
   expect(tableBody[0]?.[1]).toBe('10');
   expect(tableBody[0]?.[2]).toBe('1 instance took 50% longer than average.');
-  const task1Variabes = shallow(tableBody[0]?.[3] as JSX.Element);
-  expect(task1Variabes.text()).toBe('variable1=true');
+  const task1ViewDetails = shallow(<div>{tableBody[0]?.[3]}</div>);
+  expect(task1ViewDetails.text()).toBe('View details');
+  expect(task1ViewDetails.find(Button).text()).toBe('View details');
+  expect(task1ViewDetails.find(Button)).toExist();
 
   // task 2 with no additional data
   expect(tableBody[1]?.[0]).toBe('task2');
   expect(tableBody[1]?.[1]).toBe('5');
   expect(tableBody[1]?.[2]).toBe('2 instances took 10% longer than average.');
-  expect(tableBody[1]?.[3]).toBe('-');
+  const task2ViewDetails = shallow(<div>{tableBody[1]?.[3]}</div>);
+  expect(task2ViewDetails.text()).toBe('View details');
+  expect(task2ViewDetails.find(Button).text()).toBe('View details');
+  expect(task2ViewDetails.find(Button)).toExist();
 });
 
 it('should ommit tasks without data', () => {
@@ -79,7 +85,7 @@ it('should render download instances button', () => {
   const node = shallow(<OutlierDetailsTable {...props} />);
 
   const tableBody = node.find('Table').prop<(string | JSX.Element)[][]>('body');
-  const downloadButton = tableBody[0]?.[5] as JSX.Element;
+  const downloadButton = tableBody[0]?.[4] as JSX.Element;
 
   expect(downloadButton.props).toMatchObject({
     id: 'task1',

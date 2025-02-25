@@ -80,14 +80,15 @@ public final class FileBasedSnapshotStoreImpl {
 
   public FileBasedSnapshotStoreImpl(
       final int brokerId,
-      final int partitionId,
       final Path root,
       final CRC32CChecksumProvider checksumProvider,
-      final ConcurrencyControl actor) {
+      final ConcurrencyControl actor,
+      final SnapshotMetrics snapshotMetrics) {
     this.brokerId = brokerId;
     snapshotsDirectory = root.resolve(SNAPSHOTS_DIRECTORY);
     pendingDirectory = root.resolve(PENDING_DIRECTORY);
     this.actor = actor;
+    this.snapshotMetrics = snapshotMetrics;
 
     try {
       FileUtil.ensureDirectoryExists(snapshotsDirectory);
@@ -96,7 +97,6 @@ public final class FileBasedSnapshotStoreImpl {
       throw new UncheckedIOException("Failed to create snapshot directories", e);
     }
 
-    snapshotMetrics = new SnapshotMetrics(String.valueOf(partitionId));
     receivingSnapshotStartCount = new AtomicLong();
 
     listeners = new CopyOnWriteArraySet<>();

@@ -11,7 +11,7 @@ import {authenticationStore} from 'modules/stores/authentication';
 import {LocationLog} from 'modules/utils/LocationLog';
 import {MemoryRouter, Route, Routes} from 'react-router-dom';
 import {AuthenticationCheck} from './AuthenticationCheck';
-import {mockGetUser} from 'modules/mocks/api/getUser';
+import {mockMe} from 'modules/mocks/api/v2/me';
 import {createUser} from 'modules/testUtils';
 
 const PROTECTED_CONTENT = 'protected content';
@@ -38,7 +38,7 @@ describe('<AuthenticationCheck />', () => {
   });
 
   it('should handle no session', async () => {
-    mockGetUser().withServerError(401);
+    mockMe().withServerError(401);
 
     render(
       <AuthenticationCheck redirectPath={PUBLIC_AREA_URL}>
@@ -56,7 +56,7 @@ describe('<AuthenticationCheck />', () => {
   });
 
   it('should handle valid session', async () => {
-    mockGetUser().withSuccess(createUser());
+    mockMe().withSuccess(createUser());
 
     render(
       <AuthenticationCheck redirectPath={PUBLIC_AREA_URL}>

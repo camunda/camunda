@@ -18,6 +18,7 @@ import io.camunda.zeebe.snapshots.SnapshotException.SnapshotAlreadyExistsExcepti
 import io.camunda.zeebe.snapshots.SnapshotException.SnapshotNotFoundException;
 import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotStore;
 import io.camunda.zeebe.util.FileUtil;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -49,7 +50,8 @@ public class TransientSnapshotTest {
     final File root = temporaryFolder.getRoot();
 
     snapshotStore =
-        new FileBasedSnapshotStore(0, partitionId, root.toPath(), snapshotPath -> Map.of());
+        new FileBasedSnapshotStore(
+            0, partitionId, root.toPath(), snapshotPath -> Map.of(), new SimpleMeterRegistry());
     scheduler.submitActor(snapshotStore).join();
   }
 

@@ -9,7 +9,7 @@
 import {render, screen} from 'modules/testing-library';
 import {createUser} from 'modules/testUtils';
 
-import {mockGetUser} from 'modules/mocks/api/getUser';
+import {mockMe} from 'modules/mocks/api/v2/me';
 import {authenticationStore} from 'modules/stores/authentication';
 import {useEffect} from 'react';
 import {TenantField} from '.';
@@ -45,7 +45,7 @@ function getWrapper(initialValues?: ProcessInstanceFilters) {
 
 describe('Tenant Field', () => {
   it('should only contain all tenants filter', async () => {
-    mockGetUser().withSuccess(
+    mockMe().withSuccess(
       createUser({
         tenants: [],
       }),
@@ -66,7 +66,7 @@ describe('Tenant Field', () => {
   });
 
   it('should contain list of tenants', async () => {
-    mockGetUser().withSuccess(
+    mockMe().withSuccess(
       createUser({
         tenants: [
           {tenantId: '<default>', name: 'Default Tenant'},
@@ -96,7 +96,7 @@ describe('Tenant Field', () => {
   });
 
   it('should not set value if its not valid', async () => {
-    mockGetUser().withSuccess(
+    mockMe().withSuccess(
       createUser({
         tenants: [
           {tenantId: '<default>', name: 'Default Tenant'},

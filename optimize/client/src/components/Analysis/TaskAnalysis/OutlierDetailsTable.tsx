@@ -20,12 +20,9 @@ type TaskData = {
   higherOutlier?: {count: number; relation: number; boundValue: number};
 };
 
-type Variable = {variableName: string; variableTerm: string | number | boolean};
-
 interface OutlierDetailsTableProps {
   loading?: boolean;
   nodeOutliers: Record<string, TaskData | undefined>;
-  outlierVariables: Record<string, Variable[]>;
   flowNodeNames: Record<string, string>;
   onDetailsClick: (taskId: string, taskData: TaskData) => string;
   config: AnalysisProcessDefinitionParameters;
@@ -34,25 +31,10 @@ interface OutlierDetailsTableProps {
 export default function OutlierDetailsTable({
   loading,
   nodeOutliers,
-  outlierVariables,
   flowNodeNames,
   onDetailsClick,
   config,
 }: OutlierDetailsTableProps) {
-  function getVariablesList(variables?: Variable[]): string | JSX.Element {
-    if (!variables?.length) {
-      return '-';
-    }
-
-    return (
-      <ul>
-        {variables.map(({variableName, variableTerm}) => (
-          <li key={variableName}>{`${variableName}=${variableTerm}`}</li>
-        ))}
-      </ul>
-    );
-  }
-
   function parseTableBody(): TableBody[] {
     if (!nodeOutliers) {
       return [];
@@ -68,13 +50,11 @@ export default function OutlierDetailsTable({
           higherOutlier: {count, relation, boundValue},
           totalCount,
         } = nodeOutlierData;
-        const variables = outlierVariables[nodeOutlierId];
 
         tableRows.push([
           flowNodeNames[nodeOutlierId] || nodeOutlierId,
           totalCount.toString(),
           getOutlierSummary(count, relation),
-          getVariablesList(variables),
           <Button
             kind="tertiary"
             size="sm"
@@ -104,7 +84,6 @@ export default function OutlierDetailsTable({
         t('analysis.task.table.flowNodeName').toString(),
         t('analysis.task.totalInstances').toString(),
         t('analysis.task.table.outliers').toString(),
-        t('report.variables.default').toString(),
         t('common.details').toString(),
         t('common.download').toString(),
       ]}

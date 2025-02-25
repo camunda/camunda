@@ -14,12 +14,14 @@ import io.camunda.authentication.entity.CamundaUserDTO;
 import io.camunda.search.entities.RoleEntity;
 import io.camunda.security.entity.AuthenticationMethod;
 import java.util.Optional;
+import org.springframework.context.annotation.Profile;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
-@ConditionalOnAuthenticationMethod(AuthenticationMethod.BASIC)
 @Service
+@ConditionalOnAuthenticationMethod(AuthenticationMethod.BASIC)
+@Profile("consolidated-auth")
 public class BasicCamundaUserService implements CamundaUserService {
   private Optional<CamundaUser> getCurrentCamundaUser() {
     return Optional.ofNullable(SecurityContextHolder.getContext().getAuthentication())

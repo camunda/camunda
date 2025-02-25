@@ -11,6 +11,7 @@ import io.camunda.zeebe.logstreams.log.LogStream;
 import io.camunda.zeebe.logstreams.log.LogStreamBuilder;
 import io.camunda.zeebe.logstreams.log.LogStreamReader;
 import io.camunda.zeebe.logstreams.log.LogStreamWriter;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.time.Instant;
 import java.time.InstantSource;
 import java.util.function.Consumer;
@@ -63,7 +64,8 @@ public final class LogStreamRule extends ExternalResource {
             .withPartitionId(0)
             .withLogName("logStream-0")
             .withLogStorage(listLogStorage)
-            .withClock(clock);
+            .withClock(clock)
+            .withMeterRegistry(new SimpleMeterRegistry());
 
     // apply additional configs
     streamBuilder.accept(builder);

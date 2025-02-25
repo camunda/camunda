@@ -17,7 +17,9 @@ import io.camunda.zeebe.snapshots.PersistedSnapshotListener;
 import io.camunda.zeebe.snapshots.ReceivableSnapshotStore;
 import io.camunda.zeebe.snapshots.impl.FileBasedReceivedSnapshot;
 import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotStoreImpl;
+import io.camunda.zeebe.snapshots.impl.SnapshotMetrics;
 import io.camunda.zeebe.util.FileUtil;
+import io.micrometer.core.instrument.MeterRegistry;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
@@ -38,10 +40,17 @@ public class TestFileBasedSnapshotStore implements ReceivableSnapshotStore {
   private final FileBasedSnapshotStoreImpl snapshotStore;
 
   public TestFileBasedSnapshotStore(
-      final int nodeId, final Path root, final ConcurrencyControl concurrencyControl) {
+      final int nodeId,
+      final Path root,
+      final ConcurrencyControl concurrencyControl,
+      final MeterRegistry meterRegistry) {
     snapshotStore =
         new FileBasedSnapshotStoreImpl(
-            nodeId, 1, root, new TestChecksumProvider(), concurrencyControl);
+            nodeId,
+            root,
+            new TestChecksumProvider(),
+            concurrencyControl,
+            new SnapshotMetrics(meterRegistry));
     snapshotStore.start();
   }
 

@@ -12,7 +12,6 @@ import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * An {@link EnumMeter} is a set of {@link Gauge}, one for each state in the given enum type {@link
@@ -27,9 +26,9 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * @param <T> the enum type of the possible states
  */
 public final class EnumMeter<T extends Enum<T>> {
-  private final Map<T, AtomicBoolean> states;
+  private final Map<T, StatefulGauge> states;
 
-  private EnumMeter(final Map<T, AtomicBoolean> states) {
+  private EnumMeter(final Map<T, StatefulGauge> states) {
     this.states = states;
   }
 
@@ -47,14 +46,14 @@ public final class EnumMeter<T extends Enum<T>> {
       final ExtendedMeterDocumentation documentation,
       final KeyName stateTag,
       final MeterRegistry registry) {
-    final Map<T, AtomicBoolean> states = new HashMap<>();
+    final Map<T, StatefulGauge> states = new HashMap<>();
     for (final var state : stateClass.getEnumConstants()) {
-      final var value = new AtomicBoolean(false);
-      states.put(state, value);
-      Gauge.builder(documentation.getName(), value, bool -> bool.get() ? 1 : 0)
-          .description(documentation.getDescription())
-          .tag(stateTag.asString(), state.name())
-          .register(registry);
+      final var gauge =
+          StatefulGauge.builder(documentation.getName())
+              .description(documentation.getDescription())
+              .tag(stateTag.asString(), state.name())
+              .register(registry);
+      states.put(state, gauge);
     }
 
     return new EnumMeter<>(states);

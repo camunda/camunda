@@ -106,7 +106,6 @@ public final class ZeebePartitionFactory {
   private final TopologyManagerImpl topologyManager;
   private final FeatureFlags featureFlags;
   private final List<PartitionRaftListener> partitionRaftListeners;
-  private final MeterRegistry meterRegistry;
   private final SecurityConfiguration securityConfig;
 
   public ZeebePartitionFactory(
@@ -123,7 +122,6 @@ public final class ZeebePartitionFactory {
       final List<PartitionRaftListener> partitionRaftListeners,
       final TopologyManagerImpl topologyManager,
       final FeatureFlags featureFlags,
-      final MeterRegistry meterRegistry,
       final SecurityConfiguration securityConfig) {
     this.actorSchedulingService = actorSchedulingService;
     this.brokerCfg = brokerCfg;
@@ -138,7 +136,6 @@ public final class ZeebePartitionFactory {
     this.partitionRaftListeners = partitionRaftListeners;
     this.topologyManager = topologyManager;
     this.featureFlags = featureFlags;
-    this.meterRegistry = meterRegistry;
     this.securityConfig = securityConfig;
   }
 
@@ -146,7 +143,8 @@ public final class ZeebePartitionFactory {
       final RaftPartition raftPartition,
       final FileBasedSnapshotStore snapshotStore,
       final DynamicPartitionConfig initialPartitionConfig,
-      final BrokerHealthCheckService brokerHealthCheckService) {
+      final BrokerHealthCheckService brokerHealthCheckService,
+      final MeterRegistry partitionMeterRegistry) {
     final var communicationService = clusterServices.getCommunicationService();
     final var membershipService = clusterServices.getMembershipService();
     final var typedRecordProcessorsFactory = createFactory(localBroker, featureFlags);
@@ -175,9 +173,9 @@ public final class ZeebePartitionFactory {
             diskSpaceUsageMonitor,
             gatewayBrokerTransport,
             topologyManager,
-            meterRegistry,
             brokerHealthCheckService,
-            securityConfig);
+            securityConfig,
+            partitionMeterRegistry);
     context.setDynamicPartitionConfig(initialPartitionConfig);
 
     final PartitionTransition newTransitionBehavior = new PartitionTransitionImpl(TRANSITION_STEPS);

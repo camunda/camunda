@@ -41,7 +41,7 @@ if [ -z "${DATE}" ]; then
 fi
 
 if [ -z "${BASE_IMAGE}" ]; then
-  echo >&2 "No BASE_IMAGE was given; make sure to pass a valid base image name, e.g. docker.io/library/alpine:3.20.2"
+  echo >&2 "No BASE_IMAGE was given; make sure to pass a valid base image name, e.g. docker.io/library/alpine:3.21.3"
   exit 1
 fi
 

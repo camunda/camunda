@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: blombard/move-to-next-iteration@v0.6.0
+      - uses: blombard/move-to-next-iteration@v0.6.1
         with:
           owner: camunda
           number: 29

@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.engine.processing.randomized;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.engine.util.ProcessExecutor;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
@@ -79,6 +81,8 @@ public class ProcessExecutionRandomizedPropertyTest {
         .withElementType(BpmnElementType.PROCESS)
         .withBpmnProcessId(path.getProcessId())
         .await();
+
+    assertAllActivatingElementsHaveTreePathPopulated(path.getProcessId());
   }
 
   @Parameters(name = "{0}")
@@ -87,5 +91,34 @@ public class ProcessExecutionRandomizedPropertyTest {
         Integer.parseInt(PROCESS_COUNT), Integer.parseInt(EXECUTION_PATH_COUNT));
     //    return List.of(
     //        TestDataGenerator.regenerateTestRecord(-8532388551768899121L, -6565756334590616537L));
+  }
+
+  private static void assertAllActivatingElementsHaveTreePathPopulated(final String processId) {
+    RecordingExporter.processInstanceRecords()
+        .withBpmnProcessId(processId)
+        .limit(
+            p ->
+                p.getValue().getBpmnElementType().equals(BpmnElementType.PROCESS)
+                    && p.getIntent().equals(ProcessInstanceIntent.ELEMENT_COMPLETED))
+        .filter(p -> !p.getValue().getBpmnElementType().equals(BpmnElementType.PROCESS))
+        .filter(p -> p.getIntent().equals(ProcessInstanceIntent.ELEMENT_ACTIVATING))
+        .forEach(
+            r -> {
+              final var v = r.getValue();
+              final var elementInstancePath = v.getElementInstancePath();
+              final var processDefinitionPath = v.getProcessDefinitionPath();
+
+              assertThat(elementInstancePath).isNotEmpty();
+              assertThat(elementInstancePath.getLast())
+                  .describedAs(
+                      "Expect activating element to have elementInstance path populated:" + v)
+                  .containsSubsequence(v.getProcessInstanceKey(), r.getKey());
+
+              assertThat(processDefinitionPath).isNotEmpty();
+              assertThat(processDefinitionPath)
+                  .describedAs(
+                      "Expect activating element to have process definition path populated" + v)
+                  .contains(v.getProcessDefinitionKey());
+            });
   }
 }

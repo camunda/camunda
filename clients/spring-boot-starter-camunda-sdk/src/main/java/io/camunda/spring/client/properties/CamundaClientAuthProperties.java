@@ -21,7 +21,7 @@ import org.springframework.boot.context.properties.DeprecatedConfigurationProper
 
 public class CamundaClientAuthProperties {
 
-  // simple
+  // basic auth
   private String username;
   private String password;
 

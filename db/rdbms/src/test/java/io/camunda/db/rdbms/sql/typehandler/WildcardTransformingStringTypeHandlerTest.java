@@ -19,17 +19,34 @@ class WildcardTransformingStringTypeHandlerTest {
   @ParameterizedTest
   @MethodSource("provideElasticsearchQueries")
   void shouldTransformESWildcardToSQLWildcard(final String input, final String expected) {
-    final String result = WildcardTransformingStringTypeHandler.transformElasticsearchToSql(input);
+    final String result = WildcardTransformingStringTypeHandler.transformParameter(input);
     assertEquals(expected, result);
   }
 
   private static Stream<Arguments> provideElasticsearchQueries() {
     return Stream.of(
         Arguments.of("some*query", "some%query"),
-        Arguments.of("some\\*query", "some\\*query"),
+        Arguments.of("some\\*query", "some*query"),
         Arguments.of("some?query", "some_query"),
-        Arguments.of("some\\?query", "some\\?query"),
+        Arguments.of("some\\?query", "some?query"),
         Arguments.of("some*query?with*wildcards", "some%query_with%wildcards"),
-        Arguments.of("some\\*query\\?with*wildcards?", "some\\*query\\?with%wildcards_"));
+        Arguments.of("some\\*query\\?with*wildcards?", "some*query?with%wildcards_"));
+  }
+
+  private static Stream<Arguments> provideSqlQueries() {
+    return Stream.of(
+        Arguments.of("some%query", "some\\%query"),
+        Arguments.of("some\\%query", "some\\%query"),
+        Arguments.of("some_query", "some\\_query"),
+        Arguments.of("some\\_query", "some\\_query"),
+        Arguments.of("some%query_with%wildcards", "some\\%query\\_with\\%wildcards"),
+        Arguments.of("some\\*query\\_with%wild*car\\?ds?", "some*query\\_with\\%wild%car?ds_"));
+  }
+
+  @ParameterizedTest
+  @MethodSource("provideSqlQueries")
+  void shouldEscapeSqlWildcards(final String input, final String expected) {
+    final String result = WildcardTransformingStringTypeHandler.transformParameter(input);
+    assertEquals(expected, result);
   }
 }

@@ -192,9 +192,9 @@
     parameterType="io.camunda.db.rdbms.write.domain.ProcessInstanceDbModel"
     flushCache="true">
     INSERT INTO ${prefix}PROCESS_INSTANCE (PROCESS_INSTANCE_KEY, PROCESS_DEFINITION_ID, PROCESS_DEFINITION_KEY, STATE, START_DATE, END_DATE, TENANT_ID, PARENT_PROCESS_INSTANCE_KEY, PARENT_ELEMENT_INSTANCE_KEY,
-                                           NUM_INCIDENTS, VERSION, PARTITION_ID)
+                                           NUM_INCIDENTS, VERSION, PARTITION_ID, HISTORY_CLEANUP_DATE)
     VALUES (#{processInstanceKey}, #{processDefinitionId}, #{processDefinitionKey}, #{state}, #{startDate, jdbcType=TIMESTAMP}, #{endDate, jdbcType=TIMESTAMP}, #{tenantId}, #{parentProcessInstanceKey},
-            #{parentElementInstanceKey}, #{numIncidents}, #{version}, #{partitionId})
+            #{parentElementInstanceKey}, #{numIncidents}, #{version}, #{partitionId}, #{historyCleanupDate, jdbcType=TIMESTAMP})
   </insert>
 
   <update
@@ -211,7 +211,8 @@
         PARENT_PROCESS_INSTANCE_KEY = #{parentProcessInstanceKey},
         PARENT_ELEMENT_INSTANCE_KEY = #{parentElementInstanceKey},
         NUM_INCIDENTS               = #{numIncidents},
-        VERSION                     = #{version}
+        VERSION                     = #{version},
+        HISTORY_CLEANUP_DATE        = #{historyCleanupDate, jdbcType=TIMESTAMP}
     WHERE PROCESS_INSTANCE_KEY = #{processInstanceKey}
   </update>
 
@@ -246,4 +247,20 @@
     WHERE PROCESS_INSTANCE_KEY = #{id}
   </update>
 
+  <update
+    flushCache="true"
+    id="updateHistoryCleanupDate"
+    statementType="PREPARED">
+    UPDATE ${prefix}PROCESS_INSTANCE SET
+      HISTORY_CLEANUP_DATE = #{historyCleanupDate, jdbcType=TIMESTAMP}
+    WHERE PROCESS_INSTANCE_KEY = #{processInstanceKey}
+  </update>
+
+  <delete
+    flushCache="true"
+    id="cleanupHistory"
+    statementType="PREPARED">
+    <bind name="tableName" value="'PROCESS_INSTANCE'"/>
+    <include refid="io.camunda.db.rdbms.sql.Commons.historyCleanup"/>
+  </delete>
 </mapper>

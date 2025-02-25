@@ -7,7 +7,10 @@
  */
 package io.camunda.document.store.localstorage;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatNoException;
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.mockStatic;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.document.api.*;
@@ -25,6 +28,7 @@ import java.util.concurrent.Executors;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.MockedStatic;
 
 class LocalStorageDocumentStoreTest {
 
@@ -61,6 +65,28 @@ class LocalStorageDocumentStoreTest {
     // then
     assertTrue(result.isRight());
     assertEquals(documentId, result.get().documentId());
+    assertTrue(Files.exists(storagePath.resolve(documentId)));
+    assertTrue(
+        Files.exists(storagePath.resolve(documentId + LocalStorageDocumentStore.METADATA_SUFFIX)));
+  }
+
+  @Test
+  void createDocumentWithoutIdShouldReturnTheDocumentId() {
+    // given
+    final byte[] content = "test-content".getBytes();
+    final ByteArrayInputStream inputStream = new ByteArrayInputStream(content);
+    final DocumentMetadataModel metadata = givenMetadata(content);
+    final DocumentCreationRequest request =
+        new DocumentCreationRequest(null, inputStream, metadata);
+
+    // when
+    final var result = documentStore.createDocument(request).join();
+
+    // then
+    assertTrue(result.isRight());
+
+    final var documentId = result.get().documentId();
+    assertThat(documentId).isNotNull();
     assertTrue(Files.exists(storagePath.resolve(documentId)));
     assertTrue(
         Files.exists(storagePath.resolve(documentId + LocalStorageDocumentStore.METADATA_SUFFIX)));
@@ -187,6 +213,20 @@ class LocalStorageDocumentStoreTest {
     // then
     assertTrue(result.isLeft());
     assertInstanceOf(DocumentNotFound.class, result.getLeft());
+  }
+
+  @Test
+  void validateSetupShouldHandleExceptionIfSecurityExceptionIsThrown() {
+    try (final MockedStatic<Files> mockedFiles = mockStatic(Files.class)) {
+      // given
+      mockedFiles.when(() -> Files.exists(storagePath)).thenThrow(SecurityException.class);
+
+      // when
+      assertThatNoException().isThrownBy(() -> documentStore.validateSetup());
+
+      // then
+      mockedFiles.verify(() -> Files.exists(storagePath));
+    }
   }
 
   private void deleteDirectoryRecursively(final Path directory) throws IOException {

@@ -39,7 +39,8 @@ import org.springframework.test.context.junit4.SpringRunner;
       OperateProperties.PREFIX + ".importer.startLoadingDataOnStartup = false",
       OperateProperties.PREFIX + ".archiver.rolloverEnabled = false",
       "management.endpoints.web.exposure.include = usage-metrics",
-      "spring.mvc.pathmatch.matching-strategy=ANT_PATH_MATCHER"
+      "spring.mvc.pathmatch.matching-strategy=ANT_PATH_MATCHER",
+      "spring.profiles.active=test,consolidated-auth"
     })
 @TestExecutionListeners(
     listeners = DependencyInjectionTestExecutionListener.class,

@@ -35,6 +35,7 @@ import io.camunda.zeebe.gateway.api.util.StubbedBrokerClient;
 import io.camunda.zeebe.gateway.api.util.StubbedBrokerClient.RequestHandler;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerActivateJobsRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerFailJobRequest;
+import io.camunda.zeebe.gateway.metrics.LongPollingMetrics;
 import io.camunda.zeebe.gateway.protocol.rest.ActivatedJobResult;
 import io.camunda.zeebe.gateway.protocol.rest.JobActivationRequest;
 import io.camunda.zeebe.gateway.protocol.rest.JobActivationResult;
@@ -115,6 +116,7 @@ public class LongPollingActivateJobsRestTest {
                 msg -> new ResponseStatusException(HttpStatus.TOO_MANY_REQUESTS, msg))
             .setRequestCanceledExceptionProvider(
                 msg -> new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE, msg))
+            .setMetrics(LongPollingMetrics.noop())
             .build();
     submitActorToActivateJobs(handler);
 
@@ -310,6 +312,7 @@ public class LongPollingActivateJobsRestTest {
             .setActivationResultMapper(ResponseMapper::toActivateJobsResponse)
             .setNoJobsReceivedExceptionProvider(RuntimeException::new)
             .setRequestCanceledExceptionProvider(RuntimeException::new)
+            .setMetrics(LongPollingMetrics.noop())
             .build();
     submitActorToActivateJobs(handler);
 
@@ -339,6 +342,7 @@ public class LongPollingActivateJobsRestTest {
             .setActivationResultMapper(ResponseMapper::toActivateJobsResponse)
             .setNoJobsReceivedExceptionProvider(RuntimeException::new)
             .setRequestCanceledExceptionProvider(RuntimeException::new)
+            .setMetrics(LongPollingMetrics.noop())
             .build();
     submitActorToActivateJobs(handler);
 

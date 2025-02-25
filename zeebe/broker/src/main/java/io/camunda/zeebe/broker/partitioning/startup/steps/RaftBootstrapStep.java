@@ -25,7 +25,10 @@ public final class RaftBootstrapStep implements StartupStep<PartitionStartupCont
     final var partition =
         context
             .raftPartitionFactory()
-            .createRaftPartition(context.partitionMetadata(), context.partitionDirectory());
+            .createRaftPartition(
+                context.partitionMetadata(),
+                context.partitionDirectory(),
+                context.partitionMeterRegistry());
 
     // Immediately save the partition to the context, so that it can be closed in case of an error.
     context.raftPartition(partition);

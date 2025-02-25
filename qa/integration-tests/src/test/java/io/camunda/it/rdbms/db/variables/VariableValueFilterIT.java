@@ -19,6 +19,7 @@ import io.camunda.db.rdbms.write.domain.VariableDbModel;
 import io.camunda.it.rdbms.db.fixtures.VariableFixtures;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsInvocationContextProviderExtension;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsTestApplication;
+import io.camunda.search.entities.VariableEntity;
 import io.camunda.search.filter.Operation;
 import io.camunda.search.filter.VariableFilter;
 import io.camunda.search.page.SearchQueryPage;
@@ -281,6 +282,161 @@ public class VariableValueFilterIT {
     assertThat(searchResult.items().getFirst().variableKey())
         .isEqualTo(randomizedVariable.variableKey());
     assertThat(searchResult.items().getFirst().name()).isEqualTo(randomizedVariable.name());
+  }
+
+  @TestTemplate
+  public void shouldTransformAnyWildcard(final CamundaRdbmsTestApplication testApplication) {
+    // given
+    final var rdbmsService = testApplication.getRdbmsService();
+    final var variableName = "transformAnyVariable";
+    final var variableValue = "transformAnyValue";
+    prepareRandomVariablesAndReturnOne(testApplication, variableName + "X", variableValue + "X123");
+    prepareRandomVariablesAndReturnOne(testApplication, variableName + "Y", variableValue + "Y456");
+
+    // when
+    final var actual =
+        rdbmsService
+            .getVariableReader()
+            .search(
+                VariableQuery.of(
+                    b -> b.filter(f -> f.valueOperations(Operation.like(variableValue + "*")))));
+
+    // then
+    assertThat(actual.total()).isEqualTo(2);
+    assertThat(actual.items()).hasSize(2);
+    for (final VariableEntity item : actual.items()) {
+      assertThat(item.name()).startsWith(variableName);
+      assertThat(item.value()).startsWith(variableValue);
+    }
+  }
+
+  @TestTemplate
+  public void shouldTransformSingleWildcard(final CamundaRdbmsTestApplication testApplication) {
+    // given
+    final var rdbmsService = testApplication.getRdbmsService();
+    final var variableName = "transformSingleVariable";
+    final var variableValue = "transformSingleValue";
+    prepareRandomVariablesAndReturnOne(testApplication, variableName + "X", variableValue + "X");
+    prepareRandomVariablesAndReturnOne(testApplication, variableName + "Y", variableValue + "Y");
+
+    // when
+    final var actual =
+        rdbmsService
+            .getVariableReader()
+            .search(
+                VariableQuery.of(
+                    b -> b.filter(f -> f.valueOperations(Operation.like(variableValue + "?")))));
+
+    // then
+    assertThat(actual.total()).isEqualTo(2);
+    assertThat(actual.items()).hasSize(2);
+    for (final VariableEntity item : actual.items()) {
+      assertThat(item.name()).startsWith(variableName);
+      assertThat(item.value()).startsWith(variableValue);
+    }
+  }
+
+  @TestTemplate
+  public void shouldIgnoreEscapedSQLAnyWildcard(final CamundaRdbmsTestApplication testApplication) {
+    // given
+    final var rdbmsService = testApplication.getRdbmsService();
+    final var variableName = "ignoreAnyVariableX";
+    final var variableValue = "ignoreAnyValue%X";
+    prepareRandomVariablesAndReturnOne(testApplication, variableName, variableValue);
+    prepareRandomVariablesAndReturnOne(testApplication, variableName, "ignoreAnyValueXX");
+
+    // when
+    final var actual =
+        rdbmsService
+            .getVariableReader()
+            .search(
+                VariableQuery.of(
+                    b -> b.filter(f -> f.valueOperations(Operation.like("ignoreAnyValue\\%X")))));
+
+    // then
+    assertThat(actual.total()).isEqualTo(1);
+    assertThat(actual.items()).hasSize(1);
+    assertThat(actual.items().getFirst().name()).isEqualTo(variableName);
+    assertThat(actual.items().getFirst().value()).isEqualTo(variableValue);
+  }
+
+  @TestTemplate
+  public void shouldIgnoreEscapedSQLSingleWildcard(
+      final CamundaRdbmsTestApplication testApplication) {
+    // given
+    final var rdbmsService = testApplication.getRdbmsService();
+    final var variableName = "ignoreSingleVariableX";
+    final var variableValue = "ignoreSingleValue_X";
+    prepareRandomVariablesAndReturnOne(testApplication, variableName, variableValue);
+    prepareRandomVariablesAndReturnOne(testApplication, variableName, "ignoreSingleValueXX");
+
+    // when
+    final var actual =
+        rdbmsService
+            .getVariableReader()
+            .search(
+                VariableQuery.of(
+                    b ->
+                        b.filter(f -> f.valueOperations(Operation.like("ignoreSingleValue\\_X")))));
+
+    // then
+    assertThat(actual.total()).isEqualTo(1);
+    assertThat(actual.items()).hasSize(1);
+    assertThat(actual.items().getFirst().name()).isEqualTo(variableName);
+    assertThat(actual.items().getFirst().value()).isEqualTo(variableValue);
+  }
+
+  @TestTemplate
+  public void shouldUnescapeESAnyWildcard(final CamundaRdbmsTestApplication testApplication) {
+    // given 21 variables
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+    final String varName = "var-name-" + nextStringId();
+    prepareRandomVariablesAndReturnOne(testApplication, varName, "value*any%wildcards1");
+    prepareRandomVariablesAndReturnOne(testApplication, varName, "value*any%wildcards2");
+
+    // when
+    final var actual =
+        rdbmsService
+            .getVariableReader()
+            .search(
+                VariableQuery.of(
+                    b -> b.filter(f -> f.valueOperations(Operation.like("value\\*any\\%*")))));
+
+    // then
+    assertThat(actual.total()).isEqualTo(2);
+    assertThat(actual.items()).hasSize(2);
+    assertThat(actual.items()).extracting("name").containsExactly(varName, varName);
+    assertThat(actual.items())
+        .extracting("value")
+        .containsExactly("value*any%wildcards1", "value*any%wildcards2");
+  }
+
+  @TestTemplate
+  public void shouldUnescapeESSingleWildcard(final CamundaRdbmsTestApplication testApplication) {
+    // given 21 variables
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+    final String varName = "var-name-" + nextStringId();
+    prepareRandomVariablesAndReturnOne(testApplication, varName, "value?single_wildcards1");
+    prepareRandomVariablesAndReturnOne(testApplication, varName, "value?single_wildcards2");
+
+    // when
+    final var actual =
+        rdbmsService
+            .getVariableReader()
+            .search(
+                VariableQuery.of(
+                    b ->
+                        b.filter(
+                            f ->
+                                f.valueOperations(Operation.like("value\\?single\\_wildcards?")))));
+
+    // then
+    assertThat(actual.total()).isEqualTo(2);
+    assertThat(actual.items()).hasSize(2);
+    assertThat(actual.items()).extracting("name").containsExactly(varName, varName);
+    assertThat(actual.items())
+        .extracting("value")
+        .containsExactly("value?single_wildcards1", "value?single_wildcards2");
   }
 
   private static void searchAndAssertVariableValueFilter(

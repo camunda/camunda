@@ -1,12 +1,27 @@
 import { FC, FormEvent } from "react";
-import { Form, Stack } from "@carbon/react";
-import { spacing04 } from "@carbon/elements";
+import { Form, Stack, Loading } from "@carbon/react";
+import { spacing06, colors } from "@carbon/elements";
 import styled from "styled-components";
 import Modal, { ModalProps } from "./Modal";
 import useTranslate from "../../utility/localization";
 
+// carbon element z-indexes can only be imported using scss modules
+import styles from "./FormModal.module.scss";
+
 const HiddenSubmitButton = styled.input`
   display: none;
+`;
+
+const LoadingLabel = styled.div`
+  position: fixed;
+  color: ${colors.white};
+  z-index: ${styles.overlayZIndex + 1};
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  block-size: 100%;
+  inline-size: 100%;
+  inset-inline-start: 0;
 `;
 
 const FormModal: FC<ModalProps> = ({ children, onSubmit, ...modalProps }) => {
@@ -17,8 +32,14 @@ const FormModal: FC<ModalProps> = ({ children, onSubmit, ...modalProps }) => {
 
   return (
     <Modal {...modalProps} onSubmit={onSubmit}>
+      {modalProps.loading && (
+        <>
+          <Loading />
+          <LoadingLabel>{modalProps.loadingDescription}</LoadingLabel>
+        </>
+      )}
       <Form onSubmit={formSubmitHandler}>
-        <Stack gap={spacing04}>{children}</Stack>
+        <Stack gap={spacing06}>{children}</Stack>
         <HiddenSubmitButton type="submit" />
       </Form>
     </Modal>

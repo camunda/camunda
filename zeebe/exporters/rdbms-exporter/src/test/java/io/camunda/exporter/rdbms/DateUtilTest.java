@@ -10,6 +10,7 @@ package io.camunda.exporter.rdbms;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
+import io.camunda.exporter.rdbms.utils.DateUtil;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
 import org.junit.jupiter.api.Test;

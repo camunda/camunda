@@ -1,0 +1,19 @@
+{
+  "mappings": {
+    "dynamic": "strict",
+    "properties": {
+      "hello": {
+        "type": "text"
+      },
+      "world": {
+        "type": "keyword"
+      }
+    }
+  },
+  "settings": {
+    "index": {
+      "number_of_shards": 10,
+      "number_of_replicas": 10
+    }
+  }
+}

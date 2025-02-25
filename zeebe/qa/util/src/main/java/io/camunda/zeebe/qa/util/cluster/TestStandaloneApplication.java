@@ -34,4 +34,6 @@ public interface TestStandaloneApplication<T extends TestStandaloneApplication<T
    * started, but likely has no effect until it's restarted.
    */
   T withBrokerConfig(final Consumer<BrokerBasedProperties> modifier);
+
+  BrokerBasedProperties brokerConfig();
 }

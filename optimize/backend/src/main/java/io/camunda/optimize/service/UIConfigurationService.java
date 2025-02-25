@@ -15,7 +15,6 @@ import io.camunda.identity.sdk.Identity;
 import io.camunda.optimize.dto.optimize.query.ui_configuration.MixpanelConfigResponseDto;
 import io.camunda.optimize.dto.optimize.query.ui_configuration.OnboardingResponseDto;
 import io.camunda.optimize.dto.optimize.query.ui_configuration.UIConfigurationResponseDto;
-import io.camunda.optimize.dto.optimize.query.ui_configuration.WebappsEndpointDto;
 import io.camunda.optimize.license.LicenseType;
 import io.camunda.optimize.rest.cloud.CloudSaasMetaInfoService;
 import io.camunda.optimize.service.exceptions.OptimizeConfigurationException;
@@ -23,15 +22,11 @@ import io.camunda.optimize.service.metadata.OptimizeVersionService;
 import io.camunda.optimize.service.tenant.TenantService;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import io.camunda.optimize.service.util.configuration.OptimizeProfile;
-import io.camunda.optimize.service.util.configuration.engine.EngineConfiguration;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
-import org.slf4j.Logger;
 import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Component;
 
@@ -40,7 +35,6 @@ public class UIConfigurationService {
 
   public static final DateTimeFormatter DATE_TIME_FORMATTER =
       DateTimeFormatter.ofPattern("uuuu-MM-dd'T'HH:mm:ss'Z'").withZone(ZoneOffset.UTC);
-  private static final Logger LOG = org.slf4j.LoggerFactory.getLogger(UIConfigurationService.class);
   private final ConfigurationService configurationService;
   private final OptimizeVersionService versionService;
   private final TenantService tenantService;
@@ -85,7 +79,6 @@ public class UIConfigurationService {
     uiConfigurationDto.setUserTaskAssigneeAnalyticsEnabled(
         configurationService.getUiConfiguration().isUserTaskAssigneeAnalyticsEnabled());
     uiConfigurationDto.setOptimizeProfile(optimizeProfile);
-    uiConfigurationDto.setWebappsEndpoints(getCamundaWebappsEndpoints());
     uiConfigurationDto.setWebhooks(getConfiguredWebhooks());
     uiConfigurationDto.setExportCsvLimit(
         configurationService.getCsvConfiguration().getExportCsvLimit());
@@ -154,23 +147,6 @@ public class UIConfigurationService {
     }
     throw new OptimizeConfigurationException(
         "Could not determine whether Optimize is running in enterprise mode");
-  }
-
-  private Map<String, WebappsEndpointDto> getCamundaWebappsEndpoints() {
-    final Map<String, WebappsEndpointDto> engineNameToEndpoints = new HashMap<>();
-    for (final Map.Entry<String, EngineConfiguration> entry :
-        configurationService.getConfiguredEngines().entrySet()) {
-      final EngineConfiguration engineConfiguration = entry.getValue();
-      final WebappsEndpointDto webappsEndpoint = new WebappsEndpointDto();
-      String endpointAsString = "";
-      if (engineConfiguration.getWebapps().isEnabled()) {
-        endpointAsString = engineConfiguration.getWebapps().getEndpoint();
-      }
-      webappsEndpoint.setEndpoint(endpointAsString);
-      webappsEndpoint.setEngineName(engineConfiguration.getName());
-      engineNameToEndpoints.put(entry.getKey(), webappsEndpoint);
-    }
-    return engineNameToEndpoints;
   }
 
   private List<String> getConfiguredWebhooks() {
