@@ -15,6 +15,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class SchemaManager {
+
   private static final Logger LOG = LoggerFactory.getLogger(SchemaManager.class.getPackageName());
   private final ElasticsearchClient client;
   private final ElasticsearchExporterConfiguration configuration;
@@ -45,7 +46,7 @@ public class SchemaManager {
   }
 
   public void createSchema() {
-    if (!indexTemplatesCreated) {
+    if (configuration.index.isCreateSchema() && !indexTemplatesCreated) {
       createIndexTemplates();
       updateRetentionPolicyForExistingIndices();
     }
