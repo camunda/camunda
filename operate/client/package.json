@@ -5,7 +5,7 @@
   "dependencies": {
     "@axe-core/playwright": "4.10.0",
     "@bpmn-io/element-template-icon-renderer": "0.5.2",
-    "@camunda/camunda-composite-components": "0.16.0",
+    "@camunda/camunda-composite-components": "0.17.0",
     "@carbon/elements": "11.61.0",
     "@carbon/react": "1.57.0",
     "@devbookhq/splitter": "1.4.2",
@@ -78,7 +78,7 @@
     "@types/jest": "29.5.14",
     "@types/lodash": "4.17.12",
     "@types/mixpanel-browser": "2.51.0",
-    "@types/node": "22.10.0",
+    "@types/node": "22.13.5",
     "@types/react": "18.3.12",
     "@types/react-dom": "18.3.1",
     "@types/react-transition-group": "4.4.11",

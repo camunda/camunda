@@ -4604,11 +4604,11 @@ components:
           type: string
           description: The parent flow node instance key.
     ProcessInstanceStateEnum:
-      description: The state, one of ACTIVE, COMPLETED, CANCELED.
+      description: The state, one of ACTIVE, COMPLETED, TERMINATED.
       enum:
         - ACTIVE
         - COMPLETED
-        - CANCELED
+        - TERMINATED
     CancelProcessInstanceRequest:
       type: object
       nullable: true
