@@ -261,7 +261,7 @@ public class AdHocSubProcessProcessor
         terminate(adHocSubProcess, adHocSubProcessContext);
       }
     } else if (stateBehavior.canBeCompleted(childContext)) {
-      // complete the ad-hoc subprocess because it's completion condition was met previously and
+      // complete the ad-hoc subprocess because its completion condition was met previously and
       // all remaining child instances were terminated.
       stateTransitionBehavior.completeElement(adHocSubProcessContext);
     }
