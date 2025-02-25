@@ -7,17 +7,41 @@
  */
 package io.camunda.webapps.schema.entities.operate.dmn.definition;
 
-import io.camunda.webapps.schema.entities.operate.OperateZeebeEntity;
+import io.camunda.webapps.schema.entities.ExporterEntity;
+import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import java.util.Objects;
 
-public class DecisionDefinitionEntity extends OperateZeebeEntity<DecisionDefinitionEntity> {
+public class DecisionDefinitionEntity
+    implements ExporterEntity<DecisionDefinitionEntity>, TenantOwned {
 
+  private String id;
+  private long key;
   private String decisionId;
   private String name;
   private int version;
   private String decisionRequirementsId;
   private long decisionRequirementsKey;
-  private String tenantId = DEFAULT_TENANT_ID;
+  private String tenantId = DEFAULT_TENANT_IDENTIFIER;
+
+  @Override
+  public String getId() {
+    return id;
+  }
+
+  @Override
+  public DecisionDefinitionEntity setId(final String id) {
+    this.id = id;
+    return this;
+  }
+
+  public long getKey() {
+    return key;
+  }
+
+  public DecisionDefinitionEntity setKey(final long key) {
+    this.key = key;
+    return this;
+  }
 
   public String getDecisionId() {
     return decisionId;
@@ -64,6 +88,7 @@ public class DecisionDefinitionEntity extends OperateZeebeEntity<DecisionDefinit
     return this;
   }
 
+  @Override
   public String getTenantId() {
     return tenantId;
   }
@@ -76,7 +101,8 @@ public class DecisionDefinitionEntity extends OperateZeebeEntity<DecisionDefinit
   @Override
   public int hashCode() {
     return Objects.hash(
-        super.hashCode(),
+        id,
+        key,
         decisionId,
         name,
         version,
@@ -93,11 +119,10 @@ public class DecisionDefinitionEntity extends OperateZeebeEntity<DecisionDefinit
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    if (!super.equals(o)) {
-      return false;
-    }
     final DecisionDefinitionEntity that = (DecisionDefinitionEntity) o;
-    return version == that.version
+    return Objects.equals(id, that.id)
+        && key == that.key
+        && version == that.version
         && decisionRequirementsKey == that.decisionRequirementsKey
         && Objects.equals(decisionId, that.decisionId)
         && Objects.equals(name, that.name)

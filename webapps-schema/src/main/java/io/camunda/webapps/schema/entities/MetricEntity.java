@@ -7,23 +7,45 @@
  */
 package io.camunda.webapps.schema.entities;
 
-import io.camunda.webapps.schema.entities.tasklist.TasklistEntity;
+import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import java.time.OffsetDateTime;
 import java.util.Objects;
 
-public class MetricEntity extends TasklistEntity<MetricEntity> {
+public class MetricEntity implements ExporterEntity<MetricEntity>, TenantOwned {
+
+  private String id;
+  private String tenantId = DEFAULT_TENANT_IDENTIFIER;
   private String event;
   private String value;
   private OffsetDateTime eventTime;
 
-  public MetricEntity() {
-    super();
-  }
+  public MetricEntity() {}
 
   public MetricEntity(final String event, final String value, final OffsetDateTime eventTime) {
     this.event = event;
     this.value = value;
     this.eventTime = eventTime;
+  }
+
+  @Override
+  public String getId() {
+    return id;
+  }
+
+  @Override
+  public MetricEntity setId(final String id) {
+    this.id = id;
+    return this;
+  }
+
+  @Override
+  public String getTenantId() {
+    return tenantId;
+  }
+
+  public MetricEntity setTenantId(final String tenantId) {
+    this.tenantId = tenantId;
+    return this;
   }
 
   public String getEvent() {
@@ -55,7 +77,7 @@ public class MetricEntity extends TasklistEntity<MetricEntity> {
 
   @Override
   public int hashCode() {
-    return Objects.hash(super.hashCode(), event, value, eventTime);
+    return Objects.hash(id, tenantId, event, value, eventTime);
   }
 
   @Override
@@ -66,11 +88,10 @@ public class MetricEntity extends TasklistEntity<MetricEntity> {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    if (!super.equals(o)) {
-      return false;
-    }
     final MetricEntity that = (MetricEntity) o;
-    return Objects.equals(event, that.event)
+    return Objects.equals(id, that.id)
+        && Objects.equals(tenantId, that.tenantId)
+        && Objects.equals(event, that.event)
         && Objects.equals(value, that.value)
         && Objects.equals(eventTime, that.eventTime);
   }
