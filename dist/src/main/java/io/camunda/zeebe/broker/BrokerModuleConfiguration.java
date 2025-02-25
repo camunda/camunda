@@ -13,6 +13,7 @@ import io.camunda.identity.sdk.IdentityConfiguration;
 import io.camunda.search.clients.SearchClientsProxy;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.service.UserServices;
+import io.camunda.service.search.core.SearchQueryService;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.exporter.repo.ExporterDescriptor;
 import io.camunda.zeebe.broker.exporter.repo.ExporterRepository;
@@ -24,6 +25,7 @@ import io.micrometer.core.instrument.MeterRegistry;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
+import java.util.Set;
 import org.slf4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
@@ -106,7 +108,9 @@ public class BrokerModuleConfiguration implements CloseableSilently {
   }
 
   @Bean(destroyMethod = "close")
-  public Broker broker(final ExporterRepository exporterRepository) {
+  public Broker broker(
+      final ExporterRepository exporterRepository,
+      final Set<SearchQueryService> searchQueryServices) {
     final SystemContext systemContext =
         new SystemContext(
             configuration.shutdownTimeout(),

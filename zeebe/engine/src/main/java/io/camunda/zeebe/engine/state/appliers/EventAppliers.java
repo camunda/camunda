@@ -22,6 +22,8 @@ import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.intent.AdHocSubProcessActivityActivationIntent;
 import io.camunda.zeebe.protocol.record.intent.AuthorizationIntent;
+import io.camunda.zeebe.protocol.record.intent.BatchOperationChunkIntent;
+import io.camunda.zeebe.protocol.record.intent.BatchOperationExecutionIntent;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationIntent;
 import io.camunda.zeebe.protocol.record.intent.ClockIntent;
 import io.camunda.zeebe.protocol.record.intent.CommandDistributionIntent;
@@ -586,6 +588,27 @@ public final class EventAppliers implements EventApplier {
     register(
         BatchOperationIntent.CREATED,
         new BatchOperationCreatedApplier(state.getBatchOperationState()));
+    register(
+        BatchOperationChunkIntent.CREATED,
+        new BatchOperationSubbatchCreatedApplier(state.getBatchOperationState()));
+    register(
+        BatchOperationExecutionIntent.EXECUTING,
+        new BatchOperationExecutingApplier(state.getBatchOperationState()));
+    register(
+        BatchOperationExecutionIntent.EXECUTED,
+        new BatchOperationExecutedApplier(state.getBatchOperationState()));
+    register(
+        BatchOperationExecutionIntent.PAUSED,
+        new BatchOperationPausedApplier(state.getBatchOperationState()));
+    register(
+        BatchOperationExecutionIntent.RESUMED,
+        new BatchOperationResumedApplier(state.getBatchOperationState()));
+    register(
+        BatchOperationExecutionIntent.CANCELED,
+        new BatchOperationCanceledApplier(state.getBatchOperationState()));
+    register(
+        BatchOperationExecutionIntent.COMPLETED,
+        new BatchOperationCompletedApplier(state.getBatchOperationState()));
   }
 
   private void registerIdentitySetupAppliers() {

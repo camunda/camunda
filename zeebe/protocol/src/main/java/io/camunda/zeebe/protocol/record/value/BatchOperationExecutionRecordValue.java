@@ -25,7 +25,17 @@ import org.immutables.value.Value;
 public interface BatchOperationExecutionRecordValue extends BatchOperationRelated, RecordValue {
 
   /**
-   * @return subset of entity keys for the batch operation which are being or were processed
+   * @return last processed position in the log stream
    */
-  Set<Long> getEntityKeys();
+  Integer getOffset();
+
+  /**
+   * @return subset of keys for the batch operation which where processed
+   */
+  Set<Long> getKeys();
+
+  /**
+   * @return batch operation type which defines the batch operation which should operate on the keys
+   */
+  BatchOperationType getBatchOperationType();
 }

@@ -20,7 +20,7 @@ public record BatchOperationSort(List<FieldSorting> orderings) implements SortOp
 
   public static BatchOperationSort of(
       final Function<Builder, ObjectBuilder<BatchOperationSort>> fn) {
-    return SortOptionBuilders.batchOperation(fn);
+    return SortOptionBuilders.batchOperationSort(fn);
   }
 
   public static final class Builder extends AbstractBuilder<BatchOperationSort.Builder>
@@ -38,16 +38,6 @@ public record BatchOperationSort(List<FieldSorting> orderings) implements SortOp
 
     public Builder operationType() {
       currentOrdering = new FieldSorting("operationType", null);
-      return this;
-    }
-
-    public Builder startDate() {
-      currentOrdering = new FieldSorting("startDate", null);
-      return this;
-    }
-
-    public Builder endDate() {
-      currentOrdering = new FieldSorting("endDate", null);
       return this;
     }
 
