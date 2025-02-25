@@ -26,6 +26,7 @@ import io.camunda.zeebe.gateway.impl.broker.request.BrokerCreateProcessInstanceR
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerCreateProcessInstanceWithResultRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerMigrateProcessInstanceRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerModifyProcessInstanceRequest;
+import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationCreationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationStartInstruction;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceMigrationMappingInstruction;
@@ -35,14 +36,20 @@ import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstan
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceModificationTerminateInstruction;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceResultRecord;
+import io.camunda.zeebe.protocol.record.value.BatchOperationType;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
+import java.util.stream.Collectors;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public final class ProcessInstanceServices
     extends SearchQueryService<
     ProcessInstanceServices, ProcessInstanceQuery, ProcessInstanceEntity> {
+
+  private static final Logger LOGGER = LoggerFactory.getLogger(ProcessInstanceServices.class);
 
   private final ProcessInstanceSearchClient processInstanceSearchClient;
 
@@ -139,16 +146,19 @@ public final class ProcessInstanceServices
     return sendBrokerRequest(brokerRequest);
   }
 
-  public CompletableFuture<Long> cancelProcessInstanceBatchOperationWithResult(
+  public CompletableFuture<BatchOperationCreationRecord> cancelProcessInstanceBatchOperationWithResult(
       final ProcessInstanceQuery query) {
 
     // TODO implement pagination
     final var processInstanceKeys = search(query).items().stream()
-        .map(ProcessInstanceEntity::processInstanceKey).toList();
+        .map(ProcessInstanceEntity::processInstanceKey).collect(Collectors.toSet());
 
     final var brokerRequest =
         new BrokerCreateBatchOperationRequest()
-            .setKeys(processInstanceKeys);
+            .setKeys(processInstanceKeys)
+            .setBatchOperationType(BatchOperationType.PROCESS_CANCELLATION);
+
+    LOGGER.debug("Cancelling process instances with keys: {}", processInstanceKeys);
 
     return sendBrokerRequest(brokerRequest);
   }

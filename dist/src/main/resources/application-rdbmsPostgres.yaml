@@ -93,10 +93,6 @@ zeebe:
           minHistoryCleanupInterval: PT1S
           maxHistoryCleanupInterval: PT1H
           historyCleanupBatchSize: 1000
-      #elasticsearch:
-      #  className: io.camunda.zeebe.exporter.ElasticsearchExporter
-      #  args:
-      #    url: http://localhost:9200
 
 camunda:
   database:
@@ -160,3 +156,6 @@ logging:
   level:
     io:
       camunda: DEBUG
+    io.camunda.db.rdbms: WARN
+    io.camunda.exporter.rdbms: INFO
+    io.camunda.zeebe.broker: TRACE

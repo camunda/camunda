@@ -178,6 +178,8 @@ public interface Intent {
         return MappingIntent.from(intent);
       case IDENTITY_SETUP:
         return IdentitySetupIntent.from(intent);
+      case BATCH_OPERATION:
+        return BatchOperationIntent.from(intent);
       case NULL_VAL:
       case SBE_UNKNOWN:
         return Intent.UNKNOWN;
@@ -275,6 +277,8 @@ public interface Intent {
         return MappingIntent.valueOf(intent);
       case IDENTITY_SETUP:
         return IdentitySetupIntent.valueOf(intent);
+      case BATCH_OPERATION:
+        return BatchOperationIntent.valueOf(intent);
       case NULL_VAL:
       case SBE_UNKNOWN:
         return Intent.UNKNOWN;
