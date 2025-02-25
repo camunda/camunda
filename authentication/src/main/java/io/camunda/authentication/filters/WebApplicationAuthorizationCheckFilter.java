@@ -27,7 +27,7 @@ public class WebApplicationAuthorizationCheckFilter extends OncePerRequestFilter
       LoggerFactory.getLogger(WebApplicationAuthorizationCheckFilter.class);
   private static final List<String> WEB_APPLICATIONS = List.of("identity", "operate", "tasklist");
   private static final List<String> STATIC_RESOURCES =
-      List.of(".css", ".js", ".jpg", ".png", "woff2");
+      List.of(".css", ".js", ".jpg", ".png", "woff2", ".ico", ".svg");
 
   @Override
   protected void doFilterInternal(
@@ -39,7 +39,7 @@ public class WebApplicationAuthorizationCheckFilter extends OncePerRequestFilter
     if (!isAllowed(request)) {
       LOG.warn("Access denied for request: {}", request.getRequestURI());
       response.sendRedirect(
-          String.format("%s/%s/403", request.getContextPath(), findWebApplication(request)));
+          String.format("%s/%s/forbidden", request.getContextPath(), findWebApplication(request)));
       return;
     }
     filterChain.doFilter(request, response);
@@ -47,7 +47,7 @@ public class WebApplicationAuthorizationCheckFilter extends OncePerRequestFilter
 
   private boolean isAllowed(final HttpServletRequest request) {
 
-    if (request.getRequestURL().toString().endsWith("403")) {
+    if (request.getRequestURL().toString().endsWith("/forbidden")) {
       return true;
     }
 
