@@ -124,12 +124,8 @@ public final class JobCompleteProcessor implements CommandProcessor<JobRecord> {
         final var userTask =
             userTaskState.getIntermediateState(elementInstance.getUserTaskKey()).getRecord();
 
-        // passing denied reason for both DENY_TASK_LISTENER and COMPLETE_TASK_LISTENER cases as
-        // we would want to keep track of the current denied reason and it should be empty in case
-        // of successful completion of task listener
-        userTask.setDeniedReason(value.getResult().getDeniedReason());
-
         if (value.getResult().isDenied()) {
+          userTask.setDeniedReason(value.getResult().getDeniedReason());
           commandWriter.appendFollowUpCommand(
               userTask.getUserTaskKey(), UserTaskIntent.DENY_TASK_LISTENER, userTask);
         } else {

@@ -30,7 +30,6 @@ public final class UserTaskUpdatedV2Applier
   @Override
   public void applyState(final long key, final UserTaskRecord value) {
     final UserTaskRecord userTask = userTaskState.getUserTask(key);
-    userTask.setDeniedReason(value.getDeniedReason());
     userTask.wrapChangedAttributes(value, false);
     userTaskState.update(userTask);
     userTaskState.updateUserTaskLifecycleState(key, LifecycleState.CREATED);

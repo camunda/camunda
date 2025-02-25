@@ -99,11 +99,6 @@ public class UserTaskProcessor implements TypedRecordProcessor<UserTaskRecord> {
     // will read from the state again later, which in turn would modify this record
     final var intermediateUserTaskRecord =
         userTaskState.getIntermediateState(command.getKey()).getRecord().copy();
-
-    // setting the current denied reason here in order to track the most current denied reason,
-    // which is empty in he case of the successful completion of task listener
-    intermediateUserTaskRecord.setDeniedReason(command.getValue().getDeniedReason());
-
     final var userTaskElement = getUserTaskElement(intermediateUserTaskRecord);
     final var userTaskElementInstance = getUserTaskElementInstance(intermediateUserTaskRecord);
     final var context = buildContext(userTaskElementInstance);
