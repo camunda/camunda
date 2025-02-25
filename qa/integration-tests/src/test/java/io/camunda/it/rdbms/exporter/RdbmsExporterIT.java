@@ -216,6 +216,8 @@ class RdbmsExporterIT {
     final var completedFlowNode = rdbmsService.getFlowNodeInstanceReader().findOne(key);
     assertThat(completedFlowNode).isNotEmpty();
     assertThat(completedFlowNode.get().state()).isEqualTo(FlowNodeState.COMPLETED);
+    // Default tree path
+    assertThat(completedFlowNode.get().treePath()).isEqualTo("1/2");
   }
 
   @Test
@@ -661,7 +663,7 @@ class RdbmsExporterIT {
             recordValue.getOwnerType(),
             recordValue.getResourceType(),
             recordValue.getResourceId(),
-            recordValue.getAuthorizationPermissions());
+            recordValue.getPermissionTypes());
 
     // when
     exporter.export(authorizationDeletedRecord);

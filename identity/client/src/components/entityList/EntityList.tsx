@@ -26,6 +26,8 @@ import {
   TableToolbar,
   TableToolbarContent,
   TableToolbarSearch,
+  Pagination,
+  Tooltip,
 } from "@carbon/react";
 import useDebounce from "react-debounced";
 import styled from "styled-components";
@@ -43,6 +45,10 @@ const ToolbarMultiSelect = styled(MultiSelect)`
 
 const StyledTableCell = styled(TableCell)<{ $isClickable?: boolean }>`
   cursor: ${({ $isClickable }) => ($isClickable ? "pointer" : "auto")};
+`;
+
+const TooltipTrigger = styled.button`
+  all: unset;
 `;
 
 type HandleExpand = (event: unknown, shouldExpand: boolean) => void;
@@ -114,7 +120,6 @@ type EntityListProps<D extends EntityData> = (
   addEntityDisabled?: boolean;
   onAddEntity?: () => void;
   onEntityClick?: (element: D) => void;
-  onSearch?: (value: string) => void;
   menuItems?:
     | [MenuItem<D>]
     | [MenuItem<D>, MenuItem<D>]
@@ -130,6 +135,9 @@ type EntityListProps<D extends EntityData> = (
 };
 
 const MAX_ICON_ACTIONS = 2;
+const PAGINATION_HIDE_LIMIT = 25;
+const PAGINATION_MAX_PAGE_SIZE = 15;
+const MAX_DISPLAY_CELL_LENGTH = 20;
 
 const EntityList = <D extends EntityData>({
   title,
@@ -143,7 +151,6 @@ const EntityList = <D extends EntityData>({
   addEntityDisabled,
   onAddEntity,
   onEntityClick,
-  onSearch,
   menuItems,
   sortProperty,
   loading,
@@ -152,6 +159,8 @@ const EntityList = <D extends EntityData>({
 }: EntityListProps<D>): ReturnType<FC> => {
   const debounce = useDebounce(300);
   const { t } = useTranslate("components");
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(PAGINATION_MAX_PAGE_SIZE);
 
   const hasMenu = menuItems && menuItems.length > 0;
 
@@ -199,6 +208,11 @@ const EntityList = <D extends EntityData>({
     [sortProperty, data, selectedFilterItems],
   );
 
+  const paginatedData = useMemo(() => {
+    const startIndex = (page - 1) * pageSize;
+    return tableData.slice(startIndex, startIndex + pageSize);
+  }, [page, pageSize, tableData]);
+
   const areRowsEmpty = !tableData || tableData.length === 0;
 
   const isEntityClickable = onEntityClick !== undefined;
@@ -237,7 +251,7 @@ const EntityList = <D extends EntityData>({
       };
 
   return (
-    <DataTable rows={tableData} headers={headers} isSortable>
+    <DataTable rows={paginatedData} headers={headers} isSortable>
       {({
         rows,
         getHeaderProps,
@@ -262,13 +276,8 @@ const EntityList = <D extends EntityData>({
                     placeholder={searchPlaceholder}
                     persistent
                     onChange={(e: ChangeEvent<HTMLInputElement>) => {
-                      const { value } = e.target;
                       debounce(() => {
-                        if (onSearch) {
-                          onSearch(value);
-                        } else {
-                          onInputChange(e);
-                        }
+                        onInputChange(e);
                       });
                     }}
                     onFocus={(event: unknown, handleExpand: HandleExpand) => {
@@ -365,19 +374,44 @@ const EntityList = <D extends EntityData>({
                             }}
                           />
                         )}
-                        {cells.map(({ id: cellId, value }, index) => (
-                          <StyledTableCell
-                            key={cellId}
-                            onClick={handleEntityClick(rowId)}
-                            $isClickable={isEntityClickable}
-                          >
-                            {index === 0 && isEntityClickable ? (
-                              <Link>{value}</Link>
+                        {cells.map(({ id: cellId, value }, index) => {
+                          const displayValue = Array.isArray(value)
+                            ? value.join(", ")
+                            : value;
+
+                          const truncatedValue =
+                            displayValue &&
+                            displayValue.toString().length >
+                              MAX_DISPLAY_CELL_LENGTH ? (
+                              <Tooltip
+                                label={displayValue}
+                                autoAlign
+                                align="bottom"
+                              >
+                                <TooltipTrigger>
+                                  {displayValue
+                                    .substring(0, MAX_DISPLAY_CELL_LENGTH)
+                                    .concat("…")}
+                                </TooltipTrigger>
+                              </Tooltip>
                             ) : (
-                              value
-                            )}
-                          </StyledTableCell>
-                        ))}
+                              displayValue
+                            );
+
+                          return (
+                            <StyledTableCell
+                              key={cellId}
+                              onClick={handleEntityClick(rowId)}
+                              $isClickable={isEntityClickable}
+                            >
+                              {index === 0 && isEntityClickable ? (
+                                <Link>{displayValue}</Link>
+                              ) : (
+                                truncatedValue
+                              )}
+                            </StyledTableCell>
+                          );
+                        })}
                         {hasMenu && (
                           <TableCell>
                             {menuItems?.length > MAX_ICON_ACTIONS ? (
@@ -441,6 +475,28 @@ const EntityList = <D extends EntityData>({
                 )}
               </Table>
             </>
+          )}
+          {tableData.length > PAGINATION_HIDE_LIMIT && (
+            <Pagination
+              backwardText={t("Previous page")}
+              forwardText={t("Next page")}
+              itemsPerPageText={t("Items per page:")}
+              page={page}
+              pageNumberText={t("Page Number")}
+              pageSize={pageSize}
+              pageSizes={[15, 20, 30, 40, 50]}
+              totalItems={tableData.length}
+              onChange={({
+                page,
+                pageSize,
+              }: {
+                page: number;
+                pageSize: number;
+              }) => {
+                setPage(page);
+                setPageSize(pageSize);
+              }}
+            />
           )}
         </StyledTableContainer>
       )}

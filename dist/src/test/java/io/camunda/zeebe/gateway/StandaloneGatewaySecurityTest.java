@@ -202,7 +202,10 @@ final class StandaloneGatewaySecurityTest {
     atomixCluster = clusterConfiguration.atomixCluster();
     final ActorSchedulerConfiguration actorSchedulerConfiguration =
         new ActorSchedulerConfiguration(
-            schedulerConfig, IdleStrategySupplier.ofDefault(), new ActorClockConfiguration(false));
+            schedulerConfig,
+            IdleStrategySupplier.ofDefault(),
+            new ActorClockConfiguration(false),
+            meterRegistry);
 
     actorScheduler = actorSchedulerConfiguration.scheduler();
     final var topologyServices =
@@ -212,7 +215,7 @@ final class StandaloneGatewaySecurityTest {
 
     final var brokerClientConfiguration =
         new BrokerClientConfiguration(
-            brokerClientConfig, atomixCluster, actorScheduler, topologyManager);
+            brokerClientConfig, atomixCluster, actorScheduler, topologyManager, meterRegistry);
     brokerClient = brokerClientConfiguration.brokerClient();
     jobStreamClient = new JobStreamComponent().jobStreamClient(actorScheduler, atomixCluster);
 

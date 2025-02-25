@@ -7,11 +7,15 @@
  */
 package io.camunda.zeebe.protocol.impl.record.value.job;
 
+import static io.camunda.zeebe.msgpack.value.StringValue.EMPTY_STRING;
+import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsString;
+
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import io.camunda.zeebe.msgpack.UnpackedObject;
 import io.camunda.zeebe.msgpack.property.ArrayProperty;
 import io.camunda.zeebe.msgpack.property.BooleanProperty;
 import io.camunda.zeebe.msgpack.property.ObjectProperty;
+import io.camunda.zeebe.msgpack.property.StringProperty;
 import io.camunda.zeebe.msgpack.value.StringValue;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue.JobResultValue;
 import io.camunda.zeebe.util.buffer.BufferUtil;
@@ -31,12 +35,14 @@ public class JobResult extends UnpackedObject implements JobResultValue {
       new ArrayProperty<>("correctedAttributes", StringValue::new);
   private final ObjectProperty<JobResultCorrections> correctionsProp =
       new ObjectProperty<>("corrections", new JobResultCorrections());
+  private final StringProperty deniedReasonProp = new StringProperty("deniedReason", EMPTY_STRING);
 
   public JobResult() {
-    super(3);
+    super(4);
     declareProperty(deniedProp)
         .declareProperty(correctionsProp)
-        .declareProperty(correctedAttributesProp);
+        .declareProperty(correctedAttributesProp)
+        .declareProperty(deniedReasonProp);
   }
 
   /** Sets all properties to current instance from provided user task job data */
@@ -44,6 +50,7 @@ public class JobResult extends UnpackedObject implements JobResultValue {
     deniedProp.setValue(result.isDenied());
     setCorrectedAttributes(result.getCorrectedAttributes());
     setCorrections(result.getCorrections());
+    setDeniedReason(result.getDeniedReason());
   }
 
   @Override
@@ -53,6 +60,16 @@ public class JobResult extends UnpackedObject implements JobResultValue {
 
   public JobResult setDenied(final boolean denied) {
     deniedProp.setValue(denied);
+    return this;
+  }
+
+  @Override
+  public String getDeniedReason() {
+    return bufferAsString(deniedReasonProp.getValue());
+  }
+
+  public JobResult setDeniedReason(final String deniedReason) {
+    deniedReasonProp.setValue(deniedReason);
     return this;
   }
 

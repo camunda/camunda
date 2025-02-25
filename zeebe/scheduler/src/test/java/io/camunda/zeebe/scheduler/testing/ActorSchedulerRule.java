@@ -12,6 +12,8 @@ import io.camunda.zeebe.scheduler.ActorScheduler;
 import io.camunda.zeebe.scheduler.ActorScheduler.ActorSchedulerBuilder;
 import io.camunda.zeebe.scheduler.clock.ActorClock;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
+import io.camunda.zeebe.util.micrometer.MicrometerUtil;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import org.agrona.LangUtil;
 import org.junit.rules.ExternalResource;
 
@@ -23,6 +25,7 @@ public final class ActorSchedulerRule extends ExternalResource {
 
   private ActorSchedulerBuilder builder;
   private ActorScheduler actorScheduler;
+  private SimpleMeterRegistry meterRegistry;
 
   public ActorSchedulerRule(final int numOfThreads, final ActorClock clock) {
     this(numOfThreads, 2, clock);
@@ -50,11 +53,13 @@ public final class ActorSchedulerRule extends ExternalResource {
 
   @Override
   public void before() {
+    meterRegistry = new SimpleMeterRegistry();
     builder =
         ActorScheduler.newActorScheduler()
             .setCpuBoundActorThreadCount(numOfThreads)
             .setIoBoundActorThreadCount(numOfIoThreads)
-            .setActorClock(clock);
+            .setActorClock(clock)
+            .setMeterRegistry(meterRegistry);
 
     actorScheduler = builder.build();
     actorScheduler.start();
@@ -64,12 +69,13 @@ public final class ActorSchedulerRule extends ExternalResource {
   public void after() {
     try {
       actorScheduler.close();
-    } catch (Exception e) {
+    } catch (final Exception e) {
       LangUtil.rethrowUnchecked(e);
     }
 
     actorScheduler = null;
     builder = null;
+    MicrometerUtil.close(meterRegistry);
   }
 
   public ActorFuture<Void> submitActor(final Actor actor) {

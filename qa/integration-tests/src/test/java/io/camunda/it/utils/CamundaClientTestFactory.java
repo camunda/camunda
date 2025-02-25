@@ -8,7 +8,7 @@
 package io.camunda.it.utils;
 
 import io.camunda.client.CamundaClient;
-import io.camunda.client.CredentialsProvider;
+import io.camunda.client.impl.basicauth.BasicAuthCredentialsProviderBuilder;
 import io.camunda.client.protocol.rest.OwnerTypeEnum;
 import io.camunda.client.protocol.rest.PermissionTypeEnum;
 import io.camunda.client.protocol.rest.ResourceTypeEnum;
@@ -21,7 +21,6 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 import java.time.Duration;
-import java.util.Base64;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -100,27 +99,32 @@ public final class CamundaClientTestFactory implements AutoCloseable {
       final String username,
       final String password,
       final List<Permissions> permissions) {
-    final var userCreateResponse =
-        defaultClient
-            .newUserCreateCommand()
-            .username(username)
-            .password(password)
-            .name(username)
-            .email("%s@foo.com".formatted(username))
-            .send()
-            .join();
+    defaultClient
+        .newUserCreateCommand()
+        .username(username)
+        .password(password)
+        .name(username)
+        .email("%s@foo.com".formatted(username))
+        .send()
+        .join();
 
-    for (final Permissions permission : permissions) {
-      defaultClient
-          .newCreateAuthorizationCommand()
-          .ownerId(username)
-          .ownerType(OwnerTypeEnum.USER)
-          .resourceId("*")
-          .resourceType(permission.resourceType())
-          .permissionTypes(permission.permissionType())
-          .send()
-          .join();
-    }
+    permissions.forEach(
+        permission -> {
+          permission
+              .resourceIds()
+              .forEach(
+                  resourceId -> {
+                    defaultClient
+                        .newCreateAuthorizationCommand()
+                        .ownerId(username)
+                        .ownerType(OwnerTypeEnum.USER)
+                        .resourceId(resourceId)
+                        .resourceType(permission.resourceType())
+                        .permissionTypes(permission.permissionType())
+                        .send()
+                        .join();
+                  });
+        });
     // TODO replace with proper user get by key once it is implemented
     try {
       Thread.sleep(2000);
@@ -135,22 +139,7 @@ public final class CamundaClientTestFactory implements AutoCloseable {
         .newClientBuilder()
         .preferRestOverGrpc(true)
         .credentialsProvider(
-            new CredentialsProvider() {
-              @Override
-              public void applyCredentials(final CredentialsApplier applier) {
-                applier.put(
-                    "Authorization",
-                    "Basic %s"
-                        .formatted(
-                            Base64.getEncoder()
-                                .encodeToString("%s:%s".formatted(username, password).getBytes())));
-              }
-
-              @Override
-              public boolean shouldRetryRequest(final StatusCode statusCode) {
-                return false;
-              }
-            })
+            new BasicAuthCredentialsProviderBuilder().username(username).password(password).build())
         .build();
   }
 

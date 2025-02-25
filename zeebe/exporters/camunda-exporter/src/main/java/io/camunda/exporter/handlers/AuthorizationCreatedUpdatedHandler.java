@@ -47,7 +47,7 @@ public class AuthorizationCreatedUpdatedHandler
 
   @Override
   public List<String> generateIds(final Record<AuthorizationRecordValue> record) {
-    return List.of(String.valueOf(record.getValue().getAuthorizationKey()));
+    return List.of(String.valueOf(record.getKey()));
   }
 
   @Override
@@ -60,12 +60,12 @@ public class AuthorizationCreatedUpdatedHandler
       final Record<AuthorizationRecordValue> record, final AuthorizationEntity entity) {
     final AuthorizationRecordValue value = record.getValue();
     entity
-        .setAuthorizationKey(entity.getAuthorizationKey())
+        .setAuthorizationKey(value.getAuthorizationKey())
         .setOwnerId(value.getOwnerId())
         .setOwnerType(value.getOwnerType().name())
         .setResourceType(value.getResourceType().name())
         .setResourceId(value.getResourceId())
-        .setPermissionTypes(new HashSet<>(value.getAuthorizationPermissions()));
+        .setPermissionTypes(new HashSet<>(value.getPermissionTypes()));
   }
 
   @Override

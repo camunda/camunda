@@ -488,6 +488,9 @@ public final class EngineRule extends ExternalResource {
 
   public void awaitIdentitySetup() {
     if (partitionCount > 1) {
+      RecordingExporter.identitySetupRecords(IdentitySetupIntent.INITIALIZED)
+          .skip(partitionCount - 1)
+          .await();
       RecordingExporter.commandDistributionRecords(CommandDistributionIntent.FINISHED)
           .withDistributionIntent(IdentitySetupIntent.INITIALIZE)
           .await();

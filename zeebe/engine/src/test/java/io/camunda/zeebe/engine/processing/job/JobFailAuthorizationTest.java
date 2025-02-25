@@ -125,7 +125,6 @@ public class JobFailAuthorizationTest {
         .authorization()
         .newAuthorization()
         .withPermissions(permissionType)
-        .withOwnerKey(user.getUserKey())
         .withOwnerId(user.getUsername())
         .withOwnerType(AuthorizationOwnerType.USER)
         .withResourceType(authorization)

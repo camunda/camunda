@@ -19,14 +19,14 @@ public record AuthorizationFilter(
     String ownerType,
     List<String> resourceIds,
     String resourceType,
-    PermissionType permissionType)
+    List<PermissionType> permissionTypes)
     implements FilterBase {
   public static final class Builder implements ObjectBuilder<AuthorizationFilter> {
     private List<String> ownerIds;
     private String ownerType;
     private List<String> resourceIds;
     private String resourceType;
-    private PermissionType permissionType;
+    private List<PermissionType> permissionTypes;
 
     public Builder ownerIds(final List<String> value) {
       ownerIds = addValuesToList(ownerIds, value);
@@ -56,15 +56,19 @@ public record AuthorizationFilter(
       return this;
     }
 
-    public Builder permissionType(final PermissionType value) {
-      permissionType = value;
+    public Builder permissionTypes(final List<PermissionType> value) {
+      permissionTypes = addValuesToList(permissionTypes, value);
       return this;
+    }
+
+    public Builder permissionTypes(final PermissionType... values) {
+      return permissionTypes(collectValuesAsList(values));
     }
 
     @Override
     public AuthorizationFilter build() {
       return new AuthorizationFilter(
-          ownerIds, ownerType, resourceIds, resourceType, permissionType);
+          ownerIds, ownerType, resourceIds, resourceType, permissionTypes);
     }
   }
 }

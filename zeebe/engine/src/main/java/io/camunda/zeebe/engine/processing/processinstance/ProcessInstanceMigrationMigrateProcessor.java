@@ -12,6 +12,7 @@ import static io.camunda.zeebe.engine.state.immutable.IncidentState.MISSING_INCI
 
 import io.camunda.zeebe.engine.Loggers;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
+import io.camunda.zeebe.engine.processing.common.ElementTreePathBuilder;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowNode;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableSequenceFlow;
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
@@ -305,14 +306,10 @@ public class ProcessInstanceMigrationMigrateProcessor
     requireNoConcurrentCommand(
         eventScopeInstanceState, elementInstanceState, elementInstance, processInstanceKey);
 
+    updateElementInstanceRecord(elementInstance, targetProcessDefinition, targetElementId);
+
     stateWriter.appendFollowUpEvent(
-        elementInstance.getKey(),
-        ProcessInstanceIntent.ELEMENT_MIGRATED,
-        elementInstanceRecord
-            .setProcessDefinitionKey(targetProcessDefinition.getKey())
-            .setBpmnProcessId(targetProcessDefinition.getBpmnProcessId())
-            .setVersion(targetProcessDefinition.getVersion())
-            .setElementId(targetElementId));
+        elementInstance.getKey(), ProcessInstanceIntent.ELEMENT_MIGRATED, elementInstanceRecord);
 
     final Set<ExecutableSequenceFlow> sequenceFlows =
         getSequenceFlowsToMigrate(
@@ -362,13 +359,13 @@ public class ProcessInstanceMigrationMigrateProcessor
         incidentState.getProcessInstanceIncidentKey(elementInstance.getKey());
     if (processIncidentKey != MISSING_INCIDENT) {
       appendIncidentMigratedEvent(
-          processIncidentKey, targetProcessDefinition, targetElementId, processInstanceKey);
+          processIncidentKey, targetProcessDefinition, targetElementId, elementInstanceRecord);
     }
 
     final var jobIncidentKey = incidentState.getJobIncidentKey(elementInstance.getJobKey());
     if (jobIncidentKey != MISSING_INCIDENT) {
       appendIncidentMigratedEvent(
-          jobIncidentKey, targetProcessDefinition, targetElementId, processInstanceKey);
+          jobIncidentKey, targetProcessDefinition, targetElementId, elementInstanceRecord);
     }
 
     if (elementInstance.getUserTaskKey() > 0) {
@@ -423,13 +420,110 @@ public class ProcessInstanceMigrationMigrateProcessor
           processInstanceKey,
           elementId);
     }
+
+    if (elementInstanceRecord.getBpmnElementType() == BpmnElementType.CALL_ACTIVITY) {
+      migrateCalledSubProcessElements(elementInstance.getCalledChildInstanceKey());
+    }
+  }
+
+  /**
+   * Updates the element instance record with the new process definition key, bpmn process id,
+   * version and recalculates the tree path.
+   *
+   * @param elementInstance the element instance to be updated
+   * @param targetProcessDefinition the new process definition
+   * @param targetElementId the new element id
+   */
+  private void updateElementInstanceRecord(
+      final ElementInstance elementInstance,
+      final DeployedProcess targetProcessDefinition,
+      final String targetElementId) {
+    final var elementInstanceRecord = elementInstance.getValue();
+
+    elementInstanceRecord
+        .setProcessDefinitionKey(targetProcessDefinition.getKey())
+        .setBpmnProcessId(targetProcessDefinition.getBpmnProcessId())
+        .setVersion(targetProcessDefinition.getVersion())
+        .setElementId(targetElementId);
+
+    // recalculating the tree path is necessary because the element id changed
+    final var elementTreePath =
+        new ElementTreePathBuilder()
+            .withElementInstanceProvider(elementInstanceState::getInstance)
+            .withCallActivityIndexProvider(processState::getFlowElement)
+            .withElementInstanceKey(elementInstance.getKey())
+            .withFlowScopeKey(elementInstance.getParentKey())
+            .withRecordValue(elementInstanceRecord)
+            .build();
+
+    elementInstanceRecord
+        .setElementInstancePath(elementTreePath.elementInstancePath())
+        .setProcessDefinitionPath(elementTreePath.processDefinitionPath())
+        .setCallingElementPath(elementTreePath.callingElementPath());
+  }
+
+  /**
+   * Migrates the elements of a called subprocess.
+   *
+   * <p>When migrating the parent process instance, new call activities might be included.
+   * Therefore, we need to adjust the tree path of the called subprocess elements accordingly.
+   *
+   * @param calledChildInstanceKey the key of the called subprocess instance
+   */
+  private void migrateCalledSubProcessElements(final long calledChildInstanceKey) {
+    final var calledInstance = elementInstanceState.getInstance(calledChildInstanceKey);
+    final var elementInstances = new ArrayDeque<>(List.of(calledInstance));
+    while (!elementInstances.isEmpty()) {
+      final var instance = elementInstances.poll();
+      adjustCalledInstancesTreePath(elementInstances, instance);
+      final List<ElementInstance> children = elementInstanceState.getChildren(instance.getKey());
+      elementInstances.addAll(children);
+    }
+  }
+
+  /**
+   * Adjusts the tree path of the called instances for a given element instance. This method
+   * recalculates the tree path for the element instance and updates the element instance record
+   * with the new paths. If the element instance is a call activity, it also processes the called
+   * child instance.
+   *
+   * @param elementInstances the queue of element instances to process
+   * @param instance the current element instance to adjust
+   */
+  private void adjustCalledInstancesTreePath(
+      final ArrayDeque<ElementInstance> elementInstances, final ElementInstance instance) {
+    final var elementInstanceRecord = instance.getValue();
+    final var elementTreePath =
+        new ElementTreePathBuilder()
+            .withElementInstanceProvider(elementInstanceState::getInstance)
+            .withCallActivityIndexProvider(processState::getFlowElement)
+            .withElementInstanceKey(instance.getKey())
+            .withFlowScopeKey(instance.getParentKey())
+            .withRecordValue(elementInstanceRecord)
+            .build();
+
+    elementInstanceRecord
+        .setElementInstancePath(elementTreePath.elementInstancePath())
+        .setProcessDefinitionPath(elementTreePath.processDefinitionPath())
+        .setCallingElementPath(elementTreePath.callingElementPath());
+
+    stateWriter.appendFollowUpEvent(
+        instance.getKey(), ProcessInstanceIntent.ANCESTOR_MIGRATED, elementInstanceRecord);
+
+    if (elementInstanceRecord.getBpmnElementType() == BpmnElementType.CALL_ACTIVITY) {
+      // found more call activities? add the called child instance to the queue to continue going
+      // deeper the tree
+      final ElementInstance calledInstance =
+          elementInstanceState.getInstance(instance.getCalledChildInstanceKey());
+      elementInstances.add(calledInstance);
+    }
   }
 
   private void appendIncidentMigratedEvent(
       final long incidentKey,
       final DeployedProcess targetProcessDefinition,
       final String targetElementId,
-      final long processInstanceKey) {
+      final ProcessInstanceRecord elementInstanceRecord) {
     final var incidentRecord = incidentState.getIncidentRecord(incidentKey);
     if (incidentRecord == null) {
       throw new SafetyCheckFailedException(
@@ -438,7 +532,7 @@ public class ProcessInstanceMigrationMigrateProcessor
               Expected to migrate a user task for process instance with key '%d', \
               but could not find incident with key '%d'. \
               Please report this as a bug""",
-              processInstanceKey, incidentKey));
+              elementInstanceRecord.getProcessInstanceKey(), incidentKey));
     }
     stateWriter.appendFollowUpEvent(
         incidentKey,
@@ -446,7 +540,10 @@ public class ProcessInstanceMigrationMigrateProcessor
         incidentRecord
             .setProcessDefinitionKey(targetProcessDefinition.getKey())
             .setBpmnProcessId(targetProcessDefinition.getBpmnProcessId())
-            .setElementId(BufferUtil.wrapString(targetElementId)));
+            .setElementId(BufferUtil.wrapString(targetElementId))
+            .setElementInstancePath(elementInstanceRecord.getElementInstancePath())
+            .setProcessDefinitionPath(elementInstanceRecord.getProcessDefinitionPath())
+            .setCallingElementPath(elementInstanceRecord.getCallingElementPath()));
   }
 
   private Set<ExecutableSequenceFlow> getSequenceFlowsToMigrate(

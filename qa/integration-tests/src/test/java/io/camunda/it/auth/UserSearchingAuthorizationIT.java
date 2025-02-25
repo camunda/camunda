@@ -19,7 +19,6 @@ import io.camunda.it.utils.BrokerITInvocationProvider;
 import io.camunda.it.utils.CamundaClientTestFactory.Authenticated;
 import io.camunda.it.utils.CamundaClientTestFactory.Permissions;
 import io.camunda.it.utils.CamundaClientTestFactory.User;
-import io.camunda.security.entity.AuthenticationMethod;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -33,14 +32,12 @@ import java.util.UUID;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.TestInstance.Lifecycle;
 import org.junit.jupiter.api.TestTemplate;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 @TestInstance(Lifecycle.PER_CLASS)
-@Disabled("https://github.com/camunda/camunda/issues/27289")
 class UserSearchingAuthorizationIT {
 
   public static final ObjectMapper OBJECT_MAPPER =
@@ -74,9 +71,10 @@ class UserSearchingAuthorizationIT {
   static final BrokerITInvocationProvider PROVIDER =
       new BrokerITInvocationProvider()
           .withoutRdbmsExporter()
-          .withAuthenticationMethod(AuthenticationMethod.BASIC)
+          .withBasicAuth()
           .withAuthorizationsEnabled()
-          .withUsers(ADMIN_USER, RESTRICTED_USER, RESTRICTED_USER_WITH_READ_PERMISSION);
+          .withUsers(ADMIN_USER, RESTRICTED_USER, RESTRICTED_USER_WITH_READ_PERMISSION)
+          .withBasicAuth();
 
   @AutoClose private static final HttpClient HTTP_CLIENT = HttpClient.newHttpClient();
   private boolean initialized;

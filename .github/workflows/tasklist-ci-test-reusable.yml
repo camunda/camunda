@@ -90,7 +90,6 @@ jobs:
           repository: ${{ env.ZEEBE_TEST_DOCKER_IMAGE }}
           distball: ${{ steps.build-camunda.outputs.distball }}
           version: ${{ env.ZEEBE_TEST_DOCKER_IMAGE_TAG }}
-          dockerfile: camunda.Dockerfile
           # push is needed to make accessible for integration tests
           push: true
 

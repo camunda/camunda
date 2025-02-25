@@ -15,6 +15,7 @@ import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.intent.AuthorizationIntent;
 import io.camunda.zeebe.protocol.record.intent.CommandDistributionIntent;
 import io.camunda.zeebe.protocol.record.intent.TenantIntent;
 import io.camunda.zeebe.protocol.record.intent.UserIntent;
@@ -69,7 +70,7 @@ public class RemoveEntityTenantMultiPartitionTest {
             RecordingExporter.records()
                 .withPartitionId(1)
                 .limitByCount(
-                    record -> record.getIntent().equals(CommandDistributionIntent.FINISHED), 4)
+                    record -> record.getIntent().equals(CommandDistributionIntent.FINISHED), 5)
                 .filter(
                     record ->
                         record.getValueType() == ValueType.TENANT
@@ -116,7 +117,7 @@ public class RemoveEntityTenantMultiPartitionTest {
     setupTenantWithUserAndRemoveEntity();
     assertThat(
             RecordingExporter.commandDistributionRecords()
-                .limitByCount(r -> r.getIntent().equals(CommandDistributionIntent.FINISHED), 4)
+                .limitByCount(r -> r.getIntent().equals(CommandDistributionIntent.FINISHED), 5)
                 .withIntent(CommandDistributionIntent.ENQUEUED))
         .extracting(r -> r.getValue().getQueueId())
         .containsOnly(DistributionQueue.IDENTITY.getQueueId());
@@ -135,10 +136,11 @@ public class RemoveEntityTenantMultiPartitionTest {
     // then
     assertThat(
             RecordingExporter.commandDistributionRecords(CommandDistributionIntent.FINISHED)
-                .limit(4))
+                .limit(5))
         .extracting(r -> r.getValue().getValueType(), r -> r.getValue().getIntent())
         .containsExactly(
             tuple(ValueType.USER, UserIntent.CREATE),
+            tuple(ValueType.AUTHORIZATION, AuthorizationIntent.CREATE),
             tuple(ValueType.TENANT, TenantIntent.CREATE),
             tuple(ValueType.TENANT, TenantIntent.ADD_ENTITY),
             tuple(ValueType.TENANT, TenantIntent.REMOVE_ENTITY));

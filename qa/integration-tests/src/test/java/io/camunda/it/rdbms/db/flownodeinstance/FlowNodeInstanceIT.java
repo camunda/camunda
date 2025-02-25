@@ -24,6 +24,7 @@ import io.camunda.search.filter.FlowNodeInstanceFilter;
 import io.camunda.search.page.SearchQueryPage;
 import io.camunda.search.query.FlowNodeInstanceQuery;
 import io.camunda.search.sort.FlowNodeInstanceSort;
+import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
 import org.assertj.core.data.TemporalUnitWithinOffset;
 import org.junit.jupiter.api.Tag;
@@ -34,7 +35,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
 @ExtendWith(CamundaRdbmsInvocationContextProviderExtension.class)
 public class FlowNodeInstanceIT {
 
-  public static final Long PARTITION_ID = 0L;
+  public static final int PARTITION_ID = 0;
+  public static final OffsetDateTime NOW = OffsetDateTime.now();
 
   @TestTemplate
   public void shouldSaveAndFindFlowNodeInstanceByKey(
@@ -254,5 +256,51 @@ public class FlowNodeInstanceIT {
     assertThat(nextPage.total()).isEqualTo(20);
     assertThat(nextPage.items()).hasSize(5);
     assertThat(nextPage.items()).isEqualTo(searchResult.items().subList(10, 15));
+  }
+
+  @TestTemplate
+  public void shouldCleanup(final CamundaRdbmsTestApplication testApplication) {
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+    final RdbmsWriter rdbmsWriter = rdbmsService.createWriter(PARTITION_ID);
+    final FlowNodeInstanceReader reader = rdbmsService.getFlowNodeInstanceReader();
+
+    final var cleanupDate = NOW.minusDays(1);
+
+    final var definition =
+        ProcessDefinitionFixtures.createAndSaveProcessDefinition(rdbmsWriter, b -> b);
+    final var item1 =
+        createAndSaveFlowNodeInstance(
+            rdbmsWriter, b -> b.processDefinitionKey(definition.processDefinitionKey()));
+    final var item2 =
+        createAndSaveFlowNodeInstance(
+            rdbmsWriter, b -> b.processDefinitionKey(definition.processDefinitionKey()));
+    final var item3 =
+        createAndSaveFlowNodeInstance(
+            rdbmsWriter, b -> b.processDefinitionKey(definition.processDefinitionKey()));
+
+    // set cleanup dates
+    rdbmsWriter
+        .getFlowNodeInstanceWriter()
+        .scheduleForHistoryCleanup(item1.processInstanceKey(), NOW);
+    rdbmsWriter
+        .getFlowNodeInstanceWriter()
+        .scheduleForHistoryCleanup(item2.processInstanceKey(), NOW.minusDays(2));
+    rdbmsWriter.flush();
+
+    // cleanup
+    rdbmsWriter.getFlowNodeInstanceWriter().cleanupHistory(PARTITION_ID, cleanupDate, 10);
+
+    final var searchResult =
+        reader.search(
+            FlowNodeInstanceQuery.of(
+                b ->
+                    b.filter(f -> f.processDefinitionKeys(definition.processDefinitionKey()))
+                        .sort(s -> s)
+                        .page(p -> p.from(0).size(20))));
+
+    assertThat(searchResult.total()).isEqualTo(2);
+    assertThat(searchResult.items()).hasSize(2);
+    assertThat(searchResult.items().stream().map(FlowNodeInstanceEntity::flowNodeInstanceKey))
+        .containsExactlyInAnyOrder(item1.flowNodeInstanceKey(), item3.flowNodeInstanceKey());
   }
 }

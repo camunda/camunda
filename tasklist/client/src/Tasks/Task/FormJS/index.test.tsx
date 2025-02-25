@@ -78,7 +78,7 @@ describe('<FormJS />', () => {
         {once: true},
       ),
       http.get(
-        '/v1/internal/users/current',
+        '/v2/authentication/me',
         () => {
           return HttpResponse.json(userMocks.currentUser);
         },

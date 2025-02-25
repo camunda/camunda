@@ -73,8 +73,7 @@ public class AuthorizationCreatedUpdatedHandlerTest {
     final var idList = underTest.generateIds(authorizationRecord);
 
     // then
-    assertThat(idList)
-        .containsExactly(String.valueOf(authorizationRecord.getValue().getAuthorizationKey()));
+    assertThat(idList).containsExactly(String.valueOf(authorizationRecord.getKey()));
   }
 
   @Test
@@ -95,11 +94,11 @@ public class AuthorizationCreatedUpdatedHandlerTest {
     final var authorizationRecordValue =
         ImmutableAuthorizationRecordValue.builder()
             .from(factory.generateObject(AuthorizationRecordValue.class))
-            .withAuthorizationKey(recordKey)
+            .withAuthorizationKey(456L)
             .withOwnerId("foo")
             .withOwnerType(AuthorizationOwnerType.USER)
             .withResourceId("*")
-            .withAuthorizationPermissions(List.of(PermissionType.CREATE, PermissionType.DELETE))
+            .withPermissionTypes(List.of(PermissionType.CREATE, PermissionType.DELETE))
             .build();
 
     final Record<AuthorizationRecordValue> authorizationRecord =
@@ -113,7 +112,7 @@ public class AuthorizationCreatedUpdatedHandlerTest {
     // when
     final var authorizationEntity =
         new AuthorizationEntity()
-            .setAuthorizationKey(recordKey)
+            .setAuthorizationKey(789L)
             .setOwnerId("bar")
             .setOwnerType(AuthorizationOwnerType.GROUP.name())
             .setResourceId("resourceId")
@@ -129,7 +128,7 @@ public class AuthorizationCreatedUpdatedHandlerTest {
     assertThat(authorizationEntity.getResourceId())
         .isEqualTo(authorizationRecordValue.getResourceId());
     assertThat(authorizationEntity.getPermissionTypes())
-        .isEqualTo(authorizationRecordValue.getAuthorizationPermissions());
+        .isEqualTo(authorizationRecordValue.getPermissionTypes());
   }
 
   @Test

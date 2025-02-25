@@ -43,7 +43,7 @@ describe('<EmptyPage isLoadingTasks={false} hasNoTasks={false} />', () => {
   it('should hide part of the empty message for new users', async () => {
     nodeMockServer.use(
       http.get(
-        '/v1/internal/users/current',
+        '/v2/authentication/me',
         () => {
           return HttpResponse.json(userMocks.currentUser);
         },
@@ -72,7 +72,7 @@ describe('<EmptyPage isLoadingTasks={false} hasNoTasks={false} />', () => {
   it('should show an empty page message for new users', async () => {
     nodeMockServer.use(
       http.get(
-        '/v1/internal/users/current',
+        '/v2/authentication/me',
         () => {
           return HttpResponse.json(userMocks.currentUser);
         },
@@ -113,7 +113,7 @@ describe('<EmptyPage isLoadingTasks={false} hasNoTasks={false} />', () => {
   it('should show an empty page message for old users', async () => {
     nodeMockServer.use(
       http.get(
-        '/v1/internal/users/current',
+        '/v2/authentication/me',
         () => {
           return HttpResponse.json(userMocks.currentUser);
         },
@@ -140,7 +140,7 @@ describe('<EmptyPage isLoadingTasks={false} hasNoTasks={false} />', () => {
   it('should not show an empty page message for old users', async () => {
     nodeMockServer.use(
       http.get(
-        '/v1/internal/users/current',
+        '/v2/authentication/me',
         () => {
           return HttpResponse.json(userMocks.currentUser);
         },
@@ -162,32 +162,5 @@ describe('<EmptyPage isLoadingTasks={false} hasNoTasks={false} />', () => {
     );
 
     expect(container).toBeEmptyDOMElement();
-  });
-
-  it('should show an empty page message for old readonly users', async () => {
-    nodeMockServer.use(
-      http.get(
-        '/v1/internal/users/current',
-        () => {
-          return HttpResponse.json(userMocks.currentRestrictedUser);
-        },
-        {once: true},
-      ),
-      http.post('/v1/tasks/search', async () => {
-        return HttpResponse.json([generateTask('0')]);
-      }),
-    );
-
-    storeStateLocally('hasCompletedTask', true);
-
-    render(<Component />, {
-      wrapper: getWrapper(),
-    });
-
-    expect(
-      await screen.findByRole('heading', {
-        name: 'Pick a task to view details',
-      }),
-    ).toBeInTheDocument();
   });
 });

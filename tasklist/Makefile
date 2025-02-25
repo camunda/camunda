@@ -3,6 +3,7 @@ SHELL := /bin/bash
 MAVEN_CONTEXT:=/tmp/.env.maven-context.tmp
 COMPOSE_FILE:=config/docker-compose.yml
 DATABASE:=elasticsearch
+MAIN_CLASS:=io.camunda.application.StandaloneTasklist
 SPRING_PROFILES_ACTIVE:=dev,dev-data,auth
 WITH_IDENTITY:=false
 WITH_OAUTH:=false
@@ -13,7 +14,12 @@ WRITE_OR_REPLACE_SCRIPT:=./config/write_or_replace_var.sh
 
 .PHONY: env-up
 env-up: $(DATABASE) setup-maven-context
-	$(eval SERVICES := zeebe)
+	$(eval SERVICES := elasticsearch)
+	$(eval SPRING_PROFILES_ACTIVE = tasklist,broker,dev,dev-data,consolidated-auth)
+	$(eval MAIN_CLASS = io.camunda.application.StandaloneCamunda)
+	@set -o allexport && source $(MAVEN_CONTEXT) set +o allexport && \
+		$(WRITE_OR_REPLACE_SCRIPT) CAMUNDA_TASKLIST_IMPORTER_ENABLED "false" $(MAVEN_CONTEXT) && \
+		$(WRITE_OR_REPLACE_SCRIPT) ZEEBE_BROKER_NETWORK_HOST "localhost" $(MAVEN_CONTEXT)
 	$(call run-env)
 
 # Set the env var ZEEBE_TASKLIST_AUTH0_CLIENTSECRET in your shell please, eg: export ZEEBE_TASKLIST_AUTH0_CLIENTSECRET=<client-secret>
@@ -90,6 +96,7 @@ operate-identity-mt-up:
 env-down:
 	@DATABASE=opensearch docker compose -f $(COMPOSE_FILE) down -v
 	@DATABASE=elasticsearch docker compose -f $(COMPOSE_FILE) down -v
+	@rm -rf ./data
 	@mvn clean
 
 .PHONY: env-status
@@ -103,15 +110,18 @@ env-clean: env-down
 .PHONY: start-e2e
 start-e2e: elasticsearch setup-maven-context
 	@curl --request DELETE --url http://localhost:9200/e2e* || true
-	@docker rm -f zeebe-e2e || true
-	$(eval SERVICES := zeebe-e2e)
-	$(eval SPRING_PROFILES_ACTIVE = e2e-test)
+	$(eval SERVICES := elasticsearch)
+	$(eval SPRING_PROFILES_ACTIVE = e2e-test,tasklist,broker,consolidated-auth)
+	$(eval MAIN_CLASS = io.camunda.application.StandaloneCamunda)
 	@set -o allexport && source $(MAVEN_CONTEXT) set +o allexport && \
 		$(WRITE_OR_REPLACE_SCRIPT) CAMUNDA_TASKLIST_ELASTICSEARCH_INDEXPREFIX "e2e" $(MAVEN_CONTEXT) && \
 		$(WRITE_OR_REPLACE_SCRIPT) CAMUNDA_TASKLIST_ZEEBEELASTICSEARCH_PREFIX "e2e" $(MAVEN_CONTEXT) && \
-		$(WRITE_OR_REPLACE_SCRIPT) CAMUNDA_TASKLIST_ZEEBE_GATEWAYADDRESS "localhost:26503" $(MAVEN_CONTEXT) && \
-		$(WRITE_OR_REPLACE_SCRIPT) CAMUNDA_TASKLIST_ZEEBE_RESTADDRESS "http://localhost:8088" $(MAVEN_CONTEXT) && \
+		$(WRITE_OR_REPLACE_SCRIPT) ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_INDEX_PREFIX "e2e" $(MAVEN_CONTEXT) && \
+		$(WRITE_OR_REPLACE_SCRIPT) CAMUNDA_DATABASE_INDEXPREFIX "e2e" $(MAVEN_CONTEXT) && \
+		$(WRITE_OR_REPLACE_SCRIPT) CAMUNDA_TASKLIST_IMPORTER_ENABLED "false" $(MAVEN_CONTEXT) && \
 		$(WRITE_OR_REPLACE_SCRIPT) CAMUNDA_TASKLIST_CLOUD_CLUSTERID "449ac2ad-d3c6-4c73-9c68-7752e39ae616" $(MAVEN_CONTEXT) && \
+		$(WRITE_OR_REPLACE_SCRIPT) EXT_CAMUNDA_TASKLIST_ZEEBE_RESTADDRESS "http://localhost:8081" $(MAVEN_CONTEXT) && \
+		$(WRITE_OR_REPLACE_SCRIPT) ZEEBE_BROKER_NETWORK_HOST "localhost" $(MAVEN_CONTEXT) && \
 		$(WRITE_OR_REPLACE_SCRIPT) SERVER_PORT 8081 $(MAVEN_CONTEXT)
 	$(call run-env)
 
@@ -159,8 +169,8 @@ setup-maven-context:
 
 define run-env
 	@DATABASE=$(DATABASE) docker compose -f $(COMPOSE_FILE) up -d $(SERVICES)
-	@mvn clean install -B -DskipTests=true -DskipChecks -Dskip.fe.build=false -DskipQaBuild
+	@mvn clean install -B -T1C -DskipTests=true -DskipChecks -Dskip.fe.build=false -DskipQaBuild
 	@set -o allexport && source $(MAVEN_CONTEXT) && set +o allexport && rm -rf $(MAVEN_CONTEXT) && \
-        mvn -f ../dist/pom.xml exec:java -Dexec.mainClass="io.camunda.application.StandaloneTasklist" -Dspring.profiles.active=$(SPRING_PROFILES_ACTIVE)
+        mvn -f ../dist/pom.xml exec:java -Dexec.mainClass="$(MAIN_CLASS)" -Dspring.profiles.active=$(SPRING_PROFILES_ACTIVE)
 endef
 

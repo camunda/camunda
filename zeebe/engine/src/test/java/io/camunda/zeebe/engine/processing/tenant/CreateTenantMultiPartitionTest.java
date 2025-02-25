@@ -39,7 +39,8 @@ public class CreateTenantMultiPartitionTest {
   @Test
   public void shouldDistributeTenantCreateCommand() {
     // when
-    engine.tenant().newTenant().withTenantId("tenant-123").withName("New Tenant").create();
+    final var tenantId = "tenant-123";
+    engine.tenant().newTenant().withTenantId(tenantId).withName("New Tenant").create();
 
     // then
     assertThat(
@@ -69,7 +70,8 @@ public class CreateTenantMultiPartitionTest {
 
     for (int partitionId = 2; partitionId <= PARTITION_COUNT; partitionId++) {
       assertThat(
-              RecordingExporter.records()
+              RecordingExporter.tenantRecords()
+                  .withTenantId(tenantId)
                   .withPartitionId(partitionId)
                   .limit(record -> record.getIntent().equals(TenantIntent.CREATED))
                   .collect(Collectors.toList()))

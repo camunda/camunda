@@ -9,7 +9,6 @@ package io.camunda.tasklist;
 
 import io.camunda.tasklist.webapp.management.WebappManagementModuleConfiguration;
 import io.camunda.tasklist.webapp.security.WebappSecurityModuleConfiguration;
-import io.camunda.tasklist.webapp.security.permission.TasklistPermissionServices;
 import io.camunda.tasklist.zeebeimport.security.ImporterSecurityModuleConfiguration;
 import io.camunda.zeebe.broker.Broker;
 import io.camunda.zeebe.gateway.Gateway;
@@ -47,7 +46,6 @@ import org.springframework.context.annotation.Profile;
     // versions of importer
     nameGenerator = FullyQualifiedAnnotationBeanNameGenerator.class)
 @Profile("tasklist")
-@Import(TasklistPermissionServices.class)
 public class TasklistModuleConfiguration {
   // if present, then it will ensure
   // that the broker is started first

@@ -9,7 +9,27 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="io.camunda.db.rdbms.sql.PurgeMapper">
 
+  <update id="disableForeignKeyChecks" databaseId="mariadb">
+    SET FOREIGN_KEY_CHECKS = 0
+  </update>
+
+  <update id="enableForeignKeyChecks" databaseId="mariadb">
+    SET FOREIGN_KEY_CHECKS = 1
+  </update>
+
+  <update id="disableForeignKeyChecks" databaseId="h2">
+    SET REFERENTIAL_INTEGRITY FALSE
+    </update>
+
+  <update id="enableForeignKeyChecks" databaseId="h2">
+    SET REFERENTIAL_INTEGRITY TRUE
+  </update>
+
   <update id="truncateTable" parameterType="java.lang.String">
     TRUNCATE TABLE ${prefix}${tableName}
+  </update>
+
+  <update id="truncateTable" parameterType="java.lang.String" databaseId="postgresql">
+    TRUNCATE TABLE ${prefix}${tableName} CASCADE
   </update>
 </mapper>

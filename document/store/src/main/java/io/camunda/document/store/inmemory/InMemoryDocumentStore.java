@@ -56,7 +56,7 @@ public class InMemoryDocumentStore implements DocumentStore {
     } catch (final Exception e) {
       // should never happen
       return CompletableFuture.completedFuture(
-          Either.left(new DocumentError.UnknownDocumentError("Failed to create document")));
+          Either.left(new DocumentError.UnknownDocumentError("Failed to create document", e)));
     }
     final DigestInputStream contentInputStream =
         new DigestInputStream(request.contentInputStream(), md);

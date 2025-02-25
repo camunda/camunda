@@ -25,6 +25,7 @@ import io.camunda.tasklist.webapp.api.rest.v1.entities.VariableSearchResponse;
 import io.camunda.tasklist.webapp.api.rest.v1.entities.VariablesSearchRequest;
 import io.camunda.tasklist.webapp.dto.TaskDTO;
 import io.camunda.tasklist.webapp.mapper.TaskMapper;
+import io.camunda.tasklist.webapp.permission.TasklistPermissionServices;
 import io.camunda.tasklist.webapp.rest.exception.Error;
 import io.camunda.tasklist.webapp.rest.exception.ForbiddenActionException;
 import io.camunda.tasklist.webapp.rest.exception.InvalidRequestException;
@@ -32,7 +33,6 @@ import io.camunda.tasklist.webapp.security.TasklistAuthenticationUtil;
 import io.camunda.tasklist.webapp.security.TasklistURIs;
 import io.camunda.tasklist.webapp.security.UserReader;
 import io.camunda.tasklist.webapp.security.identity.IdentityAuthorizationService;
-import io.camunda.tasklist.webapp.security.permission.TasklistPermissionServices;
 import io.camunda.tasklist.webapp.service.TaskService;
 import io.camunda.tasklist.webapp.service.VariableService;
 import io.camunda.webapps.schema.entities.tasklist.TaskEntity.TaskImplementation;
@@ -230,25 +230,7 @@ public class TaskController extends ApiErrorController {
   }
 
   private boolean hasAccessToTask(final LazySupplier<TaskDTO> taskSupplier) {
-    final String userName = userReader.getCurrentUser().getUserId();
-    final List<String> listOfUserGroups = identityAuthorizationService.getUserGroups();
-    final var task = taskSupplier.get();
-    final boolean allUsersTask =
-        task.getCandidateUsers() == null && task.getCandidateGroups() == null;
-    final boolean candidateGroupTasks =
-        task.getCandidateGroups() != null
-            && !Collections.disjoint(Arrays.asList(task.getCandidateGroups()), listOfUserGroups);
-    final boolean candidateUserTasks =
-        task.getCandidateUsers() != null
-            && Arrays.asList(task.getCandidateUsers()).contains(userName);
-    final boolean assigneeTasks = task.getAssignee() != null && task.getAssignee().equals(userName);
-    final boolean noRestrictions = listOfUserGroups.contains(IdentityProperties.FULL_GROUP_ACCESS);
-
-    return candidateUserTasks
-        || assigneeTasks
-        || candidateGroupTasks
-        || allUsersTask
-        || noRestrictions;
+    return true;
   }
 
   @Operation(

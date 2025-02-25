@@ -14,6 +14,8 @@ import java.util.Comparator;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 import org.apache.ibatis.executor.BatchResult;
 import org.apache.ibatis.session.ExecutorType;
 import org.apache.ibatis.session.SqlSessionFactory;
@@ -80,7 +82,7 @@ public class DefaultExecutionQueue implements ExecutionQueue {
   public int flush() {
     synchronized (queue) {
       if (queue.isEmpty()) {
-        LOG.debug(
+        LOG.trace(
             "[RDBMS ExecutionQueue, Partition {}] Skip Flushing because execution queue is empty",
             partitionId);
         return 0;
@@ -136,11 +138,10 @@ public class DefaultExecutionQueue implements ExecutionQueue {
         sessionFactory.openSession(ExecutorType.BATCH, TransactionIsolationLevel.READ_UNCOMMITTED);
 
     var flushedElements = 0;
-    final var items = new ArrayList<>(queue);
-    items.sort(Comparator.comparing(QueueItem::contextType).thenComparing(QueueItem::statementId));
+    final var optimizedItems = optimizeQueueOrder(queue);
 
     try {
-      for (final var entry : items) {
+      for (final var entry : optimizedItems) {
         LOG.trace("[RDBMS ExecutionQueue, Partition {}] Executing entry: {}", partitionId, entry);
         session.update(entry.statementId(), entry.parameter());
         queue.remove();
@@ -185,6 +186,43 @@ public class DefaultExecutionQueue implements ExecutionQueue {
     } finally {
       session.close();
     }
+  }
+
+  /**
+   * Optimizes the order of the queue items to minimize the number of executed statements. Primary
+   * goal of this optimization is to batch as many statements as possible For this statements with
+   * the same MyBatis-ID have to be executed sequentially directly after each other. A second goal
+   * is to ensure that INSERT statements are always executed before UPDATE statements. <br>
+   * The optimization happens in two steps: <br>
+   * <br>
+   * First the queue is grouped by the {@link ContextType}. Here the order of the items inside this
+   * group is still preserved.<br>
+   * <br>
+   * In the second step the items inside the groups are sorted by the {@link WriteStatementType}
+   * (natural order) and {@link QueueItem#statementId()}. For some entities this step will lead to
+   * errors. Therefore, this second step can be deactivated in the {@link ContextType}.
+   *
+   * @param items queue of items
+   * @return optimized queue of items
+   */
+  private List<QueueItem> optimizeQueueOrder(final List<QueueItem> items) {
+    final Map<ContextType, List<QueueItem>> itemsByContextType =
+        items.stream().collect(Collectors.groupingBy(QueueItem::contextType));
+
+    final List<QueueItem> resultList = new ArrayList<>();
+    for (final var entry : itemsByContextType.entrySet()) {
+      final var contextType = entry.getKey();
+      if (contextType.preserveOrder()) {
+        resultList.addAll(entry.getValue());
+      } else {
+        final var contextItems = new ArrayList<>(entry.getValue());
+        contextItems.sort(
+            Comparator.comparing(QueueItem::statementType).thenComparing(QueueItem::statementId));
+        resultList.addAll(contextItems);
+      }
+    }
+
+    return resultList;
   }
 
   LinkedList<QueueItem> getQueue() {

@@ -13,9 +13,12 @@ public class VendorDatabaseProperties {
 
   private static final String VARIABLE_VALUE_PREVIEW_SIZE = "variableValue.previewSize";
 
+  private static final String DISABLE_FK_BEFORE_TRUNCATE = "disableFkBeforeTruncate";
+
   private final Properties properties;
 
   private final int variableValuePreviewSize;
+  private final boolean disableFkBeforeTruncate;
 
   public VendorDatabaseProperties(final Properties properties) {
     this.properties = properties;
@@ -26,10 +29,21 @@ public class VendorDatabaseProperties {
     }
     variableValuePreviewSize =
         Integer.parseInt(properties.getProperty(VARIABLE_VALUE_PREVIEW_SIZE));
+
+    if (!properties.containsKey(DISABLE_FK_BEFORE_TRUNCATE)) {
+      throw new IllegalArgumentException(
+          "Property '" + DISABLE_FK_BEFORE_TRUNCATE + "' is missing");
+    }
+    disableFkBeforeTruncate =
+        Boolean.parseBoolean(properties.getProperty(DISABLE_FK_BEFORE_TRUNCATE));
   }
 
   public int variableValuePreviewSize() {
     return variableValuePreviewSize;
+  }
+
+  public boolean disableFkBeforeTruncate() {
+    return disableFkBeforeTruncate;
   }
 
   public Properties properties() {

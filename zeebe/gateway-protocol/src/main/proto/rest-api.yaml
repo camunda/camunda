@@ -74,10 +74,10 @@ paths:
         - License
       operationId: getLicense
       summary: Get license status
-      description: Obtains the status of the current Camunda license
+      description: Obtains the status of the current Camunda license.
       responses:
         "200":
-          description: Obtains the current status of the Camunda license
+          description: Obtains the current status of the Camunda license.
           content:
             application/json:
               schema:
@@ -3597,7 +3597,7 @@ paths:
           $ref: "#/components/responses/InternalServerError"
 
   /element-instances/{elementInstanceKey}/variables:
-    post:
+    put:
       tags:
         - Element instance
       operationId: createElementInstanceVariables
@@ -3933,7 +3933,7 @@ components:
             - $ref: "#/components/schemas/DateTimeFilterProperty"
         processInstanceVariables:
           type: array
-          description: Process Instance variables associated with the user task.
+          description: Process instance variables associated with the user task.
           items:
             $ref: "#/components/schemas/UserTaskVariableFilterRequest"
         localVariables:
@@ -4364,7 +4364,13 @@ components:
             $like:
               description: |
                 Checks if the property matches the provided like value.
-                Supported wildcard characters depend on the configured search client.
+
+                Supported wildcard characters are:
+
+                * `*`: matches zero, one, or multiple characters.
+                * `?`: matches one, single character.
+
+                Wildcard characters can be escaped with backslash, for instance: `\*`.
               type: string
     AdvancedProcessInstanceStateFilter:
       title: Advanced filter
@@ -4390,7 +4396,13 @@ components:
         $like:
           description: |
             Checks if the property matches the provided like value.
-            Supported wildcard characters depend on the configured search client.
+
+            Supported wildcard characters are:
+
+            * `*`: matches zero, one, or multiple characters.
+            * `?`: matches one, single character.
+
+            Wildcard characters can be escaped with backslash, for instance: `\*`.
           type: string
     AdvancedDateTimeFilter:
       title: Advanced filter
@@ -4667,6 +4679,7 @@ components:
             - PROCESS
             - SUB_PROCESS
             - EVENT_SUB_PROCESS
+            - AD_HOC_SUB_PROCESS
             - START_EVENT
             - INTERMEDIATE_CATCH_EVENT
             - INTERMEDIATE_THROW_EVENT
@@ -4750,6 +4763,7 @@ components:
             - PROCESS
             - SUB_PROCESS
             - EVENT_SUB_PROCESS
+            - AD_HOC_SUB_PROCESS
             - START_EVENT
             - INTERMEDIATE_CATCH_EVENT
             - INTERMEDIATE_THROW_EVENT
@@ -6095,6 +6109,10 @@ components:
             As a result, the completion request is rejected and the task remains active.
             Defaults to false.
           nullable: true
+        deniedReason:
+          type: string
+          description: The reason provided by the user task listener for denying the work.
+          nullable: true
         corrections:
           $ref: "#/components/schemas/JobResultCorrections"
     JobResultCorrections:
@@ -7397,8 +7415,8 @@ components:
         tenantId:
           description: The tenant ID of the form.
           type: string
-        bpmnId:
-          description: The BPMN ID of the form.
+        formId:
+          description: The user-provided identifier of the form.
           type: string
         schema:
           description: The form content.
@@ -7408,7 +7426,7 @@ components:
           type: integer
           format: int64
         formKey:
-          description: The key of the form.
+          description: The assigned key, which acts as a unique identifier for this form.
           type: string
   responses:
     InternalServerError:
