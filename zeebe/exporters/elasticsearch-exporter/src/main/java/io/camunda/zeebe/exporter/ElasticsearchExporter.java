@@ -66,8 +66,10 @@ public class ElasticsearchExporter implements Exporter {
 
     validate(configuration);
     pluginRepository.load(configuration.getInterceptorPlugins());
-
     context.setFilter(new ElasticsearchRecordFilter(configuration));
+    if (configuration.index.isCreateSchema()) {
+      schemaManager = new SchemaManager(configuration);
+    }
     registry = context.getMeterRegistry();
   }
 
@@ -85,7 +87,9 @@ public class ElasticsearchExporter implements Exporter {
             .orElse(new ElasticsearchRecordCounters());
 
     scheduleDelayedFlush();
-    schemaManager = new SchemaManager(client, configuration);
+    if (configuration.index.isCreateSchema()) {
+      schemaManager = new SchemaManager(client, configuration);
+    }
 
     log.info("Exporter opened");
   }
