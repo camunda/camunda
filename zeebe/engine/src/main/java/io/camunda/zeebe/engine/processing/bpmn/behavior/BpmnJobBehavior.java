@@ -282,7 +282,6 @@ public final class BpmnJobBehavior {
         JobKind.BPMN_ELEMENT,
         JobListenerEventType.UNSPECIFIED,
         element.getJobWorkerProperties().getTaskHeaders());
-    jobMetrics.countJobEvent(JobAction.CREATED, JobKind.BPMN_ELEMENT, jobProperties.getType());
   }
 
   public void createNewExecutionListenerJob(
@@ -430,7 +429,7 @@ public final class BpmnJobBehavior {
     final var jobKey = keyGenerator.nextKey();
     stateWriter.appendFollowUpEvent(jobKey, JobIntent.CREATED, jobRecord);
     jobActivationBehavior.publishWork(jobKey, jobRecord);
-    jobMetrics.countJobEvent(JobAction.CANCELED, jobKind, props.getType());
+    jobMetrics.countJobEvent(JobAction.CREATED, jobKind, props.getType());
   }
 
   private DirectBuffer encodeHeaders(
@@ -516,6 +515,7 @@ public final class BpmnJobBehavior {
       // it there as well.
       stateWriter.appendFollowUpEvent(jobKey, JobIntent.CANCELED, job);
       jobMetrics.countJobEvent(JobAction.CANCELED, job.getJobKind(), job.getType());
+      System.out.println("Canceled job " + jobKey);
     }
   }
 
