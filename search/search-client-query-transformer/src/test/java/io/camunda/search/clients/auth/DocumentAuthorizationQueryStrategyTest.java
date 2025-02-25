@@ -176,7 +176,7 @@ class DocumentAuthorizationQueryStrategyTest {
                         f ->
                             f.ownerIds(List.of("foo"))
                                 .resourceType("PROCESS_DEFINITION")
-                                .permissionType(READ_PROCESS_DEFINITION))));
+                                .permissionTypes(READ_PROCESS_DEFINITION))));
   }
 
   private SearchQueryResponse<AuthorizationEntity> buildSearchQueryResponse(

@@ -33,8 +33,8 @@ class SearchDecisionInstanceTest extends ClientRestTest {
     client.newDecisionInstanceQuery().send().join();
 
     // then
-    final DecisionInstanceSearchQueryRequest request =
-        gatewayService.getLastRequest(DecisionInstanceSearchQueryRequest.class);
+    final DecisionInstanceSearchQuery request =
+        gatewayService.getLastRequest(DecisionInstanceSearchQuery.class);
     assertThat(request.getFilter()).isNull();
   }
 
@@ -60,16 +60,16 @@ class SearchDecisionInstanceTest extends ClientRestTest {
         .join();
 
     // then
-    final DecisionInstanceSearchQueryRequest request =
-        gatewayService.getLastRequest(DecisionInstanceSearchQueryRequest.class);
-    assertThat(request.getFilter().getDecisionInstanceKey()).isEqualTo(1L);
+    final DecisionInstanceSearchQuery request =
+        gatewayService.getLastRequest(DecisionInstanceSearchQuery.class);
+    assertThat(request.getFilter().getDecisionInstanceKey()).isEqualTo("1");
     assertThat(request.getFilter().getState()).isEqualTo(DecisionInstanceStateEnum.FAILED);
     assertThat(request.getFilter().getEvaluationFailure()).isEqualTo("ef");
     assertThat(request.getFilter().getDecisionDefinitionType())
         .isEqualTo(DecisionDefinitionTypeEnum.DECISION_TABLE);
-    assertThat(request.getFilter().getProcessDefinitionKey()).isEqualTo(2L);
-    assertThat(request.getFilter().getProcessInstanceKey()).isEqualTo(3L);
-    assertThat(request.getFilter().getDecisionDefinitionKey().get$Eq()).isEqualTo(4L);
+    assertThat(request.getFilter().getProcessDefinitionKey()).isEqualTo("2");
+    assertThat(request.getFilter().getProcessInstanceKey()).isEqualTo("3");
+    assertThat(request.getFilter().getDecisionDefinitionKey().get$Eq()).isEqualTo("4");
     assertThat(request.getFilter().getDecisionDefinitionId()).isEqualTo("ddi");
     assertThat(request.getFilter().getDecisionDefinitionName()).isEqualTo("ddm");
     assertThat(request.getFilter().getDecisionDefinitionVersion()).isEqualTo(5);
@@ -86,13 +86,13 @@ class SearchDecisionInstanceTest extends ClientRestTest {
         .join();
 
     // then
-    final DecisionInstanceSearchQueryRequest request =
-        gatewayService.getLastRequest(DecisionInstanceSearchQueryRequest.class);
-    final DecisionInstanceFilterRequest filter = request.getFilter();
+    final DecisionInstanceSearchQuery request =
+        gatewayService.getLastRequest(DecisionInstanceSearchQuery.class);
+    final DecisionInstanceFilter filter = request.getFilter();
     assertThat(filter).isNotNull();
-    final BasicLongFilterProperty decisionDefinitionKey = filter.getDecisionDefinitionKey();
+    final BasicStringFilterProperty decisionDefinitionKey = filter.getDecisionDefinitionKey();
     assertThat(decisionDefinitionKey).isNotNull();
-    assertThat(decisionDefinitionKey.get$In()).isEqualTo(Arrays.asList(1L, 10L));
+    assertThat(decisionDefinitionKey.get$In()).isEqualTo(Arrays.asList("1", "10"));
   }
 
   @Test
@@ -102,9 +102,9 @@ class SearchDecisionInstanceTest extends ClientRestTest {
     client.newDecisionInstanceQuery().filter(f -> f.evaluationDate(b -> b.neq(now))).send().join();
 
     // then
-    final DecisionInstanceSearchQueryRequest request =
-        gatewayService.getLastRequest(DecisionInstanceSearchQueryRequest.class);
-    final DecisionInstanceFilterRequest filter = request.getFilter();
+    final DecisionInstanceSearchQuery request =
+        gatewayService.getLastRequest(DecisionInstanceSearchQuery.class);
+    final DecisionInstanceFilter filter = request.getFilter();
     assertThat(filter).isNotNull();
     final DateTimeFilterProperty evaluationDate = filter.getEvaluationDate();
     assertThat(evaluationDate).isNotNull();
@@ -146,8 +146,8 @@ class SearchDecisionInstanceTest extends ClientRestTest {
         .join();
 
     // then
-    final DecisionInstanceSearchQueryRequest request =
-        gatewayService.getLastRequest(DecisionInstanceSearchQueryRequest.class);
+    final DecisionInstanceSearchQuery request =
+        gatewayService.getLastRequest(DecisionInstanceSearchQuery.class);
     assertThat(request.getSort().size()).isEqualTo(12);
     assertThat(request.getSort().get(0).getField())
         .isEqualTo(DecisionInstanceSearchQuerySortRequest.FieldEnum.DECISION_DEFINITION_KEY);

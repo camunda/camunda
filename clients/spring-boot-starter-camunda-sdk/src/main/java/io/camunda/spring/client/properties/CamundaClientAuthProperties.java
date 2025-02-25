@@ -17,10 +17,11 @@ package io.camunda.spring.client.properties;
 
 import java.net.URI;
 import java.time.Duration;
+import org.springframework.boot.context.properties.DeprecatedConfigurationProperty;
 
 public class CamundaClientAuthProperties {
 
-  // simple
+  // basic auth
   private String username;
   private String password;
 
@@ -28,7 +29,8 @@ public class CamundaClientAuthProperties {
   private String clientId;
   private String clientSecret;
 
-  private URI issuer;
+  @Deprecated private URI issuer;
+  private URI tokenUrl;
   private String audience;
   private String scope;
 
@@ -41,6 +43,14 @@ public class CamundaClientAuthProperties {
   private String credentialsCachePath;
   private Duration connectTimeout;
   private Duration readTimeout;
+
+  public URI getTokenUrl() {
+    return tokenUrl;
+  }
+
+  public void setTokenUrl(final URI tokenUrl) {
+    this.tokenUrl = tokenUrl;
+  }
 
   public Duration getConnectTimeout() {
     return connectTimeout;
@@ -66,10 +76,15 @@ public class CamundaClientAuthProperties {
     this.credentialsCachePath = credentialsCachePath;
   }
 
+  @Deprecated
+  @DeprecatedConfigurationProperty(
+      reason = "The expected property value if a token url, renamed",
+      replacement = "camunda.client.auth.token-url")
   public URI getIssuer() {
     return issuer;
   }
 
+  @Deprecated
   public void setIssuer(final URI issuer) {
     this.issuer = issuer;
   }
@@ -177,8 +192,8 @@ public class CamundaClientAuthProperties {
         + ", clientSecret='"
         + (clientSecret != null ? "***" : null)
         + '\''
-        + ", issuer="
-        + issuer
+        + ", tokenUrl="
+        + tokenUrl
         + ", audience='"
         + audience
         + '\''

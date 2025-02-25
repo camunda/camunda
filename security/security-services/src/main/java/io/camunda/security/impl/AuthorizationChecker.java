@@ -55,7 +55,7 @@ public class AuthorizationChecker {
                         f ->
                             f.ownerIds(ownerIds)
                                 .resourceType(resourceType.name())
-                                .permissionType(permissionType))));
+                                .permissionTypes(permissionType))));
     return authorizationEntities.stream()
         .filter(e -> e.permissionTypes().contains(permissionType))
         .map(AuthorizationEntity::resourceId)
@@ -83,7 +83,7 @@ public class AuthorizationChecker {
                                 f ->
                                     f.ownerIds(ownerIds)
                                         .resourceType(resourceType.name())
-                                        .permissionType(permissionType)
+                                        .permissionTypes(permissionType)
                                         .resourceIds(List.of(WILDCARD, resourceId)))
                             .page(p -> p.size(1))))
             .total()

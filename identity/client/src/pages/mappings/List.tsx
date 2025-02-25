@@ -5,10 +5,11 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-import { FC, useState } from "react";
+import { FC } from "react";
+import { Edit, TrashCan } from "@carbon/react/icons";
 import useTranslate from "src/utility/localization";
 import { useApi } from "src/utility/api/hooks";
-import Page, { PageTitle } from "src/components/layout/Page";
+import Page, { PageHeader } from "src/components/layout/Page";
 import EntityList, {
   DocumentationDescription,
 } from "src/components/entityList";
@@ -20,12 +21,10 @@ import { TranslatedErrorInlineNotification } from "src/components/notifications/
 import useModal from "src/components/modal/useModal";
 import AddModal from "src/pages/mappings/modals/AddModal";
 import { C3EmptyState } from "@camunda/camunda-composite-components";
-import { Edit, TrashCan } from "@carbon/react/icons";
 import { searchMapping } from "src/utility/api/mappings";
 
 const List: FC = () => {
   const { t, Translate } = useTranslate();
-  const [, setSearch] = useState("");
   const {
     data: mappingSearchResults,
     loading,
@@ -34,13 +33,18 @@ const List: FC = () => {
   } = useApi(searchMapping);
 
   const [addMapping, addMappingModal] = useModal(AddModal, reload);
+  const pageHeader = (
+    <PageHeader
+      title="Mappings"
+      linkText="mappings"
+      linkUrl="/concepts/mappings/"
+    />
+  );
 
   if (success && !mappingSearchResults?.items.length) {
     return (
       <Page>
-        <PageTitle>
-          <Translate>Mappings</Translate>
-        </PageTitle>
+        {pageHeader}
         <C3EmptyState
           heading={t("You don’t have any mappings yet")}
           description={t("Mapping of JWT token")}
@@ -60,8 +64,8 @@ const List: FC = () => {
 
   return (
     <Page>
+      {pageHeader}
       <EntityList
-        title={t("Mappings")}
         data={mappingSearchResults == null ? [] : mappingSearchResults.items}
         headers={[
           { header: t("Mapping Key"), key: "mappingKey" },
@@ -71,7 +75,6 @@ const List: FC = () => {
         sortProperty="claimName"
         addEntityLabel={t("Create mapping")}
         onAddEntity={addMapping}
-        onSearch={setSearch}
         loading={loading}
         menuItems={[
           {

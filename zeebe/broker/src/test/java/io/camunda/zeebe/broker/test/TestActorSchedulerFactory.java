@@ -11,6 +11,7 @@ import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.scheduler.ActorScheduler;
 import io.camunda.zeebe.scheduler.clock.ActorClock;
 import io.camunda.zeebe.scheduler.clock.DefaultActorClock;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 
 public final class TestActorSchedulerFactory {
   private TestActorSchedulerFactory() {}
@@ -27,7 +28,7 @@ public final class TestActorSchedulerFactory {
         ActorScheduler.newActorScheduler()
             .setCpuBoundActorThreadCount(threads.getCpuThreadCount())
             .setIoBoundActorThreadCount(threads.getIoThreadCount())
-            .setMetricsEnabled(features.isEnableActorMetrics())
+            .setMeterRegistry(features.isEnableActorMetrics() ? new SimpleMeterRegistry() : null)
             .setActorClock(clock)
             .build();
     scheduler.start();

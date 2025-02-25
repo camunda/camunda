@@ -33,8 +33,10 @@ public record DecisionInstanceDbModel(
     Long rootDecisionDefinitionKey,
     DecisionDefinitionType decisionType,
     String tenantId,
+    int partitionId,
     List<EvaluatedInput> evaluatedInputs,
-    List<EvaluatedOutput> evaluatedOutputs) {
+    List<EvaluatedOutput> evaluatedOutputs,
+    OffsetDateTime historyCleanupDate) {
 
   public static DecisionInstanceDbModel of(
       final Function<Builder, ObjectBuilder<DecisionInstanceDbModel>> fn) {
@@ -61,8 +63,10 @@ public record DecisionInstanceDbModel(
     private Long rootDecisionDefinitionKey;
     private DecisionDefinitionType decisionType;
     private String tenantId;
+    private int partitionId;
     private List<EvaluatedInput> evaluatedInputs;
     private List<EvaluatedOutput> evaluatedOutputs;
+    private OffsetDateTime historyCleanupDate;
 
     public Builder decisionInstanceId(final String value) {
       decisionInstanceId = value;
@@ -154,6 +158,11 @@ public record DecisionInstanceDbModel(
       return this;
     }
 
+    public Builder partitionId(final int value) {
+      partitionId = value;
+      return this;
+    }
+
     public Builder evaluatedInputs(final List<EvaluatedInput> value) {
       evaluatedInputs = value;
       return this;
@@ -161,6 +170,11 @@ public record DecisionInstanceDbModel(
 
     public Builder evaluatedOutputs(final List<EvaluatedOutput> value) {
       evaluatedOutputs = value;
+      return this;
+    }
+
+    public Builder historyCleanupDate(final OffsetDateTime value) {
+      historyCleanupDate = value;
       return this;
     }
 
@@ -185,8 +199,10 @@ public record DecisionInstanceDbModel(
           rootDecisionDefinitionKey,
           decisionType,
           tenantId,
+          partitionId,
           evaluatedInputs,
-          evaluatedOutputs);
+          evaluatedOutputs,
+          historyCleanupDate);
     }
   }
 

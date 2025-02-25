@@ -31,7 +31,6 @@ public @interface CamundaPostMapping {
   @AliasFor(annotation = RequestMapping.class)
   String[] produces() default {
     MediaType.APPLICATION_JSON_VALUE,
-    RequestMapper.MEDIA_TYPE_KEYS_NUMBER_VALUE,
     RequestMapper.MEDIA_TYPE_KEYS_STRING_VALUE,
     MediaType.APPLICATION_PROBLEM_JSON_VALUE,
   };

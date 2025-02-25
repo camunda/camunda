@@ -151,6 +151,9 @@ public class CamundaClientPropertiesPostProcessor implements EnvironmentPostProc
       case saas -> {
         return "modes/saas.yaml";
       }
+      case basic -> {
+        return "modes/basic.yaml";
+      }
       default -> throw new IllegalStateException("Unknown client mode " + clientMode);
     }
   }

@@ -134,7 +134,7 @@ func adjustJavaOpts(javaOpts string, settings C8RunSettings) string {
 	if settings.password != "" {
 		javaOpts = javaOpts + " -Dcamunda.security.initialization.users[0].password=" + settings.password
 	}
-	javaOpts = javaOpts + " -Dspring.profiles.active=operate,tasklist,broker,identity,auth-basic"
+	javaOpts = javaOpts + " -Dspring.profiles.active=operate,tasklist,broker,identity,consolidated-auth"
 	os.Setenv("CAMUNDA_OPERATE_ZEEBE_RESTADDRESS", protocol+"://localhost:"+strconv.Itoa(settings.port))
 	fmt.Println("Java opts: " + javaOpts)
 	return javaOpts
@@ -312,7 +312,6 @@ func main() {
 	}
 
 	elasticsearchVersion := os.Getenv("ELASTICSEARCH_VERSION")
-	camundaReleaseTag := os.Getenv("CAMUNDA_RELEASE_TAG")
 	camundaVersion := os.Getenv("CAMUNDA_VERSION")
 	connectorsVersion := os.Getenv("CONNECTORS_VERSION")
 	composeTag := os.Getenv("COMPOSE_TAG")
@@ -328,8 +327,6 @@ func main() {
 	if err != nil {
 		fmt.Println("Failed to set envVars:", err)
 	}
-
-	// classPath := filepath.Join(parentDir, "configuration", "userlib") + "," + filepath.Join(parentDir, "configuration", "keystore")
 
 	baseCommand, err := getBaseCommand()
 	if err != nil {
@@ -503,12 +500,29 @@ func main() {
 		if err != nil {
 			fmt.Print("Failed to write to file: " + connectorsPidPath + " continuing...")
 		}
+
 		var extraArgs string
 		if settings.config != "" {
-			extraArgs = "--spring.config.location=" + filepath.Join(parentDir, settings.config)
-		} else {
-			extraArgs = "--spring.config.location=" + filepath.Join(parentDir, "configuration")
+			path := filepath.Join(parentDir, settings.config)
+			var slash string
+			if runtime.GOOS == "linux" || runtime.GOOS == "darwin" {
+				slash = "/"
+			} else if runtime.GOOS == "windows" {
+				slash = "\\"
+			}
+
+			configStat, err := os.Stat(path)
+			if err != nil {
+				fmt.Printf("Failed to read config file: %s\n", path)
+				os.Exit(1)
+			}
+			if configStat.IsDir() {
+				extraArgs = "--spring.config.additional-location=file:" + filepath.Join(parentDir, settings.config) + slash
+			} else {
+				extraArgs = "--spring.config.additional-location=file:" + filepath.Join(parentDir, settings.config)
+			}
 		}
+
 		camundaCmd := c8.CamundaCmd(camundaVersion, parentDir, extraArgs, javaOpts)
 		camundaLogPath := filepath.Join(parentDir, "log", "camunda.log")
 		camundaLogFile, err := os.OpenFile(camundaLogPath, os.O_RDWR|os.O_CREATE, 0644)
@@ -561,20 +575,10 @@ func main() {
 	}
 
 	if baseCommand == "package" {
-		if runtime.GOOS == "windows" {
-			err := PackageWindows(camundaVersion, elasticsearchVersion, connectorsVersion, camundaReleaseTag, composeTag)
-			if err != nil {
-				fmt.Printf("%+v", err)
-				os.Exit(1)
-			}
-		} else if runtime.GOOS == "linux" || runtime.GOOS == "darwin" {
-			err := PackageUnix(camundaVersion, elasticsearchVersion, connectorsVersion, camundaReleaseTag, composeTag)
-			if err != nil {
-				fmt.Printf("%+v", err)
-				os.Exit(1)
-			}
-		} else {
-			panic("Unsupported system")
+		err := Package(camundaVersion, elasticsearchVersion, connectorsVersion, composeTag)
+		if err != nil {
+			fmt.Printf("%+v", err)
+			os.Exit(1)
 		}
 	}
 

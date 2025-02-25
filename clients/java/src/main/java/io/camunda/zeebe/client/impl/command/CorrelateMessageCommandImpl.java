@@ -16,7 +16,7 @@
 package io.camunda.zeebe.client.impl.command;
 
 import io.camunda.client.protocol.rest.MessageCorrelationRequest;
-import io.camunda.client.protocol.rest.MessageCorrelationResponse;
+import io.camunda.client.protocol.rest.MessageCorrelationResult;
 import io.camunda.zeebe.client.api.JsonMapper;
 import io.camunda.zeebe.client.api.ZeebeFuture;
 import io.camunda.zeebe.client.api.command.CorrelateMessageCommandStep1;
@@ -85,7 +85,7 @@ public class CorrelateMessageCommandImpl extends CommandWithVariables<CorrelateM
         "/messages/correlation",
         jsonMapper.toJson(request),
         httpRequestConfig.build(),
-        MessageCorrelationResponse.class,
+        MessageCorrelationResult.class,
         response::setResponse,
         result);
     return result;

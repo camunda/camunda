@@ -15,6 +15,7 @@ import co.elastic.clients.elasticsearch.core.SearchRequest;
 import co.elastic.clients.elasticsearch.ilm.PutLifecycleRequest;
 import co.elastic.clients.elasticsearch.indices.Alias;
 import co.elastic.clients.elasticsearch.indices.CreateIndexRequest;
+import co.elastic.clients.elasticsearch.indices.IndexTemplateSummary;
 import co.elastic.clients.elasticsearch.indices.PutIndexTemplateRequest;
 import co.elastic.clients.elasticsearch.indices.PutIndicesSettingsRequest;
 import co.elastic.clients.elasticsearch.indices.PutMappingRequest;
@@ -227,6 +228,29 @@ public class ElasticsearchEngineClient implements SearchEngineClient {
     }
   }
 
+  /**
+   * Overwrites the settings of the existing index template with the settings block in the
+   * descriptor schema json file.
+   *
+   * @param indexTemplateDescriptor of the index template to have its settings overwritten.
+   */
+  @Override
+  public void updateIndexTemplateSettings(
+      final IndexTemplateDescriptor indexTemplateDescriptor, final IndexSettings currentSettings) {
+    final var updateIndexTemplateSettingsRequest =
+        updateTemplateSettings(indexTemplateDescriptor, currentSettings);
+
+    try {
+      client.indices().putIndexTemplate(updateIndexTemplateSettingsRequest);
+    } catch (final IOException | ElasticsearchException e) {
+      throw new ElasticsearchExporterException(
+          String.format(
+              "Expected to update index template settings '%s' with '%s', but failed ",
+              indexTemplateDescriptor.getTemplateName(), updateIndexTemplateSettingsRequest),
+          e);
+    }
+  }
+
   private SearchRequest allImportPositionDocuments(
       final int partitionId, final List<IndexDescriptor> importPositionIndices) {
     final var importPositionIndicesNames =
@@ -364,8 +388,10 @@ public class ElasticsearchEngineClient implements SearchEngineClient {
       final var templateFields =
           deserializeJson(
               IndexTemplateMapping._DESERIALIZER,
-              utils.appendToFileSchemaSettings(templateFile, settings));
-
+              utils.new SchemaSettingsAppender(templateFile)
+                  .withNumberOfReplicas(settings.getNumberOfReplicas())
+                  .withNumberOfShards(settings.getNumberOfShards())
+                  .build());
       return new PutIndexTemplateRequest.Builder()
           .name(indexTemplateDescriptor.getTemplateName())
           .indexPatterns(indexTemplateDescriptor.getIndexPattern())
@@ -386,6 +412,58 @@ public class ElasticsearchEngineClient implements SearchEngineClient {
     }
   }
 
+  private PutIndexTemplateRequest updateTemplateSettings(
+      final IndexTemplateDescriptor indexTemplateDescriptor, final IndexSettings currentSettings) {
+    try (final var templateFile =
+        getResourceAsStream(indexTemplateDescriptor.getMappingsClasspathFilename())) {
+      final var updatedTemplateSettings =
+          deserializeJson(
+                  IndexTemplateMapping._DESERIALIZER,
+                  utils.new SchemaSettingsAppender(templateFile)
+                      .withNumberOfShards(currentSettings.getNumberOfShards())
+                      .withNumberOfReplicas(currentSettings.getNumberOfReplicas())
+                      .build())
+              .settings();
+
+      final var currentIndexTemplateState = getIndexTemplateState(indexTemplateDescriptor);
+
+      return new PutIndexTemplateRequest.Builder()
+          .name(indexTemplateDescriptor.getTemplateName())
+          .indexPatterns(indexTemplateDescriptor.getIndexPattern())
+          .template(
+              t ->
+                  t.settings(updatedTemplateSettings)
+                      .mappings(currentIndexTemplateState.mappings())
+                      .aliases(currentIndexTemplateState.aliases()))
+          .build();
+
+    } catch (final IOException e) {
+      throw new ElasticsearchExporterException(
+          "Failed to load file "
+              + indexTemplateDescriptor.getMappingsClasspathFilename()
+              + " from classpath.",
+          e);
+    }
+  }
+
+  private IndexTemplateSummary getIndexTemplateState(
+      final IndexTemplateDescriptor indexTemplateDescriptor) {
+    try {
+      return client
+          .indices()
+          .getIndexTemplate(r -> r.name(indexTemplateDescriptor.getTemplateName()))
+          .indexTemplates()
+          .getFirst()
+          .indexTemplate()
+          .template();
+    } catch (final IOException e) {
+      throw new ElasticsearchExporterException(
+          String.format(
+              "Failed to retrieve index template '%s'", indexTemplateDescriptor.getTemplateName()),
+          e);
+    }
+  }
+
   private CreateIndexRequest createIndexRequest(
       final IndexDescriptor indexDescriptor, final IndexSettings settings) {
     try (final var templateFile =
@@ -394,7 +472,10 @@ public class ElasticsearchEngineClient implements SearchEngineClient {
       final var templateFields =
           deserializeJson(
               IndexTemplateMapping._DESERIALIZER,
-              utils.appendToFileSchemaSettings(templateFile, settings));
+              utils.new SchemaSettingsAppender(templateFile)
+                  .withNumberOfReplicas(settings.getNumberOfReplicas())
+                  .withNumberOfShards(settings.getNumberOfShards())
+                  .build());
 
       return new CreateIndexRequest.Builder()
           .index(indexDescriptor.getFullQualifiedName())

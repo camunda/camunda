@@ -41,15 +41,15 @@
     <version.bouncycastle>1.79</version.bouncycastle>
     <version.camunda>7.22.0</version.camunda>
     <version.camunda-license-check>2.10.0</version.camunda-license-check>
-    <version.checkstyle>10.21.1</version.checkstyle>
+    <version.checkstyle>10.21.3</version.checkstyle>
     <version.commons-beanutils>1.9.4</version.commons-beanutils>
     <version.commons-lang>3.17.0</version.commons-lang>
-    <version.commons-logging>1.3.4</version.commons-logging>
+    <version.commons-logging>1.3.5</version.commons-logging>
     <version.commons-math>3.6.1</version.commons-math>
     <version.commons-codec>1.17.2</version.commons-codec>
     <version.commons-compress>1.27.1</version.commons-compress>
     <version.commons-validator>1.9.0</version.commons-validator>
-    <version.zstd-jni>1.5.6-9</version.zstd-jni>
+    <version.zstd-jni>1.5.7-1</version.zstd-jni>
     <version.commons-text>1.13.0</version.commons-text>
     <version.cron-utils>9.2.1</version.cron-utils>
     <version.docker-java-api>3.4.1</version.docker-java-api>
@@ -61,13 +61,12 @@
     <version.hamcrest>3.0</version.hamcrest>
     <version.httpasyncclient>4.1.5</version.httpasyncclient>
     <version.httpclient>4.5.14</version.httpclient>
-    <version.httpclient5>5.4.1</version.httpclient5>
-    <version.httpcore5>5.3</version.httpcore5>
+    <version.httpclient5>5.4.2</version.httpclient5>
+    <version.httpcore5>5.3.3</version.httpcore5>
     <version.httpcomponents>4.4.16</version.httpcomponents>
-    <version.identity>8.6.7</version.identity>
+    <version.identity>8.6.8</version.identity>
     <version.surefire>3.5.2</version.surefire>
     <version.jackson>2.18.2</version.jackson>
-    <version.java-grpc-prometheus>0.6.0</version.java-grpc-prometheus>
     <version.junit>5.11.4</version.junit>
     <version.junit4>4.13.2</version.junit4>
     <version.log4j>2.24.3</version.log4j>
@@ -75,7 +74,7 @@
     <version.mockito>5.15.2</version.mockito>
     <version.model>7.7.0</version.model>
     <version.msgpack>0.9.9</version.msgpack>
-    <version.netty>4.1.117.Final</version.netty>
+    <version.netty>4.1.118.Final</version.netty>
     <version.objenesis>3.4</version.objenesis>
     <version.opensearch>2.14.0</version.opensearch>
     <version.opensearch-java>2.19.0</version.opensearch-java>
@@ -83,7 +82,7 @@
     <version.prometheus>0.16.0</version.prometheus>
     <version.protobuf>4.29.3</version.protobuf>
     <version.protobuf-common>2.50.1</version.protobuf-common>
-    <version.micrometer>1.14.3</version.micrometer>
+    <version.micrometer>1.14.4</version.micrometer>
     <version.rocksdbjni>9.4.0</version.rocksdbjni>
     <version.sbe>1.34.1</version.sbe>
     <version.scala>2.13.16</version.scala>
@@ -93,7 +92,7 @@
     <version.wiremock>3.10.0</version.wiremock>
     <version.conscrypt>2.5.2</version.conscrypt>
     <version.asm>9.3</version.asm>
-    <version.testcontainers>1.20.4</version.testcontainers>
+    <version.testcontainers>1.20.5</version.testcontainers>
     <version.mariadb-java-client>3.4.1</version.mariadb-java-client>
     <version.testcontainer-mariadb>1.20.0</version.testcontainer-mariadb>
     <version.postgressql-testcontainer>1.20.1</version.postgressql-testcontainer>
@@ -101,17 +100,18 @@
     <version.zeebe-test-container>3.6.5</version.zeebe-test-container>
     <version.feel-scala>1.19.1</version.feel-scala>
     <version.dmn-scala>1.10.1</version.dmn-scala>
-    <version.rest-assured>5.5.0</version.rest-assured>
-    <version.spring>6.2.1</version.spring>
-    <version.spring-security>6.4.2</version.spring-security>
-    <version.spring-boot>3.4.1</version.spring-boot>
+    <version.rest-assured>5.5.1</version.rest-assured>
+    <version.spring>6.2.3</version.spring>
+    <version.spring-security>6.4.3</version.spring-security>
+    <version.spring-boot>3.4.3</version.spring-boot>
     <version.concurrentunit>0.4.6</version.concurrentunit>
     <version.kryo>5.6.2</version.kryo>
     <version.failsafe>2.4.4</version.failsafe>
-    <version.jetbrains-annotations>26.0.1</version.jetbrains-annotations>
+    <version.jetbrains-annotations>26.0.2</version.jetbrains-annotations>
     <version.jqwik>1.9.2</version.jqwik>
     <version.jmock>2.13.1</version.jmock>
     <version.jmh>1.37</version.jmh>
+    <version.json-smart>2.5.2</version.json-smart>
     <version.byte-buddy>1.15.11</version.byte-buddy>
     <version.revapi>0.28.1</version.revapi>
     <version.resilience4j>2.3.0</version.resilience4j>
@@ -121,18 +121,18 @@
     <version.servlet-api>2.5</version.servlet-api>
     <version.osgi>6.0.0</version.osgi>
     <version.findbugs-annotations>3.0.1u2</version.findbugs-annotations>
-    <version.spotbugs>4.9.0</version.spotbugs>
+    <version.spotbugs>4.9.1</version.spotbugs>
     <version.archunit>1.3.0</version.archunit>
     <version.easy-random>5.0.0</version.easy-random>
     <version.jcip>1.0</version.jcip>
     <version.jnr-posix>3.1.20</version.jnr-posix>
-    <version.zpt>8.6.7</version.zpt>
+    <version.zpt>8.6.9</version.zpt>
     <version.feign>13.5</version.feign>
     <version.google-sdk>26.53.0</version.google-sdk>
-    <version.azure-sdk>1.2.30</version.azure-sdk>
+    <version.azure-sdk>1.2.31</version.azure-sdk>
     <version.awssdk>2.29.50</version.awssdk>
     <version.toxiproxy>2.1.7</version.toxiproxy>
-    <version.validation-api>3.1.0</version.validation-api>
+    <version.validation-api>3.1.1</version.validation-api>
     <version.jackson-databind-nullable>0.2.6</version.jackson-databind-nullable>
     <version.findbugs.jsr305>3.0.2</version.findbugs.jsr305>
     <version.jackson-annotations>2.18.2</version.jackson-annotations>
@@ -157,20 +157,20 @@
     <version.thymeleaf>3.1.3.RELEASE</version.thymeleaf>
     <version.unboundid-ldapsdk>7.0.2</version.unboundid-ldapsdk>
     <version.parsson>1.1.7</version.parsson>
-    <version.springdoc>2.6.0</version.springdoc>
+    <version.springdoc>2.8.5</version.springdoc>
     <version.jakarta.json>2.0.1</version.jakarta.json>
 
     <version.node>v20.12.2</version.node>
     <version.yarn>v1.22.21</version.yarn>
 
-    <version.aws-java-sdk>1.12.780</version.aws-java-sdk>
-    <version.elasticsearch-test-container>1.20.4</version.elasticsearch-test-container>
-    <version.postgres-test-container>1.20.4</version.postgres-test-container>
+    <version.aws-java-sdk>1.12.782</version.aws-java-sdk>
+    <version.elasticsearch-test-container>1.20.5</version.elasticsearch-test-container>
+    <version.postgres-test-container>1.20.5</version.postgres-test-container>
     <version.elasticsearch7>7.17.27</version.elasticsearch7>
     <!-- the lucene version must be coupled with version.elasticsearch7 -->
     <version.lucene>8.11.3</version.lucene>
     <version.hdr-histogram>2.2.2</version.hdr-histogram>
-    <version.joda-time>2.13.0</version.joda-time>
+    <version.joda-time>2.13.1</version.joda-time>
     <version.commons-collections4>4.4</version.commons-collections4>
     <version.xmlunit-core>2.10.0</version.xmlunit-core>
 
@@ -185,7 +185,7 @@
     <version.guava.annotations>r03</version.guava.annotations>
     <version.nimbus-jose-jwt>10.0.1</version.nimbus-jose-jwt>
     <version.nimbus-sdk>11.21.2</version.nimbus-sdk>
-    <version.keycloak>25.0.6</version.keycloak>
+    <version.keycloak>26.0.4</version.keycloak>
     <version.jna>5.16.0</version.jna>
     <version.jopt-simple>5.0.4</version.jopt-simple>
     <version.mybatis-spring>3.0.4</version.mybatis-spring>
@@ -516,6 +516,12 @@
       <dependency>
         <groupId>io.camunda</groupId>
         <artifactId>zeebe-backup-store-azure</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>io.camunda</groupId>
+        <artifactId>zeebe-backup-store-filesystem</artifactId>
         <version>${project.version}</version>
       </dependency>
 
@@ -967,6 +973,7 @@
         <type>pom</type>
         <scope>import</scope>
       </dependency>
+
       <dependency>
         <groupId>com.nimbusds</groupId>
         <artifactId>oauth2-oidc-sdk</artifactId>
@@ -1005,12 +1012,6 @@
 
       <dependency>
         <groupId>org.springframework.boot</groupId>
-        <artifactId>spring-boot-starter</artifactId>
-        <version>${version.spring-boot}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-configuration-processor</artifactId>
         <version>${version.spring-boot}</version>
       </dependency>
@@ -1022,14 +1023,97 @@
       </dependency>
 
       <dependency>
-        <groupId>org.springframework.boot</groupId>
-        <artifactId>spring-boot-starter-json</artifactId>
-        <version>${version.spring-boot}</version>
+        <groupId>software.amazon.awssdk</groupId>
+        <artifactId>bom</artifactId>
+        <version>${version.awssdk}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+
+      <dependency>
+        <groupId>com.azure</groupId>
+        <artifactId>azure-sdk-bom</artifactId>
+        <version>${version.azure-sdk}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+
+      <dependency>
+        <groupId>org.mockito</groupId>
+        <artifactId>mockito-bom</artifactId>
+        <version>${version.mockito}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+
+      <dependency>
+        <groupId>org.apache.logging.log4j</groupId>
+        <artifactId>log4j-bom</artifactId>
+        <version>${version.log4j}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+
+      <dependency>
+        <groupId>io.github.openfeign</groupId>
+        <artifactId>feign-bom</artifactId>
+        <version>${version.feign}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+
+      <dependency>
+        <groupId>io.grpc</groupId>
+        <artifactId>grpc-bom</artifactId>
+        <version>${version.grpc}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+
+      <dependency>
+        <groupId>com.google.protobuf</groupId>
+        <artifactId>protobuf-bom</artifactId>
+        <version>${version.protobuf}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+
+      <dependency>
+        <groupId>io.netty</groupId>
+        <artifactId>netty-bom</artifactId>
+        <version>${version.netty}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+
+      <dependency>
+        <groupId>io.micrometer</groupId>
+        <artifactId>micrometer-bom</artifactId>
+        <version>${version.micrometer}</version>
+        <type>pom</type>
+        <scope>import</scope>
       </dependency>
 
       <!--
-           In order resolve dependency issues with wiremock and spring-boot-dependencies
-           make sure this is declared before spring boot dependencies.
+        As this includes so-called "first party" dependencies" which may be of different versions,
+        this must also be after most library-specific BOMs (but above Spring's)
+      -->
+      <dependency>
+        <groupId>com.google.cloud</groupId>
+        <artifactId>libraries-bom</artifactId>
+        <version>${version.google-sdk}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+
+      <!--
+           This should be the last dependency management import of type POM and scope IMPORT; if
+           you put any below, and there is some overlap in the library versions, then Spring's will
+           win every time.
+
+           Typically, if we want to add a POM/IMPORT for a specific library (e.g. Netty), then we
+           want to version. If we do want Spring's version to win, then we should just rely on that
+           instead and do not need to specify a version ourselves.
       -->
 
       <dependency>
@@ -1075,22 +1159,6 @@
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-test</artifactId>
         <version>${version.spring-boot}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>org.springframework.boot</groupId>
-        <artifactId>spring-boot-starter-webflux</artifactId>
-        <version>${version.spring-boot}</version>
-        <exclusions>
-          <exclusion>
-            <groupId>ch.qos.logback</groupId>
-            <artifactId>logback-classic</artifactId>
-          </exclusion>
-          <exclusion>
-            <groupId>org.apache.logging.log4j</groupId>
-            <artifactId>log4j-to-slf4j</artifactId>
-          </exclusion>
-        </exclusions>
       </dependency>
 
       <dependency>
@@ -1216,14 +1284,6 @@
       </dependency>
 
       <dependency>
-        <groupId>org.mockito</groupId>
-        <artifactId>mockito-bom</artifactId>
-        <version>${version.mockito}</version>
-        <type>pom</type>
-        <scope>import</scope>
-      </dependency>
-
-      <dependency>
         <groupId>org.assertj</groupId>
         <artifactId>assertj-core</artifactId>
         <version>${version.assertj}</version>
@@ -1255,22 +1315,6 @@
       </dependency>
 
       <dependency>
-        <groupId>org.apache.logging.log4j</groupId>
-        <artifactId>log4j-bom</artifactId>
-        <version>${version.log4j}</version>
-        <type>pom</type>
-        <scope>import</scope>
-      </dependency>
-
-      <dependency>
-        <groupId>io.github.openfeign</groupId>
-        <artifactId>feign-bom</artifactId>
-        <version>${version.feign}</version>
-        <type>pom</type>
-        <scope>import</scope>
-      </dependency>
-
-      <dependency>
         <groupId>org.scala-lang</groupId>
         <artifactId>scala-library</artifactId>
         <version>${version.scala}</version>
@@ -1295,41 +1339,9 @@
       </dependency>
 
       <dependency>
-        <groupId>io.grpc</groupId>
-        <artifactId>grpc-bom</artifactId>
-        <version>${version.grpc}</version>
-        <type>pom</type>
-        <scope>import</scope>
-      </dependency>
-
-      <dependency>
-        <groupId>com.google.protobuf</groupId>
-        <artifactId>protobuf-bom</artifactId>
-        <version>${version.protobuf}</version>
-        <type>pom</type>
-        <scope>import</scope>
-      </dependency>
-
-      <dependency>
         <groupId>com.google.api.grpc</groupId>
         <artifactId>proto-google-common-protos</artifactId>
         <version>${version.protobuf-common}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>io.netty</groupId>
-        <artifactId>netty-bom</artifactId>
-        <version>${version.netty}</version>
-        <type>pom</type>
-        <scope>import</scope>
-      </dependency>
-
-      <dependency>
-        <groupId>io.micrometer</groupId>
-        <artifactId>micrometer-bom</artifactId>
-        <version>${version.micrometer}</version>
-        <type>pom</type>
-        <scope>import</scope>
       </dependency>
 
       <dependency>
@@ -1480,18 +1492,6 @@
       </dependency>
 
       <dependency>
-        <groupId>io.prometheus</groupId>
-        <artifactId>simpleclient_httpserver</artifactId>
-        <version>${version.prometheus}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>io.prometheus</groupId>
-        <artifactId>simpleclient_hotspot</artifactId>
-        <version>${version.prometheus}</version>
-      </dependency>
-
-      <dependency>
         <groupId>org.apache.httpcomponents.client5</groupId>
         <artifactId>httpclient5</artifactId>
         <version>${version.httpclient5}</version>
@@ -1501,18 +1501,6 @@
         <groupId>org.apache.httpcomponents.core5</groupId>
         <artifactId>httpcore5</artifactId>
         <version>${version.httpcore5}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>me.dinowernli</groupId>
-        <artifactId>java-grpc-prometheus</artifactId>
-        <version>${version.java-grpc-prometheus}</version>
-        <exclusions>
-          <exclusion>
-            <groupId>io.grpc</groupId>
-            <artifactId>grpc-all</artifactId>
-          </exclusion>
-        </exclusions>
       </dependency>
 
       <!-- Interface based code generation -->
@@ -1698,30 +1686,6 @@
         <groupId>com.github.jnr</groupId>
         <artifactId>jnr-posix</artifactId>
         <version>${version.jnr-posix}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>com.google.cloud</groupId>
-        <artifactId>libraries-bom</artifactId>
-        <version>${version.google-sdk}</version>
-        <type>pom</type>
-        <scope>import</scope>
-      </dependency>
-
-      <dependency>
-        <groupId>software.amazon.awssdk</groupId>
-        <artifactId>bom</artifactId>
-        <version>${version.awssdk}</version>
-        <type>pom</type>
-        <scope>import</scope>
-      </dependency>
-
-      <dependency>
-        <groupId>com.azure</groupId>
-        <artifactId>azure-sdk-bom</artifactId>
-        <version>${version.azure-sdk}</version>
-        <type>pom</type>
-        <scope>import</scope>
       </dependency>
 
       <dependency>
@@ -1911,7 +1875,7 @@
       <dependency>
         <groupId>net.minidev</groupId>
         <artifactId>json-smart</artifactId>
-        <version>2.5.1</version>
+        <version>${version.json-smart}</version>
       </dependency>
 
       <!-- needed for tests in elasticsearch-exporter -->
@@ -2049,6 +2013,11 @@
       <dependency>
         <groupId>org.keycloak</groupId>
         <artifactId>keycloak-core</artifactId>
+        <version>${version.keycloak}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.keycloak</groupId>
+        <artifactId>keycloak-client-common-synced</artifactId>
         <version>${version.keycloak}</version>
       </dependency>
 

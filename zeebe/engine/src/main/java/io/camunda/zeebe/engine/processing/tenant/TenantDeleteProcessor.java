@@ -17,10 +17,16 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejection
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.distribution.DistributionQueue;
+import io.camunda.zeebe.engine.state.immutable.AuthorizationState;
+import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.state.immutable.TenantState;
+import io.camunda.zeebe.engine.state.immutable.UserState;
+import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.tenant.TenantRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
+import io.camunda.zeebe.protocol.record.intent.AuthorizationIntent;
 import io.camunda.zeebe.protocol.record.intent.TenantIntent;
+import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
@@ -31,20 +37,24 @@ public class TenantDeleteProcessor implements DistributedTypedRecordProcessor<Te
   private static final String TENANT_NOT_FOUND_ERROR_MESSAGE =
       "Expected to delete tenant with id '%s', but no tenant with this id exists.";
   private final TenantState tenantState;
+  private final AuthorizationState authorizationState;
   private final AuthorizationCheckBehavior authCheckBehavior;
   private final KeyGenerator keyGenerator;
   private final StateWriter stateWriter;
   private final TypedRejectionWriter rejectionWriter;
   private final TypedResponseWriter responseWriter;
   private final CommandDistributionBehavior commandDistributionBehavior;
+  private final UserState userState;
 
   public TenantDeleteProcessor(
-      final TenantState tenantState,
+      final ProcessingState state,
       final AuthorizationCheckBehavior authCheckBehavior,
       final KeyGenerator keyGenerator,
       final Writers writers,
       final CommandDistributionBehavior commandDistributionBehavior) {
-    this.tenantState = tenantState;
+    tenantState = state.getTenantState();
+    authorizationState = state.getAuthorizationState();
+    userState = state.getUserState();
     this.authCheckBehavior = authCheckBehavior;
     this.keyGenerator = keyGenerator;
     stateWriter = writers.state();
@@ -81,6 +91,7 @@ public class TenantDeleteProcessor implements DistributedTypedRecordProcessor<Te
     record.setTenantKey(tenantKey);
 
     removeAssignedEntities(record);
+    deleteAuthorizations(record);
 
     stateWriter.appendFollowUpEvent(tenantKey, TenantIntent.DELETED, record);
     responseWriter.writeEventOnCommand(tenantKey, TenantIntent.DELETED, record, command);
@@ -95,6 +106,7 @@ public class TenantDeleteProcessor implements DistributedTypedRecordProcessor<Te
         .ifPresentOrElse(
             tenant -> {
               removeAssignedEntities(command.getValue());
+              deleteAuthorizations(command.getValue());
               stateWriter.appendFollowUpEvent(
                   command.getKey(), TenantIntent.DELETED, command.getValue());
             },
@@ -134,17 +146,39 @@ public class TenantDeleteProcessor implements DistributedTypedRecordProcessor<Te
         .getEntitiesByType(tenantKey)
         .forEach(
             (entityType, entityKeys) -> {
-              entityKeys.forEach(
-                  entityKey -> {
-                    final var entityRecord =
-                        new TenantRecord()
-                            .setTenantId(tenantId)
-                            .setTenantKey(tenantKey)
-                            .setEntityKey(entityKey)
-                            .setEntityType(entityType);
-                    stateWriter.appendFollowUpEvent(
-                        tenantKey, TenantIntent.ENTITY_REMOVED, entityRecord);
-                  });
+              switch (entityType) {
+                case USER ->
+                    entityKeys.forEach(
+                        entityKey -> {
+                          final var username =
+                              userState.getUser(entityKey).orElseThrow().getUsername();
+                          final var entityRecord =
+                              new TenantRecord()
+                                  .setTenantId(tenantId)
+                                  .setEntityId(username)
+                                  .setEntityType(entityType);
+                          stateWriter.appendFollowUpEvent(
+                              tenantKey, TenantIntent.ENTITY_REMOVED, entityRecord);
+                        });
+                default ->
+                    throw new UnsupportedOperationException(
+                        String.format(
+                            "Expected to remove entity with key %d and type %s from tenant %s, but type %s is not supported.",
+                            record.getEntityKey(), record.getEntityType(), tenantId, entityType));
+              }
             });
+  }
+
+  private void deleteAuthorizations(final TenantRecord record) {
+    final var tenantId = record.getTenantId();
+    final var authorizationKeysForGroup =
+        authorizationState.getAuthorizationKeysForOwner(AuthorizationOwnerType.TENANT, tenantId);
+
+    authorizationKeysForGroup.forEach(
+        authorizationKey -> {
+          final var authorization = new AuthorizationRecord().setAuthorizationKey(authorizationKey);
+          stateWriter.appendFollowUpEvent(
+              authorizationKey, AuthorizationIntent.DELETED, authorization);
+        });
   }
 }

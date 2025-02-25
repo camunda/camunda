@@ -7,15 +7,18 @@
  */
 package io.camunda.zeebe.it.client;
 
+import static io.camunda.zeebe.gateway.metrics.LongPollingMetricsDoc.RequestsQueuedKeyNames.TYPE;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.client.CamundaClient;
-import io.camunda.zeebe.gateway.metrics.LongPollingMetrics;
+import io.camunda.zeebe.gateway.metrics.LongPollingMetricsDoc;
 import io.camunda.zeebe.qa.util.actuator.JobStreamActuator;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import io.camunda.zeebe.qa.util.jobstream.JobStreamActuatorAssert;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
+import io.camunda.zeebe.util.micrometer.StatefulGauge;
+import io.micrometer.core.instrument.MeterRegistry;
 import java.time.Duration;
 import java.util.UUID;
 import org.awaitility.Awaitility;
@@ -24,15 +27,11 @@ import org.junit.jupiter.api.Test;
 
 @ZeebeIntegration
 final class ClientCancelPendingCommandTest {
-  @TestZeebe(initMethod = "initTestStandaloneBroker")
-  private static TestStandaloneBroker zeebe;
+  @TestZeebe
+  private static final TestStandaloneBroker ZEEBE =
+      new TestStandaloneBroker().withUnauthenticatedAccess().withUnauthenticatedAccess();
 
-  @AutoClose private final CamundaClient client = zeebe.newClientBuilder().build();
-
-  @SuppressWarnings("unused")
-  static void initTestStandaloneBroker() {
-    zeebe = new TestStandaloneBroker().withUnauthenticatedAccess().withUnauthenticatedAccess();
-  }
+  @AutoClose private final CamundaClient client = ZEEBE.newClientBuilder().build();
 
   @Test
   void shouldCancelCommandOnFutureCancellation() {
@@ -44,9 +43,18 @@ final class ClientCancelPendingCommandTest {
             .maxJobsToActivate(10)
             .requestTimeout(Duration.ofHours(1))
             .send();
-    final var metrics = new LongPollingMetrics();
+    final var registry = ZEEBE.bean(MeterRegistry.class);
+    final var blockedRequestCount = LongPollingMetricsDoc.REQUESTS_QUEUED_CURRENT;
     Awaitility.await("until we have one polling client")
-        .untilAsserted(() -> assertThat(metrics.getBlockedRequestsCount("type")).isOne());
+        .untilAsserted(
+            () ->
+                assertThat(
+                        (StatefulGauge)
+                            registry
+                                .get(blockedRequestCount.getName())
+                                .tag(TYPE.asString(), "type")
+                                .meter())
+                    .returns(1.0, StatefulGauge::value));
 
     // when - create some jobs after cancellation; the notification will trigger long polling to
     // remove cancelled requests. unfortunately we can't tell when cancellation is finished
@@ -54,7 +62,15 @@ final class ClientCancelPendingCommandTest {
 
     // then
     Awaitility.await("until no long polling clients are waiting")
-        .untilAsserted(() -> assertThat(metrics.getBlockedRequestsCount("type")).isZero());
+        .untilAsserted(
+            () ->
+                assertThat(
+                        (StatefulGauge)
+                            registry
+                                .get(blockedRequestCount.getName())
+                                .tag(TYPE.asString(), "type")
+                                .meter())
+                    .returns(0.0, StatefulGauge::value));
   }
 
   @Test
@@ -78,7 +94,7 @@ final class ClientCancelPendingCommandTest {
   }
 
   private void awaitStreamRegistered(final String workerName) {
-    final var actuator = JobStreamActuator.of(zeebe);
+    final var actuator = JobStreamActuator.of(ZEEBE);
     Awaitility.await("until a stream with the worker name '%s' is registered".formatted(workerName))
         .untilAsserted(
             () ->
@@ -88,7 +104,7 @@ final class ClientCancelPendingCommandTest {
   }
 
   private void awaitStreamRemoved(final String workerName) {
-    final var actuator = JobStreamActuator.of(zeebe);
+    final var actuator = JobStreamActuator.of(ZEEBE);
     Awaitility.await("until no stream with worker name '%s' is registered".formatted(workerName))
         .untilAsserted(
             () ->

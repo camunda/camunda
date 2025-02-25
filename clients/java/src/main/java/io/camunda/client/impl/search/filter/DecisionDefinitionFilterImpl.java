@@ -17,21 +17,22 @@ package io.camunda.client.impl.search.filter;
 
 import io.camunda.client.api.search.filter.DecisionDefinitionFilter;
 import io.camunda.client.impl.search.TypedSearchRequestPropertyProvider;
-import io.camunda.client.protocol.rest.DecisionDefinitionFilterRequest;
+import io.camunda.client.impl.util.ParseUtil;
 
 public class DecisionDefinitionFilterImpl
-    extends TypedSearchRequestPropertyProvider<DecisionDefinitionFilterRequest>
+    extends TypedSearchRequestPropertyProvider<
+        io.camunda.client.protocol.rest.DecisionDefinitionFilter>
     implements DecisionDefinitionFilter {
 
-  private final DecisionDefinitionFilterRequest filter;
+  private final io.camunda.client.protocol.rest.DecisionDefinitionFilter filter;
 
   public DecisionDefinitionFilterImpl() {
-    filter = new DecisionDefinitionFilterRequest();
+    filter = new io.camunda.client.protocol.rest.DecisionDefinitionFilter();
   }
 
   @Override
   public DecisionDefinitionFilter decisionDefinitionKey(final long value) {
-    filter.setDecisionDefinitionKey(value);
+    filter.setDecisionDefinitionKey(ParseUtil.keyToString(value));
     return this;
   }
 
@@ -61,7 +62,7 @@ public class DecisionDefinitionFilterImpl
 
   @Override
   public DecisionDefinitionFilter decisionRequirementsKey(final long value) {
-    filter.setDecisionRequirementsKey(value);
+    filter.setDecisionRequirementsKey(ParseUtil.keyToString(value));
     return this;
   }
 
@@ -72,7 +73,7 @@ public class DecisionDefinitionFilterImpl
   }
 
   @Override
-  protected DecisionDefinitionFilterRequest getSearchRequestProperty() {
+  protected io.camunda.client.protocol.rest.DecisionDefinitionFilter getSearchRequestProperty() {
     return filter;
   }
 }

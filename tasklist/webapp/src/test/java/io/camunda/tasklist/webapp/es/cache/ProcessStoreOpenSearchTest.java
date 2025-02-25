@@ -24,18 +24,18 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.authentication.entity.CamundaUser;
 import io.camunda.authentication.tenant.TenantAttributeHolder;
 import io.camunda.security.configuration.AuthorizationsConfiguration;
+import io.camunda.security.configuration.MultiTenancyConfiguration;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.security.impl.AuthorizationChecker;
 import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.tasklist.exceptions.NotFoundException;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
-import io.camunda.tasklist.property.MultiTenancyProperties;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.store.opensearch.ProcessStoreOpenSearch;
 import io.camunda.tasklist.tenant.TenantAwareOpenSearchClient;
 import io.camunda.tasklist.util.OpenSearchUtil;
 import io.camunda.tasklist.util.SpringContextHolder;
-import io.camunda.tasklist.webapp.security.permission.TasklistPermissionServices;
+import io.camunda.tasklist.webapp.permission.TasklistPermissionServices;
 import io.camunda.webapps.schema.descriptors.operate.index.ProcessIndex;
 import io.camunda.webapps.schema.entities.operate.ProcessEntity;
 import java.io.IOException;
@@ -75,8 +75,8 @@ class ProcessStoreOpenSearchTest {
   @InjectMocks private ProcessStoreOpenSearch processStore;
   @Mock private ObjectMapper objectMapper;
   @InjectMocks private SpringContextHolder springContextHolder;
-  @Mock private TasklistProperties tasklistProperties;
   @Mock private SecurityConfiguration securityConfiguration;
+  @Mock private TasklistProperties tasklistProperties;
   @Mock private io.camunda.identity.autoconfigure.IdentityProperties identityProperties;
   @Mock private SecurityContextProvider securityContextProvider;
   @Mock private AuthorizationChecker authorizationChecker;
@@ -87,7 +87,7 @@ class ProcessStoreOpenSearchTest {
   @BeforeEach
   public void setup() {
     MockitoAnnotations.initMocks(this);
-    when(tasklistProperties.getMultiTenancy()).thenReturn(new MultiTenancyProperties());
+    when(securityConfiguration.getMultiTenancy()).thenReturn(new MultiTenancyConfiguration());
     ReflectionTestUtils.setField(
         permissionServices, "securityConfiguration", securityConfiguration);
 

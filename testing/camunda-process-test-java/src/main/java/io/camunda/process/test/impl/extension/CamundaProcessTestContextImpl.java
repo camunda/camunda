@@ -21,6 +21,8 @@ import io.camunda.process.test.api.CamundaProcessTestContext;
 import io.camunda.process.test.impl.client.CamundaManagementClient;
 import io.camunda.process.test.impl.containers.CamundaContainer;
 import io.camunda.process.test.impl.containers.ConnectorsContainer;
+import io.camunda.zeebe.client.ZeebeClient;
+import io.camunda.zeebe.client.ZeebeClientBuilder;
 import java.net.URI;
 import java.time.Duration;
 import java.time.Instant;
@@ -30,13 +32,13 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
 
   private final CamundaContainer camundaContainer;
   private final ConnectorsContainer connectorsContainer;
-  private final Consumer<CamundaClient> clientCreationCallback;
+  private final Consumer<AutoCloseable> clientCreationCallback;
   private final CamundaManagementClient camundaManagementClient;
 
   public CamundaProcessTestContextImpl(
       final CamundaContainer camundaContainer,
       final ConnectorsContainer connectorsContainer,
-      final Consumer<CamundaClient> clientCreationCallback) {
+      final Consumer<AutoCloseable> clientCreationCallback) {
     this.camundaContainer = camundaContainer;
     this.connectorsContainer = connectorsContainer;
     this.clientCreationCallback = clientCreationCallback;
@@ -61,6 +63,27 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
     modifier.accept(builder);
 
     final CamundaClient client = builder.build();
+    clientCreationCallback.accept(client);
+
+    return client;
+  }
+
+  @Override
+  public ZeebeClient createZeebeClient() {
+    return createZeebeClient(builder -> {});
+  }
+
+  @Override
+  public ZeebeClient createZeebeClient(final Consumer<ZeebeClientBuilder> modifier) {
+    final ZeebeClientBuilder builder =
+        ZeebeClient.newClientBuilder()
+            .usePlaintext()
+            .grpcAddress(getCamundaGrpcAddress())
+            .restAddress(getCamundaRestAddress());
+
+    modifier.accept(builder);
+
+    final ZeebeClient client = builder.build();
     clientCreationCallback.accept(client);
 
     return client;

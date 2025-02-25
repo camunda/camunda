@@ -16,11 +16,17 @@
  */
 package io.atomix.cluster.protocol;
 
+import io.micrometer.core.instrument.MeterRegistry;
 import java.time.Duration;
 
 /** SWIM membership protocol builder. */
 public class SwimMembershipProtocolBuilder extends GroupMembershipProtocolBuilder {
   private final SwimMembershipProtocolConfig config = new SwimMembershipProtocolConfig();
+  private final MeterRegistry meterRegistry;
+
+  public SwimMembershipProtocolBuilder(final MeterRegistry meterRegistry) {
+    this.meterRegistry = meterRegistry;
+  }
 
   /**
    * Sets whether to broadcast member updates to all peers.
@@ -135,6 +141,6 @@ public class SwimMembershipProtocolBuilder extends GroupMembershipProtocolBuilde
 
   @Override
   public GroupMembershipProtocol build() {
-    return new SwimMembershipProtocol(config, "");
+    return new SwimMembershipProtocol(config, "", meterRegistry);
   }
 }

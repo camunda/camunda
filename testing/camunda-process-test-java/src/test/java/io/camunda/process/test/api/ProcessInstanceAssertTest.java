@@ -16,6 +16,7 @@
 package io.camunda.process.test.api;
 
 import static org.mockito.Mockito.atLeast;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -114,6 +115,20 @@ public class ProcessInstanceAssertTest {
     @Test
     void shouldUseProcessInstanceEvent() throws IOException {
       // given
+      when(processInstanceEvent.getProcessInstanceKey()).thenReturn(ACTIVE_PROCESS_INSTANCE_KEY);
+
+      // when
+      CamundaAssert.assertThat(processInstanceEvent).isActive();
+
+      // then
+      verify(camundaDataSource).findProcessInstances();
+    }
+
+    @Test
+    void shouldUseDeprecatedProcessInstanceEvent() throws IOException {
+      // given
+      final io.camunda.zeebe.client.api.response.ProcessInstanceEvent processInstanceEvent =
+          mock(io.camunda.zeebe.client.api.response.ProcessInstanceEvent.class);
       when(processInstanceEvent.getProcessInstanceKey()).thenReturn(ACTIVE_PROCESS_INSTANCE_KEY);
 
       // when
@@ -281,7 +296,7 @@ public class ProcessInstanceAssertTest {
       // then
       Assertions.assertThatThrownBy(() -> CamundaAssert.assertThat(processInstanceEvent).isActive())
           .hasMessage(
-              "Process instance [key: %d] should be active but was not activated.",
+              "Process instance [key: %d] should be active but was not created.",
               PROCESS_INSTANCE_KEY);
     }
   }
@@ -375,7 +390,7 @@ public class ProcessInstanceAssertTest {
       Assertions.assertThatThrownBy(
               () -> CamundaAssert.assertThat(processInstanceEvent).isCompleted())
           .hasMessage(
-              "Process instance [key: %d] should be completed but was not activated.",
+              "Process instance [key: %d] should be completed but was not created.",
               PROCESS_INSTANCE_KEY);
     }
   }
@@ -469,7 +484,69 @@ public class ProcessInstanceAssertTest {
       Assertions.assertThatThrownBy(
               () -> CamundaAssert.assertThat(processInstanceEvent).isTerminated())
           .hasMessage(
-              "Process instance [key: %d] should be terminated but was not activated.",
+              "Process instance [key: %d] should be terminated but was not created.",
+              PROCESS_INSTANCE_KEY);
+    }
+  }
+
+  @Nested
+  class IsCreated {
+
+    @Test
+    void shouldBeCreatedIfActive() throws IOException {
+      // given
+      final ProcessInstanceDto processInstance = newActiveProcessInstance(PROCESS_INSTANCE_KEY);
+      when(camundaDataSource.findProcessInstances())
+          .thenReturn(Collections.singletonList(processInstance));
+
+      // when
+      when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
+
+      // then
+      CamundaAssert.assertThat(processInstanceEvent).isCreated();
+    }
+
+    @Test
+    void shouldBeCreatedIfCompleted() throws IOException {
+      // given
+      final ProcessInstanceDto processInstance = newCompletedProcessInstance(PROCESS_INSTANCE_KEY);
+      when(camundaDataSource.findProcessInstances())
+          .thenReturn(Collections.singletonList(processInstance));
+
+      // when
+      when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
+
+      // then
+      CamundaAssert.assertThat(processInstanceEvent).isCreated();
+    }
+
+    @Test
+    void shouldBeCreatedIfTerminated() throws IOException {
+      // given
+      final ProcessInstanceDto processInstance = newTerminatedProcessInstance(PROCESS_INSTANCE_KEY);
+      when(camundaDataSource.findProcessInstances())
+          .thenReturn(Collections.singletonList(processInstance));
+
+      // when
+      when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
+
+      // then
+      CamundaAssert.assertThat(processInstanceEvent).isCreated();
+    }
+
+    @Test
+    void shouldFailIfNotCreated() throws IOException {
+      // given
+      when(camundaDataSource.findProcessInstances()).thenReturn(Collections.emptyList());
+
+      // when
+      when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
+
+      // then
+      Assertions.assertThatThrownBy(
+              () -> CamundaAssert.assertThat(processInstanceEvent).isCreated())
+          .hasMessage(
+              "Process instance [key: %d] should be created but was not created.",
               PROCESS_INSTANCE_KEY);
     }
   }

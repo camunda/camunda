@@ -1,3 +1,3 @@
 #!/bin/bash
 
-./c8run start
+./c8run start $@

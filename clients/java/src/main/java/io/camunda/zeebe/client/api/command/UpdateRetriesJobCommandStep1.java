@@ -18,7 +18,7 @@ package io.camunda.zeebe.client.api.command;
 import io.camunda.zeebe.client.api.response.UpdateRetriesJobResponse;
 
 /**
- * @deprecated since 8.7 for removal in 8.8, replaced by {@link
+ * @deprecated since 8.8 for removal in 8.9, replaced by {@link
  *     io.camunda.client.api.command.UpdateRetriesJobCommandStep1}
  */
 @Deprecated
@@ -37,7 +37,7 @@ public interface UpdateRetriesJobCommandStep1
   UpdateRetriesJobCommandStep2 retries(int retries);
 
   /**
-   * @deprecated since 8.7 for removal in 8.8, replaced by {@link
+   * @deprecated since 8.8 for removal in 8.9, replaced by {@link
    *     io.camunda.client.api.command.UpdateRetriesJobCommandStep1.UpdateRetriesJobCommandStep2}
    */
   @Deprecated

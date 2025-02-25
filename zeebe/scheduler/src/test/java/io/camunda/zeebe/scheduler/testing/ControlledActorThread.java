@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.scheduler.testing;
 
+import io.camunda.zeebe.scheduler.ActorMetrics;
 import io.camunda.zeebe.scheduler.ActorThread;
 import io.camunda.zeebe.scheduler.ActorThreadGroup;
 import io.camunda.zeebe.scheduler.ActorTimerQueue;
@@ -27,7 +28,15 @@ public final class ControlledActorThread extends ActorThread {
       final ActorClock clock,
       final ActorTimerQueue timerQueue,
       final IdleStrategy idleStrategy) {
-    super(name, id, threadGroup, taskScheduler, clock, timerQueue, false, idleStrategy);
+    super(
+        name,
+        id,
+        threadGroup,
+        taskScheduler,
+        clock,
+        timerQueue,
+        ActorMetrics.disabled(),
+        idleStrategy);
     this.idleStrategy = new ControlledIdleStrategy(idleStrategy);
   }
 

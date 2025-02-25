@@ -36,6 +36,8 @@ import io.camunda.zeebe.transport.stream.api.RemoteStreamer;
 import io.camunda.zeebe.transport.stream.api.StreamResponseException;
 import io.camunda.zeebe.transport.stream.impl.messages.ErrorCode;
 import io.camunda.zeebe.util.buffer.BufferUtil;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
@@ -51,6 +53,7 @@ import org.agrona.DirectBuffer;
 import org.assertj.core.api.InstanceOfAssertFactories;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -64,16 +67,15 @@ final class StreamIntegrationTest {
           .build();
   private final List<Node> clusterNodes =
       List.of(createNode("server1"), createNode("server2"), createNode("client"));
+  private final TestSerializableData metadata = new TestSerializableData(1);
+  private ClientStreamer<TestSerializableData> clientStreamer;
+  @AutoClose private MeterRegistry meterRegistry = new SimpleMeterRegistry();
   private final TestServer server1 =
       new TestServer(createClusterNode(clusterNodes.get(0), clusterNodes));
   private final TestServer server2 =
       new TestServer(createClusterNode(clusterNodes.get(1), clusterNodes));
   private final TestClient client =
       new TestClient(createClusterNode(clusterNodes.get(2), clusterNodes));
-
-  private final TestSerializableData metadata = new TestSerializableData(1);
-
-  private ClientStreamer<TestSerializableData> clientStreamer;
 
   @BeforeEach
   void setup() {
@@ -199,7 +201,7 @@ final class StreamIntegrationTest {
   }
 
   private AtomixCluster createClusterNode(final Node localNode, final Collection<Node> nodes) {
-    return AtomixCluster.builder()
+    return AtomixCluster.builder(meterRegistry)
         .withAddress(localNode.address())
         .withMemberId(localNode.id().id())
         .withMembershipProvider(new BootstrapDiscoveryProvider(nodes))

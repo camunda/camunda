@@ -9,7 +9,7 @@
 import {waitFor} from 'modules/testing-library';
 import {authenticationStore} from 'modules/stores/authentication';
 import {getStateLocally} from 'modules/utils/localStorage';
-import {mockGetUser} from 'modules/mocks/api/getUser';
+import {mockMe} from 'modules/mocks/api/v2/me';
 import {createUser} from 'modules/testUtils';
 
 const mockUserResponse = createUser();
@@ -17,32 +17,6 @@ const mockUserResponse = createUser();
 describe('stores/authentication', () => {
   afterEach(() => {
     authenticationStore.reset();
-  });
-
-  it('should set user role', () => {
-    expect(authenticationStore.state.permissions).toEqual(['read', 'write']);
-
-    authenticationStore.setUser(createUser({permissions: undefined}));
-    expect(authenticationStore.state.permissions).toEqual(['read', 'write']);
-
-    authenticationStore.setUser(createUser({permissions: ['read']}));
-    expect(authenticationStore.state.permissions).toEqual(['read']);
-  });
-
-  it('should see if user has permissions to specific scopes', () => {
-    expect(authenticationStore.hasPermission(['write'])).toBe(true);
-    expect(authenticationStore.hasPermission(['read'])).toBe(true);
-    expect(authenticationStore.hasPermission(['write', 'read'])).toBe(true);
-
-    authenticationStore.setUser(createUser({permissions: undefined}));
-    expect(authenticationStore.hasPermission(['write'])).toBe(true);
-    expect(authenticationStore.hasPermission(['read'])).toBe(true);
-    expect(authenticationStore.hasPermission(['write', 'read'])).toBe(true);
-
-    authenticationStore.setUser(createUser({permissions: ['read']}));
-    expect(authenticationStore.hasPermission(['write'])).toBe(false);
-    expect(authenticationStore.hasPermission(['read'])).toBe(true);
-    expect(authenticationStore.hasPermission(['write', 'read'])).toBe(true);
   });
 
   it.each([{canLogout: false}, {canLogout: true, isLoginDelegated: true}])(
@@ -64,7 +38,7 @@ describe('stores/authentication', () => {
         },
       }));
 
-      mockGetUser().withSuccess(mockUserResponse);
+      mockMe().withSuccess(mockUserResponse);
 
       authenticationStore.authenticate();
 
@@ -74,7 +48,7 @@ describe('stores/authentication', () => {
         ),
       );
 
-      mockGetUser().withServerError(401);
+      mockMe().withServerError(401);
 
       authenticationStore.authenticate();
 
@@ -86,7 +60,7 @@ describe('stores/authentication', () => {
       expect(mockReload).toHaveBeenCalledTimes(1);
       expect(getStateLocally()?.wasReloaded).toBe(true);
 
-      mockGetUser().withSuccess(mockUserResponse);
+      mockMe().withSuccess(mockUserResponse);
 
       authenticationStore.authenticate();
 

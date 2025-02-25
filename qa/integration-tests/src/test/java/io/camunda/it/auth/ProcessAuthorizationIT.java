@@ -21,12 +21,10 @@ import io.camunda.it.utils.BrokerITInvocationProvider;
 import io.camunda.it.utils.CamundaClientTestFactory.Authenticated;
 import io.camunda.it.utils.CamundaClientTestFactory.Permissions;
 import io.camunda.it.utils.CamundaClientTestFactory.User;
-import io.camunda.security.entity.AuthenticationMethod;
 import java.time.Duration;
 import java.util.List;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.TestInstance.Lifecycle;
 import org.junit.jupiter.api.TestTemplate;
@@ -34,7 +32,6 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.api.function.Executable;
 
 @TestInstance(Lifecycle.PER_CLASS)
-@Disabled("https://github.com/camunda/camunda/issues/27289")
 class ProcessAuthorizationIT {
 
   private static final String ADMIN = "admin";
@@ -60,7 +57,7 @@ class ProcessAuthorizationIT {
   static final BrokerITInvocationProvider PROVIDER =
       new BrokerITInvocationProvider()
           .withoutRdbmsExporter()
-          .withAuthenticationMethod(AuthenticationMethod.BASIC)
+          .withBasicAuth()
           .withAuthorizationsEnabled()
           .withUsers(ADMIN_USER, RESTRICTED_USER);
 

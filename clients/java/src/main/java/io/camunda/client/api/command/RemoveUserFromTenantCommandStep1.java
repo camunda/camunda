@@ -22,11 +22,10 @@ public interface RemoveUserFromTenantCommandStep1
     extends FinalCommandStep<RemoveUserFromTenantResponse> {
 
   /**
-   * Sets the user key for the removal of assignment.
+   * Sets the username for the removal of assignment.
    *
-   * @param userKey the key of the user
    * @return the builder for this command. Call {@link #send()} to complete the command and send it
    *     to the broker.
    */
-  RemoveUserFromTenantCommandStep1 userKey(long userKey);
+  RemoveUserFromTenantCommandStep1 username(String username);
 }

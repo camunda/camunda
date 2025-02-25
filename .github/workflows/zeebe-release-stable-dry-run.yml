@@ -6,6 +6,18 @@ on:
     - cron: '0 2 * * 1-5'
 
 jobs:
+  dry-run-release-87:
+    name: "Release from stable/8.7"
+    uses: camunda/camunda/.github/workflows/camunda-platform-release.yml@stable/8.7
+    secrets: inherit
+    strategy:
+      fail-fast: false
+    with:
+      releaseBranch: stable/8.7
+      releaseVersion: 0.8.7
+      nextDevelopmentVersion: 0.0.0-SNAPSHOT
+      isLatest: true
+      dryRun: true
   dry-run-release-86:
     name: "Release from stable/8.6"
     uses: camunda/camunda/.github/workflows/camunda-platform-release.yml@stable/8.6

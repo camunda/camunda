@@ -15,7 +15,9 @@
  */
 package io.camunda.zeebe.client.impl.command;
 
+import io.camunda.client.impl.util.ParseUtil;
 import io.camunda.client.protocol.rest.MigrateProcessInstanceMappingInstruction;
+import io.camunda.client.protocol.rest.ProcessInstanceMigrationInstruction;
 import io.camunda.zeebe.client.CredentialsProvider.StatusCode;
 import io.camunda.zeebe.client.ZeebeClientConfiguration;
 import io.camunda.zeebe.client.api.JsonMapper;
@@ -51,7 +53,7 @@ public final class MigrateProcessInstanceCommandImpl
   private Duration requestTimeout;
   private final HttpClient httpClient;
   private final RequestConfig.Builder httpRequestConfig;
-  private final io.camunda.client.protocol.rest.MigrateProcessInstanceRequest httpRequestObject;
+  private final ProcessInstanceMigrationInstruction httpRequestObject;
   private boolean useRest;
   private final long processInstanceKey;
   private final JsonMapper jsonMapper;
@@ -69,7 +71,7 @@ public final class MigrateProcessInstanceCommandImpl
     this.retryPredicate = retryPredicate;
     this.httpClient = httpClient;
     httpRequestConfig = httpClient.newRequestConfig();
-    httpRequestObject = new io.camunda.client.protocol.rest.MigrateProcessInstanceRequest();
+    httpRequestObject = new ProcessInstanceMigrationInstruction();
     useRest = config.preferRestOverGrpc();
     this.processInstanceKey = processInstanceKey;
     this.jsonMapper = jsonMapper;
@@ -83,7 +85,8 @@ public final class MigrateProcessInstanceCommandImpl
         MigrateProcessInstanceRequest.MigrationPlan.newBuilder()
             .setTargetProcessDefinitionKey(targetProcessDefinitionKey)
             .build());
-    httpRequestObject.setTargetProcessDefinitionKey(targetProcessDefinitionKey);
+    httpRequestObject.setTargetProcessDefinitionKey(
+        ParseUtil.keyToString(targetProcessDefinitionKey));
     return this;
   }
 
@@ -106,7 +109,8 @@ public final class MigrateProcessInstanceCommandImpl
   }
 
   private void buildRequestObject(final MigrationPlan migrationPlan) {
-    httpRequestObject.setTargetProcessDefinitionKey(migrationPlan.getTargetProcessDefinitionKey());
+    httpRequestObject.setTargetProcessDefinitionKey(
+        ParseUtil.keyToString(migrationPlan.getTargetProcessDefinitionKey()));
     httpRequestObject.setMappingInstructions(
         migrationPlan.getMappingInstructions().stream()
             .map(

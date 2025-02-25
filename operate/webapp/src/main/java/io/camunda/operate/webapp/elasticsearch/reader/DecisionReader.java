@@ -19,12 +19,12 @@ import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.util.ElasticsearchUtil;
 import io.camunda.operate.webapp.rest.dto.DecisionRequestDto;
 import io.camunda.operate.webapp.rest.exception.NotFoundException;
-import io.camunda.operate.webapp.security.identity.IdentityPermission;
 import io.camunda.operate.webapp.security.permission.PermissionsService;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.webapps.schema.descriptors.operate.index.DecisionIndex;
 import io.camunda.webapps.schema.descriptors.operate.index.DecisionRequirementsIndex;
 import io.camunda.webapps.schema.entities.operate.dmn.definition.DecisionDefinitionEntity;
+import io.camunda.zeebe.protocol.record.value.PermissionType;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -232,7 +232,8 @@ public class DecisionReader extends AbstractReader
   private QueryBuilder buildQuery(final String tenantId) {
     QueryBuilder decisionIdQ = null;
     if (permissionsService.permissionsEnabled()) {
-      final var allowed = permissionsService.getDecisionsWithPermission(IdentityPermission.READ);
+      final var allowed =
+          permissionsService.getDecisionsWithPermission(PermissionType.READ_DECISION_DEFINITION);
       if (allowed != null && !allowed.isAll()) {
         decisionIdQ = QueryBuilders.termsQuery(DecisionIndex.DECISION_ID, allowed.getIds());
       }

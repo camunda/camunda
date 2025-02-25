@@ -7,6 +7,9 @@
  */
 package io.camunda.exporter.rdbms.handlers;
 
+import static io.camunda.exporter.rdbms.utils.ExportUtil.buildTreePath;
+
+import io.camunda.db.rdbms.write.domain.FlowNodeInstanceDbModel;
 import io.camunda.db.rdbms.write.domain.FlowNodeInstanceDbModel.FlowNodeInstanceDbModelBuilder;
 import io.camunda.db.rdbms.write.service.FlowNodeInstanceWriter;
 import io.camunda.exporter.rdbms.RdbmsExportHandler;
@@ -20,13 +23,19 @@ import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import io.camunda.zeebe.util.DateUtil;
 import java.util.Set;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class FlowNodeExportHandler implements RdbmsExportHandler<ProcessInstanceRecordValue> {
+
+  private static final Logger LOG = LoggerFactory.getLogger(FlowNodeExportHandler.class);
 
   private static final Set<Intent> FLOW_NODE_INTENT =
       Set.of(
           ProcessInstanceIntent.ELEMENT_ACTIVATING,
           ProcessInstanceIntent.ELEMENT_COMPLETED,
+          ProcessInstanceIntent.ELEMENT_MIGRATED,
+          ProcessInstanceIntent.ANCESTOR_MIGRATED,
           ProcessInstanceIntent.ELEMENT_TERMINATED);
 
   private static final Set<BpmnElementType> UNHANDLED_BPMN_TYPES =
@@ -49,19 +58,10 @@ public class FlowNodeExportHandler implements RdbmsExportHandler<ProcessInstance
   public void export(final Record<ProcessInstanceRecordValue> record) {
     final var value = record.getValue();
     if (record.getIntent() == ProcessInstanceIntent.ELEMENT_ACTIVATING) {
-      final var flowNode =
-          new FlowNodeInstanceDbModelBuilder()
-              .flowNodeInstanceKey(record.getKey())
-              .flowNodeId(value.getElementId())
-              .processInstanceKey(value.getProcessInstanceKey())
-              .processDefinitionKey(value.getProcessDefinitionKey())
-              .processDefinitionId(value.getBpmnProcessId())
-              .tenantId(value.getTenantId())
-              .state(FlowNodeState.ACTIVE)
-              .startDate(DateUtil.toOffsetDateTime(record.getTimestamp()))
-              .type(mapFlowNodeType(value))
-              .build();
-      flowNodeInstanceWriter.create(flowNode);
+      flowNodeInstanceWriter.create(map(record, value));
+    } else if (record.getIntent() == ProcessInstanceIntent.ELEMENT_MIGRATED
+        || record.getIntent() == ProcessInstanceIntent.ANCESTOR_MIGRATED) {
+      flowNodeInstanceWriter.update(map(record, value));
     } else if (record.getIntent() == ProcessInstanceIntent.ELEMENT_COMPLETED) {
       flowNodeInstanceWriter.finish(
           record.getKey(),
@@ -73,6 +73,25 @@ public class FlowNodeExportHandler implements RdbmsExportHandler<ProcessInstance
           FlowNodeState.TERMINATED,
           DateUtil.toOffsetDateTime(record.getTimestamp()));
     }
+  }
+
+  private static FlowNodeInstanceDbModel map(
+      final Record<ProcessInstanceRecordValue> record, final ProcessInstanceRecordValue value) {
+    return new FlowNodeInstanceDbModelBuilder()
+        .flowNodeInstanceKey(record.getKey())
+        .flowNodeId(value.getElementId())
+        .processInstanceKey(value.getProcessInstanceKey())
+        .processDefinitionKey(value.getProcessDefinitionKey())
+        .processDefinitionId(value.getBpmnProcessId())
+        .tenantId(value.getTenantId())
+        .state(FlowNodeState.ACTIVE)
+        .startDate(DateUtil.toOffsetDateTime(record.getTimestamp()))
+        .type(mapFlowNodeType(value))
+        .partitionId(record.getPartitionId())
+        .treePath(
+            buildTreePath(
+                record.getKey(), value.getProcessInstanceKey(), value.getElementInstancePath()))
+        .build();
   }
 
   private static FlowNodeType mapFlowNodeType(final ProcessInstanceRecordValue recordValue) {

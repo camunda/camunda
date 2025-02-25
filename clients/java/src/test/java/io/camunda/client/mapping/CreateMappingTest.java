@@ -27,6 +27,7 @@ public class CreateMappingTest extends ClientRestTest {
   public static final String CLAIM_NAME = "claimName";
   public static final String CLAIM_VALUE = "claimValue";
   public static final String NAME = "mappingName";
+  public static final String ID = "mappingId";
 
   @Test
   void shouldCreateMapping() {
@@ -36,6 +37,7 @@ public class CreateMappingTest extends ClientRestTest {
         .claimName(CLAIM_NAME)
         .claimValue(CLAIM_VALUE)
         .name(NAME)
+        .id(ID)
         .send()
         .join();
 
@@ -44,6 +46,8 @@ public class CreateMappingTest extends ClientRestTest {
         gatewayService.getLastRequest(MappingRuleCreateRequest.class);
     assertThat(request.getClaimName()).isEqualTo(CLAIM_NAME);
     assertThat(request.getClaimValue()).isEqualTo(CLAIM_VALUE);
+    assertThat(request.getName()).isEqualTo(NAME);
+    assertThat(request.getId()).isEqualTo(ID);
   }
 
   @Test

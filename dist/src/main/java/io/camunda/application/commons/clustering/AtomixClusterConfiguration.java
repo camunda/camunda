@@ -12,6 +12,7 @@ import io.atomix.cluster.ClusterConfig;
 import io.atomix.utils.Version;
 import io.camunda.application.commons.actor.ActorSchedulerConfiguration.SchedulerConfiguration;
 import io.camunda.zeebe.util.VersionUtil;
+import io.micrometer.core.instrument.MeterRegistry;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -21,10 +22,13 @@ public final class AtomixClusterConfiguration {
 
   private final ClusterConfig config;
   private final String actorSchedulerName;
+  private final MeterRegistry meterRegistry;
 
   @Autowired
   public AtomixClusterConfiguration(
-      final ClusterConfig config, final SchedulerConfiguration schedulerConfiguration) {
+      final ClusterConfig config,
+      final SchedulerConfiguration schedulerConfiguration,
+      final MeterRegistry meterRegistry) {
 
     this.config = config;
     actorSchedulerName =
@@ -34,12 +38,14 @@ public final class AtomixClusterConfiguration {
             ? String.format(
                 "%s-%s", schedulerConfiguration.schedulerPrefix(), schedulerConfiguration.nodeId())
             : "";
+    this.meterRegistry = meterRegistry;
   }
 
   @Bean(destroyMethod = "stop")
   public AtomixCluster atomixCluster() {
     final var atomixCluster =
-        new AtomixCluster(config, Version.from(VersionUtil.getVersion()), actorSchedulerName);
+        new AtomixCluster(
+            config, Version.from(VersionUtil.getVersion()), actorSchedulerName, meterRegistry);
     atomixCluster.start();
     return atomixCluster;
   }

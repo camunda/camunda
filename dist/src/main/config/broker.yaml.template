@@ -124,7 +124,7 @@
           # password:
 
       # commandApi:
-        # Overrides the host used for gateway-to-broker communication
+      # Overrides the host used for gateway-to-broker communication
         # This setting can also be overridden using the environment variable ZEEBE_BROKER_NETWORK_COMMANDAPI_HOST.
         # host: 0.0.0.0
 
@@ -901,16 +901,12 @@
         #
         #   index:
         #     prefix:
+        #     zeebeIndexPrefix: zeebe-record
+        #     The 'zeebeIndexPrefix' must be the same value as the Elasticsearch exporter 'elasticsearch.args.index.prefix'
+        #     otherwise the exporter may never start.
         #     numberOfShards: 3
         #     numberOfReplicas: 0
         #     variableSizeThreshold: 8191
-        #
-        #   retention:
-        #     enabled: false
-        #     minimumAge: 30d
-        #     policyName: camunda-retention-policy
-        #
-        #   createSchema: true
         #
         #   archiver:
         #     enabled: true
@@ -919,6 +915,13 @@
         #     rolloverBatchSize: 100
         #     waitPeriodBeforeArchiving: "1h"
         #     delayBetweenRuns: 2000
+        #     maxDelayBetweenRuns: 60000
+        #     retention:
+        #       enabled: false
+        #       minimumAge: 30d
+        #       policyName: camunda-retention-policy
+        #
+        #   createSchema: true
         #
         #   processCache:
         #     maxCacheSize: 10000

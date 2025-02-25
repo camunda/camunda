@@ -16,19 +16,23 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejection
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.distribution.DistributionQueue;
+import io.camunda.zeebe.engine.state.immutable.AuthorizationState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.state.immutable.TenantState;
 import io.camunda.zeebe.engine.state.immutable.UserState;
 import io.camunda.zeebe.engine.state.user.PersistedUser;
+import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.RoleRecord;
 import io.camunda.zeebe.protocol.impl.record.value.group.GroupRecord;
 import io.camunda.zeebe.protocol.impl.record.value.tenant.TenantRecord;
 import io.camunda.zeebe.protocol.impl.record.value.user.UserRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
+import io.camunda.zeebe.protocol.record.intent.AuthorizationIntent;
 import io.camunda.zeebe.protocol.record.intent.GroupIntent;
 import io.camunda.zeebe.protocol.record.intent.RoleIntent;
 import io.camunda.zeebe.protocol.record.intent.TenantIntent;
 import io.camunda.zeebe.protocol.record.intent.UserIntent;
+import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.EntityType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
@@ -40,6 +44,7 @@ public class UserDeleteProcessor implements DistributedTypedRecordProcessor<User
   private static final String USER_DOES_NOT_EXIST_ERROR_MESSAGE =
       "Expected to delete user with username %s, but a user with this username does not exist";
   private final UserState userState;
+  private final AuthorizationState authorizationState;
   private final KeyGenerator keyGenerator;
   private final StateWriter stateWriter;
   private final TypedRejectionWriter rejectionWriter;
@@ -57,6 +62,7 @@ public class UserDeleteProcessor implements DistributedTypedRecordProcessor<User
     this.keyGenerator = keyGenerator;
     userState = state.getUserState();
     tenantState = state.getTenantState();
+    authorizationState = state.getAuthorizationState();
     stateWriter = writers.state();
     rejectionWriter = writers.rejection();
     responseWriter = writers.response();
@@ -118,14 +124,16 @@ public class UserDeleteProcessor implements DistributedTypedRecordProcessor<User
 
   private void deleteUser(final PersistedUser user) {
     final var userKey = user.getUserKey();
+    final var username = user.getUsername();
+    deleteAuthorizations(username);
     for (final var tenantId : user.getTenantIdsList()) {
       final long tenantKey = tenantState.getTenantKeyById(tenantId).orElseThrow();
       stateWriter.appendFollowUpEvent(
           tenantKey,
           TenantIntent.ENTITY_REMOVED,
           new TenantRecord()
-              .setTenantKey(tenantKey)
-              .setEntityKey(userKey)
+              .setTenantId(tenantId)
+              .setEntityId(user.getUsername())
               .setEntityType(EntityType.USER));
     }
 
@@ -149,5 +157,17 @@ public class UserDeleteProcessor implements DistributedTypedRecordProcessor<User
     }
 
     stateWriter.appendFollowUpEvent(userKey, UserIntent.DELETED, user.getUser());
+  }
+
+  private void deleteAuthorizations(final String username) {
+    final var authorizationKeysForGroup =
+        authorizationState.getAuthorizationKeysForOwner(AuthorizationOwnerType.USER, username);
+
+    authorizationKeysForGroup.forEach(
+        authorizationKey -> {
+          final var authorization = new AuthorizationRecord().setAuthorizationKey(authorizationKey);
+          stateWriter.appendFollowUpEvent(
+              authorizationKey, AuthorizationIntent.DELETED, authorization);
+        });
   }
 }

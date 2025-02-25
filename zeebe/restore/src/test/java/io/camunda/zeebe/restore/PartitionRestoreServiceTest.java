@@ -86,7 +86,8 @@ class PartitionRestoreServiceTest {
     backupStore = new TestRestorableBackupStore();
 
     snapshotStore =
-        new FileBasedSnapshotStore(0, partitionId, dataDirectory, snapshotPath -> Map.of());
+        new FileBasedSnapshotStore(
+            0, partitionId, dataDirectory, snapshotPath -> Map.of(), meterRegistry);
     actorScheduler.submitActor(snapshotStore, SchedulingHints.IO_BOUND);
 
     final var partitionMetadata =
@@ -95,10 +96,11 @@ class PartitionRestoreServiceTest {
     final var raftPartition =
         new RaftPartition(partitionMetadata, null, dataDirectoryToRestore.toFile(), meterRegistry);
     restoreService =
-        new PartitionRestoreService(backupStore, raftPartition, nodeId, snapshotPath -> Map.of());
+        new PartitionRestoreService(
+            backupStore, raftPartition, nodeId, snapshotPath -> Map.of(), meterRegistry);
 
     journal =
-        SegmentedJournal.builder()
+        SegmentedJournal.builder(meterRegistry)
             .withDirectory(dataDirectory.toFile())
             .withName(raftPartition.name())
             .withMetaStore(mock(JournalMetaStore.class))
@@ -113,7 +115,8 @@ class PartitionRestoreServiceTest {
             snapshotStore,
             dataDirectory,
             // RaftPartitions implements this interface, but the RaftServer is not started
-            index -> CompletableFuture.completedFuture(journal.getTailSegments(index).values()));
+            index -> CompletableFuture.completedFuture(journal.getTailSegments(index).values()),
+            meterRegistry);
     actorScheduler.submitActor(backupService);
   }
 

@@ -16,7 +16,7 @@
 package io.camunda.client.api.search.response;
 
 import io.camunda.client.impl.util.EnumUtil;
-import io.camunda.client.protocol.rest.IncidentFilterRequest;
+import io.camunda.client.protocol.rest.IncidentFilter;
 import io.camunda.client.protocol.rest.IncidentResult;
 
 public enum IncidentState {
@@ -26,8 +26,8 @@ public enum IncidentState {
   PENDING,
   UNKNOWN_ENUM_VALUE;
 
-  public static IncidentFilterRequest.StateEnum toProtocolState(final IncidentState value) {
-    return (value == null) ? null : IncidentFilterRequest.StateEnum.fromValue(value.name());
+  public static IncidentFilter.StateEnum toProtocolState(final IncidentState value) {
+    return (value == null) ? null : IncidentFilter.StateEnum.fromValue(value.name());
   }
 
   public static IncidentState fromProtocolState(final IncidentResult.StateEnum value) {

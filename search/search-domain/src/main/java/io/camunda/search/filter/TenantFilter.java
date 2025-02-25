@@ -8,10 +8,17 @@
 package io.camunda.search.filter;
 
 import io.camunda.util.ObjectBuilder;
+import io.camunda.zeebe.protocol.record.value.EntityType;
 import java.util.Set;
 import java.util.function.Function;
 
-public record TenantFilter(Long key, String tenantId, String name, Set<Long> memberKeys)
+public record TenantFilter(
+    Long key,
+    String tenantId,
+    String name,
+    String joinParentId,
+    EntityType entityType,
+    Set<Long> memberKeys)
     implements FilterBase {
 
   public static TenantFilter of(final Function<Builder, Builder> builderFunction) {
@@ -23,6 +30,8 @@ public record TenantFilter(Long key, String tenantId, String name, Set<Long> mem
     private Long key;
     private String tenantId;
     private String name;
+    private String joinParentId;
+    private EntityType entityType;
     private Set<Long> memberKeys;
 
     public Builder key(final Long value) {
@@ -40,8 +49,19 @@ public record TenantFilter(Long key, String tenantId, String name, Set<Long> mem
       return this;
     }
 
-    public Builder memberKey(final Long value) {
-      return memberKeys(Set.of(value));
+    public Builder joinParentId(final String value) {
+      joinParentId = value;
+      return this;
+    }
+
+    public Builder entityType(final EntityType value) {
+      entityType = value;
+      return this;
+    }
+
+    public Builder memberType(final EntityType value) {
+      entityType = value;
+      return this;
     }
 
     public Builder memberKeys(final Set<Long> value) {
@@ -51,7 +71,7 @@ public record TenantFilter(Long key, String tenantId, String name, Set<Long> mem
 
     @Override
     public TenantFilter build() {
-      return new TenantFilter(key, tenantId, name, memberKeys);
+      return new TenantFilter(key, tenantId, name, joinParentId, entityType, memberKeys);
     }
   }
 }

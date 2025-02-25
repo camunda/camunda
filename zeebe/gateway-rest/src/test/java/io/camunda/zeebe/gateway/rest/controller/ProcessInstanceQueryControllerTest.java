@@ -439,19 +439,19 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
   private static Stream<Arguments> provideAdvancedSearchParameters() {
     final var streamBuilder = Stream.<Arguments>builder();
 
-    basicLongOperationTestCases(
+    keyOperationTestCases(
         streamBuilder,
         "processInstanceKey",
         ops -> new ProcessInstanceFilter.Builder().processInstanceKeyOperations(ops).build());
-    basicLongOperationTestCases(
+    keyOperationTestCases(
         streamBuilder,
         "processDefinitionKey",
         ops -> new ProcessInstanceFilter.Builder().processDefinitionKeyOperations(ops).build());
-    basicLongOperationTestCases(
+    keyOperationTestCases(
         streamBuilder,
         "parentProcessInstanceKey",
         ops -> new ProcessInstanceFilter.Builder().parentProcessInstanceKeyOperations(ops).build());
-    basicLongOperationTestCases(
+    keyOperationTestCases(
         streamBuilder,
         "parentFlowNodeInstanceKey",
         ops ->

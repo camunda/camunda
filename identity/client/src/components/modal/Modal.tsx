@@ -68,7 +68,7 @@ const Modal: FC<ModalProps> = ({
 }) => {
   const { t } = useTranslate("components");
   const submitLoading = (
-    <InlineLoading description={loadingDescription || t("Loading")} />
+    <InlineLoading description={loadingDescription || t("loading")} />
   );
 
   const modalRef = useRef<HTMLDivElement>(null);
@@ -98,8 +98,8 @@ const Modal: FC<ModalProps> = ({
         open={open}
         primaryButtonText={loading ? submitLoading : confirmLabel}
         primaryButtonDisabled={submitDisabled || loading}
-        closeButtonLabel={t("Close")}
-        secondaryButtonText={t("Cancel")}
+        closeButtonLabel={t("close")}
+        secondaryButtonText={t("cancel")}
         onRequestSubmit={onSubmit}
         onRequestClose={onClose}
         onSecondarySubmit={onClose}
@@ -134,7 +134,7 @@ export const DeleteModal: FC<
   const { t } = useTranslate("components");
 
   return (
-    <Modal {...modalProps} confirmLabel={t("Delete")} danger size="sm">
+    <Modal {...modalProps} confirmLabel={t("delete")} danger size="sm">
       {children}
     </Modal>
   );

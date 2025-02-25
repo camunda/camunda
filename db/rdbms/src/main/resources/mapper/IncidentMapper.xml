@@ -131,11 +131,35 @@
                           STATE,
                           CREATION_DATE,
                           JOB_KEY,
-                          TENANT_ID)
+                                   TENANT_ID,
+                                   PARTITION_ID,
+                                   HISTORY_CLEANUP_DATE)
     VALUES (#{incidentKey}, #{flowNodeInstanceKey}, #{flowNodeId}, #{processInstanceKey},
             #{processDefinitionId}, #{processDefinitionKey}, #{errorMessage}, #{errorType},
-            #{state},             #{creationDate, jdbcType=TIMESTAMP}, #{jobKey}, #{tenantId})
+            #{state}, #{creationDate, jdbcType=TIMESTAMP}, #{jobKey}, #{tenantId}, #{partitionId},
+            #{historyCleanupDate, jdbcType=TIMESTAMP})
   </insert>
+
+  <update
+    id="update"
+    statementType="PREPARED"
+    parameterType="io.camunda.db.rdbms.write.domain.IncidentDbModel"
+    flushCache="true">
+    UPDATE INCIDENT
+    SET FLOW_NODE_INSTANCE_KEY = #{flowNodeInstanceKey},
+        FLOW_NODE_ID           = #{flowNodeId},
+        PROCESS_INSTANCE_KEY   = #{processInstanceKey},
+        PROCESS_DEFINITION_ID  = #{processDefinitionId},
+        PROCESS_DEFINITION_KEY = #{processDefinitionKey},
+        ERROR_MESSAGE          = #{errorMessage},
+        ERROR_TYPE             = #{errorType},
+        STATE                  = #{state},
+        CREATION_DATE          = #{creationDate, jdbcType=TIMESTAMP},
+        JOB_KEY                = #{jobKey},
+        TENANT_ID              = #{tenantId},
+        HISTORY_CLEANUP_DATE   = #{historyCleanupDate, jdbcType=TIMESTAMP}
+    WHERE INCIDENT_KEY = #{incidentKey}
+  </update>
 
   <update
     id="updateState"
@@ -148,5 +172,21 @@
     WHERE INCIDENT_KEY = #{incidentKey}
   </update>
 
+  <update
+    flushCache="true"
+    id="updateHistoryCleanupDate"
+    statementType="PREPARED">
+    UPDATE ${prefix}INCIDENT SET
+      HISTORY_CLEANUP_DATE = #{historyCleanupDate, jdbcType=TIMESTAMP}
+    WHERE PROCESS_INSTANCE_KEY = #{processInstanceKey}
+  </update>
+
+  <delete
+    flushCache="true"
+    id="cleanupHistory"
+    statementType="PREPARED">
+    <bind name="tableName" value="'INCIDENT'"/>
+    <include refid="io.camunda.db.rdbms.sql.Commons.historyCleanup"/>
+  </delete>
 
 </mapper>

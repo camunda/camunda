@@ -83,7 +83,9 @@ public class ConcurrentBackupCompactionTest extends DynamicAutoCloseable {
     actorScheduler.start();
     backupStore = manage(new InMemoryMockBackupStore());
     snapshotStore =
-        manage(new FileBasedSnapshotStore(0, partitionId, dataDirectory, snapshotPath -> Map.of()));
+        manage(
+            new FileBasedSnapshotStore(
+                0, partitionId, dataDirectory, snapshotPath -> Map.of(), meterRegistry));
     actorScheduler.submitActor(snapshotStore, SchedulingHints.IO_BOUND);
 
     final var partitionMetadata =
@@ -94,7 +96,7 @@ public class ConcurrentBackupCompactionTest extends DynamicAutoCloseable {
 
     journal =
         manage(
-            SegmentedJournal.builder()
+            SegmentedJournal.builder(meterRegistry)
                 .withDirectory(dataDirectory.toFile())
                 .withName(raftPartition.name())
                 .withMetaStore(mock(JournalMetaStore.class))
@@ -121,8 +123,8 @@ public class ConcurrentBackupCompactionTest extends DynamicAutoCloseable {
                 snapshotStore,
                 dataDirectory,
                 // RaftPartitions implements this interface, but the RaftServer is not started
-                index ->
-                    CompletableFuture.completedFuture(journal.getTailSegments(index).values())));
+                index -> CompletableFuture.completedFuture(journal.getTailSegments(index).values()),
+                meterRegistry));
     actorScheduler.submitActor(backupService);
   }
 

@@ -72,6 +72,7 @@ import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import io.camunda.zeebe.test.util.socket.SocketUtil;
 import io.camunda.zeebe.util.VersionUtil;
 import io.camunda.zeebe.util.exception.UncheckedExecutionException;
+import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import io.netty.util.NetUtil;
 import java.io.File;
@@ -340,26 +341,32 @@ public class ClusteringRule extends ExternalResource {
     final var brokerBase = getBrokerBase(nodeId);
     final var brokerCfg = getBrokerCfg(nodeId);
     final var brokerSpringConfig = getBrokerConfiguration(brokerBase, brokerCfg);
+    final var meterRegistry = new SimpleMeterRegistry();
     brokerCfg.init(brokerBase.getAbsolutePath());
 
     final var atomixCluster =
         new AtomixCluster(
-            brokerSpringConfig.clusterConfig(), Version.from(VersionUtil.getVersion()), "Broker");
+            brokerSpringConfig.clusterConfig(),
+            Version.from(VersionUtil.getVersion()),
+            "Broker",
+            meterRegistry);
 
     final var scheduler =
         new ActorSchedulerConfiguration(
                 brokerSpringConfig.schedulerConfiguration(),
                 IdleStrategySupplier.ofDefault(),
-                actorClockConfiguration)
+                actorClockConfiguration,
+                meterRegistry)
             .scheduler();
 
-    final var dynamicClusterServices = new DynamicClusterServices(scheduler, atomixCluster);
+    final var dynamicClusterServices =
+        new DynamicClusterServices(scheduler, atomixCluster, meterRegistry);
     final var topologyManager = dynamicClusterServices.brokerTopologyManager();
 
     final var brokerClientConfig = brokerSpringConfig.brokerClientConfig();
     final var brokerClientConfiguration =
         new BrokerClientConfiguration(
-            brokerClientConfig, atomixCluster, scheduler, topologyManager);
+            brokerClientConfig, atomixCluster, scheduler, topologyManager, meterRegistry);
     final var brokerClient = brokerClientConfiguration.brokerClient();
 
     final var systemContext =
@@ -370,11 +377,10 @@ public class ClusteringRule extends ExternalResource {
             scheduler,
             atomixCluster,
             brokerClient,
-            new SimpleMeterRegistry(),
+            meterRegistry,
             new SecurityConfiguration(),
             null,
             null);
-    systemContexts.put(nodeId, systemContext);
 
     final Broker broker =
         new Broker(
@@ -473,25 +479,30 @@ public class ClusteringRule extends ExternalResource {
     final var config = new GatewayBasedConfiguration(gatewayCfg, new LifecycleProperties());
     final var clusterConfig = config.clusterConfig();
     final var actorConfig = config.schedulerConfiguration();
+    final var meterRegistry = new SimpleMeterRegistry();
 
     final ActorScheduler actorScheduler =
         new ActorSchedulerConfiguration(
-                actorConfig, IdleStrategySupplier.ofDefault(), actorClockConfiguration)
+                actorConfig,
+                IdleStrategySupplier.ofDefault(),
+                actorClockConfiguration,
+                meterRegistry)
             .scheduler();
 
-    final var clusterConfiguration = new AtomixClusterConfiguration(clusterConfig, actorConfig);
+    final var clusterConfiguration =
+        new AtomixClusterConfiguration(clusterConfig, actorConfig, meterRegistry);
     final var atomixCluster = clusterConfiguration.atomixCluster();
     atomixCluster.start().join();
 
-    final var dynamicClusterServices = new DynamicClusterServices(actorScheduler, atomixCluster);
+    final var dynamicClusterServices =
+        new DynamicClusterServices(actorScheduler, atomixCluster, meterRegistry);
     final var topologyManager = dynamicClusterServices.brokerTopologyManager();
 
     final var brokerClientConfig = config.brokerClientConfig();
     final var brokerClientConfiguration =
         new BrokerClientConfiguration(
-            brokerClientConfig, atomixCluster, actorScheduler, topologyManager);
+            brokerClientConfig, atomixCluster, actorScheduler, topologyManager, meterRegistry);
     final var brokerClient = brokerClientConfiguration.brokerClient();
-
     final var jobStreamClient =
         new JobStreamComponent().jobStreamClient(actorScheduler, atomixCluster);
     jobStreamClient.start().join();
@@ -508,11 +519,18 @@ public class ClusteringRule extends ExternalResource {
             actorScheduler,
             jobStreamClient.streamer(),
             null,
-            null);
+            null,
+            meterRegistry);
     gateway.start().join();
 
     return new GatewayResource(
-        gatewayCfg, actorScheduler, atomixCluster, brokerClient, jobStreamClient, gateway);
+        gatewayCfg,
+        actorScheduler,
+        atomixCluster,
+        brokerClient,
+        jobStreamClient,
+        gateway,
+        meterRegistry);
   }
 
   private CamundaClient createClient() {
@@ -673,6 +691,9 @@ public class ClusteringRule extends ExternalResource {
       } catch (final InterruptedException | ExecutionException e) {
         LangUtil.rethrowUnchecked(e);
       }
+
+      broker.getSystemContext().getMeterRegistry().clear();
+      broker.getSystemContext().getMeterRegistry().close();
     }
   }
 
@@ -965,13 +986,20 @@ public class ClusteringRule extends ExternalResource {
       AtomixCluster cluster,
       BrokerClient brokerClient,
       JobStreamClient jobStreamClient,
-      Gateway gateway)
+      Gateway gateway,
+      MeterRegistry meterRegistry)
       implements AutoCloseable {
 
     @Override
     public void close() {
       CloseHelper.quietCloseAll(
-          gateway, jobStreamClient, brokerClient, scheduler, () -> cluster.stop().join());
+          gateway,
+          jobStreamClient,
+          brokerClient,
+          scheduler,
+          () -> cluster.stop().join(),
+          meterRegistry::clear,
+          meterRegistry::close);
     }
   }
 

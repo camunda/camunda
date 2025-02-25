@@ -62,7 +62,8 @@ public final class LongPollingActivateJobsHandler<T> implements ActivateJobsHand
       final int failedAttemptThreshold,
       final Function<JobActivationResponse, JobActivationResult<T>> activationResultMapper,
       final Function<String, Exception> noJobsReceivedExceptionProvider,
-      final Function<String, Throwable> requestCanceledExceptionProvider) {
+      final Function<String, Throwable> requestCanceledExceptionProvider,
+      final LongPollingMetrics metrics) {
     this.brokerClient = brokerClient;
     activateJobsHandler =
         new RoundRobinActivateJobsHandler<>(
@@ -71,7 +72,7 @@ public final class LongPollingActivateJobsHandler<T> implements ActivateJobsHand
     this.longPollingTimeout = Duration.ofMillis(longPollingTimeout);
     this.probeTimeoutMillis = probeTimeoutMillis;
     this.failedAttemptThreshold = failedAttemptThreshold;
-    metrics = new LongPollingMetrics();
+    this.metrics = metrics;
   }
 
   @Override
@@ -383,6 +384,7 @@ public final class LongPollingActivateJobsHandler<T> implements ActivateJobsHand
     private Function<JobActivationResponse, JobActivationResult<T>> activationResultMapper;
     private Function<String, Exception> noJobsReceivedExceptionProvider;
     private Function<String, Throwable> requestCanceledExceptionProvider;
+    private LongPollingMetrics metrics;
 
     public Builder<T> setBrokerClient(final BrokerClient brokerClient) {
       this.brokerClient = brokerClient;
@@ -427,6 +429,11 @@ public final class LongPollingActivateJobsHandler<T> implements ActivateJobsHand
       return this;
     }
 
+    public Builder<T> setMetrics(final LongPollingMetrics metrics) {
+      this.metrics = metrics;
+      return this;
+    }
+
     public LongPollingActivateJobsHandler<T> build() {
       Objects.requireNonNull(brokerClient, "brokerClient");
       return new LongPollingActivateJobsHandler<>(
@@ -437,7 +444,8 @@ public final class LongPollingActivateJobsHandler<T> implements ActivateJobsHand
           minEmptyResponses,
           activationResultMapper,
           noJobsReceivedExceptionProvider,
-          requestCanceledExceptionProvider);
+          requestCanceledExceptionProvider,
+          metrics);
     }
   }
 }

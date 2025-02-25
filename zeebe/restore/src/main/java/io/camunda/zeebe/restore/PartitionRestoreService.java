@@ -22,6 +22,7 @@ import io.camunda.zeebe.snapshots.CRC32CChecksumProvider;
 import io.camunda.zeebe.snapshots.RestorableSnapshotStore;
 import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotStore;
 import io.camunda.zeebe.util.FileUtil;
+import io.micrometer.core.instrument.MeterRegistry;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.DirectoryNotEmptyException;
@@ -44,18 +45,21 @@ public class PartitionRestoreService {
   private final RaftPartition partition;
   private final int brokerId;
   private final CRC32CChecksumProvider checksumProvider;
+  private final MeterRegistry meterRegistry;
 
   public PartitionRestoreService(
       final BackupStore backupStore,
       final RaftPartition partition,
       final int brokerId,
-      final CRC32CChecksumProvider checksumProvider) {
+      final CRC32CChecksumProvider checksumProvider,
+      final MeterRegistry meterRegistry) {
     this.backupStore = backupStore;
     partitionId = partition.id().id();
     rootDirectory = partition.dataDirectory().toPath();
     this.partition = partition;
     this.brokerId = brokerId;
     this.checksumProvider = Objects.requireNonNull(checksumProvider);
+    this.meterRegistry = meterRegistry;
   }
 
   /**
@@ -110,7 +114,7 @@ public class PartitionRestoreService {
       final long checkpointPosition, final Path dataDirectory) {
 
     try (final var journal =
-        SegmentedJournal.builder()
+        SegmentedJournal.builder(partition.getMeterRegistry())
             .withDirectory(dataDirectory.toFile())
             .withName(partition.name())
             .withMetaStore(new InMemory())
@@ -187,7 +191,11 @@ public class PartitionRestoreService {
     @SuppressWarnings("resource")
     final RestorableSnapshotStore snapshotStore =
         new FileBasedSnapshotStore(
-            brokerId, partition.id().id(), partition.dataDirectory().toPath(), checksumProvider);
+            brokerId,
+            partition.id().id(),
+            partition.dataDirectory().toPath(),
+            checksumProvider,
+            meterRegistry);
 
     try {
       snapshotStore.restore(

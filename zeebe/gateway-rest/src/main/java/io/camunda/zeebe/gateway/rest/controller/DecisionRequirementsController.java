@@ -11,8 +11,8 @@ import static io.camunda.zeebe.gateway.rest.RestErrorMapper.mapErrorToResponse;
 
 import io.camunda.search.query.DecisionRequirementsQuery;
 import io.camunda.service.DecisionRequirementsServices;
-import io.camunda.zeebe.gateway.protocol.rest.DecisionRequirementsItem;
-import io.camunda.zeebe.gateway.protocol.rest.DecisionRequirementsSearchQueryRequest;
+import io.camunda.zeebe.gateway.protocol.rest.DecisionRequirementsResult;
+import io.camunda.zeebe.gateway.protocol.rest.DecisionRequirementsSearchQuery;
 import io.camunda.zeebe.gateway.rest.RequestMapper;
 import io.camunda.zeebe.gateway.rest.RestErrorMapper;
 import io.camunda.zeebe.gateway.rest.SearchQueryRequestMapper;
@@ -39,7 +39,7 @@ public class DecisionRequirementsController {
 
   @CamundaPostMapping(path = "/search")
   public ResponseEntity<Object> searchDecisionRequirements(
-      @RequestBody(required = false) final DecisionRequirementsSearchQueryRequest query) {
+      @RequestBody(required = false) final DecisionRequirementsSearchQuery query) {
     return SearchQueryRequestMapper.toDecisionRequirementsQuery(query)
         .fold(RestErrorMapper::mapProblemToResponse, this::search);
   }
@@ -58,7 +58,7 @@ public class DecisionRequirementsController {
   }
 
   @CamundaGetMapping(path = "/{decisionRequirementsKey}")
-  public ResponseEntity<DecisionRequirementsItem> getByKey(
+  public ResponseEntity<DecisionRequirementsResult> getByKey(
       @PathVariable("decisionRequirementsKey") final Long decisionRequirementsKey) {
     try {
       return ResponseEntity.ok()

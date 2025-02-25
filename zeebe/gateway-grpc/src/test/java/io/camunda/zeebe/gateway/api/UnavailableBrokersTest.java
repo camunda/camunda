@@ -19,6 +19,8 @@ import io.camunda.client.api.command.FinalCommandStep;
 import io.camunda.security.configuration.SecurityConfigurations;
 import io.camunda.service.UserServices;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
+import io.camunda.zeebe.broker.client.api.BrokerClientRequestMetrics;
+import io.camunda.zeebe.broker.client.api.BrokerClientTopologyMetrics;
 import io.camunda.zeebe.broker.client.impl.BrokerClientImpl;
 import io.camunda.zeebe.broker.client.impl.BrokerTopologyManagerImpl;
 import io.camunda.zeebe.gateway.Gateway;
@@ -30,7 +32,10 @@ import io.camunda.zeebe.scheduler.ActorScheduler;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.test.util.asserts.grpc.ClientStatusExceptionAssert;
 import io.camunda.zeebe.test.util.socket.SocketUtil;
+import io.camunda.zeebe.util.micrometer.MicrometerUtil;
 import io.grpc.Status.Code;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import io.netty.util.NetUtil;
 import java.io.IOException;
 import java.net.InetAddress;
@@ -48,13 +53,15 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 
 @Execution(ExecutionMode.CONCURRENT)
 class UnavailableBrokersTest {
-  static Gateway gateway;
-  static AtomixCluster cluster;
-  static ActorScheduler actorScheduler;
-  static CamundaClient client;
-  static BrokerClient brokerClient;
-  static JobStreamClient jobStreamClient;
-  static BrokerTopologyManagerImpl topologyManager;
+  private static final MeterRegistry REGISTRY = new SimpleMeterRegistry();
+
+  private static Gateway gateway;
+  private static AtomixCluster cluster;
+  private static ActorScheduler actorScheduler;
+  private static CamundaClient client;
+  private static BrokerClient brokerClient;
+  private static JobStreamClient jobStreamClient;
+  private static BrokerTopologyManagerImpl topologyManager;
 
   @BeforeAll
   static void setUp() throws IOException {
@@ -62,14 +69,16 @@ class UnavailableBrokersTest {
     final GatewayCfg config = new GatewayCfg().setNetwork(networkCfg);
     config.init(InetAddress.getLocalHost().getHostName());
 
-    cluster = AtomixCluster.builder().build();
+    cluster = AtomixCluster.builder(REGISTRY).build();
     cluster.start();
 
     actorScheduler = ActorScheduler.newActorScheduler().build();
     actorScheduler.start();
 
     topologyManager =
-        new BrokerTopologyManagerImpl(() -> cluster.getMembershipService().getMembers());
+        new BrokerTopologyManagerImpl(
+            () -> cluster.getMembershipService().getMembers(),
+            new BrokerClientTopologyMetrics(REGISTRY));
     actorScheduler.submitActor(topologyManager).join();
     cluster.getMembershipService().addListener(topologyManager);
 
@@ -79,7 +88,8 @@ class UnavailableBrokersTest {
             cluster.getMessagingService(),
             cluster.getEventService(),
             actorScheduler,
-            topologyManager);
+            topologyManager,
+            new BrokerClientRequestMetrics(REGISTRY));
     jobStreamClient = new JobStreamClientImpl(actorScheduler, cluster.getCommunicationService());
     jobStreamClient.start().join();
 
@@ -96,7 +106,8 @@ class UnavailableBrokersTest {
             actorScheduler,
             jobStreamClient.streamer(),
             mock(UserServices.class),
-            mock(PasswordEncoder.class));
+            mock(PasswordEncoder.class),
+            REGISTRY);
     gateway.start().join();
 
     final String gatewayAddress = NetUtil.toSocketAddressString(networkCfg.toSocketAddress());
@@ -112,7 +123,8 @@ class UnavailableBrokersTest {
         jobStreamClient,
         topologyManager,
         actorScheduler,
-        () -> cluster.stop().join());
+        () -> cluster.stop().join(),
+        () -> MicrometerUtil.close(REGISTRY));
   }
 
   @ParameterizedTest(name = "{0}")

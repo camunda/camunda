@@ -23,8 +23,9 @@ import io.camunda.identity.sdk.authentication.Authentication;
 import io.camunda.identity.sdk.impl.rest.exception.RestException;
 import io.camunda.identity.sdk.tenants.Tenants;
 import io.camunda.identity.sdk.tenants.dto.Tenant;
+import io.camunda.security.configuration.MultiTenancyConfiguration;
+import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.tasklist.CommonUtils;
-import io.camunda.tasklist.property.MultiTenancyProperties;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.util.SpringContextHolder;
 import io.camunda.tasklist.util.apps.nobeans.TestApplicationWithNoBeans;
@@ -67,6 +68,8 @@ public class IdentityJwt2AuthenticationTokenConverterIT {
   @Mock private Authentication authentication;
 
   @MockBean private Tenants tenants;
+
+  @SpyBean private SecurityConfiguration securityConfiguration;
 
   @SpyBean private TasklistProperties tasklistProperties;
 
@@ -113,8 +116,9 @@ public class IdentityJwt2AuthenticationTokenConverterIT {
     when(authentication.verifyToken(any())).thenReturn(null);
     when(identity.tenants()).thenReturn(tenants);
 
-    final var multiTenancyProperties = new MultiTenancyProperties().setEnabled(true);
-    when(tasklistProperties.getMultiTenancy()).thenReturn(multiTenancyProperties);
+    final var multiTenancyConfiguration = new MultiTenancyConfiguration();
+    multiTenancyConfiguration.setEnabled(true);
+    when(securityConfiguration.getMultiTenancy()).thenReturn(multiTenancyConfiguration);
 
     final List<Tenant> tenants =
         CommonUtils.OBJECT_MAPPER.readValue(
@@ -146,8 +150,9 @@ public class IdentityJwt2AuthenticationTokenConverterIT {
     when(authentication.verifyToken(any())).thenReturn(null);
     when(identity.tenants()).thenReturn(tenants);
 
-    final var multiTenancyProperties = new MultiTenancyProperties().setEnabled(false);
-    when(tasklistProperties.getMultiTenancy()).thenReturn(multiTenancyProperties);
+    final var multiTenancyConfiguration = new MultiTenancyConfiguration();
+    multiTenancyConfiguration.setEnabled(false);
+    when(securityConfiguration.getMultiTenancy()).thenReturn(multiTenancyConfiguration);
 
     final Jwt token = createJwtTokenWith();
     final AbstractAuthenticationToken authenticationToken = tokenConverter.convert(token);
@@ -168,8 +173,9 @@ public class IdentityJwt2AuthenticationTokenConverterIT {
     when(authentication.verifyToken(any())).thenReturn(null);
     when(identity.tenants()).thenReturn(tenants);
 
-    final var multiTenancyProperties = new MultiTenancyProperties().setEnabled(true);
-    when(tasklistProperties.getMultiTenancy()).thenReturn(multiTenancyProperties);
+    final var multiTenancyConfiguration = new MultiTenancyConfiguration();
+    multiTenancyConfiguration.setEnabled(true);
+    when(securityConfiguration.getMultiTenancy()).thenReturn(multiTenancyConfiguration);
 
     final Jwt token = createJwtTokenWith();
     final AbstractAuthenticationToken authenticationToken = tokenConverter.convert(token);

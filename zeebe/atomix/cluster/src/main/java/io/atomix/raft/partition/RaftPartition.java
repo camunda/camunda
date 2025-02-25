@@ -32,11 +32,7 @@ import io.camunda.zeebe.util.VisibleForTesting;
 import io.camunda.zeebe.util.health.FailureListener;
 import io.camunda.zeebe.util.health.HealthMonitorable;
 import io.camunda.zeebe.util.health.HealthReport;
-import io.camunda.zeebe.util.micrometer.MicrometerUtil;
-import io.camunda.zeebe.util.micrometer.MicrometerUtil.PartitionKeyNames;
 import io.micrometer.core.instrument.MeterRegistry;
-import io.micrometer.core.instrument.Tags;
-import io.micrometer.core.instrument.composite.CompositeMeterRegistry;
 import java.io.File;
 import java.util.Collection;
 import java.util.Collections;
@@ -71,7 +67,7 @@ public final class RaftPartition implements Partition, HealthMonitorable {
     this.partitionMetadata = partitionMetadata;
     this.config = config;
     this.dataDirectory = dataDirectory;
-    this.meterRegistry = createMeterRegistry(meterRegistry);
+    this.meterRegistry = meterRegistry;
   }
 
   public void addRoleChangeListener(final RaftRoleChangeListener listener) {
@@ -245,6 +241,10 @@ public final class RaftPartition implements Partition, HealthMonitorable {
     return server;
   }
 
+  public MeterRegistry getMeterRegistry() {
+    return meterRegistry;
+  }
+
   public CompletableFuture<Void> stepDown() {
     return server.stepDown();
   }
@@ -282,28 +282,10 @@ public final class RaftPartition implements Partition, HealthMonitorable {
   }
 
   public CompletableFuture<Void> stop() {
-    // close the registry regardless of errors in server.stop()
-    return server
-        .stop()
-        .whenComplete(
-            (unused, error) -> {
-              MicrometerUtil.closeRegistry(meterRegistry);
-            });
+    return server.stop();
   }
 
   public RaftPartitionConfig getPartitionConfig() {
     return config;
-  }
-
-  private MeterRegistry createMeterRegistry(final MeterRegistry meterRegistry) {
-    final var registry = new CompositeMeterRegistry();
-    registry.add(meterRegistry);
-    registry
-        .config()
-        .commonTags(
-            Tags.of(
-                PartitionKeyNames.PARTITION.asString(),
-                Integer.toString(partitionMetadata.id().id())));
-    return registry;
   }
 }

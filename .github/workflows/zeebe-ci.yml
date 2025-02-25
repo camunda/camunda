@@ -86,15 +86,19 @@ jobs:
         continue-on-error: true
         uses: ./.github/actions/observe-build-status
         with:
-          job_name: "smoke-tests/${{ matrix.os }}"
+          job_name: "smoke-tests/${{ matrix.os }}-${{ matrix.arch }}"
           build_status: ${{ job.status }}
+          user_reason: ${{ (steps.analyze-test-run.outputs.flakyTests != '') && 'flaky-tests' || '' }}
+          user_description: ${{ steps.analyze-test-run.outputs.flakyTests }}
+          detailed_junit_flaky_tests: ${{ matrix.os != 'macos' && matrix.os != 'windows' }}  # feature only supported on Linux for now
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+
   property-tests:
     name: Property Tests
     runs-on: gcp-perf-core-8-default
-    timeout-minutes: 30
+    timeout-minutes: 20
     permissions: {}  # GITHUB_TOKEN unused in this job
     steps:
       - uses: actions/checkout@v4
@@ -136,13 +140,17 @@ jobs:
         uses: ./.github/actions/observe-build-status
         with:
           build_status: ${{ job.status }}
+          user_reason: ${{ (steps.analyze-test-run.outputs.flakyTests != '') && 'flaky-tests' || '' }}
+          user_description: ${{ steps.analyze-test-run.outputs.flakyTests }}
+          detailed_junit_flaky_tests: true
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+
   performance-tests:
     name: Performance Tests
     runs-on: gcp-perf-core-16-default
-    timeout-minutes: 30
+    timeout-minutes: 20
     permissions: {}  # GITHUB_TOKEN unused in this job
     env:
       ZEEBE_PERFORMANCE_TEST_RESULTS_DIR: "/tmp/jmh"
@@ -203,11 +211,12 @@ jobs:
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+
   strace-tests:
     # Zeebe tests requiring strace
     name: Strace Tests
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 15
     permissions: {}  # GITHUB_TOKEN unused in this job
     steps:
       - uses: actions/checkout@v4
@@ -259,6 +268,7 @@ jobs:
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+
   docker-checks:
     name: Docker checks
     runs-on: ubuntu-latest

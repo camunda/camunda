@@ -9,8 +9,10 @@ package io.camunda.zeebe.util.collection;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.BiFunction;
 import java.util.function.IntFunction;
+import java.util.function.Supplier;
 
 /**
  * A table is a data structure which maps rows and columns to a single value. Think of it like your
@@ -73,6 +75,10 @@ public interface Table<RowT, ColT, T> {
     return new MapTable<>();
   }
 
+  static <RowT, ColT, T> Table<RowT, ColT, T> concurrent() {
+    return new MapTable<>(ConcurrentHashMap::new);
+  }
+
   /** Returns an optimized table for enum keys (both rows and columns). */
   static <RowT extends Enum<RowT>, ColT extends Enum<ColT>, T> Table<RowT, ColT, T> ofEnum(
       final Class<RowT> rowClass,
@@ -87,10 +93,24 @@ public interface Table<RowT, ColT, T> {
   }
 
   /** A very simple implementation using nested maps. */
+  @SuppressWarnings("unchecked")
   final class MapTable<RowT, ColT, T> implements Table<RowT, ColT, T> {
-    private final Map<RowT, Map<ColT, T>> table = new HashMap<>();
+    private final Map<RowT, Map<ColT, T>> table;
+    private final Supplier<Map<?, ?>> supplier;
 
-    private MapTable() {}
+    private MapTable() {
+      this(HashMap::new);
+    }
+
+    /**
+     * Construct the MapTable using this factory method for maps.
+     *
+     * @param supplier used to create an empty map
+     */
+    private MapTable(final Supplier<Map<?, ?>> supplier) {
+      this.supplier = supplier;
+      table = (Map<RowT, Map<ColT, T>>) supplier.get();
+    }
 
     @Override
     public T get(final RowT rowKey, final ColT columnKey) {
@@ -104,14 +124,14 @@ public interface Table<RowT, ColT, T> {
 
     @Override
     public void put(final RowT rowKey, final ColT columnKey, final T value) {
-      table.computeIfAbsent(rowKey, ignored -> new HashMap<>()).put(columnKey, value);
+      table.computeIfAbsent(rowKey, ignored -> (Map<ColT, T>) supplier.get()).put(columnKey, value);
     }
 
     @Override
     public T computeIfAbsent(
         final RowT rowKey, final ColT columnKey, final BiFunction<RowT, ColT, T> computer) {
       return table
-          .computeIfAbsent(rowKey, ignored -> new HashMap<>())
+          .computeIfAbsent(rowKey, ignored -> (Map<ColT, T>) supplier.get())
           .computeIfAbsent(columnKey, ignored -> computer.apply(rowKey, columnKey));
     }
   }

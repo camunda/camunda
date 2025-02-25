@@ -13,6 +13,7 @@ import io.camunda.db.rdbms.write.queue.ContextType;
 import io.camunda.db.rdbms.write.queue.ExecutionQueue;
 import io.camunda.db.rdbms.write.queue.QueueItem;
 import io.camunda.db.rdbms.write.queue.UpsertMerger;
+import io.camunda.db.rdbms.write.queue.WriteStatementType;
 import java.util.function.Function;
 
 public class RoleWriter {
@@ -26,7 +27,11 @@ public class RoleWriter {
   public void create(final RoleDbModel role) {
     executionQueue.executeInQueue(
         new QueueItem(
-            ContextType.ROLE, role.roleKey(), "io.camunda.db.rdbms.sql.RoleMapper.insert", role));
+            ContextType.ROLE,
+            WriteStatementType.INSERT,
+            role.roleKey(),
+            "io.camunda.db.rdbms.sql.RoleMapper.insert",
+            role));
   }
 
   public void update(final RoleDbModel role) {
@@ -35,7 +40,11 @@ public class RoleWriter {
     if (!wasMerged) {
       executionQueue.executeInQueue(
           new QueueItem(
-              ContextType.ROLE, role.roleKey(), "io.camunda.db.rdbms.sql.RoleMapper.update", role));
+              ContextType.ROLE,
+              WriteStatementType.UPDATE,
+              role.roleKey(),
+              "io.camunda.db.rdbms.sql.RoleMapper.update",
+              role));
     }
   }
 
@@ -43,6 +52,7 @@ public class RoleWriter {
     executionQueue.executeInQueue(
         new QueueItem(
             ContextType.ROLE,
+            WriteStatementType.INSERT,
             member.roleKey(),
             "io.camunda.db.rdbms.sql.RoleMapper.insertMember",
             member));
@@ -52,6 +62,7 @@ public class RoleWriter {
     executionQueue.executeInQueue(
         new QueueItem(
             ContextType.ROLE,
+            WriteStatementType.DELETE,
             member.roleKey(),
             "io.camunda.db.rdbms.sql.RoleMapper.deleteMember",
             member));
@@ -60,10 +71,15 @@ public class RoleWriter {
   public void delete(final long roleKey) {
     executionQueue.executeInQueue(
         new QueueItem(
-            ContextType.ROLE, roleKey, "io.camunda.db.rdbms.sql.RoleMapper.delete", roleKey));
+            ContextType.ROLE,
+            WriteStatementType.DELETE,
+            roleKey,
+            "io.camunda.db.rdbms.sql.RoleMapper.delete",
+            roleKey));
     executionQueue.executeInQueue(
         new QueueItem(
             ContextType.ROLE,
+            WriteStatementType.DELETE,
             roleKey,
             "io.camunda.db.rdbms.sql.RoleMapper.deleteAllMembers",
             roleKey));

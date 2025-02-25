@@ -41,17 +41,18 @@ public class CreateAuthorizationMultipartitionTest {
   @Test
   public void shouldTestLifecycle() {
     // when
-    engine
-        .authorization()
-        .newAuthorization()
-        // TODO: remove with https://github.com/camunda/camunda/issues/26883
-        .withOwnerKey(1L)
-        .withOwnerId("ownerId")
-        .withOwnerType(AuthorizationOwnerType.USER)
-        .withResourceId("resourceId")
-        .withResourceType(AuthorizationResourceType.RESOURCE)
-        .withPermissions(PermissionType.CREATE)
-        .create();
+    final var authorizationKey =
+        engine
+            .authorization()
+            .newAuthorization()
+            .withOwnerId("ownerId")
+            .withOwnerType(AuthorizationOwnerType.USER)
+            .withResourceId("resourceId")
+            .withResourceType(AuthorizationResourceType.RESOURCE)
+            .withPermissions(PermissionType.CREATE)
+            .create()
+            .getValue()
+            .getAuthorizationKey();
 
     // then
     assertThat(
@@ -91,7 +92,8 @@ public class CreateAuthorizationMultipartitionTest {
 
     for (int partitionId = 2; partitionId < PARTITION_COUNT; partitionId++) {
       assertThat(
-              RecordingExporter.records()
+              RecordingExporter.authorizationRecords()
+                  .withAuthorizationKey(authorizationKey)
                   .withPartitionId(partitionId)
                   .limit(r -> r.getIntent().equals(AuthorizationIntent.CREATED))
                   .collect(Collectors.toList()))
@@ -106,8 +108,6 @@ public class CreateAuthorizationMultipartitionTest {
     engine
         .authorization()
         .newAuthorization()
-        // TODO: remove with https://github.com/camunda/camunda/issues/26883
-        .withOwnerKey(1L)
         .withOwnerId("ownerId")
         .withOwnerType(AuthorizationOwnerType.USER)
         .withResourceId("resourceId")
@@ -143,8 +143,6 @@ public class CreateAuthorizationMultipartitionTest {
     engine
         .authorization()
         .newAuthorization()
-        // TODO: remove with https://github.com/camunda/camunda/issues/26883
-        .withOwnerKey(1L)
         .withOwnerId("ownerId")
         .withOwnerType(AuthorizationOwnerType.USER)
         .withResourceId("resourceId")

@@ -8,9 +8,9 @@
     <version>8.8.0-SNAPSHOT</version>
     <relativePath>../../parent/pom.xml</relativePath>
   </parent>
-
   <artifactId>zeebe-client-java</artifactId>
   <version>8.8.0-SNAPSHOT</version>
+  <name>Zeebe Client Java</name>
   <distributionManagement>
     <relocation>
       <artifactId>camunda-client-java</artifactId>

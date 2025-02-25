@@ -49,7 +49,7 @@ public class UpdateUserMultiPartitionTest {
 
     ENGINE
         .user()
-        .updateUser(userRecord.getKey())
+        .updateUser()
         .withUsername(userRecord.getValue().getUsername())
         .withName("Bar Foo")
         .withEmail("bar@foo.com")
@@ -64,7 +64,7 @@ public class UpdateUserMultiPartitionTest {
             RecordingExporter.records()
                 .withPartitionId(1)
                 .limitByCount(
-                    record -> record.getIntent().equals(CommandDistributionIntent.FINISHED), 2)
+                    record -> record.getIntent().equals(CommandDistributionIntent.FINISHED), 3)
                 .filter(
                     record ->
                         record.getValueType() == ValueType.USER
@@ -97,7 +97,8 @@ public class UpdateUserMultiPartitionTest {
         .endsWith(tuple(CommandDistributionIntent.FINISHED, RecordType.EVENT, 1));
     for (int partitionId = 2; partitionId < PARTITION_COUNT; partitionId++) {
       assertThat(
-              RecordingExporter.records()
+              RecordingExporter.userRecords()
+                  .withUsername(username)
                   .withPartitionId(partitionId)
                   .limit(record -> record.getIntent().equals(UserIntent.UPDATED))
                   .collect(Collectors.toList()))
@@ -121,7 +122,7 @@ public class UpdateUserMultiPartitionTest {
 
     ENGINE
         .user()
-        .updateUser(userRecord.getKey())
+        .updateUser()
         .withUsername(userRecord.getValue().getUsername())
         .withName("Bar Foo")
         .withEmail("bar@foo.com")
@@ -131,7 +132,7 @@ public class UpdateUserMultiPartitionTest {
     // then
     assertThat(
             RecordingExporter.commandDistributionRecords()
-                .limitByCount(r -> r.getIntent().equals(CommandDistributionIntent.FINISHED), 2)
+                .limitByCount(r -> r.getIntent().equals(CommandDistributionIntent.FINISHED), 3)
                 .withIntent(CommandDistributionIntent.ENQUEUED))
         .extracting(r -> r.getValue().getQueueId())
         .containsOnly(DistributionQueue.IDENTITY.getQueueId());

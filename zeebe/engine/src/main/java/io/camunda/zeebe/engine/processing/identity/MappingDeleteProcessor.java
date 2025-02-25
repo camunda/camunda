@@ -16,18 +16,22 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseW
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.authorization.PersistedMapping;
 import io.camunda.zeebe.engine.state.distribution.DistributionQueue;
+import io.camunda.zeebe.engine.state.immutable.AuthorizationState;
 import io.camunda.zeebe.engine.state.immutable.MappingState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.state.immutable.TenantState;
+import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.MappingRecord;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.RoleRecord;
 import io.camunda.zeebe.protocol.impl.record.value.group.GroupRecord;
 import io.camunda.zeebe.protocol.impl.record.value.tenant.TenantRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
+import io.camunda.zeebe.protocol.record.intent.AuthorizationIntent;
 import io.camunda.zeebe.protocol.record.intent.GroupIntent;
 import io.camunda.zeebe.protocol.record.intent.MappingIntent;
 import io.camunda.zeebe.protocol.record.intent.RoleIntent;
 import io.camunda.zeebe.protocol.record.intent.TenantIntent;
+import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.EntityType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
@@ -39,13 +43,14 @@ public class MappingDeleteProcessor implements DistributedTypedRecordProcessor<M
   private static final String MAPPING_NOT_FOUND_ERROR_MESSAGE =
       "Expected to delete mapping with key '%s', but a mapping with this key does not exist.";
   private final MappingState mappingState;
+  private final TenantState tenantState;
+  private final AuthorizationState authorizationState;
   private final AuthorizationCheckBehavior authCheckBehavior;
   private final KeyGenerator keyGenerator;
   private final StateWriter stateWriter;
   private final TypedRejectionWriter rejectionWriter;
   private final TypedResponseWriter responseWriter;
   private final CommandDistributionBehavior commandDistributionBehavior;
-  private final TenantState tenantState;
 
   public MappingDeleteProcessor(
       final ProcessingState processingState,
@@ -55,6 +60,7 @@ public class MappingDeleteProcessor implements DistributedTypedRecordProcessor<M
       final CommandDistributionBehavior commandDistributionBehavior) {
     mappingState = processingState.getMappingState();
     tenantState = processingState.getTenantState();
+    authorizationState = processingState.getAuthorizationState();
     this.authCheckBehavior = authCheckBehavior;
     this.keyGenerator = keyGenerator;
     stateWriter = writers.state();
@@ -114,6 +120,7 @@ public class MappingDeleteProcessor implements DistributedTypedRecordProcessor<M
 
   private void deleteMapping(final PersistedMapping mapping) {
     final var mappingKey = mapping.getMappingKey();
+    deleteAuthorizations(mappingKey);
     for (final var tenantId : mapping.getTenantIdsList()) {
       final long tenantKey = tenantState.getTenantKeyById(tenantId).orElseThrow();
       stateWriter.appendFollowUpEvent(
@@ -144,5 +151,18 @@ public class MappingDeleteProcessor implements DistributedTypedRecordProcessor<M
     }
     stateWriter.appendFollowUpEvent(
         mappingKey, MappingIntent.DELETED, new MappingRecord().setMappingKey(mappingKey));
+  }
+
+  private void deleteAuthorizations(final long mappingKey) {
+    final var authorizationKeysForMapping =
+        authorizationState.getAuthorizationKeysForOwner(
+            AuthorizationOwnerType.MAPPING, String.valueOf(mappingKey));
+
+    authorizationKeysForMapping.forEach(
+        authorizationKey -> {
+          final var authorization = new AuthorizationRecord().setAuthorizationKey(authorizationKey);
+          stateWriter.appendFollowUpEvent(
+              authorizationKey, AuthorizationIntent.DELETED, authorization);
+        });
   }
 }

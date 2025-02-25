@@ -36,6 +36,7 @@ import io.atomix.utils.net.Address;
 import io.atomix.utils.serializer.Namespace;
 import io.atomix.utils.serializer.Namespaces;
 import io.atomix.utils.serializer.Serializer;
+import io.micrometer.core.instrument.MeterRegistry;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -109,23 +110,24 @@ public class SwimMembershipProtocol
       (address, payload) ->
           handleProbeRequest(SERIALIZER.decode(payload)).thenApply(SERIALIZER::encode);
   private final NodeDiscoveryEventListener discoveryEventListener = this::handleDiscoveryEvent;
+  private volatile Properties localProperties = new Properties();
+  private ScheduledFuture<?> gossipFuture;
+  private ScheduledFuture<?> probeFuture;
+  private ScheduledFuture<?> syncFuture;
+  private final SwimMembershipProtocolMetrics swimMembershipProtocolMetrics;
   private final BiFunction<Address, byte[], byte[]> syncHandler =
       (address, payload) -> SERIALIZER.encode(handleSync(SERIALIZER.decode(payload)));
   private final BiFunction<Address, byte[], byte[]> probeHandler =
       (address, payload) -> SERIALIZER.encode(handleProbe(SERIALIZER.decode(payload)));
   private final BiConsumer<Address, byte[]> gossipListener =
       (address, payload) -> handleGossipUpdates(SERIALIZER.decode(payload));
-  private volatile Properties localProperties = new Properties();
-  private ScheduledFuture<?> gossipFuture;
-  private ScheduledFuture<?> probeFuture;
-  private ScheduledFuture<?> syncFuture;
-
-  private final SwimMembershipProtocolMetrics swimMembershipProtocolMetrics =
-      new SwimMembershipProtocolMetrics();
 
   SwimMembershipProtocol(
-      final SwimMembershipProtocolConfig config, final String actorSchedulerName) {
+      final SwimMembershipProtocolConfig config,
+      final String actorSchedulerName,
+      final MeterRegistry registry) {
     this.config = config;
+    swimMembershipProtocolMetrics = new SwimMembershipProtocolMetrics(registry);
 
     swimScheduler =
         Executors.newSingleThreadScheduledExecutor(
@@ -140,8 +142,8 @@ public class SwimMembershipProtocol
    *
    * @return a new bootstrap provider builder
    */
-  public static SwimMembershipProtocolBuilder builder() {
-    return new SwimMembershipProtocolBuilder();
+  public static SwimMembershipProtocolBuilder builder(final MeterRegistry registry) {
+    return new SwimMembershipProtocolBuilder(registry);
   }
 
   @Override
@@ -391,7 +393,7 @@ public class SwimMembershipProtocol
    */
   private void recordUpdate(final ImmutableMember member) {
     updates.put(member.id(), member);
-    SwimMembershipProtocolMetrics.updateMemberIncarnationNumber(
+    swimMembershipProtocolMetrics.updateMemberIncarnationNumber(
         member.id().id(), member.incarnationNumber);
   }
 
@@ -890,8 +892,10 @@ public class SwimMembershipProtocol
 
     @Override
     public GroupMembershipProtocol newProtocol(
-        final SwimMembershipProtocolConfig config, final String actorSchedulerName) {
-      return new SwimMembershipProtocol(config, actorSchedulerName);
+        final SwimMembershipProtocolConfig config,
+        final String actorSchedulerName,
+        final MeterRegistry registry) {
+      return new SwimMembershipProtocol(config, actorSchedulerName, registry);
     }
   }
 

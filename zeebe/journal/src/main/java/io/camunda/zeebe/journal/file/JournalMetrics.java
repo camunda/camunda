@@ -15,171 +15,113 @@
  */
 package io.camunda.zeebe.journal.file;
 
-import io.prometheus.client.Counter;
-import io.prometheus.client.Gauge;
-import io.prometheus.client.Gauge.Timer;
-import io.prometheus.client.Histogram;
-import io.prometheus.client.Histogram.Child;
+import static io.camunda.zeebe.journal.file.JournalMetricsDoc.*;
+
+import io.camunda.zeebe.util.CloseableSilently;
+import io.camunda.zeebe.util.micrometer.MicrometerUtil;
+import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.Gauge;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.Timer;
+import java.util.concurrent.atomic.AtomicLong;
 
 final class JournalMetrics {
-  private static final String NAMESPACE = "atomix";
-  private static final String PARTITION_LABEL = "partition";
-  private static final Histogram SEGMENT_CREATION_TIME =
-      Histogram.build()
-          .namespace(NAMESPACE)
-          .name("segment_creation_time")
-          .help("Time spend to create a new segment")
-          .labelNames(PARTITION_LABEL)
-          .register();
+  private final Timer segmentCreationTime;
+  private final Timer segmentTruncateTime;
+  private final Timer segmentFlushTime;
+  private final Timer journalFlushTime;
+  private final AtomicLong segmentCount;
+  private final AtomicLong journalOpenDuration;
+  private final Timer segmentAllocationTime;
+  private final Timer appendLatency;
+  private final Counter appendRate;
+  private final Counter appendDataRate;
+  private final Timer seekLatency;
+  private final MeterRegistry registry;
 
-  private static final Histogram SEGMENT_TRUNCATE_TIME =
-      Histogram.build()
-          .namespace(NAMESPACE)
-          .name("segment_truncate_time")
-          .help("Time spend to truncate a segment")
-          .labelNames(PARTITION_LABEL)
-          .register();
+  JournalMetrics(final MeterRegistry registry) {
+    this.registry = registry;
+    segmentCreationTime = makeTimer(SEGMENT_CREATION_TIME);
+    segmentTruncateTime = makeTimer(SEGMENT_TRUNCATE_TIME);
+    segmentFlushTime = makeTimer(SEGMENT_FLUSH_TIME);
+    journalFlushTime = makeTimer(JOURNAL_FLUSH_TIME);
 
-  private static final Histogram SEGMENT_FLUSH_TIME =
-      Histogram.build()
-          .namespace(NAMESPACE)
-          .name("segment_flush_time")
-          .help("Time spend to flush segment to disk")
-          .labelNames(PARTITION_LABEL)
-          .register();
+    segmentCount = new AtomicLong(0L);
+    Gauge.builder(SEGMENT_COUNT.getName(), segmentCount::get)
+        .description(SEGMENT_COUNT.getDescription())
+        .register(registry);
 
-  private static final Histogram JOURNAL_FLUSH_TIME =
-      Histogram.build()
-          .namespace(NAMESPACE)
-          .name("journal_flush_time")
-          .help("Time spend to flush all dirty segments to disk")
-          .labelNames(PARTITION_LABEL)
-          .register();
+    journalOpenDuration = new AtomicLong(0L);
+    Gauge.builder(JOURNAL_OPERATION_DURATION.getName(), journalOpenDuration::get)
+        .description(JOURNAL_OPERATION_DURATION.getDescription())
+        .register(registry);
 
-  private static final Gauge SEGMENT_COUNT =
-      Gauge.build()
-          .namespace(NAMESPACE)
-          .name("segment_count")
-          .help("Number of segments")
-          .labelNames(PARTITION_LABEL)
-          .register();
-  private static final Gauge JOURNAL_OPEN_DURATION =
-      Gauge.build()
-          .namespace(NAMESPACE)
-          .name("journal_open_time")
-          .help("Time taken to open the journal")
-          .labelNames(PARTITION_LABEL)
-          .register();
-
-  private static final Histogram SEGMENT_ALLOCATION_TIME =
-      Histogram.build()
-          .namespace(NAMESPACE)
-          .name("segment_allocation_time")
-          .help("Time spent to allocate a new segment")
-          .labelNames(PARTITION_LABEL)
-          .register();
-
-  private static final Counter APPEND_DATA_RATE =
-      Counter.build()
-          .namespace(NAMESPACE)
-          .name("journal_append_data_rate")
-          .help("The rate in KiB at which we append data to the journal")
-          .labelNames(PARTITION_LABEL)
-          .register();
-
-  private static final Counter APPEND_RATE =
-      Counter.build()
-          .namespace(NAMESPACE)
-          .name("journal_append_rate")
-          .help("The rate at which we append entries in the journal, by entry count")
-          .labelNames(PARTITION_LABEL)
-          .register();
-
-  private static final Histogram APPEND_LATENCY =
-      Histogram.build()
-          .namespace(NAMESPACE)
-          .name("journal_append_latency")
-          .help("Distribution of time spent appending journal records, excluding flushing")
-          .labelNames(PARTITION_LABEL)
-          .register();
-
-  private static final Histogram SEEK_LATENCY =
-      Histogram.build()
-          .namespace(NAMESPACE)
-          .name("journal_seek_latency")
-          .help("Distribution of time spent seeking to a specific index")
-          .labelNames(PARTITION_LABEL)
-          .buckets(0.0001, 0.001, .005, .01, .025, .05, .075, .1, .25, .5, .75, 1, 2.5, 5)
-          .register();
-
-  private final Histogram.Child segmentCreationTime;
-  private final Histogram.Child segmentTruncateTime;
-  private final Histogram.Child segmentFlushTime;
-  private final Histogram.Child journalFlushTime;
-  private final Gauge.Child segmentCount;
-  private final Gauge.Child journalOpenTime;
-  private final Histogram.Child segmentAllocationTime;
-  private final Histogram.Child appendLatency;
-  private final Counter.Child appendRate;
-  private final Counter.Child appendDataRate;
-  private final Child seekLatency;
-
-  JournalMetrics(final String partitionId) {
-    segmentCreationTime = SEGMENT_CREATION_TIME.labels(partitionId);
-    segmentTruncateTime = SEGMENT_TRUNCATE_TIME.labels(partitionId);
-    segmentFlushTime = SEGMENT_FLUSH_TIME.labels(partitionId);
-    journalFlushTime = JOURNAL_FLUSH_TIME.labels(partitionId);
-    segmentCount = SEGMENT_COUNT.labels(partitionId);
-    journalOpenTime = JOURNAL_OPEN_DURATION.labels(partitionId);
-    segmentAllocationTime = SEGMENT_ALLOCATION_TIME.labels(partitionId);
-    appendLatency = APPEND_LATENCY.labels(partitionId);
-    appendRate = APPEND_RATE.labels(partitionId);
-    appendDataRate = APPEND_DATA_RATE.labels(partitionId);
-    seekLatency = SEEK_LATENCY.labels(partitionId);
+    segmentAllocationTime = makeTimer(SEGMENT_ALLOCATION_TIME);
+    appendLatency = makeTimer(APPEND_LATENCY);
+    appendRate =
+        Counter.builder(APPEND_RATE.getName())
+            .description(APPEND_RATE.getDescription())
+            .register(registry);
+    appendDataRate =
+        Counter.builder(APPEND_DATA_RATE.getName())
+            .description(APPEND_DATA_RATE.getDescription())
+            .register(registry);
+    seekLatency = makeTimer(SEEK_LATENCY);
   }
 
   void observeSegmentCreation(final Runnable segmentCreation) {
-    segmentCreationTime.time(segmentCreation);
+    segmentCreationTime.record(segmentCreation);
   }
 
-  Histogram.Timer observeSegmentFlush() {
-    return segmentFlushTime.startTimer();
+  CloseableSilently observeSegmentFlush() {
+    return MicrometerUtil.timer(segmentFlushTime, Timer.start(registry));
   }
 
-  Histogram.Timer observeJournalFlush() {
-    return journalFlushTime.startTimer();
+  CloseableSilently observeJournalFlush() {
+    return MicrometerUtil.timer(journalFlushTime, Timer.start(registry));
   }
 
   void observeSegmentTruncation(final Runnable segmentTruncation) {
-    segmentTruncateTime.time(segmentTruncation);
+    segmentTruncateTime.record(segmentTruncation);
   }
 
-  Timer startJournalOpenDurationTimer() {
-    return journalOpenTime.startTimer();
+  CloseableSilently startJournalOpenDurationTimer() {
+    final var now = registry.config().clock().monotonicTime();
+    return () -> {
+      final var end = registry.config().clock().monotonicTime();
+      journalOpenDuration.set(end - now);
+    };
   }
 
   void incSegmentCount() {
-    segmentCount.inc();
+    segmentCount.incrementAndGet();
   }
 
   void decSegmentCount() {
-    segmentCount.dec();
+    segmentCount.decrementAndGet();
   }
 
-  Histogram.Timer observeSegmentAllocation() {
-    return segmentAllocationTime.startTimer();
+  CloseableSilently observeSegmentAllocation() {
+    return MicrometerUtil.timer(segmentAllocationTime, Timer.start(registry));
   }
 
   void observeAppend(final long appendedBytes) {
-    appendRate.inc();
-    appendDataRate.inc(appendedBytes / 1024f);
+    appendRate.increment();
+    appendDataRate.increment(appendedBytes / 1024f);
   }
 
-  Histogram.Timer observeAppendLatency() {
-    return appendLatency.startTimer();
+  CloseableSilently observeAppendLatency() {
+    return MicrometerUtil.timer(appendLatency, Timer.start(registry));
   }
 
-  Histogram.Timer observeSeekLatency() {
-    return seekLatency.startTimer();
+  CloseableSilently observeSeekLatency() {
+    return MicrometerUtil.timer(seekLatency, Timer.start(registry));
+  }
+
+  private Timer makeTimer(final JournalMetricsDoc meter) {
+    return Timer.builder(meter.getName())
+        .description(meter.getDescription())
+        .serviceLevelObjectives(meter.getTimerSLOs())
+        .register(registry);
   }
 }
