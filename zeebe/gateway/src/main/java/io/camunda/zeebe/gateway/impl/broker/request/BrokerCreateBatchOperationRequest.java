@@ -8,45 +8,46 @@
 package io.camunda.zeebe.gateway.impl.broker.request;
 
 import io.camunda.zeebe.broker.client.api.dto.BrokerExecuteCommand;
+import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationCreationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationIntent;
+import io.camunda.zeebe.protocol.record.value.BatchOperationCreationRecordValue;
+import io.camunda.zeebe.protocol.record.value.BatchOperationType;
+import io.camunda.zeebe.protocol.record.value.ImmutableBatchOperationCreationRecordValue;
 import java.util.List;
+import java.util.Set;
 import org.agrona.DirectBuffer;
 
 public class BrokerCreateBatchOperationRequest
-    extends BrokerExecuteCommand<Long> {
+    extends BrokerExecuteCommand<BatchOperationCreationRecord> {
 
-  private List<Long> keys;
-  private CommandType commandType;
+  BatchOperationCreationRecord requestDto = new BatchOperationCreationRecord();
 
   public BrokerCreateBatchOperationRequest() {
     super(ValueType.BATCH_OPERATION, BatchOperationIntent.CREATE);
   }
 
-  public BrokerCreateBatchOperationRequest setKeys(final List<Long> keys) {
-    this.keys = keys;
+  public BrokerCreateBatchOperationRequest setKeys(final Set<Long> keys) {
+    this.requestDto.setKeys(keys);
     return this;
   }
 
-  public BrokerCreateBatchOperationRequest setCommandType(final CommandType commandType) {
-    this.commandType = commandType;
+  public BrokerCreateBatchOperationRequest setBatchOperationType(final BatchOperationType batchOperationType) {
+    this.requestDto.setBatchOperationType(batchOperationType);
     return this;
   }
 
   @Override
-  public ProcessInstanceRecord getRequestWriter() {
-    return null; // TODO
+  public BatchOperationCreationRecord getRequestWriter() {
+    return requestDto;
   }
 
   @Override
-  protected Long toResponseDto(final DirectBuffer buffer) {
-    final ProcessInstanceRecord responseDto = new ProcessInstanceRecord();
+  protected BatchOperationCreationRecord toResponseDto(final DirectBuffer buffer) {
+    final BatchOperationCreationRecord responseDto = new BatchOperationCreationRecord();
     responseDto.wrap(buffer);
-    return -1L; // TODO
+    return responseDto;
   }
 
-  public enum CommandType {
-    CANCEL_PROCESS_INSTANCE,
-  }
 }
