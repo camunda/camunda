@@ -137,6 +137,47 @@ public class TaskListenerTest {
   }
 
   @Test
+  public void shouldCreateUserTaskAfterAllCreatingTaskListenersAreExecuted() {
+    // given
+    final long processInstanceKey =
+        createProcessInstance(
+            createUserTaskWithTaskListeners(
+                ZeebeTaskListenerEventType.creating,
+                listenerType,
+                listenerType + "_2",
+                listenerType + "_3"));
+
+    // when
+    completeJobs(processInstanceKey, listenerType, listenerType + "_2", listenerType + "_3");
+
+    // then
+    assertTaskListenerJobsCompletionSequence(
+        processInstanceKey,
+        JobListenerEventType.CREATING,
+        listenerType,
+        listenerType + "_2",
+        listenerType + "_3");
+
+    // ensure that `COMPLETE_TASK_LISTENER` commands were triggered between
+    // `COMPLETING` and `COMPLETED` events
+    assertUserTaskIntentsSequence(
+        UserTaskIntent.CREATING,
+        UserTaskIntent.COMPLETE_TASK_LISTENER,
+        UserTaskIntent.COMPLETE_TASK_LISTENER,
+        UserTaskIntent.COMPLETE_TASK_LISTENER,
+        UserTaskIntent.CREATED);
+
+    assertUserTaskRecordWithIntent(
+        processInstanceKey,
+        UserTaskIntent.CREATED,
+        userTask ->
+            Assertions.assertThat(userTask)
+                .hasAction("my_custom_action")
+                .hasVariables(Map.of("foo_var", "bar"))
+                .hasNoChangedAttributes());
+  }
+
+  @Test
   public void shouldAssignUserTaskAfterAllAssignmentTaskListenersAreExecuted() {
     // given
     final long processInstanceKey =
