@@ -84,7 +84,8 @@ public final class TestEngine {
                             new SubscriptionCommandSender(partitionId, interPartitionCommandSender),
                             interPartitionCommandSender,
                             featureFlags,
-                            JobStreamer.noop())
+                            JobStreamer.noop(),
+                            null)
                         .withListener(
                             new ProcessingExporterTransistor(
                                 testStreams.getLogStream(

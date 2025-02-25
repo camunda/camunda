@@ -48,6 +48,8 @@ import io.camunda.zeebe.protocol.record.intent.VariableIntent;
 import io.camunda.zeebe.protocol.record.intent.scaling.ScaleIntent;
 import io.camunda.zeebe.protocol.record.value.AuthorizationRecordValue;
 import io.camunda.zeebe.protocol.record.value.BatchOperationCreationRecordValue;
+import io.camunda.zeebe.protocol.record.value.BatchOperationCreationRecordValue;
+import io.camunda.zeebe.protocol.record.value.BatchOperationExecutionRecordValue;
 import io.camunda.zeebe.protocol.record.value.ClockRecordValue;
 import io.camunda.zeebe.protocol.record.value.CommandDistributionRecordValue;
 import io.camunda.zeebe.protocol.record.value.CompensationSubscriptionRecordValue;
@@ -546,6 +548,17 @@ public final class RecordingExporter implements Exporter {
   public static BatchOperationCreationRecordStream batchOperationCreationRecords(
       final BatchOperationIntent intent) {
     return batchOperationCreationRecords().withIntent(intent);
+  }
+
+
+  public static BatchOperationExecutionRecordStream batchOperationExecutionRecords() {
+    return new BatchOperationExecutionRecordStream(
+        records(ValueType.BATCH_OPERATION_EXECUTION, BatchOperationExecutionRecordValue.class));
+  }
+
+  public static BatchOperationExecutionRecordStream batchOperationExecutionRecords(
+      final BatchOperationIntent intent) {
+    return batchOperationExecutionRecords().withIntent(intent);
   }
 
   public static void autoAcknowledge(final boolean shouldAcknowledgeRecords) {

@@ -159,13 +159,13 @@ public final class SortOptionBuilders {
     return fn.apply(incident()).build();
   }
 
-  public static BatchOperationSort.Builder batchOperation() {
+  public static BatchOperationSort.Builder batchOperationSort() {
     return new BatchOperationSort.Builder();
   }
 
-  public static BatchOperationSort batchOperation(
+  public static BatchOperationSort batchOperationSort(
       final Function<BatchOperationSort.Builder, ObjectBuilder<BatchOperationSort>> fn) {
-    return fn.apply(batchOperation()).build();
+    return fn.apply(batchOperationSort()).build();
   }
 
   public static AuthorizationSort authorization(

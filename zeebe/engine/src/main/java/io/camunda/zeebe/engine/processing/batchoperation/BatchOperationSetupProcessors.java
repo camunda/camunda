@@ -7,23 +7,67 @@
  */
 package io.camunda.zeebe.engine.processing.batchoperation;
 
+import io.camunda.service.search.core.SearchQueryService;
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessors;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
+import io.camunda.zeebe.engine.state.immutable.ProcessingState;
+import io.camunda.zeebe.engine.state.immutable.ScheduledTaskState;
 import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.intent.BatchOperationChunkIntent;
+import io.camunda.zeebe.protocol.record.intent.BatchOperationExecutionIntent;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationIntent;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
+import java.time.Duration;
+import java.util.Set;
+import java.util.function.Supplier;
 
 public final class BatchOperationSetupProcessors {
 
   public static void addBatchOperationProcessors(
       final KeyGenerator keyGenerator,
       final TypedRecordProcessors typedRecordProcessors,
+      final ProcessingState processingState,
+      final Supplier<ScheduledTaskState> scheduledTaskStateFactory,
       final Writers writers,
-      final CommandDistributionBehavior commandDistributionBehavior) {
-    typedRecordProcessors.onCommand(
-        ValueType.BATCH_OPERATION_CREATION,
-        BatchOperationIntent.CREATE,
-        new BatchOperationCreateProcessor(writers, keyGenerator, commandDistributionBehavior));
+      final CommandDistributionBehavior commandDistributionBehavior,
+      final Set<SearchQueryService> searchQueryServices,
+      final int partitionId) {
+    typedRecordProcessors
+        .onCommand(
+            ValueType.BATCH_OPERATION_CREATION,
+            BatchOperationIntent.CREATE,
+            new BatchOperationCreateProcessor(writers, keyGenerator, commandDistributionBehavior))
+        .onCommand(
+            ValueType.BATCH_OPERATION_CHUNK,
+            BatchOperationChunkIntent.CREATE,
+            new BatchOperationCreateSubbatchProcessor(writers))
+        .onCommand(
+            ValueType.BATCH_OPERATION_EXECUTION,
+            BatchOperationExecutionIntent.CANCEL,
+            new BatchOperationCancelProcessor(
+                writers, keyGenerator, commandDistributionBehavior, processingState))
+        .onCommand(
+            ValueType.BATCH_OPERATION_EXECUTION,
+            BatchOperationExecutionIntent.PAUSE,
+            new BatchOperationPauseProcessor(
+                writers, keyGenerator, commandDistributionBehavior, processingState))
+        .onCommand(
+            ValueType.BATCH_OPERATION_EXECUTION,
+            BatchOperationExecutionIntent.RESUME,
+            new BatchOperationResumeProcessor(
+                writers, keyGenerator, commandDistributionBehavior, processingState))
+        .onCommand(
+            ValueType.BATCH_OPERATION_EXECUTION,
+            BatchOperationExecutionIntent.EXECUTE,
+            new BatchOperationExecuteProcessor(writers, processingState, partitionId))
+        // FIXME pass process instance services (or a list of query services) to the scheduler
+        // FIXME pass the polling interval from configurations to the scheduler
+        .withListener(
+            new BatchOperationExecutionScheduler(
+                scheduledTaskStateFactory,
+                searchQueryServices,
+                keyGenerator,
+                Duration.ofMillis(100)));
   }
 }

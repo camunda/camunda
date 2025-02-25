@@ -26,6 +26,7 @@ import io.camunda.zeebe.broker.client.api.dto.BrokerResponse;
 import io.camunda.zeebe.gateway.impl.job.JobActivationResult;
 import io.camunda.zeebe.gateway.protocol.rest.ActivatedJobResult;
 import io.camunda.zeebe.gateway.protocol.rest.AuthorizationCreateResult;
+import io.camunda.zeebe.gateway.protocol.rest.BatchOperationCreatedResult;
 import io.camunda.zeebe.gateway.protocol.rest.CreateProcessInstanceResult;
 import io.camunda.zeebe.gateway.protocol.rest.DeploymentDecisionRequirementsResult;
 import io.camunda.zeebe.gateway.protocol.rest.DeploymentDecisionResult;
@@ -59,6 +60,7 @@ import io.camunda.zeebe.msgpack.value.ValueArray;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.MappingRecord;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.RoleRecord;
+import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationCreationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.decision.DecisionEvaluationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DecisionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DecisionRequirementsMetadataRecord;
@@ -452,6 +454,15 @@ public final class ResponseMapper {
     }
 
     return new ResponseEntity<>(response, HttpStatus.OK);
+  }
+
+  public static ResponseEntity<Object> toCancelProcessInstanceBatchOperationWithResultResponse(
+      final BatchOperationCreationRecord brokerResponse) {
+    final var response =
+        new BatchOperationCreatedResult()
+            .batchOperationKey(KeyUtil.keyToString(brokerResponse.getBatchOperationKey()))
+            .batchOperationType(brokerResponse.getBatchOperationType().toString());
+    return new ResponseEntity<>(response, HttpStatus.CREATED);
   }
 
   public static ResponseEntity<Object> toSignalBroadcastResponse(

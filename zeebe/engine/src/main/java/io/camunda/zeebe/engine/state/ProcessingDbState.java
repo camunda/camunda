@@ -176,7 +176,7 @@ public class ProcessingDbState implements MutableProcessingState {
     groupState = new DbGroupState(zeebeDb, transactionContext);
     tenantState = new DbTenantState(zeebeDb, transactionContext);
     mappingState = new DbMappingState(zeebeDb, transactionContext);
-    batchOperationState = new DbBatchOperationState(zeebeDb, transactionContext);
+    batchOperationState = new DbBatchOperationState(zeebeDb, transactionContext, config);
     this.transientProcessMessageSubscriptionState = transientProcessMessageSubscriptionState;
   }
 

@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.gateway.rest.controller;
 
+import static io.camunda.search.query.SearchQueryBuilders.batchOperationQuery;
 import static io.camunda.zeebe.gateway.rest.RestErrorMapper.mapErrorToResponse;
 
 import io.camunda.search.query.BatchOperationQuery;
@@ -21,6 +22,8 @@ import io.camunda.zeebe.gateway.rest.SearchQueryRequestMapper;
 import io.camunda.zeebe.gateway.rest.SearchQueryResponseMapper;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaGetMapping;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaPostMapping;
+import io.camunda.zeebe.gateway.rest.annotation.CamundaPutMapping;
+import java.util.concurrent.ExecutionException;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -71,6 +74,54 @@ public class BatchOperationController {
       @RequestBody(required = false) final BatchOperationSearchQuery query) {
     return SearchQueryRequestMapper.toBatchOperationQuery(query)
         .fold(RestErrorMapper::mapProblemToResponse, this::search);
+  }
+
+  @CamundaPutMapping(path = "/{key}/cancel")
+  public ResponseEntity<Object> cancelBatchOperation(@PathVariable final long key) {
+    // TODO better return value
+    try {
+      final var result =
+          batchOperationServices
+              .withAuthentication(RequestMapper.getAuthentication())
+              .cancel(key)
+              .get();
+    } catch (final InterruptedException | ExecutionException e) {
+      throw new RuntimeException(e);
+    }
+
+    return ResponseEntity.noContent().build();
+  }
+
+  @CamundaPutMapping(path = "/{key}/pause")
+  public ResponseEntity<Object> PauseBatchOperation(@PathVariable final long key) {
+    // TODO better return value
+    try {
+      final var result =
+          batchOperationServices
+              .withAuthentication(RequestMapper.getAuthentication())
+              .pause(key)
+              .get();
+    } catch (final InterruptedException | ExecutionException e) {
+      throw new RuntimeException(e);
+    }
+
+    return ResponseEntity.noContent().build();
+  }
+
+  @CamundaPutMapping(path = "/{key}/resume")
+  public ResponseEntity<Object> resumeBatchOperation(@PathVariable final long key) {
+    // TODO better return value
+    try {
+      final var result =
+          batchOperationServices
+              .withAuthentication(RequestMapper.getAuthentication())
+              .resume(key)
+              .get();
+    } catch (final InterruptedException | ExecutionException e) {
+      throw new RuntimeException(e);
+    }
+
+    return ResponseEntity.noContent().build();
   }
 
   private ResponseEntity<BatchOperationSearchQueryResult> search(final BatchOperationQuery query) {

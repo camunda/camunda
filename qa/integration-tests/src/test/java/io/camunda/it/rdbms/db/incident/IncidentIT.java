@@ -157,6 +157,7 @@ public class IncidentIT {
                                     .flowNodeIds(original.flowNodeId())
                                     .jobKeys(original.jobKey())
                                     .tenantIds(original.tenantId())
+                                    .partitionIds(original.partitionId())
                                     .creationTime(
                                         new DateValueFilter(
                                             original.creationDate().minusSeconds(1),

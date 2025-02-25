@@ -18,6 +18,7 @@ import io.camunda.service.ProcessInstanceServices.ProcessInstanceMigrateRequest;
 import io.camunda.service.ProcessInstanceServices.ProcessInstanceModifyRequest;
 import io.camunda.zeebe.gateway.protocol.rest.CancelProcessInstanceRequest;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceCreationInstruction;
+import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceFilter;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceMigrationInstruction;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceModificationInstruction;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceSearchQuery;
@@ -29,6 +30,7 @@ import io.camunda.zeebe.gateway.rest.SearchQueryRequestMapper;
 import io.camunda.zeebe.gateway.rest.SearchQueryResponseMapper;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaGetMapping;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaPostMapping;
+import io.camunda.zeebe.gateway.rest.validator.RequestValidator;
 import java.util.concurrent.CompletableFuture;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -103,6 +105,19 @@ public class ProcessInstanceController {
     }
   }
 
+  @CamundaPostMapping(path = "/batch-operations/cancellation")
+  public CompletableFuture<ResponseEntity<Object>> cancelProcessInstanceBatchOperation(
+      @RequestBody(required = false) final ProcessInstanceFilter filter) {
+
+    // TODO with Either and ProblemDetail
+    return SearchQueryRequestMapper.toProcessInstanceFilter(filter)
+        .fold(
+            (errors) ->
+                RestErrorMapper.mapProblemToCompletedResponse(
+                    RequestValidator.createProblemDetail(errors).get()),
+            this::batchOperationCancellation);
+  }
+
   private ResponseEntity<ProcessInstanceSearchQueryResult> search(
       final ProcessInstanceQuery query) {
     try {
@@ -115,6 +130,17 @@ public class ProcessInstanceController {
     } catch (final Exception e) {
       return mapErrorToResponse(e);
     }
+  }
+
+  private CompletableFuture<ResponseEntity<Object>> batchOperationCancellation(
+      final io.camunda.search.filter.ProcessInstanceFilter filter) {
+    return RequestMapper.executeServiceMethod(
+        () ->
+            processInstanceServices
+                .withAuthentication(RequestMapper.getAuthentication())
+                .cancelProcessInstanceBatchOperationWithResult(filter),
+        ResponseMapper
+            ::toCancelProcessInstanceBatchOperationWithResultResponse); // TODO better response
   }
 
   private CompletableFuture<ResponseEntity<Object>> createProcessInstance(

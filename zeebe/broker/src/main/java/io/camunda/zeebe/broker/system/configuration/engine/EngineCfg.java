@@ -17,6 +17,7 @@ public final class EngineCfg implements ConfigurationEntry {
   private CachesCfg caches = new CachesCfg();
   private JobsCfg jobs = new JobsCfg();
   private ValidatorsCfg validators = new ValidatorsCfg();
+  private BatchOperationsCfg batchOperations = new BatchOperationsCfg();
   private int maxProcessDepth = EngineConfiguration.DEFAULT_MAX_PROCESS_DEPTH;
 
   @Override
@@ -25,6 +26,7 @@ public final class EngineCfg implements ConfigurationEntry {
     caches.init(globalConfig, brokerBase);
     jobs.init(globalConfig, brokerBase);
     validators.init(globalConfig, brokerBase);
+    batchOperations.init(globalConfig, brokerBase);
   }
 
   public MessagesCfg getMessages() {
@@ -59,6 +61,14 @@ public final class EngineCfg implements ConfigurationEntry {
     this.validators = validators;
   }
 
+  public BatchOperationsCfg getBatchOperations() {
+    return batchOperations;
+  }
+
+  public void setBatchOperations(final BatchOperationsCfg batchOperations) {
+    this.batchOperations = batchOperations;
+  }
+
   public int getMaxProcessDepth() {
     return maxProcessDepth;
   }
@@ -78,6 +88,8 @@ public final class EngineCfg implements ConfigurationEntry {
         + jobs
         + ", validators="
         + validators
+        + ", batchOperations="
+        + batchOperations
         + ", maxProcessDepth="
         + maxProcessDepth
         + '}';
@@ -94,6 +106,7 @@ public final class EngineCfg implements ConfigurationEntry {
         .setJobsTimeoutCheckerPollingInterval(jobs.getTimeoutCheckerPollingInterval())
         .setJobsTimeoutCheckerBatchLimit(jobs.getTimeoutCheckerBatchLimit())
         .setValidatorsResultsOutputMaxSize(validators.getResultsOutputMaxSize())
+        .setBatchOperationBlockSize(batchOperations.getBlockSize())
         .setMaxProcessDepth(getMaxProcessDepth());
   }
 }

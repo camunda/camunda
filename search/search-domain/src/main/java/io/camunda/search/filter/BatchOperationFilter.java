@@ -23,7 +23,7 @@ public record BatchOperationFilter(
 
     private List<Long> batchOperationKeys;
     private List<String> operationTypes;
-    private List<String> states;
+    private List<String> status;
 
     public Builder batchOperationKeys(final Long value, final Long... values) {
       return batchOperationKeys(collectValues(value, values));
@@ -48,7 +48,7 @@ public record BatchOperationFilter(
     }
 
     public Builder status(final List<String> values) {
-      states = addValuesToList(states, values);
+      status = addValuesToList(status, values);
       return this;
     }
 
@@ -57,7 +57,7 @@ public record BatchOperationFilter(
       return new BatchOperationFilter(
           Objects.requireNonNullElse(batchOperationKeys, Collections.emptyList()),
           Objects.requireNonNullElse(operationTypes, Collections.emptyList()),
-          Objects.requireNonNullElse(states, Collections.emptyList()));
+          Objects.requireNonNullElse(status, Collections.emptyList()));
     }
   }
 }
