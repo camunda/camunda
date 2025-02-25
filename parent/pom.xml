@@ -185,7 +185,7 @@
     <version.guava.annotations>r03</version.guava.annotations>
     <version.nimbus-jose-jwt>10.0.1</version.nimbus-jose-jwt>
     <version.nimbus-sdk>11.21.2</version.nimbus-sdk>
-    <version.keycloak>26.0.4</version.keycloak>
+    <version.keycloak>26.0.6</version.keycloak>
     <version.jna>5.16.0</version.jna>
     <version.jopt-simple>5.0.4</version.jopt-simple>
     <version.mybatis-spring>3.0.4</version.mybatis-spring>
