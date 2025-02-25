@@ -103,6 +103,13 @@ public class ProcessInstanceController {
     }
   }
 
+  @CamundaPostMapping(path = "/batch-operations/cancellation")
+  public CompletableFuture<ResponseEntity<Object>> cancelProcessInstanceBatchOperation(
+      @RequestBody(required = false) final ProcessInstanceSearchQuery query) {
+    return SearchQueryRequestMapper.toProcessInstanceQuery(query)
+        .fold(RestErrorMapper::mapProblemToResponse, this::batchOperationCancellation);
+  }
+
   private ResponseEntity<ProcessInstanceSearchQueryResult> search(
       final ProcessInstanceQuery query) {
     try {
@@ -115,6 +122,16 @@ public class ProcessInstanceController {
     } catch (final Exception e) {
       return mapErrorToResponse(e);
     }
+  }
+
+  private CompletableFuture<ResponseEntity<Object>> batchOperationCancellation(
+      final ProcessInstanceQuery query) {
+    return RequestMapper.executeServiceMethod(
+        () ->
+            processInstanceServices
+                .withAuthentication(RequestMapper.getAuthentication())
+                .cancelProcessInstanceBatchOperationWithResult(query),
+        ResponseMapper::toCancelProcessInstanceBatchOperationWithResultResponse);
   }
 
   private CompletableFuture<ResponseEntity<Object>> createProcessInstance(
