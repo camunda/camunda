@@ -11,11 +11,14 @@ import io.camunda.security.configuration.MultiTenancyConfiguration;
 import io.camunda.service.ResourceServices;
 import io.camunda.service.ResourceServices.DeployResourcesRequest;
 import io.camunda.service.ResourceServices.ResourceDeletionRequest;
+import io.camunda.service.ResourceServices.ResourceFetchRequest;
 import io.camunda.zeebe.gateway.protocol.rest.DeleteResourceRequest;
 import io.camunda.zeebe.gateway.rest.RequestMapper;
 import io.camunda.zeebe.gateway.rest.ResponseMapper;
 import io.camunda.zeebe.gateway.rest.RestErrorMapper;
+import io.camunda.zeebe.gateway.rest.annotation.CamundaGetMapping;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaPostMapping;
+import io.camunda.zeebe.protocol.impl.record.value.deployment.ResourceRecord;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import org.springframework.http.MediaType;
@@ -56,6 +59,20 @@ public class ResourceController {
         .fold(RestErrorMapper::mapProblemToCompletedResponse, this::delete);
   }
 
+  @CamundaGetMapping(path = "/resources/{resourceKey}")
+  public CompletableFuture<ResponseEntity<Object>> getResource(
+      @PathVariable final long resourceKey) {
+    return RequestMapper.executeServiceMethod(
+        () -> fetchResource(resourceKey), ResponseMapper::toGetResourceResponse);
+  }
+
+  @CamundaGetMapping(path = "/resources/{resourceKey}/content")
+  public CompletableFuture<ResponseEntity<Object>> getResourceContent(
+      @PathVariable final long resourceKey) {
+    return RequestMapper.executeServiceMethod(
+        () -> fetchResource(resourceKey), ResponseMapper::toGetResourceContentResponse);
+  }
+
   private CompletableFuture<ResponseEntity<Object>> deployResources(
       final DeployResourcesRequest request) {
     return RequestMapper.executeServiceMethod(
@@ -72,5 +89,11 @@ public class ResourceController {
             resourceServices
                 .withAuthentication(RequestMapper.getAuthentication())
                 .deleteResource(request));
+  }
+
+  private CompletableFuture<ResourceRecord> fetchResource(final long resourceKey) {
+    return resourceServices
+        .withAuthentication(RequestMapper.getAuthentication())
+        .fetchResource(new ResourceFetchRequest(resourceKey));
   }
 }
