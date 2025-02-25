@@ -54,6 +54,9 @@ import org.springframework.security.web.util.matcher.RequestMatcher;
 @Profile("consolidated-auth")
 public class WebSecurityConfig {
   public static final String SESSION_COOKIE = "camunda-session";
+  private static final int ORDER_WEBAPP_API_PROTECTION = 1;
+  private static final int ORDER_UNPROTECTED_API = 2;
+  private static final int ORDER_LOGIN_LOGOUT_HANDLING = 3;
   private static final Logger LOG = LoggerFactory.getLogger(WebSecurityConfig.class);
   private static final String LOGIN_URL = "/login";
   private static final String LOGOUT_URL = "/logout";
@@ -108,7 +111,7 @@ public class WebSecurityConfig {
 
   @Bean
   @ConditionalOnAuthenticationMethod(AuthenticationMethod.OIDC)
-  @Order(1)
+  @Order(ORDER_WEBAPP_API_PROTECTION)
   public SecurityFilterChain oidcHttpSecurity(
       final HttpSecurity httpSecurity,
       final AuthFailureHandler authFailureHandler,
@@ -144,7 +147,7 @@ public class WebSecurityConfig {
 
   @Bean
   @ConditionalOnAuthenticationMethod(AuthenticationMethod.BASIC)
-  @Order(1)
+  @Order(ORDER_WEBAPP_API_PROTECTION)
   public SecurityFilterChain httpBasicAuthSecurityFilterChain(
       final HttpSecurity httpSecurity,
       final AuthFailureHandler authFailureHandler,
@@ -171,7 +174,7 @@ public class WebSecurityConfig {
   }
 
   @Bean
-  @Order(2)
+  @Order(ORDER_UNPROTECTED_API)
   public SecurityFilterChain unprotectedApiAccessSecurityFilterChain(
       final HttpSecurity httpSecurity,
       final AuthFailureHandler authFailureHandler,
@@ -194,7 +197,7 @@ public class WebSecurityConfig {
 
   @Bean
   @ConditionalOnAuthenticationMethod(AuthenticationMethod.BASIC)
-  @Order(3)
+  @Order(ORDER_LOGIN_LOGOUT_HANDLING)
   public SecurityFilterChain loginAuthSecurityFilterChain(
       final HttpSecurity httpSecurity, final AuthFailureHandler authFailureHandler)
       throws Exception {
