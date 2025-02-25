@@ -56,5 +56,7 @@ public enum JobListenerEventType {
    * `priority`. It allows executing custom logic before the task is updated, to correct user task
    * data, and to deny the update.
    */
-  UPDATING
+  UPDATING,
+
+  CREATING
 }
