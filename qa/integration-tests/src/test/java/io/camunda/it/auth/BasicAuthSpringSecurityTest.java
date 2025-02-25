@@ -40,11 +40,11 @@ import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
     properties = {
       "spring.profiles.active=consolidated-auth",
       "camunda.security.authentication.method=basic",
-      "camunda.security.authentication.basic.allow-unauthenticated-api-access=false"
+      "camunda.security.authentication.unprotected-api=false"
     })
 @WebAppConfiguration
 @AutoConfigureMockMvc
-public class BasicAuthIT {
+public class BasicAuthSpringSecurityTest {
   private static final String USERNAME = "correct_username";
   private static final String PASSWORD = "correct_password";
   @Autowired PasswordEncoder passwordEncoder;
