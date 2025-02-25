@@ -18,6 +18,7 @@ import java.lang.reflect.Field;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.function.Predicate;
 import org.agrona.CloseHelper;
 import org.awaitility.Awaitility;
@@ -86,6 +87,12 @@ public class CamundaMultiDBExtension
       "test.integration.camunda.database.type";
   public static final String TEST_INTEGRATION_OPENSEARCH_AWS_URL =
       "test.integration.opensearch.aws.url";
+  public static final String PROP_TEST_INTEGRATION_OPENSEARCH_AWS_TIMEOUT =
+      "test.integration.opensearch.aws.timeout.seconds";
+  public static final Duration TIMEOUT_DATABASE_EXPORTER_READINESS_TIMEOUT =
+      Optional.ofNullable(System.getProperty(PROP_TEST_INTEGRATION_OPENSEARCH_AWS_TIMEOUT))
+          .map(val -> Duration.ofSeconds(Long.parseLong(val)))
+          .orElse(Duration.ofSeconds(60));
   public static final String DEFAULT_ES_URL = "http://localhost:9200";
   public static final String DEFAULT_OS_URL = "http://localhost:9200";
   public static final String DEFAULT_OS_ADMIN_USER = "admin";

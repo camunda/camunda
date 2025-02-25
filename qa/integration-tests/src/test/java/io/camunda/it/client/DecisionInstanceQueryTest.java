@@ -7,6 +7,7 @@
  */
 package io.camunda.it.client;
 
+import static io.camunda.it.utils.CamundaMultiDBExtension.TIMEOUT_DATABASE_EXPORTER_READINESS_TIMEOUT;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
@@ -18,7 +19,6 @@ import io.camunda.client.api.search.response.DecisionDefinitionType;
 import io.camunda.client.api.search.response.DecisionInstance;
 import io.camunda.client.api.search.response.DecisionInstanceState;
 import io.camunda.it.utils.MultiDbTest;
-import java.time.Duration;
 import java.time.OffsetDateTime;
 import java.util.HashMap;
 import java.util.List;
@@ -341,7 +341,7 @@ class DecisionInstanceQueryTest {
   private static void waitForDecisionsToBeEvaluated(
       final CamundaClient camundaClient, final int expectedCount) {
     Awaitility.await("should deploy decision definitions and import in Operate")
-        .atMost(Duration.ofSeconds(120))
+        .atMost(TIMEOUT_DATABASE_EXPORTER_READINESS_TIMEOUT)
         .ignoreExceptions() // Ignore exceptions and continue retrying
         .untilAsserted(
             () -> {
