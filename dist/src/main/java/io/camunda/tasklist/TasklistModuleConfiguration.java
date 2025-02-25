@@ -7,10 +7,9 @@
  */
 package io.camunda.tasklist;
 
-import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.tasklist.webapp.management.WebappManagementModuleConfiguration;
 import io.camunda.tasklist.webapp.security.WebappSecurityModuleConfiguration;
-import io.camunda.tasklist.webapp.security.identity.DefaultIdentityAuthorizationServiceImpl;
+import io.camunda.tasklist.webapp.security.identity.DefaultUserGroupService;
 import io.camunda.tasklist.webapp.security.identity.UserGroupService;
 import io.camunda.tasklist.webapp.security.identity.UserGroupServiceImpl;
 import io.camunda.tasklist.zeebeimport.security.ImporterSecurityModuleConfiguration;
@@ -61,8 +60,6 @@ public class TasklistModuleConfiguration {
   // that the gateway is started first
   private final Gateway gateway;
 
-  @Autowired private SecurityConfiguration securityConfiguration;
-
   public TasklistModuleConfiguration(
       @Autowired(required = false) final Broker broker,
       @Autowired(required = false) final Gateway gateway) {
@@ -71,7 +68,7 @@ public class TasklistModuleConfiguration {
   }
 
   /**
-   * Bean definition for `IdentityAuthorizationService` when the application is running under the
+   * Bean definition for `UserGroupService` when the application is running under the
    * "consolidated-auth" profile.
    *
    * <p>- The `@Profile("consolidated-auth")` annotation ensures that this bean is only loaded when
@@ -83,13 +80,13 @@ public class TasklistModuleConfiguration {
   @Bean
   @Primary
   @Profile("consolidated-auth")
-  public UserGroupService consolidatedIdentityAuthorizationService() {
+  public UserGroupService consolidatedUserGroupService() {
     return new UserGroupServiceImpl();
   }
 
   /**
-   * Fallback bean for `IdentityAuthorizationService`, used when the "consolidated-auth" profile is
-   * **not active**.
+   * Fallback bean for `UserGroupService`, used when the "consolidated-auth" profile is **not
+   * active**.
    *
    * <p>- This bean ensures that authorization is always available, even when consolidated
    * authentication is not enabled. - It provides a **default, full-access authorization service**.
@@ -98,8 +95,9 @@ public class TasklistModuleConfiguration {
    * implemented
    */
   @Bean
-  public UserGroupService defaultIdentityAuthorizationService() {
-    return new DefaultIdentityAuthorizationServiceImpl();
+  @Profile("!consolidated-auth")
+  public UserGroupService defaultUserGroupService() {
+    return new DefaultUserGroupService();
   }
 
   @Configuration(proxyBeanMethods = false)
