@@ -686,14 +686,12 @@ public class TaskListenerTest {
             createProcessWithZeebeUserTask(
                 task ->
                     task.zeebeAssignee(assignee)
+                        .zeebeTaskListener(l -> l.creating().type(listenerType + "_creating"))
                         .zeebeTaskListener(l -> l.assigning().type(listenerType))
                         .zeebeTaskListener(l -> l.assigning().type(listenerType + "_2"))
                         .zeebeTaskListener(l -> l.assigning().type(listenerType + "_3"))));
 
-    // await user task creation
-    RecordingExporter.userTaskRecords(UserTaskIntent.CREATED)
-        .withProcessInstanceKey(processInstanceKey)
-        .await();
+    completeJobs(processInstanceKey, listenerType + "_creating");
 
     // when
     completeJobs(processInstanceKey, listenerType, listenerType + "_2", listenerType + "_3");
