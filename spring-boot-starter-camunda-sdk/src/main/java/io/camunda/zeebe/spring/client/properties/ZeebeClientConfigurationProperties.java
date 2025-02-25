@@ -489,6 +489,18 @@ public class ZeebeClientConfigurationProperties {
     }
 
     public void setGrpcAddress(final URI grpcAddress) {
+      /*
+       * Validates that the provided gRPC address is an absolute URI.
+       *
+       * <p>We use {@code URI.getHost() == null} to check for absolute URIs because:
+       * <ul>
+       *   <li>For absolute URIs (with a scheme) (e.g., "https://example.com"), {@code URI.getHost()} returns the hostname (e.g., "example.com").</li>
+       *   <li>For relative URIs (without a scheme) (e.g., "example.com"), {@code URI.getHost()} returns {@code null}.</li>
+       * </ul>
+       */
+      if (grpcAddress != null && grpcAddress.getHost() == null) {
+        throw new IllegalArgumentException("grpcAddress must be an absolute URI");
+      }
       this.grpcAddress = grpcAddress;
     }
 
@@ -501,6 +513,18 @@ public class ZeebeClientConfigurationProperties {
     }
 
     public void setRestAddress(final URI restAddress) {
+      /*
+       * Validates that the provided gRPC address is an absolute URI.
+       *
+       * <p>We use {@code URI.getHost() == null} to check for absolute URIs because:
+       * <ul>
+       *   <li>For absolute URIs (with a scheme) (e.g., "https://example.com"), {@code URI.getHost()} returns the hostname (e.g., "example.com").</li>
+       *   <li>For relative URIs (without a scheme) (e.g., "example.com"), {@code URI.getHost()} returns {@code null}.</li>
+       * </ul>
+       */
+      if (restAddress != null && restAddress.getHost() == null) {
+        throw new IllegalArgumentException("restAddress must be an absolute URI");
+      }
       this.restAddress = restAddress;
     }
 
