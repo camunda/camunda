@@ -1378,6 +1378,13 @@ paths:
           $ref: "#/components/responses/InvalidData"
         "500":
           $ref: "#/components/responses/InternalServerError"
+        "504":
+          description: |
+            The process instance creation request timed out in the gateway.
+
+            This can happen if the `awaitCompletion` request parameter is set to `true`
+            and the created process instance did not complete within the defined request timeout.
+            This often happens when the created instance is not fully automated or contains wait states.
 
   /process-instances/{processInstanceKey}:
     get:
@@ -6789,7 +6796,8 @@ components:
         awaitCompletion:
           description: |
             Wait for the process instance to complete. If the process instance completion does
-            not occur within the requestTimeout, the request will be closed. Disabled by default.
+            not occur within the requestTimeout, the request will be closed. This can lead to a 504
+            response status. Disabled by default.
           type: boolean
           default: false
         fetchVariables:
