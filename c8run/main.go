@@ -268,7 +268,6 @@ func getBaseCommandSettings(baseCommand string) (C8RunSettings, error) {
 
 func createStartFlagSet(settings *C8RunSettings) *flag.FlagSet {
 	startFlagSet := flag.NewFlagSet("start", flag.ExitOnError)
-	startFlagSet.StringVar(&settings.config, "config", "", "Applies the specified configuration file.")
 	startFlagSet.BoolVar(&settings.detached, "detached", false, "Starts Camunda Run as a detached process")
 	startFlagSet.IntVar(&settings.port, "port", 8080, "Port to run Camunda on")
 	startFlagSet.StringVar(&settings.keystore, "keystore", "", "Provide a JKS filepath to enable TLS")
@@ -312,8 +311,6 @@ func main() {
 	if err != nil {
 		fmt.Println("Failed to set envVars:", err)
 	}
-
-	// classPath := filepath.Join(parentDir, "configuration", "userlib") + "," + filepath.Join(parentDir, "configuration", "keystore")
 
 	baseCommand, err := getBaseCommand()
 	if err != nil {
@@ -487,13 +484,7 @@ func main() {
 		if err != nil {
 			fmt.Print("Failed to write to file: " + connectorsPidPath + " continuing...")
 		}
-		var extraArgs string
-		if settings.config != "" {
-			extraArgs = "--spring.config.location=" + filepath.Join(parentDir, settings.config)
-		} else {
-			extraArgs = "--spring.config.location=" + filepath.Join(parentDir, "configuration")
-		}
-		camundaCmd := c8.CamundaCmd(camundaVersion, parentDir, extraArgs, javaOpts)
+		camundaCmd := c8.CamundaCmd(camundaVersion, parentDir, "", javaOpts)
 		camundaLogPath := filepath.Join(parentDir, "log", "camunda.log")
 		camundaLogFile, err := os.OpenFile(camundaLogPath, os.O_RDWR|os.O_CREATE, 0644)
 		if err != nil {
