@@ -60,6 +60,7 @@ public class FinishedImportingIT extends OperateZeebeAbstractIT {
   @Autowired private RestHighLevelClient esClient;
   @Autowired private MeterRegistry registry;
   private final ProtocolFactory factory = new ProtocolFactory();
+  private int emptyBatches = 0;
 
   @Before
   public void beforeEach() {
@@ -70,7 +71,7 @@ public class FinishedImportingIT extends OperateZeebeAbstractIT {
     CONFIG.index.createTemplate = true;
     CONFIG.retention.setEnabled(false);
     CONFIG.bulk.size = 1; // force flushing on the first record
-
+    emptyBatches = operateProperties.getImporter().getCompletedReaderMinEmptyBatches();
     // here enable all indexes that needed during the tests beforehand as they will be created once
     TestSupport.provideValueTypes()
         .forEach(valueType -> TestSupport.setIndexingForValueType(CONFIG.index, valueType, true));
@@ -107,7 +108,7 @@ public class FinishedImportingIT extends OperateZeebeAbstractIT {
     // require multiple checks to avoid race condition. If records are written to zeebe indices and
     // before a refresh, the record reader pulls the import batch is empty so it then says that the
     // record reader is done when it is not.
-    for (int i = 0; i < operateProperties.getImporter().getCompletedReaderMinEmptyBatches(); i++) {
+    for (int i = 0; i < emptyBatches; i++) {
       zeebeImporter.performOneRoundOfImport();
     }
 
@@ -137,7 +138,7 @@ public class FinishedImportingIT extends OperateZeebeAbstractIT {
         generateRecord(ValueType.DECISION_EVALUATION, "8.8.0", 1);
     EXPORTER.export(newVersionDecisionEvalRecord);
 
-    for (int i = 0; i <= operateProperties.getImporter().getCompletedReaderMinEmptyBatches(); i++) {
+    for (int i = 0; i <= emptyBatches; i++) {
       // simulate existing decision records left to process so it is not marked as completed
       final var decisionRecord2 = generateRecord(ValueType.DECISION, "8.7.0", 2);
       EXPORTER.export(decisionRecord2);
@@ -173,7 +174,7 @@ public class FinishedImportingIT extends OperateZeebeAbstractIT {
     EXPORTER.export(partitionTwoRecord2);
     esClient.indices().refresh(new RefreshRequest("*"), RequestOptions.DEFAULT);
 
-    for (int i = 0; i <= operateProperties.getImporter().getCompletedReaderMinEmptyBatches(); i++) {
+    for (int i = 0; i <= emptyBatches; i++) {
       zeebeImporter.performOneRoundOfImport();
     }
 
@@ -196,7 +197,7 @@ public class FinishedImportingIT extends OperateZeebeAbstractIT {
     esClient.indices().refresh(new RefreshRequest("*"), RequestOptions.DEFAULT);
 
     // when
-    for (int i = 0; i <= operateProperties.getImporter().getCompletedReaderMinEmptyBatches(); i++) {
+    for (int i = 0; i <= emptyBatches; i++) {
       zeebeImporter.performOneRoundOfImport();
     }
 
@@ -231,7 +232,7 @@ public class FinishedImportingIT extends OperateZeebeAbstractIT {
     EXPORTER.export(partitionTwoRecord2);
     esClient.indices().refresh(new RefreshRequest("*"), RequestOptions.DEFAULT);
 
-    for (int i = 0; i <= operateProperties.getImporter().getCompletedReaderMinEmptyBatches(); i++) {
+    for (int i = 0; i <= emptyBatches; i++) {
       zeebeImporter.performOneRoundOfImport();
     }
 
@@ -288,7 +289,7 @@ public class FinishedImportingIT extends OperateZeebeAbstractIT {
     // Otherwise: If records are written to zeebe indices and before a refresh, the record reader
     // pulls an empty import batch, then it might assume falsely
     // that it is done, while it is not.
-    for (int i = 0; i < operateProperties.getImporter().getCompletedReaderMinEmptyBatches(); i++) {
+    for (int i = 0; i < emptyBatches; i++) {
       zeebeImporter.performOneRoundOfImport();
     }
 
@@ -364,7 +365,7 @@ public class FinishedImportingIT extends OperateZeebeAbstractIT {
     esClient.indices().refresh(new RefreshRequest("*"), RequestOptions.DEFAULT);
 
     // when
-    for (int i = 0; i <= operateProperties.getImporter().getCompletedReaderMinEmptyBatches(); i++) {
+    for (int i = 0; i <= emptyBatches; i++) {
       zeebeImporter.performOneRoundOfImport();
     }
 
