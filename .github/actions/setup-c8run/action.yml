@@ -206,7 +206,7 @@ runs:
 
     - if: ${{ inputs.os == 'ubuntu-latest' }}
       name: Linux - Run c8run
-      run: ./c8run start
+      run: ./c8run start --config e2e_tests/prefix-config.yaml
       shell: bash
       working-directory: ./c8run
       env:
@@ -215,7 +215,7 @@ runs:
     - if: ${{ startsWith(inputs.os, 'macos') }}
       name: Mac - Run c8run
       shell: bash
-      run: ./c8run start
+      run: ./c8run start --config e2e_tests/prefix-config.yaml
       working-directory: ./c8run
       env:
         JAVA_VERSION: 22.0.3

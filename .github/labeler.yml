@@ -85,3 +85,10 @@ backport main: # TODO replace with 'backport stable/8.8' once the stable branch 
               - 'clients/java/src/main/java/io/camunda/zeebe/**'
               - 'clients/java/src/test/java/io/camunda/zeebe/**'
       - base-branch: 'stable/8.7'
+component/c8run:
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'c8run/**'
+          - '.github/workflows/c8run-build.yaml'
+          - '.github/workflows/c8run-release.yaml'
+          - '.github/actions/setup-c8run/action.yml'
