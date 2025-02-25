@@ -24,7 +24,7 @@
 
     <!-- database config -->
     <elasticsearch.client.version>8.13.0</elasticsearch.client.version>
-    <elasticsearch.client.test.version>7.17.27</elasticsearch.client.test.version>
+    <elasticsearch.client.test.version>7.17.28</elasticsearch.client.test.version>
     <opensearch.client.version>2.10.4</opensearch.client.version>
     <awssdk.version>2.28.29</awssdk.version>
 
