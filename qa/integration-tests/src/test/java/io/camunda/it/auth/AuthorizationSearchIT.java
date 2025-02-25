@@ -14,10 +14,11 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.protocol.rest.PermissionTypeEnum;
-import io.camunda.it.utils.BrokerITInvocationProvider;
+import io.camunda.it.utils.CamundaMultiDBExtension;
 import io.camunda.qa.util.auth.Authenticated;
 import io.camunda.qa.util.auth.Permissions;
 import io.camunda.qa.util.auth.User;
+import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -27,12 +28,16 @@ import java.net.http.HttpResponse;
 import java.util.Base64;
 import java.util.List;
 import org.junit.jupiter.api.AutoClose;
-import org.junit.jupiter.api.TestInstance;
-import org.junit.jupiter.api.TestTemplate;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-@TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class AuthorizationSearchIT {
+
+  static final TestStandaloneBroker BROKER =
+      new TestStandaloneBroker().withBasicAuth().withAuthorizationsEnabled();
+
+  @RegisterExtension
+  static final CamundaMultiDBExtension EXTENSION = new CamundaMultiDBExtension(BROKER);
 
   private static final ObjectMapper OBJECT_MAPPER =
       new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
@@ -40,24 +45,16 @@ class AuthorizationSearchIT {
   private static final String RESTRICTED = "restrictedUser";
   private static final String DEFAULT_PASSWORD = "password";
   private static final String AUTH_SEARCH_ENDPOINT = "v2/authorizations/search";
+
   private static final User ADMIN_USER =
       new User(
           ADMIN,
           DEFAULT_PASSWORD,
           List.of(new Permissions(AUTHORIZATION, PermissionTypeEnum.READ, List.of("*"))));
   private static final User RESTRICTED_USER = new User(RESTRICTED, DEFAULT_PASSWORD, List.of());
-
-  @RegisterExtension
-  static final BrokerITInvocationProvider PROVIDER =
-      new BrokerITInvocationProvider()
-          .withoutRdbmsExporter()
-          .withBasicAuth()
-          .withAuthorizationsEnabled()
-          .withUsers(ADMIN_USER, RESTRICTED_USER);
-
   @AutoClose private static final HttpClient HTTP_CLIENT = HttpClient.newHttpClient();
 
-  @TestTemplate
+  @Test
   void searchShouldReturnAuthorizations(@Authenticated(ADMIN) final CamundaClient adminClient)
       throws Exception {
     final var response =
@@ -65,7 +62,7 @@ class AuthorizationSearchIT {
     assertThat(response.items()).isNotEmpty();
   }
 
-  @TestTemplate
+  @Test
   void searchShouldReturnEmptyListForRestrictedUser(
       @Authenticated(RESTRICTED) final CamundaClient client) throws Exception {
     final var response =
