@@ -13,7 +13,6 @@ import java.util.stream.Collectors;
 import org.opensearch.client.opensearch.OpenSearchClient;
 import org.opensearch.client.opensearch.cluster.ComponentTemplate;
 import org.opensearch.client.opensearch.cluster.ComponentTemplateNode;
-import org.opensearch.client.opensearch.cluster.DeleteComponentTemplateRequest;
 import org.opensearch.client.opensearch.cluster.PutComponentTemplateRequest;
 import org.opensearch.client.opensearch.indices.PutIndexTemplateRequest;
 import org.slf4j.Logger;
@@ -62,17 +61,6 @@ public class OpenSearchTemplateOperations extends OpenSearchRetryOperation {
             return openSearchClient.cluster().putComponentTemplate(request).acknowledged();
           }
           return false;
-        });
-  }
-
-  public boolean deleteComponentTemplateWithRetries(final DeleteComponentTemplateRequest request) {
-    return executeWithRetries(
-        "DeleteComponentTemplate " + request.name(),
-        () -> {
-          if (templatesExist(request.name())) {
-            return openSearchClient.cluster().deleteComponentTemplate(request).acknowledged();
-          }
-          return true;
         });
   }
 

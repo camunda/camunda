@@ -59,7 +59,6 @@ import org.elasticsearch.client.core.CountRequest;
 import org.elasticsearch.client.indexlifecycle.PutLifecyclePolicyRequest;
 import org.elasticsearch.client.indices.ComposableIndexTemplateExistRequest;
 import org.elasticsearch.client.indices.CreateIndexRequest;
-import org.elasticsearch.client.indices.DeleteComponentTemplateRequest;
 import org.elasticsearch.client.indices.DeleteComposableIndexTemplateRequest;
 import org.elasticsearch.client.indices.GetIndexRequest;
 import org.elasticsearch.client.indices.GetIndexResponse;
@@ -387,12 +386,6 @@ public class RetryElasticsearchClient {
           }
           return true;
         });
-  }
-
-  public boolean deleteComponentTemplate(final DeleteComponentTemplateRequest request) {
-    return executeWithRetries(
-        "DeleteComponentTemplate " + request.getName(),
-        () -> esClient.cluster().deleteComponentTemplate(request, requestOptions).isAcknowledged());
   }
 
   public boolean createTemplate(final PutComposableIndexTemplateRequest request) {
