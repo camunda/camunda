@@ -51,7 +51,7 @@ public final class JobProcessingMetrics {
     final var provider =
         Counter.builder(JOB_EVENTS.getName())
             .description(JOB_EVENTS.getDescription())
-            .tag(EngineKeyNames.JOB_ACTION.asString(), jobAction.toString())
+            .tag(EngineKeyNames.JOB_ACTION.asString(), jobAction.getLabel())
             .tag(EngineKeyNames.JOB_KIND.asString(), kind.name())
             .withRegistry(registry);
 
