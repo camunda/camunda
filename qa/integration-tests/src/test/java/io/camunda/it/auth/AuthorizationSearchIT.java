@@ -16,8 +16,8 @@ import io.camunda.client.CamundaClient;
 import io.camunda.client.protocol.rest.PermissionTypeEnum;
 import io.camunda.it.utils.BrokerITInvocationProvider;
 import io.camunda.it.utils.CamundaClientTestFactory.Authenticated;
-import io.camunda.it.utils.CamundaClientTestFactory.Permissions;
-import io.camunda.it.utils.CamundaClientTestFactory.User;
+import io.camunda.qa.util.auth.Permissions;
+import io.camunda.qa.util.auth.User;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -36,18 +36,15 @@ class AuthorizationSearchIT {
 
   private static final ObjectMapper OBJECT_MAPPER =
       new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
-
   private static final String ADMIN = "admin";
   private static final String RESTRICTED = "restrictedUser";
   private static final String DEFAULT_PASSWORD = "password";
   private static final String AUTH_SEARCH_ENDPOINT = "v2/authorizations/search";
-
   private static final User ADMIN_USER =
       new User(
           ADMIN,
           DEFAULT_PASSWORD,
           List.of(new Permissions(AUTHORIZATION, PermissionTypeEnum.READ, List.of("*"))));
-
   private static final User RESTRICTED_USER = new User(RESTRICTED, DEFAULT_PASSWORD, List.of());
 
   @RegisterExtension

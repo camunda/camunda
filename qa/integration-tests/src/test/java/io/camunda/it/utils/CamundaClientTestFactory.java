@@ -10,8 +10,6 @@ package io.camunda.it.utils;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.impl.basicauth.BasicAuthCredentialsProviderBuilder;
 import io.camunda.client.protocol.rest.OwnerTypeEnum;
-import io.camunda.client.protocol.rest.PermissionTypeEnum;
-import io.camunda.client.protocol.rest.ResourceTypeEnum;
 import io.camunda.security.configuration.InitializationConfiguration;
 import io.camunda.zeebe.qa.util.cluster.TestGateway;
 import io.camunda.zeebe.test.util.asserts.TopologyAssert;
@@ -146,17 +144,6 @@ public final class CamundaClientTestFactory implements AutoCloseable {
   @Override
   public void close() {
     cachedClients.values().forEach(CamundaClient::close);
-  }
-
-  public record Permissions(
-      ResourceTypeEnum resourceType, PermissionTypeEnum permissionType, List<String> resourceIds) {}
-
-  public record User(String username, String password, List<Permissions> permissions) {
-    public static final User DEFAULT =
-        new User(
-            InitializationConfiguration.DEFAULT_USER_USERNAME,
-            InitializationConfiguration.DEFAULT_USER_PASSWORD,
-            List.of());
   }
 
   /**
