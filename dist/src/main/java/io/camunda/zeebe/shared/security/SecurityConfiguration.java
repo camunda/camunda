@@ -14,15 +14,16 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import org.springframework.boot.actuate.autoconfigure.security.servlet.EndpointRequest;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.boot.autoconfigure.condition.NoneNestedConditions;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Condition;
+import org.springframework.context.annotation.ConditionContext;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.ConfigurationCondition.ConfigurationPhase;
 import org.springframework.context.annotation.Profile;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
+import org.springframework.core.env.Environment;
+import org.springframework.core.type.AnnotatedTypeMetadata;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
@@ -41,7 +42,7 @@ import org.springframework.security.web.servletapi.SecurityContextHolderAwareReq
 @EnableWebSecurity
 @EnableMethodSecurity
 @Configuration(proxyBeanMethods = false)
-public final class SecurityConfiguration {
+public class SecurityConfiguration {
 
   @Bean
   @Order(Ordered.HIGHEST_PRECEDENCE)
@@ -111,22 +112,22 @@ public final class SecurityConfiguration {
    * set to {@code NONE}. It helps deal with the fact that the gateway can be embedded in the broker
    * or run standalone.
    */
-  static class GatewaySecurityAuthenticationEnabledCondition extends NoneNestedConditions {
+  static class GatewaySecurityAuthenticationEnabledCondition implements Condition {
 
-    public GatewaySecurityAuthenticationEnabledCondition() {
-      super(ConfigurationPhase.REGISTER_BEAN);
+    @Override
+    public boolean matches(final ConditionContext context, final AnnotatedTypeMetadata metadata) {
+      final Environment env = context.getEnvironment();
+      final boolean standaloneGatewayEnabled =
+          "true".equals(env.getProperty("zeebe.gateway.enabled"));
+      final boolean standaloneGatewaySecurityNotNone =
+          !"none".equals(env.getProperty("zeebe.gateway.security.authentication.mode"));
+      final boolean embeddedGatewayEnabled =
+          "true".equals(env.getProperty("zeebe.broker.gateway.enabled"));
+      final boolean embeddedGatewaySecurityNotNone =
+          !"none".equals(env.getProperty("zeebe.broker.gateway.security.authentication.mode"));
+
+      return (standaloneGatewayEnabled && standaloneGatewaySecurityNotNone)
+          || (embeddedGatewayEnabled && embeddedGatewaySecurityNotNone);
     }
-
-    @ConditionalOnProperty(
-        prefix = "zeebe.gateway",
-        value = "security.authentication.mode",
-        havingValue = "none")
-    static class StandaloneGatewayCondition {}
-
-    @ConditionalOnProperty(
-        prefix = "zeebe.broker.gateway",
-        value = "security.authentication.mode",
-        havingValue = "none")
-    static class EmbeddedGatewayCondition {}
   }
 }
