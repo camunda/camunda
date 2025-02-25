@@ -107,6 +107,13 @@ jobs:
         run: npx playwright install --with-deps
         working-directory: ./c8run/e2e_tests
 
+      - name: Wait for camunda process to start
+        run: bash -c 'while ! curl -s -f "http://localhost:9600/actuator/health"; do sleep 5; done; sleep 120'
+
+      - name: Run Playwright tests
+        run: npx playwright test
+        working-directory: ./c8run/e2e_tests
+
       - uses: actions/upload-artifact@v4
         if: failure()
         with:
@@ -114,12 +121,6 @@ jobs:
           path: ./c8run/e2e_tests/*.png
           retention-days: 30
 
-      - name: Wait for camunda process to start
-        run: bash -c 'while ! curl -s -f "http://localhost:9600/actuator/health"; do sleep 5; done; sleep 120'
-
-      - name: Run Playwright tests
-        run: npx playwright test
-        working-directory: ./c8run/e2e_tests
 
       - name: Run v2 API endpoint test
         run: ./api_tests.sh
