@@ -19,6 +19,7 @@ import io.camunda.it.utils.CamundaMultiDBExtension;
 import io.camunda.qa.util.auth.Authenticated;
 import io.camunda.qa.util.auth.Permissions;
 import io.camunda.qa.util.auth.User;
+import io.camunda.qa.util.auth.UserDefinition;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import java.io.IOException;
 import java.net.URI;
@@ -57,6 +58,7 @@ class GroupSearchingAuthorizationIT {
   private static final String GROUP_SEARCH_ENDPOINT = "v2/groups/search";
   private static final Duration AWAIT_TIMEOUT = Duration.ofSeconds(15);
 
+  @UserDefinition
   private static final User ADMIN_USER =
       new User(
           ADMIN,
@@ -67,8 +69,10 @@ class GroupSearchingAuthorizationIT {
               new Permissions(GROUP, PermissionTypeEnum.READ, List.of("*")),
               new Permissions(AUTHORIZATION, PermissionTypeEnum.UPDATE, List.of("*"))));
 
+  @UserDefinition
   private static final User RESTRICTED_USER = new User(RESTRICTED, DEFAULT_PASSWORD, List.of());
 
+  @UserDefinition
   private static final User RESTRICTED_USER_WITH_READ_PERMISSION =
       new User(
           RESTRICTED_WITH_READ,

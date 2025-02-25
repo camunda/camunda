@@ -19,6 +19,7 @@ import io.camunda.it.utils.CamundaMultiDBExtension;
 import io.camunda.qa.util.auth.Authenticated;
 import io.camunda.qa.util.auth.Permissions;
 import io.camunda.qa.util.auth.User;
+import io.camunda.qa.util.auth.UserDefinition;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.collection.Tuple;
@@ -58,6 +59,8 @@ class TenantAuthorizationIT {
   private static final String ADMIN = "admin";
   private static final String RESTRICTED = "restricted-user";
   private static final String UNAUTHORIZED = "unauthorized-user";
+
+  @UserDefinition
   private static final User ADMIN_USER =
       new User(
           ADMIN,
@@ -65,11 +68,15 @@ class TenantAuthorizationIT {
           List.of(
               new Permissions(TENANT, CREATE, List.of("*")),
               new Permissions(TENANT, READ, List.of("*"))));
+
+  @UserDefinition
   private static final User RESTRICTED_USER =
       new User(
           RESTRICTED,
           PASSWORD,
           List.of(new Permissions(TENANT, READ, List.of("tenant1", "tenant2"))));
+
+  @UserDefinition
   private static final User UNAUTHORIZED_USER = new User(UNAUTHORIZED, PASSWORD, List.of());
 
   @AutoClose private static final HttpClient HTTP_CLIENT = HttpClient.newHttpClient();

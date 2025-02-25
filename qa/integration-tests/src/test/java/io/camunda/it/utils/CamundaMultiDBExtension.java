@@ -10,6 +10,7 @@ package io.camunda.it.utils;
 import io.camunda.client.CamundaClient;
 import io.camunda.qa.util.auth.Authenticated;
 import io.camunda.qa.util.auth.User;
+import io.camunda.qa.util.auth.UserDefinition;
 import io.camunda.qa.util.cluster.TestSimpleCamundaApplication;
 import io.camunda.webapps.schema.descriptors.IndexDescriptors;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneApplication;
@@ -185,7 +186,10 @@ public class CamundaMultiDBExtension
   private List<User> findUsers(
       final Class<?> testClass, final Object testInstance, Predicate<Field> predicate) {
     final var users = new ArrayList<User>();
-    predicate = predicate.and(field -> field.getType() == User.class);
+    predicate =
+        predicate.and(
+            field ->
+                field.getType() == User.class && field.getAnnotation(UserDefinition.class) != null);
     for (final Field field : testClass.getDeclaredFields()) {
       try {
         if (predicate.test(field)) {

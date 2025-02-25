@@ -22,6 +22,7 @@ import io.camunda.it.utils.CamundaMultiDBExtension;
 import io.camunda.qa.util.auth.Authenticated;
 import io.camunda.qa.util.auth.Permissions;
 import io.camunda.qa.util.auth.User;
+import io.camunda.qa.util.auth.UserDefinition;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import java.time.Duration;
 import java.util.List;
@@ -48,6 +49,8 @@ class ProcessInstanceAuthorizationIT {
   private static final String ADMIN = "admin";
   private static final String USER1 = "user1";
   private static final String USER2 = "user2";
+
+  @UserDefinition
   private static final User ADMIN_USER =
       new User(
           ADMIN,
@@ -57,12 +60,16 @@ class ProcessInstanceAuthorizationIT {
               new Permissions(PROCESS_DEFINITION, CREATE_PROCESS_INSTANCE, List.of("*")),
               new Permissions(PROCESS_DEFINITION, READ_PROCESS_DEFINITION, List.of("*")),
               new Permissions(PROCESS_DEFINITION, READ_PROCESS_INSTANCE, List.of("*"))));
+
+  @UserDefinition
   private static final User USER1_USER =
       new User(
           USER1,
           "password",
           List.of(
               new Permissions(PROCESS_DEFINITION, READ_PROCESS_INSTANCE, List.of(PROCESS_ID_1))));
+
+  @UserDefinition
   private static final User USER2_USER =
       new User(
           USER2,

@@ -21,6 +21,7 @@ import io.camunda.it.utils.CamundaMultiDBExtension;
 import io.camunda.qa.util.auth.Authenticated;
 import io.camunda.qa.util.auth.Permissions;
 import io.camunda.qa.util.auth.User;
+import io.camunda.qa.util.auth.UserDefinition;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import java.time.Duration;
 import java.util.List;
@@ -44,6 +45,8 @@ class ProcessAuthorizationIT {
 
   private static final String ADMIN = "admin";
   private static final String RESTRICTED = "restricted-user";
+
+  @UserDefinition
   private static final User ADMIN_USER =
       new User(
           ADMIN,
@@ -51,6 +54,8 @@ class ProcessAuthorizationIT {
           List.of(
               new Permissions(RESOURCE, CREATE, List.of("*")),
               new Permissions(PROCESS_DEFINITION, READ_PROCESS_DEFINITION, List.of("*"))));
+
+  @UserDefinition
   private static final User RESTRICTED_USER =
       new User(
           RESTRICTED,

@@ -19,6 +19,7 @@ import io.camunda.it.utils.CamundaMultiDBExtension;
 import io.camunda.qa.util.auth.Authenticated;
 import io.camunda.qa.util.auth.Permissions;
 import io.camunda.qa.util.auth.User;
+import io.camunda.qa.util.auth.UserDefinition;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import java.io.IOException;
 import java.net.URI;
@@ -55,6 +56,8 @@ class MappingAuthorizationIT {
   private static final String DEFAULT_PASSWORD = "password";
   private static final String MAPPING_SEARCH_ENDPOINT = "v2/mapping-rules/search";
   private static final Duration AWAIT_TIMEOUT = Duration.ofSeconds(15);
+
+  @UserDefinition
   private static final User ADMIN_USER =
       new User(
           ADMIN,
@@ -62,10 +65,15 @@ class MappingAuthorizationIT {
           List.of(
               new Permissions(MAPPING_RULE, CREATE, List.of("*")),
               new Permissions(MAPPING_RULE, READ, List.of("*"))));
+
+  @UserDefinition
   private static final User RESTRICTED_USER =
       new User(
           RESTRICTED, DEFAULT_PASSWORD, List.of(new Permissions(MAPPING_RULE, READ, List.of("*"))));
+
+  @UserDefinition
   private static final User UNAUTHORIZED_USER = new User(UNAUTHORIZED, DEFAULT_PASSWORD, List.of());
+
   @AutoClose private static final HttpClient HTTP_CLIENT = HttpClient.newHttpClient();
 
   @BeforeAll

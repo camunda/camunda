@@ -18,6 +18,7 @@ import io.camunda.it.utils.CamundaMultiDBExtension;
 import io.camunda.qa.util.auth.Authenticated;
 import io.camunda.qa.util.auth.Permissions;
 import io.camunda.qa.util.auth.User;
+import io.camunda.qa.util.auth.UserDefinition;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import java.io.IOException;
 import java.net.URI;
@@ -50,12 +51,16 @@ class AuthorizationSearchIT {
   private static final String DEFAULT_PASSWORD = "password";
   private static final String AUTH_SEARCH_ENDPOINT = "v2/authorizations/search";
 
+  @UserDefinition
   private static final User ADMIN_USER =
       new User(
           ADMIN,
           DEFAULT_PASSWORD,
           List.of(new Permissions(AUTHORIZATION, PermissionTypeEnum.READ, List.of("*"))));
+
+  @UserDefinition
   private static final User RESTRICTED_USER = new User(RESTRICTED, DEFAULT_PASSWORD, List.of());
+
   @AutoClose private static final HttpClient HTTP_CLIENT = HttpClient.newHttpClient();
 
   @Test

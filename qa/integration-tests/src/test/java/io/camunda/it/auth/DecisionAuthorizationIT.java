@@ -23,6 +23,7 @@ import io.camunda.it.utils.CamundaMultiDBExtension;
 import io.camunda.qa.util.auth.Authenticated;
 import io.camunda.qa.util.auth.Permissions;
 import io.camunda.qa.util.auth.User;
+import io.camunda.qa.util.auth.UserDefinition;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import java.time.Duration;
 import java.util.List;
@@ -50,6 +51,8 @@ class DecisionAuthorizationIT {
   private static final String DECISION_REQUIREMENTS_ID_2 = "definitions_test";
   private static final String ADMIN = "admin";
   private static final String RESTRICTED = "restricted-user";
+
+  @UserDefinition
   private static final User ADMIN_USER =
       new User(
           ADMIN,
@@ -58,6 +61,8 @@ class DecisionAuthorizationIT {
               new Permissions(RESOURCE, CREATE, List.of("*")),
               new Permissions(DECISION_DEFINITION, READ_DECISION_DEFINITION, List.of("*")),
               new Permissions(DECISION_REQUIREMENTS_DEFINITION, READ, List.of("*"))));
+
+  @UserDefinition
   private static final User RESTRICTED_USER =
       new User(
           RESTRICTED,
