@@ -15,10 +15,11 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.protocol.rest.PermissionTypeEnum;
 import io.camunda.client.protocol.rest.ResourceTypeEnum;
-import io.camunda.it.utils.BrokerITInvocationProvider;
+import io.camunda.it.utils.CamundaMultiDBExtension;
 import io.camunda.qa.util.auth.Authenticated;
 import io.camunda.qa.util.auth.Permissions;
 import io.camunda.qa.util.auth.User;
+import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -30,14 +31,17 @@ import java.util.Base64;
 import java.util.List;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AutoClose;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.TestInstance;
-import org.junit.jupiter.api.TestInstance.Lifecycle;
-import org.junit.jupiter.api.TestTemplate;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-@TestInstance(Lifecycle.PER_CLASS)
 class RoleSearchingAuthorizationIT {
+
+  static final TestStandaloneBroker BROKER =
+      new TestStandaloneBroker().withBasicAuth().withAuthorizationsEnabled();
+
+  @RegisterExtension
+  static final CamundaMultiDBExtension EXTENSION = new CamundaMultiDBExtension(BROKER);
 
   private static final ObjectMapper OBJECT_MAPPER =
       new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
@@ -67,27 +71,16 @@ class RoleSearchingAuthorizationIT {
           DEFAULT_PASSWORD,
           List.of(new Permissions(ResourceTypeEnum.ROLE, PermissionTypeEnum.READ, List.of("*"))));
 
-  @RegisterExtension
-  static final BrokerITInvocationProvider PROVIDER =
-      new BrokerITInvocationProvider()
-          .withoutRdbmsExporter()
-          .withBasicAuth()
-          .withAuthorizationsEnabled()
-          .withUsers(ADMIN_USER, RESTRICTED_USER, RESTRICTED_USER_WITH_READ_PERMISSION);
-
   @AutoClose private static final HttpClient HTTP_CLIENT = HttpClient.newHttpClient();
   private boolean initialized;
 
-  @BeforeEach
-  void setUp(@Authenticated(ADMIN) final CamundaClient adminClient) {
-    if (!initialized) {
-      createRole(adminClient, "role2");
-      createRole(adminClient, "role3");
-      final int expectedCount = 3; // Admin, role2, role3
-      waitForRolesToBeCreated(
-          adminClient.getConfiguration().getRestAddress().toString(), ADMIN, expectedCount);
-      initialized = true;
-    }
+  @BeforeAll
+  static void setUp(@Authenticated(ADMIN) final CamundaClient adminClient) {
+    createRole(adminClient, "role2");
+    createRole(adminClient, "role3");
+    final int expectedCount = 3; // Admin, role2, role3
+    waitForRolesToBeCreated(
+        adminClient.getConfiguration().getRestAddress().toString(), ADMIN, expectedCount);
   }
 
   private static RoleSearchResponse searchRoles(final String restAddress, final String username)
@@ -108,7 +101,7 @@ class RoleSearchingAuthorizationIT {
     return OBJECT_MAPPER.readValue(response.body(), RoleSearchResponse.class);
   }
 
-  @TestTemplate
+  @Test
   void searchShouldReturnAuthorizedRoles(
       @Authenticated(RESTRICTED_WITH_READ) final CamundaClient camundaClient) throws Exception {
     final var roleSearchResponse =
@@ -121,7 +114,7 @@ class RoleSearchingAuthorizationIT {
         .containsExactlyInAnyOrder("Admin", "role2", "role3");
   }
 
-  @TestTemplate
+  @Test
   void searchShouldReturnEmptyListWhenUnauthorized(
       @Authenticated(RESTRICTED) final CamundaClient camundaClient) throws Exception {
     final var roleSearchResponse =
@@ -134,7 +127,7 @@ class RoleSearchingAuthorizationIT {
     adminClient.newCreateRoleCommand().name(roleName).send().join();
   }
 
-  private void waitForRolesToBeCreated(
+  private static void waitForRolesToBeCreated(
       final String restAddress, final String name, final int expectedCount) {
     Awaitility.await("should create roles and import in ES")
         .atMost(AWAIT_TIMEOUT)

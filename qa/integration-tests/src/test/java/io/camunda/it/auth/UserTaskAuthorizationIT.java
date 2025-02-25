@@ -17,22 +17,26 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.command.ProblemException;
-import io.camunda.it.utils.BrokerITInvocationProvider;
+import io.camunda.it.utils.CamundaMultiDBExtension;
 import io.camunda.qa.util.auth.Authenticated;
 import io.camunda.qa.util.auth.Permissions;
 import io.camunda.qa.util.auth.User;
+import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import java.time.Duration;
 import java.util.List;
 import org.awaitility.Awaitility;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.TestInstance;
-import org.junit.jupiter.api.TestInstance.Lifecycle;
-import org.junit.jupiter.api.TestTemplate;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.api.function.Executable;
 
-@TestInstance(Lifecycle.PER_CLASS)
 class UserTaskAuthorizationIT {
+  static final TestStandaloneBroker BROKER =
+      new TestStandaloneBroker().withBasicAuth().withAuthorizationsEnabled();
+
+  @RegisterExtension
+  static final CamundaMultiDBExtension EXTENSION = new CamundaMultiDBExtension(BROKER);
+
   private static final String PROCESS_ID_1 = "bpmProcessVariable";
   private static final String PROCESS_ID_2 = "processWithForm";
   private static final String ADMIN = "admin";
@@ -57,32 +61,19 @@ class UserTaskAuthorizationIT {
           "password",
           List.of(new Permissions(PROCESS_DEFINITION, READ_USER_TASK, List.of(PROCESS_ID_2))));
 
-  @RegisterExtension
-  static final BrokerITInvocationProvider PROVIDER =
-      new BrokerITInvocationProvider()
-          .withoutRdbmsExporter()
-          .withBasicAuth()
-          .withAuthorizationsEnabled()
-          .withUsers(ADMIN_USER, USER1_USER, USER2_USER);
+  @BeforeAll
+  static void setUp(@Authenticated(ADMIN) final CamundaClient adminClient) {
+    deployResource(adminClient, "process/bpm_variable_test.bpmn");
+    deployResource(adminClient, "form/form.form");
+    deployResource(adminClient, "process/process_with_form.bpmn");
 
-  private boolean initialized;
+    startProcessInstance(adminClient, PROCESS_ID_1);
+    startProcessInstance(adminClient, PROCESS_ID_2);
 
-  @BeforeEach
-  void setUp(@Authenticated(ADMIN) final CamundaClient adminClient) {
-    if (!initialized) {
-      deployResource(adminClient, "process/bpm_variable_test.bpmn");
-      deployResource(adminClient, "form/form.form");
-      deployResource(adminClient, "process/process_with_form.bpmn");
-
-      startProcessInstance(adminClient, PROCESS_ID_1);
-      startProcessInstance(adminClient, PROCESS_ID_2);
-
-      waitForTasksBeingExported(adminClient, 3);
-      initialized = true;
-    }
+    waitForTasksBeingExported(adminClient, 3);
   }
 
-  @TestTemplate
+  @Test
   public void searchShouldReturnAuthorizedUserTasks(
       @Authenticated(USER1) final CamundaClient camundaClient) {
     // when
@@ -94,7 +85,7 @@ class UserTaskAuthorizationIT {
     assertThat(result.items().getLast().getBpmnProcessId()).isEqualTo(PROCESS_ID_1);
   }
 
-  @TestTemplate
+  @Test
   void getByKeyShouldReturnAuthorizedUserTask(
       @Authenticated(ADMIN) final CamundaClient adminClient,
       @Authenticated(USER1) final CamundaClient camundaClient) {
@@ -107,7 +98,7 @@ class UserTaskAuthorizationIT {
     assertThat(result.getBpmnProcessId()).isEqualTo(PROCESS_ID_1);
   }
 
-  @TestTemplate
+  @Test
   void getByKeyShouldReturnForbiddenForUnauthorizedUserTask(
       @Authenticated(ADMIN) final CamundaClient adminClient,
       @Authenticated(USER1) final CamundaClient camundaClient) {
@@ -124,7 +115,7 @@ class UserTaskAuthorizationIT {
             "Unauthorized to perform operation 'READ_USER_TASK' on resource 'PROCESS_DEFINITION'");
   }
 
-  @TestTemplate
+  @Test
   void getUserTaskFormShouldReturnFormForAuthorizedUserTask(
       @Authenticated(ADMIN) final CamundaClient adminClient,
       @Authenticated(USER2) final CamundaClient camundaClient) {
@@ -137,7 +128,7 @@ class UserTaskAuthorizationIT {
     assertThat(result.getFormId()).isEqualTo("test");
   }
 
-  @TestTemplate
+  @Test
   void getUserTaskFormShouldReturnForbiddenForUnauthorizedUserTask(
       @Authenticated(ADMIN) final CamundaClient adminClient,
       @Authenticated(USER1) final CamundaClient camundaClient) {
@@ -154,7 +145,7 @@ class UserTaskAuthorizationIT {
             "Unauthorized to perform operation 'READ_USER_TASK' on resource 'PROCESS_DEFINITION'");
   }
 
-  @TestTemplate
+  @Test
   void searchUserTaskVariablesShouldReturnVariablesForAuthorizedUserTask(
       @Authenticated(ADMIN) final CamundaClient adminClient,
       @Authenticated(USER1) final CamundaClient camundaClient) {
@@ -166,7 +157,7 @@ class UserTaskAuthorizationIT {
     assertThat(result.items()).isNotEmpty();
   }
 
-  @TestTemplate
+  @Test
   void searchUserTaskVariablesShouldReturnForbiddenForUnauthorizedUserTask(
       @Authenticated(ADMIN) final CamundaClient adminClient,
       @Authenticated(USER2) final CamundaClient camundaClient) {
@@ -194,15 +185,16 @@ class UserTaskAuthorizationIT {
         .getUserTaskKey();
   }
 
-  private void deployResource(final CamundaClient camundaClient, final String resourceName) {
+  private static void deployResource(final CamundaClient camundaClient, final String resourceName) {
     camundaClient.newDeployResourceCommand().addResourceFromClasspath(resourceName).send().join();
   }
 
-  private void startProcessInstance(final CamundaClient camundaClient, final String processId) {
+  private static void startProcessInstance(
+      final CamundaClient camundaClient, final String processId) {
     camundaClient.newCreateInstanceCommand().bpmnProcessId(processId).latestVersion().send().join();
   }
 
-  private void waitForTasksBeingExported(
+  private static void waitForTasksBeingExported(
       final CamundaClient camundaClient, final int expectedCount) {
     Awaitility.await("should receive data from ES")
         .atMost(Duration.ofMinutes(1))

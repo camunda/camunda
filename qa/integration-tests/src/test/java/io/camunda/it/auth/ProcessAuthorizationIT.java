@@ -17,22 +17,26 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.command.ProblemException;
 import io.camunda.client.api.response.DeploymentEvent;
-import io.camunda.it.utils.BrokerITInvocationProvider;
+import io.camunda.it.utils.CamundaMultiDBExtension;
 import io.camunda.qa.util.auth.Authenticated;
 import io.camunda.qa.util.auth.Permissions;
 import io.camunda.qa.util.auth.User;
+import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import java.time.Duration;
 import java.util.List;
 import org.awaitility.Awaitility;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.TestInstance;
-import org.junit.jupiter.api.TestInstance.Lifecycle;
-import org.junit.jupiter.api.TestTemplate;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.api.function.Executable;
 
-@TestInstance(Lifecycle.PER_CLASS)
 class ProcessAuthorizationIT {
+
+  static final TestStandaloneBroker BROKER =
+      new TestStandaloneBroker().withBasicAuth().withAuthorizationsEnabled();
+
+  @RegisterExtension
+  static final CamundaMultiDBExtension EXTENSION = new CamundaMultiDBExtension(BROKER);
 
   private static final String ADMIN = "admin";
   private static final String RESTRICTED = "restricted-user";
@@ -53,29 +57,15 @@ class ProcessAuthorizationIT {
                   READ_PROCESS_DEFINITION,
                   List.of("service_tasks_v1", "service_tasks_v2"))));
 
-  @RegisterExtension
-  static final BrokerITInvocationProvider PROVIDER =
-      new BrokerITInvocationProvider()
-          .withoutRdbmsExporter()
-          .withBasicAuth()
-          .withAuthorizationsEnabled()
-          .withUsers(ADMIN_USER, RESTRICTED_USER);
-
-  private boolean initialized;
-
-  @BeforeEach
-  void setUp(@Authenticated(ADMIN) final CamundaClient adminClient) {
-    if (!initialized) {
-      final List<String> processes =
-          List.of("service_tasks_v1.bpmn", "service_tasks_v2.bpmn", "incident_process_v1.bpmn");
-      processes.forEach(
-          process -> deployResource(adminClient, String.format("process/%s", process)));
-      waitForProcessesToBeDeployed(adminClient, processes.size());
-      initialized = true;
-    }
+  @BeforeAll
+  static void setUp(@Authenticated(ADMIN) final CamundaClient adminClient) {
+    final List<String> processes =
+        List.of("service_tasks_v1.bpmn", "service_tasks_v2.bpmn", "incident_process_v1.bpmn");
+    processes.forEach(process -> deployResource(adminClient, String.format("process/%s", process)));
+    waitForProcessesToBeDeployed(adminClient, processes.size());
   }
 
-  @TestTemplate
+  @Test
   void searchShouldReturnAuthorizedProcessDefinitions(
       @Authenticated(RESTRICTED) final CamundaClient userClient) {
     // when
@@ -87,7 +77,7 @@ class ProcessAuthorizationIT {
         .containsExactlyInAnyOrder("service_tasks_v1", "service_tasks_v2");
   }
 
-  @TestTemplate
+  @Test
   void getByKeyShouldReturnForbiddenForUnauthorizedProcessDefinition(
       @Authenticated(ADMIN) final CamundaClient adminClient,
       @Authenticated(RESTRICTED) final CamundaClient userClient) {
@@ -106,7 +96,7 @@ class ProcessAuthorizationIT {
             "Unauthorized to perform operation 'READ_PROCESS_DEFINITION' on resource 'PROCESS_DEFINITION'");
   }
 
-  @TestTemplate
+  @Test
   void getByKeyShouldReturnAuthorizedProcessDefinition(
       @Authenticated(ADMIN) final CamundaClient adminClient,
       @Authenticated(RESTRICTED) final CamundaClient userClient) {
@@ -134,7 +124,7 @@ class ProcessAuthorizationIT {
         .getProcessDefinitionKey();
   }
 
-  private DeploymentEvent deployResource(
+  private static DeploymentEvent deployResource(
       final CamundaClient camundaClient, final String resourceName) {
     return camundaClient
         .newDeployResourceCommand()
@@ -143,7 +133,7 @@ class ProcessAuthorizationIT {
         .join();
   }
 
-  private void waitForProcessesToBeDeployed(
+  private static void waitForProcessesToBeDeployed(
       final CamundaClient camundaClient, final int expectedCount) {
     Awaitility.await("should deploy processes and import in Operate")
         .atMost(Duration.ofSeconds(15))

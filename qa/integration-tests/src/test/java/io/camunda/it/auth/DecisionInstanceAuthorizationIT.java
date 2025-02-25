@@ -20,22 +20,26 @@ import io.camunda.client.api.command.ProblemException;
 import io.camunda.client.api.response.DeploymentEvent;
 import io.camunda.client.api.response.EvaluateDecisionResponse;
 import io.camunda.client.api.search.response.DecisionInstance;
-import io.camunda.it.utils.BrokerITInvocationProvider;
+import io.camunda.it.utils.CamundaMultiDBExtension;
 import io.camunda.qa.util.auth.Authenticated;
 import io.camunda.qa.util.auth.Permissions;
 import io.camunda.qa.util.auth.User;
+import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import java.time.Duration;
 import java.util.List;
 import org.awaitility.Awaitility;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.TestInstance;
-import org.junit.jupiter.api.TestInstance.Lifecycle;
-import org.junit.jupiter.api.TestTemplate;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.api.function.Executable;
 
-@TestInstance(Lifecycle.PER_CLASS)
 class DecisionInstanceAuthorizationIT {
+
+  static final TestStandaloneBroker BROKER =
+      new TestStandaloneBroker().withBasicAuth().withAuthorizationsEnabled();
+
+  @RegisterExtension
+  static final CamundaMultiDBExtension EXTENSION = new CamundaMultiDBExtension(BROKER);
 
   private static final String DECISION_DEFINITION_ID_1 = "decision_1";
   private static final String DECISION_DEFINITION_ID_2 = "test_qa";
@@ -57,33 +61,20 @@ class DecisionInstanceAuthorizationIT {
               new Permissions(
                   DECISION_DEFINITION, READ_DECISION_INSTANCE, List.of(DECISION_DEFINITION_ID_1))));
 
-  @RegisterExtension
-  static final BrokerITInvocationProvider PROVIDER =
-      new BrokerITInvocationProvider()
-          .withoutRdbmsExporter()
-          .withBasicAuth()
-          .withAuthorizationsEnabled()
-          .withUsers(ADMIN_USER, RESTRICTED_USER);
-
-  private boolean initialized;
-
-  @BeforeEach
-  void setUp(@Authenticated(ADMIN) final CamundaClient adminClient) {
-    if (!initialized) {
-      final List<String> decisions = List.of("decision_model.dmn", "decision_model_1.dmn");
-      decisions.stream()
-          .flatMap(
-              decision ->
-                  deployResource(adminClient, String.format("decisions/%s", decision))
-                      .getDecisions()
-                      .stream())
-          .forEach(decision -> evaluateDecision(adminClient, decision.getDecisionKey()));
-      waitForDecisionsToBeEvaluated(adminClient, decisions.size());
-      initialized = true;
-    }
+  @BeforeAll
+  static void setUp(@Authenticated(ADMIN) final CamundaClient adminClient) {
+    final List<String> decisions = List.of("decision_model.dmn", "decision_model_1.dmn");
+    decisions.stream()
+        .flatMap(
+            decision ->
+                deployResource(adminClient, String.format("decisions/%s", decision))
+                    .getDecisions()
+                    .stream())
+        .forEach(decision -> evaluateDecision(adminClient, decision.getDecisionKey()));
+    waitForDecisionsToBeEvaluated(adminClient, decisions.size());
   }
 
-  @TestTemplate
+  @Test
   void searchShouldReturnAuthorizedDecisionInstances(
       @Authenticated(RESTRICTED) final CamundaClient userClient) {
     // when
@@ -95,7 +86,7 @@ class DecisionInstanceAuthorizationIT {
         .containsOnly(DECISION_DEFINITION_ID_1);
   }
 
-  @TestTemplate
+  @Test
   void getByIdShouldReturnForbiddenForUnauthorizedDecisionInstance(
       @Authenticated(ADMIN) final CamundaClient adminClient,
       @Authenticated(RESTRICTED) final CamundaClient userClient) {
@@ -114,7 +105,7 @@ class DecisionInstanceAuthorizationIT {
             "Unauthorized to perform operation 'READ_DECISION_INSTANCE' on resource 'DECISION_DEFINITION'");
   }
 
-  @TestTemplate
+  @Test
   void getByIdShouldReturnAuthorizedDecisionDefinition(
       @Authenticated(ADMIN) final CamundaClient adminClient,
       @Authenticated(RESTRICTED) final CamundaClient userClient) {
@@ -142,7 +133,7 @@ class DecisionInstanceAuthorizationIT {
         .getDecisionInstanceId();
   }
 
-  private DeploymentEvent deployResource(
+  private static DeploymentEvent deployResource(
       final CamundaClient camundaClient, final String resourceName) {
     return camundaClient
         .newDeployResourceCommand()
@@ -161,7 +152,7 @@ class DecisionInstanceAuthorizationIT {
         .join();
   }
 
-  private void waitForDecisionsToBeEvaluated(
+  private static void waitForDecisionsToBeEvaluated(
       final CamundaClient camundaClient, final int expectedCount) {
     Awaitility.await("should deploy decision definitions and import in Operate")
         .atMost(Duration.ofSeconds(15))

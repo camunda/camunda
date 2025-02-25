@@ -15,10 +15,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.client.CamundaClient;
-import io.camunda.it.utils.BrokerITInvocationProvider;
+import io.camunda.it.utils.CamundaMultiDBExtension;
 import io.camunda.qa.util.auth.Authenticated;
 import io.camunda.qa.util.auth.Permissions;
 import io.camunda.qa.util.auth.User;
+import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -30,14 +31,17 @@ import java.util.Base64;
 import java.util.List;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AutoClose;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.TestInstance;
-import org.junit.jupiter.api.TestInstance.Lifecycle;
-import org.junit.jupiter.api.TestTemplate;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-@TestInstance(Lifecycle.PER_CLASS)
 class MappingAuthorizationIT {
+
+  static final TestStandaloneBroker BROKER =
+      new TestStandaloneBroker().withBasicAuth().withAuthorizationsEnabled();
+
+  @RegisterExtension
+  static final CamundaMultiDBExtension EXTENSION = new CamundaMultiDBExtension(BROKER);
 
   private static final ObjectMapper OBJECT_MAPPER =
       new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
@@ -47,7 +51,6 @@ class MappingAuthorizationIT {
   private static final String DEFAULT_PASSWORD = "password";
   private static final String MAPPING_SEARCH_ENDPOINT = "v2/mapping-rules/search";
   private static final Duration AWAIT_TIMEOUT = Duration.ofSeconds(15);
-
   private static final User ADMIN_USER =
       new User(
           ADMIN,
@@ -55,37 +58,22 @@ class MappingAuthorizationIT {
           List.of(
               new Permissions(MAPPING_RULE, CREATE, List.of("*")),
               new Permissions(MAPPING_RULE, READ, List.of("*"))));
-
   private static final User RESTRICTED_USER =
       new User(
           RESTRICTED, DEFAULT_PASSWORD, List.of(new Permissions(MAPPING_RULE, READ, List.of("*"))));
-
   private static final User UNAUTHORIZED_USER = new User(UNAUTHORIZED, DEFAULT_PASSWORD, List.of());
-
-  @RegisterExtension
-  static final BrokerITInvocationProvider PROVIDER =
-      new BrokerITInvocationProvider()
-          .withoutRdbmsExporter()
-          .withBasicAuth()
-          .withAuthorizationsEnabled()
-          .withUsers(ADMIN_USER, RESTRICTED_USER, UNAUTHORIZED_USER);
-
   @AutoClose private static final HttpClient HTTP_CLIENT = HttpClient.newHttpClient();
-  private boolean initialized;
 
-  @BeforeEach
-  void setUp(@Authenticated(ADMIN) final CamundaClient adminClient) {
-    if (!initialized) {
-      createMapping(adminClient, "test-name", "test-value", "mapping1");
-      createMapping(adminClient, "test-name2", "test-value2", "mapping2");
-      final int expectedCount = 2;
-      waitForMappingsToBeCreated(
-          adminClient.getConfiguration().getRestAddress().toString(), ADMIN, expectedCount);
-      initialized = true;
-    }
+  @BeforeAll
+  static void setUp(@Authenticated(ADMIN) final CamundaClient adminClient) {
+    createMapping(adminClient, "test-name", "test-value", "mapping1");
+    createMapping(adminClient, "test-name2", "test-value2", "mapping2");
+    final int expectedCount = 2;
+    waitForMappingsToBeCreated(
+        adminClient.getConfiguration().getRestAddress().toString(), ADMIN, expectedCount);
   }
 
-  @TestTemplate
+  @Test
   void searchShouldReturnAuthorizedMappings(
       @Authenticated(RESTRICTED) final CamundaClient userClient) throws Exception {
     final var mappingSearchResponse =
@@ -97,7 +85,7 @@ class MappingAuthorizationIT {
         .containsExactlyInAnyOrder("mapping1", "mapping2");
   }
 
-  @TestTemplate
+  @Test
   void searchShouldReturnEmptyListWhenUnauthorized(
       @Authenticated(UNAUTHORIZED) final CamundaClient userClient) throws Exception {
     final var mappingSearchResponse =
@@ -121,7 +109,7 @@ class MappingAuthorizationIT {
         .join();
   }
 
-  private void waitForMappingsToBeCreated(
+  private static void waitForMappingsToBeCreated(
       final String restAddress, final String username, final int expectedCount) {
     Awaitility.await("should create mappings and import in ES")
         .atMost(AWAIT_TIMEOUT)

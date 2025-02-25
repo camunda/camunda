@@ -15,10 +15,11 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.protocol.rest.PermissionTypeEnum;
-import io.camunda.it.utils.BrokerITInvocationProvider;
+import io.camunda.it.utils.CamundaMultiDBExtension;
 import io.camunda.qa.util.auth.Authenticated;
 import io.camunda.qa.util.auth.Permissions;
 import io.camunda.qa.util.auth.User;
+import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -31,17 +32,19 @@ import java.util.List;
 import java.util.UUID;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AutoClose;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.TestInstance;
-import org.junit.jupiter.api.TestInstance.Lifecycle;
-import org.junit.jupiter.api.TestTemplate;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-@TestInstance(Lifecycle.PER_CLASS)
 class UserSearchingAuthorizationIT {
 
   public static final ObjectMapper OBJECT_MAPPER =
       new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+  static final TestStandaloneBroker BROKER =
+      new TestStandaloneBroker().withBasicAuth().withAuthorizationsEnabled();
+
+  @RegisterExtension
+  static final CamundaMultiDBExtension EXTENSION = new CamundaMultiDBExtension(BROKER);
 
   private static final String ADMIN = "admin";
   private static final String RESTRICTED = "restricted-user";
@@ -66,29 +69,15 @@ class UserSearchingAuthorizationIT {
           RESTRICTED_WITH_READ,
           DEFAULT_PASSWORD,
           List.of(new Permissions(USER, PermissionTypeEnum.READ, List.of("*"))));
-
-  @RegisterExtension
-  static final BrokerITInvocationProvider PROVIDER =
-      new BrokerITInvocationProvider()
-          .withoutRdbmsExporter()
-          .withBasicAuth()
-          .withAuthorizationsEnabled()
-          .withUsers(ADMIN_USER, RESTRICTED_USER, RESTRICTED_USER_WITH_READ_PERMISSION)
-          .withBasicAuth();
-
   @AutoClose private static final HttpClient HTTP_CLIENT = HttpClient.newHttpClient();
-  private boolean initialized;
 
-  @BeforeEach
-  void setUp(@Authenticated(ADMIN) final CamundaClient adminClient) {
-    if (!initialized) {
-      createUser(adminClient, "user1");
-      createUser(adminClient, "user2");
-      final var expectedCount = 4; // demo, admin, user1, user2
-      waitForUsersToBeCreated(
-          adminClient.getConfiguration().getRestAddress().toString(), ADMIN, expectedCount);
-      initialized = true;
-    }
+  @BeforeAll
+  static void setUp(@Authenticated(ADMIN) final CamundaClient adminClient) {
+    createUser(adminClient, "user1");
+    createUser(adminClient, "user2");
+    final var expectedCount = 4; // demo, admin, user1, user2
+    waitForUsersToBeCreated(
+        adminClient.getConfiguration().getRestAddress().toString(), ADMIN, expectedCount);
   }
 
   private static UserSearchResponse searchUsers(final String restAddress, final String username)
@@ -109,7 +98,7 @@ class UserSearchingAuthorizationIT {
     return OBJECT_MAPPER.readValue(response.body(), UserSearchResponse.class);
   }
 
-  @TestTemplate
+  @Test
   void searchShouldReturnAuthorizedUsers(
       @Authenticated(RESTRICTED_WITH_READ) final CamundaClient userClient) throws Exception {
     // when
@@ -123,7 +112,7 @@ class UserSearchingAuthorizationIT {
         .contains("demo", "admin", "user1", "user2", "restricted-user-2");
   }
 
-  @TestTemplate
+  @Test
   void searchShouldReturnOnlyRestrictedUserWhenUnauthorized(
       @Authenticated(RESTRICTED) final CamundaClient userClient) throws Exception {
     // when
@@ -148,7 +137,7 @@ class UserSearchingAuthorizationIT {
         .join();
   }
 
-  private void waitForUsersToBeCreated(
+  private static void waitForUsersToBeCreated(
       final String restAddress, final String username, final int expectedCount) {
     Awaitility.await("should create users and import in ES")
         .atMost(AWAIT_TIMEOUT)

@@ -18,22 +18,27 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.command.ProblemException;
-import io.camunda.it.utils.BrokerITInvocationProvider;
+import io.camunda.it.utils.CamundaMultiDBExtension;
 import io.camunda.qa.util.auth.Authenticated;
 import io.camunda.qa.util.auth.Permissions;
 import io.camunda.qa.util.auth.User;
+import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import java.time.Duration;
 import java.util.List;
 import org.awaitility.Awaitility;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.TestInstance;
-import org.junit.jupiter.api.TestInstance.Lifecycle;
-import org.junit.jupiter.api.TestTemplate;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.api.function.Executable;
 
-@TestInstance(Lifecycle.PER_CLASS)
 class ProcessInstanceAuthorizationIT {
+
+  static final TestStandaloneBroker BROKER =
+      new TestStandaloneBroker().withBasicAuth().withAuthorizationsEnabled();
+
+  @RegisterExtension
+  static final CamundaMultiDBExtension EXTENSION = new CamundaMultiDBExtension(BROKER);
+
   private static final String PROCESS_ID_1 = "incident_process_v1";
   private static final String PROCESS_ID_2 = "service_tasks_v1";
   private static final String ADMIN = "admin";
@@ -61,31 +66,18 @@ class ProcessInstanceAuthorizationIT {
           List.of(
               new Permissions(PROCESS_DEFINITION, READ_PROCESS_INSTANCE, List.of(PROCESS_ID_2))));
 
-  @RegisterExtension
-  static final BrokerITInvocationProvider PROVIDER =
-      new BrokerITInvocationProvider()
-          .withoutRdbmsExporter()
-          .withBasicAuth()
-          .withAuthorizationsEnabled()
-          .withUsers(ADMIN_USER, USER1_USER, USER2_USER);
+  @BeforeAll
+  static void setUp(@Authenticated(ADMIN) final CamundaClient adminClient) {
+    deployResource(adminClient, "process/incident_process_v1.bpmn");
+    deployResource(adminClient, "process/service_tasks_v1.bpmn");
 
-  private boolean initialized;
+    startProcessInstance(adminClient, PROCESS_ID_1);
+    startProcessInstance(adminClient, PROCESS_ID_2);
 
-  @BeforeEach
-  void setUp(@Authenticated(ADMIN) final CamundaClient adminClient) {
-    if (!initialized) {
-      deployResource(adminClient, "process/incident_process_v1.bpmn");
-      deployResource(adminClient, "process/service_tasks_v1.bpmn");
-
-      startProcessInstance(adminClient, PROCESS_ID_1);
-      startProcessInstance(adminClient, PROCESS_ID_2);
-
-      waitForFlowNodeInstancesBeingExported(adminClient, 4);
-      initialized = true;
-    }
+    waitForFlowNodeInstancesBeingExported(adminClient, 4);
   }
 
-  @TestTemplate
+  @Test
   public void searchShouldReturnAuthorizedProcessInstances(
       @Authenticated(USER1) final CamundaClient camundaClient) {
     // when
@@ -95,7 +87,7 @@ class ProcessInstanceAuthorizationIT {
     assertThat(result.items().getFirst().getProcessDefinitionId()).isEqualTo(PROCESS_ID_1);
   }
 
-  @TestTemplate
+  @Test
   void getByKeyShouldReturnAuthorizedProcessInstance(
       @Authenticated(ADMIN) final CamundaClient adminClient,
       @Authenticated(USER1) final CamundaClient camundaClient) {
@@ -108,7 +100,7 @@ class ProcessInstanceAuthorizationIT {
     assertThat(result.getProcessDefinitionId()).isEqualTo(PROCESS_ID_1);
   }
 
-  @TestTemplate
+  @Test
   void getByKeyShouldReturnForbiddenForUnauthorizedProcessInstance(
       @Authenticated(ADMIN) final CamundaClient adminClient,
       @Authenticated(USER1) final CamundaClient camundaClient) {
@@ -125,7 +117,7 @@ class ProcessInstanceAuthorizationIT {
             "Unauthorized to perform operation 'READ_PROCESS_INSTANCE' on resource 'PROCESS_DEFINITION'");
   }
 
-  @TestTemplate
+  @Test
   public void searchShouldReturnAuthorizedFlowNodeInstances(
       @Authenticated(ADMIN) final CamundaClient adminClient,
       @Authenticated(USER1) final CamundaClient camundaClient) {
@@ -139,7 +131,7 @@ class ProcessInstanceAuthorizationIT {
     assertThat(result.items().getLast().getProcessDefinitionKey()).isEqualTo(processDefinitionKey);
   }
 
-  @TestTemplate
+  @Test
   void getByKeyShouldReturnAuthorizedFlowNodeInstance(
       @Authenticated(ADMIN) final CamundaClient adminClient,
       @Authenticated(USER1) final CamundaClient camundaClient) {
@@ -154,7 +146,7 @@ class ProcessInstanceAuthorizationIT {
         .isEqualTo(getProcessDefinitionKey(adminClient, PROCESS_ID_1));
   }
 
-  @TestTemplate
+  @Test
   void getByKeyShouldReturnForbiddenForUnauthorizedFlowNodeInstance(
       @Authenticated(ADMIN) final CamundaClient adminClient,
       @Authenticated(USER1) final CamundaClient camundaClient) {
@@ -171,7 +163,7 @@ class ProcessInstanceAuthorizationIT {
             "Unauthorized to perform operation 'READ_PROCESS_INSTANCE' on resource 'PROCESS_DEFINITION'");
   }
 
-  @TestTemplate
+  @Test
   public void searchShouldReturnAuthorizedIncidents(
       @Authenticated(USER1) final CamundaClient camundaClient) {
     // when
@@ -181,7 +173,7 @@ class ProcessInstanceAuthorizationIT {
     assertThat(result.items().getFirst().getProcessDefinitionId()).isEqualTo(PROCESS_ID_1);
   }
 
-  @TestTemplate
+  @Test
   void getByKeyShouldReturnAuthorizedIncident(
       @Authenticated(ADMIN) final CamundaClient adminClient,
       @Authenticated(USER1) final CamundaClient camundaClient) {
@@ -195,7 +187,7 @@ class ProcessInstanceAuthorizationIT {
         .isEqualTo(getProcessDefinitionKey(adminClient, PROCESS_ID_1));
   }
 
-  @TestTemplate
+  @Test
   void getByKeyShouldReturnForbiddenForUnauthorizedIncident(
       @Authenticated(ADMIN) final CamundaClient adminClient,
       @Authenticated(USER2) final CamundaClient camundaClient) {
@@ -212,7 +204,7 @@ class ProcessInstanceAuthorizationIT {
             "Unauthorized to perform operation 'READ_PROCESS_INSTANCE' on resource 'PROCESS_DEFINITION'");
   }
 
-  @TestTemplate
+  @Test
   public void searchShouldReturnAuthorizedVariables(
       @Authenticated(ADMIN) final CamundaClient adminClient,
       @Authenticated(USER1) final CamundaClient camundaClient) {
@@ -225,7 +217,7 @@ class ProcessInstanceAuthorizationIT {
     assertThat(result.items().getFirst().getProcessInstanceKey()).isEqualTo(processInstanceKey);
   }
 
-  @TestTemplate
+  @Test
   void getByKeyShouldReturnAuthorizedVariable(
       @Authenticated(ADMIN) final CamundaClient adminClient,
       @Authenticated(USER1) final CamundaClient camundaClient) {
@@ -239,7 +231,7 @@ class ProcessInstanceAuthorizationIT {
     assertThat(result.getProcessInstanceKey()).isEqualTo(processInstanceKey);
   }
 
-  @TestTemplate
+  @Test
   void getByKeyShouldReturnForbiddenForUnauthorizedVariable(
       @Authenticated(ADMIN) final CamundaClient adminClient,
       @Authenticated(USER1) final CamundaClient camundaClient) {
@@ -313,15 +305,16 @@ class ProcessInstanceAuthorizationIT {
         .getProcessDefinitionKey();
   }
 
-  private void deployResource(final CamundaClient camundaClient, final String resourceName) {
+  private static void deployResource(final CamundaClient camundaClient, final String resourceName) {
     camundaClient.newDeployResourceCommand().addResourceFromClasspath(resourceName).send().join();
   }
 
-  private void startProcessInstance(final CamundaClient camundaClient, final String processId) {
+  private static void startProcessInstance(
+      final CamundaClient camundaClient, final String processId) {
     camundaClient.newCreateInstanceCommand().bpmnProcessId(processId).latestVersion().send().join();
   }
 
-  private void waitForFlowNodeInstancesBeingExported(
+  private static void waitForFlowNodeInstancesBeingExported(
       final CamundaClient camundaClient, final int expectedCount) {
     Awaitility.await("should receive data from ES")
         .atMost(Duration.ofMinutes(1))

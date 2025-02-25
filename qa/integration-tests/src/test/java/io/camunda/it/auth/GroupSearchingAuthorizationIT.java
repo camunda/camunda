@@ -15,10 +15,11 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.protocol.rest.PermissionTypeEnum;
-import io.camunda.it.utils.BrokerITInvocationProvider;
+import io.camunda.it.utils.CamundaMultiDBExtension;
 import io.camunda.qa.util.auth.Authenticated;
 import io.camunda.qa.util.auth.Permissions;
 import io.camunda.qa.util.auth.User;
+import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -30,14 +31,17 @@ import java.util.Base64;
 import java.util.List;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AutoClose;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.TestInstance;
-import org.junit.jupiter.api.TestInstance.Lifecycle;
-import org.junit.jupiter.api.TestTemplate;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-@TestInstance(Lifecycle.PER_CLASS)
 class GroupSearchingAuthorizationIT {
+
+  static final TestStandaloneBroker BROKER =
+      new TestStandaloneBroker().withBasicAuth().withAuthorizationsEnabled();
+
+  @RegisterExtension
+  static final CamundaMultiDBExtension EXTENSION = new CamundaMultiDBExtension(BROKER);
 
   private static final ObjectMapper OBJECT_MAPPER =
       new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
@@ -67,27 +71,15 @@ class GroupSearchingAuthorizationIT {
           DEFAULT_PASSWORD,
           List.of(new Permissions(GROUP, PermissionTypeEnum.READ, List.of("*"))));
 
-  @RegisterExtension
-  static final BrokerITInvocationProvider PROVIDER =
-      new BrokerITInvocationProvider()
-          .withoutRdbmsExporter()
-          .withBasicAuth()
-          .withAuthorizationsEnabled()
-          .withUsers(ADMIN_USER, RESTRICTED_USER, RESTRICTED_USER_WITH_READ_PERMISSION);
-
   @AutoClose private static final HttpClient HTTP_CLIENT = HttpClient.newHttpClient();
-  private boolean initialized;
 
-  @BeforeEach
-  void setUp(@Authenticated(ADMIN) final CamundaClient adminClient) {
-    if (!initialized) {
-      createGroup(adminClient, "group1");
-      createGroup(adminClient, "group2");
-      final int expectedCount = 2;
-      waitForGroupsToBeCreated(
-          adminClient.getConfiguration().getRestAddress().toString(), ADMIN, expectedCount);
-      initialized = true;
-    }
+  @BeforeAll
+  static void setUp(@Authenticated(ADMIN) final CamundaClient adminClient) {
+    createGroup(adminClient, "group1");
+    createGroup(adminClient, "group2");
+    final int expectedCount = 2;
+    waitForGroupsToBeCreated(
+        adminClient.getConfiguration().getRestAddress().toString(), ADMIN, expectedCount);
   }
 
   private static GroupSearchResponse searchGroups(final String restAddress, final String username)
@@ -108,7 +100,7 @@ class GroupSearchingAuthorizationIT {
     return OBJECT_MAPPER.readValue(response.body(), GroupSearchResponse.class);
   }
 
-  @TestTemplate
+  @Test
   void searchShouldReturnAuthorizedGroups(
       @Authenticated(RESTRICTED_WITH_READ) final CamundaClient camundaClient) throws Exception {
     final var groupSearchResponse =
@@ -121,7 +113,7 @@ class GroupSearchingAuthorizationIT {
         .containsExactlyInAnyOrder("group1", "group2");
   }
 
-  @TestTemplate
+  @Test
   void searchShouldReturnEmptyListWhenUnauthorized(
       @Authenticated(RESTRICTED) final CamundaClient camundaClient) throws Exception {
     final var groupSearchResponse =
@@ -134,7 +126,7 @@ class GroupSearchingAuthorizationIT {
     adminClient.newCreateGroupCommand().name(groupName).send().join();
   }
 
-  private void waitForGroupsToBeCreated(
+  private static void waitForGroupsToBeCreated(
       final String restAddress, final String username, final int expectedCount) {
     Awaitility.await("should create groups and import in ES")
         .atMost(AWAIT_TIMEOUT)

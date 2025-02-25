@@ -19,22 +19,26 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.command.ProblemException;
 import io.camunda.client.api.response.DeploymentEvent;
-import io.camunda.it.utils.BrokerITInvocationProvider;
+import io.camunda.it.utils.CamundaMultiDBExtension;
 import io.camunda.qa.util.auth.Authenticated;
 import io.camunda.qa.util.auth.Permissions;
 import io.camunda.qa.util.auth.User;
+import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import java.time.Duration;
 import java.util.List;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.TestInstance;
-import org.junit.jupiter.api.TestInstance.Lifecycle;
-import org.junit.jupiter.api.TestTemplate;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.api.function.Executable;
 
-@TestInstance(Lifecycle.PER_CLASS)
 class DecisionAuthorizationIT {
+
+  static final TestStandaloneBroker BROKER =
+      new TestStandaloneBroker().withBasicAuth().withAuthorizationsEnabled();
+
+  @RegisterExtension
+  static final CamundaMultiDBExtension EXTENSION = new CamundaMultiDBExtension(BROKER);
 
   private static final String DECISION_DEFINITION_ID_1 = "decision_1";
   private static final String DECISION_REQUIREMENTS_ID_1 = "definitions_1";
@@ -59,15 +63,6 @@ class DecisionAuthorizationIT {
                   DECISION_DEFINITION, READ_DECISION_DEFINITION, List.of(DECISION_DEFINITION_ID_1)),
               new Permissions(
                   DECISION_REQUIREMENTS_DEFINITION, READ, List.of(DECISION_REQUIREMENTS_ID_1))));
-
-  @RegisterExtension
-  static final BrokerITInvocationProvider PROVIDER =
-      new BrokerITInvocationProvider()
-          .withoutRdbmsExporter()
-          .withBasicAuth()
-          .withAuthorizationsEnabled()
-          .withUsers(ADMIN_USER, RESTRICTED_USER);
-
   private boolean initialized;
 
   @BeforeEach
@@ -82,7 +77,7 @@ class DecisionAuthorizationIT {
     }
   }
 
-  @TestTemplate
+  @Test
   void searchShouldReturnAuthorizedDecisionDefinitions(
       @Authenticated(RESTRICTED) final CamundaClient userClient) {
     // when
@@ -94,7 +89,7 @@ class DecisionAuthorizationIT {
         .containsOnly(DECISION_DEFINITION_ID_1);
   }
 
-  @TestTemplate
+  @Test
   void getByKeyShouldReturnForbiddenForUnauthorizedDecisionDefinition(
       @Authenticated(ADMIN) final CamundaClient adminClient,
       @Authenticated(RESTRICTED) final CamundaClient userClient) {
@@ -114,7 +109,7 @@ class DecisionAuthorizationIT {
             "Unauthorized to perform operation 'READ_DECISION_DEFINITION' on resource 'DECISION_DEFINITION'");
   }
 
-  @TestTemplate
+  @Test
   void getByKeyShouldReturnAuthorizedDecisionDefinition(
       @Authenticated(ADMIN) final CamundaClient adminClient,
       @Authenticated(RESTRICTED) final CamundaClient userClient) {
@@ -131,7 +126,7 @@ class DecisionAuthorizationIT {
     assertThat(decisionDefinition.getDmnDecisionId()).isEqualTo(DECISION_DEFINITION_ID_1);
   }
 
-  @TestTemplate
+  @Test
   void searchShouldReturnAuthorizedDecisionRequirements(
       @Authenticated(RESTRICTED) final CamundaClient userClient) {
     // when
@@ -144,7 +139,7 @@ class DecisionAuthorizationIT {
         .containsOnly(DECISION_REQUIREMENTS_ID_1);
   }
 
-  @TestTemplate
+  @Test
   void getByKeyShouldReturnForbiddenForUnauthorizedDecisionRequirements(
       @Authenticated(ADMIN) final CamundaClient adminClient,
       @Authenticated(RESTRICTED) final CamundaClient userClient) {
@@ -164,7 +159,7 @@ class DecisionAuthorizationIT {
             "Unauthorized to perform operation 'READ' on resource 'DECISION_REQUIREMENTS_DEFINITION'");
   }
 
-  @TestTemplate
+  @Test
   void getByKeyShouldReturnAuthorizedDecisionRequirements(
       @Authenticated(ADMIN) final CamundaClient adminClient,
       @Authenticated(RESTRICTED) final CamundaClient userClient) {
