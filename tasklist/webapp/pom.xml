@@ -182,7 +182,7 @@
     <!-- OAuth0 -->
     <dependency>
       <groupId>io.camunda</groupId>
-      <artifactId>tasklist-mvc-auth-commons</artifactId>
+      <artifactId>camunda-mvc-auth-commons</artifactId>
     </dependency>
 
     <!-- OAuth2 token authorization -->

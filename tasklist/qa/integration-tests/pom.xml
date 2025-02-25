@@ -57,7 +57,7 @@
 
     <dependency>
       <groupId>io.camunda</groupId>
-      <artifactId>tasklist-mvc-auth-commons</artifactId>
+      <artifactId>camunda-mvc-auth-commons</artifactId>
       <scope>test</scope>
     </dependency>
 
