@@ -28,9 +28,11 @@ import java.net.http.HttpResponse;
 import java.util.Base64;
 import java.util.List;
 import org.junit.jupiter.api.AutoClose;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+@Tag("multi-db-test")
 class AuthorizationSearchIT {
 
   static final TestStandaloneBroker BROKER =

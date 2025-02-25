@@ -32,9 +32,11 @@ import java.util.List;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+@Tag("multi-db-test")
 class MappingAuthorizationIT {
 
   static final TestStandaloneBroker BROKER =

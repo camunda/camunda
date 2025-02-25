@@ -27,10 +27,12 @@ import java.time.Duration;
 import java.util.List;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.api.function.Executable;
 
+@Tag("multi-db-test")
 class ProcessInstanceAuthorizationIT {
 
   static final TestStandaloneBroker BROKER =
