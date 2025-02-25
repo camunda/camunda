@@ -13,7 +13,7 @@ import AppHeader from "src/components/layout/AppHeader";
 import ErrorBoundary from "src/components/global/ErrorBoundary";
 import { useApi } from "src/utility/api";
 import { getAuthentication } from "src/utility/api/authentication";
-import Error403 from "src/pages/errors/403.tsx";
+import Forbidden from "src/pages/forbidden/index.tsx";
 
 const GlobalStyle = createGlobalStyle`
   body {
@@ -74,7 +74,7 @@ const AppContent: FC<{ children?: ReactNode }> = ({ children }) => {
         </GridHeader>
         <GridMain>
           <GridMainContent>
-            <Error403 />
+            <Forbidden />
           </GridMainContent>
         </GridMain>
       </>
