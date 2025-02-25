@@ -153,7 +153,11 @@ public final class UserTaskProcessor extends JobWorkerTaskSupportingProcessor<Ex
       final UserTaskProperties userTaskProperties) {
     final var userTaskRecord =
         userTaskBehavior.createNewUserTask(context, element, userTaskProperties);
-    userTaskBehavior.userTaskCreated(userTaskRecord);
+    element.getTaskListeners(ZeebeTaskListenerEventType.creating).stream()
+        .findFirst()
+        .ifPresentOrElse(
+            listener -> jobBehavior.createNewTaskListenerJob(context, userTaskRecord, listener),
+            () -> userTaskBehavior.userTaskCreated(userTaskRecord));
     return new UserTaskCreationResult(userTaskProperties, userTaskRecord);
   }
 
