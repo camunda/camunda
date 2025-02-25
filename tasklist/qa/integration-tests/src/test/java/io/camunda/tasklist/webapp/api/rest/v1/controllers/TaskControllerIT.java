@@ -36,7 +36,7 @@ import io.camunda.tasklist.webapp.dto.UserDTO;
 import io.camunda.tasklist.webapp.dto.VariableInputDTO;
 import io.camunda.tasklist.webapp.security.Permission;
 import io.camunda.tasklist.webapp.security.TasklistURIs;
-import io.camunda.tasklist.webapp.security.identity.IdentityAuthorizationService;
+import io.camunda.tasklist.webapp.security.identity.UserGroupService;
 import io.camunda.webapps.schema.entities.tasklist.TaskEntity.TaskImplementation;
 import io.camunda.webapps.schema.entities.tasklist.TaskState;
 import io.camunda.zeebe.model.bpmn.builder.AbstractUserTaskBuilder;
@@ -67,7 +67,7 @@ public class TaskControllerIT extends TasklistZeebeIntegrationTest {
 
   @InjectMocks private IdentityProperties identityProperties;
 
-  @MockBean private IdentityAuthorizationService identityAuthorizationService;
+  @MockBean private UserGroupService userGroupService;
 
   @Autowired private WebApplicationContext context;
 
@@ -226,8 +226,7 @@ public class TaskControllerIT extends TasklistZeebeIntegrationTest {
       createTaskWithCandidateGroup(bpmnProcessId, flowNodeBpmnId, numberOfInstances, "Admins");
       createTaskWithCandidateGroup(bpmnProcessId, flowNodeBpmnId, numberOfInstances, "Users");
       createTaskWithCandidateGroup(bpmnProcessId, flowNodeBpmnId, numberOfInstances, "Sales");
-      when(identityAuthorizationService.getUserGroups())
-          .thenReturn(List.of("Admins", "Users", "Sales"));
+      when(userGroupService.getUserGroups()).thenReturn(List.of("Admins", "Users", "Sales"));
 
       final var searchQuery =
           new TaskQueryDTO().setCandidateGroups(new String[] {"Admins", "Users"});
@@ -708,7 +707,7 @@ public class TaskControllerIT extends TasklistZeebeIntegrationTest {
       // Mock identity service behaviour
       identityProperties.setUserAccessRestrictionsEnabled(true);
       tasklistProperties.setIdentity(identityProperties);
-      when(identityAuthorizationService.getUserGroups()).thenReturn(List.of("Admins"));
+      when(userGroupService.getUserGroups()).thenReturn(List.of("Admins"));
 
       // when
       final var result = mockMvcHelper.doRequest(post(TasklistURIs.TASKS_URL_V1.concat("/search")));
@@ -744,7 +743,7 @@ public class TaskControllerIT extends TasklistZeebeIntegrationTest {
       // Mock identity service behaviour
       identityProperties.setUserAccessRestrictionsEnabled(true);
       tasklistProperties.setIdentity(identityProperties);
-      when(identityAuthorizationService.getUserGroups()).thenReturn(emptyList());
+      when(userGroupService.getUserGroups()).thenReturn(emptyList());
 
       // when
       final var result = mockMvcHelper.doRequest(post(TasklistURIs.TASKS_URL_V1.concat("/search")));
@@ -781,7 +780,7 @@ public class TaskControllerIT extends TasklistZeebeIntegrationTest {
       // Mock identity service behaviour
       identityProperties.setUserAccessRestrictionsEnabled(true);
       tasklistProperties.setIdentity(identityProperties);
-      when(identityAuthorizationService.getUserGroups()).thenReturn(List.of("Admins"));
+      when(userGroupService.getUserGroups()).thenReturn(List.of("Admins"));
 
       // when
       final var result = mockMvcHelper.doRequest(post(TasklistURIs.TASKS_URL_V1.concat("/search")));
