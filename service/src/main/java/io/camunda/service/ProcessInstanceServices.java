@@ -20,6 +20,7 @@ import io.camunda.service.search.core.SearchQueryService;
 import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.util.ObjectBuilder;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
+import io.camunda.zeebe.gateway.impl.broker.request.BrokerCancelProcessInstanceBatchOperationRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerCancelProcessInstanceRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerCreateProcessInstanceRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerCreateProcessInstanceWithResultRequest;
@@ -135,6 +136,15 @@ public final class ProcessInstanceServices
     if (request.operationReference() != null) {
       brokerRequest.setOperationReference(request.operationReference());
     }
+    return sendBrokerRequest(brokerRequest);
+  }
+
+  public CompletableFuture<Long> cancelProcessInstanceBatchOperationWithResult(
+      final ProcessInstanceQuery query) {
+    final var brokerRequest =
+        new BrokerCancelProcessInstanceBatchOperationRequest()
+            .setQuery(query);
+
     return sendBrokerRequest(brokerRequest);
   }
 
