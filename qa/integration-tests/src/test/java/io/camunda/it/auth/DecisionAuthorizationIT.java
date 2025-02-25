@@ -28,7 +28,7 @@ import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import java.time.Duration;
 import java.util.List;
 import org.awaitility.Awaitility;
-import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
@@ -72,18 +72,14 @@ class DecisionAuthorizationIT {
                   DECISION_DEFINITION, READ_DECISION_DEFINITION, List.of(DECISION_DEFINITION_ID_1)),
               new Permissions(
                   DECISION_REQUIREMENTS_DEFINITION, READ, List.of(DECISION_REQUIREMENTS_ID_1))));
-  private boolean initialized;
 
-  @BeforeEach
-  void setUp(@Authenticated(ADMIN) final CamundaClient adminClient) {
-    if (!initialized) {
-      final List<String> decisions = List.of("decision_model.dmn", "decision_model_1.dmn");
-      decisions.forEach(
-          decision -> deployResource(adminClient, String.format("decisions/%s", decision)));
-      waitForDecisionDefinitionsToBeDeployed(adminClient, decisions.size());
-      waitForDecisionRequirementsToBeDeployed(adminClient, decisions.size());
-      initialized = true;
-    }
+  @BeforeAll
+  static void setUp(@Authenticated(ADMIN) final CamundaClient adminClient) {
+    final List<String> decisions = List.of("decision_model.dmn", "decision_model_1.dmn");
+    decisions.forEach(
+        decision -> deployResource(adminClient, String.format("decisions/%s", decision)));
+    waitForDecisionDefinitionsToBeDeployed(adminClient, decisions.size());
+    waitForDecisionRequirementsToBeDeployed(adminClient, decisions.size());
   }
 
   @Test
@@ -210,7 +206,7 @@ class DecisionAuthorizationIT {
         .getDecisionRequirementsKey();
   }
 
-  private DeploymentEvent deployResource(
+  private static DeploymentEvent deployResource(
       final CamundaClient camundaClient, final String resourceName) {
     return camundaClient
         .newDeployResourceCommand()
@@ -219,7 +215,7 @@ class DecisionAuthorizationIT {
         .join();
   }
 
-  private void waitForDecisionDefinitionsToBeDeployed(
+  private static void waitForDecisionDefinitionsToBeDeployed(
       final CamundaClient camundaClient, final int expectedCount) {
     Awaitility.await("should deploy decision definitions and import in Operate")
         .atMost(Duration.ofSeconds(15))
@@ -231,7 +227,7 @@ class DecisionAuthorizationIT {
             });
   }
 
-  private void waitForDecisionRequirementsToBeDeployed(
+  private static void waitForDecisionRequirementsToBeDeployed(
       final CamundaClient camundaClient, final int expectedCount) {
     Awaitility.await("should deploy decision requirements and import in Operate")
         .atMost(Duration.ofSeconds(15))
