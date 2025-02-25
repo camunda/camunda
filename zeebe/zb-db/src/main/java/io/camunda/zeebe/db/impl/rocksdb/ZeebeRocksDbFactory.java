@@ -22,6 +22,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.Properties;
+import java.util.function.Supplier;
 import org.agrona.CloseHelper;
 import org.rocksdb.BlockBasedTableConfig;
 import org.rocksdb.BloomFilter;
@@ -53,17 +54,17 @@ public final class ZeebeRocksDbFactory<
   private final RocksDbConfiguration rocksDbConfiguration;
   private final ConsistencyChecksSettings consistencyChecksSettings;
   private final AccessMetricsConfiguration metrics;
-  private final MeterRegistry meterRegistry;
+  private final Supplier<MeterRegistry> meterRegistryFactory;
 
   public ZeebeRocksDbFactory(
       final RocksDbConfiguration rocksDbConfiguration,
       final ConsistencyChecksSettings consistencyChecksSettings,
       final AccessMetricsConfiguration metricsConfiguration,
-      final MeterRegistry meterRegistry) {
+      final Supplier<MeterRegistry> meterRegistryFactory) {
     this.rocksDbConfiguration = Objects.requireNonNull(rocksDbConfiguration);
     this.consistencyChecksSettings = Objects.requireNonNull(consistencyChecksSettings);
     metrics = metricsConfiguration;
-    this.meterRegistry = Objects.requireNonNull(meterRegistry);
+    this.meterRegistryFactory = Objects.requireNonNull(meterRegistryFactory);
   }
 
   @Override
@@ -77,7 +78,7 @@ public final class ZeebeRocksDbFactory<
           rocksDbConfiguration,
           consistencyChecksSettings,
           metrics,
-          meterRegistry);
+          meterRegistryFactory);
     } catch (final RocksDBException e) {
       CloseHelper.quietCloseAll(closeables);
       throw new IllegalStateException("Unexpected error occurred trying to open the database", e);
