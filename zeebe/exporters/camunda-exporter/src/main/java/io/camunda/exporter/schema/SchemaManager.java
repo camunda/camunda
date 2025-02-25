@@ -59,6 +59,10 @@ public class SchemaManager {
       return;
     }
     LOG.info("Schema creation is enabled. Start Schema management.");
+
+    // remove legacy index template which is not compatible with current schema manager
+    searchEngineClient.removeBreakingIndexTemplates(indexTemplateDescriptors);
+
     final var schemaValidator = new IndexSchemaValidator(objectMapper);
     final var newIndexProperties = validateIndices(schemaValidator);
     final var newIndexTemplateProperties = validateIndexTemplates(schemaValidator);
@@ -66,13 +70,13 @@ public class SchemaManager {
     initialiseResources();
 
     //  used to update existing indices/templates
+    updateSchemaSettings();
     LOG.info("Update index schema. '{}' indices need to be updated", newIndexProperties.size());
     updateSchemaMappings(newIndexProperties);
     LOG.info(
         "Update index template schema. '{}' index templates need to be updated",
         newIndexTemplateProperties.size());
     updateSchemaMappings(newIndexTemplateProperties);
-    updateSchemaSettings();
 
     final RetentionConfiguration retention = config.getArchiver().getRetention();
     if (retention.isEnabled()) {
