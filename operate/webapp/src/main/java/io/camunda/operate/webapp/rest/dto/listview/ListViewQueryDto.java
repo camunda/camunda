@@ -30,6 +30,8 @@ public class ListViewQueryDto {
 
   private String errorMessage;
 
+  private Integer incidentErrorHashCode;
+
   private String activityId;
 
   @Schema(description = "Start date after (inclusive)", nullable = true)
@@ -143,6 +145,15 @@ public class ListViewQueryDto {
 
   public ListViewQueryDto setErrorMessage(final String errorMessage) {
     this.errorMessage = errorMessage;
+    return this;
+  }
+
+  public Integer getIncidentErrorHashCode() {
+    return incidentErrorHashCode;
+  }
+
+  public ListViewQueryDto setIncidentErrorHashCode(final Integer incidentErrorHashCode) {
+    this.incidentErrorHashCode = incidentErrorHashCode;
     return this;
   }
 
@@ -264,33 +275,7 @@ public class ListViewQueryDto {
   }
 
   @Override
-  public int hashCode() {
-    return Objects.hash(
-        running,
-        active,
-        incidents,
-        finished,
-        completed,
-        canceled,
-        ids,
-        errorMessage,
-        activityId,
-        startDateAfter,
-        startDateBefore,
-        endDateAfter,
-        endDateBefore,
-        processIds,
-        bpmnProcessId,
-        processVersion,
-        excludeIds,
-        variable,
-        batchOperationId,
-        parentInstanceId,
-        tenantId);
-  }
-
-  @Override
-  public boolean equals(final Object o) {
+  public boolean equals(Object o) {
     if (this == o) {
       return true;
     }
@@ -304,8 +289,10 @@ public class ListViewQueryDto {
         && finished == that.finished
         && completed == that.completed
         && canceled == that.canceled
+        && retriesLeft == that.retriesLeft
         && Objects.equals(ids, that.ids)
         && Objects.equals(errorMessage, that.errorMessage)
+        && Objects.equals(incidentErrorHashCode, that.incidentErrorHashCode)
         && Objects.equals(activityId, that.activityId)
         && Objects.equals(startDateAfter, that.startDateAfter)
         && Objects.equals(startDateBefore, that.startDateBefore)
@@ -319,5 +306,33 @@ public class ListViewQueryDto {
         && Objects.equals(batchOperationId, that.batchOperationId)
         && Objects.equals(parentInstanceId, that.parentInstanceId)
         && Objects.equals(tenantId, that.tenantId);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(
+        running,
+        active,
+        incidents,
+        finished,
+        completed,
+        canceled,
+        retriesLeft,
+        ids,
+        errorMessage,
+        incidentErrorHashCode,
+        activityId,
+        startDateAfter,
+        startDateBefore,
+        endDateAfter,
+        endDateBefore,
+        processIds,
+        bpmnProcessId,
+        processVersion,
+        excludeIds,
+        variable,
+        batchOperationId,
+        parentInstanceId,
+        tenantId);
   }
 }

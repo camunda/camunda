@@ -20,6 +20,7 @@ const mockStatistics = {
 const mockIncidentsByError = [
   {
     errorMessage: 'No more retries left.',
+    incidentErrorHashCode: 1111,
     instancesWithErrorCount: 170,
     processes: [
       {
@@ -207,6 +208,7 @@ const mockIncidentsByError = [
   {
     errorMessage:
       "failed to evaluate expression '{orderId:orderNo,amountToPay:total}': no variable found for name 'total'",
+    incidentErrorHashCode: 1112,
     instancesWithErrorCount: 112,
     processes: [
       {
@@ -225,6 +227,7 @@ const mockIncidentsByError = [
   {
     errorMessage:
       "failed to evaluate expression 'clientId': no variable found for name 'clientId'",
+    incidentErrorHashCode: 1113,
     instancesWithErrorCount: 76,
     processes: [
       {
@@ -254,6 +257,7 @@ const mockIncidentsByError = [
   {
     errorMessage:
       'Expected at least one condition to evaluate to true, or to have a default flow',
+    incidentErrorHashCode: 1114,
     instancesWithErrorCount: 63,
     processes: [
       {
@@ -283,6 +287,7 @@ const mockIncidentsByError = [
   {
     errorMessage:
       "Expected result of the expression ' list contains(flows,\"2\")' to be 'BOOLEAN', but was 'NULL'.",
+    incidentErrorHashCode: 1115,
     instancesWithErrorCount: 56,
     processes: [
       {
@@ -301,6 +306,7 @@ const mockIncidentsByError = [
   {
     errorMessage:
       "failed to evaluate expression '{taskOrderId:orderId}': no variable found for name 'orderId'",
+    incidentErrorHashCode: 1116,
     instancesWithErrorCount: 56,
     processes: [
       {
@@ -319,6 +325,7 @@ const mockIncidentsByError = [
   {
     errorMessage:
       'Something went wrong. \njava.lang.Throwable\n\tat io.camunda.operate.data.usertest.UserTestDataGenerator.lambda$progressAlwaysFailingTask$3(UserTestDataGenerator.java:359)\n\tat io.camunda.client.impl.worker.JobRunnableFactory.executeJob(JobRunnableFactory.java:44)\n\tat io.camunda.client.impl.worker.JobRunnableFactory.lambda$create$0(JobRunnableFactory.java:39)\n\tat java.base/java.util.concurrent.Executors$RunnableAdapter.call(Executors.java:577)\n\tat java.base/java.util.concurrent.FutureTask.run(FutureTask.java:317)\n\tat java.base/java.util.concurrent.ScheduledThreadPoolExecutor$ScheduledFutureTask.run(ScheduledThreadPoolExecutor.java:304)\n\tat java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1144)\n\tat java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:642)\n\tat java.base/java.lang.Thread.run(Thread.java:1589)',
+    incidentErrorHashCode: 1117,
     instancesWithErrorCount: 55,
     processes: [
       {
@@ -337,6 +344,7 @@ const mockIncidentsByError = [
   {
     errorMessage:
       "Expected process with BPMN process id 'called-process' to be deployed, but not found.",
+    incidentErrorHashCode: 1118,
     instancesWithErrorCount: 20,
     processes: [
       {
@@ -355,6 +363,7 @@ const mockIncidentsByError = [
   {
     errorMessage:
       "Expected to throw an error event with the code 'end', but it was not caught. No error events are available in the scope.",
+    incidentErrorHashCode: 1119,
     instancesWithErrorCount: 20,
     processes: [
       {
@@ -373,6 +382,7 @@ const mockIncidentsByError = [
   {
     errorMessage:
       "Expected to evaluate decision 'invoiceAssignApprover', but failed to evaluate expression 'amount': no variable found for name 'amount'",
+    incidentErrorHashCode: 1120,
     instancesWithErrorCount: 17,
     processes: [
       {
@@ -391,6 +401,7 @@ const mockIncidentsByError = [
   {
     errorMessage:
       "Expected to throw an error event with the code 'unknown' with message 'Job worker throw error with error code: unknown', but it was not caught. Available error events are [boundary, subProcess]",
+    incidentErrorHashCode: 1121,
     instancesWithErrorCount: 17,
     processes: [
       {
@@ -409,6 +420,7 @@ const mockIncidentsByError = [
   {
     errorMessage:
       "Expected to evaluate decision 'invoiceAssignApprover', but no decision found for id 'invoiceAssignApprover'",
+    incidentErrorHashCode: 1122,
     instancesWithErrorCount: 16,
     processes: [
       {
@@ -426,6 +438,7 @@ const mockIncidentsByError = [
   },
   {
     errorMessage: 'Loan request does not contain all the required data',
+    incidentErrorHashCode: 1123,
     instancesWithErrorCount: 10,
     processes: [
       {
@@ -442,6 +455,7 @@ const mockIncidentsByError = [
   },
   {
     errorMessage: 'Cannot connect to server delivery05',
+    incidentErrorHashCode: 1124,
     instancesWithErrorCount: 9,
     processes: [
       {
@@ -469,6 +483,7 @@ const mockIncidentsByError = [
   {
     errorMessage:
       "failed to evaluate expression 'paid = false': no variable found for name 'paid'",
+    incidentErrorHashCode: 1125,
     instancesWithErrorCount: 4,
     processes: [
       {
@@ -487,6 +502,7 @@ const mockIncidentsByError = [
   {
     errorMessage:
       "failed to evaluate expression 'paid = true': no variable found for name 'paid'",
+    incidentErrorHashCode: 1126,
     instancesWithErrorCount: 4,
     processes: [
       {
@@ -504,6 +520,7 @@ const mockIncidentsByError = [
   },
   {
     errorMessage: 'Schufa system is not accessible',
+    incidentErrorHashCode: 1127,
     instancesWithErrorCount: 2,
     processes: [
       {
@@ -520,6 +537,7 @@ const mockIncidentsByError = [
   },
   {
     errorMessage: 'No memory left.',
+    incidentErrorHashCode: 1128,
     instancesWithErrorCount: 1,
     processes: [
       {
@@ -536,6 +554,7 @@ const mockIncidentsByError = [
   },
   {
     errorMessage: 'No space left on device.',
+    incidentErrorHashCode: 1129,
     instancesWithErrorCount: 1,
     processes: [
       {
@@ -552,6 +571,7 @@ const mockIncidentsByError = [
   },
   {
     errorMessage: 'error',
+    incidentErrorHashCode: 1130,
     instancesWithErrorCount: 1,
     processes: [
       {
@@ -569,6 +589,7 @@ const mockIncidentsByError = [
   {
     errorMessage:
       "failed to evaluate expression 'smthIsMissing = true': no variable found for name 'smthIsMissing'",
+    incidentErrorHashCode: 1131,
     instancesWithErrorCount: 1,
     processes: [
       {
@@ -587,6 +608,7 @@ const mockIncidentsByError = [
   {
     errorMessage:
       'java.lang.RuntimeException: Payment system not available.\n\tat io.camunda.operate.data.develop.DevelopDataGenerator.lambda$progressOrderProcessCheckPayment$0(DevelopDataGenerator.java:233)\n\tat io.camunda.client.impl.worker.JobRunnableFactory.executeJob(JobRunnableFactory.java:44)\n\tat io.camunda.client.impl.worker.JobRunnableFactory.lambda$create$0(JobRunnableFactory.java:39)\n\tat java.base/java.util.concurrent.Executors$RunnableAdapter.call(Executors.java:577)\n\tat java.base/java.util.concurrent.FutureTask.run(FutureTask.java:317)\n\tat java.base/java.util.concurrent.ScheduledThreadPoolExecutor$ScheduledFutureTask.run(ScheduledThreadPoolExecutor.java:304)\n\tat java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1144)\n\tat java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:642)\n\tat java.base/java.lang.Thread.run(Thread.java:1589)',
+    incidentErrorHashCode: 1132,
     instancesWithErrorCount: 1,
     processes: [
       {

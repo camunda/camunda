@@ -12,6 +12,7 @@ type ProcessInstanceFilterField =
   | 'ids'
   | 'parentInstanceId'
   | 'errorMessage'
+  | 'incidentErrorHashCode'
   | 'flowNodeId'
   | 'variableName'
   | 'variableValues'
@@ -33,6 +34,7 @@ type ProcessInstanceFilters = {
   ids?: string;
   parentInstanceId?: string;
   errorMessage?: string;
+  incidentErrorHashCode?: number;
   flowNodeId?: string;
   variableName?: string;
   variableValues?: string;
@@ -55,6 +57,7 @@ const PROCESS_INSTANCE_FILTER_FIELDS: ProcessInstanceFilterField[] = [
   'ids',
   'parentInstanceId',
   'errorMessage',
+  'incidentErrorHashCode',
   'flowNodeId',
   'variableName',
   'variableValues',
