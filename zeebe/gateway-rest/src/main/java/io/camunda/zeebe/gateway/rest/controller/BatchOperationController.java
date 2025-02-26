@@ -17,6 +17,7 @@ import io.camunda.service.ProcessInstanceServices.ProcessInstanceCancelRequest;
 import io.camunda.service.ProcessInstanceServices.ProcessInstanceCreateRequest;
 import io.camunda.service.ProcessInstanceServices.ProcessInstanceMigrateRequest;
 import io.camunda.service.ProcessInstanceServices.ProcessInstanceModifyRequest;
+import io.camunda.zeebe.gateway.protocol.rest.BatchOperationSearchQueryResult;
 import io.camunda.zeebe.gateway.protocol.rest.CancelProcessInstanceRequest;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceCreationInstruction;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceFilter;
@@ -48,16 +49,15 @@ public class BatchOperationController {
   }
 
   @CamundaPostMapping(path = "/search")
-  public ResponseEntity<ProcessInstanceSearchQueryResult> searchBatchOperations() {
+  public ResponseEntity<BatchOperationSearchQueryResult> searchBatchOperations() {
     return search();
   }
 
-  private ResponseEntity<ProcessInstanceSearchQueryResult> search() {
+  private ResponseEntity<BatchOperationSearchQueryResult> search() {
     try {
       final var result = batchOperationServices.search();
-      //return ResponseEntity.ok(
-      //    SearchQueryResponseMapper.toProcessInstanceSearchQueryResponse(result));
-      return null; //TODO
+      return ResponseEntity.ok(
+          SearchQueryResponseMapper.toBatchOperationSearchQueryResult(result));
     } catch (final Exception e) {
       return mapErrorToResponse(e);
     }
