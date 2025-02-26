@@ -681,7 +681,7 @@ paths:
       summary: Remove a group from a tenant
       description: Removes a single group from a specified tenant without deleting the group.
       parameters:
-        - name: tenantKey
+        - name: tenantId
           in: path
           required: true
           description: The unique identifier of the tenant.

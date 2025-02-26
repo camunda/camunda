@@ -1636,15 +1636,15 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    *
    * <pre>
    * camundaClient
-   *   .newUnassignGroupFromTenantCommand(tenantKey)
+   *   .newUnassignGroupFromTenantCommand(tenantId)
    *   .groupKey(groupKey)
    *   .send();
    * </pre>
    *
-   * @param tenantKey the unique identifier of the tenant
+   * @param tenantId the unique identifier of the tenant
    * @return a builder to configure and send the unassign group from tenant command
    */
-  UnassignGroupFromTenantCommandStep1 newUnassignGroupFromTenantCommand(long tenantKey);
+  UnassignGroupFromTenantCommandStep1 newUnassignGroupFromTenantCommand(String tenantId);
 
   /**
    * Command to create an authorization
