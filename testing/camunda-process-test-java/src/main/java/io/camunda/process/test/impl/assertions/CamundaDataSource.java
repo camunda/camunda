@@ -66,13 +66,14 @@ public class CamundaDataSource {
         .items();
   }
 
-  public Incident getIncidentByKey(final long incidentKey) {
+  public List<Incident> getIncidentsByProcessInstanceKey(final long processInstanceKey) {
     return client
         .newIncidentQuery()
-        .filter(filter -> filter.incidentKey(incidentKey))
+        .filter(filter -> filter.processInstanceKey(processInstanceKey))
+        .sort(sort -> sort.creationTime().asc())
+        .page(DEFAULT_PAGE_REQUEST)
         .send()
         .join()
-        .items()
-        .get(0);
+        .items();
   }
 }

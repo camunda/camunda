@@ -18,6 +18,7 @@ package io.camunda.process.test.impl.testresult;
 import io.camunda.client.api.search.response.FlowNodeInstance;
 import io.camunda.client.api.search.response.FlowNodeInstanceState;
 import io.camunda.client.api.search.response.Incident;
+import io.camunda.client.api.search.response.IncidentState;
 import io.camunda.client.api.search.response.ProcessInstance;
 import io.camunda.client.api.search.response.Variable;
 import io.camunda.process.test.impl.assertions.CamundaDataSource;
@@ -74,24 +75,10 @@ public class CamundaProcessTestResultCollector {
         .collect(Collectors.toMap(Variable::getName, Variable::getValue));
   }
 
-  private List<OpenIncident> collectOpenIncidents(final long processInstanceKey) {
-    return dataSource.getFlowNodeInstancesByProcessInstanceKey(processInstanceKey).stream()
-        .filter(
-            flowNodeInstance ->
-                flowNodeInstance.getIncident() != null && flowNodeInstance.getIncident())
-        .map(this::getIncident)
+  private List<Incident> collectOpenIncidents(final long processInstanceKey) {
+    return dataSource.getIncidentsByProcessInstanceKey(processInstanceKey).stream()
+        .filter(incident -> incident.getState().equals(IncidentState.ACTIVE))
         .collect(Collectors.toList());
-  }
-
-  private OpenIncident getIncident(final FlowNodeInstance flowNodeInstance) {
-    final OpenIncident openIncident = new OpenIncident();
-    openIncident.setFlowNodeId(flowNodeInstance.getFlowNodeId());
-
-    final Incident incident = dataSource.getIncidentByKey(flowNodeInstance.getIncidentKey());
-    openIncident.setType(incident.getErrorType().name());
-    openIncident.setMessage(incident.getErrorMessage());
-
-    return openIncident;
   }
 
   private List<FlowNodeInstance> collectActiveFlowNodeInstances(final long processInstanceKey) {

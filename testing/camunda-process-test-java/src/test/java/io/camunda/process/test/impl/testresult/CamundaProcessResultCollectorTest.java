@@ -21,6 +21,7 @@ import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.when;
 
 import io.camunda.client.api.search.response.FlowNodeInstance;
+import io.camunda.client.api.search.response.Incident;
 import io.camunda.client.api.search.response.IncidentErrorType;
 import io.camunda.client.api.search.response.ProcessInstance;
 import io.camunda.process.test.impl.assertions.CamundaDataSource;
@@ -164,6 +165,19 @@ public class CamundaProcessResultCollectorTest {
             PROCESS_INSTANCE_1.getProcessInstanceKey()))
         .thenReturn(Arrays.asList(flowNodeInstance1, flowNodeInstance2));
 
+    when(camundaDataSource.getIncidentsByProcessInstanceKey(
+            PROCESS_INSTANCE_1.getProcessInstanceKey()))
+        .thenReturn(
+            Arrays.asList(
+                IncidentBuilder.newActiveIncident(
+                        IncidentErrorType.JOB_NO_RETRIES, "No retries left.")
+                    .setFlowNodeId("A")
+                    .build(),
+                IncidentBuilder.newActiveIncident(
+                        IncidentErrorType.EXTRACT_VALUE_ERROR, "Failed to evaluate expression.")
+                    .setFlowNodeId("B")
+                    .build()));
+
     final FlowNodeInstance flowNodeInstance3 =
         FlowNodeInstanceBuilder.newActiveFlowNodeInstance(
                 "C", PROCESS_INSTANCE_2.getProcessInstanceKey())
@@ -181,20 +195,14 @@ public class CamundaProcessResultCollectorTest {
             PROCESS_INSTANCE_2.getProcessInstanceKey()))
         .thenReturn(Arrays.asList(flowNodeInstance3, flowNodeInstance4));
 
-    when(camundaDataSource.getIncidentByKey(flowNodeInstance1.getIncidentKey()))
+    when(camundaDataSource.getIncidentsByProcessInstanceKey(
+            PROCESS_INSTANCE_2.getProcessInstanceKey()))
         .thenReturn(
-            IncidentBuilder.newActiveIncident(IncidentErrorType.JOB_NO_RETRIES, "No retries left.")
-                .build());
-    when(camundaDataSource.getIncidentByKey(flowNodeInstance2.getIncidentKey()))
-        .thenReturn(
-            IncidentBuilder.newActiveIncident(
-                    IncidentErrorType.EXTRACT_VALUE_ERROR, "Failed to evaluate expression.")
-                .build());
-    when(camundaDataSource.getIncidentByKey(flowNodeInstance3.getIncidentKey()))
-        .thenReturn(
-            IncidentBuilder.newActiveIncident(
-                    IncidentErrorType.UNHANDLED_ERROR_EVENT, "No error catch event found.")
-                .build());
+            Collections.singletonList(
+                IncidentBuilder.newActiveIncident(
+                        IncidentErrorType.UNHANDLED_ERROR_EVENT, "No error catch event found.")
+                    .setFlowNodeId("C")
+                    .build()));
 
     // when
     final ProcessTestResult result = resultCollector.collect();
@@ -204,15 +212,16 @@ public class CamundaProcessResultCollectorTest {
 
     assertThat(result.getProcessInstanceTestResults().get(0).getOpenIncidents())
         .hasSize(2)
-        .extracting(OpenIncident::getType, OpenIncident::getMessage, OpenIncident::getFlowNodeId)
+        .extracting(Incident::getErrorType, Incident::getErrorMessage, Incident::getFlowNodeId)
         .contains(
-            tuple("JOB_NO_RETRIES", "No retries left.", "A"),
-            tuple("EXTRACT_VALUE_ERROR", "Failed to evaluate expression.", "B"));
+            tuple(IncidentErrorType.JOB_NO_RETRIES, "No retries left.", "A"),
+            tuple(IncidentErrorType.EXTRACT_VALUE_ERROR, "Failed to evaluate expression.", "B"));
 
     assertThat(result.getProcessInstanceTestResults().get(1).getOpenIncidents())
         .hasSize(1)
-        .extracting(OpenIncident::getType, OpenIncident::getMessage, OpenIncident::getFlowNodeId)
-        .contains(tuple("UNHANDLED_ERROR_EVENT", "No error catch event found.", "C"));
+        .extracting(Incident::getErrorType, Incident::getErrorMessage, Incident::getFlowNodeId)
+        .contains(
+            tuple(IncidentErrorType.UNHANDLED_ERROR_EVENT, "No error catch event found.", "C"));
   }
 
   @Test
