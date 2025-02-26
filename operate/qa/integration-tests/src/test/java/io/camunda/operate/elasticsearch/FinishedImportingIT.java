@@ -36,7 +36,6 @@ import java.io.IOException;
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.Map;
-import org.awaitility.Awaitility;
 import org.elasticsearch.action.admin.indices.refresh.RefreshRequest;
 import org.elasticsearch.action.get.GetRequest;
 import org.elasticsearch.action.search.SearchRequest;
@@ -53,6 +52,11 @@ public class FinishedImportingIT extends OperateZeebeAbstractIT {
   private static final ElasticsearchExporter EXPORTER = new ElasticsearchExporter();
   private static final ElasticsearchExporterConfiguration CONFIG =
       new ElasticsearchExporterConfiguration();
+
+  static {
+    System.setProperty("logging.level.io.camunda.operate.zeebeimport", "TRACE");
+  }
+
   @Autowired public SchemaManager schemaManager;
   @Autowired protected ZeebeImporter zeebeImporter;
   @Autowired private OperateProperties operateProperties;
@@ -64,6 +68,7 @@ public class FinishedImportingIT extends OperateZeebeAbstractIT {
 
   @Before
   public void beforeEach() {
+    super.before();
     operateProperties.getImporter().setImportPositionUpdateInterval(5000);
     CONFIG.index.prefix = operateProperties.getZeebeElasticsearch().getPrefix();
     CONFIG.index.setNumberOfShards(1);
@@ -89,6 +94,7 @@ public class FinishedImportingIT extends OperateZeebeAbstractIT {
 
   @Test
   public void shouldMarkRecordReadersAsCompletedIf880RecordReceived() throws IOException {
+
     // given
     final var record = generateRecord(ValueType.PROCESS_INSTANCE, "8.7.0", 1);
     EXPORTER.export(record);
@@ -120,6 +126,7 @@ public class FinishedImportingIT extends OperateZeebeAbstractIT {
 
   @Test
   public void shouldMarkMultiplePositionIndexAsCompletedIf880RecordReceived() throws IOException {
+
     final var processInstanceRecord = generateRecord(ValueType.PROCESS_INSTANCE, "8.7.0", 1);
     final var decisionEvalRecord = generateRecord(ValueType.DECISION_EVALUATION, "8.7.0", 1);
     final var decisionRecord = generateRecord(ValueType.DECISION, "8.7.0", 2);
@@ -159,20 +166,14 @@ public class FinishedImportingIT extends OperateZeebeAbstractIT {
   @Test
   public void shouldMarkMultiplePartitionsAsCompletedIfTheyReceiveAn880Record() throws IOException {
     // given
+
     final var record = generateRecord(ValueType.PROCESS_INSTANCE, "8.7.0", 1);
     final var partitionTwoRecord = generateRecord(ValueType.PROCESS_INSTANCE, "8.7.0", 2);
     EXPORTER.export(record);
     EXPORTER.export(partitionTwoRecord);
-    Awaitility.await()
-        .atMost(Duration.ofSeconds(30))
-        .pollInterval(Duration.ofSeconds(1))
-        .until(
-            () -> {
-              esClient.indices().refresh(new RefreshRequest("*"), RequestOptions.DEFAULT);
-              zeebeImporter.performOneRoundOfImport();
-              return isRecordIngested("1-process-instance")
-                  && isRecordIngested("2-process-instance");
-            });
+    esClient.indices().refresh(new RefreshRequest("*"), RequestOptions.DEFAULT);
+    zeebeImporter.performOneRoundOfImport();
+
     // when
     final var record2 = generateRecord(ValueType.PROCESS_INSTANCE, "8.8.0", 1);
     final var partitionTwoRecord2 = generateRecord(ValueType.PROCESS_INSTANCE, "8.8.0", 2);
@@ -196,20 +197,13 @@ public class FinishedImportingIT extends OperateZeebeAbstractIT {
   @Test
   public void shouldNotMarkedAsCompletedViaMetricsWhenImportingIsNotDone() throws IOException {
     // given
+
     final var record = generateRecord(ValueType.PROCESS_INSTANCE, "8.7.0", 1);
     final var partitionTwoRecord = generateRecord(ValueType.PROCESS_INSTANCE, "8.7.0", 2);
     EXPORTER.export(record);
     EXPORTER.export(partitionTwoRecord);
-    Awaitility.await()
-        .atMost(Duration.ofSeconds(30))
-        .pollInterval(Duration.ofSeconds(1))
-        .until(
-            () -> {
-              esClient.indices().refresh(new RefreshRequest("*"), RequestOptions.DEFAULT);
-              zeebeImporter.performOneRoundOfImport();
-              return isRecordIngested("1-process-instance")
-                  && isRecordIngested("2-process-instance");
-            });
+    esClient.indices().refresh(new RefreshRequest("*"), RequestOptions.DEFAULT);
+    zeebeImporter.performOneRoundOfImport();
 
     // when
     for (int i = 0; i <= RecordsReaderHolder.MINIMUM_EMPTY_BATCHES_FOR_COMPLETED_READER; i++) {
@@ -219,6 +213,7 @@ public class FinishedImportingIT extends OperateZeebeAbstractIT {
     // then
     await()
         .atMost(Duration.ofSeconds(30))
+        .ignoreExceptions()
         .untilAsserted(
             () -> {
               final var metrics = beanFactory.getBean(Metrics.class);
@@ -230,23 +225,17 @@ public class FinishedImportingIT extends OperateZeebeAbstractIT {
   }
 
   @Test
-  public void shouldMarkImporterCompletedViaMetricsAsWell() throws IOException {
+  public void shouldMarkImporterCompletedViaMetricsAsWell()
+      throws IOException, InterruptedException {
     // given
+
     final var record = generateRecord(ValueType.PROCESS_INSTANCE, "8.7.0", 1);
     final var partitionTwoRecord = generateRecord(ValueType.PROCESS_INSTANCE, "8.7.0", 2);
     EXPORTER.export(record);
     EXPORTER.export(partitionTwoRecord);
-    Awaitility.await()
-        .atMost(Duration.ofSeconds(30))
-        .pollInterval(Duration.ofSeconds(1))
-        .until(
-            () -> {
-              esClient.indices().refresh(new RefreshRequest("*"), RequestOptions.DEFAULT);
-              zeebeImporter.performOneRoundOfImport();
-              return isRecordIngested("1-process-instance")
-                  && isRecordIngested("2-process-instance");
-            });
+    esClient.indices().refresh(new RefreshRequest("*"), RequestOptions.DEFAULT);
 
+    zeebeImporter.performOneRoundOfImport();
     // when
     final var record2 = generateRecord(ValueType.PROCESS_INSTANCE, "8.8.0", 1);
     final var partitionTwoRecord2 = generateRecord(ValueType.PROCESS_INSTANCE, "8.8.0", 2);
@@ -254,21 +243,29 @@ public class FinishedImportingIT extends OperateZeebeAbstractIT {
     EXPORTER.export(partitionTwoRecord2);
     esClient.indices().refresh(new RefreshRequest("*"), RequestOptions.DEFAULT);
 
+    System.out.println(
+        "################################################## START IMPORTING LOOP ##################################################");
+
     for (int i = 0; i <= RecordsReaderHolder.MINIMUM_EMPTY_BATCHES_FOR_COMPLETED_READER; i++) {
+      System.out.println("\nImport round: " + i + "\n");
       zeebeImporter.performOneRoundOfImport();
     }
 
     await()
         .atMost(Duration.ofSeconds(30))
+        .pollInterval(Duration.ofSeconds(1))
         .until(() -> isRecordReaderIsCompleted("1-process-instance"));
     await()
         .atMost(Duration.ofSeconds(30))
+        .pollInterval(Duration.ofSeconds(1))
         .until(() -> isRecordReaderIsCompleted("2-process-instance"));
 
     // then
 
     await()
         .atMost(Duration.ofSeconds(30))
+        .pollInterval(Duration.ofSeconds(1))
+        .ignoreExceptions()
         .untilAsserted(
             () -> {
               final var metrics = beanFactory.getBean(Metrics.class);
@@ -292,6 +289,7 @@ public class FinishedImportingIT extends OperateZeebeAbstractIT {
   @Test
   public void shouldNotSetCompletedToFalseForSubsequentRecordsAfterImportingDone()
       throws IOException {
+
     final var record = generateRecord(ValueType.PROCESS_INSTANCE, "8.7.0", 1);
     EXPORTER.export(record);
     esClient.indices().refresh(new RefreshRequest("*"), RequestOptions.DEFAULT);
@@ -333,6 +331,7 @@ public class FinishedImportingIT extends OperateZeebeAbstractIT {
 
   @Test
   public void shouldNotOverwriteImportPositionDocumentWithDefaultValue() throws IOException {
+
     final var record = generateRecord(ValueType.PROCESS_INSTANCE, "8.7.0", 1);
     EXPORTER.export(record);
     esClient.indices().refresh(new RefreshRequest("*"), RequestOptions.DEFAULT);
@@ -359,6 +358,7 @@ public class FinishedImportingIT extends OperateZeebeAbstractIT {
 
   @Test
   public void shouldWriteDefaultEmptyDefaultImportPositionDocumentsOnRecordReaderStart() {
+
     recordsReaderHolder.getAllRecordsReaders().stream()
         .map(ElasticsearchRecordsReader.class::cast)
         .forEach(ElasticsearchRecordsReader::postConstruct);
@@ -382,6 +382,7 @@ public class FinishedImportingIT extends OperateZeebeAbstractIT {
   @Test
   public void shouldMarkRecordReadersCompletedEvenIfZeebeIndicesDontExist() throws IOException {
     // given
+
     final var record = generateRecord(ValueType.PROCESS_INSTANCE, "8.8.0", 1);
     EXPORTER.export(record);
     esClient.indices().refresh(new RefreshRequest("*"), RequestOptions.DEFAULT);

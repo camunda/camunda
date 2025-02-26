@@ -422,6 +422,11 @@ public class ElasticsearchRecordsReader implements RecordsReader {
   }
 
   private boolean scheduleImportJob(final ImportJob job, final boolean skipPendingJob) {
+    LOGGER.debug(
+        "Scheduling import job: {} {} {}",
+        job.getImportBatch().getPartitionId(),
+        job.getImportBatch().getImportValueType(),
+        skipPendingJob);
     if (tryToScheduleImportJob(job, skipPendingJob)) {
       importJobScheduledSucceeded(job);
       return true;
@@ -546,12 +551,29 @@ public class ElasticsearchRecordsReader implements RecordsReader {
           var retries = 3;
 
           while (!scheduled && retries > 0) {
+            LOGGER.debug(
+                "Offering import job to queue: {} {}",
+                importJob.getImportBatch().getPartitionId(),
+                importJob.getImportBatch().getImportValueType());
             scheduled = importJobs.offer(executeJob(importJob));
             retries = retries - 1;
           }
 
           pendingImportJob = skipPendingJob || scheduled ? null : importJob;
+          LOGGER.debug(
+              "Scheduled import job: {} {}. Pending: {} {}",
+              importJob.getImportBatch().getPartitionId(),
+              importJob.getImportBatch().getImportValueType(),
+              pendingImportJob,
+              scheduled);
+          /*          if (active != null) {
+            LOGGER.debug(
+                "Existing Active Job: {} {}",
+                ((ElasticsearchRecordsReader) active).getPartitionId(),
+                ((ElasticsearchRecordsReader) active).getImportValueType());
+          }*/
           if (scheduled && active == null) {
+            LOGGER.debug("Executing import job immediately");
             executeNext();
           }
 
@@ -562,11 +584,19 @@ public class ElasticsearchRecordsReader implements RecordsReader {
   private Callable<Boolean> executeJob(final ImportJob job) {
     return () -> {
       try {
+        LOGGER.debug(
+            "Executing import job: {} {}",
+            job.getImportBatch().getPartitionId(),
+            job.getImportBatch().getImportValueType());
         final var imported = job.call();
         if (imported) {
           executeNext();
           rescheduleRecordsReaderIfNecessary();
         } else {
+          LOGGER.debug(
+              "Retrying import job: {} {}",
+              job.getImportBatch().getPartitionId(),
+              job.getImportBatch().getImportValueType());
           // retry the same job
           sleepFor(2000L);
           execute(active);
@@ -583,7 +613,15 @@ public class ElasticsearchRecordsReader implements RecordsReader {
   }
 
   private void markRecordReaderCompletedIfMinimumEmptyBatchesReceived() {
+    LOGGER.debug(
+        "Partition [{}] has completed importing for value type [{}] ?",
+        partitionId,
+        importValueType.getAliasTemplate());
     if (recordsReaderHolder.hasPartitionCompletedImporting(partitionId)) {
+      LOGGER.debug(
+          "Partition [{}] has completed importing [{}] incrementing empty batches",
+          partitionId,
+          importValueType.getAliasTemplate());
       recordsReaderHolder.incrementEmptyBatches(partitionId, importValueType);
     }
 
@@ -603,7 +641,12 @@ public class ElasticsearchRecordsReader implements RecordsReader {
 
   private void executeNext() {
     active = importJobs.poll();
+    LOGGER.debug("Polled next job: {}", active);
     if (active != null) {
+      /*LOGGER.debug(
+      "Submitting new job: {} {}",
+      ((ElasticsearchRecordsReader) active).getPartitionId(),
+      ((ElasticsearchRecordsReader) active).getImportValueType());*/
       importExecutor.submit(active);
       // TODO what to do with failing jobs
       LOGGER.debug("Submitted next job");
@@ -628,6 +671,10 @@ public class ElasticsearchRecordsReader implements RecordsReader {
 
   private void reschedulePendingImportJob() {
     try {
+      LOGGER.debug(
+          "Rescheduling pending import job: {} {}",
+          pendingImportJob.getImportBatch().getPartitionId(),
+          pendingImportJob.getImportBatch().getImportValueType());
       scheduleImportJob(pendingImportJob, false);
     } finally {
       // whatever happened (exception or not),

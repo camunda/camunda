@@ -155,6 +155,10 @@ public class ElasticsearchImportStore implements ImportStore {
       updateFields.put(ImportPositionIndex.SEQUENCE, position.getSequence());
       updateFields.put(ImportPositionIndex.COMPLETED, position.getCompleted());
 
+      LOGGER.debug(
+          "Preparing request to update processed position for alias [{}] and partitionId [{}]",
+          position.getAliasName(),
+          position.getPartitionId());
       final UpdateRequest updateRequest =
           new UpdateRequest()
               .index(index)

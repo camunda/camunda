@@ -189,6 +189,7 @@ public class ImportPositionHolder {
     try {
       LOGGER.trace("access LOCK {} - {}", Thread.currentThread().getName(), name);
       inflightImportPositionLock.lock();
+      LOGGER.trace("acquired LOCK {} - {}", Thread.currentThread().getName(), name);
       action.run();
     } finally {
       inflightImportPositionLock.unlock();
