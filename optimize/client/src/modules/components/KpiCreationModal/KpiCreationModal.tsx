@@ -57,7 +57,7 @@ export default function KpiCreationModal({onClose}: KpiCreationModalProps): JSX.
     track('openKpiWizzard');
   }, []);
 
-  const loadReport = async (reportPayload: ReportEvaluationPayload<'process'>) => {
+  const loadReport = async (reportPayload: ReportEvaluationPayload) => {
     setLoading(true);
     await mightFail(evaluateReport(reportPayload), setEvaluatedReport, showError, () =>
       setLoading(false)
@@ -158,7 +158,7 @@ export default function KpiCreationModal({onClose}: KpiCreationModalProps): JSX.
                   return;
                 }
 
-                const newReportPayload = newReport.new as ReportEvaluationPayload<'process'>;
+                const newReportPayload = newReport.new as ReportEvaluationPayload;
                 await loadReport({
                   ...newReportPayload,
                   collectionId: getCollection(pathname),

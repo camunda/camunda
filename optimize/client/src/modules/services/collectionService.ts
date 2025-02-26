@@ -8,7 +8,7 @@
 
 import {Source} from 'types';
 import {put} from 'request';
-import { getFullURL } from '../api';
+import {getFullURL} from '../api';
 
 export async function addSources(collectionId: string, sources: Source[]) {
   return await put(getFullURL(`api/collection/${collectionId}/scope`), sources);

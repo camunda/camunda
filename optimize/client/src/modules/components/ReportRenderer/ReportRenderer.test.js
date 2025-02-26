@@ -13,7 +13,6 @@ import NoDataNotice from './NoDataNotice';
 import SetupNotice from './SetupNotice';
 
 const reportTemplate = {
-  reportType: 'process',
   data: {
     definitions: [
       {

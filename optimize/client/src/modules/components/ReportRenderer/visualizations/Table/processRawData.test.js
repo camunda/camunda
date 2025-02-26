@@ -63,7 +63,7 @@ describe('Process table', () => {
   };
 
   it('should transform data to table compatible format', () => {
-    expect(processRawData({report: {reportType: 'process', data, result}})).toMatchSnapshot();
+    expect(processRawData({report: {data, result}})).toMatchSnapshot();
   });
 
   it('should not include columns that are hidden', () => {
@@ -77,7 +77,7 @@ describe('Process table', () => {
         },
       },
     };
-    expect(processRawData({report: {reportType: 'process', data, result}})).toEqual({
+    expect(processRawData({report: {data, result}})).toEqual({
       body: [['foo'], ['xyz']],
       head: [{id: 'processInstanceId', label: 'Process instance Id', title: 'Process instance Id'}],
     });
@@ -94,7 +94,7 @@ describe('Process table', () => {
         },
       },
     };
-    expect(processRawData({report: {reportType: 'process', data, result}})).toMatchSnapshot();
+    expect(processRawData({report: {data, result}})).toMatchSnapshot();
   });
 
   it('should format start and end dates', () => {
@@ -104,7 +104,6 @@ describe('Process table', () => {
 
     const cells = processRawData({
       report: {
-        reportType: 'process',
         result: {
           data: [{startDate, endDate}],
         },
@@ -124,7 +123,6 @@ describe('Process table', () => {
   it('should format duration', () => {
     const cells = processRawData({
       report: {
-        reportType: 'process',
         result: {
           data: [{duration: 123023423}],
         },
@@ -140,7 +138,6 @@ describe('Process table', () => {
   it('should display the processInstanceId as text', () => {
     const cell = processRawData({
       report: {
-        reportType: 'process',
         result: {data: [{processInstanceId: '123', engineName: '1'}]},
         data: {
           configuration: {
@@ -157,7 +154,6 @@ describe('Process table', () => {
     const spy = jest.fn();
     const {body} = processRawData({
       report: {
-        reportType: 'process',
         data,
         result,
       },
@@ -171,7 +167,7 @@ describe('Process table', () => {
   });
 
   it('should disable sorting for flow node duration columns', () => {
-    const {head} = processRawData({report: {reportType: 'process', data, result}});
+    const {head} = processRawData({report: {data, result}});
 
     const flowNodeDurationColumns = head.filter((column) => column.type === 'flowNodeDurations');
 

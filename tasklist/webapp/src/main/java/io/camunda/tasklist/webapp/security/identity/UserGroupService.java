@@ -9,6 +9,6 @@ package io.camunda.tasklist.webapp.security.identity;
 
 import java.util.List;
 
-public interface IdentityAuthorizationService {
+public interface UserGroupService {
   List<String> getUserGroups();
 }

@@ -8,7 +8,7 @@
 
 import {Tenant} from 'types';
 import {get, post} from 'request';
-import { getFullURL } from '../../api';
+import {getFullURL} from '../../api';
 
 export type Version = {
   version: string;
@@ -50,7 +50,10 @@ export async function loadTenants(
     payload.filterByCollectionScope = collectionId;
   }
 
-  const response = await post(getFullURL(`api/definition/${type}/_resolveTenantsForVersions`), payload);
+  const response = await post(
+    getFullURL(`api/definition/${type}/_resolveTenantsForVersions`),
+    payload
+  );
 
   return response.json();
 }

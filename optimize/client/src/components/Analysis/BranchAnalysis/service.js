@@ -7,7 +7,7 @@
  */
 
 import {post} from 'request';
-import { getFullURL } from '../../../modules/api';
+import {getFullURL} from '../../../modules/api';
 
 export async function loadFrequencyData(
   processDefinitionKey,
@@ -32,7 +32,6 @@ export async function loadFrequencyData(
 
 function createFlowNodeFrequencyReport(key, versions, tenantIds, identifier, filter) {
   return {
-    reportType: 'process',
     data: {
       definitions: [{key, versions, tenantIds, identifier}],
       filter,

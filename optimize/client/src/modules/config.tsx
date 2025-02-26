@@ -8,7 +8,7 @@
 
 import {ReactNode, createContext, useEffect, useState} from 'react';
 import {Loading} from '@carbon/react';
-import { getFullURL } from './api';
+import {getFullURL} from './api';
 
 import {get, ErrorResponse} from 'request';
 import {showError} from 'notifications';

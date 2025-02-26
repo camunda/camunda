@@ -8,7 +8,6 @@
 
 import {spawn} from 'child_process';
 import {resolve as _resolve, dirname} from 'path';
-import {platform} from 'os';
 import {readFile} from 'fs';
 import {parseString} from 'xml2js';
 import {fileURLToPath} from 'url';
@@ -100,24 +99,21 @@ setVersionInfo().then(setupEnvironment).then(startBackend);
 
 function startBackend() {
   return new Promise((resolve, reject) => {
-  const engineEnv = {
-        cloud: cloudEnv,
-        'self-managed': selfManagedEnv,
-      };
+    const engineEnv = {
+      cloud: cloudEnv,
+      'self-managed': selfManagedEnv,
+    };
 
-    backendProcess = spawnWithArgs(
-      `dist/target/camunda-zeebe/bin/optimize`,
-      {
-        cwd: _resolve(__dirname, '..', '..', '..'),
-        shell: true,
-        env: {
-          ...process.env,
-          ...commonEnv,
-          ...engineEnv[mode],
-          CLASSPATH_PREFIX: 'optimize/client/demo-data'
-        },
-      }
-    );
+    backendProcess = spawnWithArgs(`dist/target/camunda-zeebe/bin/optimize`, {
+      cwd: _resolve(__dirname, '..', '..', '..'),
+      shell: true,
+      env: {
+        ...process.env,
+        ...commonEnv,
+        ...engineEnv[mode],
+        CLASSPATH_PREFIX: 'optimize/client/demo-data',
+      },
+    });
 
     backendProcess.stdout.on('data', (data) => server.addLog(data, 'backend'));
     backendProcess.stderr.on('data', (data) => server.addLog(data, 'backend', true));
@@ -161,7 +157,7 @@ async function setupEnvironment() {
 function buildBackend() {
   return new Promise((resolve, reject) => {
     buildBackendProcess = spawnWithArgs(
-      'mvn clean install -DskipTests -Dskip.docker -Dskip.fe.build -pl optimize/backend -am -T1C',
+      'mvn clean install -DskipTests -Dskip.docker -Dskip.fe.build -pl dist -am -T1C',
       {
         cwd: _resolve(__dirname, '..', '..', '..'),
         shell: true,

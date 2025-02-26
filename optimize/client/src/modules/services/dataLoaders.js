@@ -7,7 +7,7 @@
  */
 
 import {get, post} from 'request';
-import { getFullURL } from '../api.ts';
+import {getFullURL} from '../api.ts';
 
 export {loadProcessDefinitionXml, loadVariables} from './dataLoaders.ts';
 

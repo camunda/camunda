@@ -36,7 +36,7 @@ import io.camunda.tasklist.webapp.rest.exception.InvalidRequestException;
 import io.camunda.tasklist.webapp.security.TasklistAuthenticationUtil;
 import io.camunda.tasklist.webapp.security.TasklistURIs;
 import io.camunda.tasklist.webapp.security.UserReader;
-import io.camunda.tasklist.webapp.security.identity.IdentityAuthorizationService;
+import io.camunda.tasklist.webapp.security.identity.UserGroupService;
 import io.camunda.tasklist.webapp.service.TaskService;
 import io.camunda.tasklist.webapp.service.VariableService;
 import io.camunda.webapps.schema.entities.tasklist.TaskEntity.TaskImplementation;
@@ -48,7 +48,6 @@ import java.util.List;
 import java.util.Set;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -79,7 +78,7 @@ class TaskControllerTest {
   private TasklistProperties tasklistProperties;
 
   @Mock private UserReader userReader;
-  @Mock private IdentityAuthorizationService identityAuthorizationService;
+  @Mock private UserGroupService userGroupService;
   @Mock private TasklistPermissionServices tasklistPermissionServices;
 
   @BeforeEach
@@ -929,7 +928,7 @@ class TaskControllerTest {
       when(tasklistProperties.getIdentity().isUserAccessRestrictionsEnabled()).thenReturn(true);
       when(userReader.getCurrentUser()).thenReturn(mock(UserDTO.class));
       when(userReader.getCurrentUser().getDisplayName()).thenReturn("demo");
-      when(identityAuthorizationService.getUserGroups()).thenReturn(List.of("Admins"));
+      when(userGroupService.getUserGroups()).thenReturn(List.of("Admins"));
       when(tasklistProperties.getIdentity().isUserAccessRestrictionsEnabled()).thenReturn(false);
 
       // When
@@ -970,7 +969,7 @@ class TaskControllerTest {
       when(tasklistProperties.getIdentity().isUserAccessRestrictionsEnabled()).thenReturn(true);
       when(userReader.getCurrentUser()).thenReturn(mock(UserDTO.class));
       when(userReader.getCurrentUser().getDisplayName()).thenReturn("demo");
-      when(identityAuthorizationService.getUserGroups()).thenReturn(List.of("Admins"));
+      when(userGroupService.getUserGroups()).thenReturn(List.of("Admins"));
       when(tasklistProperties.getIdentity().isUserAccessRestrictionsEnabled()).thenReturn(false);
 
       // When
@@ -1003,7 +1002,7 @@ class TaskControllerTest {
       when(tasklistProperties.getIdentity().isUserAccessRestrictionsEnabled()).thenReturn(true);
       when(userReader.getCurrentUser()).thenReturn(mock(UserDTO.class));
       when(userReader.getCurrentUser().getDisplayName()).thenReturn("demo");
-      when(identityAuthorizationService.getUserGroups()).thenReturn(List.of("Admins"));
+      when(userGroupService.getUserGroups()).thenReturn(List.of("Admins"));
       when(tasklistProperties.getIdentity().isUserAccessRestrictionsEnabled()).thenReturn(false);
 
       // When
@@ -1055,7 +1054,7 @@ class TaskControllerTest {
         when(tasklistProperties.getIdentity().isUserAccessRestrictionsEnabled()).thenReturn(true);
         when(userReader.getCurrentUser()).thenReturn(mock(UserDTO.class));
         when(userReader.getCurrentUser().getDisplayName()).thenReturn("demo");
-        when(identityAuthorizationService.getUserGroups()).thenReturn(List.of("Admins"));
+        when(userGroupService.getUserGroups()).thenReturn(List.of("Admins"));
         when(taskMapper.toTaskQuery(searchRequest)).thenReturn(searchQuery);
         when(taskService.getTasks(searchQuery, Set.of(TASK_DESCRIPTION), false))
             .thenReturn(List.of(providedTask));
@@ -1084,7 +1083,6 @@ class TaskControllerTest {
       }
 
       @Test
-      @Disabled
       void accessRestrictionsShouldReturnTasksForCandidateUser() throws Exception {
         // Given
         final var providedTask =
@@ -1116,7 +1114,7 @@ class TaskControllerTest {
         when(tasklistProperties.getIdentity().isUserAccessRestrictionsEnabled()).thenReturn(true);
         when(userReader.getCurrentUser()).thenReturn(mock(UserDTO.class));
         when(userReader.getCurrentUser().getDisplayName()).thenReturn("demo");
-        when(identityAuthorizationService.getUserGroups()).thenReturn(List.of("Admins"));
+        when(userGroupService.getUserGroups()).thenReturn(List.of("Admins"));
         when(taskMapper.toTaskQuery(searchRequest)).thenReturn(searchQuery);
         when(taskMapper.toTaskSearchResponse(providedTask)).thenReturn(taskResponse);
         when(taskMapper.toTaskQuery(searchRequest)).thenReturn(searchQuery);
@@ -1180,7 +1178,7 @@ class TaskControllerTest {
         when(tasklistProperties.getIdentity().isUserAccessRestrictionsEnabled()).thenReturn(true);
         when(userReader.getCurrentUser()).thenReturn(mock(UserDTO.class));
         when(userReader.getCurrentUser().getDisplayName()).thenReturn("demo");
-        when(identityAuthorizationService.getUserGroups()).thenReturn(List.of("Admins"));
+        when(userGroupService.getUserGroups()).thenReturn(List.of("Admins"));
         when(taskMapper.toTaskQuery(searchRequest)).thenReturn(searchQuery);
         when(taskService.getTasks(searchQuery, Set.of(TASK_DESCRIPTION), false))
             .thenReturn(List.of(providedTask));
@@ -1220,7 +1218,7 @@ class TaskControllerTest {
         when(tasklistProperties.getIdentity().isUserAccessRestrictionsEnabled()).thenReturn(true);
         when(userReader.getCurrentUser()).thenReturn(mock(UserDTO.class));
         when(userReader.getCurrentUser().getDisplayName()).thenReturn("demo");
-        when(identityAuthorizationService.getUserGroups()).thenReturn(List.of("Admins"));
+        when(userGroupService.getUserGroups()).thenReturn(List.of("Admins"));
         when(taskMapper.toTaskQuery(searchRequest)).thenReturn(searchQuery);
 
         // When
@@ -1268,7 +1266,7 @@ class TaskControllerTest {
         when(tasklistProperties.getIdentity().isUserAccessRestrictionsEnabled()).thenReturn(true);
         when(userReader.getCurrentUser()).thenReturn(mock(UserDTO.class));
         when(userReader.getCurrentUser().getUserId()).thenReturn("demo");
-        when(identityAuthorizationService.getUserGroups()).thenReturn(List.of("Admins"));
+        when(userGroupService.getUserGroups()).thenReturn(List.of("Admins"));
         when(taskService.getTask(taskId)).thenReturn(taskDto);
         when(taskService.completeTask(taskId, variables, true)).thenReturn(taskDto);
         when(taskMapper.toTaskResponse(taskDto)).thenReturn(expectedTaskResponse);
@@ -1296,7 +1294,6 @@ class TaskControllerTest {
       }
 
       @Test
-      @Disabled
       void completeTaskShouldReturnForbiddenWhenUserHasNoAccess() throws Exception {
         // Given
         final var taskId = "55555555";
@@ -1317,7 +1314,7 @@ class TaskControllerTest {
         when(tasklistProperties.getIdentity().isUserAccessRestrictionsEnabled()).thenReturn(true);
         when(userReader.getCurrentUser()).thenReturn(mock(UserDTO.class));
         when(userReader.getCurrentUser().getUserId()).thenReturn("demo");
-        when(identityAuthorizationService.getUserGroups()).thenReturn(List.of("Demo"));
+        when(userGroupService.getUserGroups()).thenReturn(List.of("Demo"));
         when(taskService.getTask(taskId)).thenReturn(taskDto);
         when(taskService.completeTask(taskId, variables, true)).thenReturn(taskDto);
         when(taskMapper.toTaskResponse(taskDto)).thenReturn(expectedTaskResponse);
@@ -1369,8 +1366,8 @@ class TaskControllerTest {
         when(tasklistProperties.getIdentity()).thenReturn(mock(IdentityProperties.class));
         when(tasklistProperties.getIdentity().isUserAccessRestrictionsEnabled()).thenReturn(true);
         when(userReader.getCurrentUser()).thenReturn(mock(UserDTO.class));
-        when(userReader.getCurrentUser().getUserId()).thenReturn("demo");
-        when(identityAuthorizationService.getUserGroups()).thenReturn(List.of("Admins"));
+        when(userReader.getCurrentUserId()).thenReturn("demo");
+        when(userGroupService.getUserGroups()).thenReturn(List.of("Admins"));
         when(taskService.getTask(taskId)).thenReturn(providedTask);
         when(taskMapper.toTaskResponse(providedTask)).thenReturn(taskResponse);
 
@@ -1420,7 +1417,7 @@ class TaskControllerTest {
         when(tasklistProperties.getIdentity().isUserAccessRestrictionsEnabled()).thenReturn(true);
         when(userReader.getCurrentUser()).thenReturn(mock(UserDTO.class));
         when(userReader.getCurrentUser().getUserId()).thenReturn("demo");
-        when(identityAuthorizationService.getUserGroups()).thenReturn(List.of("Admins"));
+        when(userGroupService.getUserGroups()).thenReturn(List.of("Admins"));
         when(taskService.getTask(taskId)).thenReturn(providedTask);
         when(taskMapper.toTaskResponse(providedTask)).thenReturn(taskResponse);
 
@@ -1445,7 +1442,6 @@ class TaskControllerTest {
       }
 
       @Test
-      @Disabled
       void accessRestrictionsShouldReturnForbiddenWhenUserHasNoAccess() throws Exception {
         // Given
         final var providedTask =
@@ -1473,7 +1469,7 @@ class TaskControllerTest {
         when(tasklistProperties.getIdentity().isUserAccessRestrictionsEnabled()).thenReturn(true);
         when(userReader.getCurrentUser()).thenReturn(mock(UserDTO.class));
         when(userReader.getCurrentUser().getUserId()).thenReturn("demo");
-        when(identityAuthorizationService.getUserGroups()).thenReturn(List.of("Test"));
+        when(userGroupService.getUserGroups()).thenReturn(List.of("Test"));
         when(taskService.getTask(taskId)).thenReturn(providedTask);
         when(taskMapper.toTaskResponse(providedTask)).thenReturn(taskResponse);
 
@@ -1527,7 +1523,7 @@ class TaskControllerTest {
         when(tasklistProperties.getIdentity().isUserAccessRestrictionsEnabled()).thenReturn(true);
         when(userReader.getCurrentUser()).thenReturn(mock(UserDTO.class));
         when(userReader.getCurrentUser().getUserId()).thenReturn("demo");
-        when(identityAuthorizationService.getUserGroups()).thenReturn(List.of("Admins"));
+        when(userGroupService.getUserGroups()).thenReturn(List.of("Admins"));
         when(tasklistPermissionServices.hasPermissionToUpdateUserTask(any())).thenReturn(true);
 
         // When
@@ -1578,7 +1574,7 @@ class TaskControllerTest {
         when(tasklistProperties.getIdentity().isUserAccessRestrictionsEnabled()).thenReturn(true);
         when(userReader.getCurrentUser()).thenReturn(mock(UserDTO.class));
         when(userReader.getCurrentUser().getUserId()).thenReturn("demo");
-        when(identityAuthorizationService.getUserGroups()).thenReturn(List.of("Demo"));
+        when(userGroupService.getUserGroups()).thenReturn(List.of("Demo"));
 
         // When
         final var responseAsString =

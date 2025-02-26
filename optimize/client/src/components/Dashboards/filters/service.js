@@ -7,7 +7,7 @@
  */
 
 import {post, get} from 'request';
-import { getFullURL } from '../../../modules/api';
+import {getFullURL} from '../../../modules/api';
 
 export async function getVariableNames(reportIds) {
   const response = await post(getFullURL('api/variables/reports'), {reportIds});

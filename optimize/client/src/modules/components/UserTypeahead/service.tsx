@@ -8,7 +8,7 @@
 
 import {get} from 'request';
 import {formatters} from 'services';
-import { getFullURL } from '../../api';
+import {getFullURL} from '../../api';
 
 export interface Identity {
   id: string | null;
