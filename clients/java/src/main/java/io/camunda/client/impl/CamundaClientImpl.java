@@ -897,8 +897,13 @@ public final class CamundaClientImpl implements CamundaClient {
   }
 
   @Override
-  public AssignGroupToTenantCommandStep1 newAssignGroupToTenantCommand(final long tenantKey) {
-    return new AssignGroupToTenantCommandImpl(httpClient, tenantKey);
+  public RemoveUserFromTenantCommandStep1 newRemoveUserFromTenantCommand(final String tenantId) {
+    return new RemoveUserFromTenantCommandImpl(httpClient, tenantId);
+  }
+
+  @Override
+  public AssignGroupToTenantCommandStep1 newAssignGroupToTenantCommand(final String tenantId) {
+    return new AssignGroupToTenantCommandImpl(httpClient, tenantId);
   }
 
   @Override
@@ -922,11 +927,6 @@ public final class CamundaClientImpl implements CamundaClient {
   public UpdateAuthorizationCommandStep1 newUpdateAuthorizationCommand(
       final long authorizationKey) {
     return new UpdateAuthorizationCommandImpl(httpClient, jsonMapper, authorizationKey);
-  }
-
-  @Override
-  public RemoveUserFromTenantCommandStep1 newRemoveUserFromTenantCommand(final String tenantId) {
-    return new RemoveUserFromTenantCommandImpl(httpClient, tenantId);
   }
 
   private JobClient newJobClient() {

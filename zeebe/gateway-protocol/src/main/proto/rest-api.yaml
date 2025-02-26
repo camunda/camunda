@@ -637,7 +637,7 @@ paths:
         "500":
           $ref: "#/components/responses/InternalServerError"
 
-  /tenants/{tenantKey}/groups/{groupKey}:
+  /tenants/{tenantId}/groups/{groupKey}:
     put:
       tags:
         - Tenant
@@ -645,7 +645,7 @@ paths:
       summary: Assign a group to a tenant
       description: Assign a single group to a specified tenant.
       parameters:
-        - name: tenantKey
+        - name: tenantId
           in: path
           required: true
           description: The unique identifier of the tenant.
