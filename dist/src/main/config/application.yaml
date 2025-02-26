@@ -82,18 +82,6 @@ zeebe:
       # This setting can also be overridden using the environment variable ZEEBE_BROKER_THREADS_IOTHREADCOUNT
       ioThreadCount: 2
 
-    exporters:
-      # Important to export data into Operate and Tasklist, needs the elasticsearch (or opensearch) endpoint configured
-      elasticsearch:
-        className: io.camunda.zeebe.exporter.ElasticsearchExporter
-        args:
-          url: http://localhost:9200
-          #authentication:
-          #   username: user
-          #   password: pass
-          index:
-            prefix: zeebe-record
-
 camunda:
   database:
     # Controls which database must be used, possible values: elasticsearch, opensearch
