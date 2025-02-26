@@ -119,8 +119,13 @@ public class CCSMAuthenticationService extends AbstractAuthenticationService {
     // will redirect again to the home page. The reason is that we need to attach
     // auth cookies to the request, and this only happens if the redirection is initiated
     // by a human. Having a redirector that does window.location=<url> simulates the behavior.
-    final String targetUri = redirectUri;
-    redirectUri += "/external/static/redirect.html?url=" + targetUri;
+    String targetUri = redirectUri;
+
+    // There are some instances where the final slash is needed to load the page, with Tomcat.
+    targetUri = StringUtils.appendIfMissing(targetUri, "/");
+
+    redirectUri = StringUtils.appendIfMissing(redirectUri, "/");
+    redirectUri += "static/redirect.html?url=" + targetUri;
 
     log.trace("Using root redirect Url: {}", redirectUri);
     return redirectUri;
