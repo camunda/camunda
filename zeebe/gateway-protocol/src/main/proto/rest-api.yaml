@@ -3933,7 +3933,7 @@ components:
             - $ref: "#/components/schemas/DateTimeFilterProperty"
         processInstanceVariables:
           type: array
-          description: Process Instance variables associated with the user task.
+          description: Process instance variables associated with the user task.
           items:
             $ref: "#/components/schemas/UserTaskVariableFilterRequest"
         localVariables:
@@ -4364,7 +4364,13 @@ components:
             $like:
               description: |
                 Checks if the property matches the provided like value.
-                Supported wildcard characters depend on the configured search client.
+
+                Supported wildcard characters are:
+
+                * `*`: matches zero, one, or multiple characters.
+                * `?`: matches one, single character.
+
+                Wildcard characters can be escaped with backslash, for instance: `\*`.
               type: string
     AdvancedProcessInstanceStateFilter:
       title: Advanced filter
@@ -4390,7 +4396,13 @@ components:
         $like:
           description: |
             Checks if the property matches the provided like value.
-            Supported wildcard characters depend on the configured search client.
+
+            Supported wildcard characters are:
+
+            * `*`: matches zero, one, or multiple characters.
+            * `?`: matches one, single character.
+
+            Wildcard characters can be escaped with backslash, for instance: `\*`.
           type: string
     AdvancedDateTimeFilter:
       title: Advanced filter
@@ -4592,11 +4604,11 @@ components:
           type: string
           description: The parent flow node instance key.
     ProcessInstanceStateEnum:
-      description: The state, one of ACTIVE, COMPLETED, CANCELED.
+      description: The state, one of ACTIVE, COMPLETED, TERMINATED.
       enum:
         - ACTIVE
         - COMPLETED
-        - CANCELED
+        - TERMINATED
     CancelProcessInstanceRequest:
       type: object
       nullable: true
@@ -4667,6 +4679,7 @@ components:
             - PROCESS
             - SUB_PROCESS
             - EVENT_SUB_PROCESS
+            - AD_HOC_SUB_PROCESS
             - START_EVENT
             - INTERMEDIATE_CATCH_EVENT
             - INTERMEDIATE_THROW_EVENT
@@ -4750,6 +4763,7 @@ components:
             - PROCESS
             - SUB_PROCESS
             - EVENT_SUB_PROCESS
+            - AD_HOC_SUB_PROCESS
             - START_EVENT
             - INTERMEDIATE_CATCH_EVENT
             - INTERMEDIATE_THROW_EVENT

@@ -166,6 +166,7 @@
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>identity-spring-boot-autoconfigure</artifactId>
+      <scope>test</scope>
     </dependency>
 
     <!-- Micrometer Prometheus -->

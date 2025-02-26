@@ -9,21 +9,28 @@ package io.camunda.it.backup;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.webapps.backup.BackupRepository;
+import io.camunda.webapps.backup.repository.BackupRepositoryPropsRecord;
+import io.camunda.webapps.backup.repository.SnapshotNameProvider;
+import io.camunda.webapps.backup.repository.opensearch.OpensearchBackupRepository;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.List;
 import org.apache.http.HttpHost;
+import org.opensearch.client.opensearch.OpenSearchAsyncClient;
 import org.opensearch.client.opensearch.OpenSearchClient;
 import org.opensearch.client.opensearch.cat.indices.IndicesRecord;
 import org.opensearch.client.opensearch.indices.DeleteIndexRequest;
+import org.opensearch.client.transport.OpenSearchTransport;
 
 public class OSDBClientBackup implements BackupDBClient {
   private final org.opensearch.client.RestClient osRestClient;
   private final OpenSearchClient opensearchClient;
+  private final OpenSearchTransport transport;
 
   public OSDBClientBackup(final String url) {
     osRestClient = org.opensearch.client.RestClient.builder(HttpHost.create(url)).build();
-    final var transport =
+    transport =
         new org.opensearch.client.transport.rest_client.RestClientTransport(
             osRestClient, new org.opensearch.client.json.jackson.JacksonJsonpMapper());
     opensearchClient = new OpenSearchClient(transport);
@@ -66,6 +73,16 @@ public class OSDBClientBackup implements BackupDBClient {
   @Override
   public void deleteAllIndices(final String indexPrefix) throws IOException {
     opensearchClient.indices().delete(DeleteIndexRequest.of(b -> b.index("*")));
+  }
+
+  @Override
+  public BackupRepository zeebeBackupRepository(
+      final String repositoryName, final SnapshotNameProvider snapshotNameProvider) {
+    return new OpensearchBackupRepository(
+        opensearchClient,
+        new OpenSearchAsyncClient(transport),
+        new BackupRepositoryPropsRecord("current", ""),
+        snapshotNameProvider);
   }
 
   @Override

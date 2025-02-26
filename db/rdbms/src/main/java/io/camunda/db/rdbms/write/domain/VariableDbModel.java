@@ -14,6 +14,7 @@ import static io.camunda.util.ValueTypeUtil.mapLong;
 import io.camunda.search.entities.ValueTypeEnum;
 import io.camunda.util.ObjectBuilder;
 import io.camunda.util.ValueTypeUtil;
+import java.time.OffsetDateTime;
 import java.util.function.Function;
 
 public record VariableDbModel(
@@ -29,8 +30,11 @@ public record VariableDbModel(
     Long processInstanceKey,
     String processDefinitionId,
     String tenantId,
-    int partitionId) {
+    int partitionId,
+    OffsetDateTime historyCleanupDate)
+    implements Copyable<VariableDbModel> {
 
+  @Override
   public VariableDbModel copy(
       final Function<ObjectBuilder<VariableDbModel>, ObjectBuilder<VariableDbModel>>
           builderFunction) {
@@ -44,7 +48,8 @@ public record VariableDbModel(
                 .processInstanceKey(processInstanceKey)
                 .processDefinitionId(processDefinitionId)
                 .tenantId(tenantId)
-                .partitionId(partitionId))
+                .partitionId(partitionId)
+                .historyCleanupDate(historyCleanupDate))
         .build();
   }
 
@@ -63,7 +68,8 @@ public record VariableDbModel(
           processInstanceKey,
           processDefinitionId,
           tenantId,
-          partitionId);
+          partitionId,
+          historyCleanupDate);
     } else {
       return this;
     }
@@ -79,6 +85,7 @@ public record VariableDbModel(
     private String processDefinitionId;
     private String tenantId;
     private int partitionId;
+    private OffsetDateTime historyCleanupDate;
 
     public VariableDbModelBuilder() {}
 
@@ -122,6 +129,11 @@ public record VariableDbModel(
       return this;
     }
 
+    public VariableDbModelBuilder historyCleanupDate(final OffsetDateTime value) {
+      historyCleanupDate = value;
+      return this;
+    }
+
     // Build method to create the record
     @Override
     public VariableDbModel build() {
@@ -148,7 +160,8 @@ public record VariableDbModel(
           processInstanceKey,
           processDefinitionId,
           tenantId,
-          partitionId);
+          partitionId,
+          historyCleanupDate);
     }
 
     private VariableDbModel getLongModel() {
@@ -165,7 +178,8 @@ public record VariableDbModel(
           processInstanceKey,
           processDefinitionId,
           tenantId,
-          partitionId);
+          partitionId,
+          historyCleanupDate);
     }
 
     private VariableDbModel getDoubleModel() {
@@ -182,7 +196,8 @@ public record VariableDbModel(
           processInstanceKey,
           processDefinitionId,
           tenantId,
-          partitionId);
+          partitionId,
+          historyCleanupDate);
     }
   }
 }

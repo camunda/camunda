@@ -23,7 +23,7 @@ import io.camunda.tasklist.webapp.rest.exception.Error;
 import io.camunda.tasklist.webapp.rest.exception.InvalidRequestException;
 import io.camunda.tasklist.webapp.rest.exception.NotFoundApiException;
 import io.camunda.tasklist.webapp.security.TasklistURIs;
-import io.camunda.tasklist.webapp.security.identity.IdentityAuthorizationService;
+import io.camunda.tasklist.webapp.security.identity.UserGroupService;
 import io.camunda.tasklist.webapp.security.tenant.TenantService;
 import io.camunda.tasklist.webapp.service.ProcessService;
 import io.camunda.webapps.schema.entities.operate.ProcessEntity;
@@ -57,7 +57,7 @@ public class ProcessInternalController extends ApiErrorController {
   @Autowired private FormStore formStore;
   @Autowired private ProcessService processService;
   @Autowired private TasklistProperties tasklistProperties;
-  @Autowired private IdentityAuthorizationService identityAuthorizationService;
+  @Autowired private UserGroupService userGroupService;
   @Autowired private TenantService tenantService;
   @Autowired private TasklistPermissionServices permissionServices;
 

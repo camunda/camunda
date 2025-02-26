@@ -14,6 +14,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import io.camunda.db.rdbms.sql.ProcessInstanceMapper;
 import io.camunda.db.rdbms.sql.ProcessInstanceMapper.EndProcessInstanceDto;
 import io.camunda.db.rdbms.write.queue.ContextType;
 import io.camunda.db.rdbms.write.queue.ExecutionQueue;
@@ -29,13 +30,15 @@ class ProcessInstanceWriterTest {
 
   private static final OffsetDateTime NOW = OffsetDateTime.now();
 
+  private ProcessInstanceMapper mapper;
   private ExecutionQueue executionQueue;
   private ProcessInstanceWriter writer;
 
   @BeforeEach
   void setUp() {
+    mapper = mock(ProcessInstanceMapper.class);
     executionQueue = mock(ExecutionQueue.class);
-    writer = new ProcessInstanceWriter(executionQueue);
+    writer = new ProcessInstanceWriter(mapper, executionQueue);
   }
 
   @Test

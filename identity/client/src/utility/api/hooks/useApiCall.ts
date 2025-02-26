@@ -1,10 +1,8 @@
-import { useCallback, useMemo, useState } from "react";
-import { ApiCall, ApiDefinition, namedErrorsReducer } from "../request";
+import { useCallback, useState } from "react";
+import { ApiCall, ApiDefinition, ErrorResponse } from "../request";
 import useTranslate from "../../localization";
 import { useNotifications } from "src/components/notifications";
 import { getApiBaseUrl } from "src/configuration";
-
-export type NamedErrors<R> = Partial<Record<keyof R, string[]>> | null;
 
 type ResetApiCall = () => void;
 
@@ -13,16 +11,22 @@ export type UseApiCallResult<R, P> = [
   {
     data: R | null;
     loading: boolean;
-    errors: string[] | null;
-    namedErrors: NamedErrors<P>;
+    error: ErrorResponse<"detailed"> | null;
     status: number;
     success: boolean;
   },
   ResetApiCall,
 ];
 
+export type UseApiCallOptions = {
+  suppressErrorNotification?: boolean;
+};
+
 export type UseApiCall = {
-  <R, P>(apiDefinition: ApiDefinition<R, P>): UseApiCallResult<R, P>;
+  <R, P>(
+    apiDefinition: ApiDefinition<R, P>,
+    options?: UseApiCallOptions,
+  ): UseApiCallResult<R, P>;
 };
 
 /**
@@ -34,27 +38,20 @@ export type UseApiCall = {
  */
 const useApiCall: UseApiCall = <R, P>(
   apiDefinition: ApiDefinition<R, P>,
+  options: UseApiCallOptions = { suppressErrorNotification: false },
 ): UseApiCallResult<R, P> => {
   const { enqueueNotification } = useNotifications();
   const { t } = useTranslate("components");
   const [data, setData] = useState<R | null>(null);
   const [status, setStatus] = useState<number>(-1);
-  const [errors, setErrors] = useState<string[] | null>(null);
+  const [error, setError] = useState<ErrorResponse<"detailed"> | null>(null);
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
-  const namedErrors = useMemo(
-    () =>
-      (!loading &&
-        (errors?.reduce(namedErrorsReducer, {}) as NamedErrors<P>)) ||
-      null,
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [JSON.stringify([errors, loading])],
-  );
 
   const reset = () => {
     setData(null);
     setStatus(-1);
-    setErrors(null);
+    setError(null);
     setLoading(false);
     setSuccess(false);
     setLoading(false);
@@ -67,56 +64,61 @@ const useApiCall: UseApiCall = <R, P>(
       const {
         data: apiData,
         status: apiStatus,
-        errors: apiErrors,
+        error: apiError,
         success: apiSuccess,
       } = await apiDefinition(params as P)(getApiBaseUrl());
 
-      if (apiStatus >= 400) {
+      if (apiStatus >= 400 && !options.suppressErrorNotification) {
         switch (apiStatus) {
           case 401:
             enqueueNotification({
               kind: "error",
-              title: t("Unauthorized"),
-              subtitle: t("Looks like your session has expired") ?? "",
+              title: t("unauthorized"),
+              subtitle: t("sessionExpired"),
             });
             break;
           case 403:
             enqueueNotification({
               kind: "error",
-              title: t("Forbidden"),
-              subtitle:
-                t(
-                  "You don't have access to perform this operation on given resource",
-                ) ?? "",
+              title: t("forbidden"),
+              subtitle: t("accessDenied"),
             });
             break;
           case 404:
             enqueueNotification({
               kind: "error",
-              title: t("Not found"),
-              subtitle: t("The requested entity has not been found") ?? "",
+              title: t("notFound"),
+              subtitle: t("entityNotFound"),
             });
             break;
           default:
-            enqueueNotification({
-              kind: "error",
-              title: t("An error occurred"),
-              subtitle: t("Please try again later") ?? "",
-            });
+            if (apiError && isDetailedError(apiError)) {
+              enqueueNotification({
+                kind: "error",
+                title: apiError.title,
+                subtitle: apiError.detail,
+              });
+            } else {
+              enqueueNotification({
+                kind: "error",
+                title: t("errorOccurred"),
+                subtitle: apiError?.error || t("tryAgainLater"),
+              });
+            }
             break;
         }
       }
 
       setData(apiData);
       setStatus(apiStatus);
-      setErrors(apiErrors);
+      setError(apiError && isDetailedError(apiError) ? apiError : null);
       setLoading(false);
       setSuccess(apiSuccess);
 
       return {
         data: apiData,
         status: apiStatus,
-        errors: apiErrors,
+        error: apiError,
         success: apiSuccess,
       };
     },
@@ -129,13 +131,24 @@ const useApiCall: UseApiCall = <R, P>(
     {
       data,
       status,
-      errors,
+      error,
       loading,
       success,
-      namedErrors,
     },
     reset,
   ];
 };
+
+function isDetailedError(
+  error: ErrorResponse,
+): error is ErrorResponse<"detailed"> {
+  return (
+    typeof error === "object" &&
+    "detail" in error &&
+    "instance" in error &&
+    "title" in error &&
+    "type" in error
+  );
+}
 
 export default useApiCall;

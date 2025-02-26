@@ -33,11 +33,6 @@
   },
   "packageRules": [
     {
-      "description": "Temporary rule to prevent exposure to CVE-2024-57699 in newer versions of json-smart.",
-      "matchPackageNames": ["net.minidev:json-smart"],
-      "allowedVersions": "<=2.4.11"
-    },
-    {
       "description": "Only patch updates for our maintenance branches to avoid breaking changes.",
       "matchBaseBranches": [
         "/^stable\\/8\\..*/",

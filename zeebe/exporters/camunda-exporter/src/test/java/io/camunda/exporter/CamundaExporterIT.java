@@ -66,6 +66,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -683,6 +684,7 @@ final class CamundaExporterIT {
         final ExporterConfiguration config, final SearchClientAdapter clientAdapter)
         throws IOException {
       // given
+      config.getIndex().setZeebeIndexPrefix(UUID.randomUUID().toString());
       createSchemas(config, clientAdapter);
       indexImportPositionEntity("decision", false, clientAdapter);
       clientAdapter.refresh();
@@ -727,8 +729,11 @@ final class CamundaExporterIT {
         final ExporterConfiguration config, final SearchClientAdapter clientAdapter)
         throws IOException {
       // given
+      final String zeebeIndexPrefix = CUSTOM_PREFIX + "-zeebe-record";
+      config.getIndex().setZeebeIndexPrefix(zeebeIndexPrefix);
       createSchemas(config, clientAdapter);
-      clientAdapter.index("1", "zeebe-record-decision", Map.of("key", "12345"));
+      clientAdapter.index("1", zeebeIndexPrefix + "-decision", Map.of("key", "12345"));
+
       // adds a not complete position index document so exporter sees importing as not yet completed
       indexImportPositionEntity("decision", false, clientAdapter);
       clientAdapter.refresh();
@@ -868,14 +873,15 @@ final class CamundaExporterIT {
         throws IOException {
       // given
       assertThat(config.getBulk().getSize()).isEqualTo(1);
+      final String zeebeIndexPrefix = CUSTOM_PREFIX + "-zeebe-record";
+      config.getIndex().setZeebeIndexPrefix(zeebeIndexPrefix);
 
       // Simulate existing zeebe index so it will not skip the wait for importers
-      clientAdapter.index("1", "zeebe-record-decision", Map.of("key", "12345"));
+      clientAdapter.index("1", zeebeIndexPrefix + "-decision", Map.of("key", "12345"));
 
       // if schemas are never created then import position indices do not exist and all checks about
       // whether the importers are completed will return false.
       config.setCreateSchema(false);
-      config.getIndex().setPrefix(RandomStringUtils.randomAlphabetic(10).toLowerCase());
       final var context = getContextFromConfig(config);
       camundaExporter.configure(context);
       camundaExporter.open(controller);

@@ -28,6 +28,8 @@ import io.camunda.zeebe.gateway.interceptors.impl.AuthenticationInterceptor;
 import io.camunda.zeebe.gateway.interceptors.impl.ContextInjectingInterceptor;
 import io.camunda.zeebe.gateway.interceptors.impl.DecoratedInterceptor;
 import io.camunda.zeebe.gateway.interceptors.impl.InterceptorRepository;
+import io.camunda.zeebe.gateway.metrics.LongPollingMetrics;
+import io.camunda.zeebe.gateway.metrics.LongPollingMetricsDoc;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsResponse;
 import io.camunda.zeebe.gateway.query.impl.QueryApiImpl;
 import io.camunda.zeebe.protocol.impl.stream.job.JobActivationProperties;
@@ -52,7 +54,6 @@ import io.grpc.netty.NettyServerBuilder;
 import io.grpc.protobuf.StatusProto;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.binder.grpc.MetricCollectingServerInterceptor;
-import io.micrometer.core.instrument.composite.CompositeMeterRegistry;
 import io.netty.channel.ChannelOption;
 import io.netty.handler.ssl.SslContextBuilder;
 import java.io.IOException;
@@ -371,10 +372,6 @@ public final class Gateway implements CloseableSilently {
 
   private LongPollingActivateJobsHandler<ActivateJobsResponse> buildLongPollingHandler(
       final BrokerClient brokerClient) {
-    final var grpcRegistry = new CompositeMeterRegistry();
-    grpcRegistry.add(meterRegistry);
-    grpcRegistry.config().commonTags("gateway", "grpc");
-
     return LongPollingActivateJobsHandler.<ActivateJobsResponse>newBuilder()
         .setBrokerClient(brokerClient)
         .setMaxMessageSize(gatewayCfg.getNetwork().getMaxMessageSize().toBytes())
@@ -384,7 +381,8 @@ public final class Gateway implements CloseableSilently {
         .setActivationResultMapper(ResponseMapper::toActivateJobsResponse)
         .setNoJobsReceivedExceptionProvider(NO_JOBS_RECEIVED_EXCEPTION_PROVIDER)
         .setRequestCanceledExceptionProvider(REQUEST_CANCELED_EXCEPTION_PROVIDER)
-        .setMeterRegistry(grpcRegistry)
+        .setMetrics(
+            new LongPollingMetrics(meterRegistry, LongPollingMetricsDoc.GatewayProtocol.GRPC))
         .build();
   }
 
@@ -400,7 +398,7 @@ public final class Gateway implements CloseableSilently {
     Collections.reverse(interceptors);
     interceptors.add(new ContextInjectingInterceptor(queryApi));
 
-    if (!securityConfiguration.isUnauthenticatedApiAccessAllowed()) {
+    if (securityConfiguration.isApiProtected()) {
       interceptors.add(new AuthenticationInterceptor(userServices, passwordEncoder));
     }
     return ServerInterceptors.intercept(service, interceptors);

@@ -6,6 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 import { FC, useState } from "react";
+import { InlineNotification } from "@carbon/react";
 import TextField from "src/components/form/TextField";
 import { useApiCall } from "src/utility/api";
 import useTranslate from "src/utility/localization";
@@ -16,7 +17,9 @@ import { createMapping } from "src/utility/api/mappings";
 const AddMappingModal: FC<UseModalProps> = ({ open, onClose, onSuccess }) => {
   const { t } = useTranslate("mappings");
   const { enqueueNotification } = useNotifications();
-  const [apiCall, { loading, namedErrors }] = useApiCall(createMapping);
+  const [apiCall, { loading, error }] = useApiCall(createMapping, {
+    suppressErrorNotification: true,
+  });
   const [mappingId, setMappingId] = useState("");
   const [mappingName, setMappingName] = useState("");
   const [claimName, setClaimName] = useState("");
@@ -59,7 +62,6 @@ const AddMappingModal: FC<UseModalProps> = ({ open, onClose, onSuccess }) => {
         placeholder={t("Enter mapping ID")}
         onChange={setMappingId}
         value={mappingId}
-        errors={namedErrors?.id}
         autoFocus
       />
       <TextField
@@ -67,7 +69,6 @@ const AddMappingModal: FC<UseModalProps> = ({ open, onClose, onSuccess }) => {
         placeholder={t("Enter mapping name")}
         onChange={setMappingName}
         value={mappingName}
-        errors={namedErrors?.name}
         autoFocus
       />
       <TextField
@@ -75,15 +76,22 @@ const AddMappingModal: FC<UseModalProps> = ({ open, onClose, onSuccess }) => {
         placeholder={t("Enter claim name")}
         onChange={setClaimName}
         value={claimName}
-        errors={namedErrors?.claimName}
       />
       <TextField
         label={t("Claim Value")}
         placeholder={t("Enter claim value")}
         onChange={setClaimValue}
         value={claimValue}
-        errors={namedErrors?.claimValue}
       />
+      {error && (
+        <InlineNotification
+          kind="error"
+          role="alert"
+          lowContrast
+          title={error.title}
+          subtitle={error.detail}
+        />
+      )}
     </FormModal>
   );
 };

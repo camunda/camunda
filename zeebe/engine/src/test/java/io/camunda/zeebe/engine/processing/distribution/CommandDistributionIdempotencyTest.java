@@ -529,7 +529,7 @@ public class CommandDistributionIdempotencyTest {
                   final var user = createUser();
                   ENGINE
                       .user()
-                      .updateUser(user.getKey())
+                      .updateUser()
                       .withUsername(user.getValue().getUsername())
                       .withName(UUID.randomUUID().toString())
                       .update();
