@@ -9,7 +9,7 @@ package io.camunda.operate.webapp.security.permission;
 
 import io.camunda.authentication.entity.CamundaPrincipal;
 import io.camunda.authentication.entity.CamundaUser;
-import io.camunda.operate.webapp.security.tenant.TenantService;
+import io.camunda.authentication.tenant.TenantService;
 import io.camunda.search.entities.RoleEntity;
 import io.camunda.security.auth.Authorization;
 import io.camunda.security.auth.SecurityContext;
@@ -235,7 +235,7 @@ public class PermissionsService {
   private io.camunda.security.auth.Authentication getAuthentication() {
     final var authenticatedUsername = getAuthenticatedUsername();
     final List<Long> authenticatedRoleKeys = getAuthenticatedUserRoleKeys();
-    final List<String> authorizedTenants = tenantService.tenantIds();
+    final List<String> authorizedTenants = tenantService.tenantsIds();
     // groups  will come later
     return new io.camunda.security.auth.Authentication.Builder()
         .user(authenticatedUsername)

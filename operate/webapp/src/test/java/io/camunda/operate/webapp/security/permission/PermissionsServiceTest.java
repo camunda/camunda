@@ -13,8 +13,8 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.authentication.entity.AuthenticationContext;
 import io.camunda.authentication.entity.CamundaUser;
+import io.camunda.authentication.tenant.TenantService;
 import io.camunda.operate.webapp.security.permission.PermissionsService.ResourcesAllowed;
-import io.camunda.operate.webapp.security.tenant.TenantService;
 import io.camunda.search.entities.RoleEntity;
 import io.camunda.security.configuration.AuthorizationsConfiguration;
 import io.camunda.security.configuration.SecurityConfiguration;
@@ -52,7 +52,7 @@ public class PermissionsServiceTest {
 
     when(mockSecurityConfiguration.getAuthorizations()).thenReturn(mockAuthorizationsConfiguration);
     when(mockAuthorizationsConfiguration.isEnabled()).thenReturn(true);
-    when(mockTenantService.tenantIds()).thenReturn(List.of(tenantId));
+    when(mockTenantService.tenantsIds()).thenReturn(List.of(tenantId));
 
     final CamundaUser camundaUser = mock(CamundaUser.class);
     when(camundaUser.getUsername()).thenReturn(username);

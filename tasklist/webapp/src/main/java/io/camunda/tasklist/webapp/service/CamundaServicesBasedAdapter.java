@@ -7,6 +7,7 @@
  */
 package io.camunda.tasklist.webapp.service;
 
+import io.camunda.authentication.tenant.TenantService;
 import io.camunda.client.impl.command.StreamUtil;
 import io.camunda.security.auth.Authentication;
 import io.camunda.service.JobServices;
@@ -22,7 +23,6 @@ import io.camunda.tasklist.webapp.permission.TasklistPermissionServices;
 import io.camunda.tasklist.webapp.rest.exception.ForbiddenActionException;
 import io.camunda.tasklist.webapp.rest.exception.InvalidRequestException;
 import io.camunda.tasklist.webapp.rest.exception.NotFoundApiException;
-import io.camunda.tasklist.webapp.security.tenant.TenantService;
 import io.camunda.tasklist.zeebe.TasklistServicesAdapter;
 import io.camunda.webapps.schema.entities.tasklist.TaskEntity;
 import io.camunda.zeebe.broker.client.api.BrokerErrorException;

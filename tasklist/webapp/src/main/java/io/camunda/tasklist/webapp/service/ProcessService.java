@@ -8,6 +8,7 @@
 package io.camunda.tasklist.webapp.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.camunda.authentication.tenant.TenantService;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
 import io.camunda.tasklist.store.ProcessStore;
 import io.camunda.tasklist.webapp.dto.ProcessInstanceDTO;
@@ -16,7 +17,6 @@ import io.camunda.tasklist.webapp.permission.TasklistPermissionServices;
 import io.camunda.tasklist.webapp.rest.exception.ForbiddenActionException;
 import io.camunda.tasklist.webapp.rest.exception.InvalidRequestException;
 import io.camunda.tasklist.webapp.security.UserReader;
-import io.camunda.tasklist.webapp.security.tenant.TenantService;
 import io.camunda.tasklist.zeebe.TasklistServicesAdapter;
 import io.camunda.webapps.schema.entities.operate.ProcessEntity;
 import java.io.IOException;
