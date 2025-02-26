@@ -279,7 +279,8 @@ public class ElasticsearchFinishedImportingIT extends TasklistZeebeIntegrationTe
     EXPORTER.export(record2);
     EXPORTER.export(partitionTwoRecord2);
     tasklistEsClient.indices().refresh(new RefreshRequest("*"), RequestOptions.DEFAULT);
-
+    System.out.println(
+        "################################################## START IMPORTING LOOP ##################################################");
     for (int i = 0; i <= RecordsReaderHolder.MINIMUM_EMPTY_BATCHES_FOR_COMPLETED_READER; i++) {
       zeebeImporter.performOneRoundOfImport();
     }

@@ -125,6 +125,10 @@ public class ImportPositionHolderElasticSearch extends ImportPositionHolderAbstr
       updateFields.put(TasklistImportPositionIndex.SEQUENCE, position.getSequence());
       updateFields.put(TasklistImportPositionIndex.COMPLETED, position.getCompleted());
 
+      LOGGER.debug(
+          "Preparing request to update processed position for alias [{}] and partitionId [{}]",
+          position.getAliasName(),
+          position.getPartitionId());
       final UpdateRequest updateRequest =
           new UpdateRequest()
               .index(index)

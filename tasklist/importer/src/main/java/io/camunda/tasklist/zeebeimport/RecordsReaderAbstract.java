@@ -304,7 +304,15 @@ public abstract class RecordsReaderAbstract implements RecordsReader, Runnable {
   }
 
   private void markRecordReaderCompletedIfMinimumEmptyBatchesReceived() {
+    LOGGER.debug(
+        "Partition [{}] has completed importing for value type [{}] ?",
+        partitionId,
+        importValueType.getAliasTemplate());
     if (recordsReaderHolder.hasPartitionCompletedImporting(partitionId)) {
+      LOGGER.debug(
+          "Partition [{}] has completed importing [{}] incrementing empty batches",
+          partitionId,
+          importValueType.getAliasTemplate());
       recordsReaderHolder.incrementEmptyBatches(partitionId, importValueType);
     }
 

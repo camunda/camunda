@@ -89,9 +89,16 @@ public abstract class ImportJobAbstract implements ImportJob {
       final var batchVersion = SemanticVersion.fromVersion(version);
 
       if (batchVersion.getMajor() == 8 && batchVersion.getMinor() == 8) {
+        LOGGER.debug("Received batch with version {} \n Hits: \n", version);
+        subBatch.getHits().forEach(hit -> LOGGER.debug("Hit: {}", hit));
+        LOGGER.debug("End Hits \n");
         recordsReaderHolder.addPartitionCompletedImporting(subBatch.getPartitionId());
         return true;
       }
+
+      LOGGER.debug("Received batch with version {} \n Hits: \n", version);
+      subBatch.getHits().forEach(hit -> LOGGER.debug("Hit: {}", hit));
+      LOGGER.debug("End Hits \n");
 
       final ImportBatchProcessor importBatchProcessor =
           importBatchProcessorFactory.getImportBatchProcessor(version);

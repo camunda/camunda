@@ -75,15 +75,24 @@ public class RecordsReaderHolder {
   }
 
   public void addPartitionCompletedImporting(final int partitionId) {
+    LOGGER.debug("Add Partition [{}] as completed importing", partitionId);
     partitionsCompletedImporting.add(partitionId);
   }
 
   public boolean hasPartitionCompletedImporting(final int partitionId) {
+    LOGGER.debug("Has Partition [{}] completed importing ?", partitionId);
+    LOGGER.debug("Partitions completed importing: {}", partitionsCompletedImporting);
     return partitionsCompletedImporting.contains(partitionId);
   }
 
   public void incrementEmptyBatches(final int partitionId, final ImportValueType importValueType) {
     final var reader = getRecordsReader(partitionId, importValueType);
+    LOGGER.info(
+        "Reader {} - {} has {} empty batches after importing done incrementing {}",
+        reader.getImportValueType(),
+        reader.getPartitionId(),
+        countEmptyBatchesAfterImportingDone.get(reader),
+        countEmptyBatchesAfterImportingDone.get(reader));
     countEmptyBatchesAfterImportingDone.merge(reader, 1, Integer::sum);
   }
 
@@ -92,6 +101,11 @@ public class RecordsReaderHolder {
     if (hasPartitionCompletedImporting(partitionId)) {
 
       final var reader = getRecordsReader(partitionId, importValueType);
+      LOGGER.debug(
+          "Reader {} - {} has {} empty batches after importing done",
+          reader.getImportValueType(),
+          reader.getPartitionId(),
+          countEmptyBatchesAfterImportingDone.get(reader));
       return countEmptyBatchesAfterImportingDone.get(reader)
           >= MINIMUM_EMPTY_BATCHES_FOR_COMPLETED_READER;
     }
