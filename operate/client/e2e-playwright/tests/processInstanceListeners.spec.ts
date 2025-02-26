@@ -147,6 +147,17 @@ test.describe('Process Instance Listeners', () => {
     const {statusCode} = await zeebeRestApi.completeUserTask({userTaskKey});
     expect(statusCode).toBe(204);
 
+    // check if user task is completed, selecting task and moving metadata popup out of the way
+    await expect(page.getByTestId('state-overlay-active')).not.toBeVisible();
+    await expect(
+      page.getByTestId('state-overlay-completedEndEvents'),
+    ).toBeVisible();
+    await page.waitForTimeout(1000);
+    await processInstancePage.instanceHistory
+      .getByText('Service Task B')
+      .click();
+    await processInstancePage.diagram.moveCanvasHorizontally(-400);
+
     // check if both types of listeners are visible (default filter)
     await processInstancePage.listenersTabButton.click();
     await expect(page.getByText('Execution listener')).toBeVisible();
