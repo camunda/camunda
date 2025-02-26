@@ -721,4 +721,8 @@ public final class UserTaskRecord extends UnifiedRecordValue implements UserTask
     processInstanceKeyProp.setValue(key);
     return this;
   }
+
+  public boolean hasAssignee() {
+    return !BufferUtil.equals(assigneeProp.getValue(), BufferUtil.wrapString(EMPTY_STRING));
+  }
 }
