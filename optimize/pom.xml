@@ -649,17 +649,6 @@
     </repository>
   </distributionManagement>
 
-  <scm>
-    <url>https://github.com/camunda/camunda</url>
-    <connection>
-      scm:git:https://${env.GITHUB_TOKEN_USR}:${env.GITHUB_TOKEN_PSW}@github.com/camunda/camunda.git
-    </connection>
-    <developerConnection>
-      scm:git:https://${env.GITHUB_TOKEN_USR}:${env.GITHUB_TOKEN_PSW}@github.com/camunda/camunda.git
-    </developerConnection>
-    <tag>HEAD</tag>
-  </scm>
-
   <issueManagement>
     <system>Jira</system>
     <url>https://app.camunda.com/jira/browse/OPT/</url>
