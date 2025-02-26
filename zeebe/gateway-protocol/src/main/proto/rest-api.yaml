@@ -27,6 +27,7 @@ tags:
   - name: Ad-hoc subprocess
   - name: Authentication
   - name: Authorization
+  - name: Batch Operation
   - name: Clock
   - name: Cluster
   - name: Decision definition
@@ -1539,7 +1540,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/BatchOperationResult"
+                $ref: "#/components/schemas/BatchOperationCreatedResult"
         "400":
           description: >
             The process instance batch operation failed.
@@ -3439,6 +3440,40 @@ paths:
                 $ref: "#/components/schemas/SignalBroadcastResult"
         "400":
           $ref: "#/components/responses/InvalidData"
+        "404":
+          description: The signal is not found.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+  /batch-operations/search:
+    post:
+      tags:
+        - Batch Operation
+      operationId: searchBatchOperations
+      summary: Search Batch Operations
+      description: Searches for Batch Operations
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        "200":
+          description: List of Batch Operations.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BatchOperationSearchQueryResult"
+        "400":
+          description: The provided data is not valid.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
         "404":
           description: The signal is not found.
           content:
@@ -7190,13 +7225,50 @@ components:
         formKey:
           description: The assigned key, which acts as a unique identifier for this form.
           type: string
-    BatchOperationResult:
+    BatchOperationCreatedResult:
       type: object
       properties:
         batchOperationKey:
           description: >
             Key of the batch operation
           type: string
+    BatchOperationSearchQueryResult:
+      type: object
+      allOf:
+        - $ref: "#/components/schemas/SearchQueryResponse"
+      properties:
+        items:
+          description: The matching batch operations.
+          type: array
+          items:
+            $ref: "#/components/schemas/BatchOperation"
+    BatchOperation:
+      type: object
+      properties:
+        batchOperationKey:
+          description: Key of the batch operation
+          type: string
+        batchOperationType:
+          description: Batch operation type
+          type: string
+        startDate:
+          type: string
+          description: The start date.
+          format: date-time
+        endDate:
+          type: string
+          description: The end date.
+          format: date-time
+        operationsTotalCount:
+          type: integer
+          format: int64
+        operationsFailedCount:
+          type: integer
+          format: int64
+        operationsCompletedCount:
+          type: integer
+          format: int64
+
   responses:
     InternalServerError:
       description: >
