@@ -84,6 +84,7 @@ public class ClientConfigRestServiceIT {
                 + "\"isLoginDelegated\":false,"
                 + "\"contextPath\":\"\","
                 + "\"baseName\":\"/tasklist\","
+                + "\"clientMode\":\"v1\","
                 + "\"organizationId\":\"organizationId\","
                 + "\"clusterId\":null,"
                 + "\"stage\":\"stage\","
@@ -92,5 +93,28 @@ public class ClientConfigRestServiceIT {
                 + "\"isResourcePermissionsEnabled\":false,"
                 + "\"isUserAccessRestrictionsEnabled\":true,"
                 + "\"maxRequestSize\":4194304};");
+  }
+  
+  @Test
+  @DisplayName("should set clientMode to v2 when CAMUNDA_TASKLIST_V2_MODE_ENABLED is true")
+  @SpringBootTest(
+      properties = {
+        "CAMUNDA_TASKLIST_V2_MODE_ENABLED=true"
+      })
+  public void testV2ModeEnabled() throws Exception {
+    mockMvc = MockMvcBuilders.webAppContextSetup(context).build();
+    
+    // when
+    final MockHttpServletRequestBuilder request = get("/tasklist/client-config.js");
+    final MvcResult mvcResult =
+        mockMvc
+            .perform(request)
+            .andExpect(status().isOk())
+            .andExpect(content().contentTypeCompatibleWith("text/javascript"))
+            .andReturn();
+
+    // then
+    String response = mvcResult.getResponse().getContentAsString();
+    assertThat(response).contains("\"clientMode\":\"v2\"");
   }
 }
