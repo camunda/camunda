@@ -10,6 +10,7 @@ package io.camunda.application;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.fail;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
@@ -29,6 +30,7 @@ import org.testcontainers.elasticsearch.ElasticsearchContainer;
 @EnabledIfSystemProperty(named = "camunda.docker.test.enabled", matches = "true")
 public class CamundaDockerIT {
 
+  private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
   private static final int SERVER_PORT = 8080;
   private static final int MANAGEMENT_PORT = 9600;
   private static final int GATEWAY_GRPC_PORT = 26500;
@@ -69,7 +71,7 @@ public class CamundaDockerIT {
                         camundaContainer.getMappedPort(MANAGEMENT_PORT),
                         "/actuator/health")))) {
 
-            // then - convert the response and expected response to intermediate JSON representation
+      // then - convert the response and expected response to intermediate JSON representation
       // this will allow us to compare without worrying about the ordering of the values, and just
       // checking that they are logically equivalent
       assertThat(healthCheckResponse.getCode()).isEqualTo(200);
