@@ -192,18 +192,18 @@ public class TenantServiceTest {
       names = {"USER", "MAPPING", "GROUP"})
   public void shouldAddEntityToTenant(final EntityType entityType) {
     // given
-    final var tenantKey = 100L;
+    final var tenantId = "tenantId";
     final var entityKey = 42;
 
     // when
-    services.addMember(tenantKey, entityType, entityKey);
+    services.addMember(tenantId, entityType, entityKey);
 
     // then
     final BrokerTenantEntityRequest request = stubbedBrokerClient.getSingleBrokerRequest();
     assertThat(request.getIntent()).isEqualTo(TenantIntent.ADD_ENTITY);
     assertThat(request.getValueType()).isEqualTo(ValueType.TENANT);
     final TenantRecord brokerRequestValue = request.getRequestWriter();
-    assertThat(brokerRequestValue.getTenantKey()).isEqualTo(tenantKey);
+    assertThat(brokerRequestValue.getTenantId()).isEqualTo(tenantId);
     assertThat(brokerRequestValue.getEntityKey()).isEqualTo(entityKey);
     assertThat(brokerRequestValue.getEntityType()).isEqualTo(entityType);
   }
@@ -214,18 +214,18 @@ public class TenantServiceTest {
       names = {"USER", "MAPPING", "GROUP"})
   public void shouldRemoveEntityFromTenant(final EntityType entityType) {
     // given
-    final var tenantKey = 100L;
+    final var tenantId = "tenantId";
     final var entityKey = 42;
 
     // when
-    services.removeMember(tenantKey, entityType, entityKey);
+    services.removeMember(tenantId, entityType, entityKey);
 
     // then
     final BrokerTenantEntityRequest request = stubbedBrokerClient.getSingleBrokerRequest();
     assertThat(request.getIntent()).isEqualTo(TenantIntent.REMOVE_ENTITY);
     assertThat(request.getValueType()).isEqualTo(ValueType.TENANT);
     final TenantRecord brokerRequestValue = request.getRequestWriter();
-    assertThat(brokerRequestValue.getTenantKey()).isEqualTo(tenantKey);
+    assertThat(brokerRequestValue.getTenantId()).isEqualTo(tenantId);
     assertThat(brokerRequestValue.getEntityKey()).isEqualTo(entityKey);
     assertThat(brokerRequestValue.getEntityType()).isEqualTo(entityType);
   }

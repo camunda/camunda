@@ -30,32 +30,32 @@ import org.junit.jupiter.api.Test;
     "Disabled while groups are not fully supported yet: https://github.com/camunda/camunda/issues/26961 ")
 public class UnassignGroupFromTenantTest extends ClientRestTest {
 
-  private static final long TENANT_KEY = 123L;
+  private static final String TENANT_ID = "tenantId";
   private static final long GROUP_KEY = 456L;
 
   @Test
   void shouldUnassignGroupFromTenant() {
     // when
-    client.newUnassignGroupFromTenantCommand(TENANT_KEY).groupKey(GROUP_KEY).send().join();
+    client.newUnassignGroupFromTenantCommand(TENANT_ID).groupKey(GROUP_KEY).send().join();
 
     // then
     final String requestPath = RestGatewayService.getLastRequest().getUrl();
     assertThat(requestPath)
-        .isEqualTo(REST_API_PATH + "/tenants/" + TENANT_KEY + "/groups/" + GROUP_KEY);
+        .isEqualTo(REST_API_PATH + "/tenants/" + TENANT_ID + "/groups/" + GROUP_KEY);
   }
 
   @Test
   void shouldRaiseExceptionOnNotFoundTenant() {
     // given
     gatewayService.errorOnRequest(
-        REST_API_PATH + "/tenants/" + TENANT_KEY + "/groups/" + GROUP_KEY,
+        REST_API_PATH + "/tenants/" + TENANT_ID + "/groups/" + GROUP_KEY,
         () -> new ProblemDetail().title("Not Found").status(404));
 
     // when / then
     assertThatThrownBy(
             () ->
                 client
-                    .newUnassignGroupFromTenantCommand(TENANT_KEY)
+                    .newUnassignGroupFromTenantCommand(TENANT_ID)
                     .groupKey(GROUP_KEY)
                     .send()
                     .join())
@@ -67,14 +67,14 @@ public class UnassignGroupFromTenantTest extends ClientRestTest {
   void shouldRaiseExceptionOnNotFoundGroup() {
     // given
     gatewayService.errorOnRequest(
-        REST_API_PATH + "/tenants/" + TENANT_KEY + "/groups/" + GROUP_KEY,
+        REST_API_PATH + "/tenants/" + TENANT_ID + "/groups/" + GROUP_KEY,
         () -> new ProblemDetail().title("Not Found").status(404));
 
     // when / then
     assertThatThrownBy(
             () ->
                 client
-                    .newUnassignGroupFromTenantCommand(TENANT_KEY)
+                    .newUnassignGroupFromTenantCommand(TENANT_ID)
                     .groupKey(GROUP_KEY)
                     .send()
                     .join())
@@ -86,14 +86,14 @@ public class UnassignGroupFromTenantTest extends ClientRestTest {
   void shouldHandleServerError() {
     // given
     gatewayService.errorOnRequest(
-        REST_API_PATH + "/tenants/" + TENANT_KEY + "/groups/" + GROUP_KEY,
+        REST_API_PATH + "/tenants/" + TENANT_ID + "/groups/" + GROUP_KEY,
         () -> new ProblemDetail().title("Internal Server Error").status(500));
 
     // when / then
     assertThatThrownBy(
             () ->
                 client
-                    .newUnassignGroupFromTenantCommand(TENANT_KEY)
+                    .newUnassignGroupFromTenantCommand(TENANT_ID)
                     .groupKey(GROUP_KEY)
                     .send()
                     .join())
@@ -105,14 +105,14 @@ public class UnassignGroupFromTenantTest extends ClientRestTest {
   void shouldRaiseExceptionOnForbiddenRequest() {
     // given
     gatewayService.errorOnRequest(
-        REST_API_PATH + "/tenants/" + TENANT_KEY + "/groups/" + GROUP_KEY,
+        REST_API_PATH + "/tenants/" + TENANT_ID + "/groups/" + GROUP_KEY,
         () -> new ProblemDetail().title("Forbidden").status(403));
 
     // when / then
     assertThatThrownBy(
             () ->
                 client
-                    .newUnassignGroupFromTenantCommand(TENANT_KEY)
+                    .newUnassignGroupFromTenantCommand(TENANT_ID)
                     .groupKey(GROUP_KEY)
                     .send()
                     .join())
