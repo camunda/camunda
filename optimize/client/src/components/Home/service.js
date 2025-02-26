@@ -7,7 +7,7 @@
  */
 
 import {get, post, put, del} from 'request';
-import { getFullURL } from '../../modules/api';
+import {getFullURL} from '../../modules/api';
 
 export async function loadCollectionEntities(id, sortBy, sortOrder) {
   const params = {};
@@ -43,7 +43,11 @@ export async function getSources(collection) {
 }
 
 export async function editSource(collection, scopeId, tenants, force = false) {
-  return await put(getFullURL(`api/collection/${collection}/scope/${scopeId}`), {tenants}, {query: {force}});
+  return await put(
+    getFullURL(`api/collection/${collection}/scope/${scopeId}`),
+    {tenants},
+    {query: {force}}
+  );
 }
 
 export async function removeSource(collection, scopeId) {
@@ -51,7 +55,9 @@ export async function removeSource(collection, scopeId) {
 }
 
 export async function checkDeleteSourceConflicts(collection, scopeId) {
-  const response = await get(getFullURL(`api/collection/${collection}/scope/${scopeId}/delete-conflicts`));
+  const response = await get(
+    getFullURL(`api/collection/${collection}/scope/${scopeId}/delete-conflicts`)
+  );
   return await response.json();
 }
 

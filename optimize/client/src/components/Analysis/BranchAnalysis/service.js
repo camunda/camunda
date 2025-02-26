@@ -7,7 +7,7 @@
  */
 
 import {post} from 'request';
-import { getFullURL } from '../../../modules/api';
+import {getFullURL} from '../../../modules/api';
 
 export async function loadFrequencyData(
   processDefinitionKey,

@@ -8,7 +8,7 @@
 
 import {post} from 'request';
 import {Report, ReportType} from 'types';
-import { getFullURL } from '../api';
+import {getFullURL} from '../api';
 
 interface ConfigParams {
   processDefinitionKey: string;
