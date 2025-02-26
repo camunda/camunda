@@ -65,39 +65,36 @@ public class AdHocSubprocessActivityServices extends ApiServices<AdHocSubprocess
               .formatted(query.filter().adHocSubprocessId()));
     }
 
-    final var flowNodes = adHocSubProcess.getChildElementsByType(FlowNode.class);
-    final var rootActivities =
-        flowNodes.stream()
-            .filter(flowNode -> flowNode.getIncoming().isEmpty())
+    final var activities =
+        adHocSubProcess.getChildElementsByType(FlowNode.class).stream()
+            .filter(element -> element.getIncoming().isEmpty())
             .map(
-                flowNode ->
+                element ->
                     toAdHocSubprocessActivityEntity(
-                        processDefinitionEntity, adHocSubProcess, flowNode))
+                        processDefinitionEntity, adHocSubProcess, element))
             .toList();
 
-    return new SearchQueryResult.Builder<AdHocSubprocessActivityEntity>()
-        .items(rootActivities)
-        .build();
+    return new SearchQueryResult.Builder<AdHocSubprocessActivityEntity>().items(activities).build();
   }
 
   private AdHocSubprocessActivityEntity toAdHocSubprocessActivityEntity(
       final ProcessDefinitionEntity processDefinitionEntity,
       final AdHocSubProcess adHocSubProcess,
-      final FlowNode flowNode) {
+      final FlowNode element) {
     return new AdHocSubprocessActivityEntity(
         processDefinitionEntity.processDefinitionKey(),
         processDefinitionEntity.processDefinitionId(),
         adHocSubProcess.getId(),
-        flowNode.getId(),
-        flowNode.getName(),
-        ActivityType.fromZeebeBpmnElementTypeName(flowNode.getElementType().getTypeName()),
-        documentationAsString(flowNode),
+        element.getId(),
+        element.getName(),
+        ActivityType.fromZeebeBpmnElementTypeName(element.getElementType().getTypeName()),
+        documentationAsString(element),
         processDefinitionEntity.tenantId());
   }
 
-  private String documentationAsString(final FlowNode flowNode) {
+  private String documentationAsString(final FlowNode element) {
     final var documentation =
-        flowNode.getDocumentations().stream()
+        element.getDocumentations().stream()
             .map(ModelElementInstance::getTextContent)
             .collect(Collectors.joining("\n"));
 
