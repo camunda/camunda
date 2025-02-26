@@ -90,7 +90,7 @@
     <wiremock.version>3.9.2</wiremock.version>
     <version.docker-java-api>3.3.6</version.docker-java-api>
     <version.httpclient>4.5.14</version.httpclient>
-    <version.elasticsearch7>7.17.27</version.elasticsearch7>
+    <version.elasticsearch7>7.17.28</version.elasticsearch7>
     <version.elasticsearch>8.9.2</version.elasticsearch>
     <!-- the lucene version must be coupled with version.elasticsearch7 -->
     <version.lucene>8.11.3</version.lucene>
