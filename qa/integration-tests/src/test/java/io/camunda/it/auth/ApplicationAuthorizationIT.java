@@ -25,7 +25,6 @@ import org.apache.hc.core5.http.Header;
 import org.apache.hc.core5.http.HttpStatus;
 import org.apache.hc.core5.http.ProtocolException;
 import org.apache.hc.core5.http.message.BasicHeader;
-import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -157,7 +156,7 @@ class ApplicationAuthorizationIT {
     Assertions.assertNull(locationHeader);
   }
 
-  private static @NotNull BasicHeader basicAuthentication(final String restricted) {
+  private static BasicHeader basicAuthentication(final String restricted) {
     return new BasicHeader(
         "Authorization",
         "Basic " + Base64.getEncoder().encodeToString((restricted + ":" + "password").getBytes()));
