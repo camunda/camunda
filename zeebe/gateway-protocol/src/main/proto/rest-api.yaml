@@ -126,12 +126,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/JobActivationResult"
         "400":
-          description: >
-            The provided data is not valid.
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
+          $ref: "#/components/responses/InvalidData"
         "500":
           $ref: "#/components/responses/InternalServerError"
   /jobs/{jobKey}/failure:
@@ -159,12 +154,7 @@ paths:
         "204":
           description: The job is failed.
         "400":
-          description: >
-            The provided data is not valid.
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
+          $ref: "#/components/responses/InvalidData"
         "404":
           description: >
             The job with the given jobKey is not found.
@@ -186,8 +176,8 @@ paths:
     post:
       tags:
         - Job
-      operationId: reportJobError
-      summary: Report error for job
+      operationId: throwJobError
+      summary: Throw error for job
       description: |
         Reports a business error (i.e. non-technical) that occurs while processing a job.
       parameters:
@@ -207,12 +197,7 @@ paths:
         "204":
           description: An error is thrown for the job.
         "400":
-          description: >
-            The provided data is not valid.
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
+          $ref: "#/components/responses/InvalidData"
         "404":
           description: >
             The job with the given jobKey is not found.
@@ -255,13 +240,7 @@ paths:
         "204":
           description: The job was completed successfully.
         "400":
-          description: >
-            The job with the given key cannot be completed.
-            More details are provided in the response body.
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
+          $ref: "#/components/responses/InvalidData"
         "404":
           description: The job with the given key was not found.
           content:
@@ -302,12 +281,7 @@ paths:
         "204":
           description: The job was updated successfully.
         "400":
-          description: >
-            The provided data is not valid.
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
+          $ref: "#/components/responses/InvalidData"
         "404":
           description: The job with the jobKey is not found.
           content:
@@ -345,11 +319,7 @@ paths:
         "204":
           description: The incident is marked as resolved.
         "400":
-          description: The provided data is not valid.
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
+          $ref: "#/components/responses/InvalidData"
         "404":
           description: The incident with the incidentKey is not found.
           content:
@@ -380,11 +350,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/TenantCreateResult"
         "400":
-          description: The provided data is not valid.
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
+          $ref: "#/components/responses/InvalidData"
         "403":
           $ref: "#/components/responses/Forbidden"
         "404":
@@ -418,11 +384,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/TenantResult"
         "400":
-          description: The provided data is not valid.
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
+          $ref: "#/components/responses/InvalidData"
         "401":
           $ref: "#/components/responses/Unauthorized"
         "403":
@@ -462,11 +424,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/TenantUpdateResult"
         "400":
-          description: The provided data is not valid.
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
+          $ref: "#/components/responses/InvalidData"
         "403":
           $ref: "#/components/responses/Forbidden"
         "404":
@@ -495,11 +453,7 @@ paths:
         "204":
           description: The tenant was deleted successfully.
         "400":
-          description: The provided data is not valid.
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
+          $ref: "#/components/responses/InvalidData"
         "403":
           $ref: "#/components/responses/Forbidden"
         "404":
@@ -535,11 +489,7 @@ paths:
         "202":
           description: The user was successfully assigned to the tenant.
         "400":
-          description: The provided data is not valid.
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
+          $ref: "#/components/responses/InvalidData"
         "403":
           $ref: "#/components/responses/Forbidden"
         "404":
@@ -574,11 +524,7 @@ paths:
         "202":
           description: The user was successfully removed from the tenant.
         "400":
-          description: The provided data is not valid.
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
+          $ref: "#/components/responses/InvalidData"
         "403":
           $ref: "#/components/responses/Forbidden"
         "404":
@@ -650,11 +596,7 @@ paths:
         "202":
           description: The mapping rule was successfully assigned to the tenant.
         "400":
-          description: The provided data is not valid.
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
+          $ref: "#/components/responses/InvalidData"
         "403":
           $ref: "#/components/responses/Forbidden"
         "404":
@@ -690,11 +632,7 @@ paths:
         "202":
           description: The mapping rule was successfully removed from the tenant.
         "400":
-          description: The provided data is not valid.
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
+          $ref: "#/components/responses/InvalidData"
         "403":
           $ref: "#/components/responses/Forbidden"
         "404":
@@ -731,11 +669,7 @@ paths:
         "202":
           description: The group was successfully assigned to the tenant.
         "400":
-          description: The provided data is not valid.
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
+          $ref: "#/components/responses/InvalidData"
         "403":
           $ref: "#/components/responses/Forbidden"
         "404":
@@ -771,11 +705,7 @@ paths:
         "202":
           description: The group was successfully removed from the tenant.
         "400":
-          description: The provided data is not valid.
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
+          $ref: "#/components/responses/InvalidData"
         "403":
           $ref: "#/components/responses/Forbidden"
         "404":
@@ -808,11 +738,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/TenantSearchQueryResult"
         "400":
-          description: The provided data is not valid.
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
+          $ref: "#/components/responses/InvalidData"
         "401":
           $ref: "#/components/responses/Unauthorized"
         "403":
@@ -851,13 +777,7 @@ paths:
         "204":
           description: The user task was completed successfully.
         "400":
-          description: >
-            The user task with the given key cannot be completed.
-            More details are provided in the response body.
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
+          $ref: "#/components/responses/InvalidData"
         "404":
           description: The user task with the given key was not found.
           content:
@@ -899,13 +819,7 @@ paths:
         "204":
           description: The user task's assignment was adjusted.
         "400":
-          description: >
-            The assignment of the user task with the given key cannot be completed.
-            More details are provided in the response body.
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
+          $ref: "#/components/responses/InvalidData"
         "404":
           description: The user task with the given key was not found.
           content:
@@ -947,13 +861,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/UserTaskResult"
         "400":
-          description: >
-            The provided data is not valid.
-            More details are provided in the response body.
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
+          $ref: "#/components/responses/InvalidData"
         "401":
           $ref: "#/components/responses/Unauthorized"
         "403":
@@ -990,13 +898,7 @@ paths:
         "204":
           description: The user task was updated successfully.
         "400":
-          description: >
-            The user task with the given key cannot be updated.
-            More details are provided in the response body.
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
+          $ref: "#/components/responses/InvalidData"
         "404":
           description: The user task with the given key was not found.
           content:
@@ -1043,11 +945,7 @@ paths:
           description: >
             The user task was found, but no form is associated with it.
         "400":
-          description: "Bad request"
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
+          $ref: "#/components/responses/InvalidData"
         "401":
           $ref: "#/components/responses/Unauthorized"
         "403":
@@ -1079,13 +977,7 @@ paths:
         "204":
           description: The user task was unassigned successfully.
         "400":
-          description: >
-            The user task with the given key cannot be unassigned.
-            More details are provided in the response body.
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
+          $ref: "#/components/responses/InvalidData"
         "404":
           description: The user task with the given key was not found.
           content:
@@ -1125,13 +1017,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/UserTaskSearchQueryResult"
         "400":
-          description: >
-            The user task search query failed.
-            More details are provided in the response body.
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
+          $ref: "#/components/responses/InvalidData"
         "401":
           $ref: "#/components/responses/Unauthorized"
         "403":
@@ -1169,13 +1055,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/VariableSearchQueryResult"
         "400":
-          description: >
-            The user task variables search query failed.
-            More details are provided in the response body.
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
+          $ref: "#/components/responses/InvalidData"
         "500":
           $ref: "#/components/responses/InternalServerError"
 
@@ -1202,13 +1082,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/VariableSearchQueryResult"
         "400":
-          description: >
-            The user task search query failed.
-            More details are provided in the response body.
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
+          $ref: "#/components/responses/InvalidData"
         "401":
           $ref: "#/components/responses/Unauthorized"
         "403":
@@ -1240,11 +1114,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/VariableResult"
         "400":
-          description: "Bad request"
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
+          $ref: "#/components/responses/InvalidData"
         "401":
           $ref: "#/components/responses/Unauthorized"
         "403":
@@ -1282,11 +1152,7 @@ paths:
           description: >
             The clock was successfully pinned to the specified time in epoch milliseconds.
         "400":
-          description: The required timestamp parameter is missing or it is negative.
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
+          $ref: "#/components/responses/InvalidData"
         "500":
           $ref: "#/components/responses/InternalServerError"
 
@@ -1332,13 +1198,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/ProcessDefinitionSearchQueryResult"
         "400":
-          description: >
-            The process definition search query failed.
-            More details are provided in the response body.
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
+          $ref: "#/components/responses/InvalidData"
         "401":
           $ref: "#/components/responses/Unauthorized"
         "403":
@@ -1370,13 +1230,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/ProcessDefinitionResult"
         "400":
-          description: >
-            The process definition request failed.
-            More details are provided in the response body.
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
+          $ref: "#/components/responses/InvalidData"
         "401":
           $ref: "#/components/responses/Unauthorized"
         "403":
@@ -1423,13 +1277,7 @@ paths:
               schema:
                 type: string
         "400":
-          description: >
-            The process definition request failed.
-            More details are provided in the response body.
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
+          $ref: "#/components/responses/InvalidData"
         "401":
           $ref: "#/components/responses/Unauthorized"
         "403":
@@ -1474,11 +1322,7 @@ paths:
           description: >
             The process was found, but no form is associated with it.
         "400":
-          description: "Bad request"
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
+          $ref: "#/components/responses/InvalidData"
         "401":
           $ref: "#/components/responses/Unauthorized"
         "403":
@@ -1531,9 +1375,16 @@ paths:
               schema:
                 $ref: "#/components/schemas/CreateProcessInstanceResult"
         "400":
-          description: The provided data is not valid.
+          $ref: "#/components/responses/InvalidData"
         "500":
           $ref: "#/components/responses/InternalServerError"
+        "504":
+          description: |
+            The process instance creation request timed out in the gateway.
+
+            This can happen if the `awaitCompletion` request parameter is set to `true`
+            and the created process instance did not complete within the defined request timeout.
+            This often happens when the created instance is not fully automated or contains wait states.
 
   /process-instances/{processInstanceKey}:
     get:
@@ -1558,11 +1409,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/ProcessInstanceResult"
         "400":
-          description: The provided data is not valid.
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
+          $ref: "#/components/responses/InvalidData"
         "401":
           $ref: "#/components/responses/Unauthorized"
         "403":
@@ -1598,13 +1445,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/ProcessInstanceSearchQueryResult"
         "400":
-          description: >
-            The process instance search query failed.
-            More details are provided in the response body.
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
+          $ref: "#/components/responses/InvalidData"
         "401":
           $ref: "#/components/responses/Unauthorized"
         "403":
@@ -1636,11 +1477,7 @@ paths:
         "204":
           description: The process instance is canceled.
         "400":
-          description: The provided data is not valid.
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
+          $ref: "#/components/responses/InvalidData"
         "404":
           description: The process instance is not found.
           content:
@@ -1681,11 +1518,7 @@ paths:
         "204":
           description: The process instance is migrated.
         "400":
-          description: The provided data is not valid.
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
+          $ref: "#/components/responses/InvalidData"
         "404":
           description: The process instance is not found.
           content:
@@ -1725,11 +1558,7 @@ paths:
         "204":
           description: The process instance is modified.
         "400":
-          description: The provided data is not valid.
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
+          $ref: "#/components/responses/InvalidData"
         "404":
           description: The process instance is not found.
           content:
@@ -1762,13 +1591,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/FlowNodeInstanceSearchQueryResult"
         "400":
-          description: >
-            The Flow node instance search query failed.
-            More details are provided in the response body.
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
+          $ref: "#/components/responses/InvalidData"
         "401":
           $ref: "#/components/responses/Unauthorized"
         "403":
@@ -1800,13 +1623,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/FlowNodeInstanceResult"
         "400":
-          description: >
-            The flow node instance request failed.
-            More details are provided in the response body.
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
+          $ref: "#/components/responses/InvalidData"
         "401":
           $ref: "#/components/responses/Unauthorized"
         "403":
@@ -1845,13 +1662,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/DecisionDefinitionSearchQueryResult"
         "400":
-          description: >
-            The decision definition search query failed.
-            More details are provided in the response body.
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
+          $ref: "#/components/responses/InvalidData"
         "401":
           $ref: "#/components/responses/Unauthorized"
         "403":
@@ -1883,13 +1694,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/DecisionDefinitionResult"
         "400":
-          description: >
-            The decision definition request failed.
-            More details are provided in the response body.
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
+          $ref: "#/components/responses/InvalidData"
         "401":
           $ref: "#/components/responses/Unauthorized"
         "403":
@@ -1929,13 +1734,7 @@ paths:
               schema:
                 type: string
         "400":
-          description: >
-            The decision definition request failed.
-            More details are provided in the response body.
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
+          $ref: "#/components/responses/InvalidData"
         "401":
           $ref: "#/components/responses/Unauthorized"
         "403":
@@ -1974,13 +1773,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/DecisionRequirementsSearchQueryResult"
         "400":
-          description: >
-            The search query failed.
-            More details are provided in the response body.
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
+          $ref: "#/components/responses/InvalidData"
         "401":
           $ref: "#/components/responses/Unauthorized"
         "403":
@@ -2012,13 +1805,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/DecisionRequirementsResult"
         "400":
-          description: >
-            The decision requirements request failed.
-            More details are provided in the response body.
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
+          $ref: "#/components/responses/InvalidData"
         "401":
           $ref: "#/components/responses/Unauthorized"
         "403":
@@ -2058,13 +1845,7 @@ paths:
               schema:
                 type: string
         "400":
-          description: >
-            The decision requirements request failed.
-            More details are provided in the response body.
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
+          $ref: "#/components/responses/InvalidData"
         "401":
           $ref: "#/components/responses/Unauthorized"
         "403":
@@ -2103,13 +1884,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/DecisionInstanceSearchQueryResult"
         "400":
-          description: >
-            The decision instance search query failed.
-            More details are provided in the response body.
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
+          $ref: "#/components/responses/InvalidData"
         "401":
           $ref: "#/components/responses/Unauthorized"
         "403":
@@ -2141,13 +1916,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/DecisionInstanceGetQueryResult"
         "400":
-          description: >
-            The decision instance request failed.
-            More details are provided in the response body.
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
+          $ref: "#/components/responses/InvalidData"
         "401":
           $ref: "#/components/responses/Unauthorized"
         "403":
@@ -2199,11 +1968,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/EvaluateDecisionResult"
         "400":
-          description: The provided data is not valid.
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
+          $ref: "#/components/responses/InvalidData"
         "404":
           description: The decision is not found.
           content:
@@ -2235,13 +2000,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/AuthorizationCreateResult"
         "400":
-          description: |
-            The authorization could not be created.
-            More details are provided in the response body.
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
+          $ref: "#/components/responses/InvalidData"
         "401":
           $ref: "#/components/responses/Unauthorized"
         "403":
@@ -2338,13 +2097,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/AuthorizationSearchResult"
         "400":
-          description: >
-            The authorization search query failed.
-            More details are provided in the response body.
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
+          $ref: "#/components/responses/InvalidData"
         "401":
           $ref: "#/components/responses/Unauthorized"
         "403":
@@ -2374,13 +2127,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/RoleCreateResult"
         "400":
-          description: |
-            The role could not be created.
-            More details are provided in the response body.
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
+          $ref: "#/components/responses/InvalidData"
         "401":
           $ref: "#/components/responses/Unauthorized"
         "403":
@@ -2444,12 +2191,7 @@ paths:
         "204":
           description: The role was updated successfully.
         "400":
-          description: >
-            The provided data is not valid.
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
+          $ref: "#/components/responses/InvalidData"
         "401":
           $ref: "#/components/responses/Unauthorized"
         "404":
@@ -2508,13 +2250,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/RoleSearchQueryResult"
         "400":
-          description: >
-            The role search query failed.
-            More details are provided in the response body.
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
+          $ref: "#/components/responses/InvalidData"
         "401":
           $ref: "#/components/responses/Unauthorized"
         "403":
@@ -2545,13 +2281,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/GroupCreateResult"
         "400":
-          description: |
-            The group could not be created.
-            More details are provided in the response body.
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
+          $ref: "#/components/responses/InvalidData"
         "401":
           $ref: "#/components/responses/Unauthorized"
         "403":
@@ -2615,12 +2345,7 @@ paths:
         "204":
           description: The group was updated successfully.
         "400":
-          description: >
-            The provided data is not valid.
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
+          $ref: "#/components/responses/InvalidData"
         "401":
           $ref: "#/components/responses/Unauthorized"
         "404":
@@ -2683,13 +2408,7 @@ paths:
         "202":
           description: The user was assigned successfully to the group.
         "400":
-          description: |
-            The user could not be assigned.
-            More details are provided in the response body.
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
+          $ref: "#/components/responses/InvalidData"
         "403":
           $ref: "#/components/responses/Forbidden"
         "404":
@@ -2730,13 +2449,7 @@ paths:
         "202":
           description: The user was unassigned successfully from the group.
         "400":
-          description: |
-            The user could not be unassigned.
-            More details are provided in the response body.
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
+          $ref: "#/components/responses/InvalidData"
         "403":
           $ref: "#/components/responses/Forbidden"
         "404":
@@ -2769,13 +2482,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/GroupSearchQueryResult"
         "400":
-          description: >
-            The group search query failed.
-            More details are provided in the response body.
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
+          $ref: "#/components/responses/InvalidData"
         "401":
           $ref: "#/components/responses/Unauthorized"
         "403":
@@ -2808,11 +2515,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/MappingRuleCreateResult"
         "400":
-          description: The mapping rule could not be created.
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
+          $ref: "#/components/responses/InvalidData"
         "403":
           description: |
             The request to create a mapping rule was denied.
@@ -2879,13 +2582,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/MappingSearchQueryResult"
         "400":
-          description: >
-            The mapping rule search query failed.
-            More details are provided in the response body.
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
+          $ref: "#/components/responses/InvalidData"
         "401":
           $ref: "#/components/responses/Unauthorized"
         "403":
@@ -2919,11 +2616,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/MessagePublicationResult"
         "400":
-          description: The provided data is not valid.
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
+          $ref: "#/components/responses/InvalidData"
         "500":
           $ref: "#/components/responses/InternalServerError"
 
@@ -2952,11 +2645,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/MessageCorrelationResult"
         "400":
-          description: The provided data is not valid
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
+          $ref: "#/components/responses/InvalidData"
         "403":
           $ref: "#/components/responses/Forbidden"
         "404":
@@ -3018,12 +2707,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/DocumentReference"
         "400":
-          description: >
-            The document upload failed. More details are provided in the response body.
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
+          $ref: "#/components/responses/InvalidData"
   /documents/batch:
     post:
       tags:
@@ -3091,12 +2775,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/DocumentCreationBatchResponse"
         "400":
-          description: >
-            The document upload failed. More details are provided in the response body.
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
+          $ref: "#/components/responses/InvalidData"
   /documents/{documentId}:
     get:
       tags:
@@ -3230,12 +2909,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/DocumentLink"
         "400":
-          description: >
-            The document link creation failed. More details are provided in the response body.
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
+          $ref: "#/components/responses/InvalidData"
 
   /users:
     post:
@@ -3259,13 +2933,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/UserCreateResult"
         "400":
-          description: |
-            Unable to create the user.
-            More details are provided in the response body.
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
+          $ref: "#/components/responses/InvalidData"
         "401":
           $ref: "#/components/responses/Unauthorized"
         "403":
@@ -3302,13 +2970,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/UserSearchResult"
         "400":
-          description: >
-            The user search query failed.
-            More details are provided in the response body.
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
+          $ref: "#/components/responses/InvalidData"
         "401":
           $ref: "#/components/responses/Unauthorized"
         "403":
@@ -3335,11 +2997,7 @@ paths:
         "204":
           description: The user was deleted successfully.
         "400":
-          description: The provided data is not valid.
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
+          $ref: "#/components/responses/InvalidData"
         "404":
           description: The user is not found.
           content:
@@ -3372,11 +3030,7 @@ paths:
         "204":
           description: The user was updated successfully.
         "400":
-          description: The provided data is not valid.
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
+          $ref: "#/components/responses/InvalidData"
         "403":
           $ref: "#/components/responses/Forbidden"
         "404":
@@ -3411,9 +3065,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/IncidentSearchQueryResult"
         "400":
-          description: >
-            The incident search query failed.
-            More details are provided in the response body.
+          $ref: "#/components/responses/InvalidData"
         "401":
           $ref: "#/components/responses/Unauthorized"
         "403":
@@ -3445,13 +3097,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/IncidentResult"
         "400":
-          description: >
-            The incident request failed.
-            More details are provided in the response body.
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
+          $ref: "#/components/responses/InvalidData"
         "401":
           $ref: "#/components/responses/Unauthorized"
         "403":
@@ -3497,13 +3143,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/UsageMetricsResponse"
         "400":
-          description: >
-            The usage metrics request failed.
-            More details are provided in the response body.
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
+          $ref: "#/components/responses/InvalidData"
         "401":
           $ref: "#/components/responses/Unauthorized"
         "403":
@@ -3546,12 +3186,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/DeploymentResult"
         "400":
-          description: >
-            The document upload failed. More details are provided in the response body.
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
+          $ref: "#/components/responses/InvalidData"
   /resources/{resourceKey}/deletion:
     post:
       tags:
@@ -3582,11 +3217,7 @@ paths:
         "200":
           description: The resource is deleted.
         "400":
-          description: The provided data is not valid.
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
+          $ref: "#/components/responses/InvalidData"
         "404":
           description: The resource is not found.
           content:
@@ -3625,11 +3256,7 @@ paths:
         "204":
           description: The variables were updated.
         "400":
-          description: The provided data is not valid.
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
+          $ref: "#/components/responses/InvalidData"
         "500":
           $ref: "#/components/responses/InternalServerError"
 
@@ -3654,11 +3281,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/SignalBroadcastResult"
         "400":
-          description: The provided data is not valid.
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
+          $ref: "#/components/responses/InvalidData"
         "404":
           description: The signal is not found.
           content:
@@ -7173,7 +6796,8 @@ components:
         awaitCompletion:
           description: |
             Wait for the process instance to complete. If the process instance completion does
-            not occur within the requestTimeout, the request will be closed. Disabled by default.
+            not occur within the requestTimeout, the request will be closed. This can lead to a 504
+            response status. Disabled by default.
           type: boolean
           default: false
         fetchVariables:
@@ -7444,6 +7068,12 @@ components:
             $ref: "#/components/schemas/ProblemDetail"
     Forbidden:
       description: Forbidden. The request is not allowed.
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/ProblemDetail"
+    InvalidData:
+      description: The provided data is not valid.
       content:
         application/problem+json:
           schema:

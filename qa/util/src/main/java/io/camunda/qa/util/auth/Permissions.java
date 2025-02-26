@@ -5,16 +5,11 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
+package io.camunda.qa.util.auth;
 
-import {post} from 'request';
-import {getFullURL} from '../../api';
+import io.camunda.client.protocol.rest.PermissionTypeEnum;
+import io.camunda.client.protocol.rest.ResourceTypeEnum;
+import java.util.List;
 
-export async function loadTenants(definitions) {
-  const params = {definitions};
-  const response = await post(
-    getFullURL(`api/definition/process/_resolveTenantsForVersions`),
-    params
-  );
-
-  return await response.json();
-}
+public record Permissions(
+    ResourceTypeEnum resourceType, PermissionTypeEnum permissionType, List<String> resourceIds) {}
