@@ -4,26 +4,46 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Redirect</title>
+</head>
+<body>
   <script>
     function getQueryParameter(name) {
       const urlParams = new URLSearchParams(window.location.search);
       return urlParams.get(name);
     }
 
-    const url = getQueryParameter('url');
-    if (url) {
-      try {
-        const validURL = new URL(url);
-        window.location = validURL.href;
-      } catch (e) {
-        console.error("Invalid URL provided:", url);
-        document.body.innerHTML = '<h1>Invalid or unsafe URL</h1>';
+    function validateUrl(url) {
+      if(typeof url !== "string") {
+        throw new Error('invalid');
       }
-    } else {
-      document.body.innerHTML = '<h1>No URL provided</h1>';
+
+      // don't allow redirects to the redirect
+      if(url.includes("redirect")) {
+        throw new Error('invalid');
+      }
+
+      const parsedUrl = new URL(url);
+
+      // only allow http and https protocols (don't allow javascript: protocol)
+      if(parsedUrl.protocol !== 'http:' && parsedUrl.protocol !== 'https:') {
+        throw new Error('invalid');
+      }
+
+      // only redirect to the same domain
+      if(parsedUrl.hostname !== window.location.hostname) {
+        throw new Error('invalid');
+      }
+
+      return parsedUrl.href;
+    }
+
+    const url = getQueryParameter('url');
+    try {
+      const ref = validateUrl(url);
+      window.location = ref;
+    } catch (e) {
+      document.body.innerHTML = '<h1>invalid redirect</h1>';
     }
   </script>
-</head>
-<body>
 </body>
 </html>
