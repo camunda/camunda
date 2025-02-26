@@ -10,6 +10,7 @@ package io.camunda.zeebe.engine.processing.deployment.model.validation;
 import io.camunda.zeebe.el.ExpressionLanguage;
 import io.camunda.zeebe.engine.processing.common.ExpressionProcessor;
 import io.camunda.zeebe.engine.processing.deployment.model.validation.ZeebeExpressionValidator.ExpressionVerification;
+import io.camunda.zeebe.model.bpmn.instance.AdHocSubProcess;
 import io.camunda.zeebe.model.bpmn.instance.ConditionExpression;
 import io.camunda.zeebe.model.bpmn.instance.Message;
 import io.camunda.zeebe.model.bpmn.instance.MultiInstanceLoopCharacteristics;
@@ -194,12 +195,17 @@ public final class ZeebeRuntimeValidators {
             .build(expressionLanguage),
         new ZeebePriorityDefinitionValidator(),
         // ----------------------------------------
+        ZeebeExpressionValidator.verifyThat(AdHocSubProcess.class)
+            .hasValidExpression(
+                adHocSubProcess ->
+                    adHocSubProcess.getCompletionCondition() != null
+                        ? adHocSubProcess.getCompletionCondition().getTextContent()
+                        : null,
+                expression -> expression.isOptional().isNonStatic())
+            .build(expressionLanguage),
         ZeebeExpressionValidator.verifyThat(ZeebeAdHoc.class)
             .hasValidExpression(
                 ZeebeAdHoc::getActiveElementsCollection,
-                expression -> expression.isOptional().isNonStatic())
-            .hasValidExpression(
-                ZeebeAdHoc::getCompletionCondition,
                 expression -> expression.isOptional().isNonStatic())
             .build(expressionLanguage));
   }

@@ -20,6 +20,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.model.bpmn.instance.AdHocSubProcess;
+import io.camunda.zeebe.model.bpmn.instance.CompletionCondition;
 import io.camunda.zeebe.model.bpmn.instance.ExtensionElements;
 import io.camunda.zeebe.model.bpmn.instance.FlowElement;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeAdHoc;
@@ -91,7 +92,7 @@ class AdHocSubProcessBuilderTest {
             .adHocSubProcess(
                 "ad-hoc",
                 adHocSubProcess -> {
-                  adHocSubProcess.zeebeCompletionConditionExpression("true");
+                  adHocSubProcess.completionCondition("true");
                   adHocSubProcess.task("A");
                 })
             .endEvent()
@@ -99,15 +100,13 @@ class AdHocSubProcessBuilderTest {
 
     // when/then
     final ModelElementInstance adHocSubProcess = process.getModelElementById("ad-hoc");
+    assertThat(adHocSubProcess).isInstanceOf(AdHocSubProcess.class);
 
-    final ExtensionElements extensionElements =
-        (ExtensionElements) adHocSubProcess.getUniqueChildElementByType(ExtensionElements.class);
-    assertThat(extensionElements).isNotNull();
-
-    assertThat(extensionElements.getChildElementsByType(ZeebeAdHoc.class))
-        .hasSize(1)
-        .extracting(ZeebeAdHoc::getCompletionCondition)
-        .contains("=true");
+    assertThat(((AdHocSubProcess) adHocSubProcess).getCompletionCondition())
+        .isNotNull()
+        .isInstanceOf(CompletionCondition.class)
+        .extracting(CompletionCondition::getTextContent)
+        .isEqualTo("=true");
   }
 
   @Test
@@ -119,7 +118,7 @@ class AdHocSubProcessBuilderTest {
             .adHocSubProcess(
                 "ad-hoc",
                 adHocSubProcess -> {
-                  adHocSubProcess.zeebeCancelRemainingInstances(true);
+                  adHocSubProcess.cancelRemainingInstancesEnabled(true);
                   adHocSubProcess.task("A");
                 })
             .endEvent()
@@ -128,13 +127,7 @@ class AdHocSubProcessBuilderTest {
     // when/then
     final ModelElementInstance adHocSubProcess = process.getModelElementById("ad-hoc");
 
-    final ExtensionElements extensionElements =
-        (ExtensionElements) adHocSubProcess.getUniqueChildElementByType(ExtensionElements.class);
-    assertThat(extensionElements).isNotNull();
-
-    assertThat(extensionElements.getChildElementsByType(ZeebeAdHoc.class))
-        .hasSize(1)
-        .extracting(ZeebeAdHoc::isCancelRemainingInstancesEnabled)
-        .contains(true);
+    assertThat(adHocSubProcess).isInstanceOf(AdHocSubProcess.class);
+    assertThat(((AdHocSubProcess) adHocSubProcess).isCancelRemainingInstancesEnabled()).isTrue();
   }
 }

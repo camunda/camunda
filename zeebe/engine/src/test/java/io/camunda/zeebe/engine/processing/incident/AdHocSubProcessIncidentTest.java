@@ -192,7 +192,7 @@ public class AdHocSubProcessIncidentTest {
         process(
             adHocSubProcess -> {
               adHocSubProcess.zeebeActiveElementsCollectionExpression("activeElements");
-              adHocSubProcess.zeebeCompletionConditionExpression("completionCondition");
+              adHocSubProcess.completionCondition("completionCondition");
               adHocSubProcess.task("A");
               adHocSubProcess.task("B");
               adHocSubProcess.task("C");
