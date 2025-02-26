@@ -42,7 +42,7 @@ class UnassignGroupFromTenantTest {
     tenantKey =
         client
             .newCreateTenantCommand()
-            .tenantId("tenant-id")
+            .tenantId("tenantId")
             .name("Tenant Name")
             .send()
             .join()

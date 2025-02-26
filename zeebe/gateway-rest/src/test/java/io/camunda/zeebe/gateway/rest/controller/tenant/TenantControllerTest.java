@@ -33,6 +33,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
@@ -51,20 +52,20 @@ public class TenantControllerTest extends RestControllerTest {
     when(tenantServices.withAuthentication(any(Authentication.class))).thenReturn(tenantServices);
   }
 
-  @Test
-  void createTenantShouldReturnAccepted() {
+  @ParameterizedTest
+  @ValueSource(strings = {"foo", "Foo", "foo123"})
+  void createTenantShouldReturnAccepted(final String id) {
     // given
     final var tenantName = "Test Tenant";
-    final var tenantId = "tenant-test-id";
     final var tenantDescription = "Test description";
-    when(tenantServices.createTenant(new TenantDTO(null, tenantId, tenantName, tenantDescription)))
+    when(tenantServices.createTenant(new TenantDTO(null, id, tenantName, tenantDescription)))
         .thenReturn(
             CompletableFuture.completedFuture(
                 new TenantRecord()
                     .setTenantKey(100L)
                     .setName(tenantName)
                     .setDescription(tenantDescription)
-                    .setTenantId(tenantId)));
+                    .setTenantId(id)));
 
     // when
     webClient
@@ -73,24 +74,21 @@ public class TenantControllerTest extends RestControllerTest {
         .accept(MediaType.APPLICATION_JSON)
         .contentType(MediaType.APPLICATION_JSON)
         .bodyValue(
-            new TenantCreateRequest()
-                .name(tenantName)
-                .description(tenantDescription)
-                .tenantId(tenantId))
+            new TenantCreateRequest().name(tenantName).description(tenantDescription).tenantId(id))
         .exchange()
         .expectStatus()
         .isCreated();
 
     // then
     verify(tenantServices, times(1))
-        .createTenant(new TenantDTO(null, tenantId, tenantName, tenantDescription));
+        .createTenant(new TenantDTO(null, id, tenantName, tenantDescription));
   }
 
   @Test
   void createTenantShouldReturnAllDetails() {
     // given
     final var tenantName = "Test Tenant";
-    final var tenantId = "tenant-test-id";
+    final var tenantId = "tenantId";
     final var tenantDescription = "Test description";
     final var tenantKey = 100L;
     when(tenantServices.createTenant(new TenantDTO(null, tenantId, tenantName, tenantDescription)))
@@ -156,6 +154,77 @@ public class TenantControllerTest extends RestControllerTest {
               "status": 400,
               "title": "INVALID_ARGUMENT",
               "detail": "No tenantId provided.",
+              "instance": "%s"
+            }"""
+                .formatted(TENANT_BASE_URL));
+
+    // then
+    verifyNoInteractions(tenantServices);
+  }
+
+  @ParameterizedTest
+  @ValueSource(
+      strings = {
+        "foo~", "foo!", "foo#", "foo$", "foo%", "foo^", "foo&", "foo*", "foo(", "foo)", "foo=",
+        "foo+", "foo{", "foo[", "foo}", "foo]", "foo|", "foo\\", "foo:", "foo;", "foo\"", "foo'",
+        "foo<", "foo>", "foo,", "foo?", "foo/", "foo ", "foo@", "foo_", "foo.", "foo\t", "foo\n",
+        "foo\r",
+      })
+  void shouldRejectTenantCreationWithIllegalCharactersInId(final String id) {
+    // given
+    final var tenantName = "Tenant Name";
+    final var request = new TenantCreateRequest().tenantId(id).name(tenantName);
+
+    // when
+    webClient
+        .post()
+        .uri(TENANT_BASE_URL)
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectBody()
+        .json(
+            """
+            {
+              "type": "about:blank",
+              "status": 400,
+              "title": "INVALID_ARGUMENT",
+              "detail": "The provided tenantId contains illegal characters. It must match the pattern '[a-zA-Z0-9]+'.",
+              "instance": "%s"
+            }"""
+                .formatted(TENANT_BASE_URL));
+
+    // then
+    verifyNoInteractions(tenantServices);
+  }
+
+  @Test
+  void shouldRejectTenantWithTooLongId() {
+    // given
+    final var id = "x".repeat(257);
+    final var request = new TenantCreateRequest().tenantId(id).name("Tenant name");
+
+    // when
+    webClient
+        .post()
+        .uri(TENANT_BASE_URL)
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectBody()
+        .json(
+            """
+            {
+              "type": "about:blank",
+              "status": 400,
+              "title": "INVALID_ARGUMENT",
+              "detail": "The provided tenantId exceeds the limit of 256 characters.",
               "instance": "%s"
             }"""
                 .formatted(TENANT_BASE_URL));

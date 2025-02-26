@@ -32,4 +32,6 @@ public final class ErrorMessages {
   public static final String ERROR_MESSAGE_ALL_REQUIRED_FIELD = "All %s are required";
   public static final String ERROR_MESSAGE_TOO_MANY_CHARACTERS =
       "The provided %s exceeds the limit of %d characters";
+  public static final String ERROR_MESSAGE_ILLEGAL_CHARACTER =
+      "The provided %s contains illegal characters. It must match the pattern '%s'";
 }

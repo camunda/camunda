@@ -17,8 +17,8 @@ import io.camunda.zeebe.it.util.ZeebeAssertHelper;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
+import io.camunda.zeebe.test.util.Strings;
 import java.time.Duration;
-import java.util.UUID;
 import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -26,7 +26,7 @@ import org.junit.jupiter.api.Test;
 @ZeebeIntegration
 class RemoveUserFromTenantTest {
 
-  private static final String TENANT_ID = "tenant-id";
+  private static final String TENANT_ID = "tenantId";
   private static final String USERNAME = "username";
 
   @TestZeebe
@@ -69,7 +69,7 @@ class RemoveUserFromTenantTest {
   @Test
   void shouldRejectUnassignIfTenantDoesNotExist() {
     // Given
-    final var invalidTenantId = UUID.randomUUID().toString();
+    final var invalidTenantId = Strings.newRandomValidIdentityId();
 
     // When / Then
     assertThatThrownBy(
@@ -89,7 +89,7 @@ class RemoveUserFromTenantTest {
   @Test
   void shouldRejectUnassignIfUserDoesNotExist() {
     // Given
-    final var invalidUsername = UUID.randomUUID().toString();
+    final var invalidUsername = Strings.newRandomValidUsername();
 
     // When / Then
     assertThatThrownBy(
