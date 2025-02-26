@@ -564,11 +564,11 @@ public final class ZeebeAssertHelper {
   }
 
   public static void assertGroupUnassignedFromTenant(
-      final long tenantKey, final Consumer<TenantRecordValue> consumer) {
+      final String tenantId, final Consumer<TenantRecordValue> consumer) {
     final var tenantRecordValue =
         RecordingExporter.tenantRecords()
             .withIntent(TenantIntent.ENTITY_REMOVED)
-            .withTenantKey(tenantKey)
+            .withTenantId(tenantId)
             .getFirst()
             .getValue();
 
