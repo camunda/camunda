@@ -81,6 +81,9 @@
             },
             "priority": {
               "type": "integer"
+            },
+            "deniedReason": {
+              "type": "text"
             }
           }
         }
