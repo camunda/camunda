@@ -85,14 +85,6 @@ public class TenantServices extends SearchQueryService<TenantServices, TenantQue
     return sendBrokerRequest(new BrokerTenantDeleteRequest(tenantId));
   }
 
-  public CompletableFuture<TenantRecord> addMember(
-      final Long tenantKey, final EntityType entityType, final long entityKey) {
-    return sendBrokerRequest(
-        BrokerTenantEntityRequest.createAddRequest()
-            .setTenantKey(tenantKey)
-            .setEntity(entityType, entityKey));
-  }
-
   /**
    * This is a temporary method which can be removed once groups and mappings are refactored to work
    * with ids instead of keys.

@@ -564,7 +564,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/UserSearchResult"
 
-  /tenants/{tenantKey}/mapping-rules/{mappingKey}:
+  /tenants/{tenantId}/mapping-rules/{mappingKey}:
     put:
       tags:
         - Tenant
@@ -572,7 +572,7 @@ paths:
       summary: Assign a mapping rule to a tenant
       description: Assign a single mapping rule to a specified tenant.
       parameters:
-        - name: tenantKey
+        - name: tenantId
           in: path
           required: true
           description: The unique identifier of the tenant.
