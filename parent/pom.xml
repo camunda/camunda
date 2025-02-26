@@ -85,7 +85,7 @@
     <version.slf4j>2.0.17</version.slf4j>
     <version.snakeyaml>2.2</version.snakeyaml>
     <version.javax>1.3.2</version.javax>
-    <version.wiremock>2.35.2</version.wiremock>
+    <version.wiremock>3.10.0</version.wiremock>
     <version.conscrypt>2.5.2</version.conscrypt>
     <version.asm>9.3</version.asm>
     <version.testcontainers>1.19.8</version.testcontainers>
@@ -866,8 +866,8 @@
       </dependency>
 
       <dependency>
-        <groupId>com.github.tomakehurst</groupId>
-        <artifactId>wiremock-jre8</artifactId>
+        <groupId>org.wiremock</groupId>
+        <artifactId>wiremock-standalone</artifactId>
         <version>${version.wiremock}</version>
       </dependency>
 
@@ -1140,13 +1140,6 @@
         <groupId>net.java.dev.jna</groupId>
         <artifactId>jna</artifactId>
         <version>${version.jna}</version>
-      </dependency>
-
-      <!-- between wiremock's own transitive dependencies -->
-      <dependency>
-        <groupId>javax.servlet</groupId>
-        <artifactId>servlet-api</artifactId>
-        <version>${version.servlet-api}</version>
       </dependency>
 
       <!-- between httpasyncclient and elasticsearch-rest-client -->
