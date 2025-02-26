@@ -51,6 +51,8 @@ public abstract class TasklistZeebeIntegrationTest extends SessionlessTasklistZe
   public void after() {
     setDefaultCurrentUser();
     authenticationUtil.close();
+
+    // Mock tenant service behaviour
     super.after();
   }
 

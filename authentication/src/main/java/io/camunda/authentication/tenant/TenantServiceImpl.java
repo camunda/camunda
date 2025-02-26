@@ -9,12 +9,9 @@ package io.camunda.authentication.tenant;
 
 import io.camunda.security.configuration.SecurityConfiguration;
 import java.util.List;
-import org.apache.commons.collections4.CollectionUtils;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Component;
 import org.springframework.web.context.request.RequestContextHolder;
 
-@Component
 public class TenantServiceImpl implements TenantService {
 
   @Autowired private SecurityConfiguration securityConfiguration;
@@ -34,10 +31,10 @@ public class TenantServiceImpl implements TenantService {
 
     final List<String> tenants = tenantsIds();
 
-    if (CollectionUtils.isNotEmpty(tenants)) {
-      return AuthenticatedTenants.assignedTenants(tenants);
-    } else {
+    if (tenants == null || tenants.isEmpty()) { // Ensure tenants is not null
       return AuthenticatedTenants.noTenantsAssigned();
+    } else {
+      return AuthenticatedTenants.assignedTenants(tenants);
     }
   }
 

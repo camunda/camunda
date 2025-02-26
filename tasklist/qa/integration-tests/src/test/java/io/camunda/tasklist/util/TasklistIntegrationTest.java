@@ -10,6 +10,7 @@ package io.camunda.tasklist.util;
 import static org.mockito.Mockito.when;
 
 import io.camunda.authentication.service.CamundaUserService;
+import io.camunda.authentication.tenant.TenantServiceConfig;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.zeebe.PartitionHolder;
 import java.time.OffsetDateTime;
@@ -26,7 +27,7 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 @ExtendWith(SpringExtension.class)
 @SpringBootTest(
-    classes = TestApplication.class,
+    classes = {TestApplication.class, TenantServiceConfig.class},
     properties = {
       TasklistProperties.PREFIX + ".importer.startLoadingDataOnStartup = false",
       TasklistProperties.PREFIX + ".archiver.rolloverEnabled = false",
@@ -41,6 +42,7 @@ public abstract class TasklistIntegrationTest {
 
   protected OffsetDateTime testStartTime;
   @Autowired private ApplicationContext applicationContext;
+
   @MockBean private CamundaUserService camundaUserService;
 
   @BeforeEach

@@ -9,6 +9,7 @@ package io.camunda.tasklist.webapp.security.se;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.authentication.tenant.TenantServiceConfig;
 import io.camunda.tasklist.es.RetryElasticsearchClient;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.qa.util.TestElasticsearchSchemaManager;
@@ -32,6 +33,7 @@ import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
       WebSecurityConfig.class,
       OAuth2WebConfigurer.class,
       RetryElasticsearchClient.class,
+      TenantServiceConfig.class
     },
     properties = {
       TasklistProperties.PREFIX + ".importer.startLoadingDataOnStartup = false",
