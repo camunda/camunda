@@ -12,6 +12,8 @@ import io.camunda.zeebe.gateway.impl.configuration.LongPollingCfg;
 import io.camunda.zeebe.gateway.impl.job.ActivateJobsHandler;
 import io.camunda.zeebe.gateway.impl.job.LongPollingActivateJobsHandler;
 import io.camunda.zeebe.gateway.impl.job.RoundRobinActivateJobsHandler;
+import io.camunda.zeebe.gateway.metrics.LongPollingMetrics;
+import io.camunda.zeebe.gateway.metrics.LongPollingMetricsDoc;
 import io.camunda.zeebe.gateway.protocol.rest.JobActivationResult;
 import io.camunda.zeebe.gateway.rest.ConditionalOnRestGatewayEnabled;
 import io.camunda.zeebe.gateway.rest.ResponseMapper;
@@ -20,7 +22,6 @@ import io.camunda.zeebe.gateway.rest.controller.ResponseObserverProvider;
 import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.ActorScheduler;
 import io.micrometer.core.instrument.MeterRegistry;
-import io.micrometer.core.instrument.composite.CompositeMeterRegistry;
 import java.util.concurrent.CompletableFuture;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
@@ -81,12 +82,6 @@ public class JobHandlerConfiguration {
 
   private LongPollingActivateJobsHandler<JobActivationResult> buildLongPollingHandler(
       final BrokerClient brokerClient) {
-    // once long polling is removed from the gRPC gateway, we can remove the differentiation here
-    // with the extra "gateway" label
-    final var restRegistry = new CompositeMeterRegistry();
-    restRegistry.add(meterRegistry);
-    restRegistry.config().commonTags("gateway", "rest");
-
     return LongPollingActivateJobsHandler.<JobActivationResult>newBuilder()
         .setBrokerClient(brokerClient)
         .setMaxMessageSize(config.maxMessageSize().toBytes())
@@ -96,7 +91,8 @@ public class JobHandlerConfiguration {
         .setActivationResultMapper(ResponseMapper::toActivateJobsResponse)
         .setNoJobsReceivedExceptionProvider(RuntimeException::new)
         .setRequestCanceledExceptionProvider(RuntimeException::new)
-        .setMeterRegistry(restRegistry)
+        .setMetrics(
+            new LongPollingMetrics(meterRegistry, LongPollingMetricsDoc.GatewayProtocol.REST))
         .build();
   }
 

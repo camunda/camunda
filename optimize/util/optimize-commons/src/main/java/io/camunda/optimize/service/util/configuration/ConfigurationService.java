@@ -36,13 +36,10 @@ import com.jayway.jsonpath.ReadContext;
 import com.jayway.jsonpath.TypeRef;
 import io.camunda.optimize.dto.optimize.SchedulerConfig;
 import io.camunda.optimize.dto.optimize.ZeebeConfigDto;
-import io.camunda.optimize.dto.optimize.datasource.EngineDataSourceDto;
 import io.camunda.optimize.dto.optimize.datasource.IngestedDataSourceDto;
 import io.camunda.optimize.service.exceptions.OptimizeConfigurationException;
 import io.camunda.optimize.service.util.configuration.analytics.AnalyticsConfiguration;
 import io.camunda.optimize.service.util.configuration.cleanup.CleanupConfiguration;
-import io.camunda.optimize.service.util.configuration.engine.EngineAuthenticationConfiguration;
-import io.camunda.optimize.service.util.configuration.engine.EngineConfiguration;
 import io.camunda.optimize.service.util.configuration.engine.UserIdentityCacheConfiguration;
 import io.camunda.optimize.service.util.configuration.engine.UserTaskIdentityCacheConfiguration;
 import io.camunda.optimize.service.util.configuration.security.AuthConfiguration;
@@ -52,9 +49,7 @@ import io.camunda.optimize.service.util.configuration.users.UsersConfiguration;
 import io.camunda.optimize.util.SuppressionConstants;
 import java.io.InputStream;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.Properties;
 import org.apache.commons.lang3.StringUtils;
@@ -66,8 +61,6 @@ public class ConfigurationService {
   private static final String ERROR_NO_ENGINE_WITH_ALIAS = "No Engine configured with alias ";
 
   // @formatter:off
-  private static final TypeRef<HashMap<String, EngineConfiguration>> ENGINES_MAP_TYPEREF =
-      new TypeRef<>() {};
   private static final TypeRef<List<String>> LIST_OF_STRINGS_TYPE_REF = new TypeRef<>() {};
   private static final Logger LOG = org.slf4j.LoggerFactory.getLogger(ConfigurationService.class);
   // @formatter:on
@@ -79,7 +72,6 @@ public class ConfigurationService {
   private ReadContext configJsonContext;
   private SecurityConfiguration securityConfiguration;
   private UsersConfiguration usersConfiguration;
-  private Map<String, EngineConfiguration> configuredEngines;
   private ZeebeConfiguration configuredZeebe;
   private String engineDateFormat;
   private Long initialBackoff;
@@ -257,19 +249,6 @@ public class ConfigurationService {
     this.configJsonContext = configJsonContext;
   }
 
-  public Map<String, EngineConfiguration> getConfiguredEngines() {
-    if (configuredEngines == null) {
-      configuredEngines =
-          configJsonContext.read(
-              ConfigurationServiceConstants.CONFIGURED_ENGINES, ENGINES_MAP_TYPEREF);
-    }
-    return configuredEngines;
-  }
-
-  public void setConfiguredEngines(final Map<String, EngineConfiguration> configuredEngines) {
-    this.configuredEngines = configuredEngines;
-  }
-
   public ZeebeConfiguration getConfiguredZeebe() {
     if (configuredZeebe == null) {
       configuredZeebe =
@@ -361,31 +340,6 @@ public class ConfigurationService {
 
   public void setMaximumBackoff(final Long maximumBackoff) {
     this.maximumBackoff = maximumBackoff;
-  }
-
-  public int getEngineConnectTimeout() {
-    if (engineConnectTimeout == null) {
-      engineConnectTimeout =
-          configJsonContext.read(
-              ConfigurationServiceConstants.ENGINE_CONNECT_TIMEOUT, Integer.class);
-    }
-    return engineConnectTimeout;
-  }
-
-  public void setEngineConnectTimeout(final Integer engineConnectTimeout) {
-    this.engineConnectTimeout = engineConnectTimeout;
-  }
-
-  public int getEngineReadTimeout() {
-    if (engineReadTimeout == null) {
-      engineReadTimeout =
-          configJsonContext.read(ConfigurationServiceConstants.ENGINE_READ_TIMEOUT, Integer.class);
-    }
-    return engineReadTimeout;
-  }
-
-  public void setEngineReadTimeout(final Integer engineReadTimeout) {
-    this.engineReadTimeout = engineReadTimeout;
   }
 
   public int getCurrentTimeBackoffMilliseconds() {
@@ -868,79 +822,13 @@ public class ConfigurationService {
     this.maxStatusConnections = maxStatusConnections;
   }
 
-  public Optional<String> getEngineDefaultTenantIdOfCustomEngine(final String engineAlias) {
-    return getEngineConfiguration(engineAlias)
-        .map(EngineConfiguration::getDefaultTenantId)
-        .orElseThrow(
-            () -> new OptimizeConfigurationException(ERROR_NO_ENGINE_WITH_ALIAS + engineAlias));
-  }
-
-  public List<String> getExcludedTenants(final String engineAlias) {
-    return getEngineConfiguration(engineAlias)
-        .map(EngineConfiguration::getExcludedTenants)
-        .orElseThrow(
-            () -> new OptimizeConfigurationException(ERROR_NO_ENGINE_WITH_ALIAS + engineAlias));
-  }
-
-  public String getEngineRestApiEndpointOfCustomEngine(final String engineAlias) {
-    return getEngineRestApiEndpoint(engineAlias) + "/engine/" + getEngineName(engineAlias);
-  }
-
-  public String getDefaultEngineAuthenticationUser(final String engineAlias) {
-    return getEngineConfiguration(engineAlias)
-        .map(EngineConfiguration::getAuthentication)
-        .map(EngineAuthenticationConfiguration::getUser)
-        .orElseThrow(
-            () -> new OptimizeConfigurationException(ERROR_NO_ENGINE_WITH_ALIAS + engineAlias));
-  }
-
-  public String getDefaultEngineAuthenticationPassword(final String engineAlias) {
-    return getEngineConfiguration(engineAlias)
-        .map(EngineConfiguration::getAuthentication)
-        .map(EngineAuthenticationConfiguration::getPassword)
-        .orElseThrow(
-            () -> new OptimizeConfigurationException(ERROR_NO_ENGINE_WITH_ALIAS + engineAlias));
-  }
-
-  /**
-   * This method is mostly for internal usage. All API invocations should rely on {@link
-   * #getEngineRestApiEndpointOfCustomEngine(String)}
-   *
-   * @param engineAlias - an alias of configured engine
-   * @return <b>raw</b> REST endpoint, without engine suffix
-   */
-  private String getEngineRestApiEndpoint(final String engineAlias) {
-    return getEngineConfiguration(engineAlias)
-        .map(EngineConfiguration::getRest)
-        .orElseThrow(
-            () -> new OptimizeConfigurationException(ERROR_NO_ENGINE_WITH_ALIAS + engineAlias));
-  }
-
-  public String getEngineName(final String engineAlias) {
-    return getEngineConfiguration(engineAlias)
-        .map(EngineConfiguration::getName)
-        .orElseThrow(
-            () -> new OptimizeConfigurationException(ERROR_NO_ENGINE_WITH_ALIAS + engineAlias));
-  }
-
   public boolean isImportEnabled(final SchedulerConfig dataSourceDto) {
-    if (dataSourceDto instanceof final EngineDataSourceDto engineSource) {
-      return getEngineConfiguration(engineSource.getName())
-          .map(EngineConfiguration::isImportEnabled)
-          .orElseThrow(
-              () ->
-                  new OptimizeConfigurationException(
-                      ERROR_NO_ENGINE_WITH_ALIAS + engineSource.getName()));
-    } else if (dataSourceDto instanceof ZeebeConfigDto) {
+    if (dataSourceDto instanceof ZeebeConfigDto) {
       return getConfiguredZeebe().isEnabled();
     } else if (dataSourceDto instanceof IngestedDataSourceDto) {
       return getExternalVariableConfiguration().getImportConfiguration().isEnabled();
     }
     throw new OptimizeConfigurationException("Invalid data import source");
-  }
-
-  public Optional<EngineConfiguration> getEngineConfiguration(final String engineAlias) {
-    return Optional.ofNullable(getConfiguredEngines().get(engineAlias));
   }
 
   public Properties getQuartzProperties() {
@@ -1250,11 +1138,6 @@ public class ConfigurationService {
   public void setExternalVariableConfiguration(
       final ExternalVariableConfiguration externalVariableConfiguration) {
     this.externalVariableConfiguration = externalVariableConfiguration;
-  }
-
-  @JsonIgnore
-  public VariableIngestionConfiguration getVariableIngestionConfiguration() {
-    return getExternalVariableConfiguration().getVariableIngestion();
   }
 
   @JsonIgnore

@@ -9,14 +9,12 @@ package io.camunda.tasklist;
 
 import io.camunda.authentication.tenant.TenantAttributeHolder;
 import io.camunda.operate.webapp.security.UserService;
-import io.camunda.tasklist.property.IdentityProperties;
 import io.camunda.tasklist.webapp.dto.UserDTO;
 import io.camunda.tasklist.webapp.security.AssigneeMigrator;
 import io.camunda.tasklist.webapp.security.AssigneeMigratorNoImpl;
 import io.camunda.tasklist.webapp.security.Permission;
 import io.camunda.tasklist.webapp.security.TasklistProfileService;
 import io.camunda.tasklist.webapp.security.UserReader;
-import io.camunda.tasklist.webapp.security.identity.IdentityAuthorizationService;
 import io.camunda.tasklist.webapp.security.tenant.TenantService;
 import java.util.List;
 import java.util.Optional;
@@ -41,7 +39,6 @@ import org.springframework.security.core.Authentication;
 @Configuration(proxyBeanMethods = false)
 @Profile("tasklist & operate")
 public class TasklistSecurityStubsConfiguration {
-
   /** UserReader that gets user details using Operate's UserService */
   @Bean
   public UserReader stubUserReader(final UserService userService) {
@@ -113,12 +110,6 @@ public class TasklistSecurityStubsConfiguration {
   @Bean
   public AssigneeMigrator stubAssigneeMigrator() {
     return new AssigneeMigratorNoImpl();
-  }
-
-  /** stub to IdentityAuthorizationService that provides full access to user */
-  @Bean
-  public IdentityAuthorizationService stubIdentityAuthorizationService() {
-    return () -> List.of(IdentityProperties.FULL_GROUP_ACCESS);
   }
 
   @Bean

@@ -41,6 +41,9 @@ import io.camunda.zeebe.scheduler.testing.TestConcurrencyControl;
 import io.camunda.zeebe.snapshots.testing.TestFileBasedSnapshotStore;
 import io.camunda.zeebe.util.FileUtil;
 import io.camunda.zeebe.util.collection.Tuple;
+import io.camunda.zeebe.util.micrometer.MicrometerUtil;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.Tags;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.io.File;
 import java.io.IOException;
@@ -89,6 +92,7 @@ public final class ControllableRaftContexts {
   private final int nodeCount;
   private final Map<MemberId, RaftContext> raftServers = new HashMap<>();
   private final Map<MemberId, TestFileBasedSnapshotStore> snapshotStores = new HashMap<>();
+  private final Map<MemberId, MeterRegistry> meterRegistries = new HashMap<>();
   private Duration electionTimeout;
   private Duration heartbeatTimeout;
   private int nextEntry = 0;
@@ -140,7 +144,7 @@ public final class ControllableRaftContexts {
     messageQueue.clear();
     leadersAtTerms.clear();
     directory = null;
-    meterRegistry.close();
+    MicrometerUtil.close(meterRegistry);
   }
 
   private void joinRaftServers() throws InterruptedException, ExecutionException, TimeoutException {
@@ -179,7 +183,8 @@ public final class ControllableRaftContexts {
         new TestFileBasedSnapshotStore(
             nodeId,
             getMemberDirectory(directory, memberId.toString()).toPath().resolve("snapshots"),
-            new TestConcurrencyControl());
+            new TestConcurrencyControl(),
+            meterRegistries.computeIfAbsent(memberId, this::meterRegistryForMember));
     snapshotStores.put(memberId, snapshotStore);
     final RaftContext raftContext =
         createRaftContext(
@@ -202,9 +207,13 @@ public final class ControllableRaftContexts {
             () -> random,
             RaftElectionConfig.ofPriorityElection(nodeCount, Integer.parseInt(memberId.id()) + 1),
             new RaftPartitionConfig(),
-            meterRegistry);
+            meterRegistries.computeIfAbsent(memberId, this::meterRegistryForMember));
     raft.setEntryValidator(new NoopEntryValidator());
     return raft;
+  }
+
+  private MeterRegistry meterRegistryForMember(final MemberId m) {
+    return MicrometerUtil.wrap(meterRegistry, Tags.of("memberId", m.id()));
   }
 
   private RaftThreadContextFactory getRaftThreadContextFactory(final MemberId memberId) {
@@ -376,6 +385,7 @@ public final class ControllableRaftContexts {
     raftServers.get(memberId).close();
     deterministicExecutors.remove(memberId).close();
     snapshotStores.get(memberId).close();
+    MicrometerUtil.close(meterRegistries.get(memberId));
     final var newContext = createRaftContextForMember(random, Integer.parseInt(memberId.id()));
     newContext.getCluster().bootstrap(raftServers.keySet());
   }
@@ -388,6 +398,7 @@ public final class ControllableRaftContexts {
     LOG.info("Shutting down member {}", memberId.id());
     raftServers.get(memberId).close();
     deterministicExecutors.remove(memberId).close();
+    MicrometerUtil.close(meterRegistries.get(memberId));
     final var nodeBeforeRestart = raftServers.remove(memberId);
 
     // Wait until the other two members become a quorum and elect a leader. Otherwise, the restarted

@@ -127,6 +127,10 @@ public class BrokerITInvocationProvider
     return withAdditionalSecurityConfig(cfg -> cfg.getAuthorizations().setEnabled(true));
   }
 
+  public BrokerITInvocationProvider withUnprotectedApi() {
+    return withAdditionalSecurityConfig(cfg -> cfg.getAuthentication().setUnprotectedApi(true));
+  }
+
   public BrokerITInvocationProvider withUsers(final User... users) {
     registeredUsers.addAll(List.of(users));
     return this;

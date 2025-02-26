@@ -19,8 +19,8 @@ import io.camunda.operate.util.apps.nobeans.TestApplicationWithNoBeans;
 import io.camunda.operate.webapp.reader.DecisionInstanceReader;
 import io.camunda.operate.webapp.rest.DecisionInstanceRestService;
 import io.camunda.operate.webapp.rest.dto.dmn.DecisionInstanceDto;
-import io.camunda.operate.webapp.security.identity.IdentityPermission;
 import io.camunda.operate.webapp.security.permission.PermissionsService;
+import io.camunda.zeebe.protocol.record.value.PermissionType;
 import org.junit.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
@@ -52,7 +52,8 @@ public class DecisionInstanceRestServiceIT extends OperateAbstractIT {
     when(decisionInstanceReader.getDecisionInstance(decisionInstanceId))
         .thenReturn(new DecisionInstanceDto().setDecisionId(bpmnDecisionId));
     when(permissionsService.permissionsEnabled()).thenReturn(true);
-    when(permissionsService.hasPermissionForDecision(bpmnDecisionId, IdentityPermission.READ))
+    when(permissionsService.hasPermissionForDecision(
+            bpmnDecisionId, PermissionType.READ_DECISION_INSTANCE))
         .thenReturn(false);
     final MvcResult mvcResult =
         getRequestShouldFailWithNoAuthorization(getDecisionInstanceByIdUrl(decisionInstanceId));
@@ -69,7 +70,8 @@ public class DecisionInstanceRestServiceIT extends OperateAbstractIT {
     when(decisionInstanceReader.getDecisionInstance(decisionInstanceId))
         .thenReturn(new DecisionInstanceDto().setDecisionId(bpmnDecisionId));
     when(permissionsService.permissionsEnabled()).thenReturn(true);
-    when(permissionsService.hasPermissionForDecision(bpmnDecisionId, IdentityPermission.READ))
+    when(permissionsService.hasPermissionForDecision(
+            bpmnDecisionId, PermissionType.READ_DECISION_INSTANCE))
         .thenReturn(false);
     final MvcResult mvcResult =
         getRequestShouldFailWithNoAuthorization(getDecisionInstanceDrdByIdUrl(decisionInstanceId));

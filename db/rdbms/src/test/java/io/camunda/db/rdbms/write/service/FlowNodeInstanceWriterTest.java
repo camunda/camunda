@@ -31,12 +31,14 @@ class FlowNodeInstanceWriterTest {
   private static final OffsetDateTime NOW = OffsetDateTime.now();
 
   private ExecutionQueue executionQueue;
+  private FlowNodeInstanceMapper mapper;
   private FlowNodeInstanceWriter writer;
 
   @BeforeEach
   void setUp() {
     executionQueue = mock(DefaultExecutionQueue.class);
-    writer = new FlowNodeInstanceWriter(executionQueue);
+    mapper = mock(FlowNodeInstanceMapper.class);
+    writer = new FlowNodeInstanceWriter(executionQueue, mapper);
   }
 
   @Test

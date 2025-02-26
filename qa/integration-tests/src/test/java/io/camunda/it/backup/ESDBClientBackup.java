@@ -16,9 +16,14 @@ import co.elastic.clients.elasticsearch.snapshot.Repository;
 import co.elastic.clients.elasticsearch.snapshot.RestoreRequest;
 import co.elastic.clients.json.jackson.JacksonJsonpMapper;
 import co.elastic.clients.transport.rest_client.RestClientTransport;
+import io.camunda.webapps.backup.BackupRepository;
+import io.camunda.webapps.backup.repository.BackupRepositoryPropsRecord;
+import io.camunda.webapps.backup.repository.SnapshotNameProvider;
+import io.camunda.webapps.backup.repository.elasticsearch.ElasticsearchBackupRepository;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.List;
+import java.util.concurrent.Executor;
 import org.apache.http.HttpHost;
 import org.elasticsearch.client.RestClient;
 
@@ -26,9 +31,11 @@ public class ESDBClientBackup implements BackupDBClient {
 
   final RestClient restClient;
   final ElasticsearchClient esClient;
+  private final Executor executor;
 
-  public ESDBClientBackup(final String url) throws IOException {
+  public ESDBClientBackup(final String url, final Executor executor) throws IOException {
     restClient = RestClient.builder(HttpHost.create(url)).build();
+    this.executor = executor;
     esClient =
         new ElasticsearchClient(new RestClientTransport(restClient, new JacksonJsonpMapper()));
   }
@@ -62,6 +69,13 @@ public class ESDBClientBackup implements BackupDBClient {
   @Override
   public void deleteAllIndices(final String indexPrefix) throws IOException {
     esClient.indices().delete(DeleteIndexRequest.of(b -> b.index("*")));
+  }
+
+  @Override
+  public BackupRepository zeebeBackupRepository(
+      final String repositoryName, final SnapshotNameProvider snapshotNameProvider) {
+    return new ElasticsearchBackupRepository(
+        esClient, new BackupRepositoryPropsRecord("current", ""), snapshotNameProvider, executor);
   }
 
   @Override

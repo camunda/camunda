@@ -36,12 +36,12 @@ import io.camunda.operate.webapp.rest.exception.InvalidRequestException;
 import io.camunda.operate.webapp.rest.exception.NotAuthorizedException;
 import io.camunda.operate.webapp.rest.validation.ModifyProcessInstanceRequestValidator;
 import io.camunda.operate.webapp.rest.validation.ProcessInstanceRequestValidator;
-import io.camunda.operate.webapp.security.identity.IdentityPermission;
 import io.camunda.operate.webapp.security.permission.PermissionsService;
 import io.camunda.operate.webapp.writer.BatchOperationWriter;
 import io.camunda.webapps.schema.entities.operate.SequenceFlowEntity;
 import io.camunda.webapps.schema.entities.operation.BatchOperationEntity;
 import io.camunda.webapps.schema.entities.operation.OperationType;
+import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.micrometer.core.annotation.Timed;
 import io.swagger.v3.oas.annotations.Operation;
 import jakarta.validation.ConstraintViolationException;
@@ -128,9 +128,9 @@ public class ProcessInstanceRestService extends InternalAPIErrorController {
       @RequestBody final CreateOperationRequestDto operationRequest) {
     processInstanceRequestValidator.validateCreateOperationRequest(operationRequest, id);
     if (operationRequest.getOperationType() == OperationType.DELETE_PROCESS_INSTANCE) {
-      checkIdentityPermission(Long.valueOf(id), IdentityPermission.DELETE_PROCESS_INSTANCE);
+      checkIdentityPermission(Long.valueOf(id), PermissionType.DELETE_PROCESS_INSTANCE);
     } else {
-      checkIdentityPermission(Long.valueOf(id), IdentityPermission.UPDATE_PROCESS_INSTANCE);
+      checkIdentityPermission(Long.valueOf(id), PermissionType.UPDATE_PROCESS_INSTANCE);
     }
     return batchOperationWriter.scheduleSingleOperation(Long.parseLong(id), operationRequest);
   }
@@ -143,7 +143,7 @@ public class ProcessInstanceRestService extends InternalAPIErrorController {
       @RequestBody final ModifyProcessInstanceRequestDto modifyRequest) {
     modifyRequest.setProcessInstanceKey(id);
     modifyProcessInstanceRequestValidator.validate(modifyRequest);
-    checkIdentityPermission(Long.valueOf(id), IdentityPermission.UPDATE_PROCESS_INSTANCE);
+    checkIdentityPermission(Long.valueOf(id), PermissionType.UPDATE_PROCESS_INSTANCE);
     return batchOperationWriter.scheduleModifyProcessInstance(modifyRequest);
   }
 
@@ -263,11 +263,11 @@ public class ProcessInstanceRestService extends InternalAPIErrorController {
   }
 
   private void checkIdentityReadPermission(final Long processInstanceKey) {
-    checkIdentityPermission(processInstanceKey, IdentityPermission.READ_PROCESS_INSTANCE);
+    checkIdentityPermission(processInstanceKey, PermissionType.READ_PROCESS_INSTANCE);
   }
 
   private void checkIdentityPermission(
-      final Long processInstanceKey, final IdentityPermission permission) {
+      final Long processInstanceKey, final PermissionType permission) {
     if (permissionsService.permissionsEnabled()
         && !permissionsService.hasPermissionForProcess(
             processInstanceReader.getProcessInstanceByKey(processInstanceKey).getBpmnProcessId(),

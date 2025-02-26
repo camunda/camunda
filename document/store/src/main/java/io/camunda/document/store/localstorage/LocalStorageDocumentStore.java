@@ -26,6 +26,7 @@ import io.camunda.zeebe.util.Either;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
@@ -35,7 +36,7 @@ import org.slf4j.Logger;
 public class LocalStorageDocumentStore implements DocumentStore {
 
   public static final String METADATA_SUFFIX = "-metadata";
-  private static final Logger LOG =
+  private static final Logger LOGGER =
       org.slf4j.LoggerFactory.getLogger(LocalStorageDocumentStore.class);
   private final Path storagePath;
   private final FileHandler fileHandler;
@@ -86,6 +87,24 @@ public class LocalStorageDocumentStore implements DocumentStore {
         () -> verifyContentHashInternal(documentId, contentHash), executor);
   }
 
+  @Override
+  public void validateSetup() {
+    try {
+      if (Files.exists(storagePath)) {
+        LOGGER.info("Successfully accessed storage path '{}'", storagePath);
+      } else {
+        LOGGER.warn(
+            "Storage path '{}' does not exist. {}", storagePath, SETUP_VALIDATION_FAILURE_MESSAGE);
+      }
+    } catch (final Exception e) {
+      LOGGER.warn(
+          "Could not verify the existence of the storage path '{}'. {}",
+          storagePath,
+          SETUP_VALIDATION_FAILURE_MESSAGE,
+          e);
+    }
+  }
+
   private Either<DocumentError, DocumentReference> createDocumentInternal(
       final DocumentCreationRequest request) {
     final String documentId = getDocumentId(request);
@@ -99,7 +118,7 @@ public class LocalStorageDocumentStore implements DocumentStore {
         fileHandler.delete(documentFilePath);
         fileHandler.delete(documentMetaDataFilePath);
       } catch (final IOException e) {
-        LOG.warn("Error deleting document or metadata with document ID {}", documentId);
+        LOGGER.warn("Error deleting document or metadata with document ID {}", documentId);
         return Either.left(new UnknownDocumentError(e));
       }
     }
@@ -120,7 +139,7 @@ public class LocalStorageDocumentStore implements DocumentStore {
       return Either.left(new UnknownDocumentError(e));
     }
     return Either.right(
-        new DocumentReference(request.documentId(), hashResult.contentHash(), request.metadata()));
+        new DocumentReference(documentId, hashResult.contentHash(), request.metadata()));
   }
 
   private Either<DocumentError, DocumentContent> getDocumentInternal(final String documentId) {

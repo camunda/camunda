@@ -13,7 +13,8 @@
   <select id="count" resultType="java.lang.Long">
     SELECT COUNT(*)
     FROM ${prefix}DECISION_INSTANCE di
-    LEFT JOIN ${prefix}DECISION_DEFINITION dd ON (di.DECISION_DEFINITION_KEY = dd.DECISION_DEFINITION_KEY)
+    LEFT JOIN ${prefix}DECISION_DEFINITION dd ON (di.DECISION_DEFINITION_KEY =
+    dd.DECISION_DEFINITION_KEY)
     <include refid="io.camunda.db.rdbms.sql.DecisionInstanceMapper.searchFilter"/>
   </select>
 
@@ -39,7 +40,8 @@
     dd.NAME AS DECISION_DEFINITION_NAME,
     dd.VERSION AS DECISION_DEFINITION_VERSION
     FROM ${prefix}DECISION_INSTANCE di
-    LEFT JOIN ${prefix}DECISION_DEFINITION dd ON (di.DECISION_DEFINITION_KEY = dd.DECISION_DEFINITION_KEY)
+    LEFT JOIN ${prefix}DECISION_DEFINITION dd ON (di.DECISION_DEFINITION_KEY =
+    dd.DECISION_DEFINITION_KEY)
     <include refid="io.camunda.db.rdbms.sql.DecisionInstanceMapper.searchFilter"/>
     ) t
     <include refid="io.camunda.db.rdbms.sql.Commons.keySetPageFilter"/>
@@ -60,7 +62,8 @@
     <if
       test="filter.decisionInstanceKeys != null and !filter.decisionInstanceKeys.isEmpty()">
       AND di.DECISION_INSTANCE_KEY IN
-      <foreach collection="filter.decisionInstanceKeys" item="key" open="(" close=")" separator=", ">
+      <foreach collection="filter.decisionInstanceKeys" item="key" open="(" close=")"
+        separator=", ">
         #{key}
       </foreach>
     </if>
@@ -72,7 +75,8 @@
     </if>
     <if test="filter.processDefinitionKeys != null and !filter.processDefinitionKeys.isEmpty()">
       AND di.PROCESS_DEFINITION_KEY IN
-      <foreach collection="filter.processDefinitionKeys" item="key" open="(" close=")" separator=", ">
+      <foreach collection="filter.processDefinitionKeys" item="key" open="(" close=")"
+        separator=", ">
         #{key}
       </foreach>
     </if>
@@ -84,26 +88,30 @@
     </if>
     <if test="filter.evaluationFailures != null and !filter.evaluationFailures.isEmpty()">
       AND di.EVALUATION_FAILURE IN
-      <foreach collection="filter.evaluationFailures" item="value" open="(" close=")" separator=", ">
+      <foreach collection="filter.evaluationFailures" item="value" open="(" close=")"
+        separator=", ">
         #{value}
       </foreach>
     </if>
     <if test="filter.decisionDefinitionIds != null and !filter.decisionDefinitionIds.isEmpty()">
       AND di.DECISION_DEFINITION_ID IN
-      <foreach collection="filter.decisionDefinitionIds" item="value" open="(" close=")" separator=", ">
+      <foreach collection="filter.decisionDefinitionIds" item="value" open="(" close=")"
+        separator=", ">
         #{value}
       </foreach>
     </if>
     <if test="filter.decisionDefinitionNames != null and !filter.decisionDefinitionNames.isEmpty()">
       AND dd.NAME IN
-      <foreach collection="filter.decisionDefinitionNames" item="value" open="(" close=")" separator=", ">
+      <foreach collection="filter.decisionDefinitionNames" item="value" open="(" close=")"
+        separator=", ">
         #{value}
       </foreach>
     </if>
     <if
       test="filter.decisionDefinitionVersions != null and !filter.decisionDefinitionVersions.isEmpty()">
       AND dd.VERSION IN
-      <foreach collection="filter.decisionDefinitionVersions" item="value" open="(" close=")" separator=", ">
+      <foreach collection="filter.decisionDefinitionVersions" item="value" open="(" close=")"
+        separator=", ">
         #{value}
       </foreach>
     </if>
@@ -185,7 +193,8 @@
                                    RESULT,
                                             EVALUATION_FAILURE,
                                             TENANT_ID,
-                                            PARTITION_ID)
+                                            PARTITION_ID,
+                                            HISTORY_CLEANUP_DATE)
     VALUES (#{decisionInstanceId}, #{decisionInstanceKey}, #{processInstanceKey},
             #{processDefinitionKey}, #{processDefinitionId},
             #{decisionDefinitionKey}, #{decisionDefinitionId},
@@ -194,14 +203,16 @@
             #{rootDecisionDefinitionKey},
             #{decisionType}, #{state},
             #{evaluationDate, jdbcType=TIMESTAMP}, #{result}, #{evaluationFailure},
-            #{tenantId}, #{partitionId})
+            #{tenantId}, #{partitionId},
+            #{historyCleanupDate, jdbcType=TIMESTAMP})
   </insert>
 
   <insert
     id="insertInput"
     parameterType="io.camunda.db.rdbms.write.domain.DecisionInstanceDbModel"
     flushCache="true">
-    INSERT INTO ${prefix}DECISION_INSTANCE_INPUT (DECISION_INSTANCE_ID, INPUT_ID, INPUT_NAME, INPUT_VALUE)
+    INSERT INTO ${prefix}DECISION_INSTANCE_INPUT (DECISION_INSTANCE_ID, INPUT_ID, INPUT_NAME,
+    INPUT_VALUE)
     VALUES
     <foreach collection="evaluatedInputs" item="item" separator=", ">
       (#{decisionInstanceId}, #{item.id}, #{item.name}, #{item.value})
@@ -268,5 +279,22 @@
       <arg column="RULE_INDEX" javaType="java.lang.Integer"/>
     </constructor>
   </resultMap>
+
+  <update
+    flushCache="true"
+    id="updateHistoryCleanupDate"
+    statementType="PREPARED">
+    UPDATE ${prefix}DECISION_INSTANCE
+    SET HISTORY_CLEANUP_DATE = #{historyCleanupDate, jdbcType=TIMESTAMP}
+    WHERE PROCESS_INSTANCE_KEY = #{processInstanceKey}
+  </update>
+
+  <delete
+    flushCache="true"
+    id="cleanupHistory"
+    statementType="PREPARED">
+    <bind name="tableName" value="'DECISION_INSTANCE'"/>
+    <include refid="io.camunda.db.rdbms.sql.Commons.historyCleanup"/>
+  </delete>
 
 </mapper>

@@ -82,6 +82,7 @@ import io.camunda.search.sort.VariableSort;
 import io.camunda.util.ObjectBuilder;
 import io.camunda.zeebe.gateway.protocol.rest.*;
 import io.camunda.zeebe.gateway.rest.util.KeyUtil;
+import io.camunda.zeebe.gateway.rest.util.ProcessInstanceStateConverter;
 import io.camunda.zeebe.gateway.rest.validator.RequestValidator;
 import io.camunda.zeebe.util.Either;
 import jakarta.validation.constraints.NotNull;
@@ -522,7 +523,7 @@ public final class SearchQueryRequestMapper {
           .map(mapToOperations(OffsetDateTime.class))
           .ifPresent(builder::endDateOperations);
       ofNullable(filter.getState())
-          .map(mapToOperations(String.class))
+          .map(mapToOperations(String.class, new ProcessInstanceStateConverter()))
           .ifPresent(builder::stateOperations);
       ofNullable(filter.getHasIncident()).ifPresent(builder::hasIncident);
       ofNullable(filter.getTenantId())

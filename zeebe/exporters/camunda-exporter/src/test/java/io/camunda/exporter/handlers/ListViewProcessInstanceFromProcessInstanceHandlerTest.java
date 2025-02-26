@@ -429,14 +429,17 @@ public class ListViewProcessInstanceFromProcessInstanceHandlerTest {
         .isEqualTo(ProcessInstanceState.CANCELED);
   }
 
-  @Test
-  void shouldUpdateStateForMigrateRecord() {
+  @ParameterizedTest
+  @EnumSource(
+      value = ProcessInstanceIntent.class,
+      names = {"ELEMENT_MIGRATED", "ANCESTOR_MIGRATED"},
+      mode = Mode.INCLUDE)
+  void shouldUpdateStateAfterMigration(final ProcessInstanceIntent intent) {
     // given
     final long timestamp = new Date().getTime();
     final Record<ProcessInstanceRecordValue> processInstanceRecord =
         factory.generateRecord(
-            ValueType.PROCESS_INSTANCE,
-            r -> r.withIntent(ProcessInstanceIntent.ELEMENT_MIGRATED).withTimestamp(timestamp));
+            ValueType.PROCESS_INSTANCE, r -> r.withIntent(intent).withTimestamp(timestamp));
 
     final String treePath =
         new TreePath()
