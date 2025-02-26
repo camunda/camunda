@@ -5,7 +5,7 @@ on:
     branches:
       - "main"
       - "stable/**"
-      - "release/**"
+      - "release**"
     paths:
       - ".ci/**"
       - ".github/actions/**"
