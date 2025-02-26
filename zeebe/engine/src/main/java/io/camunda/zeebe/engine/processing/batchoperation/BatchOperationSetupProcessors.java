@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.batchoperation;
 
+import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessors;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.protocol.record.ValueType;
@@ -18,13 +19,21 @@ public final class BatchOperationSetupProcessors {
   public static void addBatchOperationProcessors(
       final KeyGenerator keyGenerator,
       final TypedRecordProcessors typedRecordProcessors,
-      final Writers writers) {
+      final Writers writers, final CommandDistributionBehavior commandDistributionBehavior) {
     typedRecordProcessors
         .onCommand(
             ValueType.BATCH_OPERATION,
             BatchOperationIntent.CREATE,
             new BatchOperationActivateProcessor(
                 writers,
-                keyGenerator));
+                keyGenerator,
+                commandDistributionBehavior))
+        .onCommand(
+            ValueType.BATCH_OPERATION,
+            BatchOperationIntent.EXECUTE,
+            new BatchOperationExecuteProcessor(
+                writers,
+                keyGenerator,
+                commandDistributionBehavior));
   }
 }
