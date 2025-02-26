@@ -59,25 +59,25 @@ public class AdHocSubprocessActivityServices extends ApiServices<AdHocSubprocess
 
     final var processElement =
         modelInstance.getModelElementById(query.filter().adHocSubprocessId());
-    if (processElement instanceof final AdHocSubProcess adHocSubProcess) {
-      final var flowNodes = adHocSubProcess.getChildElementsByType(FlowNode.class);
-      final var rootActivities =
-          flowNodes.stream()
-              .filter(flowNode -> flowNode.getIncoming().isEmpty())
-              .map(
-                  flowNode ->
-                      toAdHocSubprocessActivityEntity(
-                          processDefinitionEntity, adHocSubProcess, flowNode))
-              .toList();
-
-      return new SearchQueryResult.Builder<AdHocSubprocessActivityEntity>()
-          .items(rootActivities)
-          .build();
+    if (!(processElement instanceof final AdHocSubProcess adHocSubProcess)) {
+      throw new NotFoundException(
+          "Failed to find Ad-Hoc Subprocess with ID '%s'"
+              .formatted(query.filter().adHocSubprocessId()));
     }
 
-    throw new NotFoundException(
-        "Failed to find Ad-Hoc Subprocess with ID '%s'"
-            .formatted(query.filter().adHocSubprocessId()));
+    final var flowNodes = adHocSubProcess.getChildElementsByType(FlowNode.class);
+    final var rootActivities =
+        flowNodes.stream()
+            .filter(flowNode -> flowNode.getIncoming().isEmpty())
+            .map(
+                flowNode ->
+                    toAdHocSubprocessActivityEntity(
+                        processDefinitionEntity, adHocSubProcess, flowNode))
+            .toList();
+
+    return new SearchQueryResult.Builder<AdHocSubprocessActivityEntity>()
+        .items(rootActivities)
+        .build();
   }
 
   private AdHocSubprocessActivityEntity toAdHocSubprocessActivityEntity(
