@@ -10,6 +10,7 @@ package io.camunda.application;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.application.StandaloneSchemaManager.BrokerBasedProperties;
 import io.camunda.application.listeners.ApplicationErrorListener;
+import io.camunda.operate.webapp.security.auth.OperateUserDetailsService;
 import io.camunda.zeebe.broker.exporter.context.ExporterConfiguration;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.configuration.ExporterCfg;
@@ -85,6 +86,7 @@ import org.springframework.context.annotation.Primary;
       "io.camunda.tasklist.property",
       "io.camunda.tasklist.schema",
     },
+    basePackageClasses = {OperateUserDetailsService.class},
     nameGenerator = FullyQualifiedAnnotationBeanNameGenerator.class)
 public class StandaloneSchemaManager {
 
@@ -130,6 +132,8 @@ public class StandaloneSchemaManager {
       applicationContext.getBean(io.camunda.operate.schema.SchemaStartup.class);
       applicationContext.getBean(io.camunda.tasklist.schema.SchemaStartup.class);
       new io.camunda.zeebe.exporter.SchemaManager(elasticsearchConfig).createSchema();
+
+      applicationContext.getBean(OperateUserDetailsService.class).initializeUsers();
     } catch (final Exception e) {
       LOG.error("Failed to create/update schemas", e);
       System.exit(-1);
