@@ -18,6 +18,7 @@ import io.camunda.service.ProcessInstanceServices.ProcessInstanceMigrateRequest;
 import io.camunda.service.ProcessInstanceServices.ProcessInstanceModifyRequest;
 import io.camunda.zeebe.gateway.protocol.rest.CancelProcessInstanceRequest;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceCreationInstruction;
+import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceFilter;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceMigrationInstruction;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceModificationInstruction;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceSearchQuery;
@@ -105,9 +106,11 @@ public class ProcessInstanceController {
 
   @CamundaPostMapping(path = "/batch-operations/cancellation")
   public CompletableFuture<ResponseEntity<Object>> cancelProcessInstanceBatchOperation(
-      @RequestBody(required = false) final ProcessInstanceSearchQuery query) {
-    return SearchQueryRequestMapper.toProcessInstanceQuery(query)
-        .fold(RestErrorMapper::mapProblemToCompletedResponse, this::batchOperationCancellation);
+      @RequestBody(required = false) final ProcessInstanceFilter filter) {
+
+    // TODO with Either and ProblemDetail
+    return this.batchOperationCancellation(
+        SearchQueryRequestMapper.toProcessInstanceFilter(filter));
   }
 
   private ResponseEntity<ProcessInstanceSearchQueryResult> search(
@@ -125,12 +128,12 @@ public class ProcessInstanceController {
   }
 
   private CompletableFuture<ResponseEntity<Object>> batchOperationCancellation(
-      final ProcessInstanceQuery query) {
+      final io.camunda.search.filter.ProcessInstanceFilter filter) {
     return RequestMapper.executeServiceMethod(
         () ->
             processInstanceServices
                 .withAuthentication(RequestMapper.getAuthentication())
-                .cancelProcessInstanceBatchOperationWithResult(query),
+                .cancelProcessInstanceBatchOperationWithResult(filter),
         ResponseEntity::ok); // TODO better response
   }
 
