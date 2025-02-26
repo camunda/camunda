@@ -34,7 +34,20 @@ public class MigrationsRunner implements ApplicationRunner {
   @Override
   public void run(final ApplicationArguments args) throws Exception {
     LOG.info("Starting {} migration tasks", migrators.size());
-    final Exception migrationsExceptions = new Exception("migration is failed");
+    /* Detach from main Spring thread */
+    new Thread(
+            () -> {
+              try {
+                startMigrators(args);
+              } catch (final Exception e) {
+                throw new RuntimeException(e);
+              }
+            })
+        .start();
+  }
+
+  private void startMigrators(final ApplicationArguments args) throws Exception {
+    final Exception migrationsExceptions = new Exception("migration failed");
     try (final var executor = Executors.newFixedThreadPool(migrators.size())) {
       final var results = executor.invokeAll(migrators);
       for (final var result : results) {
