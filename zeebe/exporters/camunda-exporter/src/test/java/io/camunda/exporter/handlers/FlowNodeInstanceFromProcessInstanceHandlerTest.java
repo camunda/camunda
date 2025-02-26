@@ -407,4 +407,37 @@ public class FlowNodeInstanceFromProcessInstanceHandlerTest {
     assertThat(flowNodeInstanceEntity.getPosition()).isNull();
     assertThat(flowNodeInstanceEntity.getTreePath()).isEqualTo(defaultTreePath);
   }
+
+  @ParameterizedTest
+  @EnumSource(BpmnElementType.class)
+  public void shouldSetFlowNodeType(final BpmnElementType bpmnElementType) {
+    // given
+    final ProcessInstanceRecordValue processInstanceRecordValue =
+        ImmutableProcessInstanceRecordValue.builder()
+            .from(factory.generateObject(ProcessInstanceRecordValue.class))
+            .withBpmnElementType(bpmnElementType)
+            .build();
+
+    final Record<ProcessInstanceRecordValue> processInstanceRecord =
+        factory.generateRecord(
+            ValueType.PROCESS_INSTANCE,
+            r ->
+                r.withIntent(ProcessInstanceIntent.ELEMENT_ACTIVATING)
+                    .withValue(processInstanceRecordValue));
+
+    // when
+    final FlowNodeInstanceEntity entity = new FlowNodeInstanceEntity();
+
+    underTest.updateEntity(processInstanceRecord, entity);
+
+    // then
+    assertThat(entity.getType())
+        .describedAs(
+            """
+            Should set flow-node type for element: %s. \
+            Probably, the BPMN element is new and need to be added to the enum FlowNodeType.""",
+            bpmnElementType)
+        .isNotNull()
+        .isNotEqualTo(FlowNodeType.UNKNOWN);
+  }
 }

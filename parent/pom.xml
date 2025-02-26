@@ -41,7 +41,7 @@
     <version.bouncycastle>1.79</version.bouncycastle>
     <version.camunda>7.22.0</version.camunda>
     <version.camunda-license-check>2.10.0</version.camunda-license-check>
-    <version.checkstyle>10.21.2</version.checkstyle>
+    <version.checkstyle>10.21.3</version.checkstyle>
     <version.commons-beanutils>1.9.4</version.commons-beanutils>
     <version.commons-lang>3.17.0</version.commons-lang>
     <version.commons-logging>1.3.5</version.commons-logging>
@@ -49,7 +49,7 @@
     <version.commons-codec>1.17.2</version.commons-codec>
     <version.commons-compress>1.27.1</version.commons-compress>
     <version.commons-validator>1.9.0</version.commons-validator>
-    <version.zstd-jni>1.5.6-10</version.zstd-jni>
+    <version.zstd-jni>1.5.7-1</version.zstd-jni>
     <version.commons-text>1.13.0</version.commons-text>
     <version.cron-utils>9.2.1</version.cron-utils>
     <version.docker-java-api>3.4.1</version.docker-java-api>
@@ -64,7 +64,7 @@
     <version.httpclient5>5.4.2</version.httpclient5>
     <version.httpcore5>5.3.3</version.httpcore5>
     <version.httpcomponents>4.4.16</version.httpcomponents>
-    <version.identity>8.6.7</version.identity>
+    <version.identity>8.6.8</version.identity>
     <version.surefire>3.5.2</version.surefire>
     <version.jackson>2.18.2</version.jackson>
     <version.junit>5.11.4</version.junit>
@@ -92,7 +92,7 @@
     <version.wiremock>3.10.0</version.wiremock>
     <version.conscrypt>2.5.2</version.conscrypt>
     <version.asm>9.3</version.asm>
-    <version.testcontainers>1.20.4</version.testcontainers>
+    <version.testcontainers>1.20.5</version.testcontainers>
     <version.mariadb-java-client>3.4.1</version.mariadb-java-client>
     <version.testcontainer-mariadb>1.20.0</version.testcontainer-mariadb>
     <version.postgressql-testcontainer>1.20.1</version.postgressql-testcontainer>
@@ -101,9 +101,9 @@
     <version.feel-scala>1.19.1</version.feel-scala>
     <version.dmn-scala>1.10.1</version.dmn-scala>
     <version.rest-assured>5.5.1</version.rest-assured>
-    <version.spring>6.2.1</version.spring>
+    <version.spring>6.2.3</version.spring>
     <version.spring-security>6.4.3</version.spring-security>
-    <version.spring-boot>3.4.2</version.spring-boot>
+    <version.spring-boot>3.4.3</version.spring-boot>
     <version.concurrentunit>0.4.6</version.concurrentunit>
     <version.kryo>5.6.2</version.kryo>
     <version.failsafe>2.4.4</version.failsafe>
@@ -111,6 +111,7 @@
     <version.jqwik>1.9.2</version.jqwik>
     <version.jmock>2.13.1</version.jmock>
     <version.jmh>1.37</version.jmh>
+    <version.json-smart>2.5.2</version.json-smart>
     <version.byte-buddy>1.15.11</version.byte-buddy>
     <version.revapi>0.28.1</version.revapi>
     <version.resilience4j>2.3.0</version.resilience4j>
@@ -125,7 +126,7 @@
     <version.easy-random>5.0.0</version.easy-random>
     <version.jcip>1.0</version.jcip>
     <version.jnr-posix>3.1.20</version.jnr-posix>
-    <version.zpt>8.6.7</version.zpt>
+    <version.zpt>8.6.9</version.zpt>
     <version.feign>13.5</version.feign>
     <version.google-sdk>26.53.0</version.google-sdk>
     <version.azure-sdk>1.2.31</version.azure-sdk>
@@ -162,9 +163,9 @@
     <version.node>v20.12.2</version.node>
     <version.yarn>v1.22.21</version.yarn>
 
-    <version.aws-java-sdk>1.12.781</version.aws-java-sdk>
-    <version.elasticsearch-test-container>1.20.4</version.elasticsearch-test-container>
-    <version.postgres-test-container>1.20.4</version.postgres-test-container>
+    <version.aws-java-sdk>1.12.782</version.aws-java-sdk>
+    <version.elasticsearch-test-container>1.20.5</version.elasticsearch-test-container>
+    <version.postgres-test-container>1.20.5</version.postgres-test-container>
     <version.elasticsearch7>7.17.27</version.elasticsearch7>
     <!-- the lucene version must be coupled with version.elasticsearch7 -->
     <version.lucene>8.11.3</version.lucene>
@@ -184,7 +185,8 @@
     <version.guava.annotations>r03</version.guava.annotations>
     <version.nimbus-jose-jwt>10.0.1</version.nimbus-jose-jwt>
     <version.nimbus-sdk>11.21.2</version.nimbus-sdk>
-    <version.keycloak>25.0.6</version.keycloak>
+    <version.keycloak>26.0.6</version.keycloak>
+    <version.keycloak-client>26.0.4</version.keycloak-client>
     <version.jna>5.16.0</version.jna>
     <version.jopt-simple>5.0.4</version.jopt-simple>
     <version.mybatis-spring>3.0.4</version.mybatis-spring>
@@ -515,6 +517,12 @@
       <dependency>
         <groupId>io.camunda</groupId>
         <artifactId>zeebe-backup-store-azure</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>io.camunda</groupId>
+        <artifactId>zeebe-backup-store-filesystem</artifactId>
         <version>${project.version}</version>
       </dependency>
 
@@ -1868,7 +1876,7 @@
       <dependency>
         <groupId>net.minidev</groupId>
         <artifactId>json-smart</artifactId>
-        <version>2.4.11</version>
+        <version>${version.json-smart}</version>
       </dependency>
 
       <!-- needed for tests in elasticsearch-exporter -->
@@ -2001,12 +2009,17 @@
       <dependency>
         <groupId>org.keycloak</groupId>
         <artifactId>keycloak-admin-client</artifactId>
-        <version>${version.keycloak}</version>
+        <version>${version.keycloak-client}</version>
       </dependency>
       <dependency>
         <groupId>org.keycloak</groupId>
         <artifactId>keycloak-core</artifactId>
         <version>${version.keycloak}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.keycloak</groupId>
+        <artifactId>keycloak-client-common-synced</artifactId>
+        <version>${version.keycloak-client}</version>
       </dependency>
 
       <!-- Auth0 and it's direct dependencies -->

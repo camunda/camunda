@@ -7,6 +7,8 @@
  */
 package io.camunda.document.store.aws;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatNoException;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
@@ -421,5 +423,22 @@ class AwsDocumentStoreTest {
     // then
     assertTrue(result.isLeft());
     assertInstanceOf(UnknownDocumentError.class, result.getLeft());
+  }
+
+  @Test
+  void validateSetupShouldHandleExceptionIfExceptionIsThrown() {
+    // given
+    when(s3Client.headBucket(any(HeadBucketRequest.class)))
+        .thenThrow(new RuntimeException("Unexpected error"));
+    final var requestCaptor = ArgumentCaptor.forClass(HeadBucketRequest.class);
+
+    // when
+    assertThatNoException().isThrownBy(() -> documentStore.validateSetup());
+
+    // then
+    verify(s3Client).headBucket(requestCaptor.capture());
+    verifyNoMoreInteractions(s3Client);
+    final var request = requestCaptor.getValue();
+    assertThat(request.bucket()).isEqualTo(BUCKET_NAME);
   }
 }

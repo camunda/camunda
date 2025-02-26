@@ -9,9 +9,9 @@ package io.camunda.operate.webapp.reader;
 
 import io.camunda.operate.store.ProcessStore;
 import io.camunda.operate.webapp.rest.dto.ProcessRequestDto;
-import io.camunda.operate.webapp.security.identity.IdentityPermission;
 import io.camunda.operate.webapp.security.permission.PermissionsService;
 import io.camunda.webapps.schema.entities.operate.ProcessEntity;
+import io.camunda.zeebe.protocol.record.value.PermissionType;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -92,7 +92,7 @@ public class ProcessReader {
     }
 
     final PermissionsService.ResourcesAllowed allowed =
-        permissionsService.getProcessesWithPermission(IdentityPermission.READ);
+        permissionsService.getProcessesWithPermission(PermissionType.READ_PROCESS_DEFINITION);
     return allowed == null || allowed.isAll() ? null : allowed.getIds();
   }
 }

@@ -7,6 +7,8 @@
  */
 package io.camunda.db.rdbms.write.service;
 
+import io.camunda.db.rdbms.sql.HistoryCleanupMapper;
+import io.camunda.db.rdbms.sql.HistoryCleanupMapper.CleanupHistoryDto;
 import io.camunda.db.rdbms.sql.IncidentMapper;
 import io.camunda.db.rdbms.write.domain.IncidentDbModel;
 import io.camunda.db.rdbms.write.domain.IncidentDbModel.Builder;
@@ -16,6 +18,7 @@ import io.camunda.db.rdbms.write.queue.QueueItem;
 import io.camunda.db.rdbms.write.queue.UpsertMerger;
 import io.camunda.db.rdbms.write.queue.WriteStatementType;
 import io.camunda.search.entities.IncidentEntity.IncidentState;
+import java.time.OffsetDateTime;
 import java.util.function.Function;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -25,9 +28,11 @@ public class IncidentWriter {
   private static final Logger LOG = LoggerFactory.getLogger(IncidentWriter.class);
 
   private final ExecutionQueue executionQueue;
+  private final IncidentMapper mapper;
 
-  public IncidentWriter(final ExecutionQueue executionQueue) {
+  public IncidentWriter(final ExecutionQueue executionQueue, final IncidentMapper mapper) {
     this.executionQueue = executionQueue;
+    this.mapper = mapper;
   }
 
   public void create(final IncidentDbModel incident) {
@@ -65,8 +70,32 @@ public class IncidentWriter {
     }
   }
 
+  public void scheduleForHistoryCleanup(
+      final Long processInstanceKey, final OffsetDateTime historyCleanupDate) {
+    executionQueue.executeInQueue(
+        new QueueItem(
+            ContextType.INCIDENT,
+            WriteStatementType.UPDATE,
+            processInstanceKey,
+            "io.camunda.db.rdbms.sql.IncidentMapper.updateHistoryCleanupDate",
+            new HistoryCleanupMapper.UpdateHistoryCleanupDateDto.Builder()
+                .processInstanceKey(processInstanceKey)
+                .historyCleanupDate(historyCleanupDate)
+                .build()));
+  }
+
   private boolean mergeToQueue(final long key, final Function<Builder, Builder> mergeFunction) {
     return executionQueue.tryMergeWithExistingQueueItem(
         new UpsertMerger<>(ContextType.INCIDENT, key, IncidentDbModel.class, mergeFunction));
+  }
+
+  public int cleanupHistory(
+      final int partitionId, final OffsetDateTime cleanupDate, final int rowsToRemove) {
+    return mapper.cleanupHistory(
+        new CleanupHistoryDto.Builder()
+            .partitionId(partitionId)
+            .cleanupDate(cleanupDate)
+            .limit(rowsToRemove)
+            .build());
   }
 }

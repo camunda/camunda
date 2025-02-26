@@ -286,7 +286,7 @@ public final class SearchQueryResponseMapper {
         .parentFlowNodeInstanceKey(KeyUtil.keyToString(p.parentFlowNodeInstanceKey()))
         .startDate(formatDate(p.startDate()))
         .endDate(formatDate(p.endDate()))
-        .state((p.state() == null) ? null : ProcessInstanceStateEnum.fromValue(p.state().name()))
+        .state(toProtocolState(p.state()))
         .hasIncident(p.hasIncident())
         .tenantId(p.tenantId());
   }
@@ -644,6 +644,17 @@ public final class SearchQueryResponseMapper {
                 .map(PermissionType::name)
                 .map(PermissionTypeEnum::fromValue)
                 .toList());
+  }
+
+  private static ProcessInstanceStateEnum toProtocolState(
+      final ProcessInstanceEntity.ProcessInstanceState value) {
+    if (value == null) {
+      return null;
+    }
+    if (value == ProcessInstanceEntity.ProcessInstanceState.CANCELED) {
+      return ProcessInstanceStateEnum.TERMINATED;
+    }
+    return ProcessInstanceStateEnum.fromValue(value.name());
   }
 
   private record RuleIdentifier(String ruleId, int ruleIndex) {}

@@ -8,6 +8,7 @@
 package io.camunda.zeebe.engine.processing.common;
 
 import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContextImpl;
+import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateBehavior;
 import io.camunda.zeebe.engine.processing.deployment.model.element.AbstractFlowElement;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCatchEventSupplier;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowElement;
@@ -39,6 +40,7 @@ public final class ElementActivationBehavior {
   private final KeyGenerator keyGenerator;
   private final TypedCommandWriter commandWriter;
   private final StateWriter stateWriter;
+  private final BpmnStateBehavior stateBehavior;
   private final CatchEventBehavior catchEventBehavior;
 
   private final ElementInstanceState elementInstanceState;
@@ -47,12 +49,14 @@ public final class ElementActivationBehavior {
       final KeyGenerator keyGenerator,
       final Writers writers,
       final CatchEventBehavior catchEventBehavior,
-      final ElementInstanceState elementInstanceState) {
+      final ElementInstanceState elementInstanceState,
+      final BpmnStateBehavior stateBehavior) {
     this.keyGenerator = keyGenerator;
     this.catchEventBehavior = catchEventBehavior;
     this.elementInstanceState = elementInstanceState;
     commandWriter = writers.command();
     stateWriter = writers.state();
+    this.stateBehavior = stateBehavior;
   }
 
   /**
@@ -374,6 +378,14 @@ public final class ElementActivationBehavior {
       final BiConsumer<DirectBuffer, Long> createVariablesCallback) {
 
     final var elementRecord = createElementRecord(processInstanceRecord, element, flowScopeKey);
+
+    final var elementTreePath =
+        stateBehavior.getElementTreePath(elementInstanceKey, flowScopeKey, elementRecord);
+
+    elementRecord
+        .setElementInstancePath(elementTreePath.elementInstancePath())
+        .setProcessDefinitionPath(elementTreePath.processDefinitionPath())
+        .setCallingElementPath(elementTreePath.callingElementPath());
 
     stateWriter.appendFollowUpEvent(
         elementInstanceKey, ProcessInstanceIntent.ELEMENT_ACTIVATING, elementRecord);

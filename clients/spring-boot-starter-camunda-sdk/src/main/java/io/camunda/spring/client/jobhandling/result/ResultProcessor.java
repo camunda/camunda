@@ -17,5 +17,12 @@ package io.camunda.spring.client.jobhandling.result;
 
 public interface ResultProcessor {
 
-  Object process(Object result);
+  @Deprecated
+  default Object process(final Object result) {
+    return result;
+  }
+
+  default Object process(final ResultProcessorContext context) {
+    return process(context.getResult());
+  }
 }

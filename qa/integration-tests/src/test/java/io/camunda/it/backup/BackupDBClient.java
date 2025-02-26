@@ -8,9 +8,12 @@
 package io.camunda.it.backup;
 
 import io.camunda.search.connect.configuration.DatabaseType;
+import io.camunda.webapps.backup.BackupRepository;
+import io.camunda.webapps.backup.repository.SnapshotNameProvider;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.List;
+import java.util.concurrent.Executor;
 
 /**
  * interface to abstract Elasticsearch/Opensearch clients for testing purposes. Methods defined here
@@ -22,10 +25,11 @@ public interface BackupDBClient extends AutoCloseable {
 
   void createRepository(String repositoryName) throws IOException;
 
-  static BackupDBClient create(final String url, final DatabaseType databaseType)
+  static BackupDBClient create(
+      final String url, final DatabaseType databaseType, final Executor executor)
       throws IOException {
     return switch (databaseType) {
-      case ELASTICSEARCH -> new ESDBClientBackup(url);
+      case ELASTICSEARCH -> new ESDBClientBackup(url, executor);
       case OPENSEARCH -> new OSDBClientBackup(url);
       default -> throw new IllegalStateException("Unsupported database type: " + databaseType);
     };
@@ -33,6 +37,9 @@ public interface BackupDBClient extends AutoCloseable {
 
   // TODO remove this when purge functionality is available
   void deleteAllIndices(final String indexPrefix) throws IOException;
+
+  BackupRepository zeebeBackupRepository(
+      String repositoryName, SnapshotNameProvider snapshotNameProvider);
 
   List<String> cat() throws IOException;
 }

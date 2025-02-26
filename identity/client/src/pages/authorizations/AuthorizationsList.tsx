@@ -57,19 +57,19 @@ const AuthorizationList: FC<AuthorizationListProps> = ({
           title={t(tab)}
           data={data.items}
           headers={[
-            { header: t("Owner type"), key: "ownerType" },
-            { header: t("Owner ID"), key: "ownerId" },
-            { header: t("Resource ID"), key: "resourceId" },
-            { header: t("Permissions"), key: "permissionTypes" },
+            { header: t("ownerType"), key: "ownerType" },
+            { header: t("ownerId"), key: "ownerId" },
+            { header: t("resourceId"), key: "resourceId" },
+            { header: t("permissionTypes"), key: "permissionTypes" },
           ]}
-          addEntityLabel={t("Create authorization")}
+          addEntityLabel={t("createAuthorization")}
           onAddEntity={() => {
             addAuthorization(tab);
           }}
           loading={loading}
           menuItems={[
             {
-              label: t("Delete"),
+              label: t("delete"),
               icon: TrashCan,
               isDangerous: true,
               onClick: deleteAuthorization,
@@ -78,17 +78,12 @@ const AuthorizationList: FC<AuthorizationListProps> = ({
         />
       ) : (
         <C3EmptyState
-          heading={t(
-            "You don't have any authorizations for this resource type yet",
-            {
-              tab: t(tab),
-            },
-          )}
-          description={t(
-            "Authorizations define access permissions for different resources. Create an authorization by selecting an owner, resource, and at least one permission.",
-          )}
+          heading={t("noAuthorizationsYet", {
+            tab: t(tab),
+          })}
+          description={t("authorizationDescription")}
           button={{
-            label: t("Create an authorization"),
+            label: t("createAuthorization"),
             onClick: () => {
               addAuthorization(tab);
             },

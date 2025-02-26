@@ -1099,7 +1099,7 @@ public class ModifyProcessInstanceTest {
         .hasSize(4);
 
     // when
-    final var ancestorScopeKey = flowscopekeys.get(0);
+    final var ancestorScopeKey = flowscopekeys.getFirst();
     final var modifiedRecord =
         ENGINE
             .processInstance()
@@ -1353,71 +1353,8 @@ public class ModifyProcessInstanceTest {
         .isNotEmpty();
   }
 
-  private static void verifyThatRootElementIsActivated(
-      final long processInstanceKey, final String elementId, final BpmnElementType elementType) {
-    verifyThatElementIsActivated(processInstanceKey, elementId, elementType, processInstanceKey);
-  }
-
-  private static void verifyThatElementIsActivated(
-      final long processInstanceKey,
-      final String elementId,
-      final BpmnElementType elementType,
-      final long flowScopeKey) {
-
-    final var processActivatedEvent =
-        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
-            .withProcessInstanceKey(processInstanceKey)
-            .withElementType(BpmnElementType.PROCESS)
-            .getFirst()
-            .getValue();
-
-    final var elementInstanceEvents =
-        RecordingExporter.processInstanceRecords()
-            .onlyEvents()
-            .withElementId(elementId)
-            .withProcessInstanceKey(processInstanceKey)
-            .limit(elementId, ProcessInstanceIntent.ELEMENT_ACTIVATED)
-            .toList();
-
-    Assertions.assertThat(elementInstanceEvents)
-        .extracting(Record::getIntent)
-        .describedAs("Expect the element instance to have been activated")
-        .containsExactly(
-            ProcessInstanceIntent.ELEMENT_ACTIVATING, ProcessInstanceIntent.ELEMENT_ACTIVATED);
-
-    Assertions.assertThat(elementInstanceEvents)
-        .extracting(Record::getKey)
-        .describedAs("Expect each element instance event to refer to the same entity")
-        .containsOnly(elementInstanceEvents.get(0).getKey());
-
-    Assertions.assertThat(elementInstanceEvents)
-        .extracting(Record::getValue)
-        .describedAs("Expect each element instance event to contain the complete record value")
-        .extracting(
-            ProcessInstanceRecordValue::getProcessDefinitionKey,
-            ProcessInstanceRecordValue::getBpmnProcessId,
-            ProcessInstanceRecordValue::getVersion,
-            ProcessInstanceRecordValue::getProcessInstanceKey,
-            ProcessInstanceRecordValue::getBpmnElementType,
-            ProcessInstanceRecordValue::getElementId,
-            ProcessInstanceRecordValue::getFlowScopeKey,
-            ProcessInstanceRecordValue::getParentProcessInstanceKey,
-            ProcessInstanceRecordValue::getParentElementInstanceKey)
-        .containsOnly(
-            Tuple.tuple(
-                processActivatedEvent.getProcessDefinitionKey(),
-                processActivatedEvent.getBpmnProcessId(),
-                processActivatedEvent.getVersion(),
-                processActivatedEvent.getProcessInstanceKey(),
-                elementType,
-                elementId,
-                flowScopeKey,
-                -1L,
-                -1L));
-  }
-
   @Test
-  public void shouldUseAncestorSelectionInsideMultiInstances() throws InterruptedException {
+  public void shouldUseAncestorSelectionInsideMultiInstances() {
     // given
     ENGINE
         .deployment()
@@ -1487,8 +1424,103 @@ public class ModifyProcessInstanceTest {
             aTasks.get(0).getValue().getFlowScopeKey(), aTasks.get(2).getValue().getFlowScopeKey());
   }
 
-  private static void verifyThatElementIsCompleted(
-      final long processInstanceKey, final String elementId) {
+  @Test
+  public void shouldReActivateElementAndUpdateTreePath() {
+    // given
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(PROCESS_ID)
+                .startEvent()
+                .serviceTask("A", a -> a.zeebeJobType("A"))
+                .serviceTask("B", b -> b.zeebeJobType("B"))
+                .endEvent()
+                .done())
+        .deploy();
+
+    final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+    final var elementBeforeModification =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATING)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementId("A")
+            .getFirst();
+    // when
+    ENGINE
+        .processInstance()
+        .withInstanceKey(processInstanceKey)
+        .modification()
+        .terminateElement(elementBeforeModification.getKey())
+        .activateElement("A")
+        .modify();
+
+    // then
+    verifyThatElementTreePathIsUpdated(elementBeforeModification);
+  }
+
+  private void verifyThatRootElementIsActivated(
+      final long processInstanceKey, final String elementId, final BpmnElementType elementType) {
+    verifyThatElementIsActivated(processInstanceKey, elementId, elementType, processInstanceKey);
+  }
+
+  private void verifyThatElementIsActivated(
+      final long processInstanceKey,
+      final String elementId,
+      final BpmnElementType elementType,
+      final long flowScopeKey) {
+
+    final var processActivatedEvent =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementType(BpmnElementType.PROCESS)
+            .getFirst()
+            .getValue();
+
+    final var elementInstanceEvents =
+        RecordingExporter.processInstanceRecords()
+            .onlyEvents()
+            .withElementId(elementId)
+            .withProcessInstanceKey(processInstanceKey)
+            .limit(elementId, ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .toList();
+
+    Assertions.assertThat(elementInstanceEvents)
+        .extracting(Record::getIntent)
+        .describedAs("Expect the element instance to have been activated")
+        .containsExactly(
+            ProcessInstanceIntent.ELEMENT_ACTIVATING, ProcessInstanceIntent.ELEMENT_ACTIVATED);
+
+    Assertions.assertThat(elementInstanceEvents)
+        .extracting(Record::getKey)
+        .describedAs("Expect each element instance event to refer to the same entity")
+        .containsOnly(elementInstanceEvents.getFirst().getKey());
+
+    Assertions.assertThat(elementInstanceEvents)
+        .extracting(Record::getValue)
+        .describedAs("Expect each element instance event to contain the complete record value")
+        .extracting(
+            ProcessInstanceRecordValue::getProcessDefinitionKey,
+            ProcessInstanceRecordValue::getBpmnProcessId,
+            ProcessInstanceRecordValue::getVersion,
+            ProcessInstanceRecordValue::getProcessInstanceKey,
+            ProcessInstanceRecordValue::getBpmnElementType,
+            ProcessInstanceRecordValue::getElementId,
+            ProcessInstanceRecordValue::getFlowScopeKey,
+            ProcessInstanceRecordValue::getParentProcessInstanceKey,
+            ProcessInstanceRecordValue::getParentElementInstanceKey)
+        .containsOnly(
+            Tuple.tuple(
+                processActivatedEvent.getProcessDefinitionKey(),
+                processActivatedEvent.getBpmnProcessId(),
+                processActivatedEvent.getVersion(),
+                processActivatedEvent.getProcessInstanceKey(),
+                elementType,
+                elementId,
+                flowScopeKey,
+                -1L,
+                -1L));
+  }
+
+  private void verifyThatElementIsCompleted(final long processInstanceKey, final String elementId) {
 
     Assertions.assertThat(
             RecordingExporter.processInstanceRecords()
@@ -1502,7 +1534,7 @@ public class ModifyProcessInstanceTest {
             ProcessInstanceIntent.ELEMENT_COMPLETING, ProcessInstanceIntent.ELEMENT_COMPLETED);
   }
 
-  private static void verifyThatProcessInstanceIsCompleted(final long processInstanceKey) {
+  private void verifyThatProcessInstanceIsCompleted(final long processInstanceKey) {
 
     Assertions.assertThat(
             RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_COMPLETED)
@@ -1514,7 +1546,7 @@ public class ModifyProcessInstanceTest {
         .isPresent();
   }
 
-  private static void completeJobs(final long processInstanceKey, final int numberOfJobs) {
+  private void completeJobs(final long processInstanceKey, final int numberOfJobs) {
     RecordingExporter.jobRecords(JobIntent.CREATED)
         .withProcessInstanceKey(processInstanceKey)
         .limit(numberOfJobs)
@@ -1522,7 +1554,7 @@ public class ModifyProcessInstanceTest {
         .forEach(jobKey -> ENGINE.job().withKey(jobKey).complete());
   }
 
-  private static long getElementInstanceKeyOfElement(
+  private long getElementInstanceKeyOfElement(
       final long processInstanceKey, final String elementId) {
     return RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
         .withProcessInstanceKey(processInstanceKey)
@@ -1552,5 +1584,31 @@ public class ModifyProcessInstanceTest {
                 .withElementId(elementId)
                 .exists())
         .isTrue();
+  }
+
+  private void verifyThatElementTreePathIsUpdated(
+      final Record<ProcessInstanceRecordValue> elementBeforeModification) {
+    final var elementInstance = elementBeforeModification.getValue();
+
+    final var modifiedRecord =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATING)
+            .withProcessInstanceKey(elementInstance.getProcessInstanceKey())
+            .withElementId(elementInstance.getElementId())
+            .withElementType(elementInstance.getBpmnElementType())
+            .withFlowScopeKey(elementInstance.getFlowScopeKey())
+            .limit(2)
+            .getLast();
+    final var modifiedElementInstance = modifiedRecord.getValue();
+    final var modifiedTreePath = modifiedElementInstance.getElementInstancePath();
+
+    assertThat(modifiedRecord.getKey())
+        .describedAs("Expect the element instance key to be updated")
+        .isNotEqualTo(elementBeforeModification.getKey());
+
+    assertThat(modifiedTreePath)
+        .isNotNull()
+        .isNotEmpty()
+        .describedAs("Expect the tree path to be updated")
+        .isNotEqualTo(elementInstance.getElementInstancePath());
   }
 }

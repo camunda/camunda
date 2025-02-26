@@ -163,7 +163,7 @@ public final class EmbeddedBrokerRule extends ExternalResource {
       } catch (final IOException e) {
         LOG.error("Unexpected error on deleting data.", e);
       }
-      MicrometerUtil.closeRegistry(meterRegistry);
+      MicrometerUtil.close(meterRegistry);
 
       controlledActorClock.reset();
     }

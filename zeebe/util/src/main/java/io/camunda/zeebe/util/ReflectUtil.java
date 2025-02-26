@@ -17,6 +17,13 @@ public final class ReflectUtil {
 
   private ReflectUtil() {}
 
+  /**
+   * Returns a new instance of the given class, using the default, no-arguments constructor.
+   *
+   * @param clazz the class to instantiate
+   * @return an instance of the class
+   * @param <T> the expected type of the instance
+   */
   public static <T> T newInstance(final Class<T> clazz) {
     try {
       return clazz.getDeclaredConstructor().newInstance();

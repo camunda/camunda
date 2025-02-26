@@ -28,6 +28,8 @@ import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.time.Duration;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.function.Consumer;
 import org.junit.ClassRule;
@@ -154,13 +156,8 @@ public final class EmbeddedSubProcessTest {
             .withIntent(ProcessInstanceIntent.ELEMENT_ACTIVATING)
             .getFirst();
 
-    final ProcessInstanceRecordValue value = startEvent.getValue();
-    assertThat(value.getCallingElementPath()).isEmpty();
-    assertThat(value.getElementInstancePath()).hasSize(1);
-    final List<Long> elementInstances = value.getElementInstancePath().get(0);
-    assertThat(elementInstances)
-        .containsExactly(processInstanceKey, subProcessActivating.getKey(), startEvent.getKey());
-    assertThat(value.getProcessDefinitionPath()).containsExactly(value.getProcessDefinitionKey());
+    assertTreePathIsPopulated(subProcessActivating, processInstanceKey);
+    assertTreePathIsPopulated(startEvent, processInstanceKey, subProcessActivating.getKey());
   }
 
   @Test
@@ -639,5 +636,22 @@ public final class EmbeddedSubProcessTest {
                 .withScopeKey(processInstanceKey))
         .extracting(var -> tuple(var.getIntent(), var.getValue().getValue()))
         .containsExactly(tuple(VariableIntent.CREATED, "1"), tuple(VariableIntent.UPDATED, "2"));
+  }
+
+  private static void assertTreePathIsPopulated(
+      final Record<ProcessInstanceRecordValue> elementInstanceRecord,
+      final long... parentElementInstanceKeys) {
+    final ProcessInstanceRecordValue elementInstanceValue = elementInstanceRecord.getValue();
+    assertThat(elementInstanceValue.getCallingElementPath()).isEmpty();
+    assertThat(elementInstanceValue.getElementInstancePath()).hasSize(1);
+
+    final List<Long> expectedElementInstancePath = new ArrayList<>();
+    Arrays.stream(parentElementInstanceKeys).boxed().forEach(expectedElementInstancePath::add);
+    expectedElementInstancePath.add(elementInstanceRecord.getKey());
+
+    final List<Long> elementInstances = elementInstanceValue.getElementInstancePath().getFirst();
+    assertThat(elementInstances).containsExactlyElementsOf(expectedElementInstancePath);
+    assertThat(elementInstanceValue.getProcessDefinitionPath())
+        .containsExactly(elementInstanceValue.getProcessDefinitionKey());
   }
 }

@@ -7,12 +7,14 @@
  */
 package io.camunda.exporter.schema.opensearch;
 
+import co.elastic.clients.elasticsearch._types.ElasticsearchException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.camunda.exporter.SchemaResourceSerializer;
 import io.camunda.exporter.config.ExporterConfiguration.IndexSettings;
+import io.camunda.exporter.exceptions.ElasticsearchExporterException;
 import io.camunda.exporter.exceptions.IndexSchemaValidationException;
 import io.camunda.exporter.exceptions.OpensearchExporterException;
 import io.camunda.exporter.schema.IndexMapping;
@@ -48,6 +50,7 @@ import org.opensearch.client.opensearch.indices.PutIndexTemplateRequest;
 import org.opensearch.client.opensearch.indices.PutIndicesSettingsRequest;
 import org.opensearch.client.opensearch.indices.PutMappingRequest;
 import org.opensearch.client.opensearch.indices.get_index_template.IndexTemplateItem;
+import org.opensearch.client.opensearch.indices.get_index_template.IndexTemplateSummary;
 import org.opensearch.client.opensearch.indices.put_index_template.IndexTemplateMapping;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -241,6 +244,29 @@ public class OpensearchEngineClient implements SearchEngineClient {
     }
   }
 
+  /**
+   * Overwrites the settings of the existing index template with the settings block in the
+   * descriptor schema json file.
+   *
+   * @param indexTemplateDescriptor of the index template to have its settings overwritten.
+   */
+  @Override
+  public void updateIndexTemplateSettings(
+      final IndexTemplateDescriptor indexTemplateDescriptor, final IndexSettings currentSettings) {
+    final var updateIndexTemplateSettingsRequest =
+        updateTemplateSettings(indexTemplateDescriptor, currentSettings);
+
+    try {
+      client.indices().putIndexTemplate(updateIndexTemplateSettingsRequest);
+    } catch (final IOException | ElasticsearchException e) {
+      throw new ElasticsearchExporterException(
+          String.format(
+              "Expected to update index template settings '%s' with '%s', but failed ",
+              indexTemplateDescriptor.getTemplateName(), updateIndexTemplateSettingsRequest),
+          e);
+    }
+  }
+
   private SearchRequest allImportPositionDocuments(
       final int partitionId, final List<IndexDescriptor> importPositionIndices) {
     final var importPositionIndicesNames =
@@ -383,7 +409,10 @@ public class OpensearchEngineClient implements SearchEngineClient {
       final var templateFields =
           deserializeJson(
               IndexTemplateMapping._DESERIALIZER,
-              utils.appendToFileSchemaSettings(templateFile, settings));
+              utils.new SchemaSettingsAppender(templateFile)
+                  .withNumberOfShards(settings.getNumberOfShards())
+                  .withNumberOfReplicas(settings.getNumberOfReplicas())
+                  .build());
 
       return new PutIndexTemplateRequest.Builder()
           .name(indexTemplateDescriptor.getTemplateName())
@@ -404,6 +433,58 @@ public class OpensearchEngineClient implements SearchEngineClient {
     }
   }
 
+  private PutIndexTemplateRequest updateTemplateSettings(
+      final IndexTemplateDescriptor indexTemplateDescriptor, final IndexSettings currentSettings) {
+    try (final var templateFile =
+        getClass().getResourceAsStream(indexTemplateDescriptor.getMappingsClasspathFilename())) {
+      final var updatedTemplateSettings =
+          deserializeJson(
+                  IndexTemplateMapping._DESERIALIZER,
+                  utils.new SchemaSettingsAppender(templateFile)
+                      .withNumberOfShards(currentSettings.getNumberOfShards())
+                      .withNumberOfReplicas(currentSettings.getNumberOfReplicas())
+                      .build())
+              .settings();
+
+      final var currentIndexTemplateState = getIndexTemplateState(indexTemplateDescriptor);
+
+      return new PutIndexTemplateRequest.Builder()
+          .name(indexTemplateDescriptor.getTemplateName())
+          .indexPatterns(indexTemplateDescriptor.getIndexPattern())
+          .template(
+              t ->
+                  t.settings(updatedTemplateSettings)
+                      .mappings(currentIndexTemplateState.mappings())
+                      .aliases(currentIndexTemplateState.aliases()))
+          .build();
+
+    } catch (final IOException e) {
+      throw new OpensearchExporterException(
+          "Failed to load file "
+              + indexTemplateDescriptor.getMappingsClasspathFilename()
+              + " from classpath.",
+          e);
+    }
+  }
+
+  private IndexTemplateSummary getIndexTemplateState(
+      final IndexTemplateDescriptor indexTemplateDescriptor) {
+    try {
+      return client
+          .indices()
+          .getIndexTemplate(r -> r.name(indexTemplateDescriptor.getTemplateName()))
+          .indexTemplates()
+          .getFirst()
+          .indexTemplate()
+          .template();
+    } catch (final IOException e) {
+      throw new OpensearchExporterException(
+          String.format(
+              "Failed to retrieve index template '%s'", indexTemplateDescriptor.getTemplateName()),
+          e);
+    }
+  }
+
   private CreateIndexRequest createIndexRequest(
       final IndexDescriptor indexDescriptor, final IndexSettings settings) {
 
@@ -413,7 +494,10 @@ public class OpensearchEngineClient implements SearchEngineClient {
       final var templateFields =
           deserializeJson(
               IndexTemplateMapping._DESERIALIZER,
-              utils.appendToFileSchemaSettings(templateFile, settings));
+              utils.new SchemaSettingsAppender(templateFile)
+                  .withNumberOfShards(settings.getNumberOfShards())
+                  .withNumberOfReplicas(settings.getNumberOfReplicas())
+                  .build());
 
       return new CreateIndexRequest.Builder()
           .index(indexDescriptor.getFullQualifiedName())
