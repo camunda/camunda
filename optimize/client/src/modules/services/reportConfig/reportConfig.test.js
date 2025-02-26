@@ -398,9 +398,7 @@ describe('process exclusive updates', () => {
 
 describe('getDefaultSorting', () => {
   it('should sort raw data a descending order by the start date', () => {
-    expect(
-      getDefaultSorting({data: {...report, view: {property: 'rawData'}}})
-    ).toEqual({
+    expect(getDefaultSorting({data: {...report, view: {property: 'rawData'}}})).toEqual({
       by: 'startDate',
       order: 'desc',
     });

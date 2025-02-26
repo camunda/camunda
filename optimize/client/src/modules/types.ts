@@ -313,10 +313,8 @@ export interface SingleProcessReportResultData {
   value: string | number;
 }
 
-export interface Report<
-  Data extends object = SingleProcessReportData,
-  Result = unknown | undefined,
-> extends GenericEntity<Data> {
+export interface Report<Data extends object = SingleProcessReportData, Result = unknown | undefined>
+  extends GenericEntity<Data> {
   id: string;
   collectionId?: string | null;
   description: string | null;

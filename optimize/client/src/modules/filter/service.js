@@ -8,7 +8,7 @@
 
 import {post, get} from 'request';
 import equal from 'fast-deep-equal';
-import { getFullURL } from '../api';
+import {getFullURL} from '../api';
 
 export async function loadValues(
   processDefinitionKey,
