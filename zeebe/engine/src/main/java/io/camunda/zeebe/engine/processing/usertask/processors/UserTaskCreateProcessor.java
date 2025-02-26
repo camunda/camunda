@@ -8,13 +8,20 @@
 package io.camunda.zeebe.engine.processing.usertask.processors;
 
 import io.camunda.zeebe.engine.processing.Rejection;
+import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContextImpl;
+import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnJobBehavior;
+import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnUserTaskBehavior;
+import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableUserTask;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
+import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
+import io.camunda.zeebe.engine.state.immutable.ProcessState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.state.immutable.UserTaskState;
 import io.camunda.zeebe.engine.state.immutable.UserTaskState.LifecycleState;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskListenerEventType;
 import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
@@ -26,15 +33,23 @@ public final class UserTaskCreateProcessor implements UserTaskCommandProcessor {
 
   private static final String DEFAULT_ACTION = "create";
 
+  private final ElementInstanceState elementInstanceState;
+  private final ProcessState processState;
   private final UserTaskState userTaskState;
   private final StateWriter stateWriter;
   private final TypedResponseWriter responseWriter;
   private final UserTaskCommandPreconditionChecker preconditionChecker;
+  private final BpmnJobBehavior jobBehavior;
+  private final BpmnUserTaskBehavior userTaskBehavior;
 
   public UserTaskCreateProcessor(
       final ProcessingState state,
       final Writers writers,
-      final AuthorizationCheckBehavior authCheckBehavior) {
+      final AuthorizationCheckBehavior authCheckBehavior,
+      final BpmnUserTaskBehavior userTaskBehavior,
+      final BpmnJobBehavior jobBehavior) {
+    elementInstanceState = state.getElementInstanceState();
+    processState = state.getProcessState();
     userTaskState = state.getUserTaskState();
     stateWriter = writers.state();
     responseWriter = writers.response();
@@ -44,6 +59,8 @@ public final class UserTaskCreateProcessor implements UserTaskCommandProcessor {
             "create",
             state.getUserTaskState(),
             authCheckBehavior);
+    this.userTaskBehavior = userTaskBehavior;
+    this.jobBehavior = jobBehavior;
   }
 
   @Override
@@ -82,5 +99,34 @@ public final class UserTaskCreateProcessor implements UserTaskCommandProcessor {
                   metadata.getRequestId(),
                   metadata.getRequestStreamId()));
     }
+
+    if (userTaskRecord.hasAssignee()) {
+      assignUserTask(userTaskRecord, userTaskRecord.getAssignee());
+    }
+  }
+
+  private void assignUserTask(final UserTaskRecord userTaskRecord, final String assignee) {
+    userTaskBehavior.userTaskAssigning(userTaskRecord, assignee);
+
+    final var element =
+        processState.getFlowElement(
+            userTaskRecord.getProcessDefinitionKey(),
+            userTaskRecord.getTenantId(),
+            userTaskRecord.getElementIdBuffer(),
+            ExecutableUserTask.class);
+
+    final var elementInstance =
+        elementInstanceState.getInstance(userTaskRecord.getElementInstanceKey());
+
+    final var context = new BpmnElementContextImpl();
+    context.init(elementInstance.getKey(), elementInstance.getValue(), elementInstance.getState());
+
+    element.getTaskListeners(ZeebeTaskListenerEventType.assigning).stream()
+        .findFirst()
+        .ifPresentOrElse(
+            listener ->
+                jobBehavior.createNewTaskListenerJob(
+                    context, userTaskRecord, listener, List.of(UserTaskRecord.ASSIGNEE)),
+            () -> userTaskBehavior.userTaskAssigned(userTaskRecord, assignee));
   }
 }
