@@ -16,6 +16,7 @@ import io.micrometer.prometheusmetrics.PrometheusConfig;
 import io.micrometer.prometheusmetrics.PrometheusMeterRegistry;
 import io.prometheus.metrics.model.snapshots.GaugeSnapshot.GaugeDataPointSnapshot;
 import io.prometheus.metrics.model.snapshots.Labels;
+import java.util.stream.LongStream;
 import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.Test;
 
@@ -134,5 +135,32 @@ final class StatefulGaugeTest {
     // then
     assertThatCode(() -> gauge.set(5)).doesNotThrowAnyException();
     assertThat(registry.find("foo").meter()).isNull();
+  }
+
+  @Test
+  void shouldReturnDoubleValue() {
+    // given
+    final var gauge = StatefulGauge.builder("foo").register(registry);
+
+    // when
+    gauge.set(30.5223);
+
+    // then - measurements are taken from the underlying gauge
+    final var registered = (StatefulGauge) registry.get("foo").meter();
+    assertThat(registered.measure()).allSatisfy(m -> assertThat(m.getValue()).isEqualTo(30.5223));
+  }
+
+  @Test
+  void shouldReturnLongValue() {
+    // given
+    final var gauge = StatefulGauge.builder("foo").register(registry);
+    final var highValue = Integer.MAX_VALUE + 1_000_000_000_000L;
+
+    // when
+    gauge.set(highValue);
+
+    // then - measurements are taken from the underlying gauge
+    final var registered = (StatefulGauge) registry.get("foo").meter();
+    assertThat(registered.measure()).allSatisfy(m -> assertThat(m.getValue()).isEqualTo(highValue));
   }
 }
