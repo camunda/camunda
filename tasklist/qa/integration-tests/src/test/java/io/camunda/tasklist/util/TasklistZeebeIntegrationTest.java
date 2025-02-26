@@ -9,7 +9,10 @@ package io.camunda.tasklist.util;
 
 import static io.camunda.tasklist.util.TasklistZeebeIntegrationTest.DEFAULT_USER_ID;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
 
+import io.camunda.authentication.entity.CamundaUserDTO;
+import io.camunda.authentication.service.CamundaUserService;
 import io.camunda.tasklist.webapp.dto.UserDTO;
 import io.camunda.tasklist.webapp.security.Permission;
 import io.camunda.tasklist.webapp.security.TasklistAuthenticationUtil;
@@ -19,6 +22,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.mockito.MockedStatic;
 import org.mockito.Mockito;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.security.test.context.support.WithMockUser;
 
@@ -29,6 +33,8 @@ public abstract class TasklistZeebeIntegrationTest extends SessionlessTasklistZe
   public static final String DEFAULT_DISPLAY_NAME = "Demo User";
 
   @MockBean protected UserReader userReader;
+
+  @Autowired protected CamundaUserService camundaUserService;
 
   private MockedStatic<TasklistAuthenticationUtil> authenticationUtil;
 
@@ -73,5 +79,8 @@ public abstract class TasklistZeebeIntegrationTest extends SessionlessTasklistZe
             : user.getUserId() + "-org";
     Mockito.when(userReader.getCurrentOrganizationId()).thenReturn(organisation);
     authenticationUtil.when(TasklistAuthenticationUtil::isApiUser).thenReturn(isApiUser);
+
+    Mockito.when(camundaUserService.getCurrentUser()).thenReturn(mock(CamundaUserDTO.class));
+    Mockito.when(camundaUserService.getCurrentUser().userId()).thenReturn(user.getUserId());
   }
 }

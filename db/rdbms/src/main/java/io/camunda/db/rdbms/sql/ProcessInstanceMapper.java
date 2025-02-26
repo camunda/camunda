@@ -13,7 +13,7 @@ import io.camunda.search.entities.ProcessInstanceEntity;
 import java.time.OffsetDateTime;
 import java.util.List;
 
-public interface ProcessInstanceMapper {
+public interface ProcessInstanceMapper extends HistoryCleanupMapper {
 
   void insert(ProcessInstanceDbModel processInstance);
 

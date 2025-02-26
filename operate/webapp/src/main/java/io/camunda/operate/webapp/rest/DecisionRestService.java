@@ -13,11 +13,11 @@ import io.camunda.operate.webapp.reader.DecisionReader;
 import io.camunda.operate.webapp.rest.dto.DecisionRequestDto;
 import io.camunda.operate.webapp.rest.dto.dmn.DecisionGroupDto;
 import io.camunda.operate.webapp.rest.exception.NotAuthorizedException;
-import io.camunda.operate.webapp.security.identity.IdentityPermission;
 import io.camunda.operate.webapp.security.permission.PermissionsService;
 import io.camunda.operate.webapp.writer.BatchOperationWriter;
 import io.camunda.webapps.schema.entities.operate.dmn.definition.DecisionDefinitionEntity;
 import io.camunda.webapps.schema.entities.operation.BatchOperationEntity;
+import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import java.util.List;
@@ -78,7 +78,7 @@ public class DecisionRestService extends InternalAPIErrorController {
     if (permissionsService.permissionsEnabled()) {
       final String decisionId = decisionReader.getDecision(decisionDefinitionKey).getDecisionId();
       if (!permissionsService.hasPermissionForDecision(
-          decisionId, IdentityPermission.READ_DECISION_INSTANCE)) {
+          decisionId, PermissionType.READ_DECISION_INSTANCE)) {
         throw new NotAuthorizedException(
             String.format("No read permission for decision %s", decisionId));
       }
@@ -88,7 +88,7 @@ public class DecisionRestService extends InternalAPIErrorController {
   private void checkIdentityDeletePermission(final String decisionId) {
     if (permissionsService.permissionsEnabled()) {
       if (!permissionsService.hasPermissionForDecision(
-          decisionId, IdentityPermission.DELETE_DECISION_INSTANCE)) {
+          decisionId, PermissionType.DELETE_DECISION_INSTANCE)) {
         throw new NotAuthorizedException(
             String.format("No delete permission for decision %s", decisionId));
       }

@@ -18,6 +18,7 @@ import io.camunda.zeebe.snapshots.SnapshotException.SnapshotAlreadyExistsExcepti
 import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotStore;
 import io.camunda.zeebe.snapshots.impl.SnapshotWriteException;
 import io.camunda.zeebe.util.FileUtil;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
@@ -52,11 +53,13 @@ public class ReceivedSnapshotTest {
     final var receiverDirectory = temporaryFolder.newFolder("receiver").toPath();
 
     senderSnapshotStore =
-        new FileBasedSnapshotStore(0, partitionId, senderDirectory, snapshotPath -> Map.of());
+        new FileBasedSnapshotStore(
+            0, partitionId, senderDirectory, snapshotPath -> Map.of(), new SimpleMeterRegistry());
     scheduler.get().submitActor((Actor) senderSnapshotStore).join();
 
     receiverSnapshotStore =
-        new FileBasedSnapshotStore(0, partitionId, receiverDirectory, snapshotPath -> Map.of());
+        new FileBasedSnapshotStore(
+            0, partitionId, receiverDirectory, snapshotPath -> Map.of(), new SimpleMeterRegistry());
 
     scheduler.get().submitActor((Actor) receiverSnapshotStore).join();
   }

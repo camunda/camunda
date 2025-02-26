@@ -34,7 +34,6 @@ import java.time.Instant;
 import java.util.HashMap;
 import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -59,15 +58,13 @@ public class CredentialsProviderSelfManagedTest {
   static WireMockExtension wm =
       WireMockExtension.newInstance().options(new WireMockConfiguration().dynamicPort()).build();
 
-  private static final String ACCESS_TOKEN =
-      JWT.create().withExpiresAt(Instant.now().plusSeconds(300)).sign(Algorithm.none());
   @MockBean CamundaClientExecutorService zeebeClientExecutorService;
   @Autowired CredentialsProvider credentialsProvider;
 
   @DynamicPropertySource
   static void registerPgProperties(final DynamicPropertyRegistry registry) {
     final String issuer = "http://localhost:" + wm.getPort() + "/auth-server";
-    registry.add("camunda.client.auth.issuer", () -> issuer);
+    registry.add("camunda.client.auth.token-url", () -> issuer);
   }
 
   @BeforeEach
@@ -85,24 +82,24 @@ public class CredentialsProviderSelfManagedTest {
   }
 
   @Test
-  @Disabled
   void shouldHaveZeebeAuth() throws IOException {
     final Map<String, String> headers = new HashMap<>();
-
+    final String accessToken =
+        JWT.create().withExpiresAt(Instant.now().plusSeconds(300)).sign(Algorithm.none());
     wm.stubFor(
         post("/auth-server")
             .willReturn(
                 ok().withJsonBody(
                         JsonNodeFactory.instance
                             .objectNode()
-                            .put("access_token", ACCESS_TOKEN)
+                            .put("access_token", accessToken)
                             .put("token_type", "bearer")
                             .put("expires_in", 300))));
 
     credentialsProvider.applyCredentials(headers::put);
     credentialsProvider.applyCredentials(headers::put);
     assertThat(credentialsProvider).isExactlyInstanceOf(OAuthCredentialsProvider.class);
-    assertThat(headers).containsEntry("Authorization", "Bearer " + ACCESS_TOKEN);
+    assertThat(headers).containsEntry("Authorization", "Bearer " + accessToken);
     assertThat(headers).hasSize(1);
   }
 }

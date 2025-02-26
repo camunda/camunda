@@ -518,7 +518,8 @@ public final class ResponseMapper {
         new MappingRuleCreateResult()
             .mappingKey(KeyUtil.keyToString(record.getMappingKey()))
             .claimName(record.getClaimName())
-            .claimValue(record.getClaimValue());
+            .claimValue(record.getClaimValue())
+            .name(record.getName());
     return new ResponseEntity<>(response, HttpStatus.CREATED);
   }
 

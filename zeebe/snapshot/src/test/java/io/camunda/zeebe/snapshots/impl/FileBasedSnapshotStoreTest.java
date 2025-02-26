@@ -17,6 +17,7 @@ import io.camunda.zeebe.snapshots.TestChecksumProvider;
 import io.camunda.zeebe.snapshots.TransientSnapshot;
 import io.camunda.zeebe.test.util.asserts.DirectoryAssert;
 import io.camunda.zeebe.util.FileUtil;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
@@ -61,7 +62,8 @@ public class FileBasedSnapshotStoreTest {
     final var root = temporaryFolder.getRoot().toPath();
 
     // when
-    final var store = new FileBasedSnapshotStore(0, 1, root, snapshotPath -> Map.of());
+    final var store =
+        new FileBasedSnapshotStore(0, 1, root, snapshotPath -> Map.of(), new SimpleMeterRegistry());
 
     // then
     assertThat(root.resolve(FileBasedSnapshotStoreImpl.SNAPSHOTS_DIRECTORY)).exists().isDirectory();
@@ -257,7 +259,9 @@ public class FileBasedSnapshotStoreTest {
     final var testChecksumProvider = new TestChecksumProvider(badChecksums);
 
     // when
-    final var store = new FileBasedSnapshotStore(0, 1, rootDirectory, testChecksumProvider);
+    final var store =
+        new FileBasedSnapshotStore(
+            0, 1, rootDirectory, testChecksumProvider, new SimpleMeterRegistry());
     scheduler.submitActor(store).join();
     final var takenSnapshot = (FileBasedSnapshot) takeTransientSnapshot(1, store).persist().join();
 
@@ -368,7 +372,11 @@ public class FileBasedSnapshotStoreTest {
 
     final var store =
         new FileBasedSnapshotStore(
-            0, PARTITION_ID, receiverStorePath, new TestChecksumProvider(fileChecksums));
+            0,
+            PARTITION_ID,
+            receiverStorePath,
+            new TestChecksumProvider(fileChecksums),
+            new SimpleMeterRegistry());
     scheduler.submitActor(store);
 
     // when
@@ -388,7 +396,11 @@ public class FileBasedSnapshotStoreTest {
 
     final var restartedStore =
         new FileBasedSnapshotStore(
-            0, PARTITION_ID, receiverStorePath, new TestChecksumProvider(fileChecksums));
+            0,
+            PARTITION_ID,
+            receiverStorePath,
+            new TestChecksumProvider(fileChecksums),
+            new SimpleMeterRegistry());
     scheduler.submitActor(restartedStore).join();
 
     assertThat(restartedStore.getLatestSnapshot())
@@ -423,7 +435,8 @@ public class FileBasedSnapshotStoreTest {
   }
 
   private FileBasedSnapshotStore createStore(final Path root) {
-    final var store = new FileBasedSnapshotStore(0, 1, root, snapshotPath -> Map.of());
+    final var store =
+        new FileBasedSnapshotStore(0, 1, root, snapshotPath -> Map.of(), new SimpleMeterRegistry());
     scheduler.submitActor(store).join();
 
     return store;

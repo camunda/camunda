@@ -533,18 +533,6 @@ jobs:
           version: current-test
           push: true
           distball: ${{ steps.build-zeebe.outputs.distball }}
-      - name: Build Camunda Docker Image
-        if: matrix.group == 'root'
-        uses: ./.github/actions/build-platform-docker
-        id: build-camunda-docker
-        with:
-          repository: localhost:5000/camunda/camunda
-          version: current-test
-          distball: ${{ steps.build-zeebe.outputs.distball }}
-          platforms: ${{ env.DOCKER_PLATFORMS }}
-          dockerfile: camunda.Dockerfile
-          # push is needed for multi-arch images as buildkit does not support loading them locally
-          push: true
       - name: Create build output log file
         run: echo "BUILD_OUTPUT_FILE_PATH=$(mktemp)" >> $GITHUB_ENV
       - name: Maven Test Build
@@ -830,7 +818,7 @@ jobs:
         run: yarn test:ci
       - name: Upload test results
         if: always()
-        uses: actions/upload-artifact@65c4c4a1ddee5b72f698fdd19549f0f0fb45cf08 # v4
+        uses: actions/upload-artifact@4cec3d8aa04e39d1a68397de0c4cd6fb9dce8ec1 # v4
         with:
           name: optimize-unit-tests-frontend-junit
           path: |
@@ -883,7 +871,7 @@ jobs:
           threads: .5C
       - name: Upload Test Results
         if: always()
-        uses: actions/upload-artifact@65c4c4a1ddee5b72f698fdd19549f0f0fb45cf08 # v4
+        uses: actions/upload-artifact@4cec3d8aa04e39d1a68397de0c4cd6fb9dce8ec1 # v4
         with:
           name: optimize-unit-tests-backend-junit
           path: |
@@ -1025,8 +1013,8 @@ jobs:
   deploy-snapshots:
     name: Deploy snapshot artifacts
     needs: [ check-results ]
-    runs-on: ubuntu-latest
-    timeout-minutes: 60
+    runs-on: gcp-perf-core-8-default
+    timeout-minutes: 25
     permissions: {}  # GITHUB_TOKEN unused in this job
     if: github.repository == 'camunda/camunda' && github.ref == 'refs/heads/main'
     concurrency:
@@ -1034,37 +1022,12 @@ jobs:
       cancel-in-progress: false
     steps:
       - uses: actions/checkout@v4
-      - name: Import Secrets
-        id: secrets
-        uses: hashicorp/vault-action@v3.0.0
-        with:
-          url: ${{ secrets.VAULT_ADDR }}
-          method: approle
-          roleId: ${{ secrets.VAULT_ROLE_ID }}
-          secretId: ${{ secrets.VAULT_SECRET_ID }}
-          secrets: |
-            secret/data/products/zeebe/ci/zeebe ARTIFACTS_USR;
-            secret/data/products/zeebe/ci/zeebe ARTIFACTS_PSW;
-      - uses: actions/setup-java@v4.6.0
-        with:
-          distribution: 'temurin'
-          java-version: '21'
-      # Use CI Nexus as co-located pull-through cache for Maven artifacts via ~/.m2/settings.xml
-      - name: 'Create settings.xml'
-        uses: s4u/maven-settings-action@v3.1.0
-        with:
-          githubServer: false
-          servers: |
-            [{
-              "id": "camunda-nexus",
-              "username": "${{ steps.secrets.outputs.ARTIFACTS_USR }}",
-              "password": "${{ steps.secrets.outputs.ARTIFACTS_PSW }}"
-            }]
-          mirrors: '[{"url": "https://repository.nexus.camunda.cloud/content/groups/internal/", "id": "camunda-nexus", "mirrorOf": "zeebe,zeebe-snapshots", "name": "camunda Nexus"}]'
-      - name: Configure Maven
-        uses: ./.github/actions/setup-maven-cache
+      - uses: ./.github/actions/setup-build
         with:
           maven-cache-key-modifier: snapshots
+          vault-address: ${{ secrets.VAULT_ADDR }}
+          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
       - uses: ./.github/actions/build-frontend
         id: build-operate-fe
         with:
@@ -1080,10 +1043,7 @@ jobs:
       # compile and generate-sources to ensure that the Javadoc can be properly generated; compile is
       # necessary when using annotation preprocessors for code generation, as otherwise the symbols are
       # not resolve-able by the Javadoc generator
-      - run: ./mvnw -B -D skipTests -D skipChecks -PskipFrontendBuild compile generate-sources source:jar javadoc:jar deploy
-        env:
-          MAVEN_USERNAME: ${{ steps.secrets.outputs.ARTIFACTS_USR }}
-          MAVEN_PASSWORD: ${{ steps.secrets.outputs.ARTIFACTS_PSW }}
+      - run: ./mvnw -B -T1C -D skipTests -D skipChecks -PskipFrontendBuild compile generate-sources source:jar javadoc:jar deploy
       - name: Observe build status
         if: always()
         continue-on-error: true

@@ -45,7 +45,9 @@ public class ZeebeConnectorSecureIT {
   private static final String CERTIFICATE_FILE = "zeebe-test-chain.cert.pem";
   private static final String PRIVATE_KEY_FILE = "zeebe-test-server.key.pem";
   private static final DockerImageName ZEEBE_DOCKER_IMAGE =
-      DockerImageName.parse("camunda/zeebe")
+      DockerImageName.parse(
+              ContainerVersionsUtil.readProperty(
+                  ContainerVersionsUtil.ZEEBE_CURRENTVERSION_DOCKER_REPO_PROPERTY_NAME))
           .withTag(
               ContainerVersionsUtil.readProperty(
                   ContainerVersionsUtil.ZEEBE_CURRENTVERSION_DOCKER_PROPERTY_NAME));
