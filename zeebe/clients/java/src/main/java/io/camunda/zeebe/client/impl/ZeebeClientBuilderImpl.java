@@ -61,6 +61,7 @@ public final class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeCl
       "ZEEBE_CLIENT_WORKER_STREAM_ENABLED";
   public static final String DEFAULT_GATEWAY_ADDRESS = "0.0.0.0:26500";
   public static final URI DEFAULT_GRPC_ADDRESS =
+<<<<<<< HEAD:zeebe/clients/java/src/main/java/io/camunda/zeebe/client/impl/ZeebeClientBuilderImpl.java
       getURIFromString("https://" + DEFAULT_GATEWAY_ADDRESS);
   public static final URI DEFAULT_REST_ADDRESS = getURIFromString("https://0.0.0.0:8080");
   public static final String REST_ADDRESS_VAR = "ZEEBE_REST_ADDRESS";
@@ -71,6 +72,11 @@ public final class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeCl
       "ZEEBE_DEFAULT_JOB_WORKER_TENANT_IDS";
   public static final String DEFAULT_JOB_WORKER_NAME = "default";
   public static final String USE_DEFAULT_RETRY_POLICY_VAR = "ZEEBE_CLIENT_USE_DEFAULT_RETRY_POLICY";
+=======
+      getURIFromString("http://" + DEFAULT_GATEWAY_ADDRESS);
+  public static final URI DEFAULT_REST_ADDRESS = getURIFromString("http://0.0.0.0:8080");
+  public static final String DEFAULT_JOB_WORKER_NAME_VAR = "default";
+>>>>>>> ce1ffe89 (fix: default localhost addresses should use plaintext):clients/java/src/main/java/io/camunda/zeebe/client/impl/ZeebeClientBuilderImpl.java
   private static final String TENANT_ID_LIST_SEPARATOR = ",";
   private static final boolean DEFAULT_PREFER_REST_OVER_GRPC = false;
 
