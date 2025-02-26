@@ -20,6 +20,7 @@ import io.camunda.zeebe.protocol.record.intent.DecisionRequirementsIntent;
 import io.camunda.zeebe.protocol.record.intent.FormIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessIntent;
 import io.camunda.zeebe.protocol.record.intent.ResourceDeletionIntent;
+import io.camunda.zeebe.protocol.record.intent.ResourceIntent;
 import io.camunda.zeebe.protocol.record.value.CommandDistributionRecordValue;
 import io.camunda.zeebe.test.util.Strings;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
@@ -34,6 +35,7 @@ public class ResourceDeletionMultiPartitionTest {
   private static final int PARTITION_COUNT = 3;
   private static final String DMN_RESOURCE = "/dmn/decision-table.dmn";
   private static final String FORM_RESOURCE = "/form/test-form-1.form";
+  private static final String RPA_RESOURCE = "/resource/test-rpa-1.rpa";
 
   @Rule public final EngineRule engine = EngineRule.multiplePartition(PARTITION_COUNT);
   @Rule public final TestWatcher watcher = new RecordingExporterTestWatcher();
@@ -224,6 +226,68 @@ public class ResourceDeletionMultiPartitionTest {
               ResourceDeletionIntent.DELETE,
               ResourceDeletionIntent.DELETING,
               FormIntent.DELETED,
+              ResourceDeletionIntent.DELETED);
+    }
+  }
+
+  @Test
+  public void shouldTestResourceLifecycle() {
+    // given
+    final var resourceKey =
+        engine
+            .deployment()
+            .withJsonClasspathResource(RPA_RESOURCE)
+            .deploy()
+            .getValue()
+            .getResourceMetadata()
+            .getFirst()
+            .getResourceKey();
+
+    // when
+    engine.resourceDeletion().withResourceKey(resourceKey).delete();
+
+    // then
+    assertThat(
+            RecordingExporter.records()
+                .withPartitionId(1)
+                .limitByCount(r -> r.getIntent().equals(CommandDistributionIntent.FINISHED), 2))
+        .extracting(
+            Record::getIntent,
+            Record::getRecordType,
+            r ->
+                // We want to verify the partition id where the deletion was distributing to and
+                // where it was completed. Since only the CommandDistribution records have a
+                // value that contains the partition id, we use the partition id the record was
+                // written on for the other records.
+                r.getValue() instanceof CommandDistributionRecordValue
+                    ? ((CommandDistributionRecordValue) r.getValue()).getPartitionId()
+                    : r.getPartitionId())
+        .containsSubsequence(
+            tuple(ResourceDeletionIntent.DELETE, RecordType.COMMAND, 1),
+            tuple(ResourceIntent.DELETED, RecordType.EVENT, 1),
+            tuple(ResourceDeletionIntent.DELETED, RecordType.EVENT, 1),
+            tuple(CommandDistributionIntent.STARTED, RecordType.EVENT, 1))
+        .containsSubsequence(
+            tuple(CommandDistributionIntent.DISTRIBUTING, RecordType.EVENT, 2),
+            tuple(CommandDistributionIntent.ACKNOWLEDGE, RecordType.COMMAND, 2),
+            tuple(CommandDistributionIntent.ACKNOWLEDGED, RecordType.EVENT, 2))
+        .containsSubsequence(
+            tuple(CommandDistributionIntent.DISTRIBUTING, RecordType.EVENT, 3),
+            tuple(CommandDistributionIntent.ACKNOWLEDGE, RecordType.COMMAND, 3),
+            tuple(CommandDistributionIntent.ACKNOWLEDGED, RecordType.EVENT, 3))
+        .endsWith(tuple(CommandDistributionIntent.FINISHED, RecordType.EVENT, 1));
+
+    for (int partitionId = 2; partitionId < PARTITION_COUNT; partitionId++) {
+      assertThat(
+              RecordingExporter.records()
+                  .withPartitionId(partitionId)
+                  .limit(r -> r.getIntent().equals(ResourceDeletionIntent.DELETED))
+                  .collect(Collectors.toList()))
+          .extracting(Record::getIntent)
+          .endsWith(
+              ResourceDeletionIntent.DELETE,
+              ResourceDeletionIntent.DELETING,
+              ResourceIntent.DELETED,
               ResourceDeletionIntent.DELETED);
     }
   }
