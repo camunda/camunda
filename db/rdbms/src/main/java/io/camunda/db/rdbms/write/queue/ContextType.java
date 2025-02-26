@@ -23,7 +23,8 @@ public enum ContextType {
   USER(false),
   USER_TASK(true),
   FORM(false),
-  MAPPING(false);
+  MAPPING(false),
+  BATCH_OPERATION(false);
 
   private final boolean preserveOrder;
 
