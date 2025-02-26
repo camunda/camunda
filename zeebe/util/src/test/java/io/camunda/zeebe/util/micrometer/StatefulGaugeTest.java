@@ -16,7 +16,6 @@ import io.micrometer.prometheusmetrics.PrometheusConfig;
 import io.micrometer.prometheusmetrics.PrometheusMeterRegistry;
 import io.prometheus.metrics.model.snapshots.GaugeSnapshot.GaugeDataPointSnapshot;
 import io.prometheus.metrics.model.snapshots.Labels;
-import java.util.stream.LongStream;
 import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.Test;
 

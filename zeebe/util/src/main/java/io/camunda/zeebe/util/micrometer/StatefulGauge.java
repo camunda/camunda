@@ -110,6 +110,22 @@ public final class StatefulGauge extends AbstractMeter implements Gauge {
     return new Builder(name);
   }
 
+  static StatefulGauge registerAsGauge(final Meter.Id id, final MeterRegistry registry) {
+    final var state = new AtomicLong();
+    final var gauge =
+        Gauge.builder(id.getName(), state, StatefulGauge::longAsDouble)
+            .description(id.getDescription())
+            .tags(id.getTags())
+            .baseUnit(id.getBaseUnit())
+            .register(registry);
+
+    return new StatefulGauge(gauge, state);
+  }
+
+  private static double longAsDouble(final AtomicLong value) {
+    return Double.longBitsToDouble(value.get());
+  }
+
   /**
    * Builds a {@link StatefulGauge}.
    *
@@ -118,7 +134,6 @@ public final class StatefulGauge extends AbstractMeter implements Gauge {
    */
   @SuppressWarnings("unused")
   public static final class Builder {
-
     private final String name;
     private Tags tags = Tags.empty();
     private String description;
@@ -209,21 +224,5 @@ public final class StatefulGauge extends AbstractMeter implements Gauge {
 
       return StatefulGauge.registerAsGauge(id, registry);
     }
-  }
-
-  static StatefulGauge registerAsGauge(final Meter.Id id, final MeterRegistry registry) {
-    final var state = new AtomicLong();
-    final var gauge =
-        Gauge.builder(id.getName(), state, StatefulGauge::longAsDouble)
-            .description(id.getDescription())
-            .tags(id.getTags())
-            .baseUnit(id.getBaseUnit())
-            .register(registry);
-
-    return new StatefulGauge(gauge, state);
-  }
-
-  private static double longAsDouble(final AtomicLong value) {
-    return Double.longBitsToDouble(value.get());
   }
 }
