@@ -26,6 +26,7 @@ public class ClientConfig {
   public boolean isLoginDelegated;
   public String contextPath;
   public String baseName;
+  public String clientMode;
 
   // Cloud related properties for mixpanel events
   @Value("${CAMUNDA_TASKLIST_CLOUD_ORGANIZATIONID:#{null}}")
@@ -54,6 +55,9 @@ public class ClientConfig {
   @Value("${spring.servlet.multipart.max-request-size:4MB}")
   private DataSize maxRequestSizeConfigValue;
 
+  @Value("${CAMUNDA_TASKLIST_V2_MODE_ENABLED:#{false}}")
+  private boolean isV2ModeEnabled;
+
   @Autowired private TasklistProfileService profileService;
   @Autowired private TasklistProperties tasklistProperties;
   @Autowired private SecurityConfiguration securityConfiguration;
@@ -68,5 +72,6 @@ public class ClientConfig {
     canLogout = profileService.currentProfileCanLogout();
     isLoginDelegated = profileService.isLoginDelegated();
     maxRequestSize = maxRequestSizeConfigValue.toBytes();
+    clientMode = isV2ModeEnabled ? "v2" : "v1";
   }
 }
