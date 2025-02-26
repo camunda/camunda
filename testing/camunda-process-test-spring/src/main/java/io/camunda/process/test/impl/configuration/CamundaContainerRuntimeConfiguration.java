@@ -37,6 +37,7 @@ public class CamundaContainerRuntimeConfiguration {
       ContainerRuntimeDefaults.CONNECTORS_DOCKER_IMAGE_VERSION;
   private Map<String, String> connectorsEnvVars = Collections.emptyMap();
   private Map<String, String> connectorsSecrets = Collections.emptyMap();
+  private Map<String, String> elasticsearchEnvVars = Collections.emptyMap();
 
   public String getCamundaVersion() {
     return camundaVersion;
@@ -108,5 +109,13 @@ public class CamundaContainerRuntimeConfiguration {
 
   public void setConnectorsSecrets(final Map<String, String> connectorsSecrets) {
     this.connectorsSecrets = connectorsSecrets;
+  }
+
+  public Map<String, String> getElasticsearchEnvVars() {
+    return elasticsearchEnvVars;
+  }
+
+  public void setElasticsearchEnvVars(final Map<String, String> elasticsearchEnvVars) {
+    this.elasticsearchEnvVars = elasticsearchEnvVars;
   }
 }

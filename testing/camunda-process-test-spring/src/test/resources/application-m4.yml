@@ -1,0 +1,12 @@
+io:
+  camunda:
+    process:
+      test:
+        camundaEnvVars:
+          JAVA_TOOL_OPTIONS: -XX:UseSVE=0
+        elasticsearchEnvVars:
+          ES_JAVA_OPTS: -XX:UseSVE=0
+          CLI_JAVA_OPTS: -XX:UseSVE=0
+        connectorsEnvVars:
+          JAVA_TOOL_OPTIONS: -XX:UseSVE=0
+

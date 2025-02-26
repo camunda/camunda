@@ -15,6 +15,8 @@
  */
 package io.camunda.process.test.impl.runtime;
 
+import static io.camunda.process.test.api.CamundaProcessTestExtension.ELASTIC_ENV;
+import static io.camunda.process.test.api.CamundaProcessTestExtension.JAVA_TOOL_OPTION_ENV;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
@@ -41,6 +43,7 @@ public class CamundaContainerRuntimeTest {
   private static final String ADDITIONAL_ENV_VAR_KEY = "env-3";
   private static final String ADDITIONAL_ENV_VAR_VALUE = "test-3";
   private static final Map<String, String> EXPECTED_ENV_VARS;
+  private static final Map<String, String> ELASTIC_EXPECTED_ENV_VARS;
 
   static {
     ENV_VARS = new HashMap<>();
@@ -49,6 +52,11 @@ public class CamundaContainerRuntimeTest {
 
     EXPECTED_ENV_VARS = new HashMap<>(ENV_VARS);
     EXPECTED_ENV_VARS.put(ADDITIONAL_ENV_VAR_KEY, ADDITIONAL_ENV_VAR_VALUE);
+    EXPECTED_ENV_VARS.putAll(JAVA_TOOL_OPTION_ENV);
+
+    ELASTIC_EXPECTED_ENV_VARS = new HashMap<>(ENV_VARS);
+    ELASTIC_EXPECTED_ENV_VARS.put(ADDITIONAL_ENV_VAR_KEY, ADDITIONAL_ENV_VAR_VALUE);
+    ELASTIC_EXPECTED_ENV_VARS.putAll(ELASTIC_ENV);
   }
 
   @Mock private ContainerFactory containerFactory;
@@ -74,7 +82,12 @@ public class CamundaContainerRuntimeTest {
   void shouldCreateContainers() {
     // given/when
     final CamundaContainerRuntime runtime =
-        CamundaContainerRuntime.newBuilder().withContainerFactory(containerFactory).build();
+        CamundaContainerRuntime.newBuilder()
+            .withCamundaEnv(JAVA_TOOL_OPTION_ENV)
+            .withConnectorsEnv(JAVA_TOOL_OPTION_ENV)
+            .withElasticsearchEnv(ELASTIC_ENV)
+            .withContainerFactory(containerFactory)
+            .build();
 
     // then
     assertThat(runtime).isNotNull();
@@ -91,7 +104,12 @@ public class CamundaContainerRuntimeTest {
   void shouldStartAndStopContainers() throws Exception {
     // given
     final CamundaContainerRuntime runtime =
-        CamundaContainerRuntime.newBuilder().withContainerFactory(containerFactory).build();
+        CamundaContainerRuntime.newBuilder()
+            .withCamundaEnv(JAVA_TOOL_OPTION_ENV)
+            .withConnectorsEnv(JAVA_TOOL_OPTION_ENV)
+            .withElasticsearchEnv(ELASTIC_ENV)
+            .withContainerFactory(containerFactory)
+            .build();
 
     // when
     runtime.start();
@@ -113,7 +131,12 @@ public class CamundaContainerRuntimeTest {
   @Test
   void shouldCreateWithDefaults() {
     // given/when
-    CamundaContainerRuntime.newBuilder().withContainerFactory(containerFactory).build();
+    CamundaContainerRuntime.newBuilder()
+        .withCamundaEnv(JAVA_TOOL_OPTION_ENV)
+        .withConnectorsEnv(JAVA_TOOL_OPTION_ENV)
+        .withElasticsearchEnv(ELASTIC_ENV)
+        .withContainerFactory(containerFactory)
+        .build();
 
     // then
     verify(containerFactory)
@@ -146,6 +169,9 @@ public class CamundaContainerRuntimeTest {
         .withCamundaExposedPort(100)
         .withCamundaExposedPort(200)
         .withCamundaLogger("custom-logger")
+        .withCamundaEnv(JAVA_TOOL_OPTION_ENV)
+        .withConnectorsEnv(JAVA_TOOL_OPTION_ENV)
+        .withElasticsearchEnv(ELASTIC_ENV)
         .build();
 
     // then
@@ -172,11 +198,15 @@ public class CamundaContainerRuntimeTest {
         .withElasticsearchExposedPort(100)
         .withElasticsearchExposedPort(200)
         .withElasticsearchLogger("custom-logger")
+        .withCamundaEnv(JAVA_TOOL_OPTION_ENV)
+        .withConnectorsEnv(JAVA_TOOL_OPTION_ENV)
+        .withElasticsearchEnv(ELASTIC_ENV)
+        .withContainerFactory(containerFactory)
         .build();
 
     // then
     verify(containerFactory).createElasticsearchContainer(dockerImageName, dockerImageVersion);
-    verify(elasticsearchContainer).withEnv(EXPECTED_ENV_VARS);
+    verify(elasticsearchContainer).withEnv(ELASTIC_EXPECTED_ENV_VARS);
     verify(elasticsearchContainer).addExposedPort(100);
     verify(elasticsearchContainer).addExposedPort(200);
     verify(elasticsearchContainer).withLogConsumer(any());
@@ -187,6 +217,9 @@ public class CamundaContainerRuntimeTest {
     // given
     final CamundaContainerRuntime runtime =
         CamundaContainerRuntime.newBuilder()
+            .withCamundaEnv(JAVA_TOOL_OPTION_ENV)
+            .withConnectorsEnv(JAVA_TOOL_OPTION_ENV)
+            .withElasticsearchEnv(ELASTIC_ENV)
             .withContainerFactory(containerFactory)
             .withConnectorsEnabled(true)
             .build();
@@ -232,6 +265,10 @@ public class CamundaContainerRuntimeTest {
         .withConnectorsSecrets(connectorSecrets)
         .withConnectorsSecret(additionalConnectorSecretKey, additionalConnectorSecretValue)
         .withConnectorsLogger("custom-logger")
+        .withCamundaEnv(JAVA_TOOL_OPTION_ENV)
+        .withConnectorsEnv(JAVA_TOOL_OPTION_ENV)
+        .withElasticsearchEnv(ELASTIC_ENV)
+        .withContainerFactory(containerFactory)
         .build();
 
     // then

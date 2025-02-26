@@ -175,6 +175,9 @@ public class CamundaProcessTestExecutionListener implements TestExecutionListene
         .withConnectorsEnv(runtimeConfiguration.getConnectorsEnvVars())
         .withConnectorsSecrets(runtimeConfiguration.getConnectorsSecrets());
 
+    containerRuntimeBuilder
+        .withElasticsearchEnv(runtimeConfiguration.getElasticsearchEnvVars());
+
     return containerRuntimeBuilder.build();
   }
 

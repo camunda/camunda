@@ -15,6 +15,9 @@
  */
 package io.camunda.process.test.impl.runtime;
 
+import static io.camunda.process.test.api.CamundaProcessTestExtension.ELASTIC_ENV;
+import static io.camunda.process.test.api.CamundaProcessTestExtension.JAVA_TOOL_OPTION_ENV;
+
 import io.camunda.process.test.impl.containers.CamundaContainer;
 import io.camunda.process.test.impl.containers.ConnectorsContainer;
 import io.camunda.process.test.impl.containers.ContainerFactory;
@@ -58,6 +61,7 @@ public class CamundaContainerRuntime implements AutoCloseable {
   private final ConnectorsContainer connectorsContainer;
 
   private final boolean connectorsEnabled;
+
 
   CamundaContainerRuntime(
       final CamundaContainerRuntimeBuilder builder, final ContainerFactory containerFactory) {
@@ -195,6 +199,10 @@ public class CamundaContainerRuntime implements AutoCloseable {
   }
 
   public static CamundaContainerRuntime newDefaultRuntime() {
-    return newBuilder().build();
+    return newBuilder()
+        .withElasticsearchEnv(ELASTIC_ENV)
+        .withCamundaEnv(JAVA_TOOL_OPTION_ENV)
+        .withConnectorsEnv(JAVA_TOOL_OPTION_ENV)
+        .build();
   }
 }

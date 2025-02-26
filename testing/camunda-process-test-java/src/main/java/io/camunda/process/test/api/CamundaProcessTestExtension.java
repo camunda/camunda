@@ -28,6 +28,7 @@ import io.camunda.zeebe.client.ZeebeClient;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
@@ -69,6 +70,9 @@ public class CamundaProcessTestExtension implements BeforeEachCallback, AfterEac
   /** The JUnit extension store key of the context. */
   public static final String STORE_KEY_CONTEXT = "camunda-process-test-context";
 
+  public static final Map<String, String> JAVA_TOOL_OPTION_ENV = new HashMap<>();
+  public static final Map<String, String> ELASTIC_ENV = new HashMap<>();
+
   private final List<AutoCloseable> createdClients = new ArrayList<>();
 
   private final CamundaContainerRuntimeBuilder containerRuntimeBuilder;
@@ -76,6 +80,12 @@ public class CamundaProcessTestExtension implements BeforeEachCallback, AfterEac
 
   private CamundaContainerRuntime containerRuntime;
   private CamundaProcessTestResultCollector processTestResultCollector;
+
+  static {
+    JAVA_TOOL_OPTION_ENV.put("JAVA_TOOL_OPTIONS", "-XX:UseSVE=0");
+    ELASTIC_ENV.put("ES_JAVA_OPTS", "-XX:UseSVE=0");
+    ELASTIC_ENV.put("CLI_JAVA_OPTS", "-XX:UseSVE=0");
+  }
 
   CamundaProcessTestExtension(
       final CamundaContainerRuntimeBuilder containerRuntimeBuilder,
@@ -106,7 +116,12 @@ public class CamundaProcessTestExtension implements BeforeEachCallback, AfterEac
   @Override
   public void beforeEach(final ExtensionContext context) throws Exception {
     // create runtime
-    containerRuntime = containerRuntimeBuilder.build();
+    containerRuntime =
+        containerRuntimeBuilder
+            .withElasticsearchEnv(ELASTIC_ENV)
+            .withCamundaEnv(JAVA_TOOL_OPTION_ENV)
+            .withConnectorsEnv(JAVA_TOOL_OPTION_ENV)
+            .build();
     containerRuntime.start();
 
     final CamundaProcessTestContext camundaProcessTestContext =
