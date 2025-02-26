@@ -10,15 +10,12 @@ package io.camunda.zeebe.engine.processing.batchoperation;
 import io.camunda.zeebe.engine.processing.ExcludeAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.DistributedTypedRecordProcessor;
-import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
-import io.camunda.zeebe.engine.state.distribution.DistributionQueue;
-import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationCreationRecord;
-import io.camunda.zeebe.protocol.record.intent.AuthorizationIntent;
+import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationExecutionRecord;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationIntent;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
@@ -28,7 +25,9 @@ import org.slf4j.LoggerFactory;
 @ExcludeAuthorizationCheck
 public final class BatchOperationActivateProcessor
     implements DistributedTypedRecordProcessor<BatchOperationCreationRecord> {
-  private static final Logger LOGGER = LoggerFactory.getLogger(BatchOperationActivateProcessor.class);
+
+  private static final Logger LOGGER = LoggerFactory.getLogger(
+      BatchOperationActivateProcessor.class);
 
   private final TypedCommandWriter commandWriter;
   private final KeyGenerator keyGenerator;
@@ -40,7 +39,7 @@ public final class BatchOperationActivateProcessor
       final Writers writers,
       final KeyGenerator keyGenerator,
       final CommandDistributionBehavior commandDistributionBehavior
-      ) {
+  ) {
     commandWriter = writers.command();
     stateWriter = writers.state();
     responseWriter = writers.response();
@@ -50,14 +49,17 @@ public final class BatchOperationActivateProcessor
 
   @Override
   public void processNewCommand(final TypedRecord<BatchOperationCreationRecord> command) {
+    final long key = keyGenerator.nextKey();
     final var recordValue = command.getValue();
-    LOGGER.debug("Processing new command with key '{}': {}", command.getKey(), recordValue);
-    createBatchOperation(command);
+    LOGGER.debug("Processing new command with key '{}': {}", key, recordValue);
+    createBatchOperationExecution(key, command);
     responseWriter.writeEventOnCommand(
-        command.getKey(), BatchOperationIntent.CREATED, command.getValue(), command);
-
+        key,
+        BatchOperationIntent.CREATED,
+        command.getValue(),
+        command);
     commandDistributionBehavior
-        .withKey(command.getKey())
+        .withKey(key)
         .unordered()
         .distribute(command);
   }
@@ -67,19 +69,21 @@ public final class BatchOperationActivateProcessor
     final var recordValue = command.getValue();
 
     LOGGER.debug("Processing distributed command with key '{}': {}", command.getKey(), recordValue);
-    createBatchOperation(command);
+    createBatchOperationExecution(command.getKey(), command);
     commandDistributionBehavior.acknowledgeCommand(command);
   }
 
-  private void createBatchOperation(final TypedRecord<BatchOperationCreationRecord> command) {
-    stateWriter.appendFollowUpEvent(command.getKey(), BatchOperationIntent.CREATED, command.getValue());
-  }
+  private void createBatchOperationExecution(final Long key,
+      final TypedRecord<BatchOperationCreationRecord> command) {
+    stateWriter.appendFollowUpEvent(key, BatchOperationIntent.CREATED,
+        command.getValue());
 
-  private void writeEventAndDistribute(
-      final TypedRecord<BatchOperationCreationRecord> command,
-      final BatchOperationCreationRecord batchRecord) {
-    //final long key = keyGenerator.nextKey();
-
+    final var batchExecute = new BatchOperationExecutionRecord();
+    batchExecute.setBatchOperationKey(key);
+    batchExecute.setBatchOperationType(command.getValue().getBatchOperationType());
+    batchExecute.setOffset(0);
+    commandWriter.appendFollowUpCommand(key, BatchOperationIntent.EXECUTE,
+        batchExecute);
   }
 
 }

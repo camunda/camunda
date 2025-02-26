@@ -7,15 +7,11 @@
  */
 package io.camunda.zeebe.engine.state.immutable;
 
-import io.camunda.zeebe.engine.state.authorization.PersistedAuthorization;
-import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
-import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
-import io.camunda.zeebe.protocol.record.value.PermissionType;
+import io.camunda.zeebe.engine.state.batchoperation.ItemKeys;
 import java.util.Optional;
-import java.util.Set;
 
 public interface BatchOperationState {
 
-  Optional<PersistedAuthorization> get(final long batchKey);
+  Optional<ItemKeys> get(final long batchKey);
 
 }

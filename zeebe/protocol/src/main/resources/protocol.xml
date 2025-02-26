@@ -66,6 +66,7 @@
       <validValue name="IDENTITY_SETUP">48</validValue>
       <validValue name="RESOURCE">49</validValue>
       <validValue name="BATCH_OPERATION">50</validValue>
+      <validValue name="BATCH_OPERATION_EXECUTION">51</validValue>
 
       <!-- Management records / record not related to process automation -->
       <validValue name="REDISTRIBUTION">252</validValue>
