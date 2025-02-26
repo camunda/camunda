@@ -161,7 +161,6 @@ public class ElasticsearchExporterConfiguration {
   }
 
   public static class IndexConfiguration {
-
     // prefix for index and templates
     public String prefix = "zeebe-record";
 
@@ -177,9 +176,6 @@ public class ElasticsearchExporterConfiguration {
 
     // update index template on startup
     public boolean createTemplate = true;
-
-    // defines whether the application manages the schema
-    public boolean createSchema = true;
 
     // record types to export
     public boolean command = false;
@@ -224,17 +220,10 @@ public class ElasticsearchExporterConfiguration {
     public boolean messageCorrelation = true;
     public boolean user = true;
     public boolean authorization = true;
+
     // index settings
     private Integer numberOfShards = null;
     private Integer numberOfReplicas = null;
-
-    public boolean isCreateSchema() {
-      return createSchema;
-    }
-
-    public void setCreateSchema(final boolean createSchema) {
-      this.createSchema = createSchema;
-    }
 
     public Integer getNumberOfShards() {
       return numberOfShards;
@@ -260,8 +249,6 @@ public class ElasticsearchExporterConfiguration {
           + '\''
           + ", createTemplate="
           + createTemplate
-          + ", createSchema="
-          + createSchema
           + ", command="
           + command
           + ", event="
@@ -345,7 +332,6 @@ public class ElasticsearchExporterConfiguration {
   }
 
   public static class BulkConfiguration {
-
     // delay before forced flush
     public int delay = 5;
     // bulk size before flush
@@ -367,7 +353,6 @@ public class ElasticsearchExporterConfiguration {
   }
 
   public static class AuthenticationConfiguration {
-
     private String username;
     private String password;
 
