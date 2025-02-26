@@ -29,7 +29,7 @@ const AssignMembersModal: FC<
     { assignedUsers: User[] }
   >
 > = ({ entity: tenant, assignedUsers, onSuccess, open, onClose }) => {
-  const { t, Translate } = useTranslate();
+  const { t, Translate } = useTranslate("tenants");
   const [selectedUsers, setSelectedUsers] = useState<User[]>([]);
   const [loadingAssignUser, setLoadingAssignUser] = useState(false);
 
@@ -37,7 +37,7 @@ const AssignMembersModal: FC<
     data: userSearchResults,
     loading,
     reload,
-    errors,
+    error,
   } = useApi(searchUser);
 
   const [callAssignUser] = useApiCall(assignTenantMember);
@@ -87,10 +87,10 @@ const AssignMembersModal: FC<
 
   return (
     <FormModal
-      headline={t("Assign user")}
-      confirmLabel={t("Assign user")}
+      headline={t("assignUser")}
+      confirmLabel={t("assignUser")}
       loading={loadingAssignUser}
-      loadingDescription={t("Assigning user")}
+      loadingDescription={t("assigningUser")}
       open={open}
       onSubmit={handleSubmit}
       submitDisabled={!canSubmit}
@@ -121,15 +121,15 @@ const AssignMembersModal: FC<
         items={unassignedUsers}
         itemTitle={({ username }) => username}
         itemSubTitle={({ email }) => email}
-        placeholder={t("Search by full name or email address")}
+        placeholder={t("searchByNameOrEmail")}
         onChange={() => null}
         onSelect={onSelectUser}
       />
 
-      {!loading && errors && (
+      {!loading && error && (
         <TranslatedErrorInlineNotification
-          title={t("Users could not be loaded.")}
-          actionButton={{ label: t("Retry"), onClick: reload }}
+          title={t("usersCouldNotLoad")}
+          actionButton={{ label: t("retry"), onClick: reload }}
         />
       )}
     </FormModal>

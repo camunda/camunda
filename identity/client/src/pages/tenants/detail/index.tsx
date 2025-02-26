@@ -74,7 +74,7 @@ const Details: FC = () => {
               tabs={[
                 {
                   key: "users",
-                  label: t("Users"),
+                  label: t("users"),
                   content: <Members tenantId={tenant.tenantId} />,
                 },
                 {

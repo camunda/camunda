@@ -21,7 +21,7 @@ import AddModal from "src/pages/tenants/modals/AddModal";
 import DeleteModal from "src/pages/tenants/modals/DeleteModal";
 
 const List: FC = () => {
-  const { t } = useTranslate();
+  const { t } = useTranslate("tenants");
   const navigate = useNavigate();
   const {
     data: tenantSearchResults,
@@ -48,17 +48,15 @@ const List: FC = () => {
       <Page>
         {pageHeader}
         <C3EmptyState
-          heading={t("You don’t have any tenants yet")}
-          description={t(
-            "Create isolated environments with their own assigned users, groups, and applications.",
-          )}
+          heading={t("noTenants")}
+          description={t("createIsolatedEnvironments")}
           button={{
-            label: t("Create a tenant"),
+            label: t("createATenant"),
             onClick: addTenant,
           }}
           link={{
             href: documentationHref("/concepts/multi-tenancy/", ""),
-            label: t("Learn more about tenants"),
+            label: t("learnMoreAboutTenants"),
           }}
         />
         {addTenantModal}
@@ -72,17 +70,17 @@ const List: FC = () => {
       <EntityList
         data={tenantSearchResults == null ? [] : tenantSearchResults.items}
         headers={[
-          { header: t("Name"), key: "name" },
-          { header: t("Tenant ID"), key: "tenantId" },
+          { header: t("name"), key: "name" },
+          { header: t("tenantId"), key: "tenantId" },
         ]}
         sortProperty="name"
         onEntityClick={showDetails}
-        addEntityLabel={t("Create tenant")}
+        addEntityLabel={t("createTenant")}
         onAddEntity={addTenant}
         loading={loading}
         menuItems={[
           {
-            label: t("Delete"),
+            label: t("delete"),
             icon: TrashCan,
             isDangerous: true,
             onClick: (tenant) =>
@@ -96,8 +94,8 @@ const List: FC = () => {
       />
       {!loading && !success && (
         <TranslatedErrorInlineNotification
-          title={t("The list of tenants could not be loaded.")}
-          actionButton={{ label: t("Retry"), onClick: reload }}
+          title={t("tenantsListCouldNotLoad")}
+          actionButton={{ label: t("retry"), onClick: reload }}
         />
       )}
       {addTenantModal}

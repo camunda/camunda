@@ -29,7 +29,7 @@ const DeleteModal: FC<RemoveTenantMemberModalProps> = ({
   onSuccess,
   tenant,
 }) => {
-  const { t, Translate } = useTranslate();
+  const { t, Translate } = useTranslate("tenants");
   const { enqueueNotification } = useNotifications();
 
   const [callUnassignMember, { loading }] = useApiCall(unassignTenantMember);
@@ -44,7 +44,7 @@ const DeleteModal: FC<RemoveTenantMemberModalProps> = ({
       if (success) {
         enqueueNotification({
           kind: "success",
-          title: t("Tenant member has been removed."),
+          title: t("tenantMemberRemoved"),
         });
         onSuccess();
       }
@@ -54,12 +54,12 @@ const DeleteModal: FC<RemoveTenantMemberModalProps> = ({
   return (
     <Modal
       open={open}
-      headline={t("Remove user")}
+      headline={t("removeUser")}
       onSubmit={handleSubmit}
       loading={loading}
-      loadingDescription={t("Removing user")}
+      loadingDescription={t("removingUser")}
       onClose={onClose}
-      confirmLabel={t("Delete tenant")}
+      confirmLabel={t("removeUser")}
     >
       <p>
         <Translate>Are you sure you want to remove</Translate>{" "}
