@@ -5,15 +5,17 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.tasklist.webapp.security.identity;
+package io.camunda.tasklist.webapp.group;
 
 import static io.camunda.tasklist.property.IdentityProperties.FULL_GROUP_ACCESS;
 
 import java.util.ArrayList;
 import java.util.List;
+import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
 @Component
+@Profile("!consolidated-auth")
 public class DefaultUserGroupService implements UserGroupService {
   @Override
   public List<String> getUserGroups() {
