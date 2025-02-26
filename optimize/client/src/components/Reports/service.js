@@ -7,7 +7,7 @@
  */
 
 import {get, del, post} from 'request';
-import { getFullURL } from '../../modules/api';
+import {getFullURL} from '../../modules/api';
 
 export async function shareReport(reportId) {
   const body = {

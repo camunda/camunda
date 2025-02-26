@@ -18,5 +18,4 @@ export const copyNameInput = Selector('.Modal.is-visible input');
 export const editButton = Selector('[title="Edit Alert"]');
 export const cancelButton = Selector('.Modal.is-visible .cds--modal-footer .cds--btn:nth-child(1)');
 export const deleteButton = Selector('[title="Delete Alert"]');
-export const webhookDropdown = Selector('#webhooks');
 export const alertListItem = listItem('alert');

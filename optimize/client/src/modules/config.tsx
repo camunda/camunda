@@ -8,7 +8,7 @@
 
 import {ReactNode, createContext, useEffect, useState} from 'react';
 import {Loading} from '@carbon/react';
-import { getFullURL } from './api';
+import {getFullURL} from './api';
 
 import {get, ErrorResponse} from 'request';
 import {showError} from 'notifications';
@@ -44,7 +44,6 @@ export type UiConfig = {
   optimizeProfile: 'cloud' | 'ccsm';
   enterpriseMode: boolean;
   webappsLinks: WebappLinks;
-  webhooks: string[];
   mixpanel: MixpanelConfig;
   logoutHidden: boolean;
   exportCsvLimit: number;
@@ -115,7 +114,6 @@ export const areTenantsAvailable = createAccessorFunction<boolean>('tenantsAvail
 export const getOptimizeVersion = createAccessorFunction<string>('optimizeVersion');
 export const getDocsVersion = createAccessorFunction<string>('optimizeDocsVersion');
 export const getWebappLinks = createAccessorFunction<WebappLinks>('webappsLinks');
-export const getWebhooks = createAccessorFunction<string[]>('webhooks');
 export const getMixpanelConfig = createAccessorFunction<MixpanelConfig>('mixpanel');
 export const getOptimizeProfile =
   createAccessorFunction<UiConfig['optimizeProfile']>('optimizeProfile');
