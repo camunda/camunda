@@ -496,8 +496,7 @@ public final class EngineRule extends ExternalResource {
           .await();
       RecordingExporter.commandDistributionRecords(CommandDistributionIntent.FINISHED)
           .withDistributionIntent(AuthorizationIntent.CREATE)
-          // -2 as we don't create Authorizations for the UNSPECIFIED resource type.
-          .skip(AuthorizationResourceType.values().length - 2)
+          .skip(AuthorizationResourceType.getUserProvidedResourceTypes().size() - 1)
           .await();
     } else {
       RecordingExporter.identitySetupRecords(IdentitySetupIntent.INITIALIZED).await();
