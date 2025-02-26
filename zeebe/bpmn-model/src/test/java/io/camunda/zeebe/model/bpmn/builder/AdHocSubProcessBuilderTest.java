@@ -26,6 +26,8 @@ import io.camunda.zeebe.model.bpmn.instance.FlowElement;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeAdHoc;
 import org.camunda.bpm.model.xml.instance.ModelElementInstance;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 class AdHocSubProcessBuilderTest {
 
@@ -109,8 +111,9 @@ class AdHocSubProcessBuilderTest {
         .isEqualTo("=true");
   }
 
-  @Test
-  void shouldSetCancelRemainingInstances() {
+  @ParameterizedTest
+  @ValueSource(booleans = {true, false})
+  void shouldSetCancelRemainingInstances(final boolean cancelRemainingInstancesEnabled) {
     // given
     final BpmnModelInstance process =
         Bpmn.createExecutableProcess("process")
@@ -118,7 +121,29 @@ class AdHocSubProcessBuilderTest {
             .adHocSubProcess(
                 "ad-hoc",
                 adHocSubProcess -> {
-                  adHocSubProcess.cancelRemainingInstancesEnabled(true);
+                  adHocSubProcess.cancelRemainingInstancesEnabled(cancelRemainingInstancesEnabled);
+                  adHocSubProcess.task("A");
+                })
+            .endEvent()
+            .done();
+
+    // when/then
+    final ModelElementInstance adHocSubProcess = process.getModelElementById("ad-hoc");
+
+    assertThat(adHocSubProcess).isInstanceOf(AdHocSubProcess.class);
+    assertThat(((AdHocSubProcess) adHocSubProcess).isCancelRemainingInstancesEnabled())
+        .isEqualTo(cancelRemainingInstancesEnabled);
+  }
+
+  @Test
+  void cancelRemainingInstancesShouldDefaultToTrue() {
+    // given
+    final BpmnModelInstance process =
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .adHocSubProcess(
+                "ad-hoc",
+                adHocSubProcess -> {
                   adHocSubProcess.task("A");
                 })
             .endEvent()
