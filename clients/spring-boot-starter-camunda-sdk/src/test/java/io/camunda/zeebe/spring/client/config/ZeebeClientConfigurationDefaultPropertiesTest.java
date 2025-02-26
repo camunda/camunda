@@ -47,7 +47,7 @@ public class ZeebeClientConfigurationDefaultPropertiesTest {
   void testDefaultClientConfiguration() throws URISyntaxException {
     final ZeebeClient client = applicationContext.getBean(ZeebeClient.class);
 
-    assertThat(client.getConfiguration().isPlaintextConnectionEnabled()).isFalse();
+    assertThat(client.getConfiguration().isPlaintextConnectionEnabled()).isTrue();
     assertThat(client.getConfiguration().getCaCertificatePath()).isNull();
     assertThat(client.getConfiguration().getCredentialsProvider())
         .isInstanceOf(NoopCredentialsProvider.class);
@@ -66,14 +66,14 @@ public class ZeebeClientConfigurationDefaultPropertiesTest {
     assertThat(client.getConfiguration().getDefaultTenantId()).isEqualTo("<default>");
     assertThat(client.getConfiguration().getGatewayAddress()).isEqualTo("0.0.0.0:26500");
     assertThat(client.getConfiguration().getGrpcAddress())
-        .isEqualTo(new URI("https://0.0.0.0:26500"));
+        .isEqualTo(new URI("http://0.0.0.0:26500"));
     assertThat(client.getConfiguration().getKeepAlive()).isEqualTo(Duration.ofSeconds(45));
     assertThat(client.getConfiguration().getMaxMessageSize()).isEqualTo(4 * ONE_MB);
     assertThat(client.getConfiguration().getMaxMetadataSize()).isEqualTo(16 * ONE_KB);
     assertThat(client.getConfiguration().getNumJobWorkerExecutionThreads()).isEqualTo(1);
     assertThat(client.getConfiguration().getOverrideAuthority()).isNull();
     assertThat(client.getConfiguration().getRestAddress())
-        .isEqualTo(new URI("https://0.0.0.0:8080"));
+        .isEqualTo(new URI("http://0.0.0.0:8080"));
     assertThat(client.getConfiguration().preferRestOverGrpc()).isFalse();
   }
 }
