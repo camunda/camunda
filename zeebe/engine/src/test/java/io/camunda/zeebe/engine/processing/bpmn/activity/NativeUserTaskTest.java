@@ -750,12 +750,13 @@ public final class NativeUserTaskTest {
                     t.zeebeCandidateGroups("foo, bar")
                         .zeebeCandidateUsers("oof, rab")
                         .zeebeFollowUpDate("2023-03-02T15:35+02:00")
-                        .zeebeDueDate("2023-03-02T16:35+02:00")))
+                        .zeebeDueDate("2023-03-02T16:35+02:00")
+                        .zeebeTaskPriority("90")))
         .deploy();
     final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
 
     // when
-    ENGINE.userTask().ofInstance(processInstanceKey).update(new UserTaskRecord());
+    ENGINE.userTask().ofInstance(processInstanceKey).withAllAttributesChanged().update();
 
     // then
     final UserTaskRecordValue createdUserTask =
@@ -778,7 +779,8 @@ public final class NativeUserTaskTest {
         .hasCandidateUsersList("oof", "rab")
         .hasDueDate("2023-03-02T16:35+02:00")
         .hasFollowUpDate("2023-03-02T15:35+02:00")
-        .hasNoChangedAttributes();
+        .hasNoChangedAttributes()
+        .hasPriority(90);
 
     Assertions.assertThat(
             RecordingExporter.userTaskRecords(UserTaskIntent.UPDATED)
@@ -789,17 +791,20 @@ public final class NativeUserTaskTest {
         .hasNoCandidateUsersList()
         .hasDueDate("")
         .hasFollowUpDate("")
+        .hasPriority(50)
         .hasChangedAttributes(
             UserTaskRecord.CANDIDATE_GROUPS,
             UserTaskRecord.CANDIDATE_USERS,
             UserTaskRecord.DUE_DATE,
-            UserTaskRecord.FOLLOW_UP_DATE);
+            UserTaskRecord.FOLLOW_UP_DATE,
+            UserTaskRecord.PRIORITY);
 
     Assertions.assertThat(userTaskState.getUserTask(createdUserTask.getUserTaskKey()))
         .hasNoCandidateGroupsList()
         .hasNoCandidateUsersList()
         .hasDueDate("")
         .hasFollowUpDate("")
+        .hasPriority(50)
         .hasNoChangedAttributes();
   }
 
