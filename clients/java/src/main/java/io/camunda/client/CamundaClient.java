@@ -859,13 +859,13 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    * subprocess ID and does not support paging or sorting.
    *
    * <pre>
-   * long processDefinitionId = ...;
+   * long processDefinitionKey = ...;
    * String adHocSubprocessId = ...;
    *
    * camundaClient
    *  .newAdHocSubprocessActivityQuery()
    *  .filter((f) -> f
-   *     .processDefinitionId(processDefinitionId)
+   *     .processDefinitionKey(processDefinitionKey)
    *     .adHocSubprocessId(adHocSubprocessId)
    *  )
    *  .send();
@@ -883,12 +883,12 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    * subprocess ID and does not support paging or sorting.
    *
    * <pre>
-   * long processDefinitionId = ...;
+   * long processDefinitionKey = ...;
    * String adHocSubprocessId = ...;
    *
    * camundaClient
    *  .newAdHocSubprocessActivityQuery(
-   *    processDefinitionId,
+   *    processDefinitionKey,
    *    adHocSubprocessId
    *  )
    *  .send();
