@@ -7,8 +7,6 @@
  */
 package io.camunda.zeebe.db.impl.rocksdb.metrics;
 
-import io.camunda.zeebe.db.ZeebeDb;
-import io.camunda.zeebe.protocol.EnumValue;
 import io.camunda.zeebe.util.micrometer.StatefulGauge;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.util.EnumMap;
@@ -18,18 +16,16 @@ import org.rocksdb.RocksDB;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/** This class exports metrics for a RocksDB instance to Prometheus. */
-public final class ZeebeRocksDBMetricExporter<
-    ColumnFamilyType extends Enum<? extends EnumValue> & EnumValue> {
+/** This class exports metrics for a RocksDB instance to Micrometer. */
+public final class RocksDBMetricExporter {
 
-  private static final Logger LOG =
-      LoggerFactory.getLogger(ZeebeRocksDBMetricExporter.class.getName());
+  private static final Logger LOG = LoggerFactory.getLogger(RocksDBMetricExporter.class.getName());
 
   private final Map<RocksDbMetricsDoc, StatefulGauge> metrics =
       new EnumMap<>(RocksDbMetricsDoc.class);
   private final MeterRegistry registry;
 
-  public ZeebeRocksDBMetricExporter(final MeterRegistry registry) {
+  public RocksDBMetricExporter(final MeterRegistry registry) {
     this.registry = registry;
   }
 
