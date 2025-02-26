@@ -37,8 +37,8 @@ const AddTenantModal: FC<UseModalProps> = ({ open, onClose, onSuccess }) => {
     if (success) {
       enqueueNotification({
         kind: "success",
-        title: t("Tenant created"),
-        subtitle: t("You have successfully created tenant {{ name }}", {
+        title: t("tenantCreated"),
+        subtitle: t("createTenantSuccess", {
           name,
         }),
       });
@@ -48,33 +48,33 @@ const AddTenantModal: FC<UseModalProps> = ({ open, onClose, onSuccess }) => {
 
   return (
     <FormModal
-      headline={t("Create new tenant")}
+      headline={t("createNewTenant")}
       open={open}
       onClose={onClose}
       loading={loading}
       submitDisabled={submitDisabled}
-      confirmLabel={t("Create tenant")}
+      confirmLabel={t("createTenant")}
       onSubmit={handleSubmit}
     >
       <Stack orientation="vertical" gap={spacing06}>
         <TextField
-          label={t("Tenant ID")}
-          placeholder={t("Enter tenant ID")}
+          label={t("tenantId")}
+          placeholder={t("tenantIdPlaceholder")}
           onChange={setTenantId}
           value={tenantId}
-          helperText="The tenant ID must be unique and cannot be modified."
+          helperText="tenantIdHelperText"
           autoFocus
         />
         <TextField
-          label={t("Tenant name")}
-          placeholder={t("Enter tenant name")}
+          label={t("tenantName")}
+          placeholder={t("tenantNamePlaceholder")}
           onChange={setName}
           value={name}
         />
         <TextField
-          label={t("Description")}
+          label={t("description")}
           value={description}
-          placeholder={t("Enter a tenant description (Max 255 characters)")}
+          placeholder={t("tenantDescriptionPlaceholder")}
           onChange={setDescription}
           cols={2}
           enableCounter

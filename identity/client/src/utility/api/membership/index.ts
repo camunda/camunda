@@ -46,7 +46,6 @@ export const assignTenantMember: ApiDefinition<
   undefined,
   AssignTenantMemberParams
 > = ({ tenantId, userId }) => {
-  console.log("tenant and user", tenantId, userId);
   return apiPost(`${TENANTS_ENDPOINT}/${tenantId}/users`, { id: userId });
 };
 

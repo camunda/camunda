@@ -53,11 +53,9 @@ const Members: FC<MembersProps> = ({ tenantId }) => {
   if (!loading && !success)
     return (
       <C3EmptyState
-        heading={t("Something's wrong")}
-        description={t(
-          'We were unable to load the members. Click "Retry" to try again.',
-        )}
-        button={{ label: t("Retry"), onClick: reload }}
+        heading={t("somethingsWrong")}
+        description={t("unableToLoadMembers")}
+        button={{ label: t("retry"), onClick: reload }}
       />
     );
 
@@ -65,16 +63,14 @@ const Members: FC<MembersProps> = ({ tenantId }) => {
     return (
       <>
         <C3EmptyState
-          heading={t("Assign users to this Tenant")}
-          description={t(
-            "Members of this Tenant will be given access to the data within the Tenant.",
-          )}
+          heading={t("assignUsersToTenant")}
+          description={t("tenantMemberAccessDisclaimer")}
           button={{
-            label: t("Assign members"),
+            label: t("assignUser"),
             onClick: openAssignModal,
           }}
           link={{
-            label: t("Learn more about tenants"),
+            label: t("learnMoreAboutTenants"),
             href: `/identity/concepts/access-control/tenants`,
           }}
         />
@@ -93,12 +89,12 @@ const Members: FC<MembersProps> = ({ tenantId }) => {
         ]}
         sortProperty="username"
         loading={loading}
-        addEntityLabel={t("Assign user")}
+        addEntityLabel={t("assignUser")}
         onAddEntity={openAssignModal}
-        searchPlaceholder={t("Search by username")}
+        searchPlaceholder={t("searchByUsername")}
         menuItems={[
           {
-            label: t("Remove"),
+            label: t("remove"),
             icon: TrashCan,
             isDangerous: true,
             onClick: unassignMember,

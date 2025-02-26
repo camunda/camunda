@@ -135,7 +135,7 @@ export const DeleteModal: FC<
   const { t } = useTranslate("components");
 
   return (
-    <Modal confirmLabel={t("Delete")} {...modalProps} danger size="sm">
+    <Modal confirmLabel={t("delete")} {...modalProps} danger size="sm">
       {children}
     </Modal>
   );
