@@ -11,11 +11,9 @@ import static io.camunda.tasklist.property.IdentityProperties.FULL_GROUP_ACCESS;
 
 import java.util.ArrayList;
 import java.util.List;
-import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
 @Component
-@Profile("!consolidated-auth")
 public class DefaultUserGroupService implements UserGroupService {
   @Override
   public List<String> getUserGroups() {

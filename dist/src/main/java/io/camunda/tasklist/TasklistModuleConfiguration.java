@@ -16,13 +16,13 @@ import io.camunda.tasklist.zeebeimport.security.ImporterSecurityModuleConfigurat
 import io.camunda.zeebe.broker.Broker;
 import io.camunda.zeebe.gateway.Gateway;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.FilterType;
 import org.springframework.context.annotation.FullyQualifiedAnnotationBeanNameGenerator;
 import org.springframework.context.annotation.Import;
-import org.springframework.context.annotation.Primary;
 import org.springframework.context.annotation.Profile;
 
 /**
@@ -78,7 +78,6 @@ public class TasklistModuleConfiguration {
    * enabled.
    */
   @Bean
-  @Primary
   @Profile("consolidated-auth")
   public UserGroupService consolidatedUserGroupService() {
     return new UserGroupServiceImpl();
@@ -95,7 +94,7 @@ public class TasklistModuleConfiguration {
    * implemented
    */
   @Bean
-  @Profile("!consolidated-auth")
+  @ConditionalOnMissingBean(UserGroupService.class)
   public UserGroupService defaultUserGroupService() {
     return new DefaultUserGroupService();
   }
