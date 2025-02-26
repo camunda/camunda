@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:modeler="http://camunda.org/schema/modeler/1.0" id="Definitions_1kj358h" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="5.32.0" modeler:executionPlatform="Camunda Cloud" modeler:executionPlatformVersion="8.7.0">
+  <bpmn:process id="TestParentAdHocSubprocess" isExecutable="true">
+    <bpmn:adHocSubProcess id="TestAdHocSubprocess" name="Ad-Hoc Subprocess">
+      <bpmn:extensionElements>
+        <zeebe:adHoc />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_1nmmpcw</bpmn:incoming>
+      <bpmn:outgoing>Flow_1e1ppa1</bpmn:outgoing>
+      <bpmn:sequenceFlow id="Flow_0h7ye31" sourceRef="TestUserTask" targetRef="TestServiceTask" />
+      <bpmn:scriptTask id="TestScriptTask" name="test script task">
+        <bpmn:documentation>This is a test script task</bpmn:documentation>
+        <bpmn:extensionElements>
+          <zeebe:script expression="=2 * 2" resultVariable="fooCalculation" />
+        </bpmn:extensionElements>
+      </bpmn:scriptTask>
+      <bpmn:serviceTask id="TestServiceTask" name="test service task">
+        <bpmn:extensionElements>
+          <zeebe:taskDefinition type="testType" />
+        </bpmn:extensionElements>
+        <bpmn:incoming>Flow_0h7ye31</bpmn:incoming>
+      </bpmn:serviceTask>
+      <bpmn:userTask id="TestUserTask" name="test user task">
+        <bpmn:extensionElements>
+          <zeebe:userTask />
+          <zeebe:formDefinition formId="testForm" />
+        </bpmn:extensionElements>
+        <bpmn:outgoing>Flow_0h7ye31</bpmn:outgoing>
+      </bpmn:userTask>
+    </bpmn:adHocSubProcess>
+    <bpmn:endEvent id="EndEvent_1">
+      <bpmn:incoming>Flow_1e1ppa1</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_1e1ppa1" sourceRef="TestAdHocSubprocess" targetRef="EndEvent_1" />
+    <bpmn:sequenceFlow id="Flow_1nmmpcw" sourceRef="StartEvent_1" targetRef="TestAdHocSubprocess" />
+    <bpmn:startEvent id="StartEvent_1">
+      <bpmn:outgoing>Flow_1nmmpcw</bpmn:outgoing>
+    </bpmn:startEvent>
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="TestParentAdHocSubprocess">
+      <bpmndi:BPMNShape id="StartEvent_1_di" bpmnElement="StartEvent_1">
+        <dc:Bounds x="172" y="187" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_071g6t1_di" bpmnElement="TestAdHocSubprocess" isExpanded="true">
+        <dc:Bounds x="280" y="70" width="350" height="270" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_0vuyrum_di" bpmnElement="TestScriptTask">
+        <dc:Bounds x="410" y="110" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_1wiygn1_di" bpmnElement="TestUserTask">
+        <dc:Bounds x="330" y="215" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_18de575_di" bpmnElement="TestServiceTask">
+        <dc:Bounds x="480" y="215" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_0h7ye31_di" bpmnElement="Flow_0h7ye31">
+        <di:waypoint x="430" y="255" />
+        <di:waypoint x="480" y="255" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="Event_0nc2s10_di" bpmnElement="EndEvent_1">
+        <dc:Bounds x="702" y="187" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_1nmmpcw_di" bpmnElement="Flow_1nmmpcw">
+        <di:waypoint x="208" y="205" />
+        <di:waypoint x="280" y="205" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1e1ppa1_di" bpmnElement="Flow_1e1ppa1">
+        <di:waypoint x="630" y="205" />
+        <di:waypoint x="702" y="205" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

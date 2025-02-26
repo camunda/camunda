@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.gateway.rest.util;
 
+import java.util.Optional;
+
 public class KeyUtil {
 
   public static Long keyToLong(final String key) {
@@ -15,5 +17,13 @@ public class KeyUtil {
 
   public static String keyToString(final Long value) {
     return value != null ? String.valueOf(value) : null;
+  }
+
+  public static Optional<Long> tryParseLong(final String key) {
+    try {
+      return Optional.ofNullable(keyToLong(key));
+    } catch (final NumberFormatException e) {
+      return Optional.empty();
+    }
   }
 }
