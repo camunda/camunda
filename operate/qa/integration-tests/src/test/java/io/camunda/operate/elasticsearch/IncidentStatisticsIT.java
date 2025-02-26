@@ -53,6 +53,7 @@ public class IncidentStatisticsIT extends OperateAbstractIT {
   public static final String NO_INSTANCES_PROCESS_ID = "noInstancesProcess";
   public static final String NO_INSTANCES_PROCESS_NAME = "No Instances Process";
   public static final String ERRMSG_OTHER = "Other error message";
+  public static final Integer ERRMSG_OTHER_HASH_CODE = ERRMSG_OTHER.hashCode();
   private static final String QUERY_INCIDENTS_BY_PROCESS_URL = INCIDENT_URL + "/byProcess";
   private static final String QUERY_INCIDENTS_BY_ERROR_URL = INCIDENT_URL + "/byError";
   @Rule public SearchTestRule searchTestRule = new SearchTestRule();
@@ -227,6 +228,8 @@ public class IncidentStatisticsIT extends OperateAbstractIT {
     // TODO: Check
     assertThat(incidentsByError1.getInstancesWithErrorCount()).isEqualTo(3);
     assertThat(incidentsByError1.getProcesses()).hasSize(2);
+    assertThat(incidentsByError1.getIncidentErrorHashCode())
+        .isEqualTo(TestUtil.ERROR_MSG_HASH_CODE);
     assertThat(
             incidentsByError1.getProcesses().stream()
                 .map(IncidentByProcessStatisticsDto::getBpmnProcessId)
@@ -240,6 +243,7 @@ public class IncidentStatisticsIT extends OperateAbstractIT {
             .orElseThrow();
     assertThat(incidentsByError2.getInstancesWithErrorCount()).isEqualTo(2);
     assertThat(incidentsByError2.getProcesses()).hasSize(2);
+    assertThat(incidentsByError2.getIncidentErrorHashCode()).isEqualTo(ERRMSG_OTHER_HASH_CODE);
     assertThat(
             incidentsByError2.getProcesses().stream()
                 .map(IncidentByProcessStatisticsDto::getBpmnProcessId)
@@ -285,6 +289,8 @@ public class IncidentStatisticsIT extends OperateAbstractIT {
             .orElseThrow();
     assertThat(incidentsByError1.getInstancesWithErrorCount()).isEqualTo(2);
     assertThat(incidentsByError1.getProcesses()).hasSize(1);
+    assertThat(incidentsByError1.getIncidentErrorHashCode())
+        .isEqualTo(TestUtil.ERROR_MSG_HASH_CODE);
     assertThat(
             incidentsByError1.getProcesses().stream()
                 .map(IncidentByProcessStatisticsDto::getBpmnProcessId)
@@ -298,6 +304,7 @@ public class IncidentStatisticsIT extends OperateAbstractIT {
             .orElseThrow();
     assertThat(incidentsByError2.getInstancesWithErrorCount()).isEqualTo(2);
     assertThat(incidentsByError2.getProcesses()).hasSize(2);
+    assertThat(incidentsByError2.getIncidentErrorHashCode()).isEqualTo(ERRMSG_OTHER_HASH_CODE);
     assertThat(
             incidentsByError2.getProcesses().stream()
                 .map(IncidentByProcessStatisticsDto::getBpmnProcessId)
@@ -328,6 +335,8 @@ public class IncidentStatisticsIT extends OperateAbstractIT {
     // TODO: Check
     assertThat(incidentsByError1.getInstancesWithErrorCount()).isEqualTo(1);
     assertThat(incidentsByError1.getProcesses()).hasSize(1);
+    assertThat(incidentsByError1.getIncidentErrorHashCode())
+        .isEqualTo(TestUtil.ERROR_MSG_HASH_CODE);
     assertThat(
             incidentsByError1.getProcesses().stream()
                 .map(IncidentByProcessStatisticsDto::getBpmnProcessId)
