@@ -61,8 +61,9 @@ public class FinishedImportingIT extends OperateZeebeAbstractIT {
   @Autowired private MeterRegistry registry;
   private final ProtocolFactory factory = new ProtocolFactory();
 
+  @Override
   @Before
-  public void beforeEach() {
+  public void before() {
     operateProperties.getImporter().setImportPositionUpdateInterval(5000);
     CONFIG.index.prefix = operateProperties.getZeebeElasticsearch().getPrefix();
     CONFIG.index.setNumberOfShards(1);
@@ -84,6 +85,7 @@ public class FinishedImportingIT extends OperateZeebeAbstractIT {
     recordsReaderHolder.resetCountEmptyBatches();
     recordsReaderHolder.resetPartitionsCompletedImporting();
     registry.clear();
+    super.before();
   }
 
   @Test
