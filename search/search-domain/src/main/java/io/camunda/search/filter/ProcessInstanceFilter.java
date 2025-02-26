@@ -7,7 +7,8 @@
  */
 package io.camunda.search.filter;
 
-import static io.camunda.util.CollectionUtil.*;
+import static io.camunda.util.CollectionUtil.addValuesToList;
+import static io.camunda.util.CollectionUtil.collectValues;
 
 import io.camunda.util.FilterUtil;
 import io.camunda.util.ObjectBuilder;
@@ -33,6 +34,24 @@ public record ProcessInstanceFilter(
     List<VariableValueFilter> variableFilters,
     List<Operation<String>> batchOperationIdOperations)
     implements FilterBase {
+
+  public Builder toBuilder() {
+    return new Builder()
+        .processInstanceKeyOperations(processInstanceKeyOperations)
+        .processDefinitionIdOperations(processDefinitionIdOperations)
+        .processDefinitionNameOperations(processDefinitionNameOperations)
+        .processDefinitionVersionOperations(processDefinitionVersionOperations)
+        .processDefinitionVersionTagOperations(processDefinitionVersionTagOperations)
+        .processDefinitionKeyOperations(processDefinitionKeyOperations)
+        .parentProcessInstanceKeyOperations(parentProcessInstanceKeyOperations)
+        .parentFlowNodeInstanceKeyOperations(parentFlowNodeInstanceKeyOperations)
+        .startDateOperations(startDateOperations)
+        .endDateOperations(endDateOperations)
+        .stateOperations(stateOperations)
+        .hasIncident(hasIncident)
+        .tenantIdOperations(tenantIdOperations)
+        .variables(variableFilters);
+  }
 
   public static final class Builder implements ObjectBuilder<ProcessInstanceFilter> {
 
