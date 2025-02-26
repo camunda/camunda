@@ -17,6 +17,7 @@ import io.micrometer.core.instrument.Meter.Type;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.util.Arrays;
 import java.util.Objects;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
 import org.slf4j.Logger;
@@ -100,11 +101,13 @@ public final class ZeebeRocksDBMetricExporter<
   }
 
   public void exportMetrics() {
-    final long startTime = System.currentTimeMillis();
+    final long startTime = System.nanoTime();
     forAllMetrics(this::exportMetric);
 
-    final long elapsedTime = System.currentTimeMillis() - startTime;
-    LOG.trace("Exporting RocksDBMetrics took + {} ms", elapsedTime);
+    final long elapsedTime = System.nanoTime() - startTime;
+    LOG.trace(
+        "Exporting RocksDBMetrics took + {} ms",
+        TimeUnit.MILLISECONDS.convert(elapsedTime, TimeUnit.NANOSECONDS));
   }
 
   private void exportMetric(final RocksDBMetric metric) {
