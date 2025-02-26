@@ -40,8 +40,24 @@ public final class ElementInstance extends UnpackedObject implements DbValue {
   private final IntegerProperty activeSequenceFlowsProp =
       new IntegerProperty("activeSequenceFlows", 0);
 
+  /**
+   * Expresses the current depth of the process instance in the called process tree.
+   *
+   * <p>A root process instance has depth 1. Each child instance has the depth of its parent
+   * incremented by 1.
+   *
+   * @since 8.3.20, 8.4.16, 8.5.13, 8.6.8, and 8.7
+   * @apiNote This property is added in 8.7 and backport to 8.6.8, 8.5.13, 8.4.16, and 8.3.20. Any
+   *     child process instances created before 8.7 (or any of these patches) will have a depth of 1
+   *     rather than a correct value. Child instances created before the property existed will have
+   *     a depth of 1 + the depth of the parent instance. Therefore, child instances created on or
+   *     after the property was added that are part of a root process instance created prior to the
+   *     property existed, will not have a correct depth.
+   */
+  private final IntegerProperty processDepth = new IntegerProperty("processDepth", 1);
+
   public ElementInstance() {
-    super(11);
+    super(12);
     declareProperty(parentKeyProp)
         .declareProperty(childCountProp)
         .declareProperty(childActivatedCountProp)
@@ -52,7 +68,8 @@ public final class ElementInstance extends UnpackedObject implements DbValue {
         .declareProperty(interruptingEventKeyProp)
         .declareProperty(calledChildInstanceKeyProp)
         .declareProperty(recordProp)
-        .declareProperty(activeSequenceFlowsProp);
+        .declareProperty(activeSequenceFlowsProp)
+        .declareProperty(processDepth);
   }
 
   public ElementInstance(
@@ -205,7 +222,7 @@ public final class ElementInstance extends UnpackedObject implements DbValue {
     if (getActiveSequenceFlows() > 0) {
       activeSequenceFlowsProp.decrement();
       // This should never happen, but we should fix this in a better way
-      // https://github.com/camunda/zeebe/issues/9528
+      // https://github.com/camunda/camunda/issues/9528
       //    if (decrement < 0) {
       //      throw new IllegalStateException(
       //          "Not expected to have an active sequence flow count lower then zero!");
@@ -219,5 +236,13 @@ public final class ElementInstance extends UnpackedObject implements DbValue {
 
   public void resetActiveSequenceFlows() {
     activeSequenceFlowsProp.setValue(0);
+  }
+
+  public int getProcessDepth() {
+    return processDepth.getValue();
+  }
+
+  public void setProcessDepth(final int depth) {
+    processDepth.setValue(depth);
   }
 }
