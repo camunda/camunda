@@ -75,7 +75,7 @@ public class TenantCreateProcessor implements DistributedTypedRecordProcessor<Te
   public void processDistributedCommand(final TypedRecord<TenantRecord> command) {
     final var record = command.getValue();
     tenantState
-        .getTenantByKey(record.getTenantKey())
+        .getTenantById(record.getTenantId())
         .ifPresentOrElse(
             tenant -> {
               final var errorMessage =

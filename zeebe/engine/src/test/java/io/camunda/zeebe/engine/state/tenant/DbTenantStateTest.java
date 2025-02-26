@@ -42,7 +42,7 @@ public class DbTenantStateTest {
     tenantState.createTenant(tenantRecord);
 
     // then
-    final var persistedTenant = tenantState.getTenantByKey(tenantKey);
+    final var persistedTenant = tenantState.getTenantById(tenantId);
     assertThat(persistedTenant).isPresent();
     assertThat(persistedTenant.get().getTenantId()).isEqualTo(tenantId);
     assertThat(persistedTenant.get().getName()).isEqualTo(tenantName);
@@ -51,7 +51,7 @@ public class DbTenantStateTest {
   @Test
   void shouldReturnEmptyOptionalIfTenantNotFound() {
     // when
-    final var tenant = tenantState.getTenantByKey(999L);
+    final var tenant = tenantState.getTenantById("foo");
     // then
     assertThat(tenant).isEmpty();
   }
@@ -99,7 +99,7 @@ public class DbTenantStateTest {
     tenantState.updateTenant(updatedRecord);
 
     // then
-    final var persistedTenant = tenantState.getTenantByKey(tenantKey);
+    final var persistedTenant = tenantState.getTenantById(tenantId);
     assertThat(persistedTenant).isPresent();
     assertThat(persistedTenant.get().getName()).isEqualTo(newName);
   }
@@ -126,7 +126,7 @@ public class DbTenantStateTest {
 
     // then
     // Verify that tenantId has not been updated
-    final var persistedTenant = tenantState.getTenantByKey(tenantKey);
+    final var persistedTenant = tenantState.getTenantById(originalTenantId);
     assertThat(persistedTenant).isPresent();
     assertThat(persistedTenant.get().getTenantId()).isEqualTo(originalTenantId);
     assertThat(persistedTenant.get().getName()).isEqualTo("New Name");
@@ -283,7 +283,7 @@ public class DbTenantStateTest {
     tenantState.delete(tenantRecord);
 
     // then
-    final var deletedTenant = tenantState.getTenantByKey(tenantKey);
+    final var deletedTenant = tenantState.getTenantById(tenantId);
     assertThat(deletedTenant).isEmpty();
     final var deletedEntity = tenantState.getEntityType(tenantKey, 100L);
     assertThat(deletedEntity).isEmpty();
