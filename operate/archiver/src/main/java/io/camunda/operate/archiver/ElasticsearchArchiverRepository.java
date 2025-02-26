@@ -11,7 +11,6 @@ import static io.camunda.operate.archiver.AbstractArchiverJob.DATES_AGG;
 import static io.camunda.operate.archiver.AbstractArchiverJob.INSTANCES_AGG;
 import static io.camunda.operate.schema.SchemaManager.INDEX_LIFECYCLE_NAME;
 import static io.camunda.operate.schema.SchemaManager.OPERATE_DELETE_ARCHIVED_INDICES;
-import static io.camunda.operate.util.ElasticsearchUtil.deleteAsyncWithConnectionRelease;
 import static java.lang.String.format;
 import static org.elasticsearch.index.query.QueryBuilders.constantScoreQuery;
 import static org.elasticsearch.index.query.QueryBuilders.rangeQuery;
@@ -25,6 +24,7 @@ import static org.elasticsearch.search.aggregations.PipelineAggregatorBuilders.b
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.operate.Metrics;
 import io.camunda.operate.conditions.ElasticsearchCondition;
+import io.camunda.operate.exceptions.ArchiverException;
 import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.schema.templates.BatchOperationTemplate;
@@ -49,6 +49,9 @@ import org.elasticsearch.index.query.ConstantScoreQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.TermQueryBuilder;
 import org.elasticsearch.index.query.TermsQueryBuilder;
+import org.elasticsearch.index.reindex.AbstractBulkByScrollRequest;
+import org.elasticsearch.index.reindex.BulkByScrollResponse;
+import org.elasticsearch.index.reindex.DeleteByQueryRequest;
 import org.elasticsearch.index.reindex.ReindexRequest;
 import org.elasticsearch.search.SearchHits;
 import org.elasticsearch.search.aggregations.AggregationBuilder;
@@ -69,10 +72,12 @@ import org.springframework.stereotype.Component;
 @Conditional(ElasticsearchCondition.class)
 @Component
 public class ElasticsearchArchiverRepository implements ArchiverRepository {
+
   public static final int INTERNAL_SCROLL_KEEP_ALIVE_MS =
       30000; // this scroll timeout value is used for reindex and delete queries
   private static final Logger LOGGER =
       LoggerFactory.getLogger(ElasticsearchArchiverRepository.class);
+  private static final int UPDATE_RETRY_COUNT = 3;
 
   @Autowired
   @Qualifier("archiverThreadPoolExecutor")
@@ -189,28 +194,22 @@ public class ElasticsearchArchiverRepository implements ArchiverRepository {
       final String sourceIndexName,
       final String idFieldName,
       final List<Object> processInstanceKeys) {
-    final var deleteFuture = new CompletableFuture<Void>();
+    final var deleteFuture = new CompletableFuture<Long>();
+    final var deleteRequest =
+        createDeleteByQueryRequestWithDefaults(sourceIndexName)
+            .setQuery(termsQuery(idFieldName, processInstanceKeys))
+            .setMaxRetries(UPDATE_RETRY_COUNT);
 
     final var startTimer = Timer.start();
-    deleteAsyncWithConnectionRelease(
-            archiverExecutor,
-            sourceIndexName,
-            idFieldName,
-            processInstanceKeys,
-            objectMapper,
-            esClient)
-        .thenAccept(
-            ignore -> {
-              final var deleteTimer = getArchiverDeleteQueryTimer();
-              startTimer.stop(deleteTimer);
-              deleteFuture.complete(null);
-            })
-        .exceptionally(
-            (e) -> {
-              deleteFuture.completeExceptionally(e);
-              return null;
+    ElasticsearchUtil.deleteAsync(deleteRequest, archiverExecutor, esClient)
+        .whenComplete(
+            (response, e) -> {
+              final var timer = getArchiverDeleteQueryTimer();
+              startTimer.stop(timer);
+              final var result = handleResponse(response, e, sourceIndexName, "delete");
+              result.ifRightOrLeft(deleteFuture::complete, deleteFuture::completeExceptionally);
             });
-    return deleteFuture;
+    return deleteFuture.thenApply(ok -> null);
   }
 
   @Override
@@ -228,8 +227,7 @@ public class ElasticsearchArchiverRepository implements ArchiverRepository {
 
     final var startTimer = Timer.start();
 
-    ElasticsearchUtil.reindexAsyncWithConnectionRelease(
-            archiverExecutor, reindexRequest, sourceIndexName, esClient)
+    ElasticsearchUtil.reindexAsync(archiverExecutor, reindexRequest, esClient)
         .thenAccept(
             ignore -> {
               final var reindexTimer = getArchiverReindexQueryTimer();
@@ -366,5 +364,48 @@ public class ElasticsearchArchiverRepository implements ArchiverRepository {
 
   private Timer getArchiverDeleteQueryTimer() {
     return metrics.getTimer(Metrics.TIMER_NAME_ARCHIVER_DELETE_QUERY);
+  }
+
+  private DeleteByQueryRequest createDeleteByQueryRequestWithDefaults(final String index) {
+    final var deleteRequest = new DeleteByQueryRequest(index);
+    return applyDefaultSettings(deleteRequest);
+  }
+
+  private <T extends AbstractBulkByScrollRequest<T>> T applyDefaultSettings(final T request) {
+    return request
+        .setScroll(TimeValue.timeValueMillis(INTERNAL_SCROLL_KEEP_ALIVE_MS))
+        .setAbortOnVersionConflict(false)
+        .setSlices(AUTO_SLICES);
+  }
+
+  private Either<Throwable, Long> handleResponse(
+      final BulkByScrollResponse response,
+      final Throwable error,
+      final String sourceIndexName,
+      final String operation) {
+    if (error != null) {
+      final var message =
+          String.format(
+              "Exception occurred while performing operation %s on source index %s. The error was: %s",
+              operation, sourceIndexName, error.getMessage());
+      return Either.left(new OperateRuntimeException(message, error));
+    }
+
+    final var bulkFailures = response.getBulkFailures();
+    if (!bulkFailures.isEmpty()) {
+      LOGGER.error(
+          "Failures occurred when performing operation: {} on source index {}. See details below.",
+          operation,
+          sourceIndexName);
+      bulkFailures.forEach(f -> LOGGER.error(f.toString()));
+      return Either.left(new ArchiverException(String.format("Operation %s failed", operation)));
+    }
+
+    LOGGER.debug(
+        "Operation {} succeeded on source index {}. Response: {}",
+        operation,
+        sourceIndexName,
+        response);
+    return Either.right(response.getTotal());
   }
 }

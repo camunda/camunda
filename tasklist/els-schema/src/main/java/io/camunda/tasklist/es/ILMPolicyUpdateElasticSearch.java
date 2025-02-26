@@ -47,13 +47,17 @@ public class ILMPolicyUpdateElasticSearch implements ILMPolicyUpdate {
             + "-.*-\\d+\\.\\d+\\.\\d+_\\d{4}-\\d{2}-\\d{2}$";
     LOGGER.info("Applying ILM policy to all existent indices");
 
-    final GetLifecyclePolicyResponse policy =
-        retryElasticsearchClient.getLifeCyclePolicy(
-            new GetLifecyclePolicyRequest(TASKLIST_DELETE_ARCHIVED_INDICES));
+    if (tasklistProperties.getArchiver().isIlmManagePolicy()) {
+      final GetLifecyclePolicyResponse policy =
+          retryElasticsearchClient.getLifeCyclePolicy(
+              new GetLifecyclePolicyRequest(TASKLIST_DELETE_ARCHIVED_INDICES));
 
-    if (policy == null) {
-      LOGGER.info("ILM policy not found, creating it");
-      schemaManager.createIndexLifeCycles();
+      if (policy == null) {
+        LOGGER.info("ILM policy not found, creating it");
+        schemaManager.createIndexLifeCycles();
+      }
+    } else {
+      LOGGER.info("ILM policy is not managed by tasklist, skipping creation");
     }
 
     final Pattern indexNamePattern = Pattern.compile(archiveTemplatePatterndNameRegex);
