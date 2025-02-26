@@ -72,6 +72,7 @@ import org.springframework.stereotype.Component;
 @Conditional(ElasticsearchCondition.class)
 @Component
 public class ElasticsearchArchiverRepository implements ArchiverRepository {
+
   public static final int INTERNAL_SCROLL_KEEP_ALIVE_MS =
       30000; // this scroll timeout value is used for reindex and delete queries
   private static final Logger LOGGER =
@@ -385,7 +386,7 @@ public class ElasticsearchArchiverRepository implements ArchiverRepository {
     if (error != null) {
       final var message =
           String.format(
-              "Exception occurred, while performing operation %s on source index %s. the documents: %s",
+              "Exception occurred while performing operation %s on source index %s. The error was: %s",
               operation, sourceIndexName, error.getMessage());
       return Either.left(new OperateRuntimeException(message, error));
     }
