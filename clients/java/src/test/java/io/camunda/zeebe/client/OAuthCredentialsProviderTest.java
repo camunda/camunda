@@ -18,7 +18,6 @@ package io.camunda.zeebe.client;
 import static com.github.tomakehurst.wiremock.client.WireMock.equalTo;
 import static com.github.tomakehurst.wiremock.client.WireMock.matching;
 import static com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor;
-import static com.github.tomakehurst.wiremock.client.WireMock.verify;
 import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig;
 import static io.camunda.zeebe.client.impl.oauth.OAuthCredentialsProviderBuilder.OAUTH_ENV_AUTHORIZATION_SERVER;
 import static io.camunda.zeebe.client.impl.oauth.OAuthCredentialsProviderBuilder.OAUTH_ENV_CLIENT_ID;
@@ -287,7 +286,7 @@ public final class OAuthCredentialsProviderTest {
     // then
     assertThat(recordingInterceptor.getCapturedHeaders().get(AUTH_KEY))
         .isEqualTo(TOKEN_TYPE + " " + ACCESS_TOKEN);
-    verify(0, oauthRequestMatcher());
+    WireMock.verify(0, oauthRequestMatcher());
   }
 
   @Test
@@ -309,7 +308,7 @@ public final class OAuthCredentialsProviderTest {
 
     // when
     client.newTopologyRequest().send().join();
-    verify(1, oauthRequestMatcher());
+    WireMock.verify(1, oauthRequestMatcher());
 
     builder.usePlaintext().credentialsProvider(credsBuilder.build());
     client = new ZeebeClientImpl(builder, serverRule.getChannel());
@@ -318,7 +317,7 @@ public final class OAuthCredentialsProviderTest {
     // then
     assertThat(recordingInterceptor.getCapturedHeaders().get(AUTH_KEY))
         .isEqualTo(TOKEN_TYPE + " " + ACCESS_TOKEN);
-    verify(1, oauthRequestMatcher());
+    WireMock.verify(1, oauthRequestMatcher());
     assertCacheContents(cachePath);
   }
 
@@ -358,7 +357,7 @@ public final class OAuthCredentialsProviderTest {
     // then
     assertThat(recordingInterceptor.getCapturedHeaders().get(AUTH_KEY))
         .isEqualTo(TOKEN_TYPE + " " + ACCESS_TOKEN);
-    verify(1, oauthRequestMatcher());
+    WireMock.verify(1, oauthRequestMatcher());
     assertCacheContents(cachePath);
   }
 
@@ -551,7 +550,7 @@ public final class OAuthCredentialsProviderTest {
     // then
     assertThat(recordingInterceptor.getCapturedHeaders().get(AUTH_KEY))
         .isEqualTo(TOKEN_TYPE + " " + ACCESS_TOKEN);
-    verify(1, oauthRequestMatcher());
+    WireMock.verify(1, oauthRequestMatcher());
   }
 
   /**
