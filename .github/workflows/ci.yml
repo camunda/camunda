@@ -28,6 +28,7 @@ defaults:
 
 env:
   DOCKER_PLATFORMS: "linux/amd64,linux/arm64"
+  RERUN_FAILING_TESTS_COUNT: "3"
 
 jobs:
   detect-changes:
@@ -198,7 +199,7 @@ jobs:
         # phase of Maven https://maven.apache.org/guides/introduction/introduction-to-the-lifecycle.html#default-lifecycle
         run: >
           ./mvnw -T2 -B --no-snapshot-updates
-          -D skipITs -D skipQaBuild=true -D skipChecks -D surefire.rerunFailingTestsCount=3
+          -D skipITs -D skipQaBuild=true -D skipChecks -D surefire.rerunFailingTestsCount=${RERUN_FAILING_TESTS_COUNT}
           -D junitThreadCount=16
           -P skip-random-tests,parallel-tests,extract-flaky-tests,skipFrontendBuild
           verify
@@ -284,7 +285,7 @@ jobs:
           -D forkCount=1
           -D maven.javadoc.skip=true
           -D skipUTs -D skipChecks
-          -D failsafe.rerunFailingTestsCount=3 -D flaky.test.reportDir=failsafe-reports
+          -D failsafe.rerunFailingTestsCount=${RERUN_FAILING_TESTS_COUNT} -D flaky.test.reportDir=failsafe-reports
           -P parallel-tests,extract-flaky-tests,skipFrontendBuild,multi-db-test
           -D test.integration.camunda.database.type=es
           -pl 'qa/integration-tests'
@@ -373,7 +374,7 @@ jobs:
           -D forkCount=1
           -D maven.javadoc.skip=true
           -D skipUTs -D skipChecks
-          -D failsafe.rerunFailingTestsCount=3 -D flaky.test.reportDir=failsafe-reports
+          -D failsafe.rerunFailingTestsCount=${RERUN_FAILING_TESTS_COUNT} -D flaky.test.reportDir=failsafe-reports
           -P parallel-tests,extract-flaky-tests,skipFrontendBuild,multi-db-test
           -D test.integration.camunda.database.type=os
           -pl 'qa/integration-tests'
@@ -437,7 +438,7 @@ jobs:
           -D forkCount=3
           -D maven.javadoc.skip=true
           -D skipUTs -D skipChecks
-          -D failsafe.rerunFailingTestsCount=3 -D flaky.test.reportDir=failsafe-reports
+          -D failsafe.rerunFailingTestsCount=${RERUN_FAILING_TESTS_COUNT} -D flaky.test.reportDir=failsafe-reports
           -P parallel-tests,extract-flaky-tests,skipFrontendBuild,multi-db-test
           -D test.integration.camunda.database.type=rdbms
           -pl 'qa/integration-tests'
@@ -541,7 +542,7 @@ jobs:
           -D forkCount=${{ matrix.maven-test-fork-count }}
           -D maven.javadoc.skip=true
           -D skipUTs -D skipChecks
-          -D failsafe.rerunFailingTestsCount=3 -D flaky.test.reportDir=failsafe-reports
+          -D failsafe.rerunFailingTestsCount=${RERUN_FAILING_TESTS_COUNT} -D flaky.test.reportDir=failsafe-reports
           -P parallel-tests,extract-flaky-tests,skipFrontendBuild
           -pl ${{ matrix.maven-modules }}
           verify
