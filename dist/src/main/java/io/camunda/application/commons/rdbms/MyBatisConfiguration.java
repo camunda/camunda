@@ -9,6 +9,7 @@ package io.camunda.application.commons.rdbms;
 
 import io.camunda.db.rdbms.config.VendorDatabaseProperties;
 import io.camunda.db.rdbms.sql.AuthorizationMapper;
+import io.camunda.db.rdbms.sql.BatchOperationMapper;
 import io.camunda.db.rdbms.sql.DecisionDefinitionMapper;
 import io.camunda.db.rdbms.sql.DecisionInstanceMapper;
 import io.camunda.db.rdbms.sql.DecisionRequirementsMapper;
@@ -228,6 +229,11 @@ public class MyBatisConfiguration {
   @Bean
   public MapperFactoryBean<PurgeMapper> purgeMapper(final SqlSessionFactory sqlSessionFactory) {
     return createMapperFactoryBean(sqlSessionFactory, PurgeMapper.class);
+  }
+
+  @Bean
+  public MapperFactoryBean<BatchOperationMapper> batchOperationMapper(final SqlSessionFactory sqlSessionFactory) {
+    return createMapperFactoryBean(sqlSessionFactory, BatchOperationMapper.class);
   }
 
   private <T> MapperFactoryBean<T> createMapperFactoryBean(

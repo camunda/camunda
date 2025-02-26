@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="io.camunda.db.rdbms.sql.BatchOperationMapper">
+
+  <resultMap id="BatchOperationResultMap" type="io.camunda.search.entities.BatchOperationEntity">
+    <id property="batchOperationKey" column="BATCH_OPERATION_KEY"/>
+    <result property="operationType" column="OPERATION_TYPE"/>
+    <result property="startDate" column="START_DATE"/>
+    <result property="endDate" column="END_DATE"/>
+    <result property="operationsTotalCount" column="OPERATIONS_TOTAL_COUNT"/>
+    <result property="operationsFailedCount" column="OPERATIONS_FAILED_COUNT"/>
+    <result property="operationsCompletedCount" column="OPERATIONS_COMPLETED_COUNT"/>
+  </resultMap>
+
+  <insert id="insert" parameterType="io.camunda.db.rdbms.write.domain.BatchOperationDbModel">
+    INSERT INTO BATCH_OPERATION (BATCH_OPERATION_KEY,
+                                 OPERATION_TYPE,
+                                 START_DATE,
+                                 END_DATE,
+                                 OPERATIONS_TOTAL_COUNT,
+                                 OPERATIONS_FAILED_COUNT,
+                                 OPERATIONS_COMPLETED_COUNT)
+    VALUES (#{batchOperationKey},
+            #{operationType},
+            #{startDate},
+            #{endDate},
+            #{operationsTotalCount},
+            #{operationsFailedCount},
+            #{operationsCompletedCount})
+  </insert>
+
+  <select id="count" resultType="java.lang.Long">
+    SELECT COUNT(*)
+    FROM BATCH_OPERATION
+  </select>
+
+  <select id="search" resultMap="BatchOperationResultMap">
+    SELECT *
+    FROM BATCH_OPERATION
+  </select>
+
+</mapper>
