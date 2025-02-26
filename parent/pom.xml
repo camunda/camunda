@@ -63,7 +63,7 @@
     <version.httpcore5>5.3.3</version.httpcore5>
     <version.httpcomponents>4.4.16</version.httpcomponents>
     <version.identity>8.5.13</version.identity>
-    <version.jackson>2.17.2</version.jackson>
+    <version.jackson>2.18.2</version.jackson>
     <version.jna>5.14.0</version.jna>
     <version.junit>5.10.3</version.junit>
     <version.junit4>4.13.2</version.junit4>
@@ -71,7 +71,7 @@
     <version.minlog>1.3.1</version.minlog>
     <version.mockito>5.11.0</version.mockito>
     <version.model>7.7.0</version.model>
-    <version.msgpack>0.9.8</version.msgpack>
+    <version.msgpack>0.9.9</version.msgpack>
     <version.netty>4.1.118.Final</version.netty>
     <version.objenesis>3.3</version.objenesis>
     <version.opensearch>2.5.0</version.opensearch>
