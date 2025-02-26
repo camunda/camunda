@@ -11,11 +11,11 @@ import io.camunda.zeebe.db.DbValue;
 import io.camunda.zeebe.msgpack.UnpackedObject;
 import io.camunda.zeebe.msgpack.property.ArrayProperty;
 import io.camunda.zeebe.msgpack.value.LongValue;
-import java.util.Set;
+import java.util.List;
 import java.util.stream.Collectors;
-import java.util.stream.StreamSupport;
 
 public class ItemKeys extends UnpackedObject implements DbValue {
+
   private final ArrayProperty<LongValue> keysProp =
       new ArrayProperty<>("keys", LongValue::new);
 
@@ -24,12 +24,12 @@ public class ItemKeys extends UnpackedObject implements DbValue {
     declareProperty(keysProp);
   }
 
-  public Set<Long> getKeys() {
+  public List<Long> getKeys() {
     return keysProp.stream().map(LongValue::getValue)
-        .collect(Collectors.toSet());
+        .collect(Collectors.toList());
   }
 
-  public void setKeys(final Set<Long> keys) {
+  public void setKeys(final List<Long> keys) {
     keysProp.reset();
     keys.forEach(key -> keysProp.add().setValue(key));
   }

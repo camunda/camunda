@@ -68,7 +68,7 @@ zeebe:
       replicationFactor: 1
       # Controls the number of partitions, which should exist in the cluster.
       # This can also be overridden using the environment variable ZEEBE_BROKER_CLUSTER_PARTITIONSCOUNT.
-      partitionsCount: 1
+      partitionsCount: 3
 
     threads:
       # Controls the number of non-blocking CPU threads to be used.
@@ -89,9 +89,9 @@ zeebe:
           flushInterval: PT0.5S
           maxQueueSize: 1000
           cleanupBatchSize: 1000
-          defaultHistoryTTL: PT1M
-          minHistoryCleanupInterval: PT1S
-          maxHistoryCleanupInterval: PT1H
+          defaultHistoryTTL: PT8H
+          minHistoryCleanupInterval: PT8H
+          maxHistoryCleanupInterval: PT8H
           historyCleanupBatchSize: 1000
 
 camunda:
