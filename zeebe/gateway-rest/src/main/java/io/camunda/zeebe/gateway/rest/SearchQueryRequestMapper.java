@@ -80,7 +80,46 @@ import io.camunda.search.sort.UserSort;
 import io.camunda.search.sort.UserTaskSort;
 import io.camunda.search.sort.VariableSort;
 import io.camunda.util.ObjectBuilder;
-import io.camunda.zeebe.gateway.protocol.rest.*;
+import io.camunda.zeebe.gateway.protocol.rest.AuthorizationSearchQuery;
+import io.camunda.zeebe.gateway.protocol.rest.AuthorizationSearchQuerySortRequest;
+import io.camunda.zeebe.gateway.protocol.rest.DecisionDefinitionSearchQuery;
+import io.camunda.zeebe.gateway.protocol.rest.DecisionDefinitionSearchQuerySortRequest;
+import io.camunda.zeebe.gateway.protocol.rest.DecisionInstanceSearchQuery;
+import io.camunda.zeebe.gateway.protocol.rest.DecisionInstanceSearchQuerySortRequest;
+import io.camunda.zeebe.gateway.protocol.rest.DecisionRequirementsSearchQuery;
+import io.camunda.zeebe.gateway.protocol.rest.DecisionRequirementsSearchQuerySortRequest;
+import io.camunda.zeebe.gateway.protocol.rest.FlowNodeInstanceSearchQuery;
+import io.camunda.zeebe.gateway.protocol.rest.FlowNodeInstanceSearchQuerySortRequest;
+import io.camunda.zeebe.gateway.protocol.rest.GroupSearchQueryRequest;
+import io.camunda.zeebe.gateway.protocol.rest.GroupSearchQuerySortRequest;
+import io.camunda.zeebe.gateway.protocol.rest.IncidentSearchQuery;
+import io.camunda.zeebe.gateway.protocol.rest.IncidentSearchQuerySortRequest;
+import io.camunda.zeebe.gateway.protocol.rest.MappingFilterRequest;
+import io.camunda.zeebe.gateway.protocol.rest.MappingSearchQueryRequest;
+import io.camunda.zeebe.gateway.protocol.rest.MappingSearchQuerySortRequest;
+import io.camunda.zeebe.gateway.protocol.rest.ProcessDefinitionSearchQuery;
+import io.camunda.zeebe.gateway.protocol.rest.ProcessDefinitionSearchQuerySortRequest;
+import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceSearchQuery;
+import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceSearchQuerySortRequest;
+import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceVariableFilterRequest;
+import io.camunda.zeebe.gateway.protocol.rest.RoleSearchQueryRequest;
+import io.camunda.zeebe.gateway.protocol.rest.RoleSearchQuerySortRequest;
+import io.camunda.zeebe.gateway.protocol.rest.SearchQueryPageRequest;
+import io.camunda.zeebe.gateway.protocol.rest.SortOrderEnum;
+import io.camunda.zeebe.gateway.protocol.rest.TenantFilterRequest;
+import io.camunda.zeebe.gateway.protocol.rest.TenantSearchQueryRequest;
+import io.camunda.zeebe.gateway.protocol.rest.TenantSearchQuerySortRequest;
+import io.camunda.zeebe.gateway.protocol.rest.UserFilterRequest;
+import io.camunda.zeebe.gateway.protocol.rest.UserSearchQueryRequest;
+import io.camunda.zeebe.gateway.protocol.rest.UserSearchQuerySortRequest;
+import io.camunda.zeebe.gateway.protocol.rest.UserTaskSearchQuery;
+import io.camunda.zeebe.gateway.protocol.rest.UserTaskSearchQuerySortRequest;
+import io.camunda.zeebe.gateway.protocol.rest.UserTaskVariableFilterRequest;
+import io.camunda.zeebe.gateway.protocol.rest.UserTaskVariableSearchQueryRequest;
+import io.camunda.zeebe.gateway.protocol.rest.UserTaskVariableSearchQuerySortRequest;
+import io.camunda.zeebe.gateway.protocol.rest.VariableSearchQuery;
+import io.camunda.zeebe.gateway.protocol.rest.VariableSearchQuerySortRequest;
+import io.camunda.zeebe.gateway.protocol.rest.VariableUserTaskFilterRequest;
 import io.camunda.zeebe.gateway.rest.util.KeyUtil;
 import io.camunda.zeebe.gateway.rest.util.ProcessInstanceStateConverter;
 import io.camunda.zeebe.gateway.rest.validator.RequestValidator;
@@ -97,7 +136,8 @@ import org.springframework.http.ProblemDetail;
 
 public final class SearchQueryRequestMapper {
 
-  private SearchQueryRequestMapper() {}
+  private SearchQueryRequestMapper() {
+  }
 
   public static Either<ProblemDetail, UsageMetricsQuery> toUsageMetricsQuery(
       final String startTime, final String endTime) {
@@ -487,7 +527,7 @@ public final class SearchQueryRequestMapper {
     return StringUtils.isEmpty(text) ? null : OffsetDateTime.parse(text);
   }
 
-  private static ProcessInstanceFilter toProcessInstanceFilter(
+  public static ProcessInstanceFilter toProcessInstanceFilter(
       final io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceFilter filter) {
     final var builder = FilterBuilders.processInstance();
 
@@ -1064,10 +1104,10 @@ public final class SearchQueryRequestMapper {
   }
 
   private static <T, B extends SortOption.AbstractBuilder<B> & ObjectBuilder<T>, F>
-      Either<List<String>, T> toSearchQuerySort(
-          final List<SearchQuerySortRequest<F>> sorting,
-          final Supplier<B> builderSupplier,
-          final BiFunction<F, B, List<String>> sortFieldMapper) {
+  Either<List<String>, T> toSearchQuerySort(
+      final List<SearchQuerySortRequest<F>> sorting,
+      final Supplier<B> builderSupplier,
+      final BiFunction<F, B, List<String>> sortFieldMapper) {
     if (sorting != null && !sorting.isEmpty()) {
       final List<String> validationErrors = new ArrayList<>();
       final var builder = builderSupplier.get();
@@ -1085,15 +1125,15 @@ public final class SearchQueryRequestMapper {
   }
 
   private static <
-          T,
-          B extends TypedSearchQueryBuilder<T, B, F, S>,
-          F extends FilterBase,
-          S extends SortOption>
-      Either<ProblemDetail, T> buildSearchQuery(
-          final F filter,
-          final Either<List<String>, S> sorting,
-          final Either<List<String>, SearchQueryPage> page,
-          final Supplier<B> queryBuilderSupplier) {
+      T,
+      B extends TypedSearchQueryBuilder<T, B, F, S>,
+      F extends FilterBase,
+      S extends SortOption>
+  Either<ProblemDetail, T> buildSearchQuery(
+      final F filter,
+      final Either<List<String>, S> sorting,
+      final Either<List<String>, SearchQueryPage> page,
+      final Supplier<B> queryBuilderSupplier) {
     final List<String> validationErrors = new ArrayList<>();
     if (sorting.isLeft()) {
       validationErrors.addAll(sorting.getLeft());

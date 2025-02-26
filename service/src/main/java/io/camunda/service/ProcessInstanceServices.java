@@ -11,6 +11,8 @@ import static io.camunda.search.query.SearchQueryBuilders.processInstanceSearchQ
 
 import io.camunda.search.clients.ProcessInstanceSearchClient;
 import io.camunda.search.entities.ProcessInstanceEntity;
+import io.camunda.search.entities.ProcessInstanceEntity.ProcessInstanceState;
+import io.camunda.search.filter.ProcessInstanceFilter;
 import io.camunda.search.query.ProcessInstanceQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.auth.Authentication;
@@ -37,8 +39,10 @@ import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstan
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceResultRecord;
 import io.camunda.zeebe.protocol.record.value.BatchOperationType;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -147,18 +151,40 @@ public final class ProcessInstanceServices
   }
 
   public CompletableFuture<BatchOperationCreationRecord> cancelProcessInstanceBatchOperationWithResult(
-      final ProcessInstanceQuery query) {
+      final ProcessInstanceFilter filter) {
+    final var rootInstanceFilter = filter.toBuilder()
+        .parentProcessInstanceKeys(-1L) // TODO is this correct for all exporters??
+        .states(ProcessInstanceState.ACTIVE.name())
+        .build();
 
-    // TODO implement pagination
-    final var processInstanceKeys = search(query).items().stream()
-        .map(ProcessInstanceEntity::processInstanceKey).collect(Collectors.toSet());
+    final Set<Long> piKeys = new HashSet<>();
+    boolean hasNextPage = true;
+    int offset = 0;
+    final int pageSize = 100;
+    while (hasNextPage) {
+      final int finalOffset = offset;
+      final var query = processInstanceSearchQuery(
+          q -> q.filter(rootInstanceFilter)
+              .page(p -> p.from(finalOffset).size(pageSize)));
+      final var result = search(query);
+
+      final var processInstanceKeys = result.items().stream()
+          .map(ProcessInstanceEntity::processInstanceKey).collect(Collectors.toSet());
+      piKeys.addAll(processInstanceKeys);
+
+      if (result.total() > offset + pageSize) {
+        offset += pageSize;
+      } else {
+        hasNextPage = false;
+      }
+    }
 
     final var brokerRequest =
         new BrokerCreateBatchOperationRequest()
-            .setKeys(processInstanceKeys)
+            .setKeys(piKeys)
             .setBatchOperationType(BatchOperationType.PROCESS_CANCELLATION);
 
-    LOGGER.debug("Cancelling process instances with keys: {}", processInstanceKeys);
+    LOGGER.info("Cancelling {} process instances", piKeys.size());
 
     return sendBrokerRequest(brokerRequest);
   }
