@@ -111,13 +111,13 @@ public class DbTenantStateTest {
   void shouldAddEntityToTenant() {
     // given
     final long tenantKey = 1L;
-    final long entityKey = 100L;
+    final String entityId = "entityId";
     final String tenantId = "tenant-1";
     final var tenantRecord =
         new TenantRecord()
             .setTenantKey(tenantKey)
             .setTenantId(tenantId)
-            .setEntityKey(entityKey)
+            .setEntityId(entityId)
             .setName("Tenant One");
 
     // when
@@ -125,7 +125,7 @@ public class DbTenantStateTest {
     tenantState.addEntity(tenantRecord);
 
     // then
-    final var entityType = tenantState.getEntityType(tenantKey, entityKey);
+    final var entityType = tenantState.getEntityType(tenantId, entityId);
     assertThat(entityType).isPresent();
     assertThat(entityType.get()).isEqualTo(tenantRecord.getEntityType());
   }
@@ -134,20 +134,20 @@ public class DbTenantStateTest {
   void shouldReturnEmptyEntityTypeIfEntityNotFound() {
     // given
     final long tenantKey = 1L;
-    final long entityKey = 999L;
+    final String entityId = "entityId";
     final String tenantId = "tenant-1";
     final var tenantRecord =
         new TenantRecord()
             .setTenantKey(tenantKey)
             .setTenantId(tenantId)
-            .setEntityKey(entityKey)
+            .setEntityId(entityId)
             .setName("Tenant One");
 
     // when
     tenantState.createTenant(tenantRecord);
 
     // then
-    final var entityType = tenantState.getEntityType(tenantKey, entityKey);
+    final var entityType = tenantState.getEntityType(tenantId, entityId);
     assertThat(entityType).isEmpty();
   }
 
@@ -155,13 +155,13 @@ public class DbTenantStateTest {
   void shouldReturnEntityTypeForExistingTenantAndEntity() {
     // given
     final long tenantKey = 1L;
-    final long entityKey = 100L;
+    final String entityId = "entityId";
     final String tenantId = "tenant-1";
     final var tenantRecord =
         new TenantRecord()
             .setTenantKey(tenantKey)
             .setTenantId(tenantId)
-            .setEntityKey(entityKey)
+            .setEntityId(entityId)
             .setName("Tenant One")
             .setEntityType(EntityType.USER);
 
@@ -170,7 +170,7 @@ public class DbTenantStateTest {
     tenantState.addEntity(tenantRecord);
 
     // then
-    final var entityType = tenantState.getEntityType(tenantKey, entityKey);
+    final var entityType = tenantState.getEntityType(tenantId, entityId);
     assertThat(entityType).isPresent();
     assertThat(entityType.get()).isEqualTo(EntityType.USER);
   }
@@ -179,8 +179,8 @@ public class DbTenantStateTest {
   void shouldRemoveEntityFromTenant() {
     // given
     final long tenantKey = 1L;
-    final long entityKey1 = 100L;
-    final long entityKey2 = 101L;
+    final String entityId1 = "entityId1";
+    final String entityId2 = "entityId2";
     final String tenantId = "tenant-1";
     final var tenantRecord =
         new TenantRecord().setTenantKey(tenantKey).setTenantId(tenantId).setName("Tenant One");
@@ -188,55 +188,29 @@ public class DbTenantStateTest {
     tenantState.createTenant(tenantRecord);
 
     // Add two entities to the tenant
+    final var removeEntity1Record =
+        new TenantRecord()
+            .setTenantKey(tenantKey)
+            .setEntityId(entityId1)
+            .setEntityType(EntityType.USER);
+    tenantState.addEntity(removeEntity1Record);
     tenantState.addEntity(
         new TenantRecord()
             .setTenantKey(tenantKey)
-            .setEntityKey(entityKey1)
-            .setEntityType(EntityType.USER));
-    tenantState.addEntity(
-        new TenantRecord()
-            .setTenantKey(tenantKey)
-            .setEntityKey(entityKey2)
+            .setEntityId(entityId2)
             .setEntityType(EntityType.USER));
 
     // when
-    tenantState.removeEntity(tenantKey, entityKey1);
+    tenantState.removeEntity(removeEntity1Record);
 
     // then
     // Ensure the first entity is removed
-    final var deletedEntity = tenantState.getEntityType(tenantKey, entityKey1);
+    final var deletedEntity = tenantState.getEntityType(tenantId, entityId1);
     assertThat(deletedEntity).isEmpty();
 
     // Ensure the second entity still exists
-    final var remainingEntityType = tenantState.getEntityType(tenantKey, entityKey2).get();
+    final var remainingEntityType = tenantState.getEntityType(tenantId, entityId2).get();
     assertThat(remainingEntityType).isEqualTo(EntityType.USER);
-  }
-
-  @Test
-  void shouldVerifyEntityAssignmentToTenant() {
-    // given
-    final long tenantKey = 1L;
-    final long assignedEntityKey = 100L;
-    final long unassignedEntityKey = 200L;
-    final String tenantId = "tenant-1";
-
-    final var tenantRecord =
-        new TenantRecord().setTenantKey(tenantKey).setTenantId(tenantId).setName("Tenant One");
-
-    // Create tenant and add an assigned entity
-    tenantState.createTenant(tenantRecord);
-    tenantState.addEntity(
-        new TenantRecord()
-            .setTenantKey(tenantKey)
-            .setEntityKey(assignedEntityKey)
-            .setEntityType(EntityType.USER));
-
-    // when & then
-    // Check that the assigned entity is recognized as assigned to the tenant
-    assertThat(tenantState.isEntityAssignedToTenant(assignedEntityKey, tenantKey)).isTrue();
-
-    // Check that an unassigned entity is not recognized as assigned to the tenant
-    assertThat(tenantState.isEntityAssignedToTenant(unassignedEntityKey, tenantKey)).isFalse();
   }
 
   @Test
@@ -244,6 +218,7 @@ public class DbTenantStateTest {
     // given
     final long tenantKey = 1L;
     final String tenantId = "tenant-1";
+    final var entityId = "entityId";
     final var tenantRecord =
         new TenantRecord().setTenantKey(tenantKey).setTenantId(tenantId).setName("Tenant One");
 
@@ -251,7 +226,7 @@ public class DbTenantStateTest {
     tenantState.addEntity(
         new TenantRecord()
             .setTenantKey(tenantKey)
-            .setEntityKey(100L)
+            .setEntityId(entityId)
             .setEntityType(EntityType.USER));
 
     // when
@@ -260,7 +235,7 @@ public class DbTenantStateTest {
     // then
     final var deletedTenant = tenantState.getTenantById(tenantId);
     assertThat(deletedTenant).isEmpty();
-    final var deletedEntity = tenantState.getEntityType(tenantKey, 100L);
+    final var deletedEntity = tenantState.getEntityType(tenantId, entityId);
     assertThat(deletedEntity).isEmpty();
   }
 
@@ -271,25 +246,27 @@ public class DbTenantStateTest {
     final String tenantId = "tenant-1";
     final var tenantRecord =
         new TenantRecord().setTenantKey(tenantKey).setTenantId(tenantId).setName("Tenant One");
+    final var entityId1 = "user";
+    final var entityId2 = "mapping";
 
     tenantState.createTenant(tenantRecord);
     tenantState.addEntity(
         new TenantRecord()
             .setTenantKey(tenantKey)
-            .setEntityKey(100L)
+            .setEntityId(entityId1)
             .setEntityType(EntityType.USER));
     tenantState.addEntity(
         new TenantRecord()
             .setTenantKey(tenantKey)
-            .setEntityKey(200L)
+            .setEntityId(entityId2)
             .setEntityType(EntityType.MAPPING));
 
     // when
-    final var entities = tenantState.getEntitiesByType(tenantKey);
+    final var entities = tenantState.getEntitiesByType(tenantId);
 
     // then
-    assertThat(entities.get(EntityType.USER)).containsExactly(100L);
-    assertThat(entities.get(EntityType.MAPPING)).containsExactly(200L);
+    assertThat(entities.get(EntityType.USER)).containsExactly(entityId1);
+    assertThat(entities.get(EntityType.MAPPING)).containsExactly(entityId2);
   }
 
   @Test

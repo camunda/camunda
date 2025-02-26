@@ -142,15 +142,13 @@ public class TenantDeleteProcessor implements DistributedTypedRecordProcessor<Te
   private void removeAssignedEntities(final TenantRecord record) {
     final var tenant = tenantState.getTenantById(record.getTenantId()).orElseThrow();
     tenantState
-        .getEntitiesByType(tenant.getTenantKey())
+        .getEntitiesByType(tenant.getTenantId())
         .forEach(
-            (entityType, entityKeys) -> {
+            (entityType, entityIds) -> {
               switch (entityType) {
                 case USER ->
-                    entityKeys.forEach(
-                        entityKey -> {
-                          final var username =
-                              userState.getUser(entityKey).orElseThrow().getUsername();
+                    entityIds.forEach(
+                        username -> {
                           final var entityRecord =
                               new TenantRecord()
                                   .setTenantId(tenant.getTenantId())
