@@ -13,6 +13,8 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.boot.actuate.autoconfigure.security.servlet.EndpointRequest;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Condition;
@@ -43,6 +45,8 @@ import org.springframework.security.web.servletapi.SecurityContextHolderAwareReq
 @EnableMethodSecurity
 @Configuration(proxyBeanMethods = false)
 public class SecurityConfiguration {
+
+  private static final Logger LOGGER = LoggerFactory.getLogger(SecurityConfiguration.class);
 
   @Bean
   @Order(Ordered.HIGHEST_PRECEDENCE)
@@ -126,8 +130,32 @@ public class SecurityConfiguration {
       final boolean embeddedGatewaySecurityNotNone =
           !"none".equals(env.getProperty("zeebe.broker.gateway.security.authentication.mode"));
 
+      warnAboutAmbiguity(standaloneGatewayEnabled, embeddedGatewaySecurityNotNone, env);
+
       return (standaloneGatewayEnabled && standaloneGatewaySecurityNotNone)
           || (embeddedGatewayEnabled && embeddedGatewaySecurityNotNone);
+    }
+
+    private void warnAboutAmbiguity(
+        final boolean standaloneGatewayEnabled,
+        final boolean embeddedGatewayEnabled,
+        final Environment env) {
+      final String standaloneGatewaySecurityMode =
+          env.getProperty("zeebe.gateway.security.authentication.mode");
+      final String embeddedGatewaySecurityMode =
+          env.getProperty("zeebe.broker.gateway.security.authentication.mode");
+
+      if (standaloneGatewayEnabled && "identity".equals(embeddedGatewaySecurityMode)) {
+        LOGGER.warn(
+            "Standalone gateway is enabled but embedded gateway security mode is set to identity. "
+                + "This configuration is ambiguous. Only the standalone gateway security mode will be used.");
+      }
+
+      if (embeddedGatewayEnabled && "identity".equals(standaloneGatewaySecurityMode)) {
+        LOGGER.warn(
+            "Embedded gateway is enabled but standalone gateway security mode is set to identity. "
+                + "This configuration is ambiguous. Only the embedded gateway security mode will be used.");
+      }
     }
   }
 }
