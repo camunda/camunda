@@ -57,31 +57,6 @@ public class DbTenantStateTest {
   }
 
   @Test
-  void shouldReturnTenantKeyById() {
-    // given
-    final long tenantKey = 1L;
-    final String tenantId = "tenant-1";
-    final var tenantRecord =
-        new TenantRecord().setTenantKey(tenantKey).setTenantId(tenantId).setName("Tenant One");
-
-    // when
-    tenantState.createTenant(tenantRecord);
-
-    // then
-    final var retrievedKey = tenantState.getTenantKeyById(tenantId);
-    assertThat(retrievedKey).isPresent();
-    assertThat(retrievedKey.get()).isEqualTo(tenantKey);
-  }
-
-  @Test
-  void shouldNotFindTenantByNonExistingId() {
-    // when
-    final var tenantKey = tenantState.getTenantKeyById("non-existent-id");
-    // then
-    assertThat(tenantKey).isEmpty();
-  }
-
-  @Test
   void shouldUpdateTenantName() {
     // given
     final long tenantKey = 1L;
@@ -287,8 +262,6 @@ public class DbTenantStateTest {
     assertThat(deletedTenant).isEmpty();
     final var deletedEntity = tenantState.getEntityType(tenantKey, 100L);
     assertThat(deletedEntity).isEmpty();
-    final var tenantKeyById = tenantState.getTenantKeyById(tenantId);
-    assertThat(tenantKeyById).isEmpty();
   }
 
   @Test
