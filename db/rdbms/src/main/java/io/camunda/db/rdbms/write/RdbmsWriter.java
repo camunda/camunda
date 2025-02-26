@@ -8,6 +8,7 @@
 package io.camunda.db.rdbms.write;
 
 import io.camunda.db.rdbms.config.VendorDatabaseProperties;
+import io.camunda.db.rdbms.sql.BatchOperationMapper;
 import io.camunda.db.rdbms.sql.DecisionInstanceMapper;
 import io.camunda.db.rdbms.sql.FlowNodeInstanceMapper;
 import io.camunda.db.rdbms.sql.IncidentMapper;
@@ -17,6 +18,7 @@ import io.camunda.db.rdbms.sql.UserTaskMapper;
 import io.camunda.db.rdbms.sql.VariableMapper;
 import io.camunda.db.rdbms.write.queue.ExecutionQueue;
 import io.camunda.db.rdbms.write.service.AuthorizationWriter;
+import io.camunda.db.rdbms.write.service.BatchOperationWriter;
 import io.camunda.db.rdbms.write.service.DecisionDefinitionWriter;
 import io.camunda.db.rdbms.write.service.DecisionInstanceWriter;
 import io.camunda.db.rdbms.write.service.DecisionRequirementsWriter;
@@ -57,6 +59,7 @@ public class RdbmsWriter {
   private final UserTaskWriter userTaskWriter;
   private final FormWriter formWriter;
   private final MappingWriter mappingWriter;
+  private final BatchOperationWriter batchOperationWriter;
 
   private final HistoryCleanupService historyCleanupService;
 
@@ -92,6 +95,7 @@ public class RdbmsWriter {
     userTaskWriter = new UserTaskWriter(executionQueue, userTaskMapper);
     formWriter = new FormWriter(executionQueue);
     mappingWriter = new MappingWriter(executionQueue);
+    batchOperationWriter = new BatchOperationWriter(executionQueue);
 
     historyCleanupService =
         new HistoryCleanupService(
