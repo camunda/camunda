@@ -1495,7 +1495,7 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    *
    * <pre>
    * camundaClient
-   *  .newDeleteTenantCommand(tenantKey)
+   *  .newDeleteTenantCommand(tenantId)
    *  .send();
    * </pre>
    *
@@ -1511,7 +1511,7 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    *
    * <pre>
    * camundaClient
-   *   .newAssignMappingToTenantCommand(tenantKey)
+   *   .newAssignMappingToTenantCommand(tenantId)
    *   .mappingKey(mappingKey)
    *   .send();
    * </pre>
@@ -1519,10 +1519,10 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    * <p>This command sends an HTTP PUT request to assign the specified mapping rule to the given
    * tenant.
    *
-   * @param tenantKey the unique identifier of the tenant
+   * @param tenantId the unique identifier of the tenant
    * @return a builder for the assign mapping rule to tenant command
    */
-  AssignMappingToTenantCommandStep1 newAssignMappingToTenantCommand(long tenantKey);
+  AssignMappingToTenantCommandStep1 newAssignMappingToTenantCommand(String tenantId);
 
   /**
    * Command to assign a user to a tenant.
@@ -1570,7 +1570,7 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    *
    * <pre>
    * camundaClient
-   *   .newAssignGroupToTenantCommand(tenantKey)
+   *   .newAssignGroupToTenantCommand(tenantId)
    *   .groupKey(groupKey)
    *   .send();
    * </pre>

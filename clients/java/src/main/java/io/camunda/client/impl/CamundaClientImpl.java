@@ -869,8 +869,8 @@ public final class CamundaClientImpl implements CamundaClient {
   }
 
   @Override
-  public AssignMappingToTenantCommandStep1 newAssignMappingToTenantCommand(final long tenantKey) {
-    return new AssignMappingToTenantCommandImpl(httpClient, tenantKey);
+  public AssignMappingToTenantCommandStep1 newAssignMappingToTenantCommand(final String tenantId) {
+    return new AssignMappingToTenantCommandImpl(httpClient, tenantId);
   }
 
   @Override
