@@ -118,13 +118,9 @@ public class CCSMAuthenticationService extends AbstractAuthenticationService {
     String targetUri = redirectUri;
 
     // There are some instances where the final slash is needed to load the page, with Tomcat.
-    if (!targetUri.endsWith("/")) {
-      targetUri = targetUri + "/";
-    }
+    targetUri = StringUtils.appendIfMissing(targetUri, "/");
 
-    if (!redirectUri.endsWith("/")) {
-      redirectUri = redirectUri + "/";
-    }
+    redirectUri = StringUtils.appendIfMissing(redirectUri, "/");
     redirectUri += "static/redirect.html?url=" + targetUri;
 
     LOG.trace("Using root redirect Url: {}", redirectUri);
