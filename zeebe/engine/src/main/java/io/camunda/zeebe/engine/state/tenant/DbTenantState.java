@@ -12,7 +12,6 @@ import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.db.impl.DbCompositeKey;
 import io.camunda.zeebe.db.impl.DbForeignKey;
-import io.camunda.zeebe.db.impl.DbLong;
 import io.camunda.zeebe.db.impl.DbString;
 import io.camunda.zeebe.engine.state.authorization.EntityTypeValue;
 import io.camunda.zeebe.engine.state.mutable.MutableTenantState;
@@ -29,7 +28,6 @@ import java.util.function.Function;
 public class DbTenantState implements MutableTenantState {
 
   private final DbString tenantId = new DbString();
-  private final DbLong tenantKey = new DbLong();
   private final PersistedTenant persistedTenant = new PersistedTenant();
   private final ColumnFamily<DbString, PersistedTenant> tenantsColumnFamily;
 
@@ -56,7 +54,6 @@ public class DbTenantState implements MutableTenantState {
 
   @Override
   public void createTenant(final TenantRecord tenantRecord) {
-    tenantKey.wrapLong(tenantRecord.getTenantKey());
     tenantId.wrapString(tenantRecord.getTenantId());
     persistedTenant.from(tenantRecord);
     tenantsColumnFamily.insert(tenantId, persistedTenant);
@@ -87,7 +84,6 @@ public class DbTenantState implements MutableTenantState {
 
   @Override
   public void delete(final TenantRecord tenantRecord) {
-    tenantKey.wrapLong(tenantRecord.getTenantKey());
     tenantId.wrapString(tenantRecord.getTenantId());
 
     entityByTenantColumnFamily.whileEqualPrefix(
