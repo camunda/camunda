@@ -17,29 +17,27 @@ package io.atomix.raft.metrics;
 
 import static io.atomix.raft.metrics.RaftReplicationMetricsDoc.*;
 
-import io.micrometer.core.instrument.Gauge;
+import io.camunda.zeebe.util.micrometer.StatefulGauge;
 import io.micrometer.core.instrument.MeterRegistry;
-import java.util.concurrent.atomic.AtomicLong;
 
 public class RaftReplicationMetrics extends RaftMetrics {
 
-  private final AtomicLong commitIndex;
-  private final AtomicLong appendIndex;
+  private final StatefulGauge commitIndex;
+  private final StatefulGauge appendIndex;
 
   public RaftReplicationMetrics(final String partitionName, final MeterRegistry registry) {
     super(partitionName);
 
-    commitIndex = new AtomicLong(0L);
-    appendIndex = new AtomicLong(0L);
-
-    Gauge.builder(COMMIT_INDEX.getName(), commitIndex::get)
-        .description(COMMIT_INDEX.getDescription())
-        .tags(RaftKeyNames.PARTITION_GROUP.asString(), partitionGroupName)
-        .register(registry);
-    Gauge.builder(APPEND_INDEX.getName(), appendIndex::get)
-        .description(APPEND_INDEX.getDescription())
-        .tags(RaftKeyNames.PARTITION_GROUP.asString(), partitionGroupName)
-        .register(registry);
+    commitIndex =
+        StatefulGauge.builder(COMMIT_INDEX.getName())
+            .description(COMMIT_INDEX.getDescription())
+            .tags(RaftKeyNames.PARTITION_GROUP.asString(), partitionGroupName)
+            .register(registry);
+    appendIndex =
+        StatefulGauge.builder(APPEND_INDEX.getName())
+            .description(APPEND_INDEX.getDescription())
+            .tags(RaftKeyNames.PARTITION_GROUP.asString(), partitionGroupName)
+            .register(registry);
   }
 
   public void setCommitIndex(final long value) {
