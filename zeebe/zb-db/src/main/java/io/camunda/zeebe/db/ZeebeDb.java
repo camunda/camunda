@@ -8,6 +8,7 @@
 package io.camunda.zeebe.db;
 
 import io.camunda.zeebe.protocol.EnumValue;
+import io.micrometer.core.instrument.MeterRegistry;
 import java.io.File;
 import java.util.Optional;
 
@@ -63,4 +64,10 @@ public interface ZeebeDb<ColumnFamilyType extends Enum<? extends EnumValue> & En
    * @return {@code true} if the column is empty, otherwise {@code false}
    */
   boolean isEmpty(ColumnFamilyType column, TransactionContext context);
+
+  /**
+   * Returns a meter registry tied to the lifecycle of the DB; any metrics registered while the DB
+   * is opened will be removed once the DB is closed.
+   */
+  MeterRegistry getMeterRegistry();
 }

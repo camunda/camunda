@@ -168,6 +168,12 @@ public abstract class TestSpringApplication<T extends TestSpringApplication<T>>
     return self();
   }
 
+  public T withBasicAuth() {
+    withProperty(AuthenticationProperties.METHOD, AuthenticationMethod.BASIC.name());
+    withAdditionalProfile(Profile.CONSOLIDATED_AUTH);
+    return self();
+  }
+
   public T withAdditionalInitializer(final ApplicationContextInitializer<?> initializer) {
     additionalInitializers.add(initializer);
     return self();

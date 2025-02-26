@@ -7,25 +7,27 @@
  */
 package io.camunda.zeebe.engine.metrics;
 
-import io.prometheus.client.Gauge;
+import static io.camunda.zeebe.engine.metrics.EngineMetricsDoc.BUFFERED_MESSAGES;
+
+import io.camunda.zeebe.util.micrometer.StatefulGauge;
+import io.micrometer.core.instrument.MeterRegistry;
 
 public class BufferedMessagesMetrics {
 
-  private static final Gauge BUFFERED_MESSAGES_COUNT =
-      Gauge.build()
-          .namespace("zeebe")
-          .name("buffered_messages_count")
-          .help("Current number of buffered messages.")
-          .labelNames("partition")
-          .register();
+  private final StatefulGauge bufferedMessageCount;
 
-  private final String partitionIdLabel;
-
-  public BufferedMessagesMetrics(final int partitionId) {
-    partitionIdLabel = String.valueOf(partitionId);
+  public BufferedMessagesMetrics(final MeterRegistry meterRegistry) {
+    bufferedMessageCount =
+        StatefulGauge.builder(BUFFERED_MESSAGES.getName())
+            .description(BUFFERED_MESSAGES.getDescription())
+            .register(meterRegistry);
   }
 
+  /**
+   * Be wary of calling this from outside the stream processing actor, you may end up with the
+   * incorrect number due to race conditions.
+   */
   public void setBufferedMessagesCounter(final long counter) {
-    BUFFERED_MESSAGES_COUNT.labels(partitionIdLabel).set((int) counter);
+    bufferedMessageCount.set(counter);
   }
 }

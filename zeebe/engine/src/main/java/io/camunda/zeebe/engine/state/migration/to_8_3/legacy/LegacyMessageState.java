@@ -190,7 +190,7 @@ public final class LegacyMessageState {
             processInstanceKey,
             correlationKey);
 
-    bufferedMessagesMetrics = new BufferedMessagesMetrics(partitionId);
+    bufferedMessagesMetrics = new BufferedMessagesMetrics(zeebeDb.getMeterRegistry());
   }
 
   public void put(final long key, final MessageRecord record) {

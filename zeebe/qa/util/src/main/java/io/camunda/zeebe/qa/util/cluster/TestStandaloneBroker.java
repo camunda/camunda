@@ -104,6 +104,10 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
     return super.createSpringBuilder();
   }
 
+  public TestStandaloneBroker withAuthorizationsEnabled() {
+    return withSecurityConfig(cfg -> cfg.getAuthorizations().setEnabled(true));
+  }
+
   @Override
   public TestStandaloneBroker self() {
     return this;
@@ -163,12 +167,6 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
     }
 
     return TestStandaloneApplication.super.newClientBuilder();
-  }
-
-  /** Returns the broker configuration */
-  @Override
-  public BrokerBasedProperties brokerConfig() {
-    return config;
   }
 
   /**
@@ -232,6 +230,12 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
   public TestStandaloneBroker withBrokerConfig(final Consumer<BrokerBasedProperties> modifier) {
     modifier.accept(config);
     return this;
+  }
+
+  /** Returns the broker configuration */
+  @Override
+  public BrokerBasedProperties brokerConfig() {
+    return config;
   }
 
   /**
