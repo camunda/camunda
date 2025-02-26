@@ -10,11 +10,11 @@ package io.camunda.operate.webapp.elasticsearch.tenant;
 import static io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor.TENANT_ID;
 import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
 
+import io.camunda.authentication.tenant.TenantService;
 import io.camunda.operate.conditions.ElasticsearchCondition;
 import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.tenant.TenantCheckApplier;
 import io.camunda.operate.util.ElasticsearchUtil;
-import io.camunda.operate.webapp.security.tenant.TenantService;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.springframework.beans.factory.annotation.Autowired;

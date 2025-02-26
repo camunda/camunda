@@ -11,8 +11,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import io.camunda.authentication.tenant.TenantService;
 import io.camunda.tasklist.webapp.es.tenant.OpenSearchTenantCheckApplier;
-import io.camunda.tasklist.webapp.security.tenant.TenantService;
 import java.util.Collections;
 import java.util.List;
 import org.junit.jupiter.api.Test;

@@ -9,9 +9,9 @@ package io.camunda.tasklist.webapp.tenant;
 
 import static org.mockito.Mockito.*;
 
+import io.camunda.authentication.tenant.TenantService;
+import io.camunda.authentication.tenant.TenantServiceImpl;
 import io.camunda.security.configuration.SecurityConfiguration;
-import io.camunda.tasklist.webapp.security.tenant.TenantService;
-import io.camunda.tasklist.webapp.security.tenant.TenantServiceImpl;
 import java.util.ArrayList;
 import java.util.List;
 import org.assertj.core.api.Assertions;
