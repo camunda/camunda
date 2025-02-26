@@ -257,7 +257,6 @@ public class ElasticsearchEngineClient implements SearchEngineClient {
 
   @Override
   public void deleteIndex(final String indexName) {
-    LOG.info("Deleting index [{}]", indexName);
     final DeleteIndexRequest deleteIndexRequest =
         new DeleteIndexRequest.Builder().index(indexName).build();
     try {
@@ -270,13 +269,12 @@ public class ElasticsearchEngineClient implements SearchEngineClient {
   }
 
   @Override
-  public void emptyIndex(final String indexName) {
-    LOG.info("Truncating index [{}]", indexName);
+  public void truncateIndex(final String indexName) {
     final DeleteByQueryRequest deleteByQueryRequest =
         new DeleteByQueryRequest.Builder().index(indexName).query(q -> q.matchAll(m -> m)).build();
     try {
       final DeleteByQueryResponse response = client.deleteByQuery(deleteByQueryRequest);
-      LOG.info("Deleted {} documents from index {}", response.deleted(), indexName);
+      LOG.debug("Deleted {} documents from index {}", response.deleted(), indexName);
     } catch (final IOException e) {
       final var errMsg = String.format("Failed to delete docs from index %s", indexName);
       LOG.error(errMsg, e);

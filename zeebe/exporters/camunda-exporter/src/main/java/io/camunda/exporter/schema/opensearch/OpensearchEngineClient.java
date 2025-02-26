@@ -285,8 +285,7 @@ public class OpensearchEngineClient implements SearchEngineClient {
   }
 
   @Override
-  public void emptyIndex(final String indexName) {
-    LOG.info("Truncating index [{}]", indexName);
+  public void truncateIndex(final String indexName) {
     final DeleteByQueryRequest request =
         new DeleteByQueryRequest.Builder().index(indexName).query(q -> q.matchAll(m -> m)).build();
 

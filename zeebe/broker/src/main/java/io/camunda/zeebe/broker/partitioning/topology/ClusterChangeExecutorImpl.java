@@ -18,8 +18,6 @@ import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.stream.api.StreamClock;
 import io.micrometer.core.instrument.MeterRegistry;
-import java.util.Arrays;
-import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -77,14 +75,5 @@ public final class ClusterChangeExecutorImpl implements ClusterChangeExecutor {
               .formatted(id, exporter.getClass()),
           e);
     }
-  }
-
-  private List<String> prefixedNames(final String prefix, final String... names) {
-    final var indexPrefix = prefix.isBlank() ? "" : prefix + "-";
-    return Arrays.stream(names).map(s -> indexPrefix + s).toList();
-  }
-
-  private String prefixedName(final String prefix, final String name) {
-    return prefix.isBlank() ? name : prefix + "-" + name;
   }
 }

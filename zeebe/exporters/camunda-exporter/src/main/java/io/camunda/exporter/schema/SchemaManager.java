@@ -246,10 +246,10 @@ public class SchemaManager {
     }
   }
 
-  public List<String> emptyIndices() {
+  public List<String> truncateIndices() {
     final var indices =
         indexDescriptors.stream().map(IndexDescriptor::getFullQualifiedName).toList();
-    indices.forEach(searchEngineClient::emptyIndex);
+    indices.forEach(searchEngineClient::truncateIndex);
     return indices;
   }
 
@@ -265,7 +265,7 @@ public class SchemaManager {
             .filter(index -> !liveIndices.contains(index))
             .toList();
     archivedIndices.forEach(searchEngineClient::deleteIndex);
-    LOG.info("Deleted archived indices '{}'", archivedIndices);
+    LOG.debug("Deleted archived indices '{}'", archivedIndices);
   }
 
   private IndexSettings getIndexSettingsFromConfig(final String indexName) {

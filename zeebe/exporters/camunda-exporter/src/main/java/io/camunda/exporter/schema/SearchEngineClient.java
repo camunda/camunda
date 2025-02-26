@@ -50,5 +50,5 @@ public interface SearchEngineClient {
 
   void deleteIndex(final String indexName);
 
-  void emptyIndex(final String indexName);
+  void truncateIndex(final String indexName);
 }

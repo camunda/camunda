@@ -219,7 +219,7 @@ public class CamundaExporter implements Exporter {
     final var schemaManager = createSchemaManager();
 
     // Indices
-    final var emptiedIndices = schemaManager.emptyIndices();
+    final var emptiedIndices = schemaManager.truncateIndices();
 
     // Delete archived indices
     schemaManager.deleteArchivedIndices();
@@ -234,16 +234,12 @@ public class CamundaExporter implements Exporter {
     // This code can be removed, once we have the unified SchemaManager, which will take care of
     // deleting all indices it manages.
     final var indexNames = String.join(",", prefixedNames("operate-*", "tasklist-*"));
-    LOG.info("Purging exporter indexes: {}", indexNames);
+    LOG.debug("Purging exporter indexes: {}", indexNames);
     searchEngineClient.getMappings(indexNames, MappingSource.INDEX).keySet().stream()
         .filter(index -> !emptiedIndices.contains(index))
-        .forEach(searchEngineClient::emptyIndex);
+        .forEach(searchEngineClient::truncateIndex);
 
-    // At this point, several indices still have data, e.g.
-    // deployment, process, process-instance-creation, user-task, process-instance
-    // But it looks like it does not matter. Tests are passing.
-
-    LOG.info("Exporter purged");
+    LOG.info("CamundaExporter purged");
   }
 
   private SchemaManager createSchemaManager() {
