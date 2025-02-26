@@ -9,7 +9,8 @@ package io.camunda.zeebe.engine.processing.job;
 
 import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
 
-import io.camunda.zeebe.engine.metrics.JobMetrics;
+import io.camunda.zeebe.engine.metrics.EngineMetricsDoc.JobAction;
+import io.camunda.zeebe.engine.metrics.JobProcessingMetrics;
 import io.camunda.zeebe.engine.processing.common.ElementTreePathBuilder;
 import io.camunda.zeebe.engine.processing.job.JobBatchCollector.TooLargeJob;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
@@ -43,7 +44,7 @@ public final class JobBatchActivateProcessor implements TypedRecordProcessor<Job
   private final TypedResponseWriter responseWriter;
   private final JobBatchCollector jobBatchCollector;
   private final KeyGenerator keyGenerator;
-  private final JobMetrics jobMetrics;
+  private final JobProcessingMetrics jobMetrics;
   private final ElementInstanceState elementInstanceState;
   private final ProcessState processState;
 
@@ -51,7 +52,7 @@ public final class JobBatchActivateProcessor implements TypedRecordProcessor<Job
       final Writers writers,
       final ProcessingState state,
       final KeyGenerator keyGenerator,
-      final JobMetrics jobMetrics) {
+      final JobProcessingMetrics jobMetrics) {
 
     stateWriter = writers.state();
     rejectionWriter = writers.rejection();
@@ -135,7 +136,8 @@ public final class JobBatchActivateProcessor implements TypedRecordProcessor<Job
     stateWriter.appendFollowUpEvent(jobBatchKey, JobBatchIntent.ACTIVATED, value);
     responseWriter.writeEventOnCommand(jobBatchKey, JobBatchIntent.ACTIVATED, value, record);
     activatedJobsCountPerJobKind.forEach(
-        (jobKind, count) -> jobMetrics.jobActivated(value.getType(), jobKind, count));
+        (jobKind, count) ->
+            jobMetrics.countJobEvent(JobAction.ACTIVATED, jobKind, value.getType(), count));
   }
 
   private void raiseIncidentJobTooLargeForMessageSize(

@@ -11,7 +11,8 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Strings;
 import io.camunda.zeebe.el.Expression;
-import io.camunda.zeebe.engine.metrics.JobMetrics;
+import io.camunda.zeebe.engine.metrics.EngineMetricsDoc.JobAction;
+import io.camunda.zeebe.engine.metrics.JobProcessingMetrics;
 import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContext;
 import io.camunda.zeebe.engine.processing.common.ExpressionProcessor;
 import io.camunda.zeebe.engine.processing.common.Failure;
@@ -85,7 +86,7 @@ public final class BpmnJobBehavior {
   private final BpmnStateBehavior stateBehavior;
   private final ResourceState resourceState;
   private final BpmnIncidentBehavior incidentBehavior;
-  private final JobMetrics jobMetrics;
+  private final JobProcessingMetrics jobMetrics;
   private final BpmnJobActivationBehavior jobActivationBehavior;
   private final BpmnUserTaskBehavior userTaskBehavior;
 
@@ -98,7 +99,7 @@ public final class BpmnJobBehavior {
       final ResourceState resourceState,
       final BpmnIncidentBehavior incidentBehavior,
       final BpmnJobActivationBehavior jobActivationBehavior,
-      final JobMetrics jobMetrics,
+      final JobProcessingMetrics jobMetrics,
       final BpmnUserTaskBehavior userTaskBehavior) {
     this.keyGenerator = keyGenerator;
     this.jobState = jobState;
@@ -278,7 +279,6 @@ public final class BpmnJobBehavior {
         JobKind.BPMN_ELEMENT,
         JobListenerEventType.UNSPECIFIED,
         element.getJobWorkerProperties().getTaskHeaders());
-    jobMetrics.jobCreated(jobProperties.getType(), JobKind.BPMN_ELEMENT);
   }
 
   public void createNewExecutionListenerJob(
@@ -296,7 +296,6 @@ public final class BpmnJobBehavior {
         JobKind.EXECUTION_LISTENER,
         jobListenerEventType,
         Collections.emptyMap());
-    jobMetrics.jobCreated(jobProperties.getType(), JobKind.EXECUTION_LISTENER);
   }
 
   private Either<Failure, String> evalTypeExp(final Expression type, final long scopeKey) {
@@ -346,6 +345,7 @@ public final class BpmnJobBehavior {
     final var jobKey = keyGenerator.nextKey();
     stateWriter.appendFollowUpEvent(jobKey, JobIntent.CREATED, jobRecord);
     jobActivationBehavior.publishWork(jobKey, jobRecord);
+    jobMetrics.countJobEvent(JobAction.CREATED, jobKind, props.getType());
   }
 
   private DirectBuffer encodeHeaders(
@@ -410,7 +410,8 @@ public final class BpmnJobBehavior {
       // Note that this logic is duplicated in JobCancelProcessor, if you change this please change
       // it there as well.
       stateWriter.appendFollowUpEvent(jobKey, JobIntent.CANCELED, job);
-      jobMetrics.jobCanceled(job.getType(), job.getJobKind());
+      jobMetrics.countJobEvent(JobAction.CANCELED, job.getJobKind(), job.getType());
+      System.out.println("Canceled job " + jobKey);
     }
   }
 

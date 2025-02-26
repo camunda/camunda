@@ -139,7 +139,7 @@ public class ProcessingDbState implements MutableProcessingState {
             zeebeDb, transactionContext, transientProcessMessageSubscriptionState, clock);
     messageCorrelationState = new DbMessageCorrelationState(zeebeDb, transactionContext);
     incidentState = new DbIncidentState(zeebeDb, transactionContext, partitionId);
-    bannedInstanceState = new DbBannedInstanceState(zeebeDb, transactionContext, partitionId);
+    bannedInstanceState = new DbBannedInstanceState(zeebeDb, transactionContext);
     decisionState = new DbDecisionState(zeebeDb, transactionContext, config);
     formState = new DbFormState(zeebeDb, transactionContext, config);
     resourceState = new DbResourceState(zeebeDb, transactionContext, config);
