@@ -17,6 +17,7 @@ package io.camunda.zeebe.model.bpmn.builder;
 
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.model.bpmn.instance.AdHocSubProcess;
+import io.camunda.zeebe.model.bpmn.instance.CompletionCondition;
 import io.camunda.zeebe.model.bpmn.instance.FlowElement;
 import io.camunda.zeebe.model.bpmn.instance.FlowNode;
 import io.camunda.zeebe.model.bpmn.instance.bpmndi.BpmnShape;
@@ -53,9 +54,9 @@ public class AbstractAdHocSubProcessBuilder<B extends AbstractAdHocSubProcessBui
    * @param expression the expression for the completion condition
    * @return the builder object
    */
-  public B zeebeCompletionConditionExpression(final String expression) {
-    final ZeebeAdHoc adHoc = getCreateSingleExtensionElement(ZeebeAdHoc.class);
-    adHoc.setCompletionCondition(asZeebeExpression(expression));
+  public B completionCondition(final String expression) {
+    final CompletionCondition condition = getCreateSingleChild(CompletionCondition.class);
+    condition.setTextContent(asZeebeExpression(expression));
     return myself;
   }
 
@@ -65,9 +66,8 @@ public class AbstractAdHocSubProcessBuilder<B extends AbstractAdHocSubProcessBui
    * @param cancelRemainingInstances whether to cancel remaining instances
    * @return the builder object
    */
-  public B zeebeCancelRemainingInstances(final boolean cancelRemainingInstances) {
-    final ZeebeAdHoc adHoc = getCreateSingleExtensionElement(ZeebeAdHoc.class);
-    adHoc.setCancelRemainingInstancesEnabled(cancelRemainingInstances);
+  public B cancelRemainingInstancesEnabled(final boolean cancelRemainingInstances) {
+    ((AdHocSubProcess) element).setCancelRemainingInstancesEnabled(cancelRemainingInstances);
     return myself;
   }
 

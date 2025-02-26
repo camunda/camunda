@@ -15,6 +15,7 @@ import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutablePro
 import io.camunda.zeebe.engine.processing.deployment.model.transformation.ModelElementTransformer;
 import io.camunda.zeebe.engine.processing.deployment.model.transformation.TransformContext;
 import io.camunda.zeebe.model.bpmn.instance.AdHocSubProcess;
+import io.camunda.zeebe.model.bpmn.instance.CompletionCondition;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeAdHoc;
 import java.util.Collection;
 import java.util.Optional;
@@ -33,37 +34,32 @@ public final class AdHocSubProcessTransformer implements ModelElementTransformer
         process.getElementById(element.getId(), ExecutableAdHocSubProcess.class);
 
     final var expressionLanguage = context.getExpressionLanguage();
-    transformAttributes(executableAdHocSubProcess, element, expressionLanguage);
+    setActiveElementsCollection(executableAdHocSubProcess, element, expressionLanguage);
+
+    Optional.ofNullable(element.getCompletionCondition())
+        .map(CompletionCondition::getTextContent)
+        .filter(e -> !e.isEmpty())
+        .map(context.getExpressionLanguage()::parseExpression)
+        .ifPresent(executableAdHocSubProcess::setCompletionCondition);
+
+    executableAdHocSubProcess.setCancelRemainingInstancesEnabled(
+        element.isCancelRemainingInstancesEnabled());
 
     final Collection<AbstractFlowElement> childElements =
         executableAdHocSubProcess.getChildElements();
     setAdHocActivities(executableAdHocSubProcess, childElements);
   }
 
-  private static void transformAttributes(
+  private static void setActiveElementsCollection(
       final ExecutableAdHocSubProcess executableAdHocSubProcess,
       final AdHocSubProcess element,
       final ExpressionLanguage expressionLanguage) {
-    final var extensionElement = element.getSingleExtensionElement(ZeebeAdHoc.class);
-    if (extensionElement == null) {
-      return;
-    }
-
-    // activeElementsCollection
-    Optional.ofNullable(extensionElement.getActiveElementsCollection())
+    Optional.ofNullable(element.getSingleExtensionElement(ZeebeAdHoc.class))
+        .flatMap(
+            extensionElement -> Optional.ofNullable(extensionElement.getActiveElementsCollection()))
         .filter(expression -> !expression.isBlank())
         .map(expressionLanguage::parseExpression)
         .ifPresent(executableAdHocSubProcess::setActiveElementsCollection);
-
-    // completionCondition
-    Optional.ofNullable(extensionElement.getCompletionCondition())
-        .filter(expression -> !expression.isBlank())
-        .map(expressionLanguage::parseExpression)
-        .ifPresent(executableAdHocSubProcess::setCompletionCondition);
-
-    // cancelRemainingInstances
-    executableAdHocSubProcess.setCancelRemainingInstancesEnabled(
-        extensionElement.isCancelRemainingInstancesEnabled());
   }
 
   private static void setAdHocActivities(

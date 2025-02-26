@@ -10,6 +10,7 @@ package io.camunda.zeebe.engine.processing.deployment.model.validation;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.model.bpmn.builder.AdHocSubProcessBuilder;
+import io.camunda.zeebe.model.bpmn.instance.AdHocSubProcess;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeAdHoc;
 import java.util.function.Consumer;
 import org.junit.jupiter.api.Test;
@@ -86,7 +87,7 @@ public class AdHocSubProcessValidatorTest {
     final BpmnModelInstance process =
         process(
             adHocSubProcess -> {
-              adHocSubProcess.zeebeCompletionConditionExpression("");
+              adHocSubProcess.completionCondition("");
               adHocSubProcess.task("A");
             });
 
@@ -100,7 +101,7 @@ public class AdHocSubProcessValidatorTest {
     final BpmnModelInstance process =
         process(
             adHocSubProcess -> {
-              adHocSubProcess.zeebeCompletionConditionExpression("elements");
+              adHocSubProcess.completionCondition("elements");
               adHocSubProcess.task("A");
             });
 
@@ -114,13 +115,13 @@ public class AdHocSubProcessValidatorTest {
     final BpmnModelInstance process =
         process(
             adHocSubProcess -> {
-              adHocSubProcess.zeebeCompletionConditionExpression("???");
+              adHocSubProcess.completionCondition("???");
               adHocSubProcess.task("A");
             });
 
     // when/then
     ProcessValidationUtil.validateProcess(
         process,
-        ExpectedValidationResult.expect(ZeebeAdHoc.class, "failed to parse expression '???'"));
+        ExpectedValidationResult.expect(AdHocSubProcess.class, "failed to parse expression '???'"));
   }
 }

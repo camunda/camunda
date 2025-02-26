@@ -261,7 +261,7 @@ public final class AdHocSubProcessTest {
         process(
             adHocSubProcess -> {
               adHocSubProcess.zeebeActiveElementsCollectionExpression("activateElements");
-              adHocSubProcess.zeebeCompletionConditionExpression("=true");
+              adHocSubProcess.completionCondition("=true");
               adHocSubProcess.task("A");
               adHocSubProcess.task("B");
               adHocSubProcess.task("C");
@@ -299,7 +299,7 @@ public final class AdHocSubProcessTest {
         process(
             adHocSubProcess -> {
               adHocSubProcess.zeebeActiveElementsCollectionExpression("activateElements");
-              adHocSubProcess.zeebeCompletionConditionExpression("=false");
+              adHocSubProcess.completionCondition("=false");
               adHocSubProcess.task("A");
               adHocSubProcess.task("B");
               adHocSubProcess.task("C");
@@ -336,8 +336,8 @@ public final class AdHocSubProcessTest {
         process(
             adHocSubProcess -> {
               adHocSubProcess.zeebeActiveElementsCollectionExpression("activateElements");
-              adHocSubProcess.zeebeCompletionConditionExpression("=true");
-              adHocSubProcess.zeebeCancelRemainingInstances(true);
+              adHocSubProcess.completionCondition("=true");
+              adHocSubProcess.cancelRemainingInstancesEnabled(true);
               adHocSubProcess.task("A");
               adHocSubProcess.task("B");
               adHocSubProcess
@@ -380,8 +380,8 @@ public final class AdHocSubProcessTest {
         process(
             adHocSubProcess -> {
               adHocSubProcess.zeebeActiveElementsCollectionExpression("activateElements");
-              adHocSubProcess.zeebeCompletionConditionExpression("=true");
-              adHocSubProcess.zeebeCancelRemainingInstances(false);
+              adHocSubProcess.completionCondition("=true");
+              adHocSubProcess.cancelRemainingInstancesEnabled(false);
               adHocSubProcess.task("A");
               adHocSubProcess.task("B");
               adHocSubProcess
