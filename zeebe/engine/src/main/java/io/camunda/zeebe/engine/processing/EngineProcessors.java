@@ -13,6 +13,7 @@ import io.camunda.zeebe.dmn.DecisionEngineFactory;
 import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.metrics.JobMetrics;
 import io.camunda.zeebe.engine.metrics.ProcessEngineMetrics;
+import io.camunda.zeebe.engine.processing.bpmn.BpmnStreamProcessor;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviorsImpl;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnJobActivationBehavior;
@@ -171,7 +172,7 @@ public final class EngineProcessors {
         clock,
         authCheckBehavior);
 
-    final TypedRecordProcessor<ProcessInstanceRecord> bpmnStreamProcessor =
+    final BpmnStreamProcessor bpmnStreamProcessor =
         addProcessProcessors(
             processingState,
             scheduledTaskStateFactory,
@@ -204,7 +205,8 @@ public final class EngineProcessors {
         authCheckBehavior);
 
     final var userTaskProcessor =
-        createUserTaskProcessor(processingState, bpmnBehaviors, writers, authCheckBehavior);
+        createUserTaskProcessor(
+            processingState, bpmnBehaviors, writers, authCheckBehavior, bpmnStreamProcessor);
     addUserTaskProcessors(typedRecordProcessors, userTaskProcessor);
 
     addIncidentProcessors(
@@ -313,14 +315,16 @@ public final class EngineProcessors {
       final MutableProcessingState processingState,
       final BpmnBehaviorsImpl bpmnBehaviors,
       final Writers writers,
-      final AuthorizationCheckBehavior authCheckBehavior) {
+      final AuthorizationCheckBehavior authCheckBehavior,
+      final BpmnStreamProcessor bpmnStreamProcessor) {
     return new UserTaskProcessor(
         processingState,
         processingState.getUserTaskState(),
         processingState.getKeyGenerator(),
         bpmnBehaviors,
         writers,
-        authCheckBehavior);
+        authCheckBehavior,
+        bpmnStreamProcessor);
   }
 
   private static BpmnBehaviorsImpl createBehaviors(
@@ -349,7 +353,7 @@ public final class EngineProcessors {
         transientProcessMessageSubscriptionState);
   }
 
-  private static TypedRecordProcessor<ProcessInstanceRecord> addProcessProcessors(
+  private static BpmnStreamProcessor addProcessProcessors(
       final MutableProcessingState processingState,
       final Supplier<ScheduledTaskState> scheduledTaskState,
       final BpmnBehaviorsImpl bpmnBehaviors,

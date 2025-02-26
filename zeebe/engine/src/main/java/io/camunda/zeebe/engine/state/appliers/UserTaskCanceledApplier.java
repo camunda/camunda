@@ -25,5 +25,10 @@ public final class UserTaskCanceledApplier
   @Override
   public void applyState(final long key, final UserTaskRecord value) {
     userTaskState.delete(key);
+    userTaskState.deleteIntermediateState(key);
+    userTaskState.deleteRecordRequestMetadata(key);
+    // TODO check if listener indices should be reset (like we do in other UserTask***edApplier-s)
+    //  or element instance will be removed by `ProcessInstanceElementTerminatedApplier`,
+    //  and we should not do anything?
   }
 }

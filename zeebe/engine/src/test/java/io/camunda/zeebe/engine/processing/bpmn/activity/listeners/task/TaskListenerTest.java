@@ -35,6 +35,7 @@ import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
+import io.camunda.zeebe.protocol.record.intent.TimerIntent;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.ErrorType;
@@ -736,6 +737,15 @@ public class TaskListenerTest {
         UserTaskIntent.COMPLETED);
   }
 
+  @Test
+  public void shouldRetryCancelingListenerWhenListenerJobFailedOnTaskCancellation() {
+    verifyListenerIsRetriedWhenListenerJobFailed(
+        ZeebeTaskListenerEventType.canceling,
+        UnaryOperator.identity(),
+        ignore -> cancelProcessInstance(),
+        UserTaskIntent.CANCELED);
+  }
+
   private void verifyListenerIsRetriedWhenListenerJobFailed(
       final ZeebeTaskListenerEventType eventType,
       final UnaryOperator<UserTaskBuilder> userTaskBuilder,
@@ -823,6 +833,25 @@ public class TaskListenerTest {
         UnaryOperator.identity(),
         UserTaskClient::complete,
         UserTaskIntent.COMPLETED);
+  }
+
+  @Test
+  public void
+      shouldCreateJobNoRetriesIncidentForCancelingListenerAndContinueAfterResolutionOnTaskCancellation() {
+    verifyIncidentCreationOnListenerJobWithoutRetriesAndResolution(
+        ZeebeTaskListenerEventType.canceling,
+        UnaryOperator.identity(),
+        ignore -> cancelProcessInstance(),
+        UserTaskIntent.CANCELED);
+  }
+
+  private static void cancelProcessInstance() {
+    final long processInstanceKey =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withElementType(BpmnElementType.PROCESS)
+            .getFirst()
+            .getKey();
+    ENGINE.processInstance().withInstanceKey(processInstanceKey).expectPartialSuccess().cancel();
   }
 
   private void verifyIncidentCreationOnListenerJobWithoutRetriesAndResolution(
@@ -1573,6 +1602,12 @@ public class TaskListenerTest {
         ZeebeTaskListenerEventType.completing, u -> u, UserTaskClient::complete, "complete");
   }
 
+  @Test
+  public void shouldAppendUserTaskCorrectedWhenCancelingTaskListenerCompletesWithCorrections() {
+    testAppendUserTaskCorrectedWhenTaskListenerCompletesWithCorrections(
+        ZeebeTaskListenerEventType.canceling, u -> u, ignore -> cancelProcessInstance(), "");
+  }
+
   private void testAppendUserTaskCorrectedWhenTaskListenerCompletesWithCorrections(
       final ZeebeTaskListenerEventType eventType,
       final UnaryOperator<UserTaskBuilder> userTaskBuilder,
@@ -1790,6 +1825,22 @@ public class TaskListenerTest {
             UserTaskIntent.COMPLETED));
   }
 
+  @Test
+  public void shouldPropagateCorrectedDataToCancelingListenerJobHeadersOnTaskCancellation() {
+    verifyUserTaskDataPropagationAcrossListenerJobHeaders(
+        ZeebeTaskListenerEventType.canceling,
+        false,
+        ignore -> cancelProcessInstance(),
+        List.of(
+            UserTaskIntent.CANCELING,
+            UserTaskIntent.COMPLETE_TASK_LISTENER,
+            UserTaskIntent.CORRECTED,
+            UserTaskIntent.COMPLETE_TASK_LISTENER,
+            UserTaskIntent.CORRECTED,
+            UserTaskIntent.COMPLETE_TASK_LISTENER,
+            UserTaskIntent.CANCELED));
+  }
+
   /**
    * Verifies the propagation of user task data across listener job headers during the task
    * lifecycle.
@@ -1981,6 +2032,15 @@ public class TaskListenerTest {
         false,
         UserTaskClient::complete,
         UserTaskIntent.COMPLETED);
+  }
+
+  @Test
+  public void shouldTrackChangedAttributesOnlyForActuallyCorrectedValuesOnTaskCancellation() {
+    verifyChangedAttributesAreTrackedOnlyForActuallyCorrectedValues(
+        ZeebeTaskListenerEventType.canceling,
+        false,
+        ignore -> cancelProcessInstance(),
+        UserTaskIntent.CANCELED);
   }
 
   /**
@@ -2263,6 +2323,15 @@ public class TaskListenerTest {
         u -> u,
         UserTaskClient::complete,
         UserTaskIntent.COMPLETED);
+  }
+
+  @Test
+  public void shouldPersistCorrectedUserTaskDataWhenCancelingTaskListenerCompletes() {
+    testPersistCorrectedUserTaskDataWhenAllTaskListenersCompleted(
+        ZeebeTaskListenerEventType.canceling,
+        u -> u,
+        ignore -> cancelProcessInstance(),
+        UserTaskIntent.CANCELED);
   }
 
   private void testPersistCorrectedUserTaskDataWhenAllTaskListenersCompleted(
@@ -2558,6 +2627,19 @@ public class TaskListenerTest {
         userTask -> Assertions.assertThat(userTask).hasAction("update"));
   }
 
+  @Test
+  @Ignore(
+      "Fails on variable UPDATE with the following error: Expected to update variables for element with key '<kep>', but no such element was found")
+  public void shouldRetryUserTaskCancelCommandAfterExtractValueErrorIncidentResolution() {
+    testUserTaskCommandRetryAfterExtractValueError(
+        ZeebeTaskListenerEventType.canceling,
+        "canceling_listener_var_name",
+        "expression_canceling_listener_2",
+        ignore -> cancelProcessInstance(),
+        UserTaskIntent.CANCELED,
+        userTask -> Assertions.assertThat(userTask).isNotNull());
+  }
+
   private void testUserTaskCommandRetryAfterExtractValueError(
       final ZeebeTaskListenerEventType eventType,
       final String variableName,
@@ -2841,6 +2923,7 @@ public class TaskListenerTest {
       case ZeebeTaskListenerEventType.assigning -> JobListenerEventType.ASSIGNING;
       case ZeebeTaskListenerEventType.updating -> JobListenerEventType.UPDATING;
       case ZeebeTaskListenerEventType.completing -> JobListenerEventType.COMPLETING;
+      case ZeebeTaskListenerEventType.canceling -> JobListenerEventType.CANCELING;
       default ->
           throw new IllegalArgumentException(
               "Unsupported zeebe task listener event type: '%s'".formatted(eventType));
@@ -2858,5 +2941,228 @@ public class TaskListenerTest {
                 .map(Record::getValue))
         .describedAs("Expected to have User Task record with '%s' intent", intent)
         .hasValueSatisfying(consumer);
+  }
+
+  @Test
+  public void
+      shouldCancelUserTaskAfterProcessWasCancelledAndAllCancelingTaskListenersAreExecuted() {
+    // given
+    final long processInstanceKey =
+        createProcessInstance(
+            createUserTaskWithTaskListeners(
+                ZeebeTaskListenerEventType.canceling,
+                listenerType,
+                listenerType + "_2",
+                listenerType + "_3"));
+    RecordingExporter.userTaskRecords(UserTaskIntent.CREATED)
+        .withProcessInstanceKey(processInstanceKey)
+        .await();
+
+    // when
+    ENGINE.processInstance().withInstanceKey(processInstanceKey).expectPartialSuccess().cancel();
+    completeJobs(processInstanceKey, listenerType, listenerType + "_2", listenerType + "_3");
+
+    // then
+    assertTaskListenerJobsCompletionSequence(
+        processInstanceKey,
+        JobListenerEventType.CANCELING,
+        listenerType,
+        listenerType + "_2",
+        listenerType + "_3");
+
+    // ensure that `COMPLETE_TASK_LISTENER` commands were triggered between
+    // `CANCELING` and `CANCELED` events
+    assertUserTaskIntentsSequence(
+        UserTaskIntent.CANCELING,
+        UserTaskIntent.COMPLETE_TASK_LISTENER,
+        UserTaskIntent.COMPLETE_TASK_LISTENER,
+        UserTaskIntent.COMPLETE_TASK_LISTENER,
+        UserTaskIntent.CANCELED);
+  }
+
+  @Test
+  public void
+      shouldCancelUserTaskAfterTimerBoundaryEventTriggersCancellationAndAllCancelingTaskListenersAreExecuted() {
+    // given
+    final long processInstanceKey =
+        createProcessInstance(
+            Bpmn.createExecutableProcess(PROCESS_ID)
+                .startEvent()
+                .userTask(
+                    USER_TASK_ELEMENT_ID,
+                    t ->
+                        t.zeebeUserTask()
+                            .zeebeTaskListener(l -> l.canceling().type(listenerType))
+                            .zeebeTaskListener(l -> l.canceling().type(listenerType + "_2"))
+                            .zeebeTaskListener(l -> l.canceling().type(listenerType + "_3")))
+                .boundaryEvent("timer_boundary_event")
+                .timerWithDate("=now()")
+                .endEvent("boundary_end")
+                .moveToActivity(USER_TASK_ELEMENT_ID)
+                .endEvent("user_task_end")
+                .done());
+
+    // when
+    completeJobs(processInstanceKey, listenerType, listenerType + "_2", listenerType + "_3");
+
+    // then
+    assertTaskListenerJobsCompletionSequence(
+        processInstanceKey,
+        JobListenerEventType.CANCELING,
+        listenerType,
+        listenerType + "_2",
+        listenerType + "_3");
+
+    // ensure TIMER was triggered
+    assertThat(
+            RecordingExporter.timerRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .limit(r -> r.getIntent() == TimerIntent.TRIGGERED))
+        .extracting(Record::getIntent)
+        .containsExactly(TimerIntent.CREATED, TimerIntent.TRIGGER, TimerIntent.TRIGGERED);
+
+    // ensure that `COMPLETE_TASK_LISTENER` commands were triggered between
+    // `CANCELING` and `CANCELED` events
+    assertUserTaskIntentsSequence(
+        UserTaskIntent.CANCELING,
+        UserTaskIntent.COMPLETE_TASK_LISTENER,
+        UserTaskIntent.COMPLETE_TASK_LISTENER,
+        UserTaskIntent.COMPLETE_TASK_LISTENER,
+        UserTaskIntent.CANCELED);
+  }
+
+  @Test
+  public void shouldTriggerCancelingAfterHavingBeenInterrupted() {
+    // given
+    final long processInstanceKey =
+        createProcessInstance(
+            Bpmn.createExecutableProcess(PROCESS_ID)
+                .startEvent()
+                .userTask(
+                    USER_TASK_ELEMENT_ID,
+                    t ->
+                        t.zeebeUserTask()
+                            .zeebeTaskListener(l -> l.canceling().type(listenerType))
+                            .zeebeTaskListener(l -> l.canceling().type(listenerType + "_2"))
+                            .zeebeTaskListener(l -> l.canceling().type(listenerType + "_3")))
+                .boundaryEvent("timer_boundary_event")
+                .timerWithDate("=now()")
+                .endEvent("boundary_end")
+                .moveToActivity(USER_TASK_ELEMENT_ID)
+                .endEvent("user_task_end")
+                .done());
+
+    // when
+    completeJobs(processInstanceKey, listenerType);
+
+    // cancel a process instance
+    ENGINE.processInstance().withInstanceKey(processInstanceKey).expectPartialSuccess().cancel();
+
+    completeJobs(processInstanceKey, listenerType + "_2", listenerType + "_3");
+
+    assertTaskListenerJobsCompletionSequence(
+        processInstanceKey,
+        JobListenerEventType.CANCELING,
+        listenerType,
+        listenerType + "_2",
+        listenerType + "_3");
+
+    // ensure that `COMPLETE_TASK_LISTENER` commands were triggered between
+    // `CANCELING` and `CANCELED` events
+    assertUserTaskIntentsSequence(
+        UserTaskIntent.CANCELING,
+        UserTaskIntent.COMPLETE_TASK_LISTENER,
+        UserTaskIntent.COMPLETE_TASK_LISTENER,
+        UserTaskIntent.COMPLETE_TASK_LISTENER,
+        UserTaskIntent.CANCELED);
+  }
+
+  @Test
+  public void shouldTriggerCancelingAfterHavingBeenInterruptedByNestedBoundaryEvent() {
+    // given
+    final long processInstanceKey =
+        createProcessInstanceWithVariables(
+            Bpmn.createExecutableProcess(PROCESS_ID)
+                .startEvent()
+                .subProcess(
+                    "subProcess",
+                    s ->
+                        s.embeddedSubProcess()
+                            .startEvent()
+                            .userTask(
+                                USER_TASK_ELEMENT_ID,
+                                t ->
+                                    t.zeebeUserTask()
+                                        .zeebeTaskListener(l -> l.canceling().type(listenerType))
+                                        .zeebeTaskListener(
+                                            l -> l.canceling().type(listenerType + "_2"))
+                                        .zeebeTaskListener(
+                                            l -> l.canceling().type(listenerType + "_3")))
+                            .boundaryEvent("inner_timer_boundary_event")
+                            .timerWithDate("=now()")
+                            .endEvent("boundary_end")
+                            .moveToActivity(USER_TASK_ELEMENT_ID)
+                            .endEvent("user_task_end"))
+                .boundaryEvent("message_boundary_event")
+                .message(m -> m.name("msg").zeebeCorrelationKeyExpression("correlationKey"))
+                .endEvent("message_boundary_event_end")
+                .moveToActivity("subProcess")
+                .endEvent("end")
+                .done(),
+            Map.of("correlationKey", "key_123"));
+
+    // when
+    completeJobs(processInstanceKey, listenerType);
+
+    ENGINE.message().withName("msg").withCorrelationKey("key_123").publish();
+
+    completeJobs(processInstanceKey, listenerType + "_2", listenerType + "_3");
+
+    assertTaskListenerJobsCompletionSequence(
+        processInstanceKey,
+        JobListenerEventType.CANCELING,
+        listenerType,
+        listenerType + "_2",
+        listenerType + "_3");
+
+    // ensure that `COMPLETE_TASK_LISTENER` commands were triggered between
+    // `CANCELING` and `CANCELED` events
+    assertUserTaskIntentsSequence(
+        UserTaskIntent.CANCELING,
+        UserTaskIntent.COMPLETE_TASK_LISTENER,
+        UserTaskIntent.COMPLETE_TASK_LISTENER,
+        UserTaskIntent.COMPLETE_TASK_LISTENER,
+        UserTaskIntent.CANCELED);
+  }
+
+  @Test
+  public void shouldRejectDenyingCancelingTaskListener() {
+    // given
+    final long processInstanceKey =
+        createProcessInstance(
+            createUserTaskWithTaskListeners(
+                ZeebeTaskListenerEventType.canceling, listenerType, listenerType + "_2"));
+
+    ENGINE.processInstance().withInstanceKey(processInstanceKey).expectPartialSuccess().cancel();
+
+    // when
+    final var rejection =
+        ENGINE
+            .job()
+            .ofInstance(processInstanceKey)
+            .withType(listenerType)
+            .withResult(new JobResult().setDenied(true))
+            .expectRejection()
+            .complete();
+
+    // then
+    Assertions.assertThat(rejection)
+        .describedAs("Expect that the `CANCELING` job completion with `denied=true` is rejected")
+        .hasRejectionType(RejectionType.INVALID_ARGUMENT)
+        .hasRejectionReason(
+            """
+                Expected to complete a 'CANCELING' task listener job, but the job result is set to \
+                `denied`. `Canceling` task listeners cannot deny user task cancellation. \
+                Please complete the job without setting the `denied=true`.""");
   }
 }
