@@ -316,6 +316,60 @@ public class PropertyBasedJobWorkerValueCustomizerTest {
   }
 
   @Test
+  void shouldNotOverrideTypeAndNameAndFetchVariablesFromGlobalsIfSet() {
+    final CamundaClientProperties properties = properties();
+    properties.getWorker().getDefaults().setType("globalOverride");
+    properties.getWorker().getDefaults().setName("globalName");
+    properties.getWorker().getDefaults().setFetchVariables(List.of("overrideVariable"));
+    final PropertyBasedJobWorkerValueCustomizer customizer =
+        new PropertyBasedJobWorkerValueCustomizer(properties);
+    final JobWorkerValue jobWorkerValue = new JobWorkerValue();
+    jobWorkerValue.setMethodInfo(methodInfo(this, "testBean", "sampleWorkerWithJsonProperty"));
+    jobWorkerValue.setType("initialValue");
+    jobWorkerValue.setName("someName");
+    jobWorkerValue.setFetchVariables(List.of("initialVariable"));
+    customizer.customize(jobWorkerValue);
+    assertThat(jobWorkerValue.getType()).isEqualTo("initialValue");
+    assertThat(jobWorkerValue.getName()).isEqualTo("someName");
+    assertThat(jobWorkerValue.getFetchVariables()).contains("initialVariable");
+  }
+
+  @Test
+  void shouldOverrideTypeAndNameFromGlobalsIfNotSet() {
+    final CamundaClientProperties properties = properties();
+    properties.getWorker().getDefaults().setType("globalOverride");
+    properties.getWorker().getDefaults().setName("globalName");
+    final PropertyBasedJobWorkerValueCustomizer customizer =
+        new PropertyBasedJobWorkerValueCustomizer(properties);
+    final JobWorkerValue jobWorkerValue = new JobWorkerValue();
+    jobWorkerValue.setMethodInfo(methodInfo(this, "testBean", "sampleWorkerWithJsonProperty"));
+    customizer.customize(jobWorkerValue);
+    assertThat(jobWorkerValue.getType()).isEqualTo("globalOverride");
+    assertThat(jobWorkerValue.getName()).isEqualTo("globalName");
+  }
+
+  @Test
+  void shouldOverrideTypeAndNameAndFetchVariablesFromLocalsIfSet() {
+    final CamundaClientProperties properties = properties();
+    final JobWorkerValue override = new JobWorkerValue();
+    override.setType("localOverride");
+    override.setName("localName");
+    override.setFetchVariables(List.of("overrideVariable"));
+    properties.getWorker().getOverride().put("initialValue", override);
+    final PropertyBasedJobWorkerValueCustomizer customizer =
+        new PropertyBasedJobWorkerValueCustomizer(properties);
+    final JobWorkerValue jobWorkerValue = new JobWorkerValue();
+    jobWorkerValue.setMethodInfo(methodInfo(this, "testBean", "sampleWorkerWithJsonProperty"));
+    jobWorkerValue.setType("initialValue");
+    jobWorkerValue.setName("someName");
+    jobWorkerValue.setFetchVariables(List.of("initialVariable"));
+    customizer.customize(jobWorkerValue);
+    assertThat(jobWorkerValue.getType()).isEqualTo("localOverride");
+    assertThat(jobWorkerValue.getName()).isEqualTo("localName");
+    assertThat(jobWorkerValue.getFetchVariables()).contains("overrideVariable");
+  }
+
+  @Test
   void shouldNotApplyPropertyAnnotationOnEmptyValue() {
     // given
     final PropertyBasedJobWorkerValueCustomizer customizer =
