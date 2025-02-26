@@ -520,11 +520,11 @@ public final class ZeebeAssertHelper {
   }
 
   public static void assertEntityAssignedToTenant(
-      final long tenantKey, final long entityKey, final Consumer<TenantRecordValue> consumer) {
+      final String tenantId, final long entityKey, final Consumer<TenantRecordValue> consumer) {
     final TenantRecordValue tenantRecordValue =
         RecordingExporter.tenantRecords()
             .withIntent(TenantIntent.ENTITY_ADDED)
-            .withTenantKey(tenantKey)
+            .withTenantId(tenantId)
             .withEntityKey(entityKey)
             .getFirst()
             .getValue();

@@ -39,10 +39,11 @@ class UnassignGroupFromTenantTest {
   @BeforeEach
   void initClientAndInstances() {
     client = zeebe.newClientBuilder().defaultRequestTimeout(Duration.ofSeconds(15)).build();
+    final var tenantId = "tenantId";
     tenantKey =
         client
             .newCreateTenantCommand()
-            .tenantId("tenantId")
+            .tenantId(tenantId)
             .name("Tenant Name")
             .send()
             .join()
@@ -51,7 +52,7 @@ class UnassignGroupFromTenantTest {
     groupKey = client.newCreateGroupCommand().name("group").send().join().getGroupKey();
 
     // Assign group to tenant to set up test scenario
-    client.newAssignGroupToTenantCommand(tenantKey).groupKey(groupKey).send().join();
+    client.newAssignGroupToTenantCommand(tenantId).groupKey(groupKey).send().join();
   }
 
   @Test
