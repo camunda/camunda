@@ -3739,11 +3739,6 @@ components:
         tenantKey:
           type: string
           description: The unique system-generated internal tenant ID.
-        assignedMemberKeys:
-          type: array
-          description: The set of keys of members assigned to the tenant.
-          items:
-            type: string
     TenantSearchQuerySortRequest:
       type: object
       properties:
