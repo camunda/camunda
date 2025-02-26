@@ -11,6 +11,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import io.camunda.zeebe.shared.security.SecurityConfigurationTest.TestCase.Builder;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -97,6 +98,15 @@ public class SecurityConfigurationTest {
                 .expectedResult(false)
                 .build()),
         Arguments.of(
+            new Builder()
+                .description(
+                    "Standalone gateway enabled, standalone gateway security mode none, embedded gateway security mode identity")
+                .standaloneGatewayEnabled()
+                .standaloneGatewaySecurityMode("none")
+                .embeddedGatewaySecurityMode("identity")
+                .expectedResult(false)
+                .build()),
+        Arguments.of(
             new TestCase.Builder()
                 .description(
                     "Standalone gateway enabled, standalone gateway security mode identity, embedded gateway security mode none")
@@ -113,6 +123,15 @@ public class SecurityConfigurationTest {
                 .embeddedGatewayEnabled()
                 .embeddedGatewaySecurityMode("identity")
                 .expectedResult(true)
+                .build()),
+        Arguments.of(
+            new Builder()
+                .description(
+                    "Embedded gateway enabled, standalone gateway security mode identity, embedded gateway security mode none")
+                .standaloneGatewaySecurityMode("identity")
+                .embeddedGatewayEnabled()
+                .embeddedGatewaySecurityMode("none")
+                .expectedResult(false)
                 .build()));
   }
 
