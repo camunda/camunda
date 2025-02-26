@@ -62,7 +62,7 @@ public class StateControllerImpl implements StateController {
     this.entrySupplier = requireNonNull(entrySupplier);
     this.concurrencyControl = requireNonNull(concurrencyControl);
 
-    scheduleDbMetricsExport();
+    concurrencyControl.execute(this::scheduleDbMetricsExport);
   }
 
   @Override
