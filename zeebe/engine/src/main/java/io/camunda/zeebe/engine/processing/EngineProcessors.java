@@ -310,7 +310,8 @@ public final class EngineProcessors {
     BatchOperationSetupProcessors.addBatchOperationProcessors(
         keyGenerator,
         typedRecordProcessors,
-        writers);
+        writers,
+        commandDistributionBehavior);
 
     return typedRecordProcessors;
   }
