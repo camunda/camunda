@@ -21,6 +21,7 @@ import java.util.function.UnaryOperator;
 public class CompleteJobResult {
 
   private boolean isDenied;
+  private String deniedReason;
   private JobResultCorrections corrections;
 
   public CompleteJobResult() {
@@ -39,6 +40,19 @@ public class CompleteJobResult {
    */
   public CompleteJobResult deny(final boolean isDenied) {
     this.isDenied = isDenied;
+    return this;
+  }
+
+  /**
+   * Indicates the reason why the worker denied the job. For example, a user task listener can deny
+   * the completion of a task by setting the deny flag to true and specifying the reason to deny.
+   * Defaults to an empty string.
+   *
+   * @param deniedReason indicates the reason why the worker denied the job
+   * @return this job result
+   */
+  public CompleteJobResult deniedReason(final String deniedReason) {
+    this.deniedReason = deniedReason;
     return this;
   }
 
@@ -144,6 +158,10 @@ public class CompleteJobResult {
 
   public boolean isDenied() {
     return isDenied;
+  }
+
+  public String getDeniedReason() {
+    return deniedReason;
   }
 
   public JobResultCorrections getCorrections() {
