@@ -14,6 +14,7 @@ import io.camunda.zeebe.db.ZeebeDbFactory;
 import io.camunda.zeebe.db.impl.rocksdb.transaction.RocksDbOptions;
 import io.camunda.zeebe.db.impl.rocksdb.transaction.ZeebeTransactionDb;
 import io.camunda.zeebe.protocol.EnumValue;
+import io.micrometer.core.instrument.MeterRegistry;
 import java.io.File;
 import java.time.Duration;
 import java.util.ArrayList;
@@ -21,6 +22,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.Properties;
+import java.util.function.Supplier;
 import org.agrona.CloseHelper;
 import org.rocksdb.BlockBasedTableConfig;
 import org.rocksdb.BloomFilter;
@@ -52,14 +54,17 @@ public final class ZeebeRocksDbFactory<
   private final RocksDbConfiguration rocksDbConfiguration;
   private final ConsistencyChecksSettings consistencyChecksSettings;
   private final AccessMetricsConfiguration metrics;
+  private final Supplier<MeterRegistry> meterRegistryFactory;
 
   public ZeebeRocksDbFactory(
       final RocksDbConfiguration rocksDbConfiguration,
       final ConsistencyChecksSettings consistencyChecksSettings,
-      final AccessMetricsConfiguration metricsConfiguration) {
+      final AccessMetricsConfiguration metricsConfiguration,
+      final Supplier<MeterRegistry> meterRegistryFactory) {
     this.rocksDbConfiguration = Objects.requireNonNull(rocksDbConfiguration);
     this.consistencyChecksSettings = Objects.requireNonNull(consistencyChecksSettings);
     metrics = metricsConfiguration;
+    this.meterRegistryFactory = Objects.requireNonNull(meterRegistryFactory);
   }
 
   @Override
@@ -72,7 +77,8 @@ public final class ZeebeRocksDbFactory<
           closeables,
           rocksDbConfiguration,
           consistencyChecksSettings,
-          metrics);
+          metrics,
+          meterRegistryFactory);
     } catch (final RocksDBException e) {
       CloseHelper.quietCloseAll(closeables);
       throw new IllegalStateException("Unexpected error occurred trying to open the database", e);

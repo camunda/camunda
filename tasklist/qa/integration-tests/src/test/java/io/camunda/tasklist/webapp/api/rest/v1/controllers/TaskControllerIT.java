@@ -34,9 +34,9 @@ import io.camunda.tasklist.webapp.api.rest.v1.entities.VariableSearchResponse.Dr
 import io.camunda.tasklist.webapp.dto.TaskQueryDTO;
 import io.camunda.tasklist.webapp.dto.UserDTO;
 import io.camunda.tasklist.webapp.dto.VariableInputDTO;
+import io.camunda.tasklist.webapp.group.UserGroupService;
 import io.camunda.tasklist.webapp.security.Permission;
 import io.camunda.tasklist.webapp.security.TasklistURIs;
-import io.camunda.tasklist.webapp.security.identity.UserGroupService;
 import io.camunda.webapps.schema.entities.tasklist.TaskEntity.TaskImplementation;
 import io.camunda.webapps.schema.entities.tasklist.TaskState;
 import io.camunda.zeebe.model.bpmn.builder.AbstractUserTaskBuilder;

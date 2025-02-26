@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import { getFullURL } from './api';
+import {getFullURL} from './api';
 
 beforeAll(() => {
   Object.defineProperty(window, 'location', {

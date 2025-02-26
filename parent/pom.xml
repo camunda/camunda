@@ -74,7 +74,7 @@
     <version.mockito>5.15.2</version.mockito>
     <version.model>7.7.0</version.model>
     <version.msgpack>0.9.9</version.msgpack>
-    <version.netty>4.1.118.Final</version.netty>
+    <version.netty>4.1.119.Final</version.netty>
     <version.objenesis>3.4</version.objenesis>
     <version.opensearch>2.14.0</version.opensearch>
     <version.opensearch-java>2.19.0</version.opensearch-java>
@@ -183,7 +183,7 @@
     <version.okio-jvm>3.9.1</version.okio-jvm>
     <version.jwks-rsa>0.22.1</version.jwks-rsa>
     <version.guava.annotations>r03</version.guava.annotations>
-    <version.nimbus-jose-jwt>10.0.1</version.nimbus-jose-jwt>
+    <version.nimbus-jose-jwt>10.0.2</version.nimbus-jose-jwt>
     <version.nimbus-sdk>11.21.2</version.nimbus-sdk>
     <version.keycloak>26.0.6</version.keycloak>
     <version.keycloak-client>26.0.4</version.keycloak-client>
