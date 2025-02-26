@@ -1644,46 +1644,6 @@ paths:
         "500":
           $ref: "#/components/responses/InternalServerError"
 
-  /ad-hoc-activities/search:
-    post:
-      tags:
-        - Ad-hoc subprocess
-      operationId: findAdHocSubprocessActivities
-      summary: Query activatable activities
-      description: |
-        Search for activatable activities within ad-hoc subprocesses based on given criteria.
-
-        Note that this API currently requires filters for both process definition key and ad-hoc
-        subprocess ID and does not support paging or sorting.
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/AdHocSubprocessActivitySearchQuery"
-      responses:
-        "200":
-          description: >
-            The ad-hoc subprocess activities search result.
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/AdHocSubprocessActivitySearchQueryResult"
-        "400":
-          description: >
-            The ad-hoc subprocess activities search query failed.
-            More details are provided in the response body.
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
-        "401":
-          $ref: "#/components/responses/Unauthorized"
-        "403":
-          $ref: "#/components/responses/Forbidden"
-        "500":
-          $ref: "#/components/responses/InternalServerError"
-
   /decision-definitions/search:
     post:
       tags:
@@ -3302,6 +3262,46 @@ paths:
           description: The variables were updated.
         "400":
           $ref: "#/components/responses/InvalidData"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+  /element-instances/ad-hoc-activities/search:
+    post:
+      tags:
+        - Ad-hoc subprocess
+      operationId: findAdHocSubprocessActivities
+      summary: Query activatable activities
+      description: |
+        Search for activatable activities within ad-hoc subprocesses based on given criteria.
+
+        Note that this API currently requires filters for both process definition key and ad-hoc
+        subprocess ID and does not support paging or sorting.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdHocSubprocessActivitySearchQuery"
+      responses:
+        "200":
+          description: >
+            The ad-hoc subprocess activities search result.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdHocSubprocessActivitySearchQueryResult"
+        "400":
+          description: >
+            The ad-hoc subprocess activities search query failed.
+            More details are provided in the response body.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
         "500":
           $ref: "#/components/responses/InternalServerError"
 

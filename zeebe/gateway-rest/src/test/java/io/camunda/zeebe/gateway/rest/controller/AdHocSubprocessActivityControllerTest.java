@@ -39,7 +39,7 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 @WebMvcTest(value = AdHocSubprocessActivityController.class)
 class AdHocSubprocessActivityControllerTest extends RestControllerTest {
-  private static final String AD_HOC_ACTIVITIES_URL = "/v2/ad-hoc-activities";
+  private static final String AD_HOC_ACTIVITIES_URL = "/v2/element-instances/ad-hoc-activities";
   private static final String SEARCH_ACTIVITIES_URL = AD_HOC_ACTIVITIES_URL + "/search";
 
   @MockitoBean private AdHocSubprocessActivityServices adHocSubprocessActivityServices;
@@ -166,7 +166,7 @@ class AdHocSubprocessActivityControllerTest extends RestControllerTest {
                 "type": "about:blank",
                 "title": "INVALID_ARGUMENT",
                 "status": 400,
-                "instance": "/v2/ad-hoc-activities/search"
+                "instance": "/v2/element-instances/ad-hoc-activities/search"
             }
             """)
           .jsonPath(".detail")
@@ -205,7 +205,7 @@ class AdHocSubprocessActivityControllerTest extends RestControllerTest {
                 "title": "NOT_FOUND",
                 "status": 404,
                 "detail": "Failed to find Ad-Hoc Subprocess with ID 'TestAdHocSubprocess'",
-                "instance": "/v2/ad-hoc-activities/search"
+                "instance": "/v2/element-instances/ad-hoc-activities/search"
             }
             """);
     }

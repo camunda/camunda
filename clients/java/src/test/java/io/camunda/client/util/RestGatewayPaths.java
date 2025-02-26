@@ -40,7 +40,7 @@ public class RestGatewayPaths {
   private static final String URL_CREATE_PROCESS_INSTANCE = REST_API_PATH + "/process-instances";
   private static final String URL_DEPLOYMENTS_URL = REST_API_PATH + "/deployments";
   private static final String URL_AD_HOC_SUBPROCESS_ACTIVITIES_SEARCH =
-      REST_API_PATH + "/ad-hoc-activities/search";
+      REST_API_PATH + "/element-instances/ad-hoc-activities/search";
 
   /**
    * @return the topology request URL

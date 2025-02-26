@@ -22,7 +22,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 
 @CamundaRestController
-@RequestMapping("/v2/ad-hoc-activities")
+@RequestMapping("/v2/element-instances/ad-hoc-activities")
 public class AdHocSubprocessActivityController {
 
   private final AdHocSubprocessActivityServices adHocSubprocessActivityServices;

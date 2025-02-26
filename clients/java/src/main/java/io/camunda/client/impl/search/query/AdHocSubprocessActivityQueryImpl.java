@@ -70,7 +70,7 @@ public class AdHocSubprocessActivityQueryImpl implements AdHocSubprocessActivity
   public CamundaFuture<AdHocSubprocessActivityResponse> send() {
     final HttpCamundaFuture<AdHocSubprocessActivityResponse> result = new HttpCamundaFuture<>();
     httpClient.post(
-        "/ad-hoc-activities/search",
+        "/element-instances/ad-hoc-activities/search",
         jsonMapper.toJson(request),
         httpRequestConfig.build(),
         AdHocSubprocessActivitySearchQueryResult.class,
