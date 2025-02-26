@@ -7,8 +7,8 @@
  */
 package io.camunda.zeebe.engine.processing.deployment.model.element;
 
-import io.camunda.zeebe.engine.processing.common.ExpressionProcessor;
 import io.camunda.zeebe.engine.processing.common.Failure;
+import io.camunda.zeebe.engine.processing.expression.ExpressionProcessor;
 import io.camunda.zeebe.model.bpmn.util.time.Timer;
 import io.camunda.zeebe.util.Either;
 import java.util.Collection;

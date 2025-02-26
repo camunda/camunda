@@ -9,8 +9,8 @@ package io.camunda.zeebe.engine.processing.deployment.model.validation;
 
 import io.camunda.zeebe.el.Expression;
 import io.camunda.zeebe.el.ExpressionLanguage;
-import io.camunda.zeebe.engine.processing.common.ExpressionProcessor;
 import io.camunda.zeebe.engine.processing.deployment.model.transformer.ExpressionTransformer;
+import io.camunda.zeebe.engine.processing.expression.ExpressionProcessor;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;

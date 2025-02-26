@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.deployment.model.transformer;
 
+import io.camunda.zeebe.el.EvaluationContext;
 import io.camunda.zeebe.el.EvaluationResult;
 import io.camunda.zeebe.el.ExpressionLanguage;
 import io.camunda.zeebe.el.ResultType;
@@ -91,7 +92,7 @@ public final class StartEventTransformer implements ModelElementTransformer<Star
 
       final EvaluationResult messageNameResult =
           expressionLanguage.evaluateExpression(
-              message.getMessageNameExpression(), variable -> null);
+              message.getMessageNameExpression(), EvaluationContext.empty());
 
       if (messageNameResult.isFailure()) {
         throw new IllegalStateException(
@@ -127,7 +128,8 @@ public final class StartEventTransformer implements ModelElementTransformer<Star
       final ExpressionLanguage expressionLanguage = context.getExpressionLanguage();
 
       final EvaluationResult signalNameResult =
-          expressionLanguage.evaluateExpression(signal.getSignalNameExpression(), variable -> null);
+          expressionLanguage.evaluateExpression(
+              signal.getSignalNameExpression(), EvaluationContext.empty());
 
       if (signalNameResult.isFailure()) {
         throw new IllegalStateException(

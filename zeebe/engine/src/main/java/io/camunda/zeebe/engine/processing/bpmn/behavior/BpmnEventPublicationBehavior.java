@@ -82,15 +82,15 @@ public final class BpmnEventPublicationBehavior {
    *
    * @param catchEventTuple a tuple representing a catch event and its current instance
    */
-  public void throwErrorEvent(
-      final CatchEventAnalyzer.CatchEventTuple catchEventTuple, final DirectBuffer variables) {
+  public long throwErrorEvent(final CatchEventTuple catchEventTuple, final DirectBuffer variables) {
     final ElementInstance eventScopeInstance = catchEventTuple.getElementInstance();
     final ExecutableCatchEvent catchEvent = catchEventTuple.getCatchEvent();
 
     if (eventHandle.canTriggerElement(eventScopeInstance, catchEvent.getId())) {
-      eventHandle.activateElement(
+      return eventHandle.activateElement(
           catchEvent, eventScopeInstance.getKey(), eventScopeInstance.getValue(), variables);
     }
+    return -1;
   }
 
   /**

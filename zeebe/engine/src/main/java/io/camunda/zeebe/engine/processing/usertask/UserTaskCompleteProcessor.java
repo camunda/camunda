@@ -71,7 +71,6 @@ public final class UserTaskCompleteProcessor implements TypedRecordProcessor<Use
     userTaskRecord.setAction(command.getValue().getActionOrDefault(DEFAULT_ACTION));
 
     stateWriter.appendFollowUpEvent(userTaskKey, UserTaskIntent.COMPLETING, userTaskRecord);
-    stateWriter.appendFollowUpEvent(userTaskKey, UserTaskIntent.COMPLETED, userTaskRecord);
     completeElementInstance(userTaskRecord);
     responseWriter.writeEventOnCommand(
         userTaskKey, UserTaskIntent.COMPLETED, userTaskRecord, command);

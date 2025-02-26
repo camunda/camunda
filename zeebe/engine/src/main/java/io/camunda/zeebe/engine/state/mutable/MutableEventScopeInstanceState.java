@@ -9,6 +9,7 @@ package io.camunda.zeebe.engine.state.mutable;
 
 import io.camunda.zeebe.engine.state.immutable.EventScopeInstanceState;
 import io.camunda.zeebe.engine.state.instance.EventTrigger;
+import io.camunda.zeebe.protocol.impl.record.value.events.CatchEventRecord;
 import java.util.Collection;
 import org.agrona.DirectBuffer;
 
@@ -90,4 +91,6 @@ public interface MutableEventScopeInstanceState extends EventScopeInstanceState 
    * @param eventKey the key of the event trigger
    */
   void deleteTrigger(long eventScopeKey, long eventKey);
+
+  void recordCatchEventTriggering(long catchEventKey, CatchEventRecord value);
 }

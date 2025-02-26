@@ -10,9 +10,9 @@ package io.camunda.zeebe.el.impl;
 import io.camunda.zeebe.el.EvaluationContext;
 import org.camunda.feel.context.CustomContext;
 import org.camunda.feel.context.VariableProvider;
+import org.camunda.feel.syntaxtree.ValContext;
 import scala.Option;
 import scala.collection.Iterable;
-import scala.collection.immutable.List$;
 
 final class FeelVariableContext extends CustomContext {
   private final EvaluationContext context;
@@ -30,14 +30,22 @@ final class FeelVariableContext extends CustomContext {
 
     @Override
     public Option<Object> getVariable(final String name) {
-      return Option.apply(context.getVariable(name))
-          .filter(variable -> variable.capacity() > 0)
-          .map(variable -> variable);
+      final var value = context.getVariable(name);
+
+      if (value != null && value instanceof EvaluationContext) {
+        return Option.apply(new ValContext(new FeelVariableContext((EvaluationContext) value)));
+      }
+      return Option.apply(value);
     }
 
     @Override
     public Iterable<String> keys() {
-      return List$.MODULE$.empty();
+      return scala.jdk.javaapi.CollectionConverters.asScala(context.getVariables().toList());
+    }
+
+    private ValContext getNamespaceFromContext(final String name) {
+      // TODO handle nested scope properly
+      return new ValContext(FeelVariableContext.this);
     }
   }
 }

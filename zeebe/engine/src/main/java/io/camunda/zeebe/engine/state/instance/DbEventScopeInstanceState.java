@@ -14,6 +14,7 @@ import io.camunda.zeebe.db.impl.DbCompositeKey;
 import io.camunda.zeebe.db.impl.DbLong;
 import io.camunda.zeebe.engine.state.mutable.MutableEventScopeInstanceState;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
+import io.camunda.zeebe.protocol.impl.record.value.events.CatchEventRecord;
 import java.util.Collection;
 import java.util.function.BiConsumer;
 import org.agrona.DirectBuffer;
@@ -30,6 +31,10 @@ public final class DbEventScopeInstanceState implements MutableEventScopeInstanc
   private final EventTrigger eventTrigger;
   private final ColumnFamily<DbCompositeKey<DbLong, DbLong>, EventTrigger> eventTriggerColumnFamily;
 
+  private final DbLong catchEventKey;
+  private final CatchEventRecordValue catchEvent;
+  private final ColumnFamily<DbLong, CatchEventRecordValue> catchEventRecordColumnFamily;
+
   public DbEventScopeInstanceState(
       final ZeebeDb<ZbColumnFamilies> zeebeDb, final TransactionContext transactionContext) {
     eventScopeKey = new DbLong();
@@ -45,6 +50,12 @@ public final class DbEventScopeInstanceState implements MutableEventScopeInstanc
     eventTriggerColumnFamily =
         zeebeDb.createColumnFamily(
             ZbColumnFamilies.EVENT_TRIGGER, transactionContext, eventTriggerKey, eventTrigger);
+
+    catchEventKey = new DbLong();
+    catchEvent = new CatchEventRecordValue();
+    catchEventRecordColumnFamily =
+        zeebeDb.createColumnFamily(
+            ZbColumnFamilies.CATCH_EVENT_RECORD, transactionContext, catchEventKey, catchEvent);
   }
 
   @Override
@@ -141,6 +152,13 @@ public final class DbEventScopeInstanceState implements MutableEventScopeInstanc
   }
 
   @Override
+  public void recordCatchEventTriggering(final long catchEventKey, final CatchEventRecord value) {
+    this.catchEventKey.wrapLong(catchEventKey);
+    catchEvent.setRecord(value);
+    catchEventRecordColumnFamily.insert(this.catchEventKey, catchEvent);
+  }
+
+  @Override
   public EventScopeInstance getInstance(final long eventScopeKey) {
     this.eventScopeKey.wrapLong(eventScopeKey);
     final EventScopeInstance instance = eventScopeInstanceColumnFamily.get(this.eventScopeKey);
@@ -167,6 +185,26 @@ public final class DbEventScopeInstanceState implements MutableEventScopeInstanc
     final EventScopeInstance instance = eventScopeInstanceColumnFamily.get(this.eventScopeKey);
 
     return canTriggerEvent(instance, elementId);
+  }
+
+  @Override
+  public CatchEventRecordValue getTriggeringCatchEvent(final long catchEventKey) {
+    this.catchEventKey.wrapLong(catchEventKey);
+    return catchEventRecordColumnFamily.get(this.catchEventKey);
+  }
+
+  @Override
+  public CatchEventRecordValue getTriggeringCatchEventByScopeKey(final long scopeKey) {
+    catchEventKey.wrapLong(-1);
+    catchEventRecordColumnFamily.whileTrue(
+        (key, value) -> {
+          if (value.getRecord().getScopeKey() == scopeKey) {
+            catchEventKey.wrapLong(key.getValue());
+            return false;
+          }
+          return true;
+        });
+    return catchEvent;
   }
 
   /**

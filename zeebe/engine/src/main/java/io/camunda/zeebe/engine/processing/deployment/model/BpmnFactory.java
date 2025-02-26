@@ -10,9 +10,9 @@ package io.camunda.zeebe.engine.processing.deployment.model;
 import io.camunda.zeebe.el.ExpressionLanguage;
 import io.camunda.zeebe.el.ExpressionLanguageFactory;
 import io.camunda.zeebe.engine.processing.bpmn.clock.ZeebeFeelEngineClock;
-import io.camunda.zeebe.engine.processing.common.ExpressionProcessor;
 import io.camunda.zeebe.engine.processing.deployment.model.transformation.BpmnTransformer;
 import io.camunda.zeebe.engine.processing.deployment.transform.BpmnValidator;
+import io.camunda.zeebe.engine.processing.expression.ExpressionProcessor;
 import java.time.InstantSource;
 
 public final class BpmnFactory {

@@ -91,7 +91,12 @@ public final class UserTaskProcessor extends JobWorkerTaskSupportingProcessor<Ex
       final ExecutableUserTask element, final BpmnElementContext context) {
     return variableMappingBehavior
         .applyOutputMappings(context, element)
-        .thenDo(ok -> eventSubscriptionBehavior.unsubscribeFromEvents(context));
+        .thenDo(
+            ok -> {
+              final var elementInstance = stateBehavior.getElementInstance(context);
+              userTaskBehavior.complete(elementInstance);
+              eventSubscriptionBehavior.unsubscribeFromEvents(context);
+            });
   }
 
   @Override

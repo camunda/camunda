@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.state.immutable;
 
+import io.camunda.zeebe.engine.state.instance.CatchEventRecordValue;
 import io.camunda.zeebe.engine.state.instance.EventScopeInstance;
 import io.camunda.zeebe.engine.state.instance.EventTrigger;
 import org.agrona.DirectBuffer;
@@ -38,4 +39,8 @@ public interface EventScopeInstanceState {
    * @return {@code true} if the event can be triggered, otherwise {@code false}
    */
   boolean canTriggerEvent(long eventScopeKey, final DirectBuffer elementId);
+
+  CatchEventRecordValue getTriggeringCatchEvent(long catchEventKey);
+
+  CatchEventRecordValue getTriggeringCatchEventByScopeKey(long scopeKey);
 }

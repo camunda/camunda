@@ -233,7 +233,14 @@ public class EventTriggerBehavior {
         .setElementId(triggeredEvent.getId())
         .setBpmnEventType(triggeredEvent.getEventType());
 
-    final var eventInstanceKey = keyGenerator.nextKey();
+    final var catchEvent = eventScopeInstanceState.getTriggeringCatchEvent(processEventKey);
+    final long eventInstanceKey;
+    if (catchEvent != null) {
+      eventInstanceKey = catchEvent.getRecord().getScopeKey();
+    } else {
+      eventInstanceKey = keyGenerator.nextKey();
+    }
+
     // transition to activating and activated directly to pass the variables to this instance
     stateWriter.appendFollowUpEvent(
         eventInstanceKey, ProcessInstanceIntent.ELEMENT_ACTIVATING, eventRecord);

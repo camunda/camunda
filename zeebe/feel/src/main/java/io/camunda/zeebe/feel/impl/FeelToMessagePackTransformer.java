@@ -14,6 +14,7 @@ import org.agrona.DirectBuffer;
 import org.agrona.ExpandableArrayBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
+import org.camunda.feel.impl.DefaultValueMapper;
 import org.camunda.feel.syntaxtree.Val;
 import org.camunda.feel.syntaxtree.ValBoolean;
 import org.camunda.feel.syntaxtree.ValContext;
@@ -81,11 +82,16 @@ public class FeelToMessagePackTransformer {
                   case final Val entryVal -> writeValue(entryVal);
                   case final DirectBuffer entryBuffer -> writer.writeRaw(entryBuffer);
                   default -> {
-                    writer.writeNil();
-                    LOGGER.trace(
-                        "No FEEL to MessagePack transformation for '{}'. Using 'null' for context entry with key '{}'.",
-                        entryValue,
-                        entryKey);
+                    final var converted = DefaultValueMapper.instance().toVal(entryValue, null);
+                    if (converted.isDefined()) {
+                      writeValue(converted.get());
+                    } else {
+                      writer.writeNil();
+                      LOGGER.trace(
+                          "No FEEL to MessagePack transformation for '{}'. Using 'null' for context entry with key '{}'.",
+                          entryValue,
+                          entryKey);
+                    }
                   }
                 }
                 return null;

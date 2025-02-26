@@ -15,14 +15,20 @@ import io.camunda.zeebe.engine.processing.common.CatchEventBehavior;
 import io.camunda.zeebe.engine.processing.common.DecisionBehavior;
 import io.camunda.zeebe.engine.processing.common.ElementActivationBehavior;
 import io.camunda.zeebe.engine.processing.common.EventTriggerBehavior;
-import io.camunda.zeebe.engine.processing.common.ExpressionProcessor;
+import io.camunda.zeebe.engine.processing.expression.CombinedEvaluationContext;
+import io.camunda.zeebe.engine.processing.expression.EnvVariableEvaluationContext;
+import io.camunda.zeebe.engine.processing.expression.ErrorEvaluationContext;
+import io.camunda.zeebe.engine.processing.expression.ExpressionProcessor;
+import io.camunda.zeebe.engine.processing.expression.NamespacedContext;
+import io.camunda.zeebe.engine.processing.expression.ProcessInstanceEvaluationContext;
+import io.camunda.zeebe.engine.processing.expression.UserTaskEvaluationContext;
+import io.camunda.zeebe.engine.processing.expression.VariableStateEvaluationContext;
 import io.camunda.zeebe.engine.processing.job.behaviour.JobUpdateBehaviour;
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
 import io.camunda.zeebe.engine.processing.streamprocessor.JobStreamer;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.processing.timer.DueDateTimerChecker;
 import io.camunda.zeebe.engine.processing.variable.VariableBehavior;
-import io.camunda.zeebe.engine.processing.variable.VariableStateEvaluationContextLookup;
 import io.camunda.zeebe.engine.state.message.TransientPendingSubscriptionState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.state.routing.RoutingInfo;
@@ -66,7 +72,23 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
     expressionBehavior =
         new ExpressionProcessor(
             ExpressionLanguageFactory.createExpressionLanguage(new ZeebeFeelEngineClock(clock)),
-            new VariableStateEvaluationContextLookup(processingState.getVariableState()));
+            CombinedEvaluationContext.withContexts(
+                NamespacedContext.create()
+                    .register(
+                        "camunda",
+                        NamespacedContext.create()
+                            .register("env", new EnvVariableEvaluationContext())
+                            .register(
+                                "processInstance",
+                                new ProcessInstanceEvaluationContext(
+                                    processingState.getElementInstanceState())) // process context
+                            .register("process", new ProcessEvaluationContext(this::stateBehavior))
+                            .register("userTask", new UserTaskEvaluationContext(processingState))
+                            .register(
+                                "error",
+                                new ErrorEvaluationContext(
+                                    processingState.getEventScopeInstanceState()))),
+                new VariableStateEvaluationContext(processingState.getVariableState())));
 
     variableBehavior =
         new VariableBehavior(

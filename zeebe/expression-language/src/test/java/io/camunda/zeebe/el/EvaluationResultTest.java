@@ -264,7 +264,7 @@ public class EvaluationResultTest {
   private EvaluationResult evaluateExpression(final String expression) {
     final var parseExpression = expressionLanguage.parseExpression(expression);
     final var evaluationResult =
-        expressionLanguage.evaluateExpression(parseExpression, name -> null);
+        expressionLanguage.evaluateExpression(parseExpression, EvaluationContext.empty());
 
     assertThat(evaluationResult.isFailure())
         .describedAs(evaluationResult.getFailureMessage())

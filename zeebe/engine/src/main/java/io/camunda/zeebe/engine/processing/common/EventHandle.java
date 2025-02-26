@@ -109,7 +109,7 @@ public final class EventHandle {
     activateElement(catchEvent, eventScopeKey, elementRecord, NO_VARIABLES);
   }
 
-  public void activateElement(
+  public long activateElement(
       final ExecutableFlowElement catchEvent,
       final long eventScopeKey,
       final ProcessInstanceRecord elementRecord,
@@ -146,6 +146,8 @@ public final class EventHandle {
           elementRecord,
           variables);
     }
+
+    return processEventKey;
   }
 
   public void triggeringProcessEvent(final JobRecord jobRecord) {

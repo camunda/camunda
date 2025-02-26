@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.deployment.model.transformer;
 
+import io.camunda.zeebe.el.EvaluationContext;
 import io.camunda.zeebe.el.EvaluationResult;
 import io.camunda.zeebe.el.Expression;
 import io.camunda.zeebe.el.ExpressionLanguage;
@@ -57,7 +58,7 @@ public final class MessageTransformer implements ModelElementTransformer<Message
 
       if (messageNameExpression.isStatic()) {
         final EvaluationResult messageNameResult =
-            expressionLanguage.evaluateExpression(messageNameExpression, variable -> null);
+            expressionLanguage.evaluateExpression(messageNameExpression, EvaluationContext.empty());
 
         if (messageNameResult.getType() == ResultType.STRING) {
           final String messageName = messageNameResult.getString();

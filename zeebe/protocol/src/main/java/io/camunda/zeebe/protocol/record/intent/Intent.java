@@ -61,7 +61,8 @@ public interface Intent {
           MessageCorrelationIntent.class,
           UserIntent.class,
           ClockIntent.class,
-          AuthorizationIntent.class);
+          AuthorizationIntent.class,
+          CatchEventIntent.class);
   short NULL_VAL = 255;
   Intent UNKNOWN = UnknownIntent.UNKNOWN;
 
@@ -155,6 +156,8 @@ public interface Intent {
         return ClockIntent.from(intent);
       case AUTHORIZATION:
         return AuthorizationIntent.from(intent);
+      case CATCH_EVENT:
+        return CatchEventIntent.from(intent);
       case NULL_VAL:
       case SBE_UNKNOWN:
         return Intent.UNKNOWN;

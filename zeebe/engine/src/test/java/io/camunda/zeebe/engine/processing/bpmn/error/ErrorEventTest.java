@@ -19,12 +19,14 @@ import io.camunda.zeebe.model.bpmn.builder.ServiceTaskBuilder;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
+import io.camunda.zeebe.protocol.record.intent.VariableIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
@@ -698,5 +700,54 @@ public class ErrorEventTest {
             tuple(BpmnElementType.BOUNDARY_EVENT, ProcessInstanceIntent.ELEMENT_ACTIVATING),
             tuple(BpmnElementType.BOUNDARY_EVENT, ProcessInstanceIntent.ELEMENT_COMPLETED),
             tuple(BpmnElementType.PROCESS, ProcessInstanceIntent.ELEMENT_COMPLETED));
+  }
+
+  @Test
+  public void shouldProvideErrorContextInOutputMappingsofBoundaryEvent() {
+    // given
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(PROCESS_ID)
+                .startEvent()
+                .serviceTask("task", t -> t.zeebeJobType(JOB_TYPE))
+                .boundaryEvent(
+                    "boundary",
+                    b ->
+                        b.error(ERROR_CODE)
+                            .zeebeOutputExpression("camunda.error.code", "code")
+                            .zeebeOutputExpression("camunda.error.message", "message")
+                            .zeebeOutputExpression("camunda.error", "error")
+                            .endEvent())
+                .done())
+        .deploy();
+
+    final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    // when
+    ENGINE
+        .job()
+        .ofInstance(processInstanceKey)
+        .withType(JOB_TYPE)
+        .withErrorCode(ERROR_CODE)
+        .withErrorMessage("my msg")
+        .throwError();
+
+    // then
+    final var variables =
+        RecordingExporter.variableRecords(VariableIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .limit(3)
+            .collect(Collectors.toMap(r -> r.getValue().getName(), c -> c.getValue().getValue()));
+
+    final var expected =
+        Map.of(
+            "code",
+            "\"ERROR\"",
+            "message",
+            "\"my msg\"",
+            "error",
+            "{\"code\":\"ERROR\",\"message\":\"my msg\"}");
+    assertThat(variables).containsAllEntriesOf(expected);
   }
 }
