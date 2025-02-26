@@ -16,7 +16,16 @@ import java.util.concurrent.ConcurrentMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/** A {@link CompositeMeterRegistry} extension which tracks */
+/**
+ * A {@link CompositeMeterRegistry} extension which tracks stateful gauges, returning the same
+ * instance when requested.
+ *
+ * <p>The reason for this is that Micrometer does not allow custom meter types, so we have to wrap
+ * an existing, underlying gauge. At the same time, we still want to return the same object which
+ * tracks the state. For example, we re-create the processing DB state which has some gauges in
+ * different parts of the code base, where it would be difficult to share the instance across all
+ * these boundaries. Instead, we rely on this stateful registry to do this.
+ */
 final class StatefulMeterRegistry extends CompositeMeterRegistry {
   private static final Logger LOGGER = LoggerFactory.getLogger(StatefulMeterRegistry.class);
 

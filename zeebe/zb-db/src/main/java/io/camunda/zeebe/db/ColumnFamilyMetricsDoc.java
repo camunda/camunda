@@ -52,6 +52,11 @@ public enum ColumnFamilyMetricsDoc implements ExtendedMeterDocumentation {
     public KeyName[] getKeyNames() {
       return KEYS;
     }
+
+    @Override
+    public KeyName[] getAdditionalKeyNames() {
+      return PartitionKeyNames.values();
+    }
   };
 
   @SuppressWarnings("NullableProblems")
