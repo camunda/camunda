@@ -29,8 +29,8 @@ Define your endpoint and any required data models in the [OpenAPI description](.
 
 1. Consider the [OpenAPI specification](https://spec.openapis.org/oas/v3.0.3) and [guide](https://learn.openapis.org/) for detailed guidance.
 2. Reuse existing data models as much as possible to avoid duplication and foster streamlined models. Consider the following aspects:
-  1. Key attributes relating to record keys in the engine must be of type `string` and not a number. This allows for uniform consumption on all platforms.
-  2. Response codes should be as consistent as possible across endpoints. Align with response codes of similar endpoints and reuse existing response components if possible.
+   1. Key attributes relating to record keys in the engine must be of type `string` and not a number. This allows for uniform consumption on all platforms.
+   2. Response codes should be as consistent as possible across endpoints. Align with response codes of similar endpoints and reuse existing response components if possible.
 3. The OpenAPI description will be used directly to generate public reference documentation later. For optimal documentation, follow these rules:
    1. Add a `summary` property to every API path.
    2. Add a `description` property to every API path and every schema property.
