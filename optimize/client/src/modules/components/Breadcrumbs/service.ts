@@ -7,7 +7,6 @@
  */
 
 import {get} from 'request';
-import {getFullURL} from '../../../modules/api';
 
 export type EntityNamesResponse = {
   reportName: string | null;
@@ -20,7 +19,7 @@ export async function loadEntitiesNames(entitiesIds: {
   dashboardId?: string | null;
   collectionId?: string | null;
 }): Promise<EntityNamesResponse> {
-  const res = await get(getFullURL('api/entities/names'), entitiesIds);
+  const res = await get('api/entities/names', entitiesIds);
 
   return await res.json();
 }

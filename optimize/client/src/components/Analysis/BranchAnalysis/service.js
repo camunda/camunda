@@ -7,7 +7,6 @@
  */
 
 import {post} from 'request';
-import {getFullURL} from '../../../modules/api';
 
 export async function loadFrequencyData(
   processDefinitionKey,
@@ -17,7 +16,7 @@ export async function loadFrequencyData(
   filter
 ) {
   const response = await post(
-    getFullURL('api/report/evaluate'),
+    'api/report/evaluate',
     createFlowNodeFrequencyReport(
       processDefinitionKey,
       processDefinitionVersions,
@@ -56,7 +55,7 @@ export async function loadCorrelationData(
   gateway,
   end
 ) {
-  const response = await post(getFullURL('api/analysis/correlation'), {
+  const response = await post('api/analysis/correlation', {
     processDefinitionKey,
     processDefinitionVersions,
     tenantIds,

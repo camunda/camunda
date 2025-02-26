@@ -9,7 +9,6 @@
 import {t} from 'translation';
 import {post} from 'request';
 import {AnalysisDurationChartEntry} from 'types';
-import {getFullURL} from '../../../modules/api';
 
 export interface OutliersVariable {
   variableName: string;
@@ -49,14 +48,14 @@ export type OutlierNode = {
 export async function loadCommonOutliersVariables(
   params: AnalysisFlowNodeOutlierParameters
 ): Promise<OutliersVariable[]> {
-  const response = await post(getFullURL('api/analysis/significantOutlierVariableTerms'), params);
+  const response = await post('api/analysis/significantOutlierVariableTerms', params);
   return await response.json();
 }
 
 export async function loadDurationData(
   params: AnalysisFlowNodeOutlierParameters
 ): Promise<AnalysisDurationChartEntry[]> {
-  const response = await post(getFullURL('api/analysis/durationChart'), params);
+  const response = await post('api/analysis/durationChart', params);
   return await response.json();
 }
 

@@ -8,7 +8,6 @@
 
 import {get} from 'request';
 import {formatters} from 'services';
-import {getFullURL} from '../../api';
 
 export interface Identity {
   id: string | null;
@@ -34,12 +33,12 @@ export async function searchIdentities(
   terms: string,
   excludeUserGroups: boolean
 ): Promise<{total: number; result: Identity[]}> {
-  const response = await get(getFullURL('api/identity/search'), {terms, excludeUserGroups});
+  const response = await get('api/identity/search', {terms, excludeUserGroups});
   return await response.json();
 }
 
 export async function getUser(id: string): Promise<Identity> {
-  const response = await get(getFullURL(`api/identity/${id}`));
+  const response = await get(`api/identity/${id}`);
   return await response.json();
 }
 
