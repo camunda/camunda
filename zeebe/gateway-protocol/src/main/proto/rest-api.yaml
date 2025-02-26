@@ -176,8 +176,8 @@ paths:
     post:
       tags:
         - Job
-      operationId: reportJobError
-      summary: Report error for job
+      operationId: throwJobError
+      summary: Throw error for job
       description: |
         Reports a business error (i.e. non-technical) that occurs while processing a job.
       parameters:
