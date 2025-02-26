@@ -29,7 +29,6 @@ jest.mock('services', () => ({
 }));
 
 const report = {
-  reportType: 'process',
   data: {
     groupBy: {type: 'startDate', value: {unit: 'automatic'}},
     view: {entity: 'processInstance', properties: ['frequency']},

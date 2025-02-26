@@ -13,7 +13,7 @@ import CountTargetInput from './CountTargetInput';
 import DurationTargetInput from './DurationTargetInput';
 
 interface TargetSelectionProps {
-  report: Report<'process'>;
+  report: Report;
   onChange: (change: Spec<SingleReportConfiguration>) => void;
   hideBaseLine?: boolean;
 }

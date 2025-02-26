@@ -35,7 +35,6 @@ beforeEach(() => {
 
 const testDefinition = {key: 'definitionKey', versions: ['ver1'], tenantIds: ['id1']};
 const report = {
-  reportType: 'process',
   data: {
     definitions: [testDefinition],
     groupBy: {
