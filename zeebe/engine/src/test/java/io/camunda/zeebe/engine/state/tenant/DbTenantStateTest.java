@@ -80,34 +80,6 @@ public class DbTenantStateTest {
   }
 
   @Test
-  void shouldNotUpdateTenantIdWhenUpdatingName() {
-    // given
-    final long tenantKey = 1L;
-    final String originalTenantId = "tenant-1";
-    final String newTenantId = "tenant-2"; // This should not be updated
-    final String tenantName = "Original Name";
-    final var tenantRecord =
-        new TenantRecord()
-            .setTenantKey(tenantKey)
-            .setTenantId(originalTenantId)
-            .setName(tenantName);
-
-    tenantState.createTenant(tenantRecord);
-
-    // when
-    final var updatedRecord =
-        new TenantRecord().setTenantKey(tenantKey).setTenantId(newTenantId).setName("New Name");
-    tenantState.updateTenant(updatedRecord);
-
-    // then
-    // Verify that tenantId has not been updated
-    final var persistedTenant = tenantState.getTenantById(originalTenantId);
-    assertThat(persistedTenant).isPresent();
-    assertThat(persistedTenant.get().getTenantId()).isEqualTo(originalTenantId);
-    assertThat(persistedTenant.get().getName()).isEqualTo("New Name");
-  }
-
-  @Test
   void shouldAddEntityToTenant() {
     // given
     final long tenantKey = 1L;
@@ -178,25 +150,23 @@ public class DbTenantStateTest {
   @Test
   void shouldRemoveEntityFromTenant() {
     // given
-    final long tenantKey = 1L;
     final String entityId1 = "entityId1";
     final String entityId2 = "entityId2";
     final String tenantId = "tenant-1";
-    final var tenantRecord =
-        new TenantRecord().setTenantKey(tenantKey).setTenantId(tenantId).setName("Tenant One");
+    final var tenantRecord = new TenantRecord().setTenantId(tenantId).setName("Tenant One");
 
     tenantState.createTenant(tenantRecord);
 
     // Add two entities to the tenant
     final var removeEntity1Record =
         new TenantRecord()
-            .setTenantKey(tenantKey)
+            .setTenantId(tenantId)
             .setEntityId(entityId1)
             .setEntityType(EntityType.USER);
     tenantState.addEntity(removeEntity1Record);
     tenantState.addEntity(
         new TenantRecord()
-            .setTenantKey(tenantKey)
+            .setTenantId(tenantId)
             .setEntityId(entityId2)
             .setEntityType(EntityType.USER));
 
@@ -225,7 +195,7 @@ public class DbTenantStateTest {
     tenantState.createTenant(tenantRecord);
     tenantState.addEntity(
         new TenantRecord()
-            .setTenantKey(tenantKey)
+            .setTenantId(tenantId)
             .setEntityId(entityId)
             .setEntityType(EntityType.USER));
 
@@ -252,12 +222,12 @@ public class DbTenantStateTest {
     tenantState.createTenant(tenantRecord);
     tenantState.addEntity(
         new TenantRecord()
-            .setTenantKey(tenantKey)
+            .setTenantId(tenantId)
             .setEntityId(entityId1)
             .setEntityType(EntityType.USER));
     tenantState.addEntity(
         new TenantRecord()
-            .setTenantKey(tenantKey)
+            .setTenantId(tenantId)
             .setEntityId(entityId2)
             .setEntityType(EntityType.MAPPING));
 

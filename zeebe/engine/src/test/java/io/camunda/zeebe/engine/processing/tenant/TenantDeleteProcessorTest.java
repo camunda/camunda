@@ -99,7 +99,7 @@ public class TenantDeleteProcessorTest {
 
     engine
         .tenant()
-        .addEntity(tenantKey)
+        .addEntity(tenantId)
         .withEntityId(username)
         .withEntityType(EntityType.USER)
         .add();
@@ -115,6 +115,7 @@ public class TenantDeleteProcessorTest {
             .asList();
 
     assertThat(deletedTenant).hasTenantKey(tenantKey);
+    assertThat(deletedTenant).hasTenantId(tenantId);
     assertThat(tenantRecords).hasSize(2);
     assertThat(tenantRecords)
         .extracting(Record::getIntent)
