@@ -10,30 +10,31 @@ package io.camunda.zeebe.util.micrometer;
 import io.camunda.zeebe.util.VisibleForTesting;
 import io.micrometer.core.instrument.AbstractMeter;
 import io.micrometer.core.instrument.Gauge;
-import io.micrometer.core.instrument.Measurement;
 import io.micrometer.core.instrument.Meter;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Tag;
 import io.micrometer.core.instrument.Tags;
-import io.micrometer.core.instrument.noop.NoopGauge;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.atomic.DoubleAdder;
-import java.util.function.Function;
 
 /**
  * A stateful gauge is a custom meter type that wraps a {@link Gauge}, while keeping track of an
  * intermediate state value (the {@link #state}).
  *
- * <p>Using a stateful gauge solves the issue of re-registering the same {@link Gauge} that
- * Micrometer currently has: if you register one gauge with a specific object, and then try again
- * with a different one, it will simply silently ignore the second one. Their reasoning is
- * documented <a
+ * <p>Micrometer takes the approach that gauges must be unique: if you register one gauge with a
+ * specific object, and then try again with a different one, it will simply silently ignore the
+ * second one. Their reasoning is documented <a
  * href="https://docs.micrometer.io/micrometer/reference/concepts/gauges.html">here</a>
  *
  * <p>In a long living, multithreaded application, the only way to ensure this is to tie the
  * lifetime of a gauge to the lifetime of whatever resource it is tracking, and remove the gauge
  * once that object is closed/released. While not wrong per se if you want accurate metrics, it
  * leads to a brittle system.
+ *
+ * <p>When used with a normal {@link MeterRegistry}, this class just wraps a gauge, and lets you
+ * combine the state + gauge together. So it's mildly convenient, in that sense.
+ *
+ * <p>When combined with a {@link StatefulMeterRegistry}, the registry will track the stateful
+ * gauges as well and always return the same one.
  *
  * <p>NOTE: If the underlying registry is closed, like with other metrics, you will get a no-op
  * gauge, and you will not always get the same one. But it's acceptable since the underlying
@@ -43,12 +44,11 @@ import java.util.function.Function;
  * essentially converting everything to a long, and storing the raw bits into an {@link AtomicLong}.
  *
  * <p>It seems unnecessary if you're setting a long, but it's the simplest way to support also
- * reusing this class for floats and doubles.
- *
- * <p>For example, say you have a client component. Initially, you use it only once.
+ * reusing this class for floats and doubles. Note that this could probably be extracted to some
+ * {@code AtomicDouble} class to simplify things.
  */
-@SuppressWarnings("NullableProblems")
-public sealed class StatefulGauge extends AbstractMeter {
+public final class StatefulGauge extends AbstractMeter implements Gauge {
+
   private final Gauge delegate;
   private final AtomicLong state;
 
@@ -56,11 +56,6 @@ public sealed class StatefulGauge extends AbstractMeter {
     super(gauge.getId());
     delegate = gauge;
     this.state = state;
-  }
-
-  @Override
-  public Iterable<Measurement> measure() {
-    return delegate.measure();
   }
 
   /** Convenience method to set a long value directly */
@@ -84,15 +79,18 @@ public sealed class StatefulGauge extends AbstractMeter {
 
   /** Atomically increments and returns the new value. */
   public long increment() {
-    return state.incrementAndGet();
+    return state.updateAndGet(
+        value -> Double.doubleToLongBits(Double.longBitsToDouble(value) + 1.0));
   }
 
   /** Atomically decrements and returns the new value. */
+  @SuppressWarnings("UnusedReturnValue")
   public long decrement() {
-    return state.decrementAndGet();
+    return state.updateAndGet(
+        value -> Double.doubleToLongBits(Double.longBitsToDouble(value) - 1.0));
   }
 
-  @VisibleForTesting("convenience method to assert value in tests")
+  @Override
   public double value() {
     return delegate.value();
   }
@@ -100,6 +98,11 @@ public sealed class StatefulGauge extends AbstractMeter {
   @VisibleForTesting("convenience accessor to test state identity")
   AtomicLong state() {
     return state;
+  }
+
+  @VisibleForTesting("allows us to ensure we're wrapping the right delegate in tests")
+  Gauge delegate() {
+    return delegate;
   }
 
   /** Returns a builder for a meter with the given name. */
@@ -113,6 +116,7 @@ public sealed class StatefulGauge extends AbstractMeter {
    * <p>NOTE: unfortunately there is no common builder class or interface in Micrometer, requiring
    * us to pretty much copy the interface by hand.
    */
+  @SuppressWarnings("unused")
   public static final class Builder {
 
     private final String name;
@@ -129,7 +133,8 @@ public sealed class StatefulGauge extends AbstractMeter {
      * @return The gauge builder with added tags.
      */
     public Builder tags(final String... tags) {
-      return tags(Tags.of(tags));
+      this.tags = this.tags.and(tags);
+      return this;
     }
 
     /**
@@ -147,7 +152,7 @@ public sealed class StatefulGauge extends AbstractMeter {
      * @return The gauge builder with a single added tag.
      */
     public Builder tag(final String key, final String value) {
-      tags = tags.and(key, value);
+      this.tags = this.tags.and(key, value);
       return this;
     }
 
@@ -195,33 +200,30 @@ public sealed class StatefulGauge extends AbstractMeter {
       return register(registry, tags);
     }
 
-    @SuppressWarnings("DataFlowIssue")
     private StatefulGauge register(final MeterRegistry registry, final Tags tags) {
       final var id = new Id(name, tags, baseUnit, description, Type.GAUGE);
-      final var state = new AtomicLong();
-      final Function<Meter.Id, StatefulGauge> builder =
-          id2 ->
-              new StatefulGauge(
-                  MicrometerInternal.newGauge(registry, id2, state, StatefulGauge::longAsDouble),
-                  state);
-      final Function<Meter.Id, StatefulGauge> noopBuilder = NoopStatefulGauge::new;
 
-      return MicrometerInternal.registerMeterIfNecessary(
-          registry, StatefulGauge.class, id, builder, noopBuilder);
+      if (registry instanceof StatefulMeterRegistry s) {
+        return s.registerIfNecessary(id);
+      }
+
+      return StatefulGauge.registerAsGauge(id, registry);
     }
+  }
+
+  static StatefulGauge registerAsGauge(final Meter.Id id, final MeterRegistry registry) {
+    final var state = new AtomicLong();
+    final var gauge =
+        Gauge.builder(id.getName(), state, StatefulGauge::longAsDouble)
+            .description(id.getDescription())
+            .tags(id.getTags())
+            .baseUnit(id.getBaseUnit())
+            .register(registry);
+
+    return new StatefulGauge(gauge, state);
   }
 
   private static double longAsDouble(final AtomicLong value) {
     return Double.longBitsToDouble(value.get());
-  }
-
-  private static final class NoopStatefulGauge extends StatefulGauge {
-
-    public NoopStatefulGauge(final Id id) {
-      super(new NoopGauge(id), null); // let the state be garbage collected
-    }
-
-    @Override
-    public void set(final long value) {}
   }
 }
