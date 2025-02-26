@@ -112,7 +112,7 @@ public final class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeCl
   private int maxMessageSize = 4 * ONE_MB;
   private int maxMetadataSize = 16 * ONE_KB;
   private boolean streamEnabled = false;
-  private boolean grpcAddressUsed = false;
+  private boolean grpcAddressUsed = true;
   private ScheduledExecutorService jobWorkerExecutor;
   private boolean ownsJobWorkerExecutor;
   private boolean useDefaultRetryPolicy;
@@ -366,6 +366,7 @@ public final class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeCl
   @Override
   public ZeebeClientBuilder gatewayAddress(final String gatewayAddress) {
     this.gatewayAddress = gatewayAddress;
+    grpcAddressUsed = false;
     return this;
   }
 
@@ -380,7 +381,6 @@ public final class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeCl
   public ZeebeClientBuilder grpcAddress(final URI grpcAddress) {
     checkIfUriIsAbsolute(grpcAddress, "grpcAddress");
     this.grpcAddress = grpcAddress;
-    grpcAddressUsed = true;
     return this;
   }
 
