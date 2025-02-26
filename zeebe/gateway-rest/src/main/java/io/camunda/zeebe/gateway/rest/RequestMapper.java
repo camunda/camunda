@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.gateway.rest;
 
+import static io.camunda.zeebe.gateway.rest.util.KeyUtil.tryParseLong;
 import static io.camunda.zeebe.gateway.rest.validator.AuthorizationRequestValidator.validateAuthorizationRequest;
 import static io.camunda.zeebe.gateway.rest.validator.ClockValidator.validateClockPinRequest;
 import static io.camunda.zeebe.gateway.rest.validator.DocumentValidator.validateDocumentLinkParams;
@@ -928,14 +929,6 @@ public class RequestMapper {
       final R request, final Function<R, Long> valueExtractor, final Long defaultValue) {
     final Long value = request == null ? null : valueExtractor.apply(request);
     return value == null ? defaultValue : value;
-  }
-
-  private static Optional<Long> tryParseLong(final String value) {
-    try {
-      return Optional.of(Long.parseLong(value));
-    } catch (final NumberFormatException e) {
-      return Optional.empty();
-    }
   }
 
   private static <R> long getKeyOrDefault(
