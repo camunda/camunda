@@ -7,55 +7,64 @@
  */
 package io.camunda.zeebe.db.impl;
 
+import static io.camunda.zeebe.db.ColumnFamilyMetricsDoc.*;
+
 import io.camunda.zeebe.db.ColumnFamilyMetrics;
 import io.camunda.zeebe.protocol.EnumValue;
-import io.prometheus.client.Histogram;
-import io.prometheus.client.Histogram.Child;
-import io.prometheus.client.Histogram.Timer;
+import io.camunda.zeebe.util.CloseableSilently;
+import io.camunda.zeebe.util.micrometer.MicrometerUtil;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.Timer;
+import java.util.Objects;
 
 public final class FineGrainedColumnFamilyMetrics implements ColumnFamilyMetrics {
 
-  private static final Histogram LATENCY =
-      Histogram.build()
-          .namespace("zeebe")
-          .name("rocksdb_latency")
-          .exponentialBuckets(0.00001, 2, 15)
-          .labelNames("partition", "columnFamily", "operation")
-          .help("Latency of RocksDB operations per column family")
-          .register();
-
-  private final Child getLatency;
-  private final Child putLatency;
-  private final Child deleteLatency;
-  private final Child iterateLatency;
+  private final Timer get;
+  private final Timer put;
+  private final Timer delete;
+  private final Timer iterate;
+  private final MeterRegistry registry;
 
   public <ColumnFamilyNames extends Enum<? extends EnumValue> & EnumValue>
-      FineGrainedColumnFamilyMetrics(final int partitionId, final ColumnFamilyNames columnFamily) {
-    final var partitionLabel = String.valueOf(partitionId);
+      FineGrainedColumnFamilyMetrics(
+          final ColumnFamilyNames columnFamily, final MeterRegistry registry) {
+    this.registry = Objects.requireNonNull(registry, "registry cannot be null");
     final var columnFamilyLabel = columnFamily.name();
-    getLatency = LATENCY.labels(partitionLabel, columnFamilyLabel, "get");
-    putLatency = LATENCY.labels(partitionLabel, columnFamilyLabel, "put");
-    deleteLatency = LATENCY.labels(partitionLabel, columnFamilyLabel, "delete");
-    iterateLatency = LATENCY.labels(partitionLabel, columnFamilyLabel, "iterate");
+    get = createTimer(columnFamilyLabel, OperationType.GET);
+    put = createTimer(columnFamilyLabel, OperationType.PUT);
+    delete = createTimer(columnFamilyLabel, OperationType.DELETE);
+    iterate = createTimer(columnFamilyLabel, OperationType.ITERATE);
   }
 
   @Override
-  public Timer measureGetLatency() {
-    return getLatency.startTimer();
+  public CloseableSilently measureGetLatency() {
+    return MicrometerUtil.timer(get, Timer.start(registry));
   }
 
   @Override
-  public Timer measurePutLatency() {
-    return putLatency.startTimer();
+  public CloseableSilently measurePutLatency() {
+    return MicrometerUtil.timer(put, Timer.start(registry));
   }
 
   @Override
-  public Timer measureDeleteLatency() {
-    return deleteLatency.startTimer();
+  public CloseableSilently measureDeleteLatency() {
+    return MicrometerUtil.timer(delete, Timer.start(registry));
   }
 
   @Override
-  public Timer measureIterateLatency() {
-    return iterateLatency.startTimer();
+  public CloseableSilently measureIterateLatency() {
+    return MicrometerUtil.timer(iterate, Timer.start(registry));
+  }
+
+  private Timer createTimer(final String columnFamily, final OperationType type) {
+    return Timer.builder(LATENCY.getName())
+        .description(LATENCY.getDescription())
+        .serviceLevelObjectives(LATENCY.getTimerSLOs())
+        .tags(
+            ColumnFamilyMetricsKeyName.COLUMN_FAMILY.asString(),
+            columnFamily,
+            ColumnFamilyMetricsKeyName.OPERATION.asString(),
+            type.getName())
+        .register(registry);
   }
 }

@@ -17,6 +17,7 @@ import io.micrometer.core.instrument.Tag;
 import io.micrometer.core.instrument.Tags;
 import io.micrometer.core.instrument.noop.NoopGauge;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.DoubleAdder;
 import java.util.function.Function;
 
 /**
@@ -38,6 +39,12 @@ import java.util.function.Function;
  * gauge, and you will not always get the same one. But it's acceptable since the underlying
  * registry passed to the builder is closed.
  *
+ * <p>This class supports setting booleans, integers, shorts, bytes, longs, doubles, etc., by
+ * essentially converting everything to a long, and storing the raw bits into an {@link AtomicLong}.
+ *
+ * <p>It seems unnecessary if you're setting a long, but it's the simplest way to support also
+ * reusing this class for floats and doubles.
+ *
  * <p>For example, say you have a client component. Initially, you use it only once.
  */
 @SuppressWarnings("NullableProblems")
@@ -56,9 +63,14 @@ public sealed class StatefulGauge extends AbstractMeter {
     return delegate.measure();
   }
 
-  /** Sets the value of the underlying gauge. */
+  /** Convenience method to set a long value directly */
   public void set(final long value) {
-    state.set(value);
+    set((double) value);
+  }
+
+  /** Sets the value of the underlying gauge. */
+  public void set(final double value) {
+    state.set(Double.doubleToLongBits(value));
   }
 
   /**
@@ -67,7 +79,7 @@ public sealed class StatefulGauge extends AbstractMeter {
    * <p>Passing {@code false} will set the gauge to 0, and passing {@code true} will set it to 1.
    */
   public void set(final boolean value) {
-    state.set(value ? 1 : 0);
+    set(value ? 1.0 : 0.0);
   }
 
   /** Atomically increments and returns the new value. */
@@ -190,12 +202,17 @@ public sealed class StatefulGauge extends AbstractMeter {
       final Function<Meter.Id, StatefulGauge> builder =
           id2 ->
               new StatefulGauge(
-                  MicrometerInternal.newGauge(registry, id2, state, AtomicLong::get), state);
+                  MicrometerInternal.newGauge(registry, id2, state, StatefulGauge::longAsDouble),
+                  state);
       final Function<Meter.Id, StatefulGauge> noopBuilder = NoopStatefulGauge::new;
 
       return MicrometerInternal.registerMeterIfNecessary(
           registry, StatefulGauge.class, id, builder, noopBuilder);
     }
+  }
+
+  private static double longAsDouble(final AtomicLong value) {
+    return Double.longBitsToDouble(value.get());
   }
 
   private static final class NoopStatefulGauge extends StatefulGauge {
