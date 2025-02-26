@@ -106,13 +106,13 @@ public class TenantAppliersTest {
     final TenantRecord tenantRecord = createTenant(tenantKey, tenantId);
 
     // Ensure the tenant exists before deletion
-    assertThat(tenantState.getTenantByKey(tenantKey)).isPresent();
+    assertThat(tenantState.getTenantById(tenantId)).isPresent();
 
     // when
     tenantDeletedApplier.applyState(tenantKey, tenantRecord);
 
     // then
-    assertThat(tenantState.getTenantByKey(tenantKey)).isEmpty();
+    assertThat(tenantState.getTenantById(tenantId)).isEmpty();
     final var resourceIdentifiers =
         authorizationState.getResourceIdentifiers(
             AuthorizationOwnerType.TENANT,

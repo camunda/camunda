@@ -189,7 +189,7 @@ public final class IdentitySetupInitializeProcessor
                                 role.getRoleKey(), userKey.getUserKey(), EntityType.USER),
                         () -> createUser(user, role.getRoleKey())));
 
-    if (tenantState.getTenantByKey(record.getDefaultTenant().getTenantKey()).isEmpty()) {
+    if (tenantState.getTenantById(record.getDefaultTenant().getTenantId()).isEmpty()) {
       createTenant(record.getDefaultTenant());
     }
 

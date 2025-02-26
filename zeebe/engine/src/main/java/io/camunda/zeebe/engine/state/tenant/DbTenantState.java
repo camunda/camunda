@@ -31,7 +31,7 @@ public class DbTenantState implements MutableTenantState {
   private final DbString tenantId = new DbString();
   private final DbLong tenantKey = new DbLong();
   private final PersistedTenant persistedTenant = new PersistedTenant();
-  private final ColumnFamily<DbLong, PersistedTenant> tenantsColumnFamily;
+  private final ColumnFamily<DbString, PersistedTenant> tenantsColumnFamily;
 
   private final DbForeignKey<DbLong> fkTenantKey;
   private final DbLong entityKey = new DbLong();
@@ -46,7 +46,7 @@ public class DbTenantState implements MutableTenantState {
       final ZeebeDb<ZbColumnFamilies> zeebeDb, final TransactionContext transactionContext) {
     tenantsColumnFamily =
         zeebeDb.createColumnFamily(
-            ZbColumnFamilies.TENANTS, transactionContext, tenantKey, new PersistedTenant());
+            ZbColumnFamilies.TENANTS, transactionContext, tenantId, new PersistedTenant());
 
     fkTenantKey = new DbForeignKey<>(tenantKey, ZbColumnFamilies.TENANTS);
 
@@ -65,17 +65,17 @@ public class DbTenantState implements MutableTenantState {
     tenantKey.wrapLong(tenantRecord.getTenantKey());
     tenantId.wrapString(tenantRecord.getTenantId());
     persistedTenant.from(tenantRecord);
-    tenantsColumnFamily.insert(tenantKey, persistedTenant);
+    tenantsColumnFamily.insert(tenantId, persistedTenant);
     tenantByIdColumnFamily.insert(tenantId, fkTenantKey);
   }
 
   @Override
   public void updateTenant(final TenantRecord updatedTenantRecord) {
-    tenantKey.wrapLong(updatedTenantRecord.getTenantKey());
-    final var persistedTenant = tenantsColumnFamily.get(tenantKey);
+    tenantId.wrapString(updatedTenantRecord.getTenantId());
+    final var persistedTenant = tenantsColumnFamily.get(tenantId);
     persistedTenant.setName(updatedTenantRecord.getName());
     persistedTenant.setDescription(updatedTenantRecord.getDescription());
-    tenantsColumnFamily.update(tenantKey, persistedTenant);
+    tenantsColumnFamily.update(tenantId, persistedTenant);
   }
 
   @Override
@@ -106,7 +106,7 @@ public class DbTenantState implements MutableTenantState {
           entityByTenantColumnFamily.deleteExisting(compositeKey);
         });
 
-    tenantsColumnFamily.deleteExisting(tenantKey);
+    tenantsColumnFamily.deleteExisting(tenantId);
   }
 
   @Override
@@ -168,7 +168,8 @@ public class DbTenantState implements MutableTenantState {
 
   @Override
   public Optional<PersistedTenant> getTenantById(final String tenantId) {
-    // TODO: Change cfs to look up by id directly
-    return getTenantKeyById(tenantId).flatMap(this::getTenantByKey);
+    this.tenantId.wrapString(tenantId);
+    final var persistedTenant = tenantsColumnFamily.get(this.tenantId);
+    return Optional.ofNullable(persistedTenant);
   }
 }

@@ -109,18 +109,6 @@ public class TenantAddEntityProcessor implements DistributedTypedRecordProcessor
 
   /** Loads the persisted tenant by the tenant key if it is set, otherwise by the tenant id. */
   private Either<String, PersistedTenant> getPersistedTenant(final TenantRecord record) {
-    if (record.hasTenantKey()) {
-      final var tenantKey = record.getTenantKey();
-      return tenantState
-          .getTenantByKey(tenantKey)
-          .<Either<String, PersistedTenant>>map(Either::right)
-          .orElseGet(
-              () ->
-                  Either.left(
-                      "Expected to add entity to tenant with key '%s', but no tenant with this key exists."
-                          .formatted(tenantKey)));
-    }
-
     final var tenantId = record.getTenantId();
     return tenantState
         .getTenantById(tenantId)
