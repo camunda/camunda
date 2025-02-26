@@ -4499,7 +4499,7 @@ components:
           description: The process definition key.
           type: string
         adHocSubprocessId:
-          description: The ad-hoc subprocess process element ID.
+          description: The ad-hoc subprocess element ID.
           type: string
     AdHocSubprocessActivitySearchQueryResult:
       type: object
@@ -4519,7 +4519,7 @@ components:
           description: The process definition ID associated to this activity.
           type: string
         adHocSubprocessId:
-          description: The ad-hoc subprocess process element ID.
+          description: The ad-hoc subprocess element ID.
           type: string
         flowNodeId:
           description: The flow node ID for this activity.
