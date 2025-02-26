@@ -69,7 +69,9 @@ public class CamundaDockerIT {
                         camundaContainer.getMappedPort(MANAGEMENT_PORT),
                         "/actuator/health")))) {
 
-      // then
+      // then - convert the response and expected response to intermediate JSON representation
+      // this will allow us to compare without worrying about the ordering of the values, and just
+      // checking that they are logically equivalent
       assertThat(healthCheckResponse.getCode()).isEqualTo(200);
       final String expectedHealthCheckResponse =
           """
@@ -87,8 +89,11 @@ public class CamundaDockerIT {
               "groups": ["liveness", "readiness", "startup", "status"]
             }
             """;
-      assertThat(EntityUtils.toString(healthCheckResponse.getEntity()))
-          .isEqualTo(expectedHealthCheckResponse.replace("\n", "").replace(" ", ""));
+      final var expectedJson = OBJECT_MAPPER.readTree(expectedHealthCheckResponse);
+      final var actualJson =
+          OBJECT_MAPPER.readTree(EntityUtils.toString(healthCheckResponse.getEntity()));
+
+      assertThat(actualJson).isEqualTo(expectedJson);
     }
   }
 
