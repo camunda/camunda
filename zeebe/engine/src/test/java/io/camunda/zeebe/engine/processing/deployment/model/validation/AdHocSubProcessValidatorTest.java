@@ -82,20 +82,6 @@ public class AdHocSubProcessValidatorTest {
   }
 
   @Test
-  void withEmptyCompletionConditionExpression() {
-    // given
-    final BpmnModelInstance process =
-        process(
-            adHocSubProcess -> {
-              adHocSubProcess.completionCondition("");
-              adHocSubProcess.task("A");
-            });
-
-    // when/then
-    ProcessValidationUtil.validateProcess(process);
-  }
-
-  @Test
   void withCompletionConditionExpression() {
     // given
     final BpmnModelInstance process =
@@ -107,6 +93,23 @@ public class AdHocSubProcessValidatorTest {
 
     // when/then
     ProcessValidationUtil.validateProcess(process);
+  }
+
+  @Test
+  void withEmptyCompletionConditionExpression() {
+    // given
+    final BpmnModelInstance process =
+        process(
+            adHocSubProcess -> {
+              adHocSubProcess.completionCondition("");
+              adHocSubProcess.task("A");
+            });
+
+    // when/then
+    ProcessValidationUtil.validateProcess(
+        process,
+        ExpectedValidationResult.expect(
+            AdHocSubProcess.class, "Expected expression but found static value ''"));
   }
 
   @Test
