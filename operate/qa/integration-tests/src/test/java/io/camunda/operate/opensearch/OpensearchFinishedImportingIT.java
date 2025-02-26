@@ -163,9 +163,16 @@ public class OpensearchFinishedImportingIT extends OperateZeebeAbstractIT {
     final var partitionTwoRecord = generateRecord(ValueType.PROCESS_INSTANCE, "8.7.0", 2);
     EXPORTER.export(record);
     EXPORTER.export(partitionTwoRecord);
-    osClient.index().refresh("*");
-
-    zeebeImporter.performOneRoundOfImport();
+    Awaitility.await()
+        .atMost(Duration.ofSeconds(30))
+        .pollInterval(Duration.ofSeconds(1))
+        .until(
+            () -> {
+              osClient.index().refresh("*");
+              zeebeImporter.performOneRoundOfImport();
+              return isRecordIngested("1-process-instance")
+                  && isRecordIngested("2-process-instance");
+            });
 
     // when
     final var record2 = generateRecord(ValueType.PROCESS_INSTANCE, "8.8.0", 1);
@@ -339,6 +346,27 @@ public class OpensearchFinishedImportingIT extends OperateZeebeAbstractIT {
         .findFirst()
         .orElseThrow()
         .getCompleted();
+  }
+
+  private boolean isRecordIngested(final String partitionIdFieldValue) throws IOException {
+    final var hits =
+        osClient
+            .doc()
+            .search(
+                new Builder().index(importPositionIndex.getFullQualifiedName()).size(100),
+                ImportPositionEntity.class)
+            .hits()
+            .hits()
+            .stream()
+            .map(Hit::source)
+            .toList();
+    if (hits.isEmpty()) {
+      return false;
+    }
+    return hits.stream()
+        .filter(hit -> hit.getId().equals(partitionIdFieldValue) && hit.getSequence() > 0)
+        .findFirst()
+        .isPresent();
   }
 
   private <T extends RecordValue> Record<T> generateRecord(
