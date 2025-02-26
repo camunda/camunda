@@ -29,7 +29,9 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     --mount=type=cache,target=/var/log/apt,sharing=locked \
     apt-get -qq update && \
     apt-get install -yqq --no-install-recommends tini ca-certificates && \
-    apt-get upgrade -yqq --no-install-recommends
+    apt-get upgrade -yqq --no-install-recommends && \
+    apt-get purge --auto-remove -y && \
+    rm -rf /var/lib/apt/lists/* /tmp/* ~/.cache/*
 
 ### Build custom JRE using the base JDK image
 # hadolint ignore=DL3006
