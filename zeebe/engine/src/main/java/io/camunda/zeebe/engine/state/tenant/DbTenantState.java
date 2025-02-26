@@ -70,6 +70,7 @@ public class DbTenantState implements MutableTenantState {
 
   @Override
   public void addEntity(final TenantRecord tenantRecord) {
+    tenantId.wrapString(tenantRecord.getTenantId());
     entityId.wrapString(tenantRecord.getEntityId());
     entityType.setEntityType(tenantRecord.getEntityType());
     entityByTenantColumnFamily.insert(entityIdByTenantId, entityType);
