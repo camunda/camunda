@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.db.impl.rocksdb.metrics;
 
+import io.camunda.zeebe.util.micrometer.MicrometerUtil.PartitionKeyNames;
+import io.micrometer.common.docs.KeyName;
 import io.micrometer.core.instrument.Meter.Type;
 
 @SuppressWarnings("NullableProblems")
@@ -330,5 +332,10 @@ public enum RocksDbMetricsDoc implements RocksDbMeterDoc {
   @Override
   public Type getType() {
     return Type.GAUGE;
+  }
+
+  @Override
+  public KeyName[] getAdditionalKeyNames() {
+    return PartitionKeyNames.values();
   }
 }
