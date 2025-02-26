@@ -608,7 +608,7 @@ paths:
       summary: Remove a mapping rule from a tenant
       description: Removes a single mapping rule from a specified tenant without deleting the rule.
       parameters:
-        - name: tenantKey
+        - name: tenantId
           in: path
           required: true
           description: The unique identifier of the tenant.

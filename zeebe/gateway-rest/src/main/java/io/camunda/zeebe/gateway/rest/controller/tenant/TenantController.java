@@ -144,14 +144,14 @@ public class TenantController {
                 .removeMember(tenantId, EntityType.USER, username));
   }
 
-  @CamundaDeleteMapping(path = "/{tenantKey}/mapping-rules/{mappingKey}")
+  @CamundaDeleteMapping(path = "/{tenantId}/mapping-rules/{mappingKey}")
   public CompletableFuture<ResponseEntity<Object>> removeMappingFromTenant(
-      @PathVariable final long tenantKey, @PathVariable final long mappingKey) {
+      @PathVariable final String tenantId, @PathVariable final long mappingKey) {
     return RequestMapper.executeServiceMethodWithNoContentResult(
         () ->
             tenantServices
                 .withAuthentication(RequestMapper.getAuthentication())
-                .removeMember(tenantKey, EntityType.MAPPING, mappingKey));
+                .removeMember(tenantId, EntityType.MAPPING, mappingKey));
   }
 
   @CamundaDeleteMapping(path = "/{tenantId}/groups/{groupKey}")
