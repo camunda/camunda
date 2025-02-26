@@ -7,6 +7,7 @@
  */
 package io.camunda.it.client;
 
+import static io.camunda.it.utils.CamundaMultiDBExtension.*;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
@@ -16,7 +17,6 @@ import io.camunda.client.api.search.response.Variable;
 import io.camunda.it.utils.MultiDbTest;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import java.io.InputStream;
-import java.time.Duration;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Random;
@@ -330,7 +330,7 @@ class VariableQueryTest {
 
   private static void waitForTasksBeingExported() {
     Awaitility.await("should receive data from ES")
-        .atMost(Duration.ofMinutes(1))
+        .atMost(TIMEOUT_DATABASE_EXPORTER_READINESS_TIMEOUT)
         .ignoreExceptions() // Ignore exceptions and continue retrying
         .untilAsserted(
             () -> {

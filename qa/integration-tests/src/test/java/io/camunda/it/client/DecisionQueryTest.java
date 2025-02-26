@@ -7,6 +7,7 @@
  */
 package io.camunda.it.client;
 
+import static io.camunda.it.utils.CamundaMultiDBExtension.TIMEOUT_DATABASE_EXPORTER_READINESS_TIMEOUT;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
@@ -21,7 +22,6 @@ import io.camunda.it.utils.MultiDbTest;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -482,7 +482,7 @@ class DecisionQueryTest {
 
   private static void waitForDecisionsBeingExported() {
     Awaitility.await("should receive data from ES")
-        .atMost(Duration.ofMinutes(1))
+        .atMost(TIMEOUT_DATABASE_EXPORTER_READINESS_TIMEOUT)
         .ignoreExceptions() // Ignore exceptions and continue retrying
         .untilAsserted(
             () -> {

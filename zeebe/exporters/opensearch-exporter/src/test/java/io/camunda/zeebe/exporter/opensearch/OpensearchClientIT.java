@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.exporter.opensearch;
 
-import static io.camunda.zeebe.exporter.opensearch.SearchDBExtension.IT_OPENSEARCH_AWS_INSTANCE_URL_PROPERTY;
+import static io.camunda.zeebe.exporter.opensearch.SearchDBExtension.TEST_INTEGRATION_OPENSEARCH_AWS_URL;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
@@ -114,7 +114,7 @@ public class OpensearchClientIT {
 
   @Test
   @DisabledIfSystemProperty(
-      named = IT_OPENSEARCH_AWS_INSTANCE_URL_PROPERTY,
+      named = TEST_INTEGRATION_OPENSEARCH_AWS_URL,
       matches = "^(?=\\s*\\S).*$",
       disabledReason = "AWS OS IT runners currently support only STS-based authentication")
   void shouldAuthenticateWithBasicAuth() {

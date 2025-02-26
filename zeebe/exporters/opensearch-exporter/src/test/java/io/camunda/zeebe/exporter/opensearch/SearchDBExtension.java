@@ -16,12 +16,12 @@ import org.junit.jupiter.api.extension.BeforeEachCallback;
 public abstract class SearchDBExtension
     implements BeforeAllCallback, BeforeEachCallback, AfterEachCallback {
 
-  protected static final String IT_OPENSEARCH_AWS_INSTANCE_URL_PROPERTY =
-      "camunda.it.opensearch.aws.url";
+  protected static final String TEST_INTEGRATION_OPENSEARCH_AWS_URL =
+      "test.integration.opensearch.aws.url";
 
   static SearchDBExtension create() {
     final var openSearchAwsInstanceUrl =
-        Optional.ofNullable(System.getProperty(IT_OPENSEARCH_AWS_INSTANCE_URL_PROPERTY)).orElse("");
+        Optional.ofNullable(System.getProperty(TEST_INTEGRATION_OPENSEARCH_AWS_URL)).orElse("");
     if (openSearchAwsInstanceUrl.isEmpty()) {
       return new ContainerizedSearchDBExtension();
     } else {

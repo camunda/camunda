@@ -34,12 +34,12 @@ public abstract class SearchDBExtension
 
   public static final FormIndex FORM_INDEX = new FormIndex(IDX_FORM_PREFIX, true);
 
-  public static final String IT_OPENSEARCH_AWS_INSTANCE_URL_PROPERTY =
-      "camunda.it.opensearch.aws.url";
+  public static final String TEST_INTEGRATION_OPENSEARCH_AWS_URL =
+      "test.integration.opensearch.aws.url";
 
   public static SearchDBExtension create() {
     final var openSearchAwsInstanceUrl =
-        Optional.ofNullable(System.getProperty(IT_OPENSEARCH_AWS_INSTANCE_URL_PROPERTY)).orElse("");
+        Optional.ofNullable(System.getProperty(TEST_INTEGRATION_OPENSEARCH_AWS_URL)).orElse("");
     if (openSearchAwsInstanceUrl.isEmpty()) {
       return new ContainerizedSearchDBExtension();
     } else {

@@ -195,4 +195,27 @@ public class MultiDbConfigurator {
   public String zeebeIndexPrefix() {
     return indexPrefix != null ? indexPrefix + zeebePrefix : indexPrefix;
   }
+
+  public void configureAWSOpenSearchSupport(final String opensearchUrl, final String indexPrefix) {
+    configureOpenSearchSupport(opensearchUrl, indexPrefix, "", "");
+    final Map<String, Object> opensearchProperties = new HashMap<>();
+    opensearchProperties.put("camunda.tasklist.opensearch.aws.enabled", true);
+    opensearchProperties.put("camunda.operate.opensearch.aws.enabled", true);
+    testApplication.withAdditionalProperties(opensearchProperties);
+    testApplication.withExporter(
+        "OpensearchExporter",
+        cfg -> {
+          cfg.setClassName(OpensearchExporter.class.getName());
+          cfg.setArgs(
+              Map.of(
+                  "url",
+                  opensearchUrl,
+                  "index",
+                  Map.of("prefix", indexPrefix),
+                  "bulk",
+                  Map.of("size", 1),
+                  "aws",
+                  Map.of("enabled", true)));
+        });
+  }
 }
