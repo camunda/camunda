@@ -20,15 +20,18 @@ import org.slf4j.Logger;
 public final class ReschedulingTask implements Runnable {
   private static final Set<Class<? extends Exception>> BACKGROUND_SUPPRESSED_EXCEPTIONS =
       Set.of(SocketTimeoutException.class, ConnectException.class, SocketException.class);
+
+  private static final Integer FAILURE_LOGGING_SKIP_COUNT = 10;
   private final BackgroundTask task;
   private final int minimumWorkCount;
   private final ScheduledExecutorService executor;
   private final Logger logger;
   private final ExponentialBackoff idleStrategy;
   private final ExponentialBackoff errorStrategy;
-
   private long delayMs;
   private long errorDelayMs;
+  private Integer failureCount = 0;
+  private String lastErrorMessage;
 
   public ReschedulingTask(
       final BackgroundTask task,
@@ -76,17 +79,44 @@ public final class ReschedulingTask implements Runnable {
   }
 
   private long onError(final Throwable error) {
-    final String logMessage =
-        "Error occurred while performing a background task; operation will be retried";
     errorDelayMs = errorStrategy.applyAsLong(errorDelayMs);
 
-    if (BACKGROUND_SUPPRESSED_EXCEPTIONS.contains(error.getCause().getClass())) {
-      logger.warn("{}. `{}`", logMessage, error.getCause().getMessage());
-    } else {
-      logger.error(logMessage, error);
-    }
+    logError(error);
 
     return errorDelayMs;
+  }
+
+  /**
+   * To avoid log pollution with similar error messages we will log on ERROR level every 10th
+   * occurrence and all others on DEBUG level. Additionally, for some exception classes like
+   * `ConnectException` we will log the on WARN level.
+   *
+   * @param error
+   */
+  private void logError(final Throwable error) {
+    final String errorMessage =
+        String.format(
+            "Error occurred while performing a background task %s; error message `%s`; operation will be retried",
+            task.getCaption(), error.getCause().getMessage());
+    if (lastErrorMessage != null && lastErrorMessage.equals(errorMessage)) {
+      failureCount++;
+    } else {
+      failureCount = 1;
+      lastErrorMessage = errorMessage;
+    }
+    // only log the error message if it's different from the last one, or if it's the same, only log
+    // every n-th time
+    if (lastErrorMessage == null
+        || !lastErrorMessage.equals(errorMessage)
+        || failureCount % FAILURE_LOGGING_SKIP_COUNT == 1) {
+      if (BACKGROUND_SUPPRESSED_EXCEPTIONS.contains(error.getCause().getClass())) {
+        logger.warn(errorMessage);
+      } else {
+        logger.error(errorMessage, error);
+      }
+    } else {
+      logger.debug(errorMessage);
+    }
   }
 
   private void reschedule(final long delay) {

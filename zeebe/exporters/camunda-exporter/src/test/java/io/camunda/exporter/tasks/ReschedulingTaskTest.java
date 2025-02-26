@@ -7,6 +7,10 @@
  */
 package io.camunda.exporter.tasks;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.contains;
+import static org.mockito.ArgumentMatchers.eq;
+
 import io.camunda.exporter.tasks.archiver.ArchiverJob;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
@@ -14,6 +18,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -38,6 +43,71 @@ final class ReschedulingTaskTest {
     inOrder
         .verify(executor, Mockito.timeout(5_000).times(1))
         .schedule(task, 10L, TimeUnit.MILLISECONDS);
+  }
+
+  @Test
+  void shouldLogEvery10ThReoccurringError() {
+    // given
+    final Logger loggerMock = Mockito.spy(Logger.class);
+    final Exception exception = new RuntimeException("failure");
+    final var task =
+        new ReschedulingTask(
+            new FailingJob().setException(exception), 1, 10, 10, executor, loggerMock);
+
+    // when
+    task.run();
+
+    // then - every 10th error is logged on error level, others on debug
+    final String errorMessage =
+        "Error occurred while performing a background task FailingJob; error message `failure`; operation will be retried";
+    final ArgumentCaptor<Exception> exceptionCaptor = ArgumentCaptor.forClass(Exception.class);
+    final var inOrder = Mockito.inOrder(loggerMock);
+    inOrder
+        .verify(loggerMock, Mockito.timeout(5_000).times(1))
+        .error(eq(errorMessage), exceptionCaptor.capture());
+    assertThat(exceptionCaptor.getValue().getCause()).isEqualTo(exception);
+    for (int i = 1; i <= 9; i++) {
+      inOrder.verify(loggerMock, Mockito.timeout(5_000).times(1)).debug(errorMessage);
+    }
+    inOrder
+        .verify(loggerMock, Mockito.timeout(5_000).times(1))
+        .error(eq(errorMessage), exceptionCaptor.capture());
+    assertThat(exceptionCaptor.getValue().getCause()).isEqualTo(exception);
+    for (int i = 1; i <= 9; i++) {
+      inOrder.verify(loggerMock, Mockito.timeout(5_000).times(1)).debug(errorMessage);
+    }
+  }
+
+  @Test
+  void shouldLogEveryNewError() {
+    // given
+    final Logger loggerMock = Mockito.spy(Logger.class);
+    final Exception exception = new RuntimeException("failure");
+    final var task =
+        new ReschedulingTask(
+            new FailingJob().setException(exception).setRandomExceptionMessage(true),
+            1,
+            10,
+            10,
+            executor,
+            loggerMock);
+
+    // when
+    task.run();
+
+    // then - when errors are different they are all logged on error level
+    final String errorMessageSubstring =
+        "Error occurred while performing a background task FailingJob;";
+    final ArgumentCaptor<Exception> exceptionCaptor = ArgumentCaptor.forClass(Exception.class);
+    final var inOrder = Mockito.inOrder(loggerMock);
+    inOrder
+        .verify(loggerMock, Mockito.timeout(5_000).times(1))
+        .error(contains(errorMessageSubstring), exceptionCaptor.capture());
+    assertThat(exceptionCaptor.getValue().getCause().getMessage()).contains(exception.getMessage());
+    inOrder
+        .verify(loggerMock, Mockito.timeout(5_000).times(1))
+        .error(contains(errorMessageSubstring), exceptionCaptor.capture());
+    assertThat(exceptionCaptor.getValue().getCause().getMessage()).contains(exception.getMessage());
   }
 
   @Test
@@ -181,9 +251,26 @@ final class ReschedulingTaskTest {
   }
 
   private static final class FailingJob implements ArchiverJob {
+
+    private Exception exception = new RuntimeException("failure");
+    private boolean randomExceptionMessage = false;
+
     @Override
     public CompletableFuture<Integer> archiveNextBatch() {
-      return CompletableFuture.failedFuture(new RuntimeException("failure"));
+      if (randomExceptionMessage) {
+        exception = new RuntimeException("failure" + System.currentTimeMillis());
+      }
+      return CompletableFuture.failedFuture(exception);
+    }
+
+    public FailingJob setException(final Exception exception) {
+      this.exception = exception;
+      return this;
+    }
+
+    public FailingJob setRandomExceptionMessage(final boolean randomExceptionMessage) {
+      this.randomExceptionMessage = randomExceptionMessage;
+      return this;
     }
   }
 }
