@@ -1550,7 +1550,7 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    *
    * <pre>
    * camundaClient
-   *   .newRemoveUserFromTenantCommand(tenantId)
+   *   .newUnassignUserFromTenantCommand(tenantId)
    *   .username(username)
    *   .send();
    * </pre>
@@ -1561,7 +1561,7 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    * @param tenantId the unique identifier of the tenant
    * @return a builder for the remove user from tenant command
    */
-  RemoveUserFromTenantCommandStep1 newRemoveUserFromTenantCommand(String tenantId);
+  RemoveUserFromTenantCommandStep1 newUnassignUserFromTenantCommand(String tenantId);
 
   /**
    * Command to assign a group to a tenant.

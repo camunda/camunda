@@ -879,7 +879,7 @@ public final class CamundaClientImpl implements CamundaClient {
   }
 
   @Override
-  public RemoveUserFromTenantCommandStep1 newRemoveUserFromTenantCommand(final String tenantId) {
+  public RemoveUserFromTenantCommandStep1 newUnassignUserFromTenantCommand(final String tenantId) {
     return new RemoveUserFromTenantCommandImpl(httpClient, tenantId);
   }
 
