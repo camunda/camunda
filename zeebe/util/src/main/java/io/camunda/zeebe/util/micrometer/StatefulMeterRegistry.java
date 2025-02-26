@@ -7,7 +7,6 @@
  */
 package io.camunda.zeebe.util.micrometer;
 
-import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.Meter;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.composite.CompositeMeterRegistry;
