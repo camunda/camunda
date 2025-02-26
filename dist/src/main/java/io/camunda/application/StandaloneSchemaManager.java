@@ -144,8 +144,8 @@ public class StandaloneSchemaManager {
   }
 
   @Bean
-  @Primary // required for some Spring Boot auto-configuration, as we have a tasklistObjectMapper
-  // and
+  @Primary
+  // required for some Spring Boot auto-configuration, as we have a tasklistObjectMapper and
   // an operateObjectMapper
   public ObjectMapper defaultObjectMapper() {
     return new ObjectMapper();
