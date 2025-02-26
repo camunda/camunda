@@ -654,7 +654,6 @@
           <!-- dependencies only packaged but not explicitly used -->
           <usedDependencies>
             <dependency>io.camunda:camunda-exporter</dependency>
-            <dependency>io.camunda:zeebe-elasticsearch-exporter</dependency>
             <dependency>io.camunda:zeebe-opensearch-exporter</dependency>
 
             <!-- Needed for Spring Actuators, and REST API -->
