@@ -12,9 +12,25 @@ concurrency:
   cancel-in-progress: true
   group: ${{ format('{0}-{1}', github.workflow, github.ref == 'refs/heads/main' && github.sha || github.ref) }}
 
+permissions:
+  actions: write
+  attestations: none
+  checks: write
+  contents: read
+  deployments: none
+  id-token: none
+  issues: none
+  discussions: none
+  packages: none
+  pages: none
+  pull-requests: none
+  repository-projects: none
+  security-events: none
+  statuses: write
+
 jobs:
   run-http-regression-tests:
-    if: ${{ github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' }}
+    if: ${{ github.event_name == 'workflow_dispatch' }}
     strategy:
       fail-fast: false
       matrix:
@@ -43,21 +59,19 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Set up Java
-        uses: actions/setup-java@v4
+      - uses: ./.github/actions/setup-build
         with:
-          distribution: "adopt"
-          java-version: "21"
+          dockerhub-readonly: true
+          vault-address: ${{ secrets.VAULT_ADDR }}
+          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
 
-      - name: Set up Maven
-        uses: actions/setup-java@v4
-        with:
-          distribution: "adopt"
-          java-version: "21"
-
-      - name: Build Project
-        run: mvn clean install -T1C -DskipTests -DskipChecks -DskipOptimize=true
-
+      - name: Package camunda-dist
+        shell: bash
+        id: build-dist
+        run: |
+          ./mvnw -B -T1C -DskipTests -DskipChecks -Dflatten.skip=true package
+      
       - name: Extract Distribution Tarball
         run: |
           cd ./dist/target
