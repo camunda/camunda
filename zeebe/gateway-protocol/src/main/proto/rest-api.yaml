@@ -721,6 +721,10 @@ paths:
             This can happen if the `awaitCompletion` request parameter is set to `true`
             and the created process instance did not complete within the defined request timeout.
             This often happens when the created instance is not fully automated or contains wait states.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
   /process-instances/search:
     post:
       tags:
