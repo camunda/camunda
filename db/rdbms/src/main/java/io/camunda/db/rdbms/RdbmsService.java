@@ -8,6 +8,7 @@
 package io.camunda.db.rdbms;
 
 import io.camunda.db.rdbms.read.service.AuthorizationReader;
+import io.camunda.db.rdbms.read.service.BatchOperationReader;
 import io.camunda.db.rdbms.read.service.DecisionDefinitionReader;
 import io.camunda.db.rdbms.read.service.DecisionInstanceReader;
 import io.camunda.db.rdbms.read.service.DecisionRequirementsReader;
@@ -47,6 +48,7 @@ public class RdbmsService {
   private final UserTaskReader userTaskReader;
   private final FormReader formReader;
   private final MappingReader mappingReader;
+  private final BatchOperationReader batchOperationReader;
 
   public RdbmsService(
       final RdbmsWriterFactory rdbmsWriterFactory,
@@ -65,7 +67,8 @@ public class RdbmsService {
       final UserReader userReader,
       final UserTaskReader userTaskReader,
       final FormReader formReader,
-      final MappingReader mappingReader) {
+      final MappingReader mappingReader,
+      final BatchOperationReader batchOperationReader) {
     this.rdbmsWriterFactory = rdbmsWriterFactory;
     this.authorizationReader = authorizationReader;
     this.decisionRequirementsReader = decisionRequirementsReader;
@@ -83,6 +86,7 @@ public class RdbmsService {
     this.userTaskReader = userTaskReader;
     this.formReader = formReader;
     this.mappingReader = mappingReader;
+    this.batchOperationReader = batchOperationReader;
   }
 
   public AuthorizationReader getAuthorizationReader() {
@@ -147,6 +151,10 @@ public class RdbmsService {
 
   public MappingReader getMappingReader() {
     return mappingReader;
+  }
+
+  public BatchOperationReader getBatchOperationReader() {
+    return batchOperationReader;
   }
 
   public RdbmsWriter createWriter(final long partitionId) { // todo fix in all itests afterwards?

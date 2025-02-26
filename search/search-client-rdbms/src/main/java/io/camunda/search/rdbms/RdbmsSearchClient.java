@@ -9,6 +9,7 @@ package io.camunda.search.rdbms;
 
 import io.camunda.db.rdbms.RdbmsService;
 import io.camunda.search.clients.AuthorizationSearchClient;
+import io.camunda.search.clients.BatchOperationSearchClient;
 import io.camunda.search.clients.DecisionDefinitionSearchClient;
 import io.camunda.search.clients.DecisionInstanceSearchClient;
 import io.camunda.search.clients.DecisionRequirementSearchClient;
@@ -26,6 +27,7 @@ import io.camunda.search.clients.UserSearchClient;
 import io.camunda.search.clients.UserTaskSearchClient;
 import io.camunda.search.clients.VariableSearchClient;
 import io.camunda.search.entities.AuthorizationEntity;
+import io.camunda.search.entities.BatchOperationEntity;
 import io.camunda.search.entities.DecisionDefinitionEntity;
 import io.camunda.search.entities.DecisionInstanceEntity;
 import io.camunda.search.entities.DecisionRequirementsEntity;
@@ -81,7 +83,8 @@ public class RdbmsSearchClient
         TenantSearchClient,
         MappingSearchClient,
         GroupSearchClient,
-        UsageMetricsSearchClient {
+        UsageMetricsSearchClient,
+        BatchOperationSearchClient {
 
   private static final Logger LOG = LoggerFactory.getLogger(RdbmsSearchClient.class);
 
@@ -297,5 +300,12 @@ public class RdbmsSearchClient
     LOG.debug("[RDBMS Search Client] Search for processDefinition: {}", query);
 
     return rdbmsService.getProcessDefinitionReader().search(query);
+  }
+
+  @Override
+  public SearchQueryResult<BatchOperationEntity> searchBatchOperations() {
+    LOG.debug("[RDBMS Search Client] Search for batch operations");
+
+    return rdbmsService.getBatchOperationReader().search();
   }
 }
