@@ -57,7 +57,7 @@ public class AdHocSubProcessImpl extends SubProcessImpl implements AdHocSubProce
     cancelRemainingInstancesAttribute =
         typeBuilder
             .booleanAttribute(BPMN_ATTRIBUTE_CANCEL_REMAINING_INSTANCES)
-            .defaultValue(false)
+            .defaultValue(true)
             .build();
 
     final SequenceBuilder sequenceBuilder = typeBuilder.sequence();
