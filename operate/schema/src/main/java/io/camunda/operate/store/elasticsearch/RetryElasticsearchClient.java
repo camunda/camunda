@@ -305,12 +305,18 @@ public class RetryElasticsearchClient {
   }
 
   public boolean createOrUpdateDocument(final String name, final String id, final Map source) {
+    return createOrUpdateDocument(name, id, null, source);
+  }
+
+  public boolean createOrUpdateDocument(
+      final String name, final String id, String routing, final Map source) {
     return executeWithRetries(
         "RetryElasticsearchClient#createOrUpdateDocument",
         () -> {
           final IndexResponse response =
               esClient.index(
-                  new IndexRequest(name).id(id).source(source, XContentType.JSON), requestOptions);
+                  new IndexRequest(name).id(id).source(source, XContentType.JSON).routing(routing),
+                  requestOptions);
           final DocWriteResponse.Result result = response.getResult();
           return result.equals(DocWriteResponse.Result.CREATED)
               || result.equals(DocWriteResponse.Result.UPDATED);

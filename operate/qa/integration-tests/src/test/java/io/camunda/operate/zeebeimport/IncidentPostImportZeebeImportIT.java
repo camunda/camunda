@@ -27,6 +27,8 @@ import io.camunda.operate.webapp.rest.dto.listview.ListViewResponseDto;
 import io.camunda.operate.webapp.rest.dto.listview.ProcessInstanceStateDto;
 import io.camunda.operate.webapp.zeebe.operation.CancelProcessInstanceHandler;
 import io.camunda.operate.zeebe.ImportValueType;
+import io.camunda.zeebe.model.bpmn.Bpmn;
+import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import java.util.List;
 import java.util.function.Predicate;
 import org.junit.Before;
@@ -149,6 +151,36 @@ public class IncidentPostImportZeebeImportIT extends OperateZeebeAbstractIT {
     assertThat(flowNodeInstances).hasSize(2);
     assertThat(flowNodeInstances.get(1).getState()).isEqualTo(FlowNodeState.ACTIVE);
     assertThat(flowNodeInstances.get(1).isIncident()).isTrue();
+  }
+
+  @Test
+  public void testPostImporterRoutesFlowNodeInstanceUpdatesCorrectly() {
+
+    // given
+    String callingProcessId = "call-activity";
+    BpmnModelInstance callActivityProcess =
+        Bpmn.createExecutableProcess(callingProcessId)
+            .startEvent()
+            .callActivity("call-activity")
+            .zeebeProcessId("process")
+            .endEvent()
+            .done();
+
+    final Long processDefinitionKey =
+        tester.deployProcess("single-task.bpmn").getProcessDefinitionKey();
+    final String taskId = "task";
+
+    Long callingProcessDefinitionKey =
+        tester.deployProcess(callActivityProcess, "callActivity.bpmn").getProcessDefinitionKey();
+
+    Long callingProcessInstanceKey =
+        tester.startProcessInstance(callingProcessId).getProcessInstanceKey();
+
+    processRecordTypeWithoutPostImporterAndWait(
+        ImportValueType.PROCESS_INSTANCE, processInstanceIsCreatedCheck, callingProcessInstanceKey);
+    tester.processInstanceIsStarted().and().failTask(taskId, "some error");
+
+    // when
   }
 
   private Tuple<Long, Long> findSingleZeebeIncidentData(final Long processInstanceKey) {

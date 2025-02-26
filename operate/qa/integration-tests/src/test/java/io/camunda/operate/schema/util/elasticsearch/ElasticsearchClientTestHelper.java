@@ -29,4 +29,13 @@ public class ElasticsearchClientTestHelper implements SearchClientTestHelper {
       final String indexName, final String id, final Map<String, Object> document) {
     elasticsearchClient.createOrUpdateDocument(indexName, id, document);
   }
+
+  @Override
+  public void createDocument(
+      final String indexName,
+      final String id,
+      final String routing,
+      final Map<String, Object> document) {
+    elasticsearchClient.createOrUpdateDocument(indexName, id, routing, document);
+  }
 }

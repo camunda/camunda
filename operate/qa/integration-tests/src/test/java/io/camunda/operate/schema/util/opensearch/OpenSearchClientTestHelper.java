@@ -32,8 +32,19 @@ public class OpenSearchClientTestHelper implements SearchClientTestHelper {
   @Override
   public void createDocument(
       final String indexName, final String id, final Map<String, Object> document) {
+    createDocument(indexName, id, null, document);
+  }
+
+  @Override
+  public void createDocument(
+      String indexName, String id, String routing, Map<String, Object> document) {
+
     final Builder<Object> requestBuilder =
-        indexRequestBuilder(indexName).id(id).document(document).refresh(Refresh.True);
+        indexRequestBuilder(indexName)
+            .id(id)
+            .routing(routing)
+            .document(document)
+            .refresh(Refresh.True);
 
     openSearchClient.doc().index(requestBuilder);
   }
