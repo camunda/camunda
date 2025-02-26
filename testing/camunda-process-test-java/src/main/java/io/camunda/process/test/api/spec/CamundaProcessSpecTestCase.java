@@ -13,17 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.camunda;
+package io.camunda.process.test.api.spec;
 
-import io.camunda.spring.client.annotation.Deployment;
-import org.springframework.boot.SpringApplication;
-import org.springframework.boot.autoconfigure.SpringBootApplication;
+public interface CamundaProcessSpecTestCase {
 
-@SpringBootApplication
-@Deployment(resources = "classpath*:/bpmn/**/*.bpmn")
-public class MySpringBootApplication {
-
-  public static void main(final String[] args) {
-    SpringApplication.run(MySpringBootApplication.class, args);
-  }
+  String getName();
 }

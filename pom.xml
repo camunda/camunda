@@ -37,6 +37,7 @@
     <module>testing/camunda-process-test-java</module>
     <module>testing/camunda-process-test-spring</module>
     <module>testing/camunda-process-test-example</module>
+    <module>testing/camunda-process-test-service</module>
     <module>document</module>
     <module>security</module>
     <module>migration</module>
