@@ -140,10 +140,9 @@ public class TenantDeleteProcessor implements DistributedTypedRecordProcessor<Te
   }
 
   private void removeAssignedEntities(final TenantRecord record) {
-    final var tenantId = record.getTenantId();
-    final var tenantKey = tenantState.getTenantKeyById(tenantId).orElseThrow();
+    final var tenant = tenantState.getTenantById(record.getTenantId()).orElseThrow();
     tenantState
-        .getEntitiesByType(tenantKey)
+        .getEntitiesByType(tenant.getTenantKey())
         .forEach(
             (entityType, entityKeys) -> {
               switch (entityType) {
@@ -154,17 +153,20 @@ public class TenantDeleteProcessor implements DistributedTypedRecordProcessor<Te
                               userState.getUser(entityKey).orElseThrow().getUsername();
                           final var entityRecord =
                               new TenantRecord()
-                                  .setTenantId(tenantId)
+                                  .setTenantId(tenant.getTenantId())
                                   .setEntityId(username)
                                   .setEntityType(entityType);
                           stateWriter.appendFollowUpEvent(
-                              tenantKey, TenantIntent.ENTITY_REMOVED, entityRecord);
+                              tenant.getTenantKey(), TenantIntent.ENTITY_REMOVED, entityRecord);
                         });
                 default ->
                     throw new UnsupportedOperationException(
                         String.format(
                             "Expected to remove entity with key %d and type %s from tenant %s, but type %s is not supported.",
-                            record.getEntityKey(), record.getEntityType(), tenantId, entityType));
+                            record.getEntityKey(),
+                            record.getEntityType(),
+                            tenant.getTenantId(),
+                            entityType));
               }
             });
   }

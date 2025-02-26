@@ -25,10 +25,9 @@ public class TenantEntityRemovedApplier implements TypedEventApplier<TenantInten
   }
 
   @Override
-  public void applyState(final long key, final TenantRecord tenant) {
+  public void applyState(final long tenantKey, final TenantRecord tenant) {
     switch (tenant.getEntityType()) {
       case USER -> {
-        final var tenantKey = tenantState.getTenantKeyById(tenant.getTenantId()).orElseThrow();
         final var userKey = userState.getUser(tenant.getEntityId()).orElseThrow().getUserKey();
         tenantState.removeEntity(tenantKey, userKey);
         userState.removeTenant(tenant.getEntityId(), tenant.getTenantId());

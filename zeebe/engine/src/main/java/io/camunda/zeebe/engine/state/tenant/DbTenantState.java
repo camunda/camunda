@@ -40,8 +40,6 @@ public class DbTenantState implements MutableTenantState {
   private final ColumnFamily<DbCompositeKey<DbForeignKey<DbLong>, DbLong>, EntityTypeValue>
       entityByTenantColumnFamily;
 
-  private final ColumnFamily<DbString, DbForeignKey<DbLong>> tenantByIdColumnFamily;
-
   public DbTenantState(
       final ZeebeDb<ZbColumnFamilies> zeebeDb, final TransactionContext transactionContext) {
     tenantsColumnFamily =
@@ -54,10 +52,6 @@ public class DbTenantState implements MutableTenantState {
     entityByTenantColumnFamily =
         zeebeDb.createColumnFamily(
             ZbColumnFamilies.ENTITY_BY_TENANT, transactionContext, entityByTenantKey, entityType);
-
-    tenantByIdColumnFamily =
-        zeebeDb.createColumnFamily(
-            ZbColumnFamilies.TENANT_BY_ID, transactionContext, tenantId, fkTenantKey);
   }
 
   @Override
@@ -66,7 +60,6 @@ public class DbTenantState implements MutableTenantState {
     tenantId.wrapString(tenantRecord.getTenantId());
     persistedTenant.from(tenantRecord);
     tenantsColumnFamily.insert(tenantId, persistedTenant);
-    tenantByIdColumnFamily.insert(tenantId, fkTenantKey);
   }
 
   @Override
@@ -98,8 +91,6 @@ public class DbTenantState implements MutableTenantState {
     tenantKey.wrapLong(tenantRecord.getTenantKey());
     tenantId.wrapString(tenantRecord.getTenantId());
 
-    tenantByIdColumnFamily.deleteExisting(tenantId);
-
     entityByTenantColumnFamily.whileEqualPrefix(
         fkTenantKey,
         (compositeKey, entityTypeValue) -> {
@@ -107,20 +98,6 @@ public class DbTenantState implements MutableTenantState {
         });
 
     tenantsColumnFamily.deleteExisting(tenantId);
-  }
-
-  @Override
-  public Optional<PersistedTenant> getTenantByKey(final long tenantKey) {
-    this.tenantKey.wrapLong(tenantKey);
-    final PersistedTenant persistedTenant = tenantsColumnFamily.get(this.tenantKey);
-    return Optional.ofNullable(persistedTenant);
-  }
-
-  @Override
-  public Optional<Long> getTenantKeyById(final String tenantId) {
-    this.tenantId.wrapString(tenantId);
-    return Optional.ofNullable(tenantByIdColumnFamily.get(this.tenantId))
-        .map(fkTenantKey -> fkTenantKey.inner().getValue());
   }
 
   @Override

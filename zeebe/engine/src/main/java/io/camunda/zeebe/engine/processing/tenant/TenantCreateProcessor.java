@@ -99,7 +99,7 @@ public class TenantCreateProcessor implements DistributedTypedRecordProcessor<Te
   }
 
   private boolean tenantAlreadyExists(final String tenantId) {
-    return tenantState.getTenantKeyById(tenantId).isPresent();
+    return tenantState.getTenantById(tenantId).isPresent();
   }
 
   private void createTenant(final TypedRecord<TenantRecord> command, final TenantRecord record) {
