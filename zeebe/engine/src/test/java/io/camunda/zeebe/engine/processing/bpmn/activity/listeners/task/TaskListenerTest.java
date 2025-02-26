@@ -1460,7 +1460,7 @@ public class TaskListenerTest {
     final long processInstanceKey =
         createProcessInstance(createProcessWithAssigningTaskListeners(listenerType));
 
-    ENGINE.userTask().ofInstance(processInstanceKey).assign(ut -> ut.setAssignee("new_assignee"));
+    ENGINE.userTask().ofInstance(processInstanceKey).withAssignee("new_assignee").assign();
 
     // deny the assignment
     ENGINE
@@ -1472,7 +1472,7 @@ public class TaskListenerTest {
         .complete();
 
     // accept the assignment
-    ENGINE.userTask().ofInstance(processInstanceKey).assign(ut -> ut.setAssignee("new_assignee"));
+    ENGINE.userTask().ofInstance(processInstanceKey).withAssignee("new_assignee").assign();
     completeRecreatedJobWithType(ENGINE, processInstanceKey, listenerType);
     completeJobs(processInstanceKey);
 
@@ -1502,10 +1502,7 @@ public class TaskListenerTest {
         createProcessInstance(
             createUserTaskWithTaskListeners(ZeebeTaskListenerEventType.updating, listenerType));
 
-    ENGINE
-        .userTask()
-        .ofInstance(processInstanceKey)
-        .update(new UserTaskRecord().setPriority(80).setPriorityChanged());
+    ENGINE.userTask().ofInstance(processInstanceKey).withPriority(80).update();
 
     // deny the update
     ENGINE
@@ -1517,10 +1514,7 @@ public class TaskListenerTest {
         .complete();
 
     // accept the update
-    ENGINE
-        .userTask()
-        .ofInstance(processInstanceKey)
-        .update(new UserTaskRecord().setPriority(80).setPriorityChanged());
+    ENGINE.userTask().ofInstance(processInstanceKey).withPriority(80).update();
     completeRecreatedJobWithType(ENGINE, processInstanceKey, listenerType);
     completeJobs(processInstanceKey);
 
