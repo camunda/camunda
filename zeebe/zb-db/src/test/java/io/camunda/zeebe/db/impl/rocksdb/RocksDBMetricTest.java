@@ -9,20 +9,23 @@ package io.camunda.zeebe.db.impl.rocksdb;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.zeebe.db.impl.rocksdb.metrics.RocksDbMetricsDoc;
+import io.camunda.zeebe.util.micrometer.ExtendedMeterDocumentation;
 import java.util.Arrays;
 import org.junit.jupiter.api.Test;
 
 public class RocksDBMetricTest {
   @Test
   public void shouldBeNamedCorrectly() {
-    final var metrics = ZeebeRocksDBMetricExporter.allMeterDocumentations();
+    final var metrics = (ExtendedMeterDocumentation[]) RocksDbMetricsDoc.values();
     assertThat(metrics)
         .allSatisfy(
             m -> {
-              assertThat(m.getName()).startsWith("zeebe.rocksdb.");
-              assertThat(m.getName()).doesNotContain("..");
-              assertThat(m.getName()).doesNotContain("-");
-              assertThat(m.getName()).doesNotContain("_");
+              assertThat(m.getName())
+                  .startsWith("zeebe.rocksdb.")
+                  .doesNotContain("..")
+                  .doesNotContain("-")
+                  .doesNotContain("_");
             });
     final var metric =
         Arrays.stream(metrics)
