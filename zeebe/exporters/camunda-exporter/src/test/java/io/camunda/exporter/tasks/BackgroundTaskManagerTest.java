@@ -13,10 +13,12 @@ import static org.assertj.core.api.Assertions.assertThatCode;
 import io.camunda.exporter.tasks.archiver.ArchiverRepository.NoopArchiverRepository;
 import io.camunda.exporter.tasks.batchoperations.BatchOperationUpdateRepository.NoopBatchOperationUpdateRepository;
 import io.camunda.exporter.tasks.incident.IncidentUpdateRepository.NoopIncidentUpdateRepository;
+import java.time.Duration;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import org.agrona.collections.MutableInteger;
+import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -39,7 +41,8 @@ final class BackgroundTaskManagerTest {
             LoggerFactory.getLogger(BackgroundTaskManagerTest.class),
             executor,
             // return unfinished futures to have a deterministic count of submitted tasks
-            List.of(CompletableFuture::new, CompletableFuture::new));
+            List.of(CompletableFuture::new, CompletableFuture::new),
+            Duration.ofMillis(100));
 
     @Test
     void shouldNotResubmitTasksOnStart() {
@@ -94,6 +97,27 @@ final class BackgroundTaskManagerTest {
         new CloseableIncidentRepository();
     private final CloseableBatchOperationUpdateRepository batchOperationUpdateRepository =
         new CloseableBatchOperationUpdateRepository();
+    private volatile boolean taskClosed = false;
+    private volatile boolean keepRunningEvenIfClosed = false;
+    private final RunnableTask task =
+        new RunnableTask() {
+          @Override
+          public void run() {
+            while (!taskClosed || keepRunningEvenIfClosed) {
+              try {
+                Thread.sleep(1);
+              } catch (final InterruptedException ignored) {
+                break;
+              }
+            }
+          }
+
+          @Override
+          public void close() {
+            taskClosed = true;
+          }
+        };
+    private final List<RunnableTask> tasks = List.of(task);
     private final BackgroundTaskManager taskManager =
         new BackgroundTaskManager(
             1,
@@ -102,7 +126,18 @@ final class BackgroundTaskManagerTest {
             batchOperationUpdateRepository,
             LoggerFactory.getLogger(BackgroundTaskManagerTest.class),
             executor,
-            List.of());
+            tasks,
+            Duration.ofMillis(100));
+
+    public CloseTest() {
+      taskManager.start();
+    }
+
+    @Test
+    void shouldCloseTasksOnClose() {
+      taskManager.close();
+      assertThat(taskClosed).isTrue();
+    }
 
     @Test
     void shouldCloseExecutorOnClose() {
@@ -110,7 +145,20 @@ final class BackgroundTaskManagerTest {
       taskManager.close();
 
       // then
-      assertThat(executor.isTerminated()).isTrue();
+      Awaitility.await("Executor is terminated")
+          .untilAsserted(() -> assertThat(executor.isTerminated()).isTrue());
+    }
+
+    @Test
+    void shouldCloseExecutorOnCloseWhenTasksDoNotTerminate() {
+      // given
+      keepRunningEvenIfClosed = true;
+      // when
+      taskManager.close();
+
+      // then
+      Awaitility.await("Executor is terminated")
+          .untilAsserted(() -> assertThat(executor.isTerminated()).isTrue());
     }
 
     @Test
