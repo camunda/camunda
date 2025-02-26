@@ -16,6 +16,7 @@
 package io.camunda.process.test.impl.testresult;
 
 import io.camunda.client.api.search.response.FlowNodeInstance;
+import io.camunda.client.api.search.response.Incident;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -90,7 +91,7 @@ public class CamundaProcessTestResultPrinter {
     return StringUtils.abbreviate(value, MAX_VALUE_LENGTH);
   }
 
-  private static String formatIncidents(final List<OpenIncident> incidents) {
+  private static String formatIncidents(final List<Incident> incidents) {
     if (incidents.isEmpty()) {
       return NO_ENTRIES;
     } else {
@@ -100,10 +101,10 @@ public class CamundaProcessTestResultPrinter {
     }
   }
 
-  private static String formatIncident(final OpenIncident incident) {
+  private static String formatIncident(final Incident incident) {
     return String.format(
         "- '%s' [type: %s] \"%s\"",
-        incident.getFlowNodeId(), incident.getType(), abbreviate(incident.getMessage()));
+        incident.getFlowNodeId(), incident.getErrorType(), abbreviate(incident.getErrorMessage()));
   }
 
   private static String formatFlowNodeInstances(final List<FlowNodeInstance> flowNodeInstances) {
