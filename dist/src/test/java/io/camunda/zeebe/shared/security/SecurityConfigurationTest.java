@@ -11,8 +11,12 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import io.camunda.zeebe.shared.security.SecurityConfigurationTest.TestCase.Builder;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.springframework.context.annotation.ConditionContext;
@@ -36,62 +40,155 @@ public class SecurityConfigurationTest {
     when(conditionContext.getEnvironment()).thenReturn(environment);
   }
 
-  @Test
-  void doesNotMatchWhenStandaloneGatewayEnabledAndSecurityModeIsNone() {
-    when(environment.getProperty("zeebe.gateway.enabled")).thenReturn("true");
-    when(environment.getProperty("zeebe.gateway.security.authentication.mode")).thenReturn("none");
-
-    final boolean result = condition.matches(conditionContext, methodMetadata);
-    assertThat(result).isFalse();
-  }
-
-  @Test
-  void matchesWhenStandaloneGatewayEnabledAndSecurityModeIsNotNone() {
-    when(environment.getProperty("zeebe.gateway.enabled")).thenReturn("true");
+  @ParameterizedTest
+  @MethodSource("provideTestCases")
+  void testGatewaySecurityAuthenticationEnabledCondition(final TestCase testCase) {
+    when(environment.getProperty("zeebe.gateway.enabled"))
+        .thenReturn(testCase.standaloneGatewayEnabled);
     when(environment.getProperty("zeebe.gateway.security.authentication.mode"))
-        .thenReturn("identity");
-
-    final boolean result = condition.matches(conditionContext, methodMetadata);
-    assertThat(result).isTrue();
-  }
-
-  @Test
-  void doesNotOverrideSecurityWhenStandaloneGatewayEnabled() {
-    when(environment.getProperty("zeebe.gateway.enabled")).thenReturn("true");
+        .thenReturn(testCase.standaloneGatewaySecurityMode);
+    when(environment.getProperty("zeebe.broker.gateway.enabled"))
+        .thenReturn(testCase.embeddedGatewayEnabled);
     when(environment.getProperty("zeebe.broker.gateway.security.authentication.mode"))
-        .thenReturn("identity");
+        .thenReturn(testCase.embeddedGatewaySecurityMode);
 
     final boolean result = condition.matches(conditionContext, methodMetadata);
-    assertThat(result).isTrue();
+    assertThat(result).describedAs(testCase.description).isEqualTo(testCase.expectedResult);
   }
 
-  @Test
-  void doesNotMatchWhenEmbeddedGatewayEnabledAndSecurityModeIsNone() {
-    when(environment.getProperty("zeebe.broker.gateway.enabled")).thenReturn("true");
-    when(environment.getProperty("zeebe.broker.gateway.security.authentication.mode"))
-        .thenReturn("none");
-
-    final boolean result = condition.matches(conditionContext, methodMetadata);
-    assertThat(result).isFalse();
+  private static Stream<Arguments> provideTestCases() {
+    return Stream.of(
+        Arguments.of(
+            new Builder()
+                .description("Standalone gateway enabled and security mode is none")
+                .enableStandaloneGateway()
+                .standaloneGatewaySecurityMode("none")
+                .expectedResult(false)
+                .build()),
+        Arguments.of(
+            new TestCase.Builder()
+                .description("Standalone gateway enabled and security mode is identity")
+                .enableStandaloneGateway()
+                .standaloneGatewaySecurityMode("identity")
+                .expectedResult(true)
+                .build()),
+        Arguments.of(
+            new TestCase.Builder()
+                .description("Embedded gateway enabled and security mode is none")
+                .enableEmbeddedGateway()
+                .embeddedGatewaySecurityMode("none")
+                .expectedResult(false)
+                .build()),
+        Arguments.of(
+            new TestCase.Builder()
+                .description("Embedded gateway enabled and security mode is identity")
+                .enableEmbeddedGateway()
+                .embeddedGatewaySecurityMode("identity")
+                .expectedResult(true)
+                .build()),
+        Arguments.of(
+            new TestCase.Builder()
+                .description(
+                    "Both standalone and embedded gateways enabled with security mode none")
+                .enableStandaloneGateway()
+                .standaloneGatewaySecurityMode("none")
+                .enableEmbeddedGateway()
+                .embeddedGatewaySecurityMode("none")
+                .expectedResult(false)
+                .build()),
+        Arguments.of(
+            new TestCase.Builder()
+                .description(
+                    "Standalone gateway enabled, standalone gateway security mode none, embedded gateway security mode identity")
+                .enableStandaloneGateway()
+                .standaloneGatewaySecurityMode("none")
+                .embeddedGatewaySecurityMode("identity")
+                .expectedResult(false)
+                .build()),
+        Arguments.of(
+            new TestCase.Builder()
+                .description(
+                    "Standalone gateway enabled, standalone gateway security mode identity, embedded gateway security mode none")
+                .enableStandaloneGateway()
+                .standaloneGatewaySecurityMode("identity")
+                .embeddedGatewaySecurityMode("none")
+                .expectedResult(true)
+                .build()),
+        Arguments.of(
+            new TestCase.Builder()
+                .description(
+                    "Embedded gateway enabled, standalone gateway security mode none, embedded gateway security mode identity")
+                .standaloneGatewaySecurityMode("none")
+                .enableEmbeddedGateway()
+                .embeddedGatewaySecurityMode("identity")
+                .expectedResult(true)
+                .build()),
+        Arguments.of(
+            new TestCase.Builder()
+                .description(
+                    "Embedded gateway enabled, standalone gateway security mode identity, embedded gateway security mode none")
+                .standaloneGatewaySecurityMode("identity")
+                .enableEmbeddedGateway()
+                .embeddedGatewaySecurityMode("none")
+                .expectedResult(false)
+                .build()));
   }
 
-  @Test
-  void matchesWhenEmbeddedGatewayEnabledAndSecurityModeIsNotNone() {
-    when(environment.getProperty("zeebe.broker.gateway.enabled")).thenReturn("true");
-    when(environment.getProperty("zeebe.broker.gateway.security.authentication.mode"))
-        .thenReturn("identity");
+  record TestCase(
+      String description,
+      String standaloneGatewayEnabled,
+      String standaloneGatewaySecurityMode,
+      String embeddedGatewayEnabled,
+      String embeddedGatewaySecurityMode,
+      boolean expectedResult) {
 
-    final boolean result = condition.matches(conditionContext, methodMetadata);
-    assertThat(result).isTrue();
-  }
+    static class Builder {
+      private String description;
+      private String standaloneGatewayEnabled;
+      private String standaloneGatewaySecurityMode;
+      private String embeddedGatewayEnabled;
+      private String embeddedGatewaySecurityMode;
+      private boolean expectedResult;
 
-  @Test
-  void doesNotOverrideSecurityWhenEmbeddedGatewayEnabled() {
-    when(environment.getProperty("zeebe.broker.gateway.enabled")).thenReturn("true");
-    when(environment.getProperty("zeebe.gateway.security.authentication.mode"))
-        .thenReturn("identity");
+      Builder description(final String description) {
+        this.description = description;
+        return this;
+      }
 
-    final boolean result = condition.matches(conditionContext, methodMetadata);
-    assertThat(result).isTrue();
+      Builder enableStandaloneGateway() {
+        standaloneGatewayEnabled = "true";
+        return this;
+      }
+
+      Builder standaloneGatewaySecurityMode(final String standaloneGatewaySecurityMode) {
+        this.standaloneGatewaySecurityMode = standaloneGatewaySecurityMode;
+        return this;
+      }
+
+      Builder enableEmbeddedGateway() {
+        embeddedGatewayEnabled = "true";
+        return this;
+      }
+
+      Builder embeddedGatewaySecurityMode(final String embeddedGatewaySecurityMode) {
+        this.embeddedGatewaySecurityMode = embeddedGatewaySecurityMode;
+        return this;
+      }
+
+      Builder expectedResult(final boolean expectedResult) {
+        this.expectedResult = expectedResult;
+        return this;
+      }
+
+      TestCase build() {
+        return new TestCase(
+            description,
+            standaloneGatewayEnabled,
+            standaloneGatewaySecurityMode,
+            embeddedGatewayEnabled,
+            embeddedGatewaySecurityMode,
+            expectedResult);
+      }
+    }
   }
 }
