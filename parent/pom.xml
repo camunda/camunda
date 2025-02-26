@@ -3078,6 +3078,7 @@
 
       <properties>
         <flaky.test.reportDir>surefire-reports</flaky.test.reportDir>
+        <flaky.test.failBuild>false</flaky.test.failBuild>
       </properties>
 
       <build>
@@ -3087,7 +3088,7 @@
             <artifactId>flaky-test-extractor-maven-plugin</artifactId>
             <configuration>
               <reportDir>${project.build.directory}/${flaky.test.reportDir}</reportDir>
-              <failBuild>false</failBuild>
+              <failBuild>${flaky.test.failBuild}</failBuild>
             </configuration>
             <executions>
               <execution>
