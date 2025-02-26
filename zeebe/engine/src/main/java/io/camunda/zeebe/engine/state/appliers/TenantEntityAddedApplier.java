@@ -35,7 +35,7 @@ public class TenantEntityAddedApplier implements TypedEventApplier<TenantIntent,
     switch (tenant.getEntityType()) {
       case USER -> {
         tenantState.addEntity(tenant);
-        userState.addTenantId(tenant.getTenantId(), tenant.getTenantId());
+        userState.addTenantId(tenant.getEntityId(), tenant.getTenantId());
       }
       case MAPPING -> {
         tenantState.addEntity(tenant);
