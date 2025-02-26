@@ -13,9 +13,8 @@ import static org.junit.Assert.fail;
 import io.camunda.zeebe.el.ExpressionLanguage;
 import io.camunda.zeebe.el.ExpressionLanguageFactory;
 import io.camunda.zeebe.engine.processing.bpmn.clock.ZeebeFeelEngineClock;
-import io.camunda.zeebe.engine.processing.common.ExpressionProcessor;
-import io.camunda.zeebe.engine.processing.common.ExpressionProcessor.EvaluationContextLookup;
 import io.camunda.zeebe.engine.processing.deployment.model.transformer.ExpressionTransformer;
+import io.camunda.zeebe.engine.processing.expression.ExpressionProcessor;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.model.bpmn.instance.ConditionExpression;
@@ -516,8 +515,7 @@ public final class ZeebeRuntimeValidationTest {
     final ExpressionLanguage expressionLanguage =
         ExpressionLanguageFactory.createExpressionLanguage(
             new ZeebeFeelEngineClock(InstantSource.system()));
-    final EvaluationContextLookup emptyLookup = scopeKey -> name -> null;
-    final var expressionProcessor = new ExpressionProcessor(expressionLanguage, emptyLookup);
+    final var expressionProcessor = new ExpressionProcessor(expressionLanguage);
     final ValidationVisitor visitor =
         new ValidationVisitor(
             ZeebeRuntimeValidators.getValidators(expressionLanguage, expressionProcessor));

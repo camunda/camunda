@@ -19,10 +19,12 @@ public class ExecutableLink extends AbstractFlowElement {
     super(id);
   }
 
+  @Override
   public DirectBuffer getName() {
     return name;
   }
 
+  @Override
   public void setName(final DirectBuffer name) {
     this.name = name;
   }

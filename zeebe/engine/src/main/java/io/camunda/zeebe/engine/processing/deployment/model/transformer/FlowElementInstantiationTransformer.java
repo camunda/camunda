@@ -57,9 +57,11 @@ import io.camunda.zeebe.model.bpmn.instance.SubProcess;
 import io.camunda.zeebe.model.bpmn.instance.Task;
 import io.camunda.zeebe.model.bpmn.instance.UserTask;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
+import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
 
@@ -122,6 +124,16 @@ public final class FlowElementInstantiationTransformer
 
       executableElement.setElementType(
           BpmnElementType.bpmnElementTypeFor(element.getElementType().getTypeName()));
+
+      Optional.ofNullable(element.getName())
+          .map(BufferUtil::wrapString)
+          .ifPresent(executableElement::setName);
+
+      Optional.ofNullable(element.getDocumentations())
+          .flatMap(documentations -> documentations.stream().findFirst())
+          .flatMap(documentation -> Optional.ofNullable(documentation.getTextContent()))
+          .map(BufferUtil::wrapString)
+          .ifPresent(executableElement::setDocumentation);
 
       process.addFlowElement(executableElement);
     }

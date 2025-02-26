@@ -15,9 +15,11 @@ import org.agrona.DirectBuffer;
 public abstract class AbstractFlowElement implements ExecutableFlowElement {
 
   private final DirectBuffer id;
+  private DirectBuffer name;
   private BpmnElementType elementType;
   private BpmnEventType eventType;
   private ExecutableFlowElement flowScope;
+  private DirectBuffer documentation;
 
   public AbstractFlowElement(final String id) {
     this.id = BufferUtil.wrapString(id);
@@ -55,5 +57,23 @@ public abstract class AbstractFlowElement implements ExecutableFlowElement {
 
   public void setEventType(final BpmnEventType eventType) {
     this.eventType = eventType;
+  }
+
+  @Override
+  public DirectBuffer getName() {
+    return name;
+  }
+
+  public void setName(final DirectBuffer name) {
+    this.name = name;
+  }
+
+  @Override
+  public DirectBuffer getDocumentation() {
+    return documentation;
+  }
+
+  public void setDocumentation(final DirectBuffer documentation) {
+    this.documentation = documentation;
   }
 }
