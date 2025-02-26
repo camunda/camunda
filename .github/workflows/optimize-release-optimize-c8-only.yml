@@ -180,7 +180,7 @@ jobs:
 
       - name: Prepare release
         run: |
-          mvn -f optimize \
+          ./mvnw -f optimize \
             -DpushChanges="${{ github.event.inputs.IS_DRY_RUN != 'true' }}" \
             -DremoteTagging="${{ github.event.inputs.IS_DRY_RUN != 'true' }}" \
             -DskipTests=true \
