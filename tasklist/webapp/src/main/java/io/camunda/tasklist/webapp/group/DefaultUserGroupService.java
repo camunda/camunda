@@ -16,6 +16,17 @@ import org.springframework.stereotype.Component;
 
 @Component
 @Profile("!consolidated-auth")
+
+/**
+ * Fallback component for `UserGroupService`, used when the "consolidated-auth" profile is **not
+ * active**.
+ *
+ * <p>- This component ensures that authorization is always available, even when consolidated
+ * authentication is not enabled. - It provides a **default, full-access authorization service**.
+ *
+ * <p>This component declaration can be removed after the consolidated authentication is fully
+ * implemented
+ */
 public class DefaultUserGroupService implements UserGroupService {
   @Override
   public List<String> getUserGroups() {
