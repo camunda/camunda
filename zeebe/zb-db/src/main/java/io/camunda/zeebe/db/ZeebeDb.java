@@ -79,7 +79,7 @@ public interface ZeebeDb<ColumnFamilyType extends Enum<? extends EnumValue> & En
    * #getMeterRegistry()}.
    *
    * <p>NOTE: on the first call, this may cause some metrics to be registered for the first time on
-   * the DB's meter registry (see {@link #getMeterRegistry()}.
+   * the DB's meter registry (see {@link #getMeterRegistry()}).
    */
   default void exportMetrics() {}
 }
