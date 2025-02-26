@@ -46,8 +46,8 @@ public class AdHocSubprocessActivitySearchTest extends ClientRestTest {
               r.processDefinitionKey(String.valueOf(PROCESS_DEFINITION_KEY));
               r.processDefinitionId(PROCESS_DEFINITION_ID);
               r.setAdHocSubprocessId(AD_HOC_SUBPROCESS_ID);
-              r.setFlowNodeId("task1");
-              r.setFlowNodeName("Task #1");
+              r.setElementId("task1");
+              r.setElementName("Task #1");
               r.setType(TypeEnum.SERVICE_TASK);
               r.setDocumentation("The first task in the ad-hoc subprocess");
               r.setTenantId("<default>");
@@ -58,8 +58,8 @@ public class AdHocSubprocessActivitySearchTest extends ClientRestTest {
               r.processDefinitionKey(String.valueOf(PROCESS_DEFINITION_KEY));
               r.processDefinitionId(PROCESS_DEFINITION_ID);
               r.setAdHocSubprocessId(AD_HOC_SUBPROCESS_ID);
-              r.setFlowNodeId("task2");
-              r.setFlowNodeName("Task #2");
+              r.setElementId("task2");
+              r.setElementName("Task #2");
               r.setType(TypeEnum.USER_TASK);
               r.setDocumentation("The second task in the ad-hoc subprocess");
               r.setTenantId("<default>");
@@ -87,8 +87,8 @@ public class AdHocSubprocessActivitySearchTest extends ClientRestTest {
             AdHocSubprocessActivity::getProcessDefinitionKey,
             AdHocSubprocessActivity::getProcessDefinitionId,
             AdHocSubprocessActivity::getAdHocSubprocessId,
-            AdHocSubprocessActivity::getFlowNodeId,
-            AdHocSubprocessActivity::getFlowNodeName,
+            AdHocSubprocessActivity::getElementId,
+            AdHocSubprocessActivity::getElementName,
             AdHocSubprocessActivity::getType,
             AdHocSubprocessActivity::getDocumentation,
             AdHocSubprocessActivity::getTenantId)
@@ -123,8 +123,8 @@ public class AdHocSubprocessActivitySearchTest extends ClientRestTest {
             + "      \"processDefinitionKey\": \"2251799813685281\",\n"
             + "      \"processDefinitionId\": \"TestParentAdHocSubprocess\",\n"
             + "      \"adHocSubprocessId\": \"TestAdHocSubprocess\",\n"
-            + "      \"flowNodeId\": \"unknownTask\",\n"
-            + "      \"flowNodeName\": \"Unknown Task\",\n"
+            + "      \"elementId\": \"unknownTask\",\n"
+            + "      \"elementName\": \"Unknown Task\",\n"
             + "      \"type\": \"START_EVENT\",\n"
             + "      \"tenantId\": \"<default>\"\n"
             + "    }\n"
@@ -147,8 +147,8 @@ public class AdHocSubprocessActivitySearchTest extends ClientRestTest {
             AdHocSubprocessActivity::getProcessDefinitionKey,
             AdHocSubprocessActivity::getProcessDefinitionId,
             AdHocSubprocessActivity::getAdHocSubprocessId,
-            AdHocSubprocessActivity::getFlowNodeId,
-            AdHocSubprocessActivity::getFlowNodeName,
+            AdHocSubprocessActivity::getElementId,
+            AdHocSubprocessActivity::getElementName,
             AdHocSubprocessActivity::getType,
             AdHocSubprocessActivity::getDocumentation,
             AdHocSubprocessActivity::getTenantId)

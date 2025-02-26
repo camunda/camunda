@@ -42,8 +42,8 @@ public class AdHocSubprocessActivityResponseImpl implements AdHocSubprocessActiv
     private final Long processDefinitionKey;
     private final String processDefinitionId;
     private final String adHocSubprocessId;
-    private final String flowNodeId;
-    private final String flowNodeName;
+    private final String elementId;
+    private final String elementName;
     private final AdHocSubprocessActivityType type;
     private final String documentation;
     private final String tenantId;
@@ -52,8 +52,8 @@ public class AdHocSubprocessActivityResponseImpl implements AdHocSubprocessActiv
       processDefinitionKey = Long.valueOf(result.getProcessDefinitionKey());
       processDefinitionId = result.getProcessDefinitionId();
       adHocSubprocessId = result.getAdHocSubprocessId();
-      flowNodeId = result.getFlowNodeId();
-      flowNodeName = result.getFlowNodeName();
+      elementId = result.getElementId();
+      elementName = result.getElementName();
       type = AdHocSubprocessActivityType.fromProtocolType(result.getType());
       documentation = result.getDocumentation();
       tenantId = result.getTenantId();
@@ -75,13 +75,13 @@ public class AdHocSubprocessActivityResponseImpl implements AdHocSubprocessActiv
     }
 
     @Override
-    public String getFlowNodeId() {
-      return flowNodeId;
+    public String getElementId() {
+      return elementId;
     }
 
     @Override
-    public String getFlowNodeName() {
-      return flowNodeName;
+    public String getElementName() {
+      return elementName;
     }
 
     @Override

@@ -37,13 +37,13 @@ public class AdHocSubprocessActivityQueryTest {
     assertThat(response.getItems())
         .hasSize(2)
         // TestServiceTask is no root node (has incoming sequence flow)
-        .noneMatch(activity -> activity.getFlowNodeId().equals("TestServiceTask"))
+        .noneMatch(activity -> activity.getElementId().equals("TestServiceTask"))
         .extracting(
             AdHocSubprocessActivity::getProcessDefinitionKey,
             AdHocSubprocessActivity::getProcessDefinitionId,
             AdHocSubprocessActivity::getAdHocSubprocessId,
-            AdHocSubprocessActivity::getFlowNodeId,
-            AdHocSubprocessActivity::getFlowNodeName,
+            AdHocSubprocessActivity::getElementId,
+            AdHocSubprocessActivity::getElementName,
             AdHocSubprocessActivity::getType,
             AdHocSubprocessActivity::getDocumentation,
             AdHocSubprocessActivity::getTenantId)

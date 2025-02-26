@@ -15,8 +15,8 @@ public record AdHocSubprocessActivityEntity(
     Long processDefinitionKey,
     String processDefinitionId,
     String adHocSubprocessId,
-    String flowNodeId,
-    String flowNodeName,
+    String elementId,
+    String elementName,
     ActivityType type,
     String documentation,
     String tenantId) {

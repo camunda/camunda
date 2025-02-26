@@ -384,8 +384,8 @@ public final class SearchQueryResponseMapper {
         .processDefinitionKey(entity.processDefinitionKey().toString())
         .processDefinitionId(entity.processDefinitionId())
         .adHocSubprocessId(entity.adHocSubprocessId())
-        .flowNodeId(entity.flowNodeId())
-        .flowNodeName(entity.flowNodeName())
+        .elementId(entity.elementId())
+        .elementName(entity.elementName())
         .type(AdHocSubprocessActivityResult.TypeEnum.fromValue(entity.type().name()))
         .documentation(entity.documentation())
         .tenantId(entity.tenantId());

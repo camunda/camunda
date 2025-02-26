@@ -31,9 +31,9 @@ public interface AdHocSubprocessActivityResponse {
 
     String getAdHocSubprocessId();
 
-    String getFlowNodeId();
+    String getElementId();
 
-    String getFlowNodeName();
+    String getElementName();
 
     AdHocSubprocessActivityType getType();
 

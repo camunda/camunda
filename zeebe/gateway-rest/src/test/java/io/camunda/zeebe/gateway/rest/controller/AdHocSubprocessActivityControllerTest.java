@@ -111,8 +111,8 @@ class AdHocSubprocessActivityControllerTest extends RestControllerTest {
                         AdHocSubprocessActivityResult::getProcessDefinitionKey,
                         AdHocSubprocessActivityResult::getProcessDefinitionId,
                         AdHocSubprocessActivityResult::getAdHocSubprocessId,
-                        AdHocSubprocessActivityResult::getFlowNodeId,
-                        AdHocSubprocessActivityResult::getFlowNodeName,
+                        AdHocSubprocessActivityResult::getElementId,
+                        AdHocSubprocessActivityResult::getElementName,
                         AdHocSubprocessActivityResult::getType,
                         AdHocSubprocessActivityResult::getDocumentation,
                         AdHocSubprocessActivityResult::getTenantId)
