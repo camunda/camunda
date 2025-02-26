@@ -9,20 +9,15 @@ package io.camunda.tasklist;
 
 import io.camunda.tasklist.webapp.management.WebappManagementModuleConfiguration;
 import io.camunda.tasklist.webapp.security.WebappSecurityModuleConfiguration;
-import io.camunda.tasklist.webapp.security.identity.DefaultUserGroupService;
-import io.camunda.tasklist.webapp.security.identity.UserGroupService;
-import io.camunda.tasklist.webapp.security.identity.UserGroupServiceImpl;
 import io.camunda.tasklist.zeebeimport.security.ImporterSecurityModuleConfiguration;
 import io.camunda.zeebe.broker.Broker;
 import io.camunda.zeebe.gateway.Gateway;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.FilterType;
 import org.springframework.context.annotation.FullyQualifiedAnnotationBeanNameGenerator;
 import org.springframework.context.annotation.Import;
-import org.springframework.context.annotation.Primary;
 import org.springframework.context.annotation.Profile;
 
 /**
@@ -65,39 +60,6 @@ public class TasklistModuleConfiguration {
       @Autowired(required = false) final Gateway gateway) {
     this.broker = broker;
     this.gateway = gateway;
-  }
-
-  /**
-   * Bean definition for `UserGroupService` when the application is running under the
-   * "consolidated-auth" profile.
-   *
-   * <p>- The `@Profile("consolidated-auth")` annotation ensures that this bean is only loaded when
-   * the profile "consolidated-auth" is active.
-   *
-   * <p>This bean provides the **main authorization logic** when consolidated authentication is
-   * enabled.
-   */
-  @Bean
-  @Primary
-  @Profile("consolidated-auth")
-  public UserGroupService consolidatedUserGroupService() {
-    return new UserGroupServiceImpl();
-  }
-
-  /**
-   * Fallback bean for `UserGroupService`, used when the "consolidated-auth" profile is **not
-   * active**.
-   *
-   * <p>- This bean ensures that authorization is always available, even when consolidated
-   * authentication is not enabled. - It provides a **default, full-access authorization service**.
-   *
-   * <p>This bean declaration can be removed after the consolidated authentication is fully
-   * implemented
-   */
-  @Bean
-  @Profile("!consolidated-auth")
-  public UserGroupService defaultUserGroupService() {
-    return new DefaultUserGroupService();
   }
 
   @Configuration(proxyBeanMethods = false)

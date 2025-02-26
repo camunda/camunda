@@ -304,7 +304,8 @@ public final class EngineProcessors {
         processingState,
         writers,
         commandDistributionBehavior,
-        securityConfig);
+        securityConfig,
+        featureFlags);
 
     return typedRecordProcessors;
   }
