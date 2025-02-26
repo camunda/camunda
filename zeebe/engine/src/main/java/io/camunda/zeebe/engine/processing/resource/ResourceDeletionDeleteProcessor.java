@@ -233,7 +233,11 @@ public class ResourceDeletionDeleteProcessor
     final var resourceOptional = resourceState.findResourceByKey(value.getResourceKey(), tenantId);
     if (resourceOptional.isPresent()) {
       final var resource = resourceOptional.get();
-      // TODO check authorization
+      checkAuthorization(
+          command,
+          AuthorizationResourceType.RESOURCE,
+          PermissionType.DELETE_RESOURCE,
+          bufferAsString(resource.getResourceId()));
       setTenantId(command, tenantId);
       deleteResource(resource);
       return true;
