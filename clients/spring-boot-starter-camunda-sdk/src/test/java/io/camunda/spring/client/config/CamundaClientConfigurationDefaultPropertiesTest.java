@@ -48,7 +48,7 @@ public class CamundaClientConfigurationDefaultPropertiesTest {
     final CamundaClientConfiguration configuration =
         applicationContext.getBean(CamundaClientConfiguration.class);
 
-    assertThat(configuration.isPlaintextConnectionEnabled()).isFalse();
+    assertThat(configuration.isPlaintextConnectionEnabled()).isTrue();
     assertThat(configuration.getCaCertificatePath()).isNull();
     assertThat(configuration.getCredentialsProvider()).isInstanceOf(NoopCredentialsProvider.class);
     assertThat(configuration.getDefaultJobPollInterval()).isEqualTo(Duration.ofMillis(100));
@@ -62,13 +62,13 @@ public class CamundaClientConfigurationDefaultPropertiesTest {
     assertThat(configuration.getDefaultRequestTimeout()).isEqualTo(Duration.ofSeconds(10));
     assertThat(configuration.getDefaultTenantId()).isEqualTo("<default>");
     assertThat(configuration.getGatewayAddress()).isEqualTo("0.0.0.0:26500");
-    assertThat(configuration.getGrpcAddress()).isEqualTo(new URI("https://0.0.0.0:26500"));
+    assertThat(configuration.getGrpcAddress()).isEqualTo(new URI("http://0.0.0.0:26500"));
     assertThat(configuration.getKeepAlive()).isEqualTo(Duration.ofSeconds(45));
     assertThat(configuration.getMaxMessageSize()).isEqualTo(4 * ONE_MB);
     assertThat(configuration.getMaxMetadataSize()).isEqualTo(16 * ONE_KB);
     assertThat(configuration.getNumJobWorkerExecutionThreads()).isEqualTo(1);
     assertThat(configuration.getOverrideAuthority()).isNull();
-    assertThat(configuration.getRestAddress()).isEqualTo(new URI("https://0.0.0.0:8080"));
+    assertThat(configuration.getRestAddress()).isEqualTo(new URI("http://0.0.0.0:8080"));
     assertThat(configuration.preferRestOverGrpc()).isFalse();
   }
 }
