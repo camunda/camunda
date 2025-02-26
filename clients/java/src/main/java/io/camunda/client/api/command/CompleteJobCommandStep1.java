@@ -181,6 +181,29 @@ public interface CompleteJobCommandStep1
     CompleteJobCommandStep2 deny(boolean isDenied);
 
     /**
+     * Indicates the reason why the worker denied the work. For example, a user task listener can
+     * deny the completion of a task by setting the deny flag to true and specifying the reason to
+     * deny. In this example, the completion of a task is represented by a job that the worker can
+     * complete as denied and provided the reason to deny. As a result, the completion request is
+     * rejected and the task remains active. Defaults to an empty string.
+     *
+     * <p>Example usage:
+     *
+     * <pre>{@code
+     * client.newCompleteJobCommand(jobKey)
+     *     .withResult()
+     *     .deny(true)
+     *     .denyReason("Reason to deny lifecycle transition")
+     *     .send();
+     * }</pre>
+     *
+     * @param deniedReason indicates the reason why the worker denied the job
+     * @return the builder for this command. Call {@link #send()} to complete the command and send
+     *     it to the broker.
+     */
+    CompleteJobCommandStep2 denyReason(String deniedReason);
+
+    /**
      * Applies corrections to the user task attributes.
      *
      * <p>This method allows the worker to modify key attributes of the user task (such as {@code
