@@ -134,10 +134,7 @@ public final class MicrometerUtil {
    * have to specify the tags again on every wrapped registry!
    */
   public static CompositeMeterRegistry wrap(final MeterRegistry wrapped, final Tags tags) {
-    final var registry =
-        wrapped != null
-            ? new CompositeMeterRegistry(wrapped.config().clock(), Collections.singleton(wrapped))
-            : new CompositeMeterRegistry();
+    final var registry = new StatefulMeterRegistry(wrapped);
     registry.config().commonTags(tags);
     return registry;
   }
