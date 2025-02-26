@@ -76,7 +76,7 @@ public class TenantAddEntityProcessor implements DistributedTypedRecordProcessor
     final var persistedTenant = tenantLookup.get();
     final var tenantKey = persistedTenant.getTenantKey();
     final var tenantId = persistedTenant.getTenantId();
-    record.setTenantId(tenantId);
+    record.setTenantKey(tenantKey);
 
     final var authorizationRequest =
         new AuthorizationRequest(command, AuthorizationResourceType.TENANT, PermissionType.UPDATE)
