@@ -24,7 +24,6 @@ import io.camunda.process.test.api.assertions.ElementSelector;
 import io.camunda.process.test.api.assertions.ProcessInstanceAssert;
 import io.camunda.process.test.api.assertions.ProcessInstanceSelector;
 import io.camunda.process.test.api.assertions.ProcessInstanceSelectors;
-import io.camunda.process.test.impl.client.CamundaClientNotFoundException;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -201,14 +200,15 @@ public class ProcessInstanceAssertj
 
     try {
       Awaitility.await()
-          .ignoreException(CamundaClientNotFoundException.class)
+          .ignoreExceptions()
           .failFast(() -> waitCondition.test(actualProcessInstance.get()))
           .untilAsserted(
               () -> {
-                final ProcessInstance processInstance = findProcessInstance();
-                actualProcessInstance.set(processInstance);
+                final Optional<ProcessInstance> processInstance = findProcessInstance();
+                processInstance.ifPresent(actualProcessInstance::set);
 
-                assertThat(processInstance.getState()).matches(expectedStateMatcher);
+                assertThat(processInstance).isPresent();
+                assertThat(processInstance.get().getState()).matches(expectedStateMatcher);
               });
 
     } catch (final ConditionTimeoutException | TerminalFailureException e) {
@@ -226,21 +226,20 @@ public class ProcessInstanceAssertj
     }
   }
 
-  private ProcessInstance findProcessInstance() {
-    return dataSource.findProcessInstances().stream()
-        .filter(actual::test)
-        .findFirst()
-        .orElseThrow(CamundaClientNotFoundException::new);
+  private Optional<ProcessInstance> findProcessInstance() {
+    return dataSource.findProcessInstances().stream().filter(actual::test).findFirst();
   }
 
   private void awaitProcessInstance() {
     try {
       Awaitility.await()
-          .ignoreException(CamundaClientNotFoundException.class)
+          .ignoreExceptions()
           .untilAsserted(
               () -> {
-                final ProcessInstance processInstance = findProcessInstance();
-                actualProcessInstance.set(processInstance);
+                final Optional<ProcessInstance> processInstance = findProcessInstance();
+                processInstance.ifPresent(actualProcessInstance::set);
+
+                assertThat(processInstance).isPresent();
               });
 
     } catch (final ConditionTimeoutException | TerminalFailureException e) {

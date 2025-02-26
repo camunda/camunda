@@ -76,7 +76,9 @@ public class CamundaProcessTestResultCollector {
 
   private List<OpenIncident> collectOpenIncidents(final long processInstanceKey) {
     return dataSource.getFlowNodeInstancesByProcessInstanceKey(processInstanceKey).stream()
-        .filter(FlowNodeInstance::getIncident)
+        .filter(
+            flowNodeInstance ->
+                flowNodeInstance.getIncident() != null && flowNodeInstance.getIncident())
         .map(this::getIncident)
         .collect(Collectors.toList());
   }

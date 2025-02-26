@@ -20,9 +20,10 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.camunda.client.api.response.ProcessInstanceEvent;
+import io.camunda.client.api.search.response.Variable;
 import io.camunda.process.test.impl.assertions.CamundaDataSource;
-import io.camunda.process.test.impl.client.ProcessInstanceDto;
-import io.camunda.process.test.impl.client.VariableDto;
+import io.camunda.process.test.utils.ProcessInstanceBuilder;
+import io.camunda.process.test.utils.VariableBuilder;
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.Collections;
@@ -71,19 +72,16 @@ public class VariableAssertTest {
 
   @BeforeEach
   void configureMocks() {
-    final ProcessInstanceDto processInstance = new ProcessInstanceDto();
-    processInstance.setKey(PROCESS_INSTANCE_KEY);
-
     when(camundaDataSource.findProcessInstances())
-        .thenReturn(Collections.singletonList(processInstance));
+        .thenReturn(
+            Collections.singletonList(
+                ProcessInstanceBuilder.newActiveProcessInstance(PROCESS_INSTANCE_KEY).build()));
   }
 
-  private static VariableDto newVariable(final String variableName, final String variableValue) {
-    final VariableDto variable = new VariableDto();
-    variable.setProcessInstanceKey(PROCESS_INSTANCE_KEY);
-    variable.setName(variableName);
-    variable.setValue(variableValue);
-    return variable;
+  private static Variable newVariable(final String variableName, final String variableValue) {
+    return VariableBuilder.newVariable(variableName, variableValue)
+        .setProcessInstanceKey(PROCESS_INSTANCE_KEY)
+        .build();
   }
 
   private static Stream<Arguments> variableValues() {
@@ -104,8 +102,8 @@ public class VariableAssertTest {
     @Test
     void shouldHasVariableNames() {
       // given
-      final VariableDto variableA = newVariable("a", "1");
-      final VariableDto variableB = newVariable("b", "2");
+      final Variable variableA = newVariable("a", "1");
+      final Variable variableB = newVariable("b", "2");
 
       when(camundaDataSource.getVariablesByProcessInstanceKey(PROCESS_INSTANCE_KEY))
           .thenReturn(Arrays.asList(variableA, variableB));
@@ -120,8 +118,8 @@ public class VariableAssertTest {
     @Test
     void shouldWaitUntilHasVariableNames() {
       // given
-      final VariableDto variableA = newVariable("a", "1");
-      final VariableDto variableB = newVariable("b", "2");
+      final Variable variableA = newVariable("a", "1");
+      final Variable variableB = newVariable("b", "2");
 
       when(camundaDataSource.getVariablesByProcessInstanceKey(PROCESS_INSTANCE_KEY))
           .thenReturn(Collections.singletonList(variableA))
@@ -139,8 +137,8 @@ public class VariableAssertTest {
     @Test
     void shouldFailIfVariableNotExist() {
       // given
-      final VariableDto variableA = newVariable("a", "1");
-      final VariableDto variableB = newVariable("b", "2");
+      final Variable variableA = newVariable("a", "1");
+      final Variable variableB = newVariable("b", "2");
 
       when(camundaDataSource.getVariablesByProcessInstanceKey(PROCESS_INSTANCE_KEY))
           .thenReturn(Arrays.asList(variableA, variableB));
@@ -180,7 +178,7 @@ public class VariableAssertTest {
     @MethodSource("io.camunda.process.test.api.VariableAssertTest#variableValues")
     void shouldHasVariable(final String variableValue, final Object expectedValue) {
       // given
-      final VariableDto variableA = newVariable("a", variableValue);
+      final Variable variableA = newVariable("a", variableValue);
 
       when(camundaDataSource.getVariablesByProcessInstanceKey(PROCESS_INSTANCE_KEY))
           .thenReturn(Collections.singletonList(variableA));
@@ -195,8 +193,8 @@ public class VariableAssertTest {
     @Test
     void shouldWaitUntilHasVariable() {
       // given
-      final VariableDto variableA = newVariable("a", "1");
-      final VariableDto variableB = newVariable("b", "2");
+      final Variable variableA = newVariable("a", "1");
+      final Variable variableB = newVariable("b", "2");
 
       when(camundaDataSource.getVariablesByProcessInstanceKey(PROCESS_INSTANCE_KEY))
           .thenReturn(Collections.singletonList(variableB))
@@ -214,8 +212,8 @@ public class VariableAssertTest {
     @Test
     void shouldWaitUntilVariableHasValue() {
       // given
-      final VariableDto variableValue1 = newVariable("a", "1");
-      final VariableDto variableValue2 = newVariable("a", "2");
+      final Variable variableValue1 = newVariable("a", "1");
+      final Variable variableValue2 = newVariable("a", "2");
 
       when(camundaDataSource.getVariablesByProcessInstanceKey(PROCESS_INSTANCE_KEY))
           .thenReturn(Collections.singletonList(variableValue1))
@@ -233,8 +231,8 @@ public class VariableAssertTest {
     @Test
     void shouldFailIfVariableNotExist() {
       // given
-      final VariableDto variableA = newVariable("a", "1");
-      final VariableDto variableB = newVariable("b", "2");
+      final Variable variableA = newVariable("a", "1");
+      final Variable variableB = newVariable("b", "2");
 
       when(camundaDataSource.getVariablesByProcessInstanceKey(PROCESS_INSTANCE_KEY))
           .thenReturn(Arrays.asList(variableA, variableB));
@@ -253,8 +251,8 @@ public class VariableAssertTest {
     @Test
     void shouldFailIfVariableHasDifferentValue() {
       // given
-      final VariableDto variableA = newVariable("a", "1");
-      final VariableDto variableB = newVariable("b", "2");
+      final Variable variableA = newVariable("a", "1");
+      final Variable variableB = newVariable("b", "2");
 
       when(camundaDataSource.getVariablesByProcessInstanceKey(PROCESS_INSTANCE_KEY))
           .thenReturn(Arrays.asList(variableA, variableB));
@@ -274,7 +272,7 @@ public class VariableAssertTest {
     @MethodSource("io.camunda.process.test.api.VariableAssertTest#variableValues")
     void shouldFailWithMessage(final String variableValue) {
       // given
-      final VariableDto variableA = newVariable("a", variableValue);
+      final Variable variableA = newVariable("a", variableValue);
 
       when(camundaDataSource.getVariablesByProcessInstanceKey(PROCESS_INSTANCE_KEY))
           .thenReturn(Collections.singletonList(variableA));
@@ -312,8 +310,8 @@ public class VariableAssertTest {
     @MethodSource("io.camunda.process.test.api.VariableAssertTest#variableValues")
     void shouldHasVariables(final String variableValue, final Object expectedValue) {
       // given
-      final VariableDto variableA = newVariable("a", variableValue);
-      final VariableDto variableB = newVariable("b", "100");
+      final Variable variableA = newVariable("a", variableValue);
+      final Variable variableB = newVariable("b", "100");
 
       when(camundaDataSource.getVariablesByProcessInstanceKey(PROCESS_INSTANCE_KEY))
           .thenReturn(Arrays.asList(variableA, variableB));
@@ -331,8 +329,8 @@ public class VariableAssertTest {
     @Test
     void shouldWaitUntilHasAllVariables() {
       // given
-      final VariableDto variableA = newVariable("a", "1");
-      final VariableDto variableB = newVariable("b", "2");
+      final Variable variableA = newVariable("a", "1");
+      final Variable variableB = newVariable("b", "2");
 
       when(camundaDataSource.getVariablesByProcessInstanceKey(PROCESS_INSTANCE_KEY))
           .thenReturn(Collections.singletonList(variableA))
@@ -353,9 +351,9 @@ public class VariableAssertTest {
     @Test
     void shouldWaitUntilAllVariablesHaveValue() {
       // given
-      final VariableDto variableValue1 = newVariable("a", "1");
-      final VariableDto variableValue2 = newVariable("a", "2");
-      final VariableDto variableB = newVariable("b", "2");
+      final Variable variableValue1 = newVariable("a", "1");
+      final Variable variableValue2 = newVariable("a", "2");
+      final Variable variableB = newVariable("b", "2");
 
       when(camundaDataSource.getVariablesByProcessInstanceKey(PROCESS_INSTANCE_KEY))
           .thenReturn(Arrays.asList(variableValue1, variableB))
@@ -376,8 +374,8 @@ public class VariableAssertTest {
     @Test
     void shouldFailIfOneVariableNotExist() {
       // given
-      final VariableDto variableA = newVariable("a", "1");
-      final VariableDto variableB = newVariable("b", "2");
+      final Variable variableA = newVariable("a", "1");
+      final Variable variableB = newVariable("b", "2");
 
       when(camundaDataSource.getVariablesByProcessInstanceKey(PROCESS_INSTANCE_KEY))
           .thenReturn(Arrays.asList(variableA, variableB));
@@ -400,9 +398,9 @@ public class VariableAssertTest {
     @Test
     void shouldFailIfVariableHasDifferentValue() {
       // given
-      final VariableDto variableA = newVariable("a", "1");
-      final VariableDto variableB = newVariable("b", "2");
-      final VariableDto variableC = newVariable("c", "3");
+      final Variable variableA = newVariable("a", "1");
+      final Variable variableB = newVariable("b", "2");
+      final Variable variableC = newVariable("c", "3");
 
       when(camundaDataSource.getVariablesByProcessInstanceKey(PROCESS_INSTANCE_KEY))
           .thenReturn(Arrays.asList(variableA, variableB, variableC));
@@ -426,7 +424,7 @@ public class VariableAssertTest {
     @MethodSource("io.camunda.process.test.api.VariableAssertTest#variableValues")
     void shouldFailWithMessage(final String variableValue) {
       // given
-      final VariableDto variableA = newVariable("a", variableValue);
+      final Variable variableA = newVariable("a", variableValue);
 
       when(camundaDataSource.getVariablesByProcessInstanceKey(PROCESS_INSTANCE_KEY))
           .thenReturn(Collections.singletonList(variableA));
