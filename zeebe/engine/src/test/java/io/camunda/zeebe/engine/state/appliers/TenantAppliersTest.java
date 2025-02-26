@@ -85,7 +85,10 @@ public class TenantAppliersTest {
     final long tenantKey = 11L;
     final var tenantRecord = new TenantRecord().setTenantId(tenantId).setTenantKey(tenantKey);
     tenantState.createTenant(tenantRecord);
-    tenantRecord.setEntityKey(entityKey).setEntityType(EntityType.MAPPING);
+    tenantRecord
+        .setEntityKey(entityKey)
+        .setEntityId(entityKey.toString())
+        .setEntityType(EntityType.MAPPING);
 
     // when
     tenantEntityAddedApplier.applyState(tenantKey, tenantRecord);
@@ -135,7 +138,7 @@ public class TenantAppliersTest {
     associateUserWithTenant(tenantKey, tenantId, username);
 
     // Ensure the user is associated with the tenant before removal
-    assertThat(tenantState.getEntitiesByType(username).get(EntityType.USER))
+    assertThat(tenantState.getEntitiesByType(tenantId).get(EntityType.USER))
         .containsExactly(username);
     final var persistedUser = userState.getUser(entityKey).get();
     assertThat(persistedUser.getTenantIdsList()).containsExactly(tenantId);
