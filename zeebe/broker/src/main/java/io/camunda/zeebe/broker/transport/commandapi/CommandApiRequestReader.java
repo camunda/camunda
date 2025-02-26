@@ -11,7 +11,6 @@ import static io.camunda.zeebe.protocol.record.ExecuteCommandRequestDecoder.TEMP
 
 import io.camunda.zeebe.broker.transport.AsyncApiRequestHandler.RequestReader;
 import io.camunda.zeebe.broker.transport.RequestReaderException;
-import io.camunda.zeebe.gateway.impl.broker.request.BrokerCreateBatchOperationRequest;
 import io.camunda.zeebe.protocol.impl.encoding.AuthInfo;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
@@ -20,6 +19,7 @@ import io.camunda.zeebe.protocol.impl.record.value.authorization.IdentitySetupRe
 import io.camunda.zeebe.protocol.impl.record.value.authorization.MappingRecord;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.RoleRecord;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationCreationRecord;
+import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationExecutionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.clock.ClockRecord;
 import io.camunda.zeebe.protocol.impl.record.value.compensation.CompensationSubscriptionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.decision.DecisionEvaluationRecord;
@@ -53,6 +53,7 @@ import java.util.function.Supplier;
 import org.agrona.DirectBuffer;
 
 public class CommandApiRequestReader implements RequestReader<ExecuteCommandRequestDecoder> {
+
   static final Map<ValueType, Supplier<UnifiedRecordValue>> RECORDS_BY_TYPE =
       new EnumMap<>(ValueType.class);
 
@@ -87,6 +88,7 @@ public class CommandApiRequestReader implements RequestReader<ExecuteCommandRequ
     RECORDS_BY_TYPE.put(ValueType.MAPPING, MappingRecord::new);
     RECORDS_BY_TYPE.put(ValueType.IDENTITY_SETUP, IdentitySetupRecord::new);
     RECORDS_BY_TYPE.put(ValueType.BATCH_OPERATION, BatchOperationCreationRecord::new);
+    RECORDS_BY_TYPE.put(ValueType.BATCH_OPERATION_EXECUTION, BatchOperationExecutionRecord::new);
   }
 
   private UnifiedRecordValue value;

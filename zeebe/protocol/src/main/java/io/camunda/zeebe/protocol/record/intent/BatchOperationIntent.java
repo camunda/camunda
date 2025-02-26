@@ -22,7 +22,11 @@ public enum BatchOperationIntent implements Intent {
 
   EXECUTE((short) 2),
 
-  EXECUTED((short) 3);
+  EXECUTING((short) 3),
+
+  EXECUTED((short) 4),
+
+  COMPLETED((short) 5);
 
   private final short value;
 
@@ -43,7 +47,11 @@ public enum BatchOperationIntent implements Intent {
       case 2:
         return EXECUTE;
       case 3:
+        return EXECUTING;
+      case 4:
         return EXECUTED;
+      case 5:
+        return COMPLETED;
       default:
         return Intent.UNKNOWN;
     }
@@ -59,6 +67,7 @@ public enum BatchOperationIntent implements Intent {
     switch (this) {
       case CREATED:
       case EXECUTED:
+      case COMPLETED:
         return true;
       default:
         return false;
