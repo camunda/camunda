@@ -26,7 +26,8 @@ public enum AuthorizationResourceType {
       PermissionType.CREATE,
       PermissionType.DELETE_FORM,
       PermissionType.DELETE_PROCESS,
-      PermissionType.DELETE_DRD),
+      PermissionType.DELETE_DRD,
+      PermissionType.DELETE_RESOURCE),
   PROCESS_DEFINITION(
       PermissionType.READ_PROCESS_DEFINITION,
       PermissionType.READ_PROCESS_INSTANCE,
