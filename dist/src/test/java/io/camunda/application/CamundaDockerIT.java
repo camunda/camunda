@@ -10,6 +10,7 @@ package io.camunda.application;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.fail;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
@@ -43,6 +44,7 @@ public class CamundaDockerIT {
       System.getProperty(
           "camunda.docker.test.elasticsearch.image",
           "docker.elastic.co/elasticsearch/elasticsearch:8.14.1");
+  private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
   private final List<GenericContainer> createdContainers = new ArrayList<>();
 
