@@ -78,7 +78,8 @@ import java.util.function.Supplier;
 
 public final class EngineProcessors {
 
-  private EngineProcessors() {}
+  private EngineProcessors() {
+  }
 
   public static TypedRecordProcessors createEngineProcessors(
       final TypedRecordProcessorContext typedRecordProcessorContext,
@@ -311,8 +312,10 @@ public final class EngineProcessors {
     BatchOperationSetupProcessors.addBatchOperationProcessors(
         keyGenerator,
         typedRecordProcessors,
+        processingState,
         writers,
-        commandDistributionBehavior);
+        commandDistributionBehavior,
+        partitionId);
 
     return typedRecordProcessors;
   }
