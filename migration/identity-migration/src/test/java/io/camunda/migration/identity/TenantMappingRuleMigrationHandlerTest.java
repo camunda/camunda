@@ -12,6 +12,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.assertArg;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
@@ -90,7 +91,7 @@ final class TenantMappingRuleMigrationHandlerTest {
     when(tenantServices.getById(any())).thenReturn(new TenantEntity(1L, "", "", null));
     when(mappingServices.createMapping(any()))
         .thenAnswer(invocation -> CompletableFuture.completedFuture(new MappingRecord()));
-    when(tenantServices.addMember(any(), any(), anyLong()))
+    when(tenantServices.addMember(anyString(), any(), anyLong()))
         .thenReturn(CompletableFuture.completedFuture(new TenantRecord()));
     // when
     migrationHandler.migrate();
@@ -98,7 +99,7 @@ final class TenantMappingRuleMigrationHandlerTest {
     // then
     verify(managementIdentityClient, times(2)).fetchTenantMappingRules(anyInt());
     verify(tenantServices, times(4)).getById(any());
-    verify(tenantServices, times(4)).addMember(any(), any(), anyLong());
+    verify(tenantServices, times(4)).addMember(anyString(), any(), anyLong());
     verify(mappingServices, times(2)).findMapping(any(MappingDTO.class));
   }
 
@@ -157,7 +158,7 @@ final class TenantMappingRuleMigrationHandlerTest {
     when(tenantServices.getById(any())).thenReturn(new TenantEntity(1L, "", "", null));
     when(mappingServices.createMapping(any()))
         .thenAnswer(invocation -> CompletableFuture.completedFuture(new MappingRecord()));
-    when(tenantServices.addMember(any(), any(), anyLong()))
+    when(tenantServices.addMember(anyString(), any(), anyLong()))
         .thenReturn(
             CompletableFuture.failedFuture(
                 new BrokerRejectionException(
@@ -173,7 +174,7 @@ final class TenantMappingRuleMigrationHandlerTest {
     // then
     verify(managementIdentityClient, times(2)).fetchTenantMappingRules(anyInt());
     verify(tenantServices, times(4)).getById(any());
-    verify(tenantServices, times(4)).addMember(any(), any(), anyLong());
+    verify(tenantServices, times(4)).addMember(anyString(), any(), anyLong());
     verify(mappingServices, times(2)).findMapping(any(MappingDTO.class));
     verify(managementIdentityClient, times(2))
         .updateMigrationStatus(
