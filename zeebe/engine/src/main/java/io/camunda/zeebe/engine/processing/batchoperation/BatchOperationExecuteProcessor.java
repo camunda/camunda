@@ -14,6 +14,10 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
+import io.camunda.zeebe.engine.state.batchoperation.ItemKeys;
+import io.camunda.zeebe.engine.state.immutable.BatchOperationState;
+import io.camunda.zeebe.engine.state.immutable.ProcessingState;
+import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationExecutionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationIntent;
@@ -27,7 +31,9 @@ import org.slf4j.LoggerFactory;
 @ExcludeAuthorizationCheck
 public final class BatchOperationExecuteProcessor
     implements TypedRecordProcessor<BatchOperationExecutionRecord> {
-  private static final Logger LOGGER = LoggerFactory.getLogger(BatchOperationExecuteProcessor.class);
+
+  private static final Logger LOGGER = LoggerFactory.getLogger(
+      BatchOperationExecuteProcessor.class);
 
   private static final int BATCH_SIZE = 10;
 
@@ -36,17 +42,24 @@ public final class BatchOperationExecuteProcessor
   private final CommandDistributionBehavior commandDistributionBehavior;
   private final StateWriter stateWriter;
   private final TypedResponseWriter responseWriter;
+  private final int partitionId;
+
+  private final BatchOperationState batchOperationState;
 
   public BatchOperationExecuteProcessor(
       final Writers writers,
+      final ProcessingState processingState,
       final KeyGenerator keyGenerator,
-      final CommandDistributionBehavior commandDistributionBehavior
-      ) {
+      final CommandDistributionBehavior commandDistributionBehavior,
+      final int partitionId
+  ) {
     commandWriter = writers.command();
     stateWriter = writers.state();
     responseWriter = writers.response();
+    batchOperationState = processingState.getBatchOperationState();
     this.keyGenerator = keyGenerator;
     this.commandDistributionBehavior = commandDistributionBehavior;
+    this.partitionId = partitionId;
   }
 
   @Override
@@ -58,35 +71,52 @@ public final class BatchOperationExecuteProcessor
 
     // TODO do we need more states here? Like EXECUTE, EXECUTING, EXECUTED
     // when do we apply this event?
+    final var filteredEntityKeys = fetchFilteredEntityKeys(batchKey);
+    final var entityKeys = filteredEntityKeys.subList(offset,
+        Math.min(offset + BATCH_SIZE, filteredEntityKeys.size()));
+
+    stateWriter.appendFollowUpEvent(
+        command.getKey(), BatchOperationIntent.EXECUTING, command.getValue());
+
+    switch (recordValue.getBatchOperationType()) {
+      case PROCESS_CANCELLATION:
+        entityKeys.forEach(this::cancelProcessInstance);
+    }
     stateWriter.appendFollowUpEvent(
         command.getKey(), BatchOperationIntent.EXECUTED, command.getValue());
 
-    final var entityKeys = fetchEntityKeys(batchKey, offset);
-    switch (recordValue.getBatchOperationType()) {
-      case PROCESS_CANCELLATION: entityKeys.forEach(this::cancelProcessInstance);
-    }
-
-    if (hasNextBatch(batchKey, offset)) {
+    if (hasNextBatch(filteredEntityKeys, offset)) {
       final var followupCommand = new BatchOperationExecutionRecord();
+      followupCommand.setBatchOperationKey(batchKey);
       followupCommand.setBatchOperationType(command.getValue().getBatchOperationType());
       followupCommand.setOffset(command.getValue().getOffset() + BATCH_SIZE);
-      commandWriter.appendFollowUpCommand(command.getKey(), BatchOperationIntent.EXECUTE, followupCommand);
+      commandWriter.appendFollowUpCommand(command.getKey(), BatchOperationIntent.EXECUTE,
+          followupCommand);
+    } else {
+      // todo use the BatchOperationRecord
+      stateWriter.appendFollowUpEvent(
+          command.getKey(), BatchOperationIntent.COMPLETED, command.getValue());
     }
   }
 
-  private List<Long> fetchEntityKeys(final long batchOperationKey, final int offset) {
-    return List.of(1L, 2L, 3L); // TODO read from column family
+  private List<Long> fetchFilteredEntityKeys(final long batchOperationKey) {
+    final var keys = batchOperationState.get(batchOperationKey).map(ItemKeys::getKeys)
+        .orElseThrow();
+    return keys.stream()
+        .filter(key -> Protocol.decodePartitionId(key) == partitionId)
+        .toList();
   }
 
-  private boolean hasNextBatch(final long batchOperationKey, final int offset) {
-    return offset == 0; // todo make better :)
+  private boolean hasNextBatch(final List<Long> filteredKeysByPartition, final int offset) {
+    return filteredKeysByPartition.size() > offset + BATCH_SIZE;
   }
 
   private void cancelProcessInstance(final long processInstanceKey) {
-    final var key = keyGenerator.nextKey();
-    final var command  = new ProcessInstanceRecord();
+    LOGGER.info("Cancelling process instance with key '{}'", processInstanceKey);
+
+    final var command = new ProcessInstanceRecord();
     command.setProcessInstanceKey(processInstanceKey);
-    commandWriter.appendFollowUpCommand(key, ProcessInstanceIntent.CANCEL, command);
+    commandWriter.appendFollowUpCommand(processInstanceKey, ProcessInstanceIntent.CANCEL, command);
   }
 
 }

@@ -23,6 +23,7 @@ import java.util.Arrays;
 import java.util.Collection;
 
 public interface Intent {
+
   Collection<Class<? extends Intent>> INTENT_CLASSES =
       Arrays.asList(
           DeploymentIntent.class,
@@ -179,6 +180,7 @@ public interface Intent {
       case IDENTITY_SETUP:
         return IdentitySetupIntent.from(intent);
       case BATCH_OPERATION:
+      case BATCH_OPERATION_EXECUTION:
         return BatchOperationIntent.from(intent);
       case NULL_VAL:
       case SBE_UNKNOWN:
@@ -278,6 +280,7 @@ public interface Intent {
       case IDENTITY_SETUP:
         return IdentitySetupIntent.valueOf(intent);
       case BATCH_OPERATION:
+      case BATCH_OPERATION_EXECUTION:
         return BatchOperationIntent.valueOf(intent);
       case NULL_VAL:
       case SBE_UNKNOWN:

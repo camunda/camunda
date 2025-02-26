@@ -46,11 +46,14 @@ public enum ProcessInstanceIntent implements ProcessInstanceRelatedIntent {
    * activation or completion.
    */
   COMPLETE_EXECUTION_LISTENER((short) 12),
-  /** Represents the intent signaling the migration of an ancestor element instance. */
+  /**
+   * Represents the intent signaling the migration of an ancestor element instance.
+   */
   ANCESTOR_MIGRATED((short) 13),
   CANCEL_BATCH_OPERATION((short) 14);
 
-  private static final Set<ProcessInstanceIntent> PROCESS_INSTANCE_COMMANDS = EnumSet.of(CANCEL, CANCEL_BATCH_OPERATION);
+  private static final Set<ProcessInstanceIntent> PROCESS_INSTANCE_COMMANDS = EnumSet.of(CANCEL,
+      CANCEL_BATCH_OPERATION);
   private static final Set<ProcessInstanceIntent> BPMN_ELEMENT_COMMANDS =
       EnumSet.of(
           ACTIVATE_ELEMENT, COMPLETE_ELEMENT, TERMINATE_ELEMENT, COMPLETE_EXECUTION_LISTENER);
