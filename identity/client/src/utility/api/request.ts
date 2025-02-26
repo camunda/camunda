@@ -1,15 +1,31 @@
 import { redirectToLogin } from "src/utility/auth";
 
+export type ErrorResponse<Type = "generic" | "detailed"> =
+  Type extends "detailed"
+    ? {
+        detail: string;
+        instance: string;
+        status: number;
+        title: string;
+        type: string;
+      }
+    : {
+        error: string;
+        path: string;
+        status: number;
+        timestamp: string;
+      };
+
 export type ApiResult<R> =
   | {
       data: R;
-      errors: null;
+      error: null;
       status: number;
       success: true;
     }
   | {
       data: null;
-      errors: string[];
+      error: ErrorResponse | null;
       status: number;
       success: false;
     };
@@ -92,19 +108,27 @@ const apiRequest: <R, P>(
     } catch {
       // body is empty
     }
-    const success = response.ok;
 
-    return {
-      data: success ? data : null,
-      errors: success ? null : (data?.errors ?? []),
-      status: response.status,
-      success,
-    };
+    if (response.ok) {
+      return {
+        data: data,
+        error: null,
+        status: response.status,
+        success: true,
+      };
+    } else {
+      return {
+        data: null,
+        error: data,
+        status: response.status,
+        success: false,
+      };
+    }
   } catch {
     return {
       data: null,
+      error: null,
       status: -1,
-      errors: [],
       success: false,
     };
   }
@@ -136,14 +160,3 @@ export const apiPut = apiRequestWrapper("PUT");
 export const apiDelete = apiRequestWrapper("DELETE");
 
 export const apiPatch = apiRequestWrapper("PATCH");
-
-export const namedErrorsReducer = (
-  result: Record<string, string[]>,
-  current: string,
-): Record<string, string[]> => {
-  const name = current.split(".")[0];
-  return {
-    ...result,
-    [name]: [...(result[name] || []), current],
-  };
-};

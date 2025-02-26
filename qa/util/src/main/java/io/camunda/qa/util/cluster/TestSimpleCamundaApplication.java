@@ -236,4 +236,9 @@ public final class TestSimpleCamundaApplication
     modifier.accept(brokerProperties);
     return this;
   }
+
+  @Override
+  public BrokerBasedProperties brokerConfig() {
+    return brokerProperties;
+  }
 }

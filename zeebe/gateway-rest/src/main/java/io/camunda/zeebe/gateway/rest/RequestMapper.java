@@ -135,11 +135,8 @@ import org.springframework.web.multipart.MultipartFile;
 public class RequestMapper {
 
   public static final String VND_CAMUNDA_API_KEYS_STRING_JSON = "vnd.camunda.api.keys.string+json";
-  public static final String VND_CAMUNDA_API_KEYS_NUMBER_JSON = "vnd.camunda.api.keys.number+json";
   public static final String MEDIA_TYPE_KEYS_STRING_VALUE =
       "application/" + VND_CAMUNDA_API_KEYS_STRING_JSON;
-  public static final String MEDIA_TYPE_KEYS_NUMBER_VALUE =
-      "application/" + VND_CAMUNDA_API_KEYS_NUMBER_JSON;
 
   public static CompleteUserTaskRequest toUserTaskCompletionRequest(
       final UserTaskCompletionRequest completionRequest, final long userTaskKey) {
