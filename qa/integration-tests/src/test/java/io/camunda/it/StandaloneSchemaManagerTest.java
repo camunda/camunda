@@ -7,11 +7,14 @@
  */
 package io.camunda.it;
 
+import io.camunda.qa.util.cluster.TestStandaloneCamunda;
 import io.camunda.qa.util.cluster.TestStandaloneSchemaManager;
+import io.camunda.zeebe.broker.system.configuration.ExporterCfg;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
 import java.io.IOException;
 import java.time.Duration;
+import java.util.Map;
 import org.elasticsearch.client.RestClient;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -86,6 +89,44 @@ final class StandaloneSchemaManagerTest {
               "/usr/share/elasticsearch/config/jvm.options.d/elasticsearch-fast-startup.options",
               BindMode.READ_ONLY);
 
+  @TestZeebe(autoStart = false)
+  final TestStandaloneCamunda camunda =
+      new TestStandaloneCamunda(es, false)
+          .withBrokerConfig(
+              cfg -> {
+                cfg.getExporters()
+                    .computeIfAbsent("elasticsearch", __ -> new ExporterCfg())
+                    .setArgs(
+                        Map.of(
+                            "index",
+                            Map.of("createTemplate", false),
+                            "retention",
+                            Map.of("enabled", false, "managePolicy", false),
+                            "authentication",
+                            Map.of("username", APP_USER, "password", APP_PASSWORD)));
+              })
+          .withOperateConfig(
+              cfg -> {
+                cfg.getElasticsearch().setCreateSchema(false);
+                cfg.getElasticsearch().setHealthCheckEnabled(false);
+                cfg.getElasticsearch().setUsername(APP_USER);
+                cfg.getElasticsearch().setPassword(APP_PASSWORD);
+                cfg.getZeebeElasticsearch().setUsername(APP_USER);
+                cfg.getZeebeElasticsearch().setPassword(APP_PASSWORD);
+                cfg.getArchiver().setIlmEnabled(true);
+              })
+          .withTasklistConfig(
+              cfg -> {
+                cfg.getElasticsearch().setCreateSchema(false);
+                cfg.getElasticsearch().setHealthCheckEnabled(false);
+                cfg.getElasticsearch().setUsername(APP_USER);
+                cfg.getElasticsearch().setPassword(APP_PASSWORD);
+                cfg.getZeebeElasticsearch().setUsername(APP_USER);
+                cfg.getZeebeElasticsearch().setPassword(APP_PASSWORD);
+                cfg.getArchiver().setIlmEnabled(true);
+                cfg.getArchiver().setIlmManagePolicy(false);
+              });
+
   @BeforeEach
   void setup() throws IOException, InterruptedException {
     // setup ES users
@@ -105,5 +146,11 @@ final class StandaloneSchemaManagerTest {
   @Test
   void canRunSchemaManager() {
     schemaManager.start();
+  }
+
+  @Test
+  void canStartCamundaAfterSchemaManager() {
+    schemaManager.start();
+    camunda.start();
   }
 }
