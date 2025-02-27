@@ -8,27 +8,35 @@ such as users, roles, permissions, and OAuth clients.
 
 ## Running locally
 
-1. Build project from the root folder of the monorepo using:
+- All commands should be run from the root folder of the monorepo unless stated otherwise.
+
+1. Build project:
 
 ```
-mvn clean install -U --projects dist --also-make -DskipTests -Dskip.fe.build=false
+mvn clean install -DskipTests=true -DskipChecks -Dskip.fe.build=false -DskipQaBuild -T1C
 ```
 
 2. Run elasticsearch by using one of the already configured docker-compose file in our codebase.
 
-Example: navigate to Operate's folder in the codebase and run:
+Example (using Operate's configuration):
 
 ```
-docker compose -f config/docker-compose.yml up -d elasticsearch
+docker compose -f operate/docker-compose.yml up -d elasticsearch
 ```
 
-3. Run this command for some final setup:
+3. Run this command for some final setup and running the Zeebe broker:
 
 ```
-CAMUNDA_SECURITY_AUTHORIZATIONS_ENABLED=true \
+SPRING_PROFILES_ACTIVE=consolidated-auth,broker,identity \
+CAMUNDA_SECURITY_AUTHENTICATION_BASIC_ALLOWUNAUTHENTICATEDAPIACCESS=false \
+CAMUNDA_SECURITY_AUTHENTICATION_METHOD=BASIC \
+ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_CONNECT_TYPE=elasticsearch \
+ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_CONNECT_URL=http://localhost:9200 \
+ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_CREATESCHEMA=true \
+ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_INDEX_SHOULDWAITFORIMPORTERS=false \
+ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_RETENTION_ENABLED=false \
 ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_CLASSNAME=io.camunda.exporter.CamundaExporter \
-CAMUNDA_REST_QUERY_ENABLED=true \
-./dist/target/camunda-zeebe/bin/broker
+./dist/target/camunda-zeebe/bin/camunda
 ```
 
 4. Run the frontend by navigating to the `identity/client` folder and running:
