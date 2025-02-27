@@ -425,18 +425,18 @@ public class CompactRecordLogger {
   private String summarizeJob(final Record<?> record) {
     final var value = (JobRecordValue) record.getValue();
 
-    return summarizeJobRecordValue(record.getKey(), value);
+    return summarizeJobRecordValue(-1L, value);
   }
 
   private String summarizeJobRecordValue(final long jobKey, final JobRecordValue value) {
     final var result = new StringBuilder();
 
     if (jobKey != -1) {
-      result.append(shortenKey(jobKey));
+      result.append(shortenKey(jobKey)).append(" ");
     }
     if (!StringUtils.isEmpty(value.getType())) {
       result
-          .append(" \"")
+          .append("\"")
           .append(value.getType())
           .append("\"")
           .append(summarizeElementInformation(value.getElementId(), value.getElementInstanceKey()));
