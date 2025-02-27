@@ -15,6 +15,7 @@
  */
 package io.camunda.process.test.api;
 
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -72,7 +73,7 @@ public class VariableAssertTest {
 
   @BeforeEach
   void configureMocks() {
-    when(camundaDataSource.findProcessInstances())
+    when(camundaDataSource.findProcessInstances(any()))
         .thenReturn(
             Collections.singletonList(
                 ProcessInstanceBuilder.newActiveProcessInstance(PROCESS_INSTANCE_KEY).build()));
@@ -159,7 +160,7 @@ public class VariableAssertTest {
     @Test
     void shouldFailIfProcessInstanceNotFound() {
       // given
-      when(camundaDataSource.findProcessInstances()).thenReturn(Collections.emptyList());
+      when(camundaDataSource.findProcessInstances(any())).thenReturn(Collections.emptyList());
 
       // when
       when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
@@ -291,7 +292,7 @@ public class VariableAssertTest {
     @Test
     void shouldFailIfProcessInstanceNotFound() {
       // given
-      when(camundaDataSource.findProcessInstances()).thenReturn(Collections.emptyList());
+      when(camundaDataSource.findProcessInstances(any())).thenReturn(Collections.emptyList());
 
       // when
       when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
@@ -446,7 +447,7 @@ public class VariableAssertTest {
     @Test
     void shouldFailIfProcessInstanceNotFound() {
       // given
-      when(camundaDataSource.findProcessInstances()).thenReturn(Collections.emptyList());
+      when(camundaDataSource.findProcessInstances(any())).thenReturn(Collections.emptyList());
 
       // when
       when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
