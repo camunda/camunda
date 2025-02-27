@@ -5413,7 +5413,7 @@ components:
         - claimValue
         - name
         - id
-    MappingRuleCreateResponseBase:
+    MappingRuleCreateResult:
       type: object
       properties:
         claimName:
@@ -5428,20 +5428,6 @@ components:
         id:
           type: string
           description: The unique external id of the mapping.
-    MappingRuleCreateResponse:
-      type: object
-      allOf:
-        - $ref: "#/components/schemas/MappingRuleCreateResponseBase"
-      properties:
-        mappingKey:
-          description: The key of the created mapping rule.
-          type: integer
-          format: int64
-    MappingRuleCreateResult:
-      type: object
-      allOf:
-        - $ref: "#/components/schemas/MappingRuleCreateResponseBase"
-      properties:
         mappingKey:
           description: The key of the created mapping rule.
           type: string
@@ -6608,33 +6594,12 @@ components:
           format: date-time
           description: The date and time when the link expires.
 
-    DeploymentResponseBase:
-      description: Base properties for DeploymentResponse.
+    DeploymentResult:
       type: object
       properties:
         tenantId:
           description: The tenant ID associated with the deployment.
           type: string
-    DeploymentResponse:
-      deprecated: true
-      type: object
-      allOf:
-        - $ref: "#/components/schemas/DeploymentResponseBase"
-      properties:
-        deploymentKey:
-          type: integer
-          format: int64
-          description: The unique key identifying the deployment.
-        deployments:
-          description: Items deployed by the request.
-          type: array
-          items:
-            $ref: "#/components/schemas/DeploymentMetadata"
-    DeploymentResult:
-      type: object
-      allOf:
-        - $ref: "#/components/schemas/DeploymentResponseBase"
-      properties:
         deploymentKey:
           type: string
           description: The unique key identifying the deployment.
@@ -6656,21 +6621,8 @@ components:
           $ref: "#/components/schemas/DeploymentFormResult"
         resource:
           $ref: "#/components/schemas/DeploymentResourceResult"
-    DeploymentMetadata:
-      type: object
-      properties:
-        processDefinition:
-          $ref: "#/components/schemas/DeploymentProcess"
-        decisionDefinition:
-          $ref: "#/components/schemas/DeploymentDecision"
-        decisionRequirements:
-          $ref: "#/components/schemas/DeploymentDecisionRequirements"
-        form:
-          $ref: "#/components/schemas/DeploymentForm"
-        resource:
-          $ref: "#/components/schemas/DeploymentResource"
-    DeploymentProcessBase:
-      description: Base properties for DeploymentProcess.
+    DeploymentProcessResult:
+      description: A deployed process.
       type: object
       properties:
         processDefinitionId:
@@ -6688,27 +6640,11 @@ components:
         tenantId:
           type: string
           description: The tenant ID of the deployed process.
-    DeploymentProcess:
-      description: A deployed process.
-      type: object
-      allOf:
-        - $ref: "#/components/schemas/DeploymentProcessBase"
-      properties:
-        processDefinitionKey:
-          type: integer
-          format: int64
-          description: The assigned key, which acts as a unique identifier for this process.
-    DeploymentProcessResult:
-      description: A deployed process.
-      type: object
-      allOf:
-        - $ref: "#/components/schemas/DeploymentProcessBase"
-      properties:
         processDefinitionKey:
           type: string
           description: The assigned key, which acts as a unique identifier for this process.
-    DeploymentDecisionBase:
-      description: Base properties for DeploymentDecision.
+    DeploymentDecisionResult:
+      description: A deployed decision.
       type: object
       properties:
         decisionDefinitionId:
@@ -6730,28 +6666,6 @@ components:
           type: string
           description: |
             The dmn ID of the decision requirements graph that this decision is part of, as parsed during deployment.
-    DeploymentDecision:
-      description: A deployed decision.
-      type: object
-      allOf:
-        - $ref: "#/components/schemas/DeploymentDecisionBase"
-      properties:
-        decisionDefinitionKey:
-          type: integer
-          format: int64
-          description: |
-            The assigned decision key, which acts as a unique identifier for this decision.
-        decisionRequirementsKey:
-          type: integer
-          format: int64
-          description: |
-            The assigned key of the decision requirements graph that this decision is part of.
-    DeploymentDecisionResult:
-      description: A deployed decision.
-      type: object
-      allOf:
-        - $ref: "#/components/schemas/DeploymentDecisionBase"
-      properties:
         decisionDefinitionKey:
           type: string
           description: |
@@ -6760,8 +6674,8 @@ components:
           type: string
           description: |
             The assigned key of the decision requirements graph that this decision is part of.
-    DeploymentDecisionRequirementsBase:
-      description: Base properties for DeploymentDecisionRequirements.
+    DeploymentDecisionRequirementsResult:
+      description: Deployed decision requirements.
       type: object
       properties:
         decisionRequirementsId:
@@ -6781,29 +6695,12 @@ components:
         resourceName:
           type: string
           description: The resource name from which this decision requirements was parsed.
-    DeploymentDecisionRequirements:
-      description: Deployed decision requirements.
-      type: object
-      allOf:
-        - $ref: "#/components/schemas/DeploymentDecisionRequirementsBase"
-      properties:
-        decisionRequirementsKey:
-          type: integer
-          format: int64
-          description: |
-            The assigned decision requirements key, which acts as a unique identifier for this decision requirements.
-    DeploymentDecisionRequirementsResult:
-      description: Deployed decision requirements.
-      type: object
-      allOf:
-        - $ref: "#/components/schemas/DeploymentDecisionRequirementsBase"
-      properties:
         decisionRequirementsKey:
           type: string
           description: |
             The assigned decision requirements key, which acts as a unique identifier for this decision requirements.
-    DeploymentFormBase:
-      description: Base properties for DeploymentForm.
+    DeploymentFormResult:
+      description: A deployed form.
       type: object
       properties:
         formId:
@@ -6821,27 +6718,11 @@ components:
         tenantId:
           type: string
           description: The tenant ID of the deployed form.
-    DeploymentForm:
-      description: A deployed form.
-      type: object
-      allOf:
-        - $ref: "#/components/schemas/DeploymentFormBase"
-      properties:
-        formKey:
-          type: integer
-          format: int64
-          description: The assigned key, which acts as a unique identifier for this form.
-    DeploymentFormResult:
-      description: A deployed form.
-      type: object
-      allOf:
-        - $ref: "#/components/schemas/DeploymentFormBase"
-      properties:
         formKey:
           type: string
           description: The assigned key, which acts as a unique identifier for this form.
-    DeploymentResourceBase:
-      description: Base properties for DeploymentResource.
+    DeploymentResourceResult:
+      description: A deployed Resource.
       type: object
       properties:
         resourceId:
@@ -6859,22 +6740,6 @@ components:
         tenantId:
           type: string
           description: The tenant ID of the deployed form.
-    DeploymentResource:
-      description: A deployed Resource.
-      type: object
-      allOf:
-        - $ref: "#/components/schemas/DeploymentResourceBase"
-      properties:
-        resourceKey:
-          type: integer
-          format: int64
-          description: The assigned key, which acts as a unique identifier for this Resource.
-    DeploymentResourceResult:
-      description: A deployed Resource.
-      type: object
-      allOf:
-        - $ref: "#/components/schemas/DeploymentResourceBase"
-      properties:
         resourceKey:
           type: string
           description: The assigned key, which acts as a unique identifier for this Resource.
