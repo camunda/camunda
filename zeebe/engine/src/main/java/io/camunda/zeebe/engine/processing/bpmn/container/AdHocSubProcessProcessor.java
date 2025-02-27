@@ -236,7 +236,7 @@ public class AdHocSubProcessProcessor
       }
     } else {
       if (satisfiesCompletionCondition) {
-        if (adHocSubProcess.isCancelRemainingInstancesEnabled()) {
+        if (adHocSubProcess.isCancelRemainingInstances()) {
           final boolean hasNoActiveChildren =
               stateTransitionBehavior.terminateChildInstances(adHocSubProcessContext);
           if (hasNoActiveChildren) {

@@ -42,8 +42,7 @@ public final class AdHocSubProcessTransformer implements ModelElementTransformer
         .map(context.getExpressionLanguage()::parseExpression)
         .ifPresent(executableAdHocSubProcess::setCompletionCondition);
 
-    executableAdHocSubProcess.setCancelRemainingInstancesEnabled(
-        element.isCancelRemainingInstancesEnabled());
+    executableAdHocSubProcess.setCancelRemainingInstances(element.isCancelRemainingInstances());
 
     final Collection<AbstractFlowElement> childElements =
         executableAdHocSubProcess.getChildElements();
