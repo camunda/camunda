@@ -49,7 +49,6 @@ import io.camunda.operate.zeebeimport.post.PostImportAction;
 import io.camunda.operate.zeebeimport.post.opensearch.OpensearchIncidentPostImportAction;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import java.io.IOException;
-import java.time.Duration;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -63,8 +62,8 @@ import org.springframework.beans.factory.BeanFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
-import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 @SpringBootTest(
     classes = {
@@ -105,10 +104,10 @@ public class OpensearchPostImportActionIT extends AbstractOpensearchConnectorPro
   @Autowired protected IncidentTemplate incidentTemplate;
 
   // not needed for the test but to satisfy our auto wirings
-  @MockitoBean("postImportThreadPoolScheduler")
+  @MockBean(name = "postImportThreadPoolScheduler")
   protected ThreadPoolTaskScheduler postImporterScheduler;
 
-  @MockitoBean protected ImportPositionHolder importPositionHolder;
+  @MockBean protected ImportPositionHolder importPositionHolder;
 
   protected PostImportAction postImportAction;
 
@@ -229,8 +228,8 @@ public class OpensearchPostImportActionIT extends AbstractOpensearchConnectorPro
     searchClientTestHelper.createDocument(
         incidentTemplate.getFullQualifiedName(), incidentKey.toString(), incidentEntry);
 
-    // wait out the refresh interval so that the post importer sees everything
-    Thread.sleep(Duration.ofSeconds(2L));
+    // refresh so that the post importer sees everything
+    searchClientTestHelper.refreshAllIndexes();
 
     // reset wiremock so that no prior requests are considered for verification
     WIRE_MOCK_SERVER.resetRequests();
@@ -252,25 +251,37 @@ public class OpensearchPostImportActionIT extends AbstractOpensearchConnectorPro
 
     // the update for the calling flow node instance was correctly routed to the calling process
     // instance
-    final List<JsonNode> updatesForCallingListViewFlowNodeInstance =
-        filterUpdatesToIndexAndDocument(bulkActions, listViewTemplate, callingFlowNodeInstanceKey);
-
-    assertThat(updatesForCallingListViewFlowNodeInstance).hasSize(1);
-
-    final String routingKeyForCallingListViewFlowNodeInstance =
-        updatesForCallingListViewFlowNodeInstance.get(0).get("routing").asText();
-    assertThat(routingKeyForCallingListViewFlowNodeInstance).isEqualTo(callingProcessInstanceKey);
+    assertUpdateWasRoutedTo(
+        bulkActions, listViewTemplate, callingFlowNodeInstanceKey, callingProcessInstanceKey);
+    assertUpdateWasRoutedTo(
+        bulkActions, flowNodeInstanceTemplate, callingFlowNodeInstanceKey, null);
 
     // and the update for the called flow node instance was correctly routed to the called process
     // instance
-    final List<JsonNode> updatesForCalledListViewFlowNodeInstance =
-        filterUpdatesToIndexAndDocument(bulkActions, listViewTemplate, calledFlowNodeInstanceKey);
+    assertUpdateWasRoutedTo(
+        bulkActions, listViewTemplate, calledFlowNodeInstanceKey, calledProcessInstanceKey);
+    assertUpdateWasRoutedTo(bulkActions, flowNodeInstanceTemplate, calledFlowNodeInstanceKey, null);
+  }
 
-    assertThat(updatesForCalledListViewFlowNodeInstance).hasSize(1);
+  private void assertUpdateWasRoutedTo(
+      List<JsonNode> bulkActions,
+      IndexDescriptor index,
+      String documentId,
+      String expectedRountingKey) {
+    final List<JsonNode> updatesForDocument =
+        filterUpdatesToIndexAndDocument(bulkActions, index, documentId);
 
-    final String routingKeyForCalledListViewFlowNodeInstance =
-        updatesForCalledListViewFlowNodeInstance.get(0).get("routing").asText();
-    assertThat(routingKeyForCalledListViewFlowNodeInstance).isEqualTo(calledProcessInstanceKey);
+    assertThat(updatesForDocument).hasSize(1);
+
+    final JsonNode update = updatesForDocument.get(0);
+    if (expectedRountingKey != null) {
+      assertThat(update.has("routing")).isTrue();
+
+      final String actualRoutingKey = update.get("routing").asText();
+      assertThat(actualRoutingKey).isEqualTo(expectedRountingKey);
+    } else {
+      assertThat(update.has("routing")).isFalse();
+    }
   }
 
   private List<JsonNode> filterUpdatesToIndexAndDocument(

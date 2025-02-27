@@ -10,7 +10,10 @@ package io.camunda.operate.schema.util.elasticsearch;
 import io.camunda.operate.conditions.ElasticsearchCondition;
 import io.camunda.operate.schema.util.SearchClientTestHelper;
 import io.camunda.operate.store.elasticsearch.RetryElasticsearchClient;
+import java.io.IOException;
 import java.util.Map;
+import org.elasticsearch.action.admin.indices.refresh.RefreshRequest;
+import org.elasticsearch.client.RequestOptions;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Conditional;
 
@@ -37,5 +40,17 @@ public class ElasticsearchClientTestHelper implements SearchClientTestHelper {
       final String routing,
       final Map<String, Object> document) {
     elasticsearchClient.createOrUpdateDocument(indexName, id, routing, document);
+  }
+
+  @Override
+  public void refreshAllIndexes() {
+    try {
+      elasticsearchClient
+          .getEsClient()
+          .indices()
+          .refresh(new RefreshRequest("*"), RequestOptions.DEFAULT);
+    } catch (IOException e) {
+      throw new RuntimeException("Refresh failed", e);
+    }
   }
 }
