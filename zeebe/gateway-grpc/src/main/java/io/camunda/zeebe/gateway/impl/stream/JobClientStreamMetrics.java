@@ -15,11 +15,9 @@ import io.camunda.zeebe.util.micrometer.MicrometerUtil;
 import io.camunda.zeebe.util.micrometer.StatefulGauge;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.DistributionSummary;
-import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.util.EnumMap;
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicLong;
 
 final class JobClientStreamMetrics implements ClientStreamMetrics {
 
