@@ -12,8 +12,8 @@ import io.camunda.zeebe.gateway.impl.configuration.LongPollingCfg;
 import io.camunda.zeebe.gateway.impl.job.ActivateJobsHandler;
 import io.camunda.zeebe.gateway.impl.job.LongPollingActivateJobsHandler;
 import io.camunda.zeebe.gateway.impl.job.RoundRobinActivateJobsHandler;
-import io.camunda.zeebe.gateway.metrics.LongPollingMetrics.GatewayProtocol;
-import io.camunda.zeebe.gateway.metrics.LongPollingMetricsImpl;
+import io.camunda.zeebe.gateway.metrics.LongPollingMetrics;
+import io.camunda.zeebe.gateway.metrics.LongPollingMetricsDoc;
 import io.camunda.zeebe.gateway.protocol.rest.JobActivationResponse;
 import io.camunda.zeebe.gateway.rest.ConditionalOnRestGatewayEnabled;
 import io.camunda.zeebe.gateway.rest.ResponseMapper;
@@ -91,7 +91,8 @@ public class JobHandlerConfiguration {
         .setActivationResultMapper(ResponseMapper::toActivateJobsResponse)
         .setNoJobsReceivedExceptionProvider(RuntimeException::new)
         .setRequestCanceledExceptionProvider(RuntimeException::new)
-        .setMetrics(new LongPollingMetricsImpl(meterRegistry, GatewayProtocol.REST))
+        .setMetrics(
+            new LongPollingMetrics(meterRegistry, LongPollingMetricsDoc.GatewayProtocol.REST))
         .build();
   }
 

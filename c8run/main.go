@@ -232,12 +232,11 @@ func main() {
 		fmt.Println("Failed to set envVars:", err)
 	}
 
-	// classPath := filepath.Join(parentDir, "configuration", "userlib") + "," + filepath.Join(parentDir, "configuration", "keystore")
-
 	baseCommand, err := getBaseCommand()
 	if err != nil {
 		fmt.Println(err.Error())
 	}
+
 	settings, err := getBaseCommandSettings(baseCommand)
 	if err != nil {
 		fmt.Println(err.Error())
@@ -371,13 +370,35 @@ func main() {
 			fmt.Print("Failed to open file: " + connectorsPidPath)
 			os.Exit(1)
 		}
-		connectorsPidFile.Write([]byte(strconv.Itoa(connectorsCmd.Process.Pid)))
-		var extraArgs string
-		if settings.config != "" {
-			extraArgs = "--spring.config.location=" + filepath.Join(parentDir, settings.config)
-		} else {
-			extraArgs = "--spring.config.location=" + filepath.Join(parentDir, "configuration")
+
+		_, err = connectorsPidFile.Write([]byte(strconv.Itoa(connectorsCmd.Process.Pid)))
+		if err != nil {
+			fmt.Print("Failed to write to file: " + connectorsPidPath + " continuing...")
 		}
+
+		var extraArgs string
+
+		if settings.config != "" {
+			path := filepath.Join(parentDir, settings.config)
+			var slash string
+			if runtime.GOOS == "linux" || runtime.GOOS == "darwin" {
+				slash = "/"
+			} else if runtime.GOOS == "windows" {
+				slash = "\\"
+			}
+
+			configStat, err := os.Stat(path)
+			if err != nil {
+				fmt.Printf("Failed to read config file: %s\n", path)
+				os.Exit(1)
+			}
+			if configStat.IsDir() {
+				extraArgs = "--spring.config.additional-location=file:" + settings.config + slash
+			} else {
+				extraArgs = "--spring.config.additional-location=file:" + settings.config
+			}
+		}
+
 		camundaCmd := c8.CamundaCmd(camundaVersion, parentDir, extraArgs)
 		camundaLogPath := filepath.Join(parentDir, "log", "camunda.log")
 		camundaLogFile, err := os.OpenFile(camundaLogPath, os.O_RDWR|os.O_CREATE, 0644)

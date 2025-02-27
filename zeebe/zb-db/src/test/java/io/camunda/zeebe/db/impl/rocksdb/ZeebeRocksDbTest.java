@@ -15,22 +15,26 @@ import io.camunda.zeebe.db.ZeebeDbFactory;
 import io.camunda.zeebe.db.impl.DbString;
 import io.camunda.zeebe.db.impl.DefaultColumnFamily;
 import io.camunda.zeebe.db.impl.DefaultZeebeDbFactory;
+import io.camunda.zeebe.util.micrometer.ExtendedMeterDocumentation;
+import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.Meter.Type;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.io.File;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import org.assertj.core.api.PathAssert;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
-public final class ZeebeRocksDbTest {
-
-  @Rule public final TemporaryFolder temporaryFolder = new TemporaryFolder();
+final class ZeebeRocksDbTest {
 
   @Test
-  public void shouldCreateSnapshot() throws Exception {
+  void shouldCreateSnapshot(final @TempDir Path tempDir) throws Exception {
     // given
     final ZeebeDbFactory<DefaultColumnFamily> dbFactory = DefaultZeebeDbFactory.getDefaultFactory();
-
-    final File pathName = temporaryFolder.newFolder();
-    final ZeebeDb<DefaultColumnFamily> db = dbFactory.createDb(pathName);
+    final ZeebeDb<DefaultColumnFamily> db =
+        dbFactory.createDb(Files.createDirectory(tempDir.resolve("db")).toFile());
 
     final DbString key = new DbString();
     key.wrapString("foo");
@@ -41,19 +45,18 @@ public final class ZeebeRocksDbTest {
     columnFamily.insert(key, value);
 
     // when
-    final File snapshotDir = new File(temporaryFolder.newFolder(), "snapshot");
+    final var snapshotDir = tempDir.resolve("snapshot").toFile();
     db.createSnapshot(snapshotDir);
 
     // then
-    assertThat(pathName.listFiles()).isNotEmpty();
+    PathAssert.assertThatPath(tempDir.resolve("db")).isNotEmptyDirectory();
     db.close();
   }
 
   @Test
-  public void shouldReopenDb() throws Exception {
+  void shouldReopenDb(final @TempDir File pathName) throws Exception {
     // given
     final ZeebeDbFactory<DefaultColumnFamily> dbFactory = DefaultZeebeDbFactory.getDefaultFactory();
-    final File pathName = temporaryFolder.newFolder();
     ZeebeDb<DefaultColumnFamily> db = dbFactory.createDb(pathName);
 
     final DbString key = new DbString();
@@ -72,18 +75,16 @@ public final class ZeebeRocksDbTest {
     columnFamily =
         db.createColumnFamily(DefaultColumnFamily.DEFAULT, db.createContext(), key, value);
     final DbString zbString = columnFamily.get(key);
-    assertThat(zbString).isNotNull();
-    assertThat(zbString.toString()).isEqualTo("bar");
-
+    assertThat(zbString).hasToString("bar");
     db.close();
   }
 
   @Test
-  public void shouldRecoverFromSnapshot() throws Exception {
+  void shouldRecoverFromSnapshot(final @TempDir Path tempDir) throws Exception {
     // given
     final ZeebeDbFactory<DefaultColumnFamily> dbFactory = DefaultZeebeDbFactory.getDefaultFactory();
-    final File pathName = temporaryFolder.newFolder();
-    ZeebeDb<DefaultColumnFamily> db = dbFactory.createDb(pathName);
+    ZeebeDb<DefaultColumnFamily> db =
+        dbFactory.createDb(Files.createDirectory(tempDir.resolve("db")).toFile());
 
     final DbString key = new DbString();
     key.wrapString("foo");
@@ -93,13 +94,13 @@ public final class ZeebeRocksDbTest {
         db.createColumnFamily(DefaultColumnFamily.DEFAULT, db.createContext(), key, value);
     columnFamily.insert(key, value);
 
-    final File snapshotDir = new File(temporaryFolder.newFolder(), "snapshot");
+    final var snapshotDir = tempDir.resolve("snapshot").toFile();
     db.createSnapshot(snapshotDir);
     value.wrapString("otherString");
     columnFamily.update(key, value);
 
     // when
-    assertThat(pathName).isNotEmptyDirectory();
+    assertThat(tempDir.resolve("db")).isNotEmptyDirectory();
     db.close();
     db = dbFactory.createDb(snapshotDir);
     columnFamily =
@@ -107,7 +108,64 @@ public final class ZeebeRocksDbTest {
 
     // then
     final DbString dbString = columnFamily.get(key);
-
     assertThat(dbString).hasToString("bar");
+  }
+
+  @Test
+  void shouldRemoveMetricsOnClose(final @TempDir Path tempDir) throws Exception {
+    // given
+    final var meterRegistry = new SimpleMeterRegistry();
+    final ZeebeDbFactory<DefaultColumnFamily> dbFactory =
+        DefaultZeebeDbFactory.getDefaultFactory(() -> meterRegistry);
+    final Counter counter;
+
+    // when
+    try (final ZeebeDb<DefaultColumnFamily> db = dbFactory.createDb(tempDir.toFile())) {
+      counter = Counter.builder(TestDoc.FOO.getName()).register(db.getMeterRegistry());
+      counter.increment();
+    }
+
+    // then, the counter is still accessible directly, but not registered to the underlying
+    // registries
+    assertThat(counter).isNotNull();
+    assertThat(counter.count()).isOne();
+    assertThat(meterRegistry.find(TestDoc.FOO.getName()).meter()).isNull();
+  }
+
+  @Test
+  void shouldCloseRegistryOnClose(final @TempDir Path tempDir) throws Exception {
+    // given
+    final var meterRegistry = new SimpleMeterRegistry();
+    final ZeebeDbFactory<DefaultColumnFamily> dbFactory =
+        DefaultZeebeDbFactory.getDefaultFactory(() -> meterRegistry);
+    final MeterRegistry dbRegistry;
+
+    // when
+    try (final ZeebeDb<DefaultColumnFamily> db = dbFactory.createDb(tempDir.toFile())) {
+      dbRegistry = db.getMeterRegistry();
+    }
+
+    // then
+    assertThat(dbRegistry).returns(true, MeterRegistry::isClosed);
+  }
+
+  @SuppressWarnings("NullableProblems")
+  private enum TestDoc implements ExtendedMeterDocumentation {
+    FOO {
+      @Override
+      public String getDescription() {
+        return "foo description";
+      }
+
+      @Override
+      public String getName() {
+        return "foo";
+      }
+
+      @Override
+      public Type getType() {
+        return Type.GAUGE;
+      }
+    }
   }
 }
