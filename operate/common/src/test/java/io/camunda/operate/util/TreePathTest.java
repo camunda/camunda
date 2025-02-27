@@ -14,52 +14,60 @@
  * SUBJECT AS SET OUT BELOW, THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  * NOTHING IN THIS AGREEMENT EXCLUDES OR RESTRICTS A PARTY’S LIABILITY FOR (A) DEATH OR PERSONAL INJURY CAUSED BY THAT PARTY’S NEGLIGENCE, (B) FRAUD, OR (C) ANY OTHER LIABILITY TO THE EXTENT THAT IT CANNOT BE LAWFULLY EXCLUDED OR RESTRICTED.
  */
-package io.camunda.operate.opensearch.client;
+package io.camunda.operate.util;
 
-import io.camunda.operate.property.OperateProperties;
-import io.camunda.operate.schema.SchemaManager;
-import io.camunda.operate.store.opensearch.client.sync.RichOpenSearchClient;
-import io.camunda.operate.util.OpensearchOperateAbstractIT;
-import io.camunda.operate.util.TestUtil;
-import java.util.function.Function;
-import org.junit.After;
-import org.junit.Before;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
+import static org.assertj.core.api.Assertions.assertThat;
 
-public abstract class AbstractOpenSearchOperationIT extends OpensearchOperateAbstractIT {
-  @Autowired protected RichOpenSearchClient richOpenSearchClient;
+import java.util.Optional;
+import org.junit.Test;
 
-  @Autowired protected SchemaManager schemaManager;
+final class TreePathTest {
 
-  @Autowired protected OperateProperties operateProperties;
+  @Test
+  void shouldFindPidForFniId() {
+    // given
+    final TreePath treePath = new TreePath("PI_1/FN_1/FNI_1/PI_2/FN_3/FNI_3");
 
-  @Autowired protected OpensearchTestDataHelper opensearchTestDataHelper;
+    // when
+    final Optional<String> piId = treePath.processInstanceForFni("3");
 
-  protected String indexPrefix;
-
-  @Before
-  public void setUp() {
-    indexPrefix = "test-opensearch-operation-" + TestUtil.createRandomString(5);
-    operateProperties.getOpensearch().setIndexPrefix(indexPrefix);
-    schemaManager.createSchema();
+    // then
+    assertThat(piId).hasValue("2");
   }
 
-  @After
-  public void cleanUp() {
-    schemaManager.deleteIndicesFor(indexPrefix + "*");
+  @Test
+  void shouldNotFindPidForNonExistentFni() {
+    // given
+    final TreePath treePath = new TreePath("PI_1/FN_1/FNI_1");
+
+    // when
+    final Optional<String> piId = treePath.processInstanceForFni("2");
+
+    // then
+    assertThat(piId).isEmpty();
   }
 
-  public <R> R withThreadPoolTaskScheduler(Function<ThreadPoolTaskScheduler, R> f) {
-    final ThreadPoolTaskScheduler scheduler = new ThreadPoolTaskScheduler();
-    scheduler.setPoolSize(5);
-    scheduler.setThreadNamePrefix(this.getClass().getSimpleName());
-    scheduler.initialize();
+  @Test
+  void shouldNotFailOnEmptyPath() {
+    // given
+    final TreePath treePath = new TreePath("");
 
-    try {
-      return f.apply(scheduler);
-    } finally {
-      scheduler.shutdown();
-    }
+    // when
+    final Optional<String> piId = treePath.processInstanceForFni("2");
+
+    // then
+    assertThat(piId).isEmpty();
+  }
+
+  @Test
+  void shouldFindPiStartingFromMiddle() {
+    // given
+    final TreePath treePath = new TreePath("PI_1/FN_1/FNI_1/PI_2/FN_3/FNI_3");
+
+    // when
+    final Optional<String> piId = treePath.processInstanceForFni("1");
+
+    // then
+    assertThat(piId).hasValue("1");
   }
 }

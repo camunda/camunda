@@ -1,9 +1,18 @@
 /*
- * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
- * one or more contributor license agreements. See the NOTICE file distributed
- * with this work for additional information regarding copyright ownership.
- * Licensed under the Camunda License 1.0. You may not use this file
- * except in compliance with the Camunda License 1.0.
+ * Copyright Camunda Services GmbH
+ *
+ * BY INSTALLING, DOWNLOADING, ACCESSING, USING, OR DISTRIBUTING THE SOFTWARE (“USE”), YOU INDICATE YOUR ACCEPTANCE TO AND ARE ENTERING INTO A CONTRACT WITH, THE LICENSOR ON THE TERMS SET OUT IN THIS AGREEMENT. IF YOU DO NOT AGREE TO THESE TERMS, YOU MUST NOT USE THE SOFTWARE. IF YOU ARE RECEIVING THE SOFTWARE ON BEHALF OF A LEGAL ENTITY, YOU REPRESENT AND WARRANT THAT YOU HAVE THE ACTUAL AUTHORITY TO AGREE TO THE TERMS AND CONDITIONS OF THIS AGREEMENT ON BEHALF OF SUCH ENTITY.
+ * “Licensee” means you, an individual, or the entity on whose behalf you receive the Software.
+ *
+ * Permission is hereby granted, free of charge, to the Licensee obtaining a copy of this Software and associated documentation files to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject in each case to the following conditions:
+ * Condition 1: If the Licensee distributes the Software or any derivative works of the Software, the Licensee must attach this Agreement.
+ * Condition 2: Without limiting other conditions in this Agreement, the grant of rights is solely for non-production use as defined below.
+ * "Non-production use" means any use of the Software that is not directly related to creating products, services, or systems that generate revenue or other direct or indirect economic benefits.  Examples of permitted non-production use include personal use, educational use, research, and development. Examples of prohibited production use include, without limitation, use for commercial, for-profit, or publicly accessible systems or use for commercial or revenue-generating purposes.
+ *
+ * If the Licensee is in breach of the Conditions, this Agreement, including the rights granted under it, will automatically terminate with immediate effect.
+ *
+ * SUBJECT AS SET OUT BELOW, THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ * NOTHING IN THIS AGREEMENT EXCLUDES OR RESTRICTS A PARTY’S LIABILITY FOR (A) DEATH OR PERSONAL INJURY CAUSED BY THAT PARTY’S NEGLIGENCE, (B) FRAUD, OR (C) ANY OTHER LIABILITY TO THE EXTENT THAT IT CANNOT BE LAWFULLY EXCLUDED OR RESTRICTED.
  */
 package io.camunda.operate.opensearch;
 
@@ -29,6 +38,7 @@ import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.schema.IndexSchemaValidator;
 import io.camunda.operate.schema.SchemaManager;
 import io.camunda.operate.schema.indices.IndexDescriptor;
+import io.camunda.operate.schema.indices.UserIndex;
 import io.camunda.operate.schema.opensearch.OpensearchSchemaManager;
 import io.camunda.operate.schema.templates.FlowNodeInstanceTemplate;
 import io.camunda.operate.schema.templates.IncidentTemplate;
@@ -37,7 +47,6 @@ import io.camunda.operate.schema.templates.OperationTemplate;
 import io.camunda.operate.schema.templates.PostImporterQueueTemplate;
 import io.camunda.operate.schema.util.SchemaTestHelper;
 import io.camunda.operate.schema.util.SearchClientTestHelper;
-import io.camunda.operate.schema.util.TestIndex;
 import io.camunda.operate.schema.util.opensearch.OpenSearchClientTestHelper;
 import io.camunda.operate.schema.util.opensearch.OpenSearchSchemaTestHelper;
 import io.camunda.operate.store.elasticsearch.ElasticsearchTaskStore;
@@ -49,23 +58,25 @@ import io.camunda.operate.zeebeimport.post.PostImportAction;
 import io.camunda.operate.zeebeimport.post.opensearch.OpensearchIncidentPostImportAction;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import java.io.IOException;
-import java.time.Duration;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.runner.RunWith;
 import org.springframework.beans.factory.BeanFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
-import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.test.context.junit4.SpringRunner;
 
+@RunWith(SpringRunner.class)
 @SpringBootTest(
     classes = {
       IncidentTemplate.class,
@@ -73,7 +84,7 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
       ListViewTemplate.class,
       FlowNodeInstanceTemplate.class,
       PostImporterQueueTemplate.class,
-      TestIndex.class,
+      UserIndex.class,
       OpensearchSchemaManager.class,
       OpenSearchSchemaTestHelper.class,
       OpensearchTaskStore.class,
@@ -105,14 +116,14 @@ public class OpensearchPostImportActionIT extends AbstractOpensearchConnectorPro
   @Autowired protected IncidentTemplate incidentTemplate;
 
   // not needed for the test but to satisfy our auto wirings
-  @MockitoBean("postImportThreadPoolScheduler")
+  @MockBean(name = "postImportThreadPoolScheduler")
   protected ThreadPoolTaskScheduler postImporterScheduler;
 
-  @MockitoBean protected ImportPositionHolder importPositionHolder;
+  @MockBean protected ImportPositionHolder importPositionHolder;
 
   protected PostImportAction postImportAction;
 
-  @BeforeEach
+  @Before
   public void setUp() throws IOException {
     postImportAction = beanFactory.getBean(PostImportAction.class, PARTITION_ID);
 
@@ -121,7 +132,7 @@ public class OpensearchPostImportActionIT extends AbstractOpensearchConnectorPro
     when(importPositionHolder.getLatestLoadedPosition(any(), anyInt())).thenReturn(startPosition);
   }
 
-  @AfterEach
+  @After
   public void tearDown() {
 
     schemaTestHelper.dropSchema();
@@ -229,8 +240,8 @@ public class OpensearchPostImportActionIT extends AbstractOpensearchConnectorPro
     searchClientTestHelper.createDocument(
         incidentTemplate.getFullQualifiedName(), incidentKey.toString(), incidentEntry);
 
-    // wait out the refresh interval so that the post importer sees everything
-    Thread.sleep(Duration.ofSeconds(2L));
+    // refresh so that the post importer sees everything
+    searchClientTestHelper.refreshAllIndexes();
 
     // reset wiremock so that no prior requests are considered for verification
     WIRE_MOCK_SERVER.resetRequests();
@@ -252,25 +263,37 @@ public class OpensearchPostImportActionIT extends AbstractOpensearchConnectorPro
 
     // the update for the calling flow node instance was correctly routed to the calling process
     // instance
-    final List<JsonNode> updatesForCallingListViewFlowNodeInstance =
-        filterUpdatesToIndexAndDocument(bulkActions, listViewTemplate, callingFlowNodeInstanceKey);
-
-    assertThat(updatesForCallingListViewFlowNodeInstance).hasSize(1);
-
-    final String routingKeyForCallingListViewFlowNodeInstance =
-        updatesForCallingListViewFlowNodeInstance.get(0).get("routing").asText();
-    assertThat(routingKeyForCallingListViewFlowNodeInstance).isEqualTo(callingProcessInstanceKey);
+    assertUpdateWasRoutedTo(
+        bulkActions, listViewTemplate, callingFlowNodeInstanceKey, callingProcessInstanceKey);
+    assertUpdateWasRoutedTo(
+        bulkActions, flowNodeInstanceTemplate, callingFlowNodeInstanceKey, null);
 
     // and the update for the called flow node instance was correctly routed to the called process
     // instance
-    final List<JsonNode> updatesForCalledListViewFlowNodeInstance =
-        filterUpdatesToIndexAndDocument(bulkActions, listViewTemplate, calledFlowNodeInstanceKey);
+    assertUpdateWasRoutedTo(
+        bulkActions, listViewTemplate, calledFlowNodeInstanceKey, calledProcessInstanceKey);
+    assertUpdateWasRoutedTo(bulkActions, flowNodeInstanceTemplate, calledFlowNodeInstanceKey, null);
+  }
 
-    assertThat(updatesForCalledListViewFlowNodeInstance).hasSize(1);
+  private void assertUpdateWasRoutedTo(
+      List<JsonNode> bulkActions,
+      IndexDescriptor index,
+      String documentId,
+      String expectedRountingKey) {
+    final List<JsonNode> updatesForDocument =
+        filterUpdatesToIndexAndDocument(bulkActions, index, documentId);
 
-    final String routingKeyForCalledListViewFlowNodeInstance =
-        updatesForCalledListViewFlowNodeInstance.get(0).get("routing").asText();
-    assertThat(routingKeyForCalledListViewFlowNodeInstance).isEqualTo(calledProcessInstanceKey);
+    assertThat(updatesForDocument).hasSize(1);
+
+    final JsonNode update = updatesForDocument.get(0);
+    if (expectedRountingKey != null) {
+      assertThat(update.has("routing")).isTrue();
+
+      final String actualRoutingKey = update.get("routing").asText();
+      assertThat(actualRoutingKey).isEqualTo(expectedRountingKey);
+    } else {
+      assertThat(update.has("routing")).isFalse();
+    }
   }
 
   private List<JsonNode> filterUpdatesToIndexAndDocument(

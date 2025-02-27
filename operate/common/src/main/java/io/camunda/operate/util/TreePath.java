@@ -149,6 +149,20 @@ public class TreePath {
     return this;
   }
 
+  public Optional<String> processInstanceForFni(final String fniId) {
+    final var compiled = treePath.toString();
+    final var pathSegments = compiled.split("/");
+    final var fniIndex = Arrays.asList(pathSegments).indexOf("FNI_" + fniId);
+    for (int index = fniIndex; index >= 0; index--) {
+      final var pathSegment = pathSegments[index];
+      if (pathSegment.startsWith("PI_")) {
+        return Optional.of(pathSegment.replaceAll("PI_", ""));
+      }
+    }
+
+    return Optional.empty();
+  }
+
   public enum TreePathEntryType {
     /** Process instance. */
     PI,

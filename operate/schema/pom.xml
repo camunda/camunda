@@ -216,7 +216,6 @@
       <artifactId>guava</artifactId>
     </dependency>
 
-
   </dependencies>
 
   <build>
@@ -251,10 +250,10 @@
             <executions>
               <execution>
                 <id>docker-start</id>
-                <phase>pre-integration-test</phase>
                 <goals>
                   <goal>exec</goal>
                 </goals>
+                <phase>pre-integration-test</phase>
                 <configuration>
                   <skip>${skipTests}</skip>
                   <executable>docker-compose</executable>
@@ -269,10 +268,10 @@
 
               <execution>
                 <id>docker-stop</id>
-                <phase>post-integration-test</phase>
                 <goals>
                   <goal>exec</goal>
                 </goals>
+                <phase>post-integration-test</phase>
                 <configuration>
                   <skip>${skipTests}</skip>
                   <executable>docker-compose</executable>
@@ -298,10 +297,10 @@
             <executions>
               <execution>
                 <id>docker-start</id>
-                <phase>pre-integration-test</phase>
                 <goals>
                   <goal>exec</goal>
                 </goals>
+                <phase>pre-integration-test</phase>
                 <configuration>
                   <skip>${skipTests}</skip>
                   <executable>docker-compose</executable>
@@ -316,10 +315,10 @@
 
               <execution>
                 <id>docker-stop</id>
-                <phase>post-integration-test</phase>
                 <goals>
                   <goal>exec</goal>
                 </goals>
+                <phase>post-integration-test</phase>
                 <configuration>
                   <skip>${skipTests}</skip>
                   <executable>docker-compose</executable>
