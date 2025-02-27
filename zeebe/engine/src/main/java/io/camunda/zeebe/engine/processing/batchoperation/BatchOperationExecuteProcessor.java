@@ -24,6 +24,7 @@ import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import java.util.List;
+import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -78,24 +79,22 @@ public final class BatchOperationExecuteProcessor
       case PROCESS_CANCELLATION:
         entityKeys.forEach(this::cancelProcessInstance);
     }
-//    stateWriter.appendFollowUpEvent(
-//        command.getKey(), BatchOperationIntent.EXECUTED, command.getValue());
 
     if (hasNextBatch(filteredEntityKeys, offset)) {
       LOGGER.debug("Scheduling next batch for BatchOperation {} on partition {}", batchKey,
           partitionId);
+      final var newOffset = command.getValue().getOffset() + BATCH_SIZE;
       final var followupCommand = new BatchOperationExecutionRecord();
       followupCommand.setBatchOperationKey(batchKey);
       followupCommand.setBatchOperationType(command.getValue().getBatchOperationType());
-      followupCommand.setOffset(command.getValue().getOffset() + BATCH_SIZE);
+      followupCommand.setOffset(newOffset);
       commandWriter.appendFollowUpCommand(command.getKey(), BatchOperationIntent.EXECUTE,
           followupCommand);
+      appendBatchOperationExecutionExecutedEvent(command, Set.copyOf(entityKeys));
     } else {
       LOGGER.debug("BatchOperation {} has no more items on partition {}, completing it", batchKey,
           partitionId);
-      // todo use the BatchOperationRecord
-//      stateWriter.appendFollowUpEvent(
-//          command.getKey(), BatchOperationIntent.COMPLETED, command.getValue());
+      appendBatchOperationExecutionCompletedEvent(filteredEntityKeys.size(), command);
     }
   }
 
@@ -116,7 +115,41 @@ public final class BatchOperationExecuteProcessor
 
     final var command = new ProcessInstanceRecord();
     command.setProcessInstanceKey(processInstanceKey);
-    commandWriter.appendFollowUpCommand(processInstanceKey, ProcessInstanceIntent.CANCEL, command);
+    commandWriter.appendFollowUpCommand(
+        processInstanceKey,
+        ProcessInstanceIntent.CANCEL,
+        command
+    );
   }
+
+  private void appendBatchOperationExecutionExecutedEvent(
+      final TypedRecord<BatchOperationExecutionRecord> command,
+      final Set<Long> keys) {
+    final var batchExecute = new BatchOperationExecutionRecord();
+    batchExecute.setBatchOperationKey(command.getKey());
+    batchExecute.setKeys(keys);
+    batchExecute.setBatchOperationType(command.getValue().getBatchOperationType());
+    batchExecute.setOffset(command.getValue().getOffset());
+    stateWriter.appendFollowUpEvent(
+        command.getKey(),
+        BatchOperationIntent.EXECUTED,
+        batchExecute
+    );
+  }
+
+  private void appendBatchOperationExecutionCompletedEvent(final int offset,
+      final TypedRecord<BatchOperationExecutionRecord> command
+  ) {
+    final var batchExecute = new BatchOperationExecutionRecord();
+    batchExecute.setBatchOperationKey(command.getKey());
+    batchExecute.setBatchOperationType(command.getValue().getBatchOperationType());
+    batchExecute.setOffset(offset);
+    stateWriter.appendFollowUpEvent(
+        command.getKey(),
+        BatchOperationIntent.COMPLETED,
+        batchExecute
+    );
+  }
+
 
 }

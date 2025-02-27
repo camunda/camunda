@@ -567,6 +567,8 @@ public final class EventAppliers implements EventApplier {
 
   private void registerBatchOperationAppliers(final MutableProcessingState state) {
     register(BatchOperationIntent.CREATED, new BatchOperationCreatedApplier(state.getBatchOperationState()));
+    register(BatchOperationIntent.EXECUTED, new BatchOperationExecutedApplier(state.getBatchOperationState()));
+    register(BatchOperationIntent.COMPLETED, new BatchOperationCompletedApplier(state.getBatchOperationState()));
   }
 
   private <I extends Intent> void register(final I intent, final TypedEventApplier<I, ?> applier) {

@@ -1,6 +1,6 @@
 package io.camunda.db.rdbms.write.service;
 
-import io.camunda.db.rdbms.sql.BatchOperationMapper;
+import io.camunda.db.rdbms.sql.BatchOperationMapper.BatchOperationUpdateDto;
 import io.camunda.db.rdbms.write.domain.BatchOperationDbModel;
 import io.camunda.db.rdbms.write.queue.ContextType;
 import io.camunda.db.rdbms.write.queue.ExecutionQueue;
@@ -24,6 +24,37 @@ public class BatchOperationWriter {
             batchOperation.batchOperationKey(),
             "io.camunda.db.rdbms.sql.BatchOperationMapper.insert",
             batchOperation));
+  }
+
+  public void update(final long batchOperationKey,
+      final int operationsFailedCount,
+      final int operationsCompletedCount) {
+    executionQueue.executeInQueue(
+        new QueueItem(
+            ContextType.BATCH_OPERATION,
+            WriteStatementType.UPDATE,
+            batchOperationKey,
+            "io.camunda.db.rdbms.sql.BatchOperationMapper.updateCompleted",
+            new BatchOperationUpdateDto(batchOperationKey,
+                null,
+                operationsFailedCount,
+                operationsCompletedCount)));
+  }
+
+  public void finish(final long batchOperationKey,
+      final OffsetDateTime endDate,
+      final int operationsFailedCount,
+      final int operationsCompletedCount) {
+    executionQueue.executeInQueue(
+        new QueueItem(
+            ContextType.BATCH_OPERATION,
+            WriteStatementType.UPDATE,
+            batchOperationKey,
+            "io.camunda.db.rdbms.sql.BatchOperationMapper.updateCompleted",
+            new BatchOperationUpdateDto(batchOperationKey,
+                endDate,
+                operationsFailedCount,
+                operationsCompletedCount)));
   }
 
 }
