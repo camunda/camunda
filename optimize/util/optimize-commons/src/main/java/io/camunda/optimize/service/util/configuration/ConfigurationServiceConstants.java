@@ -29,7 +29,6 @@ public final class ConfigurationServiceConstants {
 
   public static final String EMAIL_AUTHENTICATION = "$.email.authentication";
 
-  public static final String CONFIGURED_WEBHOOKS = "$.webhookAlerting.webhooks";
   public static final String DIGEST_CRON_TRIGGER = "$.digest.cronTrigger";
   // @formatter:off
   public static final String DATABASE_MAX_JOB_QUEUE_SIZE =
