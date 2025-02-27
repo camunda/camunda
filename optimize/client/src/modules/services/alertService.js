@@ -8,7 +8,7 @@
 
 import {del, get, post, put} from 'request';
 import {track} from 'tracking';
-import { getFullURL } from '../api';
+import {getFullURL} from '../api';
 
 export async function loadAlerts(collection) {
   const response = await get(getFullURL(`api/collection/${collection}/alerts`));

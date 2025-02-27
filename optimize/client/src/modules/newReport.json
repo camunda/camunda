@@ -92,8 +92,6 @@
       "visualization": null,
       "distributedBy": {"type": "none", "value": null}
     },
-    "combined": false,
-    "reportType": "process",
     "currentUserRole": "editor"
   }
 }

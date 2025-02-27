@@ -14,8 +14,8 @@ import io.camunda.application.commons.configuration.BrokerBasedConfiguration.Bro
 import io.camunda.application.commons.security.CamundaSecurityConfiguration.CamundaSecurityProperties;
 import io.camunda.authentication.config.AuthenticationProperties;
 import io.camunda.client.CamundaClient;
-import io.camunda.it.utils.CamundaClientTestFactory.Authenticated;
-import io.camunda.it.utils.CamundaClientTestFactory.User;
+import io.camunda.qa.util.auth.Authenticated;
+import io.camunda.qa.util.auth.User;
 import io.camunda.security.configuration.ConfiguredUser;
 import io.camunda.security.configuration.InitializationConfiguration;
 import io.camunda.security.entity.AuthenticationMethod;

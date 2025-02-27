@@ -8,7 +8,7 @@
 
 import {ProcessFilter, Variable} from 'types';
 import {get, post} from 'request';
-import { getFullURL } from '../api';
+import {getFullURL} from '../api';
 
 export async function loadProcessDefinitionXml(
   key?: string,
