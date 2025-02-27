@@ -5943,10 +5943,10 @@ eslint-plugin-jsx-a11y@^6.5.1:
     object.entries "^1.1.7"
     object.fromentries "^2.0.7"
 
-eslint-plugin-license-header@^0.6.0:
-  version "0.6.1"
-  resolved "https://registry.yarnpkg.com/eslint-plugin-license-header/-/eslint-plugin-license-header-0.6.1.tgz#28a93015d828cb43038d6c9bef7d960b56fbce62"
-  integrity sha512-9aIz8q3OaMr1/uQmCGCWySjTs5nEXUJexNegz/8lluNcZbEl82Ag1Vyr1Hu3oIveRW1NbXDPs6nu4zu9mbrmWA==
+eslint-plugin-license-header@^0.8.0:
+  version "0.8.0"
+  resolved "https://registry.yarnpkg.com/eslint-plugin-license-header/-/eslint-plugin-license-header-0.8.0.tgz#7e44c6d38048445cf2e06458619f355ef627407f"
+  integrity sha512-khTCz6G3JdoQfwrtY4XKl98KW4PpnWUKuFx8v+twIRhJADEyYglMDC0td8It75C1MZ88gcvMusWuUlJsos7gYg==
   dependencies:
     requireindex "^1.2.0"
 
