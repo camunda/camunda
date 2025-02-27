@@ -96,7 +96,7 @@ The test is a unit test because:
 
 #### Dont's: Usage of dependency
 
-```shell
+```java
 @Test
 public void shouldReturnSuccessfulResponse() {
   // given
@@ -122,7 +122,7 @@ This test is not a unit test, because:
 
 #### Dont's: Testing multiple behaviors
 
-```shell
+```java
 @Test
 public void shouldAddAndSubstract() {
   // given
