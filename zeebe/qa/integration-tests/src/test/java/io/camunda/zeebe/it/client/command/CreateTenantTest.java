@@ -41,7 +41,7 @@ class CreateTenantTest {
     final var response =
         client
             .newCreateTenantCommand()
-            .tenantId("tenant-id")
+            .tenantId("tenantId")
             .name("Tenant Name")
             .description("Tenant Description")
             .send()
@@ -50,7 +50,7 @@ class CreateTenantTest {
     // then
     assertThat(response.getTenantKey()).isGreaterThan(0);
     ZeebeAssertHelper.assertTenantCreated(
-        "tenant-id",
+        "tenantId",
         (tenant) -> {
           assertThat(tenant.getName()).isEqualTo("Tenant Name");
           assertThat(tenant.getDescription()).isEqualTo("Tenant Description");
@@ -61,12 +61,12 @@ class CreateTenantTest {
   void shouldCreateTenantWithoutDescription() {
     // when
     final var response =
-        client.newCreateTenantCommand().tenantId("tenant-id").name("Tenant Name").send().join();
+        client.newCreateTenantCommand().tenantId("tenantId").name("Tenant Name").send().join();
 
     // then
     assertThat(response.getTenantKey()).isGreaterThan(0);
     ZeebeAssertHelper.assertTenantCreated(
-        "tenant-id",
+        "tenantId",
         (tenant) -> {
           assertThat(tenant.getName()).isEqualTo("Tenant Name");
           assertThat(tenant.getDescription()).isEmpty();
@@ -76,14 +76,14 @@ class CreateTenantTest {
   @Test
   void shouldRejectIfTenantIdAlreadyExists() {
     // given
-    client.newCreateTenantCommand().tenantId("tenant-id").name("Tenant Name").send().join();
+    client.newCreateTenantCommand().tenantId("tenantId").name("Tenant Name").send().join();
 
     // when / then
     assertThatThrownBy(
             () ->
                 client
                     .newCreateTenantCommand()
-                    .tenantId("tenant-id")
+                    .tenantId("tenantId")
                     .name("Another Tenant Name")
                     .send()
                     .join())

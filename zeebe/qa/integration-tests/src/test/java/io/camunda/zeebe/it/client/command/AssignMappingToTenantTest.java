@@ -25,7 +25,7 @@ import org.junit.jupiter.api.Test;
 @ZeebeIntegration
 class AssignMappingToTenantTest {
 
-  private static final String TENANT_ID = "tenant-id";
+  private static final String TENANT_ID = "tenantId";
   private static final String CLAIM_NAME = "claimName";
   private static final String CLAIM_VALUE = "claimValue";
   private static final String NAME = "name";

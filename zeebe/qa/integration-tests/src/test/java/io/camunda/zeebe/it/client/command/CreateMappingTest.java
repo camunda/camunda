@@ -15,8 +15,8 @@ import io.camunda.zeebe.it.util.ZeebeAssertHelper;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
+import io.camunda.zeebe.test.util.Strings;
 import java.time.Duration;
-import java.util.UUID;
 import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -27,7 +27,7 @@ public class CreateMappingTest {
   public static final String CLAIM_NAME = "claimName";
   public static final String CLAIM_VALUE = "claimValue";
   public static final String NAME = "Map Name";
-  public static final String ID = "Map ID";
+  public static final String ID = "mappingId";
 
   @AutoClose CamundaClient client;
 
@@ -117,7 +117,7 @@ public class CreateMappingTest {
         .claimName(CLAIM_NAME)
         .claimValue(CLAIM_VALUE)
         .name(NAME)
-        .id(UUID.randomUUID().toString())
+        .id(Strings.newRandomValidIdentityId())
         .send()
         .join();
 
@@ -129,7 +129,7 @@ public class CreateMappingTest {
                     .claimName(CLAIM_NAME)
                     .claimValue(CLAIM_VALUE)
                     .name(NAME)
-                    .id(UUID.randomUUID().toString())
+                    .id(Strings.newRandomValidIdentityId())
                     .send()
                     .join())
         .isInstanceOf(RuntimeException.class)
@@ -164,6 +164,7 @@ public class CreateMappingTest {
         .isInstanceOf(RuntimeException.class)
         .hasMessageContaining("Failed with code 409: 'Conflict'")
         .hasMessageContaining(
-            "Expected to create mapping with id 'Map ID', but a mapping with this id already exists.");
+            "Expected to create mapping with id '%s', but a mapping with this id already exists."
+                .formatted(ID));
   }
 }
