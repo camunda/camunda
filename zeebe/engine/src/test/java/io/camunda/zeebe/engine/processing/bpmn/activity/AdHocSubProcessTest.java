@@ -32,7 +32,9 @@ import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.time.Duration;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 import org.junit.ClassRule;
@@ -265,7 +267,7 @@ public final class AdHocSubProcessTest {
         process(
             adHocSubProcess -> {
               adHocSubProcess.zeebeActiveElementsCollectionExpression("activateElements");
-              adHocSubProcess.completionCondition("=true");
+              adHocSubProcess.completionCondition("condition");
               adHocSubProcess.task("A");
               adHocSubProcess.task("B");
               adHocSubProcess.task("C");
@@ -278,7 +280,12 @@ public final class AdHocSubProcessTest {
         ENGINE
             .processInstance()
             .ofBpmnProcessId(PROCESS_ID)
-            .withVariable("activateElements", List.of("A", "C"))
+            .withVariables(
+                variables(
+                    v -> {
+                      v.put("activateElements", List.of("A", "C"));
+                      v.put("condition", true);
+                    }))
             .create();
 
     // then
@@ -303,7 +310,7 @@ public final class AdHocSubProcessTest {
         process(
             adHocSubProcess -> {
               adHocSubProcess.zeebeActiveElementsCollectionExpression("activateElements");
-              adHocSubProcess.completionCondition("=false");
+              adHocSubProcess.completionCondition("condition");
               adHocSubProcess.task("A");
               adHocSubProcess.task("B");
               adHocSubProcess.task("C");
@@ -316,7 +323,12 @@ public final class AdHocSubProcessTest {
         ENGINE
             .processInstance()
             .ofBpmnProcessId(PROCESS_ID)
-            .withVariable("activateElements", List.of("A", "C"))
+            .withVariables(
+                variables(
+                    v -> {
+                      v.put("activateElements", List.of("A", "C"));
+                      v.put("condition", false);
+                    }))
             .create();
 
     // then
@@ -334,13 +346,13 @@ public final class AdHocSubProcessTest {
   }
 
   @Test
-  public void shouldCancelRemainingInstancesWhenConfigured() {
+  public void shouldCancelRemainingInstancesWhenFlagIsEnabled() {
     // given
     final BpmnModelInstance process =
         process(
             adHocSubProcess -> {
               adHocSubProcess.zeebeActiveElementsCollectionExpression("activateElements");
-              adHocSubProcess.completionCondition("=true");
+              adHocSubProcess.completionCondition("condition");
               adHocSubProcess.cancelRemainingInstances(true);
               adHocSubProcess.task("A");
               adHocSubProcess.task("B");
@@ -354,7 +366,12 @@ public final class AdHocSubProcessTest {
         ENGINE
             .processInstance()
             .ofBpmnProcessId(PROCESS_ID)
-            .withVariable("activateElements", List.of("A", "ServiceTask"))
+            .withVariables(
+                variables(
+                    v -> {
+                      v.put("activateElements", List.of("A", "ServiceTask"));
+                      v.put("condition", true);
+                    }))
             .create();
 
     // then
@@ -379,12 +396,12 @@ public final class AdHocSubProcessTest {
   }
 
   @Test
-  public void shouldNotCancelRemainingInstancesWhenNotConfigured() {
+  public void shouldNotCancelRemainingInstancesWhenFlagIsDisabled() {
     final BpmnModelInstance process =
         process(
             adHocSubProcess -> {
               adHocSubProcess.zeebeActiveElementsCollectionExpression("activateElements");
-              adHocSubProcess.completionCondition("=true");
+              adHocSubProcess.completionCondition("condition");
               adHocSubProcess.cancelRemainingInstances(false);
               adHocSubProcess.task("A");
               adHocSubProcess.task("B");
@@ -398,7 +415,12 @@ public final class AdHocSubProcessTest {
         ENGINE
             .processInstance()
             .ofBpmnProcessId(PROCESS_ID)
-            .withVariable("activateElements", List.of("A", "ServiceTask"))
+            .withVariables(
+                variables(
+                    v -> {
+                      v.put("activateElements", List.of("A", "ServiceTask"));
+                      v.put("condition", true);
+                    }))
             .create();
 
     // helps to stop at a specific point after the ad-hoc subprocess is activated
@@ -790,6 +812,12 @@ public final class AdHocSubProcessTest {
             tuple("A", adHocSubProcessKeys.get(0)),
             tuple("B", adHocSubProcessKeys.get(1)),
             tuple("C", adHocSubProcessKeys.get(2)));
+  }
+
+  private static Map<String, Object> variables(final Consumer<Map<String, Object>> fn) {
+    final var variables = new HashMap<String, Object>();
+    fn.accept(variables);
+    return variables;
   }
 
   private static Predicate<Record<RecordValue>> signalBroadcasted(final String signalName) {
