@@ -2,18 +2,109 @@ package io.camunda.db.rdbms.write.domain;
 
 import io.camunda.util.ObjectBuilder;
 import java.time.OffsetDateTime;
+import java.util.Set;
 
-public record BatchOperationDbModel(
-    Long batchOperationKey,
-    String operationType,
-    OffsetDateTime startDate,
-    OffsetDateTime endDate,
-    int operationsTotalCount,
-    int operationsFailedCount,
-    int operationsCompletedCount) {
+public class BatchOperationDbModel {
 
-  public static class Builder
-      implements ObjectBuilder<BatchOperationDbModel> {
+  private Long batchOperationKey;
+  private String operationType;
+  private OffsetDateTime startDate;
+  private OffsetDateTime endDate;
+  private int operationsTotalCount;
+  private int operationsFailedCount;
+  private int operationsCompletedCount;
+  private Set<Long> items;
+
+  public BatchOperationDbModel(final Long batchOperationKey) {
+    this.batchOperationKey = batchOperationKey;
+  }
+
+  public BatchOperationDbModel(
+      Long batchOperationKey,
+      String operationType,
+      OffsetDateTime startDate,
+      OffsetDateTime endDate,
+      int operationsTotalCount,
+      int operationsFailedCount,
+      int operationsCompletedCount,
+      Set<Long> items) {
+    this.batchOperationKey = batchOperationKey;
+    this.operationType = operationType;
+    this.startDate = startDate;
+    this.endDate = endDate;
+    this.operationsTotalCount = operationsTotalCount;
+    this.operationsFailedCount = operationsFailedCount;
+    this.operationsCompletedCount = operationsCompletedCount;
+    this.items = items;
+  }
+
+  // Methods without set/get prefix
+  public Long batchOperationKey() {
+    return batchOperationKey;
+  }
+
+  public void batchOperationKey(Long batchOperationKey) {
+    this.batchOperationKey = batchOperationKey;
+  }
+
+  public String operationType() {
+    return operationType;
+  }
+
+  public void operationType(String operationType) {
+    this.operationType = operationType;
+  }
+
+  public OffsetDateTime startDate() {
+    return startDate;
+  }
+
+  public void startDate(OffsetDateTime startDate) {
+    this.startDate = startDate;
+  }
+
+  public OffsetDateTime endDate() {
+    return endDate;
+  }
+
+  public void endDate(OffsetDateTime endDate) {
+    this.endDate = endDate;
+  }
+
+  public int operationsTotalCount() {
+    return operationsTotalCount;
+  }
+
+  public void operationsTotalCount(int operationsTotalCount) {
+    this.operationsTotalCount = operationsTotalCount;
+  }
+
+  public int operationsFailedCount() {
+    return operationsFailedCount;
+  }
+
+  public void operationsFailedCount(int operationsFailedCount) {
+    this.operationsFailedCount = operationsFailedCount;
+  }
+
+  public int operationsCompletedCount() {
+    return operationsCompletedCount;
+  }
+
+  public void operationsCompletedCount(int operationsCompletedCount) {
+    this.operationsCompletedCount = operationsCompletedCount;
+  }
+
+  public Set<Long> items() {
+    return items;
+  }
+
+  public void items(Set<Long> items) {
+    this.items = items;
+  }
+
+  // Builder class
+  public static class Builder implements ObjectBuilder<BatchOperationDbModel> {
 
     private Long batchOperationKey;
     private String operationType;
@@ -22,47 +113,50 @@ public record BatchOperationDbModel(
     private int operationsTotalCount;
     private int operationsFailedCount;
     private int operationsCompletedCount;
+    private Set<Long> items;
 
-    // Public constructor to initialize the builder
     public Builder() {}
 
-    // Builder methods for each field
-    public Builder batchOperationKey(final Long batchOperationKey) {
+    public Builder batchOperationKey(Long batchOperationKey) {
       this.batchOperationKey = batchOperationKey;
       return this;
     }
 
-    public Builder operationType(final String operationType) {
+    public Builder operationType(String operationType) {
       this.operationType = operationType;
       return this;
     }
 
-    public Builder startDate(final OffsetDateTime startDate) {
+    public Builder startDate(OffsetDateTime startDate) {
       this.startDate = startDate;
       return this;
     }
 
-    public Builder endDate(final OffsetDateTime endDate) {
+    public Builder endDate(OffsetDateTime endDate) {
       this.endDate = endDate;
       return this;
     }
 
-    public Builder operationsTotalCount(final int operationsTotalCount) {
+    public Builder operationsTotalCount(int operationsTotalCount) {
       this.operationsTotalCount = operationsTotalCount;
       return this;
     }
 
-    public Builder operationsFailedCount(final int operationsFailedCount) {
+    public Builder operationsFailedCount(int operationsFailedCount) {
       this.operationsFailedCount = operationsFailedCount;
       return this;
     }
 
-    public Builder operationsCompletedCount(final int operationsCompletedCount) {
+    public Builder operationsCompletedCount(int operationsCompletedCount) {
       this.operationsCompletedCount = operationsCompletedCount;
       return this;
     }
 
-    // Build method to create the record
+    public Builder items(Set<Long> items) {
+      this.items = items;
+      return this;
+    }
+
     @Override
     public BatchOperationDbModel build() {
       return new BatchOperationDbModel(
@@ -72,7 +166,8 @@ public record BatchOperationDbModel(
           endDate,
           operationsTotalCount,
           operationsFailedCount,
-          operationsCompletedCount);
+          operationsCompletedCount,
+          items);
     }
   }
 }
