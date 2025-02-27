@@ -325,16 +325,9 @@ func main() {
 			fmt.Print("JAVA_OPTS: " + javaOpts + "\n")
 		}
 
-<<<<<<< HEAD
-		os.Setenv("ES_JAVA_OPTS", "-Xms1g -Xmx1g")
-
-		fmt.Print("Starting Elasticsearch " + elasticsearchVersion + "...\n")
-		fmt.Print("(Hint: you can find the log output in the 'elasticsearch.log' file in the 'log' folder of your distribution.)\n")
-=======
 		if !settings.disableElasticsearch {
 			fmt.Print("Starting Elasticsearch " + elasticsearchVersion + "...\n")
 			fmt.Print("(Hint: you can find the log output in the 'elasticsearch.log' file in the 'log' folder of your distribution.)\n")
->>>>>>> e8f9e22f (fix: if someone explicitly overrides these env vars, use override)
 
 		elasticsearchLogFilePath := filepath.Join(parentDir, "log", "elasticsearch.log")
 		elasticsearchLogFile, err := os.OpenFile(elasticsearchLogFilePath, os.O_RDWR|os.O_CREATE, 0644)
