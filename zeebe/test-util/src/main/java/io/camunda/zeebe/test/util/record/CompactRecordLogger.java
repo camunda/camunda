@@ -617,23 +617,23 @@ public class CompactRecordLogger {
     final StringBuilder result = new StringBuilder();
     if (!value.getElementInstancePath().isEmpty()) {
       result
-          .append(" ElementInstancePath: ")
+          .append(" EI:")
           .append(
               value.getElementInstancePath().stream()
-                  .map(p -> p.stream().map(this::shortenKey).collect(Collectors.joining(" -> ")))
+                  .map(p -> p.stream().map(this::shortenKey).collect(Collectors.joining("->")))
                   .toList());
     }
     if (!value.getProcessDefinitionPath().isEmpty()) {
       result
-          .append(" ProcessDefinitionPath: [")
+          .append(" PD:[")
           .append(
               value.getProcessDefinitionPath().stream()
                   .map(this::shortenKey)
-                  .collect(Collectors.joining(" -> ")))
+                  .collect(Collectors.joining("->")))
           .append("]");
     }
     if (!value.getCallingElementPath().isEmpty()) {
-      result.append(" CallingElementPath: ").append(value.getCallingElementPath());
+      result.append(" CE: ").append(value.getCallingElementPath());
     }
     return result.toString();
   }
