@@ -12,6 +12,7 @@ import io.camunda.zeebe.gateway.impl.stream.JobClientStreamMetricsDoc.PushResult
 import io.camunda.zeebe.transport.stream.api.ClientStreamMetrics;
 import io.camunda.zeebe.transport.stream.impl.messages.ErrorCode;
 import io.camunda.zeebe.util.micrometer.MicrometerUtil;
+import io.camunda.zeebe.util.micrometer.StatefulGauge;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.DistributionSummary;
 import io.micrometer.core.instrument.Gauge;
@@ -22,11 +23,11 @@ import java.util.concurrent.atomic.AtomicLong;
 
 final class JobClientStreamMetrics implements ClientStreamMetrics {
 
-  private final AtomicLong serverCount = new AtomicLong();
-  private final AtomicLong clientCount = new AtomicLong();
-  private final AtomicLong aggregatedStreamCount = new AtomicLong();
   private final Map<ErrorCode, Counter> pushAttempts = new EnumMap<>(ErrorCode.class);
 
+  private final StatefulGauge aggregatedStreamCount;
+  private final StatefulGauge clientCount;
+  private final StatefulGauge serverCount;
   private final DistributionSummary aggregatedClients;
   private final Counter pushSuccessCount;
   private final Counter pushFailureCount;
@@ -40,9 +41,9 @@ final class JobClientStreamMetrics implements ClientStreamMetrics {
     pushSuccessCount =
         registerPushCounter(JobClientStreamMetricsDoc.PUSHES, PushResultTag.SUCCESS, registry);
 
-    registerGauge(JobClientStreamMetricsDoc.SERVERS, serverCount, registry);
-    registerGauge(JobClientStreamMetricsDoc.CLIENTS, clientCount, registry);
-    registerGauge(JobClientStreamMetricsDoc.AGGREGATED_STREAMS, aggregatedStreamCount, registry);
+    serverCount = registerGauge(JobClientStreamMetricsDoc.SERVERS, registry);
+    clientCount = registerGauge(JobClientStreamMetricsDoc.CLIENTS, registry);
+    aggregatedStreamCount = registerGauge(JobClientStreamMetricsDoc.AGGREGATED_STREAMS, registry);
 
     // pre-populate the map to
     for (final var errorCode : ErrorCode.values()) {
@@ -85,9 +86,9 @@ final class JobClientStreamMetrics implements ClientStreamMetrics {
     pushAttempts.get(code).increment();
   }
 
-  private void registerGauge(
-      final JobClientStreamMetricsDoc doc, final Number state, final MeterRegistry registry) {
-    Gauge.builder(doc.getName(), state, Number::doubleValue)
+  private StatefulGauge registerGauge(
+      final JobClientStreamMetricsDoc doc, final MeterRegistry registry) {
+    return StatefulGauge.builder(doc.getName())
         .description(doc.getDescription())
         .register(registry);
   }
