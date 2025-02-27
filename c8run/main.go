@@ -189,7 +189,7 @@ func usage(exitcode int) {
 	os.Exit(exitcode)
 }
 
-func setEnvVars() error {
+func setEnvVars(javaHome string) error {
 	envVars := map[string]string{
 		"CAMUNDA_OPERATE_CSRFPREVENTIONENABLED":                  "false",
 		"CAMUNDA_OPERATE_IMPORTER_READERBACKOFF":                 "1000",
@@ -200,9 +200,15 @@ func setEnvVars() error {
 		"ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_INDEX_PREFIX": "zeebe-record",
 		"ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_URL":          "http://localhost:9200",
 		"ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_CLASSNAME":         "io.camunda.zeebe.exporter.ElasticsearchExporter",
+		"ES_JAVA_HOME": javaHome,
+		"ES_JAVA_OPTS": "-Xms1g -Xmx1g",
 	}
 
 	for key, value := range envVars {
+		currentValue := os.Getenv(key)
+		if currentValue != "" {
+			continue
+		}
 		if err := os.Setenv(key, value); err != nil {
 			return fmt.Errorf("failed to set environment variable %s: %w", key, err)
 		}
@@ -323,11 +329,6 @@ func main() {
 	connectorsPidPath := filepath.Join(baseDir, "connectors.pid")
 	camundaPidPath := filepath.Join(baseDir, "camunda.pid")
 
-	err = setEnvVars()
-	if err != nil {
-		fmt.Println("Failed to set envVars:", err)
-	}
-
 	baseCommand, err := getBaseCommand()
 	if err != nil {
 		fmt.Println(err.Error())
@@ -395,7 +396,11 @@ func main() {
 		javaHome = filepath.Dir(filepath.Dir(path))
 		javaBinary = path
 	}
-	os.Setenv("ES_JAVA_HOME", javaHome)
+
+	err = setEnvVars(javaHome)
+	if err != nil {
+		fmt.Println("Failed to set envVars:", err)
+	}
 
 	if baseCommand == "start" {
 		javaVersion := os.Getenv("JAVA_VERSION")
@@ -440,8 +445,6 @@ func main() {
 			fmt.Print("JAVA_OPTS: " + javaOpts + "\n")
 		}
 		javaOpts = adjustJavaOpts(javaOpts, settings)
-
-		os.Setenv("ES_JAVA_OPTS", "-Xms1g -Xmx1g")
 
 		if !settings.disableElasticsearch {
 			fmt.Print("Starting Elasticsearch " + elasticsearchVersion + "...\n")
