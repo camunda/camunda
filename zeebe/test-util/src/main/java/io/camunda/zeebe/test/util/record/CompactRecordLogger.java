@@ -465,11 +465,41 @@ public class CompactRecordLogger {
     }
 
     result
-        .append(
-            summarizeProcessInformation(value.getBpmnProcessId(), value.getProcessInstanceKey()))
+        .append(summarizeCustomHeaders(value.getCustomHeaders()))
         .append(summarizeVariables(value.getVariables()));
 
     return result.toString();
+  }
+
+  private String summarizeCustomHeaders(final Map<String, String> customHeaders) {
+    if (customHeaders.isEmpty()) {
+      return "";
+    }
+    return " [%s]"
+        .formatted(
+            customHeaders.entrySet().stream()
+                .map(this::abbreviateEntry)
+                .map(e -> "%s:'%s'".formatted(e.getKey(), e.getValue()))
+                .collect(Collectors.joining(",")));
+  }
+
+  private Entry<String, String> abbreviateEntry(final Entry<String, String> entry) {
+    var key = entry.getKey();
+    var value = entry.getValue();
+    if (key.toLowerCase().contains("key")) {
+      final long longOrNegative = getLongOrNegative(value);
+      if (longOrNegative > 0) {
+        value = shortenKey(longOrNegative);
+      }
+    }
+    if (key.startsWith("io.camunda.zeebe:")) {
+      key = key.replace("io.camunda.zeebe:", "");
+      // filter only the first letter and any capital letters
+      key = key.replaceAll("(?<!^)[a-z]", "");
+    }
+    key = StringUtils.abbreviateMiddle(key, "..", 10);
+    value = StringUtils.abbreviateMiddle(value, "..", 10);
+    return entry(key, value);
   }
 
   private String summarizeJobBatch(final Record<?> record) {
@@ -1087,6 +1117,14 @@ public class CompactRecordLogger {
       final StringBuilder result, final List<String> value, final String name) {
     if (value != null && !value.isEmpty()) {
       result.append(name).append(" \"").append(value).append("\"");
+    }
+  }
+
+  private static long getLongOrNegative(final String value) {
+    try {
+      return Long.parseLong(value);
+    } catch (final NumberFormatException e) {
+      return -1;
     }
   }
 }
