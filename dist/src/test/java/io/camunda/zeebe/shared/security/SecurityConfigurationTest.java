@@ -44,12 +44,12 @@ public class SecurityConfigurationTest {
   @ParameterizedTest
   @MethodSource("provideTestCases")
   void testGatewaySecurityAuthenticationEnabledCondition(final TestCase testCase) {
-    when(environment.getProperty("zeebe.gateway.enabled"))
-        .thenReturn(testCase.standaloneGatewayEnabled);
+    when(environment.getProperty("zeebe.gateway.enable"))
+        .thenReturn(testCase.standaloneGatewayEnable);
     when(environment.getProperty("zeebe.gateway.security.authentication.mode"))
         .thenReturn(testCase.standaloneGatewaySecurityMode);
-    when(environment.getProperty("zeebe.broker.gateway.enabled"))
-        .thenReturn(testCase.embeddedGatewayEnabled);
+    when(environment.getProperty("zeebe.broker.gateway.enable"))
+        .thenReturn(testCase.embeddedGatewayEnable);
     when(environment.getProperty("zeebe.broker.gateway.security.authentication.mode"))
         .thenReturn(testCase.embeddedGatewaySecurityMode);
 
@@ -62,28 +62,28 @@ public class SecurityConfigurationTest {
         Arguments.of(
             new TestCase.Builder()
                 .description("Standalone gateway enabled and security mode is none")
-                .standaloneGatewayEnabled()
+                .standaloneGatewayEnable()
                 .standaloneGatewaySecurityMode("none")
                 .expectedResult(false)
                 .build()),
         Arguments.of(
             new TestCase.Builder()
                 .description("Standalone gateway enabled and security mode is identity")
-                .standaloneGatewayEnabled()
+                .standaloneGatewayEnable()
                 .standaloneGatewaySecurityMode("identity")
                 .expectedResult(true)
                 .build()),
         Arguments.of(
             new TestCase.Builder()
                 .description("Embedded gateway enabled and security mode is none")
-                .embeddedGatewayEnabled()
+                .embeddedGatewayEnable()
                 .embeddedGatewaySecurityMode("none")
                 .expectedResult(false)
                 .build()),
         Arguments.of(
             new TestCase.Builder()
                 .description("Embedded gateway enabled and security mode is identity")
-                .embeddedGatewayEnabled()
+                .embeddedGatewayEnable()
                 .embeddedGatewaySecurityMode("identity")
                 .expectedResult(true)
                 .build()),
@@ -91,9 +91,9 @@ public class SecurityConfigurationTest {
             new TestCase.Builder()
                 .description(
                     "Both standalone and embedded gateways enabled with security mode none")
-                .standaloneGatewayEnabled()
+                .standaloneGatewayEnable()
                 .standaloneGatewaySecurityMode("none")
-                .embeddedGatewayEnabled()
+                .embeddedGatewayEnable()
                 .embeddedGatewaySecurityMode("none")
                 .expectedResult(false)
                 .build()),
@@ -101,7 +101,7 @@ public class SecurityConfigurationTest {
             new Builder()
                 .description(
                     "Standalone gateway enabled, standalone gateway security mode none, embedded gateway security mode identity")
-                .standaloneGatewayEnabled()
+                .standaloneGatewayEnable()
                 .standaloneGatewaySecurityMode("none")
                 .embeddedGatewaySecurityMode("identity")
                 .expectedResult(false)
@@ -110,7 +110,7 @@ public class SecurityConfigurationTest {
             new TestCase.Builder()
                 .description(
                     "Standalone gateway enabled, standalone gateway security mode identity, embedded gateway security mode none")
-                .standaloneGatewayEnabled()
+                .standaloneGatewayEnable()
                 .standaloneGatewaySecurityMode("identity")
                 .embeddedGatewaySecurityMode("none")
                 .expectedResult(true)
@@ -120,7 +120,7 @@ public class SecurityConfigurationTest {
                 .description(
                     "Embedded gateway enabled, standalone gateway security mode none, embedded gateway security mode identity")
                 .standaloneGatewaySecurityMode("none")
-                .embeddedGatewayEnabled()
+                .embeddedGatewayEnable()
                 .embeddedGatewaySecurityMode("identity")
                 .expectedResult(true)
                 .build()),
@@ -129,7 +129,7 @@ public class SecurityConfigurationTest {
                 .description(
                     "Embedded gateway enabled, standalone gateway security mode identity, embedded gateway security mode none")
                 .standaloneGatewaySecurityMode("identity")
-                .embeddedGatewayEnabled()
+                .embeddedGatewayEnable()
                 .embeddedGatewaySecurityMode("none")
                 .expectedResult(false)
                 .build()));
@@ -137,17 +137,17 @@ public class SecurityConfigurationTest {
 
   record TestCase(
       String description,
-      String standaloneGatewayEnabled,
+      String standaloneGatewayEnable,
       String standaloneGatewaySecurityMode,
-      String embeddedGatewayEnabled,
+      String embeddedGatewayEnable,
       String embeddedGatewaySecurityMode,
       boolean expectedResult) {
 
     static class Builder {
       private String description;
-      private String standaloneGatewayEnabled;
+      private String standaloneGatewayEnable;
       private String standaloneGatewaySecurityMode;
-      private String embeddedGatewayEnabled;
+      private String embeddedGatewayEnable;
       private String embeddedGatewaySecurityMode;
       private boolean expectedResult;
 
@@ -156,8 +156,8 @@ public class SecurityConfigurationTest {
         return this;
       }
 
-      Builder standaloneGatewayEnabled() {
-        standaloneGatewayEnabled = "true";
+      Builder standaloneGatewayEnable() {
+        standaloneGatewayEnable = "true";
         return this;
       }
 
@@ -166,8 +166,8 @@ public class SecurityConfigurationTest {
         return this;
       }
 
-      Builder embeddedGatewayEnabled() {
-        embeddedGatewayEnabled = "true";
+      Builder embeddedGatewayEnable() {
+        embeddedGatewayEnable = "true";
         return this;
       }
 
@@ -184,9 +184,9 @@ public class SecurityConfigurationTest {
       TestCase build() {
         return new TestCase(
             description,
-            standaloneGatewayEnabled,
+            standaloneGatewayEnable,
             standaloneGatewaySecurityMode,
-            embeddedGatewayEnabled,
+            embeddedGatewayEnable,
             embeddedGatewaySecurityMode,
             expectedResult);
       }

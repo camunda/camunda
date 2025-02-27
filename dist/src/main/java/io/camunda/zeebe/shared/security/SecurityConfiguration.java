@@ -122,11 +122,11 @@ public class SecurityConfiguration {
     public boolean matches(final ConditionContext context, final AnnotatedTypeMetadata metadata) {
       final Environment env = context.getEnvironment();
       final boolean standaloneGatewayEnabled =
-          "true".equals(env.getProperty("zeebe.gateway.enabled"));
+          "true".equals(env.getProperty("zeebe.gateway.enable"));
       final boolean standaloneGatewaySecurityNotNone =
           !"none".equals(env.getProperty("zeebe.gateway.security.authentication.mode"));
       final boolean embeddedGatewayEnabled =
-          "true".equals(env.getProperty("zeebe.broker.gateway.enabled"));
+          "true".equals(env.getProperty("zeebe.broker.gateway.enable"));
       final boolean embeddedGatewaySecurityNotNone =
           !"none".equals(env.getProperty("zeebe.broker.gateway.security.authentication.mode"));
 
