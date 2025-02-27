@@ -24,6 +24,7 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.client.api.response.ProcessInstanceEvent;
 import io.camunda.client.api.response.ProcessInstanceResult;
+import io.camunda.client.api.search.filter.ProcessInstanceFilter;
 import io.camunda.client.api.search.response.FlowNodeInstance;
 import io.camunda.client.api.search.response.Variable;
 import io.camunda.process.test.api.assertions.ProcessInstanceSelectors;
@@ -34,12 +35,15 @@ import io.camunda.process.test.utils.VariableBuilder;
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.function.Consumer;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Captor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -74,6 +78,8 @@ public class ProcessInstanceAssertTest {
     private static final long COMPLETED_PROCESS_INSTANCE_KEY = 2L;
 
     @Mock private ProcessInstanceResult processInstanceResult;
+    @Mock private ProcessInstanceFilter processInstanceFilter;
+    @Captor private ArgumentCaptor<Consumer<ProcessInstanceFilter>> processInstanceFilterCapture;
 
     @BeforeEach
     void configureMocks() {
@@ -97,7 +103,10 @@ public class ProcessInstanceAssertTest {
       CamundaAssert.assertThat(processInstanceEvent).isActive();
 
       // then
-      verify(camundaDataSource).findProcessInstances(any());
+      verify(camundaDataSource).findProcessInstances(processInstanceFilterCapture.capture());
+
+      processInstanceFilterCapture.getValue().accept(processInstanceFilter);
+      verify(processInstanceFilter).processInstanceKey(ACTIVE_PROCESS_INSTANCE_KEY);
     }
 
     @Test
@@ -111,7 +120,10 @@ public class ProcessInstanceAssertTest {
       CamundaAssert.assertThat(processInstanceEvent).isActive();
 
       // then
-      verify(camundaDataSource).findProcessInstances(any());
+      verify(camundaDataSource).findProcessInstances(processInstanceFilterCapture.capture());
+
+      processInstanceFilterCapture.getValue().accept(processInstanceFilter);
+      verify(processInstanceFilter).processInstanceKey(ACTIVE_PROCESS_INSTANCE_KEY);
     }
 
     @Test
@@ -138,7 +150,10 @@ public class ProcessInstanceAssertTest {
       CamundaAssert.assertThat(processInstanceResult).isActive();
 
       // then
-      verify(camundaDataSource).findProcessInstances(any());
+      verify(camundaDataSource).findProcessInstances(processInstanceFilterCapture.capture());
+
+      processInstanceFilterCapture.getValue().accept(processInstanceFilter);
+      verify(processInstanceFilter).processInstanceKey(ACTIVE_PROCESS_INSTANCE_KEY);
     }
 
     @Test
@@ -165,7 +180,10 @@ public class ProcessInstanceAssertTest {
           .isActive();
 
       // then
-      verify(camundaDataSource).findProcessInstances(any());
+      verify(camundaDataSource).findProcessInstances(processInstanceFilterCapture.capture());
+
+      processInstanceFilterCapture.getValue().accept(processInstanceFilter);
+      verify(processInstanceFilter).processInstanceKey(ACTIVE_PROCESS_INSTANCE_KEY);
     }
 
     @Test
@@ -190,7 +208,10 @@ public class ProcessInstanceAssertTest {
       CamundaAssert.assertThat(ProcessInstanceSelectors.byProcessId("active-process")).isActive();
 
       // then
-      verify(camundaDataSource).findProcessInstances(any());
+      verify(camundaDataSource).findProcessInstances(processInstanceFilterCapture.capture());
+
+      processInstanceFilterCapture.getValue().accept(processInstanceFilter);
+      verify(processInstanceFilter).processDefinitionId("active-process");
     }
 
     @Test
