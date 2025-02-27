@@ -161,17 +161,6 @@ final class StandaloneSchemaManagerTest {
   }
 
   @Test
-  void canRunSchemaManager() {
-    schemaManager.start();
-  }
-
-  @Test
-  void canStartCamundaAfterSchemaManager() {
-    schemaManager.start();
-    camunda.start();
-  }
-
-  @Test
   void canUseCamunda() {
     // given
     schemaManager.start();
