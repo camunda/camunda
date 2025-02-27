@@ -81,7 +81,7 @@ final class InterceptorIT {
     topologyManager =
         new BrokerTopologyManagerImpl(
             () -> cluster.getMembershipService().getMembers(),
-            new BrokerClientTopologyMetrics(new SimpleMeterRegistry()));
+            new BrokerClientTopologyMetrics(meterRegistry));
     cluster.getMembershipService().addListener(topologyManager);
 
     brokerClient =
@@ -91,9 +91,10 @@ final class InterceptorIT {
             cluster.getEventService(),
             scheduler,
             topologyManager,
-            new BrokerClientRequestMetrics(new SimpleMeterRegistry()));
+            new BrokerClientRequestMetrics(meterRegistry));
 
-    jobStreamClient = new JobStreamClientImpl(scheduler, cluster.getCommunicationService());
+    jobStreamClient =
+        new JobStreamClientImpl(scheduler, cluster.getCommunicationService(), meterRegistry);
     gateway =
         new Gateway(
             config,
