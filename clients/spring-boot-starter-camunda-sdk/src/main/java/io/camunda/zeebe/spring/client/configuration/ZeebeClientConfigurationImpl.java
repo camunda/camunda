@@ -342,6 +342,7 @@ public class ZeebeClientConfigurationImpl implements ZeebeClientConfiguration {
           .audience(camundaClientProperties.getZeebe().getAudience())
           .authorizationServerUrl(camundaClientProperties.getAuth().getIssuer())
           .scope(camundaClientProperties.getZeebe().getScope())
+          .credentialsCachePath(camundaClientProperties.getAuth().getCredentialsCachePath())
           .build();
     }
     return new NoopCredentialsProvider();
