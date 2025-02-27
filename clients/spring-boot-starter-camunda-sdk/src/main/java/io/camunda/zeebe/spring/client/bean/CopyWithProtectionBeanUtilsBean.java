@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.camunda.spring.client.bean;
+package io.camunda.zeebe.spring.client.bean;
 
 import java.lang.reflect.InvocationTargetException;
 import java.util.Set;
