@@ -128,7 +128,7 @@ public final class BpmnProcessors {
         keyGenerator);
     addProcessInstanceBatchStreamProcessors(typedRecordProcessors, processingState, writers);
     addAdHocSubProcessActivityStreamProcessors(
-        typedRecordProcessors, processingState, writers, keyGenerator);
+        typedRecordProcessors, processingState, writers, authCheckBehavior, keyGenerator);
 
     return bpmnStreamProcessor;
   }
@@ -332,10 +332,12 @@ public final class BpmnProcessors {
       final TypedRecordProcessors typedRecordProcessors,
       final MutableProcessingState processingState,
       final Writers writers,
+      final AuthorizationCheckBehavior authCheckBehavior,
       final KeyGenerator keyGenerator) {
     typedRecordProcessors.onCommand(
         ValueType.AD_HOC_SUB_PROCESS_ACTIVITY_ACTIVATION,
         AdHocSubProcessActivityActivationIntent.ACTIVATE,
-        new AdHocSubProcessActivityActivateProcessor(writers, processingState, keyGenerator));
+        new AdHocSubProcessActivityActivateProcessor(
+            writers, processingState, authCheckBehavior, keyGenerator));
   }
 }
