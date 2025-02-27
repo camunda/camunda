@@ -16,13 +16,13 @@
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>camunda-search-client-connect</artifactId>
-      <version>8.6.5</version>
+      <version>8.6.10</version>
     </dependency>
 
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>camunda-search-client-plugin</artifactId>
-      <version>8.6.5</version>
+      <version>8.6.10</version>
       <scope>test</scope>
     </dependency>
 
