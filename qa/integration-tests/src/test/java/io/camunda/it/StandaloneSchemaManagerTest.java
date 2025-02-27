@@ -40,6 +40,8 @@ final class StandaloneSchemaManagerTest {
         indices:
           - names: ['zeebe-*', 'operate-*', 'tasklist-*']
             privileges: ['manage']
+          - names: ['*']
+            privileges: ['read']
       """;
 
   @TestZeebe(autoStart = false)
