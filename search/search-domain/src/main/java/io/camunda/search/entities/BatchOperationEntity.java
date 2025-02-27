@@ -16,7 +16,7 @@ public record BatchOperationEntity(
     String operationType,
     OffsetDateTime startDate,
     OffsetDateTime endDate,
-    Long operationsTotalCount,
-    Long operationsFailedCount,
-    Long operationsCompletedCount) {
+    Integer operationsTotalCount,
+    Integer operationsFailedCount,
+    Integer operationsCompletedCount) {
 }

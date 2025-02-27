@@ -6,13 +6,15 @@
 <mapper namespace="io.camunda.db.rdbms.sql.BatchOperationMapper">
 
   <resultMap id="BatchOperationResultMap" type="io.camunda.search.entities.BatchOperationEntity">
-    <id property="batchOperationKey" column="BATCH_OPERATION_KEY"/>
-    <result property="operationType" column="OPERATION_TYPE"/>
-    <result property="startDate" column="START_DATE"/>
-    <result property="endDate" column="END_DATE"/>
-    <result property="operationsTotalCount" column="OPERATIONS_TOTAL_COUNT"/>
-    <result property="operationsFailedCount" column="OPERATIONS_FAILED_COUNT"/>
-    <result property="operationsCompletedCount" column="OPERATIONS_COMPLETED_COUNT"/>
+    <constructor>
+      <idArg column="BATCH_OPERATION_KEY" javaType="java.lang.Long"/>
+      <arg column="OPERATION_TYPE" javaType="java.lang.String"/>
+      <arg column="START_DATE" javaType="java.time.OffsetDateTime"/>
+      <arg column="END_DATE" javaType="java.time.OffsetDateTime"/>
+      <arg column="OPERATIONS_TOTAL_COUNT" javaType="java.lang.Integer"/>
+      <arg column="OPERATIONS_FAILED_COUNT" javaType="java.lang.Integer"/>
+      <arg column="OPERATIONS_COMPLETED_COUNT" javaType="java.lang.Integer"/>
+    </constructor>
   </resultMap>
 
   <insert id="insert" parameterType="io.camunda.db.rdbms.write.domain.BatchOperationDbModel">
@@ -31,6 +33,15 @@
             #{operationsFailedCount},
             #{operationsCompletedCount})
   </insert>
+
+  <update id="updateCompleted"
+    parameterType="io.camunda.db.rdbms.sql.BatchOperationMapper$BatchOperationUpdateDto">
+    UPDATE BATCH_OPERATION
+    SET END_DATE                   = #{endDate},
+        OPERATIONS_FAILED_COUNT    = #{operationsFailedCount},
+        OPERATIONS_COMPLETED_COUNT = #{operationsCompletedCount}
+    WHERE BATCH_OPERATION_KEY = #{batchOperationKey}
+  </update>
 
   <select id="count" resultType="java.lang.Long">
     SELECT COUNT(*)
