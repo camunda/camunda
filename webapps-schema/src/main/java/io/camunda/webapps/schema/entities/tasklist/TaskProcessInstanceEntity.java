@@ -8,8 +8,12 @@
 package io.camunda.webapps.schema.entities.tasklist;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import io.camunda.webapps.schema.entities.AbstractExporterEntity;
+import io.camunda.zeebe.protocol.record.value.TenantOwned;
+import java.util.Objects;
 
-public class TaskProcessInstanceEntity extends TasklistEntity<TaskProcessInstanceEntity> {
+public class TaskProcessInstanceEntity extends AbstractExporterEntity<TaskProcessInstanceEntity>
+    implements TenantOwned {
 
   @JsonInclude(JsonInclude.Include.NON_NULL)
   private Long processInstanceId;
@@ -17,12 +21,9 @@ public class TaskProcessInstanceEntity extends TasklistEntity<TaskProcessInstanc
   @JsonInclude(JsonInclude.Include.NON_NULL)
   private TaskJoinRelationship join;
 
-  public TaskProcessInstanceEntity() {}
+  private String tenantId = DEFAULT_TENANT_IDENTIFIER;
 
-  public TaskProcessInstanceEntity(
-      final String id, final Long key, final String tenantId, final int partitionId) {
-    super(id, key, tenantId, partitionId);
-  }
+  public TaskProcessInstanceEntity() {}
 
   public TaskJoinRelationship getJoin() {
     return join;
@@ -40,5 +41,31 @@ public class TaskProcessInstanceEntity extends TasklistEntity<TaskProcessInstanc
   public TaskProcessInstanceEntity setProcessInstanceId(final Long processInstanceId) {
     this.processInstanceId = processInstanceId;
     return this;
+  }
+
+  @Override
+  public String getTenantId() {
+    return tenantId;
+  }
+
+  public TaskProcessInstanceEntity setTenantId(final String tenantId) {
+    this.tenantId = tenantId;
+    return this;
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(super.hashCode(), join, tenantId);
+  }
+
+  @Override
+  public boolean equals(final Object o) {
+    if (!(o instanceof final TaskProcessInstanceEntity that)) {
+      return false;
+    }
+    if (!super.equals(o)) {
+      return false;
+    }
+    return Objects.equals(join, that.join) && Objects.equals(tenantId, that.tenantId);
   }
 }

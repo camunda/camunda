@@ -149,7 +149,7 @@ public class MigratedVariableHandlerTest {
         .isEqualTo(variableRecordValue.getProcessDefinitionKey());
     assertThat(variableEntity.getPosition()).isEqualTo(variableRecord.getPosition());
 
-    assertThat(variableEntity.getKey()).isEqualTo(0);
+    assertThat(variableEntity.getKey()).isNull();
     assertThat(variableEntity.getName()).isNull();
     assertThat(variableEntity.getScopeKey()).isNull();
     assertThat(variableEntity.getProcessInstanceKey()).isNull();

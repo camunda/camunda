@@ -7,11 +7,15 @@
  */
 package io.camunda.webapps.schema.entities.tasklist;
 
+import io.camunda.webapps.schema.entities.AbstractExporterEntity;
+import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import java.util.Objects;
 
 /** Represents variable with its value at the moment when task was completed. */
-public class SnapshotTaskVariableEntity extends TasklistEntity<SnapshotTaskVariableEntity> {
+public class SnapshotTaskVariableEntity extends AbstractExporterEntity<SnapshotTaskVariableEntity>
+    implements TenantOwned {
 
+  private String tenantId = DEFAULT_TENANT_IDENTIFIER;
   private String taskId;
   private String name;
   private String value;
@@ -76,8 +80,18 @@ public class SnapshotTaskVariableEntity extends TasklistEntity<SnapshotTaskVaria
   }
 
   @Override
+  public String getTenantId() {
+    return tenantId;
+  }
+
+  public SnapshotTaskVariableEntity setTenantId(final String tenantId) {
+    this.tenantId = tenantId;
+    return this;
+  }
+
+  @Override
   public int hashCode() {
-    return Objects.hash(super.hashCode(), taskId, name, value, fullValue, isPreview);
+    return Objects.hash(super.hashCode(), taskId, name, value, fullValue, isPreview, tenantId);
   }
 
   @Override
@@ -93,6 +107,7 @@ public class SnapshotTaskVariableEntity extends TasklistEntity<SnapshotTaskVaria
     }
     final SnapshotTaskVariableEntity that = (SnapshotTaskVariableEntity) o;
     return isPreview == that.isPreview
+        && Objects.equals(tenantId, that.tenantId)
         && Objects.equals(taskId, that.taskId)
         && Objects.equals(name, that.name)
         && Objects.equals(value, that.value)

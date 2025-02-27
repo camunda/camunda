@@ -8,10 +8,12 @@
 package io.camunda.webapps.schema.entities.operate;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import io.camunda.webapps.schema.entities.AbstractExporterEntity;
+import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import java.util.Arrays;
 import java.util.Objects;
 
-public class VariableEntity extends OperateZeebeEntity<VariableEntity> {
+public class VariableEntity extends AbstractExporterEntity<VariableEntity> implements TenantOwned {
 
   private String name;
   private String value;
@@ -26,7 +28,7 @@ public class VariableEntity extends OperateZeebeEntity<VariableEntity> {
   /** Attention! This field will be filled in only for data imported after v. 8.2.0. */
   private String bpmnProcessId;
 
-  private String tenantId = DEFAULT_TENANT_ID;
+  private String tenantId = DEFAULT_TENANT_IDENTIFIER;
 
   private Long position;
 
@@ -104,6 +106,7 @@ public class VariableEntity extends OperateZeebeEntity<VariableEntity> {
     return this;
   }
 
+  @Override
   public String getTenantId() {
     return tenantId;
   }
