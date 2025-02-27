@@ -36,6 +36,7 @@ import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.IndicesClient;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.client.indices.GetIndexRequest;
+import org.elasticsearch.index.reindex.BulkByScrollResponse;
 import org.elasticsearch.search.aggregations.AggregationBuilder;
 import org.elasticsearch.search.aggregations.AggregationBuilders;
 import org.elasticsearch.search.aggregations.Aggregations;
@@ -106,12 +107,10 @@ public class ElasticsearchArchiveRepositoryTest {
         final Timer.Sample timer = mock(Timer.Sample.class);
         when(timer.stop(any())).thenReturn(1000L);
         mockedTimer.when(Timer::start).thenReturn(timer);
+        final BulkByScrollResponse mockResponse = mock(BulkByScrollResponse.class);
         mockedStatic
-            .when(
-                () ->
-                    ElasticsearchUtil.deleteAsyncWithConnectionRelease(
-                        any(), anyString(), anyString(), any(), any(), any()))
-            .thenReturn(CompletableFuture.completedFuture(1000L));
+            .when(() -> ElasticsearchUtil.deleteAsync(any(), any(), any()))
+            .thenReturn(CompletableFuture.completedFuture(mockResponse));
         final CompletableFuture<Void> res = underTest.deleteDocuments("index", "id", List.of());
         res.join();
         assertThat(res).isCompleted();
@@ -125,19 +124,17 @@ public class ElasticsearchArchiveRepositoryTest {
       try (final MockedStatic<Timer> mockedTimer = mockStatic(Timer.class)) {
         final Timer.Sample timer = mock(Timer.Sample.class);
         mockedTimer.when(Timer::start).thenReturn(timer);
-        final CompletableFuture<Void> failedFuture = new CompletableFuture<>();
-        failedFuture.completeExceptionally(new Exception("test error"));
+        final CompletableFuture<BulkByScrollResponse> failedFuture = new CompletableFuture<>();
+        final String errorMsg = "test error";
+        failedFuture.completeExceptionally(new Exception(errorMsg));
         mockedStatic
-            .when(
-                () ->
-                    ElasticsearchUtil.deleteAsyncWithConnectionRelease(
-                        any(), anyString(), anyString(), any(), any(), any()))
+            .when(() -> ElasticsearchUtil.deleteAsync(any(), any(), any()))
             .thenReturn(failedFuture);
         final CompletableFuture<Void> res = underTest.deleteDocuments("index", "id", List.of());
         try {
           res.join();
         } catch (final Exception e) {
-          assertThat(e.getMessage()).isEqualTo("java.lang.Exception: test error");
+          assertThat(e.getMessage()).contains(errorMsg);
         }
       }
     }
@@ -150,12 +147,10 @@ public class ElasticsearchArchiveRepositoryTest {
         final Timer.Sample timer = mock(Timer.Sample.class);
         when(timer.stop(any())).thenReturn(1000L);
         mockedTimer.when(Timer::start).thenReturn(timer);
+        final BulkByScrollResponse mockResponse = mock(BulkByScrollResponse.class);
         mockedStatic
-            .when(
-                () ->
-                    ElasticsearchUtil.reindexAsyncWithConnectionRelease(
-                        any(), any(), anyString(), any()))
-            .thenReturn(CompletableFuture.completedFuture(1000L));
+            .when(() -> ElasticsearchUtil.reindexAsync(any(), any(), any()))
+            .thenReturn(CompletableFuture.completedFuture(mockResponse));
         final CompletableFuture<Void> res =
             underTest.reindexDocuments("sourceIndex", "destinationIndex", "id", List.of());
         res.join();
@@ -173,10 +168,7 @@ public class ElasticsearchArchiveRepositoryTest {
         final CompletableFuture<Void> failedFuture = new CompletableFuture<>();
         failedFuture.completeExceptionally(new Exception("test error"));
         mockedStatic
-            .when(
-                () ->
-                    ElasticsearchUtil.reindexAsyncWithConnectionRelease(
-                        any(), any(), anyString(), any()))
+            .when(() -> ElasticsearchUtil.reindexAsync(any(), any(), any()))
             .thenReturn(failedFuture);
         final CompletableFuture<Void> res =
             underTest.reindexDocuments("sourceIndex", "destinationIndex", "id", List.of());

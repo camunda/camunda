@@ -36,7 +36,7 @@ import io.camunda.zeebe.test.util.socket.SocketUtil;
 import java.net.URI;
 import java.nio.file.Path;
 import java.time.Duration;
-import java.util.Map;
+import java.util.HashMap;
 import java.util.function.Consumer;
 import org.elasticsearch.client.RestClient;
 import org.slf4j.Logger;
@@ -57,25 +57,33 @@ public final class TestStandaloneCamunda extends TestSpringApplication<TestStand
       DockerImageName.parse("docker.elastic.co/elasticsearch/elasticsearch")
           .withTag(RestClient.class.getPackage().getImplementationVersion());
   private static final String RECORDING_EXPORTER_ID = "recordingExporter";
-  private final ElasticsearchContainer esContainer =
-      new ElasticsearchContainer(ELASTIC_IMAGE)
-          // use JVM option files to avoid overwriting default options set by the ES container class
-          .withClasspathResourceMapping(
-              "elasticsearch-fast-startup.options",
-              "/usr/share/elasticsearch/config/jvm.options.d/elasticsearch-fast-startup.options",
-              BindMode.READ_ONLY)
-          // can be slow in CI
-          .withStartupTimeout(Duration.ofMinutes(5))
-          .withEnv("action.auto_create_index", "true")
-          .withEnv("xpack.security.enabled", "false")
-          .withEnv("xpack.watcher.enabled", "false")
-          .withEnv("xpack.ml.enabled", "false")
-          .withEnv("action.destructive_requires_name", "false");
+  private final boolean manageEs;
+  private final ElasticsearchContainer esContainer;
   private final BrokerBasedProperties brokerProperties;
   private final OperateProperties operateProperties;
   private final TasklistProperties tasklistProperties;
 
+  @SuppressWarnings("resource")
   public TestStandaloneCamunda() {
+    this(
+        new ElasticsearchContainer(ELASTIC_IMAGE)
+            // use JVM option files to avoid overwriting default options set by the ES container
+            // class
+            .withClasspathResourceMapping(
+                "elasticsearch-fast-startup.options",
+                "/usr/share/elasticsearch/config/jvm.options.d/elasticsearch-fast-startup.options",
+                BindMode.READ_ONLY)
+            // can be slow in CI
+            .withStartupTimeout(Duration.ofMinutes(5))
+            .withEnv("action.auto_create_index", "true")
+            .withEnv("xpack.security.enabled", "false")
+            .withEnv("xpack.watcher.enabled", "false")
+            .withEnv("xpack.ml.enabled", "false")
+            .withEnv("action.destructive_requires_name", "false"),
+        true);
+  }
+
+  public TestStandaloneCamunda(final ElasticsearchContainer esContainer, final boolean manageEs) {
     super(
         CommonsModuleConfiguration.class,
         OperateModuleConfiguration.class,
@@ -88,6 +96,8 @@ public final class TestStandaloneCamunda extends TestSpringApplication<TestStand
         TestTasklistElasticsearchSchemaManager.class,
         TestOperateSchemaStartup.class,
         TestTasklistSchemaStartup.class);
+    this.esContainer = esContainer;
+    this.manageEs = manageEs;
 
     brokerProperties = new BrokerBasedProperties();
 
@@ -119,14 +129,23 @@ public final class TestStandaloneCamunda extends TestSpringApplication<TestStand
 
   @Override
   public TestStandaloneCamunda start() {
-    esContainer.start();
+    if (manageEs) {
+      esContainer.start();
+    }
 
     final String esURL = String.format("http://%s", esContainer.getHttpHostAddress());
 
-    final ExporterCfg exporterCfg = new ExporterCfg();
+    final var exporterCfg =
+        brokerProperties
+            .getExporters()
+            .computeIfAbsent("elasticsearch", ignored -> new ExporterCfg());
     exporterCfg.setClassName("io.camunda.zeebe.exporter.ElasticsearchExporter");
-    exporterCfg.setArgs(Map.of("url", esURL)); // new ElasticsearchExporterConfiguration();
-    brokerProperties.getExporters().put("elasticsearch", exporterCfg);
+    if (exporterCfg.getArgs() != null) {
+      exporterCfg.setArgs(new HashMap<>(exporterCfg.getArgs()));
+    } else {
+      exporterCfg.setArgs(new HashMap<>());
+    }
+    exporterCfg.getArgs().put("url", esURL);
 
     operateProperties.getElasticsearch().setUrl(esURL);
     operateProperties.getZeebeElasticsearch().setUrl(esURL);
@@ -141,7 +160,9 @@ public final class TestStandaloneCamunda extends TestSpringApplication<TestStand
   public TestStandaloneCamunda stop() {
     // clean up ES/OS indices
     LOGGER.info("Stopping standalone camunda test...");
-    esContainer.stop();
+    if (manageEs) {
+      esContainer.stop();
+    }
     return super.stop();
   }
 
@@ -264,6 +285,16 @@ public final class TestStandaloneCamunda extends TestSpringApplication<TestStand
    */
   public TestStandaloneCamunda withBrokerConfig(final Consumer<BrokerBasedProperties> modifier) {
     modifier.accept(brokerProperties);
+    return this;
+  }
+
+  public TestStandaloneCamunda withOperateConfig(final Consumer<OperateProperties> modifier) {
+    modifier.accept(operateProperties);
+    return this;
+  }
+
+  public TestStandaloneCamunda withTasklistConfig(final Consumer<TasklistProperties> modifier) {
+    modifier.accept(tasklistProperties);
     return this;
   }
 

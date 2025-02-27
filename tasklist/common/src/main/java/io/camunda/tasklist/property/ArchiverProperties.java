@@ -38,6 +38,7 @@ public class ArchiverProperties {
   private String waitPeriodBeforeArchiving = "1h";
 
   private boolean ilmEnabled = false; // default due to usage of curator
+  private boolean ilmManagePolicy = true; // default due to usage of curator
 
   private String ilmMinAgeForDeleteArchivedIndices = "30d";
 
@@ -53,7 +54,7 @@ public class ArchiverProperties {
     return ilmMinAgeForDeleteArchivedIndices;
   }
 
-  public void setIlmMinAgeForDeleteArchivedIndices(String ilmMinAgeForDeleteArchivedIndices) {
+  public void setIlmMinAgeForDeleteArchivedIndices(final String ilmMinAgeForDeleteArchivedIndices) {
     this.ilmMinAgeForDeleteArchivedIndices = ilmMinAgeForDeleteArchivedIndices;
   }
 
@@ -61,7 +62,7 @@ public class ArchiverProperties {
     return ilmEnabled;
   }
 
-  public void setIlmEnabled(boolean ilmEnabled) {
+  public void setIlmEnabled(final boolean ilmEnabled) {
     this.ilmEnabled = ilmEnabled;
   }
 
@@ -69,7 +70,7 @@ public class ArchiverProperties {
     return rolloverEnabled;
   }
 
-  public void setRolloverEnabled(boolean rolloverEnabled) {
+  public void setRolloverEnabled(final boolean rolloverEnabled) {
     this.rolloverEnabled = rolloverEnabled;
   }
 
@@ -77,7 +78,7 @@ public class ArchiverProperties {
     return rolloverDateFormat;
   }
 
-  public void setRolloverDateFormat(String rolloverDateFormat) {
+  public void setRolloverDateFormat(final String rolloverDateFormat) {
     this.rolloverDateFormat = rolloverDateFormat;
   }
 
@@ -85,7 +86,7 @@ public class ArchiverProperties {
     return elsRolloverDateFormat;
   }
 
-  public void setElsRolloverDateFormat(String elsRolloverDateFormat) {
+  public void setElsRolloverDateFormat(final String elsRolloverDateFormat) {
     this.elsRolloverDateFormat = elsRolloverDateFormat;
   }
 
@@ -93,7 +94,7 @@ public class ArchiverProperties {
     return rolloverInterval;
   }
 
-  public void setRolloverInterval(String rolloverInterval) {
+  public void setRolloverInterval(final String rolloverInterval) {
     this.rolloverInterval = rolloverInterval;
   }
 
@@ -101,7 +102,7 @@ public class ArchiverProperties {
     return rolloverBatchSize;
   }
 
-  public void setRolloverBatchSize(int rolloverBatchSize) {
+  public void setRolloverBatchSize(final int rolloverBatchSize) {
     this.rolloverBatchSize = rolloverBatchSize;
   }
 
@@ -109,7 +110,7 @@ public class ArchiverProperties {
     return threadsCount;
   }
 
-  public void setThreadsCount(int threadsCount) {
+  public void setThreadsCount(final int threadsCount) {
     this.threadsCount = threadsCount;
   }
 
@@ -117,7 +118,7 @@ public class ArchiverProperties {
     return waitPeriodBeforeArchiving;
   }
 
-  public void setWaitPeriodBeforeArchiving(String waitPeriodBeforeArchiving) {
+  public void setWaitPeriodBeforeArchiving(final String waitPeriodBeforeArchiving) {
     this.waitPeriodBeforeArchiving = waitPeriodBeforeArchiving;
   }
 
@@ -129,7 +130,15 @@ public class ArchiverProperties {
     return delayBetweenRuns;
   }
 
-  public void setDelayBetweenRuns(int delayBetweenRuns) {
+  public void setDelayBetweenRuns(final int delayBetweenRuns) {
     this.delayBetweenRuns = delayBetweenRuns;
+  }
+
+  public boolean isIlmManagePolicy() {
+    return ilmManagePolicy;
+  }
+
+  public void setIlmManagePolicy(final boolean ilmManagePolicy) {
+    this.ilmManagePolicy = ilmManagePolicy;
   }
 }
