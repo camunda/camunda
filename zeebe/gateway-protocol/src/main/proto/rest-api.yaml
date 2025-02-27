@@ -7146,6 +7146,15 @@ components:
           description: >
             Key of the batch operation
           type: string
+        batchOperationType:
+          description: Batch operation type
+          type: string
+        keys:
+          description: the entity keys to be processed
+          type: array
+          items:
+            type: integer
+            format: int64
     BatchOperationSearchQueryResult:
       type: object
       allOf:

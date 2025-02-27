@@ -29,6 +29,7 @@ import io.camunda.client.api.command.AssignUserToGroupCommandStep1;
 import io.camunda.client.api.command.AssignUserToTenantCommandStep1;
 import io.camunda.client.api.command.BroadcastSignalCommandStep1;
 import io.camunda.client.api.command.CancelProcessInstanceCommandStep1;
+import io.camunda.client.api.command.CancelProcessInstancesBatchRequest;
 import io.camunda.client.api.command.ClientException;
 import io.camunda.client.api.command.ClockPinCommandStep1;
 import io.camunda.client.api.command.ClockResetCommandStep1;
@@ -90,6 +91,7 @@ import io.camunda.client.api.fetch.UserTaskGetRequest;
 import io.camunda.client.api.fetch.VariableGetRequest;
 import io.camunda.client.api.response.ActivatedJob;
 import io.camunda.client.api.response.DocumentReferenceResponse;
+import io.camunda.client.api.search.filter.ProcessInstanceFilter;
 import io.camunda.client.api.search.query.AdHocSubprocessActivityQuery;
 import io.camunda.client.api.search.query.DecisionDefinitionQuery;
 import io.camunda.client.api.search.query.DecisionInstanceQuery;
@@ -110,6 +112,7 @@ import io.camunda.client.impl.command.AssignUserToGroupCommandImpl;
 import io.camunda.client.impl.command.AssignUserToTenantCommandImpl;
 import io.camunda.client.impl.command.BroadcastSignalCommandImpl;
 import io.camunda.client.impl.command.CancelProcessInstanceCommandImpl;
+import io.camunda.client.impl.command.CancelProcessInstancesBatchRequestImpl;
 import io.camunda.client.impl.command.ClockPinCommandImpl;
 import io.camunda.client.impl.command.ClockResetCommandImpl;
 import io.camunda.client.impl.command.CompleteUserTaskCommandImpl;
@@ -167,6 +170,7 @@ import io.camunda.client.impl.fetch.UserTaskGetRequestImpl;
 import io.camunda.client.impl.fetch.VariableGetRequestImpl;
 import io.camunda.client.impl.http.HttpClient;
 import io.camunda.client.impl.http.HttpClientFactory;
+import io.camunda.client.impl.search.filter.ProcessInstanceFilterImpl;
 import io.camunda.client.impl.search.query.AdHocSubprocessActivityQueryImpl;
 import io.camunda.client.impl.search.query.DecisionDefinitionQueryImpl;
 import io.camunda.client.impl.search.query.DecisionInstanceQueryImpl;
@@ -202,8 +206,10 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
 
 public final class CamundaClientImpl implements CamundaClient {
+
   private final CamundaClientConfiguration config;
   private final JsonMapper jsonMapper;
   private final GatewayStub asyncStub;
@@ -344,7 +350,7 @@ public final class CamundaClientImpl implements CamundaClient {
     final GatewayStub gatewayStub = GatewayGrpc.newStub(channel).withCallCredentials(credentials);
     if (!config.getInterceptors().isEmpty()) {
       return gatewayStub.withInterceptors(
-          config.getInterceptors().toArray(new ClientInterceptor[] {}));
+          config.getInterceptors().toArray(new ClientInterceptor[]{}));
     }
     return gatewayStub;
   }
@@ -361,7 +367,8 @@ public final class CamundaClientImpl implements CamundaClient {
 
     try {
       return objectMapper.readValue(
-          defaultServiceConfig, new TypeReference<Map<String, Object>>() {});
+          defaultServiceConfig, new TypeReference<Map<String, Object>>() {
+          });
     } catch (final IOException e) {
       Loggers.LOGGER.warn(
           "Failed to read default service config from classpath; will not configure a default retry policy",
@@ -489,6 +496,15 @@ public final class CamundaClientImpl implements CamundaClient {
         httpClient,
         config,
         jsonMapper);
+  }
+
+  @Override
+  public CancelProcessInstancesBatchRequest newCancelInstancesBatchCommand(
+      final Consumer<ProcessInstanceFilter> filterModifier) {
+    ProcessInstanceFilter filter = new ProcessInstanceFilterImpl();
+    filterModifier.accept(filter);
+
+    return new CancelProcessInstancesBatchRequestImpl(httpClient, filter, jsonMapper);
   }
 
   @Override
@@ -894,6 +910,11 @@ public final class CamundaClientImpl implements CamundaClient {
   @Override
   public AssignUserToTenantCommandStep1 newAssignUserToTenantCommand(final String tenantId) {
     return new AssignUserToTenantCommandImpl(httpClient, tenantId);
+  }
+
+  @Override
+  public RemoveUserFromTenantCommandStep1 newRemoveUserFromTenantCommand(final String tenantId) {
+    return new RemoveUserFromTenantCommandImpl(httpClient, tenantId);
   }
 
   @Override
