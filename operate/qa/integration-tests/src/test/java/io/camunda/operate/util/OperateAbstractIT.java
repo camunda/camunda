@@ -16,6 +16,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import io.camunda.authentication.tenant.TenantService;
+import io.camunda.authentication.tenant.TenantServiceImpl;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.qa.util.DependencyInjectionTestExecutionListener;
 import io.camunda.operate.webapp.rest.dto.UserDto;
@@ -67,7 +68,7 @@ public abstract class OperateAbstractIT {
 
   @MockBean protected UserService userService;
 
-  @MockBean protected TenantService tenantService;
+  @MockBean protected TenantServiceImpl tenantService;
 
   @Before
   public void before() {
