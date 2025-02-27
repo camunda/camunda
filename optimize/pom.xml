@@ -51,7 +51,7 @@
     <apache.http5-client.version>5.4</apache.http5-client.version>
     <apache.http5-core.version>5.3.1</apache.http5-core.version>
     <guava.version>33.3.1-jre</guava.version>
-    <spring.boot.version>3.3.4</spring.boot.version>
+    <spring.boot.version>3.3.9</spring.boot.version>
     <spring.version>6.1.17</spring.version>
     <httpclient.version>4.5.14</httpclient.version>
     <quartz.version>2.3.2</quartz.version>
@@ -87,7 +87,6 @@
 
     <maven.compiler.target>21</maven.compiler.target>
     <maven.compiler.source>21</maven.compiler.source>
-    <spring-boot.version>3.3.4</spring-boot.version>
   </properties>
 
   <modules>
@@ -105,7 +104,7 @@
       <dependency>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-dependencies</artifactId>
-        <version>${spring-boot.version}</version>
+        <version>${spring.boot.version}</version>
         <type>pom</type>
         <scope>import</scope>
       </dependency>
