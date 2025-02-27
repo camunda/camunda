@@ -19,16 +19,16 @@ import io.camunda.qa.util.auth.User;
 import io.camunda.qa.util.auth.UserDefinition;
 import io.camunda.qa.util.cluster.TestSimpleCamundaApplication;
 import java.io.IOException;
+import java.net.HttpURLConnection;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.net.http.HttpClient;
+import java.net.http.HttpClient.Redirect;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
 import java.util.Base64;
 import java.util.List;
-import org.apache.hc.client5.http.classic.methods.HttpGet;
-import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
-import org.apache.hc.client5.http.impl.classic.CloseableHttpResponse;
-import org.apache.hc.client5.http.impl.classic.HttpClients;
-import org.apache.hc.core5.http.HttpStatus;
-import org.apache.hc.core5.http.NameValuePair;
 import org.apache.hc.core5.http.ProtocolException;
-import org.apache.hc.core5.http.message.BasicHeader;
 import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -38,93 +38,153 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 @Tag("multi-db-test")
 @DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "rdbms")
 class ApplicationAuthorizationIT {
-  static final TestSimpleCamundaApplication STANDALONE_CAMUNDA =
-      new TestSimpleCamundaApplication().withBasicAuth().withAuthorizationsEnabled()
+
+  private static final String PATH_OPERATE = "operate";
+  private static final String PATH_OPERATE_WEBAPP_USER = PATH_OPERATE + "/user";
+  private static final TestSimpleCamundaApplication STANDALONE_CAMUNDA =
+      new TestSimpleCamundaApplication()
+          .withBasicAuth()
+          .withAuthorizationsEnabled()
           .withProperty("spring.profiles.active", "consolidated-auth,identity,broker,operate");
+
   @RegisterExtension
-  static final CamundaMultiDBExtension EXTENSION = new CamundaMultiDBExtension(STANDALONE_CAMUNDA);
+  private static final CamundaMultiDBExtension EXTENSION =
+      new CamundaMultiDBExtension(STANDALONE_CAMUNDA);
+
   private static final String RESTRICTED = "restricted-user";
   private static final String ADMIN = "admin";
   private static final String DEFAULT_PASSWORD = "password";
+
   @UserDefinition
   private static final User ADMIN_USER =
       new User(
-          ADMIN,
-          DEFAULT_PASSWORD,
-          List.of(new Permissions(APPLICATION, ACCESS, List.of("*"))));
+          ADMIN, DEFAULT_PASSWORD, List.of(new Permissions(APPLICATION, ACCESS, List.of("*"))));
 
   @UserDefinition
-  private static final User RESTRICTED_USER = new User(RESTRICTED, DEFAULT_PASSWORD, List.of(new Permissions(APPLICATION, ACCESS, List.of("tasklist"))));
+  private static final User RESTRICTED_USER =
+      new User(
+          RESTRICTED,
+          DEFAULT_PASSWORD,
+          List.of(new Permissions(APPLICATION, ACCESS, List.of("tasklist"))));
 
   @AutoClose
-  private static final CloseableHttpClient HTTP_CLIENT = HttpClients.custom().disableRedirectHandling().build();
+  private static final HttpClient HTTP_CLIENT =
+      HttpClient.newBuilder().followRedirects(Redirect.NEVER).build();
 
   @Test
-  void accessAppUserWithoutAppAccessNotAllowed(@Authenticated(RESTRICTED) final CamundaClient restrictedClient) throws IOException, ProtocolException {
-      final HttpGet request = new HttpGet(restrictedClient.getConfiguration().getRestAddress() + "operate/user");
-      request.addHeader(basicAuthentication(RESTRICTED));
-      try (final CloseableHttpResponse response = HTTP_CLIENT.execute(request)) {
-        assertRedirectToForbidden(response);
-      }
+  void accessAppUserWithoutAppAccessNotAllowed(
+      @Authenticated(RESTRICTED) final CamundaClient restrictedClient)
+      throws IOException, ProtocolException, URISyntaxException, InterruptedException {
+    // when
+    final HttpRequest request =
+        HttpRequest.newBuilder()
+            .uri(createUri(restrictedClient, PATH_OPERATE_WEBAPP_USER))
+            .header("Authorization", basicAuthentication(RESTRICTED))
+            .build();
+    final HttpResponse<String> response =
+        HTTP_CLIENT.send(request, HttpResponse.BodyHandlers.ofString());
+
+    // then
+    assertRedirectToForbidden(response);
   }
 
   @Test
-  void accessAppNoUserAllowed(@Authenticated(ADMIN) final CamundaClient client) throws IOException {
-      final HttpGet request = new HttpGet(client.getConfiguration().getRestAddress() + "operate/user");
-      try (final CloseableHttpResponse response = HTTP_CLIENT.execute(request)) {
-        assertThat(response.getCode()).isEqualTo(HttpStatus.SC_OK);
-      }
+  void accessAppNoUserAllowed(@Authenticated(ADMIN) final CamundaClient client)
+      throws IOException, URISyntaxException, InterruptedException {
+    // when
+    final HttpRequest request =
+        HttpRequest.newBuilder().uri(createUri(client, PATH_OPERATE_WEBAPP_USER)).build();
+    final HttpResponse<String> response =
+        HTTP_CLIENT.send(request, HttpResponse.BodyHandlers.ofString());
+
+    // then
+    assertThat(response.statusCode()).isEqualTo(HttpURLConnection.HTTP_OK);
   }
 
   @Test
-  void accessApiUserWithoutAppAccessAllowed(@Authenticated(RESTRICTED) final CamundaClient restrictedClient) throws IOException {
-      final HttpGet request = new HttpGet(restrictedClient.getConfiguration().getRestAddress() + "v2/topology");
-      request.addHeader(basicAuthentication(RESTRICTED));
-      try (final CloseableHttpResponse response = HTTP_CLIENT.execute(request)) {
-        assertThat(response.getCode()).isEqualTo(HttpStatus.SC_OK);
-      }
+  void accessApiUserWithoutAppAccessAllowed(
+      @Authenticated(RESTRICTED) final CamundaClient restrictedClient)
+      throws IOException, URISyntaxException, InterruptedException {
+    // when
+    final HttpRequest request =
+        HttpRequest.newBuilder()
+            .uri(createUri(restrictedClient, "v2/topology"))
+            .header("Authorization", basicAuthentication(RESTRICTED))
+            .build();
+    final HttpResponse<String> response =
+        HTTP_CLIENT.send(request, HttpResponse.BodyHandlers.ofString());
+
+    // then
+    assertThat(response.statusCode()).isEqualTo(HttpURLConnection.HTTP_OK);
   }
 
   @Test
-  void accessStaticUserWithoutAppAccessAllowed(@Authenticated(RESTRICTED) final CamundaClient restrictedClient) throws IOException {
-      final HttpGet request = new HttpGet(restrictedClient.getConfiguration().getRestAddress() + "operate/image.svg");
-      request.addHeader(basicAuthentication(RESTRICTED));
-      try (final CloseableHttpResponse response = HTTP_CLIENT.execute(request)) {
-        // we expect not found here as frontend resources are not packaged for integration tests
-        assertThat(response.getCode()).isEqualTo(HttpStatus.SC_NOT_FOUND);
-    }
+  void accessStaticUserWithoutAppAccessAllowed(
+      @Authenticated(RESTRICTED) final CamundaClient restrictedClient)
+      throws IOException, URISyntaxException, InterruptedException {
+    // when
+    final HttpRequest request =
+        HttpRequest.newBuilder()
+            .uri(createUri(restrictedClient, PATH_OPERATE + "/image.svg"))
+            .header("Authorization", basicAuthentication(RESTRICTED))
+            .build();
+    final HttpResponse<String> response =
+        HTTP_CLIENT.send(request, HttpResponse.BodyHandlers.ofString());
+
+    // we expect not found here as frontend resources are not packaged for integration tests
+    assertThat(response.statusCode()).isEqualTo(HttpURLConnection.HTTP_NOT_FOUND);
   }
 
   @Test
-  void accessAppUserWithSpecificAppAccessAllowed(@Authenticated(RESTRICTED) final CamundaClient restrictedClient) throws IOException {
-      final HttpGet request = new HttpGet(restrictedClient.getConfiguration().getRestAddress() + "tasklist/user");
-      request.addHeader(basicAuthentication(RESTRICTED));
-      try (final CloseableHttpResponse response = HTTP_CLIENT.execute(request)) {
-        assertThat(response.getCode()).isEqualTo(HttpStatus.SC_OK);
-    }
+  void accessAppUserWithSpecificAppAccessAllowed(
+      @Authenticated(RESTRICTED) final CamundaClient restrictedClient)
+      throws IOException, URISyntaxException, InterruptedException {
+    // when
+    final HttpRequest request =
+        HttpRequest.newBuilder()
+            .uri(createUri(restrictedClient, "tasklist/user"))
+            .header("Authorization", basicAuthentication(RESTRICTED))
+            .build();
+    final HttpResponse<String> response =
+        HTTP_CLIENT.send(request, HttpResponse.BodyHandlers.ofString());
+
+    // then
+    assertThat(response.statusCode()).isEqualTo(HttpURLConnection.HTTP_OK);
   }
 
   @Test
-  void accessAppUserWithAppWildcardAccessAllowed(@Authenticated(ADMIN) final CamundaClient adminClient) throws IOException {
-      final HttpGet request = new HttpGet(adminClient.getConfiguration().getRestAddress() + "operate/users");
-      request.addHeader(basicAuthentication(ADMIN));
-      try (final CloseableHttpResponse response = HTTP_CLIENT.execute(request)) {
-        assertThat(response.getCode()).isEqualTo(HttpStatus.SC_OK);
-    }
+  void accessAppUserWithAppWildcardAccessAllowed(
+      @Authenticated(ADMIN) final CamundaClient adminClient)
+      throws IOException, URISyntaxException, InterruptedException {
+    // when
+    final HttpRequest request =
+        HttpRequest.newBuilder()
+            .uri(createUri(adminClient, PATH_OPERATE_WEBAPP_USER))
+            .header("Authorization", basicAuthentication(ADMIN))
+            .build();
+    final HttpResponse<String> response =
+        HTTP_CLIENT.send(request, HttpResponse.BodyHandlers.ofString());
+
+    // then
+    assertThat(response.statusCode()).isEqualTo(HttpURLConnection.HTTP_OK);
   }
 
-  private static void assertRedirectToForbidden(final CloseableHttpResponse response)
+  private static void assertRedirectToForbidden(final HttpResponse<String> response)
       throws ProtocolException {
-    assertThat(response.getCode()).isEqualTo(HttpStatus.SC_MOVED_TEMPORARILY);
-    assertThat(response.getHeader("Location"))
-        .isNotNull()
-        .extracting(NameValuePair::getValue)
-        .satisfies(location -> assertThat(location).endsWith("/operate/forbidden"));
+    assertThat(response.statusCode()).isEqualTo(HttpURLConnection.HTTP_MOVED_TEMP);
+    assertThat(response.headers().firstValue("Location"))
+        .isPresent()
+        .get()
+        .satisfies(location -> assertThat(location).endsWith(PATH_OPERATE + "/forbidden"));
   }
 
-  private static BasicHeader basicAuthentication(final String restricted) {
-    return new BasicHeader(
-        "Authorization",
-        "Basic " + Base64.getEncoder().encodeToString((restricted + ":" + "password").getBytes()));
+  private static String basicAuthentication(final String user) {
+    return "Basic "
+        + Base64.getEncoder().encodeToString((user + ":" + DEFAULT_PASSWORD).getBytes());
+  }
+
+  private static URI createUri(final CamundaClient client, final String path)
+      throws URISyntaxException {
+    return new URI("%s%s".formatted(client.getConfiguration().getRestAddress(), path));
   }
 }
