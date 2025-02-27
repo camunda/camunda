@@ -18,6 +18,7 @@ package io.camunda.process.test.impl.assertions;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.search.SearchRequestPage;
 import io.camunda.client.api.search.filter.FlownodeInstanceFilter;
+import io.camunda.client.api.search.filter.IncidentFilter;
 import io.camunda.client.api.search.filter.ProcessInstanceFilter;
 import io.camunda.client.api.search.response.FlowNodeInstance;
 import io.camunda.client.api.search.response.Incident;
@@ -78,10 +79,10 @@ public class CamundaDataSource {
         .items();
   }
 
-  public List<Incident> findIncidentsByProcessInstanceKey(final long processInstanceKey) {
+  public List<Incident> findIncidents(final Consumer<IncidentFilter> filter) {
     return client
         .newIncidentQuery()
-        .filter(filter -> filter.processInstanceKey(processInstanceKey))
+        .filter(filter)
         .sort(sort -> sort.creationTime().asc())
         .page(DEFAULT_PAGE_REQUEST)
         .send()

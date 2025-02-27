@@ -77,15 +77,13 @@ public class CamundaProcessTestResultCollector {
   }
 
   private List<Incident> collectOpenIncidents(final long processInstanceKey) {
-    return dataSource.findIncidentsByProcessInstanceKey(processInstanceKey).stream()
-        .filter(incident -> incident.getState().equals(IncidentState.ACTIVE))
-        .collect(Collectors.toList());
+    return dataSource.findIncidents(
+        filter -> filter.processInstanceKey(processInstanceKey).state(IncidentState.ACTIVE));
   }
 
   private List<FlowNodeInstance> collectActiveFlowNodeInstances(final long processInstanceKey) {
-    return dataSource.findFlowNodeInstancesByProcessInstanceKey(processInstanceKey).stream()
-        .filter(
-            flowNodeInstance -> flowNodeInstance.getState().equals(FlowNodeInstanceState.ACTIVE))
-        .collect(Collectors.toList());
+    return dataSource.findFlowNodeInstances(
+        filter ->
+            filter.processInstanceKey(processInstanceKey).state(FlowNodeInstanceState.ACTIVE));
   }
 }
