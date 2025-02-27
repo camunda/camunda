@@ -98,11 +98,22 @@ Refer to existing integration tests for setup.
 
 ### Documentation generation
 
-Adjust the [public reference documentation](https://docs.camunda.io/docs/next/apis-tools/camunda-api-rest/specifications/camunda-8-rest-api/) with the OpenAPI description [you extended earlier](#openapi-extension).
+[The public reference documentation](https://docs.camunda.io/docs/next/apis-tools/camunda-api-rest/specifications/camunda-8-rest-api/) needs to be synchronized with [your specification changes](#openapi-extension).
+
+#### Automatic synchronization
+
+The documentation project is configured to execute [a workflow](https://github.com/camunda/camunda-docs/actions/workflows/sync-rest-api-docs.yaml) weekly to synchronize the "next" version of the REST API docs. The workflow pulls the specification from `main` in this project, and re-generates the documentation for the "next" version based on that spec. If your changes only need to be applied to version "next," and a documentation update is not urgent, you should wait for that workflow to incorporate your changes.
+
+#### Manual synchronization
+
+##### For changes applied to the `main` branch
+
+1. Trigger a manual run of the [synchronization workflow](https://github.com/camunda/camunda-docs/actions/workflows/sync-rest-api-docs.yaml).
+
+##### For each other version of your changes
 
 1. Consider the [documentation guide](https://github.com/camunda/camunda-docs/blob/main/howtos/interactive-api-explorers.md) explaining how to generate the REST API explorer.
 2. If you encounter any adjustments to improve the generated documentation, feed it back into the OpenAPI file and regenerate until the docs are in the desired state.
 3. Adjust and commit the OpenAPI file back to the [Camunda repository](../zeebe/gateway-protocol/src/main/proto/rest-api.yaml) to check in the changes to the source of truth.
    Otherwise, subsequent generations of the documentation will override your manual changes by copying the source of truth OpenAPI from this repository to the Camunda documentation repository.
 4. Create a documentation PR and follow the [documentation team's guidelines](https://github.com/camunda/camunda-docs/blob/main/CONTRIBUTING.MD).
-
