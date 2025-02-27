@@ -207,8 +207,7 @@ final class StandaloneSchemaManagerTest {
     }
 
     // then -- user task exists and can be completed
-    try (final var tasklistClient =
-        camunda.newTasklistClient().withAuthentication(TEST_USER_NAME, TEST_USER_PASSWORD)) {
+    try (final var tasklistClient = camunda.newTasklistClient()) {
       final var userTaskKey =
           Awaitility.await("should create a user task")
               .atMost(Duration.ofSeconds(60))
@@ -216,27 +215,42 @@ final class StandaloneSchemaManagerTest {
               .until(
                   () ->
                       tasklistClient
+                          .withAuthentication(TEST_USER_NAME, TEST_USER_PASSWORD)
                           .searchUserTasks(SearchQueryBuilders.query().build())
                           .hits()
                           .getFirst()
                           .source()
                           .getKey(),
                   Objects::nonNull);
-      assertThat(tasklistClient.assignUserTask(userTaskKey, TEST_USER_NAME))
-          .returns(200, HttpResponse::statusCode);
-      assertThat(tasklistClient.completeUserTask(userTaskKey))
-          .returns(200, HttpResponse::statusCode);
+      Awaitility.await("should assign user task")
+          .untilAsserted(
+              () ->
+                  assertThat(
+                          tasklistClient
+                              .withAuthentication(TEST_USER_NAME, TEST_USER_PASSWORD)
+                              .assignUserTask(userTaskKey, TEST_USER_NAME))
+                      .returns(200, HttpResponse::statusCode));
+      Awaitility.await("should complete user task")
+          .untilAsserted(
+              () ->
+                  assertThat(
+                          tasklistClient
+                              .withAuthentication(TEST_USER_NAME, TEST_USER_PASSWORD)
+                              .completeUserTask(userTaskKey))
+                      .returns(200, HttpResponse::statusCode));
     }
 
     // then -- process instance is completed
-    try (final var operateClient =
-        camunda.newOperateClient().withAuthentication(TEST_USER_NAME, TEST_USER_PASSWORD)) {
+    try (final var operateClient = camunda.newOperateClient()) {
       Awaitility.await("process instance should be completed")
           .atMost(Duration.ofSeconds(60))
           .ignoreExceptions()
           .untilAsserted(
               () -> {
-                final var result = operateClient.getProcessInstanceWith(processInstanceKey);
+                final var result =
+                    operateClient
+                        .withAuthentication(TEST_USER_NAME, TEST_USER_PASSWORD)
+                        .getProcessInstanceWith(processInstanceKey);
                 EitherAssert.assertThat(result).isRight();
                 assertThat(result.get().processInstances().getFirst().getEndDate()).isNotNull();
               });
