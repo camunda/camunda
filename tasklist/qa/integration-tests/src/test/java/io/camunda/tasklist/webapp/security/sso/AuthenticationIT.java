@@ -37,7 +37,7 @@ import com.auth0.AuthorizeUrl;
 import com.auth0.IdentityVerificationException;
 import com.auth0.Tokens;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.camunda.authentication.tenant.TenantServiceConfig;
+import io.camunda.authentication.tenant.TenantService;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.util.apps.sso.AuthSSOApplication;
 import io.camunda.tasklist.webapp.dto.UserDTO;
@@ -77,7 +77,7 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.web.client.RestTemplate;
 
 @SpringBootTest(
-    classes = {AuthSSOApplication.class, TenantServiceConfig.class},
+    classes = {AuthSSOApplication.class},
     properties = {
       "camunda.tasklist.auth0.clientId=1",
       "camunda.tasklist.auth0.clientSecret=2",
@@ -111,6 +111,8 @@ public class AuthenticationIT implements AuthenticationTestable {
   @MockBean private AssigneeMigrator assigneeMigrator;
 
   @MockBean private UserGroupService userGroupService;
+
+  @MockBean private TenantService tenantService;
 
   @MockBean
   @Qualifier("auth0_restTemplate")

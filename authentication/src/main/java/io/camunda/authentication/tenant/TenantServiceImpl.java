@@ -10,8 +10,10 @@ package io.camunda.authentication.tenant;
 import io.camunda.security.configuration.SecurityConfiguration;
 import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
 import org.springframework.web.context.request.RequestContextHolder;
 
+@Service
 public class TenantServiceImpl implements TenantService {
 
   @Autowired private SecurityConfiguration securityConfiguration;
