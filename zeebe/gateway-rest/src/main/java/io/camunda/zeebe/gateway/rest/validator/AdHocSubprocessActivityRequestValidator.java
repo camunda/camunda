@@ -11,6 +11,7 @@ import static io.camunda.zeebe.gateway.rest.validator.ErrorMessages.ERROR_MESSAG
 import static io.camunda.zeebe.gateway.rest.validator.ErrorMessages.ERROR_MESSAGE_INVALID_ATTRIBUTE_VALUE;
 import static io.camunda.zeebe.gateway.rest.validator.RequestValidator.validate;
 
+import io.camunda.zeebe.gateway.protocol.rest.AdHocSubprocessActivateActivitiesInstruction;
 import io.camunda.zeebe.gateway.protocol.rest.AdHocSubprocessActivityFilter;
 import java.util.Optional;
 import org.apache.commons.lang3.StringUtils;
@@ -32,6 +33,24 @@ public class AdHocSubprocessActivityRequestValidator {
 
           if (StringUtils.isBlank(filter.getAdHocSubprocessId())) {
             violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("filter.adHocSubprocessId"));
+          }
+        });
+  }
+
+  public static Optional<ProblemDetail> validateAdHocSubprocessActivationRequest(
+      final AdHocSubprocessActivateActivitiesInstruction request) {
+    return validate(
+        violations -> {
+          // TODO validate duplicate element IDs here?
+          if (request.getElements() == null || request.getElements().isEmpty()) {
+            violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("elements"));
+          } else {
+            for (int i = 0; i < request.getElements().size(); i++) {
+              if (StringUtils.isBlank(request.getElements().get(i).getElementId())) {
+                violations.add(
+                    ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("elements[%d].elementId".formatted(i)));
+              }
+            }
           }
         });
   }
