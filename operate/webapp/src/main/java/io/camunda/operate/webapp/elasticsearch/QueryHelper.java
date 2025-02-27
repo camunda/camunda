@@ -24,6 +24,7 @@ import static org.elasticsearch.join.query.JoinQueryBuilders.hasChildQuery;
 
 import io.camunda.operate.conditions.ElasticsearchCondition;
 import io.camunda.operate.property.OperateProperties;
+import io.camunda.operate.store.IncidentStore;
 import io.camunda.operate.util.CollectionUtil;
 import io.camunda.operate.util.ElasticsearchUtil;
 import io.camunda.operate.webapp.rest.dto.listview.ListViewQueryDto;
@@ -33,18 +34,14 @@ import io.camunda.operate.webapp.security.permission.PermissionsService;
 import io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate;
 import io.camunda.webapps.schema.entities.operate.FlowNodeState;
 import io.camunda.webapps.schema.entities.operate.FlowNodeType;
+import io.camunda.webapps.schema.entities.operate.IncidentEntity;
 import io.camunda.webapps.schema.entities.operate.listview.ProcessInstanceState;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import java.time.format.DateTimeFormatter;
+import java.util.List;
 import org.apache.commons.lang3.ArrayUtils;
 import org.elasticsearch.action.search.SearchRequest;
-import org.elasticsearch.index.query.ConstantScoreQueryBuilder;
-import org.elasticsearch.index.query.ExistsQueryBuilder;
-import org.elasticsearch.index.query.Operator;
-import org.elasticsearch.index.query.QueryBuilder;
-import org.elasticsearch.index.query.QueryBuilders;
-import org.elasticsearch.index.query.RangeQueryBuilder;
-import org.elasticsearch.index.query.TermQueryBuilder;
+import org.elasticsearch.index.query.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
@@ -62,6 +59,8 @@ public class QueryHelper {
   @Autowired private PermissionsService permissionsService;
 
   @Autowired private ListViewTemplate listViewTemplate;
+
+  @Autowired private IncidentStore incidentStore;
 
   public SearchRequest createSearchRequest(final ListViewQueryDto processInstanceRequest) {
     if (processInstanceRequest.isFinished()) {
@@ -95,6 +94,7 @@ public class QueryHelper {
         createActivityIdQuery(query),
         createIdsQuery(query),
         createErrorMessageQuery(query),
+        createIncidentErrorHashCodeQuery(query),
         createStartDateQuery(query),
         createEndDateQuery(query),
         createProcessDefinitionKeysQuery(query),
@@ -256,6 +256,31 @@ public class QueryHelper {
       }
     }
     return null;
+  }
+
+  private QueryBuilder createIncidentErrorHashCodeQuery(ListViewQueryDto query) {
+    final Integer incidentErrorHashCode = query.getIncidentErrorHashCode();
+    if (incidentErrorHashCode == null) {
+      return null;
+    }
+
+    final List<IncidentEntity> incidents =
+        incidentStore.getIncidentsByErrorHashCode(incidentErrorHashCode);
+    final List<String> errors =
+        (incidents == null)
+            ? null
+            : incidents.stream().map(IncidentEntity::getErrorMessage).toList();
+    if ((errors == null) || errors.isEmpty()) {
+      return createMatchNoneQuery();
+    }
+
+    final BoolQueryBuilder errorMessagesQuery = boolQuery();
+    for (String error : errors) {
+      errorMessagesQuery.should(QueryBuilders.matchPhraseQuery(ERROR_MSG, error));
+    }
+    errorMessagesQuery.minimumShouldMatch(1);
+
+    return hasChildQuery(ACTIVITIES_JOIN_RELATION, errorMessagesQuery, None);
   }
 
   private QueryBuilder createIdsQuery(final ListViewQueryDto query) {
