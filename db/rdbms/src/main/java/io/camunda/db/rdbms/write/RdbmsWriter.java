@@ -173,6 +173,10 @@ public class RdbmsWriter {
     return mappingWriter;
   }
 
+  public BatchOperationWriter getBatchOperationWriter() {
+    return batchOperationWriter;
+  }
+
   public ExporterPositionService getExporterPositionService() {
     return exporterPositionService;
   }
