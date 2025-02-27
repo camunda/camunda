@@ -79,7 +79,7 @@ import org.slf4j.LoggerFactory;
 public class CompactRecordLogger {
 
   private static final Logger LOG = LoggerFactory.getLogger("io.camunda.zeebe.test");
-  private static final String BLOCK_SEPARATOR = " - ";
+  private static final String BLOCK_SEPARATOR = " ";
 
   // List rather than Map to preserve order
   private static final List<Entry<String, String>> ABBREVIATIONS =
