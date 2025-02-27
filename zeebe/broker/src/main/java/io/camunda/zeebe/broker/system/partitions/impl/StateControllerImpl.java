@@ -17,6 +17,7 @@ import io.camunda.zeebe.db.ZeebeDbException;
 import io.camunda.zeebe.db.ZeebeDbFactory;
 import io.camunda.zeebe.logstreams.impl.Loggers;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
+import io.camunda.zeebe.scheduler.ScheduledTimer;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.snapshots.ConstructableSnapshotStore;
 import io.camunda.zeebe.snapshots.PersistedSnapshot;
@@ -25,7 +26,9 @@ import io.camunda.zeebe.snapshots.TransientSnapshot;
 import io.camunda.zeebe.util.FileUtil;
 import java.io.IOException;
 import java.nio.file.Path;
+import java.time.Duration;
 import java.util.function.ToLongFunction;
+import org.agrona.CloseHelper;
 import org.slf4j.Logger;
 
 /** Controls how snapshot/recovery operations are performed */
@@ -33,19 +36,17 @@ import org.slf4j.Logger;
 public class StateControllerImpl implements StateController {
 
   private static final Logger LOG = Loggers.SNAPSHOT_LOGGER;
+  private static final Duration DB_METRICS_EXPORT_INTERVAL = Duration.ofSeconds(5);
 
   private final Path runtimeDirectory;
-
   private final ZeebeDbFactory zeebeDbFactory;
-
   private final ToLongFunction<ZeebeDb> exporterPositionSupplier;
-
   private final AtomixRecordEntrySupplier entrySupplier;
-
-  private ZeebeDb db;
-
   private final ConstructableSnapshotStore constructableSnapshotStore;
   private final ConcurrencyControl concurrencyControl;
+
+  private ZeebeDb db;
+  private ScheduledTimer metricsExportTimer;
 
   public StateControllerImpl(
       final ZeebeDbFactory zeebeDbFactory,
@@ -60,6 +61,8 @@ public class StateControllerImpl implements StateController {
     this.exporterPositionSupplier = requireNonNull(exporterPositionSupplier);
     this.entrySupplier = requireNonNull(entrySupplier);
     this.concurrencyControl = requireNonNull(concurrencyControl);
+
+    concurrencyControl.execute(this::scheduleDbMetricsExport);
   }
 
   @Override
@@ -84,8 +87,23 @@ public class StateControllerImpl implements StateController {
     return future;
   }
 
+  private void scheduleDbMetricsExport() {
+    metricsExportTimer =
+        concurrencyControl.schedule(DB_METRICS_EXPORT_INTERVAL, this::exportDbMetrics);
+  }
+
+  private void exportDbMetrics() {
+    if (isDbOpened()) {
+      db.exportMetrics();
+    }
+
+    scheduleDbMetricsExport();
+  }
+
   private void closeDbInternal(final ActorFuture<Void> future) {
     try {
+      CloseHelper.quietClose(metricsExportTimer);
+
       if (db != null) {
         final var dbToClose = db;
         db = null;
