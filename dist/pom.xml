@@ -322,7 +322,6 @@
     <dependency>
       <groupId>io.micrometer</groupId>
       <artifactId>micrometer-registry-prometheus</artifactId>
-      <scope>runtime</scope>
     </dependency>
 
     <dependency>
@@ -667,7 +666,6 @@
             <dependency>org.bouncycastle:bcpkix-jdk18on</dependency>
 
             <!-- Micrometer Exporters/Registries -->
-            <dependency>io.micrometer:micrometer-registry-prometheus</dependency>
             <dependency>io.micrometer:micrometer-registry-otlp</dependency>
           </usedDependencies>
         </configuration>
