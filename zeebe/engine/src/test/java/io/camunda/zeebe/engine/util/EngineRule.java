@@ -47,9 +47,11 @@ import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.record.Record;
+import io.camunda.zeebe.protocol.record.intent.AuthorizationIntent;
 import io.camunda.zeebe.protocol.record.intent.CommandDistributionIntent;
 import io.camunda.zeebe.protocol.record.intent.IdentitySetupIntent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
+import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.scheduler.ActorScheduler;
@@ -94,7 +96,7 @@ public final class EngineRule extends ExternalResource {
   private final RecordingExporterTestWatcher recordingExporterTestWatcher =
       new RecordingExporterTestWatcher();
   private final int partitionCount;
-  private boolean awaitIdentitySetup = true;
+  private boolean awaitIdentitySetup = false;
 
   private Consumer<TypedRecord> onProcessedCallback = record -> {};
   private Consumer<LoggedEvent> onSkippedCallback = record -> {};
@@ -102,7 +104,7 @@ public final class EngineRule extends ExternalResource {
   private long lastProcessedPosition = -1L;
   private JobStreamer jobStreamer = JobStreamer.noop();
 
-  private FeatureFlags featureFlags = FeatureFlags.createDefaultForTests();
+  private final FeatureFlags featureFlags = FeatureFlags.createDefaultForTests();
   private ArrayList<TestInterPartitionCommandSender> interPartitionCommandSenders;
   private Consumer<SecurityConfiguration> securityConfigModifier = cfg -> {};
 
@@ -156,8 +158,9 @@ public final class EngineRule extends ExternalResource {
     forEachPartition(environmentRule::closeStreamProcessor);
   }
 
-  public EngineRule withoutAwaitingIdentitySetup() {
-    awaitIdentitySetup = false;
+  public EngineRule withIdentitySetup() {
+    awaitIdentitySetup = true;
+    withFeatureFlags(ff -> ff.setEnableIdentitySetup(true));
     return this;
   }
 
@@ -166,8 +169,8 @@ public final class EngineRule extends ExternalResource {
     return this;
   }
 
-  public EngineRule withFeatureFlags(final FeatureFlags featureFlags) {
-    this.featureFlags = featureFlags;
+  public EngineRule withFeatureFlags(final Consumer<FeatureFlags> modifier) {
+    modifier.accept(featureFlags);
     return this;
   }
 
@@ -492,7 +495,8 @@ public final class EngineRule extends ExternalResource {
           .skip(partitionCount - 1)
           .await();
       RecordingExporter.commandDistributionRecords(CommandDistributionIntent.FINISHED)
-          .withDistributionIntent(IdentitySetupIntent.INITIALIZE)
+          .withDistributionIntent(AuthorizationIntent.CREATE)
+          .skip(AuthorizationResourceType.getUserProvidedResourceTypes().size() - 1)
           .await();
     } else {
       RecordingExporter.identitySetupRecords(IdentitySetupIntent.INITIALIZED).await();

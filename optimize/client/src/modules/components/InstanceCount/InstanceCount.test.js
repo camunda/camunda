@@ -48,7 +48,6 @@ const props = {
       instanceCount: 123,
       instanceCountWithoutFilters: 500,
     },
-    reportType: 'process',
   },
 };
 

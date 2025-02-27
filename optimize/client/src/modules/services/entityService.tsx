@@ -11,7 +11,7 @@ import {ChartColumn, Dashboard, Folder} from '@carbon/icons-react';
 import {del, get, post} from 'request';
 import {EntityListEntity, GenericReport} from 'types';
 import {track} from 'tracking';
-import { getFullURL } from '../api';
+import {getFullURL} from '../api';
 
 export async function loadReports(collection?: string | null): Promise<GenericReport[]> {
   let url = getFullURL('api/report');

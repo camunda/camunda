@@ -13,7 +13,6 @@ import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.test.util.Strings;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
-import io.camunda.zeebe.util.FeatureFlags;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
@@ -23,7 +22,7 @@ public class StraightThroughProcessingLoopValidationDisabledTest {
   public static final EngineRule ENGINE =
       EngineRule.singlePartition()
           // Disable loop detector feature flag
-          .withFeatureFlags(new FeatureFlags(true, false, true, true, false, true));
+          .withFeatureFlags(ff -> ff.setEnableStraightThroughProcessingLoopDetector(false));
 
   @Rule
   public final RecordingExporterTestWatcher recordingExporter = new RecordingExporterTestWatcher();

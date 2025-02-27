@@ -13,12 +13,7 @@ import {format} from 'dates';
 import {formatters} from 'services';
 import {t} from 'translation';
 
-import {
-  getNoDataMessage,
-  isVisibleColumn,
-  getLabelWithType,
-  sortColumns,
-} from './service';
+import {getNoDataMessage, isVisibleColumn, getLabelWithType, sortColumns} from './service';
 
 const {duration} = formatters;
 
