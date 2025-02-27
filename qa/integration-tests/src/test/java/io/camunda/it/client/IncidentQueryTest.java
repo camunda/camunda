@@ -21,7 +21,7 @@ import io.camunda.client.api.command.ProblemException;
 import io.camunda.client.api.response.Process;
 import io.camunda.client.api.search.response.Incident;
 import io.camunda.client.api.search.response.IncidentErrorType;
-import io.camunda.it.utils.MultiDbTest;
+import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.webapps.schema.entities.operate.ErrorType;
 import java.util.ArrayList;
 import java.util.Collections;

@@ -17,7 +17,7 @@ import io.camunda.client.api.response.DecisionRequirements;
 import io.camunda.client.api.response.DeploymentEvent;
 import io.camunda.client.api.search.response.DecisionDefinition;
 import io.camunda.client.impl.search.response.DecisionDefinitionImpl;
-import io.camunda.it.utils.MultiDbTest;
+import io.camunda.qa.util.multidb.MultiDbTest;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
