@@ -234,18 +234,20 @@ public class AdHocSubProcessProcessor
       if (stateBehavior.canBeCompleted(childContext)) {
         stateTransitionBehavior.completeElement(adHocSubProcessContext);
       }
-    } else {
-      if (satisfiesCompletionCondition) {
-        if (adHocSubProcess.isCancelRemainingInstances()) {
-          final boolean hasNoActiveChildren =
-              stateTransitionBehavior.terminateChildInstances(adHocSubProcessContext);
-          if (hasNoActiveChildren) {
-            stateTransitionBehavior.completeElement(adHocSubProcessContext);
-          }
-        } else {
-          if (stateBehavior.canBeCompleted(childContext)) {
-            stateTransitionBehavior.completeElement(adHocSubProcessContext);
-          }
+
+      return;
+    }
+
+    if (satisfiesCompletionCondition) {
+      if (adHocSubProcess.isCancelRemainingInstances()) {
+        final boolean hasNoActiveChildren =
+            stateTransitionBehavior.terminateChildInstances(adHocSubProcessContext);
+        if (hasNoActiveChildren) {
+          stateTransitionBehavior.completeElement(adHocSubProcessContext);
+        }
+      } else {
+        if (stateBehavior.canBeCompleted(childContext)) {
+          stateTransitionBehavior.completeElement(adHocSubProcessContext);
         }
       }
     }
