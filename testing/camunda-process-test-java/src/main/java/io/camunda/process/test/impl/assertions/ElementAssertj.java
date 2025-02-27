@@ -19,6 +19,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
 
 import io.camunda.client.api.command.ClientException;
+import io.camunda.client.api.search.filter.FlownodeInstanceFilter;
 import io.camunda.client.api.search.response.FlowNodeInstance;
 import io.camunda.client.api.search.response.FlowNodeInstanceState;
 import io.camunda.process.test.api.assertions.ElementSelector;
@@ -27,6 +28,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
@@ -157,6 +159,12 @@ public class ElementAssertj extends AbstractAssert<ElementAssertj, String> {
       final FlowNodeInstanceState expectedState,
       final Predicate<FlowNodeInstance> waitCondition) {
 
+    final Consumer<FlownodeInstanceFilter> flowNodeInstanceFilter =
+        elementSelectors.size() == 1
+            ? processInstanceFilter(processInstanceKey)
+                .andThen(elementSelectors.get(0)::applyFilter)
+            : processInstanceFilter(processInstanceKey);
+
     final AtomicReference<List<FlowNodeInstance>> reference =
         new AtomicReference<>(Collections.emptyList());
 
@@ -175,7 +183,7 @@ public class ElementAssertj extends AbstractAssert<ElementAssertj, String> {
           .untilAsserted(
               () -> {
                 final List<FlowNodeInstance> flowNodeInstances =
-                    dataSource.getFlowNodeInstancesByProcessInstanceKey(processInstanceKey);
+                    dataSource.findFlowNodeInstances(flowNodeInstanceFilter);
                 reference.set(flowNodeInstances);
 
                 final List<FlowNodeInstance> flowNodeInstancesInState =
@@ -241,6 +249,9 @@ public class ElementAssertj extends AbstractAssert<ElementAssertj, String> {
       throw new IllegalArgumentException("The amount must be greater than zero.");
     }
 
+    final Consumer<FlownodeInstanceFilter> flowNodeInstanceFilter =
+        processInstanceFilter(processInstanceKey).andThen(elementSelector::applyFilter);
+
     final AtomicReference<List<FlowNodeInstance>> reference =
         new AtomicReference<>(Collections.emptyList());
 
@@ -250,7 +261,7 @@ public class ElementAssertj extends AbstractAssert<ElementAssertj, String> {
           .untilAsserted(
               () -> {
                 final List<FlowNodeInstance> flowNodeInstances =
-                    dataSource.getFlowNodeInstancesByProcessInstanceKey(processInstanceKey).stream()
+                    dataSource.findFlowNodeInstances(flowNodeInstanceFilter).stream()
                         .filter(elementSelector::test)
                         .collect(Collectors.toList());
                 reference.set(flowNodeInstances);
@@ -311,5 +322,10 @@ public class ElementAssertj extends AbstractAssert<ElementAssertj, String> {
     final List<String> selectorList =
         elementSelectors.stream().map(ElementSelector::describe).collect(Collectors.toList());
     return AssertFormatUtil.formatNames(selectorList);
+  }
+
+  private static Consumer<FlownodeInstanceFilter> processInstanceFilter(
+      final long processInstanceKey) {
+    return filter -> filter.processInstanceKey(processInstanceKey);
   }
 }
