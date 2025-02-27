@@ -84,6 +84,7 @@ public class ClientConfigRestServiceIT {
                 + "\"isLoginDelegated\":false,"
                 + "\"contextPath\":\"\","
                 + "\"baseName\":\"/tasklist\","
+                + "\"clientMode\":\"v1\","
                 + "\"organizationId\":\"organizationId\","
                 + "\"clusterId\":null,"
                 + "\"stage\":\"stage\","
