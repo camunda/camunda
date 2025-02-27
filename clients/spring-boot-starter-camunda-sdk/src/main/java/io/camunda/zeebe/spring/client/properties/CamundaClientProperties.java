@@ -31,7 +31,7 @@ public class CamundaClientProperties {
   @NestedConfigurationProperty private List<String> tenantIds;
   @NestedConfigurationProperty private AuthProperties auth;
   @NestedConfigurationProperty private ApiProperties identity;
-  @NestedConfigurationProperty private ZeebeClientProperties zeebe;
+  @NestedConfigurationProperty private ZeebeClientProperties zeebe = new ZeebeClientProperties();
 
   public ClientMode getMode() {
     return mode;
