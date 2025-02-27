@@ -647,6 +647,101 @@ paths:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
+<<<<<<< HEAD
+=======
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+  /process-definitions/{processDefinitionKey}/xml:
+    get:
+      tags:
+        - Process definition
+      operationId: getProcessDefinitionXML
+      summary: Get process definition XML
+      description: |
+        Returns process definition as XML.
+      parameters:
+        - name: processDefinitionKey
+          in: path
+          required: true
+          description: The assigned key of the process definition, which acts as a unique identifier for this process.
+          schema:
+            type: string
+      responses:
+        "200":
+          description: >
+            The XML of the process definition is successfully returned.
+          content:
+            text/xml:
+              schema:
+                type: string
+        "204":
+          description: >
+            The process definition was found but does not have XML.
+          content:
+            text/plain:
+              schema:
+                type: string
+        "400":
+          $ref: "#/components/responses/InvalidData"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          description: >
+            The decision with the given key was not found.
+            More details are provided in the response body.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+  /process-definitions/{processDefinitionKey}/form:
+    get:
+      tags:
+        - Process definition
+      operationId: getStartProcessForm
+      summary: Get process start form
+      description: |
+        Get the start form of a process.
+
+        Note that this endpoint will only return linked forms. This endpoint does not support embedded forms.
+      parameters:
+        - name: processDefinitionKey
+          in: path
+          required: true
+          description: The process key.
+          schema:
+            type: string
+      responses:
+        "200":
+          description: >
+            The form is successfully returned.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FormResult"
+        "204":
+          description: >
+            The process was found, but no form is associated with it.
+        "400":
+          $ref: "#/components/responses/InvalidData"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          description: "Not found"
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+>>>>>>> 57f6e6ae (fix: adjust inconsistent OpenAPI attribute names)
 
   /process-instances:
     post:
@@ -949,7 +1044,40 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/FlowNodeInstanceSearchQueryResult"
+<<<<<<< HEAD
             application/vnd.camunda.api.keys.number+json:
+=======
+        "400":
+          $ref: "#/components/responses/InvalidData"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+  /flownode-instances/{flowNodeInstanceKey}:
+    get:
+      tags:
+        - Flow node instance
+      operationId: getFlowNodeInstance
+      summary: Get flow node instance
+      description: |
+        Returns flow node instance as JSON.
+      parameters:
+        - name: flowNodeInstanceKey
+          in: path
+          required: true
+          description: The assigned key of the flow node instance, which acts as a unique identifier for this flow node instance.
+          schema:
+            type: string
+      responses:
+        "200":
+          description: >
+            The flow node instance is successfully returned.
+          content:
+            application/json:
+>>>>>>> 57f6e6ae (fix: adjust inconsistent OpenAPI attribute names)
               schema:
                 $ref: "#/components/schemas/FlowNodeInstanceSearchQueryResponse"
             application/vnd.camunda.api.keys.string+json:
@@ -1399,7 +1527,7 @@ paths:
 
         The caller must provide a file name for each document, which will be used in case of a multi-status response
         to identify which documents failed to upload. The file name can be provided in the `Content-Disposition` header
-        of the file part or in the `filename` field of the metadata part. If both are provided, the `filename` field
+        of the file part or in the `fileName` field of the metadata part. If both are provided, the `fileName` field
         takes precedence.
 
         In case of a multi-status response, the response body will contain a list of `DocumentBatchProblemDetail` objects,
@@ -4251,7 +4379,7 @@ components:
     DocumentCreationFailureDetail:
       type: object
       properties:
-        filename:
+        fileName:
           type: string
           description: The name of the file.
         detail:
@@ -5036,3 +5164,4 @@ components:
       type: http
       scheme: bearer
       bearerFormat: JWT
+

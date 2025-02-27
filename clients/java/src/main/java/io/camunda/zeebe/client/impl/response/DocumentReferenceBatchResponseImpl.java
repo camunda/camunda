@@ -65,8 +65,8 @@ public class DocumentReferenceBatchResponseImpl implements DocumentReferenceBatc
     }
 
     @Override
-    public String getFilename() {
-      return failedDocumentDetail.getFilename();
+    public String getFileName() {
+      return failedDocumentDetail.getFileName();
     }
 
     @Override
