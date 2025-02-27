@@ -10,9 +10,12 @@ package io.camunda.it;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.application.Profile;
+import io.camunda.operate.webapp.api.v1.entities.ProcessInstance;
 import io.camunda.qa.util.cluster.TestStandaloneCamunda;
 import io.camunda.qa.util.cluster.TestStandaloneSchemaManager;
 import io.camunda.search.clients.query.SearchQueryBuilders;
+import io.camunda.search.connect.configuration.ConnectConfiguration;
+import io.camunda.search.connect.es.ElasticsearchConnector;
 import io.camunda.zeebe.broker.system.configuration.ExporterCfg;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
@@ -237,6 +240,81 @@ final class StandaloneSchemaManagerTest {
                 EitherAssert.assertThat(result).isRight();
                 assertThat(result.get().processInstances().getFirst().getEndDate()).isNotNull();
               });
+    }
+  }
+
+  @Test
+  void canArchiveProcessInstances() throws IOException {
+    // given
+    schemaManager.start();
+    // Configure archiver to run frequently
+    camunda
+        .withOperateConfig(
+            config -> {
+              config.setArchiverEnabled(true);
+              config.getArchiver().setWaitPeriodBeforeArchiving("1s");
+            })
+        .withTasklistConfig(
+            config -> {
+              config.setArchiverEnabled(true);
+              config.getArchiver().setWaitPeriodBeforeArchiving("1s");
+            });
+    camunda.start();
+
+    // when - a self-completing process instance is created
+    final long processInstanceKey;
+    try (final var zeebeClient = camunda.newClientBuilder().build()) {
+      zeebeClient
+          .newDeployResourceCommand()
+          .addProcessModel(
+              Bpmn.createExecutableProcess("simple-process").startEvent().endEvent().done(),
+              "simple-process.bpmn")
+          .send()
+          .join();
+
+      processInstanceKey =
+          zeebeClient
+              .newCreateInstanceCommand()
+              .bpmnProcessId("simple-process")
+              .latestVersion()
+              .send()
+              .join()
+              .getProcessInstanceKey();
+    }
+
+    // then - process instance is archived
+    final var config = new ConnectConfiguration();
+    config.setUrl(camunda.getElasticSearchHostAddress());
+    config.setUsername(APP_USER);
+    config.setPassword(APP_PASSWORD);
+    final var client = new ElasticsearchConnector(config).createClient();
+    try {
+      Awaitility.await("process instance should be archived")
+          .atMost(Duration.ofSeconds(60))
+          .pollInterval(Duration.ofSeconds(1))
+          .ignoreExceptions()
+          .untilAsserted(
+              () -> {
+                // Verify that instance is in archived index
+                final var searchResponseFromArchive =
+                    client.search(
+                        s ->
+                            s.index("operate-list-view-8.3.0_*-*-*")
+                                .query(q -> q.term(t -> t.field("key").value(processInstanceKey))),
+                        ProcessInstance.class);
+                assertThat(searchResponseFromArchive.hits().total().value()).isEqualTo(1);
+
+                // Verify it's not in the live index
+                final var searchResponseFromLive =
+                    client.search(
+                        s ->
+                            s.index("operate-list-view-8.3.0_")
+                                .query(q -> q.term(t -> t.field("key").value(processInstanceKey))),
+                        ProcessInstance.class);
+                assertThat(searchResponseFromLive.hits().total().value()).isEqualTo(0);
+              });
+    } finally {
+      client._transport().close();
     }
   }
 }
