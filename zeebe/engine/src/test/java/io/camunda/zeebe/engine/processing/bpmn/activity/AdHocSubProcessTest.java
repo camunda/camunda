@@ -331,9 +331,15 @@ public final class AdHocSubProcessTest {
                     }))
             .create();
 
+    // helps to stop at a specific point after the ad-hoc subprocess is activated
+    ENGINE.signal().withSignalName("signal").broadcast();
+
     // then
     assertThat(
-            RecordingExporter.processInstanceRecords().withProcessInstanceKey(processInstanceKey))
+            RecordingExporter.records()
+                .limit(signalBroadcasted("signal"))
+                .processInstanceRecords()
+                .withProcessInstanceKey(processInstanceKey))
         .extracting(r -> r.getValue().getElementId(), Record::getIntent)
         .containsSubsequence(
             tuple(AD_HOC_SUB_PROCESS_ELEMENT_ID, ProcessInstanceIntent.ELEMENT_ACTIVATED),
