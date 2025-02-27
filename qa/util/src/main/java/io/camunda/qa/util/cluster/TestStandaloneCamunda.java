@@ -140,7 +140,11 @@ public final class TestStandaloneCamunda extends TestSpringApplication<TestStand
             .getExporters()
             .computeIfAbsent("elasticsearch", ignored -> new ExporterCfg());
     exporterCfg.setClassName("io.camunda.zeebe.exporter.ElasticsearchExporter");
-    exporterCfg.setArgs(new HashMap<>(exporterCfg.getArgs()));
+    if (exporterCfg.getArgs() != null) {
+      exporterCfg.setArgs(new HashMap<>(exporterCfg.getArgs()));
+    } else {
+      exporterCfg.setArgs(new HashMap<>());
+    }
     exporterCfg.getArgs().put("url", esURL);
 
     operateProperties.getElasticsearch().setUrl(esURL);
