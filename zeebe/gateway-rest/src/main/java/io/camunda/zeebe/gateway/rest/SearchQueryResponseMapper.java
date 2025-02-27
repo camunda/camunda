@@ -87,6 +87,7 @@ import io.camunda.zeebe.gateway.protocol.rest.VariableSearchQueryResult;
 import io.camunda.zeebe.gateway.rest.cache.ProcessCacheItem;
 import io.camunda.zeebe.gateway.rest.util.KeyUtil;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -342,7 +343,8 @@ public final class SearchQueryResponseMapper {
         .endDate(formatDate(entity.endDate()))
         .operationsTotalCount(entity.operationsTotalCount())
         .operationsFailedCount(entity.operationsFailedCount())
-        .operationsCompletedCount(entity.operationsCompletedCount());
+        .operationsCompletedCount(entity.operationsCompletedCount())
+        .items(entity.items().stream().map(Object::toString).toList());
   }
 
   private static List<RoleResult> toRoles(final List<RoleEntity> roles) {
