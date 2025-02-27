@@ -5,16 +5,20 @@
 
 <mapper namespace="io.camunda.db.rdbms.sql.BatchOperationMapper">
 
-  <resultMap id="BatchOperationResultMap" type="io.camunda.search.entities.BatchOperationEntity">
+  <resultMap id="BatchOperationResultMap"
+    type="io.camunda.db.rdbms.write.domain.BatchOperationDbModel">
     <constructor>
       <idArg column="BATCH_OPERATION_KEY" javaType="java.lang.Long"/>
-      <arg column="OPERATION_TYPE" javaType="java.lang.String"/>
-      <arg column="START_DATE" javaType="java.time.OffsetDateTime"/>
-      <arg column="END_DATE" javaType="java.time.OffsetDateTime"/>
-      <arg column="OPERATIONS_TOTAL_COUNT" javaType="java.lang.Integer"/>
-      <arg column="OPERATIONS_FAILED_COUNT" javaType="java.lang.Integer"/>
-      <arg column="OPERATIONS_COMPLETED_COUNT" javaType="java.lang.Integer"/>
     </constructor>
+    <result column="OPERATION_TYPE" property="operationType" javaType="java.lang.String"/>
+    <result column="START_DATE" property="startDate" javaType="java.time.OffsetDateTime"/>
+    <result column="END_DATE" property="endDate" javaType="java.time.OffsetDateTime"/>
+    <result column="OPERATIONS_TOTAL_COUNT" property="operationsTotalCount" javaType="int"/>
+    <result column="OPERATIONS_FAILED_COUNT" property="operationsFailedCount" javaType="int"/>
+    <result column="OPERATIONS_COMPLETED_COUNT" property="operationsCompletedCount" javaType="int"/>
+    <collection property="items" ofType="java.lang.Long" javaType="java.util.Set">
+      <id column="ITEM_KEY"/>
+    </collection>
   </resultMap>
 
   <insert id="insert" parameterType="io.camunda.db.rdbms.write.domain.BatchOperationDbModel">
@@ -34,6 +38,15 @@
             #{operationsCompletedCount})
   </insert>
 
+  <insert id="insertItems"
+    parameterType="io.camunda.db.rdbms.sql.BatchOperationMapper$BatchOperationItemsDto">
+    INSERT INTO BATCH_OPERATION_ITEM (BATCH_OPERATION_KEY, ITEM_KEY)
+    VALUES
+    <foreach collection="items" item="itemKey" separator=",">
+      (#{batchOperationKey}, #{itemKey})
+    </foreach>
+  </insert>
+
   <update id="updateCompleted"
     parameterType="io.camunda.db.rdbms.sql.BatchOperationMapper$BatchOperationUpdateDto">
     UPDATE BATCH_OPERATION
@@ -49,8 +62,11 @@
   </select>
 
   <select id="search" resultMap="BatchOperationResultMap">
-    SELECT *
-    FROM BATCH_OPERATION
+    SELECT bo.*,
+           boi.ITEM_KEY
+    FROM BATCH_OPERATION bo
+           LEFT JOIN ${prefix}BATCH_OPERATION_ITEM boi
+                     ON (bo.BATCH_OPERATION_KEY = boi.BATCH_OPERATION_KEY)
   </select>
 
 </mapper>

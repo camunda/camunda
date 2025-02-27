@@ -11,20 +11,27 @@ import io.camunda.db.rdbms.write.domain.BatchOperationDbModel;
 import io.camunda.search.entities.BatchOperationEntity;
 import java.time.OffsetDateTime;
 import java.util.List;
+import java.util.Set;
 
 public interface BatchOperationMapper {
 
   void insert(BatchOperationDbModel batchOperationDbModel);
 
+  void insertItems(BatchOperationItemsDto items);
+
   void updateCompleted(BatchOperationUpdateDto dto);
 
   Long count();
 
-  List<BatchOperationEntity> search();
+  List<BatchOperationDbModel> search();
 
   record BatchOperationUpdateDto(
       long batchOperationKey,
       OffsetDateTime endDate,
       int operationsFailedCount,
       int operationsCompletedCount) {}
+
+  record BatchOperationItemsDto(
+      Long batchOperationKey,
+      Set<Long> items) {}
 }

@@ -9,6 +9,7 @@ package io.camunda.db.rdbms.read.service;
 
 import io.camunda.db.rdbms.read.domain.DbQuerySorting;
 import io.camunda.db.rdbms.read.domain.ProcessDefinitionDbQuery;
+import io.camunda.db.rdbms.read.mapper.BatchOperationEntityMapper;
 import io.camunda.db.rdbms.sql.BatchOperationMapper;
 import io.camunda.db.rdbms.sql.ProcessDefinitionMapper;
 import io.camunda.db.rdbms.sql.columns.BatchOperationSearchColumn;
@@ -35,7 +36,7 @@ public class BatchOperationReader extends AbstractEntityReader<BatchOperationEnt
   public SearchQueryResult<BatchOperationEntity> search() {
     LOG.trace("[RDBMS DB] Search for batch operations");
     final var totalHits = batchOperationMapper.count();
-    final var hits = batchOperationMapper.search();
+    final var hits = batchOperationMapper.search().stream().map(BatchOperationEntityMapper::toEntity).toList();
     return buildSearchQueryResult(totalHits, hits, DbQuerySorting.of(b -> b));
   }
 }

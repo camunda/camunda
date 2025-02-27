@@ -9,6 +9,8 @@ package io.camunda.search.entities;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import java.time.OffsetDateTime;
+import java.util.List;
+import java.util.Set;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 public record BatchOperationEntity(
@@ -18,5 +20,6 @@ public record BatchOperationEntity(
     OffsetDateTime endDate,
     Integer operationsTotalCount,
     Integer operationsFailedCount,
-    Integer operationsCompletedCount) {
+    Integer operationsCompletedCount,
+    Set<Long> items) {
 }

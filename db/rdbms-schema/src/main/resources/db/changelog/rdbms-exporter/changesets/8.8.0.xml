@@ -491,6 +491,18 @@
       </column>
     </createTable>
 
+    <createTable tableName="${prefix}BATCH_OPERATION_ITEM">
+      <column name="BATCH_OPERATION_KEY" type="BIGINT">
+        <constraints
+          foreignKeyName="${prefix}FK_BATCH_OPERATION_ITEM_BATCH_OPERATION"
+          referencedTableName="${prefix}BATCH_OPERATION"
+          referencedColumnNames="BATCH_OPERATION_KEY"
+          deleteCascade="true"/>
+        />
+      </column>
+      <column name="ITEM_KEY" type="BIGINT"/>
+    </createTable>
+
     <modifySql dbms="mariadb">
       <!-- MariaDB doesn't support TIMESTAMP WITH TIME ZONE, but its TIMESTAMP type has already a time zone -->
       <replace replace="TIMESTAMP WITH TIME ZONE" with="TIMESTAMP"/>
