@@ -21,6 +21,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.camunda.client.api.response.ProcessInstanceEvent;
+import io.camunda.client.api.search.filter.FlownodeInstanceFilter;
 import io.camunda.client.api.search.response.FlowNodeInstance;
 import io.camunda.process.test.api.assertions.ElementSelectors;
 import io.camunda.process.test.impl.assertions.CamundaDataSource;
@@ -29,12 +30,15 @@ import io.camunda.process.test.utils.ProcessInstanceBuilder;
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.function.Consumer;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Captor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -85,6 +89,9 @@ public class ElementAssertTest {
   @Nested
   class ElementSource {
 
+    @Mock private FlownodeInstanceFilter flownodeInstanceFilter;
+    @Captor private ArgumentCaptor<Consumer<FlownodeInstanceFilter>> flowNodeInstanceFilterCapture;
+
     @BeforeEach
     void configureMocks() {
       final FlowNodeInstance flowNodeInstanceA = newActiveFlowNodeInstance("A");
@@ -106,7 +113,13 @@ public class ElementAssertTest {
       when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
 
       // then
-      CamundaAssert.assertThat(processInstanceEvent).hasActiveElements("A", "B");
+      CamundaAssert.assertThat(processInstanceEvent).hasActiveElements("A");
+
+      verify(camundaDataSource).findFlowNodeInstances(flowNodeInstanceFilterCapture.capture());
+
+      flowNodeInstanceFilterCapture.getValue().accept(flownodeInstanceFilter);
+      verify(flownodeInstanceFilter).processInstanceKey(PROCESS_INSTANCE_KEY);
+      verify(flownodeInstanceFilter).flowNodeId("A");
     }
 
     @Test
@@ -142,8 +155,13 @@ public class ElementAssertTest {
       when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
 
       // then
-      CamundaAssert.assertThat(processInstanceEvent)
-          .hasActiveElements(ElementSelectors.byId("A"), ElementSelectors.byId("B"));
+      CamundaAssert.assertThat(processInstanceEvent).hasActiveElements(ElementSelectors.byId("A"));
+
+      verify(camundaDataSource).findFlowNodeInstances(flowNodeInstanceFilterCapture.capture());
+
+      flowNodeInstanceFilterCapture.getValue().accept(flownodeInstanceFilter);
+      verify(flownodeInstanceFilter).processInstanceKey(PROCESS_INSTANCE_KEY);
+      verify(flownodeInstanceFilter).flowNodeId("A");
     }
 
     @Test
@@ -173,8 +191,12 @@ public class ElementAssertTest {
 
       // then
       CamundaAssert.assertThat(processInstanceEvent)
-          .hasActiveElements(
-              ElementSelectors.byName("element_A"), ElementSelectors.byName("element_B"));
+          .hasActiveElements(ElementSelectors.byName("element_A"));
+
+      verify(camundaDataSource).findFlowNodeInstances(flowNodeInstanceFilterCapture.capture());
+
+      flowNodeInstanceFilterCapture.getValue().accept(flownodeInstanceFilter);
+      verify(flownodeInstanceFilter).processInstanceKey(PROCESS_INSTANCE_KEY);
     }
 
     @Test
