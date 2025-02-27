@@ -179,6 +179,35 @@ public class ElasticsearchIncidentStore implements IncidentStore {
   }
 
   @Override
+  public List<IncidentEntity> getIncidentsByErrorHashCode(final Integer incidentErrorHashCode) {
+    final TermQueryBuilder incidentErrorHashCodeQuery =
+        termQuery(IncidentTemplate.ERROR_MSG_HASH, incidentErrorHashCode);
+    final ConstantScoreQueryBuilder query =
+        constantScoreQuery(joinWithAnd(incidentErrorHashCodeQuery, ACTIVE_INCIDENT_QUERY));
+
+    final SearchRequest searchRequest =
+        ElasticsearchUtil.createSearchRequest(incidentTemplate, ONLY_RUNTIME)
+            .source(
+                new SearchSourceBuilder()
+                    .query(query)
+                    .sort(IncidentTemplate.CREATION_TIME, SortOrder.ASC));
+
+    try {
+      return tenantAwareClient.search(
+          searchRequest,
+          () -> {
+            return ElasticsearchUtil.scroll(
+                searchRequest, IncidentEntity.class, objectMapper, esClient);
+          });
+    } catch (IOException e) {
+      final String message =
+          String.format("Exception occurred, while obtaining all incidents: %s", e.getMessage());
+      LOGGER.error(message, e);
+      throw new OperateRuntimeException(message, e);
+    }
+  }
+
+  @Override
   public Map<Long, List<Long>> getIncidentKeysPerProcessInstance(List<Long> processInstanceKeys) {
     final QueryBuilder processInstanceKeysQuery =
         constantScoreQuery(
