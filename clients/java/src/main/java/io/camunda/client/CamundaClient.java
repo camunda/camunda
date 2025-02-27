@@ -79,6 +79,7 @@ import io.camunda.client.api.fetch.UserTaskGetRequest;
 import io.camunda.client.api.fetch.VariableGetRequest;
 import io.camunda.client.api.response.ActivatedJob;
 import io.camunda.client.api.response.DocumentReferenceResponse;
+import io.camunda.client.api.search.query.AdHocSubprocessActivityQuery;
 import io.camunda.client.api.search.query.DecisionDefinitionQuery;
 import io.camunda.client.api.search.query.DecisionInstanceQuery;
 import io.camunda.client.api.search.query.DecisionRequirementsQuery;
@@ -850,6 +851,54 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    * @return a builder for the request to get a flow node instance
    */
   FlowNodeInstanceGetRequest newFlowNodeInstanceGetRequest(long flowNodeInstanceKey);
+
+  /**
+   * Executes a search request to query activities within ad-hoc subprocesses.
+   *
+   * <p>Note that this API currently requires filters for both process definition key and ad-hoc
+   * subprocess ID and does not support paging or sorting.
+   *
+   * <pre>
+   * long processDefinitionKey = ...;
+   * String adHocSubprocessId = ...;
+   *
+   * camundaClient
+   *  .newAdHocSubprocessActivityQuery()
+   *  .filter((f) -> f
+   *     .processDefinitionKey(processDefinitionKey)
+   *     .adHocSubprocessId(adHocSubprocessId)
+   *  )
+   *  .send();
+   * </pre>
+   *
+   * @return a builder for the ad-hoc subprocess activity query
+   */
+  @ExperimentalApi("https://github.com/camunda/camunda/issues/27930")
+  AdHocSubprocessActivityQuery newAdHocSubprocessActivityQuery();
+
+  /**
+   * Executes a search request to query activities within ad-hoc subprocesses.
+   *
+   * <p>Note that this API currently requires filters for both process definition key and ad-hoc
+   * subprocess ID and does not support paging or sorting.
+   *
+   * <pre>
+   * long processDefinitionKey = ...;
+   * String adHocSubprocessId = ...;
+   *
+   * camundaClient
+   *  .newAdHocSubprocessActivityQuery(
+   *    processDefinitionKey,
+   *    adHocSubprocessId
+   *  )
+   *  .send();
+   * </pre>
+   *
+   * @return a builder for the ad-hoc subprocess activity query
+   */
+  @ExperimentalApi("https://github.com/camunda/camunda/issues/27930")
+  AdHocSubprocessActivityQuery newAdHocSubprocessActivityQuery(
+      long processDefinitionKey, String adHocSubprocessId);
 
   /**
    * Executes a search request to query user tasks.

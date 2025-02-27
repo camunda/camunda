@@ -24,6 +24,7 @@ servers:
         description: The schema of the Camunda 8 REST API server.
 
 tags:
+  - name: Ad-hoc subprocess
   - name: Authentication
   - name: Authorization
   - name: Clock
@@ -3264,6 +3265,49 @@ paths:
         "500":
           $ref: "#/components/responses/InternalServerError"
 
+  /element-instances/ad-hoc-activities/search:
+    post:
+      tags:
+        - Ad-hoc subprocess
+      operationId: findAdHocSubprocessActivities
+      summary: Query activatable activities (alpha)
+      description: |
+        Search for activatable activities within ad-hoc subprocesses based on given criteria.
+
+        Note that this API currently requires filters for both process definition key and ad-hoc
+        subprocess ID and does not support paging or sorting.
+
+        This endpoint is an alpha feature and may be subject to change
+        in future releases.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdHocSubprocessActivitySearchQuery"
+      responses:
+        "200":
+          description: >
+            The ad-hoc subprocess activities search result.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdHocSubprocessActivitySearchQueryResult"
+        "400":
+          description: >
+            The ad-hoc subprocess activities search query failed.
+            More details are provided in the response body.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
   /signals/broadcast:
     post:
       tags:
@@ -4436,6 +4480,83 @@ components:
           type: string
         incidentKey:
           description: Incident key associated with this flow node instance.
+          type: string
+    AdHocSubprocessActivitySearchQuery:
+      description: Ad-hoc subprocess activities search request.
+      type: object
+      required:
+        - filter
+      properties:
+        filter:
+          description: The ad-hoc subprocess activity search filters.
+          allOf:
+            - $ref: "#/components/schemas/AdHocSubprocessActivityFilter"
+    AdHocSubprocessActivityFilter:
+      description: Flow node instance filter.
+      type: object
+      required:
+        - processDefinitionKey
+        - adHocSubprocessId
+      properties:
+        processDefinitionKey:
+          description: The process definition key.
+          type: string
+        adHocSubprocessId:
+          description: The ad-hoc subprocess element ID.
+          type: string
+    AdHocSubprocessActivitySearchQueryResult:
+      type: object
+      properties:
+        items:
+          description: The matching ad-hoc subprocess activities.
+          type: array
+          items:
+            $ref: "#/components/schemas/AdHocSubprocessActivityResult"
+    AdHocSubprocessActivityResult:
+      type: object
+      properties:
+        processDefinitionKey:
+          description: The process definition key associated to this activity.
+          type: string
+        processDefinitionId:
+          description: The process definition ID associated to this activity.
+          type: string
+        adHocSubprocessId:
+          description: The ad-hoc subprocess element ID.
+          type: string
+        elementId:
+          description: The element ID for this activity.
+          type: string
+        elementName:
+          description: The element name for this activity.
+          type: string
+        type:
+          description: Type of activity with a defined set of values.
+          type: string
+          enum:
+            - UNSPECIFIED
+            - PROCESS
+            - SUB_PROCESS
+            - EVENT_SUB_PROCESS
+            - INTERMEDIATE_CATCH_EVENT
+            - INTERMEDIATE_THROW_EVENT
+            - BOUNDARY_EVENT
+            - SERVICE_TASK
+            - RECEIVE_TASK
+            - USER_TASK
+            - MANUAL_TASK
+            - TASK
+            - MULTI_INSTANCE_BODY
+            - CALL_ACTIVITY
+            - BUSINESS_RULE_TASK
+            - SCRIPT_TASK
+            - SEND_TASK
+            - UNKNOWN
+        documentation:
+          description: The documentation for this activity.
+          type: string
+        tenantId:
+          description: The tenant ID for this activity.
           type: string
     DecisionDefinitionSearchQuerySortRequest:
       type: object
