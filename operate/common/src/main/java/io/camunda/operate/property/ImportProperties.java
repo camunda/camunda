@@ -18,6 +18,7 @@ public class ImportProperties {
   private static final int DEFAULT_SCHEDULER_BACKOFF = 5000;
   private static final int DEFAULT_FLOW_NODE_TREE_CACHE_SIZE = 1000;
   private static final int DEFAULT_MAX_EMPTY_RUNS = 10;
+  private static final int DEFAULT_MINIMUM_EMPTY_BATCHES_FOR_COMPLETED_READER = 5;
 
   private int threadsCount = DEFAULT_IMPORT_THREADS_COUNT;
 
@@ -66,6 +67,12 @@ public class ImportProperties {
   private boolean retryReadingParents = true;
 
   private int maxEmptyRuns = DEFAULT_MAX_EMPTY_RUNS;
+
+  /**
+   * When migrating from the old importers to the new CamundaExporter we need to ensure that all
+   * previous data have been imported before we start consuming data on the CamundaExporter.
+   */
+  private int completedReaderMinEmptyBatches = DEFAULT_MINIMUM_EMPTY_BATCHES_FOR_COMPLETED_READER;
 
   public boolean isStartLoadingDataOnStartup() {
     return startLoadingDataOnStartup;
@@ -174,6 +181,16 @@ public class ImportProperties {
 
   public ImportProperties setMaxEmptyRuns(final int maxEmptyRuns) {
     this.maxEmptyRuns = maxEmptyRuns;
+    return this;
+  }
+
+  public int getCompletedReaderMinEmptyBatches() {
+    return completedReaderMinEmptyBatches;
+  }
+
+  public ImportProperties setCompletedReaderMinEmptyBatches(
+      final int completedReaderMinEmptyBatches) {
+    this.completedReaderMinEmptyBatches = completedReaderMinEmptyBatches;
     return this;
   }
 }

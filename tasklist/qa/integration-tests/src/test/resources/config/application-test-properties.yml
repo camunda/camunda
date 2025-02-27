@@ -14,6 +14,7 @@ camunda.tasklist:
     prefix: somePrefix
   importer:
     startLoadingDataOnStartup: false
+    completedReaderMinEmptyBatches: 10
   zeebe:
     gatewayAddress: someZeebeHost:999
   operationExecutor:
