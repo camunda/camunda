@@ -3,31 +3,28 @@
 This module contains acceptance tests for the whole Camunda 8 platform. Covering multiple components, if not all together, integrated.
 
 In the following document, we shortly highlight general recommendations and how-tos/examples of how to write them. 
-Ensuring we write such tests in a consistent manner and are able to cover all necessary supported environments.
+Ensuring we write such tests in a consistent manner and can cover all necessary supported environments.
 
 ## General
 
 * For simple cases:
   * Make use of the `@MultiDbTest` annotation (if possible).
-  * Per default, it will make use of the `TestStandaloneBroker` class to reduce the scope to a minimum.
-  * The `@MutliDbTest` annotation will make sure to tag your test as a test that should be executed against multiple secondary storages, like: Elasticsearch (ES), OpenSearch (OS), RDBMS, etc.
+  * By default, it will make use of the `TestStandaloneBroker` class to reduce the scope to a minimum.
+  * The `@MutliDbTest` annotation will make sure to tag your test as a test that should be executed against multiple secondary storage, like Elasticsearch (ES), OpenSearch (OS), RDBMS, etc.
   * The `@MutliDbTest` annotation will mark your test class with `@ExtendsWith` using the `CamundaMultiDBExtension`.
-  * The execution against different secondary storage is done on our CI.yml GitHub workflow, where separate jobs exist. A specific test property is set, for the database type, allowing the extension to configure the test application correctly (specific Exporter, etc.)
+  * The execution against different secondary storage is done on our CI.yml GitHub workflow, where separate jobs exist. A specific test property is set for the database type, allowing the extension to configure the test application correctly (specific Exporter, etc.)
 * For advanced cases:    
   * This might apply when you want to run the complete platform or need to configure the broker test application
-  * For running the complete platform, you can make use of `TestSimpleCamundaApplication`, that bundles all components together.
+  * For running the complete platform, you can make use of `TestSimpleCamundaApplication`, which bundles all components together.
   * With that, you can use `@RegisterExtension` and use the `CamundaMultiDBExtension` directly.
   * This might also be necessary for more sophisticated configurations for the Broker. For example, in case you want to test different or specific authentications, etc.
-
-
-
 
 ## Examples:
 
 ### Simple use case
 
 **Need:**
-* We simply need to validate a feature end to end, with small scope running broker, REST API, and exporter
+* We simply need to validate a feature end to end, with a small scope running broker, REST API, and exporter
 
 ```java
 @MultiDbTest
@@ -63,7 +60,7 @@ public class ProcessDefinitionQueryTest {
 
 **Optional:**
 
-* We might not want to run the test for all secondary storages, as it is not yet supported. We can use the `@DisabledIfSystemProperty` annotation
+* We might not want to run the test for all secondary storage, as it is not yet supported. We can use the `@DisabledIfSystemProperty` annotation
 
 ```java
 @Tag("multi-db-test")
