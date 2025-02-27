@@ -54,6 +54,11 @@ jobs:
           secrets: |
             secret/data/products/distribution/ci NEXUS_USERNAME;
             secret/data/products/distribution/ci NEXUS_PASSWORD;
+            secret/data/products/distribution/ci APPLE_CERTIFICATE;
+            secret/data/products/distribution/ci APPLE_CERTIFICATE_PASSWORD;
+            secret/data/products/distribution/ci APPLE_DEVELOPER_ID;
+            secret/data/products/distribution/ci APPLE_DEVELOPER_PASSWORD;
+            secret/data/products/distribution/ci APPLE_TEAM_ID;
 
       - uses: actions/setup-go@v5
         with:
@@ -63,6 +68,35 @@ jobs:
       - name: Build c8run
         run: go build
         working-directory: ./c8run
+
+      - name: sign the package
+        if: matrix.os == 'macos-latest' || matrix.os == 'macos-13'
+        run: |
+          curl -sSfL https://raw.githubusercontent.com/anchore/quill/main/install.sh | sh -s -- -b /usr/local/bin
+          echo "$CERTIFICATE" > certificate.p12
+          quill sign --p12 certificate.p12 c8run
+          rm certificate.p12
+        working-directory: ./c8run
+        env:
+          CERTIFICATE: ${{ steps.secrets.outputs.APPLE_CERTIFICATE }}
+          QUILL_SIGN_P12: ./certificate.p12
+          QUILL_SIGN_PASSWORD: ${{ steps.secrets.outputs.APPLE_CERTIFICATE_PASSWORD }}
+
+      - name: verify the package
+        if: matrix.os == 'macos-latest' || matrix.os == 'macos-13'
+        run: codesign --verify -v c8run
+        working-directory: ./c8run
+
+      - name: notarize
+        if: matrix.os == 'macos-latest' || matrix.os == 'macos-13'
+        run: |
+          xcrun notarytool submit ./c8run --apple-id "$APPLE_ID" --password "$APPLE_APP_PASSWORD" --team-id "$TEAM_ID" --wait
+          xcrun stapler staple ./c8run
+        working-directory: ./c8run
+        env:
+          APPLE_ID: ${{ steps.secrets.outputs.APPLE_DEVELOPER_ID }}
+          APPLE_APP_PASSWORD: ${{ steps.secrets.outputs.APPLE_DEVELOPER_PASSWORD }}
+          TEAM_ID: ${{ steps.secrets.outputs.APPLE_TEAM_ID }}
 
       - name: make a package
         run: ./c8run package
