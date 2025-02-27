@@ -20,7 +20,6 @@ import io.micrometer.core.instrument.composite.CompositeMeterRegistry;
 import java.time.Duration;
 import java.time.temporal.TemporalUnit;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.concurrent.TimeUnit;
 import java.util.function.LongConsumer;
 
@@ -115,10 +114,7 @@ public final class MicrometerUtil {
    * have to specify the tags again on every wrapped registry!
    */
   public static CompositeMeterRegistry wrap(final MeterRegistry wrapped, final Tags tags) {
-    final var registry =
-        wrapped != null
-            ? new CompositeMeterRegistry(wrapped.config().clock(), Collections.singleton(wrapped))
-            : new CompositeMeterRegistry();
+    final var registry = new StatefulMeterRegistry(wrapped);
     registry.config().commonTags(tags);
     return registry;
   }

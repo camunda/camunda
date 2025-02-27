@@ -16,6 +16,7 @@ import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.IdentitySetupIntent;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
+import io.camunda.zeebe.util.FeatureFlags;
 
 public final class IdentitySetupProcessors {
   public static void addIdentitySetupProcessors(
@@ -24,13 +25,14 @@ public final class IdentitySetupProcessors {
       final MutableProcessingState processingState,
       final Writers writers,
       final CommandDistributionBehavior distributionBehavior,
-      final SecurityConfiguration securityConfig) {
+      final SecurityConfiguration securityConfig,
+      final FeatureFlags featureFlags) {
     typedRecordProcessors
         .onCommand(
             ValueType.IDENTITY_SETUP,
             IdentitySetupIntent.INITIALIZE,
             new IdentitySetupInitializeProcessor(
                 processingState, writers, keyGenerator, distributionBehavior))
-        .withListener(new IdentitySetupInitializer(securityConfig));
+        .withListener(new IdentitySetupInitializer(securityConfig, featureFlags));
   }
 }

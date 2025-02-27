@@ -12,6 +12,7 @@ import io.camunda.zeebe.scheduler.ScheduledTimer;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.util.LockUtil;
 import java.time.Duration;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -42,6 +43,7 @@ import java.util.function.Consumer;
  */
 public class TestConcurrencyControl implements ConcurrencyControl {
 
+  public static final int ENDLESS_LOOP_COUNT = 10;
   // use concrete type to allow us to query if we're holding the lock below
   private final ReentrantLock lock = new ReentrantLock();
 
@@ -99,6 +101,25 @@ public class TestConcurrencyControl implements ConcurrencyControl {
 
   @Override
   public ScheduledTimer schedule(final Duration delay, final Runnable runnable) {
+    // in some cases, scheduled callbacks will re-schedule themselves. if we run them inline, this
+    // will just lead to a stack overflow.
+    // this is however a valid case, so we don't want to change production code to prevent this.
+    // instead, we'll detect that we're rescheduling ourselves via the stack trace
+    final var stackTrace = Thread.currentThread().getStackTrace();
+    final var currentElement = stackTrace[1]; // 0 is always the method `getStackTrace()`
+    final var recursing =
+        Arrays.stream(stackTrace)
+            .filter(
+                e ->
+                    e.getClassName().equals(currentElement.getClassName())
+                        && e.getMethodName().equals(currentElement.getMethodName()))
+            .count();
+    // while recursing for 10 times doesn't 100% mean it's an endless loop, it probably means that,
+    // so we should stop
+    if (recursing > ENDLESS_LOOP_COUNT) {
+      return () -> {};
+    }
+
     // Schedule immediately
     LockUtil.withLock(lock, runnable);
     return () -> {};

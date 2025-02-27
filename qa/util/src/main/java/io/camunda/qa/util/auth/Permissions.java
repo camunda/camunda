@@ -5,10 +5,11 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.tasklist.webapp.security.identity;
+package io.camunda.qa.util.auth;
 
+import io.camunda.client.protocol.rest.PermissionTypeEnum;
+import io.camunda.client.protocol.rest.ResourceTypeEnum;
 import java.util.List;
 
-public interface UserGroupService {
-  List<String> getUserGroups();
-}
+public record Permissions(
+    ResourceTypeEnum resourceType, PermissionTypeEnum permissionType, List<String> resourceIds) {}

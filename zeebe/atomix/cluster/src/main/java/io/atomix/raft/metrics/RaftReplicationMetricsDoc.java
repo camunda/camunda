@@ -10,12 +10,13 @@ package io.atomix.raft.metrics;
 import io.camunda.zeebe.util.micrometer.ExtendedMeterDocumentation;
 import io.micrometer.core.instrument.Meter.Type;
 
+@SuppressWarnings("NullableProblems")
 public enum RaftReplicationMetricsDoc implements ExtendedMeterDocumentation {
   /** The commit index */
   COMMIT_INDEX {
     @Override
     public String getName() {
-      return "partition.raft.commit.index";
+      return "atomix.partition.raft.commit.index";
     }
 
     @Override
@@ -28,11 +29,12 @@ public enum RaftReplicationMetricsDoc implements ExtendedMeterDocumentation {
       return "The commit index";
     }
   },
+
   /** The index of last entry appended to the log */
   APPEND_INDEX {
     @Override
     public String getName() {
-      return "partition.raft.append.index";
+      return "atomix.partition.raft.append.index";
     }
 
     @Override

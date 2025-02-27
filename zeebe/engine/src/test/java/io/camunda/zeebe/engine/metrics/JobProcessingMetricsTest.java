@@ -7,7 +7,6 @@
  */
 package io.camunda.zeebe.engine.metrics;
 
-import static java.util.Map.entry;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
@@ -21,13 +20,14 @@ import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.value.JobKind;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
+import io.micrometer.core.instrument.Counter;
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.Collection;
-import org.junit.Before;
-import org.junit.ClassRule;
+import java.util.Optional;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.RuleChain;
 import org.junit.rules.TestWatcher;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -35,16 +35,18 @@ import org.junit.runners.Parameterized.Parameter;
 import org.junit.runners.Parameterized.Parameters;
 
 @RunWith(Parameterized.class)
-public class JobMetricsTest {
-
-  @ClassRule public static final EngineRule ENGINE = EngineRule.singlePartition();
+public class JobProcessingMetricsTest {
 
   private static final String PROCESS_ID = "process";
   private static final String TASK_ID = "task";
   private static final String JOB_TYPE = "job";
 
   @Parameter public JobMetricsTestScenario scenario;
-  @Rule public final TestWatcher watcher = new RecordingExporterTestWatcher();
+
+  private final TestWatcher watcher = new RecordingExporterTestWatcher();
+  private final EngineRule engine = EngineRule.singlePartition();
+
+  @Rule public final RuleChain ruleChain = RuleChain.outerRule(engine).around(watcher);
 
   @Parameters(name = "{index}: {0}")
   public static Collection<Object[]> parameters() {
@@ -74,34 +76,29 @@ public class JobMetricsTest {
 
   @Test
   public void allCountsStartAtNull() {
-    assertThat(jobMetric("created", JOB_TYPE, scenario.jobKind)).isNull();
-    assertThat(jobMetric("activated", JOB_TYPE, scenario.jobKind)).isNull();
-    assertThat(jobMetric("timed out", JOB_TYPE, scenario.jobKind)).isNull();
-    assertThat(jobMetric("completed", JOB_TYPE, scenario.jobKind)).isNull();
-    assertThat(jobMetric("failed", JOB_TYPE, scenario.jobKind)).isNull();
-    assertThat(jobMetric("canceled", JOB_TYPE, scenario.jobKind)).isNull();
-    assertThat(jobMetric("error thrown", JOB_TYPE, scenario.jobKind)).isNull();
-  }
-
-  @Before
-  public void resetMetrics() {
-    JobMetrics.clear();
+    assertThat(findJobCounter("created", JOB_TYPE, scenario.jobKind)).isEmpty();
+    assertThat(findJobCounter("activated", JOB_TYPE, scenario.jobKind)).isEmpty();
+    assertThat(findJobCounter("timed out", JOB_TYPE, scenario.jobKind)).isEmpty();
+    assertThat(findJobCounter("completed", JOB_TYPE, scenario.jobKind)).isEmpty();
+    assertThat(findJobCounter("failed", JOB_TYPE, scenario.jobKind)).isEmpty();
+    assertThat(findJobCounter("canceled", JOB_TYPE, scenario.jobKind)).isEmpty();
+    assertThat(findJobCounter("error thrown", JOB_TYPE, scenario.jobKind)).isEmpty();
   }
 
   @Test
   public void shouldCountCreated() {
     // when
-    ENGINE.deployment().withXmlResource(scenario.process).deploy();
+    engine.deployment().withXmlResource(scenario.process).deploy();
     createProcessInstanceWithJob(JOB_TYPE);
 
     // then
-    assertThat(jobMetric("created", JOB_TYPE, scenario.jobKind)).isEqualTo(1);
+    assertThat(jobMetric("created", JOB_TYPE, scenario.jobKind)).isOne();
   }
 
   @Test
   public void shouldCountActivated() {
     // given
-    ENGINE.deployment().withXmlResource(scenario.process).deploy();
+    engine.deployment().withXmlResource(scenario.process).deploy();
 
     // the job type must be unique, because other tests may also have created jobs that can be
     // activated. We can't depend on the unique process instance when activating a batch of jobs.
@@ -109,21 +106,21 @@ public class JobMetricsTest {
     createProcessInstanceWithJob(jobType);
 
     // when
-    ENGINE.jobs().withType(jobType).activate();
+    engine.jobs().withType(jobType).activate();
 
     // then
-    assertThat(jobMetric("activated", jobType, scenario.jobKind)).isEqualTo(1);
+    assertThat(jobMetric("activated", jobType, scenario.jobKind)).isOne();
   }
 
   @Test
   public void shouldCountTimedOut() {
     // given
-    ENGINE.deployment().withXmlResource(scenario.process).deploy();
+    engine.deployment().withXmlResource(scenario.process).deploy();
     final long processInstanceKey = createProcessInstanceWithJob(JOB_TYPE);
 
     final var timeout = Duration.ofMinutes(10);
     final var jobRecord =
-        ENGINE
+        engine
             .jobs()
             .withType(JOB_TYPE)
             .withTimeout(timeout.toMillis())
@@ -136,59 +133,59 @@ public class JobMetricsTest {
     // We need to add 1 ms as the deadline needs to be < the current time. Without the extra 1 ms
     // it could be that the JobTimeoutChecker is triggered at the exact same time as the job
     // deadline resulting in the Job activation not being expired yet.
-    ENGINE
+    engine
         .getClock()
         .addTime(
             Duration.ofMillis(
-                jobRecord.getDeadline() - ENGINE.getClock().getCurrentTimeInMillis() + 1));
+                jobRecord.getDeadline() - engine.getClock().getCurrentTimeInMillis() + 1));
     RecordingExporter.jobRecords(JobIntent.TIMED_OUT)
         .withProcessInstanceKey(processInstanceKey)
         .await();
 
     // then
-    assertThat(jobMetric("timed out", JOB_TYPE, scenario.jobKind)).isEqualTo(1);
+    assertThat(jobMetric("timed out", JOB_TYPE, scenario.jobKind)).isOne();
   }
 
   @Test
   public void shouldCountCompleted() {
     // given
-    ENGINE.deployment().withXmlResource(scenario.process).deploy();
+    engine.deployment().withXmlResource(scenario.process).deploy();
     final long processInstanceKey = createProcessInstanceWithJob(JOB_TYPE);
 
     // when
-    ENGINE.job().ofInstance(processInstanceKey).withType(JOB_TYPE).complete();
+    engine.job().ofInstance(processInstanceKey).withType(JOB_TYPE).complete();
 
     // then
-    assertThat(jobMetric("completed", JOB_TYPE, scenario.jobKind)).isEqualTo(1);
+    assertThat(jobMetric("completed", JOB_TYPE, scenario.jobKind)).isOne();
   }
 
   @Test
   public void shouldCountFailed() {
     // given
-    ENGINE.deployment().withXmlResource(scenario.process).deploy();
+    engine.deployment().withXmlResource(scenario.process).deploy();
     final long processInstanceKey = createProcessInstanceWithJob(JOB_TYPE);
 
     // when
-    ENGINE.job().ofInstance(processInstanceKey).withType(JOB_TYPE).fail();
+    engine.job().ofInstance(processInstanceKey).withType(JOB_TYPE).fail();
 
     // then
-    assertThat(jobMetric("failed", JOB_TYPE, scenario.jobKind)).isEqualTo(1);
+    assertThat(jobMetric("failed", JOB_TYPE, scenario.jobKind)).isOne();
   }
 
   @Test
   public void shouldCountCanceled() {
     // given
-    ENGINE.deployment().withXmlResource(scenario.process).deploy();
+    engine.deployment().withXmlResource(scenario.process).deploy();
     final long processInstanceKey = createProcessInstanceWithJob(JOB_TYPE);
 
     // when
-    ENGINE.processInstance().withInstanceKey(processInstanceKey).cancel();
+    engine.processInstance().withInstanceKey(processInstanceKey).cancel();
     RecordingExporter.jobRecords(JobIntent.CANCELED)
         .withProcessInstanceKey(processInstanceKey)
         .await();
 
     // then
-    assertThat(jobMetric("canceled", JOB_TYPE, scenario.jobKind)).isEqualTo(1);
+    assertThat(jobMetric("canceled", JOB_TYPE, scenario.jobKind)).isOne();
   }
 
   @Test
@@ -198,14 +195,14 @@ public class JobMetricsTest {
     assumeThat(scenario.jobKind, is(not(equalTo(JobKind.EXECUTION_LISTENER))));
 
     // given
-    ENGINE.deployment().withXmlResource(scenario.process).deploy();
+    engine.deployment().withXmlResource(scenario.process).deploy();
     final long processInstanceKey = createProcessInstanceWithJob(JOB_TYPE);
 
     // when
-    ENGINE.job().ofInstance(processInstanceKey).withType(JOB_TYPE).throwError();
+    engine.job().ofInstance(processInstanceKey).withType(JOB_TYPE).throwError();
 
     // then
-    assertThat(jobMetric("error thrown", JOB_TYPE, scenario.jobKind)).isEqualTo(1);
+    assertThat(jobMetric("error thrown", JOB_TYPE, scenario.jobKind)).isOne();
   }
 
   /**
@@ -214,9 +211,9 @@ public class JobMetricsTest {
    * @param jobType the job type for the service task
    * @return the key of the created process instance
    */
-  private static long createProcessInstanceWithJob(final String jobType) {
+  private long createProcessInstanceWithJob(final String jobType) {
     final long processInstanceKey =
-        ENGINE
+        engine
             .processInstance()
             .ofBpmnProcessId(PROCESS_ID)
             .withVariable("jobType", jobType)
@@ -229,13 +226,29 @@ public class JobMetricsTest {
     return processInstanceKey;
   }
 
-  private static Double jobMetric(final String action, final String type, final JobKind jobKind) {
-    return MetricsTestHelper.readMetricValue(
-        "zeebe_job_events_total",
-        entry("action", action),
-        entry("partition", "1"),
-        entry("type", type),
-        entry("job_kind", jobKind.name()));
+  private Optional<Counter> findJobCounter(
+      final String action, final String type, final JobKind kind) {
+    return Optional.ofNullable(
+        engine
+            .getMeterRegistry()
+            .find("zeebe.job.events.total")
+            .tag("action", action)
+            .tag("partition", "1")
+            .tag("type", type)
+            .tag("job_kind", kind.name())
+            .counter());
+  }
+
+  private double jobMetric(final String action, final String type, final JobKind kind) {
+    return engine
+        .getMeterRegistry()
+        .get("zeebe.job.events.total")
+        .tag("action", action)
+        .tag("partition", "1")
+        .tag("type", type)
+        .tag("job_kind", kind.name())
+        .counter()
+        .count();
   }
 
   record JobMetricsTestScenario(JobKind jobKind, BpmnModelInstance process) {

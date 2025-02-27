@@ -70,12 +70,19 @@ jobs:
           ./mvnw -B -T1C -DskipTests -DskipChecks -Dflatten.skip=true package
           export ARTIFACT=$(./mvnw -pl dist/ help:evaluate -Dexpression=project.build.finalName -q -DforceStdout)
           echo "distball=dist/target/${ARTIFACT}.tar.gz" >> $GITHUB_OUTPUT
+          echo "distzip=dist/target/${ARTIFACT}.zip" >> $GITHUB_OUTPUT
 
       - name: Upload camunda-dist
         uses: actions/upload-artifact@v4
         with:
           name: camunda-platform-dist
           path: ${{ steps.build-dist.outputs.distball }}
+
+      - name: Upload camunda-dist-zip
+        uses: actions/upload-artifact@v4
+        with:
+          name: camunda-platform-dist-zip
+          path: ${{ steps.build-dist.outputs.distzip }}
 
   test_c8run:
     strategy:
@@ -172,11 +179,11 @@ jobs:
       - name: Download Camunda Core Dist
         uses: actions/download-artifact@v4
         with:
-          name: camunda-platform-dist
+          name: camunda-platform-dist-zip
           path: c8run
 
       - name: Get version of camunda-dist
-        run: echo CAMUNDA_VERSION=$(ls camunda-zeebe*.tar.gz | grep -o 'camunda-zeebe-.*' | sed 's/camunda-zeebe-//' | sed 's/\.tar\.gz//') >> $GITHUB_ENV
+        run: echo CAMUNDA_VERSION=$(ls camunda-zeebe*.zip | grep -o 'camunda-zeebe-.*' | sed 's/camunda-zeebe-//' | sed 's/\.zip//') >> $GITHUB_ENV
         shell: bash
         working-directory: .\c8run
 

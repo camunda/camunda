@@ -19,22 +19,31 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.command.ProblemException;
 import io.camunda.client.api.response.DeploymentEvent;
-import io.camunda.it.utils.BrokerITInvocationProvider;
-import io.camunda.it.utils.CamundaClientTestFactory.Authenticated;
-import io.camunda.it.utils.CamundaClientTestFactory.Permissions;
-import io.camunda.it.utils.CamundaClientTestFactory.User;
+import io.camunda.it.utils.CamundaMultiDBExtension;
+import io.camunda.qa.util.auth.Authenticated;
+import io.camunda.qa.util.auth.Permissions;
+import io.camunda.qa.util.auth.User;
+import io.camunda.qa.util.auth.UserDefinition;
+import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import java.time.Duration;
 import java.util.List;
 import org.awaitility.Awaitility;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.TestInstance;
-import org.junit.jupiter.api.TestInstance.Lifecycle;
-import org.junit.jupiter.api.TestTemplate;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.api.function.Executable;
 
-@TestInstance(Lifecycle.PER_CLASS)
+@Tag("multi-db-test")
+@DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "rdbms")
 class DecisionAuthorizationIT {
+
+  static final TestStandaloneBroker BROKER =
+      new TestStandaloneBroker().withBasicAuth().withAuthorizationsEnabled();
+
+  @RegisterExtension
+  static final CamundaMultiDBExtension EXTENSION = new CamundaMultiDBExtension(BROKER);
 
   private static final String DECISION_DEFINITION_ID_1 = "decision_1";
   private static final String DECISION_REQUIREMENTS_ID_1 = "definitions_1";
@@ -42,6 +51,8 @@ class DecisionAuthorizationIT {
   private static final String DECISION_REQUIREMENTS_ID_2 = "definitions_test";
   private static final String ADMIN = "admin";
   private static final String RESTRICTED = "restricted-user";
+
+  @UserDefinition
   private static final User ADMIN_USER =
       new User(
           ADMIN,
@@ -50,6 +61,8 @@ class DecisionAuthorizationIT {
               new Permissions(RESOURCE, CREATE, List.of("*")),
               new Permissions(DECISION_DEFINITION, READ_DECISION_DEFINITION, List.of("*")),
               new Permissions(DECISION_REQUIREMENTS_DEFINITION, READ, List.of("*"))));
+
+  @UserDefinition
   private static final User RESTRICTED_USER =
       new User(
           RESTRICTED,
@@ -60,29 +73,16 @@ class DecisionAuthorizationIT {
               new Permissions(
                   DECISION_REQUIREMENTS_DEFINITION, READ, List.of(DECISION_REQUIREMENTS_ID_1))));
 
-  @RegisterExtension
-  static final BrokerITInvocationProvider PROVIDER =
-      new BrokerITInvocationProvider()
-          .withoutRdbmsExporter()
-          .withBasicAuth()
-          .withAuthorizationsEnabled()
-          .withUsers(ADMIN_USER, RESTRICTED_USER);
-
-  private boolean initialized;
-
-  @BeforeEach
-  void setUp(@Authenticated(ADMIN) final CamundaClient adminClient) {
-    if (!initialized) {
-      final List<String> decisions = List.of("decision_model.dmn", "decision_model_1.dmn");
-      decisions.forEach(
-          decision -> deployResource(adminClient, String.format("decisions/%s", decision)));
-      waitForDecisionDefinitionsToBeDeployed(adminClient, decisions.size());
-      waitForDecisionRequirementsToBeDeployed(adminClient, decisions.size());
-      initialized = true;
-    }
+  @BeforeAll
+  static void setUp(@Authenticated(ADMIN) final CamundaClient adminClient) {
+    final List<String> decisions = List.of("decision_model.dmn", "decision_model_1.dmn");
+    decisions.forEach(
+        decision -> deployResource(adminClient, String.format("decisions/%s", decision)));
+    waitForDecisionDefinitionsToBeDeployed(adminClient, decisions.size());
+    waitForDecisionRequirementsToBeDeployed(adminClient, decisions.size());
   }
 
-  @TestTemplate
+  @Test
   void searchShouldReturnAuthorizedDecisionDefinitions(
       @Authenticated(RESTRICTED) final CamundaClient userClient) {
     // when
@@ -94,7 +94,7 @@ class DecisionAuthorizationIT {
         .containsOnly(DECISION_DEFINITION_ID_1);
   }
 
-  @TestTemplate
+  @Test
   void getByKeyShouldReturnForbiddenForUnauthorizedDecisionDefinition(
       @Authenticated(ADMIN) final CamundaClient adminClient,
       @Authenticated(RESTRICTED) final CamundaClient userClient) {
@@ -114,7 +114,7 @@ class DecisionAuthorizationIT {
             "Unauthorized to perform operation 'READ_DECISION_DEFINITION' on resource 'DECISION_DEFINITION'");
   }
 
-  @TestTemplate
+  @Test
   void getByKeyShouldReturnAuthorizedDecisionDefinition(
       @Authenticated(ADMIN) final CamundaClient adminClient,
       @Authenticated(RESTRICTED) final CamundaClient userClient) {
@@ -131,7 +131,7 @@ class DecisionAuthorizationIT {
     assertThat(decisionDefinition.getDmnDecisionId()).isEqualTo(DECISION_DEFINITION_ID_1);
   }
 
-  @TestTemplate
+  @Test
   void searchShouldReturnAuthorizedDecisionRequirements(
       @Authenticated(RESTRICTED) final CamundaClient userClient) {
     // when
@@ -144,7 +144,7 @@ class DecisionAuthorizationIT {
         .containsOnly(DECISION_REQUIREMENTS_ID_1);
   }
 
-  @TestTemplate
+  @Test
   void getByKeyShouldReturnForbiddenForUnauthorizedDecisionRequirements(
       @Authenticated(ADMIN) final CamundaClient adminClient,
       @Authenticated(RESTRICTED) final CamundaClient userClient) {
@@ -164,7 +164,7 @@ class DecisionAuthorizationIT {
             "Unauthorized to perform operation 'READ' on resource 'DECISION_REQUIREMENTS_DEFINITION'");
   }
 
-  @TestTemplate
+  @Test
   void getByKeyShouldReturnAuthorizedDecisionRequirements(
       @Authenticated(ADMIN) final CamundaClient adminClient,
       @Authenticated(RESTRICTED) final CamundaClient userClient) {
@@ -206,7 +206,7 @@ class DecisionAuthorizationIT {
         .getDecisionRequirementsKey();
   }
 
-  private DeploymentEvent deployResource(
+  private static DeploymentEvent deployResource(
       final CamundaClient camundaClient, final String resourceName) {
     return camundaClient
         .newDeployResourceCommand()
@@ -215,7 +215,7 @@ class DecisionAuthorizationIT {
         .join();
   }
 
-  private void waitForDecisionDefinitionsToBeDeployed(
+  private static void waitForDecisionDefinitionsToBeDeployed(
       final CamundaClient camundaClient, final int expectedCount) {
     Awaitility.await("should deploy decision definitions and import in Operate")
         .atMost(Duration.ofSeconds(15))
@@ -227,7 +227,7 @@ class DecisionAuthorizationIT {
             });
   }
 
-  private void waitForDecisionRequirementsToBeDeployed(
+  private static void waitForDecisionRequirementsToBeDeployed(
       final CamundaClient camundaClient, final int expectedCount) {
     Awaitility.await("should deploy decision requirements and import in Operate")
         .atMost(Duration.ofSeconds(15))

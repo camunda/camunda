@@ -20,7 +20,8 @@ import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.Test;
 
 final class StatefulGaugeTest {
-  @AutoClose private final MeterRegistry registry = new SimpleMeterRegistry();
+  @AutoClose private MeterRegistry wrapped = new SimpleMeterRegistry();
+  @AutoClose private final StatefulMeterRegistry registry = new StatefulMeterRegistry(wrapped);
 
   @Test
   void shouldRegisterAsGauge() {
@@ -31,7 +32,7 @@ final class StatefulGaugeTest {
     gauge.set(3);
 
     // then
-    final var registered = (StatefulGauge) registry.get("foo").meter();
+    final var registered = registry.get("foo").gauge();
     assertThat(registered.value()).isEqualTo(3);
   }
 
@@ -44,8 +45,7 @@ final class StatefulGaugeTest {
     final var second = StatefulGauge.builder("foo").register(registry);
 
     // then
-    final var registered = (StatefulGauge) registry.get("foo").meter();
-    assertThat(registered.state()).isSameAs(first.state()).isSameAs(second.state());
+    assertThat(first.state()).isSameAs(second.state());
   }
 
   @Test
@@ -57,8 +57,10 @@ final class StatefulGaugeTest {
     final var second = StatefulGauge.builder("foo").register(registry);
 
     // then
-    final var registered = (StatefulGauge) registry.get("foo").meter();
-    assertThat(registered).isSameAs(first).isSameAs(second);
+    assertThat(first).isSameAs(second);
+    // they are not the same, since the underlying registry is registering a gauge; but we can still
+    // check that it wraps the right gauge
+    assertThat(registry.get("foo").gauge()).isSameAs(first.delegate());
   }
 
   @Test
@@ -70,7 +72,7 @@ final class StatefulGaugeTest {
     gauge.set(5);
 
     // then - measurements are taken from the underlying gauge
-    final var registered = (StatefulGauge) registry.get("foo").meter();
+    final var registered = registry.get("foo").gauge();
     assertThat(registered.measure()).allSatisfy(m -> assertThat(m.getValue()).isEqualTo(5));
   }
 
@@ -78,7 +80,9 @@ final class StatefulGaugeTest {
   void shouldRegisterToUnderlyingImplementationAsGauge() {
     // given
     final var prometheus = new PrometheusMeterRegistry(PrometheusConfig.DEFAULT);
-    final var gauge = StatefulGauge.builder("test").tag("foo", "bar").register(prometheus);
+    registry.add(prometheus);
+
+    final var gauge = StatefulGauge.builder("test").tag("foo", "bar").register(registry);
     gauge.set(5);
 
     // when
@@ -134,5 +138,60 @@ final class StatefulGaugeTest {
     // then
     assertThatCode(() -> gauge.set(5)).doesNotThrowAnyException();
     assertThat(registry.find("foo").meter()).isNull();
+  }
+
+  @Test
+  void shouldReturnDoubleValue() {
+    // given
+    final var gauge = StatefulGauge.builder("foo").register(registry);
+
+    // when
+    gauge.set(30.5223);
+
+    // then - measurements are taken from the underlying gauge
+    final var registered = registry.get("foo").gauge();
+    assertThat(registered.measure()).allSatisfy(m -> assertThat(m.getValue()).isEqualTo(30.5223));
+  }
+
+  @Test
+  void shouldReturnLongValue() {
+    // given
+    final var gauge = StatefulGauge.builder("foo").register(registry);
+    final var highValue = Integer.MAX_VALUE + 1_000_000_000_000L;
+
+    // when
+    gauge.set(highValue);
+
+    // then - measurements are taken from the underlying gauge
+    final var registered = registry.get("foo").gauge();
+    assertThat(registered.measure()).allSatisfy(m -> assertThat(m.getValue()).isEqualTo(highValue));
+  }
+
+  @Test
+  void shouldIncrement() {
+    // given
+    final var gauge = StatefulGauge.builder("foo").register(registry);
+
+    // when
+    gauge.increment();
+    gauge.increment();
+
+    // then - measurements are taken from the underlying gauge
+    final var registered = registry.get("foo").gauge();
+    assertThat(registered.measure()).allSatisfy(m -> assertThat(m.getValue()).isEqualTo(2.0));
+  }
+
+  @Test
+  void shouldDecrement() {
+    // given
+    final var gauge = StatefulGauge.builder("foo").register(registry);
+
+    // when
+    gauge.increment();
+    gauge.decrement();
+
+    // then - measurements are taken from the underlying gauge
+    final var registered = registry.get("foo").gauge();
+    assertThat(registered.measure()).allSatisfy(m -> assertThat(m.getValue()).isZero());
   }
 }

@@ -30,15 +30,6 @@ final class MicrometerUtilTest {
     private final MeterRegistry wrapped = new SimpleMeterRegistry();
 
     @Test
-    void shouldWrapNothingIfNoParentRegistry() {
-      // given / when
-      final var registry = MicrometerUtil.wrap(null, Tags.empty());
-
-      // then
-      assertThat(registry.getRegistries()).isEmpty();
-    }
-
-    @Test
     void shouldAddCommonTagsToWrapped() {
       // given
       final var tags = Tags.of("foo", "bar");

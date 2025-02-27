@@ -12,7 +12,7 @@
     "@carbon/react": "^1.55.0",
     "@lexical/react": "^0.21.0",
     "@ungap/structured-clone": "^1.2.0",
-    "bpmn-js": "18.1.2",
+    "bpmn-js": "18.3.1",
     "bpmn-js-disable-collapsed-subprocess": "^0.1.7",
     "chart.js": "^4.4.0",
     "chartjs-plugin-datalabels": "^2.2.0",

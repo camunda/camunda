@@ -7,7 +7,8 @@
  */
 package io.camunda.zeebe.engine.processing.job;
 
-import io.camunda.zeebe.engine.metrics.JobMetrics;
+import io.camunda.zeebe.engine.metrics.EngineMetricsDoc.JobAction;
+import io.camunda.zeebe.engine.metrics.JobProcessingMetrics;
 import io.camunda.zeebe.engine.processing.ExcludeAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnJobActivationBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
@@ -30,14 +31,14 @@ public final class JobTimeOutProcessor implements TypedRecordProcessor<JobRecord
   private final JobState jobState;
   private final StateWriter stateWriter;
   private final TypedRejectionWriter rejectionWriter;
-  private final JobMetrics jobMetrics;
+  private final JobProcessingMetrics jobMetrics;
   private final BpmnJobActivationBehavior jobActivationBehavior;
   private final InstantSource clock;
 
   public JobTimeOutProcessor(
       final ProcessingState state,
       final Writers writers,
-      final JobMetrics jobMetrics,
+      final JobProcessingMetrics jobMetrics,
       final BpmnJobActivationBehavior jobActivationBehavior,
       final InstantSource clock) {
     jobState = state.getJobState();
@@ -56,7 +57,7 @@ public final class JobTimeOutProcessor implements TypedRecordProcessor<JobRecord
 
     if (state == State.ACTIVATED && hasTimedOut(job)) {
       stateWriter.appendFollowUpEvent(jobKey, JobIntent.TIMED_OUT, job);
-      jobMetrics.jobTimedOut(job.getType(), job.getJobKind());
+      jobMetrics.countJobEvent(JobAction.TIMED_OUT, job.getJobKind(), job.getType());
       jobActivationBehavior.publishWork(jobKey, job);
     } else {
       final var reason =

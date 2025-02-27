@@ -1330,25 +1330,25 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@carbon/icon-helpers@npm:^10.54.0":
-  version: 10.54.0
-  resolution: "@carbon/icon-helpers@npm:10.54.0"
+"@carbon/icon-helpers@npm:^10.55.0":
+  version: 10.55.0
+  resolution: "@carbon/icon-helpers@npm:10.55.0"
   dependencies:
     "@ibm/telemetry-js": "npm:^1.5.0"
-  checksum: 10c0/320318028f24e3a63f81be20e9bd0e74853b4a7fb3a5314ad11f8214f3f3ca3aba51a45b2ae6c46e51d46121ccf94d7cad9a96b5e2d45a364d1344101db6f809
+  checksum: 10c0/db09a25c161b24137af36d4643c92b4f2ea31b528dbb2ff24acbb93b4734d6ecf5eaca859279f5a2b8e446b18af5d9df8b7599cfcecf17beb73ec9c089317284
   languageName: node
   linkType: hard
 
 "@carbon/icons-react@npm:^11.41.0, @carbon/icons-react@npm:^11.52.0":
-  version: 11.55.0
-  resolution: "@carbon/icons-react@npm:11.55.0"
+  version: 11.56.0
+  resolution: "@carbon/icons-react@npm:11.56.0"
   dependencies:
-    "@carbon/icon-helpers": "npm:^10.54.0"
+    "@carbon/icon-helpers": "npm:^10.55.0"
     "@ibm/telemetry-js": "npm:^1.5.0"
     prop-types: "npm:^15.7.2"
   peerDependencies:
     react: ">=16"
-  checksum: 10c0/aea7ca085145c3fa1f83cc61a4d0ba2dd3a5470be637a4823f50d5ff07b0acea9f3f26974505c731eb96d7f76d02e47c7f1c3f95d0bd2cb36a79b84814c71506
+  checksum: 10c0/2a5cdd94ffe9a6842dfb6fcffe7e3bdb1027e96a16ea423ec5830da469cb576308331a569915096ac9442a9938b58d11a51045f5966f2f6a32c91d2a491b23f9
   languageName: node
   linkType: hard
 

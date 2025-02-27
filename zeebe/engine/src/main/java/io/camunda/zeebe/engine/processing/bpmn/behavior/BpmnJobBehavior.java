@@ -11,7 +11,8 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Strings;
 import io.camunda.zeebe.el.Expression;
-import io.camunda.zeebe.engine.metrics.JobMetrics;
+import io.camunda.zeebe.engine.metrics.EngineMetricsDoc.JobAction;
+import io.camunda.zeebe.engine.metrics.JobProcessingMetrics;
 import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContext;
 import io.camunda.zeebe.engine.processing.common.ExpressionProcessor;
 import io.camunda.zeebe.engine.processing.common.Failure;
@@ -89,7 +90,7 @@ public final class BpmnJobBehavior {
   private final BpmnStateBehavior stateBehavior;
   private final ResourceState resourceState;
   private final BpmnIncidentBehavior incidentBehavior;
-  private final JobMetrics jobMetrics;
+  private final JobProcessingMetrics jobMetrics;
   private final BpmnJobActivationBehavior jobActivationBehavior;
   private final BpmnUserTaskBehavior userTaskBehavior;
 
@@ -102,7 +103,7 @@ public final class BpmnJobBehavior {
       final ResourceState resourceState,
       final BpmnIncidentBehavior incidentBehavior,
       final BpmnJobActivationBehavior jobActivationBehavior,
-      final JobMetrics jobMetrics,
+      final JobProcessingMetrics jobMetrics,
       final BpmnUserTaskBehavior userTaskBehavior) {
     this.keyGenerator = keyGenerator;
     this.jobState = jobState;
@@ -301,7 +302,8 @@ public final class BpmnJobBehavior {
   public void createNewTaskListenerJob(
       final BpmnElementContext context,
       final UserTaskRecord taskRecordValue,
-      final TaskListener listener) {
+      final TaskListener listener,
+      final List<String> changedAttributes) {
     evaluateTaskListenerJobExpressions(listener.getJobWorkerProperties(), context, taskRecordValue)
         .thenDo(
             listenerJobProperties ->
@@ -310,7 +312,7 @@ public final class BpmnJobBehavior {
                     listenerJobProperties,
                     JobKind.TASK_LISTENER,
                     fromTaskListenerEventType(listener.getEventType()),
-                    extractUserTaskHeaders(taskRecordValue)))
+                    extractUserTaskHeaders(taskRecordValue, changedAttributes)))
         .ifLeft(failure -> incidentBehavior.createIncident(failure, context));
   }
 
@@ -428,7 +430,7 @@ public final class BpmnJobBehavior {
     final var jobKey = keyGenerator.nextKey();
     stateWriter.appendFollowUpEvent(jobKey, JobIntent.CREATED, jobRecord);
     jobActivationBehavior.publishWork(jobKey, jobRecord);
-    jobMetrics.jobCreated(props.getType(), jobKind);
+    jobMetrics.countJobEvent(JobAction.CREATED, jobKind, props.getType());
   }
 
   private DirectBuffer encodeHeaders(
@@ -472,12 +474,18 @@ public final class BpmnJobBehavior {
     return headerEncoder.encode(headers);
   }
 
-  private Map<String, String> extractUserTaskHeaders(final UserTaskRecord userTaskRecord) {
+  private Map<String, String> extractUserTaskHeaders(
+      final UserTaskRecord userTaskRecord, final List<String> changedAttributes) {
     final var headers = new HashMap<String, String>();
 
-    if (userTaskRecord.getUserTaskKey() > 0) {
+    if (StringUtils.isNotEmpty(userTaskRecord.getAction())) {
+      headers.put(Protocol.USER_TASK_ACTION_HEADER_NAME, userTaskRecord.getAction());
+    }
+
+    if (changedAttributes != null && !changedAttributes.isEmpty()) {
       headers.put(
-          Protocol.USER_TASK_KEY_HEADER_NAME, String.valueOf(userTaskRecord.getUserTaskKey()));
+          Protocol.USER_TASK_CHANGED_ATTRIBUTES_HEADER_NAME,
+          ExpressionTransformer.asListLiteral(changedAttributes));
     }
 
     if (userTaskRecord.getPriority() > 0) {
@@ -485,8 +493,9 @@ public final class BpmnJobBehavior {
           Protocol.USER_TASK_PRIORITY_HEADER_NAME, String.valueOf(userTaskRecord.getPriority()));
     }
 
-    if (StringUtils.isNotEmpty(userTaskRecord.getAction())) {
-      headers.put(Protocol.USER_TASK_ACTION_HEADER_NAME, userTaskRecord.getAction());
+    if (userTaskRecord.getUserTaskKey() > 0) {
+      headers.put(
+          Protocol.USER_TASK_KEY_HEADER_NAME, String.valueOf(userTaskRecord.getUserTaskKey()));
     }
 
     return Collections.unmodifiableMap(headers);
@@ -513,7 +522,7 @@ public final class BpmnJobBehavior {
       // Note that this logic is duplicated in JobCancelProcessor, if you change this please change
       // it there as well.
       stateWriter.appendFollowUpEvent(jobKey, JobIntent.CANCELED, job);
-      jobMetrics.jobCanceled(job.getType(), job.getJobKind());
+      jobMetrics.countJobEvent(JobAction.CANCELED, job.getJobKind(), job.getType());
     }
   }
 
