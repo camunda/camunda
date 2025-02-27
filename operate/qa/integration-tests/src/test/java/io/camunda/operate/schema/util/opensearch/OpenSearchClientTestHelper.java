@@ -48,4 +48,9 @@ public class OpenSearchClientTestHelper implements SearchClientTestHelper {
 
     openSearchClient.doc().index(requestBuilder);
   }
+
+  @Override
+  public void refreshAllIndexes() {
+    openSearchClient.index().refresh("*");
+  }
 }
