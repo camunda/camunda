@@ -5,14 +5,12 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.tasklist.webapp.security.tenant;
+package io.camunda.authentication.tenant;
 
 import static java.util.Collections.emptyList;
 
 import java.util.List;
-import org.springframework.stereotype.Component;
 
-@Component
 public interface TenantService {
 
   List<String> tenantsIds();

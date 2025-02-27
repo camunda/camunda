@@ -7,6 +7,7 @@
  */
 package io.camunda.operate;
 
+import io.camunda.authentication.tenant.TenantConfig;
 import jakarta.annotation.PostConstruct;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -14,8 +15,10 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.FullyQualifiedAnnotationBeanNameGenerator;
+import org.springframework.context.annotation.Import;
 
 @Configuration
+@Import(TenantConfig.class)
 @ComponentScan(
     basePackages = "io.camunda.operate.webapp",
     nameGenerator = FullyQualifiedAnnotationBeanNameGenerator.class)

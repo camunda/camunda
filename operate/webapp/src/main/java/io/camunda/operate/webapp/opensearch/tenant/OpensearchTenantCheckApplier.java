@@ -10,10 +10,10 @@ package io.camunda.operate.webapp.opensearch.tenant;
 import static io.camunda.operate.store.opensearch.dsl.QueryDSL.*;
 import static io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor.TENANT_ID;
 
+import io.camunda.authentication.tenant.TenantService;
 import io.camunda.operate.conditions.OpensearchCondition;
 import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.tenant.TenantCheckApplier;
-import io.camunda.operate.webapp.security.tenant.TenantService;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Autowired;

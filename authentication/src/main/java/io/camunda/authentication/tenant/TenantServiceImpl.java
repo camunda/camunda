@@ -5,17 +5,15 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.tasklist.webapp.security.tenant;
+package io.camunda.authentication.tenant;
 
-import io.camunda.authentication.tenant.TenantAttributeHolder;
 import io.camunda.security.configuration.SecurityConfiguration;
 import java.util.List;
-import org.apache.commons.collections4.CollectionUtils;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Component;
+import org.springframework.stereotype.Service;
 import org.springframework.web.context.request.RequestContextHolder;
 
-@Component
+@Service
 public class TenantServiceImpl implements TenantService {
 
   @Autowired private SecurityConfiguration securityConfiguration;
@@ -35,10 +33,10 @@ public class TenantServiceImpl implements TenantService {
 
     final List<String> tenants = tenantsIds();
 
-    if (CollectionUtils.isNotEmpty(tenants)) {
-      return AuthenticatedTenants.assignedTenants(tenants);
-    } else {
+    if (tenants == null || tenants.isEmpty()) { // Ensure tenants is not null
       return AuthenticatedTenants.noTenantsAssigned();
+    } else {
+      return AuthenticatedTenants.assignedTenants(tenants);
     }
   }
 

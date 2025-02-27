@@ -31,7 +31,7 @@ import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
       TestApplication.class,
       WebSecurityConfig.class,
       OAuth2WebConfigurer.class,
-      RetryElasticsearchClient.class,
+      RetryElasticsearchClient.class
     },
     properties = {
       TasklistProperties.PREFIX + ".importer.startLoadingDataOnStartup = false",
