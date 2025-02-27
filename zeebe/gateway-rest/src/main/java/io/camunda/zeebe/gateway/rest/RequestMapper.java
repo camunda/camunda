@@ -8,6 +8,7 @@
 package io.camunda.zeebe.gateway.rest;
 
 import static io.camunda.zeebe.gateway.rest.util.KeyUtil.tryParseLong;
+import static io.camunda.zeebe.gateway.rest.validator.AdHocSubprocessActivityRequestValidator.validateAdHocSubprocessActivationRequest;
 import static io.camunda.zeebe.gateway.rest.validator.AdHocSubprocessActivityRequestValidator.validateAdHocSubprocessSearchActivitiesRequest;
 import static io.camunda.zeebe.gateway.rest.validator.AuthorizationRequestValidator.validateAuthorizationRequest;
 import static io.camunda.zeebe.gateway.rest.validator.ClockValidator.validateClockPinRequest;
@@ -46,6 +47,8 @@ import io.camunda.search.filter.AdHocSubprocessActivityFilter;
 import io.camunda.search.query.AdHocSubprocessActivityQuery;
 import io.camunda.security.auth.Authentication;
 import io.camunda.security.auth.Authentication.Builder;
+import io.camunda.service.AdHocSubprocessActivityServices.AdHocSubprocessActivateActivitiesRequest;
+import io.camunda.service.AdHocSubprocessActivityServices.AdHocSubprocessActivateActivitiesRequest.AdHocSubprocessActivateActivityReference;
 import io.camunda.service.AuthorizationServices.CreateAuthorizationRequest;
 import io.camunda.service.AuthorizationServices.UpdateAuthorizationRequest;
 import io.camunda.service.DocumentServices.DocumentCreateRequest;
@@ -66,6 +69,7 @@ import io.camunda.service.TenantServices.TenantDTO;
 import io.camunda.service.UserServices.UserDTO;
 import io.camunda.zeebe.auth.Authorization;
 import io.camunda.zeebe.auth.ClaimTransformer;
+import io.camunda.zeebe.gateway.protocol.rest.AdHocSubprocessActivateActivitiesInstruction;
 import io.camunda.zeebe.gateway.protocol.rest.AdHocSubprocessActivitySearchQuery;
 import io.camunda.zeebe.gateway.protocol.rest.AuthorizationRequest;
 import io.camunda.zeebe.gateway.protocol.rest.CancelProcessInstanceRequest;
@@ -822,6 +826,22 @@ public class RequestMapper {
                         .adHocSubprocessId(filter.getAdHocSubprocessId())
                         .build())
                 .build());
+  }
+
+  public static Either<ProblemDetail, AdHocSubprocessActivateActivitiesRequest>
+      toAdHocSubprocessActivateActivitiesRequest(
+          final String adHocSubprocessInstanceKey,
+          final AdHocSubprocessActivateActivitiesInstruction request) {
+    return getResult(
+        validateAdHocSubprocessActivationRequest(request),
+        () ->
+            new AdHocSubprocessActivateActivitiesRequest(
+                adHocSubprocessInstanceKey,
+                request.getElements().stream()
+                    .map(
+                        element ->
+                            new AdHocSubprocessActivateActivityReference(element.getElementId()))
+                    .toList()));
   }
 
   private static List<ProcessInstanceModificationActivateInstruction>

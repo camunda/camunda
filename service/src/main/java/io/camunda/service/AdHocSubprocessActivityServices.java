@@ -21,8 +21,11 @@ import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.model.bpmn.instance.AdHocSubProcess;
 import io.camunda.zeebe.model.bpmn.instance.FlowNode;
+import io.camunda.zeebe.protocol.impl.record.value.adhocsubprocess.AdHocSubProcessActivityActivationRecord;
 import java.io.ByteArrayInputStream;
 import java.nio.charset.StandardCharsets;
+import java.util.List;
+import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 import org.camunda.bpm.model.xml.instance.ModelElementInstance;
 
@@ -105,5 +108,16 @@ public class AdHocSubprocessActivityServices extends ApiServices<AdHocSubprocess
     }
 
     return documentation;
+  }
+
+  public CompletableFuture<AdHocSubProcessActivityActivationRecord> activateActivities(
+      final AdHocSubprocessActivateActivitiesRequest request) {
+    // TODO implement
+    return CompletableFuture.failedFuture(new UnsupportedOperationException("Not implemented yet"));
+  }
+
+  public record AdHocSubprocessActivateActivitiesRequest(
+      String adHocSubprocessInstanceKey, List<AdHocSubprocessActivateActivityReference> elements) {
+    public record AdHocSubprocessActivateActivityReference(String elementId) {}
   }
 }
