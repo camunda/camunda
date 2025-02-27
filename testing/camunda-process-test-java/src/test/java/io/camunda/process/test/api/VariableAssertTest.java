@@ -106,7 +106,7 @@ public class VariableAssertTest {
       final Variable variableA = newVariable("a", "1");
       final Variable variableB = newVariable("b", "2");
 
-      when(camundaDataSource.getVariablesByProcessInstanceKey(PROCESS_INSTANCE_KEY))
+      when(camundaDataSource.findVariablesByProcessInstanceKey(PROCESS_INSTANCE_KEY))
           .thenReturn(Arrays.asList(variableA, variableB));
 
       // when
@@ -122,7 +122,7 @@ public class VariableAssertTest {
       final Variable variableA = newVariable("a", "1");
       final Variable variableB = newVariable("b", "2");
 
-      when(camundaDataSource.getVariablesByProcessInstanceKey(PROCESS_INSTANCE_KEY))
+      when(camundaDataSource.findVariablesByProcessInstanceKey(PROCESS_INSTANCE_KEY))
           .thenReturn(Collections.singletonList(variableA))
           .thenReturn(Arrays.asList(variableA, variableB));
 
@@ -132,7 +132,7 @@ public class VariableAssertTest {
       // then
       CamundaAssert.assertThat(processInstanceEvent).hasVariableNames("a", "b");
 
-      verify(camundaDataSource, times(2)).getVariablesByProcessInstanceKey(PROCESS_INSTANCE_KEY);
+      verify(camundaDataSource, times(2)).findVariablesByProcessInstanceKey(PROCESS_INSTANCE_KEY);
     }
 
     @Test
@@ -141,7 +141,7 @@ public class VariableAssertTest {
       final Variable variableA = newVariable("a", "1");
       final Variable variableB = newVariable("b", "2");
 
-      when(camundaDataSource.getVariablesByProcessInstanceKey(PROCESS_INSTANCE_KEY))
+      when(camundaDataSource.findVariablesByProcessInstanceKey(PROCESS_INSTANCE_KEY))
           .thenReturn(Arrays.asList(variableA, variableB));
 
       // when
@@ -181,7 +181,7 @@ public class VariableAssertTest {
       // given
       final Variable variableA = newVariable("a", variableValue);
 
-      when(camundaDataSource.getVariablesByProcessInstanceKey(PROCESS_INSTANCE_KEY))
+      when(camundaDataSource.findVariablesByProcessInstanceKey(PROCESS_INSTANCE_KEY))
           .thenReturn(Collections.singletonList(variableA));
 
       // when
@@ -197,7 +197,7 @@ public class VariableAssertTest {
       final Variable variableA = newVariable("a", "1");
       final Variable variableB = newVariable("b", "2");
 
-      when(camundaDataSource.getVariablesByProcessInstanceKey(PROCESS_INSTANCE_KEY))
+      when(camundaDataSource.findVariablesByProcessInstanceKey(PROCESS_INSTANCE_KEY))
           .thenReturn(Collections.singletonList(variableB))
           .thenReturn(Arrays.asList(variableA, variableB));
 
@@ -207,7 +207,7 @@ public class VariableAssertTest {
       // then
       CamundaAssert.assertThat(processInstanceEvent).hasVariable("a", 1);
 
-      verify(camundaDataSource, times(2)).getVariablesByProcessInstanceKey(PROCESS_INSTANCE_KEY);
+      verify(camundaDataSource, times(2)).findVariablesByProcessInstanceKey(PROCESS_INSTANCE_KEY);
     }
 
     @Test
@@ -216,7 +216,7 @@ public class VariableAssertTest {
       final Variable variableValue1 = newVariable("a", "1");
       final Variable variableValue2 = newVariable("a", "2");
 
-      when(camundaDataSource.getVariablesByProcessInstanceKey(PROCESS_INSTANCE_KEY))
+      when(camundaDataSource.findVariablesByProcessInstanceKey(PROCESS_INSTANCE_KEY))
           .thenReturn(Collections.singletonList(variableValue1))
           .thenReturn(Collections.singletonList(variableValue2));
 
@@ -226,7 +226,7 @@ public class VariableAssertTest {
       // then
       CamundaAssert.assertThat(processInstanceEvent).hasVariable("a", 2);
 
-      verify(camundaDataSource, times(2)).getVariablesByProcessInstanceKey(PROCESS_INSTANCE_KEY);
+      verify(camundaDataSource, times(2)).findVariablesByProcessInstanceKey(PROCESS_INSTANCE_KEY);
     }
 
     @Test
@@ -235,7 +235,7 @@ public class VariableAssertTest {
       final Variable variableA = newVariable("a", "1");
       final Variable variableB = newVariable("b", "2");
 
-      when(camundaDataSource.getVariablesByProcessInstanceKey(PROCESS_INSTANCE_KEY))
+      when(camundaDataSource.findVariablesByProcessInstanceKey(PROCESS_INSTANCE_KEY))
           .thenReturn(Arrays.asList(variableA, variableB));
 
       // when
@@ -255,7 +255,7 @@ public class VariableAssertTest {
       final Variable variableA = newVariable("a", "1");
       final Variable variableB = newVariable("b", "2");
 
-      when(camundaDataSource.getVariablesByProcessInstanceKey(PROCESS_INSTANCE_KEY))
+      when(camundaDataSource.findVariablesByProcessInstanceKey(PROCESS_INSTANCE_KEY))
           .thenReturn(Arrays.asList(variableA, variableB));
 
       // when
@@ -275,7 +275,7 @@ public class VariableAssertTest {
       // given
       final Variable variableA = newVariable("a", variableValue);
 
-      when(camundaDataSource.getVariablesByProcessInstanceKey(PROCESS_INSTANCE_KEY))
+      when(camundaDataSource.findVariablesByProcessInstanceKey(PROCESS_INSTANCE_KEY))
           .thenReturn(Collections.singletonList(variableA));
 
       // when
@@ -314,7 +314,7 @@ public class VariableAssertTest {
       final Variable variableA = newVariable("a", variableValue);
       final Variable variableB = newVariable("b", "100");
 
-      when(camundaDataSource.getVariablesByProcessInstanceKey(PROCESS_INSTANCE_KEY))
+      when(camundaDataSource.findVariablesByProcessInstanceKey(PROCESS_INSTANCE_KEY))
           .thenReturn(Arrays.asList(variableA, variableB));
 
       // when
@@ -333,7 +333,7 @@ public class VariableAssertTest {
       final Variable variableA = newVariable("a", "1");
       final Variable variableB = newVariable("b", "2");
 
-      when(camundaDataSource.getVariablesByProcessInstanceKey(PROCESS_INSTANCE_KEY))
+      when(camundaDataSource.findVariablesByProcessInstanceKey(PROCESS_INSTANCE_KEY))
           .thenReturn(Collections.singletonList(variableA))
           .thenReturn(Arrays.asList(variableA, variableB));
 
@@ -346,7 +346,7 @@ public class VariableAssertTest {
       expectedVariables.put("b", 2);
       CamundaAssert.assertThat(processInstanceEvent).hasVariables(expectedVariables);
 
-      verify(camundaDataSource, times(2)).getVariablesByProcessInstanceKey(PROCESS_INSTANCE_KEY);
+      verify(camundaDataSource, times(2)).findVariablesByProcessInstanceKey(PROCESS_INSTANCE_KEY);
     }
 
     @Test
@@ -356,7 +356,7 @@ public class VariableAssertTest {
       final Variable variableValue2 = newVariable("a", "2");
       final Variable variableB = newVariable("b", "2");
 
-      when(camundaDataSource.getVariablesByProcessInstanceKey(PROCESS_INSTANCE_KEY))
+      when(camundaDataSource.findVariablesByProcessInstanceKey(PROCESS_INSTANCE_KEY))
           .thenReturn(Arrays.asList(variableValue1, variableB))
           .thenReturn(Arrays.asList(variableValue2, variableB));
 
@@ -369,7 +369,7 @@ public class VariableAssertTest {
       expectedVariables.put("b", 2);
       CamundaAssert.assertThat(processInstanceEvent).hasVariables(expectedVariables);
 
-      verify(camundaDataSource, times(2)).getVariablesByProcessInstanceKey(PROCESS_INSTANCE_KEY);
+      verify(camundaDataSource, times(2)).findVariablesByProcessInstanceKey(PROCESS_INSTANCE_KEY);
     }
 
     @Test
@@ -378,7 +378,7 @@ public class VariableAssertTest {
       final Variable variableA = newVariable("a", "1");
       final Variable variableB = newVariable("b", "2");
 
-      when(camundaDataSource.getVariablesByProcessInstanceKey(PROCESS_INSTANCE_KEY))
+      when(camundaDataSource.findVariablesByProcessInstanceKey(PROCESS_INSTANCE_KEY))
           .thenReturn(Arrays.asList(variableA, variableB));
 
       // when
@@ -403,7 +403,7 @@ public class VariableAssertTest {
       final Variable variableB = newVariable("b", "2");
       final Variable variableC = newVariable("c", "3");
 
-      when(camundaDataSource.getVariablesByProcessInstanceKey(PROCESS_INSTANCE_KEY))
+      when(camundaDataSource.findVariablesByProcessInstanceKey(PROCESS_INSTANCE_KEY))
           .thenReturn(Arrays.asList(variableA, variableB, variableC));
 
       // when
@@ -427,7 +427,7 @@ public class VariableAssertTest {
       // given
       final Variable variableA = newVariable("a", variableValue);
 
-      when(camundaDataSource.getVariablesByProcessInstanceKey(PROCESS_INSTANCE_KEY))
+      when(camundaDataSource.findVariablesByProcessInstanceKey(PROCESS_INSTANCE_KEY))
           .thenReturn(Collections.singletonList(variableA));
 
       // when

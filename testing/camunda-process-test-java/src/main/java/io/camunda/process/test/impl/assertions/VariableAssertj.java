@@ -172,7 +172,7 @@ public class VariableAssertj extends AbstractAssert<VariableAssertj, String> {
   }
 
   private Map<String, String> getProcessInstanceVariables(final long processInstanceKey) {
-    return dataSource.getVariablesByProcessInstanceKey(processInstanceKey).stream()
+    return dataSource.findVariablesByProcessInstanceKey(processInstanceKey).stream()
         .collect(Collectors.toMap(Variable::getName, Variable::getValue));
   }
 

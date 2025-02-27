@@ -36,7 +36,7 @@ public class CamundaDataSource {
     this.client = client;
   }
 
-  public List<FlowNodeInstance> getFlowNodeInstancesByProcessInstanceKey(
+  public List<FlowNodeInstance> findFlowNodeInstancesByProcessInstanceKey(
       final long processInstanceKey) {
     return findFlowNodeInstances(filter -> filter.processInstanceKey(processInstanceKey));
   }
@@ -53,7 +53,7 @@ public class CamundaDataSource {
         .items();
   }
 
-  public List<Variable> getVariablesByProcessInstanceKey(final long processInstanceKey) {
+  public List<Variable> findVariablesByProcessInstanceKey(final long processInstanceKey) {
     return client
         .newVariableQuery()
         .filter(filter -> filter.processInstanceKey(processInstanceKey))
@@ -78,7 +78,7 @@ public class CamundaDataSource {
         .items();
   }
 
-  public List<Incident> getIncidentsByProcessInstanceKey(final long processInstanceKey) {
+  public List<Incident> findIncidentsByProcessInstanceKey(final long processInstanceKey) {
     return client
         .newIncidentQuery()
         .filter(filter -> filter.processInstanceKey(processInstanceKey))
