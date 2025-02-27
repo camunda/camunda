@@ -7,7 +7,7 @@
  */
 
 import {get, del, post} from 'request';
-import { getFullURL } from '../../modules/api';
+import {getFullURL} from '../../modules/api';
 
 export async function shareDashboard(dashboardId) {
   const body = {
@@ -36,7 +36,9 @@ export async function revokeDashboardSharing(id) {
 
 export async function isAuthorizedToShareDashboard(dashboardId) {
   try {
-    const response = await get(getFullURL(`api/share/dashboard/${dashboardId}/isAuthorizedToShare`));
+    const response = await get(
+      getFullURL(`api/share/dashboard/${dashboardId}/isAuthorizedToShare`)
+    );
     return response.status === 200;
   } catch (_error) {
     return false;

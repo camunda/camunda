@@ -208,7 +208,7 @@ public final class DbMessageState implements MutableMessageState {
             processInstanceKey,
             correlationKey);
 
-    bufferedMessagesMetrics = new BufferedMessagesMetrics(partitionId);
+    bufferedMessagesMetrics = new BufferedMessagesMetrics(zeebeDb.getMeterRegistry());
   }
 
   @Override

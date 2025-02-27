@@ -8,6 +8,9 @@
 package io.camunda.it.utils;
 
 import io.camunda.client.CamundaClient;
+import io.camunda.qa.util.auth.Authenticated;
+import io.camunda.qa.util.auth.User;
+import io.camunda.qa.util.auth.UserDefinition;
 import io.camunda.qa.util.cluster.TestSimpleCamundaApplication;
 import io.camunda.webapps.schema.descriptors.IndexDescriptors;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneApplication;
@@ -74,6 +77,56 @@ import org.testcontainers.elasticsearch.ElasticsearchContainer;
  *    new CamundaMultiDBExtension(new TestStandaloneBroker());
  * }</pre>
  *
+ * This is for example necessary for authentication tests.
+ *
+ * <b>We need to make sure to tag the
+ * corresponding tests as @Tag("multi-db-test"), otherwise tests are not executed in multi db fashion.</b>
+ * This is per default done by the {@link MultiDbTest} annotation.
+ *
+ *  <pre>{@code
+ *  @Tag("multi-db-test")
+ *  final class MyAuthMultiDbTest {
+ *
+ *    static final TestStandaloneBroker BROKER =
+ *        new TestStandaloneBroker().withBasicAuth().withAuthorizationsEnabled();
+ *
+ *    @RegisterExtension
+ *    static final CamundaMultiDBExtension EXTENSION = new CamundaMultiDBExtension(BROKER);
+ *
+ *    private static final String ADMIN = "admin";
+ *
+ *    @UserDefinition
+ *    private static final User ADMIN_USER =
+ *      new User(ADMIN,
+ *               "password",
+ *               List.of(new Permissions(AUTHORIZATION, PermissionTypeEnum.READ, List.of("*"))));
+ *
+ *    @Test
+ *    void shouldMakeUseOfClient(@Authenticated(ADMIN) final CamundaClient adminClient) {
+ *      // given
+ *      // ... set up
+ *
+ *      // when
+ *      topology = adminClient.newTopologyRequest().send().join();
+ *
+ *      // then
+ *      assertThat(topology.getClusterSize()).isEqualTo(1);
+ *    }
+ *  }</pre>
+ *
+ *  As we can see there are further possibilities with the extension, like defining users with
+ *  annotated {@link UserDefinition}. This allows the extension to pick up the users, and create
+ *  them on client usage. Furthermore, authenticated clients are supported with this as well.
+ *
+ * The following code will inject a client, as parameter, that is authenticated with the ADMIN
+ * user.
+ * <pre>{@code
+ * @Test
+ * void shouldMakeUseOfClient(@Authenticated(ADMIN) final CamundaClient adminClient) {
+ * </pre>
+ *
+ *
+ *
  *<p>The extension will take care of the life cycle of the {@link TestStandaloneApplication}, which
  * means configuring the detected database (this includes Operate, Tasklist, Broker properties and
  * exporter), starting the application, and tearing down at the end.
@@ -97,6 +150,7 @@ public class CamundaMultiDBExtension
   private String testPrefix;
   private final MultiDbConfigurator multiDbConfigurator;
   private MultiDbSetupHelper setupHelper = new NoopDBSetupHelper();
+  private CamundaClientTestFactory authenticatedClientFactory;
 
   public CamundaMultiDBExtension() {
     this(new TestStandaloneBroker());
@@ -160,7 +214,15 @@ public class CamundaMultiDBExtension
         .pollInterval(Duration.ofMillis(200))
         .until(() -> setupHelper.validateSchemaCreation(testPrefix));
 
+    authenticatedClientFactory = new CamundaClientTestFactory();
+    // we support only static fields for now - to make sure test setups are build in a way
+    // such they are reusable and tests methods are not relying on order, etc.
+    // We want to run tests in a efficient manner, and reduce setup time
     injectFields(testClass, null, ModifierSupport::isStatic);
+    final List<User> users = findUsers(testClass, null, ModifierSupport::isStatic);
+    if (!users.isEmpty()) {
+      authenticatedClientFactory.withUsers(users);
+    }
   }
 
   private ElasticsearchContainer setupElasticsearch() {
@@ -171,6 +233,27 @@ public class CamundaMultiDBExtension
     return elasticsearchContainer;
   }
 
+  private List<User> findUsers(
+      final Class<?> testClass, final Object testInstance, Predicate<Field> predicate) {
+    final var users = new ArrayList<User>();
+    predicate =
+        predicate.and(
+            field ->
+                field.getType() == User.class && field.getAnnotation(UserDefinition.class) != null);
+    for (final Field field : testClass.getDeclaredFields()) {
+      try {
+        if (predicate.test(field)) {
+          field.setAccessible(true);
+          final var user = (User) field.get(testInstance);
+          users.add(user);
+        }
+      } catch (final Exception ex) {
+        throw new RuntimeException(ex);
+      }
+    }
+    return users;
+  }
+
   private void injectFields(
       final Class<?> testClass, final Object testInstance, Predicate<Field> predicate) {
     predicate = predicate.and(field -> field.getType() == CamundaClient.class);
@@ -178,7 +261,7 @@ public class CamundaMultiDBExtension
       try {
         if (predicate.test(field)) {
           field.setAccessible(true);
-          field.set(testInstance, createCamundaClient());
+          field.set(testInstance, createCamundaClient(field.getAnnotation(Authenticated.class)));
         }
       } catch (final Exception ex) {
         throw new RuntimeException(ex);
@@ -202,11 +285,12 @@ public class CamundaMultiDBExtension
   public Object resolveParameter(
       final ParameterContext parameterContext, final ExtensionContext extensionContext)
       throws ParameterResolutionException {
-    return createCamundaClient();
+    return createCamundaClient(parameterContext.getParameter().getAnnotation(Authenticated.class));
   }
 
-  private CamundaClient createCamundaClient() {
-    final CamundaClient camundaClient = testApplication.newClientBuilder().build();
+  private CamundaClient createCamundaClient(final Authenticated authenticated) {
+    final CamundaClient camundaClient =
+        authenticatedClientFactory.createCamundaClient(testApplication, authenticated);
     closeables.add(camundaClient);
     return camundaClient;
   }

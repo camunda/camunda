@@ -13,6 +13,7 @@ import io.camunda.zeebe.engine.processing.ExcludeAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.DistributedTypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.authorization.PersistedMapping;
@@ -54,6 +55,7 @@ public final class IdentitySetupInitializeProcessor
   private final CommandDistributionBehavior commandDistributionBehavior;
   private final MappingState mappingState;
   private final TypedRejectionWriter rejectionWriter;
+  private final TypedCommandWriter commandWriter;
 
   public IdentitySetupInitializeProcessor(
       final ProcessingState processingState,
@@ -68,6 +70,7 @@ public final class IdentitySetupInitializeProcessor
     rejectionWriter = writers.rejection();
     this.keyGenerator = keyGenerator;
     this.commandDistributionBehavior = commandDistributionBehavior;
+    commandWriter = writers.command();
   }
 
   @Override
@@ -108,6 +111,7 @@ public final class IdentitySetupInitializeProcessor
               final long roleKey = keyGenerator.nextKey();
               role.setRoleKey(roleKey);
               createRole(role);
+              addAllPermissions(role.getRoleKey());
             });
 
     record.getUsers().stream()
@@ -204,7 +208,6 @@ public final class IdentitySetupInitializeProcessor
 
   private void createRole(final RoleRecord role) {
     stateWriter.appendFollowUpEvent(role.getRoleKey(), RoleIntent.CREATED, role);
-    addAllPermissions(role.getRoleKey());
   }
 
   private void createUser(final UserRecord user, final long roleKey) {
@@ -243,17 +246,15 @@ public final class IdentitySetupInitializeProcessor
       }
 
       // TODO: refactor when Roles use String IDs as unique identifiers
-      final var authorizationKey = keyGenerator.nextKey();
       final var record =
           new AuthorizationRecord()
-              .setAuthorizationKey(authorizationKey)
               .setOwnerId(String.valueOf(roleKey))
               .setOwnerType(AuthorizationOwnerType.ROLE)
               .setResourceType(resourceType)
               .setResourceId(WILDCARD_PERMISSION)
               .setPermissionTypes(resourceType.getSupportedPermissionTypes());
 
-      stateWriter.appendFollowUpEvent(authorizationKey, AuthorizationIntent.CREATED, record);
+      commandWriter.appendFollowUpCommand(roleKey, AuthorizationIntent.CREATE, record);
     }
   }
 }

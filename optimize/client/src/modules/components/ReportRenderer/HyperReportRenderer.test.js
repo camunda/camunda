@@ -31,7 +31,6 @@ jest.mock('services', () => {
 });
 
 const userTaskAssigneeReport = {
-  reportType: 'process',
   data: {
     processDefinitionKey: 'aKey',
     processDefinitionVersion: '1',
