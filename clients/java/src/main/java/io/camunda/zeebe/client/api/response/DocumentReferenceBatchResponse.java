@@ -39,7 +39,7 @@ public interface DocumentReferenceBatchResponse {
     /**
      * @return the filename of the failed document
      */
-    String getFilename();
+    String getFileName();
 
     /**
      * @return the failure description
