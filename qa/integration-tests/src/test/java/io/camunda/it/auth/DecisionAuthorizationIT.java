@@ -50,7 +50,7 @@ class DecisionAuthorizationIT {
   private static final String DECISION_DEFINITION_ID_2 = "test_qa";
   private static final String DECISION_REQUIREMENTS_ID_2 = "definitions_test";
   private static final String ADMIN = "admin";
-  private static final String RESTRICTED = "restricted-user";
+  private static final String RESTRICTED = "restrictedUser";
 
   @UserDefinition
   private static final User ADMIN_USER =

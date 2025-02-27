@@ -63,12 +63,14 @@ import io.camunda.zeebe.protocol.record.value.deployment.DecisionRecordValue;
 import io.camunda.zeebe.protocol.record.value.deployment.DecisionRequirementsRecordValue;
 import io.camunda.zeebe.protocol.record.value.deployment.Form;
 import io.camunda.zeebe.protocol.record.value.deployment.Process;
+import io.micrometer.core.instrument.MeterRegistry;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.TestPropertySource;
@@ -95,7 +97,11 @@ class RdbmsExporterIT {
     exporter = new RdbmsExporterWrapper(rdbmsService);
     exporter.configure(
         new ExporterContext(
-            null, new ExporterConfiguration("foo", Map.of("maxQueueSize", 0)), 1, null, null));
+            null,
+            new ExporterConfiguration("foo", Map.of("maxQueueSize", 0)),
+            1,
+            Mockito.mock(MeterRegistry.class, Mockito.RETURNS_DEEP_STUBS),
+            null));
     exporter.open(controller);
   }
 

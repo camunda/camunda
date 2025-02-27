@@ -44,7 +44,7 @@ class ProcessAuthorizationIT {
   static final CamundaMultiDBExtension EXTENSION = new CamundaMultiDBExtension(BROKER);
 
   private static final String ADMIN = "admin";
-  private static final String RESTRICTED = "restricted-user";
+  private static final String RESTRICTED = "restrictedUser";
 
   @UserDefinition
   private static final User ADMIN_USER =

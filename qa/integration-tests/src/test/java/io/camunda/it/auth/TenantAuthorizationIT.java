@@ -57,8 +57,8 @@ class TenantAuthorizationIT {
   static final CamundaMultiDBExtension EXTENSION = new CamundaMultiDBExtension(BROKER);
 
   private static final String ADMIN = "admin";
-  private static final String RESTRICTED = "restricted-user";
-  private static final String UNAUTHORIZED = "unauthorized-user";
+  private static final String RESTRICTED = "restrictedUser";
+  private static final String UNAUTHORIZED = "unauthorizedUser";
 
   @UserDefinition
   private static final User ADMIN_USER =

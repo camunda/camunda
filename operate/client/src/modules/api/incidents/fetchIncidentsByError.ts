@@ -21,6 +21,7 @@ type ProcessDto = {
 
 type IncidentByErrorDto = {
   errorMessage: string;
+  incidentErrorHashCode: number;
   instancesWithErrorCount: number;
   processes: ProcessDto[];
 };

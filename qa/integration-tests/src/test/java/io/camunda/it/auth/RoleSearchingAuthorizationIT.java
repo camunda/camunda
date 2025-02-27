@@ -52,8 +52,8 @@ class RoleSearchingAuthorizationIT {
       new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 
   private static final String ADMIN = "admin";
-  private static final String RESTRICTED = "restricted-user";
-  private static final String RESTRICTED_WITH_READ = "restricted-user-2";
+  private static final String RESTRICTED = "restrictedUser";
+  private static final String RESTRICTED_WITH_READ = "restrictedUser2";
   private static final String DEFAULT_PASSWORD = "password";
   private static final String ROLE_SEARCH_ENDPOINT = "v2/roles/search";
   private static final Duration AWAIT_TIMEOUT = Duration.ofSeconds(15);

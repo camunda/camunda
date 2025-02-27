@@ -9,6 +9,7 @@ package io.camunda.operate.webapp.rest.dto.incidents;
 
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import java.util.Comparator;
+import java.util.Objects;
 import java.util.Set;
 import java.util.TreeSet;
 
@@ -19,6 +20,8 @@ public class IncidentsByErrorMsgStatisticsDto {
 
   private String errorMessage;
 
+  private Integer incidentErrorHashCode;
+
   private long instancesWithErrorCount;
 
   @JsonDeserialize(as = TreeSet.class) // for tests
@@ -26,8 +29,9 @@ public class IncidentsByErrorMsgStatisticsDto {
 
   public IncidentsByErrorMsgStatisticsDto() {}
 
-  public IncidentsByErrorMsgStatisticsDto(String errorMessage) {
+  public IncidentsByErrorMsgStatisticsDto(String errorMessage, Integer incidentErrorHashCode) {
     this.errorMessage = errorMessage;
+    this.incidentErrorHashCode = incidentErrorHashCode;
   }
 
   public String getErrorMessage() {
@@ -36,6 +40,10 @@ public class IncidentsByErrorMsgStatisticsDto {
 
   public void setErrorMessage(String errorMessage) {
     this.errorMessage = errorMessage;
+  }
+
+  public Integer getIncidentErrorHashCode() {
+    return incidentErrorHashCode;
   }
 
   public long getInstancesWithErrorCount() {
@@ -59,14 +67,6 @@ public class IncidentsByErrorMsgStatisticsDto {
   }
 
   @Override
-  public int hashCode() {
-    int result = errorMessage != null ? errorMessage.hashCode() : 0;
-    result = 31 * result + (int) (instancesWithErrorCount ^ (instancesWithErrorCount >>> 32));
-    result = 31 * result + (processes != null ? processes.hashCode() : 0);
-    return result;
-  }
-
-  @Override
   public boolean equals(Object o) {
     if (this == o) {
       return true;
@@ -74,18 +74,16 @@ public class IncidentsByErrorMsgStatisticsDto {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-
     final IncidentsByErrorMsgStatisticsDto that = (IncidentsByErrorMsgStatisticsDto) o;
+    return instancesWithErrorCount == that.instancesWithErrorCount
+        && Objects.equals(errorMessage, that.errorMessage)
+        && Objects.equals(incidentErrorHashCode, that.incidentErrorHashCode)
+        && Objects.equals(processes, that.processes);
+  }
 
-    if (instancesWithErrorCount != that.instancesWithErrorCount) {
-      return false;
-    }
-    if (errorMessage != null
-        ? !errorMessage.equals(that.errorMessage)
-        : that.errorMessage != null) {
-      return false;
-    }
-    return processes != null ? processes.equals(that.processes) : that.processes == null;
+  @Override
+  public int hashCode() {
+    return Objects.hash(errorMessage, incidentErrorHashCode, instancesWithErrorCount, processes);
   }
 
   public static class IncidentsByErrorMsgStatisticsDtoComparator

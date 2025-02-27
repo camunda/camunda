@@ -59,6 +59,7 @@ type RequestFilters = {
   endDateAfter?: string;
   endDateBefore?: string;
   errorMessage?: string;
+  incidentErrorHashCode?: number;
   ids?: string[];
   parentInstanceId?: string;
   startDateAfter?: string;
@@ -256,6 +257,10 @@ function getProcessInstancesRequestFilters(): RequestFilters {
 
         if (key === 'retriesLeft' && value === true) {
           return {...accumulator, retriesLeft: true};
+        }
+      } else if (typeof value === 'number') {
+        if (key === 'incidentErrorHashCode') {
+          return {...accumulator, incidentErrorHashCode: value};
         }
       } else {
         if (key === 'errorMessage') {

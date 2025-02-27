@@ -17,9 +17,9 @@ import io.camunda.zeebe.protocol.record.value.EntityType;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
+import io.camunda.zeebe.test.util.Strings;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import java.time.Duration;
-import java.util.UUID;
 import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -27,7 +27,7 @@ import org.junit.jupiter.api.Test;
 @ZeebeIntegration
 class AssignUserToTenantTest {
 
-  private static final String TENANT_ID = "tenant-id";
+  private static final String TENANT_ID = "tenantId";
   private static final String USERNAME = "username";
 
   @TestZeebe
@@ -36,34 +36,29 @@ class AssignUserToTenantTest {
 
   @AutoClose private CamundaClient client;
 
-  private long tenantKey;
-  private long userKey;
-
   @BeforeEach
   void initClientAndInstances() {
     client = zeebe.newClientBuilder().defaultRequestTimeout(Duration.ofSeconds(15)).build();
 
     // Create Tenant
-    tenantKey =
-        client
-            .newCreateTenantCommand()
-            .tenantId(TENANT_ID)
-            .name("Tenant Name")
-            .send()
-            .join()
-            .getTenantKey();
+    client
+        .newCreateTenantCommand()
+        .tenantId(TENANT_ID)
+        .name("Tenant Name")
+        .send()
+        .join()
+        .getTenantKey();
 
     // Create User
-    userKey =
-        client
-            .newUserCreateCommand()
-            .username(USERNAME)
-            .name("name")
-            .email("email@example.com")
-            .password("password")
-            .send()
-            .join()
-            .getUserKey();
+    client
+        .newUserCreateCommand()
+        .username(USERNAME)
+        .name("name")
+        .email("email@example.com")
+        .password("password")
+        .send()
+        .join()
+        .getUserKey();
   }
 
   @Test
@@ -85,7 +80,7 @@ class AssignUserToTenantTest {
   @Test
   void shouldRejectAssignIfTenantDoesNotExist() {
     // Given
-    final var invalidTenantId = UUID.randomUUID().toString();
+    final var invalidTenantId = Strings.newRandomValidIdentityId();
 
     // When / Then
     assertThatThrownBy(
@@ -105,7 +100,7 @@ class AssignUserToTenantTest {
   @Test
   void shouldRejectAssignIfUserDoesNotExist() {
     // Given
-    final var invalidUserName = UUID.randomUUID().toString();
+    final var invalidUserName = Strings.newRandomValidUsername();
 
     // When / Then
     assertThatThrownBy(
