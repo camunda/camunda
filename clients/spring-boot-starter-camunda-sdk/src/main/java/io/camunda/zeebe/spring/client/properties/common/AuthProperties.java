@@ -22,6 +22,15 @@ public class AuthProperties {
   private String clientSecret;
 
   private String issuer;
+  private String credentialsCachePath;
+
+  public String getCredentialsCachePath() {
+    return credentialsCachePath;
+  }
+
+  public void setCredentialsCachePath(final String credentialsCachePath) {
+    this.credentialsCachePath = credentialsCachePath;
+  }
 
   public String getIssuer() {
     return issuer;
