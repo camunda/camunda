@@ -8,7 +8,7 @@
 
 import {get, put} from 'request';
 import {formatters} from 'services';
-import { getFullURL } from '../../modules/api';
+import {getFullURL} from '../../modules/api';
 
 export async function loadProcesses(sortBy, sortOrder) {
   const params = {};

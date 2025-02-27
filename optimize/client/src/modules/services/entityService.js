@@ -10,7 +10,7 @@ import {get, post, put} from 'request';
 import {track} from 'tracking';
 import {createEventName} from './entityService.tsx';
 export {deleteEntity} from './entityService.tsx';
-import { getFullURL } from '../api.ts';
+import {getFullURL} from '../api.ts';
 
 export async function loadEntity(type, id, query) {
   const response = await get(getFullURL(`api/${type}/` + id), query);

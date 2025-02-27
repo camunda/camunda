@@ -7,7 +7,7 @@
  */
 
 import {get, post} from 'request';
-import { getFullURL } from '../../modules/api';
+import {getFullURL} from '../../modules/api';
 
 export async function evaluateEntity(id, type, query = {}) {
   const request = type === 'dashboard' ? get : post;

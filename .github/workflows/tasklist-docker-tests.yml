@@ -5,6 +5,7 @@ on:
     branches:
       - 'main'
       - 'stable/**'
+      - 'release**'
   pull_request:
 
 # Limit workflow to 1 concurrent run per ref (branch): new commit -> old runs are canceled to save costs

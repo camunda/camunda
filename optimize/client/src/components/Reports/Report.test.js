@@ -44,7 +44,6 @@ const report = {
   description: 'description',
   lastModifier: 'lastModifier',
   lastModified: '2017-11-11T11:11:11.1111+0200',
-  reportType: 'process',
   data: {
     processDefinitionKey: null,
     configuration: {},

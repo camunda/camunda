@@ -9,7 +9,7 @@
 import {User} from 'components';
 import {post, get} from 'request';
 import {Definition} from 'types';
-import { getFullURL } from '../../../api';
+import {getFullURL} from '../../../api';
 
 export async function loadUsersByDefinition(
   type: string,

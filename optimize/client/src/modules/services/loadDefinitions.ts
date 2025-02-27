@@ -7,7 +7,7 @@
  */
 
 import {get} from 'request';
-import { getFullURL } from '../api';
+import {getFullURL} from '../api';
 
 export type Definition = {
   key: string;

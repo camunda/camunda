@@ -12,7 +12,7 @@ import {get} from 'request';
 import {withErrorHandling} from 'HOC';
 import {addNotification} from 'notifications';
 import {t} from 'translation';
-import { getFullURL } from '../modules/api';
+import {getFullURL} from '../modules/api';
 
 export function Logout({mightFail, history}) {
   useEffect(() => {
