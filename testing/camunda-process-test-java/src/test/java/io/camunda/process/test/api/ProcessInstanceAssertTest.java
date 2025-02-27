@@ -585,7 +585,7 @@ public class ProcessInstanceAssertTest {
     @Test
     void shouldAssertStateAndElements() {
       // given
-      when(camundaDataSource.getFlowNodeInstancesByProcessInstanceKey(PROCESS_INSTANCE_KEY))
+      when(camundaDataSource.findFlowNodeInstances(any()))
           .thenReturn(Collections.singletonList(activeFlowNodeInstance));
 
       // when
@@ -611,7 +611,7 @@ public class ProcessInstanceAssertTest {
     @Test
     void shouldAssertElementsAndState() {
       // given
-      when(camundaDataSource.getFlowNodeInstancesByProcessInstanceKey(PROCESS_INSTANCE_KEY))
+      when(camundaDataSource.findFlowNodeInstances(any()))
           .thenReturn(Collections.singletonList(activeFlowNodeInstance));
 
       // when
@@ -637,7 +637,7 @@ public class ProcessInstanceAssertTest {
     @Test
     void shouldAssertElementsAndVariables() {
       // given
-      when(camundaDataSource.getFlowNodeInstancesByProcessInstanceKey(PROCESS_INSTANCE_KEY))
+      when(camundaDataSource.findFlowNodeInstances(any()))
           .thenReturn(Collections.singletonList(activeFlowNodeInstance));
 
       when(camundaDataSource.getVariablesByProcessInstanceKey(PROCESS_INSTANCE_KEY))
@@ -653,7 +653,7 @@ public class ProcessInstanceAssertTest {
     @Test
     void shouldAssertVariablesAndElements() {
       // given
-      when(camundaDataSource.getFlowNodeInstancesByProcessInstanceKey(PROCESS_INSTANCE_KEY))
+      when(camundaDataSource.findFlowNodeInstances(any()))
           .thenReturn(Collections.singletonList(activeFlowNodeInstance));
 
       when(camundaDataSource.getVariablesByProcessInstanceKey(PROCESS_INSTANCE_KEY))
