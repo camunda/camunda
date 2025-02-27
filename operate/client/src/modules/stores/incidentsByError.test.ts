@@ -15,6 +15,7 @@ describe('stores/incidentsByError', () => {
     {
       errorMessage:
         "failed to evaluate expression 'clientId': no variable found for name 'clientId'",
+      incidentErrorHashCode: 1111,
       instancesWithErrorCount: 121,
       processes: [
         {
@@ -44,6 +45,7 @@ describe('stores/incidentsByError', () => {
     {
       errorMessage:
         'Expected at least one condition to evaluate to true, or to have a default flow',
+      incidentErrorHashCode: 1112,
       instancesWithErrorCount: 101,
       processes: [
         {
@@ -144,6 +146,7 @@ describe('stores/incidentsByError', () => {
       ...mockIncidentsByError,
       {
         errorMessage: 'some other error',
+        incidentErrorHashCode: 1113,
         instancesWithErrorCount: 100,
         processes: [],
       },

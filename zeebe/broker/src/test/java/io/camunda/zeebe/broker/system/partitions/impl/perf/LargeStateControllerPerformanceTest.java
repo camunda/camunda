@@ -91,7 +91,11 @@ public class LargeStateControllerPerformanceTest {
             context.snapshotStore());
 
     // when
-    try (final var db = controller.recover().join()) {
+    try (controller) {
+      // the controller closing will close the DB we just opened
+      //noinspection resource
+      final var db = controller.recover().join();
+
       //noinspection unchecked
       return db.getProperty("rocksdb.estimate-live-data-size");
     }

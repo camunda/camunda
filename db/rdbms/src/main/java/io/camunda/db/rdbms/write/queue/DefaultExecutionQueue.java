@@ -15,6 +15,7 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 import org.apache.ibatis.executor.BatchResult;
 import org.apache.ibatis.session.ExecutorType;
@@ -26,6 +27,14 @@ import org.slf4j.LoggerFactory;
 public class DefaultExecutionQueue implements ExecutionQueue {
 
   private static final Logger LOG = LoggerFactory.getLogger(DefaultExecutionQueue.class);
+  private static final Set<String> IGNORE_EMPTY_UPDATES =
+      Set.of(
+          "io.camunda.db.rdbms.sql.UserTaskMapper.updateHistoryCleanupDate",
+          "io.camunda.db.rdbms.sql.UserTaskMapper.deleteCandidateUsers",
+          "io.camunda.db.rdbms.sql.UserTaskMapper.deleteCandidateGroups",
+          "io.camunda.db.rdbms.sql.IncidentMapper.updateHistoryCleanupDate",
+          "io.camunda.db.rdbms.sql.DecisionInstanceMapper.updateHistoryCleanupDate",
+          "io.camunda.db.rdbms.sql.VariableMapper.updateHistoryCleanupDate");
 
   private final SqlSessionFactory sessionFactory;
   private final List<PreFlushListener> preFlushListeners = new ArrayList<>();
@@ -155,7 +164,8 @@ public class DefaultExecutionQueue implements ExecutionQueue {
 
       final var batchResult = session.flushStatements();
       for (final BatchResult singleBatchResult : batchResult) {
-        if (Arrays.stream(singleBatchResult.getUpdateCounts()).anyMatch(i -> i == 0)) {
+        if (Arrays.stream(singleBatchResult.getUpdateCounts()).anyMatch(i -> i == 0)
+            && !IGNORE_EMPTY_UPDATES.contains(singleBatchResult.getMappedStatement().getId())) {
           LOG.error(
               "[RDBMS ExecutionQueue, Partition {}] Some statements with ID {} were not executed successfully",
               partitionId,

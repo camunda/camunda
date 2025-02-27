@@ -301,6 +301,7 @@ export const createIncidentByError = (
 ): IncidentByErrorDto => {
   return {
     errorMessage: "JSON path '$.paid' has no result.",
+    incidentErrorHashCode: 234254,
     instancesWithErrorCount: 36,
     processes: [
       createProcess({

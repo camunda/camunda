@@ -26,7 +26,6 @@ import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
 import io.camunda.zeebe.test.util.Strings;
 import io.camunda.zeebe.test.util.testcontainers.TestSearchContainers;
 import java.util.List;
-import java.util.UUID;
 import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -86,7 +85,7 @@ public class BasicAuthOverGrpcIT {
   void shouldBeAuthorizedWithUserThatIsGrantedPermissions() {
     // given
     final var processId = Strings.newRandomValidBpmnId();
-    final var username = UUID.randomUUID().toString();
+    final var username = Strings.newRandomValidUsername();
     final var password = "password";
     authUtil.createUserWithPermissions(
         username,
@@ -113,7 +112,7 @@ public class BasicAuthOverGrpcIT {
   void shouldBeUnauthorizedWithUserThatIsNotGrantedPermissions() {
     // given
     final var processId = Strings.newRandomValidBpmnId();
-    final var username = UUID.randomUUID().toString();
+    final var username = Strings.newRandomValidUsername();
     final var password = "password";
     authUtil.createUser(username, password);
 

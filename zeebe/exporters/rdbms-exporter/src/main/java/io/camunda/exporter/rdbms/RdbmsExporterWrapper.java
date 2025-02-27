@@ -154,16 +154,21 @@ public class RdbmsExporterWrapper implements Exporter {
     if (partitionId == PROCESS_DEFINITION_PARTITION) {
       builder.withHandler(
           ValueType.PROCESS, new ProcessExportHandler(rdbmsWriter.getProcessDefinitionWriter()));
+      builder.withHandler(
+          ValueType.MAPPING, new MappingExportHandler(rdbmsWriter.getMappingWriter()));
+      builder.withHandler(ValueType.TENANT, new TenantExportHandler(rdbmsWriter.getTenantWriter()));
+      builder.withHandler(ValueType.ROLE, new RoleExportHandler(rdbmsWriter.getRoleWriter()));
+      builder.withHandler(ValueType.USER, new UserExportHandler(rdbmsWriter.getUserWriter()));
+      builder.withHandler(
+          ValueType.AUTHORIZATION,
+          new AuthorizationExportHandler(rdbmsWriter.getAuthorizationWriter()));
+      builder.withHandler(
+          ValueType.DECISION,
+          new DecisionDefinitionExportHandler(rdbmsWriter.getDecisionDefinitionWriter()));
+      builder.withHandler(
+          ValueType.DECISION_REQUIREMENTS,
+          new DecisionRequirementsExportHandler(rdbmsWriter.getDecisionRequirementsWriter()));
     }
-    builder.withHandler(
-        ValueType.AUTHORIZATION,
-        new AuthorizationExportHandler(rdbmsWriter.getAuthorizationWriter()));
-    builder.withHandler(
-        ValueType.DECISION,
-        new DecisionDefinitionExportHandler(rdbmsWriter.getDecisionDefinitionWriter()));
-    builder.withHandler(
-        ValueType.DECISION_REQUIREMENTS,
-        new DecisionRequirementsExportHandler(rdbmsWriter.getDecisionRequirementsWriter()));
     builder.withHandler(
         ValueType.DECISION_EVALUATION,
         new DecisionInstanceExportHandler(rdbmsWriter.getDecisionInstanceWriter()));
@@ -183,15 +188,10 @@ public class RdbmsExporterWrapper implements Exporter {
     builder.withHandler(
         ValueType.PROCESS_INSTANCE,
         new FlowNodeExportHandler(rdbmsWriter.getFlowNodeInstanceWriter()));
-    builder.withHandler(ValueType.TENANT, new TenantExportHandler(rdbmsWriter.getTenantWriter()));
     builder.withHandler(
         ValueType.VARIABLE, new VariableExportHandler(rdbmsWriter.getVariableWriter()));
-    builder.withHandler(ValueType.ROLE, new RoleExportHandler(rdbmsWriter.getRoleWriter()));
-    builder.withHandler(ValueType.USER, new UserExportHandler(rdbmsWriter.getUserWriter()));
     builder.withHandler(
         ValueType.USER_TASK, new UserTaskExportHandler(rdbmsWriter.getUserTaskWriter()));
     builder.withHandler(ValueType.FORM, new FormExportHandler(rdbmsWriter.getFormWriter()));
-    builder.withHandler(
-        ValueType.MAPPING, new MappingExportHandler(rdbmsWriter.getMappingWriter()));
   }
 }
