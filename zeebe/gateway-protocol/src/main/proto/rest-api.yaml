@@ -1294,7 +1294,7 @@ paths:
         "500":
           $ref: "#/components/responses/InternalServerError"
 
-  /process-definitions/{processDefinitionsKey}/form:
+  /process-definitions/{processDefinitionKey}/form:
     get:
       tags:
         - Process definition
@@ -1305,7 +1305,7 @@ paths:
 
         Note that this endpoint will only return linked forms. This endpoint does not support embedded forms.
       parameters:
-        - name: processDefinitionsKey
+        - name: processDefinitionKey
           in: path
           required: true
           description: The process key.
@@ -1604,7 +1604,7 @@ paths:
         "500":
           $ref: "#/components/responses/InternalServerError"
 
-  /flownode-instances/{flownodeInstanceKey}:
+  /flownode-instances/{flowNodeInstanceKey}:
     get:
       tags:
         - Flow node instance
@@ -1613,7 +1613,7 @@ paths:
       description: |
         Returns flow node instance as JSON.
       parameters:
-        - name: flownodeInstanceKey
+        - name: flowNodeInstanceKey
           in: path
           required: true
           description: The assigned key of the flow node instance, which acts as a unique identifier for this flow node instance.
@@ -2724,7 +2724,7 @@ paths:
 
         The caller must provide a file name for each document, which will be used in case of a multi-status response
         to identify which documents failed to upload. The file name can be provided in the `Content-Disposition` header
-        of the file part or in the `filename` field of the metadata part. If both are provided, the `filename` field
+        of the file part or in the `fileName` field of the metadata part. If both are provided, the `fileName` field
         takes precedence.
 
         In case of a multi-status response, the response body will contain a list of `DocumentBatchProblemDetail` objects,
@@ -6537,7 +6537,7 @@ components:
     DocumentCreationFailureDetail:
       type: object
       properties:
-        filename:
+        fileName:
           type: string
           description: The name of the file.
         detail:
@@ -7209,3 +7209,4 @@ components:
       type: http
       scheme: bearer
       bearerFormat: JWT
+
