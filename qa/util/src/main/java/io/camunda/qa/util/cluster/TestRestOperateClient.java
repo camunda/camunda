@@ -33,7 +33,10 @@ public class TestRestOperateClient extends AbstractTestWebappClient<TestRestOper
     this(
         endpoint,
         HttpClient.newHttpClient(),
-        createElasticsearchClient(operateProperties.getElasticsearch().getUrl()),
+        createElasticsearchClient(
+            operateProperties.getElasticsearch().getUrl(),
+            operateProperties.getElasticsearch().getUsername(),
+            operateProperties.getElasticsearch().getPassword()),
         getUserIndex(operateProperties));
   }
 

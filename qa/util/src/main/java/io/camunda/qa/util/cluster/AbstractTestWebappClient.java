@@ -113,9 +113,12 @@ public abstract class AbstractTestWebappClient<SELF extends CloseableSilently>
     }
   }
 
-  protected static ElasticsearchClient createElasticsearchClient(final String elasticsearchUrl) {
+  protected static ElasticsearchClient createElasticsearchClient(
+      final String elasticsearchUrl, final String username, final String password) {
     final var config = new ConnectConfiguration();
     config.setUrl(elasticsearchUrl);
+    config.setUsername(username);
+    config.setPassword(password);
     return new ElasticsearchConnector(config).createClient();
   }
 
