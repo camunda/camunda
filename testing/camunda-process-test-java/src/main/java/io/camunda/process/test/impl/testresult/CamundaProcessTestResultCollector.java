@@ -62,8 +62,7 @@ public class CamundaProcessTestResultCollector {
 
     final long processInstanceKey = processInstance.getProcessInstanceKey();
 
-    result.setProcessInstanceKey(processInstanceKey);
-    result.setProcessId(processInstance.getProcessDefinitionId());
+    result.setProcessInstance(processInstance);
     result.setVariables(collectVariables(processInstanceKey));
     result.setOpenIncidents(collectOpenIncidents(processInstanceKey));
     result.setActiveFlowNodeInstances(collectActiveFlowNodeInstances(processInstanceKey));

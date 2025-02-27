@@ -18,8 +18,10 @@ package io.camunda.process.test.impl.testresult;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.client.api.search.response.IncidentErrorType;
+import io.camunda.client.api.search.response.ProcessInstance;
 import io.camunda.process.test.utils.FlowNodeInstanceBuilder;
 import io.camunda.process.test.utils.IncidentBuilder;
+import io.camunda.process.test.utils.ProcessInstanceBuilder;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
@@ -278,9 +280,12 @@ public class CamundaProcessResultPrinterTest {
 
   private static ProcessInstanceResult newProcessInstance(
       final long processInstanceKey, final String processId) {
-    final ProcessInstanceResult processInstance = new ProcessInstanceResult();
-    processInstance.setProcessInstanceKey(processInstanceKey);
-    processInstance.setProcessId(processId);
-    return processInstance;
+    final ProcessInstanceResult processInstanceResult = new ProcessInstanceResult();
+    final ProcessInstance processInstance =
+        ProcessInstanceBuilder.newActiveProcessInstance(processInstanceKey)
+            .setProcessDefinitionId(processId)
+            .build();
+    processInstanceResult.setProcessInstance(processInstance);
+    return processInstanceResult;
   }
 }

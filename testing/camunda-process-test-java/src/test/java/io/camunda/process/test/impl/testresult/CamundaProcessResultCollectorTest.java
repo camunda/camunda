@@ -99,8 +99,8 @@ public class CamundaProcessResultCollectorTest {
     // then
     assertThat(result.getProcessInstanceTestResults())
         .hasSize(2)
-        .extracting(
-            ProcessInstanceResult::getProcessInstanceKey, ProcessInstanceResult::getProcessId)
+        .extracting(ProcessInstanceResult::getProcessInstance)
+        .extracting(ProcessInstance::getProcessInstanceKey, ProcessInstance::getProcessDefinitionId)
         .contains(tuple(1L, "process-a"), tuple(2L, "process-b"));
 
     assertThat(result.getProcessInstanceTestResults())
