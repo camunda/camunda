@@ -8,6 +8,7 @@
 package io.camunda.authentication.filters;
 
 import io.camunda.authentication.entity.CamundaPrincipal;
+import io.camunda.security.configuration.SecurityConfiguration;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -28,6 +29,12 @@ public class WebApplicationAuthorizationCheckFilter extends OncePerRequestFilter
   private static final List<String> WEB_APPLICATIONS = List.of("identity", "operate", "tasklist");
   private static final List<String> STATIC_RESOURCES =
       List.of(".css", ".js", ".jpg", ".png", "woff2", ".ico", ".svg");
+  final UrlPathHelper urlPathHelper = new UrlPathHelper();
+  private final SecurityConfiguration securityConfig;
+
+  public WebApplicationAuthorizationCheckFilter(final SecurityConfiguration securityConfig) {
+    this.securityConfig = securityConfig;
+  }
 
   @Override
   protected void doFilterInternal(
@@ -46,6 +53,10 @@ public class WebApplicationAuthorizationCheckFilter extends OncePerRequestFilter
   }
 
   private boolean isAllowed(final HttpServletRequest request) {
+
+    if (!securityConfig.getAuthorizations().isEnabled()) {
+      return true;
+    }
 
     if (request.getRequestURL().toString().endsWith("/forbidden")) {
       return true;
@@ -72,10 +83,9 @@ public class WebApplicationAuthorizationCheckFilter extends OncePerRequestFilter
   }
 
   private String findWebApplication(final HttpServletRequest request) {
-    final UrlPathHelper urlPathHelper = new UrlPathHelper();
-    final String requestUrl =
+    final String applicationPath =
         urlPathHelper.getPathWithinApplication(request).substring(1).split("/")[0];
-    return WEB_APPLICATIONS.stream().filter(requestUrl::equals).findFirst().orElse(null);
+    return WEB_APPLICATIONS.stream().filter(applicationPath::equals).findFirst().orElse(null);
   }
 
   private CamundaPrincipal findCurrentCamundaPrincipal() {
