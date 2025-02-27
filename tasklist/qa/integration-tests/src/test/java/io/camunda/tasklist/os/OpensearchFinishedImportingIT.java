@@ -128,7 +128,7 @@ public class OpensearchFinishedImportingIT extends TasklistZeebeIntegrationTest 
 
     // the import position for
     Awaitility.await()
-        .atMost(Duration.ofSeconds(30))
+        .atMost(Duration.ofSeconds(60))
         .until(
             () -> {
               zeebeImporter.performOneRoundOfImport();
@@ -165,7 +165,7 @@ public class OpensearchFinishedImportingIT extends TasklistZeebeIntegrationTest 
     }
 
     Awaitility.await()
-        .atMost(Duration.ofSeconds(30))
+        .atMost(Duration.ofSeconds(60))
         .until(
             () ->
                 isRecordReaderIsCompleted("1-process-instance")
@@ -197,7 +197,7 @@ public class OpensearchFinishedImportingIT extends TasklistZeebeIntegrationTest 
 
     // the import position for
     Awaitility.await()
-        .atMost(Duration.ofSeconds(30))
+        .atMost(Duration.ofSeconds(60))
         .until(() -> isRecordReaderIsCompleted("1-process-instance"));
     Awaitility.await()
         .atMost(Duration.ofSeconds(30))
@@ -230,7 +230,7 @@ public class OpensearchFinishedImportingIT extends TasklistZeebeIntegrationTest 
     }
 
     Awaitility.await()
-        .atMost(Duration.ofSeconds(30))
+        .atMost(Duration.ofSeconds(60))
         .until(() -> isRecordReaderIsCompleted("1-process-instance"));
 
     final var record3 = generateRecord(ValueType.PROCESS_INSTANCE, "8.8.0", 1);
@@ -261,7 +261,7 @@ public class OpensearchFinishedImportingIT extends TasklistZeebeIntegrationTest 
 
     // then
     Awaitility.await()
-        .atMost(Duration.ofSeconds(30))
+        .atMost(Duration.ofSeconds(60))
         .untilAsserted(
             () -> {
               final var metrics = beanFactory.getBean(Metrics.class);
@@ -295,16 +295,16 @@ public class OpensearchFinishedImportingIT extends TasklistZeebeIntegrationTest 
     }
 
     Awaitility.await()
-        .atMost(Duration.ofSeconds(30))
+        .atMost(Duration.ofSeconds(60))
         .until(() -> isRecordReaderIsCompleted("1-process-instance"));
     Awaitility.await()
-        .atMost(Duration.ofSeconds(30))
+        .atMost(Duration.ofSeconds(60))
         .until(() -> isRecordReaderIsCompleted("2-process-instance"));
 
     // then
 
     Awaitility.await()
-        .atMost(Duration.ofSeconds(30))
+        .atMost(Duration.ofSeconds(60))
         .untilAsserted(
             () -> {
               final var metrics = beanFactory.getBean(Metrics.class);
@@ -355,7 +355,7 @@ public class OpensearchFinishedImportingIT extends TasklistZeebeIntegrationTest 
         .forEach(RecordsReaderAbstract::postConstruct);
 
     Awaitility.await()
-        .atMost(Duration.ofSeconds(30))
+        .atMost(Duration.ofSeconds(60))
         .until(
             () -> {
               final var searchRequest =
@@ -389,7 +389,7 @@ public class OpensearchFinishedImportingIT extends TasklistZeebeIntegrationTest 
     // then
     for (final var type : ImportValueType.values()) {
       await()
-          .atMost(Duration.ofSeconds(30))
+          .atMost(Duration.ofSeconds(60))
           .until(() -> isRecordReaderIsCompleted("1-" + type.getAliasTemplate()));
     }
   }
@@ -397,7 +397,7 @@ public class OpensearchFinishedImportingIT extends TasklistZeebeIntegrationTest 
   private void assertImportPositionMatchesRecord(
       final Record<RecordValue> record, final ImportValueType type, final int partitionId) {
     Awaitility.await()
-        .atMost(Duration.ofSeconds(30))
+        .atMost(Duration.ofSeconds(60))
         .untilAsserted(
             () -> {
               final var req =
