@@ -158,4 +158,4 @@ logging:
       camunda: DEBUG
     io.camunda.db.rdbms: WARN
     io.camunda.exporter.rdbms: INFO
-    io.camunda.zeebe.broker: TRACE
+    io.camunda.zeebe.engine.processing.batchoperation: DEBUG

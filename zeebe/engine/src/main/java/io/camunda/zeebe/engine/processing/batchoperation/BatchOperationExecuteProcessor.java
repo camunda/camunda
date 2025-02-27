@@ -12,7 +12,6 @@ import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavi
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.batchoperation.ItemKeys;
 import io.camunda.zeebe.engine.state.immutable.BatchOperationState;
@@ -39,9 +38,7 @@ public final class BatchOperationExecuteProcessor
 
   private final TypedCommandWriter commandWriter;
   private final KeyGenerator keyGenerator;
-  private final CommandDistributionBehavior commandDistributionBehavior;
   private final StateWriter stateWriter;
-  private final TypedResponseWriter responseWriter;
   private final int partitionId;
 
   private final BatchOperationState batchOperationState;
@@ -55,37 +52,38 @@ public final class BatchOperationExecuteProcessor
   ) {
     commandWriter = writers.command();
     stateWriter = writers.state();
-    responseWriter = writers.response();
     batchOperationState = processingState.getBatchOperationState();
     this.keyGenerator = keyGenerator;
-    this.commandDistributionBehavior = commandDistributionBehavior;
     this.partitionId = partitionId;
   }
 
   @Override
   public void processRecord(final TypedRecord<BatchOperationExecutionRecord> command) {
     final var recordValue = command.getValue();
-    LOGGER.debug("Processing new command with key '{}': {}", command.getKey(), recordValue);
+    LOGGER.debug("Processing new command with key '{}' on partition{} : {}", command.getKey(),
+        partitionId, recordValue);
     final long batchKey = command.getValue().getBatchOperationKey();
     final int offset = command.getValue().getOffset();
 
-    // TODO do we need more states here? Like EXECUTE, EXECUTING, EXECUTED
-    // when do we apply this event?
     final var filteredEntityKeys = fetchFilteredEntityKeys(batchKey);
     final var entityKeys = filteredEntityKeys.subList(offset,
         Math.min(offset + BATCH_SIZE, filteredEntityKeys.size()));
 
-    stateWriter.appendFollowUpEvent(
-        command.getKey(), BatchOperationIntent.EXECUTING, command.getValue());
+    // TODO do we need more states here? Like EXECUTE, EXECUTING, EXECUTED
+    // when do we apply this event?
+//    stateWriter.appendFollowUpEvent(
+//        command.getKey(), BatchOperationIntent.EXECUTING, command.getValue());
 
     switch (recordValue.getBatchOperationType()) {
       case PROCESS_CANCELLATION:
         entityKeys.forEach(this::cancelProcessInstance);
     }
-    stateWriter.appendFollowUpEvent(
-        command.getKey(), BatchOperationIntent.EXECUTED, command.getValue());
+//    stateWriter.appendFollowUpEvent(
+//        command.getKey(), BatchOperationIntent.EXECUTED, command.getValue());
 
     if (hasNextBatch(filteredEntityKeys, offset)) {
+      LOGGER.debug("Scheduling next batch for BatchOperation {} on partition {}", batchKey,
+          partitionId);
       final var followupCommand = new BatchOperationExecutionRecord();
       followupCommand.setBatchOperationKey(batchKey);
       followupCommand.setBatchOperationType(command.getValue().getBatchOperationType());
@@ -93,9 +91,11 @@ public final class BatchOperationExecuteProcessor
       commandWriter.appendFollowUpCommand(command.getKey(), BatchOperationIntent.EXECUTE,
           followupCommand);
     } else {
+      LOGGER.debug("BatchOperation {} has no more items on partition {}, completing it", batchKey,
+          partitionId);
       // todo use the BatchOperationRecord
-      stateWriter.appendFollowUpEvent(
-          command.getKey(), BatchOperationIntent.COMPLETED, command.getValue());
+//      stateWriter.appendFollowUpEvent(
+//          command.getKey(), BatchOperationIntent.COMPLETED, command.getValue());
     }
   }
 
