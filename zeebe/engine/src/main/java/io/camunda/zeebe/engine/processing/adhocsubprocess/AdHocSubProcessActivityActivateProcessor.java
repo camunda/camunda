@@ -8,6 +8,8 @@
 package io.camunda.zeebe.engine.processing.adhocsubprocess;
 
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableAdHocSubProcess;
+import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior;
+import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior.AuthorizationRequest;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
@@ -24,6 +26,8 @@ import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.AdHocSubProcessActivityActivationIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.AdHocSubProcessActivityActivationRecordValue.AdHocSubProcessActivityActivationFlowNodeValue;
+import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
+import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import java.util.List;
@@ -37,11 +41,13 @@ public class AdHocSubProcessActivityActivateProcessor
   private final TypedCommandWriter commandWriter;
   private final ElementInstanceState elementInstanceState;
   private final ProcessState processState;
+  private final AuthorizationCheckBehavior authCheckBehavior;
   private final KeyGenerator keyGenerator;
 
   public AdHocSubProcessActivityActivateProcessor(
       final Writers writers,
       final ProcessingState processingState,
+      final AuthorizationCheckBehavior authCheckBehavior,
       final KeyGenerator keyGenerator) {
     stateWriter = writers.state();
     responseWriter = writers.response();
@@ -49,12 +55,41 @@ public class AdHocSubProcessActivityActivateProcessor
     commandWriter = writers.command();
     processState = processingState.getProcessState();
     elementInstanceState = processingState.getElementInstanceState();
+    this.authCheckBehavior = authCheckBehavior;
     this.keyGenerator = keyGenerator;
   }
 
   @Override
   public void processRecord(final TypedRecord<AdHocSubProcessActivityActivationRecord> command) {
-    // todo: authz check
+    final var adHocSubprocessElementInstance =
+        elementInstanceState.getInstance(
+            Long.parseLong(command.getValue().getAdHocSubProcessInstanceKey()));
+    if (adHocSubprocessElementInstance == null) {
+      throw new AdHocSubProcessInstanceIsNullException(
+          command.getValue().getAdHocSubProcessInstanceKey());
+    }
+
+    final var authRequest =
+        new AuthorizationRequest(
+                command,
+                AuthorizationResourceType.PROCESS_DEFINITION,
+                PermissionType.UPDATE_PROCESS_INSTANCE,
+                adHocSubprocessElementInstance.getValue().getTenantId())
+            .addResourceId(adHocSubprocessElementInstance.getValue().getBpmnProcessId());
+    final var isAuthorized = authCheckBehavior.isAuthorized(authRequest);
+    if (isAuthorized.isLeft()) {
+      final var rejection = isAuthorized.getLeft();
+      final String errorMessage =
+          RejectionType.NOT_FOUND.equals(rejection.type())
+              ? AuthorizationCheckBehavior.NOT_FOUND_ERROR_MESSAGE.formatted(
+                  "modify a process instance",
+                  command.getValue().getAdHocSubProcessInstanceKey(),
+                  "such process instance")
+              : rejection.reason();
+      rejectionWriter.appendRejection(command, rejection.type(), errorMessage);
+      responseWriter.writeRejectionOnCommand(command, rejection.type(), errorMessage);
+      return;
+    }
 
     final var hasDuplicates =
         command.getValue().getFlowNodes().stream()
@@ -67,14 +102,6 @@ public class AdHocSubProcessActivityActivateProcessor
           command.getValue().getFlowNodes().stream()
               .map(AdHocSubProcessActivityActivationFlowNodeValue::getFlowNodeId)
               .toList());
-    }
-
-    final var adHocSubprocessElementInstance =
-        elementInstanceState.getInstance(
-            Long.parseLong(command.getValue().getAdHocSubProcessInstanceKey()));
-    if (adHocSubprocessElementInstance == null) {
-      throw new AdHocSubProcessInstanceIsNullException(
-          command.getValue().getAdHocSubProcessInstanceKey());
     }
 
     final var adHocSubprocessElementId = adHocSubprocessElementInstance.getValue().getElementId();
