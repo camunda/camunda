@@ -5,16 +5,12 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.zeebe.db;
+package io.camunda.zeebe.db.impl.rocksdb.metrics;
 
-import io.camunda.zeebe.util.CloseableSilently;
+import io.camunda.zeebe.util.micrometer.ExtendedMeterDocumentation;
 
-public interface ColumnFamilyMetrics {
-  CloseableSilently measureGetLatency();
+public interface RocksDbMeterDoc extends ExtendedMeterDocumentation {
+  String propertyName();
 
-  CloseableSilently measurePutLatency();
-
-  CloseableSilently measureDeleteLatency();
-
-  CloseableSilently measureIterateLatency();
+  String namespace();
 }
