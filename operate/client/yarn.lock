@@ -1200,29 +1200,29 @@
     inherits-browser "^0.1.0"
     tiny-svg "^3.0.1"
 
-"@bpmn-io/feel-editor@^1.9.1":
-  version "1.9.1"
-  resolved "https://registry.yarnpkg.com/@bpmn-io/feel-editor/-/feel-editor-1.9.1.tgz#2abf7e5046a3f344e383cd2a0abce35a55b1b18f"
-  integrity sha512-UxSORdh5cwKM4fib4f9ov6J1/BHGpQVNtA+wPyEdKQyCyz3wqwE2/xe5wneVR1j5QFC5m2Na8nTy4a1TDFvZTw==
+"@bpmn-io/feel-editor@^1.10.0":
+  version "1.10.0"
+  resolved "https://registry.yarnpkg.com/@bpmn-io/feel-editor/-/feel-editor-1.10.0.tgz#5e26de687417cc099fa6c4908e5ff9631320f1ef"
+  integrity sha512-Unc4CSyMgDg5c2C3E3ehEbJZfyo5W9Zrq74C8cp7mjFbb3if6rTBaw3ZCZeiC06zsm881sI5P8zWHFdIhKo/vA==
   dependencies:
-    "@bpmn-io/feel-lint" "^1.3.0"
+    "@bpmn-io/feel-lint" "^1.4.0"
     "@codemirror/autocomplete" "^6.16.2"
-    "@codemirror/commands" "^6.6.0"
+    "@codemirror/commands" "^6.8.0"
     "@codemirror/language" "^6.10.2"
-    "@codemirror/lint" "^6.8.0"
-    "@codemirror/state" "^6.4.1"
-    "@codemirror/view" "^6.28.1"
-    "@lezer/highlight" "^1.2.0"
-    lang-feel "^2.1.1"
+    "@codemirror/lint" "^6.8.4"
+    "@codemirror/state" "^6.5.1"
+    "@codemirror/view" "^6.36.2"
+    "@lezer/highlight" "^1.2.1"
+    lang-feel "^2.3.0"
     min-dom "^4.2.1"
 
-"@bpmn-io/feel-lint@^1.3.0":
-  version "1.3.0"
-  resolved "https://registry.yarnpkg.com/@bpmn-io/feel-lint/-/feel-lint-1.3.0.tgz#709e8c46550a94f3fcf91aa24a11e721883eb48b"
-  integrity sha512-wykQUqGb/wWoQI13M6T5iOPrQUwzLfI7U/SVENx3nOn634L+grQtMCULeAtF0ZVkw8wAuygIQ2m8H/mcUnWo5w==
+"@bpmn-io/feel-lint@^1.4.0":
+  version "1.4.0"
+  resolved "https://registry.yarnpkg.com/@bpmn-io/feel-lint/-/feel-lint-1.4.0.tgz#552534ed606cc6104b9992a68129564f06fbabb1"
+  integrity sha512-1bsdR/9vPD7RQVqWWPk0X0tpjLsYTDrCxIzOVtN/h32o4nPGl0dZBU5m07qaFUGD4wG3eOH4Qim1wexHG8YkBw==
   dependencies:
-    "@codemirror/language" "^6.10.0"
-    lezer-feel "^1.2.3"
+    "@codemirror/language" "^6.10.8"
+    lezer-feel "^1.7.0"
 
 "@camunda/camunda-composite-components@0.17.0":
   version "0.17.0"
@@ -1455,17 +1455,27 @@
     "@codemirror/view" "^6.17.0"
     "@lezer/common" "^1.0.0"
 
-"@codemirror/commands@^6.6.0":
-  version "6.6.0"
-  resolved "https://registry.yarnpkg.com/@codemirror/commands/-/commands-6.6.0.tgz#d308f143fe1b8896ca25fdb855f66acdaf019dd4"
-  integrity sha512-qnY+b7j1UNcTS31Eenuc/5YJB6gQOzkUoNmJQc0rznwqSRpeaWWpjkWy2C/MPTcePpsKJEM26hXrOXl1+nceXg==
+"@codemirror/autocomplete@^6.18.4":
+  version "6.18.6"
+  resolved "https://registry.yarnpkg.com/@codemirror/autocomplete/-/autocomplete-6.18.6.tgz#de26e864a1ec8192a1b241eb86addbb612964ddb"
+  integrity sha512-PHHBXFomUs5DF+9tCOM/UoW6XQ4R44lLNNhRaW9PKPTU0D7lIjRg3ElxaJnTwsl/oHiR93WSXDBrekhoUGCPtg==
+  dependencies:
+    "@codemirror/language" "^6.0.0"
+    "@codemirror/state" "^6.0.0"
+    "@codemirror/view" "^6.17.0"
+    "@lezer/common" "^1.0.0"
+
+"@codemirror/commands@^6.8.0":
+  version "6.8.0"
+  resolved "https://registry.yarnpkg.com/@codemirror/commands/-/commands-6.8.0.tgz#92f200b66f852939bd6ebb90d48c2d9e9c813d64"
+  integrity sha512-q8VPEFaEP4ikSlt6ZxjB3zW72+7osfAYW9i8Zu943uqbKuz6utc1+F170hyLUCUltXORjQXRyYQNfkckzA/bPQ==
   dependencies:
     "@codemirror/language" "^6.0.0"
     "@codemirror/state" "^6.4.0"
     "@codemirror/view" "^6.27.0"
     "@lezer/common" "^1.1.0"
 
-"@codemirror/language@^6.0.0", "@codemirror/language@^6.10.0", "@codemirror/language@^6.10.2":
+"@codemirror/language@^6.0.0", "@codemirror/language@^6.10.2":
   version "6.10.2"
   resolved "https://registry.yarnpkg.com/@codemirror/language/-/language-6.10.2.tgz#4056dc219619627ffe995832eeb09cea6060be61"
   integrity sha512-kgbTYTo0Au6dCSc/TFy7fK3fpJmgHDv1sG1KNQKJXVi+xBTEeBPY/M30YXiU6mMXeH+YIDLsbrT4ZwNRdtF+SA==
@@ -1477,26 +1487,54 @@
     "@lezer/lr" "^1.0.0"
     style-mod "^4.0.0"
 
-"@codemirror/lint@^6.8.0":
-  version "6.8.1"
-  resolved "https://registry.yarnpkg.com/@codemirror/lint/-/lint-6.8.1.tgz#6427848815baaf68c08e98c7673b804d3d8c0e7f"
-  integrity sha512-IZ0Y7S4/bpaunwggW2jYqwLuHj0QtESf5xcROewY6+lDNwZ/NzvR4t+vpYgg9m7V8UXLPYqG+lu3DF470E5Oxg==
+"@codemirror/language@^6.10.8":
+  version "6.10.8"
+  resolved "https://registry.yarnpkg.com/@codemirror/language/-/language-6.10.8.tgz#3e3a346a2b0a8cf63ee1cfe03349eb1965dce5f9"
+  integrity sha512-wcP8XPPhDH2vTqf181U8MbZnW+tDyPYy0UzVOa+oHORjyT+mhhom9vBd7dApJwoDz9Nb/a8kHjJIsuA/t8vNFw==
   dependencies:
     "@codemirror/state" "^6.0.0"
-    "@codemirror/view" "^6.0.0"
+    "@codemirror/view" "^6.23.0"
+    "@lezer/common" "^1.1.0"
+    "@lezer/highlight" "^1.0.0"
+    "@lezer/lr" "^1.0.0"
+    style-mod "^4.0.0"
+
+"@codemirror/lint@^6.8.4":
+  version "6.8.4"
+  resolved "https://registry.yarnpkg.com/@codemirror/lint/-/lint-6.8.4.tgz#7d8aa5d1a6dec89ffcc23ad45ddca2e12e90982d"
+  integrity sha512-u4q7PnZlJUojeRe8FJa/njJcMctISGgPQ4PnWsd9268R4ZTtU+tfFYmwkBvgcrK2+QQ8tYFVALVb5fVJykKc5A==
+  dependencies:
+    "@codemirror/state" "^6.0.0"
+    "@codemirror/view" "^6.35.0"
     crelt "^1.0.5"
 
-"@codemirror/state@^6.0.0", "@codemirror/state@^6.4.0", "@codemirror/state@^6.4.1":
+"@codemirror/state@^6.0.0", "@codemirror/state@^6.4.0":
   version "6.4.1"
   resolved "https://registry.yarnpkg.com/@codemirror/state/-/state-6.4.1.tgz#da57143695c056d9a3c38705ed34136e2b68171b"
   integrity sha512-QkEyUiLhsJoZkbumGZlswmAhA7CBU02Wrz7zvH4SrcifbsqwlXShVXg65f3v/ts57W3dqyamEriMhij1Z3Zz4A==
 
-"@codemirror/view@^6.0.0", "@codemirror/view@^6.17.0", "@codemirror/view@^6.23.0", "@codemirror/view@^6.27.0", "@codemirror/view@^6.28.1":
+"@codemirror/state@^6.5.0", "@codemirror/state@^6.5.1":
+  version "6.5.2"
+  resolved "https://registry.yarnpkg.com/@codemirror/state/-/state-6.5.2.tgz#8eca3a64212a83367dc85475b7d78d5c9b7076c6"
+  integrity sha512-FVqsPqtPWKVVL3dPSxy8wEF/ymIEuVzF1PK3VbUgrxXpJUSHQWWZz4JMToquRxnkw+36LTamCZG2iua2Ptq0fA==
+  dependencies:
+    "@marijn/find-cluster-break" "^1.0.0"
+
+"@codemirror/view@^6.17.0", "@codemirror/view@^6.23.0", "@codemirror/view@^6.27.0":
   version "6.33.0"
   resolved "https://registry.yarnpkg.com/@codemirror/view/-/view-6.33.0.tgz#51e270410fc3af92a6e38798e80ebf8add7dc3ec"
   integrity sha512-AroaR3BvnjRW8fiZBalAaK+ZzB5usGgI014YKElYZvQdNH5ZIidHlO+cyf/2rWzyBFRkvG6VhiXeAEbC53P2YQ==
   dependencies:
     "@codemirror/state" "^6.4.0"
+    style-mod "^4.1.0"
+    w3c-keyname "^2.2.4"
+
+"@codemirror/view@^6.35.0", "@codemirror/view@^6.36.2":
+  version "6.36.3"
+  resolved "https://registry.yarnpkg.com/@codemirror/view/-/view-6.36.3.tgz#01e3c930df89e5005e93f4e19e81a5baba0441e7"
+  integrity sha512-N2bilM47QWC8Hnx0rMdDxO2x2ImJ1FvZWXubwKgjeoOrWwEiFrtpA7SFHcuZ+o2Ze2VzbkgbzWVj4+V18LVkeg==
+  dependencies:
+    "@codemirror/state" "^6.5.0"
     style-mod "^4.1.0"
     w3c-keyname "^2.2.4"
 
@@ -2107,19 +2145,31 @@
   resolved "https://registry.yarnpkg.com/@leichtgewicht/ip-codec/-/ip-codec-2.0.5.tgz#4fc56c15c580b9adb7dc3c333a134e540b44bfb1"
   integrity sha512-Vo+PSpZG2/fmgmiNzYK9qWRh8h/CHrwD0mo1h1DzL4yzHNSfWYujGTYsWGreD000gcgmZ7K4Ys6Tx9TxtsKdDw==
 
-"@lezer/common@^1.0.0", "@lezer/common@^1.1.0", "@lezer/common@^1.2.1":
+"@lezer/common@^1.0.0", "@lezer/common@^1.1.0":
   version "1.2.1"
   resolved "https://registry.yarnpkg.com/@lezer/common/-/common-1.2.1.tgz#198b278b7869668e1bebbe687586e12a42731049"
   integrity sha512-yemX0ZD2xS/73llMZIK6KplkjIjf2EvAHcinDi/TfJ9hS25G0388+ClHt6/3but0oOxinTcQHJLDXh6w1crzFQ==
 
-"@lezer/highlight@^1.0.0", "@lezer/highlight@^1.2.0":
+"@lezer/common@^1.2.3":
+  version "1.2.3"
+  resolved "https://registry.yarnpkg.com/@lezer/common/-/common-1.2.3.tgz#138fcddab157d83da557554851017c6c1e5667fd"
+  integrity sha512-w7ojc8ejBqr2REPsWxJjrMFsA/ysDCFICn8zEOR9mrqzOu2amhITYuLD8ag6XZf0CFXDrhKqw7+tW8cX66NaDA==
+
+"@lezer/highlight@^1.0.0":
   version "1.2.0"
   resolved "https://registry.yarnpkg.com/@lezer/highlight/-/highlight-1.2.0.tgz#e5898c3644208b4b589084089dceeea2966f7780"
   integrity sha512-WrS5Mw51sGrpqjlh3d4/fOwpEV2Hd3YOkp9DBt4k8XZQcoTHZFB7sx030A6OcahF4J1nDQAa3jXlTVVYH50IFA==
   dependencies:
     "@lezer/common" "^1.0.0"
 
-"@lezer/lr@^1.0.0", "@lezer/lr@^1.4.1":
+"@lezer/highlight@^1.2.1":
+  version "1.2.1"
+  resolved "https://registry.yarnpkg.com/@lezer/highlight/-/highlight-1.2.1.tgz#596fa8f9aeb58a608be0a563e960c373cbf23f8b"
+  integrity sha512-Z5duk4RN/3zuVO7Jq0pGLJ3qynpxUVsh7IbUbGj88+uV2ApSAn6kWg2au3iJb+0Zi7kKtqffIESgNcRXWZWmSA==
+  dependencies:
+    "@lezer/common" "^1.0.0"
+
+"@lezer/lr@^1.0.0", "@lezer/lr@^1.4.2":
   version "1.4.2"
   resolved "https://registry.yarnpkg.com/@lezer/lr/-/lr-1.4.2.tgz#931ea3dea8e9de84e90781001dae30dea9ff1727"
   integrity sha512-pu0K1jCIdnQ12aWNaAVU5bzi7Bd1w54J3ECgANPmYLtQKP0HBj2cE/5coBD66MT10xbtIuUr7tg0Shbsvk0mDA==
@@ -2149,6 +2199,11 @@
     rimraf "^3.0.2"
     semver "^7.3.5"
     tar "^6.1.11"
+
+"@marijn/find-cluster-break@^1.0.0":
+  version "1.0.2"
+  resolved "https://registry.yarnpkg.com/@marijn/find-cluster-break/-/find-cluster-break-1.0.2.tgz#775374306116d51c0c500b8c4face0f9a04752d8"
+  integrity sha512-l0h88YhZFyKdXIFNfSWpyjStDjGHwZ/U7iobcK1cQQD8sejsONdQtTVU+1wVN1PBw40PiiHB1vA5S7VTfQiP9g==
 
 "@monaco-editor/loader@^1.5.0":
   version "1.5.0"
@@ -5272,28 +5327,28 @@ dlv@^1.1.3:
   resolved "https://registry.yarnpkg.com/dlv/-/dlv-1.1.3.tgz#5c198a8a11453596e751494d49874bc7732f2e79"
   integrity sha512-+HlytyjlPKnIG8XuRG8WvmBP8xs8P71y+SKKS6ZXWoEgLuePxtDoUEiH7WkdePWrQ5JBpE6aoVqfZfJUQkjXwA==
 
-dmn-js-boxed-expression@^17.0.2:
-  version "17.0.2"
-  resolved "https://registry.yarnpkg.com/dmn-js-boxed-expression/-/dmn-js-boxed-expression-17.0.2.tgz#6632ec1b54fa92885a08612244993e92e89af86b"
-  integrity sha512-sNMbUm9JYt16qzCqNflGmQa1qh9Liz7p1kIarTk9Urlve/7dhmsqdbKGU1yYyZOmxtltq1gOlPsZVuvSddHB2Q==
+dmn-js-boxed-expression@^17.1.0:
+  version "17.1.0"
+  resolved "https://registry.yarnpkg.com/dmn-js-boxed-expression/-/dmn-js-boxed-expression-17.1.0.tgz#1188ed93349f629d60dad15a828babc2d562bd0f"
+  integrity sha512-+uH49GmezpfM5p6jKsrlq5L8jZnsY2bvhMsVopXLuRTGIDT6r8ZKJ+QvS8p5GYBFst+ABfuPFN5dLv+86spYTw==
   dependencies:
     "@bpmn-io/dmn-variable-resolver" "^0.7.0"
     diagram-js "^15.2.0"
-    dmn-js-shared "^17.0.1"
+    dmn-js-shared "^17.1.0"
     inferno "~5.6.3"
     min-dash "^4.2.2"
     min-dom "^4.2.1"
     table-js "^9.2.0"
 
-dmn-js-decision-table@^17.0.3:
-  version "17.0.3"
-  resolved "https://registry.yarnpkg.com/dmn-js-decision-table/-/dmn-js-decision-table-17.0.3.tgz#36167e6580341b28bd00bec1d620b80656efccb4"
-  integrity sha512-ShipjLulspntzU2mwzc7e9oHh50K1KoupcoPUFsPjkSQ5ykmm8da9UNwCdRtN63CB4+WC8O1YCsofE35dVNGzw==
+dmn-js-decision-table@^17.1.0:
+  version "17.1.0"
+  resolved "https://registry.yarnpkg.com/dmn-js-decision-table/-/dmn-js-decision-table-17.1.0.tgz#21ee1a35a69bd6e4bd8cb5bbaa74ece9fe228b67"
+  integrity sha512-QsKw4Yf5+T8a78fgV0a7ysIETNis6hBOOT/GhOhWJtHZqBIUOTcBANWWqjMntY2tUFyotsWU6rdLo4XfSH/lqg==
   dependencies:
     "@bpmn-io/dmn-variable-resolver" "^0.7.0"
     css.escape "^1.5.1"
     diagram-js "^15.2.0"
-    dmn-js-shared "^17.0.1"
+    dmn-js-shared "^17.1.0"
     escape-html "^1.0.3"
     inferno "~5.6.3"
     min-dash "^4.2.2"
@@ -5301,40 +5356,40 @@ dmn-js-decision-table@^17.0.3:
     selection-ranges "^3.0.2"
     table-js "^9.2.0"
 
-dmn-js-drd@^17.0.1:
-  version "17.0.1"
-  resolved "https://registry.yarnpkg.com/dmn-js-drd/-/dmn-js-drd-17.0.1.tgz#0640bf7e93feb0aa6781ccc4ffdf17dc7f24ae9f"
-  integrity sha512-B2MZumWTgFYnWHlfdEtda0BeHSXrm4DlBhzfsR31DmhdeVmgnzioCUzIlAE3Qub7YJypIaNtsBrCTxdqxsrpLw==
+dmn-js-drd@^17.1.0:
+  version "17.1.0"
+  resolved "https://registry.yarnpkg.com/dmn-js-drd/-/dmn-js-drd-17.1.0.tgz#1c79c51a299b8c69d46e5e1a08750914992d4725"
+  integrity sha512-th17FCmju+WSSS+GlycJfpmTz7DPBbuCTdR5Y3oBzN5ioX+EGYnL9nI2oS8szy5qySCvD2uZXD33AiGpAdZtVw==
   dependencies:
     diagram-js "^15.2.0"
     diagram-js-direct-editing "^3.2.0"
-    dmn-js-shared "^17.0.1"
+    dmn-js-shared "^17.1.0"
     inherits-browser "^0.1.0"
     min-dash "^4.2.2"
     min-dom "^4.2.1"
     object-refs "^0.4.0"
     tiny-svg "^3.1.3"
 
-dmn-js-literal-expression@^17.0.3:
-  version "17.0.3"
-  resolved "https://registry.yarnpkg.com/dmn-js-literal-expression/-/dmn-js-literal-expression-17.0.3.tgz#f26ac0a2bb9a025d41357b64eb9ba4513da60bd7"
-  integrity sha512-XbcLV9ddhqYJRLni9KPbFfLp9sw6ZRtJYXGamdtY60ux0+KMBO8DiiVfu6nX7QldnaUZKKcGwJW4YTcxyKgUYA==
+dmn-js-literal-expression@^17.1.0:
+  version "17.1.0"
+  resolved "https://registry.yarnpkg.com/dmn-js-literal-expression/-/dmn-js-literal-expression-17.1.0.tgz#7a1c25027b0e90bf184f5e127a61d6c565f7d18b"
+  integrity sha512-6wL0bPRhXFjPQ0TYAXtJyYI4ZrkQt5PIdiBEjEH/vCaWVMwzVaLcHlLr/vfLdsHe5SFQfFoeZ4zET2EHag+tYg==
   dependencies:
     "@bpmn-io/dmn-variable-resolver" "^0.7.0"
     diagram-js "^15.2.0"
-    dmn-js-shared "^17.0.1"
+    dmn-js-shared "^17.1.0"
     escape-html "^1.0.3"
     inferno "~5.6.3"
     min-dash "^4.2.2"
     min-dom "^4.2.1"
     table-js "^9.2.0"
 
-dmn-js-shared@^17.0.1:
-  version "17.0.1"
-  resolved "https://registry.yarnpkg.com/dmn-js-shared/-/dmn-js-shared-17.0.1.tgz#cebcbd512e3d1df228e06e59ba4eb60e54fc3570"
-  integrity sha512-HNJ0/46yKj3QdKBM7/OyloS0x/zq9ZPoz8gWFtwI1cmvVlAwtUxccE2HU85g5JEB92AfJj1aJ4ZI6iyFDintZw==
+dmn-js-shared@^17.1.0:
+  version "17.1.0"
+  resolved "https://registry.yarnpkg.com/dmn-js-shared/-/dmn-js-shared-17.1.0.tgz#7c35b05cd675572f02eb88d46de49d2b63252c3c"
+  integrity sha512-OOmXVM1s7BslOhTayaEKeyqIig6TIlesOUoCiRQqOVBv31GavyoPnZdxiON6EGDQWe0/pGDgQoTmLIBvKobhWg==
   dependencies:
-    "@bpmn-io/feel-editor" "^1.9.1"
+    "@bpmn-io/feel-editor" "^1.10.0"
     diagram-js "^15.2.0"
     didi "^10.2.2"
     dmn-moddle "^10.0.0"
@@ -5346,16 +5401,16 @@ dmn-js-shared@^17.0.1:
     selection-update "^0.1.2"
     table-js "^9.2.0"
 
-dmn-js@17.0.3:
-  version "17.0.3"
-  resolved "https://registry.yarnpkg.com/dmn-js/-/dmn-js-17.0.3.tgz#df1a52eab797c9245a51072e121c8bf9d30ff3c5"
-  integrity sha512-fazb3aVtWMOQ+4VuCCSpQJ4y8Z/vigcCHK2NI0B4JqHBMNQXhxBsQ4owpOaWonsaDmXC0GMZKvvLpCuAxn5QJg==
+dmn-js@17.1.0:
+  version "17.1.0"
+  resolved "https://registry.yarnpkg.com/dmn-js/-/dmn-js-17.1.0.tgz#45f48915817b63feaf4c7d83ca6b756763ab7c09"
+  integrity sha512-jrwUxKtZ7Vb8vszYTn2YzlljDSC5LmYOPFN+2U3nAT+rzTztcgo+Y8UG3pNi2+ohZKkTIyzgLGRWCdvpHeR96w==
   dependencies:
-    dmn-js-boxed-expression "^17.0.2"
-    dmn-js-decision-table "^17.0.3"
-    dmn-js-drd "^17.0.1"
-    dmn-js-literal-expression "^17.0.3"
-    dmn-js-shared "^17.0.1"
+    dmn-js-boxed-expression "^17.1.0"
+    dmn-js-decision-table "^17.1.0"
+    dmn-js-drd "^17.1.0"
+    dmn-js-literal-expression "^17.1.0"
+    dmn-js-shared "^17.1.0"
 
 dmn-moddle@^10.0.0:
   version "10.0.0"
@@ -8343,17 +8398,15 @@ klona@^2.0.4, klona@^2.0.5:
   resolved "https://registry.yarnpkg.com/klona/-/klona-2.0.6.tgz#85bffbf819c03b2f53270412420a4555ef882e22"
   integrity sha512-dhG34DXATL5hSxJbIexCft8FChFXtmskoZYnoPWjXQuebWYCNkVeV3KkGegCK9CP1oswI/vQibS2GY7Em/sJJA==
 
-lang-feel@^2.1.1:
-  version "2.2.0"
-  resolved "https://registry.yarnpkg.com/lang-feel/-/lang-feel-2.2.0.tgz#55e16862dbf53189def4c998d3b39602819b95f7"
-  integrity sha512-Ebo5nftYsMfJzB3Ny8Oy4oaDXZXb5x61qtVVmKv6aImvAZUbT76mD60ZbEilizjZQzsR2CcU1iMK5sacIa1NVA==
+lang-feel@^2.3.0:
+  version "2.3.0"
+  resolved "https://registry.yarnpkg.com/lang-feel/-/lang-feel-2.3.0.tgz#9f06b53a5c6fa326d67320467cc206d12779ab17"
+  integrity sha512-cotBfyBP710udy3Tm7s4NyNZPSSLXkVV/rrfmM4NVbuzB9WGL7CbMWUzfSn6GZ+qFnh8/xbkeDHfAvPM90oENA==
   dependencies:
-    "@codemirror/autocomplete" "^6.16.2"
-    "@codemirror/language" "^6.10.2"
-    "@codemirror/state" "^6.4.1"
-    "@codemirror/view" "^6.28.1"
-    "@lezer/common" "^1.2.1"
-    lezer-feel "^1.3.0"
+    "@codemirror/autocomplete" "^6.18.4"
+    "@codemirror/language" "^6.10.8"
+    "@lezer/common" "^1.2.3"
+    lezer-feel "^1.7.0"
 
 language-subtag-registry@^0.3.20:
   version "0.3.22"
@@ -8396,13 +8449,14 @@ levn@~0.3.0:
     prelude-ls "~1.1.2"
     type-check "~0.3.2"
 
-lezer-feel@^1.2.3, lezer-feel@^1.3.0:
-  version "1.3.0"
-  resolved "https://registry.yarnpkg.com/lezer-feel/-/lezer-feel-1.3.0.tgz#366aecf6b650f53296f0273942fe497cd9d55dc9"
-  integrity sha512-b7oBzdbcdHJU+WIVwqELi/pLLg0UiojC/80E2zFBGrZsWTSOsSQLNhHsfRocYzWLUPpOC4pWaFlhJM4m93J5Fg==
+lezer-feel@^1.7.0:
+  version "1.7.0"
+  resolved "https://registry.yarnpkg.com/lezer-feel/-/lezer-feel-1.7.0.tgz#f35e4ae01150f49ce6108cebdec154aa009c52bc"
+  integrity sha512-UC8h3Nu4llRPISEUhv+Ne7bNkdxjf4+/DcU4KfO8zKxycWxev8d2BoVnGlG17zbQDtQJBD39ZQvWtjCeTFm69g==
   dependencies:
-    "@lezer/highlight" "^1.2.0"
-    "@lezer/lr" "^1.4.1"
+    "@lezer/highlight" "^1.2.1"
+    "@lezer/lr" "^1.4.2"
+    min-dash "^4.2.1"
 
 "libxmljs2@^0.31 || ^0.32 || ^0.33":
   version "0.33.0"
