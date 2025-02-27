@@ -181,7 +181,8 @@ jobs:
     needs: [detect-changes]
     runs-on: gcp-perf-core-16-default
     timeout-minutes: 30
-    permissions: {}  # GITHUB_TOKEN unused in this job
+    permissions:
+      pull-requests: write
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/setup-build
@@ -215,6 +216,24 @@ jobs:
         if: ${{ failure() || cancelled() || steps.analyze-test-run.outputs.flakyTests != '' }}
         with:
           name: "unit tests"
+
+      - uses: peter-evans/find-comment@v3
+        if: ${{ always() && github.event_name == 'pull_request' && steps.analyze-test-run.outputs.flakyTests != '' }}
+        id: find-comment-flaky
+        with:
+          issue-number: ${{ github.event.pull_request.number }}
+          comment-author: 'github-actions[bot]'
+          body-includes: "# Flaky tests"
+
+      - name: Create PR comment about flaky tests
+        if: ${{ always() && github.event_name == 'pull_request' && steps.analyze-test-run.outputs.flakyTests != '' }}
+        uses: peter-evans/create-or-update-comment@v4
+        with:
+          issue-number: ${{ github.event.pull_request.number }}
+          body: "# Flaky tests\n\n* ${{ steps.analyze-test-run.outputs.flakyTests }}"
+          comment-id: ${{ steps.find-comment-flaky.outputs.comment-id }}
+          edit-mode: replace
+
       - name: Observe build status
         if: always()
         continue-on-error: true
