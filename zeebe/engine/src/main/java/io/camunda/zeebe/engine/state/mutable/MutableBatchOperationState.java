@@ -11,6 +11,7 @@ import io.camunda.zeebe.engine.state.immutable.AuthorizationState;
 import io.camunda.zeebe.engine.state.immutable.BatchOperationState;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationCreationRecord;
+import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationExecutionRecord;
 import java.util.Set;
 
 public interface MutableBatchOperationState extends BatchOperationState {
@@ -21,5 +22,9 @@ public interface MutableBatchOperationState extends BatchOperationState {
    * @param record the batch operation creation record to create
    */
   void create(final long batchKey, final BatchOperationCreationRecord record);
+
+  void update(final long batchKey, final BatchOperationExecutionRecord record);
+
+  void complete(final long batchKey, final BatchOperationExecutionRecord record);
 
 }
