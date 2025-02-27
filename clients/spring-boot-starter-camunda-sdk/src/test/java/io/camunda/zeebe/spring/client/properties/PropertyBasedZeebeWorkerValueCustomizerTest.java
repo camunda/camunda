@@ -359,7 +359,7 @@ public class PropertyBasedZeebeWorkerValueCustomizerTest {
     properties.getZeebe().getDefaults().setName("globalName");
     properties.getZeebe().getDefaults().setFetchVariables(List.of("overrideVariable"));
     final PropertyBasedZeebeWorkerValueCustomizer customizer =
-        new PropertyBasedZeebeWorkerValueCustomizer(legacyProperties(), properties);
+        new PropertyBasedZeebeWorkerValueCustomizer(properties);
     final ZeebeWorkerValue jobWorkerValue = new ZeebeWorkerValue();
     jobWorkerValue.setMethodInfo(methodInfo(this, "testBean", "sampleWorkerWithJsonProperty"));
     jobWorkerValue.setType("initialValue");
@@ -377,7 +377,7 @@ public class PropertyBasedZeebeWorkerValueCustomizerTest {
     properties.getZeebe().getDefaults().setType("globalOverride");
     properties.getZeebe().getDefaults().setName("globalName");
     final PropertyBasedZeebeWorkerValueCustomizer customizer =
-        new PropertyBasedZeebeWorkerValueCustomizer(legacyProperties(), properties);
+        new PropertyBasedZeebeWorkerValueCustomizer(properties);
     final ZeebeWorkerValue jobWorkerValue = new ZeebeWorkerValue();
     jobWorkerValue.setMethodInfo(methodInfo(this, "testBean", "sampleWorkerWithJsonProperty"));
     customizer.customize(jobWorkerValue);
@@ -394,7 +394,7 @@ public class PropertyBasedZeebeWorkerValueCustomizerTest {
     override.setFetchVariables(List.of("overrideVariable"));
     properties.getZeebe().getOverride().put("initialValue", override);
     final PropertyBasedZeebeWorkerValueCustomizer customizer =
-        new PropertyBasedZeebeWorkerValueCustomizer(legacyProperties(), properties);
+        new PropertyBasedZeebeWorkerValueCustomizer(properties);
     final ZeebeWorkerValue jobWorkerValue = new ZeebeWorkerValue();
     jobWorkerValue.setMethodInfo(methodInfo(this, "testBean", "sampleWorkerWithJsonProperty"));
     jobWorkerValue.setType("initialValue");
