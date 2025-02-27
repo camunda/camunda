@@ -88,6 +88,7 @@
     <elasticsearch-test-container.version>1.19.8</elasticsearch-test-container.version>
     <postgres-test-container.version>1.17.6</postgres-test-container.version>
     <wiremock.version>3.9.2</wiremock.version>
+    <netty.version>4.1.118.Final</netty.version>
     <version.docker-java-api>3.3.6</version.docker-java-api>
     <version.httpclient>4.5.14</version.httpclient>
     <version.elasticsearch7>7.17.28</version.elasticsearch7>
