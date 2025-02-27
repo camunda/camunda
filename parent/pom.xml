@@ -46,7 +46,7 @@
     <version.commons-lang>3.17.0</version.commons-lang>
     <version.commons-logging>1.3.5</version.commons-logging>
     <version.commons-math>3.6.1</version.commons-math>
-    <version.commons-codec>1.17.2</version.commons-codec>
+    <version.commons-codec>1.18.0</version.commons-codec>
     <version.commons-compress>1.27.1</version.commons-compress>
     <version.commons-validator>1.9.0</version.commons-validator>
     <version.zstd-jni>1.5.7-1</version.zstd-jni>
