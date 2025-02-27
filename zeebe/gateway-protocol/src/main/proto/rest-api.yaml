@@ -7182,6 +7182,10 @@ components:
         operationsCompletedCount:
           type: integer
           format: int32
+        items:
+          type: array
+          items:
+            type: string
 
   responses:
     InternalServerError:
