@@ -87,7 +87,7 @@ public class AdHocSubProcessValidatorTest {
     final BpmnModelInstance process =
         process(
             adHocSubProcess -> {
-              adHocSubProcess.completionCondition("elements");
+              adHocSubProcess.completionCondition("condition");
               adHocSubProcess.task("A");
             });
 
