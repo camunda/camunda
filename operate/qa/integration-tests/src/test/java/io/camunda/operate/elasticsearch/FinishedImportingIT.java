@@ -203,6 +203,7 @@ public class FinishedImportingIT extends OperateZeebeAbstractIT {
     // then
     await()
         .atMost(Duration.ofSeconds(30))
+        .ignoreExceptions()
         .untilAsserted(
             () -> {
               final var metrics = beanFactory.getBean(Metrics.class);
@@ -246,6 +247,7 @@ public class FinishedImportingIT extends OperateZeebeAbstractIT {
 
     await()
         .atMost(Duration.ofSeconds(30))
+        .ignoreExceptions()
         .untilAsserted(
             () -> {
               final var metrics = beanFactory.getBean(Metrics.class);
