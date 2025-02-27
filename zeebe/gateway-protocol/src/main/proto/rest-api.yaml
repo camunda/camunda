@@ -3368,18 +3368,12 @@ paths:
         "500":
           $ref: "#/components/responses/InternalServerError"
   /batch-operations/search:
-    post:
+    get:
       tags:
         - Batch Operation
       operationId: searchBatchOperations
       summary: Search Batch Operations
       description: Searches for Batch Operations
-      requestBody:
-        required: false
-        content:
-          application/json:
-            schema:
-              type: object
       responses:
         "200":
           description: List of Batch Operations.
@@ -7132,13 +7126,13 @@ components:
           format: date-time
         operationsTotalCount:
           type: integer
-          format: int64
+          format: int32
         operationsFailedCount:
           type: integer
-          format: int64
+          format: int32
         operationsCompletedCount:
           type: integer
-          format: int64
+          format: int32
 
   responses:
     InternalServerError:

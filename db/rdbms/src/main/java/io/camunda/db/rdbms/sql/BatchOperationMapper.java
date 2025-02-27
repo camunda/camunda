@@ -7,18 +7,24 @@
  */
 package io.camunda.db.rdbms.sql;
 
-import io.camunda.db.rdbms.read.domain.ProcessDefinitionDbQuery;
 import io.camunda.db.rdbms.write.domain.BatchOperationDbModel;
-import io.camunda.db.rdbms.write.domain.ProcessDefinitionDbModel;
 import io.camunda.search.entities.BatchOperationEntity;
-import io.camunda.search.entities.ProcessDefinitionEntity;
+import java.time.OffsetDateTime;
 import java.util.List;
 
 public interface BatchOperationMapper {
 
   void insert(BatchOperationDbModel batchOperationDbModel);
 
+  void updateCompleted(BatchOperationUpdateDto dto);
+
   Long count();
 
   List<BatchOperationEntity> search();
+
+  record BatchOperationUpdateDto(
+      long batchOperationKey,
+      OffsetDateTime endDate,
+      int operationsFailedCount,
+      int operationsCompletedCount) {}
 }

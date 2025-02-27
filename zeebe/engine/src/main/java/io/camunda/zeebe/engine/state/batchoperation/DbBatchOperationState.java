@@ -14,6 +14,7 @@ import io.camunda.zeebe.db.impl.DbLong;
 import io.camunda.zeebe.engine.state.mutable.MutableBatchOperationState;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationCreationRecord;
+import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationExecutionRecord;
 import java.util.ArrayList;
 import java.util.Optional;
 
@@ -36,6 +37,16 @@ public class DbBatchOperationState implements MutableBatchOperationState {
     final var itemKeys = new ItemKeys();
     itemKeys.setKeys(new ArrayList<>(record.getKeys())); // todo record also as list?
     columnFamily.insert(this.batchKey, itemKeys);
+  }
+
+  @Override
+  public void update(final long batchKey, final BatchOperationExecutionRecord record) {
+    // do something
+  }
+
+  @Override
+  public void complete(final long batchKey, final BatchOperationExecutionRecord record) {
+    // do something
   }
 
   @Override

@@ -8,56 +8,56 @@ public record BatchOperationDbModel(
     String operationType,
     OffsetDateTime startDate,
     OffsetDateTime endDate,
-    Long operationsTotalCount,
-    Long operationsFailedCount,
-    Long operationsCompletedCount) {
+    int operationsTotalCount,
+    int operationsFailedCount,
+    int operationsCompletedCount) {
 
-  public static class BatchOperationDbModelBuilder
+  public static class Builder
       implements ObjectBuilder<BatchOperationDbModel> {
 
     private Long batchOperationKey;
     private String operationType;
     private OffsetDateTime startDate;
     private OffsetDateTime endDate;
-    private Long operationsTotalCount;
-    private Long operationsFailedCount;
-    private Long operationsCompletedCount;
+    private int operationsTotalCount;
+    private int operationsFailedCount;
+    private int operationsCompletedCount;
 
     // Public constructor to initialize the builder
-    public BatchOperationDbModelBuilder() {}
+    public Builder() {}
 
     // Builder methods for each field
-    public BatchOperationDbModelBuilder batchOperationKey(final Long batchOperationKey) {
+    public Builder batchOperationKey(final Long batchOperationKey) {
       this.batchOperationKey = batchOperationKey;
       return this;
     }
 
-    public BatchOperationDbModelBuilder operationType(final String operationType) {
+    public Builder operationType(final String operationType) {
       this.operationType = operationType;
       return this;
     }
 
-    public BatchOperationDbModelBuilder startDate(final OffsetDateTime startDate) {
+    public Builder startDate(final OffsetDateTime startDate) {
       this.startDate = startDate;
       return this;
     }
 
-    public BatchOperationDbModelBuilder endDate(final OffsetDateTime endDate) {
+    public Builder endDate(final OffsetDateTime endDate) {
       this.endDate = endDate;
       return this;
     }
 
-    public BatchOperationDbModelBuilder operationsTotalCount(final Long operationsTotalCount) {
+    public Builder operationsTotalCount(final int operationsTotalCount) {
       this.operationsTotalCount = operationsTotalCount;
       return this;
     }
 
-    public BatchOperationDbModelBuilder operationsFailedCount(final Long operationsFailedCount) {
+    public Builder operationsFailedCount(final int operationsFailedCount) {
       this.operationsFailedCount = operationsFailedCount;
       return this;
     }
 
-    public BatchOperationDbModelBuilder operationsCompletedCount(final Long operationsCompletedCount) {
+    public Builder operationsCompletedCount(final int operationsCompletedCount) {
       this.operationsCompletedCount = operationsCompletedCount;
       return this;
     }
