@@ -19,6 +19,7 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
 import io.camunda.zeebe.engine.state.immutable.ProcessState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
+import io.camunda.zeebe.engine.state.instance.ElementInstance;
 import io.camunda.zeebe.protocol.impl.record.value.adhocsubprocess.AdHocSubProcessActivityActivationFlowNode;
 import io.camunda.zeebe.protocol.impl.record.value.adhocsubprocess.AdHocSubProcessActivityActivationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
@@ -69,49 +70,18 @@ public class AdHocSubProcessActivityActivateProcessor
           command.getValue().getAdHocSubProcessInstanceKey());
     }
 
-    final var authRequest =
-        new AuthorizationRequest(
-                command,
-                AuthorizationResourceType.PROCESS_DEFINITION,
-                PermissionType.UPDATE_PROCESS_INSTANCE,
-                adHocSubprocessElementInstance.getValue().getTenantId())
-            .addResourceId(adHocSubprocessElementInstance.getValue().getBpmnProcessId());
-    final var isAuthorized = authCheckBehavior.isAuthorized(authRequest);
-    if (isAuthorized.isLeft()) {
-      final var rejection = isAuthorized.getLeft();
-      final String errorMessage =
-          RejectionType.NOT_FOUND.equals(rejection.type())
-              ? AuthorizationCheckBehavior.NOT_FOUND_ERROR_MESSAGE.formatted(
-                  "modify a process instance",
-                  command.getValue().getAdHocSubProcessInstanceKey(),
-                  "such process instance")
-              : rejection.reason();
-      rejectionWriter.appendRejection(command, rejection.type(), errorMessage);
-      responseWriter.writeRejectionOnCommand(command, rejection.type(), errorMessage);
+    if (!isAuthorized(command, adHocSubprocessElementInstance)) {
       return;
     }
 
-    final var hasDuplicates =
-        command.getValue().getFlowNodes().stream()
-                .map(AdHocSubProcessActivityActivationFlowNodeValue::getFlowNodeId)
-                .distinct()
-                .count()
-            != command.getValue().getFlowNodes().size();
-    if (hasDuplicates) {
-      throw new DuplicateFlowNodesException(
-          command.getValue().getFlowNodes().stream()
-              .map(AdHocSubProcessActivityActivationFlowNodeValue::getFlowNodeId)
-              .toList());
-    }
+    validateDuplicateFlowNodes(command);
 
     final var adHocSubprocessElementId = adHocSubprocessElementInstance.getValue().getElementId();
-    final var adHocSubprocessState = adHocSubprocessElementInstance.getState();
-    switch (adHocSubprocessState) {
-      case ELEMENT_COMPLETED, ELEMENT_TERMINATED ->
-          throw new AdHocSubProcessAlreadyDoneException(adHocSubprocessElementId);
+    if (adHocSubprocessElementInstance.isInFinalState()) {
+      throw new AdHocSubProcessInFinalStateException(adHocSubprocessElementId);
     }
 
-    if (adHocSubprocessState != ProcessInstanceIntent.ELEMENT_ACTIVATED) {
+    if (!adHocSubprocessElementInstance.isActive()) {
       throw new AdHocSubProcessInstanceNotActivatedException(
           command.getValue().getAdHocSubProcessInstanceKey());
     }
@@ -147,10 +117,8 @@ public class AdHocSubProcessActivityActivateProcessor
       final var flowNodeProcessInstanceRecord = new ProcessInstanceRecord();
       flowNodeProcessInstanceRecord.wrap(adHocSubprocessElementInstance.getValue());
       flowNodeProcessInstanceRecord
-          // todo: should this have the same flow scope key as its parent?
           .setFlowScopeKey(adHocSubprocessElementInstance.getKey())
           .setElementId(flowNodeToActivate.getId())
-          // todo: are the element type and event type required?
           .setBpmnElementType(flowNodeToActivate.getElementType())
           .setBpmnEventType(flowNodeToActivate.getEventType());
 
@@ -181,6 +149,50 @@ public class AdHocSubProcessActivityActivateProcessor
     return ProcessingError.EXPECTED_ERROR;
   }
 
+  private void validateDuplicateFlowNodes(
+      final TypedRecord<AdHocSubProcessActivityActivationRecord> command) {
+    final var hasDuplicates =
+        command.getValue().getFlowNodes().stream()
+                .map(AdHocSubProcessActivityActivationFlowNodeValue::getFlowNodeId)
+                .distinct()
+                .count()
+            != command.getValue().getFlowNodes().size();
+    if (hasDuplicates) {
+      throw new DuplicateFlowNodesException(
+          command.getValue().getFlowNodes().stream()
+              .map(AdHocSubProcessActivityActivationFlowNodeValue::getFlowNodeId)
+              .toList());
+    }
+  }
+
+  private boolean isAuthorized(
+      final TypedRecord<AdHocSubProcessActivityActivationRecord> command,
+      final ElementInstance adHocSubprocessElementInstance) {
+    final var authRequest =
+        new AuthorizationRequest(
+                command,
+                AuthorizationResourceType.PROCESS_DEFINITION,
+                PermissionType.UPDATE_PROCESS_INSTANCE,
+                adHocSubprocessElementInstance.getValue().getTenantId())
+            .addResourceId(adHocSubprocessElementInstance.getValue().getBpmnProcessId());
+    final var isAuthorized = authCheckBehavior.isAuthorized(authRequest);
+    if (isAuthorized.isLeft()) {
+      final var rejection = isAuthorized.getLeft();
+      final String errorMessage =
+          RejectionType.NOT_FOUND.equals(rejection.type())
+              ? AuthorizationCheckBehavior.NOT_FOUND_ERROR_MESSAGE.formatted(
+                  "modify a process instance",
+                  command.getValue().getAdHocSubProcessInstanceKey(),
+                  "such process instance")
+              : rejection.reason();
+      rejectionWriter.appendRejection(command, rejection.type(), errorMessage);
+      responseWriter.writeRejectionOnCommand(command, rejection.type(), errorMessage);
+      return false;
+    }
+
+    return true;
+  }
+
   private static final class DuplicateFlowNodesException extends IllegalStateException {
     private static final String ERROR_MESSAGE = "Duplicate flow nodes %s not allowed.";
 
@@ -199,11 +211,11 @@ public class AdHocSubProcessActivityActivateProcessor
     }
   }
 
-  private static final class AdHocSubProcessAlreadyDoneException extends IllegalStateException {
+  private static final class AdHocSubProcessInFinalStateException extends IllegalStateException {
     private static final String ERROR_MESSAGE =
         "Ad-hoc subprocess <%s> is already in a terminal state. Cannot activate any further activities.";
 
-    private AdHocSubProcessAlreadyDoneException(final String adHocSubprocessElementId) {
+    private AdHocSubProcessInFinalStateException(final String adHocSubprocessElementId) {
       super(String.format(ERROR_MESSAGE, adHocSubprocessElementId));
     }
   }
