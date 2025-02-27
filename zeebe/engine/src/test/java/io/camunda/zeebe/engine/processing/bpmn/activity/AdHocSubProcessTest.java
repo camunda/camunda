@@ -15,11 +15,14 @@ import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.model.bpmn.builder.AdHocSubProcessBuilder;
+import io.camunda.zeebe.protocol.impl.record.value.signal.SignalRecord;
 import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
+import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
+import io.camunda.zeebe.protocol.record.intent.SignalIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.BpmnEventType;
 import io.camunda.zeebe.protocol.record.value.DeploymentRecordValue;
@@ -31,6 +34,7 @@ import java.time.Duration;
 import java.util.Collections;
 import java.util.List;
 import java.util.function.Consumer;
+import java.util.function.Predicate;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
@@ -340,10 +344,7 @@ public final class AdHocSubProcessTest {
               adHocSubProcess.cancelRemainingInstances(true);
               adHocSubProcess.task("A");
               adHocSubProcess.task("B");
-              adHocSubProcess
-                  .intermediateCatchEvent("TimerTask")
-                  .timerWithDuration(Duration.ofSeconds(1))
-                  .task("C");
+              adHocSubProcess.serviceTask("ServiceTask", b -> b.zeebeJobType("testType")).task("C");
             });
 
     ENGINE.deployment().withXmlResource(process).deploy();
@@ -353,7 +354,7 @@ public final class AdHocSubProcessTest {
         ENGINE
             .processInstance()
             .ofBpmnProcessId(PROCESS_ID)
-            .withVariable("activateElements", List.of("A", "TimerTask"))
+            .withVariable("activateElements", List.of("A", "ServiceTask"))
             .create();
 
     // then
@@ -364,18 +365,21 @@ public final class AdHocSubProcessTest {
         .extracting(r -> r.getValue().getElementId(), Record::getIntent)
         .containsSubsequence(
             tuple(AD_HOC_SUB_PROCESS_ELEMENT_ID, ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple("A", ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple("ServiceTask", ProcessInstanceIntent.ELEMENT_ACTIVATED),
             tuple("A", ProcessInstanceIntent.ELEMENT_COMPLETED),
-            tuple("TimerTask", ProcessInstanceIntent.TERMINATE_ELEMENT),
-            tuple("TimerTask", ProcessInstanceIntent.ELEMENT_TERMINATED),
+            tuple("ServiceTask", ProcessInstanceIntent.TERMINATE_ELEMENT),
+            tuple("ServiceTask", ProcessInstanceIntent.ELEMENT_TERMINATED),
             tuple(AD_HOC_SUB_PROCESS_ELEMENT_ID, ProcessInstanceIntent.ELEMENT_COMPLETING),
             tuple(AD_HOC_SUB_PROCESS_ELEMENT_ID, ProcessInstanceIntent.ELEMENT_COMPLETED),
             tuple(PROCESS_ID, ProcessInstanceIntent.ELEMENT_COMPLETED))
-        .doesNotContainSubsequence(tuple("C", ProcessInstanceIntent.ELEMENT_ACTIVATED));
+        .doesNotContain(
+            tuple("ServiceTask", ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple("C", ProcessInstanceIntent.ELEMENT_ACTIVATED));
   }
 
   @Test
   public void shouldNotCancelRemainingInstancesWhenNotConfigured() {
-    // given
     final BpmnModelInstance process =
         process(
             adHocSubProcess -> {
@@ -384,33 +388,48 @@ public final class AdHocSubProcessTest {
               adHocSubProcess.cancelRemainingInstances(false);
               adHocSubProcess.task("A");
               adHocSubProcess.task("B");
-              adHocSubProcess
-                  .intermediateCatchEvent("TimerTask")
-                  .timerWithDuration(Duration.ofSeconds(1))
-                  .task("C");
+              adHocSubProcess.serviceTask("ServiceTask", b -> b.zeebeJobType("testType")).task("C");
             });
 
     ENGINE.deployment().withXmlResource(process).deploy();
 
-    // when
+    // create instance and wait until ad-hoc subprocess blocks on ServiceTask being completed
     final long processInstanceKey =
         ENGINE
             .processInstance()
             .ofBpmnProcessId(PROCESS_ID)
-            .withVariable("activateElements", List.of("A", "TimerTask"))
+            .withVariable("activateElements", List.of("A", "ServiceTask"))
             .create();
 
-    // then
+    // helps to stop at a specific point after the ad-hoc subprocess is activated
+    ENGINE.signal().withSignalName("signal").broadcast();
+
+    // expect process not to complete until service task is completed
+    assertThat(
+            RecordingExporter.records()
+                .limit(signalBroadcasted("signal"))
+                .processInstanceRecords()
+                .withProcessInstanceKey(processInstanceKey))
+        .extracting(r -> r.getValue().getElementId(), Record::getIntent)
+        .containsSubsequence(
+            tuple(AD_HOC_SUB_PROCESS_ELEMENT_ID, ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple("A", ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple("ServiceTask", ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple("A", ProcessInstanceIntent.ELEMENT_COMPLETED))
+        .doesNotContain(
+            tuple("ServiceTask", ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple(AD_HOC_SUB_PROCESS_ELEMENT_ID, ProcessInstanceIntent.ELEMENT_COMPLETED));
+
+    // complete service task
+    ENGINE.job().ofInstance(processInstanceKey).withType("testType").complete();
+
     assertThat(
             RecordingExporter.processInstanceRecords()
                 .withProcessInstanceKey(processInstanceKey)
                 .limitToProcessInstanceCompleted())
         .extracting(r -> r.getValue().getElementId(), Record::getIntent)
         .containsSubsequence(
-            tuple(AD_HOC_SUB_PROCESS_ELEMENT_ID, ProcessInstanceIntent.ELEMENT_ACTIVATED),
-            tuple("A", ProcessInstanceIntent.ELEMENT_COMPLETED),
-            tuple("TimerTask", ProcessInstanceIntent.ELEMENT_COMPLETED),
-            tuple("C", ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple("ServiceTask", ProcessInstanceIntent.ELEMENT_COMPLETED),
             tuple(AD_HOC_SUB_PROCESS_ELEMENT_ID, ProcessInstanceIntent.ELEMENT_COMPLETING),
             tuple(AD_HOC_SUB_PROCESS_ELEMENT_ID, ProcessInstanceIntent.ELEMENT_COMPLETED),
             tuple(PROCESS_ID, ProcessInstanceIntent.ELEMENT_COMPLETED));
@@ -771,5 +790,11 @@ public final class AdHocSubProcessTest {
             tuple("A", adHocSubProcessKeys.get(0)),
             tuple("B", adHocSubProcessKeys.get(1)),
             tuple("C", adHocSubProcessKeys.get(2)));
+  }
+
+  private static Predicate<Record<RecordValue>> signalBroadcasted(final String signalName) {
+    return r ->
+        r.getIntent() == SignalIntent.BROADCASTED
+            && ((SignalRecord) r.getValue()).getSignalName().equals(signalName);
   }
 }
