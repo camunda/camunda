@@ -67,7 +67,7 @@ public abstract class OperateAbstractIT {
 
   @MockBean protected UserService userService;
 
-  @MockBean(name = "tenantServiceImpl")
+  @MockBean(name = "tenantService")
   protected TenantService tenantService;
 
   @Before
