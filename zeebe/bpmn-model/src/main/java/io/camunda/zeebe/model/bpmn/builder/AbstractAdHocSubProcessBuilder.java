@@ -66,8 +66,8 @@ public class AbstractAdHocSubProcessBuilder<B extends AbstractAdHocSubProcessBui
    * @param cancelRemainingInstances whether to cancel remaining instances
    * @return the builder object
    */
-  public B cancelRemainingInstancesEnabled(final boolean cancelRemainingInstances) {
-    ((AdHocSubProcess) element).setCancelRemainingInstancesEnabled(cancelRemainingInstances);
+  public B cancelRemainingInstances(final boolean cancelRemainingInstances) {
+    ((AdHocSubProcess) element).setCancelRemainingInstances(cancelRemainingInstances);
     return myself;
   }
 

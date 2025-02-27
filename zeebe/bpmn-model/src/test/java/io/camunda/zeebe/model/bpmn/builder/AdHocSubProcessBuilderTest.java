@@ -113,7 +113,7 @@ class AdHocSubProcessBuilderTest {
 
   @ParameterizedTest
   @ValueSource(booleans = {true, false})
-  void shouldSetCancelRemainingInstances(final boolean cancelRemainingInstancesEnabled) {
+  void shouldSetCancelRemainingInstances(final boolean cancelRemainingInstances) {
     // given
     final BpmnModelInstance process =
         Bpmn.createExecutableProcess("process")
@@ -121,7 +121,7 @@ class AdHocSubProcessBuilderTest {
             .adHocSubProcess(
                 "ad-hoc",
                 adHocSubProcess -> {
-                  adHocSubProcess.cancelRemainingInstancesEnabled(cancelRemainingInstancesEnabled);
+                  adHocSubProcess.cancelRemainingInstances(cancelRemainingInstances);
                   adHocSubProcess.task("A");
                 })
             .endEvent()
@@ -131,8 +131,8 @@ class AdHocSubProcessBuilderTest {
     final ModelElementInstance adHocSubProcess = process.getModelElementById("ad-hoc");
 
     assertThat(adHocSubProcess).isInstanceOf(AdHocSubProcess.class);
-    assertThat(((AdHocSubProcess) adHocSubProcess).isCancelRemainingInstancesEnabled())
-        .isEqualTo(cancelRemainingInstancesEnabled);
+    assertThat(((AdHocSubProcess) adHocSubProcess).isCancelRemainingInstances())
+        .isEqualTo(cancelRemainingInstances);
   }
 
   @Test
@@ -153,6 +153,6 @@ class AdHocSubProcessBuilderTest {
     final ModelElementInstance adHocSubProcess = process.getModelElementById("ad-hoc");
 
     assertThat(adHocSubProcess).isInstanceOf(AdHocSubProcess.class);
-    assertThat(((AdHocSubProcess) adHocSubProcess).isCancelRemainingInstancesEnabled()).isTrue();
+    assertThat(((AdHocSubProcess) adHocSubProcess).isCancelRemainingInstances()).isTrue();
   }
 }

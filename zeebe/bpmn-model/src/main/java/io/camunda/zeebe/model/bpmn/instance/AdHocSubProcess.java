@@ -33,7 +33,7 @@ public interface AdHocSubProcess extends SubProcess {
    * @return whether the ad-hoc subprocess should cancel remaining instances when completion
    *     condition evaluates to true.
    */
-  boolean isCancelRemainingInstancesEnabled();
+  boolean isCancelRemainingInstances();
 
   /**
    * Defines if the ad-hoc subprocess should cancel remaining instances when completion condition
@@ -41,5 +41,5 @@ public interface AdHocSubProcess extends SubProcess {
    *
    * @param cancelRemainingInstances whether to cancel remaining instances on completion
    */
-  void setCancelRemainingInstancesEnabled(boolean cancelRemainingInstances);
+  void setCancelRemainingInstances(boolean cancelRemainingInstances);
 }

@@ -77,12 +77,12 @@ public class AdHocSubProcessImpl extends SubProcessImpl implements AdHocSubProce
   }
 
   @Override
-  public boolean isCancelRemainingInstancesEnabled() {
+  public boolean isCancelRemainingInstances() {
     return cancelRemainingInstancesAttribute.getValue(this);
   }
 
   @Override
-  public void setCancelRemainingInstancesEnabled(final boolean cancelRemainingInstances) {
+  public void setCancelRemainingInstances(final boolean cancelRemainingInstances) {
     cancelRemainingInstancesAttribute.setValue(this, cancelRemainingInstances);
   }
 }

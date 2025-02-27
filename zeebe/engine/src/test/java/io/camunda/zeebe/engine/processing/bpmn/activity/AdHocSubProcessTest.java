@@ -337,7 +337,7 @@ public final class AdHocSubProcessTest {
             adHocSubProcess -> {
               adHocSubProcess.zeebeActiveElementsCollectionExpression("activateElements");
               adHocSubProcess.completionCondition("=true");
-              adHocSubProcess.cancelRemainingInstancesEnabled(true);
+              adHocSubProcess.cancelRemainingInstances(true);
               adHocSubProcess.task("A");
               adHocSubProcess.task("B");
               adHocSubProcess
@@ -381,7 +381,7 @@ public final class AdHocSubProcessTest {
             adHocSubProcess -> {
               adHocSubProcess.zeebeActiveElementsCollectionExpression("activateElements");
               adHocSubProcess.completionCondition("=true");
-              adHocSubProcess.cancelRemainingInstancesEnabled(false);
+              adHocSubProcess.cancelRemainingInstances(false);
               adHocSubProcess.task("A");
               adHocSubProcess.task("B");
               adHocSubProcess
