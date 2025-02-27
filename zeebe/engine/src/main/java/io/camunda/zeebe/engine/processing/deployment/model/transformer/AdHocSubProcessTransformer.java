@@ -38,7 +38,7 @@ public final class AdHocSubProcessTransformer implements ModelElementTransformer
 
     Optional.ofNullable(element.getCompletionCondition())
         .map(CompletionCondition::getTextContent)
-        .filter(e -> !e.isEmpty())
+        .filter(e -> !e.isBlank())
         .map(context.getExpressionLanguage()::parseExpression)
         .ifPresent(executableAdHocSubProcess::setCompletionCondition);
 
