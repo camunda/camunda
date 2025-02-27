@@ -25,6 +25,8 @@ public final class UserTaskCreatedApplier
 
   @Override
   public void applyState(final long key, final UserTaskRecord value) {
+    // we need to update the user task record, to unset the assignee
+    userTaskState.update(value);
     userTaskState.updateUserTaskLifecycleState(key, LifecycleState.CREATED);
 
     // Clear operational data related to the current update transition
