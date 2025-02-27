@@ -233,13 +233,23 @@ public class WebSecurityConfig {
 
   @Bean
   public FilterRegistrationBean<WebApplicationAuthorizationCheckFilter>
-      applicationAuthorizationFilterFilterRegistrationBean() {
-    return new FilterRegistrationBean<>(new WebApplicationAuthorizationCheckFilter());
+      applicationAuthorizationFilterFilterRegistrationBean(
+          final WebApplicationAuthorizationCheckFilter filter) {
+    final FilterRegistrationBean<WebApplicationAuthorizationCheckFilter> registration =
+        new FilterRegistrationBean<>();
+    registration.setFilter(filter);
+    registration.addUrlPatterns("/identity/*", "/operate/*", "/tasklist/*");
+    return registration;
+  }
+
+  @Bean
+  public WebApplicationAuthorizationCheckFilter webApplicationAuthorizationCheckFilter(
+      final SecurityConfiguration securityConfiguration) {
+    return new WebApplicationAuthorizationCheckFilter(securityConfiguration);
   }
 
   private static boolean isBasicAuthRequest(final HttpServletRequest request) {
     final String authorizationHeader = request.getHeader(HttpHeaders.AUTHORIZATION);
-    // If the client sends an `Authorization: Basic` header, treat this as a basic auth request.
     return authorizationHeader != null && authorizationHeader.startsWith("Basic ");
   }
 
