@@ -222,28 +222,16 @@ When this happens and you're still interested in contributing, please feel free 
 
 ## Backporting changes
 
-Some changes need to be copied to older versions. We use the [backport](https://github.com/zeebe-io/backport-action) Github Action to automate this process. Please follow these steps to backport your changes:
+Some changes need to be copied to other (often older) versions. We use the [backport](https://github.com/zeebe-io/backport-action) Github Action to automate this process. Please follow these steps to port your changes:
 
-1. **Label the pull request** with a backport label (e.g. the label `backport stable/1.0` indicates that we want to backport this pull request to the `stable/1.0` branch).
-   - if the pull request is _not yet_ merged, it will be automatically backported when it gets merged.
+1. **Label the pull request** with a backport label (e.g. the label `backport stable/1.0` indicates that we want to port this pull request to the `stable/1.0` branch).
+   - if the pull request is _not yet_ merged, it will be automatically ported when it gets merged.
    - if the pull request is _already_ merged, create a comment on the pull request that contains
-     `/backport` to trigger the automatic backporting.
+     `/backport` to trigger the action.
+   - a pull request can have multiple backport labels, in which case the action ports the pull request to each of those branches.
 2. The GitHub actions bot comments on the pull request once it finishes:
-   - When _successful_, a new backport pull request was automatically created. Simply approve the PR
-     and enqueue it to the merge queue by clicking the `Merge when ready` button.
-   - If it _failed_, please follow these **manual steps**:
-     1. Locally checkout the target branch (e.g. `stable/1.0`).
-     2. Make sure it's up to date with the origin (i.e. `git pull`).
-     3. Checkout a new branch for your backported changes (e.g. `git checkout -b
-        backport-123-to-stable/1.0`).
-     4. Cherry-pick your changes `git cherry-pick -x <sha-1>...<sha-n>`. You may need to resolve
-        conflicts.
-     5. Push your cherry-picked changes `git push`.
-     6. Create a pull request for your backport branch:
-        - Make sure it is clear that this backports in the title (e.g. `[Backport stable/1.0] Title of the original PR`).
-        - Make sure to change the target of the pull request to the correct branch (e.g. `stable/1.0`).
-        - Refer to the pull request in the description to link it (e.g. `backports #123`)
-        - Refer to any issues that were referenced in the original pull request (e.g. `relates to #99`).
+   - When _successful_, a new backport pull request was automatically created. A bot will automatically approve and merge it when it passes the CI. If it doesn't, you'll need to fix the problems and request a new review.
+   - If it _fails_, the action provides instructions in a comment that you need to follow. Once ready, please request a new review.
 
 ## Commit message guidelines
 
