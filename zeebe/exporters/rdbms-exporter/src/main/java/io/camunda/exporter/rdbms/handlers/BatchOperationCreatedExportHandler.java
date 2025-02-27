@@ -3,6 +3,7 @@ package io.camunda.exporter.rdbms.handlers;
 import io.camunda.db.rdbms.write.domain.BatchOperationDbModel;
 import io.camunda.db.rdbms.write.service.BatchOperationWriter;
 import io.camunda.exporter.rdbms.RdbmsExportHandler;
+import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationIntent;
@@ -11,19 +12,28 @@ import io.camunda.zeebe.util.DateUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * Exports a batch operation creation record to the database.
+ * This is only done if the batch was also created on this partition!
+ */
 public class BatchOperationCreatedExportHandler implements RdbmsExportHandler<BatchOperationCreationRecordValue> {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(BatchOperationCreatedExportHandler.class);
 
   private final BatchOperationWriter batchOperationWriter;
+  private final long partitionId;
 
-  public BatchOperationCreatedExportHandler(final BatchOperationWriter batchOperationWriter) {
+  public BatchOperationCreatedExportHandler(final BatchOperationWriter batchOperationWriter,
+                                            final long partitionId) {
     this.batchOperationWriter = batchOperationWriter;
+    this.partitionId = partitionId;
   }
 
   @Override
   public boolean canExport(final Record<BatchOperationCreationRecordValue> record) {
-    return record.getValueType() == ValueType.BATCH_OPERATION && record.getIntent().equals(BatchOperationIntent.CREATED);
+    return record.getValueType() == ValueType.BATCH_OPERATION
+        && record.getIntent().equals(BatchOperationIntent.CREATED)
+        && Protocol.decodePartitionId(record.getKey()) == (int)partitionId; // Just do it for the original partition
   }
 
   @Override
