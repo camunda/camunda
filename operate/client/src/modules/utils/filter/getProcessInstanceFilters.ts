@@ -6,6 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
+import {logger} from 'modules/logger';
 import {
   ProcessInstanceFilters,
   ProcessInstanceFilterField,
@@ -20,6 +21,20 @@ function getFilters<Fields extends string, Filters>(
 ): Filters {
   return Array.from(new URLSearchParams(searchParams)).reduce(
     (accumulator, [param, value]) => {
+      if (param === 'incidentErrorHashCode') {
+        const incidentErrorHashCode = Number(value);
+
+        if (isNaN(incidentErrorHashCode)) {
+          logger.error('incidentErrorHashCode is not a number');
+          return accumulator;
+        }
+
+        return {
+          ...accumulator,
+          [param]: incidentErrorHashCode,
+        };
+      }
+
       if (booleanFields.includes(param)) {
         return {
           ...accumulator,

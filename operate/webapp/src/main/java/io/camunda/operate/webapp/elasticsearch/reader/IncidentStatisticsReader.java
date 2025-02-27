@@ -104,7 +104,11 @@ public class IncidentStatisticsReader extends AbstractReader
             .field(IncidentTemplate.ERROR_MSG_HASH)
             .size(ElasticsearchUtil.TERMS_AGG_SIZE)
             .subAggregation(
-                topHits(ERROR_MESSAGE).size(1).fetchSource(IncidentTemplate.ERROR_MSG, null))
+                topHits(ERROR_MESSAGE)
+                    .size(1)
+                    .fetchSource(
+                        new String[] {IncidentTemplate.ERROR_MSG, IncidentTemplate.ERROR_MSG_HASH},
+                        null))
             .subAggregation(
                 terms(GROUP_BY_PROCESS_KEYS)
                     .field(IncidentTemplate.PROCESS_DEFINITION_KEY)
@@ -293,9 +297,10 @@ public class IncidentStatisticsReader extends AbstractReader
         ((TopHits) errorMessageBucket.getAggregations().get(ERROR_MESSAGE)).getHits();
     final SearchHit searchHit = searchHits.getHits()[0];
     final String errorMessage = (String) searchHit.getSourceAsMap().get(IncidentTemplate.ERROR_MSG);
-
+    final Integer errorMessageHashCode =
+        (Integer) searchHit.getSourceAsMap().get(IncidentTemplate.ERROR_MSG_HASH);
     final IncidentsByErrorMsgStatisticsDto processStatistics =
-        new IncidentsByErrorMsgStatisticsDto(errorMessage);
+        new IncidentsByErrorMsgStatisticsDto(errorMessage, errorMessageHashCode);
 
     final Terms processDefinitionKeyAggregation =
         (Terms) errorMessageBucket.getAggregations().get(GROUP_BY_PROCESS_KEYS);

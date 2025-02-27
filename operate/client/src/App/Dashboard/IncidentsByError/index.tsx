@@ -62,38 +62,45 @@ const IncidentsByError: React.FC = observer(() => {
     <PartiallyExpandableDataTable
       dataTestId="incident-byError"
       headers={[{key: 'incident', header: 'incident'}]}
-      rows={incidents.map(({errorMessage, instancesWithErrorCount}) => {
-        return {
-          id: generateErrorMessageId(errorMessage),
-          incident: (
-            <LinkWrapper
-              to={Locations.processes({
-                errorMessage: truncateErrorMessage(errorMessage),
-                incidents: true,
-              })}
-              onClick={() => {
-                panelStatesStore.expandFiltersPanel();
-                tracking.track({
-                  eventName: 'navigation',
-                  link: 'dashboard-process-incidents-by-error-message-all-processes',
-                });
-              }}
-              title={getAccordionTitle(instancesWithErrorCount, errorMessage)}
-            >
-              <InstancesBar
-                label={{type: 'incident', size: 'small', text: errorMessage}}
-                incidentsCount={instancesWithErrorCount}
-                size="medium"
-              />
-            </LinkWrapper>
-          ),
-        };
-      })}
+      rows={incidents.map(
+        ({errorMessage, incidentErrorHashCode, instancesWithErrorCount}) => {
+          return {
+            id: generateErrorMessageId(errorMessage),
+            incident: (
+              <LinkWrapper
+                to={Locations.processes({
+                  errorMessage: truncateErrorMessage(errorMessage),
+                  incidentErrorHashCode,
+                  incidents: true,
+                })}
+                onClick={() => {
+                  panelStatesStore.expandFiltersPanel();
+                  tracking.track({
+                    eventName: 'navigation',
+                    link: 'dashboard-process-incidents-by-error-message-all-processes',
+                  });
+                }}
+                title={getAccordionTitle(instancesWithErrorCount, errorMessage)}
+              >
+                <InstancesBar
+                  label={{type: 'incident', size: 'small', text: errorMessage}}
+                  incidentsCount={instancesWithErrorCount}
+                  size="medium"
+                />
+              </LinkWrapper>
+            ),
+          };
+        },
+      )}
       expandedContents={incidents.reduce(
-        (accumulator, {errorMessage, processes}) => ({
+        (accumulator, {errorMessage, incidentErrorHashCode, processes}) => ({
           ...accumulator,
           [generateErrorMessageId(errorMessage)]: (
-            <Details errorMessage={errorMessage} processes={processes} />
+            <Details
+              errorMessage={errorMessage}
+              processes={processes}
+              incidentErrorHashCode={incidentErrorHashCode}
+            />
           ),
         }),
         {},
