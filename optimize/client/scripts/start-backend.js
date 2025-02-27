@@ -157,7 +157,7 @@ async function setupEnvironment() {
 function buildBackend() {
   return new Promise((resolve, reject) => {
     buildBackendProcess = spawnWithArgs(
-      'mvn clean install -DskipTests -Dskip.docker -Dskip.fe.build -pl optimize/backend -am -T1C',
+      'mvn clean install -DskipTests -Dskip.docker -Dskip.fe.build -pl dist -am -T1C',
       {
         cwd: _resolve(__dirname, '..', '..', '..'),
         shell: true,

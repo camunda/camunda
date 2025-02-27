@@ -28,7 +28,7 @@ export default function CopyToClipboard({
     <Button
       className="CopyToClipboard"
       size="sm"
-      onClick={(evt) => {
+      onClick={(evt: React.MouseEvent<HTMLButtonElement>) => {
         evt.preventDefault();
         const input = document.createElement('input');
         input.value = value;

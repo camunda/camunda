@@ -48,7 +48,6 @@ export default function HyperReportRenderer({report, ...rest}) {
     newResultData[key] = {
       id: key,
       name: label,
-      reportType: 'process',
       data: report.data,
       result: {
         ...result,
