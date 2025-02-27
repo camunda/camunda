@@ -200,7 +200,6 @@ public class AdHocSubProcessIncidentTest {
 
     ENGINE.deployment().withXmlResource(process).deploy();
 
-    // when
     final long processInstanceKey =
         ENGINE
             .processInstance()
@@ -211,16 +210,37 @@ public class AdHocSubProcessIncidentTest {
                     Map.entry("completionCondition", "not a boolean")))
             .create();
 
-    // then
-    Assertions.assertThat(
-            RecordingExporter.incidentRecords(IncidentIntent.CREATED)
-                .withProcessInstanceKey(processInstanceKey)
-                .getFirst()
-                .getValue())
+    final var incidentCreated =
+        RecordingExporter.incidentRecords(IncidentIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementId("A")
+            .getFirst();
+
+    Assertions.assertThat(incidentCreated.getValue())
         .hasElementId("A")
         .hasErrorType(ErrorType.EXTRACT_VALUE_ERROR)
         .hasErrorMessage(
             "Failed to evaluate completion condition. Expected result of the expression 'completionCondition' to be 'BOOLEAN', but was 'STRING'.");
+
+    // when
+    ENGINE
+        .variables()
+        .ofScope(incidentCreated.getValue().getVariableScopeKey())
+        .withDocument(Map.of("completionCondition", true))
+        .update();
+
+    ENGINE.incident().ofInstance(processInstanceKey).withKey(incidentCreated.getKey()).resolve();
+
+    // then
+    assertThat(
+            RecordingExporter.processInstanceRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .limitToProcessInstanceCompleted())
+        .extracting(r -> r.getValue().getElementId(), Record::getIntent)
+        .containsSubsequence(
+            tuple(AD_HOC_SUB_PROCESS_ELEMENT_ID, ProcessInstanceIntent.ELEMENT_COMPLETING),
+            tuple(AD_HOC_SUB_PROCESS_ELEMENT_ID, ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple(PROCESS_ID, ProcessInstanceIntent.ELEMENT_COMPLETED));
   }
 
   @Test
