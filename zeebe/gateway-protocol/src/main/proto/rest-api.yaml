@@ -3270,12 +3270,15 @@ paths:
       tags:
         - Ad-hoc subprocess
       operationId: findAdHocSubprocessActivities
-      summary: Query activatable activities
+      summary: Query activatable activities (alpha)
       description: |
         Search for activatable activities within ad-hoc subprocesses based on given criteria.
 
         Note that this API currently requires filters for both process definition key and ad-hoc
         subprocess ID and does not support paging or sorting.
+
+        This endpoint is an alpha feature and may be subject to change
+        in future releases.
       requestBody:
         required: true
         content:
