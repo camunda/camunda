@@ -199,7 +199,10 @@ public class RdbmsExporterWrapper implements Exporter {
     builder.withHandler(ValueType.FORM, new FormExportHandler(rdbmsWriter.getFormWriter()));
     builder.withHandler(
         ValueType.BATCH_OPERATION,
-        new BatchOperationCreatedExportHandler(rdbmsWriter.getBatchOperationWriter()));
+        new BatchOperationCreatedExportHandler(
+            rdbmsWriter.getBatchOperationWriter(),
+            partitionId
+        ));
     builder.withHandler(
         ValueType.BATCH_OPERATION_EXECUTION,
         new BatchOperationExecutionExportHandler(rdbmsWriter.getBatchOperationWriter()));
