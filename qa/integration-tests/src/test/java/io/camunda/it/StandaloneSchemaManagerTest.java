@@ -7,14 +7,23 @@
  */
 package io.camunda.it;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
+import io.camunda.application.Profile;
 import io.camunda.qa.util.cluster.TestStandaloneCamunda;
 import io.camunda.qa.util.cluster.TestStandaloneSchemaManager;
+import io.camunda.search.clients.query.SearchQueryBuilders;
 import io.camunda.zeebe.broker.system.configuration.ExporterCfg;
+import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
+import io.camunda.zeebe.test.util.asserts.EitherAssert;
 import java.io.IOException;
+import java.net.http.HttpResponse;
 import java.time.Duration;
 import java.util.Map;
+import java.util.Objects;
+import org.awaitility.Awaitility;
 import org.elasticsearch.client.RestClient;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -42,10 +51,11 @@ final class StandaloneSchemaManagerTest {
       camunda_app_role:
         indices:
           - names: ['zeebe-*', 'operate-*', 'tasklist-*']
-            privileges: ['manage']
-          - names: ['*']
-            privileges: ['read']
+            privileges: ['manage', 'read', 'write']
       """;
+
+  private static final String TEST_USER_NAME = "foo";
+  private static final String TEST_USER_PASSWORD = "bar";
 
   @TestZeebe(autoStart = false)
   final TestStandaloneSchemaManager schemaManager =
@@ -92,6 +102,10 @@ final class StandaloneSchemaManagerTest {
   @TestZeebe(autoStart = false)
   final TestStandaloneCamunda camunda =
       new TestStandaloneCamunda(es, false)
+          .withProperty("camunda.operate.migration.migrationEnabled", false)
+          .withProperty("camunda.tasklist.migration.migrationEnabled", false)
+          .withProperty("camunda.database.username", APP_USER)
+          .withProperty("camunda.database.password", APP_PASSWORD)
           .withBrokerConfig(
               cfg -> {
                 cfg.getExporters()
@@ -152,5 +166,77 @@ final class StandaloneSchemaManagerTest {
   void canStartCamundaAfterSchemaManager() {
     schemaManager.start();
     camunda.start();
+  }
+
+  @Test
+  void canUseCamunda() {
+    // given
+    schemaManager.start();
+    camunda.withAdditionalProfile(Profile.DEFAULT_AUTH_PROFILE).start();
+    try (final var operateClient = camunda.newOperateClient()) {
+      operateClient.createUser(TEST_USER_NAME, TEST_USER_PASSWORD);
+    }
+
+    // when -- creating a process instance with user task
+    final long processInstanceKey;
+    try (final var zeebeClient = camunda.newClientBuilder().build()) {
+      // Deploy process with user task
+      zeebeClient
+          .newDeployResourceCommand()
+          .addProcessModel(
+              Bpmn.createExecutableProcess("process-with-user-task")
+                  .startEvent()
+                  .userTask("user-task")
+                  .zeebeUserTask()
+                  .endEvent()
+                  .done(),
+              "process-with-user-task.bpmn")
+          .send()
+          .join();
+      processInstanceKey =
+          zeebeClient
+              .newCreateInstanceCommand()
+              .bpmnProcessId("process-with-user-task")
+              .latestVersion()
+              .send()
+              .join()
+              .getProcessInstanceKey();
+    }
+
+    // then -- user task exists and can be completed
+    try (final var tasklistClient =
+        camunda.newTasklistClient().withAuthentication(TEST_USER_NAME, TEST_USER_PASSWORD)) {
+      final var userTaskKey =
+          Awaitility.await("should create a user task")
+              .atMost(Duration.ofSeconds(60))
+              .ignoreExceptions()
+              .until(
+                  () ->
+                      tasklistClient
+                          .searchUserTasks(SearchQueryBuilders.query().build())
+                          .hits()
+                          .getFirst()
+                          .source()
+                          .getKey(),
+                  Objects::nonNull);
+      assertThat(tasklistClient.assignUserTask(userTaskKey, TEST_USER_NAME))
+          .returns(200, HttpResponse::statusCode);
+      assertThat(tasklistClient.completeUserTask(userTaskKey))
+          .returns(200, HttpResponse::statusCode);
+    }
+
+    // then -- process instance is completed
+    try (final var operateClient =
+        camunda.newOperateClient().withAuthentication(TEST_USER_NAME, TEST_USER_PASSWORD)) {
+      Awaitility.await("process instance should be completed")
+          .atMost(Duration.ofSeconds(60))
+          .ignoreExceptions()
+          .untilAsserted(
+              () -> {
+                final var result = operateClient.getProcessInstanceWith(processInstanceKey);
+                EitherAssert.assertThat(result).isRight();
+                assertThat(result.get().processInstances().getFirst().getEndDate()).isNotNull();
+              });
+    }
   }
 }
