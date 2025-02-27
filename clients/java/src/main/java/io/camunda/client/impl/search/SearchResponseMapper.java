@@ -38,7 +38,20 @@ import io.camunda.client.impl.search.response.SearchQueryResponseImpl;
 import io.camunda.client.impl.search.response.SearchResponsePageImpl;
 import io.camunda.client.impl.search.response.UserTaskImpl;
 import io.camunda.client.impl.search.response.VariableImpl;
-import io.camunda.client.protocol.rest.*;
+import io.camunda.client.protocol.rest.DecisionDefinitionSearchQueryResult;
+import io.camunda.client.protocol.rest.DecisionInstanceSearchQueryResult;
+import io.camunda.client.protocol.rest.DecisionRequirementsSearchQueryResult;
+import io.camunda.client.protocol.rest.FlowNodeInstanceResult;
+import io.camunda.client.protocol.rest.FlowNodeInstanceSearchQueryResult;
+import io.camunda.client.protocol.rest.IncidentResult;
+import io.camunda.client.protocol.rest.IncidentSearchQueryResult;
+import io.camunda.client.protocol.rest.ProcessDefinitionResult;
+import io.camunda.client.protocol.rest.ProcessDefinitionSearchQueryResult;
+import io.camunda.client.protocol.rest.ProcessInstanceResult;
+import io.camunda.client.protocol.rest.ProcessInstanceSearchQueryResult;
+import io.camunda.client.protocol.rest.SearchQueryPageResponse;
+import io.camunda.client.protocol.rest.UserTaskSearchQueryResult;
+import io.camunda.client.protocol.rest.VariableSearchQueryResult;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
@@ -47,7 +60,8 @@ import java.util.stream.Collectors;
 
 public final class SearchResponseMapper {
 
-  private SearchResponseMapper() {}
+  private SearchResponseMapper() {
+  }
 
   public static SearchQueryResponse<ProcessDefinition> toProcessDefinitionSearchResponse(
       final ProcessDefinitionSearchQueryResult response) {
