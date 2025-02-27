@@ -32,8 +32,8 @@ import org.camunda.bpm.model.xml.type.child.SequenceBuilder;
 
 public class AdHocSubProcessImpl extends SubProcessImpl implements AdHocSubProcess {
 
-  protected static Attribute<Boolean> cancelRemainingInstancesAttribute;
-  protected static ChildElement<CompletionCondition> completionConditionChild;
+  private static Attribute<Boolean> cancelRemainingInstancesAttribute;
+  private static ChildElement<CompletionCondition> completionConditionChild;
 
   public AdHocSubProcessImpl(final ModelTypeInstanceContext context) {
     super(context);
