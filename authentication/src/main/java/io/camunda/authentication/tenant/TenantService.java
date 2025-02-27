@@ -10,9 +10,7 @@ package io.camunda.authentication.tenant;
 import static java.util.Collections.emptyList;
 
 import java.util.List;
-import org.springframework.stereotype.Component;
 
-@Component
 public interface TenantService {
 
   List<String> tenantsIds();

@@ -32,7 +32,6 @@ import org.springframework.test.context.junit4.SpringRunner;
       IdentityConfigurer.class,
       OperateProperties.class,
       CamundaSecurityProperties.class,
-      TenantService.class,
       PermissionsService.class,
       SecurityContextWrapper.class
     },
@@ -43,6 +42,9 @@ import org.springframework.test.context.junit4.SpringRunner;
 public class SSOIdentityCreatedIT {
 
   @MockBean AuthorizationChecker authorizationChecker;
+
+  @MockBean(name = "tenantServiceImpl")
+  TenantService tenantService;
 
   @Autowired
   @Qualifier("saasIdentity")
