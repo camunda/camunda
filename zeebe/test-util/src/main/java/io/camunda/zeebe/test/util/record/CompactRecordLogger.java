@@ -84,6 +84,13 @@ public class CompactRecordLogger {
   // List rather than Map to preserve order
   private static final List<Entry<String, String>> ABBREVIATIONS =
       List.of(
+          entry("COMPLETE_TASK_LISTENER", "COMP_TL"),
+          entry("DENY_TASK_LISTENER", "DENY_TL"),
+          entry("TASK_LISTENER", "TL"),
+          entry("ASSIGNMENT_DENIED", "ASGN_DENIED"),
+          entry("COMPLETION_DENIED", "COMP_DENIED"),
+          entry("UPDATE_DENIED", "UPDT_DENIED"),
+          entry("SEQUENCE_FLOW_TAKEN", "SQ_FLW_TKN"),
           entry("PROCESS_INSTANCE_CREATION", "CREA"),
           entry("PROCESS_INSTANCE_MODIFICATION", "MOD"),
           entry("PROCESS_INSTANCE", "PI"),
@@ -437,7 +444,7 @@ public class CompactRecordLogger {
     if (!StringUtils.isEmpty(value.getType())) {
       result
           .append("\"")
-          .append(value.getType())
+          .append(StringUtils.abbreviateMiddle(value.getType(), "..", 10))
           .append("\"")
           .append(summarizeElementInformation(value.getElementId(), value.getElementInstanceKey()));
     }
@@ -445,9 +452,9 @@ public class CompactRecordLogger {
     if (value.getJobKind() != null && value.getJobKind() != JobKind.BPMN_ELEMENT) {
       result
           .append(" (")
-          .append(value.getJobKind())
+          .append(abbreviate(value.getJobKind().toString()))
           .append("[")
-          .append(value.getJobListenerEventType())
+          .append(abbreviate(value.getJobListenerEventType().toString()))
           .append("]),");
     }
 
