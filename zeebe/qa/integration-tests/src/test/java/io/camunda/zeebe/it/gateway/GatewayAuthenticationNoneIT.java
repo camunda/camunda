@@ -121,7 +121,7 @@ public class GatewayAuthenticationNoneIT {
   private final TestStandaloneBroker zeebe =
       new TestStandaloneBroker()
           .withAdditionalProfile(Profile.IDENTITY_AUTH)
-          .withProperty("zeebe.gateway.security.authentication.mode", "none")
+          .withProperty("zeebe.broker.gateway.security.authentication.mode", "none")
           .withProperty("camunda.identity.issuerBackendUrl", getKeycloakRealmAddress())
           .withProperty("camunda.identity.audience", ZEEBE_CLIENT_AUDIENCE);
 
