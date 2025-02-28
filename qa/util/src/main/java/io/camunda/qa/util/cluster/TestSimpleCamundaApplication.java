@@ -14,10 +14,10 @@ import io.camunda.application.commons.configuration.BrokerBasedConfiguration.Bro
 import io.camunda.application.commons.security.CamundaSecurityConfiguration.CamundaSecurityProperties;
 import io.camunda.application.initializers.WebappsConfigurationInitializer;
 import io.camunda.authentication.config.AuthenticationProperties;
-import io.camunda.client.CamundaClientBuilder;
 import io.camunda.operate.OperateModuleConfiguration;
 import io.camunda.security.configuration.ConfiguredUser;
 import io.camunda.security.configuration.InitializationConfiguration;
+import io.camunda.security.entity.AuthenticationMethod;
 import io.camunda.tasklist.TasklistModuleConfiguration;
 import io.camunda.webapps.WebappsModuleConfiguration;
 import io.camunda.zeebe.broker.BrokerModuleConfiguration;
@@ -32,6 +32,7 @@ import io.camunda.zeebe.qa.util.cluster.TestStandaloneApplication;
 import io.camunda.zeebe.qa.util.cluster.TestZeebePort;
 import io.camunda.zeebe.test.util.socket.SocketUtil;
 import java.net.URI;
+import java.util.Optional;
 import java.util.function.Consumer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -139,6 +140,8 @@ public final class TestSimpleCamundaApplication
   }
 
   public TestSimpleCamundaApplication withAuthorizationsEnabled() {
+    // when using authorizations, api authentication needs to be enforced too
+    withAuthenticatedAccess();
     return withSecurityConfig(cfg -> cfg.getAuthorizations().setEnabled(true));
   }
 
@@ -193,16 +196,6 @@ public final class TestSimpleCamundaApplication
     return brokerProperties.getGateway();
   }
 
-  @Override
-  public CamundaClientBuilder newClientBuilder() {
-    if (!isGateway()) {
-      throw new IllegalStateException(
-          "Cannot create a new client for this broker, as it does not have an embedded gateway");
-    }
-
-    return TestStandaloneApplication.super.newClientBuilder();
-  }
-
   /**
    * Modifies the security configuration. Will still mutate the configuration if the broker is
    * started, but likely has no effect until it's restarted.
@@ -244,5 +237,10 @@ public final class TestSimpleCamundaApplication
   @Override
   public BrokerBasedProperties brokerConfig() {
     return brokerProperties;
+  }
+
+  @Override
+  public Optional<AuthenticationMethod> clientAuthenticationMethod() {
+    return apiAuthenticationMethod();
   }
 }
