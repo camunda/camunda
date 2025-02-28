@@ -13,6 +13,9 @@ import static java.util.Map.ofEntries;
 import static org.apache.commons.lang3.StringUtils.leftPad;
 import static org.apache.commons.lang3.StringUtils.rightPad;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
@@ -80,6 +83,7 @@ public class CompactRecordLogger {
 
   private static final Logger LOG = LoggerFactory.getLogger("io.camunda.zeebe.test");
   private static final String BLOCK_SEPARATOR = " ";
+  private static ObjectMapper objectMapper;
 
   // List rather than Map to preserve order
   private static final List<Entry<String, String>> ABBREVIATIONS =
@@ -492,14 +496,40 @@ public class CompactRecordLogger {
         value = shortenKey(longOrNegative);
       }
     }
+    if (key.equals(Protocol.USER_TASK_CHANGED_ATTRIBUTES_HEADER_NAME)
+        && value.length() > 2
+        && value.startsWith("[")
+        && value.endsWith("]")) {
+      if (objectMapper == null) {
+        // lazy load object mapper
+        objectMapper = new ObjectMapper();
+      }
+      List<String> changedAttributes = null;
+      try {
+        changedAttributes = objectMapper.readValue(value, new TypeReference<>() {});
+      } catch (final JsonProcessingException e) {
+        LOG.warn("Failed to parse changed attributes '{}' as json list", value);
+      }
+      if (changedAttributes != null) {
+        value =
+            changedAttributes.stream()
+                .map(CompactRecordLogger::abbreviateToFirstLetters)
+                .collect(Collectors.joining(",", "[", "]"));
+      }
+    }
+
     if (key.startsWith("io.camunda.zeebe:")) {
       key = key.replace("io.camunda.zeebe:", "");
-      // filter only the first letter and any capital letters
-      key = key.replaceAll("(?<!^)[a-z]", "");
+      key = abbreviateToFirstLetters(key);
     }
     key = StringUtils.abbreviateMiddle(key, "..", 10);
     value = StringUtils.abbreviateMiddle(value, "..", 10);
     return entry(key, value);
+  }
+
+  /** Returns only the first letter and any each capital letter. For example, userTaskKey -> uTK */
+  private static String abbreviateToFirstLetters(final String toAbbreviate) {
+    return toAbbreviate.replaceAll("(?<!^)[a-z]", "");
   }
 
   private String summarizeJobBatch(final Record<?> record) {
