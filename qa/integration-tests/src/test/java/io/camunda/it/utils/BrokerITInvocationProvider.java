@@ -49,7 +49,11 @@ import org.testcontainers.elasticsearch.ElasticsearchContainer;
  * exporter type. The lifecyle of the TestStandaloneBroker and the exporter backend is per class.
  * The tests must take this into account, as the state in Zeebe and the exporter backend is not
  * reset between test cases.
+ *
+ * @deprecated Make use of {@link io.camunda.qa.util.multidb.MultiDbTest}, and {@link
+ *     io.camunda.qa.util.multidb.CamundaMultiDBExtension}
  */
+@Deprecated(forRemoval = true)
 public class BrokerITInvocationProvider
     implements TestTemplateInvocationContextProvider, AfterAllCallback, BeforeAllCallback {
   private static final Logger LOGGER = LoggerFactory.getLogger(BrokerITInvocationProvider.class);
