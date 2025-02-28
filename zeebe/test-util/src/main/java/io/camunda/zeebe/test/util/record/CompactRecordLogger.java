@@ -899,7 +899,16 @@ public class CompactRecordLogger {
           summarizeElementInformation(value.getElementId(), value.getElementInstanceKey()));
     }
 
-    addIfNotEmpty(result, value.getChangedAttributes(), " changedAttributes");
+    if (value.getChangedAttributes() != null && !value.getChangedAttributes().isEmpty()) {
+      result
+          .append(" changedAttributes")
+          .append(" \"")
+          .append(
+              value.getChangedAttributes().stream()
+                  .map(CompactRecordLogger::abbreviateToFirstLetters)
+                  .toList())
+          .append("\"");
+    }
     addIfNotEmpty(result, value.getAssignee(), " assignee");
     addIfNotEmpty(result, value.getCandidateUsersList(), " candidateUsersList");
     addIfNotEmpty(result, value.getCandidateGroupsList(), " candidateGroupsList");
