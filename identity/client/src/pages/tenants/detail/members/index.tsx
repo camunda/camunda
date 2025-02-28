@@ -11,17 +11,18 @@ import { C3EmptyState } from "@camunda/camunda-composite-components";
 import useTranslate from "src/utility/localization";
 import { useApi } from "src/utility/api/hooks";
 import { getMembersByTenantId } from "src/utility/api/membership";
-import EntityList, {
-  DocumentationDescription,
-} from "src/components/entityList";
-import { DocumentationLink } from "src/components/documentation";
+import EntityList from "src/components/entityList";
+import { useEntityModal } from "src/components/modal";
+import { TrashCan } from "@carbon/react/icons";
+import DeleteModal from "src/pages/tenants/detail/members/DeleteModal";
+import AssignMembersModal from "src/pages/tenants/detail/members/AssignMembersModal";
 
 type MembersProps = {
   tenantId: string;
 };
 
 const Members: FC<MembersProps> = ({ tenantId }) => {
-  const { t, Translate } = useTranslate();
+  const { t } = useTranslate("tenants");
 
   const {
     data: users,
@@ -33,14 +34,28 @@ const Members: FC<MembersProps> = ({ tenantId }) => {
   });
 
   const areNoUsersAssigned = !users || users.items?.length === 0;
+  const [assignUsers, assignUsersModal] = useEntityModal(
+    AssignMembersModal,
+    reload,
+    {
+      assignedUsers: users?.items || [],
+    },
+  );
+  const openAssignModal = () => assignUsers({ id: tenantId });
+  const [unassignMember, unassignMemberModal] = useEntityModal(
+    DeleteModal,
+    reload,
+    {
+      tenant: tenantId,
+    },
+  );
+
   if (!loading && !success)
     return (
       <C3EmptyState
-        heading={t("Something's wrong")}
-        description={t(
-          'We were unable to load the members. Click "Retry" to try again.',
-        )}
-        button={{ label: t("Retry"), onClick: reload }}
+        heading={t("somethingsWrong")}
+        description={t("unableToLoadMembers")}
+        button={{ label: t("retry"), onClick: reload }}
       />
     );
 
@@ -48,15 +63,18 @@ const Members: FC<MembersProps> = ({ tenantId }) => {
     return (
       <>
         <C3EmptyState
-          heading={t("Assign users to this Tenant")}
-          description={t(
-            "Members of this Tenant will be given access to the data within the Tenant.",
-          )}
+          heading={t("assignUsersToTenant")}
+          description={t("tenantMemberAccessDisclaimer")}
+          button={{
+            label: t("assignUser"),
+            onClick: openAssignModal,
+          }}
           link={{
-            label: t("Learn more about groups"),
-            href: `/identity/concepts/access-control/groups`,
+            label: t("learnMoreAboutTenants"),
+            href: `/identity/concepts/access-control/tenants`,
           }}
         />
+        {assignUsersModal}
       </>
     );
 
@@ -65,25 +83,26 @@ const Members: FC<MembersProps> = ({ tenantId }) => {
       <EntityList
         data={users?.items}
         headers={[
-          { header: t("Username"), key: "username" },
-          { header: t("Name"), key: "name" },
-          { header: t("Email"), key: "email" },
+          { header: t("username"), key: "username" },
+          { header: t("name"), key: "name" },
+          { header: t("email"), key: "email" },
         ]}
         sortProperty="username"
         loading={loading}
-        addEntityLabel={t("Assign user")}
-        searchPlaceholder={t("Search by username")}
+        addEntityLabel={t("assignUser")}
+        onAddEntity={openAssignModal}
+        searchPlaceholder={t("searchByUsername")}
+        menuItems={[
+          {
+            label: t("remove"),
+            icon: TrashCan,
+            isDangerous: true,
+            onClick: unassignMember,
+          },
+        ]}
       />
-      {success && !areNoUsersAssigned && (
-        <DocumentationDescription>
-          <Translate>To learn more, visit our</Translate>{" "}
-          <DocumentationLink path="/concepts/access-control/groups">
-            {t("groups documentation")}
-          </DocumentationLink>
-          .
-        </DocumentationDescription>
-      )}
-      <></>
+      {assignUsersModal}
+      {unassignMemberModal}
     </>
   );
 };
