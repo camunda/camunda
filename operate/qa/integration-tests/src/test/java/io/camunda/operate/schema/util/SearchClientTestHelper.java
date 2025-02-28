@@ -14,4 +14,8 @@ public interface SearchClientTestHelper {
   void setClientRetries(int retries);
 
   void createDocument(String indexName, String id, Map<String, Object> document);
+
+  void createDocument(String indexName, String id, String routing, Map<String, Object> document);
+
+  void refreshAllIndexes();
 }
