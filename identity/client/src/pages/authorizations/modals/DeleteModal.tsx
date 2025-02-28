@@ -49,7 +49,7 @@ const DeleteAuthorizationModal: FC<UseEntityModalProps<Authorization>> = ({
       loading={loading}
       loadingDescription={t("deletingAuthorization")}
       onClose={onClose}
-      confirmLabel={t("Delete authorization")}
+      confirmLabel={t("deleteAuthorization")}
     >
       <Stack gap={spacing04}>
         {t("deleteConfirmation")}
