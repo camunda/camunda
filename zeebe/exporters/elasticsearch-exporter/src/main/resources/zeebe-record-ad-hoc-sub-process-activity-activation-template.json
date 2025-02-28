@@ -14,7 +14,7 @@
       "index.queries.cache.enabled": false
     },
     "aliases": {
-      "zeebe-record-process-instance-modification": {}
+      "zeebe-record-ad-hoc-subprocess-activity-activation": {}
     },
     "mappings": {
       "properties": {
@@ -24,9 +24,9 @@
             "adHocSubProcessInstanceKey": {
               "type": "keyword"
             },
-            "flowNodes": {
+            "elements": {
               "properties": {
-                "flowNodeId": {
+                "elementId": {
                   "type": "keyword"
                 }
               }
