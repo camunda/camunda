@@ -47,7 +47,7 @@ class AdHocSubprocessActivityControllerTest extends RestControllerTest {
   private static final String AD_HOC_ACTIVITIES_URL = "/v2/element-instances/ad-hoc-activities";
   private static final String SEARCH_ACTIVITIES_URL = AD_HOC_ACTIVITIES_URL + "/search";
   private static final String ACTIVATE_ACTIVITIES_URL =
-      AD_HOC_ACTIVITIES_URL + "/{adHocSubprocessInstanceKey}/activate";
+      AD_HOC_ACTIVITIES_URL + "/{adHocSubprocessInstanceKey}/activation";
 
   @MockitoBean private AdHocSubprocessActivityServices adHocSubprocessActivityServices;
 
@@ -350,7 +350,7 @@ class AdHocSubprocessActivityControllerTest extends RestControllerTest {
                 "type": "about:blank",
                 "title": "INVALID_ARGUMENT",
                 "status": 400,
-                "instance": "/v2/element-instances/ad-hoc-activities/%s/activate"
+                "instance": "/v2/element-instances/ad-hoc-activities/%s/activation"
             }
             """
                   .formatted(AD_HOC_SUBPROCESS_INSTANCE_KEY))

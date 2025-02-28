@@ -3418,8 +3418,7 @@ paths:
         "500":
           $ref: "#/components/responses/InternalServerError"
 
-  # TODO can we return a meaningful response?
-  /element-instances/ad-hoc-activities/{adHocSubprocessInstanceKey}/activate:
+  /element-instances/ad-hoc-activities/{adHocSubprocessInstanceKey}/activation:
     post:
       tags:
         - Ad-hoc subprocess
