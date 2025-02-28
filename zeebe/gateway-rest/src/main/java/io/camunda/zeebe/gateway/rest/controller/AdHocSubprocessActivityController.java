@@ -43,7 +43,7 @@ public class AdHocSubprocessActivityController {
         .fold(RestErrorMapper::mapProblemToResponse, this::searchAdHocSubprocessActivities);
   }
 
-  @CamundaPostMapping(path = "/{adHocSubprocessInstanceKey}/activate")
+  @CamundaPostMapping(path = "/{adHocSubprocessInstanceKey}/activation")
   public CompletableFuture<ResponseEntity<Object>> modifyProcessInstance(
       @PathVariable final String adHocSubprocessInstanceKey,
       @RequestBody final AdHocSubprocessActivateActivitiesInstruction activationRequest) {
