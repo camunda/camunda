@@ -46,7 +46,7 @@ final class BasicAuthOverRestIT {
   private TestStandaloneBroker broker =
       new TestStandaloneBroker()
           .withRecordingExporter(true)
-          .withSecurityConfig(c -> c.getAuthorizations().setEnabled(true))
+          .withAuthorizationsEnabled()
           .withAuthenticationMethod(AuthenticationMethod.BASIC);
 
   @BeforeEach
