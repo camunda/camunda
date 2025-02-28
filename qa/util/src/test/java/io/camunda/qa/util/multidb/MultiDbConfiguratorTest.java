@@ -5,9 +5,9 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.it.utils;
+package io.camunda.qa.util.multidb;
 
-import static io.camunda.it.utils.MultiDbConfigurator.zeebePrefix;
+import static io.camunda.qa.util.multidb.MultiDbConfigurator.zeebePrefix;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.application.commons.configuration.BrokerBasedConfiguration.BrokerBasedProperties;
