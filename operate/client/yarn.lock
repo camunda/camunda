@@ -1234,9 +1234,9 @@
     react-markdown "8.0.7"
 
 "@camunda8/sdk@^8.6.8":
-  version "8.6.26"
-  resolved "https://registry.yarnpkg.com/@camunda8/sdk/-/sdk-8.6.26.tgz#12c23cdbb166342671991fb198624d736469d70e"
-  integrity sha512-zzZLBsN+IxNVNBhzk2loYdxGdHCfAIow4lTKQOZQ2n7PpLSqk8rbvBbsB+gVQu5jJDltGpsyEONKoKojzkZP8g==
+  version "8.6.28"
+  resolved "https://registry.yarnpkg.com/@camunda8/sdk/-/sdk-8.6.28.tgz#52429dd17901b0e4e920077f4fc6a9aa87d06d4d"
+  integrity sha512-E8Lne/10XaBwYmL4AuRP4I6ZA97/ONraciAesAQJpOmmWl4wxfZyhBgszBxFy7xQRfEprdveIx2IRbvTolK4ng==
   dependencies:
     "@grpc/grpc-js" "1.12.5"
     "@grpc/proto-loader" "0.7.13"
@@ -12262,9 +12262,9 @@ strip-json-comments@~2.0.1:
   integrity sha512-4gB8na07fecVVkOI6Rs4e7T6NOTki5EmL7TUduTs6bu3EdnSycntVJ4re8kgZA+wx9IueI2Y11bfbgwtzuE0KQ==
 
 strnum@^1.1.1:
-  version "1.1.1"
-  resolved "https://registry.yarnpkg.com/strnum/-/strnum-1.1.1.tgz#6b312934054594dd611bd18d9bcce5053a7caaee"
-  integrity sha512-O7aCHfYCamLCctjAiaucmE+fHf2DYHkus2OKCn4Wv03sykfFtgeECn505X6K4mPl8CRNd/qurC9guq+ynoN4pw==
+  version "1.1.2"
+  resolved "https://registry.yarnpkg.com/strnum/-/strnum-1.1.2.tgz#57bca4fbaa6f271081715dbc9ed7cee5493e28e4"
+  integrity sha512-vrN+B7DBIoTTZjnPNewwhx6cBA/H+IS7rfW68n7XxC1y7uoiGQBxaKzqucGUgavX15dJgiGztLJ8vxuEzwqBdA==
 
 style-loader@^3.3.1:
   version "3.3.4"
