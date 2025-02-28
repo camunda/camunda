@@ -12,24 +12,28 @@ import static io.camunda.optimize.service.util.SnapshotUtil.SNAPSHOT_MISSING_EXC
 import static io.camunda.optimize.service.util.SnapshotUtil.getAllWildcardedSnapshotNamesForBackupId;
 import static io.camunda.optimize.service.util.SnapshotUtil.getAllWildcardedSnapshotNamesForWildcardedBackupId;
 import static java.util.stream.Collectors.groupingBy;
-import static java.util.stream.Collectors.joining;
 
 import co.elastic.clients.elasticsearch._types.ElasticsearchException;
+import co.elastic.clients.elasticsearch._types.ShardFailure;
 import co.elastic.clients.elasticsearch.snapshot.GetRepositoryRequest;
 import co.elastic.clients.elasticsearch.snapshot.GetSnapshotRequest;
 import co.elastic.clients.elasticsearch.snapshot.GetSnapshotResponse;
 import co.elastic.clients.elasticsearch.snapshot.SnapshotInfo;
+import io.camunda.optimize.dto.optimize.rest.SnapshotInfoDto;
+import io.camunda.optimize.dto.optimize.rest.SnapshotState;
 import io.camunda.optimize.service.db.es.OptimizeElasticsearchClient;
-import io.camunda.optimize.service.db.reader.BackupReader;
+import io.camunda.optimize.service.db.reader.AbstractBackupReader;
 import io.camunda.optimize.service.exceptions.OptimizeConfigurationException;
 import io.camunda.optimize.service.exceptions.OptimizeElasticsearchConnectionException;
 import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import io.camunda.optimize.service.exceptions.OptimizeSnapshotRepositoryNotFoundException;
-import io.camunda.optimize.service.exceptions.conflict.OptimizeConflictException;
 import io.camunda.optimize.service.util.SnapshotUtil;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import io.camunda.optimize.service.util.configuration.condition.ElasticSearchCondition;
 import java.io.IOException;
+import java.time.Instant;
+import java.time.OffsetDateTime;
+import java.time.ZoneId;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -44,13 +48,17 @@ import org.springframework.stereotype.Component;
 @Component
 @Slf4j
 @Conditional(ElasticSearchCondition.class)
-public class BackupReaderES implements BackupReader {
-
+public class BackupReaderES extends AbstractBackupReader {
   private final OptimizeElasticsearchClient esClient;
   private final ConfigurationService configurationService;
 
   @Override
-  public void validateRepositoryExistsOrFail() {
+  protected String getSnapshotRepositoryName() {
+    return configurationService.getElasticSearchConfiguration().getSnapshotRepositoryName();
+  }
+
+  @Override
+  protected void validateRepositoryExistsOrFail() {
     final String repositoryName = getRepositoryName();
     if (StringUtils.isEmpty(repositoryName)) {
       final String reason =
@@ -62,7 +70,7 @@ public class BackupReaderES implements BackupReader {
           GetRepositoryRequest.of(b -> b.name(repositoryName));
       try {
         esClient.verifyRepositoryExists(getRepositoriesRequest);
-      } catch (ElasticsearchException e) {
+      } catch (final ElasticsearchException e) {
         if (StringUtils.contains(e.getMessage(), REPOSITORY_MISSING_EXCEPTION_TYPE)) {
           final String reason =
               String.format("No repository with name [%s] could be found.", repositoryName);
@@ -76,7 +84,7 @@ public class BackupReaderES implements BackupReader {
           log.error(reason, e);
           throw new OptimizeRuntimeException(reason, e);
         }
-      } catch (IOException e) {
+      } catch (final IOException e) {
         final String reason =
             String.format(
                 "Encountered an error connecting to Elasticsearch while retrieving repository with name [%s].",
@@ -88,45 +96,45 @@ public class BackupReaderES implements BackupReader {
   }
 
   @Override
-  public void validateNoDuplicateBackupId(final Long backupId) {
-    final List<SnapshotInfo> existingSnapshots = getOptimizeSnapshotsForBackupId(backupId);
-    if (!existingSnapshots.isEmpty()) {
-      final String reason =
-          String.format(
-              "A backup with ID [%s] already exists. Found snapshots: [%s]",
-              backupId,
-              existingSnapshots.stream().map(SnapshotInfo::snapshot).collect(joining(", ")));
-      log.error(reason);
-      throw new OptimizeConflictException(reason);
-    }
-  }
-
-  @Override
-  public Map<Long, List<SnapshotInfo>> getAllOptimizeSnapshotsByBackupId() {
+  public Map<Long, List<SnapshotInfoDto>> getAllOptimizeSnapshotsByBackupId() {
     return getAllOptimizeSnapshots().stream()
+        .map(BackupReaderES::toSnapshotInfoDto)
         .collect(
             groupingBy(
-                snapshotInfo -> SnapshotUtil.getBackupIdFromSnapshotName(snapshotInfo.snapshot())));
+                snapshotInfo ->
+                    SnapshotUtil.getBackupIdFromSnapshotName(snapshotInfo.getSnapshotName())));
   }
 
   @Override
-  public List<SnapshotInfo> getAllOptimizeSnapshots() {
+  public List<SnapshotInfoDto> getOptimizeSnapshotsForBackupId(final Long backupId) {
+    return getOptimizeSnapshots(getAllWildcardedSnapshotNamesForBackupId(backupId)).stream()
+        .map(BackupReaderES::toSnapshotInfoDto)
+        .toList();
+  }
+
+  private static SnapshotInfoDto toSnapshotInfoDto(final SnapshotInfo snapshotInfo) {
+    final long startTimeMillis = snapshotInfo.startTimeInMillis();
+    final List<String> shardFailures =
+        snapshotInfo.shards().failures().stream().map(ShardFailure::toString).toList();
+    return new SnapshotInfoDto(
+        snapshotInfo.snapshot(),
+        SnapshotState.valueOf(snapshotInfo.state()),
+        OffsetDateTime.ofInstant(Instant.ofEpochMilli(startTimeMillis), ZoneId.systemDefault()),
+        shardFailures);
+  }
+
+  private List<SnapshotInfo> getAllOptimizeSnapshots() {
     return getOptimizeSnapshots(getAllWildcardedSnapshotNamesForWildcardedBackupId());
-  }
-
-  @Override
-  public List<SnapshotInfo> getOptimizeSnapshotsForBackupId(final Long backupId) {
-    return getOptimizeSnapshots(getAllWildcardedSnapshotNamesForBackupId(backupId));
   }
 
   private List<SnapshotInfo> getOptimizeSnapshots(final String[] snapshots) {
     final GetSnapshotRequest snapshotsStatusRequest =
         GetSnapshotRequest.of(
             b -> b.repository(getRepositoryName()).snapshot(Arrays.stream(snapshots).toList()));
-    GetSnapshotResponse response;
+    final GetSnapshotResponse response;
     try {
       response = esClient.getSnapshots(snapshotsStatusRequest);
-    } catch (ElasticsearchException e) {
+    } catch (final ElasticsearchException e) {
       if (StringUtils.contains(e.getMessage(), SNAPSHOT_MISSING_EXCEPTION_TYPE)) {
         // no snapshot with given backupID exists
         return Collections.emptyList();
@@ -137,7 +145,7 @@ public class BackupReaderES implements BackupReader {
               String.join(", ", snapshots));
       log.error(reason);
       throw new OptimizeRuntimeException(reason, e);
-    } catch (IOException e) {
+    } catch (final IOException e) {
       final String reason =
           String.format(
               "Encountered an error connecting to Elasticsearch while retrieving snapshots with names [%s].",
