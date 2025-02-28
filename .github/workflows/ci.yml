@@ -500,8 +500,9 @@ jobs:
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
 
-  build-tasklist-backend:
+  tasklist-backend-tests:
     if: needs.detect-changes.outputs.tasklist-backend-changes == 'true'
+<<<<<<< HEAD
     needs: [detect-changes]
     runs-on: ubuntu-latest
     timeout-minutes: 10
@@ -539,6 +540,11 @@ jobs:
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+=======
+    needs: [ detect-changes ]
+    uses: ./.github/workflows/tasklist-docker-tests.yml
+    secrets: inherit
+>>>>>>> 428d7afe (ci: include Tasklist docker tests in the common CI)
 
   optimize-frontend-unit-tests:
     if: needs.detect-changes.outputs.optimize-frontend-changes == 'true'
@@ -695,7 +701,6 @@ jobs:
       - actionlint
       - build-operate-backend
       - build-platform-frontend
-      - build-tasklist-backend
       - detect-changes
       - docker-checks
       - identity-frontend-tests
@@ -706,6 +711,11 @@ jobs:
       - optimize-backend-unit-tests
       - optimize-frontend-unit-tests
       - protobuf-checks
+<<<<<<< HEAD
+=======
+      - rdbms-h2-integration-tests
+      - tasklist-backend-tests
+>>>>>>> 428d7afe (ci: include Tasklist docker tests in the common CI)
       - tasklist-frontend-tests
       - zeebe-ci
     steps:
