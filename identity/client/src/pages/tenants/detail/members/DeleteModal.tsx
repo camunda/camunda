@@ -38,7 +38,7 @@ const DeleteModal: FC<RemoveTenantMemberModalProps> = ({
     if (tenant && user) {
       const { success } = await callUnassignMember({
         tenantId: tenant,
-        userId: user.id!,
+        username: user.username,
       });
 
       if (success) {

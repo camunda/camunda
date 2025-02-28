@@ -77,21 +77,6 @@ const Details: FC = () => {
                   label: t("users"),
                   content: <Members tenantId={tenant.tenantId} />,
                 },
-                {
-                  key: "groups",
-                  label: t("groups"),
-                  content: true && <p>groups</p>,
-                },
-                {
-                  key: "roles",
-                  label: t("roles"),
-                  content: true && <p>roles</p>,
-                },
-                {
-                  key: "mappings",
-                  label: t("mappings"),
-                  content: true && <p>mappings</p>,
-                },
               ]}
               selectedTabKey={tab}
               path={`../${id}`}

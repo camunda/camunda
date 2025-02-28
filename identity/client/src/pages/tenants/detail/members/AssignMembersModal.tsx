@@ -44,9 +44,9 @@ const AssignMembersModal: FC<
 
   const unassignedUsers =
     userSearchResults?.items.filter(
-      ({ id }) =>
-        !assignedUsers.some((user) => user.id === id) &&
-        !selectedUsers.some((user) => user.id === id),
+      ({ username }) =>
+        !assignedUsers.some((user) => user.username === username) &&
+        !selectedUsers.some((user) => user.username === username),
     ) || [];
 
   const onSelectUser = (user: User) => {
@@ -54,9 +54,11 @@ const AssignMembersModal: FC<
   };
 
   const onUnselectUser =
-    ({ id }: User) =>
+    ({ username }: User) =>
     () => {
-      setSelectedUsers(selectedUsers.filter((user) => user.id !== id));
+      setSelectedUsers(
+        selectedUsers.filter((user) => user.username !== username),
+      );
     };
 
   const canSubmit = tenant && selectedUsers.length;
@@ -67,8 +69,8 @@ const AssignMembersModal: FC<
     setLoadingAssignUser(true);
 
     const results = await Promise.all(
-      selectedUsers.map(({ id }) =>
-        callAssignUser({ userId: id!, tenantId: tenant.id }),
+      selectedUsers.map(({ username }) =>
+        callAssignUser({ username: username, tenantId: tenant.id }),
       ),
     );
 
@@ -104,7 +106,7 @@ const AssignMembersModal: FC<
         <SelectedUsers>
           {selectedUsers.map((user) => (
             <Tag
-              key={user.id}
+              key={user.username}
               onClose={onUnselectUser(user)}
               size="md"
               type="blue"
