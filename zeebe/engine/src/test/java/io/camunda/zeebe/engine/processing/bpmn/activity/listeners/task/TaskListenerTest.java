@@ -3253,7 +3253,9 @@ public class TaskListenerTest {
         .ofInstance(processInstanceKey)
         .withType(listenerType)
         .withResult(
-            new JobResult().setCorrections(new JobResultCorrections().setAssignee("new_assignee")))
+            new JobResult()
+                .setCorrections(new JobResultCorrections().setAssignee("new_assignee"))
+                .setCorrectedAttributes(List.of(UserTaskRecord.ASSIGNEE)))
         .complete();
 
     // then
