@@ -6,15 +6,16 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-
-import {FC} from "react";
+import { FC } from "react";
 import ForbiddenComponent from "src/pages/forbidden/component.tsx";
 import AppRoot from "src/components/global/AppRoot.tsx";
 
 const Forbidden: FC = () => {
-  return <AppRoot>
-    <ForbiddenComponent/>
-  </AppRoot>
+  return (
+    <AppRoot>
+      <ForbiddenComponent />
+    </AppRoot>
+  );
 };
 
 export default Forbidden;
