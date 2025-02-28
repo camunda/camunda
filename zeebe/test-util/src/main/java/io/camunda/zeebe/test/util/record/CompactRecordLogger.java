@@ -83,7 +83,6 @@ public class CompactRecordLogger {
 
   private static final Logger LOG = LoggerFactory.getLogger("io.camunda.zeebe.test");
   private static final String BLOCK_SEPARATOR = " ";
-  private static ObjectMapper objectMapper;
 
   // List rather than Map to preserve order
   private static final List<Entry<String, String>> ABBREVIATIONS =
@@ -135,6 +134,7 @@ public class CompactRecordLogger {
   private final ArrayList<Record<?>> records;
 
   private final List<Process> processes = new ArrayList<>();
+  private ObjectMapper objectMapper;
 
   {
     valueLoggers.put(ValueType.DEPLOYMENT, this::summarizeDeployment);
