@@ -319,7 +319,7 @@
             <failOnWarning>${dependencyAnalyze.failOnWarning}</failOnWarning>
             <ignoredUnusedDeclaredDependencies combine.children="append">
               <dep>io.camunda:identity-spring-boot-starter</dep>
-              <dep>io.micrometer:micrometer-registry-prometheus-simpleclient</dep>
+              <dep>io.micrometer:micrometer-registry-prometheus</dep>
               <dep>jakarta.annotation:jakarta.annotation-api</dep>
               <dep>jakarta.servlet:jakarta.servlet-api</dep>
               <dep>org.apache.httpcomponents.core5:httpcore5</dep>

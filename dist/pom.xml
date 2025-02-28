@@ -466,9 +466,16 @@
       </exclusions>
     </dependency>
 
+    <!-- Micrometer backend/implementations -->
     <dependency>
       <groupId>io.micrometer</groupId>
-      <artifactId>micrometer-registry-prometheus-simpleclient</artifactId>
+      <artifactId>micrometer-registry-prometheus</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.micrometer</groupId>
+      <artifactId>micrometer-registry-otlp</artifactId>
+      <scope>runtime</scope>
     </dependency>
 
     <dependency>
@@ -858,6 +865,9 @@
             <!-- Used to parse PKCS1 certificates -->
             <dependency>org.bouncycastle:bcprov-jdk18on</dependency>
             <dependency>org.bouncycastle:bcpkix-jdk18on</dependency>
+
+            <!-- Micrometer Exporters/Registries -->
+            <dependency>io.micrometer:micrometer-registry-otlp</dependency>
           </usedDependencies>
           <ignoredUnusedDeclaredDependencies>
             <dep>com.nimbusds:oauth2-oidc-sdk</dep>
