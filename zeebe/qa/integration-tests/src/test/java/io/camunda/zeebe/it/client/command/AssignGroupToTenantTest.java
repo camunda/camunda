@@ -58,9 +58,10 @@ class AssignGroupToTenantTest {
     client.newAssignGroupToTenantCommand(TENANT_ID).groupKey(groupKey).send().join();
 
     // then
+    // TODO remove the String parsing once Groups are migrated to work with ids instead of keys
     ZeebeAssertHelper.assertEntityAssignedToTenant(
         TENANT_ID,
-        groupKey,
+        String.valueOf(groupKey),
         tenant -> {
           assertThat(tenant.getTenantKey()).isEqualTo(tenantKey);
           assertThat(tenant.getEntityType()).isEqualTo(EntityType.GROUP);

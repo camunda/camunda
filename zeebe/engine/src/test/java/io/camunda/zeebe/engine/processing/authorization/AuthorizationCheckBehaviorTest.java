@@ -23,10 +23,12 @@ import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.EntityType;
+import io.camunda.zeebe.protocol.record.value.MappingRecordValue;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.protocol.record.value.UserRecordValue;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
+import io.camunda.zeebe.test.util.Strings;
 import io.camunda.zeebe.test.util.asserts.EitherAssert;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.util.List;
@@ -61,12 +63,7 @@ public class AuthorizationCheckBehaviorTest {
     final var permissionType = PermissionType.CREATE;
     final var resourceId = UUID.randomUUID().toString();
     addPermission(
-        user.getUserKey(),
-        user.getUsername(),
-        AuthorizationOwnerType.USER,
-        resourceType,
-        permissionType,
-        resourceId);
+        user.getUsername(), AuthorizationOwnerType.USER, resourceType, permissionType, resourceId);
     final var command = mockCommand(user.getUsername());
 
     // when
@@ -105,7 +102,6 @@ public class AuthorizationCheckBehaviorTest {
     final var resourceId1 = UUID.randomUUID().toString();
     final var resourceId2 = UUID.randomUUID().toString();
     addPermission(
-        user.getUserKey(),
         user.getUsername(),
         AuthorizationOwnerType.USER,
         resourceType,
@@ -149,8 +145,7 @@ public class AuthorizationCheckBehaviorTest {
     final var resourceType = AuthorizationResourceType.RESOURCE;
     final var permissionType = PermissionType.CREATE;
     final var resourceId = UUID.randomUUID().toString();
-    addPermission(
-        roleKey, roleId, AuthorizationOwnerType.ROLE, resourceType, permissionType, resourceId);
+    addPermission(roleId, AuthorizationOwnerType.ROLE, resourceType, permissionType, resourceId);
     final var command = mockCommand(user.getUsername());
 
     // when
@@ -173,7 +168,6 @@ public class AuthorizationCheckBehaviorTest {
     final var resourceId1 = UUID.randomUUID().toString();
     final var resourceId2 = UUID.randomUUID().toString();
     addPermission(
-        roleKey,
         roleId,
         AuthorizationOwnerType.ROLE,
         resourceType,
@@ -200,8 +194,7 @@ public class AuthorizationCheckBehaviorTest {
     final var resourceType = AuthorizationResourceType.RESOURCE;
     final var permissionType = PermissionType.CREATE;
     final var resourceId = UUID.randomUUID().toString();
-    addPermission(
-        groupKey, groupId, AuthorizationOwnerType.GROUP, resourceType, permissionType, resourceId);
+    addPermission(groupId, AuthorizationOwnerType.GROUP, resourceType, permissionType, resourceId);
     final var command = mockCommand(user.getUsername());
 
     // when
@@ -224,7 +217,6 @@ public class AuthorizationCheckBehaviorTest {
     final var resourceId1 = UUID.randomUUID().toString();
     final var resourceId2 = UUID.randomUUID().toString();
     addPermission(
-        groupKey,
         groupId,
         AuthorizationOwnerType.GROUP,
         resourceType,
@@ -250,12 +242,7 @@ public class AuthorizationCheckBehaviorTest {
     final var permissionType = PermissionType.CREATE;
     final var resourceId = UUID.randomUUID().toString();
     addPermission(
-        user.getUserKey(),
-        user.getUsername(),
-        AuthorizationOwnerType.USER,
-        resourceType,
-        permissionType,
-        resourceId);
+        user.getUsername(), AuthorizationOwnerType.USER, resourceType, permissionType, resourceId);
     final var tenantId = createAndAssignTenant(user.getUsername(), EntityType.USER);
     final var command = mockCommand(user.getUsername());
 
@@ -277,14 +264,10 @@ public class AuthorizationCheckBehaviorTest {
     final var permissionType = PermissionType.CREATE;
     final var resourceId = UUID.randomUUID().toString();
     addPermission(
-        user.getUserKey(),
-        user.getUsername(),
-        AuthorizationOwnerType.USER,
-        resourceType,
-        permissionType,
-        resourceId);
+        user.getUsername(), AuthorizationOwnerType.USER, resourceType, permissionType, resourceId);
     final var groupKey = createGroup(user.getUserKey(), EntityType.USER);
-    final var tenantId = createAndAssignTenant(groupKey, EntityType.GROUP);
+    // TODO remove the String parsing once Groups are migrated to work with ids instead of keys
+    final var tenantId = createAndAssignTenant(String.valueOf(groupKey), EntityType.GROUP);
     final var command = mockCommand(user.getUsername());
 
     // when
@@ -305,12 +288,7 @@ public class AuthorizationCheckBehaviorTest {
     final var permissionType = PermissionType.CREATE;
     final var resourceId = UUID.randomUUID().toString();
     addPermission(
-        user.getUserKey(),
-        user.getUsername(),
-        AuthorizationOwnerType.USER,
-        resourceType,
-        permissionType,
-        resourceId);
+        user.getUsername(), AuthorizationOwnerType.USER, resourceType, permissionType, resourceId);
     final var anotherTenantId = "authorizedForAnotherTenant";
     createAndAssignTenant(user.getUsername(), EntityType.USER);
     final var command = mockCommand(user.getUsername());
@@ -330,19 +308,13 @@ public class AuthorizationCheckBehaviorTest {
     // given
     final var claimName = UUID.randomUUID().toString();
     final var claimValue = UUID.randomUUID().toString();
-    final var mappingKey = createMapping(claimName, claimValue);
-    final var mappingId = String.valueOf(mappingKey);
+    final var mappingId = Strings.newRandomValidIdentityId();
     final var resourceType = AuthorizationResourceType.RESOURCE;
     final var permissionType = PermissionType.CREATE;
     final var resourceId = UUID.randomUUID().toString();
     addPermission(
-        mappingKey,
-        mappingId,
-        AuthorizationOwnerType.MAPPING,
-        resourceType,
-        permissionType,
-        resourceId);
-    final var tenantId = createAndAssignTenant(mappingKey, EntityType.MAPPING);
+        mappingId, AuthorizationOwnerType.MAPPING, resourceType, permissionType, resourceId);
+    final var tenantId = createAndAssignTenant(mappingId, EntityType.MAPPING);
     final var command = mockCommandWithMapping(claimName, claimValue);
 
     // when
@@ -360,20 +332,15 @@ public class AuthorizationCheckBehaviorTest {
     // given
     final var claimName = UUID.randomUUID().toString();
     final var claimValue = UUID.randomUUID().toString();
-    final var mappingKey = createMapping(claimName, claimValue);
-    final var mappingId = String.valueOf(mappingKey);
+    final var mapping = createMapping(claimName, claimValue);
     final var resourceType = AuthorizationResourceType.RESOURCE;
     final var permissionType = PermissionType.CREATE;
     final var resourceId = UUID.randomUUID().toString();
     addPermission(
-        mappingKey,
-        mappingId,
-        AuthorizationOwnerType.MAPPING,
-        resourceType,
-        permissionType,
-        resourceId);
-    final var groupKey = createGroup(mappingKey, EntityType.MAPPING);
-    final var tenantId = createAndAssignTenant(groupKey, EntityType.GROUP);
+        mapping.getId(), AuthorizationOwnerType.MAPPING, resourceType, permissionType, resourceId);
+    final var groupKey = createGroup(mapping.getMappingKey(), EntityType.MAPPING);
+    // TODO remove the String parsing once Groups are migrated to work with ids instead of keys
+    final var tenantId = createAndAssignTenant(String.valueOf(groupKey), EntityType.GROUP);
     final var command = mockCommandWithMapping(claimName, claimValue);
 
     // when
@@ -391,20 +358,14 @@ public class AuthorizationCheckBehaviorTest {
     // given
     final var claimName = UUID.randomUUID().toString();
     final var claimValue = UUID.randomUUID().toString();
-    final var mappingKey = createMapping(claimName, claimValue);
-    final var mappingId = String.valueOf(mappingKey);
+    final var mappingId = Strings.newRandomValidIdentityId();
     final var resourceType = AuthorizationResourceType.RESOURCE;
     final var permissionType = PermissionType.CREATE;
     final var resourceId = UUID.randomUUID().toString();
     addPermission(
-        mappingKey,
-        mappingId,
-        AuthorizationOwnerType.MAPPING,
-        resourceType,
-        permissionType,
-        resourceId);
+        mappingId, AuthorizationOwnerType.MAPPING, resourceType, permissionType, resourceId);
     final var anotherTenantId = "authorizedForAnotherTenant";
-    createAndAssignTenant(mappingKey, EntityType.MAPPING);
+    createAndAssignTenant(mappingId, EntityType.MAPPING);
     final var command = mockCommandWithMapping(claimName, claimValue);
 
     // when
@@ -445,9 +406,9 @@ public class AuthorizationCheckBehaviorTest {
     // given
     final var claimName = UUID.randomUUID().toString();
     final var claimValue = UUID.randomUUID().toString();
-    final var mappingKey = createMapping(claimName, claimValue);
-    final var tenantId1 = createAndAssignTenant(mappingKey, EntityType.MAPPING);
-    final var tenantId2 = createAndAssignTenant(mappingKey, EntityType.MAPPING);
+    final var mappingId = createMapping(claimName, claimValue).getId();
+    final var tenantId1 = createAndAssignTenant(mappingId, EntityType.MAPPING);
+    final var tenantId2 = createAndAssignTenant(mappingId, EntityType.MAPPING);
     final var command = mockCommandWithMapping(claimName, claimValue);
 
     // when
@@ -469,7 +430,8 @@ public class AuthorizationCheckBehaviorTest {
   public void shouldGetUserAuthorizedTenantIdsThroughGroup() {
     // given
     final var user = createUser();
-    final var groupKey = createGroup(user.getUserKey(), EntityType.USER);
+    // TODO remove the String parsing once Groups are migrated to work with ids instead of keys
+    final var groupKey = String.valueOf(createGroup(user.getUserKey(), EntityType.USER));
     final var tenantId1 = createAndAssignTenant(groupKey, EntityType.GROUP);
     final var tenantId2 = createAndAssignTenant(groupKey, EntityType.GROUP);
     final var command = mockCommand(user.getUsername());
@@ -494,8 +456,9 @@ public class AuthorizationCheckBehaviorTest {
     // given
     final var claimName = UUID.randomUUID().toString();
     final var claimValue = UUID.randomUUID().toString();
-    final var mappingKey = createMapping(claimName, claimValue);
-    final var groupKey = createGroup(mappingKey, EntityType.MAPPING);
+    final var mapping = createMapping(claimName, claimValue);
+    // TODO remove the Long parsing once Groups are migrated to work with ids instead of keys
+    final var groupKey = String.valueOf(createGroup(mapping.getMappingKey(), EntityType.MAPPING));
     final var tenantId1 = createAndAssignTenant(groupKey, EntityType.GROUP);
     final var tenantId2 = createAndAssignTenant(groupKey, EntityType.GROUP);
     final var command = mockCommandWithMapping(claimName, claimValue);
@@ -561,12 +524,7 @@ public class AuthorizationCheckBehaviorTest {
     final var permissionType = PermissionType.CREATE;
     final var resourceId = UUID.randomUUID().toString();
     addPermission(
-        user.getUserKey(),
-        user.getUsername(),
-        AuthorizationOwnerType.USER,
-        resourceType,
-        permissionType,
-        resourceId);
+        user.getUsername(), AuthorizationOwnerType.USER, resourceType, permissionType, resourceId);
     final var command = mockCommandWithAnonymousUser();
 
     // when
@@ -603,12 +561,7 @@ public class AuthorizationCheckBehaviorTest {
     final var permissionType = PermissionType.CREATE;
     final var resourceId = UUID.randomUUID().toString();
     addPermission(
-        mappingKey,
-        mappingId,
-        AuthorizationOwnerType.MAPPING,
-        resourceType,
-        permissionType,
-        resourceId);
+        mappingId, AuthorizationOwnerType.MAPPING, resourceType, permissionType, resourceId);
     final var command = mockCommandWithMapping(claimName, claimValue);
 
     // when
@@ -635,18 +588,13 @@ public class AuthorizationCheckBehaviorTest {
         .tenant()
         .addEntity(tenantId)
         .withEntityType(EntityType.MAPPING)
-        .withEntityKey(mappingKey)
+        .withEntityId(mappingId)
         .add();
     final var resourceType = AuthorizationResourceType.RESOURCE;
     final var permissionType = PermissionType.CREATE;
     final var resourceId = UUID.randomUUID().toString();
     addPermission(
-        mappingKey,
-        mappingId,
-        AuthorizationOwnerType.MAPPING,
-        resourceType,
-        permissionType,
-        resourceId);
+        mappingId, AuthorizationOwnerType.MAPPING, resourceType, permissionType, resourceId);
     final var command = mockCommandWithMapping(claimName, claimValue);
 
     // when
@@ -674,18 +622,13 @@ public class AuthorizationCheckBehaviorTest {
         .tenant()
         .addEntity(tenantId)
         .withEntityType(EntityType.MAPPING)
-        .withEntityKey(mappingKey)
+        .withEntityId(mappingId)
         .add();
     final var resourceType = AuthorizationResourceType.RESOURCE;
     final var permissionType = PermissionType.CREATE;
     final var resourceId = UUID.randomUUID().toString();
     addPermission(
-        mappingKey,
-        mappingId,
-        AuthorizationOwnerType.MAPPING,
-        resourceType,
-        permissionType,
-        resourceId);
+        mappingId, AuthorizationOwnerType.MAPPING, resourceType, permissionType, resourceId);
     final var command = mockCommandWithMapping(claimName, claimValue);
 
     // when
@@ -949,12 +892,7 @@ public class AuthorizationCheckBehaviorTest {
     final var permissionType = PermissionType.CREATE;
     final var resourceId = UUID.randomUUID().toString();
     addPermission(
-        mappingKey,
-        mappingId,
-        AuthorizationOwnerType.MAPPING,
-        resourceType,
-        permissionType,
-        resourceId);
+        mappingId, AuthorizationOwnerType.MAPPING, resourceType, permissionType, resourceId);
     final var command = mockCommandWithMapping(claimName, claimValue);
 
     // when
@@ -987,8 +925,7 @@ public class AuthorizationCheckBehaviorTest {
     final var resourceType = AuthorizationResourceType.RESOURCE;
     final var permissionType = PermissionType.CREATE;
     final var resourceId = UUID.randomUUID().toString();
-    addPermission(
-        roleKey, roleId, AuthorizationOwnerType.ROLE, resourceType, permissionType, resourceId);
+    addPermission(roleId, AuthorizationOwnerType.ROLE, resourceType, permissionType, resourceId);
     final var command = mockCommandWithMapping(claimName, claimValue);
 
     // when
@@ -1021,8 +958,7 @@ public class AuthorizationCheckBehaviorTest {
     final var resourceType = AuthorizationResourceType.RESOURCE;
     final var permissionType = PermissionType.CREATE;
     final var resourceId = UUID.randomUUID().toString();
-    addPermission(
-        groupKey, groupId, AuthorizationOwnerType.GROUP, resourceType, permissionType, resourceId);
+    addPermission(groupId, AuthorizationOwnerType.GROUP, resourceType, permissionType, resourceId);
     final var command = mockCommandWithMapping(claimName, claimValue);
 
     // when
@@ -1041,9 +977,14 @@ public class AuthorizationCheckBehaviorTest {
     // given
     final var claimName = UUID.randomUUID().toString();
     final var claimValue = UUID.randomUUID().toString();
-    final var mapping =
-        engine.mapping().newMapping(claimName).withClaimValue(claimValue).create().getValue();
-    final var mappingKey = mapping.getMappingKey();
+    final var mappingId = Strings.newRandomValidIdentityId();
+    engine
+        .mapping()
+        .newMapping(claimName)
+        .withClaimValue(claimValue)
+        .withId(mappingId)
+        .create()
+        .getValue();
     final var tenantId = "tenant";
     engine.tenant().newTenant().withTenantId(tenantId).create();
     final var command = mockCommandWithMapping(claimName, claimValue);
@@ -1053,7 +994,7 @@ public class AuthorizationCheckBehaviorTest {
         .tenant()
         .addEntity(tenantId)
         .withEntityType(EntityType.MAPPING)
-        .withEntityKey(mappingKey)
+        .withEntityId(mappingId)
         .add();
 
     // then
@@ -1112,12 +1053,17 @@ public class AuthorizationCheckBehaviorTest {
     return groupKey;
   }
 
-  private long createMapping(final String claimName, final String claimValue) {
-    return engine.mapping().newMapping(claimName).withClaimValue(claimValue).create().getKey();
+  private MappingRecordValue createMapping(final String claimName, final String claimValue) {
+    return engine
+        .mapping()
+        .newMapping(claimName)
+        .withClaimValue(claimValue)
+        .withId(Strings.newRandomValidIdentityId())
+        .create()
+        .getValue();
   }
 
   private void addPermission(
-      final long ownerKey,
       final String ownerId,
       final AuthorizationOwnerType ownerType,
       final AuthorizationResourceType resourceType,
@@ -1134,13 +1080,6 @@ public class AuthorizationCheckBehaviorTest {
           .withResourceId(resourceId)
           .create();
     }
-  }
-
-  private String createAndAssignTenant(final long entityKey, final EntityType entityType) {
-    final var tenantId = UUID.randomUUID().toString();
-    engine.tenant().newTenant().withTenantId(tenantId).create();
-    engine.tenant().addEntity(tenantId).withEntityKey(entityKey).withEntityType(entityType).add();
-    return tenantId;
   }
 
   private String createAndAssignTenant(final String entityId, final EntityType entityType) {

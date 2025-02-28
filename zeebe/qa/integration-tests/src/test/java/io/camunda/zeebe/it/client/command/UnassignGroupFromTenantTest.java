@@ -64,7 +64,9 @@ class UnassignGroupFromTenantTest {
         TENANT_ID,
         (tenant) -> {
           assertThat(tenant.getTenantId()).isEqualTo(TENANT_ID);
-          assertThat(tenant.getEntityKey()).isEqualTo(groupKey);
+          // TODO remove the String parsing once Groups are migrated to work with ids instead of
+          // keys
+          assertThat(tenant.getEntityId()).isEqualTo(String.valueOf(groupKey));
         });
   }
 

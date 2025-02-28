@@ -73,9 +73,10 @@ class AssignMappingToTenantTest {
     client.newAssignMappingToTenantCommand(TENANT_ID).mappingKey(mappingKey).send().join();
 
     // Then
+    // TODO remove the String parsing once Mappings are migrated to work with ids instead of keys
     ZeebeAssertHelper.assertEntityAssignedToTenant(
         TENANT_ID,
-        mappingKey,
+        String.valueOf(mappingKey),
         tenant -> {
           assertThat(tenant.getTenantKey()).isEqualTo(tenantKey);
           assertThat(tenant.getEntityType()).isEqualTo(EntityType.MAPPING);
