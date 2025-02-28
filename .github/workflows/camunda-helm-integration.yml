@@ -2,7 +2,7 @@ name: Camunda Helm Chart Integration Test
 
 on:
   schedule:
-    - cron: "0 5 * * *"
+    - cron: "0 5 * * 1-5"  # Mondays to Fridays, to keep it actionable
   pull_request:
     paths:
       - ".github/workflows/camunda-helm-integration.yml"
@@ -36,18 +36,32 @@ jobs:
         secret/data/products/zeebe/ci/zeebe REGISTRY_HUB_DOCKER_COM_PSW | TEST_DOCKER_PASSWORD;
         secret/data/github.com/organizations/camunda NEXUS_USR | TEST_DOCKER_USERNAME_CAMUNDA_CLOUD;
         secret/data/github.com/organizations/camunda NEXUS_PSW | TEST_DOCKER_PASSWORD_CAMUNDA_CLOUD;
+
   notify:
-    name: Send slack notification
+    name: Send Slack notification
     runs-on: ubuntu-latest
     needs: [helm-deploy]
-    if: ${{ always() }}
+    if: always()
+    timeout-minutes: 5
+    permissions: {}  # GITHUB_TOKEN unused in this job
     steps:
-      - id: slack-notify-failure
-        name: Send failure slack notification
-        uses: slackapi/slack-github-action@v2.0.0
+      - name: Import Secrets
+        id: secrets
+        uses: hashicorp/vault-action@a1b77a09293a4366e48a5067a86692ac6e94fdc0 # v3.1.0
+        with:
+          url: ${{ secrets.VAULT_ADDR }}
+          method: approle
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          exportEnv: false # we rely on step outputs, no need for environment variables
+          secrets: |
+            secret/data/products/camunda/ci/github-actions SLACK_TOPMONOREPOCI_WEBHOOK_URL;
+
+      - name: Send failure Slack notification
+        uses: slackapi/slack-github-action@485a9d42d3a73031f12ec201c457e2162c45d02d # v2.0.0
         if: ${{ always() && needs.helm-deploy.result != 'success' }}
         with:
-          webhook: ${{ secrets.SLACK_WEBHOOK_URL }}
+          webhook: ${{ steps.secrets.outputs.SLACK_TOPMONOREPOCI_WEBHOOK_URL }}
           webhook-type: incoming-webhook
           # For posting a rich message using Block Kit
           payload: |
@@ -57,14 +71,14 @@ jobs:
                   "type": "section",
                   "text": {
                     "type": "mrkdwn",
-                    "text": ":alarm: *Helm chart Integration Tests* from `main` failed! :alarm:\n"
+                    "text": ":alarm: *Helm chart Integration Tests* on `main` failed!\n"
                   }
                 },
                 {
                   "type": "section",
                   "text": {
                     "type": "mrkdwn",
-                    "text": "Please check the related workflow execution: https://github.com/camunda/camunda/actions/runs/${{ github.run_id }}"
+                    "text": "Please check this <https://github.com/camunda/camunda/actions/runs/${{ github.run_id }}|GHA workflow run>."
                   }
                 }
               ]
