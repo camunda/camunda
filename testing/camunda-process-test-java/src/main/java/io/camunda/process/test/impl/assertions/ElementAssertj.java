@@ -18,6 +18,7 @@ package io.camunda.process.test.impl.assertions;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
 
+import io.camunda.client.api.command.ClientException;
 import io.camunda.client.api.search.response.FlowNodeInstance;
 import io.camunda.client.api.search.response.FlowNodeInstanceState;
 import io.camunda.process.test.api.assertions.ElementSelector;
@@ -161,7 +162,7 @@ public class ElementAssertj extends AbstractAssert<ElementAssertj, String> {
 
     try {
       Awaitility.await()
-          .ignoreExceptions()
+          .ignoreException(ClientException.class)
           .failFast(
               () -> {
                 final List<FlowNodeInstance> flowNodeInstances =
@@ -245,7 +246,7 @@ public class ElementAssertj extends AbstractAssert<ElementAssertj, String> {
 
     try {
       Awaitility.await()
-          .ignoreExceptions()
+          .ignoreException(ClientException.class)
           .untilAsserted(
               () -> {
                 final List<FlowNodeInstance> flowNodeInstances =

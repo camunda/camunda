@@ -18,6 +18,7 @@ package io.camunda.process.test.impl.assertions;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
 
+import io.camunda.client.api.command.ClientException;
 import io.camunda.client.api.search.response.ProcessInstance;
 import io.camunda.client.api.search.response.ProcessInstanceState;
 import io.camunda.process.test.api.assertions.ElementSelector;
@@ -200,7 +201,7 @@ public class ProcessInstanceAssertj
 
     try {
       Awaitility.await()
-          .ignoreExceptions()
+          .ignoreException(ClientException.class)
           .failFast(() -> waitCondition.test(actualProcessInstance.get()))
           .untilAsserted(
               () -> {
@@ -233,7 +234,7 @@ public class ProcessInstanceAssertj
   private void awaitProcessInstance() {
     try {
       Awaitility.await()
-          .ignoreExceptions()
+          .ignoreException(ClientException.class)
           .untilAsserted(
               () -> {
                 final Optional<ProcessInstance> processInstance = findProcessInstance();

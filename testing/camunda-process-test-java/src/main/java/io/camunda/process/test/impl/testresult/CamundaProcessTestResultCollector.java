@@ -15,6 +15,7 @@
  */
 package io.camunda.process.test.impl.testresult;
 
+import io.camunda.client.api.command.ClientException;
 import io.camunda.client.api.search.response.FlowNodeInstance;
 import io.camunda.client.api.search.response.FlowNodeInstanceState;
 import io.camunda.client.api.search.response.Incident;
@@ -48,7 +49,7 @@ public class CamundaProcessTestResultCollector {
               .map(this::collectProcessInstanceResult)
               .collect(Collectors.toList());
       result.setProcessInstanceTestResults(processInstanceResults);
-    } catch (final Exception e) {
+    } catch (final ClientException e) {
       LOG.warn("Failed to collect the process instance results.", e);
     }
 

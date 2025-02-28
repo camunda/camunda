@@ -20,6 +20,7 @@ import static org.assertj.core.groups.Tuple.tuple;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.when;
 
+import io.camunda.client.api.command.ClientException;
 import io.camunda.client.api.search.response.FlowNodeInstance;
 import io.camunda.client.api.search.response.Incident;
 import io.camunda.client.api.search.response.IncidentErrorType;
@@ -75,9 +76,7 @@ public class CamundaProcessResultCollectorTest {
   @Test
   void shouldReturnEmptyResultIfDataSourceThrowsException() {
     // given
-    doThrow(new RuntimeException("expected failure"))
-        .when(camundaDataSource)
-        .findProcessInstances();
+    doThrow(new ClientException("expected failure")).when(camundaDataSource).findProcessInstances();
 
     // when
     final ProcessTestResult result = resultCollector.collect();
