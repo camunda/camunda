@@ -325,9 +325,8 @@ func main() {
 			fmt.Print("JAVA_OPTS: " + javaOpts + "\n")
 		}
 
-		if !settings.disableElasticsearch {
-			fmt.Print("Starting Elasticsearch " + elasticsearchVersion + "...\n")
-			fmt.Print("(Hint: you can find the log output in the 'elasticsearch.log' file in the 'log' folder of your distribution.)\n")
+		fmt.Print("Starting Elasticsearch " + elasticsearchVersion + "...\n")
+		fmt.Print("(Hint: you can find the log output in the 'elasticsearch.log' file in the 'log' folder of your distribution.)\n")
 
 		elasticsearchLogFilePath := filepath.Join(parentDir, "log", "elasticsearch.log")
 		elasticsearchLogFile, err := os.OpenFile(elasticsearchLogFilePath, os.O_RDWR|os.O_CREATE, 0644)
@@ -353,7 +352,6 @@ func main() {
 		}
 		elasticsearchPidFile.Write([]byte(strconv.Itoa(elasticsearchCmd.Process.Pid)))
 		queryElasticsearchHealth("Elasticsearch", "http://localhost:9200/_cluster/health?wait_for_status=green&wait_for_active_shards=all&wait_for_no_initializing_shards=true&timeout=120s")
-
 		connectorsCmd := c8.ConnectorsCmd(javaBinary, parentDir, camundaVersion)
 		connectorsLogPath := filepath.Join(parentDir, "log", "connectors.log")
 		connectorsLogFile, err := os.OpenFile(connectorsLogPath, os.O_RDWR|os.O_CREATE, 0644)
