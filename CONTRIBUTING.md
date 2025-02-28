@@ -119,11 +119,10 @@ This is a small overview of the contents of this repository:
 > [!NOTE]
 > All Camunda core modules are built and tested with JDK 21. Most modules use language level 21, exceptions are: camunda-client-java, camunda-process-test-java, zeebe-bpmn-model, zeebe-build-tools, camunda-client-java, zeebe-gateway-protocol zeebe-gateway-protocol-impl, zeebe-protocol, and zeebe-protocol-jackson which use language level 8.
 
-To **quickly** build all components for development, run the command: `mvn clean install -Dquickly` in the root folder.
-
-To build the full distribution for local usage (skipping tests), run the command `mvn clean install -DskipChecks -DskipTests`.
-
-To fully build and test the Camunda distribution, run the command: `mvn clean install` in the root folder.
+* **Quick build:** To **quickly** build all components for development, run the command: `mvn clean install -Dquickly` in the root folder.
+* **Full build:** To build the full distribution for local usage (skipping tests and checks), run the command `mvn clean install -DskipChecks -DskipTests`.
+* **Full build without frontends:** To build the full distribution for local usage without frontends (skipping tests), run the command `mvn clean install -DskipChecks -DskipTests -PskipFrontendBuild`.
+* **Full build and test:** To fully build and test the Camunda distribution, run the command: `mvn clean install` in the root folder.
 
 If you built a distribution, it can be found in the folder `dist/target`, i.e.
 

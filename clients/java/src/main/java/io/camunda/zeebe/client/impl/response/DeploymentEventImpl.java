@@ -15,12 +15,13 @@
  */
 package io.camunda.zeebe.client.impl.response;
 
-import io.camunda.client.protocol.rest.DeploymentDecision;
-import io.camunda.client.protocol.rest.DeploymentDecisionRequirements;
-import io.camunda.client.protocol.rest.DeploymentForm;
-import io.camunda.client.protocol.rest.DeploymentMetadata;
-import io.camunda.client.protocol.rest.DeploymentProcess;
-import io.camunda.client.protocol.rest.DeploymentResponse;
+import io.camunda.client.impl.util.ParseUtil;
+import io.camunda.client.protocol.rest.DeploymentDecisionRequirementsResult;
+import io.camunda.client.protocol.rest.DeploymentDecisionResult;
+import io.camunda.client.protocol.rest.DeploymentFormResult;
+import io.camunda.client.protocol.rest.DeploymentMetadataResult;
+import io.camunda.client.protocol.rest.DeploymentProcessResult;
+import io.camunda.client.protocol.rest.DeploymentResult;
 import io.camunda.zeebe.client.api.command.CommandWithTenantStep;
 import io.camunda.zeebe.client.api.response.Decision;
 import io.camunda.zeebe.client.api.response.DecisionRequirements;
@@ -83,11 +84,11 @@ public final class DeploymentEventImpl implements DeploymentEvent {
     }
   }
 
-  public DeploymentEventImpl(final DeploymentResponse response) {
-    key = response.getDeploymentKey();
+  public DeploymentEventImpl(final DeploymentResult response) {
+    key = ParseUtil.parseLongOrEmpty(response.getDeploymentKey());
     tenantId = response.getTenantId();
 
-    for (final DeploymentMetadata deployment : response.getDeployments()) {
+    for (final DeploymentMetadataResult deployment : response.getDeployments()) {
       addDeployedForm(deployment.getForm());
       addDeployedProcess(deployment.getProcessDefinition());
       addDeployedDecision(deployment.getDecisionDefinition());
@@ -95,7 +96,7 @@ public final class DeploymentEventImpl implements DeploymentEvent {
     }
   }
 
-  private void addDeployedForm(final DeploymentForm form) {
+  private void addDeployedForm(final DeploymentFormResult form) {
     Optional.ofNullable(form)
         .ifPresent(
             f ->
@@ -103,13 +104,13 @@ public final class DeploymentEventImpl implements DeploymentEvent {
                     new FormImpl(
                         f.getFormId(),
                         f.getVersion(),
-                        f.getFormKey(),
+                        ParseUtil.parseLongOrEmpty(f.getFormKey()),
                         f.getResourceName(),
                         f.getTenantId())));
   }
 
   private void addDeployedDecisionRequirements(
-      final DeploymentDecisionRequirements decisionRequirement) {
+      final DeploymentDecisionRequirementsResult decisionRequirement) {
     Optional.ofNullable(decisionRequirement)
         .ifPresent(
             dr ->
@@ -118,12 +119,12 @@ public final class DeploymentEventImpl implements DeploymentEvent {
                         dr.getDecisionRequirementsId(),
                         dr.getDecisionRequirementsName(),
                         dr.getVersion(),
-                        dr.getDecisionRequirementsKey(),
+                        ParseUtil.parseLongOrEmpty(dr.getDecisionRequirementsKey()),
                         dr.getResourceName(),
                         dr.getTenantId())));
   }
 
-  private void addDeployedDecision(final DeploymentDecision decision) {
+  private void addDeployedDecision(final DeploymentDecisionResult decision) {
     Optional.ofNullable(decision)
         .ifPresent(
             d ->
@@ -132,19 +133,19 @@ public final class DeploymentEventImpl implements DeploymentEvent {
                         d.getDecisionDefinitionId(),
                         d.getName(),
                         d.getVersion(),
-                        d.getDecisionDefinitionKey(),
+                        ParseUtil.parseLongOrEmpty(d.getDecisionDefinitionKey()),
                         d.getDecisionRequirementsId(),
-                        d.getDecisionRequirementsKey(),
+                        ParseUtil.parseLongOrEmpty(d.getDecisionRequirementsKey()),
                         d.getTenantId())));
   }
 
-  private void addDeployedProcess(final DeploymentProcess process) {
+  private void addDeployedProcess(final DeploymentProcessResult process) {
     Optional.ofNullable(process)
         .ifPresent(
             p ->
                 processes.add(
                     new ProcessImpl(
-                        p.getProcessDefinitionKey(),
+                        ParseUtil.parseLongOrEmpty(p.getProcessDefinitionKey()),
                         p.getProcessDefinitionId(),
                         p.getProcessDefinitionVersion(),
                         p.getResourceName(),

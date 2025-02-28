@@ -16,6 +16,7 @@ import io.camunda.zeebe.transport.TransportFactory;
 import io.camunda.zeebe.transport.stream.api.ClientStream;
 import io.camunda.zeebe.transport.stream.api.ClientStreamService;
 import io.camunda.zeebe.transport.stream.api.ClientStreamer;
+import io.micrometer.core.instrument.MeterRegistry;
 import java.util.Collection;
 
 /**
@@ -36,11 +37,13 @@ public final class JobStreamClientImpl implements JobStreamClient {
 
   public JobStreamClientImpl(
       final ActorSchedulingService schedulingService,
-      final ClusterCommunicationService clusterCommunicationService) {
+      final ClusterCommunicationService clusterCommunicationService,
+      final MeterRegistry meterRegistry) {
     this.schedulingService = schedulingService;
     streamService =
         new TransportFactory(schedulingService)
-            .createRemoteStreamClient(clusterCommunicationService, new JobClientStreamMetrics());
+            .createRemoteStreamClient(
+                clusterCommunicationService, new JobClientStreamMetrics(meterRegistry));
   }
 
   @Override

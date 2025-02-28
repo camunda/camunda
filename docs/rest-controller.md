@@ -2,10 +2,9 @@
 
 This document outlines the main steps to consider when building REST controllers in the Camunda 8
 REST API.
-It covers the whole end-to-end view from endpoint definition and implementation to client
-considerations and testing.
 
-## Main steps
+It covers the whole end-to-end view from endpoint definition and implementation to client
+considerations and testing, touching on the following steps:
 
 - [ ] Define the endpoint you want to create.
 - [ ] Define your endpoint and any required data models in the [OpenAPI description](../zeebe/gateway-protocol/src/main/proto/rest-api.yaml) of the C8 REST API.
@@ -15,7 +14,7 @@ considerations and testing.
 - [ ] Optional: create integration tests for your new command.
 - [ ] Generate public reference documentation from the OpenAPI description.
 
-### Endpoint definition
+## Endpoint definition
 
 Define the endpoint you want to create.
 
@@ -23,7 +22,7 @@ Define the endpoint you want to create.
 2. Consider the [existing endpoints](https://docs.camunda.io/docs/next/apis-tools/camunda-api-rest/specifications/camunda-8-rest-api/) to create consistent endpoints.
 3. Share and validate your endpoint design with peers, for example in the [#prj-c8-rest-api](https://camunda.slack.com/archives/C06UKS51QV9).
 
-### OpenAPI extension
+## OpenAPI extension
 
 Define your endpoint and any required data models in the [OpenAPI description](../zeebe/gateway-protocol/src/main/proto/rest-api.yaml) of the C8 REST API.
 
@@ -45,7 +44,7 @@ Define your endpoint and any required data models in the [OpenAPI description](.
       - Reason: The documentation generator uses only the first line as the `meta description` on the endpoint's page. Incomplete sentences on the first line create a confusing `meta description`.
 4. The OpenAPI spec is owned by the @camunda/docs-api-reviewers team, so please await a review from them before merging your changes. The team will be assigned for review automatically.
 
-### REST controller implementation
+## REST controller implementation
 
 Implement your controller(s) in the `zeebe/gateway-rest` module next to the [other controllers](../zeebe/gateway-rest/src/main/java/io/camunda/zeebe/gateway/rest/controller).
 You can extend an existing controller if there is one for your resource, e.g. the `UserTaskController` for the user task resource.
@@ -59,7 +58,7 @@ You can extend an existing controller if there is one for your resource, e.g. th
    3. Mapping the result back to either a success or failure response, e.g. using the helper methods of the `ResponseMapper` and `RestErrorMapper`.
 5. Provide REST API-level unit tests, mocking the interaction with the service layer, validating that input and output are mapped as expected, and ensuring that service exceptions are handled correctly.
 
-### Service layer extension
+## Service layer extension
 
 Implement or extend the respective `Services` your controller invokes in the `service` module.
 
@@ -76,7 +75,7 @@ Implement or extend the respective `Services` your controller invokes in the `se
    3. If your request is a new capability in the Zeebe brokers, implement and test the functionality there if not done yet.
 6. Provide service-level unit tests, mocking the interaction with the Zeebe brokers and search clients and validating that input and output are handled as expected, e.g. input validation and broker exceptions are created accordingly.
 
-### Camunda Client extension
+## Camunda Client extension
 
 Extend the Camunda Client with the new command you added to the REST API.
 
@@ -86,7 +85,7 @@ Extend the Camunda Client with the new command you added to the REST API.
 4. Implement the command chain or query interface accordingly, like the `ProcessInstanceQueryImpl` or `CompleteUserTaskCommandImpl` do.
 5. Provide client-level unit tests, mocking the interaction with the REST API and validating that the client input and API output are validated and transformed correctly.
 
-### Integration testing
+## Integration testing
 
 Create integration tests (ITs) for your new command. This is optional given not every use case requires this. The following types of ITs exist:
 
@@ -96,9 +95,21 @@ Create integration tests (ITs) for your new command. This is optional given not 
 
 Refer to existing integration tests for setup.
 
-### Documentation generation
+## Documentation generation
 
-Adjust the [public reference documentation](https://docs.camunda.io/docs/next/apis-tools/camunda-api-rest/specifications/camunda-8-rest-api/) with the OpenAPI description [you extended earlier](#openapi-extension).
+[The public reference documentation](https://docs.camunda.io/docs/next/apis-tools/camunda-api-rest/specifications/camunda-8-rest-api/) needs to be synchronized with [your specification changes](#openapi-extension).
+
+### Automatic synchronization
+
+The documentation project is configured to execute [a workflow](https://github.com/camunda/camunda-docs/actions/workflows/sync-rest-api-docs.yaml) weekly to synchronize the "next" version of the REST API docs. The workflow pulls the specification from `main` in this project, and re-generates the documentation for the "next" version based on that spec. If your changes only need to be applied to version "next," and a documentation update is not urgent, you should wait for that workflow to incorporate your changes.
+
+### Manual synchronization
+
+#### For changes applied to the `main` branch
+
+1. Trigger a manual run of the [synchronization workflow](https://github.com/camunda/camunda-docs/actions/workflows/sync-rest-api-docs.yaml).
+
+#### For each other version of your changes
 
 1. Consider the [documentation guide](https://github.com/camunda/camunda-docs/blob/main/howtos/interactive-api-explorers.md) explaining how to generate the REST API explorer.
 2. If you encounter any adjustments to improve the generated documentation, feed it back into the OpenAPI file and regenerate until the docs are in the desired state.
