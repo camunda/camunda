@@ -102,7 +102,7 @@
     <version.dmn-scala>1.10.1</version.dmn-scala>
     <version.rest-assured>5.5.1</version.rest-assured>
     <version.spring>6.2.3</version.spring>
-    <version.spring-security>6.4.2</version.spring-security>
+    <version.spring-security>6.4.3</version.spring-security>
     <version.spring-boot>3.4.3</version.spring-boot>
     <version.concurrentunit>0.4.6</version.concurrentunit>
     <version.kryo>5.6.2</version.kryo>
@@ -170,7 +170,7 @@
     <!-- the lucene version must be coupled with version.elasticsearch7 -->
     <version.lucene>8.11.3</version.lucene>
     <version.hdr-histogram>2.2.2</version.hdr-histogram>
-    <version.joda-time>2.13.0</version.joda-time>
+    <version.joda-time>2.13.1</version.joda-time>
     <version.commons-collections4>4.4</version.commons-collections4>
     <version.xmlunit-core>2.10.0</version.xmlunit-core>
 
