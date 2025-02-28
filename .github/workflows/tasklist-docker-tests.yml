@@ -9,6 +9,7 @@ jobs:
     name: Tasklist Docker tests
     runs-on: gcp-core-4-default
     timeout-minutes: 20
+    permissions: {}  # GITHUB_TOKEN unused in this job
     env:
       BRANCH_NAME: ${{ github.head_ref || github.ref_name }}
     services:
