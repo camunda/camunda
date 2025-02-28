@@ -15,9 +15,9 @@ import io.camunda.application.commons.configuration.WorkingDirectoryConfiguratio
 import io.camunda.application.commons.search.SearchClientDatabaseConfiguration.SearchClientProperties;
 import io.camunda.application.commons.security.CamundaSecurityConfiguration.CamundaSecurityProperties;
 import io.camunda.authentication.config.AuthenticationProperties;
-import io.camunda.client.CamundaClientBuilder;
 import io.camunda.security.configuration.ConfiguredUser;
 import io.camunda.security.configuration.InitializationConfiguration;
+import io.camunda.security.entity.AuthenticationMethod;
 import io.camunda.zeebe.broker.BrokerModuleConfiguration;
 import io.camunda.zeebe.broker.system.configuration.ExporterCfg;
 import io.camunda.zeebe.gateway.impl.configuration.GatewayCfg;
@@ -29,6 +29,7 @@ import io.camunda.zeebe.test.util.socket.SocketUtil;
 import java.net.URI;
 import java.nio.file.Path;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.function.Consumer;
 import org.springframework.boot.builder.SpringApplicationBuilder;
@@ -105,6 +106,8 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
   }
 
   public TestStandaloneBroker withAuthorizationsEnabled() {
+    // when using authorizations, api authentication needs to be enforced too
+    withAuthenticatedAccess();
     return withSecurityConfig(cfg -> cfg.getAuthorizations().setEnabled(true));
   }
 
@@ -157,16 +160,6 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
   @Override
   public GatewayCfg gatewayConfig() {
     return config.getGateway();
-  }
-
-  @Override
-  public CamundaClientBuilder newClientBuilder() {
-    if (!isGateway()) {
-      throw new IllegalStateException(
-          "Cannot create a new client for this broker, as it does not have an embedded gateway");
-    }
-
-    return TestStandaloneApplication.super.newClientBuilder();
   }
 
   /**
@@ -236,6 +229,11 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
   @Override
   public BrokerBasedProperties brokerConfig() {
     return config;
+  }
+
+  @Override
+  public Optional<AuthenticationMethod> clientAuthenticationMethod() {
+    return apiAuthenticationMethod();
   }
 
   /**

@@ -20,6 +20,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.Banner.Mode;
@@ -187,6 +188,16 @@ public abstract class TestSpringApplication<T extends TestSpringApplication<T>>
 
   public final T withAuthenticatedAccess() {
     return withUnauthenticatedAccess(false);
+  }
+
+  public final Optional<AuthenticationMethod> apiAuthenticationMethod() {
+    if (property(AuthenticationProperties.API_UNPROTECTED, Boolean.class, true)) {
+      return Optional.empty();
+    } else {
+      return AuthenticationMethod.parse(
+          property(
+              AuthenticationProperties.METHOD, String.class, AuthenticationMethod.BASIC.name()));
+    }
   }
 
   /** Returns the command line arguments that will be passed when the application is started. */

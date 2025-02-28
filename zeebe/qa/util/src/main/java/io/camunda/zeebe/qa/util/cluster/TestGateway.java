@@ -121,6 +121,7 @@ public interface TestGateway<T extends TestGateway<T>> extends TestApplication<T
     try (final var client = newClientBuilder().build()) {
       Awaitility.await("until cluster topology is complete")
           .atMost(timeout)
+          .ignoreExceptions()
           .untilAsserted(
               () ->
                   TopologyAssert.assertThat(client.newTopologyRequest().send().join())

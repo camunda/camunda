@@ -7,8 +7,15 @@
  */
 package io.camunda.zeebe.qa.util.cluster;
 
+import static io.camunda.security.configuration.InitializationConfiguration.DEFAULT_USER_PASSWORD;
+import static io.camunda.security.configuration.InitializationConfiguration.DEFAULT_USER_USERNAME;
+
 import io.camunda.application.commons.configuration.BrokerBasedConfiguration.BrokerBasedProperties;
+import io.camunda.client.CamundaClientBuilder;
+import io.camunda.client.impl.basicauth.BasicAuthCredentialsProviderBuilder;
+import io.camunda.security.entity.AuthenticationMethod;
 import io.camunda.zeebe.broker.system.configuration.ExporterCfg;
+import java.util.Optional;
 import java.util.function.Consumer;
 
 /**
@@ -36,4 +43,34 @@ public interface TestStandaloneApplication<T extends TestStandaloneApplication<T
   T withBrokerConfig(final Consumer<BrokerBasedProperties> modifier);
 
   BrokerBasedProperties brokerConfig();
+
+  default Optional<AuthenticationMethod> clientAuthenticationMethod() {
+    return Optional.empty();
+  }
+
+  @Override
+  default CamundaClientBuilder newClientBuilder() {
+    if (!isGateway()) {
+      throw new IllegalStateException(
+          "Cannot create a new client for this application, as it does not have an embedded gateway");
+    }
+
+    final CamundaClientBuilder camundaClientBuilder = TestGateway.super.newClientBuilder();
+
+    clientAuthenticationMethod()
+        .ifPresent(
+            method -> {
+              if (method == AuthenticationMethod.BASIC) {
+                camundaClientBuilder.credentialsProvider(
+                    new BasicAuthCredentialsProviderBuilder()
+                        .username(DEFAULT_USER_USERNAME)
+                        .password(DEFAULT_USER_PASSWORD)
+                        .build());
+              } else {
+                throw new IllegalStateException("Unsupported authentication method: " + method);
+              }
+            });
+
+    return camundaClientBuilder;
+  }
 }
