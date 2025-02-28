@@ -247,6 +247,7 @@ public class CompactRecordLogger {
         \tP9K999 - key; #999 - record position; "ID" element/process id; @"elementid"/[P9K999] - element with ID and key
         \tKeys are decomposed into partition id and per partition key (e.g. 2251799813685253 -> P1K005). If single partition, the partition is omitted.
         \tLong IDs are shortened (e.g. 'startEvent_5d56488e-0570-416c-ba2d-36d2a3acea78' -> 'star..acea78'
+        \tHeaders defined in 'Protocol' are abbreviated (e.g. 'io.camunda.zeebe:userTaskKey:2251799813685253' -> 'uTK:K005').
         """);
     bulkMessage.append("--------\n");
 
