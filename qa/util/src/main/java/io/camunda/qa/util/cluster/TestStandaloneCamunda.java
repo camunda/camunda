@@ -50,8 +50,14 @@ import org.springframework.boot.builder.SpringApplicationBuilder;
 import org.springframework.util.unit.DataSize;
 import org.testcontainers.elasticsearch.ElasticsearchContainer;
 
-/** Represents an instance of the {@link BrokerModuleConfiguration} Spring application. */
+/**
+ * Represents an instance of the {@link BrokerModuleConfiguration} Spring application.
+ *
+ * @deprecated Make use of {@link TestSimpleCamundaApplication} together with {@link
+ *     io.camunda.qa.util.multidb.MultiDbTest}.
+ */
 @SuppressWarnings("UnusedReturnValue")
+@Deprecated(forRemoval = true)
 public final class TestStandaloneCamunda extends TestSpringApplication<TestStandaloneCamunda>
     implements TestGateway<TestStandaloneCamunda>,
         TestStandaloneApplication<TestStandaloneCamunda> {
@@ -255,12 +261,6 @@ public final class TestStandaloneCamunda extends TestSpringApplication<TestStand
     return TestStandaloneApplication.super.newClientBuilder();
   }
 
-  /** Returns the broker configuration */
-  @Override
-  public BrokerBasedProperties brokerConfig() {
-    return brokerProperties;
-  }
-
   /**
    * Modifies the security configuration. Will still mutate the configuration if the broker is
    * started, but likely has no effect until it's restarted.
@@ -351,6 +351,12 @@ public final class TestStandaloneCamunda extends TestSpringApplication<TestStand
   public TestStandaloneCamunda withBrokerConfig(final Consumer<BrokerBasedProperties> modifier) {
     modifier.accept(brokerProperties);
     return this;
+  }
+
+  /** Returns the broker configuration */
+  @Override
+  public BrokerBasedProperties brokerConfig() {
+    return brokerProperties;
   }
 
   private void setExportersConfig() {
