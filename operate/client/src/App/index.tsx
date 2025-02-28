@@ -25,7 +25,7 @@ import {currentTheme} from 'modules/stores/currentTheme';
 import {createBrowserHistory} from 'history';
 import {ThemeSwitcher} from 'modules/components/ThemeSwitcher';
 import loadable from '@loadable/component';
-import {Forbidden} from "../modules/components/Forbidden";
+import {Forbidden} from '../modules/components/Forbidden';
 
 const CarbonLogin = loadable(() => import('./Login/index'), {
   resolveComponent: (components) => components.Login,
@@ -83,7 +83,7 @@ const App: React.FC = () => {
         <TrackPagination />
         <Routes>
           <Route path={Paths.login()} element={<CarbonLogin />} />
-          <Route path="/forbidden" element={<Forbidden/>}/>
+          <Route path={Paths.forbidden()} element={<Forbidden />} />
           <Route
             path={Paths.dashboard()}
             element={
