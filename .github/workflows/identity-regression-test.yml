@@ -105,6 +105,7 @@ jobs:
         uses: EnricoMi/publish-unit-test-result-action@v2
         with:
           files: '**/reports/report.xml'
+          comment_mode: off
 
       - name: Cleanup
         shell: bash

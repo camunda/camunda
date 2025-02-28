@@ -5,15 +5,15 @@ Content-Type: application/json
 Accept: application/json
 
 {
-  "password": "string",
-  "username": "string",
-  "name": "string",
-  "email": "string"
+  "password": "sergii",
+  "username": "sergii",
+  "name": "sergii",
+  "email": "sergii@camunda.com"
 }
 
 > {%
   client.test("User creation should be unauthorized", function () {
-    client.assert(response.status === 401, "Response status is not 401");
+    client.assert(response.status === 403, "Response status is not 403");
   });
 %}
 
