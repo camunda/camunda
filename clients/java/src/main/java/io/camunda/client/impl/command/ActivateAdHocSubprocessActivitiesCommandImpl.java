@@ -71,7 +71,7 @@ public final class ActivateAdHocSubprocessActivitiesCommandImpl
     final HttpCamundaFuture<ActivateAdHocSubprocessActivitiesResponse> result =
         new HttpCamundaFuture<>();
     httpClient.post(
-        "/element-instances/ad-hoc-activities/" + adHocSubprocessInstanceKey + "/activate",
+        "/element-instances/ad-hoc-activities/" + adHocSubprocessInstanceKey + "/activation",
         jsonMapper.toJson(httpRequestObject),
         httpRequestConfig.build(),
         result);
