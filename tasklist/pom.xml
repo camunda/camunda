@@ -35,7 +35,10 @@
     <maven.compiler.target>21</maven.compiler.target>
     <maven.compiler.source>21</maven.compiler.source>
 
+<<<<<<< HEAD
     <skip.fe.build>true</skip.fe.build>
+=======
+>>>>>>> c06d8f85 (build: remove skip.fe.build tasklist default)
     <maven.javadoc.skip>true</maven.javadoc.skip>
   </properties>
 
