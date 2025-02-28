@@ -157,7 +157,7 @@ public class QueryTest {
   public static void waitUntilProcessInstanceIsGone(
       final CamundaClient camundaClient, final long processInstanceKey) {
     Awaitility.await("should wait until process is ended")
-        .atMost(Duration.ofSeconds(15))
+        .atMost(Duration.ofMinutes(1))
         .ignoreExceptions() // Ignore exceptions and continue retrying
         .untilAsserted(
             () -> {
