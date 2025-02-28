@@ -152,6 +152,11 @@
 
     <dependency>
       <groupId>io.camunda</groupId>
+      <artifactId>operate-common</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
       <artifactId>operate-webapp</artifactId>
     </dependency>
 
@@ -177,6 +182,11 @@
 
     <dependency>
       <groupId>io.camunda</groupId>
+      <artifactId>operate-schema</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
       <artifactId>operate-importer</artifactId>
     </dependency>
 
@@ -198,6 +208,11 @@
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>tasklist-importer</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>tasklist-els-schema</artifactId>
     </dependency>
 
     <dependency>
@@ -571,6 +586,10 @@
               <mainClass>io.camunda.operate.schema.migration.SchemaMigration</mainClass>
             </program>
             <program>
+              <id>schema</id>
+              <mainClass>io.camunda.application.StandaloneSchemaManager</mainClass>
+            </program>
+            <program>
               <id>tasklist</id>
               <mainClass>io.camunda.application.StandaloneTasklist</mainClass>
             </program>
@@ -635,7 +654,6 @@
           <!-- dependencies only packaged but not explicitly used -->
           <usedDependencies>
             <dependency>io.camunda:camunda-exporter</dependency>
-            <dependency>io.camunda:zeebe-elasticsearch-exporter</dependency>
             <dependency>io.camunda:zeebe-opensearch-exporter</dependency>
 
             <!-- Needed for Spring Actuators, and REST API -->
