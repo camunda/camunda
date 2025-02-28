@@ -17,6 +17,7 @@ import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Profile;
+import org.springframework.scheduling.concurrent.CustomizableThreadFactory;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -34,8 +35,24 @@ public class MigrationsRunner implements ApplicationRunner {
   @Override
   public void run(final ApplicationArguments args) throws Exception {
     LOG.info("Starting {} migration tasks", migrators.size());
-    final Exception migrationsExceptions = new Exception("migration is failed");
-    try (final var executor = Executors.newFixedThreadPool(migrators.size())) {
+    /* Detach from main Spring thread */
+    new Thread(
+            () -> {
+              try {
+                startMigrators(args);
+              } catch (final Exception e) {
+                throw new RuntimeException(e);
+              }
+            },
+            "migration-parent")
+        .start();
+  }
+
+  private void startMigrators(final ApplicationArguments args) throws Exception {
+    final Exception migrationsExceptions = new Exception("migration failed");
+    try (final var executor =
+        Executors.newFixedThreadPool(
+            migrators.size(), new CustomizableThreadFactory("migration-"))) {
       final var results = executor.invokeAll(migrators);
       for (final var result : results) {
         try {

@@ -213,19 +213,20 @@ jobs:
           java-version: '22'
 
       - name: Set env
-        run: echo "JAVA_HOME=$env:JAVA_HOME_22_x64" >> $env:GITHUB_ENV
+        run: echo "JAVA_HOME=${JAVA_HOME_22_X64}" >> $GITHUB_ENV
+        shell: bash
 
       - name: Unit tests
         run: go test
         working-directory: .\c8run
-        shell: cmd
+        shell: bash
         env:
           JAVA_VERSION: "22.0.2"
 
       - name: Run c8run
-        run: .\c8run.exe start --config e2e_tests/prefix-config.yaml
-        working-directory: .\c8run
-        shell: cmd
+        run: bash -c './c8run.exe start --config e2e_tests/prefix-config.yaml'
+        working-directory: ./c8run
+        shell: bash
         env:
           JAVA_VERSION: "22.0.2"
 
