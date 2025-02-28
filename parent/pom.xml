@@ -829,6 +829,13 @@
 
       <dependency>
         <groupId>io.camunda</groupId>
+        <artifactId>tasklist-qa-migration-tests-test-fixture-870</artifactId>
+        <version>${project.version}</version>
+        <scope>test</scope>
+      </dependency>
+
+      <dependency>
+        <groupId>io.camunda</groupId>
         <artifactId>document-api</artifactId>
         <version>${project.version}</version>
       </dependency>
