@@ -11,6 +11,10 @@ import io.atomix.cluster.MemberId;
 import io.camunda.application.Profile;
 import io.camunda.application.commons.CommonsModuleConfiguration;
 import io.camunda.application.commons.configuration.GatewayBasedConfiguration.GatewayBasedProperties;
+import io.camunda.application.commons.security.CamundaSecurityConfiguration.CamundaSecurityProperties;
+import io.camunda.authentication.config.AuthenticationProperties;
+import io.camunda.security.configuration.ConfiguredUser;
+import io.camunda.security.configuration.InitializationConfiguration;
 import io.camunda.zeebe.gateway.GatewayModuleConfiguration;
 import io.camunda.zeebe.gateway.impl.configuration.GatewayCfg;
 import io.camunda.zeebe.test.util.socket.SocketUtil;
@@ -20,6 +24,7 @@ import java.util.function.Consumer;
 public final class TestStandaloneGateway extends TestSpringApplication<TestStandaloneGateway>
     implements TestGateway<TestStandaloneGateway> {
   private final GatewayBasedProperties config;
+  private final CamundaSecurityProperties securityConfig;
 
   public TestStandaloneGateway() {
     super(GatewayModuleConfiguration.class, CommonsModuleConfiguration.class);
@@ -31,6 +36,18 @@ public final class TestStandaloneGateway extends TestSpringApplication<TestStand
 
     //noinspection resource
     withBean("config", config, GatewayBasedProperties.class).withAdditionalProfile(Profile.GATEWAY);
+
+    securityConfig = new CamundaSecurityProperties();
+    securityConfig
+        .getInitialization()
+        .getUsers()
+        .add(
+            new ConfiguredUser(
+                InitializationConfiguration.DEFAULT_USER_USERNAME,
+                InitializationConfiguration.DEFAULT_USER_PASSWORD,
+                InitializationConfiguration.DEFAULT_USER_NAME,
+                InitializationConfiguration.DEFAULT_USER_EMAIL));
+    withBean("securityConfig", securityConfig, CamundaSecurityProperties.class);
     // by default, we don't want to create the schema as ES/OS containers may not be used in the
     // current test
     withCreateSchema(false);
@@ -63,6 +80,30 @@ public final class TestStandaloneGateway extends TestSpringApplication<TestStand
       case CLUSTER -> config.getCluster().getPort();
       default -> super.mappedPort(port);
     };
+  }
+
+  @Override
+  public TestStandaloneGateway withProperty(final String key, final Object value) {
+    // Since the security config is not constructed from the properties, we need to manually update
+    // it when we override a property.
+    AuthenticationProperties.applyToSecurityConfig(securityConfig, key, value);
+    return super.withProperty(key, value);
+  }
+
+  /**
+   * Modifies the security configuration. Will still mutate the configuration if the gateway is
+   * started, but likely has no effect until it's restarted.
+   */
+  public TestStandaloneGateway withSecurityConfig(
+      final Consumer<CamundaSecurityProperties> modifier) {
+    modifier.accept(securityConfig);
+    return this;
+  }
+
+  public TestStandaloneGateway withAuthorizationsEnabled() {
+    // when using authorizations, api authentication needs to be enforced too
+    withAuthenticatedAccess();
+    return withSecurityConfig(cfg -> cfg.getAuthorizations().setEnabled(true));
   }
 
   @Override
