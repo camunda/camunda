@@ -241,14 +241,13 @@ public class CompactRecordLogger {
     if (multiPartition) {
       bulkMessage.append("P[partitionId]");
     }
-    bulkMessage.append("K[key] - [summary of value]\n");
-
     bulkMessage.append(
-        "\tP9K999 - key; #999 - record position; \"ID\" element/process id; @\"elementid\"/[P9K999] - element with ID and key\n");
-    bulkMessage.append(
-        "\tKeys are decomposed into partition id and per partition key (e.g. 2251799813685253 -> P1K005). If single partition, the partition is omitted.\n");
-    bulkMessage.append(
-        "\tLong IDs are shortened (e.g. 'startEvent_5d56488e-0570-416c-ba2d-36d2a3acea78' -> 'star..acea78'\n");
+        """
+        K[key] - [summary of value]
+        \tP9K999 - key; #999 - record position; "ID" element/process id; @"elementid"/[P9K999] - element with ID and key
+        \tKeys are decomposed into partition id and per partition key (e.g. 2251799813685253 -> P1K005). If single partition, the partition is omitted.
+        \tLong IDs are shortened (e.g. 'startEvent_5d56488e-0570-416c-ba2d-36d2a3acea78' -> 'star..acea78'
+        """);
     bulkMessage.append("--------\n");
 
     records.forEach(record -> bulkMessage.append(summarizeRecord(record)).append("\n"));
