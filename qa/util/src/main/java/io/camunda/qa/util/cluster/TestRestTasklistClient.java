@@ -38,7 +38,10 @@ public class TestRestTasklistClient extends AbstractTestWebappClient<TestRestTas
     this(
         endpoint,
         HttpClient.newHttpClient(),
-        createElasticsearchClient(tasklistProperties.getElasticsearch().getUrl()),
+        createElasticsearchClient(
+            tasklistProperties.getElasticsearch().getUrl(),
+            tasklistProperties.getElasticsearch().getUsername(),
+            tasklistProperties.getElasticsearch().getPassword()),
         initDescriptor(TaskTemplate::new, tasklistProperties),
         initDescriptor(ProcessIndex::new, tasklistProperties));
   }
