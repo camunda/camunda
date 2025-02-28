@@ -28,7 +28,6 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.util.Base64;
 import java.util.List;
-import org.apache.hc.core5.http.ProtocolException;
 import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -74,7 +73,7 @@ class ApplicationAuthorizationIT {
   @ValueSource(strings = {"operate", "identity"})
   void accessAppUserWithoutAppAccessNotAllowed(
       final String appName, @Authenticated(RESTRICTED) final CamundaClient restrictedClient)
-      throws IOException, ProtocolException, URISyntaxException, InterruptedException {
+      throws IOException, URISyntaxException, InterruptedException {
     // when
     final HttpRequest request =
         HttpRequest.newBuilder()
