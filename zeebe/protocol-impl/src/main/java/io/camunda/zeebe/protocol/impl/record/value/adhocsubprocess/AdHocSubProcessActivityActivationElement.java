@@ -10,7 +10,7 @@ package io.camunda.zeebe.protocol.impl.record.value.adhocsubprocess;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import io.camunda.zeebe.msgpack.property.StringProperty;
 import io.camunda.zeebe.msgpack.value.ObjectValue;
-import io.camunda.zeebe.protocol.record.value.AdHocSubProcessActivityActivationRecordValue.AdHocSubProcessActivityActivationFlowNodeValue;
+import io.camunda.zeebe.protocol.record.value.AdHocSubProcessActivityActivationRecordValue.AdHocSubProcessActivityActivationElementValue;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 
 @JsonIgnoreProperties({
@@ -18,23 +18,23 @@ import io.camunda.zeebe.util.buffer.BufferUtil;
   "encodedLength",
   "empty"
 })
-public final class AdHocSubProcessActivityActivationFlowNode extends ObjectValue
-    implements AdHocSubProcessActivityActivationFlowNodeValue {
+public final class AdHocSubProcessActivityActivationElement extends ObjectValue
+    implements AdHocSubProcessActivityActivationElementValue {
 
-  private final StringProperty flowNodeId = new StringProperty("flowNodeId");
+  private final StringProperty elementId = new StringProperty("elementId");
 
-  public AdHocSubProcessActivityActivationFlowNode() {
+  public AdHocSubProcessActivityActivationElement() {
     super(1);
-    declareProperty(flowNodeId);
+    declareProperty(elementId);
   }
 
   @Override
-  public String getFlowNodeId() {
-    return BufferUtil.bufferAsString(flowNodeId.getValue());
+  public String getElementId() {
+    return BufferUtil.bufferAsString(elementId.getValue());
   }
 
-  public AdHocSubProcessActivityActivationFlowNode setFlowNodeId(final String flowNodeId) {
-    this.flowNodeId.setValue(flowNodeId);
+  public AdHocSubProcessActivityActivationElement setElementId(final String elementId) {
+    this.elementId.setValue(elementId);
     return this;
   }
 }

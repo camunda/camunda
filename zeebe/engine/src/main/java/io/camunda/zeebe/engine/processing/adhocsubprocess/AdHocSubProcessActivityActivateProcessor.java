@@ -20,13 +20,13 @@ import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
 import io.camunda.zeebe.engine.state.immutable.ProcessState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.state.instance.ElementInstance;
-import io.camunda.zeebe.protocol.impl.record.value.adhocsubprocess.AdHocSubProcessActivityActivationFlowNode;
+import io.camunda.zeebe.protocol.impl.record.value.adhocsubprocess.AdHocSubProcessActivityActivationElement;
 import io.camunda.zeebe.protocol.impl.record.value.adhocsubprocess.AdHocSubProcessActivityActivationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.AdHocSubProcessActivityActivationIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
-import io.camunda.zeebe.protocol.record.value.AdHocSubProcessActivityActivationRecordValue.AdHocSubProcessActivityActivationFlowNodeValue;
+import io.camunda.zeebe.protocol.record.value.AdHocSubProcessActivityActivationRecordValue.AdHocSubProcessActivityActivationElementValue;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
@@ -74,7 +74,7 @@ public class AdHocSubProcessActivityActivateProcessor
       return;
     }
 
-    validateDuplicateFlowNodes(command);
+    validateDuplicateElements(command);
 
     final var adHocSubprocessElementId = adHocSubprocessElementInstance.getValue().getElementId();
     if (adHocSubprocessElementInstance.isInFinalState()) {
@@ -99,34 +99,33 @@ public class AdHocSubProcessActivityActivateProcessor
     final var adHocActivitiesById =
         ((ExecutableAdHocSubProcess) adHocSubprocessElement).getAdHocActivitiesById();
 
-    // test that the given flow nodes exist within it
-    final var flowNodesNotInAdHocSubProcess =
-        command.getValue().flowNodes().stream()
-            .map(AdHocSubProcessActivityActivationFlowNode::getFlowNodeId)
-            .filter(flowNodeId -> !adHocActivitiesById.containsKey(flowNodeId))
+    // check that the given elements exist within the ad-hoc subprocess
+    final var elementsNotInAdHocSubProcess =
+        command.getValue().elements().stream()
+            .map(AdHocSubProcessActivityActivationElement::getElementId)
+            .filter(elementId -> !adHocActivitiesById.containsKey(elementId))
             .toList();
-    if (!flowNodesNotInAdHocSubProcess.isEmpty()) {
-      throw new FlowNodesNotPresentException(
-          adHocSubprocessElementId, flowNodesNotInAdHocSubProcess);
+    if (!elementsNotInAdHocSubProcess.isEmpty()) {
+      throw new ElementNotFoundException(adHocSubprocessElementId, elementsNotInAdHocSubProcess);
     }
 
-    // activate the flow nodes
-    for (final var flowNode : command.getValue().getFlowNodes()) {
-      final var flowNodeToActivate =
-          adHocSubprocessDefinition.getElementById(flowNode.getFlowNodeId());
-      final var flowNodeProcessInstanceRecord = new ProcessInstanceRecord();
-      flowNodeProcessInstanceRecord.wrap(adHocSubprocessElementInstance.getValue());
-      flowNodeProcessInstanceRecord
+    // activate the elements
+    for (final var elementValue : command.getValue().getElements()) {
+      final var elementToActivate =
+          adHocSubprocessDefinition.getElementById(elementValue.getElementId());
+      final var elementProcessInstanceRecord = new ProcessInstanceRecord();
+      elementProcessInstanceRecord.wrap(adHocSubprocessElementInstance.getValue());
+      elementProcessInstanceRecord
           .setFlowScopeKey(adHocSubprocessElementInstance.getKey())
-          .setElementId(flowNodeToActivate.getId())
-          .setBpmnElementType(flowNodeToActivate.getElementType())
-          .setBpmnEventType(flowNodeToActivate.getEventType());
+          .setElementId(elementToActivate.getId())
+          .setBpmnElementType(elementToActivate.getElementType())
+          .setBpmnEventType(elementToActivate.getEventType());
 
       final long elementToActivateInstanceKey = keyGenerator.nextKey();
       commandWriter.appendFollowUpCommand(
           elementToActivateInstanceKey,
           ProcessInstanceIntent.ACTIVATE_ELEMENT,
-          flowNodeProcessInstanceRecord);
+          elementProcessInstanceRecord);
     }
 
     stateWriter.appendFollowUpEvent(
@@ -149,18 +148,18 @@ public class AdHocSubProcessActivityActivateProcessor
     return ProcessingError.EXPECTED_ERROR;
   }
 
-  private void validateDuplicateFlowNodes(
+  private void validateDuplicateElements(
       final TypedRecord<AdHocSubProcessActivityActivationRecord> command) {
     final var hasDuplicates =
-        command.getValue().getFlowNodes().stream()
-                .map(AdHocSubProcessActivityActivationFlowNodeValue::getFlowNodeId)
+        command.getValue().getElements().stream()
+                .map(AdHocSubProcessActivityActivationElementValue::getElementId)
                 .distinct()
                 .count()
-            != command.getValue().getFlowNodes().size();
+            != command.getValue().getElements().size();
     if (hasDuplicates) {
-      throw new DuplicateFlowNodesException(
-          command.getValue().getFlowNodes().stream()
-              .map(AdHocSubProcessActivityActivationFlowNodeValue::getFlowNodeId)
+      throw new DuplicateElementsException(
+          command.getValue().getElements().stream()
+              .map(AdHocSubProcessActivityActivationElementValue::getElementId)
               .toList());
     }
   }
@@ -193,21 +192,21 @@ public class AdHocSubProcessActivityActivateProcessor
     return true;
   }
 
-  private static final class DuplicateFlowNodesException extends IllegalStateException {
-    private static final String ERROR_MESSAGE = "Duplicate flow nodes %s not allowed.";
+  private static final class DuplicateElementsException extends IllegalStateException {
+    private static final String ERROR_MESSAGE = "Duplicate elements %s not allowed.";
 
-    private DuplicateFlowNodesException(final List<String> flowNodeIds) {
-      super(String.format(ERROR_MESSAGE, flowNodeIds));
+    private DuplicateElementsException(final List<String> elementIds) {
+      super(String.format(ERROR_MESSAGE, elementIds));
     }
   }
 
-  private static final class FlowNodesNotPresentException extends IllegalStateException {
+  private static final class ElementNotFoundException extends IllegalStateException {
     private static final String ERROR_MESSAGE =
-        "Flow nodes %s do not exist in ad-hoc subprocess <%s>";
+        "Elements %s do not exist in ad-hoc subprocess <%s>";
 
-    private FlowNodesNotPresentException(
-        final String adHocSubprocessId, final List<String> flowNodeIds) {
-      super(String.format(ERROR_MESSAGE, flowNodeIds, adHocSubprocessId));
+    private ElementNotFoundException(
+        final String adHocSubprocessId, final List<String> elementIds) {
+      super(String.format(ERROR_MESSAGE, elementIds, adHocSubprocessId));
     }
   }
 

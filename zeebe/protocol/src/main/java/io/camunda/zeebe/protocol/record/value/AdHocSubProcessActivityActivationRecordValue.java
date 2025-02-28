@@ -38,12 +38,11 @@ public interface AdHocSubProcessActivityActivationRecordValue extends RecordValu
   /**
    * @return the list of flow node ids of the activities that need to be activated.
    */
-  List<AdHocSubProcessActivityActivationFlowNodeValue> getFlowNodes();
+  List<AdHocSubProcessActivityActivationElementValue> getElements();
 
   @Value.Immutable
-  @ImmutableProtocol(
-      builder = ImmutableAdHocSubProcessActivityActivationFlowNodeValue.Builder.class)
-  interface AdHocSubProcessActivityActivationFlowNodeValue {
-    String getFlowNodeId();
+  @ImmutableProtocol(builder = ImmutableAdHocSubProcessActivityActivationElementValue.Builder.class)
+  interface AdHocSubProcessActivityActivationElementValue {
+    String getElementId();
   }
 }
