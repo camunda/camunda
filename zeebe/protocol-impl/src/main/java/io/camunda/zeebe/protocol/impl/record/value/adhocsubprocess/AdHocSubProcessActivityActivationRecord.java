@@ -29,7 +29,7 @@ public final class AdHocSubProcessActivityActivationRecord extends UnifiedRecord
       new StringProperty("tenantId", TenantOwned.DEFAULT_TENANT_IDENTIFIER);
 
   public AdHocSubProcessActivityActivationRecord() {
-    super(2);
+    super(3);
     declareProperty(adHocSubProcessInstanceKey)
         .declareProperty(flowNodes)
         .declareProperty(tenantIdProp);
