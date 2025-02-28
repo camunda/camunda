@@ -15,8 +15,10 @@ import io.camunda.search.exception.ErrorMessages;
 import io.camunda.search.query.AdHocSubprocessActivityQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.auth.Authentication;
+import io.camunda.service.AdHocSubprocessActivityServices.AdHocSubprocessActivateActivitiesRequest.AdHocSubprocessActivateActivityReference;
 import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
+import io.camunda.zeebe.gateway.impl.broker.request.BrokerActivateAdHocSubprocessActivityRequest;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.model.bpmn.instance.AdHocSubProcess;
@@ -112,8 +114,15 @@ public class AdHocSubprocessActivityServices extends ApiServices<AdHocSubprocess
 
   public CompletableFuture<AdHocSubProcessActivityActivationRecord> activateActivities(
       final AdHocSubprocessActivateActivitiesRequest request) {
-    // TODO implement
-    return CompletableFuture.failedFuture(new UnsupportedOperationException("Not implemented yet"));
+    final var brokerRequest =
+        new BrokerActivateAdHocSubprocessActivityRequest()
+            .setAdHocSubProcessInstanceKey(request.adHocSubprocessInstanceKey());
+
+    request.elements().stream()
+        .map(AdHocSubprocessActivateActivityReference::elementId)
+        .forEach(brokerRequest::addElement);
+
+    return sendBrokerRequest(brokerRequest);
   }
 
   public record AdHocSubprocessActivateActivitiesRequest(
