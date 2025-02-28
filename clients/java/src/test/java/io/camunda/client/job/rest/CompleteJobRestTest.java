@@ -167,9 +167,25 @@ class CompleteJobRestTest extends ClientRestTest {
         .newCompleteCommand(jobKey)
         .withResult()
         .deny(denied)
-        .denyReason(deniedReason)
+        .deniedReason(deniedReason)
         .send()
         .join();
+
+    // then
+    final JobCompletionRequest request = gatewayService.getLastRequest(JobCompletionRequest.class);
+    assertThat(request.getResult()).isNotNull();
+    assertThat(request.getResult().getDenied()).isEqualTo(denied);
+    assertThat(request.getResult().getDeniedReason()).isEqualTo(deniedReason);
+  }
+
+  @ParameterizedTest
+  @MethodSource("denialDetails")
+  void shouldCompleteWithResultDeniedWithReason(final boolean denied, final String deniedReason) {
+    // given
+    final long jobKey = 12;
+
+    // when
+    client.newCompleteCommand(jobKey).withResult().deny(denied, deniedReason).send().join();
 
     // then
     final JobCompletionRequest request = gatewayService.getLastRequest(JobCompletionRequest.class);
