@@ -15,6 +15,8 @@ import java.util.Optional;
 
 public interface UserTaskState {
 
+  String getIntermediateAssignee(long key);
+
   LifecycleState getLifecycleState(final long userTaskKey);
 
   UserTaskRecord getUserTask(final long userTaskKey);

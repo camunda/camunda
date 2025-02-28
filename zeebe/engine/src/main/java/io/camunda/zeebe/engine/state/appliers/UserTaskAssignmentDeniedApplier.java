@@ -33,6 +33,7 @@ public class UserTaskAssignmentDeniedApplier
     userTaskState.updateUserTaskLifecycleState(key, LifecycleState.CREATED);
     userTaskState.deleteIntermediateState(key);
     userTaskState.deleteRecordRequestMetadata(key);
+    // todo clean up intermediate assignee
 
     final long elementInstanceKey = value.getElementInstanceKey();
     final ElementInstance elementInstance = elementInstanceState.getInstance(elementInstanceKey);

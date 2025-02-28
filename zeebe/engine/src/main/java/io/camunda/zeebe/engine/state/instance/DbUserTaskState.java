@@ -12,6 +12,7 @@ import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.db.impl.DbForeignKey;
 import io.camunda.zeebe.db.impl.DbLong;
+import io.camunda.zeebe.db.impl.DbString;
 import io.camunda.zeebe.engine.processing.identity.AuthorizedTenants;
 import io.camunda.zeebe.engine.state.mutable.MutableUserTaskState;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
@@ -54,6 +55,9 @@ public class DbUserTaskState implements MutableUserTaskState {
   private final ColumnFamily<DbLong, UserTaskRecordRequestMetadata>
       userTasksRecordRequestMetadataColumnFamily;
 
+  private final DbString intermediateAssignee = new DbString();
+  private final ColumnFamily<DbLong, DbString> userTasksIntermediateAssigneeColumnFamily;
+
   public DbUserTaskState(
       final ZeebeDb<ZbColumnFamilies> zeebeDb, final TransactionContext transactionContext) {
     userTaskKey = new DbLong();
@@ -81,6 +85,12 @@ public class DbUserTaskState implements MutableUserTaskState {
             transactionContext,
             userTaskKey,
             userTaskRecordRequestMetadata);
+    userTasksIntermediateAssigneeColumnFamily =
+        zeebeDb.createColumnFamily(
+            ZbColumnFamilies.USER_TASK_INTERMEDIATE_ASSIGNEE,
+            transactionContext,
+            userTaskKey,
+            intermediateAssignee);
   }
 
   @Override
@@ -157,6 +167,25 @@ public class DbUserTaskState implements MutableUserTaskState {
   public void deleteRecordRequestMetadata(final long key) {
     userTaskKey.wrapLong(key);
     userTasksRecordRequestMetadataColumnFamily.deleteIfExists(userTaskKey);
+  }
+
+  @Override
+  public void storeIntermediateAssignee(final long key, final String assignee) {
+    if (assignee != null && !assignee.isEmpty()) {
+      userTaskKey.wrapLong(key);
+      intermediateAssignee.wrapString(assignee);
+      userTasksIntermediateAssigneeColumnFamily.insert(userTaskKey, intermediateAssignee);
+    }
+  }
+
+  @Override
+  public String getIntermediateAssignee(final long key) {
+    userTaskKey.wrapLong(key);
+    final var intermediateAssignee = userTasksIntermediateAssigneeColumnFamily.get(userTaskKey);
+    if (intermediateAssignee == null) {
+      return null;
+    }
+    return intermediateAssignee.toString();
   }
 
   @Override
