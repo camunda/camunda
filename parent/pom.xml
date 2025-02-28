@@ -266,6 +266,8 @@
     <!-- disable other non-essential goals -->
     <flatten.skip>${quickly}</flatten.skip>
     <assembly.skipAssembly>${quickly}</assembly.skipAssembly>
+    <!-- disable frontend yarn builds -->
+    <skip.fe.build>${quickly}</skip.fe.build>
   </properties>
 
   <dependencyManagement>
