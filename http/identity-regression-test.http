@@ -13,7 +13,7 @@ Accept: application/json
 
 > {%
   client.test("User creation should be unauthorized", function () {
-    client.assert(response.status === 403, "Response status is not 403");
+    client.assert(response.status === 401, "Response status is not 401");
   });
 %}
 

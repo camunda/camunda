@@ -88,7 +88,7 @@ jobs:
           export ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_BULK_SIZE=100  && \
           export ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_INDEX_SHOULDWAITFORIMPORTERS=false  && \
           export CAMUNDA_SECURITY_AUTHORIZATIONS_ENABLED=true && \
-          export CAMUNDA_SECUIRTY_AUTHENTICATION_UNPROTECTEDAPI=false && \
+          export CAMUNDA_SECURITY_AUTHENTICATION_UNPROTECTEDAPI=false && \
           export SPRING_PROFILES_ACTIVE=identity,tasklist,operate,broker,consolidated-auth && \
           ./bin/camunda &
           sleep 60
