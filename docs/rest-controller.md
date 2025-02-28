@@ -116,3 +116,4 @@ The documentation project is configured to execute [a workflow](https://github.c
 3. Adjust and commit the OpenAPI file back to the [Camunda repository](../zeebe/gateway-protocol/src/main/proto/rest-api.yaml) to check in the changes to the source of truth.
    Otherwise, subsequent generations of the documentation will override your manual changes by copying the source of truth OpenAPI from this repository to the Camunda documentation repository.
 4. Create a documentation PR and follow the [documentation team's guidelines](https://github.com/camunda/camunda-docs/blob/main/CONTRIBUTING.MD).
+
