@@ -8,12 +8,6 @@
 package io.camunda.zeebe.engine.processing.bpmn.activity.listeners.task;
 
 import static io.camunda.zeebe.engine.processing.job.JobCompleteProcessor.TL_JOB_COMPLETION_WITH_VARS_NOT_SUPPORTED_MESSAGE;
-import static io.camunda.zeebe.test.util.record.RecordingExporter.jobRecords;
-import static io.camunda.zeebe.test.util.record.RecordingExporter.records;
-import static java.util.Map.entry;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.tuple;
-
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.engine.util.client.UserTaskClient;
 import io.camunda.zeebe.model.bpmn.Bpmn;
@@ -44,11 +38,14 @@ import io.camunda.zeebe.protocol.record.value.JobRecordValue;
 import io.camunda.zeebe.protocol.record.value.UserTaskRecordValue;
 import io.camunda.zeebe.protocol.record.value.deployment.FormMetadataValue;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
+import static io.camunda.zeebe.test.util.record.RecordingExporter.jobRecords;
+import static io.camunda.zeebe.test.util.record.RecordingExporter.records;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import static java.util.Map.entry;
 import java.util.Objects;
 import java.util.UUID;
 import java.util.function.Consumer;
@@ -57,6 +54,8 @@ import java.util.function.Predicate;
 import java.util.function.UnaryOperator;
 import java.util.stream.Stream;
 import org.apache.commons.lang3.StringUtils;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.tuple;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Ignore;
@@ -3237,21 +3236,21 @@ public class TaskListenerTest {
   }
 
   @Test
-  public void shouldAllowCorrectingAssigneeOnCreatingListenerWhenNotDefinedOnModel() {
+  public void
+      shouldAllowCorrectingAssigneeOnCreatingListenerWhenNotDefinedOnModelWithoutTriggeringAssigningListeners() {
     // when
     final long processInstanceKey =
         createProcessInstance(
             createProcessWithZeebeUserTask(
                 taskBuilder ->
                     taskBuilder
-                        .zeebeTaskListener(l -> l.creating().type(listenerType))
-                        .zeebeTaskListener(l -> l.assigning().type(listenerType + "_2"))));
+                        .zeebeTaskListener(l -> l.creating().type(listenerType + "_creating"))
+                        .zeebeTaskListener(l -> l.assigning().type(listenerType + "_assigning"))));
 
-    // then
     ENGINE
         .job()
         .ofInstance(processInstanceKey)
-        .withType(listenerType)
+        .withType(listenerType + "_creating")
         .withResult(
             new JobResult()
                 .setCorrections(new JobResultCorrections().setAssignee("new_assignee"))
@@ -3266,6 +3265,22 @@ public class TaskListenerTest {
             Assertions.assertThat(userTask)
                 .hasAssignee("new_assignee")
                 .hasChangedAttributes("assignee"));
+
+    // when: complete user task
+    ENGINE.userTask().ofInstance(processInstanceKey).complete();
+
+    // then: verify the user task intents sequence, it shouldn't contain `ASSIGNING` or `ASSIGNED`
+    // intents. When a user task is configured without an initial `assignee`, the `creating`
+    // listener can correct it, this bypasses the need for triggering the `assignment` transition
+    // after.
+    assertUserTaskIntentsSequence(
+        UserTaskIntent.CREATING,
+        UserTaskIntent.COMPLETE_TASK_LISTENER,
+        UserTaskIntent.CORRECTED,
+        UserTaskIntent.CREATED,
+        UserTaskIntent.COMPLETE,
+        UserTaskIntent.COMPLETING,
+        UserTaskIntent.COMPLETED);
   }
 
   @Test
