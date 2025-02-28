@@ -42,10 +42,11 @@ import org.slf4j.LoggerFactory;
 
 public final class BpmnUserTaskBehavior {
 
+  public static final Set<LifecycleState> CANCELABLE_LIFECYCLE_STATES =
+      EnumSet.complementOf(EnumSet.of(LifecycleState.NOT_FOUND, LifecycleState.CANCELING));
+
   private static final Logger LOGGER =
       LoggerFactory.getLogger(BpmnUserTaskBehavior.class.getPackageName());
-  private static final Set<LifecycleState> CANCELABLE_LIFECYCLE_STATES =
-      EnumSet.complementOf(EnumSet.of(LifecycleState.NOT_FOUND, LifecycleState.CANCELING));
 
   private final HeaderEncoder headerEncoder = new HeaderEncoder(LOGGER);
   private final KeyGenerator keyGenerator;

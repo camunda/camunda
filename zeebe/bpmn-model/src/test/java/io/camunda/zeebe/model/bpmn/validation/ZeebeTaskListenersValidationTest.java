@@ -70,9 +70,9 @@ public class ZeebeTaskListenersValidationTest {
       mode = EnumSource.Mode.EXCLUDE,
       // supported event types
       names = {
-        "assigning", "updating", "completing",
+        "assigning", "updating", "completing", "canceling",
         // deprecated event types
-        "assignment", "update", "complete"
+        "assignment", "update", "complete", "cancel"
       })
   void testEventTypeNotSupported(final ZeebeTaskListenerEventType unsupportedEventType) {
     // given
@@ -95,8 +95,8 @@ public class ZeebeTaskListenersValidationTest {
             ZeebeTaskListener.class,
             String.format(
                 "Task listener event type '%s' is not supported. "
-                    + "Currently, only 'assigning', 'updating', 'completing' event types "
-                    + "and 'assignment', 'update', 'complete' deprecated event types are supported.",
+                    + "Currently, only 'assigning', 'updating', 'completing', 'canceling' event types "
+                    + "and 'assignment', 'update', 'complete', 'cancel' deprecated event types are supported.",
                 unsupportedEventType)));
   }
 
@@ -106,9 +106,9 @@ public class ZeebeTaskListenersValidationTest {
       value = ZeebeTaskListenerEventType.class,
       // supported event types
       names = {
-        "assigning", "updating", "completing",
+        "assigning", "updating", "completing", "canceling",
         // deprecated event types
-        "assignment", "update", "complete"
+        "assignment", "update", "complete", "cancel"
       })
   void testEventTypeSupported(final ZeebeTaskListenerEventType supportedEventType) {
     // given
