@@ -46,7 +46,7 @@ public final class CamundaClientTestFactory implements AutoCloseable {
     if (authenticated == null) {
       LOGGER.info(
           "Creating unauthorized Zeebe client for broker address '{}", gateway.restAddress());
-      return gateway.newClientBuilder().build();
+      return gateway.newClientBuilder().preferRestOverGrpc(true).build();
     } else {
       LOGGER.info(
           "Creating Zeebe client for user '{}' and broker address '{}",
