@@ -17,7 +17,7 @@ import io.camunda.client.api.response.EvaluateDecisionResponse;
 import io.camunda.client.api.search.response.DecisionDefinitionType;
 import io.camunda.client.api.search.response.DecisionInstance;
 import io.camunda.client.api.search.response.DecisionInstanceState;
-import io.camunda.it.utils.MultiDbTest;
+import io.camunda.qa.util.multidb.MultiDbTest;
 import java.time.Duration;
 import java.time.OffsetDateTime;
 import java.util.HashMap;

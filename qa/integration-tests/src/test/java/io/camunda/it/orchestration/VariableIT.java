@@ -11,7 +11,7 @@ import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.search.filter.VariableFilter;
-import io.camunda.it.utils.MultiDbTest;
+import io.camunda.qa.util.multidb.MultiDbTest;
 import java.time.Duration;
 import java.util.Map;
 import java.util.function.Consumer;

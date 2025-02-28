@@ -13,7 +13,7 @@ import static org.junit.jupiter.api.Assertions.assertThrowsExactly;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.command.ProblemException;
-import io.camunda.it.utils.MultiDbTest;
+import io.camunda.qa.util.multidb.MultiDbTest;
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.time.Duration;
