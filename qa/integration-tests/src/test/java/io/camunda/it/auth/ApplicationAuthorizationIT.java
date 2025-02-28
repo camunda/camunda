@@ -169,8 +169,7 @@ class ApplicationAuthorizationIT {
     assertThat(response.statusCode()).isEqualTo(HttpURLConnection.HTTP_OK);
   }
 
-  private static void assertRedirectToForbidden(final HttpResponse<String> response)
-      throws ProtocolException {
+  private static void assertRedirectToForbidden(final HttpResponse<String> response) {
     assertThat(response.statusCode()).isEqualTo(HttpURLConnection.HTTP_MOVED_TEMP);
     assertThat(response.headers().firstValue("Location"))
         .isPresent()
