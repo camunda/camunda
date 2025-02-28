@@ -654,6 +654,10 @@ public class ListViewZeebeRecordProcessor {
     final FlowNodeInstanceForListViewEntity entity = new FlowNodeInstanceForListViewEntity();
 
     final var recordValue = record.getValue();
+    // only execute update if job is on a flownode (not on a process)
+    if (recordValue.getElementInstanceKey() == recordValue.getProcessInstanceKey()) {
+      return;
+    }
     final var intentStr = record.getIntent().name();
 
     entity.setKey(record.getValue().getElementInstanceKey());
