@@ -47,7 +47,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.opensearch.client.opensearch._types.OpenSearchException;
 
 @DisabledIfSystemProperty(
-    named = SearchDBExtension.IT_OPENSEARCH_AWS_INSTANCE_URL_PROPERTY,
+    named = SearchDBExtension.TEST_INTEGRATION_OPENSEARCH_AWS_URL,
     matches = "^(?=\\s*\\S).*$",
     disabledReason = "Excluding from AWS OS IT CI")
 @ExtendWith(CamundaExporterITInvocationProvider.class)
