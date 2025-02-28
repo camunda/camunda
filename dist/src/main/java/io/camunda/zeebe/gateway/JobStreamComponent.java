@@ -12,7 +12,7 @@ import io.camunda.zeebe.gateway.impl.stream.JobStreamClient;
 import io.camunda.zeebe.gateway.impl.stream.JobStreamClientImpl;
 import io.camunda.zeebe.scheduler.ActorScheduler;
 import io.camunda.zeebe.util.VisibleForTesting;
-import org.springframework.beans.factory.annotation.Autowired;
+import io.micrometer.core.instrument.MeterRegistry;
 import org.springframework.context.annotation.Bean;
 import org.springframework.stereotype.Component;
 
@@ -22,9 +22,10 @@ public final class JobStreamComponent {
 
   @VisibleForTesting
   @Bean(destroyMethod = "close")
-  @Autowired
   public JobStreamClient jobStreamClient(
-      final ActorScheduler scheduler, final AtomixCluster cluster) {
-    return new JobStreamClientImpl(scheduler, cluster.getCommunicationService());
+      final ActorScheduler scheduler,
+      final AtomixCluster cluster,
+      final MeterRegistry meterRegistry) {
+    return new JobStreamClientImpl(scheduler, cluster.getCommunicationService(), meterRegistry);
   }
 }
