@@ -81,6 +81,8 @@ public final class UserTaskCreateProcessor implements UserTaskCommandProcessor {
       final TypedRecord<UserTaskRecord> command, final UserTaskRecord userTaskRecord) {
     final long userTaskKey = command.getKey();
 
+    final var intermediateAssignee = userTaskState.getIntermediateAssignee(userTaskKey);
+
     if (command.hasRequestMetadata()) {
       stateWriter.appendFollowUpEvent(userTaskKey, UserTaskIntent.CREATED, userTaskRecord);
       responseWriter.writeEventOnCommand(
@@ -100,8 +102,8 @@ public final class UserTaskCreateProcessor implements UserTaskCommandProcessor {
                   metadata.getRequestStreamId()));
     }
 
-    if (userTaskRecord.hasAssignee()) {
-      assignUserTask(userTaskRecord, userTaskRecord.getAssignee());
+    if (intermediateAssignee != null) {
+      assignUserTask(userTaskRecord, intermediateAssignee);
     }
   }
 

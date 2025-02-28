@@ -30,13 +30,13 @@ public final class UserTaskCreatingApplier
   @Override
   public void applyState(final long key, final UserTaskRecord value) {
     // todo: should we actually store the user task fully already, or wait until we finalize?
-    //    final var assignee = value.getAssignee();
-    //    value.unsetAssignee();
-    userTaskState.create(value);
+    final var copy = value.copy();
+    copy.unsetAssignee();
+    userTaskState.create(copy);
 
-    //    value.setAssignee(assignee);
-    //    value.setAssigneeChanged();
-    userTaskState.storeIntermediateState(value, LifecycleState.CREATING);
+    userTaskState.storeIntermediateState(copy, LifecycleState.CREATING);
+
+    userTaskState.storeIntermediateAssignee(key, value.getAssignee());
 
     final long elementInstanceKey = value.getElementInstanceKey();
     if (elementInstanceKey > 0) {
