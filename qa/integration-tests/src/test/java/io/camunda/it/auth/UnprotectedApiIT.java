@@ -10,8 +10,8 @@ package io.camunda.it.auth;
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 
 import io.camunda.client.CamundaClient;
-import io.camunda.it.utils.CamundaMultiDBExtension;
-import io.camunda.it.utils.MultiDbTest;
+import io.camunda.qa.util.multidb.CamundaMultiDBExtension;
+import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
