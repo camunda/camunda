@@ -16,28 +16,18 @@ import io.camunda.zeebe.client.CredentialsProvider;
 import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.client.ZeebeClientBuilder;
 import io.camunda.zeebe.client.api.command.CommandWithCommunicationApiStep;
-import io.camunda.zeebe.client.api.command.ProblemException;
 import io.camunda.zeebe.client.api.command.TopologyRequestStep1;
-import io.camunda.zeebe.gateway.impl.configuration.AuthenticationCfg.AuthMode;
-import io.camunda.zeebe.qa.util.cluster.TestHealthProbe;
-import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
+import io.camunda.zeebe.client.api.response.Topology;
+import io.camunda.zeebe.qa.util.cluster.TestGateway;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
-import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
 import io.camunda.zeebe.qa.util.testcontainers.DefaultTestContainers;
 import io.camunda.zeebe.test.util.testcontainers.ContainerLogsDumper;
-import io.grpc.Status;
-import io.grpc.Status.Code;
-import io.grpc.StatusRuntimeException;
 import java.time.Duration;
 import java.util.Map;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
-import java.util.function.Consumer;
+import java.util.function.Supplier;
 import java.util.function.UnaryOperator;
 import java.util.stream.Stream;
-import org.apache.hc.core5.http.HttpStatus;
-import org.assertj.core.api.InstanceOfAssertFactories;
-import org.assertj.core.api.ThrowableAssertAlternative;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Named;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -51,18 +41,24 @@ import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.utility.DockerImageName;
 
+/**
+ * This test is mostly a copy of {@link GatewayAuthenticationIdentityAbstractIT} but with the
+ * authentication mode set to none. It verifies that the gateway can be configured to not require
+ * authentication, even when the {@link Profile#IDENTITY_AUTH} profile is active. In other words,
+ * users must be able to override the security configuration with env vars.
+ */
 @Testcontainers
 @ZeebeIntegration
-public class GatewayAuthenticationIdentityIT {
+public abstract class GatewayAuthenticationNoneAbstractIT<T extends TestGateway<T>> {
 
   public static final String KEYCLOAK_USER = "admin";
   public static final String KEYCLOAK_PASSWORD = "admin";
   // with authentication enabled, the first grpc response includes the warmup of the identity sdk
   public static final Duration FIRST_REQUEST_TIMEOUT = Duration.ofSeconds(5);
   public static final String SNAPSHOT_TAG = "SNAPSHOT";
+  protected static final String ZEEBE_CLIENT_AUDIENCE = "zeebe-api";
   private static final String KEYCLOAK_PATH_CAMUNDA_REALM = "/realms/camunda-platform";
   private static final String ZEEBE_CLIENT_ID = "zeebe";
-  private static final String ZEEBE_CLIENT_AUDIENCE = "zeebe-api";
   private static final String ZEEBE_CLIENT_SECRET = "zecret";
   private static final Network NETWORK = Network.newNetwork();
 
@@ -119,60 +115,36 @@ public class GatewayAuthenticationIdentityIT {
   final ContainerLogsDumper logsWatcher =
       new ContainerLogsDumper(() -> Map.of("keycloak", KEYCLOAK, "identity", IDENTITY));
 
-  @TestZeebe(autoStart = false) // must configure in BeforeAll once containers have been started
-  private final TestStandaloneBroker zeebe =
-      new TestStandaloneBroker()
-          .withBrokerConfig(
-              cfg -> {
-                final var auth = cfg.getGateway().getSecurity().getAuthentication();
-                auth.setMode(AuthMode.IDENTITY);
-              })
-          .withAdditionalProfile(Profile.IDENTITY_AUTH)
-          .withProperty("camunda.identity.issuerBackendUrl", getKeycloakRealmAddress())
-          .withProperty("camunda.identity.audience", ZEEBE_CLIENT_AUDIENCE);
-
   @BeforeEach
   void beforeEach() {
-    zeebe.start().await(TestHealthProbe.READY);
+    getZeebe().start();
   }
 
   @ParameterizedTest
-  @MethodSource("provideInvalidTokenCases")
-  void getTopologyRequestFailsWithInvalidAuthToken(final InvalidTokenTestCase testCase) {
+  @MethodSource("provideAPIs")
+  void getTopologyRequestSucceedsWithInvalidAuthToken(
+      final UnaryOperator<TopologyRequestStep1> apiPicker) {
     // given
     try (final var client =
         createZeebeClientBuilder().credentialsProvider(new InvalidAuthTokenProvider()).build()) {
-      // when
-      final Future<?> topologyFuture = testCase.apiPicker.apply(client.newTopologyRequest()).send();
-
-      // then
-      final var assertion =
-          assertThat(topologyFuture)
-              .failsWithin(FIRST_REQUEST_TIMEOUT)
-              .withThrowableOfType(ExecutionException.class);
-      testCase.expectations.accept(assertion);
+      // when / then
+      sendRequestAndAssertSuccess(apiPicker, client::newTopologyRequest);
     }
   }
 
   @ParameterizedTest
-  @MethodSource("provideInvalidTokenCases")
-  void getTopologyRequestFailsWithoutAuthToken(final InvalidTokenTestCase testCase) {
+  @MethodSource("provideAPIs")
+  void getTopologyRequestSucceedsWithoutAuthToken(
+      final UnaryOperator<TopologyRequestStep1> apiPicker) {
     // given
     try (final var client = createZeebeClientBuilder().build()) {
-      // when
-      final Future<?> topologyFuture = testCase.apiPicker.apply(client.newTopologyRequest()).send();
-
-      // then
-      final var assertion =
-          assertThat(topologyFuture)
-              .failsWithin(FIRST_REQUEST_TIMEOUT)
-              .withThrowableOfType(ExecutionException.class);
-      testCase.expectations.accept(assertion);
+      // when / then
+      sendRequestAndAssertSuccess(apiPicker, client::newTopologyRequest);
     }
   }
 
   @ParameterizedTest
-  @MethodSource("provideValidTokenCases")
+  @MethodSource("provideAPIs")
   void getTopologyRequestSucceedsWithValidAuthToken(
       final UnaryOperator<TopologyRequestStep1> apiPicker) {
     // given
@@ -187,49 +159,31 @@ public class GatewayAuthenticationIdentityIT {
                         getKeycloakRealmAddress() + "/protocol/openid-connect/token")
                     .build())
             .build()) {
-
-      // when
-      final Future<io.camunda.zeebe.client.api.response.Topology> topologyFuture =
-          apiPicker.apply(client.newTopologyRequest()).send();
-
-      // then
-      assertThat(topologyFuture).succeedsWithin(FIRST_REQUEST_TIMEOUT);
-      // second request should be faster, given the first request warmed up the token validation
-      assertThat(client.newTopologyRequest().send().toCompletableFuture())
-          .succeedsWithin(Duration.ofSeconds(1));
+      // when / then
+      sendRequestAndAssertSuccess(apiPicker, client::newTopologyRequest);
     }
   }
 
-  private static Stream<Named<UnaryOperator<TopologyRequestStep1>>> provideValidTokenCases() {
+  private static Stream<Named<UnaryOperator<TopologyRequestStep1>>> provideAPIs() {
     return Stream.of(
         Named.of("grpc", CommandWithCommunicationApiStep::useGrpc),
         Named.of("rest", CommandWithCommunicationApiStep::useRest));
   }
 
-  private static Stream<Named<InvalidTokenTestCase>> provideInvalidTokenCases() {
-    return Stream.of(
-        Named.of(
-            "grpc",
-            new InvalidTokenTestCase(
-                CommandWithCommunicationApiStep::useGrpc,
-                assertion ->
-                    assertion
-                        .havingCause()
-                        .asInstanceOf(InstanceOfAssertFactories.type(StatusRuntimeException.class))
-                        .extracting(StatusRuntimeException::getStatus)
-                        .returns(Code.UNAUTHENTICATED, Status::getCode))),
-        Named.of(
-            "rest",
-            new InvalidTokenTestCase(
-                CommandWithCommunicationApiStep::useRest,
-                assertion ->
-                    assertion
-                        .havingCause()
-                        .asInstanceOf(InstanceOfAssertFactories.type(ProblemException.class))
-                        .returns(HttpStatus.SC_UNAUTHORIZED, ProblemException::code))));
+  private static void sendRequestAndAssertSuccess(
+      final UnaryOperator<TopologyRequestStep1> apiPicker,
+      final Supplier<TopologyRequestStep1> requestSupplier) {
+    // when
+    final Future<Topology> topologyFuture = apiPicker.apply(requestSupplier.get()).send();
+
+    // then
+    assertThat(topologyFuture).succeedsWithin(FIRST_REQUEST_TIMEOUT);
+    // second request should be faster, given the first request warmed up the token validation
+    assertThat(apiPicker.apply(requestSupplier.get()).send().toCompletableFuture())
+        .succeedsWithin(Duration.ofSeconds(1));
   }
 
-  private static String getKeycloakRealmAddress() {
+  protected static String getKeycloakRealmAddress() {
     return "http://"
         + KEYCLOAK.getHost()
         + ":"
@@ -239,8 +193,8 @@ public class GatewayAuthenticationIdentityIT {
 
   private ZeebeClientBuilder createZeebeClientBuilder() {
     return ZeebeClient.newClientBuilder()
-        .grpcAddress(zeebe.grpcAddress())
-        .restAddress(zeebe.restAddress())
+        .grpcAddress(getZeebe().grpcAddress())
+        .restAddress(getZeebe().restAddress())
         .defaultRequestTimeout(Duration.ofMinutes(1))
         .usePlaintext();
   }
@@ -252,6 +206,8 @@ public class GatewayAuthenticationIdentityIT {
 
     return dockerImageTag.contains("SNAPSHOT") ? SNAPSHOT_TAG : dockerImageTag;
   }
+
+  protected abstract TestGateway<T> getZeebe();
 
   private static final class InvalidAuthTokenProvider implements CredentialsProvider {
 
@@ -265,8 +221,4 @@ public class GatewayAuthenticationIdentityIT {
       return false;
     }
   }
-
-  private record InvalidTokenTestCase(
-      UnaryOperator<TopologyRequestStep1> apiPicker,
-      Consumer<ThrowableAssertAlternative<?>> expectations) {}
 }
