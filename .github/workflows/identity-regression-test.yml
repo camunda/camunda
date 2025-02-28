@@ -58,6 +58,9 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.branch }}
+          fetch-depth: 0
 
       - uses: ./.github/actions/setup-build
         with:
