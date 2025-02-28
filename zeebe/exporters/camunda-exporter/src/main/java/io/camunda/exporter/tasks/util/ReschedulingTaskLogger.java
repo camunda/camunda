@@ -10,8 +10,10 @@ package io.camunda.exporter.tasks.util;
 import java.net.ConnectException;
 import java.net.SocketException;
 import java.net.SocketTimeoutException;
+import java.util.Arrays;
 import java.util.Set;
 import org.slf4j.Logger;
+import org.slf4j.event.Level;
 
 /**
  * To avoid log pollution with similar error messages this logger logs on ERROR level every 10th
@@ -26,6 +28,7 @@ public class ReschedulingTaskLogger {
   private final Logger logger;
   private Integer failureCount = 0;
   private String lastErrorMessage;
+  private Object[] lastErrorMessageArgs;
 
   public ReschedulingTaskLogger(final Logger logger) {
     this.logger = logger;
@@ -36,24 +39,29 @@ public class ReschedulingTaskLogger {
     this.logger = logger;
   }
 
-  public void logError(final String errorMessage, final Throwable error) {
-    if (lastErrorMessage != null && lastErrorMessage.equals(errorMessage)) {
+  public void logError(final String errorMessage, final Throwable error, final Object... args) {
+    if (lastErrorMessage != null
+        && lastErrorMessage.equals(errorMessage)
+        && Arrays.equals(args, lastErrorMessageArgs)) {
       failureCount++;
     } else {
       failureCount = 1;
       lastErrorMessage = errorMessage;
+      lastErrorMessageArgs = args;
     }
     // only log the error message if it's different from the last one, or if it's the same, only log
     // every n-th time
-    if (lastErrorMessage == null || failureCount % skipEntriesCount == 1) {
+    final Level logLevel;
+    if (failureCount % skipEntriesCount == 1) {
       if (shouldBeSupressed(error)) {
-        logger.warn(errorMessage);
+        logLevel = Level.WARN;
       } else {
-        logger.error(errorMessage, error);
+        logLevel = Level.ERROR;
       }
     } else {
-      logger.debug(errorMessage);
+      logLevel = Level.DEBUG;
     }
+    logger.atLevel(logLevel).setCause(error).log(errorMessage, args);
   }
 
   private boolean shouldBeSupressed(final Throwable error) {

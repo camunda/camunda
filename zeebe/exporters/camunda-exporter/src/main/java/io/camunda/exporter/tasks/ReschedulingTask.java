@@ -80,11 +80,11 @@ public final class ReschedulingTask implements Runnable {
   }
 
   private void logError(final Throwable error) {
-    final String errorMessage =
-        String.format(
-            "Error occurred while performing a background task %s; error message `%s`; operation will be retried",
-            task.getCaption(), error.getCause().getMessage());
-    periodicLogger.logError(errorMessage, error);
+    periodicLogger.logError(
+        "Error occurred while performing a background task {}; error message {}; operation will be retried",
+        error,
+        task.getCaption(),
+        error.getCause().getMessage());
   }
 
   private void reschedule(final long delay) {

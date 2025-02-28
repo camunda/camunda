@@ -7,53 +7,105 @@
  */
 package io.camunda.exporter.tasks.utils;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import io.camunda.exporter.tasks.util.ReschedulingTaskLogger;
+import io.camunda.zeebe.util.logging.RecordingAppender;
+import java.util.UUID;
+import java.util.stream.IntStream;
+import org.apache.logging.log4j.Level;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.core.LogEvent;
+import org.apache.logging.log4j.core.Logger;
+import org.apache.logging.log4j.core.config.Configurator;
+import org.apache.logging.slf4j.Log4jLogger;
+import org.apache.logging.slf4j.Log4jMarkerFactory;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
-import org.slf4j.Logger;
 
 public class ReschedulingTaskLoggerTest {
+
+  private ReschedulingTaskLogger periodicLogger;
+  private final RecordingAppender recorder = new RecordingAppender();
+  private Logger log;
+  private Log4jLogger logger;
+
+  @BeforeEach
+  void beforeEach() {
+    log = (Logger) LogManager.getLogger(UUID.randomUUID().toString());
+    logger = new Log4jLogger(new Log4jMarkerFactory(), log, log.getName());
+    periodicLogger = new ReschedulingTaskLogger(logger);
+    Configurator.setLevel(log, Level.DEBUG);
+
+    recorder.start();
+    log.addAppender(recorder);
+  }
+
+  @AfterEach
+  void tearDown() {
+    recorder.stop();
+    log.removeAppender(recorder);
+  }
 
   @Test
   void shouldLogEvery10ThReoccurringError() {
     // given
-    final Logger loggerMock = Mockito.spy(Logger.class);
-    final ReschedulingTaskLogger logger = new ReschedulingTaskLogger(loggerMock);
-    final String errorMessage = "error message";
+    final ReschedulingTaskLogger periodicLogger = new ReschedulingTaskLogger(logger);
+    final String errorMessage = "error message {}";
     final Exception exception = new RuntimeException(errorMessage);
 
     // when
     for (int i = 1; i <= 20; i++) {
-      logger.logError(errorMessage, exception);
+      periodicLogger.logError(errorMessage, exception, "someArgument");
     }
 
     // then - every 10th error is logged on error level, others on debug
-    final var inOrder = Mockito.inOrder(loggerMock);
+    assertThat(recorder.getAppendedEvents()).hasSize(20);
 
-    inOrder.verify(loggerMock, Mockito.timeout(5_000).times(1)).error(errorMessage, exception);
-    inOrder.verify(loggerMock, Mockito.timeout(5_000).times(9)).debug(errorMessage);
+    LogEvent event = recorder.getAppendedEvents().get(0);
+    assertThat(event.getLevel()).isEqualTo(Level.ERROR);
+    assertThat(event.getMessage().getFormattedMessage()).isEqualTo("error message someArgument");
+    assertThat(event.getThrown()).isEqualTo(exception);
 
-    inOrder.verify(loggerMock, Mockito.timeout(5_000).times(1)).error(errorMessage, exception);
-    inOrder.verify(loggerMock, Mockito.timeout(5_000).times(9)).debug(errorMessage);
+    event = recorder.getAppendedEvents().get(10);
+    assertThat(event.getLevel()).isEqualTo(Level.ERROR);
+    assertThat(event.getMessage().getFormattedMessage()).isEqualTo("error message someArgument");
+    assertThat(event.getThrown()).isEqualTo(exception);
+
+    IntStream.concat(IntStream.rangeClosed(1, 9), IntStream.rangeClosed(11, 19))
+        .forEach(
+            i -> {
+              final LogEvent event1 = recorder.getAppendedEvents().get(i);
+              assertThat(event1.getLevel()).isEqualTo(Level.DEBUG);
+              assertThat(event1.getMessage().getFormattedMessage())
+                  .isEqualTo("error message someArgument");
+            });
   }
 
   @Test
   void shouldLogEveryNewError() {
     // given
-    final Logger loggerMock = Mockito.spy(Logger.class);
-    final String errorMessage1 = "failure1";
-    final String errorMessage2 = "failure2";
-    final Exception exception1 = new RuntimeException(errorMessage1);
-    final Exception exception2 = new RuntimeException(errorMessage2);
-    final ReschedulingTaskLogger logger = new ReschedulingTaskLogger(loggerMock);
+    final ReschedulingTaskLogger periodicLogger = new ReschedulingTaskLogger(logger);
 
     // when
-    logger.logError(errorMessage1, exception1);
-    logger.logError(errorMessage2, exception2);
+    periodicLogger.logError("failure {}", new RuntimeException(), "someArgument");
+    periodicLogger.logError("otherFailure {}", new RuntimeException(), "someArgument");
+    periodicLogger.logError("otherFailure {}", new RuntimeException(), "otherArgument");
 
-    // then - when errors are different they are all logged on error level
-    final var inOrder = Mockito.inOrder(loggerMock);
-    inOrder.verify(loggerMock, Mockito.timeout(5_000).times(1)).error(errorMessage1, exception1);
-    inOrder.verify(loggerMock, Mockito.timeout(5_000).times(1)).error(errorMessage2, exception2);
+    // then - every error is logged on error level
+    assertThat(recorder.getAppendedEvents()).hasSize(3);
+
+    LogEvent event = recorder.getAppendedEvents().get(0);
+    assertThat(event.getLevel()).isEqualTo(Level.ERROR);
+    assertThat(event.getMessage().getFormattedMessage()).isEqualTo("failure someArgument");
+
+    event = recorder.getAppendedEvents().get(1);
+    assertThat(event.getLevel()).isEqualTo(Level.ERROR);
+    assertThat(event.getMessage().getFormattedMessage()).isEqualTo("otherFailure someArgument");
+
+    event = recorder.getAppendedEvents().get(2);
+    assertThat(event.getLevel()).isEqualTo(Level.ERROR);
+    assertThat(event.getMessage().getFormattedMessage()).isEqualTo("otherFailure otherArgument");
   }
 }
