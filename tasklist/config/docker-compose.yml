@@ -135,7 +135,7 @@ services:
 
   zeebe: &zeebe
     container_name: zeebe-${DATABASE}
-    image: camunda/zeebe:8.6.9
+    image: camunda/zeebe:8.6.10
     environment:
       - "JAVA_TOOL_OPTIONS=-Xms512m -Xmx512m"
       #- "JAVA_OPTS=-agentlib:jdwp=transport=dt_socket,address=8000,server=y,suspend=n"
@@ -206,7 +206,7 @@ services:
 
   tasklist: &tasklist
     container_name: tasklist-${DATABASE}
-    image: camunda/tasklist:8.6.9
+    image: camunda/tasklist:8.6.10
     ports:
       - 8080:8080
     environment:
@@ -287,7 +287,7 @@ services:
 
   operate: &operate
     container_name: operate-${DATABASE}
-    image: camunda/operate:8.6.9
+    image: camunda/operate:8.6.10
     ports:
       - 8088:8080
     environment:
@@ -348,7 +348,7 @@ services:
 
   zeebe-e2e:
     container_name: zeebe-e2e
-    image: camunda/zeebe:8.6.9
+    image: camunda/zeebe:8.6.10
     environment:
       - "JAVA_TOOL_OPTIONS=-Xms512m -Xmx512m"
       - ZEEBE_BROKER_NETWORK_HOST=zeebe-e2e
@@ -370,7 +370,7 @@ services:
 
   tasklist-e2e:
     container_name: tasklist-e2e
-    image: camunda/tasklist:8.6.9
+    image: camunda/tasklist:8.6.10
     ports:
       - 8081:8080
     environment:
@@ -392,7 +392,7 @@ services:
 
   tasklist-sso:
     container_name: tasklist-sso
-    image: camunda/tasklist:8.6.9
+    image: camunda/tasklist:8.6.10
     ports:
       - 8080:8080
     environment:
@@ -418,7 +418,7 @@ services:
 
   camunda:
     container_name: camunda
-    image: camunda/camunda:8.6.9
+    image: camunda/camunda:8.6.10
     environment:
       - SPRING_PROFILES_ACTIVE=tasklist,broker,auth
       - ZEEBE_BROKER_CLUSTER_PARTITIONS_COUNT=2
