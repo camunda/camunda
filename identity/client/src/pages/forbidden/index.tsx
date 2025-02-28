@@ -6,28 +6,15 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-// src/pages/Error403.tsx
-import { FC } from "react";
-import useTranslate from "src/utility/localization";
-import { C3EmptyState } from "@camunda/camunda-composite-components";
+
+import {FC} from "react";
+import ForbiddenComponent from "src/pages/forbidden/component.tsx";
+import AppRoot from "src/components/global/AppRoot.tsx";
 
 const Forbidden: FC = () => {
-  const { t } = useTranslate();
-
-  return (
-    <C3EmptyState
-      icon={{
-        path: "modules/components/Icon/permission-denied.svg",
-        altText: "Permission Denied Icon", // Add a meaningful description for accessibility
-      }}
-      heading={t("403 - You do not have access to this component")}
-      description="It looks like you don't have the necessary permissions to access this component. Please contact your cluster admin to get access."
-      link={{
-        label: "Learn more about permissions",
-        href: "",
-      }}
-    />
-  );
+  return <AppRoot>
+    <ForbiddenComponent/>
+  </AppRoot>
 };
 
 export default Forbidden;
