@@ -56,8 +56,18 @@ public class CamundaProcessResultPrinterTest {
   void shouldPrintProcessInstances() {
     // given
     final ProcessTestResult processTestResult = new ProcessTestResult();
-    final ProcessInstanceResult processInstance1 = newProcessInstance(1L, "process-a");
-    final ProcessInstanceResult processInstance2 = newProcessInstance(2L, "process-b");
+
+    final ProcessInstanceResult processInstance1 = new ProcessInstanceResult();
+    processInstance1.setProcessInstance(
+        ProcessInstanceBuilder.newActiveProcessInstance(1L)
+            .setProcessDefinitionId("process-a")
+            .build());
+
+    final ProcessInstanceResult processInstance2 = new ProcessInstanceResult();
+    processInstance2.setProcessInstance(
+        ProcessInstanceBuilder.newCompletedProcessInstance(2L)
+            .setProcessDefinitionId("process-b")
+            .build());
 
     processTestResult.setProcessInstanceTestResults(
         Arrays.asList(processInstance1, processInstance2));
@@ -75,7 +85,7 @@ public class CamundaProcessResultPrinterTest {
             "Process test results:\n"
                 + "=====================\n"
                 + "\n"
-                + "Process instance: 1 [process-id: 'process-a']\n"
+                + "Process instance: 1 [process-id: 'process-a', state: active]\n"
                 + "\n"
                 + "Active elements:\n"
                 + "<None>\n"
@@ -87,7 +97,7 @@ public class CamundaProcessResultPrinterTest {
                 + "<None>\n"
                 + "---------------------\n"
                 + "\n"
-                + "Process instance: 2 [process-id: 'process-b']\n"
+                + "Process instance: 2 [process-id: 'process-b', state: completed]\n"
                 + "\n"
                 + "Active elements:\n"
                 + "<None>\n"
@@ -128,10 +138,10 @@ public class CamundaProcessResultPrinterTest {
     // then
     assertThat(outputBuilder.toString())
         .containsSubsequence(
-            "Process instance: 1 [process-id: 'process-a']\n",
+            "Process instance: 1 [process-id: 'process-a', state: active]\n",
             "Variables:\n",
             "- 'var-1': 1\n",
-            "Process instance: 2 [process-id: 'process-b']\n",
+            "Process instance: 2 [process-id: 'process-b', state: active]\n",
             "Variables:\n",
             "- 'var-2': 2\n");
   }
@@ -173,11 +183,11 @@ public class CamundaProcessResultPrinterTest {
     // then
     assertThat(outputBuilder.toString())
         .containsSubsequence(
-            "Process instance: 1 [process-id: 'process-a']\n",
+            "Process instance: 1 [process-id: 'process-a', state: active]\n",
             "Open incidents:\n",
             "- 'task-a' [type: JOB_NO_RETRIES] \"No retries left.\"\n",
             "- 'task-b' [type: EXTRACT_VALUE_ERROR] \"Failed to evaluate expression.\"\n",
-            "Process instance: 2 [process-id: 'process-b']\n",
+            "Process instance: 2 [process-id: 'process-b', state: active]\n",
             "Open incidents:\n",
             "- 'task-c' [type: UNHANDLED_ERROR_EVENT] \"No error catch event found.\"\n");
   }
@@ -214,11 +224,11 @@ public class CamundaProcessResultPrinterTest {
     // then
     assertThat(outputBuilder.toString())
         .containsSubsequence(
-            "Process instance: 1 [process-id: 'process-a']\n",
+            "Process instance: 1 [process-id: 'process-a', state: active]\n",
             "Active elements:\n",
             "- 'A' [name: 'element_A']\n",
             "- 'B' [name: 'element_B']\n",
-            "Process instance: 2 [process-id: 'process-b']\n",
+            "Process instance: 2 [process-id: 'process-b', state: active]\n",
             "Active elements:\n",
             "- 'C' [name: 'element_C']\n",
             "- 'D' [name: '']\n");
