@@ -39,11 +39,11 @@ import org.springframework.boot.context.properties.NestedConfigurationProperty;
 @ConfigurationProperties(prefix = "zeebe.client")
 @Deprecated
 public class ZeebeClientConfigurationProperties {
-  // Used to read default config values
-  public static final ZeebeClientBuilderImpl DEFAULT =
-      (ZeebeClientBuilderImpl) new ZeebeClientBuilderImpl().withProperties(new Properties());
   public static final String CONNECTION_MODE_CLOUD = "CLOUD";
   public static final String CONNECTION_MODE_ADDRESS = "ADDRESS";
+  // Used to read default config values
+  private static final ZeebeClientBuilderImpl DEFAULT =
+      (ZeebeClientBuilderImpl) new ZeebeClientBuilderImpl().withProperties(new Properties());
   private static final Logger LOGGER =
       LoggerFactory.getLogger(ZeebeClientConfigurationProperties.class);
   private final org.springframework.core.env.Environment environment;
@@ -246,11 +246,11 @@ public class ZeebeClientConfigurationProperties {
 
   /**
    * @deprecated since 8.5 for removal with 8.8, replaced by {@link
-   *     ZeebeClientConfigurationProperties#getGrpcAddress()}
+   *     io.camunda.zeebe.spring.client.configuration.ZeebeClientConfigurationImpl#getGrpcAddress()}
    * @see ZeebeClientConfiguration#getGatewayAddress()
    */
   @Deprecated
-  @DeprecatedConfigurationProperty(replacement = "camunda.client.zeebe.base-url")
+  @DeprecatedConfigurationProperty(replacement = "camunda.client.zeebe.grpc-address")
   public String getGatewayAddress() {
     if (connectionMode != null && !connectionMode.isEmpty()) {
       LOGGER.info("Using connection mode '{}' to connect to Zeebe", connectionMode);

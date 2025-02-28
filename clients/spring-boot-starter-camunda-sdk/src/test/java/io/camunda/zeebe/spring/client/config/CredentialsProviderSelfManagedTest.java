@@ -28,11 +28,11 @@ import com.github.tomakehurst.wiremock.core.WireMockConfiguration;
 import com.github.tomakehurst.wiremock.junit5.WireMockExtension;
 import io.camunda.zeebe.client.CredentialsProvider;
 import io.camunda.zeebe.client.impl.oauth.OAuthCredentialsProvider;
+import io.camunda.zeebe.spring.client.configuration.CredentialsProviderConfiguration;
 import io.camunda.zeebe.spring.client.configuration.JsonMapperConfiguration;
 import io.camunda.zeebe.spring.client.configuration.ZeebeClientConfigurationImpl;
 import io.camunda.zeebe.spring.client.jobhandling.ZeebeClientExecutorService;
 import io.camunda.zeebe.spring.client.properties.CamundaClientProperties;
-import io.camunda.zeebe.spring.client.properties.ZeebeClientConfigurationProperties;
 import java.io.IOException;
 import java.nio.file.Paths;
 import java.time.Instant;
@@ -44,35 +44,36 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import wiremock.com.fasterxml.jackson.databind.node.JsonNodeFactory;
 
 @SpringBootTest(
-    classes = {JsonMapperConfiguration.class, ZeebeClientConfigurationImpl.class},
+    classes = {
+      JsonMapperConfiguration.class,
+      ZeebeClientConfigurationImpl.class,
+      CredentialsProviderConfiguration.class
+    },
     properties = {
       "camunda.client.mode=self-managed",
       "camunda.client.auth.client-id=my-client-id",
       "camunda.client.auth.client-secret=my-client-secret"
     })
-@EnableConfigurationProperties({
-  ZeebeClientConfigurationProperties.class,
-  CamundaClientProperties.class
-})
+@EnableConfigurationProperties({CamundaClientProperties.class})
 public class CredentialsProviderSelfManagedTest {
 
   @RegisterExtension
   static WireMockExtension wm =
       WireMockExtension.newInstance().options(new WireMockConfiguration().dynamicPort()).build();
 
-  @MockBean ZeebeClientExecutorService zeebeClientExecutorService;
+  @MockitoBean ZeebeClientExecutorService zeebeClientExecutorService;
   @Autowired ZeebeClientConfigurationImpl configuration;
 
   @DynamicPropertySource
   static void registerPgProperties(final DynamicPropertyRegistry registry) {
     final String issuer = "http://localhost:" + wm.getPort() + "/auth-server";
-    registry.add("camunda.client.auth.issuer", () -> issuer);
+    registry.add("camunda.client.auth.token-url", () -> issuer);
   }
 
   @BeforeEach

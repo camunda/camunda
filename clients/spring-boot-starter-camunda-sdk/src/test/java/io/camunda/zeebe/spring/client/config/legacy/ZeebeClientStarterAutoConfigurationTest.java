@@ -20,6 +20,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.zeebe.client.ZeebeClient;
+import io.camunda.zeebe.client.ZeebeClientConfiguration;
 import io.camunda.zeebe.client.api.JsonMapper;
 import io.camunda.zeebe.spring.client.configuration.CamundaAutoConfiguration;
 import io.camunda.zeebe.spring.client.configuration.JsonMapperConfiguration;
@@ -28,17 +29,17 @@ import io.camunda.zeebe.spring.client.properties.CamundaClientProperties;
 import java.time.Duration;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
+import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.TestPropertySource;
-import org.springframework.test.context.junit.jupiter.SpringExtension;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.util.ReflectionTestUtils;
 
-@ExtendWith(SpringExtension.class)
+@SpringBootTest
 @TestPropertySource(
     properties = {
       "zeebe.client.broker.gatewayAddress=localhost:1234",
@@ -64,9 +65,11 @@ import org.springframework.test.util.ReflectionTestUtils;
     })
 public class ZeebeClientStarterAutoConfigurationTest {
 
-  @Autowired private JsonMapper jsonMapper;
-  @Autowired private ZeebeClientProdAutoConfiguration autoConfiguration;
-  @Autowired private ApplicationContext applicationContext;
+  @Autowired JsonMapper jsonMapper;
+  @Autowired ZeebeClientProdAutoConfiguration autoConfiguration;
+  @Autowired ApplicationContext applicationContext;
+  @Autowired ZeebeClientConfiguration zeebeClientConfiguration;
+  @MockitoBean ZeebeClient zeebeClient;
 
   @Test
   void getJsonMapper() {
@@ -98,19 +101,19 @@ public class ZeebeClientStarterAutoConfigurationTest {
   @Test
   void testClientConfiguration() {
     final ZeebeClient client = applicationContext.getBean(ZeebeClient.class);
-    assertThat(client.getConfiguration().getGatewayAddress()).isEqualTo("localhost:1234");
-    assertThat(client.getConfiguration().getGrpcAddress().toString())
+    assertThat(zeebeClientConfiguration.getGatewayAddress()).isEqualTo("localhost:1234");
+    assertThat(zeebeClientConfiguration.getGrpcAddress().toString())
         .isEqualTo("https://localhost:1234");
-    assertThat(client.getConfiguration().getRestAddress().toString())
+    assertThat(zeebeClientConfiguration.getRestAddress().toString())
         .isEqualTo("https://localhost:8080");
-    assertThat(client.getConfiguration().getDefaultRequestTimeout())
+    assertThat(zeebeClientConfiguration.getDefaultRequestTimeout())
         .isEqualTo(Duration.ofSeconds(99));
-    assertThat(client.getConfiguration().getCaCertificatePath()).isEqualTo("aPath");
-    assertThat(client.getConfiguration().isPlaintextConnectionEnabled()).isTrue();
-    assertThat(client.getConfiguration().getDefaultJobWorkerMaxJobsActive()).isEqualTo(99);
-    assertThat(client.getConfiguration().getDefaultJobPollInterval())
+    assertThat(zeebeClientConfiguration.getCaCertificatePath()).isEqualTo("aPath");
+    assertThat(zeebeClientConfiguration.isPlaintextConnectionEnabled()).isFalse();
+    assertThat(zeebeClientConfiguration.getDefaultJobWorkerMaxJobsActive()).isEqualTo(99);
+    assertThat(zeebeClientConfiguration.getDefaultJobPollInterval())
         .isEqualTo(Duration.ofSeconds(99));
-    assertThat(client.getConfiguration().preferRestOverGrpc()).isFalse();
+    assertThat(zeebeClientConfiguration.preferRestOverGrpc()).isFalse();
   }
 
   @EnableConfigurationProperties(CamundaClientProperties.class)
