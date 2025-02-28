@@ -62,7 +62,7 @@ public class BackupReaderOS extends AbstractBackupReader {
     final String repositoryName = getRepositoryName();
     if (StringUtils.isEmpty(repositoryName)) {
       final String reason =
-          "Cannot trigger backup because no Opensearch snapshot repository name found in Optimize configuration.";
+          "No Opensearch snapshot repository name found in Optimize configuration.";
       log.error(reason);
       throw new OptimizeConfigurationException(reason);
     } else {
@@ -70,7 +70,7 @@ public class BackupReaderOS extends AbstractBackupReader {
           GetRepositoryRequest.of(b -> b.name(repositoryName));
       try {
         osClient.verifyRepositoryExists(getRepositoriesRequest);
-      } catch (OpenSearchException e) {
+      } catch (final OpenSearchException e) {
         if (StringUtils.contains(e.getMessage(), REPOSITORY_MISSING_EXCEPTION_TYPE)) {
           final String reason =
               String.format("No repository with name [%s] could be found.", repositoryName);
@@ -84,7 +84,7 @@ public class BackupReaderOS extends AbstractBackupReader {
           log.error(reason, e);
           throw new OptimizeRuntimeException(reason, e);
         }
-      } catch (IOException e) {
+      } catch (final IOException e) {
         final String reason =
             String.format(
                 "Encountered an error connecting to OpenSearch while retrieving repository with name [%s].",
@@ -131,10 +131,10 @@ public class BackupReaderOS extends AbstractBackupReader {
     final GetSnapshotRequest snapshotsStatusRequest =
         GetSnapshotRequest.of(
             b -> b.repository(getRepositoryName()).snapshot(Arrays.stream(snapshots).toList()));
-    GetSnapshotResponse response;
+    final GetSnapshotResponse response;
     try {
       response = osClient.getSnapshots(snapshotsStatusRequest);
-    } catch (OpenSearchException e) {
+    } catch (final OpenSearchException e) {
       if (StringUtils.contains(e.getMessage(), SNAPSHOT_MISSING_EXCEPTION_TYPE)) {
         // no snapshot with given backupID exists
         return Collections.emptyList();
@@ -145,7 +145,7 @@ public class BackupReaderOS extends AbstractBackupReader {
               String.join(", ", snapshots));
       log.error(reason);
       throw new OptimizeRuntimeException(reason, e);
-    } catch (IOException e) {
+    } catch (final IOException e) {
       final String reason =
           String.format(
               "Encountered an error connecting to OpenSearch while retrieving snapshots with names [%s].",
