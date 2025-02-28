@@ -340,6 +340,12 @@ public class DatabaseIntegrationTestExtension implements BeforeEachCallback, Aft
     databaseTestService.createMissingIndices(indexMappingCreatorBuilder, aliases, aKey);
   }
 
+  public String[] getImportIndices() {
+    return databaseTestService.getImportIndices().stream()
+        .map(getIndexNameService()::getOptimizeIndexAliasForIndex)
+        .toArray(String[]::new);
+  }
+
   public void setActivityStartDatesToNull(final String processDefinitionKey) {
     final ScriptData scriptData =
         new ScriptData(

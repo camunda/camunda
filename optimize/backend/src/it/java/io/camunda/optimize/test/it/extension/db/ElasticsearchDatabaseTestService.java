@@ -87,6 +87,7 @@ import io.camunda.optimize.service.db.es.builders.OptimizeUpdateRequestBuilderES
 import io.camunda.optimize.service.db.es.reader.ElasticsearchReaderUtil;
 import io.camunda.optimize.service.db.es.schema.ElasticSearchIndexSettingsBuilder;
 import io.camunda.optimize.service.db.es.schema.ElasticSearchMetadataService;
+import io.camunda.optimize.service.db.es.schema.ElasticSearchSchemaManager;
 import io.camunda.optimize.service.db.es.schema.index.ExternalProcessVariableIndexES;
 import io.camunda.optimize.service.db.es.schema.index.ProcessInstanceIndexES;
 import io.camunda.optimize.service.db.es.schema.index.TerminatedUserSessionIndexES;
@@ -545,39 +546,6 @@ public class ElasticsearchDatabaseTestService extends DatabaseTestService {
   }
 
   @Override
-  public void createRepoSnapshot(final String snapshotRepositoryName) {
-    try {
-      getOptimizeElasticClient()
-          .getEsClient()
-          .snapshot()
-          .createRepository(
-              CreateRepositoryRequest.of(
-                  b ->
-                      b.name(snapshotRepositoryName)
-                          .repository(r -> r.fs(s -> s.settings(t -> t.location("/var/tmp"))))));
-    } catch (IOException e) {
-      throw new RuntimeException(e);
-    }
-  }
-
-  @Override
-  public void cleanSnapshots(String snapshotRepositoryName) {
-    try {
-      getOptimizeElasticClient()
-          .getEsClient()
-          .snapshot()
-          .delete(
-              DeleteSnapshotRequest.of(b -> b.repository(snapshotRepositoryName).snapshot("*")));
-      getOptimizeElasticClient()
-          .getEsClient()
-          .snapshot()
-          .deleteRepository(DeleteRepositoryRequest.of(b -> b.name(snapshotRepositoryName)));
-    } catch (Exception e) {
-      log.warn("Delete failed, no snapshots to delete from repository {}", snapshotRepositoryName);
-    }
-  }
-
-  @Override
   @SneakyThrows
   public boolean indexExistsCheckWithoutApplyingOptimizePrefix(final String indexName) {
     final OptimizeElasticsearchClient esClient = getOptimizeElasticClient();
@@ -655,6 +623,67 @@ public class ElasticsearchDatabaseTestService extends DatabaseTestService {
   @Override
   public DatabaseType getDatabaseVendor() {
     return DatabaseType.ELASTICSEARCH;
+  }
+
+  @Override
+  public void createSnapshot(
+      final String snapshotRepositoryName, final String snapshotName, final String[] indexNames) {
+    final CreateSnapshotRequest createSnapshotRequest =
+        CreateSnapshotRequest.of(
+            b ->
+                b.repository(snapshotRepositoryName)
+                    .snapshot(snapshotName)
+                    .indices(Arrays.stream(indexNames).toList())
+                    .includeGlobalState(false)
+                    .waitForCompletion(true));
+    try {
+      getOptimizeElasticClient()
+          .triggerSnapshotAsync(createSnapshotRequest)
+          .get(10, TimeUnit.SECONDS);
+    } catch (final InterruptedException | ExecutionException | TimeoutException e) {
+      throw new OptimizeRuntimeException("Exception during creation snapshot:", e);
+    }
+  }
+
+  @Override
+  public void createRepoSnapshot(final String snapshotRepositoryName) {
+    try {
+      getOptimizeElasticClient()
+          .getEsClient()
+          .snapshot()
+          .createRepository(
+              CreateRepositoryRequest.of(
+                  b ->
+                      b.name(snapshotRepositoryName)
+                          .repository(r -> r.fs(s -> s.settings(t -> t.location("/var/tmp"))))));
+    } catch (final IOException e) {
+      throw new RuntimeException(e);
+    }
+  }
+
+  @Override
+  public void cleanSnapshots(final String snapshotRepositoryName) {
+    try {
+      getOptimizeElasticClient()
+          .getEsClient()
+          .snapshot()
+          .delete(
+              DeleteSnapshotRequest.of(b -> b.repository(snapshotRepositoryName).snapshot("*")));
+      getOptimizeElasticClient()
+          .getEsClient()
+          .snapshot()
+          .deleteRepository(DeleteRepositoryRequest.of(b -> b.name(snapshotRepositoryName)));
+    } catch (final Exception e) {
+      log.warn("Delete failed, no snapshots to delete from repository {}", snapshotRepositoryName);
+    }
+  }
+
+  @Override
+  public List<String> getImportIndices() {
+    return ElasticSearchSchemaManager.getAllNonDynamicMappings().stream()
+        .filter(IndexMappingCreator::isImportIndex)
+        .map(IndexMappingCreator::getIndexName)
+        .toList();
   }
 
   @Override
@@ -1062,26 +1091,6 @@ public class ElasticsearchDatabaseTestService extends DatabaseTestService {
       return esClient.elasticsearchClient().count(countRequest).count();
     } catch (final IOException e) {
       throw new OptimizeIntegrationTestException(e);
-    }
-  }
-
-  @Override
-  public void createSnapshot(
-      final String snapshotRepositoryName, final String snapshotName, final String[] indexNames) {
-    CreateSnapshotRequest createSnapshotRequest =
-        CreateSnapshotRequest.of(
-            b ->
-                b.repository(snapshotRepositoryName)
-                    .snapshot(snapshotName)
-                    .indices(Arrays.stream(indexNames).toList())
-                    .includeGlobalState(false)
-                    .waitForCompletion(true));
-    try {
-      getOptimizeElasticClient()
-          .triggerSnapshotAsync(createSnapshotRequest)
-          .get(10, TimeUnit.SECONDS);
-    } catch (InterruptedException | ExecutionException | TimeoutException e) {
-      throw new OptimizeRuntimeException("Exception during creation snapshot:", e);
     }
   }
 

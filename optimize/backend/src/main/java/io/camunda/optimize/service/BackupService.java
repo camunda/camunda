@@ -15,26 +15,20 @@ import static io.camunda.optimize.dto.optimize.rest.SnapshotState.SUCCESS;
 import static java.util.stream.Collectors.groupingBy;
 import static java.util.stream.Collectors.joining;
 
-import co.elastic.clients.elasticsearch._types.ShardFailure;
-import co.elastic.clients.elasticsearch.snapshot.SnapshotInfo;
 import io.camunda.optimize.dto.optimize.BackupState;
 import io.camunda.optimize.dto.optimize.rest.BackupInfoDto;
 import io.camunda.optimize.dto.optimize.rest.SnapshotInfoDto;
 import io.camunda.optimize.dto.optimize.rest.SnapshotState;
 import io.camunda.optimize.service.db.reader.BackupReader;
 import io.camunda.optimize.service.db.writer.BackupWriter;
-import io.camunda.optimize.service.exceptions.OptimizeConfigurationException;
+import io.camunda.optimize.service.exceptions.conflict.OptimizeConflictException;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import jakarta.ws.rs.NotFoundException;
-import java.time.Instant;
-import java.time.OffsetDateTime;
-import java.time.ZoneId;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Component;
 
 @RequiredArgsConstructor
@@ -49,35 +43,34 @@ public class BackupService {
   private final ConfigurationService configurationService;
 
   public synchronized void triggerBackup(final Long backupId) {
-    validateRepositoryExists();
-    backupReader.validateNoDuplicateBackupId(backupId);
+    backupReader.validateRepositoryExists();
+    validateNoDuplicateBackupId(backupId);
 
     log.info("Triggering backup with ID {}", backupId);
     backupWriter.triggerSnapshotCreation(backupId);
   }
 
   public List<BackupInfoDto> getAllBackupInfo() {
-    validateRepositoryExists();
+    backupReader.validateRepositoryExists();
     return backupReader.getAllOptimizeSnapshotsByBackupId().entrySet().stream()
         .map(
             entry ->
                 getSingleBackupInfo(
                     entry.getKey(),
-                    entry.getValue().stream()
-                        .collect(groupingBy(s -> SnapshotState.valueOf(s.state())))))
+                    entry.getValue().stream().collect(groupingBy(SnapshotInfoDto::getState))))
         .toList();
   }
 
   public BackupInfoDto getSingleBackupInfo(final Long backupId) {
-    validateRepositoryExists();
+    backupReader.validateRepositoryExists();
     return getSingleBackupInfo(
         backupId,
         backupReader.getOptimizeSnapshotsForBackupId(backupId).stream()
-            .collect(groupingBy(s -> SnapshotState.valueOf(s.state()))));
+            .collect(groupingBy(SnapshotInfoDto::getState)));
   }
 
   private BackupInfoDto getSingleBackupInfo(
-      final Long backupId, final Map<SnapshotState, List<SnapshotInfo>> snapshotInfosPerState) {
+      final Long backupId, final Map<SnapshotState, List<SnapshotInfoDto>> snapshotInfosPerState) {
     if (snapshotInfosPerState.isEmpty()) {
       final String reason =
           String.format("No Optimize backup with ID [%d] could be found.", backupId);
@@ -88,7 +81,7 @@ public class BackupService {
   }
 
   private BackupInfoDto getBackupInfoDto(
-      final Long backupId, final Map<SnapshotState, List<SnapshotInfo>> snapshotInfosPerState) {
+      final Long backupId, final Map<SnapshotState, List<SnapshotInfoDto>> snapshotInfosPerState) {
     final BackupState backupState = determineBackupState(snapshotInfosPerState);
     String failureReason = null;
     if (BackupState.FAILED == backupState) {
@@ -96,36 +89,23 @@ public class BackupService {
           String.format(
               "The following snapshots failed: [%s]",
               snapshotInfosPerState.getOrDefault(FAILED, Collections.emptyList()).stream()
-                  .map(snapshotInfo -> snapshotInfo.snapshot())
+                  .map(SnapshotInfoDto::getSnapshotName)
                   .collect(joining(", ")));
     }
     return new BackupInfoDto(
         backupId,
         failureReason,
         backupState,
-        snapshotInfosPerState.values().stream()
-            .flatMap(List::stream)
-            .map(
-                snapshotInfo ->
-                    new SnapshotInfoDto(
-                        snapshotInfo.snapshot(),
-                        SnapshotState.valueOf(snapshotInfo.state()),
-                        OffsetDateTime.ofInstant(
-                            Instant.ofEpochMilli(snapshotInfo.startTime().toEpochMilli()),
-                            ZoneId.systemDefault()),
-                        snapshotInfo.shards().failures().stream()
-                            .map(ShardFailure::toString)
-                            .toList()))
-            .toList());
+        snapshotInfosPerState.values().stream().flatMap(List::stream).toList());
   }
 
   public void deleteBackup(final Long backupId) {
-    validateRepositoryExists();
+    backupReader.validateRepositoryExists();
     backupWriter.deleteOptimizeSnapshots(backupId);
   }
 
   private BackupState determineBackupState(
-      final Map<SnapshotState, List<SnapshotInfo>> snapshotInfosPerState) {
+      final Map<SnapshotState, List<SnapshotInfoDto>> snapshotInfosPerState) {
     if (snapshotInfosPerState.getOrDefault(SUCCESS, Collections.emptyList()).size()
         == EXPECTED_NUMBER_OF_SNAPSHOTS_PER_BACKUP) {
       return BackupState.COMPLETED;
@@ -146,17 +126,19 @@ public class BackupService {
     }
   }
 
-  // todo extract this validation to the readers to avoid using there configuration or extract it
-  // from db configuration by OPT-7245
-  private void validateRepositoryExists() {
-    if (StringUtils.isEmpty(
-        configurationService.getElasticSearchConfiguration().getSnapshotRepositoryName())) {
+  private void validateNoDuplicateBackupId(final Long backupId) {
+    final List<SnapshotInfoDto> existingSnapshots =
+        backupReader.getOptimizeSnapshotsForBackupId(backupId);
+    if (!existingSnapshots.isEmpty()) {
       final String reason =
-          "Cannot execute backup request because no Elasticsearch snapshot repository name found in Optimize configuration.";
+          String.format(
+              "A backup with ID [%s] already exists. Found snapshots: [%s]",
+              backupId,
+              existingSnapshots.stream()
+                  .map(SnapshotInfoDto::getSnapshotName)
+                  .collect(joining(", ")));
       log.error(reason);
-      throw new OptimizeConfigurationException(reason);
-    } else {
-      backupReader.validateRepositoryExistsOrFail();
+      throw new OptimizeConflictException(reason);
     }
   }
 }

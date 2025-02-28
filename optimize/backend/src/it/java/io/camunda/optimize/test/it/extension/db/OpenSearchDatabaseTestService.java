@@ -39,6 +39,7 @@ import io.camunda.optimize.service.db.os.externalcode.client.dsl.QueryDSL;
 import io.camunda.optimize.service.db.os.externalcode.client.dsl.RequestDSL;
 import io.camunda.optimize.service.db.os.schema.OpenSearchIndexSettingsBuilder;
 import io.camunda.optimize.service.db.os.schema.OpenSearchMetadataService;
+import io.camunda.optimize.service.db.os.schema.OpenSearchSchemaManager;
 import io.camunda.optimize.service.db.os.schema.index.ExternalProcessVariableIndexOS;
 import io.camunda.optimize.service.db.os.schema.index.ProcessInstanceIndexOS;
 import io.camunda.optimize.service.db.os.schema.index.TerminatedUserSessionIndexOS;
@@ -66,12 +67,16 @@ import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import java.io.IOException;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 import lombok.SneakyThrows;
@@ -114,6 +119,10 @@ import org.opensearch.client.opensearch.indices.IndexSettings;
 import org.opensearch.client.opensearch.indices.PutIndicesSettingsRequest;
 import org.opensearch.client.opensearch.indices.RefreshRequest;
 import org.opensearch.client.opensearch.indices.get_alias.IndexAliases;
+import org.opensearch.client.opensearch.snapshot.CreateRepositoryRequest;
+import org.opensearch.client.opensearch.snapshot.CreateSnapshotRequest;
+import org.opensearch.client.opensearch.snapshot.DeleteRepositoryRequest;
+import org.opensearch.client.opensearch.snapshot.DeleteSnapshotRequest;
 
 @Slf4j
 public class OpenSearchDatabaseTestService extends DatabaseTestService {
@@ -616,7 +625,29 @@ public class OpenSearchDatabaseTestService extends DatabaseTestService {
   @Override
   public void createSnapshot(
       String snapshotRepositoryName, String snapshotName, String[] indexNames) {
-    // not implemented
+    CreateSnapshotRequest createSnapshotRequest =
+        CreateSnapshotRequest.of(
+            b ->
+                b.repository(snapshotRepositoryName)
+                    .snapshot(snapshotName)
+                    .indices(Arrays.stream(indexNames).toList())
+                    .includeGlobalState(false)
+                    .waitForCompletion(true));
+    try {
+      getOptimizeOpenSearchClient()
+          .triggerSnapshotAsync(createSnapshotRequest)
+          .get(10, TimeUnit.SECONDS);
+    } catch (InterruptedException | ExecutionException | TimeoutException e) {
+      throw new OptimizeRuntimeException("Exception during creation snapshot:", e);
+    }
+  }
+
+  @Override
+  public List<String> getImportIndices() {
+    return OpenSearchSchemaManager.getAllNonDynamicMappings().stream()
+        .filter(IndexMappingCreator::isImportIndex)
+        .map(IndexMappingCreator::getIndexName)
+        .toList();
   }
 
   @Override
@@ -728,12 +759,36 @@ public class OpenSearchDatabaseTestService extends DatabaseTestService {
 
   @Override
   public void createRepoSnapshot(String snapshotRepositoryName) {
-    // not implemented
+    try {
+      getOptimizeOpenSearchClient()
+          .getOpenSearchClient()
+          .snapshot()
+          .createRepository(
+              CreateRepositoryRequest.of(
+                  b ->
+                      b.name(snapshotRepositoryName)
+                          .settings(s -> s.location("/var/tmp"))
+                          .type("fs")));
+    } catch (IOException e) {
+      throw new RuntimeException(e);
+    }
   }
 
   @Override
   public void cleanSnapshots(String snapshotRepositoryName) {
-    // not implemented
+    try {
+      getOptimizeOpenSearchClient()
+          .getOpenSearchClient()
+          .snapshot()
+          .delete(
+              DeleteSnapshotRequest.of(b -> b.repository(snapshotRepositoryName).snapshot("*")));
+      getOptimizeOpenSearchClient()
+          .getOpenSearchClient()
+          .snapshot()
+          .deleteRepository(DeleteRepositoryRequest.of(b -> b.name(snapshotRepositoryName)));
+    } catch (Exception e) {
+      log.warn("Delete failed, no snapshots to delete from repository {}", snapshotRepositoryName);
+    }
   }
 
   @Override

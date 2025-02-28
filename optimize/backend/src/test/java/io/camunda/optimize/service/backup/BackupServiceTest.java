@@ -12,9 +12,12 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import io.camunda.optimize.dto.optimize.rest.SnapshotInfoDto;
 import io.camunda.optimize.service.BackupService;
 import io.camunda.optimize.service.db.reader.BackupReader;
 import io.camunda.optimize.service.db.writer.BackupWriter;
@@ -26,11 +29,11 @@ import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import io.camunda.optimize.service.util.configuration.ElasticSearchConfiguration;
 import jakarta.ws.rs.NotFoundException;
 import java.util.Collections;
+import java.util.List;
 import lombok.SneakyThrows;
 import org.apache.commons.lang3.StringUtils;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -42,25 +45,16 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 public class BackupServiceTest {
 
-  @Mock private BackupReader backupReader;
-
-  @Mock private BackupWriter backupWriter;
-
-  @Mock private ElasticSearchConfiguration databaseConfiguration;
-
-  @Mock private ConfigurationService configurationService;
-
-  @InjectMocks private BackupService backupService;
   private static MockedStatic<StringUtils> stringUtils;
+  @Mock private BackupReader backupReader;
+  @Mock private BackupWriter backupWriter;
+  @Mock private ElasticSearchConfiguration databaseConfiguration;
+  @Mock private ConfigurationService configurationService;
+  @InjectMocks private BackupService backupService;
 
   @BeforeAll
   public static void beforeAll() {
     stringUtils = Mockito.mockStatic(StringUtils.class);
-  }
-
-  @BeforeEach
-  public void beforeEach() {
-    when(configurationService.getElasticSearchConfiguration()).thenReturn(databaseConfiguration);
   }
 
   @AfterAll
@@ -71,13 +65,17 @@ public class BackupServiceTest {
   @Test
   public void triggerBackupWithoutSnapshotRepositoryConfig() {
     // given mock no repository in config
-    stringUtils.when(() -> StringUtils.isEmpty(any())).thenReturn(true);
+    final OptimizeConfigurationException optimizeConfigurationException =
+        new OptimizeConfigurationException(
+            "Cannot execute backup request because no snapshot repository name found in Optimize configuration.");
+    doThrow(optimizeConfigurationException).when(backupReader).validateRepositoryExists();
+
     // when/then
     final OptimizeConfigurationException thrown =
         assertThrows(OptimizeConfigurationException.class, () -> backupService.triggerBackup(123L));
     assertThat(thrown.getMessage())
         .isEqualTo(
-            "Cannot execute backup request because no Elasticsearch snapshot repository name found in Optimize "
+            "Cannot execute backup request because no snapshot repository name found in Optimize "
                 + "configuration.");
   }
 
@@ -90,7 +88,7 @@ public class BackupServiceTest {
             new OptimizeSnapshotRepositoryNotFoundException(
                 "No repository with name [does_not_exist] could be found."))
         .when(backupReader)
-        .validateRepositoryExistsOrFail();
+        .validateRepositoryExists();
 
     // when/then
     final OptimizeRuntimeException thrown =
@@ -105,13 +103,13 @@ public class BackupServiceTest {
     // given
     // Mock existence of repository name field in config
     stringUtils.when(() -> StringUtils.isEmpty(any())).thenReturn(false);
-    doNothing().when(backupReader).validateRepositoryExistsOrFail();
     // Mock existence of other backup with the same ID
-    doThrow(
-            new OptimizeConflictException(
-                "A backup with ID [123] already exists. Found snapshots: [existingSnapshotName/Xtll5DxHQ56j6rMz8nFDmQ]"))
+    final SnapshotInfoDto snapshotInfoDtoMock = mock(SnapshotInfoDto.class);
+    when(snapshotInfoDtoMock.getSnapshotName())
+        .thenReturn("existingSnapshotName/Xtll5DxHQ56j6rMz8nFDmQ");
+    doReturn(List.of(snapshotInfoDtoMock))
         .when(backupReader)
-        .validateNoDuplicateBackupId(any());
+        .getOptimizeSnapshotsForBackupId(any());
 
     // when
     final OptimizeConflictException thrown =
@@ -125,7 +123,10 @@ public class BackupServiceTest {
   @Test
   public void getSpecificBackupStateWithoutSnapshotRepositoryConfig() {
     // given mock no repository in config
-    stringUtils.when(() -> StringUtils.isEmpty(any())).thenReturn(true);
+    final OptimizeConfigurationException optimizeConfigurationException =
+        new OptimizeConfigurationException(
+            "Cannot execute backup request because no snapshot repository name found in Optimize configuration.");
+    doThrow(optimizeConfigurationException).when(backupReader).validateRepositoryExists();
 
     // when/then
     final OptimizeConfigurationException thrown =
@@ -133,7 +134,7 @@ public class BackupServiceTest {
             OptimizeConfigurationException.class, () -> backupService.getSingleBackupInfo(123L));
     assertThat(thrown.getMessage())
         .isEqualTo(
-            "Cannot execute backup request because no Elasticsearch snapshot repository name found in Optimize "
+            "Cannot execute backup request because no snapshot repository name found in Optimize "
                 + "configuration.");
   }
 
@@ -146,7 +147,7 @@ public class BackupServiceTest {
             new OptimizeSnapshotRepositoryNotFoundException(
                 "No repository with name [does_not_exist] could be found."))
         .when(backupReader)
-        .validateRepositoryExistsOrFail();
+        .validateRepositoryExists();
 
     // when/then
     final OptimizeRuntimeException thrown =
@@ -160,7 +161,7 @@ public class BackupServiceTest {
     // given
     // Mock existence of repository name field in config
     stringUtils.when(() -> StringUtils.isEmpty(any())).thenReturn(false);
-    doNothing().when(backupReader).validateRepositoryExistsOrFail();
+    doNothing().when(backupReader).validateRepositoryExists();
     when(backupReader.getOptimizeSnapshotsForBackupId(anyLong()))
         .thenReturn(Collections.emptyList());
 
@@ -173,14 +174,17 @@ public class BackupServiceTest {
   @Test
   public void getAllBackupStateWithoutSnapshotRepositoryConfig() {
     // given mock no repository in config
-    stringUtils.when(() -> StringUtils.isEmpty(any())).thenReturn(true);
+    final OptimizeConfigurationException optimizeConfigurationException =
+        new OptimizeConfigurationException(
+            "Cannot execute backup request because no snapshot repository name found in Optimize configuration.");
+    doThrow(optimizeConfigurationException).when(backupReader).validateRepositoryExists();
 
     // when/then
     final OptimizeConfigurationException thrown =
         assertThrows(OptimizeConfigurationException.class, () -> backupService.getAllBackupInfo());
     assertThat(thrown.getMessage())
         .isEqualTo(
-            "Cannot execute backup request because no Elasticsearch snapshot repository name found in Optimize "
+            "Cannot execute backup request because no snapshot repository name found in Optimize "
                 + "configuration.");
   }
 
@@ -193,7 +197,7 @@ public class BackupServiceTest {
             new OptimizeSnapshotRepositoryNotFoundException(
                 "No repository with name [does_not_exist] could be found."))
         .when(backupReader)
-        .validateRepositoryExistsOrFail();
+        .validateRepositoryExists();
 
     // when/then
     final OptimizeRuntimeException thrown =
@@ -207,7 +211,7 @@ public class BackupServiceTest {
     // given
     // Mock existence of repository name field in config
     stringUtils.when(() -> StringUtils.isEmpty(any())).thenReturn(false);
-    doNothing().when(backupReader).validateRepositoryExistsOrFail();
+    doNothing().when(backupReader).validateRepositoryExists();
     when(backupReader.getAllOptimizeSnapshotsByBackupId()).thenReturn(Collections.emptyMap());
 
     // when/then
@@ -217,14 +221,17 @@ public class BackupServiceTest {
   @Test
   public void deleteBackupWithoutSnapshotRepositoryConfig() {
     // given mock no repository in config
-    stringUtils.when(() -> StringUtils.isEmpty(any())).thenReturn(true);
+    final OptimizeConfigurationException optimizeConfigurationException =
+        new OptimizeConfigurationException(
+            "Cannot execute backup request because no snapshot repository name found in Optimize configuration.");
+    doThrow(optimizeConfigurationException).when(backupReader).validateRepositoryExists();
 
     // when/then
     final OptimizeConfigurationException thrown =
         assertThrows(OptimizeConfigurationException.class, () -> backupService.deleteBackup(123L));
     assertThat(thrown.getMessage())
         .isEqualTo(
-            "Cannot execute backup request because no Elasticsearch snapshot repository name found in Optimize "
+            "Cannot execute backup request because no snapshot repository name found in Optimize "
                 + "configuration.");
   }
 
@@ -237,7 +244,7 @@ public class BackupServiceTest {
             new OptimizeSnapshotRepositoryNotFoundException(
                 "No repository with name [does_not_exist] could be found."))
         .when(backupReader)
-        .validateRepositoryExistsOrFail();
+        .validateRepositoryExists();
 
     // when/then
     final OptimizeRuntimeException thrown =
