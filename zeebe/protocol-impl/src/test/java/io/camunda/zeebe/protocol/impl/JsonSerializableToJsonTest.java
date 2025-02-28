@@ -2222,7 +2222,7 @@ final class JsonSerializableToJsonTest {
                       .setAdHocSubProcessInstanceKey("1234")
                       .setTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
 
-              adHocSubProcessActivityActivationRecord.flowNodes().add().setFlowNodeId("123");
+              adHocSubProcessActivityActivationRecord.elements().add().setElementId("123");
 
               return adHocSubProcessActivityActivationRecord;
             },
@@ -2230,9 +2230,9 @@ final class JsonSerializableToJsonTest {
         {
           "adHocSubProcessInstanceKey": "1234",
           "tenantId": "<default>",
-          "flowNodes": [
+          "elements": [
             {
-              "flowNodeId": "123"
+              "elementId": "123"
             }
           ]
         }
@@ -2249,7 +2249,7 @@ final class JsonSerializableToJsonTest {
         {
           "adHocSubProcessInstanceKey": "",
           "tenantId": "<default>",
-          "flowNodes": []
+          "elements": []
         }
         """
       },

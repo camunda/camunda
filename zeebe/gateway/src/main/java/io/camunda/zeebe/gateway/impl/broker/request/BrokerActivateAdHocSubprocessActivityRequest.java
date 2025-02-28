@@ -32,7 +32,7 @@ public class BrokerActivateAdHocSubprocessActivityRequest
   }
 
   public BrokerActivateAdHocSubprocessActivityRequest addElement(final String elementId) {
-    requestDto.flowNodes().add().setFlowNodeId(elementId);
+    requestDto.elements().add().setElementId(elementId);
     return this;
   }
 

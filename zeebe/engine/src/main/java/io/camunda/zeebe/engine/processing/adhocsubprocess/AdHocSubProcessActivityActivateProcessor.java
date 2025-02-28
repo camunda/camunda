@@ -20,13 +20,13 @@ import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
 import io.camunda.zeebe.engine.state.immutable.ProcessState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.state.instance.ElementInstance;
-import io.camunda.zeebe.protocol.impl.record.value.adhocsubprocess.AdHocSubProcessActivityActivationFlowNode;
+import io.camunda.zeebe.protocol.impl.record.value.adhocsubprocess.AdHocSubProcessActivityActivationElement;
 import io.camunda.zeebe.protocol.impl.record.value.adhocsubprocess.AdHocSubProcessActivityActivationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.AdHocSubProcessActivityActivationIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
-import io.camunda.zeebe.protocol.record.value.AdHocSubProcessActivityActivationRecordValue.AdHocSubProcessActivityActivationFlowNodeValue;
+import io.camunda.zeebe.protocol.record.value.AdHocSubProcessActivityActivationRecordValue.AdHocSubProcessActivityActivationElementValue;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
@@ -101,8 +101,8 @@ public class AdHocSubProcessActivityActivateProcessor
 
     // test that the given flow nodes exist within it
     final var flowNodesNotInAdHocSubProcess =
-        command.getValue().flowNodes().stream()
-            .map(AdHocSubProcessActivityActivationFlowNode::getFlowNodeId)
+        command.getValue().elements().stream()
+            .map(AdHocSubProcessActivityActivationElement::getElementId)
             .filter(flowNodeId -> !adHocActivitiesById.containsKey(flowNodeId))
             .toList();
     if (!flowNodesNotInAdHocSubProcess.isEmpty()) {
@@ -111,9 +111,9 @@ public class AdHocSubProcessActivityActivateProcessor
     }
 
     // activate the flow nodes
-    for (final var flowNode : command.getValue().getFlowNodes()) {
+    for (final var flowNode : command.getValue().getElements()) {
       final var flowNodeToActivate =
-          adHocSubprocessDefinition.getElementById(flowNode.getFlowNodeId());
+          adHocSubprocessDefinition.getElementById(flowNode.getElementId());
       final var flowNodeProcessInstanceRecord = new ProcessInstanceRecord();
       flowNodeProcessInstanceRecord.wrap(adHocSubprocessElementInstance.getValue());
       flowNodeProcessInstanceRecord
@@ -152,15 +152,15 @@ public class AdHocSubProcessActivityActivateProcessor
   private void validateDuplicateFlowNodes(
       final TypedRecord<AdHocSubProcessActivityActivationRecord> command) {
     final var hasDuplicates =
-        command.getValue().getFlowNodes().stream()
-                .map(AdHocSubProcessActivityActivationFlowNodeValue::getFlowNodeId)
+        command.getValue().getElements().stream()
+                .map(AdHocSubProcessActivityActivationElementValue::getElementId)
                 .distinct()
                 .count()
-            != command.getValue().getFlowNodes().size();
+            != command.getValue().getElements().size();
     if (hasDuplicates) {
       throw new DuplicateFlowNodesException(
-          command.getValue().getFlowNodes().stream()
-              .map(AdHocSubProcessActivityActivationFlowNodeValue::getFlowNodeId)
+          command.getValue().getElements().stream()
+              .map(AdHocSubProcessActivityActivationElementValue::getElementId)
               .toList());
     }
   }

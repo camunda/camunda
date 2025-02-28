@@ -72,11 +72,11 @@ public class ActivateAdHocSubProcessActivityTest {
 
   @Test
   public void
-      givenRunningAdhocSubProcessInstanceWhenActivatingExistingFlowNodeThenTheFlowNodeIsActivated() {
+      givenRunningAdhocSubProcessInstanceWhenActivatingExistingElementThenTheElementIsActivated() {
     final var adHocSubProcessActivityActivationRecord =
         new AdHocSubProcessActivityActivationRecord()
             .setAdHocSubProcessInstanceKey(String.valueOf(adHocSubProcessInstanceKey));
-    adHocSubProcessActivityActivationRecord.flowNodes().add().setFlowNodeId("A");
+    adHocSubProcessActivityActivationRecord.elements().add().setElementId("A");
 
     ENGINE.writeRecords(
         RecordToWrite.command()
@@ -98,11 +98,11 @@ public class ActivateAdHocSubProcessActivityTest {
 
   @Test
   public void
-      givenRunningAdhocSubProcessInstanceWhenSuccessfullyActivatingAFlowNodeThenSubsequentActivatedEventIsSent() {
+      givenRunningAdhocSubProcessInstanceWhenSuccessfullyActivatingAElementThenSubsequentActivatedEventIsSent() {
     final var adHocSubProcessActivityActivationRecord =
         new AdHocSubProcessActivityActivationRecord()
             .setAdHocSubProcessInstanceKey(String.valueOf(adHocSubProcessInstanceKey));
-    adHocSubProcessActivityActivationRecord.flowNodes().add().setFlowNodeId("A");
+    adHocSubProcessActivityActivationRecord.elements().add().setElementId("A");
 
     ENGINE.writeRecords(
         RecordToWrite.command()
@@ -112,19 +112,18 @@ public class ActivateAdHocSubProcessActivityTest {
     assertThat(
             RecordingExporter.adHocSubProcessActivityActivationRecords()
                 .withAdHocSubProcessInstanceKey(String.valueOf(adHocSubProcessInstanceKey)))
-        // todo add short-circuit `limit` call?
-        .extracting(r -> r.getValue().getFlowNodes().getFirst().getFlowNodeId(), Record::getIntent)
+        .extracting(r -> r.getValue().getElements().getFirst().getElementId(), Record::getIntent)
         .contains(tuple("A", AdHocSubProcessActivityActivationIntent.ACTIVATED));
   }
 
   @Test
   public void
-      givenRunningAdhocSubProcessInstanceWhenActivatingMoreThanOneFlowNodeThenAllGivenFlowNodesAreActivated() {
+      givenRunningAdhocSubProcessInstanceWhenActivatingMoreThanOneElementThenAllGivenElementsAreActivated() {
     final var adHocSubProcessActivityActivationRecord =
         new AdHocSubProcessActivityActivationRecord()
             .setAdHocSubProcessInstanceKey(String.valueOf(adHocSubProcessInstanceKey));
-    adHocSubProcessActivityActivationRecord.flowNodes().add().setFlowNodeId("A");
-    adHocSubProcessActivityActivationRecord.flowNodes().add().setFlowNodeId("B");
+    adHocSubProcessActivityActivationRecord.elements().add().setElementId("A");
+    adHocSubProcessActivityActivationRecord.elements().add().setElementId("B");
 
     ENGINE.writeRecords(
         RecordToWrite.command()
@@ -133,7 +132,6 @@ public class ActivateAdHocSubProcessActivityTest {
 
     assertThat(
             RecordingExporter.processInstanceRecords().withProcessInstanceKey(processInstanceKey))
-        // todo add short-circuit `limit` call?
         .extracting(r -> r.getValue().getElementId(), Record::getIntent)
         .contains(
             tuple("A", ProcessInstanceIntent.ACTIVATE_ELEMENT),
@@ -145,11 +143,11 @@ public class ActivateAdHocSubProcessActivityTest {
 
   @Test
   public void
-      givenRunningAdhocSubProcessInstanceWhenActivatingFlowNodeThatDoesNotExistThenTheActivationIsRejected() {
+      givenRunningAdhocSubProcessInstanceWhenActivatingElementThatDoesNotExistThenTheActivationIsRejected() {
     final var adHocSubProcessActivityActivationRecord =
         new AdHocSubProcessActivityActivationRecord()
             .setAdHocSubProcessInstanceKey(String.valueOf(adHocSubProcessInstanceKey));
-    adHocSubProcessActivityActivationRecord.flowNodes().add().setFlowNodeId("does-not-exist");
+    adHocSubProcessActivityActivationRecord.elements().add().setElementId("does-not-exist");
 
     ENGINE.writeRecords(
         RecordToWrite.command()
@@ -161,18 +159,18 @@ public class ActivateAdHocSubProcessActivityTest {
                 .withAdHocSubProcessInstanceKey(String.valueOf(adHocSubProcessInstanceKey))
                 .onlyCommandRejections()
                 .limit(1))
-        .extracting(r -> r.getValue().getFlowNodes().getFirst().getFlowNodeId(), Record::getIntent)
+        .extracting(r -> r.getValue().getElements().getFirst().getElementId(), Record::getIntent)
         .describedAs("Expected flow node that doesn't exist to be rejected.")
         .contains(tuple("does-not-exist", AdHocSubProcessActivityActivationIntent.ACTIVATE));
   }
 
   @Test
   public void
-      givenAdhocSubProcessInATerminalStateWhenActivatingFlowNodesThenTheActivationIsRejected() {
+      givenAdhocSubProcessInATerminalStateWhenActivatingElementsThenTheActivationIsRejected() {
     final var adHocSubProcessActivityActivationRecord =
         new AdHocSubProcessActivityActivationRecord()
             .setAdHocSubProcessInstanceKey(String.valueOf(adHocSubProcessInstanceKey));
-    adHocSubProcessActivityActivationRecord.flowNodes().add().setFlowNodeId("A");
+    adHocSubProcessActivityActivationRecord.elements().add().setElementId("A");
 
     ENGINE.writeRecords(
         RecordToWrite.command()
@@ -196,12 +194,12 @@ public class ActivateAdHocSubProcessActivityTest {
 
   @Test
   public void
-      givenRunningAdhocSubProcessWhenAttemptingToActivateDuplicateFlowNodesThenTheActivationIsRejected() {
+      givenRunningAdhocSubProcessWhenAttemptingToActivateDuplicateElementsThenTheActivationIsRejected() {
     final var adHocSubProcessActivityActivationRecord =
         new AdHocSubProcessActivityActivationRecord()
             .setAdHocSubProcessInstanceKey(String.valueOf(adHocSubProcessInstanceKey));
-    adHocSubProcessActivityActivationRecord.flowNodes().add().setFlowNodeId("A");
-    adHocSubProcessActivityActivationRecord.flowNodes().add().setFlowNodeId("A");
+    adHocSubProcessActivityActivationRecord.elements().add().setElementId("A");
+    adHocSubProcessActivityActivationRecord.elements().add().setElementId("A");
 
     ENGINE.writeRecords(
         RecordToWrite.command()
