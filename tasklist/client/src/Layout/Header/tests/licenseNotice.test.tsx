@@ -7,7 +7,6 @@
  */
 
 import {render, screen} from 'modules/testing-library';
-import {DEFAULT_MOCK_CLIENT_CONFIG} from 'modules/mocks/window';
 import {nodeMockServer} from 'modules/mockServer/nodeMockServer';
 import {http, HttpResponse} from 'msw';
 import {Header} from '..';
@@ -16,10 +15,6 @@ import * as userMocks from 'modules/mock-schema/mocks/current-user';
 import * as licenseMocks from 'modules/mock-schema/mocks/license';
 
 describe('license note', () => {
-  afterEach(() => {
-    window.clientConfig = DEFAULT_MOCK_CLIENT_CONFIG;
-  });
-
   beforeEach(() => {
     nodeMockServer.use(
       http.get(
@@ -74,10 +69,6 @@ describe('license note', () => {
         },
       ),
     );
-    window.clientConfig = {
-      isEnterprise: false,
-      organizationId: null,
-    };
 
     render(<Header />, {
       wrapper: getWrapper(),
@@ -100,10 +91,6 @@ describe('license note', () => {
         },
       ),
     );
-    window.clientConfig = {
-      isEnterprise: false,
-      organizationId: '000000000-0000-0000-0000-000000000000',
-    };
 
     render(<Header />, {
       wrapper: getWrapper(),
@@ -127,11 +114,6 @@ describe('license note', () => {
         },
       ),
     );
-
-    window.clientConfig = {
-      isEnterprise: true,
-      organizationId: null,
-    };
 
     render(<Header />, {
       wrapper: getWrapper(),

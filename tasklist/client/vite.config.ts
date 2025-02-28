@@ -72,6 +72,7 @@ export default defineConfig(({mode}) => ({
     include: ['./src/**/*.{test,spec}.?(c|m)[jt]s?(x)'],
     setupFiles: ['./src/setupTests.ts'],
     restoreMocks: true,
+    reset: true,
     coverage: {
       provider: 'istanbul',
       exclude: [

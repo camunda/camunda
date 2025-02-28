@@ -23,12 +23,11 @@ import {FormLevelErrorMessage} from './FormLevelErrorMessage';
 import {Stack} from '@carbon/react';
 import {toHumanReadableBytes} from 'modules/utils/toHumanReadableBytes';
 import {useTranslation} from 'react-i18next';
+import {getClientConfig} from 'modules/getClientConfig';
 
 const defaultDocumentsEndpointKey = decodeURIComponent(
   api.v2.getDocument('{documentId}').url,
 );
-
-const MAX_REQUEST_SIZE = window.clientConfig?.maxRequestSize ?? 4 * 1024 * 1024;
 
 type Props = {
   handleSubmit: (variables: Variable[]) => Promise<void>;
@@ -243,8 +242,8 @@ const FormJSRenderer: React.FC<Props> = ({
             .flat()
             .map((file) => file.size)
             .reduce((total, itemSize) => total + itemSize, 0);
-          const hasLargeFilePayload = totalFilePayloadSize > MAX_REQUEST_SIZE;
-
+          const hasLargeFilePayload =
+            totalFilePayloadSize > getClientConfig().maxRequestSize;
           if (hasLargeFilePayload) {
             onValidationError?.();
             setHasLargeFilePayload(true);
@@ -333,7 +332,7 @@ const FormJSRenderer: React.FC<Props> = ({
           {hasLargeFilePayload ? (
             <FormLevelErrorMessage
               readableMessage={t('formJSLargeFilePayloadError', {
-                size: toHumanReadableBytes(MAX_REQUEST_SIZE),
+                size: toHumanReadableBytes(getClientConfig().maxRequestSize),
               })}
             />
           ) : null}

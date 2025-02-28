@@ -10,6 +10,7 @@ import {type Mixpanel} from 'mixpanel-browser';
 import {getStage} from 'modules/utils/getStage';
 import type {CurrentUser} from 'modules/types';
 import type {TaskFilters} from 'modules/hooks/useTaskFilters';
+import {getClientConfig} from 'modules/getClientConfig';
 
 const EVENT_PREFIX = 'tasklist:';
 type Events =
@@ -134,8 +135,8 @@ class Tracking {
   #appCues: null | NonNullable<typeof window.Appcues> = null;
 
   #baseProperties = {
-    organizationId: window.clientConfig?.organizationId,
-    clusterId: window.clientConfig?.clusterId,
+    organizationId: getClientConfig().organizationId,
+    clusterId: getClientConfig().clusterId,
     stage: STAGE_ENV,
     version: import.meta.env.VITE_VERSION,
   } as const;
@@ -144,7 +145,7 @@ class Tracking {
     return (
       !import.meta.env.DEV &&
       ['prod', 'int', 'dev'].includes(STAGE_ENV) &&
-      window.clientConfig?.organizationId
+      getClientConfig().organizationId
     );
   };
 
@@ -194,11 +195,10 @@ class Tracking {
   #loadMixpanel = (): Promise<void> => {
     return import('mixpanel-browser').then(({default: mixpanel}) => {
       mixpanel.init(
-        window.clientConfig?.mixpanelToken ??
-          import.meta.env.VITE_MIXPANEL_TOKEN,
+        getClientConfig().mixpanelToken ?? import.meta.env.VITE_MIXPANEL_TOKEN,
         {
           api_host:
-            window.clientConfig?.mixpanelAPIHost ??
+            getClientConfig().mixpanelAPIHost ??
             import.meta.env.VITE_MIXPANEL_HOST,
           opt_out_tracking_by_default: true,
         },

@@ -8,25 +8,29 @@
 
 import {render, screen} from 'modules/testing-library';
 import {Disclaimer} from './index';
+import {vi} from 'vitest';
+import {getClientConfig} from 'modules/getClientConfig';
+
+vi.mock('modules/getClientConfig', async (importOriginal) => {
+  const actual =
+    await importOriginal<typeof import('modules/getClientConfig')>();
+  return {
+    getClientConfig: vi.fn().mockImplementation(actual.getClientConfig),
+  };
+});
+
+const {getClientConfig: actualGetClientConfig} = await vi.importActual<
+  typeof import('modules/getClientConfig')
+>('modules/getClientConfig');
+const mockGetClientConfig = vi.mocked(getClientConfig);
 
 const DISCLAIMER_TEXT =
   'Non-Production License. If you would like information on production usage, please refer to our terms & conditions page or contact sales.';
 
 describe('<Disclaimer />', () => {
-  beforeEach(() => {
-    Object.defineProperties(window.clientConfig, {
-      isEnterprise: {
-        configurable: true,
-        writable: true,
-        value: null,
-      },
-    });
-  });
-  afterEach(() => {
-    delete window.clientConfig!.isEnterprise;
-  });
-
   it('should show the disclaimer', () => {
+    mockGetClientConfig.mockReturnValue(actualGetClientConfig());
+
     const {rerender} = render(<Disclaimer />);
 
     // we need this custom selector because the text contains a link
@@ -45,8 +49,6 @@ describe('<Disclaimer />', () => {
       'href',
       'https://camunda.com/contact/',
     );
-
-    window.clientConfig!.isEnterprise = false;
 
     rerender(<Disclaimer />);
 
@@ -68,7 +70,11 @@ describe('<Disclaimer />', () => {
   });
 
   it('should not render the disclaimer', () => {
-    window.clientConfig!.isEnterprise = true;
+    mockGetClientConfig.mockReturnValue({
+      ...actualGetClientConfig(),
+      isEnterprise: true,
+    });
+
     render(<Disclaimer />);
 
     expect(

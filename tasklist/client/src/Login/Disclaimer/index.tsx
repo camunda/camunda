@@ -9,13 +9,14 @@
 import {Link} from '@carbon/react';
 import styles from './styles.module.scss';
 import {Trans} from 'react-i18next';
+import {getClientConfig} from 'modules/getClientConfig';
 
 type Props = {
   className?: string;
 };
 
 const Disclaimer: React.FC<Props> = () => {
-  return window.clientConfig?.isEnterprise ? null : (
+  return getClientConfig().isEnterprise ? null : (
     <span className={styles.container}>
       <Trans i18nKey="headerNonProductionLicenseText">
         Non-Production License. If you would like information on production

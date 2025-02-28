@@ -9,7 +9,8 @@
 import type {Form, Task, TasksSearchBody, Variable} from './types';
 import {mergePathname} from './utils/mergePathname';
 import {buildDocumentMultipart} from './utils/buildDocumentMultipart';
-const BASENAME = window.clientConfig?.contextPath ?? '/';
+import {getClientConfig} from 'modules/getClientConfig';
+
 const BASE_REQUEST_OPTIONS: RequestInit = {
   credentials: 'include',
   mode: 'cors',
@@ -20,7 +21,10 @@ function getFullURL(url: string) {
     throw new Error('window.location.origin is not a set');
   }
 
-  return new URL(mergePathname(BASENAME, url), window.location.origin);
+  return new URL(
+    mergePathname(getClientConfig().contextPath, url),
+    window.location.origin,
+  );
 }
 
 const api = {

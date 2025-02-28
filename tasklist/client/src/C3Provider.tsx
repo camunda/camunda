@@ -9,10 +9,11 @@
 import {C3UserConfigurationProvider} from '@camunda/camunda-composite-components';
 import {C3ThemePersister} from 'C3ThemePersister';
 import {api} from 'modules/api';
+import {getClientConfig} from 'modules/getClientConfig';
 import {getStage} from 'modules/utils/getStage';
 import {useEffect, useState} from 'react';
 
-const IS_SAAS = typeof window.clientConfig?.organizationId === 'string';
+const IS_SAAS = getClientConfig().organizationId === 'string';
 const STAGE = getStage(window.location.host);
 
 async function fetchToken() {
@@ -54,10 +55,10 @@ const C3Provider: React.FC<Props> = ({children}) => {
 
   return (
     <C3UserConfigurationProvider
-      activeOrganizationId={window.clientConfig?.organizationId ?? ''}
+      activeOrganizationId={getClientConfig().organizationId ?? ''}
       userToken={token}
       getNewUserToken={fetchToken}
-      currentClusterUuid={window.clientConfig?.clusterId ?? ''}
+      currentClusterUuid={getClientConfig().clusterId ?? ''}
       currentApp="tasklist"
       stage={STAGE === 'unknown' ? 'dev' : STAGE}
       handleTheme
