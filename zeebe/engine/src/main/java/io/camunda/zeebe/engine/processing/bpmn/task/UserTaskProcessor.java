@@ -156,16 +156,16 @@ public final class UserTaskProcessor extends JobWorkerTaskSupportingProcessor<Ex
         userTaskBehavior.createNewUserTask(context, element, userTaskProperties);
     var lifecycleState = LifecycleState.CREATING;
 
-    // assignee is set in the creating event to support assigning after creating listeners.
-    // however, it should not be part of the created event as the assignee should be considered
-    // unset until the assigning event is triggered.
-    userTaskRecord.unsetAssignee();
-
     final var nextListener =
         element.getTaskListeners(ZeebeTaskListenerEventType.creating).stream().findFirst();
     if (nextListener.isPresent()) {
       jobBehavior.createNewTaskListenerJob(context, userTaskRecord, nextListener.get(), null);
     } else {
+      // assignee is set in the creating event to support assigning after creating listeners.
+      // however, it should not be part of the created event as the assignee should be considered
+      // unset until the assigning event is triggered.
+      userTaskRecord.unsetAssignee();
+
       userTaskBehavior.userTaskCreated(userTaskRecord);
       lifecycleState = LifecycleState.CREATED;
     }
