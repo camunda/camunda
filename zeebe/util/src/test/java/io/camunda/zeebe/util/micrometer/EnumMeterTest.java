@@ -50,7 +50,7 @@ final class EnumMeterTest {
     EnumMeter.register(States.class, DOC, TAG, registry);
 
     // then
-    assertThat(registry.get(DOC.getName()).tagKeys(TAG.asString()).gauges())
+    assertThat(registry.get(DOC.getName()).tagKeys(TAG.asString()).meters())
         .hasSameSizeAs(States.values());
     assertThat(registry.get(DOC.getName()).tag(TAG.asString(), "A").gauge())
         .returns(0.0, Gauge::value);

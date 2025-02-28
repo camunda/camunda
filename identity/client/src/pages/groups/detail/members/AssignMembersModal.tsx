@@ -29,7 +29,7 @@ const AssignMembersModal: FC<
     data: userSearchResults,
     loading,
     reload,
-    errors,
+    error,
   } = useApi(searchUser);
   const [callAssignUser] = useApiCall(assignGroupMember);
 
@@ -117,7 +117,7 @@ const AssignMembersModal: FC<
         onSelect={onSelectUser}
       />
 
-      {!loading && errors && (
+      {!loading && error && (
         <TranslatedErrorInlineNotification
           title={t("Users could not be loaded.")}
           actionButton={{ label: t("Retry"), onClick: reload }}

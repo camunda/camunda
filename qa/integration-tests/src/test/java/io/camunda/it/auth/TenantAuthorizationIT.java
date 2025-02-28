@@ -15,10 +15,12 @@ import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.client.CamundaClient;
-import io.camunda.it.utils.BrokerITInvocationProvider;
-import io.camunda.it.utils.CamundaClientTestFactory.Authenticated;
-import io.camunda.it.utils.CamundaClientTestFactory.Permissions;
-import io.camunda.it.utils.CamundaClientTestFactory.User;
+import io.camunda.it.utils.CamundaMultiDBExtension;
+import io.camunda.qa.util.auth.Authenticated;
+import io.camunda.qa.util.auth.Permissions;
+import io.camunda.qa.util.auth.User;
+import io.camunda.qa.util.auth.UserDefinition;
+import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.collection.Tuple;
 import java.io.IOException;
@@ -34,22 +36,31 @@ import java.util.List;
 import java.util.UUID;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AutoClose;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.TestInstance;
-import org.junit.jupiter.api.TestInstance.Lifecycle;
-import org.junit.jupiter.api.TestTemplate;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.springframework.http.HttpStatus;
 
-@TestInstance(Lifecycle.PER_CLASS)
+@Tag("multi-db-test")
+@DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "rdbms")
 class TenantAuthorizationIT {
 
   public static final ObjectMapper OBJECT_MAPPER =
       new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
   public static final String PASSWORD = "password";
+  static final TestStandaloneBroker BROKER =
+      new TestStandaloneBroker().withBasicAuth().withAuthorizationsEnabled();
+
+  @RegisterExtension
+  static final CamundaMultiDBExtension EXTENSION = new CamundaMultiDBExtension(BROKER);
+
   private static final String ADMIN = "admin";
-  private static final String RESTRICTED = "restricted-user";
-  private static final String UNAUTHORIZED = "unauthorized-user";
+  private static final String RESTRICTED = "restrictedUser";
+  private static final String UNAUTHORIZED = "unauthorizedUser";
+
+  @UserDefinition
   private static final User ADMIN_USER =
       new User(
           ADMIN,
@@ -57,37 +68,29 @@ class TenantAuthorizationIT {
           List.of(
               new Permissions(TENANT, CREATE, List.of("*")),
               new Permissions(TENANT, READ, List.of("*"))));
+
+  @UserDefinition
   private static final User RESTRICTED_USER =
       new User(
           RESTRICTED,
           PASSWORD,
           List.of(new Permissions(TENANT, READ, List.of("tenant1", "tenant2"))));
-  private static final User UNAUTHORIZED_USER = new User(UNAUTHORIZED, PASSWORD, List.of());
 
-  @RegisterExtension
-  static final BrokerITInvocationProvider PROVIDER =
-      new BrokerITInvocationProvider()
-          .withoutRdbmsExporter()
-          .withBasicAuth()
-          .withAuthorizationsEnabled()
-          .withUsers(ADMIN_USER, RESTRICTED_USER, UNAUTHORIZED_USER);
+  @UserDefinition
+  private static final User UNAUTHORIZED_USER = new User(UNAUTHORIZED, PASSWORD, List.of());
 
   @AutoClose private static final HttpClient HTTP_CLIENT = HttpClient.newHttpClient();
   private boolean initialized;
 
-  @BeforeEach
-  void setUp(@Authenticated(ADMIN) final CamundaClient adminClient) {
-    if (!initialized) {
-      createTenant(adminClient, "tenant1");
-      createTenant(adminClient, "tenant2");
-      // Expected count is 3 because a default tenant gets created
-      waitForTenantsToBeCreated(
-          adminClient.getConfiguration().getRestAddress().toString(), ADMIN, 3);
-      initialized = true;
-    }
+  @BeforeAll
+  static void setUp(@Authenticated(ADMIN) final CamundaClient adminClient) {
+    createTenant(adminClient, "tenant1");
+    createTenant(adminClient, "tenant2");
+    // Expected count is 3 because a default tenant gets created
+    waitForTenantsToBeCreated(adminClient.getConfiguration().getRestAddress().toString(), ADMIN, 3);
   }
 
-  @TestTemplate
+  @Test
   void searchShouldReturnAuthorizedTenants(
       @Authenticated(RESTRICTED) final CamundaClient userClient) throws Exception {
     // when
@@ -101,7 +104,7 @@ class TenantAuthorizationIT {
         .containsExactlyInAnyOrder("tenant1", "tenant2");
   }
 
-  @TestTemplate
+  @Test
   void searchShouldReturnEmptyListWhenUnauthorized(
       @Authenticated(UNAUTHORIZED) final CamundaClient userClient) throws Exception {
     // when
@@ -112,7 +115,7 @@ class TenantAuthorizationIT {
     assertThat(tenantSearchResponse.items()).isEmpty();
   }
 
-  @TestTemplate
+  @Test
   void getByIdShouldReturnAuthorizedTenant(
       @Authenticated(RESTRICTED) final CamundaClient userClient) throws Exception {
     // when
@@ -125,7 +128,7 @@ class TenantAuthorizationIT {
     assertThat(tenant.get().tenantId()).isEqualTo("tenant1");
   }
 
-  @TestTemplate
+  @Test
   void getByIdShouldReturnForbiddenForUnauthorizedTenantId(
       @Authenticated(UNAUTHORIZED) final CamundaClient userClient) throws Exception {
     // when
@@ -151,7 +154,7 @@ class TenantAuthorizationIT {
         .join();
   }
 
-  private void waitForTenantsToBeCreated(
+  private static void waitForTenantsToBeCreated(
       final String restAddress, final String username, final int expectedCount) {
     Awaitility.await("should create tenants and import in ES")
         .atMost(Duration.ofSeconds(15))

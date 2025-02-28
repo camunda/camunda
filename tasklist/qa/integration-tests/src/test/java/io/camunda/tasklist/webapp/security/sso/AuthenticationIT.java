@@ -40,10 +40,10 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.util.apps.sso.AuthSSOApplication;
 import io.camunda.tasklist.webapp.dto.UserDTO;
+import io.camunda.tasklist.webapp.group.UserGroupService;
 import io.camunda.tasklist.webapp.security.AssigneeMigrator;
 import io.camunda.tasklist.webapp.security.AuthenticationTestable;
 import io.camunda.tasklist.webapp.security.Permission;
-import io.camunda.tasklist.webapp.security.identity.IdentityAuthorizationService;
 import io.camunda.tasklist.webapp.security.sso.model.ClusterInfo;
 import io.camunda.tasklist.webapp.security.sso.model.ClusterInfo.SalesPlan;
 import io.camunda.tasklist.webapp.security.sso.model.ClusterMetadata;
@@ -109,7 +109,7 @@ public class AuthenticationIT implements AuthenticationTestable {
 
   @MockBean private AssigneeMigrator assigneeMigrator;
 
-  @MockBean private IdentityAuthorizationService identityAuthorizationService;
+  @MockBean private UserGroupService userGroupService;
 
   @MockBean
   @Qualifier("auth0_restTemplate")

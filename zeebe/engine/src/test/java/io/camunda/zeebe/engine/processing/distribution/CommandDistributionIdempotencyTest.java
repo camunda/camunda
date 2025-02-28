@@ -42,7 +42,9 @@ import io.camunda.zeebe.engine.processing.user.UserCreateProcessor;
 import io.camunda.zeebe.engine.processing.user.UserDeleteProcessor;
 import io.camunda.zeebe.engine.processing.user.UserUpdateProcessor;
 import io.camunda.zeebe.engine.util.EngineRule;
+import io.camunda.zeebe.engine.util.TestInterPartitionCommandSender.CommandInterceptor;
 import io.camunda.zeebe.model.bpmn.Bpmn;
+import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.MappingRecord;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.RoleRecord;
 import io.camunda.zeebe.protocol.impl.record.value.tenant.TenantRecord;
@@ -64,6 +66,7 @@ import io.camunda.zeebe.protocol.record.intent.SignalIntent;
 import io.camunda.zeebe.protocol.record.intent.TenantIntent;
 import io.camunda.zeebe.protocol.record.intent.UserIntent;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
+import io.camunda.zeebe.protocol.record.value.CommandDistributionRecordValue;
 import io.camunda.zeebe.protocol.record.value.DeploymentRecordValue;
 import io.camunda.zeebe.protocol.record.value.EntityType;
 import io.camunda.zeebe.protocol.record.value.GroupRecordValue;
@@ -79,12 +82,19 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
-import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.CancellationException;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.awaitility.Awaitility;
+import org.junit.After;
 import org.junit.AfterClass;
+import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
@@ -113,6 +123,7 @@ public class CommandDistributionIdempotencyTest {
 
   private final Scenario scenario;
   private final Class<?> processor;
+  private AcknowledgementInterceptor interceptor;
 
   public CommandDistributionIdempotencyTest(
       final String testName, final Scenario scenario, final Class<?> processor) {
@@ -120,8 +131,13 @@ public class CommandDistributionIdempotencyTest {
     this.processor = processor;
   }
 
+  @After
+  public void updateTestedProcessors() {
+    DISTRIBUTING_PROCESSORS.remove(processor);
+  }
+
   @AfterClass
-  public static void afterClass() {
+  public static void assertAllProcessorsTested() {
     if (!DISTRIBUTING_PROCESSORS.isEmpty()) {
       fail("No test scenario found for processors: '%s'".formatted(DISTRIBUTING_PROCESSORS));
     }
@@ -138,7 +154,7 @@ public class CommandDistributionIdempotencyTest {
                 AuthorizationIntent.CREATE,
                 () -> {
                   final var user = createUser();
-                  ENGINE
+                  return ENGINE
                       .authorization()
                       .newAuthorization()
                       .withOwnerId(user.getValue().getUsername())
@@ -146,8 +162,7 @@ public class CommandDistributionIdempotencyTest {
                       .withResourceType(AuthorizationResourceType.USER)
                       .withPermissions(PermissionType.READ)
                       .create();
-                },
-                2),
+                }),
             AuthorizationCreateProcessor.class
           },
           {
@@ -169,9 +184,8 @@ public class CommandDistributionIdempotencyTest {
                           .getValue()
                           .getAuthorizationKey();
 
-                  ENGINE.authorization().deleteAuthorization(key).delete();
-                },
-                4),
+                  return ENGINE.authorization().deleteAuthorization(key).delete();
+                }),
             AuthorizationDeleteProcessor.class
           },
           {
@@ -193,14 +207,13 @@ public class CommandDistributionIdempotencyTest {
                           .getValue()
                           .getAuthorizationKey();
 
-                  ENGINE.authorization().updateAuthorization(key).update();
-                },
-                4),
+                  return ENGINE.authorization().updateAuthorization(key).update();
+                }),
             AuthorizationUpdateProcessor.class
           },
           {
             "Clock.RESET is idempotent",
-            new Scenario(ValueType.CLOCK, ClockIntent.RESET, () -> ENGINE.clock().reset(), 1),
+            new Scenario(ValueType.CLOCK, ClockIntent.RESET, () -> ENGINE.clock().reset()),
             ClockProcessor.class
           },
           {
@@ -208,8 +221,7 @@ public class CommandDistributionIdempotencyTest {
             new Scenario(
                 ValueType.DEPLOYMENT,
                 DeploymentIntent.CREATE,
-                CommandDistributionIdempotencyTest::deployProcess,
-                1),
+                CommandDistributionIdempotencyTest::deployProcess),
             DeploymentCreateProcessor.class
           },
           {
@@ -217,8 +229,7 @@ public class CommandDistributionIdempotencyTest {
             new Scenario(
                 ValueType.GROUP,
                 GroupIntent.CREATE,
-                CommandDistributionIdempotencyTest::createGroup,
-                1),
+                CommandDistributionIdempotencyTest::createGroup),
             GroupCreateProcessor.class
           },
           {
@@ -228,9 +239,8 @@ public class CommandDistributionIdempotencyTest {
                 GroupIntent.DELETE,
                 () -> {
                   final var group = createGroup();
-                  ENGINE.group().deleteGroup(group.getKey()).delete();
-                },
-                2),
+                  return ENGINE.group().deleteGroup(group.getKey()).delete();
+                }),
             GroupDeleteProcessor.class
           },
           {
@@ -240,13 +250,12 @@ public class CommandDistributionIdempotencyTest {
                 GroupIntent.UPDATE,
                 () -> {
                   final var group = createGroup();
-                  ENGINE
+                  return ENGINE
                       .group()
                       .updateGroup(group.getKey())
                       .withName(UUID.randomUUID().toString())
                       .update();
-                },
-                2),
+                }),
             GroupUpdateProcessor.class
           },
           {
@@ -257,14 +266,13 @@ public class CommandDistributionIdempotencyTest {
                 () -> {
                   final var group = createGroup();
                   final var user = createUser();
-                  ENGINE
+                  return ENGINE
                       .group()
                       .addEntity(group.getKey())
                       .withEntityKey(user.getKey())
                       .withEntityType(EntityType.USER)
                       .add();
-                },
-                4),
+                }),
             GroupAddEntityProcessor.class
           },
           {
@@ -281,14 +289,13 @@ public class CommandDistributionIdempotencyTest {
                       .withEntityKey(user.getKey())
                       .withEntityType(EntityType.USER)
                       .add();
-                  ENGINE
+                  return ENGINE
                       .group()
                       .removeEntity(group.getKey())
                       .withEntityKey(user.getKey())
                       .withEntityType(EntityType.USER)
                       .remove();
-                },
-                5),
+                }),
             GroupRemoveEntityProcessor.class
           },
           {
@@ -296,8 +303,7 @@ public class CommandDistributionIdempotencyTest {
             new Scenario(
                 ValueType.MAPPING,
                 MappingIntent.CREATE,
-                CommandDistributionIdempotencyTest::createMapping,
-                1),
+                CommandDistributionIdempotencyTest::createMapping),
             MappingCreateProcessor.class
           },
           {
@@ -307,9 +313,8 @@ public class CommandDistributionIdempotencyTest {
                 MappingIntent.DELETE,
                 () -> {
                   final var mapping = createMapping();
-                  ENGINE.mapping().deleteMapping(mapping.getKey()).delete();
-                },
-                2),
+                  return ENGINE.mapping().deleteMapping(mapping.getKey()).delete();
+                }),
             MappingDeleteProcessor.class
           },
           {
@@ -319,7 +324,7 @@ public class CommandDistributionIdempotencyTest {
                 ResourceDeletionIntent.DELETE,
                 () -> {
                   final var process = deployProcess();
-                  ENGINE
+                  return ENGINE
                       .resourceDeletion()
                       .withResourceKey(
                           process
@@ -328,17 +333,13 @@ public class CommandDistributionIdempotencyTest {
                               .getFirst()
                               .getProcessDefinitionKey())
                       .delete();
-                },
-                2),
+                }),
             ResourceDeletionDeleteProcessor.class
           },
           {
             "Role.CREATE is idempotent",
             new Scenario(
-                ValueType.ROLE,
-                RoleIntent.CREATE,
-                CommandDistributionIdempotencyTest::createRole,
-                1),
+                ValueType.ROLE, RoleIntent.CREATE, CommandDistributionIdempotencyTest::createRole),
             RoleCreateProcessor.class
           },
           {
@@ -348,9 +349,8 @@ public class CommandDistributionIdempotencyTest {
                 RoleIntent.DELETE,
                 () -> {
                   final var group = createRole();
-                  ENGINE.role().deleteRole(group.getKey()).delete();
-                },
-                2),
+                  return ENGINE.role().deleteRole(group.getKey()).delete();
+                }),
             RoleDeleteProcessor.class
           },
           {
@@ -360,13 +360,12 @@ public class CommandDistributionIdempotencyTest {
                 RoleIntent.UPDATE,
                 () -> {
                   final var role = createRole();
-                  ENGINE
+                  return ENGINE
                       .role()
                       .updateRole(role.getKey())
                       .withName(UUID.randomUUID().toString())
                       .update();
-                },
-                2),
+                }),
             RoleUpdateProcessor.class
           },
           {
@@ -377,14 +376,13 @@ public class CommandDistributionIdempotencyTest {
                 () -> {
                   final var role = createRole();
                   final var user = createUser();
-                  ENGINE
+                  return ENGINE
                       .role()
                       .addEntity(role.getKey())
                       .withEntityKey(user.getKey())
                       .withEntityType(EntityType.USER)
                       .add();
-                },
-                4),
+                }),
             RoleAddEntityProcessor.class
           },
           {
@@ -401,14 +399,13 @@ public class CommandDistributionIdempotencyTest {
                       .withEntityKey(user.getKey())
                       .withEntityType(EntityType.USER)
                       .add();
-                  ENGINE
+                  return ENGINE
                       .role()
                       .removeEntity(role.getKey())
                       .withEntityKey(user.getKey())
                       .withEntityType(EntityType.USER)
                       .remove();
-                },
-                5),
+                }),
             RoleRemoveEntityProcessor.class
           },
           {
@@ -416,8 +413,7 @@ public class CommandDistributionIdempotencyTest {
             new Scenario(
                 ValueType.SIGNAL,
                 SignalIntent.BROADCAST,
-                () -> ENGINE.signal().withSignalName(UUID.randomUUID().toString()).broadcast(),
-                1),
+                () -> ENGINE.signal().withSignalName(UUID.randomUUID().toString()).broadcast()),
             SignalBroadcastProcessor.class
           },
           {
@@ -425,8 +421,7 @@ public class CommandDistributionIdempotencyTest {
             new Scenario(
                 ValueType.TENANT,
                 TenantIntent.CREATE,
-                CommandDistributionIdempotencyTest::createTenant,
-                1),
+                CommandDistributionIdempotencyTest::createTenant),
             TenantCreateProcessor.class
           },
           {
@@ -436,9 +431,8 @@ public class CommandDistributionIdempotencyTest {
                 TenantIntent.DELETE,
                 () -> {
                   final var tenant = createTenant();
-                  ENGINE.tenant().deleteTenant(tenant.getValue().getTenantId()).delete();
-                },
-                2),
+                  return ENGINE.tenant().deleteTenant(tenant.getValue().getTenantId()).delete();
+                }),
             TenantDeleteProcessor.class
           },
           {
@@ -448,13 +442,12 @@ public class CommandDistributionIdempotencyTest {
                 TenantIntent.UPDATE,
                 () -> {
                   final var tenant = createTenant();
-                  ENGINE
+                  return ENGINE
                       .tenant()
                       .updateTenant(tenant.getValue().getTenantId())
                       .withName(UUID.randomUUID().toString())
                       .update();
-                },
-                2),
+                }),
             TenantUpdateProcessor.class
           },
           {
@@ -465,14 +458,13 @@ public class CommandDistributionIdempotencyTest {
                 () -> {
                   final var tenant = createTenant();
                   final var user = createUser();
-                  ENGINE
+                  return ENGINE
                       .tenant()
                       .addEntity(tenant.getValue().getTenantId())
                       .withEntityId(user.getValue().getUsername())
                       .withEntityType(EntityType.USER)
                       .add();
-                },
-                4),
+                }),
             TenantAddEntityProcessor.class
           },
           {
@@ -489,23 +481,19 @@ public class CommandDistributionIdempotencyTest {
                       .withEntityId(user.getValue().getUsername())
                       .withEntityType(EntityType.USER)
                       .add();
-                  ENGINE
+                  return ENGINE
                       .tenant()
                       .removeEntity(tenant.getValue().getTenantId())
                       .withEntityId(user.getValue().getUsername())
                       .withEntityType(EntityType.USER)
                       .remove();
-                },
-                5),
+                }),
             TenantRemoveEntityProcessor.class
           },
           {
             "User.CREATE is idempotent",
             new Scenario(
-                ValueType.USER,
-                UserIntent.CREATE,
-                CommandDistributionIdempotencyTest::createUser,
-                1),
+                ValueType.USER, UserIntent.CREATE, CommandDistributionIdempotencyTest::createUser),
             UserCreateProcessor.class
           },
           {
@@ -515,9 +503,8 @@ public class CommandDistributionIdempotencyTest {
                 UserIntent.DELETE,
                 () -> {
                   final var user = createUser();
-                  ENGINE.user().deleteUser(user.getValue().getUsername()).delete();
-                },
-                3),
+                  return ENGINE.user().deleteUser(user.getValue().getUsername()).delete();
+                }),
             UserDeleteProcessor.class,
           },
           {
@@ -527,14 +514,13 @@ public class CommandDistributionIdempotencyTest {
                 UserIntent.UPDATE,
                 () -> {
                   final var user = createUser();
-                  ENGINE
+                  return ENGINE
                       .user()
-                      .updateUser(user.getKey())
+                      .updateUser()
                       .withUsername(user.getValue().getUsername())
                       .withName(UUID.randomUUID().toString())
                       .update();
-                },
-                3),
+                }),
             UserUpdateProcessor.class
           },
           {
@@ -542,8 +528,7 @@ public class CommandDistributionIdempotencyTest {
             new Scenario(
                 ValueType.MESSAGE_SUBSCRIPTION,
                 MessageSubscriptionIntent.MIGRATE,
-                CommandDistributionIdempotencyTest::migrateMessageSubscription,
-                2),
+                CommandDistributionIdempotencyTest::migrateMessageSubscription),
             MessageSubscriptionMigrateProcessor.class
           },
           {
@@ -574,71 +559,64 @@ public class CommandDistributionIdempotencyTest {
                                 .setId("id")
                                 .setClaimName("claimName")
                                 .setClaimValue("claimValue"))
-                        .initialize(),
-                1),
+                        .initialize()),
             IdentitySetupInitializeProcessor.class
           }
         });
   }
 
+  @Before
+  public void setup() {
+    interceptor = AcknowledgementInterceptor.create(scenario);
+  }
+
+  @After
+  public void tearDown() {
+    interceptor.close();
+    interceptor = null;
+  }
+
   @Test
   public void test() {
-    DISTRIBUTING_PROCESSORS.remove(processor);
-    // given we intercept the first acknowledgement
-    interceptAcknowledgement(scenario);
+    // when we trigger the scenario and initiate command distribution
+    final var event = scenario.commandSender.sendCommand();
+    final var distributionCommand =
+        RecordingExporter.commandDistributionRecords(CommandDistributionIntent.STARTED)
+            .withSourceRecordPosition(event.getSourceRecordPosition())
+            .filter(a -> scenario.matches(a.getValue()))
+            .getFirst();
 
-    // when distribution is started
-    scenario.commandSender.sendCommand();
-    RecordingExporter.commandDistributionRecords(CommandDistributionIntent.STARTED)
-        .withDistributionIntent(scenario.intent())
-        .withDistributionValueType(scenario.valueType())
-        .await();
+    // given we intercept the first acknowledgement of the command distribution
+    interceptor.enable(distributionCommand);
 
-    // wait until the 2nd partition received the command twice
+    // then we expect the command will written to the target partition twice (retry)
     RecordingExporter.setMaximumWaitTime(100);
     Awaitility.await()
         .untilAsserted(
             () -> {
+              // wait for retry mechanism to trigger second distribution
+              // (while we intercepted the first acknowledgement)
               ENGINE.getClock().addTime(CommandRedistributor.COMMAND_REDISTRIBUTION_INTERVAL);
+
+              // Make sure we have two records on the target partition
               assertThat(
                       RecordingExporter.records()
                           .withPartitionId(2)
-                          .withValueType(scenario.valueType())
-                          .withIntent(scenario.intent())
+                          .withValueType(distributionCommand.getValue().getValueType())
+                          .withIntent(distributionCommand.getValue().getIntent())
+                          .withRecordKey(distributionCommand.getKey())
                           .limit(2))
                   .hasSize(2);
             });
     RecordingExporter.setMaximumWaitTime(5000);
 
-    // then
+    // then we expect the distribution still finishes based on the second (retried) acknowledgement
     assertThat(
             RecordingExporter.commandDistributionRecords(CommandDistributionIntent.FINISHED)
                 .withPartitionId(1)
-                .withDistributionValueType(scenario.valueType())
-                .withDistributionIntent(scenario.intent())
+                .withRecordKey(distributionCommand.getKey())
                 .exists())
         .isTrue();
-  }
-
-  private static void interceptAcknowledgement(final Scenario scenario) {
-    final var hasInterceptedAlready = new AtomicBoolean(false);
-    final var acknowledgementCounter = new AtomicInteger(0);
-    ENGINE.interceptInterPartitionCommands(
-        (receiverPartitionId, valueType, intent, recordKey, command) -> {
-          if (intent != CommandDistributionIntent.ACKNOWLEDGE) {
-            return true;
-          }
-
-          final var currentAcknowledgementCount = acknowledgementCounter.incrementAndGet();
-
-          if (hasInterceptedAlready.get()
-              || currentAcknowledgementCount < scenario.expectedAmountOfDistributions) {
-            return true;
-          }
-
-          hasInterceptedAlready.set(true);
-          return false;
-        });
   }
 
   private static Record<UserRecordValue> createUser() {
@@ -742,14 +720,117 @@ public class CommandDistributionIdempotencyTest {
         .migrate();
   }
 
-  public record Scenario(
-      ValueType valueType,
-      Intent intent,
-      CommandSender commandSender,
-      int expectedAmountOfDistributions) {}
+  private record Scenario(ValueType valueType, Intent intent, CommandSender commandSender) {
+
+    public boolean matches(final CommandDistributionRecordValue record) {
+      return record.getValueType() == valueType && record.getIntent() == intent;
+    }
+  }
+
+  private static class AcknowledgementInterceptor {
+    private final CompletableFuture<Record<CommandDistributionRecordValue>> signal =
+        new CompletableFuture();
+    private final AtomicInteger acknowledgeCount = new AtomicInteger(0);
+
+    private final Scenario scenario;
+
+    public AcknowledgementInterceptor(final Scenario scenario) {
+      this.scenario = scenario;
+    }
+
+    /**
+     * Creates an interceptor for the given scenario and registers it with the engine
+     *
+     * @param scenario to match with the intercepted commands
+     * @return interceptor instance create
+     */
+    public static AcknowledgementInterceptor create(final Scenario scenario) {
+      final var interceptor = new AcknowledgementInterceptor(scenario);
+      ENGINE.interceptInterPartitionCommands(interceptor::shouldPassCommand);
+      return interceptor;
+    }
+
+    /**
+     * Closes the interceptor
+     *
+     * <p>It cancels the future it might wait for to unblock the thread and unregisters it from the
+     * engine
+     */
+    public void close() {
+      ENGINE.interceptInterPartitionCommands(CommandInterceptor.SEND_ALL);
+
+      if (signal.isCompletedExceptionally()) {
+        fail(
+            "Interceptor hasn't received a signal in time, and thus couldn't do any interceptions");
+      } else {
+        signal.cancel(true);
+      }
+    }
+
+    /**
+     * Signals that the initial command distribution started and allows to identify the
+     * acknowledgements we want to intercept
+     *
+     * @param distributionCommand
+     */
+    public void enable(final Record<CommandDistributionRecordValue> distributionCommand) {
+      signal.complete(distributionCommand);
+    }
+
+    /**
+     * This method will be called for all inter-partition commands
+     *
+     * <p>Attention: this also means for commands that are not related to the scenario, or we don't
+     * want to swallow
+     */
+    private boolean shouldPassCommand(
+        final int targetPartitionId,
+        final ValueType valueType,
+        final Intent intent,
+        final Long recordKey,
+        final UnifiedRecordValue commandValue) {
+
+      if (matchesScenario(intent, recordKey, commandValue)) {
+        // intercept the first acknowledgement, pass on the rest
+        return acknowledgeCount.incrementAndGet() > 1;
+      }
+
+      return true;
+    }
+
+    private boolean matchesScenario(
+        final Intent intent, final Long recordKey, final UnifiedRecordValue commandValue) {
+      // allow other inter-partition commands to continue without waiting for the signal
+      if (intent != CommandDistributionIntent.ACKNOWLEDGE) {
+        return false;
+      }
+
+      // allow other distribution commands to continue early and not wait for the signal
+      if (!scenario.matches((CommandDistributionRecordValue) commandValue)) {
+        return false;
+      }
+
+      return getScenarioKey().map(recordKey::equals).orElse(false);
+    }
+
+    private Optional<Long> getScenarioKey() {
+      try {
+        return Optional.of(signal.get(5000, TimeUnit.MILLISECONDS).getKey());
+      } catch (final InterruptedException
+          | ExecutionException
+          | TimeoutException
+          | CancellationException e) {
+        // complete the future, let the commands pass, but make sure to fail the test
+        if (!signal.isDone()) {
+          signal.completeExceptionally(e);
+        }
+        return Optional.empty();
+      }
+    }
+  }
 
   @FunctionalInterface
   interface CommandSender {
-    void sendCommand();
+    Record sendCommand();
   }
 }

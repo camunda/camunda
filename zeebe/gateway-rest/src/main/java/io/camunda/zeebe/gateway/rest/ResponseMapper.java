@@ -224,7 +224,7 @@ public final class ResponseMapper {
               final var detail = new DocumentCreationFailureDetail();
               final var defaultProblemDetail = mapDocumentErrorToProblem(error.error());
               detail.setDetail(defaultProblemDetail.getDetail());
-              detail.setFilename(error.request().metadata().fileName());
+              detail.setFileName(error.request().metadata().fileName());
               response.addFailedDocumentsItem(detail);
             });
     return ResponseEntity.status(HttpStatus.MULTI_STATUS)
@@ -518,7 +518,8 @@ public final class ResponseMapper {
         new MappingRuleCreateResult()
             .mappingKey(KeyUtil.keyToString(record.getMappingKey()))
             .claimName(record.getClaimName())
-            .claimValue(record.getClaimValue());
+            .claimValue(record.getClaimValue())
+            .name(record.getName());
     return new ResponseEntity<>(response, HttpStatus.CREATED);
   }
 

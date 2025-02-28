@@ -11,7 +11,8 @@ import static io.camunda.zeebe.engine.EngineConfiguration.DEFAULT_MAX_ERROR_MESS
 import static io.camunda.zeebe.util.StringUtil.limitString;
 import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
 
-import io.camunda.zeebe.engine.metrics.JobMetrics;
+import io.camunda.zeebe.engine.metrics.EngineMetricsDoc.JobAction;
+import io.camunda.zeebe.engine.metrics.JobProcessingMetrics;
 import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnJobActivationBehavior;
@@ -54,7 +55,7 @@ public final class JobFailProcessor implements TypedRecordProcessor<JobRecord> {
   private final TypedRejectionWriter rejectionWriter;
   private final TypedResponseWriter responseWriter;
   private final KeyGenerator keyGenerator;
-  private final JobMetrics jobMetrics;
+  private final JobProcessingMetrics jobMetrics;
   private final JobBackoffChecker jobBackoffChecker;
   private final VariableBehavior variableBehavior;
   private final BpmnJobActivationBehavior jobActivationBehavior;
@@ -68,7 +69,7 @@ public final class JobFailProcessor implements TypedRecordProcessor<JobRecord> {
       final ProcessingState state,
       final Writers writers,
       final KeyGenerator keyGenerator,
-      final JobMetrics jobMetrics,
+      final JobProcessingMetrics jobMetrics,
       final JobBackoffChecker jobBackoffChecker,
       final BpmnBehaviors bpmnBehaviors,
       final AuthorizationCheckBehavior authCheckBehavior) {
@@ -129,7 +130,7 @@ public final class JobFailProcessor implements TypedRecordProcessor<JobRecord> {
     }
     stateWriter.appendFollowUpEvent(jobKey, JobIntent.FAILED, failedJob);
     responseWriter.writeEventOnCommand(jobKey, JobIntent.FAILED, failedJob, record);
-    jobMetrics.jobFailed(failedJob.getType(), failedJob.getJobKind());
+    jobMetrics.countJobEvent(JobAction.FAILED, failedJob.getJobKind(), failedJob.getType());
 
     setFailedVariables(failedJob);
 

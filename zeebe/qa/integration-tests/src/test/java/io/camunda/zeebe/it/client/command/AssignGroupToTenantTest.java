@@ -25,7 +25,7 @@ import org.junit.jupiter.api.Test;
 @ZeebeIntegration
 class AssignGroupToTenantTest {
 
-  private static final String TENANT_ID = "tenant-id";
+  private static final String TENANT_ID = "tenantId";
 
   @TestZeebe
   private final TestStandaloneBroker zeebe =

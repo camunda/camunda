@@ -16,13 +16,12 @@ import io.camunda.security.configuration.ConfiguredUser;
 import io.camunda.zeebe.engine.processing.user.IdentitySetupInitializer;
 import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.record.Assertions;
-import io.camunda.zeebe.protocol.record.RecordType;
-import io.camunda.zeebe.protocol.record.intent.ClockIntent;
 import io.camunda.zeebe.protocol.record.intent.IdentitySetupIntent;
 import io.camunda.zeebe.qa.util.actuator.PartitionsActuator;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotId;
+import io.camunda.zeebe.test.util.Strings;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import java.nio.file.Path;
 import java.time.Duration;
@@ -56,7 +55,7 @@ final class IdentitySetupInitializerIT {
   @ValueSource(booleans = {true, false})
   void shouldInitializeIdentity(final boolean enableAuthorizations) {
     // given a broker with authorization enabled or disabled
-    final var username = UUID.randomUUID().toString();
+    final var username = Strings.newRandomValidUsername();
     final var name = UUID.randomUUID().toString();
     final var password = UUID.randomUUID().toString();
     final var email = UUID.randomUUID().toString();
@@ -104,41 +103,28 @@ final class IdentitySetupInitializerIT {
     client.newClockResetCommand().send();
 
     final var initializeRecords =
-        RecordingExporter.records()
-            .limit(
-                r ->
-                    r.getIntent() == ClockIntent.RESET
-                        && r.getRecordType() == RecordType.COMMAND_REJECTION)
-            .identitySetupRecords()
-            .withIntent(IdentitySetupIntent.INITIALIZED)
-            .toList();
+        RecordingExporter.identitySetupRecords(IdentitySetupIntent.INITIALIZE).limit(2).toList();
 
     assertThat(initializeRecords)
         .describedAs("One partition should initialize identity and distribute it to the other")
         .hasSize(2);
 
-    final var firstRecord = initializeRecords.getFirst();
-    final var secondRecord = initializeRecords.getLast();
+    final var partition1Record =
+        initializeRecords.stream().filter(r -> r.getKey() == -1L).findFirst().orElseThrow();
+    final var partition2Record =
+        initializeRecords.stream().filter(r -> r.getKey() != -1L).findFirst().orElseThrow();
 
-    assertThat(firstRecord.getPartitionId()).isEqualTo(Protocol.DEPLOYMENT_PARTITION);
-    assertThat(Protocol.decodePartitionId(firstRecord.getValue().getDefaultRole().getRoleKey()))
+    assertThat(partition1Record.getPartitionId()).isEqualTo(Protocol.DEPLOYMENT_PARTITION);
+    assertThat(partition2Record.getPartitionId()).isNotEqualTo(Protocol.DEPLOYMENT_PARTITION);
+    assertThat(
+            Protocol.decodePartitionId(partition2Record.getValue().getDefaultRole().getRoleKey()))
         .describedAs("Role key should be generated on the deployment partition")
         .isEqualTo(Protocol.DEPLOYMENT_PARTITION);
     assertThat(
-            Protocol.decodePartitionId(firstRecord.getValue().getUsers().getFirst().getUserKey()))
+            Protocol.decodePartitionId(
+                partition2Record.getValue().getUsers().getFirst().getUserKey()))
         .describedAs("User key should be generated on the deployment partition")
         .isEqualTo(Protocol.DEPLOYMENT_PARTITION);
-
-    assertThat(secondRecord.getPartitionId()).isNotEqualTo(Protocol.DEPLOYMENT_PARTITION);
-    assertThat(Protocol.decodePartitionId(secondRecord.getValue().getDefaultRole().getRoleKey()))
-        .describedAs("Role key should be generated on the deployment partition")
-        .isEqualTo(Protocol.DEPLOYMENT_PARTITION);
-    assertThat(
-            Protocol.decodePartitionId(secondRecord.getValue().getUsers().getFirst().getUserKey()))
-        .describedAs("User key should be generated on the deployment partition")
-        .isEqualTo(Protocol.DEPLOYMENT_PARTITION);
-
-    Assertions.assertThat(firstRecord.getValue()).isEqualTo(secondRecord.getValue());
   }
 
   @Test

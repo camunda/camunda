@@ -19,12 +19,12 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.github.tomakehurst.wiremock.http.RequestMethod;
-import io.camunda.client.protocol.rest.DeploymentDecision;
-import io.camunda.client.protocol.rest.DeploymentDecisionRequirements;
-import io.camunda.client.protocol.rest.DeploymentForm;
-import io.camunda.client.protocol.rest.DeploymentMetadata;
-import io.camunda.client.protocol.rest.DeploymentProcess;
-import io.camunda.client.protocol.rest.DeploymentResponse;
+import io.camunda.client.protocol.rest.DeploymentDecisionRequirementsResult;
+import io.camunda.client.protocol.rest.DeploymentDecisionResult;
+import io.camunda.client.protocol.rest.DeploymentFormResult;
+import io.camunda.client.protocol.rest.DeploymentMetadataResult;
+import io.camunda.client.protocol.rest.DeploymentProcessResult;
+import io.camunda.client.protocol.rest.DeploymentResult;
 import io.camunda.client.protocol.rest.ProblemDetail;
 import io.camunda.zeebe.client.api.response.DeploymentEvent;
 import io.camunda.zeebe.client.impl.command.StreamUtil;
@@ -205,16 +205,16 @@ public class DeployResourceRestTest extends ClientRestTest {
     final String tenantId = "test-tenant";
     final String filename = DeployResourceTest.class.getResource(BPMN_1_FILENAME).getPath();
     gatewayService.onDeploymentsRequest(
-        new DeploymentResponse()
-            .deploymentKey(key)
+        new DeploymentResult()
+            .deploymentKey(String.valueOf(key))
             .tenantId(tenantId)
             .addDeploymentsItem(
-                new DeploymentMetadata()
+                new DeploymentMetadataResult()
                     .processDefinition(
-                        new DeploymentProcess()
+                        new DeploymentProcessResult()
                             .processDefinitionId(BPMN_1_PROCESS_ID)
                             .processDefinitionVersion(12)
-                            .processDefinitionKey(423L)
+                            .processDefinitionKey("423")
                             .tenantId(tenantId)
                             .resourceName(filename))));
 
@@ -242,25 +242,25 @@ public class DeployResourceRestTest extends ClientRestTest {
     final String filename1 = BPMN_1_FILENAME.substring(1);
     final String filename2 = BPMN_2_FILENAME.substring(1);
     gatewayService.onDeploymentsRequest(
-        new DeploymentResponse()
-            .deploymentKey(key)
+        new DeploymentResult()
+            .deploymentKey(String.valueOf(key))
             .tenantId(tenantId)
             .addDeploymentsItem(
-                new DeploymentMetadata()
+                new DeploymentMetadataResult()
                     .processDefinition(
-                        new DeploymentProcess()
+                        new DeploymentProcessResult()
                             .processDefinitionId(BPMN_1_PROCESS_ID)
                             .processDefinitionVersion(1)
-                            .processDefinitionKey(1L)
+                            .processDefinitionKey("1")
                             .tenantId(tenantId)
                             .resourceName(filename1)))
             .addDeploymentsItem(
-                new DeploymentMetadata()
+                new DeploymentMetadataResult()
                     .processDefinition(
-                        new DeploymentProcess()
+                        new DeploymentProcessResult()
                             .processDefinitionId(BPMN_2_PROCESS_ID)
                             .processDefinitionVersion(1)
-                            .processDefinitionKey(2L)
+                            .processDefinitionKey("2")
                             .tenantId(tenantId)
                             .resourceName(filename2))));
 
@@ -293,39 +293,39 @@ public class DeployResourceRestTest extends ClientRestTest {
     final long decisionKey1 = 345L;
     final long decisionKey2 = 456L;
     gatewayService.onDeploymentsRequest(
-        new DeploymentResponse()
-            .deploymentKey(deploymentKey)
+        new DeploymentResult()
+            .deploymentKey(String.valueOf(deploymentKey))
             .tenantId(tenantId)
             .addDeploymentsItem(
-                new DeploymentMetadata()
+                new DeploymentMetadataResult()
                     .decisionDefinition(
-                        new DeploymentDecision()
+                        new DeploymentDecisionResult()
                             .decisionDefinitionId(DMN_DECISION_ID_1)
                             .name(DMN_DECISION_NAME_1)
                             .version(version)
-                            .decisionDefinitionKey(decisionKey1)
+                            .decisionDefinitionKey(String.valueOf(decisionKey1))
                             .decisionRequirementsId(DMN_DECISION_REQUIREMENTS_ID)
-                            .decisionRequirementsKey(decisionRequirementsKey)
+                            .decisionRequirementsKey(String.valueOf(decisionRequirementsKey))
                             .tenantId(tenantId)))
             .addDeploymentsItem(
-                new DeploymentMetadata()
+                new DeploymentMetadataResult()
                     .decisionDefinition(
-                        new DeploymentDecision()
+                        new DeploymentDecisionResult()
                             .decisionDefinitionId(DMN_DECISION_ID_2)
                             .name(DMN_DECISION_NAME_2)
                             .version(version)
-                            .decisionDefinitionKey(decisionKey2)
+                            .decisionDefinitionKey(String.valueOf(decisionKey2))
                             .decisionRequirementsId(DMN_DECISION_REQUIREMENTS_ID)
-                            .decisionRequirementsKey(decisionRequirementsKey)
+                            .decisionRequirementsKey(String.valueOf(decisionRequirementsKey))
                             .tenantId(tenantId)))
             .addDeploymentsItem(
-                new DeploymentMetadata()
+                new DeploymentMetadataResult()
                     .decisionRequirements(
-                        new DeploymentDecisionRequirements()
+                        new DeploymentDecisionRequirementsResult()
                             .decisionRequirementsId(DMN_DECISION_REQUIREMENTS_ID)
                             .decisionRequirementsName(DMN_DECISION_REQUIREMENTS_NAME)
                             .version(version)
-                            .decisionRequirementsKey(decisionRequirementsKey)
+                            .decisionRequirementsKey(String.valueOf(decisionRequirementsKey))
                             .resourceName(filename)
                             .tenantId(tenantId))));
 
@@ -391,16 +391,16 @@ public class DeployResourceRestTest extends ClientRestTest {
     final long formKey = 234L;
     final String formId = "formId";
     gatewayService.onDeploymentsRequest(
-        new DeploymentResponse()
-            .deploymentKey(deploymentKey)
+        new DeploymentResult()
+            .deploymentKey(String.valueOf(deploymentKey))
             .tenantId(DEFAULT_TENANT)
             .addDeploymentsItem(
-                new DeploymentMetadata()
+                new DeploymentMetadataResult()
                     .form(
-                        new DeploymentForm()
+                        new DeploymentFormResult()
                             .formId(formId)
                             .version(version)
-                            .formKey(formKey)
+                            .formKey(String.valueOf(formKey))
                             .resourceName(filename)
                             .tenantId(DEFAULT_TENANT))));
 
@@ -423,25 +423,25 @@ public class DeployResourceRestTest extends ClientRestTest {
     final String formId1 = "formId1";
     final String formId2 = "formId2";
     gatewayService.onDeploymentsRequest(
-        new DeploymentResponse()
-            .deploymentKey(key)
+        new DeploymentResult()
+            .deploymentKey(String.valueOf(key))
             .tenantId(DEFAULT_TENANT)
             .addDeploymentsItem(
-                new DeploymentMetadata()
+                new DeploymentMetadataResult()
                     .form(
-                        new DeploymentForm()
+                        new DeploymentFormResult()
                             .formId(formId1)
                             .version(1)
-                            .formKey(1L)
+                            .formKey("1")
                             .resourceName(filename1)
                             .tenantId(DEFAULT_TENANT)))
             .addDeploymentsItem(
-                new DeploymentMetadata()
+                new DeploymentMetadataResult()
                     .form(
-                        new DeploymentForm()
+                        new DeploymentFormResult()
                             .formId(formId2)
                             .version(1)
-                            .formKey(2L)
+                            .formKey("2")
                             .resourceName(filename2)
                             .tenantId(DEFAULT_TENANT))));
 

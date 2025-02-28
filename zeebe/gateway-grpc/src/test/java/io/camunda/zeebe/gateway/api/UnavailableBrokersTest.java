@@ -90,7 +90,8 @@ class UnavailableBrokersTest {
             actorScheduler,
             topologyManager,
             new BrokerClientRequestMetrics(REGISTRY));
-    jobStreamClient = new JobStreamClientImpl(actorScheduler, cluster.getCommunicationService());
+    jobStreamClient =
+        new JobStreamClientImpl(actorScheduler, cluster.getCommunicationService(), REGISTRY);
     jobStreamClient.start().join();
 
     // before we can add the job stream client as a topology listener, we need to wait for the

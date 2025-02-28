@@ -108,7 +108,7 @@
     </dependency>
     <dependency>
       <groupId>org.keycloak</groupId>
-      <artifactId>keycloak-core</artifactId>
+      <artifactId>keycloak-client-common-synced</artifactId>
     </dependency>
     <dependency>
       <groupId>org.elasticsearch.client</groupId>

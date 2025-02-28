@@ -7,6 +7,8 @@
  */
 package io.camunda.exporter.rdbms.handlers;
 
+import static io.camunda.exporter.rdbms.utils.ExportUtil.buildTreePath;
+
 import io.camunda.db.rdbms.write.domain.IncidentDbModel;
 import io.camunda.db.rdbms.write.service.IncidentWriter;
 import io.camunda.exporter.rdbms.RdbmsExportHandler;
@@ -37,8 +39,6 @@ public class IncidentExportHandler implements RdbmsExportHandler<IncidentRecordV
 
   @Override
   public void export(final Record<IncidentRecordValue> record) {
-    final var value = record.getValue();
-
     if (record.getIntent().equals(IncidentIntent.CREATED)) {
       incidentWriter.create(map(record));
     } else if (record.getIntent().equals(IncidentIntent.RESOLVED)) {
@@ -68,6 +68,9 @@ public class IncidentExportHandler implements RdbmsExportHandler<IncidentRecordV
         .errorMessage(value.getErrorMessage())
         .creationDate(DateUtil.toOffsetDateTime(record.getTimestamp()))
         .jobKey(mapIfGreaterZero(value.getJobKey()))
+        .treePath(
+            buildTreePath(
+                record.getKey(), value.getProcessInstanceKey(), value.getElementInstancePath()))
         .tenantId(value.getTenantId())
         .build();
   }

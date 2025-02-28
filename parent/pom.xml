@@ -41,12 +41,12 @@
     <version.bouncycastle>1.79</version.bouncycastle>
     <version.camunda>7.22.0</version.camunda>
     <version.camunda-license-check>2.10.0</version.camunda-license-check>
-    <version.checkstyle>10.21.2</version.checkstyle>
-    <version.commons-beanutils>1.9.4</version.commons-beanutils>
+    <version.checkstyle>10.21.3</version.checkstyle>
+    <version.commons-beanutils>1.10.1</version.commons-beanutils>
     <version.commons-lang>3.17.0</version.commons-lang>
     <version.commons-logging>1.3.5</version.commons-logging>
     <version.commons-math>3.6.1</version.commons-math>
-    <version.commons-codec>1.17.2</version.commons-codec>
+    <version.commons-codec>1.18.0</version.commons-codec>
     <version.commons-compress>1.27.1</version.commons-compress>
     <version.commons-validator>1.9.0</version.commons-validator>
     <version.zstd-jni>1.5.7-1</version.zstd-jni>
@@ -55,8 +55,8 @@
     <version.docker-java-api>3.4.1</version.docker-java-api>
     <version.elasticsearch>8.13.4</version.elasticsearch>
     <version.error-prone>2.36.0</version.error-prone>
-    <version.grpc>1.69.1</version.grpc>
-    <version.gson>2.11.0</version.gson>
+    <version.grpc>1.70.0</version.grpc>
+    <version.gson>2.12.1</version.gson>
     <version.guava>33.4.0-jre</version.guava>
     <version.hamcrest>3.0</version.hamcrest>
     <version.httpasyncclient>4.1.5</version.httpasyncclient>
@@ -74,19 +74,19 @@
     <version.mockito>5.15.2</version.mockito>
     <version.model>7.7.0</version.model>
     <version.msgpack>0.9.9</version.msgpack>
-    <version.netty>4.1.118.Final</version.netty>
+    <version.netty>4.1.119.Final</version.netty>
     <version.objenesis>3.4</version.objenesis>
     <version.opensearch>2.14.0</version.opensearch>
     <version.opensearch-java>2.19.0</version.opensearch-java>
     <version.opensearch.testcontainers>2.1.2</version.opensearch.testcontainers>
     <version.prometheus>0.16.0</version.prometheus>
     <version.protobuf>4.29.3</version.protobuf>
-    <version.protobuf-common>2.50.1</version.protobuf-common>
+    <version.protobuf-common>2.53.0</version.protobuf-common>
     <version.micrometer>1.14.4</version.micrometer>
     <version.rocksdbjni>9.4.0</version.rocksdbjni>
     <version.sbe>1.34.1</version.sbe>
     <version.scala>2.13.16</version.scala>
-    <version.slf4j>2.0.16</version.slf4j>
+    <version.slf4j>2.0.17</version.slf4j>
     <version.snakeyaml>2.3</version.snakeyaml>
     <version.javax>1.3.2</version.javax>
     <version.wiremock>3.10.0</version.wiremock>
@@ -111,6 +111,7 @@
     <version.jqwik>1.9.2</version.jqwik>
     <version.jmock>2.13.1</version.jmock>
     <version.jmh>1.37</version.jmh>
+    <version.json-smart>2.5.2</version.json-smart>
     <version.byte-buddy>1.15.11</version.byte-buddy>
     <version.revapi>0.28.1</version.revapi>
     <version.resilience4j>2.3.0</version.resilience4j>
@@ -127,7 +128,7 @@
     <version.jnr-posix>3.1.20</version.jnr-posix>
     <version.zpt>8.6.9</version.zpt>
     <version.feign>13.5</version.feign>
-    <version.google-sdk>26.53.0</version.google-sdk>
+    <version.google-sdk>26.55.0</version.google-sdk>
     <version.azure-sdk>1.2.31</version.azure-sdk>
     <version.awssdk>2.29.50</version.awssdk>
     <version.toxiproxy>2.1.7</version.toxiproxy>
@@ -137,7 +138,7 @@
     <version.jackson-annotations>2.18.2</version.jackson-annotations>
     <version.swagger-annotations>2.2.28</version.swagger-annotations>
     <version.checker-qual>3.48.4</version.checker-qual>
-    <version.java-jwt>4.4.0</version.java-jwt>
+    <version.java-jwt>4.5.0</version.java-jwt>
     <version.reactive-streams>1.0.4</version.reactive-streams>
     <version.postgresql>42.7.5</version.postgresql>
     <version.h2>2.3.232</version.h2>
@@ -165,7 +166,7 @@
     <version.aws-java-sdk>1.12.782</version.aws-java-sdk>
     <version.elasticsearch-test-container>1.20.5</version.elasticsearch-test-container>
     <version.postgres-test-container>1.20.5</version.postgres-test-container>
-    <version.elasticsearch7>7.17.27</version.elasticsearch7>
+    <version.elasticsearch7>7.17.28</version.elasticsearch7>
     <!-- the lucene version must be coupled with version.elasticsearch7 -->
     <version.lucene>8.11.3</version.lucene>
     <version.hdr-histogram>2.2.2</version.hdr-histogram>
@@ -179,12 +180,13 @@
     <version.auth0>1.45.1</version.auth0>
     <version.auth0.commons>1.11.0</version.auth0.commons>
     <version.auth0.jwt>4.4.0</version.auth0.jwt>
-    <version.okio-jvm>3.9.1</version.okio-jvm>
+    <version.okio-jvm>3.10.2</version.okio-jvm>
     <version.jwks-rsa>0.22.1</version.jwks-rsa>
     <version.guava.annotations>r03</version.guava.annotations>
-    <version.nimbus-jose-jwt>10.0.1</version.nimbus-jose-jwt>
-    <version.nimbus-sdk>11.21.2</version.nimbus-sdk>
-    <version.keycloak>25.0.6</version.keycloak>
+    <version.nimbus-jose-jwt>10.0.2</version.nimbus-jose-jwt>
+    <version.nimbus-sdk>11.23.1</version.nimbus-sdk>
+    <version.keycloak>26.0.6</version.keycloak>
+    <version.keycloak-client>26.0.4</version.keycloak-client>
     <version.jna>5.16.0</version.jna>
     <version.jopt-simple>5.0.4</version.jopt-simple>
     <version.mybatis-spring>3.0.4</version.mybatis-spring>
@@ -1874,7 +1876,7 @@
       <dependency>
         <groupId>net.minidev</groupId>
         <artifactId>json-smart</artifactId>
-        <version>2.4.11</version>
+        <version>${version.json-smart}</version>
       </dependency>
 
       <!-- needed for tests in elasticsearch-exporter -->
@@ -2007,12 +2009,17 @@
       <dependency>
         <groupId>org.keycloak</groupId>
         <artifactId>keycloak-admin-client</artifactId>
-        <version>${version.keycloak}</version>
+        <version>${version.keycloak-client}</version>
       </dependency>
       <dependency>
         <groupId>org.keycloak</groupId>
         <artifactId>keycloak-core</artifactId>
         <version>${version.keycloak}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.keycloak</groupId>
+        <artifactId>keycloak-client-common-synced</artifactId>
+        <version>${version.keycloak-client}</version>
       </dependency>
 
       <!-- Auth0 and it's direct dependencies -->

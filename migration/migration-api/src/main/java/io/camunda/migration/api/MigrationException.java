@@ -13,6 +13,10 @@ public class MigrationException extends RuntimeException {
 
   @Serial private static final long serialVersionUID = 845931450938L;
 
+  public MigrationException(final Throwable cause) {
+    super(cause);
+  }
+
   public MigrationException(final String message) {
     super(message);
   }

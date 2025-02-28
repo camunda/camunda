@@ -7,11 +7,14 @@
  */
 package io.camunda.zeebe.gateway.rest;
 
+import static io.camunda.zeebe.gateway.rest.util.KeyUtil.tryParseLong;
 import static io.camunda.zeebe.gateway.rest.validator.AuthorizationRequestValidator.validateAuthorizationRequest;
 import static io.camunda.zeebe.gateway.rest.validator.ClockValidator.validateClockPinRequest;
 import static io.camunda.zeebe.gateway.rest.validator.DocumentValidator.validateDocumentLinkParams;
 import static io.camunda.zeebe.gateway.rest.validator.DocumentValidator.validateDocumentMetadata;
 import static io.camunda.zeebe.gateway.rest.validator.ElementRequestValidator.validateVariableRequest;
+import static io.camunda.zeebe.gateway.rest.validator.ErrorMessages.ERROR_MESSAGE_EMPTY_ATTRIBUTE;
+import static io.camunda.zeebe.gateway.rest.validator.ErrorMessages.ERROR_MESSAGE_INVALID_ATTRIBUTE_VALUE;
 import static io.camunda.zeebe.gateway.rest.validator.EvaluateDecisionRequestValidator.validateEvaluateDecisionRequest;
 import static io.camunda.zeebe.gateway.rest.validator.JobRequestValidator.validateJobActivationRequest;
 import static io.camunda.zeebe.gateway.rest.validator.JobRequestValidator.validateJobErrorRequest;
@@ -24,6 +27,8 @@ import static io.camunda.zeebe.gateway.rest.validator.ProcessInstanceRequestVali
 import static io.camunda.zeebe.gateway.rest.validator.ProcessInstanceRequestValidator.validateCreateProcessInstanceRequest;
 import static io.camunda.zeebe.gateway.rest.validator.ProcessInstanceRequestValidator.validateMigrateProcessInstanceRequest;
 import static io.camunda.zeebe.gateway.rest.validator.ProcessInstanceRequestValidator.validateModifyProcessInstanceRequest;
+import static io.camunda.zeebe.gateway.rest.validator.RequestValidator.createProblemDetail;
+import static io.camunda.zeebe.gateway.rest.validator.RequestValidator.validate;
 import static io.camunda.zeebe.gateway.rest.validator.ResourceRequestValidator.validateResourceDeletion;
 import static io.camunda.zeebe.gateway.rest.validator.SignalRequestValidator.validateSignalBroadcastRequest;
 import static io.camunda.zeebe.gateway.rest.validator.UserTaskRequestValidator.validateAssignmentRequest;
@@ -37,6 +42,8 @@ import io.camunda.authentication.entity.CamundaUser;
 import io.camunda.authentication.tenant.TenantAttributeHolder;
 import io.camunda.document.api.DocumentMetadataModel;
 import io.camunda.search.entities.RoleEntity;
+import io.camunda.search.filter.AdHocSubprocessActivityFilter;
+import io.camunda.search.query.AdHocSubprocessActivityQuery;
 import io.camunda.security.auth.Authentication;
 import io.camunda.security.auth.Authentication.Builder;
 import io.camunda.service.AuthorizationServices.CreateAuthorizationRequest;
@@ -59,6 +66,7 @@ import io.camunda.service.TenantServices.TenantDTO;
 import io.camunda.service.UserServices.UserDTO;
 import io.camunda.zeebe.auth.Authorization;
 import io.camunda.zeebe.auth.ClaimTransformer;
+import io.camunda.zeebe.gateway.protocol.rest.AdHocSubprocessActivitySearchQuery;
 import io.camunda.zeebe.gateway.protocol.rest.AuthorizationRequest;
 import io.camunda.zeebe.gateway.protocol.rest.CancelProcessInstanceRequest;
 import io.camunda.zeebe.gateway.protocol.rest.Changeset;
@@ -125,6 +133,7 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import org.agrona.concurrent.UnsafeBuffer;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
@@ -135,11 +144,8 @@ import org.springframework.web.multipart.MultipartFile;
 public class RequestMapper {
 
   public static final String VND_CAMUNDA_API_KEYS_STRING_JSON = "vnd.camunda.api.keys.string+json";
-  public static final String VND_CAMUNDA_API_KEYS_NUMBER_JSON = "vnd.camunda.api.keys.number+json";
   public static final String MEDIA_TYPE_KEYS_STRING_VALUE =
       "application/" + VND_CAMUNDA_API_KEYS_STRING_JSON;
-  public static final String MEDIA_TYPE_KEYS_NUMBER_VALUE =
-      "application/" + VND_CAMUNDA_API_KEYS_NUMBER_JSON;
 
   public static CompleteUserTaskRequest toUserTaskCompletionRequest(
       final UserTaskCompletionRequest completionRequest, final long userTaskKey) {
@@ -785,6 +791,41 @@ public class RequestMapper {
                 tenantId,
                 tenantUpdateRequest.getName(),
                 tenantUpdateRequest.getDescription()));
+  }
+
+  public static Either<ProblemDetail, AdHocSubprocessActivityQuery> toAdHocSubprocessActivityQuery(
+      final AdHocSubprocessActivitySearchQuery request) {
+    final var filter = request.getFilter();
+    if (filter == null) {
+      return Either.left(
+          createProblemDetail(List.of(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("filter"))).get());
+    }
+
+    final var processDefinitionKey = tryParseLong(filter.getProcessDefinitionKey());
+
+    return getResult(
+        validate(
+            violations -> {
+              if (processDefinitionKey.isEmpty() || processDefinitionKey.get() <= 0) {
+                violations.add(
+                    ERROR_MESSAGE_INVALID_ATTRIBUTE_VALUE.formatted(
+                        "filter.processDefinitionKey",
+                        filter.getProcessDefinitionKey(),
+                        "a non-negative numeric value"));
+              }
+
+              if (StringUtils.isBlank(filter.getAdHocSubprocessId())) {
+                violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("filter.adHocSubprocessId"));
+              }
+            }),
+        () ->
+            AdHocSubprocessActivityQuery.builder()
+                .filter(
+                    AdHocSubprocessActivityFilter.builder()
+                        .processDefinitionKey(processDefinitionKey.get())
+                        .adHocSubprocessId(filter.getAdHocSubprocessId())
+                        .build())
+                .build());
   }
 
   private static List<ProcessInstanceModificationActivateInstruction>

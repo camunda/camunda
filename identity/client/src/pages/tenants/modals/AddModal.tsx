@@ -6,6 +6,7 @@
  * You may not use this file except in compliance with the Camunda License 1.0.
  */
 import { FC, useState } from "react";
+import { InlineNotification } from "@carbon/react";
 import TextField from "src/components/form/TextField";
 import { useApiCall } from "src/utility/api";
 import useTranslate from "src/utility/localization";
@@ -16,7 +17,9 @@ import { useNotifications } from "src/components/notifications";
 const AddTenantModal: FC<UseModalProps> = ({ open, onClose, onSuccess }) => {
   const { t } = useTranslate("tenants");
   const { enqueueNotification } = useNotifications();
-  const [apiCall, { loading, namedErrors }] = useApiCall(createTenant);
+  const [apiCall, { loading, error }] = useApiCall(createTenant, {
+    suppressErrorNotification: true,
+  });
   const [name, setName] = useState("");
   const [tenantId, setTenantId] = useState("");
   const [description, setDescription] = useState("");
@@ -57,7 +60,6 @@ const AddTenantModal: FC<UseModalProps> = ({ open, onClose, onSuccess }) => {
         placeholder={t("Enter tenant name")}
         onChange={setName}
         value={name}
-        errors={namedErrors?.name}
         autoFocus
       />
       <TextField
@@ -65,15 +67,22 @@ const AddTenantModal: FC<UseModalProps> = ({ open, onClose, onSuccess }) => {
         placeholder={t("Enter tenant ID")}
         onChange={setTenantId}
         value={tenantId}
-        errors={namedErrors?.tenantId}
       />
       <TextField
         label={t("Description")}
         value={description}
         placeholder={t("Enter a tenant description")}
         onChange={setDescription}
-        errors={namedErrors?.description}
       />
+      {error && (
+        <InlineNotification
+          kind="error"
+          role="alert"
+          lowContrast
+          title={error.title}
+          subtitle={error.detail}
+        />
+      )}
     </FormModal>
   );
 };

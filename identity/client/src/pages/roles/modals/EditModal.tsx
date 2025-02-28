@@ -6,6 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 import { FC, useState } from "react";
+import { InlineNotification } from "@carbon/react";
 import TextField from "src/components/form/TextField";
 import { useApiCall } from "src/utility/api";
 import useTranslate from "src/utility/localization";
@@ -21,7 +22,9 @@ const EditModal: FC<UseEntityModalProps<Role>> = ({
   onSuccess,
 }) => {
   const { t } = useTranslate();
-  const [apiCall, { loading, namedErrors }] = useApiCall(updateRole);
+  const [apiCall, { loading, error }] = useApiCall(updateRole, {
+    suppressErrorNotification: true,
+  });
   const [name, setName] = useState(role.name);
   const [description, setDescription] = useState(role.description);
   const { permissions, setPermissions, onSelect, onUnselect, availableItems } =
@@ -54,7 +57,6 @@ const EditModal: FC<UseEntityModalProps<Role>> = ({
         value={name}
         placeholder={t("Name")}
         onChange={setName}
-        errors={namedErrors?.name}
         autoFocus
       />
       <TextField
@@ -62,7 +64,6 @@ const EditModal: FC<UseEntityModalProps<Role>> = ({
         value={description}
         placeholder={t("Role description")}
         onChange={setDescription}
-        errors={namedErrors?.description}
       />
       <EntityList
         isInsideModal
@@ -80,6 +81,15 @@ const EditModal: FC<UseEntityModalProps<Role>> = ({
           isSelected: ({ permission }) => permissions.includes(permission),
         }}
       />
+      {error && (
+        <InlineNotification
+          kind="error"
+          role="alert"
+          lowContrast
+          title={error.title}
+          subtitle={error.detail}
+        />
+      )}
     </FormModal>
   );
 };

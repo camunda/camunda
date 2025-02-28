@@ -7,11 +7,11 @@
  */
 package io.camunda.zeebe.it.client;
 
-import static io.camunda.zeebe.gateway.metrics.LongPollingMetrics.RequestsQueuedKeyNames.TYPE;
+import static io.camunda.zeebe.gateway.metrics.LongPollingMetricsDoc.RequestsQueuedKeyNames.TYPE;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.client.CamundaClient;
-import io.camunda.zeebe.gateway.metrics.LongPollingMetrics.LongPollingMetricsDoc;
+import io.camunda.zeebe.gateway.metrics.LongPollingMetricsDoc;
 import io.camunda.zeebe.qa.util.actuator.JobStreamActuator;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import io.camunda.zeebe.qa.util.jobstream.JobStreamActuatorAssert;
@@ -27,15 +27,11 @@ import org.junit.jupiter.api.Test;
 
 @ZeebeIntegration
 final class ClientCancelPendingCommandTest {
-  @TestZeebe(initMethod = "initTestStandaloneBroker")
-  private static TestStandaloneBroker zeebe;
+  @TestZeebe
+  private static final TestStandaloneBroker ZEEBE =
+      new TestStandaloneBroker().withUnauthenticatedAccess().withUnauthenticatedAccess();
 
-  @AutoClose private final CamundaClient client = zeebe.newClientBuilder().build();
-
-  @SuppressWarnings("unused")
-  static void initTestStandaloneBroker() {
-    zeebe = new TestStandaloneBroker().withUnauthenticatedAccess().withUnauthenticatedAccess();
-  }
+  @AutoClose private final CamundaClient client = ZEEBE.newClientBuilder().build();
 
   @Test
   void shouldCancelCommandOnFutureCancellation() {
@@ -47,7 +43,7 @@ final class ClientCancelPendingCommandTest {
             .maxJobsToActivate(10)
             .requestTimeout(Duration.ofHours(1))
             .send();
-    final var registry = zeebe.bean(MeterRegistry.class);
+    final var registry = ZEEBE.bean(MeterRegistry.class);
     final var blockedRequestCount = LongPollingMetricsDoc.REQUESTS_QUEUED_CURRENT;
     Awaitility.await("until we have one polling client")
         .untilAsserted(
@@ -96,7 +92,7 @@ final class ClientCancelPendingCommandTest {
   }
 
   private void awaitStreamRegistered(final String workerName) {
-    final var actuator = JobStreamActuator.of(zeebe);
+    final var actuator = JobStreamActuator.of(ZEEBE);
     Awaitility.await("until a stream with the worker name '%s' is registered".formatted(workerName))
         .untilAsserted(
             () ->
@@ -106,7 +102,7 @@ final class ClientCancelPendingCommandTest {
   }
 
   private void awaitStreamRemoved(final String workerName) {
-    final var actuator = JobStreamActuator.of(zeebe);
+    final var actuator = JobStreamActuator.of(ZEEBE);
     Awaitility.await("until no stream with worker name '%s' is registered".formatted(workerName))
         .untilAsserted(
             () ->

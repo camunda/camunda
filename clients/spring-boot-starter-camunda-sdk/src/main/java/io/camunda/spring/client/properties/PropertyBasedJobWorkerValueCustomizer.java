@@ -26,6 +26,7 @@ import io.camunda.client.api.response.ActivatedJob;
 import io.camunda.spring.client.annotation.customizer.JobWorkerValueCustomizer;
 import io.camunda.spring.client.annotation.value.JobWorkerValue;
 import io.camunda.spring.client.bean.CopyNotNullBeanUtilsBean;
+import io.camunda.spring.client.bean.CopyWithProtectionBeanUtilsBean;
 import io.camunda.spring.client.bean.MethodInfo;
 import io.camunda.spring.client.bean.ParameterInfo;
 import java.lang.reflect.Field;
@@ -45,7 +46,10 @@ import org.springframework.util.ReflectionUtils;
 public class PropertyBasedJobWorkerValueCustomizer implements JobWorkerValueCustomizer {
   private static final Logger LOG =
       LoggerFactory.getLogger(PropertyBasedJobWorkerValueCustomizer.class);
-  private static final CopyNotNullBeanUtilsBean BEAN_UTILS_BEAN = new CopyNotNullBeanUtilsBean();
+  private static final CopyNotNullBeanUtilsBean COPY_NOT_NULL_BEAN_UTILS_BEAN =
+      new CopyNotNullBeanUtilsBean();
+  private static final CopyWithProtectionBeanUtilsBean COPY_WITH_PROTECTION_BEAN_UTILS_BEAN =
+      new CopyWithProtectionBeanUtilsBean(Set.of("name", "type", "fetchVariables"));
 
   private final CamundaClientProperties camundaClientProperties;
 
@@ -126,7 +130,7 @@ public class PropertyBasedJobWorkerValueCustomizer implements JobWorkerValueCust
     final JobWorkerValue defaults = camundaClientProperties.getWorker().getDefaults();
     try {
       if (defaults != null) {
-        BEAN_UTILS_BEAN.copyProperties(zeebeWorker, defaults);
+        COPY_WITH_PROTECTION_BEAN_UTILS_BEAN.copyProperties(zeebeWorker, defaults);
       }
     } catch (final IllegalAccessException | InvocationTargetException e) {
       throw new RuntimeException(
@@ -141,7 +145,7 @@ public class PropertyBasedJobWorkerValueCustomizer implements JobWorkerValueCust
       final JobWorkerValue jobWorkerValue = workerConfigurationMap.get(workerType);
       LOG.debug("Worker '{}': Applying overrides {}", workerType, jobWorkerValue);
       try {
-        BEAN_UTILS_BEAN.copyProperties(zeebeWorker, jobWorkerValue);
+        COPY_NOT_NULL_BEAN_UTILS_BEAN.copyProperties(zeebeWorker, jobWorkerValue);
       } catch (final IllegalAccessException | InvocationTargetException e) {
         throw new RuntimeException(
             "Error while copying properties from " + jobWorkerValue + " to " + zeebeWorker, e);

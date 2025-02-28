@@ -138,6 +138,10 @@ public final class TestSimpleCamundaApplication
     return super.createSpringBuilder();
   }
 
+  public TestSimpleCamundaApplication withAuthorizationsEnabled() {
+    return withSecurityConfig(cfg -> cfg.getAuthorizations().setEnabled(true));
+  }
+
   @Override
   public TestSimpleCamundaApplication self() {
     return this;

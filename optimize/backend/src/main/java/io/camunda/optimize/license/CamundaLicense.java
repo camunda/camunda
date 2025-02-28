@@ -16,11 +16,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * This class is a duplicate of src/main/java/io/camunda/service/license/CamundaLicense.java
+ * This class is an Optimize implementation of
+ * src/main/java/io/camunda/service/license/CamundaLicense.java
  *
  * <p>This class exists because Optimize is not part of the single application, and cannot use any
- * of the monorepo's modules. Once Optimize is added, the `service` implementation of
- * `CamundaLicense` can be used, and this Optimize duplicate can be removed
+ * of the single app's modules.
  */
 public class CamundaLicense {
 

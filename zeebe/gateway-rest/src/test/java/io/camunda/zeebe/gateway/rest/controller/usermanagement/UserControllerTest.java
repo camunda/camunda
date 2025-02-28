@@ -27,6 +27,8 @@ import java.net.URI;
 import java.util.concurrent.CompletableFuture;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.stubbing.Answer;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
@@ -52,10 +54,11 @@ public class UserControllerTest extends RestControllerTest {
             (Answer<String>) invocationOnMock -> invocationOnMock.getArgument(0).toString());
   }
 
-  @Test
-  void createUserShouldReturnCreated() {
+  @ParameterizedTest
+  @ValueSource(strings = {"foo", "Foo", "foo@bar.baz", "f_oo@bar.baz", "foo123"})
+  void createUserShouldReturnCreated(final String username) {
     // given
-    final var dto = validCreateUserRequest();
+    final var dto = validCreateUserRequest(username);
 
     final var userRecord =
         new UserRecord()
@@ -81,11 +84,12 @@ public class UserControllerTest extends RestControllerTest {
             """
           {
             "userKey": "-1",
-            "username": "foo",
+            "username": "%s",
             "name": "Foo Bar",
             "email": "bar@baz.com"
           }
-        """);
+        """
+                .formatted(username));
 
     // then
     verify(userServices, times(1)).createUser(dto);
@@ -96,7 +100,7 @@ public class UserControllerTest extends RestControllerTest {
     // given
     final String message = "message";
 
-    final var dto = validCreateUserRequest();
+    final var dto = validCreateUserRequest("foo");
 
     when(userServices.createUser(dto))
         .thenThrow(new CamundaSearchException(RejectionType.ALREADY_EXISTS.name()));
@@ -322,6 +326,32 @@ public class UserControllerTest extends RestControllerTest {
     verifyNoInteractions(userServices);
   }
 
+  @ParameterizedTest
+  @ValueSource(
+      strings = {
+        "foo~", "foo!", "foo#", "foo$", "foo%", "foo^", "foo&", "foo*", "foo(", "foo)", "foo=",
+        "foo+", "foo{", "foo[", "foo}", "foo]", "foo|", "foo\\", "foo:", "foo;", "foo\"", "foo'",
+        "foo<", "foo>", "foo,", "foo?", "foo/", "foo ", "foo\t", "foo\n", "foo\r",
+      })
+  void shouldRejectUserCreationWithIllegalCharactersInUsername(final String username) {
+    // given
+    final var request = validUserWithPasswordRequest().username(username);
+
+    // when then
+    assertRequestRejectedExceptionally(
+        request,
+        """
+            {
+              "type": "about:blank",
+              "status": 400,
+              "title": "INVALID_ARGUMENT",
+              "detail": "The provided username contains illegal characters. It must match the pattern '[a-zA-Z0-9@._]+'.",
+              "instance": "%s"
+            }"""
+            .formatted(USER_BASE_URL));
+    verifyNoInteractions(userServices);
+  }
+
   @Test
   void deleteUserShouldReturnNoContent() {
     // given
@@ -373,8 +403,8 @@ public class UserControllerTest extends RestControllerTest {
     verify(userServices, times(1)).updateUser(user);
   }
 
-  private UserDTO validCreateUserRequest() {
-    return new UserDTO("foo", "Foo Bar", "bar@baz.com", "zabraboof");
+  private UserDTO validCreateUserRequest(final String username) {
+    return new UserDTO(username, "Foo Bar", "bar@baz.com", "zabraboof");
   }
 
   private UserRequest validUserWithPasswordRequest() {

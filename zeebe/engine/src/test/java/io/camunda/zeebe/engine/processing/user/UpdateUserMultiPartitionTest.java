@@ -49,7 +49,7 @@ public class UpdateUserMultiPartitionTest {
 
     ENGINE
         .user()
-        .updateUser(userRecord.getKey())
+        .updateUser()
         .withUsername(userRecord.getValue().getUsername())
         .withName("Bar Foo")
         .withEmail("bar@foo.com")
@@ -122,7 +122,7 @@ public class UpdateUserMultiPartitionTest {
 
     ENGINE
         .user()
-        .updateUser(userRecord.getKey())
+        .updateUser()
         .withUsername(userRecord.getValue().getUsername())
         .withName("Bar Foo")
         .withEmail("bar@foo.com")

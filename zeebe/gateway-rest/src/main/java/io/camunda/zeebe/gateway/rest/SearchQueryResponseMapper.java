@@ -11,6 +11,7 @@ import static io.camunda.zeebe.gateway.rest.ResponseMapper.formatDate;
 import static java.util.Collections.emptyList;
 import static java.util.Optional.ofNullable;
 
+import io.camunda.search.entities.AdHocSubprocessActivityEntity;
 import io.camunda.search.entities.AuthorizationEntity;
 import io.camunda.search.entities.DecisionDefinitionEntity;
 import io.camunda.search.entities.DecisionInstanceEntity;
@@ -33,6 +34,7 @@ import io.camunda.search.entities.UserEntity;
 import io.camunda.search.entities.UserTaskEntity;
 import io.camunda.search.entities.VariableEntity;
 import io.camunda.search.query.SearchQueryResult;
+import io.camunda.zeebe.gateway.protocol.rest.AdHocSubprocessActivityResult;
 import io.camunda.zeebe.gateway.protocol.rest.AuthorizationResult;
 import io.camunda.zeebe.gateway.protocol.rest.AuthorizationSearchResult;
 import io.camunda.zeebe.gateway.protocol.rest.DecisionDefinitionResult;
@@ -286,7 +288,7 @@ public final class SearchQueryResponseMapper {
         .parentFlowNodeInstanceKey(KeyUtil.keyToString(p.parentFlowNodeInstanceKey()))
         .startDate(formatDate(p.startDate()))
         .endDate(formatDate(p.endDate()))
-        .state((p.state() == null) ? null : ProcessInstanceStateEnum.fromValue(p.state().name()))
+        .state(toProtocolState(p.state()))
         .hasIncident(p.hasIncident())
         .tenantId(p.tenantId());
   }
@@ -374,6 +376,19 @@ public final class SearchQueryResponseMapper {
         .state(FlowNodeInstanceResult.StateEnum.fromValue(instance.state().name()))
         .type(FlowNodeInstanceResult.TypeEnum.fromValue(instance.type().name()))
         .tenantId(instance.tenantId());
+  }
+
+  public static AdHocSubprocessActivityResult toAdHocSubprocessActivity(
+      final AdHocSubprocessActivityEntity entity) {
+    return new AdHocSubprocessActivityResult()
+        .processDefinitionKey(entity.processDefinitionKey().toString())
+        .processDefinitionId(entity.processDefinitionId())
+        .adHocSubprocessId(entity.adHocSubprocessId())
+        .elementId(entity.elementId())
+        .elementName(entity.elementName())
+        .type(AdHocSubprocessActivityResult.TypeEnum.fromValue(entity.type().name()))
+        .documentation(entity.documentation())
+        .tenantId(entity.tenantId());
   }
 
   public static DecisionDefinitionResult toDecisionDefinition(final DecisionDefinitionEntity d) {
@@ -644,6 +659,17 @@ public final class SearchQueryResponseMapper {
                 .map(PermissionType::name)
                 .map(PermissionTypeEnum::fromValue)
                 .toList());
+  }
+
+  private static ProcessInstanceStateEnum toProtocolState(
+      final ProcessInstanceEntity.ProcessInstanceState value) {
+    if (value == null) {
+      return null;
+    }
+    if (value == ProcessInstanceEntity.ProcessInstanceState.CANCELED) {
+      return ProcessInstanceStateEnum.TERMINATED;
+    }
+    return ProcessInstanceStateEnum.fromValue(value.name());
   }
 
   private record RuleIdentifier(String ruleId, int ruleIndex) {}

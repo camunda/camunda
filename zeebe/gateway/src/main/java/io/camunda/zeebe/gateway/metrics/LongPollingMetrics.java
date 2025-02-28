@@ -7,84 +7,54 @@
  */
 package io.camunda.zeebe.gateway.metrics;
 
-import io.camunda.zeebe.util.micrometer.ExtendedMeterDocumentation;
-import io.micrometer.common.docs.KeyName;
-import io.micrometer.core.instrument.Meter.Type;
+import static io.camunda.zeebe.gateway.metrics.LongPollingMetricsDoc.REQUESTS_QUEUED_CURRENT;
+import static io.camunda.zeebe.gateway.metrics.LongPollingMetricsDoc.RequestsQueuedKeyNames.TYPE;
+
+import io.camunda.zeebe.gateway.metrics.LongPollingMetricsDoc.GatewayKeyNames;
+import io.camunda.zeebe.gateway.metrics.LongPollingMetricsDoc.GatewayProtocol;
+import io.camunda.zeebe.util.micrometer.BoundedMeterCache;
+import io.camunda.zeebe.util.micrometer.StatefulGauge;
+import io.micrometer.core.instrument.MeterRegistry;
 
 /** Metrics to monitor the health of the long polling requests per protocol. */
-@FunctionalInterface
-public interface LongPollingMetrics {
-  LongPollingMetrics NOOP = (type, count) -> {};
+public sealed class LongPollingMetrics {
+
+  private final BoundedMeterCache<StatefulGauge> requestsQueued;
+
+  public LongPollingMetrics(final MeterRegistry registry, final GatewayProtocol gatewayProtocol) {
+    final var provider =
+        StatefulGauge.builder(REQUESTS_QUEUED_CURRENT.getName())
+            .description(REQUESTS_QUEUED_CURRENT.getDescription())
+            .tag(GatewayKeyNames.GATEWAY_PROTOCOL.asString(), gatewayProtocol.value())
+            .withRegistry(registry);
+
+    requestsQueued = BoundedMeterCache.of(registry, provider, TYPE);
+  }
+
+  protected LongPollingMetrics(final BoundedMeterCache<StatefulGauge> requestsQueued) {
+    this.requestsQueued = requestsQueued;
+  }
+
+  /**
+   * Returns an instance of {@link LongPollingMetrics} which does nothing. Mostly useful for
+   * testing.
+   */
+  public static LongPollingMetrics noop() {
+    return new Noop();
+  }
 
   /** Sets the number of long polling requests which are idle for a given job type */
-  void setBlockedRequestsCount(String type, int count);
-
-  /** Number of requests currently queued due to long polling */
-  @SuppressWarnings("NullableProblems")
-  enum LongPollingMetricsDoc implements ExtendedMeterDocumentation {
-    REQUESTS_QUEUED_CURRENT {
-      @Override
-      public String getDescription() {
-        return "Number of requests currently queued due to long polling";
-      }
-
-      @Override
-      public String getName() {
-        return "zeebe.long.polling.queued.current";
-      }
-
-      @Override
-      public Type getType() {
-        return Type.GAUGE;
-      }
-
-      @Override
-      public KeyName[] getKeyNames() {
-        return LongPollingMetrics.RequestsQueuedKeyNames.values();
-      }
-
-      @Override
-      public KeyName[] getAdditionalKeyNames() {
-        return LongPollingMetrics.GatewayKeyNames.values();
-      }
-    }
+  public void setBlockedRequestsCount(final String type, final int count) {
+    requestsQueued.get(type).set(count);
   }
 
-  @SuppressWarnings("NullableProblems")
-  enum RequestsQueuedKeyNames implements KeyName {
-    /** The job type associated with the blocked request */
-    TYPE {
-      @Override
-      public String asString() {
-        return "type";
-      }
-    }
-  }
+  private static final class Noop extends LongPollingMetrics {
 
-  @SuppressWarnings("NullableProblems")
-  enum GatewayKeyNames implements KeyName {
-    /** Distinguishes between the gateway protocol */
-    GATEWAY_PROTOCOL {
-      @Override
-      public String asString() {
-        return "protocol";
-      }
-    }
-  }
-
-  /** The possible values for the gateway type */
-  enum GatewayProtocol {
-    REST("rest"),
-    GRPC("grpc");
-
-    private final String value;
-
-    GatewayProtocol(final String value) {
-      this.value = value;
+    private Noop() {
+      super(null);
     }
 
-    public String value() {
-      return value;
-    }
+    @Override
+    public void setBlockedRequestsCount(final String type, final int count) {}
   }
 }
