@@ -519,8 +519,7 @@ paths:
           required: true
           description: The unique identifier of the user.
           schema:
-            type: integer
-            format: int64
+            type: string
       responses:
         "202":
           description: The user was successfully removed from the tenant.
@@ -541,7 +540,6 @@ paths:
     post:
       tags:
         - Tenant
-        - User
       operationId: searchUsersForTenant
       summary: Query users for tenant
       description: Retrieves a filtered and sorted list of users for a specified tenant.
@@ -563,12 +561,6 @@ paths:
           description: The search result of users for the tenant.
           content:
             application/json:
-              schema:
-                $ref: "#/components/schemas/UserSearchResult"
-            application/vnd.camunda.api.keys.number+json:
-              schema:
-                $ref: "#/components/schemas/UserSearchResult"
-            application/vnd.camunda.api.keys.string+json:
               schema:
                 $ref: "#/components/schemas/UserSearchResult"
 
@@ -3418,11 +3410,6 @@ components:
         tenantKey:
           type: string
           description: The unique system-generated internal tenant ID.
-        assignedMemberKeys:
-          type: array
-          description: The set of keys of members assigned to the tenant.
-          items:
-            type: string
     TenantSearchQuerySortRequest:
       type: object
       properties:
@@ -5186,10 +5173,6 @@ components:
     UserResult:
       type: "object"
       properties:
-        id:
-          description: The ID of the user.
-          type: "integer"
-          format: "int64"
         username:
           description: The username of the user.
           type: "string"
