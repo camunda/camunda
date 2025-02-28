@@ -775,7 +775,7 @@ public class CompactRecordLogger {
 
     final var builder = new StringBuilder();
     builder
-        .append(String.format("ACTIVATE flow nodes %s", value.getFlowNodes()))
+        .append(String.format("ACTIVATE elements %s", value.getElements()))
         .append(
             String.format(
                 " in adhoc subprocess [%s]",

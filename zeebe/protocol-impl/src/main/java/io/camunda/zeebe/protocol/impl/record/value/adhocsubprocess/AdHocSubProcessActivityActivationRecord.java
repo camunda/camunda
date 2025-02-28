@@ -23,15 +23,15 @@ public final class AdHocSubProcessActivityActivationRecord extends UnifiedRecord
 
   private final StringProperty adHocSubProcessInstanceKey =
       new StringProperty("adHocSubProcessInstanceKey", DEFAULT_STRING);
-  private final ArrayProperty<AdHocSubProcessActivityActivationFlowNode> flowNodes =
-      new ArrayProperty<>("flowNodes", AdHocSubProcessActivityActivationFlowNode::new);
+  private final ArrayProperty<AdHocSubProcessActivityActivationElement> elements =
+      new ArrayProperty<>("elements", AdHocSubProcessActivityActivationElement::new);
   private final StringProperty tenantIdProp =
       new StringProperty("tenantId", TenantOwned.DEFAULT_TENANT_IDENTIFIER);
 
   public AdHocSubProcessActivityActivationRecord() {
     super(3);
     declareProperty(adHocSubProcessInstanceKey)
-        .declareProperty(flowNodes)
+        .declareProperty(elements)
         .declareProperty(tenantIdProp);
   }
 
@@ -47,9 +47,9 @@ public final class AdHocSubProcessActivityActivationRecord extends UnifiedRecord
   }
 
   @Override
-  public List<AdHocSubProcessActivityActivationFlowNodeValue> getFlowNodes() {
-    return flowNodes.stream()
-        .map(AdHocSubProcessActivityActivationFlowNodeValue.class::cast)
+  public List<AdHocSubProcessActivityActivationElementValue> getElements() {
+    return elements.stream()
+        .map(AdHocSubProcessActivityActivationElementValue.class::cast)
         .toList();
   }
 
@@ -58,8 +58,8 @@ public final class AdHocSubProcessActivityActivationRecord extends UnifiedRecord
    *
    * @return a {@link ValueArray} of flow nodes that can easily be added to.
    */
-  public ValueArray<AdHocSubProcessActivityActivationFlowNode> flowNodes() {
-    return flowNodes;
+  public ValueArray<AdHocSubProcessActivityActivationElement> elements() {
+    return elements;
   }
 
   @Override
