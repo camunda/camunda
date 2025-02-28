@@ -90,13 +90,4 @@
       AND ENTITY_TYPE = #{entityType}
   </delete>
 
-  <delete
-    id="deleteAllMembers"
-    parameterType="java.lang.String"
-    flushCache="true">
-    DELETE
-    FROM ${prefix}TENANT_MEMBER
-    WHERE TENANT_ID = #{tenantId}
-  </delete>
-
 </mapper>
