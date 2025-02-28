@@ -143,6 +143,7 @@ public final class BpmnUserTaskBehavior {
             .setCreationTimestamp(clock.millis());
 
     stateWriter.appendFollowUpEvent(userTaskKey, UserTaskIntent.CREATING, userTaskRecord);
+
     return userTaskRecord;
   }
 
