@@ -14,7 +14,7 @@ import ErrorBoundary from "src/components/global/ErrorBoundary";
 import { NotificationProvider } from "src/components/notifications";
 import { useApi } from "src/utility/api";
 import { getAuthentication } from "src/utility/api/authentication";
-import Forbidden from "src/pages/forbidden/index.tsx";
+import ForbiddenComponent from "src/pages/forbidden/component.tsx";
 
 const GlobalStyle = createGlobalStyle`
   body {
@@ -75,7 +75,7 @@ const AppContent: FC<{ children?: ReactNode }> = ({ children }) => {
         </GridHeader>
         <GridMain>
           <GridMainContent>
-            <Forbidden />
+            <ForbiddenComponent />
           </GridMainContent>
         </GridMain>
       </>
