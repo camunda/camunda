@@ -3285,7 +3285,35 @@ public class TaskListenerTest {
   }
 
   @Test
-  public void shouldNotAllowCorrectingAssigneeOnCreatingListenerWhenDefinedOnModel() {}
+  public void shouldIgnoreAssigneeCorrectionOnCreatingListenerWhenDefinedOnModel() {
+    // given
+    final long processInstanceKey =
+        createProcessInstance(
+            createProcessWithZeebeUserTask(
+                taskBuilder ->
+                    taskBuilder
+                        .zeebeAssignee("initial_assignee")
+                        .zeebeTaskListener(l -> l.creating().type(listenerType))
+                        .zeebeTaskListener(l -> l.assigning().type(listenerType + "_assigning"))));
+
+    // when correcting the assignee in the creating listener
+    ENGINE
+        .job()
+        .ofInstance(processInstanceKey)
+        .withType(listenerType)
+        .withResult(
+            new JobResult()
+                .setCorrections(new JobResultCorrections().setAssignee("new_assignee"))
+                .setCorrectedAttributes(List.of(UserTaskRecord.ASSIGNEE)))
+        .complete();
+
+    // then
+    final var activatedJob = activateJob(processInstanceKey, listenerType + "_assigning");
+    assertThat(activatedJob.getCustomHeaders())
+        .describedAs(
+            "Expect to ignore the correction, the assigning listener sees the initial assignee")
+        .containsEntry(Protocol.USER_TASK_ASSIGNEE_HEADER_NAME, "initial_assignee");
+  }
 
   private static void completeRecreatedJobWithType(
       final EngineRule engine, final long processInstanceKey, final String jobType) {
