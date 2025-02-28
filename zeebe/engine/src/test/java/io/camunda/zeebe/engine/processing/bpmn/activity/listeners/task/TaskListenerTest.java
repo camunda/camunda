@@ -137,6 +137,43 @@ public class TaskListenerTest {
   }
 
   @Test
+  public void shouldCreateUserTaskAfterAllCreatingTaskListenersAreExecuted() {
+    // given
+    final long processInstanceKey =
+        createProcessInstance(
+            createUserTaskWithTaskListeners(
+                ZeebeTaskListenerEventType.creating,
+                listenerType,
+                listenerType + "_2",
+                listenerType + "_3"));
+
+    // when
+    completeJobs(processInstanceKey, listenerType, listenerType + "_2", listenerType + "_3");
+
+    // then
+    assertTaskListenerJobsCompletionSequence(
+        processInstanceKey,
+        JobListenerEventType.CREATING,
+        listenerType,
+        listenerType + "_2",
+        listenerType + "_3");
+
+    // ensure that `COMPLETE_TASK_LISTENER` commands were triggered between
+    // `COMPLETING` and `COMPLETED` events
+    assertUserTaskIntentsSequence(
+        UserTaskIntent.CREATING,
+        UserTaskIntent.COMPLETE_TASK_LISTENER,
+        UserTaskIntent.COMPLETE_TASK_LISTENER,
+        UserTaskIntent.COMPLETE_TASK_LISTENER,
+        UserTaskIntent.CREATED);
+
+    assertUserTaskRecordWithIntent(
+        processInstanceKey,
+        UserTaskIntent.CREATED,
+        userTask -> Assertions.assertThat(userTask).hasNoChangedAttributes());
+  }
+
+  @Test
   public void shouldAssignUserTaskAfterAllAssignmentTaskListenersAreExecuted() {
     // given
     final long processInstanceKey =
@@ -555,7 +592,7 @@ public class TaskListenerTest {
         .describedAs(
             "Verify that the assignee changes. The assignment of the second assignee should be rejected.")
         .containsSequence(
-            tuple(UserTaskIntent.CREATING, ""),
+            tuple(UserTaskIntent.CREATING, "first_assignee"),
             tuple(UserTaskIntent.CREATED, ""),
             tuple(UserTaskIntent.ASSIGNING, "first_assignee"),
             tuple(UserTaskIntent.COMPLETE_TASK_LISTENER, "first_assignee"),
@@ -665,7 +702,61 @@ public class TaskListenerTest {
             r -> r.getValue().getAction(),
             r -> r.getValue().getChangedAttributes())
         .containsExactly(
-            tuple(UserTaskIntent.CREATING, StringUtils.EMPTY, action, List.of()),
+            tuple(UserTaskIntent.CREATING, assignee, action, List.of()),
+            tuple(UserTaskIntent.CREATED, StringUtils.EMPTY, action, List.of()),
+            tuple(UserTaskIntent.ASSIGNING, assignee, action, List.of(UserTaskRecord.ASSIGNEE)),
+            tuple(UserTaskIntent.COMPLETE_TASK_LISTENER, assignee, action, List.of()),
+            tuple(UserTaskIntent.COMPLETE_TASK_LISTENER, assignee, action, List.of()),
+            tuple(UserTaskIntent.COMPLETE_TASK_LISTENER, assignee, action, List.of()),
+            tuple(UserTaskIntent.ASSIGNED, assignee, action, List.of(UserTaskRecord.ASSIGNEE)));
+  }
+
+  @Test
+  public void
+      shouldTriggerAssigningListenersAfterCreationWithDefinedAssigneeAndCreatingListeners() {
+    // given
+    final var assignee = "peregrin";
+    final var action = StringUtils.EMPTY;
+
+    // when: process instance is created with a UT having an `assignee` and `assignment` listeners
+    final long processInstanceKey =
+        createProcessInstance(
+            createProcessWithZeebeUserTask(
+                task ->
+                    task.zeebeAssignee(assignee)
+                        .zeebeTaskListener(l -> l.creating().type(listenerType + "_creating"))
+                        .zeebeTaskListener(l -> l.assigning().type(listenerType))
+                        .zeebeTaskListener(l -> l.assigning().type(listenerType + "_2"))
+                        .zeebeTaskListener(l -> l.assigning().type(listenerType + "_3"))));
+
+    completeJobs(processInstanceKey, listenerType + "_creating");
+
+    // when
+    completeJobs(processInstanceKey, listenerType, listenerType + "_2", listenerType + "_3");
+
+    // then: verify the task listener completion sequence for the assignment event
+    assertTaskListenerJobsCompletionSequence(
+        processInstanceKey,
+        JobListenerEventType.ASSIGNING,
+        listenerType,
+        listenerType + "_2",
+        listenerType + "_3");
+
+    // verify that UT records follows the expected intents sequence from `CREATING` to `ASSIGNED`
+    assertThat(
+            RecordingExporter.userTaskRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .limit(r -> r.getIntent() == UserTaskIntent.ASSIGNED))
+        .as(
+            "Verify the sequence of intents, `assignee`, `action` and `changedAttributes` properties emitted for the user task")
+        .extracting(
+            Record::getIntent,
+            r -> r.getValue().getAssignee(),
+            r -> r.getValue().getAction(),
+            r -> r.getValue().getChangedAttributes())
+        .containsExactly(
+            tuple(UserTaskIntent.CREATING, assignee, action, List.of()),
+            tuple(UserTaskIntent.COMPLETE_TASK_LISTENER, StringUtils.EMPTY, action, List.of()),
             tuple(UserTaskIntent.CREATED, StringUtils.EMPTY, action, List.of()),
             tuple(UserTaskIntent.ASSIGNING, assignee, action, List.of(UserTaskRecord.ASSIGNEE)),
             tuple(UserTaskIntent.COMPLETE_TASK_LISTENER, assignee, action, List.of()),
@@ -3106,6 +3197,122 @@ public class TaskListenerTest {
         processInstanceKey,
         UserTaskIntent.ASSIGNED,
         userTask -> Assertions.assertThat(userTask).hasAssignee(assignee).hasAction(""));
+  }
+
+  @Test
+  public void shouldHaveAccessToAssigneeInCreatingListenerWhenDefinedOnModel() {
+    // given
+    final var assignee = "me";
+
+    // when
+    final long processInstanceKey =
+        createProcessInstance(
+            createProcessWithZeebeUserTask(
+                taskBuilder ->
+                    taskBuilder
+                        .zeebeAssignee(assignee)
+                        .zeebeTaskListener(l -> l.creating().type(listenerType))));
+
+    // then
+    final var activatedJob = activateJob(processInstanceKey, listenerType);
+
+    assertThat(activatedJob.getCustomHeaders())
+        .containsEntry(Protocol.USER_TASK_ASSIGNEE_HEADER_NAME, assignee);
+  }
+
+  @Test
+  public void shouldNotHaveAccessToAssigneeInCreatingListenerWhenNotDefinedOnModel() {
+    // when
+    final long processInstanceKey =
+        createProcessInstance(
+            createProcessWithZeebeUserTask(
+                taskBuilder ->
+                    taskBuilder.zeebeTaskListener(l -> l.creating().type(listenerType))));
+
+    // then
+    final var activatedJob = activateJob(processInstanceKey, listenerType);
+
+    assertThat(activatedJob.getCustomHeaders())
+        .doesNotContainKey(Protocol.USER_TASK_ASSIGNEE_HEADER_NAME);
+  }
+
+  @Test
+  public void
+      shouldAllowCorrectingAssigneeOnCreatingListenerWhenNotDefinedOnModelWithoutTriggeringAssigningListeners() {
+    // when
+    final long processInstanceKey =
+        createProcessInstance(
+            createProcessWithZeebeUserTask(
+                taskBuilder ->
+                    taskBuilder
+                        .zeebeTaskListener(l -> l.creating().type(listenerType + "_creating"))
+                        .zeebeTaskListener(l -> l.assigning().type(listenerType + "_assigning"))));
+
+    ENGINE
+        .job()
+        .ofInstance(processInstanceKey)
+        .withType(listenerType + "_creating")
+        .withResult(
+            new JobResult()
+                .setCorrections(new JobResultCorrections().setAssignee("new_assignee"))
+                .setCorrectedAttributes(List.of(UserTaskRecord.ASSIGNEE)))
+        .complete();
+
+    // then
+    assertUserTaskRecordWithIntent(
+        processInstanceKey,
+        UserTaskIntent.CREATED,
+        userTask ->
+            Assertions.assertThat(userTask)
+                .hasAssignee("new_assignee")
+                .hasChangedAttributes("assignee"));
+
+    // when: complete user task
+    ENGINE.userTask().ofInstance(processInstanceKey).complete();
+
+    // then: verify the user task intents sequence, it shouldn't contain `ASSIGNING` or `ASSIGNED`
+    // intents. When a user task is configured without an initial `assignee`, the `creating`
+    // listener can correct it, this bypasses the need for triggering the `assignment` transition
+    // after.
+    assertUserTaskIntentsSequence(
+        UserTaskIntent.CREATING,
+        UserTaskIntent.COMPLETE_TASK_LISTENER,
+        UserTaskIntent.CORRECTED,
+        UserTaskIntent.CREATED,
+        UserTaskIntent.COMPLETE,
+        UserTaskIntent.COMPLETING,
+        UserTaskIntent.COMPLETED);
+  }
+
+  @Test
+  public void shouldIgnoreAssigneeCorrectionOnCreatingListenerWhenDefinedOnModel() {
+    // given
+    final long processInstanceKey =
+        createProcessInstance(
+            createProcessWithZeebeUserTask(
+                taskBuilder ->
+                    taskBuilder
+                        .zeebeAssignee("initial_assignee")
+                        .zeebeTaskListener(l -> l.creating().type(listenerType))
+                        .zeebeTaskListener(l -> l.assigning().type(listenerType + "_assigning"))));
+
+    // when correcting the assignee in the creating listener
+    ENGINE
+        .job()
+        .ofInstance(processInstanceKey)
+        .withType(listenerType)
+        .withResult(
+            new JobResult()
+                .setCorrections(new JobResultCorrections().setAssignee("new_assignee"))
+                .setCorrectedAttributes(List.of(UserTaskRecord.ASSIGNEE)))
+        .complete();
+
+    // then
+    final var activatedJob = activateJob(processInstanceKey, listenerType + "_assigning");
+    assertThat(activatedJob.getCustomHeaders())
+        .describedAs(
+            "Expect to ignore the correction, the assigning listener sees the initial assignee")
+        .containsEntry(Protocol.USER_TASK_ASSIGNEE_HEADER_NAME, "initial_assignee");
   }
 
   private static void completeRecreatedJobWithType(
