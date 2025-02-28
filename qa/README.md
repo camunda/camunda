@@ -2,7 +2,7 @@
 
 This module contains acceptance tests for the whole Camunda 8 platform. Covering multiple components, if not all together, integrated.
 
-In the following document, we shortly highlight general recommendations and how-tos/examples of how to write them. 
+In the following document, we shortly highlight general recommendations and how-tos/examples of how to write them.
 Ensuring we write such tests in a consistent manner and can cover all necessary supported environments.
 
 ## General
@@ -13,7 +13,7 @@ Ensuring we write such tests in a consistent manner and can cover all necessary 
   * The `@MutliDbTest` annotation will make sure to tag your test as a test that should be executed against multiple secondary storage, like Elasticsearch (ES), OpenSearch (OS), RDBMS, etc.
   * The `@MutliDbTest` annotation will mark your test class with `@ExtendsWith` using the `CamundaMultiDBExtension`.
   * The execution against different secondary storage is done on our CI.yml GitHub workflow, where separate jobs exist. A specific test property is set for the database type, allowing the extension to configure the test application correctly (specific Exporter, etc.)
-* For advanced cases:    
+* For advanced cases:
   * This might apply when you want to run the complete platform or need to configure the broker test application
   * For running the complete platform, you can make use of `TestSimpleCamundaApplication`, which bundles all components together.
   * With that, you can use `@RegisterExtension` and use the `CamundaMultiDBExtension` directly.
@@ -91,11 +91,11 @@ class SomeIT {
 
 There are some special features for the authentication tests that we should highlight here.
 
- * For the tests, users (that are used in tests) can be predefined annotated with `@UserDefinition` such they are created and an authenticated client is created later
- * Authenticated clients can be created via `@Authenticated` annotation, specifying a user to be used.
- * Mostly, authentication tests can't use the `@MultiDbTest` annotation as of now, as they need to configure the broker or camunda application specifically
-   * In consequence, they need to be tagged with `@Tag("multi-db-test")` separately to make sure we run tests against all environements
-   * They need to make use of the `@RegisterExtension` to pass in the Broker, pre-configured
+* For the tests, users (that are used in tests) can be predefined annotated with `@UserDefinition` such they are created and an authenticated client is created later
+* Authenticated clients can be created via `@Authenticated` annotation, specifying a user to be used.
+* Mostly, authentication tests can't use the `@MultiDbTest` annotation as of now, as they need to configure the broker or camunda application specifically
+  * In consequence, they need to be tagged with `@Tag("multi-db-test")` separately to make sure we run tests against all environements
+  * They need to make use of the `@RegisterExtension` to pass in the Broker, pre-configured
 
 **Example:**
 
@@ -153,3 +153,4 @@ class ProcessAuthorizationIT {
         .containsExactlyInAnyOrder("service_tasks_v1", "service_tasks_v2");
   }
 ```
+
