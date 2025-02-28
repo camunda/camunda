@@ -238,22 +238,23 @@ public class OpensearchIncidentPostImportAction extends AbstractIncidentPostImpo
           incident.getProcessInstanceKey(), data.getProcessInstanceTreePaths().keySet())) {
 
         // extract all process instance ids and flow node instance ids from tree path
-        final String incidentTreePath = data.getIncidentTreePaths().get(incident.getId());
+        final TreePath incidentTreePath =
+            new TreePath(data.getIncidentTreePaths().get(incident.getId()));
 
-        final List<String> piIds = new TreePath(incidentTreePath).extractProcessInstanceIds();
+        final List<String> piIds = incidentTreePath.extractProcessInstanceIds();
 
         final IncidentState newState = batch.getNewIncidentStates().get(incident.getKey());
         updateProcessInstancesState(incident.getId(), newState, piIds, data, updateRequests);
 
         incident.setState(newState);
 
-        final List<String> fniIds = new TreePath(incidentTreePath).extractFlowNodeInstanceIds();
-        updateFlowNodeInstancesState(incident, fniIds, data, updateRequests);
+        final List<String> fniIds = incidentTreePath.extractFlowNodeInstanceIds();
+        updateFlowNodeInstancesState(incident, incidentTreePath, fniIds, data, updateRequests);
         updateIncidents(
             incident,
             newState,
             data.getIncidentIndices().get(incident.getId()),
-            incidentTreePath,
+            incidentTreePath.toString(),
             updateRequests);
 
       } else {
@@ -393,6 +394,7 @@ public class OpensearchIncidentPostImportAction extends AbstractIncidentPostImpo
 
   private void updateFlowNodeInstancesState(
       final IncidentEntity incident,
+      final TreePath incidentTreePath,
       final List<String> fniIds,
       final AdditionalData data,
       final OpensearchPostImporterRequests requests) {
@@ -417,13 +419,20 @@ public class OpensearchIncidentPostImportAction extends AbstractIncidentPostImpo
         data.addFniIdsWithIncidentIds(fniId, incident.getId());
         // if there were now incidents and now one
         if (data.getFniIdsWithIncidentIds().get(fniId).size() == 1) {
+
+          final String processInstanceKey =
+              incidentTreePath
+                  .processInstanceForFni(fniId)
+                  .orElseGet(() -> String.valueOf(incident.getProcessInstanceKey()));
+
           updateFlowNodeInstance(
               incident,
               data.getFlowNodeInstanceIndices(),
               data.getFlowNodeInstanceInListViewIndices(),
               requests,
               updateFields,
-              fniId);
+              fniId,
+              processInstanceKey);
         }
       }
     } else {
@@ -435,13 +444,20 @@ public class OpensearchIncidentPostImportAction extends AbstractIncidentPostImpo
         data.deleteIncidentIdByFniId(fniId, incident.getId());
         if (data.getFniIdsWithIncidentIds().get(fniId) == null
             || data.getFniIdsWithIncidentIds().get(fniId).size() == 0) {
+
+          final String processInstanceKey =
+              incidentTreePath
+                  .processInstanceForFni(fniId)
+                  .orElseGet(() -> String.valueOf(incident.getProcessInstanceKey()));
+
           updateFlowNodeInstance(
               incident,
               data.getFlowNodeInstanceIndices(),
               data.getFlowNodeInstanceInListViewIndices(),
               requests,
               updateFields,
-              fniId);
+              fniId,
+              processInstanceKey);
         } // otherwise there are more active incidents
       }
     }
@@ -481,7 +497,8 @@ public class OpensearchIncidentPostImportAction extends AbstractIncidentPostImpo
       final Map<String, List<String>> flowNodeInstanceInListViewIndices,
       final OpensearchPostImporterRequests requests,
       final Map<String, Object> updateFields,
-      final String fniId) {
+      final String fniId,
+      final String processInstanceKey) {
     if (flowNodeInstanceIndices.get(fniId) == null) {
       throw new OperateRuntimeException(
           String.format("Flow node instance was not yet imported %s", fniId));
@@ -491,12 +508,7 @@ public class OpensearchIncidentPostImportAction extends AbstractIncidentPostImpo
         .forEach(
             index -> {
               createUpdateRequestFor(
-                  index,
-                  fniId,
-                  updateFields,
-                  null,
-                  incident.getProcessInstanceKey().toString(),
-                  requests.getFlowNodeInstanceRequests());
+                  index, fniId, updateFields, null, null, requests.getFlowNodeInstanceRequests());
             });
     if (flowNodeInstanceInListViewIndices.get(fniId) == null) {
       throw new OperateRuntimeException(
@@ -511,7 +523,7 @@ public class OpensearchIncidentPostImportAction extends AbstractIncidentPostImpo
                   fniId,
                   updateFields,
                   null,
-                  incident.getProcessInstanceKey().toString(),
+                  processInstanceKey,
                   requests.getListViewRequests());
             });
   }

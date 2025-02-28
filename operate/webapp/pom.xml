@@ -256,7 +256,6 @@
       <artifactId>slf4j-api</artifactId>
     </dependency>
 
-
     <!-- Micrometer Prometheus -->
     <dependency>
       <groupId>io.micrometer</groupId>

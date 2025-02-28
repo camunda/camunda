@@ -1011,6 +1011,17 @@
       </properties>
     </profile>
 
+    <!-- currently only runs one test; expand the pattern to add more tests as needed -->
+    <profile>
+      <id>operateItOpensearch</id>
+      <properties>
+        <includeITNames>io/camunda/operate/opensearch/OpensearchPostImportActionIT.java</includeITNames>
+        <excludeITNames>none</excludeITNames>
+        <failsafeForkCount>1</failsafeForkCount>
+        <skipSurefire>true</skipSurefire>
+      </properties>
+    </profile>
+
     <!-- profile to auto format -->
     <profile>
       <id>autoFormat</id>
