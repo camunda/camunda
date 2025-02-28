@@ -79,6 +79,11 @@ jobs:
           mvn -f operate verify -T${{ env.LIMITS_CPU }} -P skipFrontendBuild,operateItStage1 -B -Dfailsafe.rerunFailingTestsCount=2
 
       # Reports: publish test metrics results
+      - name: Backend - Opensearch Integration Tests
+        run: |
+          mvn -f operate verify -T${{ env.LIMITS_CPU }} -P skipFrontendBuild,operateItOpensearch -B -Dfailsafe.rerunFailingTestsCount=2
+
+      # Reports: publish test metrics results
       - name: Publish Test Results
         uses: EnricoMi/publish-unit-test-result-action@v2.16.1
         if: ${{ (success() || failure()) }}
