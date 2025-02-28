@@ -182,7 +182,8 @@ final class SecurityTest {
             actorScheduler,
             topologyManager,
             new BrokerClientRequestMetrics(meterRegistry));
-    jobStreamClient = new JobStreamClientImpl(actorScheduler, atomix.getCommunicationService());
+    jobStreamClient =
+        new JobStreamClientImpl(actorScheduler, atomix.getCommunicationService(), meterRegistry);
     jobStreamClient.start().join();
 
     // before we can add the job stream client as a topology listener, we need to wait for the
