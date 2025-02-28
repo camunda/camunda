@@ -56,7 +56,6 @@ const initialAlert = {
   },
   reminder: null,
   fixNotification: true,
-  webhook: null,
 };
 
 const reports = [
@@ -164,23 +163,6 @@ it('should disable the submit button if the check interval is negative', () => {
     },
   });
   expect(node.find('.confirm')).toBeDisabled();
-});
-
-it('should enable the submit button if webhook is selected', () => {
-  const node = shallow(<AlertModal {...props} webhooks={['testWebhook']} />);
-
-  node.setProps({initialAlert});
-  node.setState({emails: ['']});
-  node.find('#webhooks').prop('onChange')('testWebhook');
-
-  expect(node.find('.confirm')).not.toBeDisabled();
-});
-
-it('should show warning if alert is inactive due to missing webhook', async () => {
-  const node = await shallow(<AlertModal {...props} webhooks={[]} />);
-  node.setProps({initialAlert: {...initialAlert, emails: [], webhook: 'nonExistingWebhook'}});
-
-  expect(node.find('ActionableNotification').exists()).toBe(true);
 });
 
 it('should show warning that email is not configured', async () => {

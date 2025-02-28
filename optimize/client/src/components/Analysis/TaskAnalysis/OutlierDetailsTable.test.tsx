@@ -8,7 +8,7 @@
 
 import {shallow} from 'enzyme';
 import OutlierDetailsTable from './OutlierDetailsTable';
-import {Button} from "@carbon/react";
+import {Button} from '@carbon/react';
 
 const props = {
   flowNodeNames: {
