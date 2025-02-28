@@ -6,13 +6,14 @@
  * except in compliance with the Camunda License 1.0.
  */
 
+import {getClientConfig} from 'modules/getClientConfig';
 import {useCurrentUser} from 'modules/queries/useCurrentUser';
 
 function useMultiTenancyDropdown() {
   const {data: currentUser} = useCurrentUser();
   const hasMultipleTenants = (currentUser?.tenants.length ?? 0) > 1;
   const isMultiTenancyVisible =
-    window.clientConfig?.isMultiTenancyEnabled &&
+    getClientConfig().isMultiTenancyEnabled &&
     currentUser !== undefined &&
     hasMultipleTenants;
 

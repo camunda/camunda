@@ -8,6 +8,7 @@
 
 import {makeObservable, observable, action} from 'mobx';
 import {api} from 'modules/api';
+import {getClientConfig} from 'modules/getClientConfig';
 import {reactQueryClient} from 'modules/react-query/reactQueryClient';
 import {request} from 'modules/request';
 import {getStateLocally, storeStateLocally} from 'modules/utils/localStorage';
@@ -77,10 +78,7 @@ class Authentication {
 
     reactQueryClient.clear();
 
-    if (
-      !window.clientConfig?.canLogout ||
-      window.clientConfig?.isLoginDelegated
-    ) {
+    if (!getClientConfig().canLogout || getClientConfig().isLoginDelegated) {
       this.#handleThirdPartySessionExpiration();
       return;
     }
@@ -95,10 +93,7 @@ class Authentication {
   };
 
   disableSession = () => {
-    if (
-      !window.clientConfig?.canLogout ||
-      window.clientConfig?.isLoginDelegated
-    ) {
+    if (!getClientConfig().canLogout || getClientConfig().isLoginDelegated) {
       this.#handleThirdPartySessionExpiration();
 
       return;

@@ -7,6 +7,7 @@
  */
 
 import {useParams} from 'react-router-dom';
+import {getClientConfig} from './getClientConfig';
 
 /* istanbul ignore file */
 
@@ -26,7 +27,7 @@ const pages = {
   ) {
     const {tenantId, matchAllChildren: matchAllChildren = false} = options;
     const baseRoute = matchAllChildren ? 'processes/*' : 'processes';
-    if (tenantId !== undefined && window.clientConfig?.isMultiTenancyEnabled) {
+    if (tenantId !== undefined && getClientConfig().isMultiTenancyEnabled) {
       return `${baseRoute}?tenantId=${tenantId}`;
     }
 

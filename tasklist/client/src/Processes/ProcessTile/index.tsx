@@ -26,6 +26,7 @@ import {ProcessTag} from './ProcessTag';
 import styles from './styles.module.scss';
 import cn from 'classnames';
 import {useUploadDocuments} from 'modules/mutations/useUploadDocuments';
+import {getClientConfig} from 'modules/getClientConfig';
 
 type InlineLoadingStatus = NonNullable<InlineLoadingProps['status']>;
 
@@ -70,9 +71,6 @@ function getTags(process: Process): ProcessTagVariant[] {
 
   return tags;
 }
-
-const isMultiTenancyEnabled =
-  window.clientConfig?.isMultiTenancyEnabled ?? false;
 
 type Props = {
   process: Process;
@@ -182,7 +180,10 @@ const ProcessTile: React.FC<Props> = ({
                 eventName: 'process-start-failed',
               });
               setStatus('inactive');
-              if (isMultiTenancyEnabled && tenantId === undefined) {
+              if (
+                getClientConfig().isMultiTenancyEnabled &&
+                tenantId === undefined
+              ) {
                 notificationsStore.displayNotification({
                   isDismissable: false,
                   kind: 'error',
@@ -244,7 +245,7 @@ const ProcessTile: React.FC<Props> = ({
               files,
             });
           }}
-          isMultiTenancyEnabled={isMultiTenancyEnabled}
+          isMultiTenancyEnabled={getClientConfig().isMultiTenancyEnabled}
           tenantId={tenantId}
         />
       )}

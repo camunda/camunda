@@ -31,6 +31,7 @@ import {
   type SelectionOption,
 } from 'modules/internationalization';
 import styles from './styles.module.scss';
+import {getClientConfig} from 'modules/getClientConfig';
 
 function getInfoSidebarItems(isPaidPlan: boolean) {
   const BASE_INFO_SIDEBAR_ITEMS = [
@@ -94,7 +95,7 @@ function getInfoSidebarItems(isPaidPlan: boolean) {
 }
 
 const Header: React.FC = observer(() => {
-  const IS_SAAS = typeof window.clientConfig?.organizationId === 'string';
+  const IS_SAAS = getClientConfig().organizationId === 'string';
   const location = useLocation();
   const isProcessesPage =
     matchPath(pages.processes(), location.pathname) !== null;
@@ -267,7 +268,7 @@ const Header: React.FC = observer(() => {
             },
           },
         ],
-        bottomElements: window.clientConfig?.canLogout
+        bottomElements: getClientConfig().canLogout
           ? [
               {
                 key: 'logout',

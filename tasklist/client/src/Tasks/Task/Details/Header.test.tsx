@@ -14,7 +14,6 @@ import noop from 'lodash/noop';
 import * as taskMocks from 'modules/mock-schema/mocks/task';
 import * as userMocks from 'modules/mock-schema/mocks/current-user';
 import {useCurrentUser} from 'modules/queries/useCurrentUser';
-import {DEFAULT_MOCK_CLIENT_CONFIG} from 'modules/mocks/window';
 import {QueryClientProvider} from '@tanstack/react-query';
 import {getMockQueryClient} from 'modules/react-query/getMockQueryClient';
 import {Header} from './Header';
@@ -45,10 +44,6 @@ const getWrapper = (id: string = '0') => {
 };
 
 describe('<Header />', () => {
-  afterEach(() => {
-    window.clientConfig = DEFAULT_MOCK_CLIENT_CONFIG;
-  });
-
   it('should render completed task details', async () => {
     nodeMockServer.use(
       http.get('/v2/authentication/me', () => {

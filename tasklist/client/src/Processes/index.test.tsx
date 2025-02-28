@@ -23,17 +23,30 @@ import {Component} from './index';
 import {notificationsStore} from 'modules/stores/notifications';
 import * as formMocks from 'modules/mock-schema/mocks/form';
 import * as userMocks from 'modules/mock-schema/mocks/current-user';
-import {DEFAULT_MOCK_CLIENT_CONFIG} from 'modules/mocks/window';
 import {LocationLog} from 'modules/utils/LocationLog';
 import {QueryClientProvider} from '@tanstack/react-query';
 import {getMockQueryClient} from 'modules/react-query/getMockQueryClient';
 import {pages} from 'modules/routing';
+import {getClientConfig} from 'modules/getClientConfig';
 
 vi.mock('modules/stores/notifications', () => ({
   notificationsStore: {
     displayNotification: vi.fn(() => () => {}),
   },
 }));
+
+vi.mock('modules/getClientConfig', async (importOriginal) => {
+  const actual =
+    await importOriginal<typeof import('modules/getClientConfig')>();
+  return {
+    getClientConfig: vi.fn().mockImplementation(actual.getClientConfig),
+  };
+});
+
+const {getClientConfig: actualGetClientConfig} = await vi.importActual<
+  typeof import('modules/getClientConfig')
+>('modules/getClientConfig');
+const mockGetClientConfig = vi.mocked(getClientConfig);
 
 const mockedNotificationsStore = notificationsStore as Mocked<
   typeof notificationsStore
@@ -67,6 +80,7 @@ describe('Processes', () => {
   });
 
   beforeEach(() => {
+    mockGetClientConfig.mockReturnValue(actualGetClientConfig());
     nodeMockServer.use(
       http.get(
         '/v2/authentication/me',
@@ -223,10 +237,10 @@ describe('Processes', () => {
 
   it('should render a tenant dropdown', async () => {
     window.localStorage.setItem('hasConsentedToStartProcess', 'true');
-    window.clientConfig = {
-      ...DEFAULT_MOCK_CLIENT_CONFIG,
+    mockGetClientConfig.mockReturnValue({
+      ...actualGetClientConfig(),
       isMultiTenancyEnabled: true,
-    };
+    });
     nodeMockServer.use(
       http.get('/v1/internal/processes', () => {
         return HttpResponse.json([]);
@@ -261,10 +275,10 @@ describe('Processes', () => {
   it('should render a tenant dropdown with the current tenant selected', async () => {
     window.localStorage.setItem('hasConsentedToStartProcess', 'true');
     window.localStorage.setItem('tenantId', '"tenantA"');
-    window.clientConfig = {
-      ...DEFAULT_MOCK_CLIENT_CONFIG,
+    mockGetClientConfig.mockReturnValue({
+      ...actualGetClientConfig(),
       isMultiTenancyEnabled: true,
-    };
+    });
     nodeMockServer.use(
       http.get('/v1/internal/processes', () => {
         return HttpResponse.json([]);
@@ -298,10 +312,10 @@ describe('Processes', () => {
 
   it('should not render dropdown with single tenant', async () => {
     window.localStorage.setItem('hasConsentedToStartProcess', 'true');
-    window.clientConfig = {
-      ...DEFAULT_MOCK_CLIENT_CONFIG,
+    mockGetClientConfig.mockReturnValue({
+      ...actualGetClientConfig(),
       isMultiTenancyEnabled: true,
-    };
+    });
     nodeMockServer.use(
       http.get('/v1/internal/processes', () => {
         return HttpResponse.json([]);

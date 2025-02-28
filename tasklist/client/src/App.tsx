@@ -25,7 +25,8 @@ import {TrackPagination} from 'modules/tracking/TrackPagination';
 import {ReactQueryProvider} from 'modules/react-query/ReactQueryProvider';
 import {ErrorWithinLayout, FallbackErrorPage} from 'errorBoundaries';
 import {tracking} from 'modules/tracking';
-import {Forbidden} from "./modules/components/Errors/Forbidden";
+import {getClientConfig} from 'modules/getClientConfig';
+import {Forbidden} from './modules/components/Errors/Forbidden';
 
 const Wrapper: React.FC = () => {
   return (
@@ -40,7 +41,7 @@ const Wrapper: React.FC = () => {
 const router = createBrowserRouter(
   createRoutesFromElements(
     <Route path="/" element={<Wrapper />} ErrorBoundary={ErrorWithinLayout}>
-      <Route path="forbidden" element={<Forbidden />}  />
+      <Route path="forbidden" element={<Forbidden />} />
       <Route path="login" lazy={() => import('./Login')} />
       <Route
         path="new/:bpmnProcessId"
@@ -80,9 +81,7 @@ const router = createBrowserRouter(
     </Route>,
   ),
   {
-    basename: import.meta.env.DEV
-      ? '/'
-      : (window.clientConfig?.baseName ?? '/'),
+    basename: import.meta.env.DEV ? '/' : getClientConfig().baseName,
   },
 );
 

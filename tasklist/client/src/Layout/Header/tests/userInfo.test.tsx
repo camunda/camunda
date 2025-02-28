@@ -7,7 +7,6 @@
  */
 
 import {render, screen} from 'modules/testing-library';
-import {DEFAULT_MOCK_CLIENT_CONFIG} from 'modules/mocks/window';
 import {nodeMockServer} from 'modules/mockServer/nodeMockServer';
 import {authenticationStore} from 'modules/stores/authentication';
 import {http, HttpResponse} from 'msw';
@@ -15,12 +14,22 @@ import {Header} from '..';
 import {getWrapper} from './mocks';
 import * as userMocks from 'modules/mock-schema/mocks/current-user';
 import * as licenseMocks from 'modules/mock-schema/mocks/license';
+import {getClientConfig} from 'modules/getClientConfig';
+
+vi.mock('modules/getClientConfig', async (importOriginal) => {
+  const actual =
+    await importOriginal<typeof import('modules/getClientConfig')>();
+  return {
+    getClientConfig: vi.fn().mockImplementation(actual.getClientConfig),
+  };
+});
+
+const {getClientConfig: actualGetClientConfig} = await vi.importActual<
+  typeof import('modules/getClientConfig')
+>('modules/getClientConfig');
+const mockGetClientConfig = vi.mocked(getClientConfig);
 
 describe('User info', () => {
-  afterEach(() => {
-    window.clientConfig = DEFAULT_MOCK_CLIENT_CONFIG;
-  });
-
   beforeEach(() => {
     nodeMockServer.use(
       http.get(
@@ -33,6 +42,8 @@ describe('User info', () => {
         },
       ),
     );
+
+    mockGetClientConfig.mockReturnValue(actualGetClientConfig());
   });
 
   it('should render user display name', async () => {
@@ -93,7 +104,10 @@ describe('User info', () => {
   });
 
   it('should handle a SSO user', async () => {
-    window.clientConfig = {...window.clientConfig, canLogout: false};
+    mockGetClientConfig.mockReturnValue({
+      ...actualGetClientConfig(),
+      canLogout: false,
+    });
 
     nodeMockServer.use(
       http.get(
@@ -139,7 +153,7 @@ describe('User info', () => {
         },
       ),
       http.post(
-        '/api/logout',
+        '/logout',
         () => {
           return new HttpResponse(null, {
             status: 204,
