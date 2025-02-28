@@ -98,7 +98,7 @@ jobs:
         run: |
           curl -f -L -o ijhttp.zip "https://jb.gg/ijhttp/latest"
           unzip ijhttp.zip
-          ijhttp/ijhttp http/${{ matrix.case }} --private-env-file http/http-client.private.env.json --report -t 60000
+          ijhttp/ijhttp http/${{ matrix.case }} --private-env-file http/http-client.private.env.json --env ${{ matrix.env }} --report -t 60000
 
       - name: Publish Test Report
         if: always()
