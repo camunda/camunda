@@ -34,6 +34,8 @@ import io.camunda.zeebe.util.Either;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Function;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Handles the requests for the configuration management. This is expected be running on the
@@ -41,6 +43,8 @@ import java.util.function.Function;
  */
 public final class ClusterConfigurationManagementRequestsHandler
     implements ClusterConfigurationManagementApi {
+  private static final Logger LOG =
+      LoggerFactory.getLogger(ClusterConfigurationManagementRequestsHandler.class);
   private final ConfigurationChangeCoordinator coordinator;
   private final ConcurrencyControl executor;
   private final MemberId localMemberId;
@@ -160,6 +164,29 @@ public final class ClusterConfigurationManagementRequestsHandler
   public ActorFuture<ClusterConfigurationChangeResponse> patchCluster(
       final ClusterPatchRequest clusterPatchRequest) {
 
+    if (clusterPatchRequest.newPartitionsDistribution().isPresent()) {
+      clusterPatchRequest
+          .newPartitionsDistribution()
+          .get()
+          .getPartitionsList()
+          .forEach(
+              partition -> {
+                final StringBuilder sb =
+                    new StringBuilder("Got new partitionDistribution - partitionId: ");
+                sb.append(partition.getPartitionId()).append(" members: ");
+                partition
+                    .getMembersList()
+                    .forEach(
+                        member -> {
+                          sb.append(" \nmemberId: ").append(member.getMemberId());
+                          sb.append(" priority: ").append(member.getPriority());
+                        });
+                LOG.info(sb.toString());
+              });
+    } else {
+      LOG.info("No new partitionDistribution");
+    }
+
     if (!enablePartitionScaling && clusterPatchRequest.newPartitionCount().isPresent()) {
       final var failedFuture = executor.<ClusterConfigurationChangeResponse>createFuture();
       failedFuture.completeExceptionally(
@@ -173,7 +200,8 @@ public final class ClusterConfigurationManagementRequestsHandler
             clusterPatchRequest.membersToAdd(),
             clusterPatchRequest.membersToRemove(),
             clusterPatchRequest.newPartitionCount(),
-            clusterPatchRequest.newReplicationFactor()));
+            clusterPatchRequest.newReplicationFactor(),
+            clusterPatchRequest.newPartitionsDistribution()));
   }
 
   @Override

@@ -43,7 +43,12 @@ final class ClusterPatchRequestTransformerTest {
     // given
     final var patchRequest =
         new ClusterPatchRequest(
-            Set.of(id0, id2), Set.of(id0, id1), Optional.empty(), Optional.empty(), false);
+            Set.of(id0, id2),
+            Set.of(id0, id1),
+            Optional.empty(),
+            Optional.empty(),
+            Optional.empty(),
+            false);
 
     // when
     final var result =
@@ -51,7 +56,8 @@ final class ClusterPatchRequestTransformerTest {
                 patchRequest.membersToAdd(),
                 patchRequest.membersToRemove(),
                 patchRequest.newPartitionCount(),
-                patchRequest.newReplicationFactor())
+                patchRequest.newReplicationFactor(),
+                patchRequest.newPartitionsDistribution())
             .operations(ClusterConfiguration.init());
 
     // then
@@ -70,13 +76,15 @@ final class ClusterPatchRequestTransformerTest {
 
     // when
     final var patchRequest =
-        new ClusterPatchRequest(Set.of(), Set.of(), Optional.of(1), Optional.empty(), false);
+        new ClusterPatchRequest(
+            Set.of(), Set.of(), Optional.of(1), Optional.empty(), Optional.empty(), false);
     final var result =
         new ClusterPatchRequestTransformer(
                 patchRequest.membersToAdd(),
                 patchRequest.membersToRemove(),
                 patchRequest.newPartitionCount(),
-                patchRequest.newReplicationFactor())
+                patchRequest.newReplicationFactor(),
+                patchRequest.newPartitionsDistribution())
             .operations(ClusterConfiguration.init());
 
     // then
@@ -97,7 +105,8 @@ final class ClusterPatchRequestTransformerTest {
 
     // when
     final var patchRequest =
-        new ClusterPatchRequest(Set.of(id2), Set.of(), Optional.empty(), Optional.empty(), false);
+        new ClusterPatchRequest(
+            Set.of(id2), Set.of(), Optional.empty(), Optional.empty(), Optional.empty(), false);
     final var expectedDistribution =
         new RoundRobinPartitionDistributor()
             .distributePartitions(Set.of(id0, id1, id2), getSortedPartitionIds(2), 2);
@@ -119,7 +128,8 @@ final class ClusterPatchRequestTransformerTest {
 
     // when
     final var patchRequest =
-        new ClusterPatchRequest(Set.of(), Set.of(id1), Optional.empty(), Optional.empty(), false);
+        new ClusterPatchRequest(
+            Set.of(), Set.of(id1), Optional.empty(), Optional.empty(), Optional.empty(), false);
 
     final var expectedDistribution =
         new RoundRobinPartitionDistributor()
@@ -143,7 +153,7 @@ final class ClusterPatchRequestTransformerTest {
     // when
     final var patchRequest =
         new ClusterPatchRequest(
-            Set.of(id2), Set.of(id1), Optional.empty(), Optional.empty(), false);
+            Set.of(id2), Set.of(id1), Optional.empty(), Optional.empty(), Optional.empty(), false);
 
     final var expectedDistribution =
         new RoundRobinPartitionDistributor()
@@ -168,7 +178,12 @@ final class ClusterPatchRequestTransformerTest {
     final int newPartitionCount = 4;
     final var patchRequest =
         new ClusterPatchRequest(
-            Set.of(id2), Set.of(id1), Optional.of(newPartitionCount), Optional.empty(), false);
+            Set.of(id2),
+            Set.of(id1),
+            Optional.of(newPartitionCount),
+            Optional.empty(),
+            Optional.empty(),
+            false);
 
     final var expectedDistribution =
         new RoundRobinPartitionDistributor()
@@ -193,7 +208,12 @@ final class ClusterPatchRequestTransformerTest {
     final int newPartitionCount = 4;
     final var patchRequest =
         new ClusterPatchRequest(
-            Set.of(id2), Set.of(id1), Optional.of(newPartitionCount), Optional.of(2), false);
+            Set.of(id2),
+            Set.of(id1),
+            Optional.of(newPartitionCount),
+            Optional.of(2),
+            Optional.empty(),
+            false);
 
     final var expectedDistribution =
         new RoundRobinPartitionDistributor()
@@ -217,7 +237,8 @@ final class ClusterPatchRequestTransformerTest {
                 patchRequest.membersToAdd(),
                 patchRequest.membersToRemove(),
                 patchRequest.newPartitionCount(),
-                patchRequest.newReplicationFactor())
+                patchRequest.newReplicationFactor(),
+                patchRequest.newPartitionsDistribution())
             .operations(oldClusterTopology);
     assertThat(result).isRight();
     final var operations = result.get();
