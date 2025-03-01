@@ -21,6 +21,7 @@ import io.camunda.client.CamundaClient;
 import io.camunda.client.CamundaClientConfiguration;
 import io.camunda.client.CredentialsProvider;
 import io.camunda.client.api.JsonMapper;
+import io.camunda.client.api.command.ActivateAdHocSubprocessActivitiesCommandStep1;
 import io.camunda.client.api.command.ActivateJobsCommandStep1;
 import io.camunda.client.api.command.AssignGroupToTenantCommandStep1;
 import io.camunda.client.api.command.AssignMappingToTenantCommandStep1;
@@ -103,6 +104,7 @@ import io.camunda.client.api.search.query.UserTaskVariableQuery;
 import io.camunda.client.api.search.query.VariableQuery;
 import io.camunda.client.api.worker.JobClient;
 import io.camunda.client.api.worker.JobWorkerBuilderStep1;
+import io.camunda.client.impl.command.ActivateAdHocSubprocessActivitiesCommandImpl;
 import io.camunda.client.impl.command.AssignGroupToTenantCommandImpl;
 import io.camunda.client.impl.command.AssignMappingToTenantCommandImpl;
 import io.camunda.client.impl.command.AssignUserTaskCommandImpl;
@@ -689,6 +691,13 @@ public final class CamundaClientImpl implements CamundaClient {
                 filter
                     .processDefinitionKey(processDefinitionKey)
                     .adHocSubprocessId(adHocSubprocessId));
+  }
+
+  @Override
+  public ActivateAdHocSubprocessActivitiesCommandStep1 newActivateAdHocSubprocessActivitiesCommand(
+      final String adHocSubprocessInstanceKey) {
+    return new ActivateAdHocSubprocessActivitiesCommandImpl(
+        httpClient, jsonMapper, adHocSubprocessInstanceKey);
   }
 
   @Override
