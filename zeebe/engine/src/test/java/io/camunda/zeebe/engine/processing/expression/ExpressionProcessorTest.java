@@ -5,19 +5,23 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.zeebe.engine.processing.common;
+package io.camunda.zeebe.engine.processing.expression;
 
 import static io.camunda.zeebe.test.util.asserts.EitherAssert.assertThat;
 
-import io.camunda.zeebe.el.EvaluationContext;
+import io.camunda.zeebe.el.Expression;
 import io.camunda.zeebe.el.ExpressionLanguage;
 import io.camunda.zeebe.el.ExpressionLanguageFactory;
 import io.camunda.zeebe.engine.processing.bpmn.clock.ZeebeFeelEngineClock;
-import io.camunda.zeebe.engine.processing.common.ExpressionProcessor.EvaluationContextLookup;
+import io.camunda.zeebe.engine.processing.common.Failure;
+import io.camunda.zeebe.test.util.MsgPackUtil;
 import io.camunda.zeebe.util.Either;
 import java.time.InstantSource;
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Stream;
+import org.agrona.DirectBuffer;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
@@ -31,8 +35,6 @@ class ExpressionProcessorTest {
   private static final ExpressionLanguage EXPRESSION_LANGUAGE =
       ExpressionLanguageFactory.createExpressionLanguage(
           new ZeebeFeelEngineClock(InstantSource.system()));
-  private static final EvaluationContext EMPTY_LOOKUP = x -> null;
-  private static final EvaluationContextLookup DEFAULT_CONTEXT_LOOKUP = scope -> EMPTY_LOOKUP;
 
   @Nested
   @TestInstance(Lifecycle.PER_CLASS)
@@ -41,7 +43,7 @@ class ExpressionProcessorTest {
     @ParameterizedTest
     @MethodSource("arrayOfStringsExpressions")
     void testSuccessfulEvaluations(final String expression, final List<String> expected) {
-      final var processor = new ExpressionProcessor(EXPRESSION_LANGUAGE, DEFAULT_CONTEXT_LOOKUP);
+      final var processor = new ExpressionProcessor(EXPRESSION_LANGUAGE);
       final var parsedExpression = EXPRESSION_LANGUAGE.parseExpression(expression);
       assertThat(processor.evaluateArrayOfStringsExpression(parsedExpression, -1L))
           .isRight()
@@ -52,7 +54,7 @@ class ExpressionProcessorTest {
     @ParameterizedTest
     @MethodSource("notArrayOfStringsExpressions")
     void testFailingEvaluations(final String expression, final String message) {
-      final var processor = new ExpressionProcessor(EXPRESSION_LANGUAGE, DEFAULT_CONTEXT_LOOKUP);
+      final var processor = new ExpressionProcessor(EXPRESSION_LANGUAGE);
       final var parsedExpression = EXPRESSION_LANGUAGE.parseExpression(expression);
       assertThat(processor.evaluateArrayOfStringsExpression(parsedExpression, -1L))
           .isLeft()
@@ -97,7 +99,7 @@ class ExpressionProcessorTest {
 
     @Test
     void testStringExpression() {
-      final var processor = new ExpressionProcessor(EXPRESSION_LANGUAGE, DEFAULT_CONTEXT_LOOKUP);
+      final var processor = new ExpressionProcessor(EXPRESSION_LANGUAGE);
       final var parsedExpression = EXPRESSION_LANGUAGE.parseExpression("=x");
       assertThat(processor.evaluateStringExpression(parsedExpression, -1L))
           .isLeft()
@@ -111,7 +113,7 @@ class ExpressionProcessorTest {
 
     @Test
     void testLongExpression() {
-      final var processor = new ExpressionProcessor(EXPRESSION_LANGUAGE, DEFAULT_CONTEXT_LOOKUP);
+      final var processor = new ExpressionProcessor(EXPRESSION_LANGUAGE);
       final var parsedExpression = EXPRESSION_LANGUAGE.parseExpression("=x");
       assertThat(processor.evaluateLongExpression(parsedExpression, -1L))
           .isLeft()
@@ -125,7 +127,7 @@ class ExpressionProcessorTest {
 
     @Test
     void testBooleanExpression() {
-      final var processor = new ExpressionProcessor(EXPRESSION_LANGUAGE, DEFAULT_CONTEXT_LOOKUP);
+      final var processor = new ExpressionProcessor(EXPRESSION_LANGUAGE);
       final var parsedExpression = EXPRESSION_LANGUAGE.parseExpression("=x");
       assertThat(processor.evaluateBooleanExpression(parsedExpression, -1L))
           .isLeft()
@@ -139,7 +141,7 @@ class ExpressionProcessorTest {
 
     @Test
     void testIntervalExpression() {
-      final var processor = new ExpressionProcessor(EXPRESSION_LANGUAGE, DEFAULT_CONTEXT_LOOKUP);
+      final var processor = new ExpressionProcessor(EXPRESSION_LANGUAGE);
       final var parsedExpression = EXPRESSION_LANGUAGE.parseExpression("=x");
       assertThat(processor.evaluateIntervalExpression(parsedExpression, -1L))
           .isLeft()
@@ -153,7 +155,7 @@ class ExpressionProcessorTest {
 
     @Test
     void testDateTimeExpression() {
-      final var processor = new ExpressionProcessor(EXPRESSION_LANGUAGE, DEFAULT_CONTEXT_LOOKUP);
+      final var processor = new ExpressionProcessor(EXPRESSION_LANGUAGE);
       final var parsedExpression = EXPRESSION_LANGUAGE.parseExpression("=x");
       assertThat(processor.evaluateDateTimeExpression(parsedExpression, -1L))
           .isLeft()
@@ -167,7 +169,7 @@ class ExpressionProcessorTest {
 
     @Test
     void testArrayExpression() {
-      final var processor = new ExpressionProcessor(EXPRESSION_LANGUAGE, DEFAULT_CONTEXT_LOOKUP);
+      final var processor = new ExpressionProcessor(EXPRESSION_LANGUAGE);
       final var parsedExpression = EXPRESSION_LANGUAGE.parseExpression("=x");
       assertThat(processor.evaluateArrayExpression(parsedExpression, -1L))
           .isLeft()
@@ -181,22 +183,22 @@ class ExpressionProcessorTest {
 
     @Test
     void testStringArrayExpression() {
-      final var processor = new ExpressionProcessor(EXPRESSION_LANGUAGE, DEFAULT_CONTEXT_LOOKUP);
+      final var processor = new ExpressionProcessor(EXPRESSION_LANGUAGE);
       final var parsedExpression = EXPRESSION_LANGUAGE.parseExpression("=[x]");
       assertThat(processor.evaluateArrayOfStringsExpression(parsedExpression, -1L))
           .isLeft()
           .extracting(r -> r.getLeft().getMessage())
           .isEqualTo(
               """
-              Expected result of the expression '[x]' to be 'ARRAY' containing 'STRING' items, \
-              but was 'ARRAY' containing at least one non-'STRING' item. \
-              The evaluation reported the following warnings:
-              [NO_VARIABLE_FOUND] No variable found with name 'x'""");
+             Expected result of the expression '[x]' to be 'ARRAY' containing 'STRING' items, \
+             but was 'ARRAY' containing at least one non-'STRING' item. \
+             The evaluation reported the following warnings:
+             [NO_VARIABLE_FOUND] No variable found with name 'x'""");
     }
 
     @Test
     void testMessageCorrelationKeyExpression() {
-      final var processor = new ExpressionProcessor(EXPRESSION_LANGUAGE, DEFAULT_CONTEXT_LOOKUP);
+      final var processor = new ExpressionProcessor(EXPRESSION_LANGUAGE);
       final var parsedExpression = EXPRESSION_LANGUAGE.parseExpression("=x");
       assertThat(processor.evaluateMessageCorrelationKeyExpression(parsedExpression, -1L))
           .isLeft()
@@ -211,7 +213,7 @@ class ExpressionProcessorTest {
 
     @Test
     void testVariableMappingExpression() {
-      final var processor = new ExpressionProcessor(EXPRESSION_LANGUAGE, DEFAULT_CONTEXT_LOOKUP);
+      final var processor = new ExpressionProcessor(EXPRESSION_LANGUAGE);
       final var parsedExpression = EXPRESSION_LANGUAGE.parseExpression("=x");
       assertThat(processor.evaluateVariableMappingExpression(parsedExpression, -1L))
           .isLeft()
@@ -221,6 +223,79 @@ class ExpressionProcessorTest {
               Expected result of the expression 'x' to be 'OBJECT', but was 'NULL'. \
               The evaluation reported the following warnings:
               [NO_VARIABLE_FOUND] No variable found with name 'x'""");
+    }
+  }
+
+  @Nested
+  class EvaluationContextTest {
+
+    @Test
+    void testNoEvaluationContext() {
+      final Expression expression = EXPRESSION_LANGUAGE.parseExpression("=x");
+      final var processor = new ExpressionProcessor(EXPRESSION_LANGUAGE);
+
+      final var result = processor.evaluateStringExpression(expression, -1L);
+
+      assertThat(result).isLeft();
+    }
+
+    @Test
+    void testSimpleEvaluationContext() {
+      final Expression expression = EXPRESSION_LANGUAGE.parseExpression("=x");
+      final Map<String, DirectBuffer> variables = Map.of("x", MsgPackUtil.asMsgPack("\"foo\""));
+      final var processor = new ExpressionProcessor(EXPRESSION_LANGUAGE, variables::get);
+
+      final var result = processor.evaluateStringExpression(expression, -1L);
+
+      assertThat(result).isRight().right().isEqualTo("foo");
+    }
+
+    @Test
+    void testEnvEvaluationContext() {
+      final var envVariable = System.getenv().keySet().stream().findFirst().get();
+      final Expression expression =
+          EXPRESSION_LANGUAGE.parseExpression(String.format("=camunda.env.%s", envVariable));
+
+      final EnvVariableEvaluationContext envContext =
+          new EnvVariableEvaluationContext(Collections.emptyList());
+
+      final var contextEnvNamespace = NamespacedContext.create().register("env", envContext);
+      final var camundaNamespace =
+          NamespacedContext.create().register("camunda", contextEnvNamespace);
+
+      final var processor = new ExpressionProcessor(EXPRESSION_LANGUAGE, camundaNamespace);
+      final var result = processor.evaluateStringExpression(expression, -1L);
+
+      assertThat(result).isRight().right().isEqualTo(System.getenv(envVariable));
+    }
+
+    @Test
+    void testWithPrimaryContext() {
+      final Expression expression = EXPRESSION_LANGUAGE.parseExpression("=x");
+      final Map<String, DirectBuffer> variables1 = Map.of("x", MsgPackUtil.asMsgPack("\"foo\""));
+      final Map<String, DirectBuffer> variables2 = Map.of("x", MsgPackUtil.asMsgPack("\"bar\""));
+
+      final var processor =
+          new ExpressionProcessor(EXPRESSION_LANGUAGE, variables1::get)
+              .withPrimaryContext(variables2::get);
+
+      final var result = processor.evaluateStringExpression(expression, -1L);
+
+      assertThat(result).isRight().right().isEqualTo("bar");
+    }
+
+    @Test
+    void testIt() {
+      final var envVariable = System.getenv().keySet().stream().findFirst().get();
+      final Expression expression =
+          EXPRESSION_LANGUAGE.parseExpression(String.format("=%s", envVariable));
+
+      final EnvVariableEvaluationContext context =
+          new EnvVariableEvaluationContext(Collections.emptyList());
+      final var processor = new ExpressionProcessor(EXPRESSION_LANGUAGE, context);
+      final var result = processor.evaluateStringExpression(expression, -1L);
+
+      assertThat(result).isRight().right().isEqualTo(System.getenv(envVariable));
     }
   }
 }
