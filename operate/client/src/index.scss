@@ -1,0 +1,132 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+
+@use '@carbon/react' as *;
+
+@use '@carbon/react/scss/themes';
+@use '@carbon/react/scss/theme';
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  -moz-osx-font-smoothing: antialiased;
+  -webkit-font-smoothing: antialiased;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+}
+
+body.nsResizing {
+  cursor: ns-resize !important;
+}
+
+body.ewResizing {
+  cursor: ew-resize !important;
+}
+
+html,
+body,
+#root {
+  height: 100vh;
+  width: 100vw;
+  overflow: hidden;
+
+  .carbonThemeProvider {
+    height: 100%;
+    width: 100;
+  }
+}
+
+#root {
+  min-width: 960px;
+  min-height: 540px;
+}
+
+/* removes dotted default focus */
+button::-moz-focus-inner {
+  border: 0;
+}
+
+ul {
+  padding: 0px;
+  margin: 0px;
+  list-style-type: none;
+}
+
+svg {
+  fill: currentColor;
+}
+
+.bjs-powered-by {
+  display: none;
+}
+
+.bjs-breadcrumbs {
+  display: flex;
+  background-color: #ffffff;
+  border-radius: 8px;
+  padding: 8px !important;
+  padding-bottom: 4px !important;
+  top: 16px !important;
+  left: 16px !important;
+  font-size: 14px !important;
+}
+
+.bjs-breadcrumbs li:last-of-type a {
+  color: #161616 !important;
+}
+
+.bjs-container {
+  --breadcrumbs-item-color: var(--cds-background-brand) !important;
+  --breadcrumbs-font-family: 'IBM Plex Sans', 'Helvetica Neue', Arial,
+    sans-serif;
+}
+
+.cds--modal {
+  p {
+    @include type-style('body-01');
+    margin: var(--cds-spacing-05) 0;
+  }
+}
+
+.cds--g10 {
+  @include theme.theme(themes.$g10);
+}
+
+.cds--g100 {
+  @include theme.theme(themes.$g100);
+}
+
+.cds--data-table-container {
+  padding-top: 0;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  margin: 0;
+}
+
+.cds--overflow-menu-options[aria-label='optional-filters-menu'] {
+  width: unset;
+  button {
+    // filter panel width minus padding
+    max-width: calc(320px - 2rem);
+  }
+  // hide overflow menu caret
+  &::after {
+    display: none;
+  }
+}
