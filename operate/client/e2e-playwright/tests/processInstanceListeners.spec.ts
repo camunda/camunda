@@ -34,7 +34,7 @@ test.beforeAll(async ({request}) => {
 });
 
 test.describe('Process Instance Listeners', () => {
-  test('Listeners tab button show/hide', async ({
+  test('Listeners tab should always be visible', async ({
     page,
     processInstancePage,
   }) => {
@@ -42,9 +42,11 @@ test.describe('Process Instance Listeners', () => {
       initialData.processWithListenerInstance.processInstanceKey;
     processInstancePage.navigateToProcessInstance({id: processInstanceKey});
 
+    await expect(processInstancePage.listenersTabButton).toBeVisible();
+
     // Start flow node should NOT enable listeners tab
     await processInstancePage.instanceHistory.getByText('StartEvent_1').click();
-    await expect(processInstancePage.listenersTabButton).not.toBeVisible();
+    await expect(processInstancePage.listenersTabButton).toBeVisible();
 
     // Service task flow node should enable listeners tab
     await processInstancePage.instanceHistory
@@ -145,18 +147,16 @@ test.describe('Process Instance Listeners', () => {
     const {statusCode} = await zeebeRestApi.completeUserTask({userTaskKey});
     expect(statusCode).toBe(204);
 
-    // check if user task is completed and listener showed up
+    // check if user task is completed, selecting task and moving metadata popup out of the way
     await expect(page.getByTestId('state-overlay-active')).not.toBeVisible();
     await expect(
       page.getByTestId('state-overlay-completedEndEvents'),
     ).toBeVisible();
-    await expect
-      .poll(async () => {
-        await processInstancePage.diagram.clickFlowNode('Service Task B');
-        await processInstancePage.diagram.moveCanvasHorizontally(-200);
-        return processInstancePage.listenersTabButton.isVisible();
-      })
-      .toBeTruthy();
+    await page.waitForTimeout(1000);
+    await processInstancePage.instanceHistory
+      .getByText('Service Task B')
+      .click();
+    await processInstancePage.diagram.moveCanvasHorizontally(-400);
 
     // check if both types of listeners are visible (default filter)
     await processInstancePage.listenersTabButton.click();

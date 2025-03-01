@@ -39,6 +39,7 @@ type State = {
     | 'error';
   currentProcessInstanceId: ProcessInstanceEntity['id'];
   currentId: CurrentId;
+  isListenerTabSelected: boolean;
 };
 
 const DEFAULT_STATE: State = {
@@ -53,6 +54,7 @@ const DEFAULT_STATE: State = {
     type: null,
     value: '',
   },
+  isListenerTabSelected: false,
 };
 
 const MAX_LISTENERS_STORED = 200;
@@ -71,10 +73,6 @@ class ProcessInstanceListeners {
     makeAutoObservable(this);
   }
 
-  get hasFlowNodeListeners() {
-    return this.state.listenersCount > 0;
-  }
-
   get listenersFailureCount() {
     if (!this.state.listenersCount) return 0;
 
@@ -84,6 +82,10 @@ class ProcessInstanceListeners {
 
     return failedListeners?.length || 0;
   }
+
+  setListenerTabVisibility = (value: boolean) => {
+    this.state.isListenerTabSelected = value;
+  };
 
   startFetching = () => {
     if (this.state.status === 'initial') {
