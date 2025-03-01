@@ -58,7 +58,7 @@ public class TasklistAssignUserTaskAuthorizationIT {
   private TestStandaloneCamunda standaloneCamunda =
       new TestStandaloneCamunda()
           .withCamundaExporter()
-          .withSecurityConfig(c -> c.getAuthorizations().setEnabled(true))
+          .withAuthorizationsEnabled()
           .withAuthenticationMethod(AuthenticationMethod.BASIC);
 
   @BeforeEach

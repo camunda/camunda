@@ -47,7 +47,7 @@ public class TasklistCreateProcessInstanceAuthorizationIT {
   private final TestStandaloneCamunda standaloneCamunda =
       new TestStandaloneCamunda()
           .withCamundaExporter()
-          .withSecurityConfig(c -> c.getAuthorizations().setEnabled(true))
+          .withAuthorizationsEnabled()
           .withAuthenticationMethod(AuthenticationMethod.BASIC);
 
   @BeforeEach

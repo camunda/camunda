@@ -47,9 +47,8 @@ public class BasicAuthOverGrpcIT {
   private final TestStandaloneBroker broker =
       new TestStandaloneBroker()
           .withRecordingExporter(true)
-          .withSecurityConfig(c -> c.getAuthorizations().setEnabled(true))
-          .withAuthenticationMethod(AuthenticationMethod.BASIC)
-          .withAuthenticatedAccess();
+          .withAuthorizationsEnabled()
+          .withAuthenticationMethod(AuthenticationMethod.BASIC);
 
   @BeforeEach
   void beforeEach() {
