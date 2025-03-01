@@ -20,10 +20,12 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.response.ProcessInstanceEvent;
+import io.camunda.client.api.search.response.ProcessInstance;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import java.time.Duration;
 import java.time.Instant;
+import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Test;
 
 @CamundaProcessTest
@@ -103,5 +105,35 @@ public class CamundaProcessTestExtensionIT {
 
     assertThat(Duration.between(timeBefore, timeAfter))
         .isCloseTo(timerDuration, Duration.ofSeconds(10));
+  }
+
+  @Test
+  void shouldQueryProcessInstances() {
+    // given
+    final BpmnModelInstance process =
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .name("start")
+            .userTask()
+            .name("task")
+            .endEvent()
+            .name("end")
+            .done();
+
+    client.newDeployResourceCommand().addProcessModel(process, "process.bpmn").send().join();
+
+    // when
+    final ProcessInstanceEvent processInstance =
+        client.newCreateInstanceCommand().bpmnProcessId("process").latestVersion().send().join();
+
+    // then
+    Awaitility.await()
+        .atMost(Duration.ofSeconds(10))
+        .untilAsserted(
+            () ->
+                assertThat(client.newProcessInstanceQuery().send().join().items())
+                    .hasSize(1)
+                    .extracting(ProcessInstance::getProcessInstanceKey)
+                    .contains(processInstance.getProcessInstanceKey()));
   }
 }

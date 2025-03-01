@@ -19,7 +19,6 @@ import io.camunda.client.CamundaClient;
 import io.camunda.client.api.JsonMapper;
 import io.camunda.process.test.impl.assertions.CamundaDataSource;
 import io.camunda.process.test.impl.configuration.CamundaContainerRuntimeConfiguration;
-import io.camunda.process.test.impl.containers.CamundaContainer;
 import io.camunda.process.test.impl.extension.CamundaProcessTestContextImpl;
 import io.camunda.process.test.impl.proxy.CamundaClientProxy;
 import io.camunda.process.test.impl.proxy.CamundaProcessTestContextProxy;
@@ -113,7 +112,7 @@ public class CamundaProcessTestExecutionListener implements TestExecutionListene
         .publishEvent(new ZeebeClientCreatedEvent(this, zeebeClient));
 
     // initialize assertions
-    final CamundaDataSource dataSource = createDataSource(containerRuntime);
+    final CamundaDataSource dataSource = new CamundaDataSource(client);
     CamundaAssert.initialize(dataSource);
 
     // initialize result collector
@@ -205,11 +204,6 @@ public class CamundaProcessTestExecutionListener implements TestExecutionListene
 
   private static boolean hasBeanForType(final TestContext testContext, final Class<?> type) {
     return testContext.getApplicationContext().getBeanNamesForType(type).length > 0;
-  }
-
-  private CamundaDataSource createDataSource(final CamundaContainerRuntime containerRuntime) {
-    final CamundaContainer camundaContainer = containerRuntime.getCamundaContainer();
-    return new CamundaDataSource(camundaContainer.getRestApiAddress().toString());
   }
 
   private static boolean isTestFailed(final TestContext testContext) {

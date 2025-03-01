@@ -18,10 +18,10 @@ package io.camunda.process.test.impl.assertions;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
 
+import io.camunda.client.api.command.ClientException;
 import io.camunda.client.api.search.response.FlowNodeInstance;
 import io.camunda.client.api.search.response.FlowNodeInstanceState;
 import io.camunda.process.test.api.assertions.ElementSelector;
-import io.camunda.process.test.impl.client.CamundaClientNotFoundException;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -162,7 +162,7 @@ public class ElementAssertj extends AbstractAssert<ElementAssertj, String> {
 
     try {
       Awaitility.await()
-          .ignoreException(CamundaClientNotFoundException.class)
+          .ignoreException(ClientException.class)
           .failFast(
               () -> {
                 final List<FlowNodeInstance> flowNodeInstances =
@@ -246,7 +246,7 @@ public class ElementAssertj extends AbstractAssert<ElementAssertj, String> {
 
     try {
       Awaitility.await()
-          .ignoreException(CamundaClientNotFoundException.class)
+          .ignoreException(ClientException.class)
           .untilAsserted(
               () -> {
                 final List<FlowNodeInstance> flowNodeInstances =

@@ -17,7 +17,6 @@ package io.camunda.process.test.api;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.process.test.impl.assertions.CamundaDataSource;
-import io.camunda.process.test.impl.containers.CamundaContainer;
 import io.camunda.process.test.impl.extension.CamundaProcessTestContextImpl;
 import io.camunda.process.test.impl.runtime.CamundaContainerRuntime;
 import io.camunda.process.test.impl.runtime.CamundaContainerRuntimeBuilder;
@@ -132,7 +131,8 @@ public class CamundaProcessTestExtension implements BeforeEachCallback, AfterEac
     store.put(STORE_KEY_CONTEXT, camundaProcessTestContext);
 
     // initialize assertions
-    final CamundaDataSource dataSource = createDataSource(containerRuntime);
+    final CamundaDataSource dataSource =
+        new CamundaDataSource(camundaProcessTestContext.createClient());
     CamundaAssert.initialize(dataSource);
 
     // initialize result collector
@@ -168,11 +168,6 @@ public class CamundaProcessTestExtension implements BeforeEachCallback, AfterEac
 
   private static boolean isNotStatic(final Field field) {
     return !Modifier.isStatic(field.getModifiers());
-  }
-
-  private CamundaDataSource createDataSource(final CamundaContainerRuntime containerRuntime) {
-    final CamundaContainer camundaContainer = containerRuntime.getCamundaContainer();
-    return new CamundaDataSource(camundaContainer.getRestApiAddress().toString());
   }
 
   @Override

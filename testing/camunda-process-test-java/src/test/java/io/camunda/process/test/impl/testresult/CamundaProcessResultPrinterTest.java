@@ -17,9 +17,9 @@ package io.camunda.process.test.impl.testresult;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.client.api.search.response.FlowNodeInstance;
-import io.camunda.client.api.search.response.FlowNodeInstanceState;
-import io.camunda.process.test.impl.client.FlowNodeInstanceDto;
+import io.camunda.client.api.search.response.IncidentErrorType;
+import io.camunda.process.test.utils.FlowNodeInstanceBuilder;
+import io.camunda.process.test.utils.IncidentBuilder;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
@@ -140,15 +140,23 @@ public class CamundaProcessResultPrinterTest {
     final ProcessTestResult processTestResult = new ProcessTestResult();
 
     final ProcessInstanceResult processInstance1 = newProcessInstance(1L, "process-a");
-    final OpenIncident incident1 = newOpenIncident("JOB_NO_RETRIES", "No retries left.", "task-a");
-    final OpenIncident incident2 =
-        newOpenIncident("EXTRACT_VALUE_ERROR", "Failed to evaluate expression.", "task-b");
-    processInstance1.setOpenIncidents(Arrays.asList(incident1, incident2));
+    processInstance1.setOpenIncidents(
+        Arrays.asList(
+            IncidentBuilder.newActiveIncident(IncidentErrorType.JOB_NO_RETRIES, "No retries left.")
+                .setFlowNodeId("task-a")
+                .build(),
+            IncidentBuilder.newActiveIncident(
+                    IncidentErrorType.EXTRACT_VALUE_ERROR, "Failed to evaluate expression.")
+                .setFlowNodeId("task-b")
+                .build()));
 
     final ProcessInstanceResult processInstance2 = newProcessInstance(2L, "process-b");
-    final OpenIncident incident3 =
-        newOpenIncident("UNHANDLED_ERROR_EVENT", "No error catch event found.", "task-c");
-    processInstance2.setOpenIncidents(Collections.singletonList(incident3));
+    processInstance2.setOpenIncidents(
+        Collections.singletonList(
+            IncidentBuilder.newActiveIncident(
+                    IncidentErrorType.UNHANDLED_ERROR_EVENT, "No error catch event found.")
+                .setFlowNodeId("task-c")
+                .build()));
 
     processTestResult.setProcessInstanceTestResults(
         Arrays.asList(processInstance1, processInstance2));
@@ -180,12 +188,16 @@ public class CamundaProcessResultPrinterTest {
     final ProcessInstanceResult processInstance1 = newProcessInstance(1L, "process-a");
     processInstance1.setActiveFlowNodeInstances(
         Arrays.asList(
-            newActiveFlowNodeInstance("task_A", "A"), newActiveFlowNodeInstance("task_B", "B")));
+            FlowNodeInstanceBuilder.newActiveFlowNodeInstance("A", 1L).build(),
+            FlowNodeInstanceBuilder.newActiveFlowNodeInstance("B", 1L).build()));
 
     final ProcessInstanceResult processInstance2 = newProcessInstance(2L, "process-b");
     processInstance2.setActiveFlowNodeInstances(
         Arrays.asList(
-            newActiveFlowNodeInstance("task_C", "C"), newActiveFlowNodeInstance("task_D", null)));
+            FlowNodeInstanceBuilder.newActiveFlowNodeInstance("C", 2L).build(),
+            FlowNodeInstanceBuilder.newActiveFlowNodeInstance("D", 2L)
+                .setFlowNodeName(null)
+                .build()));
 
     processTestResult.setProcessInstanceTestResults(
         Arrays.asList(processInstance1, processInstance2));
@@ -202,12 +214,12 @@ public class CamundaProcessResultPrinterTest {
         .containsSubsequence(
             "Process instance: 1 [process-id: 'process-a']\n",
             "Active elements:\n",
-            "- 'task_A' [name: 'A']\n",
-            "- 'task_B' [name: 'B']\n",
+            "- 'A' [name: 'element_A']\n",
+            "- 'B' [name: 'element_B']\n",
             "Process instance: 2 [process-id: 'process-b']\n",
             "Active elements:\n",
-            "- 'task_C' [name: 'C']\n",
-            "- 'task_D' [name: '']\n");
+            "- 'C' [name: 'element_C']\n",
+            "- 'D' [name: '']\n");
   }
 
   @Test
@@ -243,9 +255,11 @@ public class CamundaProcessResultPrinterTest {
     final ProcessInstanceResult processInstance = newProcessInstance(1L, "process-a");
 
     final String bigIncidentMessage = StringUtils.repeat("x", 1000);
-    final OpenIncident incident = newOpenIncident("JOB_NO_RETRIES", bigIncidentMessage, "task-a");
 
-    processInstance.setOpenIncidents(Collections.singletonList(incident));
+    processInstance.setOpenIncidents(
+        Collections.singletonList(
+            IncidentBuilder.newActiveIncident(IncidentErrorType.JOB_NO_RETRIES, bigIncidentMessage)
+                .setFlowNodeId("task-a")));
     processTestResult.setProcessInstanceTestResults(Collections.singletonList(processInstance));
 
     // when
@@ -268,22 +282,5 @@ public class CamundaProcessResultPrinterTest {
     processInstance.setProcessInstanceKey(processInstanceKey);
     processInstance.setProcessId(processId);
     return processInstance;
-  }
-
-  private static OpenIncident newOpenIncident(
-      final String type, final String message, final String flowNodeId) {
-    final OpenIncident incident = new OpenIncident();
-    incident.setType(type);
-    incident.setMessage(message);
-    incident.setFlowNodeId(flowNodeId);
-    return incident;
-  }
-
-  private static FlowNodeInstance newActiveFlowNodeInstance(final String id, final String name) {
-    final FlowNodeInstanceDto flowNodeInstance = new FlowNodeInstanceDto();
-    flowNodeInstance.setFlowNodeId(id);
-    flowNodeInstance.setFlowNodeName(name);
-    flowNodeInstance.setState(FlowNodeInstanceState.ACTIVE);
-    return flowNodeInstance;
   }
 }
