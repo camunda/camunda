@@ -1,0 +1,15 @@
+{
+  "objectVar": {
+    "innerVar": 123
+  },
+  "stringVar": "string",
+  "numberVar": 12.5,
+  "booleanVar": false,
+  "listVar": [
+    "val1",
+    "val2",
+    123
+  ],
+  "nullVar": null,
+  "businessKey": "12345"
+}
