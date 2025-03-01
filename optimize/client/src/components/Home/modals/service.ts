@@ -10,7 +10,6 @@ import {get} from 'request';
 import {Definition, Tenant} from 'types';
 import {formatters, UNAUTHORIZED_TENANT_ID} from 'services';
 import {t} from 'translation';
-import {getFullURL} from '../../../modules/api';
 
 const {formatTenantName} = formatters;
 
@@ -19,13 +18,13 @@ export type TenantWithDefinitions = Tenant & {definitions: Definition};
 export type DefinitionWithTenants = Omit<Definition, 'key'> & {tenants: Tenant[]; key: string};
 
 export async function getDefinitionsWithTenants(): Promise<DefinitionWithTenants[]> {
-  const response = await get(getFullURL('api/definition'));
+  const response = await get('api/definition');
 
   return await response.json();
 }
 
 export async function getTenantsWithDefinitions(): Promise<TenantWithDefinitions[]> {
-  const response = await get(getFullURL('api/definition/_groupByTenant'));
+  const response = await get('api/definition/_groupByTenant');
 
   return await response.json();
 }
@@ -34,7 +33,7 @@ export async function getDefinitionTenants(
   defintionKey: string,
   defintionType: string
 ): Promise<DefinitionWithTenants> {
-  const response = await get(getFullURL(`api/definition/${defintionType}/${defintionKey}`));
+  const response = await get(`api/definition/${defintionType}/${defintionKey}`);
 
   return await response.json();
 }

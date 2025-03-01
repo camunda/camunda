@@ -7,7 +7,6 @@
  */
 
 import {get, post} from 'request';
-import {getFullURL} from '../../../../modules/api.ts';
 
 export async function loadTenants(type, definitions, collectionId) {
   const payload = {definitions};
@@ -16,7 +15,7 @@ export async function loadTenants(type, definitions, collectionId) {
   }
 
   const response = await post(
-    getFullURL(`api/definition/${type}/_resolveTenantsForVersions`),
+    `api/definition/${type}/_resolveTenantsForVersions`,
     payload
   );
 
@@ -29,7 +28,7 @@ export async function loadVersions(type, collectionId, key) {
     params.filterByCollectionScope = collectionId;
   }
 
-  const response = await get(getFullURL(`api/definition/${type}/${key}/versions`), params);
+  const response = await get(`api/definition/${type}/${key}/versions`, params);
 
   return await response.json();
 }

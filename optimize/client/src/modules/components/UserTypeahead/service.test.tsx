@@ -30,7 +30,7 @@ describe('UserTypeahead service', () => {
 
       const result = await searchIdentities('John', false);
 
-      expect(get).toHaveBeenCalledWith('http://localhost/api/identity/search', {
+      expect(get).toHaveBeenCalledWith('api/identity/search', {
         terms: 'John',
         excludeUserGroups: false,
       });
@@ -45,7 +45,7 @@ describe('UserTypeahead service', () => {
 
       const result = await getUser('1');
 
-      expect(get).toHaveBeenCalledWith('http://localhost/api/identity/1');
+      expect(get).toHaveBeenCalledWith('api/identity/1');
       expect(result).toEqual({id: '1', name: 'John Doe'});
     });
   });

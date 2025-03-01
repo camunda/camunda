@@ -7,7 +7,6 @@
  */
 
 import {get, post, put, del} from 'request';
-import {getFullURL} from '../../modules/api';
 
 export async function loadCollectionEntities(id, sortBy, sortOrder) {
   const params = {};
@@ -16,47 +15,47 @@ export async function loadCollectionEntities(id, sortBy, sortOrder) {
     params.sortOrder = sortOrder;
   }
 
-  const response = await get(getFullURL(`api/collection/${id}/entities`), params);
+  const response = await get(`api/collection/${id}/entities`, params);
   return await response.json();
 }
 
 export async function getUsers(collection) {
-  const response = await get(getFullURL(`api/collection/${collection}/role`));
+  const response = await get(`api/collection/${collection}/role`);
   return await response.json();
 }
 
 export async function addUser(collection, roles) {
-  return await post(getFullURL(`api/collection/${collection}/role`), roles);
+  return await post(`api/collection/${collection}/role`, roles);
 }
 
 export async function editUser(collection, id, role) {
-  return await put(getFullURL(`api/collection/${collection}/role/${id}`), {role});
+  return await put(`api/collection/${collection}/role/${id}`, {role});
 }
 
 export async function removeUser(collection, id) {
-  return await del(getFullURL(`api/collection/${collection}/role/${id}`));
+  return await del(`api/collection/${collection}/role/${id}`);
 }
 
 export async function getSources(collection) {
-  const response = await get(getFullURL(`api/collection/${collection}/scope`));
+  const response = await get(`api/collection/${collection}/scope`);
   return await response.json();
 }
 
 export async function editSource(collection, scopeId, tenants, force = false) {
   return await put(
-    getFullURL(`api/collection/${collection}/scope/${scopeId}`),
+    `api/collection/${collection}/scope/${scopeId}`,
     {tenants},
     {query: {force}}
   );
 }
 
 export async function removeSource(collection, scopeId) {
-  return await del(getFullURL(`api/collection/${collection}/scope/${scopeId}?force=true`));
+  return await del(`api/collection/${collection}/scope/${scopeId}?force=true`);
 }
 
 export async function checkDeleteSourceConflicts(collection, scopeId) {
   const response = await get(
-    getFullURL(`api/collection/${collection}/scope/${scopeId}/delete-conflicts`)
+    `api/collection/${collection}/scope/${scopeId}/delete-conflicts`
   );
   return await response.json();
 }
@@ -66,7 +65,7 @@ export async function importEntity(json, collectionId) {
   if (collectionId) {
     query.collectionId = collectionId;
   }
-  return await post(getFullURL('api/import'), json, {query});
+  return await post('api/import', json, {query});
 }
 
 export async function removeEntities(entities, collectionId) {
@@ -75,7 +74,7 @@ export async function removeEntities(entities, collectionId) {
     query.collectionId = collectionId;
   }
 
-  return await post(getFullURL(`api/entities/delete`), formatRequest(entities));
+  return await post(`api/entities/delete`, formatRequest(entities));
 }
 
 export async function checkConflicts(entities, collectionId) {
@@ -84,22 +83,22 @@ export async function checkConflicts(entities, collectionId) {
     query.collectionId = collectionId;
   }
 
-  const response = await post(getFullURL(`api/entities/delete-conflicts`), formatRequest(entities));
+  const response = await post(`api/entities/delete-conflicts`, formatRequest(entities));
 
   return await response.json();
 }
 
 export async function removeAlerts(alerts) {
-  return await post(getFullURL('api/alert/delete'), getIds(alerts));
+  return await post('api/alert/delete', getIds(alerts));
 }
 
 export async function removeSources(collectionId, scopes) {
-  return await post(getFullURL(`api/collection/${collectionId}/scope/delete`), getIds(scopes));
+  return await post(`api/collection/${collectionId}/scope/delete`, getIds(scopes));
 }
 
 export async function checkSourcesConflicts(collectionId, scopes) {
   const response = await post(
-    getFullURL(`api/collection/${collectionId}/scope/delete-conflicts`),
+    `api/collection/${collectionId}/scope/delete-conflicts`,
     getIds(scopes)
   );
 
@@ -107,7 +106,7 @@ export async function checkSourcesConflicts(collectionId, scopes) {
 }
 
 export async function removeUsers(collectionId, users) {
-  return await post(getFullURL(`api/collection/${collectionId}/roles/delete`), getIds(users));
+  return await post(`api/collection/${collectionId}/roles/delete`, getIds(users));
 }
 
 function getIds(entities) {

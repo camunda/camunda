@@ -7,16 +7,15 @@
  */
 
 import {post, get} from 'request';
-import {getFullURL} from '../../../modules/api';
 
 export async function getVariableNames(reportIds) {
-  const response = await post(getFullURL('api/variables/reports'), {reportIds});
+  const response = await post('api/variables/reports', {reportIds});
 
   return await response.json();
 }
 
 export async function getVariableValues(reportIds, name, type, numResults, valueFilter) {
-  const response = await post(getFullURL('api/variables/values/reports'), {
+  const response = await post('api/variables/values/reports', {
     reportIds,
     name,
     type,
@@ -29,13 +28,13 @@ export async function getVariableValues(reportIds, name, type, numResults, value
 }
 
 export async function loadUsersByReportIds(type, payload) {
-  const response = await post(getFullURL(`api/${type}/search/reports`), payload);
+  const response = await post(`api/${type}/search/reports`, payload);
 
   return await response.json();
 }
 
 export async function getAssigneeNames(type, listOfIds) {
-  const response = await get(getFullURL('api/' + type), {idIn: listOfIds.join(',')});
+  const response = await get('api/' + type, {idIn: listOfIds.join(',')});
 
   return await response.json();
 }

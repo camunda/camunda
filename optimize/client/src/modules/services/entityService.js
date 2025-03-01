@@ -10,10 +10,9 @@ import {get, post, put} from 'request';
 import {track} from 'tracking';
 import {createEventName} from './entityService.tsx';
 export {deleteEntity} from './entityService.tsx';
-import {getFullURL} from '../api.ts';
 
 export async function loadEntity(type, id, query) {
-  const response = await get(getFullURL(`api/${type}/` + id), query);
+  const response = await get(`api/${type}/` + id, query);
   const json = await response.json();
   track(createEventName('view', type), {
     entityId: id,
@@ -23,21 +22,21 @@ export async function loadEntity(type, id, query) {
 }
 
 export async function copyReport(id) {
-  const response = await post(getFullURL(`api/report/${id}/copy`));
+  const response = await post(`api/report/${id}/copy`);
   const json = await response.json();
   return json.id;
 }
 
 export async function updateEntity(type, id, data, options = {}) {
-  const response = await put(getFullURL(`api/${type}/${id}`), data, options);
+  const response = await put(`api/${type}/${id}`, data, options);
   track(createEventName('update', type), {entityId: id});
   return response;
 }
 
 export async function loadReports(collection) {
-  let url = getFullURL('api/report');
+  let url = 'api/report';
   if (collection) {
-    url = getFullURL(`api/collection/${collection}/reports`);
+    url = `api/collection/${collection}/reports`;
   }
   const response = await get(url);
   return await response.json();

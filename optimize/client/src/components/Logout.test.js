@@ -26,7 +26,7 @@ it('should logout from server', () => {
   shallow(<Logout {...props} />);
   runLastEffect();
 
-  expect(get).toHaveBeenCalledWith('http://localhost/api/authentication/logout');
+  expect(get).toHaveBeenCalledWith('api/authentication/logout');
 });
 
 it('should redirect to the index page', async () => {
