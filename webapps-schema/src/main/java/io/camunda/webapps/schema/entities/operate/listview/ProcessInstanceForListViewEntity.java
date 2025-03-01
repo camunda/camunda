@@ -10,13 +10,14 @@ package io.camunda.webapps.schema.entities.operate.listview;
 import static io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate.PROCESS_INSTANCE_JOIN_RELATION;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import io.camunda.webapps.schema.entities.operate.OperateZeebeEntity;
+import io.camunda.webapps.schema.entities.AbstractExporterEntity;
+import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Objects;
 
 public class ProcessInstanceForListViewEntity
-    extends OperateZeebeEntity<ProcessInstanceForListViewEntity> {
+    extends AbstractExporterEntity<ProcessInstanceForListViewEntity> implements TenantOwned {
 
   private Long processDefinitionKey;
   private String processName;
@@ -39,7 +40,7 @@ public class ProcessInstanceForListViewEntity
 
   private boolean incident;
 
-  private String tenantId = DEFAULT_TENANT_ID;
+  private String tenantId = DEFAULT_TENANT_IDENTIFIER;
 
   private ListViewJoinRelation joinRelation =
       new ListViewJoinRelation(PROCESS_INSTANCE_JOIN_RELATION);
@@ -177,6 +178,7 @@ public class ProcessInstanceForListViewEntity
     return this;
   }
 
+  @Override
   public String getTenantId() {
     return tenantId;
   }

@@ -7,11 +7,15 @@
  */
 package io.camunda.webapps.schema.entities.tasklist;
 
+import io.camunda.webapps.schema.entities.AbstractExporterEntity;
+import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import java.util.Objects;
 
 /** Represents draft variable with its value when task is in created state. */
-public class DraftTaskVariableEntity extends TasklistEntity<DraftTaskVariableEntity> {
+public class DraftTaskVariableEntity extends AbstractExporterEntity<DraftTaskVariableEntity>
+    implements TenantOwned {
 
+  private String tenantId = DEFAULT_TENANT_IDENTIFIER;
   private String taskId;
   private String name;
   private String value;
@@ -64,8 +68,18 @@ public class DraftTaskVariableEntity extends TasklistEntity<DraftTaskVariableEnt
   }
 
   @Override
+  public String getTenantId() {
+    return tenantId;
+  }
+
+  public DraftTaskVariableEntity setTenantId(final String tenantId) {
+    this.tenantId = tenantId;
+    return this;
+  }
+
+  @Override
   public int hashCode() {
-    return Objects.hash(super.hashCode(), taskId, name, value, fullValue, isPreview);
+    return Objects.hash(super.hashCode(), taskId, name, value, fullValue, isPreview, tenantId);
   }
 
   @Override
@@ -84,6 +98,7 @@ public class DraftTaskVariableEntity extends TasklistEntity<DraftTaskVariableEnt
         && Objects.equals(taskId, that.taskId)
         && Objects.equals(name, that.name)
         && Objects.equals(value, that.value)
-        && Objects.equals(fullValue, that.fullValue);
+        && Objects.equals(fullValue, that.fullValue)
+        && Objects.equals(tenantId, that.tenantId);
   }
 }
