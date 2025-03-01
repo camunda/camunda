@@ -89,4 +89,9 @@ public class ProcessInstancesArchiverJob implements ArchiverJob {
             executor)
         .thenApplyAsync(ok -> processInstanceKeys.size(), executor);
   }
+
+  @Override
+  public String getCaption() {
+    return "Process instances archiver job";
+  }
 }

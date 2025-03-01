@@ -42,6 +42,11 @@ public class BatchOperationUpdateTask implements BackgroundTask {
         .thenComposeAsync(this::updateBatchOperations, executor);
   }
 
+  @Override
+  public String getCaption() {
+    return "Batch operation update task";
+  }
+
   private CompletionStage<Integer> updateBatchOperations(
       final Collection<String> batchOperationIds) {
     if (batchOperationIds.isEmpty()) {

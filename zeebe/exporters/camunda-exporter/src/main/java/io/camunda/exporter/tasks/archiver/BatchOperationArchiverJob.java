@@ -66,4 +66,9 @@ public class BatchOperationArchiverJob implements ArchiverJob {
             executor)
         .thenApplyAsync(ok -> processInstanceKeys.size(), executor);
   }
+
+  @Override
+  public String toString() {
+    return "Batch operation archiver job";
+  }
 }
