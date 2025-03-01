@@ -25,7 +25,6 @@ import io.camunda.zeebe.engine.processing.processinstance.ProcessInstanceCreatio
 import io.camunda.zeebe.engine.processing.processinstance.ProcessInstanceCreationCreateWithResultProcessor;
 import io.camunda.zeebe.engine.processing.processinstance.ProcessInstanceMigrationMigrateProcessor;
 import io.camunda.zeebe.engine.processing.processinstance.ProcessInstanceModificationModifyProcessor;
-import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessors;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.processing.timer.DueDateTimerChecker;
@@ -40,7 +39,6 @@ import io.camunda.zeebe.engine.state.mutable.MutableElementInstanceState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessMessageSubscriptionState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.state.routing.RoutingInfo;
-import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceBatchIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceCreationIntent;
@@ -57,7 +55,7 @@ import java.util.function.Supplier;
 
 public final class BpmnProcessors {
 
-  public static TypedRecordProcessor<ProcessInstanceRecord> addBpmnStreamProcessor(
+  public static BpmnStreamProcessor addBpmnStreamProcessor(
       final MutableProcessingState processingState,
       final Supplier<ScheduledTaskState> scheduledTaskState,
       final BpmnBehaviors bpmnBehaviors,

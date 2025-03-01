@@ -102,7 +102,9 @@ public enum UserTaskIntent implements ProcessInstanceRelatedIntent {
    * corrections within the same update transition are discarded, and the user task remains in its
    * prior state.
    */
-  UPDATE_DENIED(21);
+  UPDATE_DENIED(21),
+
+  CANCEL(22);
 
   private final short value;
   private final boolean shouldBanInstance;
@@ -166,6 +168,8 @@ public enum UserTaskIntent implements ProcessInstanceRelatedIntent {
         return CLAIMING;
       case 21:
         return UPDATE_DENIED;
+      case 22:
+        return CANCEL;
       default:
         return UNKNOWN;
     }

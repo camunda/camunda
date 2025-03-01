@@ -379,6 +379,7 @@ public final class BpmnJobBehavior {
       case assigning -> JobListenerEventType.ASSIGNING;
       case updating -> JobListenerEventType.UPDATING;
       case completing -> JobListenerEventType.COMPLETING;
+      case canceling -> JobListenerEventType.CANCELING;
       default ->
           throw new IllegalStateException("Unexpected ZeebeTaskListenerEventType: " + eventType);
     };
