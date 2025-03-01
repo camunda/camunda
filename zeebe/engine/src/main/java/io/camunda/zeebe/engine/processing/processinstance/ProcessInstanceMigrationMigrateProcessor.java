@@ -10,11 +10,21 @@ package io.camunda.zeebe.engine.processing.processinstance;
 import static io.camunda.zeebe.engine.processing.processinstance.ProcessInstanceMigrationPreconditions.*;
 import static io.camunda.zeebe.engine.state.immutable.IncidentState.MISSING_INCIDENT;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.zeebe.engine.Loggers;
+import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContextImpl;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
+import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnJobBehavior;
+import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnUserTaskBehavior;
+import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnUserTaskBehavior.UserTaskProperties;
 import io.camunda.zeebe.engine.processing.common.ElementTreePathBuilder;
+import io.camunda.zeebe.engine.processing.deployment.model.element.AbstractFlowElement;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowNode;
+import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableJobWorkerElement;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableSequenceFlow;
+import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableUserTask;
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior.AuthorizationRequest;
@@ -34,9 +44,12 @@ import io.camunda.zeebe.engine.state.immutable.UserTaskState;
 import io.camunda.zeebe.engine.state.immutable.VariableState;
 import io.camunda.zeebe.engine.state.instance.ElementInstance;
 import io.camunda.zeebe.engine.state.routing.RoutingInfo;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskListenerEventType;
 import io.camunda.zeebe.msgpack.spec.MsgPackHelper;
+import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceMigrationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
+import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
 import io.camunda.zeebe.protocol.impl.record.value.variable.VariableRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
@@ -61,6 +74,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.agrona.concurrent.UnsafeBuffer;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 
 public class ProcessInstanceMigrationMigrateProcessor
@@ -68,6 +82,8 @@ public class ProcessInstanceMigrationMigrateProcessor
 
   private static final Logger LOG = Loggers.ENGINE_PROCESSING_LOGGER;
   private static final UnsafeBuffer NIL_VALUE = new UnsafeBuffer(MsgPackHelper.NIL);
+  private static final String ZEEBE_USER_TASK_IMPLEMENTATION = "zeebe user task";
+  private static final String JOB_WORKER_IMPLEMENTATION = "job worker";
   private final VariableRecord variableRecord = new VariableRecord().setValue(NIL_VALUE);
 
   private final StateWriter stateWriter;
@@ -81,6 +97,8 @@ public class ProcessInstanceMigrationMigrateProcessor
   private final IncidentState incidentState;
   private final EventScopeInstanceState eventScopeInstanceState;
   private final AuthorizationCheckBehavior authCheckBehavior;
+  private final BpmnUserTaskBehavior userTaskBehavior;
+  private final BpmnJobBehavior jobBehavior;
   private final ProcessInstanceMigrationCatchEventBehaviour migrationCatchEventBehaviour;
   private final KeyGenerator keyGenerator;
 
@@ -104,6 +122,8 @@ public class ProcessInstanceMigrationMigrateProcessor
     incidentState = processingState.getIncidentState();
     eventScopeInstanceState = processingState.getEventScopeInstanceState();
     this.authCheckBehavior = authCheckBehavior;
+    userTaskBehavior = bpmnBehaviors.userTaskBehavior();
+    jobBehavior = bpmnBehaviors.jobBehavior();
     this.keyGenerator = keyGenerator;
 
     migrationCatchEventBehaviour =
@@ -238,8 +258,8 @@ public class ProcessInstanceMigrationMigrateProcessor
     requireNonNullTargetElementId(targetElementId, processInstanceKey, elementId);
     requireSameElementType(
         targetProcessDefinition, targetElementId, elementInstance, processInstanceKey);
-    requireSameUserTaskImplementation(
-        targetProcessDefinition, targetElementId, elementInstance, processInstanceKey);
+    /*requireSameUserTaskImplementation(
+    targetProcessDefinition, targetElementId, elementInstance, processInstanceKey);*/
     requireUnchangedFlowScope(
         elementInstanceState, elementInstanceRecord, targetProcessDefinition, targetElementId);
     requireNoEventSubprocessInSource(
@@ -335,7 +355,111 @@ public class ProcessInstanceMigrationMigrateProcessor
               keyGenerator.nextKey(), ProcessInstanceIntent.ELEMENT_MIGRATED, sequenceFlowRecord);
         });
 
-    if (elementInstance.getJobKey() > 0) {
+    final boolean isUserTaskConversion =
+        isUserTaskConversion(targetProcessDefinition, targetElementId, elementInstance);
+
+    if (isUserTaskConversion) {
+      final var job = jobState.getJob(elementInstance.getJobKey());
+      if (job == null) {
+        throw new SafetyCheckFailedException(
+            String.format(
+                """
+                Expected to migrate a job for process instance with key '%d', \
+                but could not find job with key '%d'. \
+                Please report this as a bug""",
+                processInstanceKey, elementInstance.getUserTaskKey()));
+      }
+      final Map<String, String> customHeaders = job.getCustomHeaders();
+      final UserTaskProperties userTaskProperties = new UserTaskProperties();
+      final ExecutableJobWorkerElement sourceElement =
+          sourceProcessDefinition
+              .getProcess()
+              .getElementById(elementId, ExecutableJobWorkerElement.class);
+
+      final ObjectMapper objectMapper = new ObjectMapper();
+
+      final String assignee = customHeaders.get(Protocol.USER_TASK_ASSIGNEE_HEADER_NAME);
+      if (assignee != null) {
+        userTaskProperties.assignee(assignee);
+      }
+      final String candidateGroups =
+          customHeaders.get(Protocol.USER_TASK_CANDIDATE_GROUPS_HEADER_NAME);
+      if (candidateGroups != null) {
+        try {
+          userTaskProperties.candidateGroups(
+              objectMapper.readValue(candidateGroups, new TypeReference<>() {}));
+        } catch (final JsonProcessingException e) {
+          throw new RuntimeException(e);
+        }
+      }
+      final String candidateUsers =
+          customHeaders.get(Protocol.USER_TASK_CANDIDATE_USERS_HEADER_NAME);
+      if (candidateUsers != null) {
+        try {
+          userTaskProperties.candidateUsers(
+              objectMapper.readValue(candidateUsers, new TypeReference<>() {}));
+        } catch (final JsonProcessingException e) {
+          throw new RuntimeException(e);
+        }
+      }
+      final String dueDate = customHeaders.get(Protocol.USER_TASK_DUE_DATE_HEADER_NAME);
+      if (dueDate != null) {
+        userTaskProperties.dueDate(dueDate);
+      }
+      final String followUpDate = customHeaders.get(Protocol.USER_TASK_FOLLOW_UP_DATE_HEADER_NAME);
+      if (followUpDate != null) {
+        userTaskProperties.followUpDate(followUpDate);
+      }
+      final String formKey = customHeaders.get(Protocol.USER_TASK_FORM_KEY_HEADER_NAME);
+      if (formKey != null) {
+        // external form
+        if (sourceElement.getJobWorkerProperties().getFormId() == null) {
+          userTaskProperties.externalFormReference(formKey);
+        } else {
+          // internal form
+          userTaskProperties.formKey(Long.parseLong(formKey));
+        }
+      }
+
+      final var context = new BpmnElementContextImpl();
+      context.init(elementInstance.getKey(), elementInstanceRecord, elementInstance.getState());
+
+      final ExecutableUserTask targetElement =
+          targetProcessDefinition
+              .getProcess()
+              .getElementById(targetElementId, ExecutableUserTask.class);
+
+      final UserTaskRecord userTaskRecord =
+          userTaskBehavior.createNewUserTask(
+              context,
+              sourceElement.getJobWorkerProperties().getTaskHeaders(),
+              targetElement.getId(),
+              userTaskProperties);
+      userTaskBehavior.userTaskCreated(userTaskRecord);
+
+      if (StringUtils.isNotEmpty(userTaskProperties.getAssignee())) {
+        userTaskBehavior.userTaskAssigning(userTaskRecord, assignee);
+        targetElement.getTaskListeners(ZeebeTaskListenerEventType.assigning).stream()
+            .findFirst()
+            .ifPresentOrElse(
+                listener ->
+                    jobBehavior.createNewTaskListenerJob(
+                        context, userTaskRecord, listener, userTaskRecord.getChangedAttributes()),
+                () -> userTaskBehavior.userTaskAssigned(userTaskRecord, assignee));
+      }
+
+      stateWriter.appendFollowUpEvent(
+          elementInstance.getJobKey(),
+          JobIntent.CANCELED,
+          job.setProcessDefinitionKey(targetProcessDefinition.getKey())
+              .setProcessDefinitionVersion(targetProcessDefinition.getVersion())
+              .setBpmnProcessId(targetProcessDefinition.getBpmnProcessId())
+              .setElementId(targetElementId));
+
+      // TODO: raise incident if job based user task contains an embedded form
+    }
+
+    if (elementInstance.getJobKey() > 0 && !isUserTaskConversion) {
       final var job = jobState.getJob(elementInstance.getJobKey());
       if (job == null) {
         throw new SafetyCheckFailedException(
@@ -596,6 +720,39 @@ public class ProcessInstanceMigrationMigrateProcessor
               return activeFlow;
             })
         .collect(Collectors.toSet());
+  }
+
+  private static boolean isUserTaskConversion(
+      final DeployedProcess targetProcessDefinition,
+      final String targetElementId,
+      final ElementInstance elementInstance) {
+    final ProcessInstanceRecord elementInstanceRecord = elementInstance.getValue();
+    if (elementInstanceRecord.getBpmnElementType() != BpmnElementType.USER_TASK) {
+      return false;
+    }
+
+    final AbstractFlowElement targetElement =
+        targetProcessDefinition.getProcess().getElementById(targetElementId);
+    final BpmnElementType targetElementType = targetElement.getElementType();
+    if (targetElementType != BpmnElementType.USER_TASK) {
+      return false;
+    }
+
+    final ExecutableUserTask targetUserTask =
+        targetProcessDefinition
+            .getProcess()
+            .getElementById(targetElementId, ExecutableUserTask.class);
+    final String targetUserTaskType =
+        targetUserTask.getUserTaskProperties() != null
+            ? ZEEBE_USER_TASK_IMPLEMENTATION
+            : JOB_WORKER_IMPLEMENTATION;
+    final String sourceUserTaskType =
+        elementInstance.getUserTaskKey() > 0
+            ? ZEEBE_USER_TASK_IMPLEMENTATION
+            : JOB_WORKER_IMPLEMENTATION;
+
+    return sourceUserTaskType.equals(JOB_WORKER_IMPLEMENTATION)
+        && targetUserTaskType.equals(ZEEBE_USER_TASK_IMPLEMENTATION);
   }
 
   /**
