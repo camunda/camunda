@@ -11,6 +11,8 @@ import static io.camunda.search.query.SearchQueryBuilders.processInstanceSearchQ
 
 import io.camunda.search.clients.ProcessInstanceSearchClient;
 import io.camunda.search.entities.ProcessInstanceEntity;
+import io.camunda.search.entities.ProcessInstanceEntity.ProcessInstanceState;
+import io.camunda.search.filter.ProcessInstanceFilter;
 import io.camunda.search.query.ProcessInstanceQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.auth.Authentication;
@@ -21,10 +23,12 @@ import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.util.ObjectBuilder;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerCancelProcessInstanceRequest;
+import io.camunda.zeebe.gateway.impl.broker.request.BrokerCreateBatchOperationRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerCreateProcessInstanceRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerCreateProcessInstanceWithResultRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerMigrateProcessInstanceRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerModifyProcessInstanceRequest;
+import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationCreationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationStartInstruction;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceMigrationMappingInstruction;
@@ -34,14 +38,22 @@ import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstan
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceModificationTerminateInstruction;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceResultRecord;
+import io.camunda.zeebe.protocol.record.value.BatchOperationType;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
+import java.util.stream.Collectors;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public final class ProcessInstanceServices
     extends SearchQueryService<
-        ProcessInstanceServices, ProcessInstanceQuery, ProcessInstanceEntity> {
+    ProcessInstanceServices, ProcessInstanceQuery, ProcessInstanceEntity> {
+
+  private static final Logger LOGGER = LoggerFactory.getLogger(ProcessInstanceServices.class);
 
   private final ProcessInstanceSearchClient processInstanceSearchClient;
 
@@ -138,6 +150,45 @@ public final class ProcessInstanceServices
     return sendBrokerRequest(brokerRequest);
   }
 
+  public CompletableFuture<BatchOperationCreationRecord> cancelProcessInstanceBatchOperationWithResult(
+      final ProcessInstanceFilter filter) {
+    final var rootInstanceFilter = filter.toBuilder()
+        .parentProcessInstanceKeys(-1L) // TODO is this correct for all exporters??
+        .states(ProcessInstanceState.ACTIVE.name())
+        .build();
+
+    final Set<Long> piKeys = new HashSet<>();
+    boolean hasNextPage = true;
+    int offset = 0;
+    final int pageSize = 100;
+    while (hasNextPage) {
+      final int finalOffset = offset;
+      final var query = processInstanceSearchQuery(
+          q -> q.filter(rootInstanceFilter)
+              .page(p -> p.from(finalOffset).size(pageSize)));
+      final var result = search(query);
+
+      final var processInstanceKeys = result.items().stream()
+          .map(ProcessInstanceEntity::processInstanceKey).collect(Collectors.toSet());
+      piKeys.addAll(processInstanceKeys);
+
+      if (result.total() > offset + pageSize) {
+        offset += pageSize;
+      } else {
+        hasNextPage = false;
+      }
+    }
+
+    final var brokerRequest =
+        new BrokerCreateBatchOperationRequest()
+            .setKeys(piKeys)
+            .setBatchOperationType(BatchOperationType.PROCESS_CANCELLATION);
+
+    LOGGER.info("Cancelling {} process instances", piKeys.size());
+
+    return sendBrokerRequest(brokerRequest);
+  }
+
   public CompletableFuture<ProcessInstanceMigrationRecord> migrateProcessInstance(
       final ProcessInstanceMigrateRequest request) {
     final var brokerRequest =
@@ -176,19 +227,27 @@ public final class ProcessInstanceServices
       Long requestTimeout,
       Long operationReference,
       List<ProcessInstanceCreationStartInstruction> startInstructions,
-      List<String> fetchVariables) {}
+      List<String> fetchVariables) {
 
-  public record ProcessInstanceCancelRequest(Long processInstanceKey, Long operationReference) {}
+  }
+
+  public record ProcessInstanceCancelRequest(Long processInstanceKey, Long operationReference) {
+
+  }
 
   public record ProcessInstanceMigrateRequest(
       Long processInstanceKey,
       Long targetProcessDefinitionKey,
       List<ProcessInstanceMigrationMappingInstruction> mappingInstructions,
-      Long operationReference) {}
+      Long operationReference) {
+
+  }
 
   public record ProcessInstanceModifyRequest(
       Long processInstanceKey,
       List<ProcessInstanceModificationActivateInstruction> activateInstructions,
       List<ProcessInstanceModificationTerminateInstruction> terminateInstructions,
-      Long operationReference) {}
+      Long operationReference) {
+
+  }
 }

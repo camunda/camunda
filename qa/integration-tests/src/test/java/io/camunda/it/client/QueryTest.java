@@ -14,6 +14,7 @@ import io.camunda.client.CamundaClient;
 import io.camunda.client.api.command.CreateProcessInstanceCommandStep1;
 import io.camunda.client.api.response.DeploymentEvent;
 import io.camunda.client.api.response.ProcessInstanceEvent;
+import io.camunda.client.api.search.response.ProcessInstanceState;
 import io.camunda.client.api.search.response.SearchQueryResponse;
 import java.util.Comparator;
 import java.util.List;
@@ -77,7 +78,7 @@ public class QueryTest {
       final CamundaClient camundaClient, final String bpmnProcessId, final String payload) {
     final CreateProcessInstanceCommandStep1.CreateProcessInstanceCommandStep3
         createProcessInstanceCommandStep3 =
-            camundaClient.newCreateInstanceCommand().bpmnProcessId(bpmnProcessId).latestVersion();
+        camundaClient.newCreateInstanceCommand().bpmnProcessId(bpmnProcessId).latestVersion();
     if (payload != null) {
       createProcessInstanceCommandStep3.variables(payload);
     }
@@ -93,6 +94,22 @@ public class QueryTest {
             () -> {
               final var result = camundaClient.newProcessInstanceQuery().send().join();
               assertThat(result.page().totalItems()).isEqualTo(expectedProcessInstances);
+            });
+  }
+
+  public static void waitForProcessInstanceToBeTerminated(
+      final CamundaClient camundaClient, final Long processInstanceKey) {
+    Awaitility.await("should wait until process is terminated")
+        .atMost(Duration.ofSeconds(60))
+        .ignoreExceptions() // Ignore exceptions and continue retrying
+        .untilAsserted(
+            () -> {
+              final var result =
+                  camundaClient
+                      .newProcessInstanceGetRequest(processInstanceKey)
+                      .send()
+                      .join();
+              assertThat(result.getState()).isEqualTo(ProcessInstanceState.TERMINATED);
             });
   }
 

@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="io.camunda.db.rdbms.sql.BatchOperationMapper">
+
+  <resultMap id="BatchOperationResultMap"
+    type="io.camunda.db.rdbms.write.domain.BatchOperationDbModel">
+    <constructor>
+      <idArg column="BATCH_OPERATION_KEY" javaType="java.lang.Long"/>
+    </constructor>
+    <result column="OPERATION_TYPE" property="operationType" javaType="java.lang.String"/>
+    <result column="START_DATE" property="startDate" javaType="java.time.OffsetDateTime"/>
+    <result column="END_DATE" property="endDate" javaType="java.time.OffsetDateTime"/>
+    <result column="OPERATIONS_TOTAL_COUNT" property="operationsTotalCount" javaType="int"/>
+    <result column="OPERATIONS_FAILED_COUNT" property="operationsFailedCount" javaType="int"/>
+    <result column="OPERATIONS_COMPLETED_COUNT" property="operationsCompletedCount" javaType="int"/>
+    <collection property="items" ofType="java.lang.Long" javaType="java.util.Set">
+      <id column="ITEM_KEY"/>
+    </collection>
+  </resultMap>
+
+  <insert id="insert" parameterType="io.camunda.db.rdbms.write.domain.BatchOperationDbModel">
+    INSERT INTO BATCH_OPERATION (BATCH_OPERATION_KEY,
+                                 OPERATION_TYPE,
+                                 START_DATE,
+                                 END_DATE,
+                                 OPERATIONS_TOTAL_COUNT,
+                                 OPERATIONS_FAILED_COUNT,
+                                 OPERATIONS_COMPLETED_COUNT)
+    VALUES (#{batchOperationKey},
+            #{operationType},
+            #{startDate},
+            #{endDate},
+            #{operationsTotalCount},
+            #{operationsFailedCount},
+            #{operationsCompletedCount})
+  </insert>
+
+  <insert id="insertItems"
+    parameterType="io.camunda.db.rdbms.sql.BatchOperationMapper$BatchOperationItemsDto">
+    INSERT INTO BATCH_OPERATION_ITEM (BATCH_OPERATION_KEY, ITEM_KEY)
+    VALUES
+    <foreach collection="items" item="itemKey" separator=",">
+      (#{batchOperationKey}, #{itemKey})
+    </foreach>
+  </insert>
+
+  <update id="updateCompleted"
+    parameterType="io.camunda.db.rdbms.sql.BatchOperationMapper$BatchOperationUpdateDto">
+    UPDATE BATCH_OPERATION
+    SET END_DATE                   = #{endDate},
+        OPERATIONS_FAILED_COUNT    = #{operationsFailedCount},
+        OPERATIONS_COMPLETED_COUNT = #{operationsCompletedCount}
+    WHERE BATCH_OPERATION_KEY = #{batchOperationKey}
+  </update>
+
+  <select id="count" resultType="java.lang.Long">
+    SELECT COUNT(*)
+    FROM BATCH_OPERATION
+  </select>
+
+  <select id="search" resultMap="BatchOperationResultMap">
+    SELECT bo.*,
+           boi.ITEM_KEY
+    FROM BATCH_OPERATION bo
+           LEFT JOIN ${prefix}BATCH_OPERATION_ITEM boi
+                     ON (bo.BATCH_OPERATION_KEY = boi.BATCH_OPERATION_KEY)
+  </select>
+
+</mapper>
