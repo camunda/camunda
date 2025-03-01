@@ -63,7 +63,7 @@
     <version.httpcore5>5.3.3</version.httpcore5>
     <version.httpcomponents>4.4.16</version.httpcomponents>
     <version.identity>8.5.13</version.identity>
-    <version.jackson>2.18.2</version.jackson>
+    <version.jackson>2.18.3</version.jackson>
     <version.jna>5.14.0</version.jna>
     <version.junit>5.10.3</version.junit>
     <version.junit4>4.13.2</version.junit4>
