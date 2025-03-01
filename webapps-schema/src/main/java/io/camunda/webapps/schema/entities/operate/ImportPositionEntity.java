@@ -8,10 +8,14 @@
 package io.camunda.webapps.schema.entities.operate;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
-import io.camunda.webapps.schema.entities.AbstractExporterEntity;
+import io.camunda.webapps.schema.entities.ExporterEntity;
+import io.camunda.webapps.schema.entities.PartitionedEntity;
 import java.util.Objects;
 
-public class ImportPositionEntity extends AbstractExporterEntity<ImportPositionEntity> {
+public class ImportPositionEntity
+    implements ExporterEntity<ImportPositionEntity>, PartitionedEntity<ImportPositionEntity> {
+
+  private String id;
 
   private String aliasName;
 
@@ -52,10 +56,12 @@ public class ImportPositionEntity extends AbstractExporterEntity<ImportPositionE
     return this;
   }
 
+  @Override
   public int getPartitionId() {
     return partitionId;
   }
 
+  @Override
   public ImportPositionEntity setPartitionId(final int partitionId) {
     this.partitionId = partitionId;
     return this;
@@ -112,15 +118,15 @@ public class ImportPositionEntity extends AbstractExporterEntity<ImportPositionE
   }
 
   @Override
+  public ImportPositionEntity setId(final String id) {
+    this.id = id;
+    return this;
+  }
+
+  @Override
   public int hashCode() {
     return Objects.hash(
-        super.hashCode(),
-        aliasName,
-        partitionId,
-        position,
-        sequence,
-        postImporterPosition,
-        indexName);
+        id, aliasName, partitionId, position, sequence, postImporterPosition, indexName);
   }
 
   @Override
@@ -131,11 +137,9 @@ public class ImportPositionEntity extends AbstractExporterEntity<ImportPositionE
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    if (!super.equals(o)) {
-      return false;
-    }
     final ImportPositionEntity that = (ImportPositionEntity) o;
-    return partitionId == that.partitionId
+    return Objects.equals(id, that.id)
+        && partitionId == that.partitionId
         && position == that.position
         && sequence == that.sequence
         && Objects.equals(aliasName, that.aliasName)
