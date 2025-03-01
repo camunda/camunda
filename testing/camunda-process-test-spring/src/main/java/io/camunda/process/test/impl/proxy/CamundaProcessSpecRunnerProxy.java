@@ -13,17 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.camunda;
+package io.camunda.process.test.impl.proxy;
 
-import io.camunda.spring.client.annotation.Deployment;
-import org.springframework.boot.SpringApplication;
-import org.springframework.boot.autoconfigure.SpringBootApplication;
+import io.camunda.process.test.api.spec.CamundaProcessSpecRunner;
 
-@SpringBootApplication
-@Deployment(resources = "classpath*:/bpmn/**/*.bpmn")
-public class MySpringBootApplication {
+public class CamundaProcessSpecRunnerProxy extends AbstractClientProxy<CamundaProcessSpecRunner> {
 
-  public static void main(final String[] args) {
-    SpringApplication.run(MySpringBootApplication.class, args);
+  @Override
+  protected Class<CamundaProcessSpecRunner> getDelegateClass() {
+    return CamundaProcessSpecRunner.class;
   }
 }

@@ -1,0 +1,21 @@
+spring.jackson.mapper.accept-case-insensitive-enums: true
+
+io:
+  camunda:
+    process:
+      test:
+        connectors-enabled: false
+
+logging:
+  level:
+    root: info
+    io:
+      camunda:
+        process:
+          test: info
+    # Hide default logging from Testcontainers
+    org:
+      testcontainers: warn
+    tc: error
+    tc.camunda: warn
+    tc.elasticsearch: warn
