@@ -1,0 +1,97 @@
+<<<<<<< HEAD
+=======
+name: Zeebe Weekly medic benchmark
+on:
+  workflow_dispatch: { }
+  schedule:
+    # Runs at 1am every monday https://crontab.guru/#0_1_*_*_1
+    - cron: 0 1 * * 1
+
+jobs:
+  delete-old-benchmarks:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: 'read'
+      id-token: 'write'
+    steps:
+      - uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: 'projects/628707732411/locations/global/workloadIdentityPools/zeebe-gh-actions/providers/gha-provider'
+          service_account: 'zeebe-gh-actions@zeebe-io.iam.gserviceaccount.com'
+      - uses: google-github-actions/get-gke-credentials@v2.3.0
+        with:
+          cluster_name: zeebe-cluster
+          location: europe-west1-b
+      - name: Collect benchmark data
+        id: data
+        run: |
+          # Get all namespaces, filter for medic benchmarks and select the oldest one
+          echo "normal=$(kubectl get ns -o name | grep -E namespace/medic-y-[0-9]+-cw-[0-9]+-[a-z0-9]+-benchmark$ | sort -V | head -n1)" >> $GITHUB_OUTPUT
+      - name: Delete benchmarks
+        run: |
+          kubectl delete ${{ steps.data.outputs.normal }}
+          kubectl delete ${{ steps.data.outputs.normal }}-mixed
+          kubectl delete ${{ steps.data.outputs.normal }}-latency
+  benchmark-data:
+    name: Collect benchmark data
+    runs-on: ubuntu-latest
+    outputs:
+      full-ref: ${{ steps.data.outputs.full-ref }}
+      benchmark: ${{ steps.data.outputs.benchmark }}
+      operate: ${{ steps.data.outputs.operate }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Collect benchmark data
+        id: data
+        run: |
+          echo "full-ref"=$(git rev-parse HEAD) >> $GITHUB_OUTPUT
+          echo "benchmark=medic-y-$(date +%Y)-cw-$(date +%V)-$(git rev-parse --short HEAD)-benchmark" >> $GITHUB_OUTPUT
+          echo "operate=operate-y-$(date +%Y)-cw-$(date +%V)" >> $GITHUB_OUTPUT
+
+
+  setup-normal-benchmark:
+    name: Normal Benchmark
+    needs:
+      - benchmark-data
+      - delete-old-benchmarks
+    uses: ./.github/workflows/zeebe-benchmark.yml
+    secrets: inherit
+    with:
+      name: ${{ needs.benchmark-data.outputs.benchmark }}
+      cluster: zeebe-cluster
+      cluster-region: europe-west1-b
+      ref: ${{ needs.benchmark-data.outputs.full-ref }}
+      publish: "slack"
+  setup-mixed-benchmark:
+    name: Mixed Benchmark
+    uses: ./.github/workflows/zeebe-benchmark.yml
+    secrets: inherit
+    needs:
+      - benchmark-data
+      - delete-old-benchmarks
+    with:
+      name: ${{ needs.benchmark-data.outputs.benchmark }}-mixed
+      cluster: zeebe-cluster
+      cluster-region: europe-west1-b
+      ref: ${{ needs.benchmark-data.outputs.full-ref }}
+      operate-tag: ${{ needs.benchmark-data.outputs.operate }}
+      benchmark-load: >
+        -f https://raw.githubusercontent.com/camunda/zeebe-benchmark-helm/refs/heads/main/charts/zeebe-benchmark/values-realistic-benchmark.yaml
+        --set camunda-platform.operate.image.repository=gcr.io/zeebe-io/operate
+        --set camunda-platform.operate.image.tag=${{ needs.benchmark-data.outputs.operate }}
+  setup-latency-benchmark:
+    name: Latency Benchmark
+    uses: ./.github/workflows/zeebe-benchmark.yml
+    secrets: inherit
+    needs:
+      - benchmark-data
+      - delete-old-benchmarks
+    with:
+      name: ${{ needs.benchmark-data.outputs.benchmark }}-latency
+      cluster: zeebe-cluster
+      cluster-region: europe-west1-b
+      ref: ${{ needs.benchmark-data.outputs.full-ref }}
+      benchmark-load: >
+        --set starter.rate=1
+        --set workers.benchmark.replicas=1
+>>>>>>> 6b618e7f (ci: remove broken benchmark measurement support)
