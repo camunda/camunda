@@ -194,14 +194,6 @@ public class OpensearchTestRuleProvider implements SearchTestRuleProvider {
   }
 
   @Override
-  public void processRecordsWithTypeAndWait(
-      final ImportValueType importValueType,
-      final Predicate<Object[]> predicate,
-      final Object... arguments) {
-    processRecordsAndWaitFor(getRecordsReaders(importValueType), 50, predicate, null, arguments);
-  }
-
-  @Override
   public void processRecordsAndWaitFor(
       final Collection<RecordsReader> readers,
       final Integer maxWaitingRounds,
