@@ -40,6 +40,8 @@ final class EngineCfgTest {
         .isEqualTo(EngineConfiguration.DEFAULT_PROCESS_CACHE_CAPACITY);
     assertThat(configuration.getValidatorsResultsOutputMaxSize())
         .isEqualTo(EngineConfiguration.DEFAULT_VALIDATORS_RESULTS_OUTPUT_MAX_SIZE);
+    assertThat(configuration.getMaxProcessDepth())
+        .isEqualTo(EngineConfiguration.DEFAULT_MAX_PROCESS_DEPTH);
   }
 
   @Test
@@ -60,5 +62,6 @@ final class EngineCfgTest {
     assertThat(configuration.getDrgCacheCapacity()).isEqualTo(2000L);
     assertThat(configuration.getDrgCacheCapacity()).isEqualTo(2000L);
     assertThat(configuration.getValidatorsResultsOutputMaxSize()).isEqualTo(2000);
+    assertThat(configuration.getMaxProcessDepth()).isEqualTo(2000);
   }
 }
