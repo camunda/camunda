@@ -27,13 +27,13 @@ import org.apache.hc.client5.http.config.RequestConfig;
 public final class AssignGroupToTenantCommandImpl implements AssignGroupToTenantCommandStep1 {
 
   private final HttpClient httpClient;
-  private final long tenantKey;
+  private final String tenantId;
   private final RequestConfig.Builder httpRequestConfig;
   private long groupKey;
 
-  public AssignGroupToTenantCommandImpl(final HttpClient httpClient, final long tenantKey) {
+  public AssignGroupToTenantCommandImpl(final HttpClient httpClient, final String tenantId) {
     this.httpClient = httpClient;
-    this.tenantKey = tenantKey;
+    this.tenantId = tenantId;
     httpRequestConfig = httpClient.newRequestConfig();
   }
 
@@ -55,7 +55,7 @@ public final class AssignGroupToTenantCommandImpl implements AssignGroupToTenant
     ArgumentUtil.ensureNotNull("groupKey", groupKey);
     final HttpCamundaFuture<AssignGroupToTenantResponse> result = new HttpCamundaFuture<>();
     httpClient.put(
-        "/tenants/" + tenantKey + "/groups/" + groupKey,
+        "/tenants/" + tenantId + "/groups/" + groupKey,
         null, // No request body needed
         httpRequestConfig.build(),
         result);

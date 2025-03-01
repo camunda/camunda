@@ -27,14 +27,14 @@ import org.apache.hc.client5.http.config.RequestConfig;
 
 public final class AssignMappingToTenantCommandImpl implements AssignMappingToTenantCommandStep1 {
 
-  private final long tenantKey;
+  private final String tenantId;
   private long mappingKey;
   private final HttpClient httpClient;
   private final RequestConfig.Builder httpRequestConfig;
 
-  public AssignMappingToTenantCommandImpl(final HttpClient httpClient, final long tenantKey) {
+  public AssignMappingToTenantCommandImpl(final HttpClient httpClient, final String tenantId) {
     this.httpClient = httpClient;
-    this.tenantKey = tenantKey;
+    this.tenantId = tenantId;
     httpRequestConfig = httpClient.newRequestConfig();
   }
 
@@ -54,7 +54,7 @@ public final class AssignMappingToTenantCommandImpl implements AssignMappingToTe
   @Override
   public CamundaFuture<AssignMappingToTenantResponse> send() {
     final HttpCamundaFuture<AssignMappingToTenantResponse> result = new HttpCamundaFuture<>();
-    final String endpoint = String.format("/tenants/%d/mapping-rules/%d", tenantKey, mappingKey);
+    final String endpoint = String.format("/tenants/%s/mapping-rules/%d", tenantId, mappingKey);
     httpClient.put(endpoint, null, httpRequestConfig.build(), result);
     return result;
   }

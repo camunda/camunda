@@ -18,6 +18,7 @@ import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
 import java.time.Duration;
+import java.util.UUID;
 import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -54,11 +55,11 @@ class AssignGroupToTenantTest {
   @Test
   void shouldAssignGroupToTenant() {
     // when
-    client.newAssignGroupToTenantCommand(tenantKey).groupKey(groupKey).send().join();
+    client.newAssignGroupToTenantCommand(TENANT_ID).groupKey(groupKey).send().join();
 
     // then
     ZeebeAssertHelper.assertEntityAssignedToTenant(
-        tenantKey,
+        TENANT_ID,
         groupKey,
         tenant -> {
           assertThat(tenant.getTenantKey()).isEqualTo(tenantKey);
@@ -69,21 +70,21 @@ class AssignGroupToTenantTest {
   @Test
   void shouldRejectIfTenantDoesNotExist() {
     // given
-    final long nonExistentTenantKey = 999999L;
+    final var nonExistentTenantId = UUID.randomUUID().toString();
 
     // when / then
     assertThatThrownBy(
             () ->
                 client
-                    .newAssignGroupToTenantCommand(nonExistentTenantKey)
+                    .newAssignGroupToTenantCommand(nonExistentTenantId)
                     .groupKey(groupKey)
                     .send()
                     .join())
         .isInstanceOf(ProblemException.class)
         .hasMessageContaining("Failed with code 404: 'Not Found'")
         .hasMessageContaining(
-            "Expected to add entity to tenant with key '%d', but no tenant with this key exists."
-                .formatted(nonExistentTenantKey));
+            "Expected to add entity to tenant with id '%s', but no tenant with this id exists."
+                .formatted(nonExistentTenantId));
   }
 
   @Test
@@ -95,7 +96,7 @@ class AssignGroupToTenantTest {
     assertThatThrownBy(
             () ->
                 client
-                    .newAssignGroupToTenantCommand(tenantKey)
+                    .newAssignGroupToTenantCommand(TENANT_ID)
                     .groupKey(nonExistentGroupKey)
                     .send()
                     .join())
@@ -109,11 +110,11 @@ class AssignGroupToTenantTest {
   @Test
   void shouldRejectIfAlreadyAssigned() {
     // given
-    client.newAssignGroupToTenantCommand(tenantKey).groupKey(groupKey).send().join();
+    client.newAssignGroupToTenantCommand(TENANT_ID).groupKey(groupKey).send().join();
 
     // when / then
     assertThatThrownBy(
-            () -> client.newAssignGroupToTenantCommand(tenantKey).groupKey(groupKey).send().join())
+            () -> client.newAssignGroupToTenantCommand(TENANT_ID).groupKey(groupKey).send().join())
         .isInstanceOf(ProblemException.class)
         .hasMessageContaining("Failed with code 400: 'Bad Request'")
         .hasMessageContaining(

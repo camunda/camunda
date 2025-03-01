@@ -564,7 +564,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/UserSearchResult"
 
-  /tenants/{tenantKey}/mapping-rules/{mappingKey}:
+  /tenants/{tenantId}/mapping-rules/{mappingKey}:
     put:
       tags:
         - Tenant
@@ -572,7 +572,7 @@ paths:
       summary: Assign a mapping rule to a tenant
       description: Assign a single mapping rule to a specified tenant.
       parameters:
-        - name: tenantKey
+        - name: tenantId
           in: path
           required: true
           description: The unique identifier of the tenant.
@@ -608,7 +608,7 @@ paths:
       summary: Remove a mapping rule from a tenant
       description: Removes a single mapping rule from a specified tenant without deleting the rule.
       parameters:
-        - name: tenantKey
+        - name: tenantId
           in: path
           required: true
           description: The unique identifier of the tenant.
@@ -637,7 +637,7 @@ paths:
         "500":
           $ref: "#/components/responses/InternalServerError"
 
-  /tenants/{tenantKey}/groups/{groupKey}:
+  /tenants/{tenantId}/groups/{groupKey}:
     put:
       tags:
         - Tenant
@@ -645,7 +645,7 @@ paths:
       summary: Assign a group to a tenant
       description: Assign a single group to a specified tenant.
       parameters:
-        - name: tenantKey
+        - name: tenantId
           in: path
           required: true
           description: The unique identifier of the tenant.
@@ -681,7 +681,7 @@ paths:
       summary: Remove a group from a tenant
       description: Removes a single group from a specified tenant without deleting the group.
       parameters:
-        - name: tenantKey
+        - name: tenantId
           in: path
           required: true
           description: The unique identifier of the tenant.

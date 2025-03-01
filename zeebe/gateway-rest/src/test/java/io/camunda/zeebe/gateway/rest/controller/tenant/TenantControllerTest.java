@@ -400,23 +400,23 @@ public class TenantControllerTest extends RestControllerTest {
   @MethodSource("provideAddMemberByKeyTestCases")
   void testAddMemberToTenantByKey(final EntityType entityType, final String entityPath) {
     // given
-    final var tenantKey = 100L;
+    final var tenantId = "tenantId";
     final var entityKey = 42L;
 
-    when(tenantServices.addMember(tenantKey, entityType, entityKey))
+    when(tenantServices.addMember(tenantId, entityType, entityKey))
         .thenReturn(CompletableFuture.completedFuture(null));
 
     // when
     webClient
         .put()
-        .uri("%s/%s/%s/%s".formatted(TENANT_BASE_URL, tenantKey, entityPath, entityKey))
+        .uri("%s/%s/%s/%s".formatted(TENANT_BASE_URL, tenantId, entityPath, entityKey))
         .accept(MediaType.APPLICATION_JSON)
         .exchange()
         .expectStatus()
         .isNoContent();
 
     // then
-    verify(tenantServices, times(1)).addMember(tenantKey, entityType, entityKey);
+    verify(tenantServices, times(1)).addMember(tenantId, entityType, entityKey);
   }
 
   @ParameterizedTest
@@ -446,23 +446,23 @@ public class TenantControllerTest extends RestControllerTest {
   @MethodSource("provideRemoveMemberByKeyTestCases")
   void testRemoveMemberByKeyFromTenant(final EntityType entityType, final String entityPath) {
     // given
-    final var tenantKey = 100L;
+    final var tenantId = "tenantId";
     final var entityKey = 42L;
 
-    when(tenantServices.removeMember(tenantKey, entityType, entityKey))
+    when(tenantServices.removeMember(tenantId, entityType, entityKey))
         .thenReturn(CompletableFuture.completedFuture(null));
 
     // when
     webClient
         .delete()
-        .uri("%s/%s/%s/%s".formatted(TENANT_BASE_URL, tenantKey, entityPath, entityKey))
+        .uri("%s/%s/%s/%s".formatted(TENANT_BASE_URL, tenantId, entityPath, entityKey))
         .accept(MediaType.APPLICATION_JSON)
         .exchange()
         .expectStatus()
         .isNoContent();
 
     // then
-    verify(tenantServices, times(1)).removeMember(tenantKey, entityType, entityKey);
+    verify(tenantServices, times(1)).removeMember(tenantId, entityType, entityKey);
   }
 
   @ParameterizedTest

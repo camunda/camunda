@@ -29,13 +29,13 @@ public final class UnassignGroupFromTenantCommandImpl
     implements UnassignGroupFromTenantCommandStep1 {
   private final HttpClient httpClient;
   private final RequestConfig.Builder httpRequestConfig;
-  private final long tenantKey;
+  private final String tenantId;
   private long groupKey;
 
-  public UnassignGroupFromTenantCommandImpl(final HttpClient httpClient, final long tenantKey) {
+  public UnassignGroupFromTenantCommandImpl(final HttpClient httpClient, final String tenantId) {
     this.httpClient = httpClient;
     httpRequestConfig = httpClient.newRequestConfig();
-    this.tenantKey = tenantKey;
+    this.tenantId = tenantId;
   }
 
   @Override
@@ -56,7 +56,7 @@ public final class UnassignGroupFromTenantCommandImpl
   public CamundaFuture<UnassignGroupFromTenantResponse> send() {
     ArgumentUtil.ensureNotNull("groupKey", groupKey);
     final HttpCamundaFuture<UnassignGroupFromTenantResponse> result = new HttpCamundaFuture<>();
-    final String endpoint = String.format("/tenants/%d/groups/%d", tenantKey, groupKey);
+    final String endpoint = String.format("/tenants/%s/groups/%d", tenantId, groupKey);
     httpClient.delete(endpoint, httpRequestConfig.build(), result);
     return result;
   }
