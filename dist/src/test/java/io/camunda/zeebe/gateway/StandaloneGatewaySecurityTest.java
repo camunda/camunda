@@ -26,8 +26,6 @@ import io.camunda.zeebe.gateway.impl.configuration.SecurityCfg;
 import io.camunda.zeebe.gateway.impl.stream.JobStreamClient;
 import io.camunda.zeebe.scheduler.ActorScheduler;
 import io.camunda.zeebe.test.util.asserts.SslAssert;
-import io.camunda.zeebe.test.util.junit.AutoCloseResources;
-import io.camunda.zeebe.test.util.junit.AutoCloseResources.AutoCloseResource;
 import io.camunda.zeebe.test.util.socket.SocketUtil;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
@@ -40,11 +38,11 @@ import java.security.KeyStore;
 import java.security.cert.Certificate;
 import org.agrona.CloseHelper;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.autoconfigure.context.LifecycleProperties;
 
-@AutoCloseResources
 final class StandaloneGatewaySecurityTest {
   private SelfSignedCertificate certificate;
   private GatewayModuleConfiguration gateway;
@@ -52,7 +50,7 @@ final class StandaloneGatewaySecurityTest {
   private AtomixCluster atomixCluster;
   private ActorScheduler actorScheduler;
   private JobStreamClient jobStreamClient;
-  @AutoCloseResource private final MeterRegistry meterRegistry = new SimpleMeterRegistry();
+  @AutoClose private final MeterRegistry meterRegistry = new SimpleMeterRegistry();
 
   @BeforeEach
   void beforeEach() throws Exception {
