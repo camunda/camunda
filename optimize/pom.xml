@@ -102,7 +102,7 @@
     <!-- remove these versions.anything properties once we inherit from zeebe-parent -->
     <version.node>v20.9.0</version.node>
     <version.yarn>v1.22.19</version.yarn>
-    <version.jackson>2.18.2</version.jackson>
+    <version.jackson>2.18.3</version.jackson>
 
     <!-- testing config -->
     <mockito.version>5.15.2</mockito.version>
