@@ -17,8 +17,8 @@ package io.atomix.raft.metrics;
 
 import static io.atomix.raft.metrics.SnapshotReplicationMetricsDoc.*;
 
-import io.camunda.zeebe.util.micrometer.StatefulGauge;
 import io.camunda.zeebe.util.CloseableSilently;
+import io.camunda.zeebe.util.micrometer.StatefulGauge;
 import io.micrometer.core.instrument.MeterRegistry;
 
 public class SnapshotReplicationMetrics extends RaftMetrics implements CloseableSilently {
