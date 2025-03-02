@@ -336,14 +336,14 @@ public class RestErrorMapper {
           final String detail =
               "Expected to handle REST request, but resource was not found: %s".formatted(message);
           REST_GATEWAY_LOGGER.debug(detail);
-          return createProblemDetail(HttpStatus.NOT_FOUND, detail, RejectionType.NOT_FOUND.name());
+          return createProblemDetail(HttpStatus.NOT_FOUND, message, RejectionType.NOT_FOUND.name());
         }
       case NOT_UNIQUE:
         {
           final String detail =
               "Expected to handle REST request, but resource is not unique: %s".formatted(message);
           return createProblemDetail(
-              HttpStatus.CONFLICT, detail, RejectionType.INVALID_STATE.name());
+              HttpStatus.CONFLICT, message, RejectionType.INVALID_STATE.name());
         }
       case ES_CLIENT_FAILED:
       case OS_CLIENT_FAILED:
