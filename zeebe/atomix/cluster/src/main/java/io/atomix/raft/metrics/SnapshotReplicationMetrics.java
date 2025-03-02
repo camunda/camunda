@@ -17,6 +17,7 @@ package io.atomix.raft.metrics;
 
 import static io.atomix.raft.metrics.SnapshotReplicationMetricsDoc.*;
 
+import io.camunda.zeebe.util.micrometer.StatefulGauge;
 import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.util.Objects;
@@ -24,32 +25,32 @@ import java.util.concurrent.atomic.AtomicLong;
 
 public class SnapshotReplicationMetrics extends RaftMetrics {
 
-  private final AtomicLong count;
-  private final AtomicLong duration;
+  private final StatefulGauge count;
+  private final StatefulGauge duration;
 
   public SnapshotReplicationMetrics(final String partitionName, final MeterRegistry meterRegistry) {
     super(partitionName);
     Objects.requireNonNull(meterRegistry, "meterRegistry cannot be null");
 
-    count = new AtomicLong(0L);
-    Gauge.builder(COUNT.getName(), count::get)
-        .description(COUNT.getDescription())
-        .tags(PARTITION_GROUP_NAME_LABEL, partitionGroupName)
-        .register(meterRegistry);
+    count =
+        StatefulGauge.builder(COUNT.getName())
+            .description(COUNT.getDescription())
+            .tags(PARTITION_GROUP_NAME_LABEL, partitionGroupName)
+            .register(meterRegistry);
 
-    duration = new AtomicLong(0L);
-    Gauge.builder(DURATION.getName(), duration::get)
-        .description(DURATION.getDescription())
-        .tags(PARTITION_GROUP_NAME_LABEL, partitionGroupName)
-        .register(meterRegistry);
+    duration =
+        StatefulGauge.builder(DURATION.getName())
+            .description(DURATION.getDescription())
+            .tags(PARTITION_GROUP_NAME_LABEL, partitionGroupName)
+            .register(meterRegistry);
   }
 
   public void incrementCount() {
-    count.incrementAndGet();
+    count.increment();
   }
 
   public void decrementCount() {
-    count.decrementAndGet();
+    count.decrement();
   }
 
   public void setCount(final int value) {
