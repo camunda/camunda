@@ -66,7 +66,7 @@ public class RecordsReaderElasticSearch extends RecordsReaderAbstract {
     super(partitionId, importValueType, queueSize);
   }
 
-  private SearchHit[] withTimerSearchHits(final Callable<SearchHit[]> callable) throws Exception {
+  private <A> A withTimer(final Callable<A> callable) throws Exception {
     return metrics
         .getTimer(
             Metrics.TIMER_NAME_IMPORT_QUERY,
@@ -217,7 +217,7 @@ public class RecordsReaderElasticSearch extends RecordsReaderAbstract {
 
     try {
       final SearchHit[] hits =
-          withTimerSearchHits(() -> read(searchRequest, maxNumberOfHits >= QUERY_MAX_SIZE));
+          withTimer(() -> read(searchRequest, maxNumberOfHits >= QUERY_MAX_SIZE));
       if (hits.length == 0) {
         countEmptyRuns++;
       } else {
@@ -240,10 +240,6 @@ public class RecordsReaderElasticSearch extends RecordsReaderAbstract {
               "Exception occurred, while obtaining next Zeebe records batch: %s", e.getMessage());
       throw new TasklistRuntimeException(message, e);
     }
-  }
-
-  private SearchResponse withTimer(final Callable<SearchResponse> callable) throws Exception {
-    return metrics.getTimer(Metrics.TIMER_NAME_IMPORT_QUERY).recordCallable(callable);
   }
 
   private SearchRequest createSearchQuery(
