@@ -113,7 +113,7 @@ final class ProcessInstanceElementMigratedV2Applier
       return;
     }
 
-    final boolean targetHasMessageStartEvent =
+    final boolean isTargetWithMessageStartEvent =
         processState
             .getFlowElement(
                 value.getProcessDefinitionKey(),
@@ -121,10 +121,10 @@ final class ProcessInstanceElementMigratedV2Applier
                 value.getElementIdBuffer(),
                 ExecutableFlowElementContainer.class)
             .hasMessageStartEvent();
-    final boolean bpmnProcessIdChanged =
+    final boolean hasBpmnProcessIdChanged =
         !BufferUtil.equals(previousBpmnProcessId, currentBpmnProcessId);
 
-    if (targetHasMessageStartEvent && bpmnProcessIdChanged) {
+    if (isTargetWithMessageStartEvent && hasBpmnProcessIdChanged) {
       // unlock the previous process instance's process id
       messageState.removeActiveProcessInstance(previousBpmnProcessId, correlationKey);
       // lock the new process instance's process id
@@ -133,7 +133,7 @@ final class ProcessInstanceElementMigratedV2Applier
 
     // clean up the correlation key relation if the target process doesn't have a message start
     // event at all
-    if (!targetHasMessageStartEvent) {
+    if (!isTargetWithMessageStartEvent) {
       messageState.removeActiveProcessInstance(previousBpmnProcessId, correlationKey);
       messageState.removeProcessInstanceCorrelationKey(value.getProcessInstanceKey());
     }
