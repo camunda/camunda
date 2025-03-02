@@ -10,11 +10,12 @@ package io.camunda.service;
 import io.camunda.search.entities.AdHocSubprocessActivityEntity;
 import io.camunda.search.entities.AdHocSubprocessActivityEntity.ActivityType;
 import io.camunda.search.entities.ProcessDefinitionEntity;
-import io.camunda.search.exception.NotFoundException;
+import io.camunda.search.exception.CamundaSearchException;
 import io.camunda.search.query.AdHocSubprocessActivityQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.auth.Authentication;
 import io.camunda.service.security.SecurityContextProvider;
+import io.camunda.util.ExceptionUtil;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
@@ -60,9 +61,10 @@ public class AdHocSubprocessActivityServices extends ApiServices<AdHocSubprocess
     final var processElement =
         modelInstance.getModelElementById(query.filter().adHocSubprocessId());
     if (!(processElement instanceof final AdHocSubProcess adHocSubProcess)) {
-      throw new NotFoundException(
-          "Failed to find Ad-Hoc Subprocess with ID '%s'"
-              .formatted(query.filter().adHocSubprocessId()));
+      throw new CamundaSearchException(
+          ExceptionUtil.ERROR_NOT_FOUND_AD_HOC_SUBPROCESS.formatted(
+              query.filter().adHocSubprocessId()),
+          CamundaSearchException.Reason.NOT_FOUND);
     }
 
     final var activities =

@@ -43,7 +43,7 @@ import io.camunda.search.es.transformers.search.SearchRequestTransformer;
 import io.camunda.search.es.transformers.search.SearchResponseTransformer;
 import io.camunda.search.es.transformers.search.SearchWriteResponseTransformer;
 import io.camunda.search.exception.CamundaSearchException;
-import io.camunda.search.exception.SearchQueryExecutionException;
+import io.camunda.util.ExceptionUtil;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -79,8 +79,12 @@ public class ElasticsearchSearchClient
       final SearchResponse<T> rawSearchResponse = client.search(request, documentClass);
       final SearchResponseTransformer<T> searchResponseTransformer = getSearchResponseTransformer();
       return searchResponseTransformer.apply(rawSearchResponse);
-    } catch (final IOException | ElasticsearchException ioe) {
-      throw new SearchQueryExecutionException("Failed to execute search query", ioe);
+    } catch (final IOException | ElasticsearchException e) {
+      LOGGER.error(ExceptionUtil.ERROR_FAILED_SEARCH_QUERY, e);
+      throw new CamundaSearchException(
+          ExceptionUtil.ERROR_FAILED_SEARCH_QUERY,
+          e,
+          CamundaSearchException.Reason.ES_CLIENT_FAILED);
     }
   }
 
@@ -106,7 +110,11 @@ public class ElasticsearchSearchClient
         result.addAll(items);
       }
     } catch (final IOException | ElasticsearchException e) {
-      throw new SearchQueryExecutionException("Failed to execute findAll query", e);
+      LOGGER.error(ExceptionUtil.ERROR_FAILED_FIND_ALL_QUERY, e);
+      throw new CamundaSearchException(
+          ExceptionUtil.ERROR_FAILED_FIND_ALL_QUERY,
+          e,
+          CamundaSearchException.Reason.ES_CLIENT_FAILED);
     } finally {
       clearScroll(scrollId);
     }
@@ -123,9 +131,12 @@ public class ElasticsearchSearchClient
       final SearchGetResponseTransformer<T> getResponseTransformer =
           getSearchGetResponseTransformer();
       return getResponseTransformer.apply(rawGetResponse);
-    } catch (final IOException | ElasticsearchException ioe) {
-      LOGGER.debug("Failed to execute get request", ioe);
-      throw new SearchQueryExecutionException("Failed to execute get request", ioe);
+    } catch (final IOException | ElasticsearchException e) {
+      LOGGER.error(ExceptionUtil.ERROR_FAILED_GET_REQUEST, e);
+      throw new CamundaSearchException(
+          ExceptionUtil.ERROR_FAILED_GET_REQUEST,
+          e,
+          CamundaSearchException.Reason.ES_CLIENT_FAILED);
     }
   }
 
@@ -136,8 +147,12 @@ public class ElasticsearchSearchClient
       final var elasticRequest = requestTransformer.apply(request);
       final var response = client.indices().getAlias(elasticRequest);
       return getIndexAliasResponseTransformer().apply(response);
-    } catch (final IOException e) {
-      throw new CamundaSearchException(e);
+    } catch (final IOException | ElasticsearchException e) {
+      LOGGER.error(ExceptionUtil.ERROR_FAILED_GET_ALIAS_REQUEST, e);
+      throw new CamundaSearchException(
+          ExceptionUtil.ERROR_FAILED_GET_ALIAS_REQUEST,
+          e,
+          CamundaSearchException.Reason.ES_CLIENT_FAILED);
     }
   }
 
@@ -150,9 +165,12 @@ public class ElasticsearchSearchClient
       final var rawIndexResponse = client.index(request);
       final var indexResponseTransformer = getSearchWriteResponseTransformer();
       return indexResponseTransformer.apply(rawIndexResponse);
-    } catch (final IOException | ElasticsearchException ioe) {
-      LOGGER.debug("Failed to execute index request", ioe);
-      throw new SearchQueryExecutionException("Failed to execute index request", ioe);
+    } catch (final IOException | ElasticsearchException e) {
+      LOGGER.error(ExceptionUtil.ERROR_FAILED_INDEX_REQUEST, e);
+      throw new CamundaSearchException(
+          ExceptionUtil.ERROR_FAILED_INDEX_REQUEST,
+          e,
+          CamundaSearchException.Reason.ES_CLIENT_FAILED);
     }
   }
 
@@ -164,9 +182,12 @@ public class ElasticsearchSearchClient
       final var rawDeleteRequest = client.delete(request);
       final var deleteResponseTransformer = getSearchWriteResponseTransformer();
       return deleteResponseTransformer.apply(rawDeleteRequest);
-    } catch (final IOException | ElasticsearchException ioe) {
-      LOGGER.debug("Failed to execute delete request", ioe);
-      throw new SearchQueryExecutionException("Failed to execute delete request", ioe);
+    } catch (final IOException | ElasticsearchException e) {
+      LOGGER.error(ExceptionUtil.ERROR_FAILED_DELETE_REQUEST, e);
+      throw new CamundaSearchException(
+          ExceptionUtil.ERROR_FAILED_DELETE_REQUEST,
+          e,
+          CamundaSearchException.Reason.ES_CLIENT_FAILED);
     }
   }
 

@@ -13,7 +13,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.camunda.search.entities.MappingEntity;
-import io.camunda.search.exception.NotFoundException;
+import io.camunda.search.exception.CamundaSearchException;
 import io.camunda.search.page.SearchQueryPage;
 import io.camunda.search.query.MappingQuery;
 import io.camunda.search.query.SearchQueryResult;
@@ -73,7 +73,9 @@ public class MappingQueryControllerTest extends RestControllerTest {
     final var mappingKey = 100L;
     final var path = "%s/%s".formatted(MAPPING_BASE_URL, mappingKey);
     when(mappingServices.getMapping(mappingKey))
-        .thenThrow(new NotFoundException("mapping not found"));
+        .thenThrow(
+            new CamundaSearchException(
+                "mapping not found", CamundaSearchException.Reason.NOT_FOUND));
 
     // when
     webClient

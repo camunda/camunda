@@ -16,7 +16,6 @@ import static org.mockito.Mockito.when;
 import io.camunda.search.clients.ProcessInstanceSearchClient;
 import io.camunda.search.entities.ProcessInstanceEntity;
 import io.camunda.search.exception.CamundaSearchException;
-import io.camunda.search.exception.NotFoundException;
 import io.camunda.search.query.ProcessInstanceQuery;
 import io.camunda.search.query.SearchQueryBuilders;
 import io.camunda.search.query.SearchQueryResult;
@@ -90,8 +89,9 @@ public final class ProcessInstanceServiceTest {
 
     // when / then
     final var exception =
-        assertThrowsExactly(NotFoundException.class, () -> services.getByKey(key));
+        assertThrowsExactly(CamundaSearchException.class, () -> services.getByKey(key));
     assertThat(exception.getMessage()).isEqualTo("Process instance with key 100 not found");
+    assertThat(exception.getReason()).isEqualTo(CamundaSearchException.Reason.NOT_FOUND);
   }
 
   @Test

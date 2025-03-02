@@ -11,15 +11,44 @@ public class CamundaSearchException extends RuntimeException {
 
   private static final long serialVersionUID = 1L;
 
-  public CamundaSearchException(final String message) {
-    super(message);
-  }
+  private final Reason reason;
 
-  public CamundaSearchException(final String message, final Throwable cause) {
-    super(message, cause);
+  public CamundaSearchException(final String message) {
+    this(message, Reason.UNKNOWN);
   }
 
   public CamundaSearchException(final Throwable cause) {
+    this(cause, Reason.UNKNOWN);
+  }
+
+  public CamundaSearchException(final String message, final Throwable cause) {
+    this(message, cause, Reason.UNKNOWN);
+  }
+
+  public CamundaSearchException(final String message, final Reason reason) {
+    super(message);
+    this.reason = reason;
+  }
+
+  public CamundaSearchException(final Throwable cause, final Reason reason) {
     super(cause);
+    this.reason = reason;
+  }
+
+  public CamundaSearchException(final String message, final Throwable cause, final Reason reason) {
+    super(message, cause);
+    this.reason = reason;
+  }
+
+  public Reason getReason() {
+    return reason;
+  }
+
+  public enum Reason {
+    NOT_FOUND,
+    NOT_UNIQUE,
+    ES_CLIENT_FAILED,
+    OS_CLIENT_FAILED,
+    UNKNOWN,
   }
 }
