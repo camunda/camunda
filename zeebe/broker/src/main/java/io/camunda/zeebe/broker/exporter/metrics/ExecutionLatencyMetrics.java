@@ -99,7 +99,7 @@ public class ExecutionLatencyMetrics {
             () -> collection.get(partitionId).get())
         .description(
             "The current cached instances for counting their execution latency. If only short-lived instances are handled this can be seen or observed as the current active instance count.")
-        .tags("type", type, "partition", Integer.toString(partitionId))
+        .tag("type", type)
         .register(meterRegistry);
   }
 }
