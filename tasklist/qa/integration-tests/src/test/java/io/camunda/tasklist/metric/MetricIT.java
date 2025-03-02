@@ -82,13 +82,13 @@ public class MetricIT extends TasklistZeebeIntegrationTest {
         .allMatch(
             s ->
                 s.equals(
-                    "tasklist_claimed_tasks_total{bpmnProcessId=\"testProcess\",flowNodeId=\"taskA\",organizationId=\"joe-org\",userId=\"joe\",} 1.0"));
+                    "tasklist_claimed_tasks_total{bpmnProcessId=\"testProcess\",flowNodeId=\"taskA\",organizationId=\"joe-org\",userId=\"joe\"} 1.0"));
     assertThat(filter(claimedTasksMetrics, m -> m.contains("jane")))
         .hasSize(1)
         .allMatch(
             s ->
                 s.equals(
-                    "tasklist_claimed_tasks_total{bpmnProcessId=\"testProcess\",flowNodeId=\"taskA\",organizationId=\"jane-org\",userId=\"jane\",} 2.0"));
+                    "tasklist_claimed_tasks_total{bpmnProcessId=\"testProcess\",flowNodeId=\"taskA\",organizationId=\"jane-org\",userId=\"jane\"} 2.0"));
     assertThat(filter(claimedTasksMetrics, m -> m.contains(DEFAULT_USER_ID)))
         .hasSize(1)
         .allMatch(
@@ -96,7 +96,7 @@ public class MetricIT extends TasklistZeebeIntegrationTest {
                 s.equals(
                     "tasklist_claimed_tasks_total{bpmnProcessId=\"testProcess\",flowNodeId=\"taskA\",organizationId=\"null\",userId=\""
                         + DEFAULT_USER_ID
-                        + "\",} 1.0"));
+                        + "\"} 1.0"));
   }
 
   @Test
@@ -145,13 +145,13 @@ public class MetricIT extends TasklistZeebeIntegrationTest {
         .allMatch(
             s ->
                 s.equals(
-                    "tasklist_completed_tasks_total{bpmnProcessId=\"testProcess\",flowNodeId=\"taskA\",organizationId=\"joe-org\",userId=\"joe\",} 1.0"));
+                    "tasklist_completed_tasks_total{bpmnProcessId=\"testProcess\",flowNodeId=\"taskA\",organizationId=\"joe-org\",userId=\"joe\"} 1.0"));
     assertThat(filter(completedTasksMetrics, m -> m.contains("jane")))
         .hasSize(1)
         .allMatch(
             s ->
                 s.equals(
-                    "tasklist_completed_tasks_total{bpmnProcessId=\"testProcess\",flowNodeId=\"taskA\",organizationId=\"jane-org\",userId=\"jane\",} 2.0"));
+                    "tasklist_completed_tasks_total{bpmnProcessId=\"testProcess\",flowNodeId=\"taskA\",organizationId=\"jane-org\",userId=\"jane\"} 2.0"));
     assertThat(filter(completedTasksMetrics, m -> m.contains(DEFAULT_USER_ID)))
         .hasSize(1)
         .allMatch(
@@ -159,7 +159,7 @@ public class MetricIT extends TasklistZeebeIntegrationTest {
                 s.equals(
                     "tasklist_completed_tasks_total{bpmnProcessId=\"testProcess\",flowNodeId=\"taskA\",organizationId=\"null\",userId=\""
                         + DEFAULT_USER_ID
-                        + "\",} 1.0"));
+                        + "\"} 1.0"));
   }
 
   protected List<String> metricsFor(final String key) {
