@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.gateway.rest;
 
+import static io.camunda.search.exception.CamundaSearchException.Reason.ES_CLIENT_FAILED;
+
 import com.fasterxml.jackson.core.JsonParseException;
 import io.atomix.cluster.messaging.MessagingException;
 import io.camunda.document.api.DocumentError.DocumentAlreadyExists;
@@ -85,21 +87,6 @@ public class RestErrorMapper {
         .map(RestErrorMapper::mapProblemToResponse);
   }
 
-  public static ProblemDetail createProblemDetail(
-      CamundaSearchException cse, final Function<BrokerRejection, ProblemDetail> rejectionMapper) {
-    if (cse.getReason() == CamundaSearchException.Reason.NOT_FOUND) {
-      REST_GATEWAY_LOGGER.trace("Expected to handle REST request, but resource was not found", cse);
-      return createProblemDetail(
-          HttpStatus.NOT_FOUND, cse.getMessage(), RejectionType.NOT_FOUND.name());
-    }
-
-    REST_GATEWAY_LOGGER.debug("Expected to handle REST request, but search request failed", cse);
-    return cse.getCause() != null ? mapErrorToProblem(cse.getCause(), rejectionMapper) : null;
-
-    // return createProblemDetail(HttpStatus.INTERNAL_SERVER_ERROR, ex.getMessage(),
-    // ex.getClass().getName());
-  }
-
   public static ProblemDetail mapErrorToProblem(
       final Throwable error, final Function<BrokerRejection, ProblemDetail> rejectionMapper) {
     if (error == null) {
@@ -110,7 +97,7 @@ public class RestErrorMapper {
         REST_GATEWAY_LOGGER.trace("Expected to handle REST request, but was forbidden", fe);
         yield createProblemDetail(HttpStatus.FORBIDDEN, fe.getMessage(), fe.getClass().getName());
       case final CamundaSearchException cse:
-        yield createProblemDetail(cse, rejectionMapper);
+        yield mapCamundaSearchExceptionToProblem(cse, rejectionMapper);
       case final CamundaBrokerException cse:
         REST_GATEWAY_LOGGER.debug(
             "Expected to handle REST request, but broker request failed", cse);
@@ -333,5 +320,65 @@ public class RestErrorMapper {
   public static ResponseEntity<Object> mapDocumentHandlingExceptionToResponse(
       final DocumentException e) {
     return mapProblemToResponse(mapDocumentHandlingExceptionToProblem(e));
+  }
+
+  public static ProblemDetail mapCamundaSearchExceptionToProblem(
+      CamundaSearchException cse, final Function<BrokerRejection, ProblemDetail> rejectionMapper) {
+    final CamundaSearchException.Reason reason =
+        (cse.getReason() == null) ? CamundaSearchException.Reason.UNKNOWN : cse.getReason();
+    final Throwable cause = (cse.getCause() == null) ? cse : cse.getCause();
+    final String name = cause.getClass().getName();
+    final String simpleName = cause.getClass().getSimpleName();
+    final String message = cause.getMessage();
+    switch (reason) {
+      case NOT_FOUND:
+        {
+          final String detail =
+              "Expected to handle REST request, but resource was not found: %s".formatted(message);
+          REST_GATEWAY_LOGGER.debug(detail);
+          return createProblemDetail(HttpStatus.NOT_FOUND, detail, RejectionType.NOT_FOUND.name());
+        }
+      case NOT_UNIQUE:
+        {
+          final String detail =
+              "Expected to handle REST request, but resource is not unique: %s".formatted(message);
+          return createProblemDetail(
+              HttpStatus.CONFLICT, detail, RejectionType.INVALID_STATE.name());
+        }
+      case ES_CLIENT_FAILED:
+      case OS_CLIENT_FAILED:
+        {
+          final String dataLayer = (reason == ES_CLIENT_FAILED) ? "ElasticSearch" : "OpenSearch";
+          final String detail;
+          final ProblemDetail problemDetail;
+          if ("ConnectException".equals(simpleName)) {
+            detail =
+                "Expected to handle REST request, but %s client could to connect to %s server: (%s) %s"
+                    .formatted(dataLayer, dataLayer, name, message);
+            problemDetail = createProblemDetail(HttpStatus.SERVICE_UNAVAILABLE, detail, name);
+          } else if ("ElasticsearchException".equals(simpleName)
+              || "OpenSearchException".equals(simpleName)) {
+            detail =
+                "Expected to handle REST request, but %s server was unable to process the request: (%s) %s"
+                    .formatted(dataLayer, name, message);
+            problemDetail = createProblemDetail(HttpStatus.INTERNAL_SERVER_ERROR, detail, name);
+          } else {
+            detail =
+                "Expected to handle REST request, but %s client was unable to process the request: (%s) %s"
+                    .formatted(dataLayer, name, message);
+            problemDetail = createProblemDetail(HttpStatus.INTERNAL_SERVER_ERROR, detail, name);
+          }
+          REST_GATEWAY_LOGGER.debug(detail);
+          return problemDetail;
+        }
+      default:
+        {
+          final String detail =
+              "Expected to handle REST request, but unexpected error occured: %s"
+                  .formatted(message);
+          REST_GATEWAY_LOGGER.debug(detail);
+          return createProblemDetail(HttpStatus.INTERNAL_SERVER_ERROR, detail, name);
+        }
+    }
   }
 }

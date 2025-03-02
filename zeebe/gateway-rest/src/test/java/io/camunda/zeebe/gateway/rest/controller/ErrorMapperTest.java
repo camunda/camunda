@@ -202,7 +202,7 @@ public class ErrorMapperTest extends RestControllerTest {
     final var expectedBody =
         ProblemDetail.forStatusAndDetail(
             HttpStatus.INTERNAL_SERVER_ERROR,
-            "Unexpected error occurred during the request processing: Just an error");
+            "Expected to handle REST request, but unexpected error occured: Just an error");
     expectedBody.setTitle(NullPointerException.class.getName());
     expectedBody.setInstance(URI.create(USER_TASKS_BASE_URL + "/1/completion"));
 
