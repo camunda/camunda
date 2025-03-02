@@ -17,18 +17,13 @@
 package io.atomix.raft.metrics;
 
 import io.camunda.zeebe.util.CloseableSilently;
-import io.camunda.zeebe.util.micrometer.MicrometerUtil;
 import io.camunda.zeebe.util.micrometer.StatefulGauge;
 import io.micrometer.core.instrument.Counter;
-import io.micrometer.core.instrument.Gauge;
-import io.micrometer.core.instrument.Meter;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicLong;
-import java.util.stream.Stream;
 
 public class LeaderAppenderMetrics extends RaftMetrics implements CloseableSilently {
   private final MeterRegistry meterRegistry;

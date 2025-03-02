@@ -11,12 +11,10 @@ import static io.camunda.zeebe.backup.metrics.CheckpointMetricsDoc.*;
 
 import io.camunda.zeebe.util.micrometer.StatefulGauge;
 import io.micrometer.core.instrument.Counter;
-import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.util.EnumMap;
 import java.util.Map;
 import java.util.Objects;
-import java.util.concurrent.atomic.AtomicLong;
 
 public class CheckpointMetrics {
   private final MeterRegistry registry;

@@ -18,9 +18,7 @@ package io.atomix.raft.metrics;
 import static io.atomix.raft.metrics.RaftStartupMetricsDoc.*;
 
 import io.camunda.zeebe.util.micrometer.StatefulGauge;
-import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.MeterRegistry;
-import java.util.concurrent.atomic.AtomicLong;
 
 public class RaftStartupMetrics extends RaftMetrics {
 
