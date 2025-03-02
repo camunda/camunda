@@ -11,6 +11,7 @@ import io.atomix.cluster.AtomixCluster;
 import io.atomix.cluster.ClusterConfig;
 import io.atomix.utils.Version;
 import io.camunda.zeebe.util.VersionUtil;
+import io.micrometer.core.instrument.MeterRegistry;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -19,15 +20,18 @@ import org.springframework.context.annotation.Configuration;
 public final class AtomixClusterConfiguration {
 
   private final ClusterConfig config;
+  private final MeterRegistry meterRegistry;
 
   @Autowired
-  public AtomixClusterConfiguration(final ClusterConfig config) {
+  public AtomixClusterConfiguration(final ClusterConfig config, final MeterRegistry meterRegistry) {
+    this.meterRegistry = meterRegistry;
     this.config = config;
   }
 
   @Bean(destroyMethod = "stop")
   public AtomixCluster atomixCluster() {
-    final var atomixCluster = new AtomixCluster(config, Version.from(VersionUtil.getVersion()));
+    final var atomixCluster =
+        new AtomixCluster(config, Version.from(VersionUtil.getVersion()), meterRegistry);
     atomixCluster.start();
     return atomixCluster;
   }

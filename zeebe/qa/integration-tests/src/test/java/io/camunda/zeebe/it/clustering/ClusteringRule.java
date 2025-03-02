@@ -104,6 +104,7 @@ import org.agrona.LangUtil;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.awaitility.Awaitility;
 import org.junit.Assert;
+import org.junit.jupiter.api.AutoClose;
 import org.junit.rules.ExternalResource;
 import org.junit.rules.TemporaryFolder;
 import org.junit.runner.Description;
@@ -145,6 +146,7 @@ public class ClusteringRule extends ExternalResource {
   private final Map<Integer, SpringBrokerBridge> springBrokerBridge;
   private final Map<Integer, SystemContext> systemContexts;
   private final ActorClockConfiguration actorClockConfiguration;
+  @AutoClose private final MeterRegistry meterRegistry = new SimpleMeterRegistry();
 
   public ClusteringRule() {
     this(3);
@@ -344,7 +346,9 @@ public class ClusteringRule extends ExternalResource {
 
     final var atomixCluster =
         new AtomixCluster(
-            brokerSpringConfig.clusterConfig(), Version.from(VersionUtil.getVersion()));
+            brokerSpringConfig.clusterConfig(),
+            Version.from(VersionUtil.getVersion()),
+            meterRegistry);
 
     final var scheduler =
         new ActorSchedulerConfiguration(
@@ -472,7 +476,6 @@ public class ClusteringRule extends ExternalResource {
     final var config = new GatewayBasedConfiguration(gatewayCfg, new LifecycleProperties());
     final var clusterConfig = config.clusterConfig();
     final var actorConfig = config.schedulerConfiguration();
-    final var meterRegistry = new SimpleMeterRegistry();
 
     final ActorScheduler actorScheduler =
         new ActorSchedulerConfiguration(
@@ -482,7 +485,7 @@ public class ClusteringRule extends ExternalResource {
                 meterRegistry)
             .scheduler();
 
-    final var clusterConfiguration = new AtomixClusterConfiguration(clusterConfig);
+    final var clusterConfiguration = new AtomixClusterConfiguration(clusterConfig, meterRegistry);
     final var atomixCluster = clusterConfiguration.atomixCluster();
     atomixCluster.start().join();
 
@@ -505,11 +508,7 @@ public class ClusteringRule extends ExternalResource {
 
     final var gateway =
         new Gateway(
-            gatewayCfg,
-            brokerClient,
-            actorScheduler,
-            jobStreamClient.streamer(),
-            new SimpleMeterRegistry());
+            gatewayCfg, brokerClient, actorScheduler, jobStreamClient.streamer(), meterRegistry);
     gateway.start().join();
 
     return new GatewayResource(

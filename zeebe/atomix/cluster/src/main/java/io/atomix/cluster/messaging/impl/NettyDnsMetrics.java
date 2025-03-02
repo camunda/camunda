@@ -7,48 +7,42 @@
  */
 package io.atomix.cluster.messaging.impl;
 
+import static io.atomix.cluster.messaging.impl.NettyDnsMetricsDoc.*;
+
+import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.Meter.MeterProvider;
+import io.micrometer.core.instrument.MeterRegistry;
 import io.netty.channel.ChannelFuture;
 import io.netty.handler.codec.dns.DnsQuestion;
 import io.netty.handler.codec.dns.DnsResponseCode;
 import io.netty.resolver.dns.DnsQueryLifecycleObserver;
-import io.prometheus.client.Counter;
 import java.net.InetSocketAddress;
 import java.util.List;
 
 final class NettyDnsMetrics implements DnsQueryLifecycleObserver {
-  private static final Counter ERROR =
-      Counter.build()
-          .help("Counts how often DNS queries fail with an error")
-          .namespace("zeebe")
-          .subsystem("dns")
-          .name("error")
-          .register();
-  private static final Counter FAILED =
-      Counter.build()
-          .help("Counts how often DNS queries return an unsuccessful answer")
-          .namespace("zeebe")
-          .subsystem("dns")
-          .name("failed")
-          .labelNames("code")
-          .register();
-  private static final Counter WRITTEN =
-      Counter.build()
-          .help("Counts how often DNS queries are written")
-          .namespace("zeebe")
-          .subsystem("dns")
-          .name("written")
-          .register();
-  private static final Counter SUCCESS =
-      Counter.build()
-          .help("Counts how often DNS queries are successful")
-          .namespace("zeebe")
-          .subsystem("dns")
-          .name("success")
-          .register();
+
+  private final Counter error;
+  private final Counter written;
+  private final Counter succeded;
+
+  /** indexed by {@link DnsResponseCode#intValue()} */
+  private final MeterProvider<Counter> failed;
+
+  NettyDnsMetrics(final MeterRegistry registry) {
+    error = Counter.builder(ERROR.getName()).description(ERROR.getDescription()).register(registry);
+    written =
+        Counter.builder(WRITTEN.getName()).description(WRITTEN.getDescription()).register(registry);
+    succeded =
+        Counter.builder(SUCCESS.getName()).description(SUCCESS.getDescription()).register(registry);
+    failed =
+        Counter.builder(FAILED.getName())
+            .description(FAILED.getDescription())
+            .withRegistry(registry);
+  }
 
   @Override
   public void queryWritten(final InetSocketAddress dnsServerAddress, final ChannelFuture future) {
-    WRITTEN.inc();
+    written.increment();
   }
 
   @Override
@@ -66,17 +60,17 @@ final class NettyDnsMetrics implements DnsQueryLifecycleObserver {
 
   @Override
   public DnsQueryLifecycleObserver queryNoAnswer(final DnsResponseCode code) {
-    FAILED.labels(code.toString()).inc();
+    failed.withTag(NettyDnsKeyName.CODE.asString(), code.toString()).increment();
     return this;
   }
 
   @Override
   public void queryFailed(final Throwable cause) {
-    ERROR.inc();
+    error.increment();
   }
 
   @Override
   public void querySucceed() {
-    SUCCESS.inc();
+    succeded.increment();
   }
 }

@@ -40,6 +40,10 @@ import io.atomix.utils.Version;
 import io.atomix.utils.net.Address;
 import io.atomix.utils.serializer.Namespaces;
 import io.atomix.utils.serializer.Serializer;
+import io.camunda.zeebe.test.util.junit.AutoCloseResources;
+import io.camunda.zeebe.test.util.junit.AutoCloseResources.AutoCloseResource;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
@@ -56,6 +60,7 @@ import org.junit.After;
 import org.junit.Test;
 
 /** Cluster event service test. */
+@AutoCloseResources
 public class DefaultClusterEventServiceTest {
 
   private static final Serializer SERIALIZER = Serializer.using(Namespaces.BASIC);
@@ -67,6 +72,7 @@ public class DefaultClusterEventServiceTest {
   private final Map<Integer, Managed> managedMemberShipServices = new HashMap<>();
   private final Map<Integer, Managed> managedEventService = new HashMap<>();
   private CountDownLatch membersDiscovered;
+  @AutoCloseResource private final MeterRegistry meterRegistry = new SimpleMeterRegistry();
 
   private Member buildNode(final int memberId) {
     return Member.builder(String.valueOf(memberId))
@@ -103,7 +109,7 @@ public class DefaultClusterEventServiceTest {
             new DefaultNodeDiscoveryService(
                 bootstrapService1, localMember, new BootstrapDiscoveryProvider(bootstrapLocations)),
             bootstrapService1,
-            SwimMembershipProtocol.builder().build());
+            SwimMembershipProtocol.builder(meterRegistry).build());
     managedMemberShipServices.put(memberId, managedClusterMembershipService);
     managedClusterMembershipService.addListener(event -> membersDiscovered.countDown());
     final ClusterMembershipService clusterMembershipService =

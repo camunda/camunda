@@ -50,7 +50,7 @@ final class StandaloneGatewaySecurityTest {
   private AtomixCluster atomixCluster;
   private ActorScheduler actorScheduler;
   private JobStreamClient jobStreamClient;
-  @AutoClose private MeterRegistry meterRegistry = new SimpleMeterRegistry();
+  @AutoClose private final MeterRegistry meterRegistry = new SimpleMeterRegistry();
 
   @BeforeEach
   void beforeEach() throws Exception {
@@ -196,7 +196,7 @@ final class StandaloneGatewaySecurityTest {
     final var brokerClientConfig = gatewayConfig.brokerClientConfig();
 
     final var clusterConfig = gatewayConfig.clusterConfig();
-    final var clusterConfiguration = new AtomixClusterConfiguration(clusterConfig);
+    final var clusterConfiguration = new AtomixClusterConfiguration(clusterConfig, meterRegistry);
     atomixCluster = clusterConfiguration.atomixCluster();
     final ActorSchedulerConfiguration actorSchedulerConfiguration =
         new ActorSchedulerConfiguration(
