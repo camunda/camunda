@@ -14,7 +14,7 @@ import static org.mockito.Mockito.when;
 import static org.springframework.http.MediaType.APPLICATION_JSON;
 
 import io.camunda.search.entities.VariableEntity;
-import io.camunda.search.exception.NotFoundException;
+import io.camunda.search.exception.CamundaSearchException;
 import io.camunda.search.filter.VariableFilter;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.query.SearchQueryResult.Builder;
@@ -99,8 +99,9 @@ public class VariablesQueryControllerTest extends RestControllerTest {
 
     when(variableServices.getByKey(INVALID_VARIABLE_KEY))
         .thenThrow(
-            new NotFoundException(
-                String.format("Variable with key %d not found", INVALID_VARIABLE_KEY)));
+            new CamundaSearchException(
+                String.format("Variable with key %d not found", INVALID_VARIABLE_KEY),
+                CamundaSearchException.Reason.NOT_FOUND));
   }
 
   @Test

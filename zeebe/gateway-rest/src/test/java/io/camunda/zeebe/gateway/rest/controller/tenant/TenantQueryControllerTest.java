@@ -14,7 +14,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.camunda.search.entities.TenantEntity;
-import io.camunda.search.exception.NotFoundException;
+import io.camunda.search.exception.CamundaSearchException;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.query.TenantQuery;
 import io.camunda.search.sort.TenantSort;
@@ -148,7 +148,10 @@ public class TenantQueryControllerTest extends RestControllerTest {
     // given
     final var tenantId = "non-existing-tenant";
     final var path = "%s/%s".formatted(TENANT_BASE_URL, tenantId);
-    when(tenantServices.getById(tenantId)).thenThrow(new NotFoundException("tenant not found"));
+    when(tenantServices.getById(tenantId))
+        .thenThrow(
+            new CamundaSearchException(
+                "tenant not found", CamundaSearchException.Reason.NOT_FOUND));
 
     // when
     webClient

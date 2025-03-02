@@ -15,7 +15,6 @@ import io.camunda.document.api.DocumentError.InvalidInput;
 import io.camunda.document.api.DocumentError.OperationNotSupported;
 import io.camunda.document.api.DocumentError.StoreDoesNotExist;
 import io.camunda.search.exception.CamundaSearchException;
-import io.camunda.search.exception.NotFoundException;
 import io.camunda.service.DocumentServices.DocumentException;
 import io.camunda.service.exception.CamundaBrokerException;
 import io.camunda.service.exception.ForbiddenException;
@@ -86,24 +85,32 @@ public class RestErrorMapper {
         .map(RestErrorMapper::mapProblemToResponse);
   }
 
+  public static ProblemDetail createProblemDetail(
+      CamundaSearchException cse, final Function<BrokerRejection, ProblemDetail> rejectionMapper) {
+    if (cse.getReason() == CamundaSearchException.Reason.NOT_FOUND) {
+      REST_GATEWAY_LOGGER.trace("Expected to handle REST request, but resource was not found", cse);
+      return createProblemDetail(
+          HttpStatus.NOT_FOUND, cse.getMessage(), RejectionType.NOT_FOUND.name());
+    }
+
+    REST_GATEWAY_LOGGER.debug("Expected to handle REST request, but search request failed", cse);
+    return cse.getCause() != null ? mapErrorToProblem(cse.getCause(), rejectionMapper) : null;
+
+    // return createProblemDetail(HttpStatus.INTERNAL_SERVER_ERROR, ex.getMessage(),
+    // ex.getClass().getName());
+  }
+
   public static ProblemDetail mapErrorToProblem(
       final Throwable error, final Function<BrokerRejection, ProblemDetail> rejectionMapper) {
     if (error == null) {
       return null;
     }
     return switch (error) {
-      case final NotFoundException nfe:
-        REST_GATEWAY_LOGGER.trace(
-            "Expected to handle REST request, but resource was not found", nfe);
-        yield createProblemDetail(
-            HttpStatus.NOT_FOUND, nfe.getMessage(), RejectionType.NOT_FOUND.name());
       case final ForbiddenException fe:
         REST_GATEWAY_LOGGER.trace("Expected to handle REST request, but was forbidden", fe);
         yield createProblemDetail(HttpStatus.FORBIDDEN, fe.getMessage(), fe.getClass().getName());
       case final CamundaSearchException cse:
-        REST_GATEWAY_LOGGER.debug(
-            "Expected to handle REST request, but search request failed", cse);
-        yield cse.getCause() != null ? mapErrorToProblem(cse.getCause(), rejectionMapper) : null;
+        yield createProblemDetail(cse, rejectionMapper);
       case final CamundaBrokerException cse:
         REST_GATEWAY_LOGGER.debug(
             "Expected to handle REST request, but broker request failed", cse);

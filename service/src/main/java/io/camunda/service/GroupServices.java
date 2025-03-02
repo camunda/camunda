@@ -9,7 +9,7 @@ package io.camunda.service;
 
 import io.camunda.search.clients.GroupSearchClient;
 import io.camunda.search.entities.GroupEntity;
-import io.camunda.search.exception.NotFoundException;
+import io.camunda.search.exception.CamundaSearchException;
 import io.camunda.search.query.GroupQuery;
 import io.camunda.search.query.SearchQueryBuilders;
 import io.camunda.search.query.SearchQueryResult;
@@ -17,6 +17,7 @@ import io.camunda.security.auth.Authentication;
 import io.camunda.security.auth.Authorization;
 import io.camunda.service.search.core.SearchQueryService;
 import io.camunda.service.security.SecurityContextProvider;
+import io.camunda.util.ExceptionUtil;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.gateway.impl.broker.request.group.BrokerGroupCreateRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.group.BrokerGroupDeleteRequest;
@@ -72,7 +73,10 @@ public class GroupServices extends SearchQueryService<GroupServices, GroupQuery,
   public GroupEntity getGroup(final Long groupKey) {
     return findGroup(groupKey)
         .orElseThrow(
-            () -> new NotFoundException("Group with groupKey %d not found".formatted(groupKey)));
+            () ->
+                new CamundaSearchException(
+                    ExceptionUtil.ERROR_NOT_FOUND_GROUP_BY_KEY.formatted(groupKey),
+                    CamundaSearchException.Reason.NOT_FOUND));
   }
 
   public Optional<GroupEntity> findGroupByName(final String name) {
@@ -85,7 +89,10 @@ public class GroupServices extends SearchQueryService<GroupServices, GroupQuery,
   public GroupEntity getGroupByName(final String name) {
     return findGroupByName(name)
         .orElseThrow(
-            () -> new NotFoundException("Group with group name %s not found".formatted(name)));
+            () ->
+                new CamundaSearchException(
+                    ExceptionUtil.ERROR_NOT_FOUND_GROUP_BY_NAME.formatted(name),
+                    CamundaSearchException.Reason.NOT_FOUND));
   }
 
   public List<GroupEntity> getGroupsByUserKey(final long userKey) {

@@ -14,7 +14,7 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.search.entities.FormEntity;
 import io.camunda.search.entities.ProcessDefinitionEntity;
-import io.camunda.search.exception.NotFoundException;
+import io.camunda.search.exception.CamundaSearchException;
 import io.camunda.search.query.ProcessDefinitionQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.query.SearchQueryResult.Builder;
@@ -152,7 +152,10 @@ public class ProcessDefinitionQueryControllerTest extends RestControllerTest {
   public void shouldReturn404ForInvalidProcessDefinitionKey() {
     // given
     when(processDefinitionServices.getByKey(17L))
-        .thenThrow(new NotFoundException("Process definition with key 17 not found"));
+        .thenThrow(
+            new CamundaSearchException(
+                "Process definition with key 17 not found",
+                CamundaSearchException.Reason.NOT_FOUND));
     // when / then
     webClient
         .get()
@@ -297,7 +300,10 @@ public class ProcessDefinitionQueryControllerTest extends RestControllerTest {
   @Test
   public void shouldReturn404ForFormInvaliProcessKey() throws Exception {
     when(processDefinitionServices.getByKey(999L))
-        .thenThrow(new NotFoundException("Process definition with key 999 not found"));
+        .thenThrow(
+            new CamundaSearchException(
+                "Process definition with key 999 not found",
+                CamundaSearchException.Reason.NOT_FOUND));
     webClient
         .get()
         .uri(PROCESS_DEFINITION_URL + "999/form")
