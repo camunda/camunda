@@ -60,7 +60,7 @@ public class CheckpointMetrics {
   private Counter registerCheckpointRecords(final CheckpointMetricsResultValue value) {
     return Counter.builder(CHECKPOINTS_RECORDS.getName())
         .description(CHECKPOINTS_RECORDS.getDescription())
-        .tags(CheckpointMetricsKeyName.RESULT.asString(), value.value())
+        .tag(CheckpointMetricsKeyName.RESULT.asString(), value.value())
         .register(registry);
   }
 }

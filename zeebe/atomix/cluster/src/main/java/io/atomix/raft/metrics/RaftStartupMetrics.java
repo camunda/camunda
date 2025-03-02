@@ -33,13 +33,13 @@ public class RaftStartupMetrics extends RaftMetrics {
     bootstrapDuration =
         StatefulGauge.builder(BOOTSTRAP_DURATION.getName())
             .description(BOOTSTRAP_DURATION.getDescription())
-            .tags(RaftKeyNames.PARTITION_GROUP.asString(), partitionGroupName)
+            .tag(RaftKeyNames.PARTITION_GROUP.asString(), partitionGroupName)
             .register(registry);
 
     joinDuration =
         StatefulGauge.builder(JOIN_DURATION.getName())
             .description(JOIN_DURATION.getDescription())
-            .tags(RaftKeyNames.PARTITION_GROUP.asString(), partitionGroupName)
+            .tag(RaftKeyNames.PARTITION_GROUP.asString(), partitionGroupName)
             .register(registry);
   }
 
