@@ -28,6 +28,7 @@ import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.transport.ClientRequest;
 import io.camunda.zeebe.transport.ClientTransport;
 import java.time.Duration;
+import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Supplier;
@@ -166,7 +167,7 @@ final class BrokerRequestManager extends Actor {
     final Enum<?> code;
 
     if (result != null && result.getErrorCode() != ErrorCode.NULL_VAL) {
-      code = result.getErrorCode();
+      code = Objects.requireNonNullElse(result.getErrorCode(), AdditionalErrorCodes.UNKNOWN);
     } else if (error != null && error.getClass().equals(TimeoutException.class)) {
       code = AdditionalErrorCodes.TIMEOUT;
     } else {
