@@ -84,8 +84,9 @@ public class ActivateAdHocSubProcessActivityTest {
             .key(adHocSubProcessInstanceKey));
 
     assertThat(
-            RecordingExporter.processInstanceRecords().withProcessInstanceKey(processInstanceKey))
-        // todo add short-circuit `limit` call?
+            RecordingExporter.processInstanceRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .limitToProcessInstanceCompleted())
         .extracting(r -> r.getValue().getElementId(), Record::getIntent)
         .contains(
             tuple("A", ProcessInstanceIntent.ACTIVATE_ELEMENT),
@@ -111,7 +112,8 @@ public class ActivateAdHocSubProcessActivityTest {
 
     assertThat(
             RecordingExporter.adHocSubProcessActivityActivationRecords()
-                .withAdHocSubProcessInstanceKey(String.valueOf(adHocSubProcessInstanceKey)))
+                .withAdHocSubProcessInstanceKey(String.valueOf(adHocSubProcessInstanceKey))
+                .limitToAdHocSubProcessInstanceCompleted())
         .extracting(r -> r.getValue().getElements().getFirst().getElementId(), Record::getIntent)
         .contains(tuple("A", AdHocSubProcessActivityActivationIntent.ACTIVATED));
   }
@@ -131,7 +133,9 @@ public class ActivateAdHocSubProcessActivityTest {
             .key(adHocSubProcessInstanceKey));
 
     assertThat(
-            RecordingExporter.processInstanceRecords().withProcessInstanceKey(processInstanceKey))
+            RecordingExporter.processInstanceRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .limitToProcessInstanceCompleted())
         .extracting(r -> r.getValue().getElementId(), Record::getIntent)
         .contains(
             tuple("A", ProcessInstanceIntent.ACTIVATE_ELEMENT),
