@@ -851,6 +851,16 @@ public class TaskListenerTest {
 
   @Test
   public void
+      shouldCreateJobNoRetriesIncidentForCreatingListenerAndContinueAfterResolutionOnTaskCreation() {
+    verifyIncidentCreationOnListenerJobWithoutRetriesAndResolution(
+        ZeebeTaskListenerEventType.creating,
+        UnaryOperator.identity(),
+        userTaskClient -> {},
+        UserTaskIntent.CREATED);
+  }
+
+  @Test
+  public void
       shouldCreateJobNoRetriesIncidentForAssigningListenerAndContinueAfterResolutionOnTaskAssignAfterCreation() {
     verifyIncidentCreationOnListenerJobWithoutRetriesAndResolution(
         ZeebeTaskListenerEventType.assigning,
