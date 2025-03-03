@@ -82,7 +82,7 @@ public class AdHocSubProcessActivityActivateProcessor
     }
 
     if (!adHocSubprocessElementInstance.isActive()) {
-      throw new AdHocSubProcessInstanceNotActivatedException(
+      throw new AdHocSubProcessInstanceNotActiveException(
           command.getValue().getAdHocSubProcessInstanceKey());
     }
 
@@ -141,11 +141,25 @@ public class AdHocSubProcessActivityActivateProcessor
   @Override
   public ProcessingError tryHandleError(
       final TypedRecord<AdHocSubProcessActivityActivationRecord> command, final Throwable error) {
-    rejectionWriter.appendRejection(command, RejectionType.INVALID_ARGUMENT, error.getMessage());
-    responseWriter.writeRejectionOnCommand(
-        command, RejectionType.INVALID_ARGUMENT, error.getMessage());
+    return switch (error) {
+      case final IllegalArgumentException e -> {
+        writeRejectionError(command, RejectionType.INVALID_ARGUMENT, e);
+        yield ProcessingError.EXPECTED_ERROR;
+      }
+      case final IllegalStateException e -> {
+        writeRejectionError(command, RejectionType.INVALID_STATE, e);
+        yield ProcessingError.EXPECTED_ERROR;
+      }
+      default -> ProcessingError.UNEXPECTED_ERROR;
+    };
+  }
 
-    return ProcessingError.EXPECTED_ERROR;
+  private void writeRejectionError(
+      final TypedRecord<AdHocSubProcessActivityActivationRecord> command,
+      final RejectionType rejectionType,
+      final Throwable error) {
+    rejectionWriter.appendRejection(command, rejectionType, error.getMessage());
+    responseWriter.writeRejectionOnCommand(command, rejectionType, error.getMessage());
   }
 
   private void validateDuplicateElements(
@@ -192,7 +206,7 @@ public class AdHocSubProcessActivityActivateProcessor
     return true;
   }
 
-  private static final class DuplicateElementsException extends IllegalStateException {
+  private static final class DuplicateElementsException extends IllegalArgumentException {
     private static final String ERROR_MESSAGE = "Duplicate elements %s not allowed.";
 
     private DuplicateElementsException(final List<String> elementIds) {
@@ -212,7 +226,7 @@ public class AdHocSubProcessActivityActivateProcessor
 
   private static final class AdHocSubProcessInFinalStateException extends IllegalStateException {
     private static final String ERROR_MESSAGE =
-        "Ad-hoc subprocess <%s> is already in a terminal state. Cannot activate any further activities.";
+        "Ad-hoc subprocess <%s> is already in a terminal state. Can't activate any activities.";
 
     private AdHocSubProcessInFinalStateException(final String adHocSubprocessElementId) {
       super(String.format(ERROR_MESSAGE, adHocSubprocessElementId));
@@ -220,18 +234,18 @@ public class AdHocSubProcessActivityActivateProcessor
   }
 
   private static final class AdHocSubProcessInstanceIsNullException extends IllegalStateException {
-    private static final String ERROR_MESSAGE = "Ad-hoc subprocess instance <%s> is.";
+    private static final String ERROR_MESSAGE = "Ad-hoc subprocess instance <%s> is null.";
 
     private AdHocSubProcessInstanceIsNullException(final String adHocSubprocessInstanceKey) {
       super(String.format(ERROR_MESSAGE, adHocSubprocessInstanceKey));
     }
   }
 
-  private static final class AdHocSubProcessInstanceNotActivatedException
+  private static final class AdHocSubProcessInstanceNotActiveException
       extends IllegalStateException {
-    private static final String ERROR_MESSAGE = "Ad-hoc subprocess instance <%s> is.";
+    private static final String ERROR_MESSAGE = "Ad-hoc subprocess instance <%s> is not active.";
 
-    private AdHocSubProcessInstanceNotActivatedException(final String adHocSubprocessInstanceKey) {
+    private AdHocSubProcessInstanceNotActiveException(final String adHocSubprocessInstanceKey) {
       super(String.format(ERROR_MESSAGE, adHocSubprocessInstanceKey));
     }
   }
