@@ -122,7 +122,7 @@ final class MessagingMetricsImpl implements MessagingMetrics {
             Timer.builder(REQUEST_RESPONSE_LATENCY.getName())
                 .description(REQUEST_RESPONSE_LATENCY.getDescription())
                 .serviceLevelObjectives(REQUEST_RESPONSE_LATENCY.getTimerSLOs())
-                .tags(MessagingKeyNames.TOPIC.asString(), t)
+                .tag(MessagingKeyNames.TOPIC.asString(), t)
                 .register(registry));
   }
 

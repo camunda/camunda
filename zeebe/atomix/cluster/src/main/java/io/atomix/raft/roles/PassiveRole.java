@@ -105,6 +105,8 @@ public class PassiveRole extends InactiveRole {
           "Failed to purge pending snapshots, which may result in unnecessary disk usage and should be monitored",
           e);
     }
+
+    snapshotReplicationMetrics.close();
     return super.stop();
   }
 
