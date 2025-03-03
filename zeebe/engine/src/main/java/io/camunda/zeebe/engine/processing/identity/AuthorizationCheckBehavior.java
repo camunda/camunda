@@ -231,11 +231,11 @@ public final class AuthorizationCheckBehavior {
             AuthorizationOwnerType.USER, user.getUsername(), resourceType, permissionType);
     // Get resource identifiers for the user's roles
     final var roleAuthorizedResourceIdentifiers =
-        getAuthorizedResourceIdentifiersForOwners(
+        getAuthorizedResourceIdentifiersForOwnerKeys(
             AuthorizationOwnerType.ROLE, user.getRoleKeysList(), resourceType, permissionType);
     // Get resource identifiers for the user's groups
     final var groupAuthorizedResourceIdentifiers =
-        getAuthorizedResourceIdentifiersForOwners(
+        getAuthorizedResourceIdentifiersForOwnerKeys(
             AuthorizationOwnerType.GROUP, user.getGroupKeysList(), resourceType, permissionType);
     return Stream.concat(
         userAuthorizedResourceIdentifiers.stream(),
@@ -255,17 +255,17 @@ public final class AuthorizationCheckBehavior {
             (mapping, stream) -> {
               getAuthorizedResourceIdentifiersForOwners(
                       AuthorizationOwnerType.MAPPING,
-                      List.of(mapping.getMappingKey()),
+                      List.of(mapping.getId()),
                       request.getResourceType(),
                       request.getPermissionType())
                   .forEach(stream);
-              getAuthorizedResourceIdentifiersForOwners(
+              getAuthorizedResourceIdentifiersForOwnerKeys(
                       AuthorizationOwnerType.GROUP,
                       mapping.getGroupKeysList(),
                       request.getResourceType(),
                       request.getPermissionType())
                   .forEach(stream);
-              getAuthorizedResourceIdentifiersForOwners(
+              getAuthorizedResourceIdentifiersForOwnerKeys(
                       AuthorizationOwnerType.ROLE,
                       mapping.getRoleKeysList(),
                       request.getResourceType(),
@@ -276,17 +276,26 @@ public final class AuthorizationCheckBehavior {
 
   // TODO: refactor to use String-based ownerKeys when all Identity-related entities use them
   // https://github.com/camunda/camunda/issues/26981
-  private Stream<String> getAuthorizedResourceIdentifiersForOwners(
+  private Stream<String> getAuthorizedResourceIdentifiersForOwnerKeys(
       final AuthorizationOwnerType ownerType,
       final List<Long> ownerKeys,
       final AuthorizationResourceType resourceType,
       final PermissionType permissionType) {
-    return ownerKeys.stream()
+    final var ownerIds = ownerKeys.stream().map(String::valueOf).toList();
+    return getAuthorizedResourceIdentifiersForOwners(
+        ownerType, ownerIds, resourceType, permissionType);
+  }
+
+  private Stream<String> getAuthorizedResourceIdentifiersForOwners(
+      final AuthorizationOwnerType ownerType,
+      final List<String> ownerIds,
+      final AuthorizationResourceType resourceType,
+      final PermissionType permissionType) {
+    return ownerIds.stream()
         .flatMap(
-            ownerKey ->
+            ownerId ->
                 authorizationState
-                    .getResourceIdentifiers(
-                        ownerType, String.valueOf(ownerKey), resourceType, permissionType)
+                    .getResourceIdentifiers(ownerType, ownerId, resourceType, permissionType)
                     .stream());
   }
 
