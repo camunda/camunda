@@ -15,6 +15,7 @@
  */
 package io.camunda.process.test.api.assertions;
 
+import io.camunda.client.api.search.filter.FlownodeInstanceFilter;
 import io.camunda.client.api.search.response.FlowNodeInstance;
 
 /** A collection of predefined {@link ElementSelector}s. */
@@ -56,6 +57,11 @@ public class ElementSelectors {
     @Override
     public String describe() {
       return elementId;
+    }
+
+    @Override
+    public void applyFilter(final FlownodeInstanceFilter filter) {
+      filter.flowNodeId(elementId);
     }
   }
 
