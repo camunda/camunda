@@ -225,7 +225,7 @@ Accept: application/json
 {
   "sort": [
     {
-      "field": "resourceType",
+      "field": "resourceId",
       "order": "ASC"
     }
   ],
