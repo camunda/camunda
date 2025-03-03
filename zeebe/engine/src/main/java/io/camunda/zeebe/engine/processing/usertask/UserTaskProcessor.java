@@ -268,7 +268,7 @@ public class UserTaskProcessor implements TypedRecordProcessor<UserTaskRecord> {
 
   private ZeebeTaskListenerEventType mapIntentToEventType(final UserTaskIntent intent) {
     return switch (intent) {
-      case CREATING -> ZeebeTaskListenerEventType.creating;
+      case CREATE -> ZeebeTaskListenerEventType.creating;
       case ASSIGN, CLAIM -> ZeebeTaskListenerEventType.assigning;
       case UPDATE -> ZeebeTaskListenerEventType.updating;
       case COMPLETE -> ZeebeTaskListenerEventType.completing;
