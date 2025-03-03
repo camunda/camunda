@@ -37,6 +37,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -447,14 +448,25 @@ public class ProcessInstanceAndFlowNodeInstanceQueryTest {
 
   @Test
   void shouldQueryProcessInstancesByStateCompleted() {
-    // when
-    final var result =
-        camundaClient.newProcessInstanceQuery().filter(f -> f.state(COMPLETED)).send().join();
+    Awaitility.await("process is completed")
+        .untilAsserted(
+            () -> {
 
-    // then
-    assertThat(result.items().size()).isEqualTo(3);
-    assertThat(result.items().stream().map(ProcessInstance::getProcessDefinitionId).toList())
-        .containsExactlyInAnyOrder("parent_process_v1", "child_process_v1", "manual_process");
+              // when
+              final var result =
+                  camundaClient
+                      .newProcessInstanceQuery()
+                      .filter(f -> f.state(COMPLETED))
+                      .send()
+                      .join();
+
+              // then
+              assertThat(result.items().size()).isEqualTo(3);
+              assertThat(
+                      result.items().stream().map(ProcessInstance::getProcessDefinitionId).toList())
+                  .containsExactlyInAnyOrder(
+                      "parent_process_v1", "child_process_v1", "manual_process");
+            });
   }
 
   @Test
