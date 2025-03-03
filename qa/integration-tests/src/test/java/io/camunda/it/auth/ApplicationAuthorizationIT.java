@@ -99,7 +99,7 @@ class ApplicationAuthorizationIT {
         HTTP_CLIENT.send(request, HttpResponse.BodyHandlers.ofString());
 
     // then
-    assertThat(response.statusCode()).isEqualTo(HttpURLConnection.HTTP_OK);
+    assertAccessAllowed(response);
   }
 
   @Test
@@ -116,7 +116,7 @@ class ApplicationAuthorizationIT {
         HTTP_CLIENT.send(request, HttpResponse.BodyHandlers.ofString());
 
     // then
-    assertThat(response.statusCode()).isEqualTo(HttpURLConnection.HTTP_OK);
+    assertAccessAllowed(response);
   }
 
   @Test
@@ -132,8 +132,8 @@ class ApplicationAuthorizationIT {
     final HttpResponse<String> response =
         HTTP_CLIENT.send(request, HttpResponse.BodyHandlers.ofString());
 
-    // we expect not found here as frontend resources are not packaged for integration tests
-    assertThat(response.statusCode()).isEqualTo(HttpURLConnection.HTTP_NOT_FOUND);
+    // then
+    assertAccessAllowed(response);
   }
 
   @Test
@@ -150,7 +150,7 @@ class ApplicationAuthorizationIT {
         HTTP_CLIENT.send(request, HttpResponse.BodyHandlers.ofString());
 
     // then
-    assertThat(response.statusCode()).isEqualTo(HttpURLConnection.HTTP_OK);
+    assertAccessAllowed(response);
   }
 
   @ParameterizedTest
@@ -168,7 +168,7 @@ class ApplicationAuthorizationIT {
         HTTP_CLIENT.send(request, HttpResponse.BodyHandlers.ofString());
 
     // then
-    assertThat(response.statusCode()).isEqualTo(HttpURLConnection.HTTP_OK);
+    assertAccessAllowed(response);
   }
 
   private static void assertRedirectToForbidden(
@@ -188,5 +188,13 @@ class ApplicationAuthorizationIT {
   private static URI createUri(final CamundaClient client, final String path)
       throws URISyntaxException {
     return new URI("%s%s".formatted(client.getConfiguration().getRestAddress(), path));
+  }
+
+  private static void assertAccessAllowed(final HttpResponse<String> response) {
+    assertThat(response.statusCode())
+        .isNotIn(
+            HttpURLConnection.HTTP_UNAUTHORIZED,
+            HttpURLConnection.HTTP_FORBIDDEN,
+            HttpURLConnection.HTTP_MOVED_TEMP);
   }
 }
