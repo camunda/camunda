@@ -500,7 +500,8 @@ jobs:
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
 
-  tasklist-backend-tests:
+  tasklist-docker-tests:
+    # Currently only runs Tasklist Docker tests but should be extended in future to also include backend tests
     if: needs.detect-changes.outputs.tasklist-backend-changes == 'true'
     needs: [ detect-changes ]
     uses: ./.github/workflows/tasklist-docker-tests.yml
@@ -671,11 +672,7 @@ jobs:
       - optimize-backend-unit-tests
       - optimize-frontend-unit-tests
       - protobuf-checks
-<<<<<<< HEAD
-=======
-      - rdbms-h2-integration-tests
-      - tasklist-backend-tests
->>>>>>> 428d7afe243 (ci: include Tasklist docker tests in the common CI)
+      - tasklist-docker-tests
       - tasklist-frontend-tests
       - zeebe-ci
     steps:
