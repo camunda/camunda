@@ -8,6 +8,7 @@
 package io.camunda.zeebe.test.util.record;
 
 import io.camunda.zeebe.protocol.record.Record;
+import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.AdHocSubProcessActivityActivationRecordValue;
 import java.util.stream.Stream;
 
@@ -31,5 +32,12 @@ public class AdHocSubProcessActivityActivationRecordStream
       final String adHocSubProcessInstanceKey) {
     return valueFilter(
         record -> record.getAdHocSubProcessInstanceKey().equals(adHocSubProcessInstanceKey));
+  }
+
+  public AdHocSubProcessActivityActivationRecordStream limitToAdHocSubProcessInstanceCompleted() {
+    return limit(
+        r ->
+            r.getIntent() == ProcessInstanceIntent.ELEMENT_COMPLETED
+                && r.getKey() == Long.parseLong(r.getValue().getAdHocSubProcessInstanceKey()));
   }
 }
