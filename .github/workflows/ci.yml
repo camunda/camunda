@@ -67,7 +67,7 @@ jobs:
       # renovate: datasource=github-releases depName=rhysd/actionlint
       ACTIONLINT_VERSION: '1.7.7'
       # renovate: datasource=github-tags depName=open-policy-agent/conftest
-      CONFTEST_VERSION: '0.57.0'
+      CONFTEST_VERSION: '0.58.0'
     steps:
       - uses: actions/checkout@v4
       - uses: camunda/infra-global-github-actions/actionlint@main
