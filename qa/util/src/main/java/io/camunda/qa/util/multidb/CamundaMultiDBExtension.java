@@ -167,7 +167,7 @@ public class CamundaMultiDBExtension
   public static final Duration TIMEOUT_DATA_AVAILABILITY =
       Optional.ofNullable(System.getProperty(PROP_TEST_INTEGRATION_OPENSEARCH_AWS_TIMEOUT))
           .map(val -> Duration.ofSeconds(Long.parseLong(val)))
-          .orElse(Duration.ofSeconds(30));
+          .orElse(Duration.ofMinutes(2));
   public static final String DEFAULT_ES_URL = "http://localhost:9200";
   public static final String DEFAULT_OS_URL = "http://localhost:9200";
   public static final String DEFAULT_OS_ADMIN_USER = "admin";
