@@ -51,7 +51,7 @@
     "rollup-plugin-license": "^3.5.3",
     "sass": "1.85.1",
     "typescript": "5.7.3",
-    "vite": "6.0.9"
+    "vite": "6.2.0"
   },
   "packageManager": "yarn@4.3.1",
   "stableVersion": "8.8.0-SNAPSHOT"
