@@ -23,7 +23,6 @@ import io.camunda.zeebe.engine.state.immutable.UserTaskState;
 import io.camunda.zeebe.engine.state.immutable.UserTaskState.LifecycleState;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskListenerEventType;
 import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
-import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.util.Either;
@@ -81,27 +80,9 @@ public final class UserTaskCreateProcessor implements UserTaskCommandProcessor {
       final TypedRecord<UserTaskRecord> command, final UserTaskRecord userTaskRecord) {
     final long userTaskKey = command.getKey();
 
+    stateWriter.appendFollowUpEvent(userTaskKey, UserTaskIntent.CREATED, userTaskRecord);
+
     final var intermediateAssignee = userTaskState.getIntermediateAssignee(userTaskKey);
-
-    if (command.hasRequestMetadata()) {
-      stateWriter.appendFollowUpEvent(userTaskKey, UserTaskIntent.CREATED, userTaskRecord);
-      responseWriter.writeEventOnCommand(
-          userTaskKey, UserTaskIntent.CREATED, userTaskRecord, command);
-    } else {
-      final var recordRequestMetadata = userTaskState.findRecordRequestMetadata(userTaskKey);
-      stateWriter.appendFollowUpEvent(userTaskKey, UserTaskIntent.CREATED, userTaskRecord);
-
-      recordRequestMetadata.ifPresent(
-          metadata ->
-              responseWriter.writeResponse(
-                  userTaskKey,
-                  UserTaskIntent.CREATED,
-                  userTaskRecord,
-                  ValueType.USER_TASK,
-                  metadata.getRequestId(),
-                  metadata.getRequestStreamId()));
-    }
-
     if (intermediateAssignee != null) {
       // clean up the changed attributes because we have already finished the creation, and are now
       // starting a new transition to assigning
