@@ -8,21 +8,18 @@
 package io.camunda.zeebe.engine.processing.batchoperation;
 
 import io.camunda.zeebe.engine.processing.ExcludeAuthorizationCheck;
-import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
-import io.camunda.zeebe.engine.state.batchoperation.BatchOperation;
+import io.camunda.zeebe.engine.state.batchoperation.PersistedBatchOperation;
 import io.camunda.zeebe.engine.state.immutable.BatchOperationState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
-import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationExecutionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
-import java.util.List;
 import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -39,14 +36,10 @@ public final class BatchOperationExecuteProcessor
   private final TypedCommandWriter commandWriter;
   private final StateWriter stateWriter;
   private final int partitionId;
-
   private final BatchOperationState batchOperationState;
 
   public BatchOperationExecuteProcessor(
-      final Writers writers,
-      final ProcessingState processingState,
-      final CommandDistributionBehavior commandDistributionBehavior,
-      final int partitionId) {
+      final Writers writers, final ProcessingState processingState, final int partitionId) {
     commandWriter = writers.command();
     stateWriter = writers.state();
     batchOperationState = processingState.getBatchOperationState();
@@ -70,12 +63,12 @@ public final class BatchOperationExecuteProcessor
       return;
     }
 
-    if (batchOperation.getStatus() == BatchOperation.BatchOperationState.PAUSED) {
+    if (batchOperation.getStatus() == PersistedBatchOperation.BatchOperationState.PAUSED) {
       LOGGER.debug("Batch operation with key '{}' has been paused, Doing nothing", batchKey);
       return;
     }
 
-    final var filteredEntityKeys = fetchFilteredEntityKeys(batchOperation);
+    final var filteredEntityKeys = recordValue.getKeys();
     if (filteredEntityKeys.size() <= offset) {
       LOGGER.debug(
           "No items to process for BatchOperation {} on partition {}", batchKey, partitionId);
@@ -83,26 +76,29 @@ public final class BatchOperationExecuteProcessor
       return;
     }
 
-    final var entityKeys =
-        filteredEntityKeys.subList(
-            offset, Math.min(offset + BATCH_SIZE, filteredEntityKeys.size()));
+    final var entityKeys = filteredEntityKeys.stream().skip(offset).limit(BATCH_SIZE).toList();
 
     if (entityKeys.isEmpty()) {
-      LOGGER.warn("No items to process for BatchOperation {} on partition {} and offset {}",
-          batchKey, partitionId, offset);
+      LOGGER.warn(
+          "No items to process for BatchOperation {} on partition {} and offset {}",
+          batchKey,
+          partitionId,
+          offset);
     }
 
     appendBatchOperationExecutionExecutingEvent(command, Set.copyOf(entityKeys));
 
     switch (recordValue.getBatchOperationType()) {
-      case PROCESS_CANCELLATION:
-        entityKeys.forEach(entityKey -> cancelProcessInstance(entityKey, batchKey));
+      case PROCESS_CANCELLATION ->
+          entityKeys.forEach(entityKey -> cancelProcessInstance(entityKey, batchKey));
     }
 
     final var newOffset = command.getValue().getOffset() + BATCH_SIZE;
     LOGGER.debug(
-        "Scheduling next batch for BatchOperation {} on partition {} with offset {}", batchKey,
-        partitionId, newOffset);
+        "Scheduling next batch for BatchOperation {} on partition {} with offset {}",
+        batchKey,
+        partitionId,
+        newOffset);
     final var followupCommand = new BatchOperationExecutionRecord();
     followupCommand.setBatchOperationKey(batchKey);
     followupCommand.setBatchOperationType(command.getValue().getBatchOperationType());
@@ -113,12 +109,7 @@ public final class BatchOperationExecuteProcessor
     appendBatchOperationExecutionExecutedEvent(command, Set.copyOf(entityKeys));
   }
 
-  private List<Long> fetchFilteredEntityKeys(final BatchOperation batchOperation) {
-    final var keys = batchOperation.getKeys();
-    return keys.stream().filter(key -> Protocol.decodePartitionId(key) == partitionId).toList();
-  }
-
-  private BatchOperation getBatchOperation(final long batchOperationKey) {
+  private PersistedBatchOperation getBatchOperation(final long batchOperationKey) {
     return batchOperationState.get(batchOperationKey).orElse(null);
   }
 
@@ -127,7 +118,8 @@ public final class BatchOperationExecuteProcessor
 
     final var command = new ProcessInstanceRecord();
     command.setProcessInstanceKey(processInstanceKey);
-    commandWriter.appendFollowUpCommand(processInstanceKey, ProcessInstanceIntent.CANCEL, command, batchKey);
+    commandWriter.appendFollowUpCommand(
+        processInstanceKey, ProcessInstanceIntent.CANCEL, command, batchKey);
   }
 
   private void appendBatchOperationExecutionExecutingEvent(

@@ -14,18 +14,20 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Exports a batch operation creation record to the database.
- * This is only done if the batch was also created on this partition!
+ * Exports a batch operation creation record to the database. This is only done if the batch was
+ * also created on this partition!
  */
-public class BatchOperationCreatedExportHandler implements RdbmsExportHandler<BatchOperationCreationRecordValue> {
+public class BatchOperationCreatedExportHandler
+    implements RdbmsExportHandler<BatchOperationCreationRecordValue> {
 
-  private static final Logger LOGGER = LoggerFactory.getLogger(BatchOperationCreatedExportHandler.class);
+  private static final Logger LOGGER =
+      LoggerFactory.getLogger(BatchOperationCreatedExportHandler.class);
 
   private final BatchOperationWriter batchOperationWriter;
   private final long partitionId;
 
-  public BatchOperationCreatedExportHandler(final BatchOperationWriter batchOperationWriter,
-                                            final long partitionId) {
+  public BatchOperationCreatedExportHandler(
+      final BatchOperationWriter batchOperationWriter, final long partitionId) {
     this.batchOperationWriter = batchOperationWriter;
     this.partitionId = partitionId;
   }
@@ -34,7 +36,8 @@ public class BatchOperationCreatedExportHandler implements RdbmsExportHandler<Ba
   public boolean canExport(final Record<BatchOperationCreationRecordValue> record) {
     return record.getValueType() == ValueType.BATCH_OPERATION
         && record.getIntent().equals(BatchOperationIntent.CREATED)
-        && Protocol.decodePartitionId(record.getKey()) == (int)partitionId; // Just do it for the original partition
+        && Protocol.decodePartitionId(record.getKey())
+            == (int) partitionId; // Just do it for the original partition
   }
 
   @Override
@@ -50,7 +53,8 @@ public class BatchOperationCreatedExportHandler implements RdbmsExportHandler<Ba
         .operationType(value.getBatchOperationType().name())
         .startDate(DateUtil.toOffsetDateTime(record.getTimestamp()))
         .endDate(null)
-        .operationsTotalCount(value.getKeys().size())
+        // TODO that needs to rely on something else, we don't have the keys here
+        .operationsTotalCount(0)
         .operationsFailedCount(0)
         .operationsCompletedCount(0)
         .build();
