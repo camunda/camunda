@@ -90,7 +90,7 @@ const props = {
   location: {},
 };
 
-it('should load existing alertsa and reports', () => {
+it('should load existing alerts and reports', () => {
   shallow(<AlertsDropdown {...props} dashboardTiles={[]} />);
 
   runAllEffects();

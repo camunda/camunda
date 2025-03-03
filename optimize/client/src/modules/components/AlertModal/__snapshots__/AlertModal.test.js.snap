@@ -12,7 +12,6 @@ Object {
   ],
   "fixNotification": true,
   "id": "71395",
-  "inactive": false,
   "invalid": false,
   "name": "Sample Alert",
   "reminder": null,
