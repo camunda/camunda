@@ -71,15 +71,15 @@ jobs:
         working-directory: ./optimize/client
         run: yarn start &
 
-      - name: Start zeebe, operate, keycloak, identity and Elasticsearch
+      - name: Start services (Zeebe, Keycloak, Identity, Operate and Elasticsearch)
         uses: ./.github/actions/compose
         with:
           compose_file: optimize/client/docker-compose.yml
           project_name: e2e
           additional_flags: "--profile self-managed"
 
-      - name: Build dist
-        run: ./mvnw clean install -T1C -DskipTests -Dskip.docker -pl dist -am -P skipFrontendBuild
+      - name: Build backend
+        run: ./mvnw -f optimize/pom.xml clean install -T1C -DskipTests -Dskip.docker -pl backend -am
 
       - name: Create backend logs file
         run: mkdir -p ./optimize/client/build && touch ./optimize/client/build/backendLogs.log
@@ -101,7 +101,7 @@ jobs:
             sleep 10
           done
 
-      - name: Wait for front-end to start
+      - name: Wait for frontend to start
         run: ./.github/optimize/scripts/wait-for.sh http://localhost:3000/ready
 
       - name: Run tests
