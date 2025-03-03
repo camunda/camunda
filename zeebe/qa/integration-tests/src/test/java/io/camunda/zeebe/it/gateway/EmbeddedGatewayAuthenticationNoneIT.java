@@ -22,7 +22,7 @@ public class EmbeddedGatewayAuthenticationNoneIT
           .withProperty("camunda.identity.audience", ZEEBE_CLIENT_AUDIENCE);
 
   @Override
-  protected TestGateway getZeebe() {
+  protected TestGateway<TestStandaloneBroker> getGateway() {
     return zeebe;
   }
 }
