@@ -8,7 +8,6 @@
 package io.camunda.operate.opensearch;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
-import static org.awaitility.Awaitility.await;
 
 import io.camunda.operate.conditions.DatabaseCondition;
 import io.camunda.operate.property.OperateProperties;
@@ -18,7 +17,6 @@ import io.camunda.operate.util.OperateZeebeAbstractIT;
 import io.camunda.operate.util.TestSupport;
 import io.camunda.operate.zeebe.ImportValueType;
 import io.camunda.operate.zeebeimport.RecordsReaderHolder;
-import io.camunda.operate.zeebeimport.ZeebeImporter;
 import io.camunda.operate.zeebeimport.opensearch.OpensearchRecordsReader;
 import io.camunda.webapps.schema.descriptors.operate.index.ImportPositionIndex;
 import io.camunda.webapps.schema.entities.operate.ImportPositionEntity;
@@ -56,7 +54,6 @@ public class OpensearchFinishedImportingIT extends OperateZeebeAbstractIT {
       new OpensearchExporterConfiguration();
 
   @Autowired public SchemaManager schemaManager;
-  @Autowired protected ZeebeImporter zeebeImporter;
   @Autowired private OperateProperties operateProperties;
   @Autowired private RecordsReaderHolder recordsReaderHolder;
   @Autowired private ImportPositionIndex importPositionIndex;
@@ -94,8 +91,7 @@ public class OpensearchFinishedImportingIT extends OperateZeebeAbstractIT {
     final var record = generateRecord(ValueType.PROCESS_INSTANCE, "8.7.0", 1);
     EXPORTER.export(record);
     osClient.index().refresh("*");
-
-    zeebeImporter.performOneRoundOfImport();
+    tester.performOneRoundOfImport();
 
     // when
     final var record2 = generateRecord(ValueType.PROCESS_INSTANCE, "8.8.0", 1);
@@ -103,19 +99,19 @@ public class OpensearchFinishedImportingIT extends OperateZeebeAbstractIT {
     osClient.index().refresh("*");
 
     // receives 8.7 record and marks partition as finished importing
-    zeebeImporter.performOneRoundOfImport();
+    tester.performOneRoundOfImport();
 
     // then
     // require multiple checks to avoid race condition. If records are written to zeebe indices and
     // before a refresh, the record reader pulls the import batch is empty so it then says that the
     // record reader is done when it is not.
     for (int i = 0; i < RecordsReaderHolder.MINIMUM_EMPTY_BATCHES_FOR_COMPLETED_READER; i++) {
-      zeebeImporter.performOneRoundOfImport();
+      tester.performOneRoundOfImport();
     }
 
     Awaitility.await()
         .atMost(Duration.ofSeconds(30))
-        .until(() -> isRecordReaderIsCompleted("1-process-instance"));
+        .until(() -> isRecordReaderCompleted("1-process-instance"));
   }
 
   @Test
@@ -128,7 +124,7 @@ public class OpensearchFinishedImportingIT extends OperateZeebeAbstractIT {
     EXPORTER.export(decisionRecord);
 
     osClient.index().refresh("*");
-    zeebeImporter.performOneRoundOfImport();
+    tester.performOneRoundOfImport();
 
     // when
     final var newVersionProcessInstanceRecord =
@@ -144,16 +140,16 @@ public class OpensearchFinishedImportingIT extends OperateZeebeAbstractIT {
       EXPORTER.export(decisionRecord2);
       osClient.index().refresh("*");
 
-      zeebeImporter.performOneRoundOfImport();
+      tester.performOneRoundOfImport();
     }
 
     Awaitility.await()
         .atMost(Duration.ofSeconds(30))
         .until(
             () ->
-                isRecordReaderIsCompleted("1-process-instance")
-                    && isRecordReaderIsCompleted("1-decision-evaluation")
-                    && !isRecordReaderIsCompleted("2-decision"));
+                isRecordReaderCompleted("1-process-instance")
+                    && isRecordReaderCompleted("1-decision-evaluation")
+                    && !isRecordReaderCompleted("2-decision"));
   }
 
   @Test
@@ -164,8 +160,7 @@ public class OpensearchFinishedImportingIT extends OperateZeebeAbstractIT {
     EXPORTER.export(record);
     EXPORTER.export(partitionTwoRecord);
     osClient.index().refresh("*");
-
-    zeebeImporter.performOneRoundOfImport();
+    tester.performOneRoundOfImport();
 
     // when
     final var record2 = generateRecord(ValueType.PROCESS_INSTANCE, "8.8.0", 1);
@@ -174,17 +169,21 @@ public class OpensearchFinishedImportingIT extends OperateZeebeAbstractIT {
     EXPORTER.export(partitionTwoRecord2);
     osClient.index().refresh("*");
 
-    for (int i = 0; i <= RecordsReaderHolder.MINIMUM_EMPTY_BATCHES_FOR_COMPLETED_READER; i++) {
-      zeebeImporter.performOneRoundOfImport();
+    // Import 8.8 records to trigger importer's counting of empty batches
+    tester.performOneRoundOfImport();
+
+    // Import empty batches
+    for (int i = 0; i < RecordsReaderHolder.MINIMUM_EMPTY_BATCHES_FOR_COMPLETED_READER; i++) {
+      tester.performOneRoundOfImport();
     }
 
     // the import position for
     Awaitility.await()
         .atMost(Duration.ofSeconds(30))
-        .until(() -> isRecordReaderIsCompleted("1-process-instance"));
+        .until(() -> isRecordReaderCompleted("1-process-instance"));
     Awaitility.await()
         .atMost(Duration.ofSeconds(30))
-        .until(() -> isRecordReaderIsCompleted("2-process-instance"));
+        .until(() -> isRecordReaderCompleted("2-process-instance"));
   }
 
   @Test
@@ -194,7 +193,7 @@ public class OpensearchFinishedImportingIT extends OperateZeebeAbstractIT {
     EXPORTER.export(record);
     osClient.index().refresh("*");
 
-    zeebeImporter.performOneRoundOfImport();
+    tester.performOneRoundOfImport();
 
     // when
     final var record2 = generateRecord(ValueType.PROCESS_INSTANCE, "8.8.0", 1);
@@ -202,30 +201,30 @@ public class OpensearchFinishedImportingIT extends OperateZeebeAbstractIT {
     osClient.index().refresh("*");
 
     // receives 8.7 record and marks partition as finished importing
-    zeebeImporter.performOneRoundOfImport();
+    tester.performOneRoundOfImport();
 
     // then
     // require multiple checks to avoid race condition. If records are written to zeebe indices and
     // before a refresh, the record reader pulls the import batch is empty so it then says that the
     // record reader is done when it is not.
     for (int i = 0; i < RecordsReaderHolder.MINIMUM_EMPTY_BATCHES_FOR_COMPLETED_READER; i++) {
-      zeebeImporter.performOneRoundOfImport();
+      tester.performOneRoundOfImport();
     }
 
     Awaitility.await()
         .atMost(Duration.ofSeconds(30))
-        .until(() -> isRecordReaderIsCompleted("1-process-instance"));
+        .until(() -> isRecordReaderCompleted("1-process-instance"));
 
     final var record3 = generateRecord(ValueType.PROCESS_INSTANCE, "8.8.0", 1);
     EXPORTER.export(record3);
     osClient.index().refresh("*");
 
-    zeebeImporter.performOneRoundOfImport();
+    tester.performOneRoundOfImport();
 
     Awaitility.await()
         .during(Duration.ofSeconds(10))
         .atMost(Duration.ofSeconds(12))
-        .until(() -> isRecordReaderIsCompleted("1-process-instance"));
+        .until(() -> isRecordReaderCompleted("1-process-instance"));
   }
 
   @Test
@@ -234,8 +233,7 @@ public class OpensearchFinishedImportingIT extends OperateZeebeAbstractIT {
     final var record = generateRecord(ValueType.PROCESS_INSTANCE, "8.7.0", 1);
     EXPORTER.export(record);
     osClient.index().refresh("*");
-
-    zeebeImporter.performOneRoundOfImport();
+    tester.performOneRoundOfImport();
 
     assertImportPositionMatchesRecord(record, ImportValueType.PROCESS_INSTANCE, 1);
 
@@ -289,14 +287,14 @@ public class OpensearchFinishedImportingIT extends OperateZeebeAbstractIT {
 
     // when
     for (int i = 0; i <= RecordsReaderHolder.MINIMUM_EMPTY_BATCHES_FOR_COMPLETED_READER; i++) {
-      zeebeImporter.performOneRoundOfImport();
+      tester.performOneRoundOfImport();
     }
 
     // then
     for (final var type : ImportValueType.IMPORT_VALUE_TYPES) {
-      await()
+      Awaitility.await()
           .atMost(Duration.ofSeconds(30))
-          .until(() -> isRecordReaderIsCompleted("1-" + type.getAliasTemplate()));
+          .until(() -> isRecordReaderCompleted("1-" + type.getAliasTemplate()));
     }
   }
 
@@ -319,7 +317,7 @@ public class OpensearchFinishedImportingIT extends OperateZeebeAbstractIT {
             });
   }
 
-  private boolean isRecordReaderIsCompleted(final String partitionIdFieldValue) throws IOException {
+  private boolean isRecordReaderCompleted(final String partitionIdFieldValue) throws IOException {
     final var hits =
         osClient
             .doc()
@@ -337,8 +335,8 @@ public class OpensearchFinishedImportingIT extends OperateZeebeAbstractIT {
     return hits.stream()
         .filter(hit -> hit.getId().equals(partitionIdFieldValue))
         .findFirst()
-        .orElseThrow()
-        .getCompleted();
+        .map(ImportPositionEntity::getCompleted)
+        .orElse(false);
   }
 
   private <T extends RecordValue> Record<T> generateRecord(
