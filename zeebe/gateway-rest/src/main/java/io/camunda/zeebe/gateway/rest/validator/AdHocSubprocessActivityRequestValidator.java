@@ -41,7 +41,6 @@ public class AdHocSubprocessActivityRequestValidator {
       final AdHocSubprocessActivateActivitiesInstruction request) {
     return validate(
         violations -> {
-          // TODO validate duplicate element IDs here?
           if (request.getElements() == null || request.getElements().isEmpty()) {
             violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("elements"));
           } else {
