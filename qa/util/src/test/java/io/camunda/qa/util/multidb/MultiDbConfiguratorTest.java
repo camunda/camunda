@@ -25,21 +25,6 @@ public class MultiDbConfiguratorTest {
   public static final String EXPECTED_PW = "pw";
 
   @Test
-  public void shouldRegisterOperateAndTasklistPropertiesByDefault() {
-    // given
-    final var testSimpleCamundaApplication = new TestSimpleCamundaApplication();
-
-    // when
-    new MultiDbConfigurator(testSimpleCamundaApplication);
-
-    // then
-
-    final BrokerBasedProperties brokerBasedProperties =
-        testSimpleCamundaApplication.bean(BrokerBasedProperties.class);
-    assertThat(brokerBasedProperties.getExporters()).isEmpty();
-  }
-
-  @Test
   public void shouldConfigureWithElasticsearch() {
     // given
     final var testSimpleCamundaApplication = new TestSimpleCamundaApplication();
@@ -106,6 +91,91 @@ public class MultiDbConfiguratorTest {
                 EXPECTED_PREFIX,
                 "type",
                 io.camunda.search.connect.configuration.DatabaseType.ELASTICSEARCH));
+
+    assertThat(exporterArgs.get("archiver"))
+        .isEqualTo(
+            Map.of(
+                "waitPeriodBeforeArchiving",
+                "1s",
+                "retention",
+                Map.of(
+                    "enabled",
+                    Boolean.toString(false),
+                    "policyName",
+                    EXPECTED_PREFIX + "-ilm",
+                    "minimumAge",
+                    "0s")));
+  }
+
+  @Test
+  public void shouldConfigureElasticsearchWithRetention() {
+    // given
+    final var testSimpleCamundaApplication = new TestSimpleCamundaApplication();
+    final MultiDbConfigurator multiDbConfigurator =
+        new MultiDbConfigurator(testSimpleCamundaApplication);
+
+    // when
+    multiDbConfigurator.configureElasticsearchSupport(EXPECTED_URL, EXPECTED_PREFIX, true);
+
+    // then
+
+    final BrokerBasedProperties brokerBasedProperties =
+        testSimpleCamundaApplication.bean(BrokerBasedProperties.class);
+    assertThat(brokerBasedProperties).isNotNull();
+
+    final ExporterCfg camundaExporter = brokerBasedProperties.getExporters().get("CamundaExporter");
+    assertThat(camundaExporter).isNotNull();
+
+    final Map<String, Object> exporterArgs = camundaExporter.getArgs();
+    assertThat(exporterArgs.get("archiver"))
+        .isEqualTo(
+            Map.of(
+                "waitPeriodBeforeArchiving",
+                "1s",
+                "retention",
+                Map.of(
+                    "enabled",
+                    Boolean.toString(true),
+                    "policyName",
+                    EXPECTED_PREFIX + "-ilm",
+                    "minimumAge",
+                    "0s")));
+  }
+
+  @Test
+  public void shouldConfigureWithOpenSearchWithRetention() {
+    // given
+    final var testSimpleCamundaApplication = new TestSimpleCamundaApplication();
+    final MultiDbConfigurator multiDbConfigurator =
+        new MultiDbConfigurator(testSimpleCamundaApplication);
+
+    // when
+    multiDbConfigurator.configureOpenSearchSupport(
+        EXPECTED_URL, EXPECTED_PREFIX, EXPECTED_USER, EXPECTED_PW, true);
+
+    // then
+
+    final BrokerBasedProperties brokerBasedProperties =
+        testSimpleCamundaApplication.bean(BrokerBasedProperties.class);
+    assertThat(brokerBasedProperties).isNotNull();
+
+    final ExporterCfg camundaExporter = brokerBasedProperties.getExporters().get("CamundaExporter");
+    assertThat(camundaExporter).isNotNull();
+
+    final Map<String, Object> exporterArgs = camundaExporter.getArgs();
+    assertThat(exporterArgs.get("archiver"))
+        .isEqualTo(
+            Map.of(
+                "waitPeriodBeforeArchiving",
+                "1s",
+                "retention",
+                Map.of(
+                    "enabled",
+                    Boolean.toString(true),
+                    "policyName",
+                    EXPECTED_PREFIX + "-ilm",
+                    "minimumAge",
+                    "0s")));
   }
 
   @Test
@@ -185,6 +255,20 @@ public class MultiDbConfiguratorTest {
                 EXPECTED_USER,
                 "password",
                 EXPECTED_PW));
+
+    assertThat(exporterArgs.get("archiver"))
+        .isEqualTo(
+            Map.of(
+                "waitPeriodBeforeArchiving",
+                "1s",
+                "retention",
+                Map.of(
+                    "enabled",
+                    Boolean.toString(false),
+                    "policyName",
+                    EXPECTED_PREFIX + "-ilm",
+                    "minimumAge",
+                    "0s")));
   }
 
   private <T> void assertProperty(
