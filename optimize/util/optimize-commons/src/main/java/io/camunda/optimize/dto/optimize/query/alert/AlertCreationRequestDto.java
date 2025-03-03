@@ -20,7 +20,6 @@ public class AlertCreationRequestDto {
   private boolean fixNotification;
   private AlertInterval reminder;
   private List<String> emails = new ArrayList<>();
-  private String webhook;
 
   public AlertCreationRequestDto() {}
 
@@ -88,14 +87,6 @@ public class AlertCreationRequestDto {
     this.emails = emails;
   }
 
-  public String getWebhook() {
-    return webhook;
-  }
-
-  public void setWebhook(final String webhook) {
-    this.webhook = webhook;
-  }
-
   protected boolean canEqual(final Object other) {
     return other instanceof AlertCreationRequestDto;
   }
@@ -128,8 +119,6 @@ public class AlertCreationRequestDto {
         + getReminder()
         + ", emails="
         + getEmails()
-        + ", webhook="
-        + getWebhook()
         + ")";
   }
 
@@ -145,7 +134,6 @@ public class AlertCreationRequestDto {
     public static final String fixNotification = "fixNotification";
     public static final String reminder = "reminder";
     public static final String emails = "emails";
-    public static final String webhook = "webhook";
 
     protected Fields() {}
   }
