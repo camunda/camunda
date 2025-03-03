@@ -31,7 +31,7 @@ func QueryCamunda(c8 opener, name string, settings settings) error {
 	if settings.HasKeyStore() {
 		protocol = "https"
 	}
-	healthEndpoint := protocol + "://localhost:9600/actuator/health"
+	healthEndpoint := protocol + "://localhost:8080" + "/operate/login"
 	if isRunning(name, healthEndpoint, 24, 14*time.Second) {
 		fmt.Println(name + " has successfully been started.")
 		err := c8.OpenBrowser(protocol, settings.Port())
