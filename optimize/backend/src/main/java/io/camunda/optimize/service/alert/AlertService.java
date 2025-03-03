@@ -441,7 +441,7 @@ public class AlertService implements ReportReferencingService {
       alertRecipientValidator.validateAlertRecipientEmailAddresses(toCreate.getEmails());
     }
     if (!emailsDefined) {
-      throw new OptimizeValidationException("The field [emails] is not allowed to both be empty.");
+      throw new OptimizeValidationException("The field [emails] is not allowed to be empty.");
     }
   }
 
