@@ -11,12 +11,13 @@ import io.camunda.zeebe.db.ColumnFamily;
 import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.db.impl.DbLong;
-import io.camunda.zeebe.engine.state.batchoperation.BatchOperation.BatchOperationState;
+import io.camunda.zeebe.db.impl.DbNil;
+import io.camunda.zeebe.engine.state.batchoperation.PersistedBatchOperation.BatchOperationState;
 import io.camunda.zeebe.engine.state.mutable.MutableBatchOperationState;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationCreationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationExecutionRecord;
-import java.util.ArrayList;
+import io.camunda.zeebe.protocol.record.intent.BatchOperationIntent;
 import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -26,73 +27,97 @@ public class DbBatchOperationState implements MutableBatchOperationState {
   private static final String KEY = "BATCH_OPERATION";
   private final Logger LOGGER = LoggerFactory.getLogger(DbBatchOperationState.class);
   private final DbLong batchKey = new DbLong();
-  private final ColumnFamily<DbLong, BatchOperation> columnFamily;
+  private final ColumnFamily<DbLong, PersistedBatchOperation> batchOperationColumnFamily;
+  private final ColumnFamily<DbLong, DbNil> pendingBatchOperationColumnFamily;
 
   public DbBatchOperationState(
       final ZeebeDb<ZbColumnFamilies> zeebeDb, final TransactionContext transactionContext) {
-    columnFamily = zeebeDb.createColumnFamily(ZbColumnFamilies.BATCH_OPERATION, transactionContext,
-        batchKey, new BatchOperation());
+    batchOperationColumnFamily =
+        zeebeDb.createColumnFamily(
+            ZbColumnFamilies.BATCH_OPERATION,
+            transactionContext,
+            batchKey,
+            new PersistedBatchOperation());
+    pendingBatchOperationColumnFamily =
+        zeebeDb.createColumnFamily(
+            ZbColumnFamilies.PENDING_BATCH_OPERATION, transactionContext, batchKey, DbNil.INSTANCE);
   }
 
   @Override
   public void create(final long batchKey, final BatchOperationCreationRecord record) {
     this.batchKey.wrapLong(batchKey);
-    final var batch = new BatchOperation();
-    batch.setStatus(BatchOperationState.ACTIVATED);
-    batch.setType(record.getBatchOperationType());
-    batch.setOffset(0);
-    batch.setKeys(new ArrayList<>(record.getKeys())); // todo record also as list?
-    columnFamily.insert(this.batchKey, batch);
+    final var batchOperation = new PersistedBatchOperation();
+    batchOperation
+        .setKey(batchKey)
+        .setStatus(BatchOperationState.ACTIVATED)
+        .setBatchOperationType(record.getBatchOperationType())
+        .setIntent(BatchOperationIntent.CREATED)
+        .setFilter(record.getFilterBuffer())
+        .setOffset(0);
+    batchOperationColumnFamily.insert(this.batchKey, batchOperation);
+    pendingBatchOperationColumnFamily.insert(this.batchKey, DbNil.INSTANCE);
   }
 
   @Override
   public void update(final long batchKey, final BatchOperationExecutionRecord record) {
     this.batchKey.wrapLong(batchKey);
-    final var batch = columnFamily.get(this.batchKey);
+    final var batch = batchOperationColumnFamily.get(this.batchKey);
     batch.setOffset(record.getOffset());
-    columnFamily.update(this.batchKey, batch);
+    batchOperationColumnFamily.update(this.batchKey, batch);
+    pendingBatchOperationColumnFamily.deleteIfExists(this.batchKey);
   }
 
   @Override
   public void pause(final long batchKey, final BatchOperationExecutionRecord record) {
     this.batchKey.wrapLong(batchKey);
-    final var batch = columnFamily.get(this.batchKey);
+    final var batch = batchOperationColumnFamily.get(this.batchKey);
     if (batch == null) {
       LOGGER.warn("Batch operation with key {} not found for pausing", batchKey);
       return;
     }
     batch.setStatus(BatchOperationState.PAUSED);
-    columnFamily.insert(this.batchKey, batch);
+    batchOperationColumnFamily.insert(this.batchKey, batch);
   }
 
   @Override
   public void resume(final long batchKey, final BatchOperationExecutionRecord record) {
     this.batchKey.wrapLong(batchKey);
-    final var batch = columnFamily.get(this.batchKey);
+    final var batch = batchOperationColumnFamily.get(this.batchKey);
     if (batch == null) {
       LOGGER.warn("Batch operation with key {} not found for resuming", batchKey);
       return;
     }
     batch.setStatus(BatchOperationState.ACTIVATED);
-    columnFamily.insert(this.batchKey, batch);
+    batchOperationColumnFamily.insert(this.batchKey, batch);
   }
 
   @Override
   public void cancel(final long batchKey, final BatchOperationExecutionRecord record) {
     this.batchKey.wrapLong(batchKey);
-    columnFamily.deleteExisting(this.batchKey);
+    batchOperationColumnFamily.deleteExisting(this.batchKey);
   }
 
   @Override
   public void complete(final long batchKey, final BatchOperationExecutionRecord record) {
     this.batchKey.wrapLong(batchKey);
-    columnFamily.deleteExisting(this.batchKey);
+    batchOperationColumnFamily.deleteExisting(this.batchKey);
   }
 
   @Override
-  public Optional<BatchOperation> get(final long key) {
+  public Optional<PersistedBatchOperation> get(final long key) {
     batchKey.wrapLong(key);
-    return Optional.ofNullable(columnFamily.get(batchKey));
+    return Optional.ofNullable(batchOperationColumnFamily.get(batchKey));
   }
 
+  @Override
+  public void foreachPendingBatchOperation(final BatchOperationVisitor visitor) {
+    pendingBatchOperationColumnFamily.whileTrue(
+        (key, nil) -> {
+          final var batchOperation = batchOperationColumnFamily.get(key);
+          if (batchOperation != null) {
+            visitor.visit(batchOperation);
+          }
+          return true;
+        });
+  }
 }
