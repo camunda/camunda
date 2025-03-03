@@ -10,7 +10,6 @@ package io.camunda.zeebe.it.gateway;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import dasniko.testcontainers.keycloak.KeycloakContainer;
-import io.camunda.application.Profile;
 import io.camunda.identity.sdk.Identity;
 import io.camunda.zeebe.client.CredentialsProvider;
 import io.camunda.zeebe.client.ZeebeClient;
@@ -18,11 +17,8 @@ import io.camunda.zeebe.client.ZeebeClientBuilder;
 import io.camunda.zeebe.client.api.command.CommandWithCommunicationApiStep;
 import io.camunda.zeebe.client.api.command.ProblemException;
 import io.camunda.zeebe.client.api.command.TopologyRequestStep1;
-import io.camunda.zeebe.gateway.impl.configuration.AuthenticationCfg.AuthMode;
-import io.camunda.zeebe.qa.util.cluster.TestHealthProbe;
-import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
+import io.camunda.zeebe.qa.util.cluster.TestGateway;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
-import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
 import io.camunda.zeebe.qa.util.testcontainers.DefaultTestContainers;
 import io.camunda.zeebe.test.util.testcontainers.ContainerLogsDumper;
 import io.grpc.Status;
@@ -53,16 +49,16 @@ import org.testcontainers.utility.DockerImageName;
 
 @Testcontainers
 @ZeebeIntegration
-public class GatewayAuthenticationIdentityIT {
+public abstract class GatewayAuthenticationIdentityAbstractIT<T extends TestGateway<T>> {
 
   public static final String KEYCLOAK_USER = "admin";
   public static final String KEYCLOAK_PASSWORD = "admin";
   // with authentication enabled, the first grpc response includes the warmup of the identity sdk
   public static final Duration FIRST_REQUEST_TIMEOUT = Duration.ofSeconds(5);
   public static final String SNAPSHOT_TAG = "SNAPSHOT";
+  protected static final String ZEEBE_CLIENT_AUDIENCE = "zeebe-api";
   private static final String KEYCLOAK_PATH_CAMUNDA_REALM = "/realms/camunda-platform";
   private static final String ZEEBE_CLIENT_ID = "zeebe";
-  private static final String ZEEBE_CLIENT_AUDIENCE = "zeebe-api";
   private static final String ZEEBE_CLIENT_SECRET = "zecret";
   private static final Network NETWORK = Network.newNetwork();
 
@@ -119,21 +115,9 @@ public class GatewayAuthenticationIdentityIT {
   final ContainerLogsDumper logsWatcher =
       new ContainerLogsDumper(() -> Map.of("keycloak", KEYCLOAK, "identity", IDENTITY));
 
-  @TestZeebe(autoStart = false) // must configure in BeforeAll once containers have been started
-  private final TestStandaloneBroker zeebe =
-      new TestStandaloneBroker()
-          .withBrokerConfig(
-              cfg -> {
-                final var auth = cfg.getGateway().getSecurity().getAuthentication();
-                auth.setMode(AuthMode.IDENTITY);
-              })
-          .withAdditionalProfile(Profile.IDENTITY_AUTH)
-          .withProperty("camunda.identity.issuerBackendUrl", getKeycloakRealmAddress())
-          .withProperty("camunda.identity.audience", ZEEBE_CLIENT_AUDIENCE);
-
   @BeforeEach
   void beforeEach() {
-    zeebe.start().await(TestHealthProbe.READY);
+    getGateway().start();
   }
 
   @ParameterizedTest
@@ -229,7 +213,7 @@ public class GatewayAuthenticationIdentityIT {
                         .returns(HttpStatus.SC_UNAUTHORIZED, ProblemException::code))));
   }
 
-  private static String getKeycloakRealmAddress() {
+  protected static String getKeycloakRealmAddress() {
     return "http://"
         + KEYCLOAK.getHost()
         + ":"
@@ -239,8 +223,8 @@ public class GatewayAuthenticationIdentityIT {
 
   private ZeebeClientBuilder createZeebeClientBuilder() {
     return ZeebeClient.newClientBuilder()
-        .grpcAddress(zeebe.grpcAddress())
-        .restAddress(zeebe.restAddress())
+        .grpcAddress(getGateway().grpcAddress())
+        .restAddress(getGateway().restAddress())
         .defaultRequestTimeout(Duration.ofMinutes(1))
         .usePlaintext();
   }
@@ -252,6 +236,12 @@ public class GatewayAuthenticationIdentityIT {
 
     return dockerImageTag.contains("SNAPSHOT") ? SNAPSHOT_TAG : dockerImageTag;
   }
+
+  protected abstract TestGateway<T> getGateway();
+
+  protected record InvalidTokenTestCase(
+      UnaryOperator<TopologyRequestStep1> apiPicker,
+      Consumer<ThrowableAssertAlternative<?>> expectations) {}
 
   private static final class InvalidAuthTokenProvider implements CredentialsProvider {
 
@@ -265,8 +255,4 @@ public class GatewayAuthenticationIdentityIT {
       return false;
     }
   }
-
-  private record InvalidTokenTestCase(
-      UnaryOperator<TopologyRequestStep1> apiPicker,
-      Consumer<ThrowableAssertAlternative<?>> expectations) {}
 }
