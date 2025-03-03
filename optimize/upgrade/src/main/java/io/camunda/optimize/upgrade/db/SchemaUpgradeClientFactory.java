@@ -47,9 +47,7 @@ public final class SchemaUpgradeClientFactory {
           metadataService,
           upgradeDependencies.configurationService(),
           esClient,
-          new ObjectMapperFactory(
-                  new OptimizeDateTimeFormatterFactory().getObject(),
-                  upgradeDependencies.configurationService())
+          new ObjectMapperFactory(new OptimizeDateTimeFormatterFactory().getObject())
               .createOptimizeMapper());
     } else if (upgradeDependencies.databaseType().equals(DatabaseType.OPENSEARCH)) {
       final OptimizeOpenSearchClient osClient =
@@ -65,9 +63,7 @@ public final class SchemaUpgradeClientFactory {
               mappingUtil.getAllMappings(upgradeDependencies.indexNameService().getIndexPrefix())),
           metadataService,
           osClient,
-          new ObjectMapperFactory(
-                  new OptimizeDateTimeFormatterFactory().getObject(),
-                  upgradeDependencies.configurationService())
+          new ObjectMapperFactory(new OptimizeDateTimeFormatterFactory().getObject())
               .createOptimizeMapper());
     } else {
       throw new UnsupportedOperationException(
@@ -89,16 +85,14 @@ public final class SchemaUpgradeClientFactory {
           (ElasticSearchMetadataService) metadataService,
           configurationService,
           esClient,
-          new ObjectMapperFactory(
-                  new OptimizeDateTimeFormatterFactory().getObject(), configurationService)
+          new ObjectMapperFactory(new OptimizeDateTimeFormatterFactory().getObject())
               .createOptimizeMapper());
     } else if (dbClient instanceof final OptimizeOpenSearchClient osClient) {
       return new SchemaUpgradeClientOS(
           (OpenSearchSchemaManager) schemaManager,
           (OpenSearchMetadataService) metadataService,
           osClient,
-          new ObjectMapperFactory(
-                  new OptimizeDateTimeFormatterFactory().getObject(), configurationService)
+          new ObjectMapperFactory(new OptimizeDateTimeFormatterFactory().getObject())
               .createOptimizeMapper());
     } else {
       throw new UnsupportedOperationException(
