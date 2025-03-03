@@ -12,7 +12,6 @@ Object {
   ],
   "fixNotification": true,
   "id": "71395",
-  "inactive": null,
   "invalid": false,
   "name": "Sample Alert",
   "reminder": null,
@@ -34,6 +33,5 @@ Object {
   "threshold": "37",
   "thresholdOperator": "<",
   "validEmails": true,
-  "webhook": null,
 }
 `;

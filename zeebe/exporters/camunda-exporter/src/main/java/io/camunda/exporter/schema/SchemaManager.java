@@ -246,6 +246,28 @@ public class SchemaManager {
     }
   }
 
+  public List<String> truncateIndices() {
+    final var indices =
+        indexDescriptors.stream().map(IndexDescriptor::getFullQualifiedName).toList();
+    indices.forEach(searchEngineClient::truncateIndex);
+    return indices;
+  }
+
+  public void deleteArchivedIndices() {
+    final var liveIndices =
+        indexDescriptors.stream().map(IndexDescriptor::getFullQualifiedName).toList();
+    final var archivedIndices =
+        liveIndices.stream()
+            .map(indexName -> indexName + "*")
+            .map(idxWildcard -> searchEngineClient.getMappings(idxWildcard, MappingSource.INDEX))
+            .map(Map::keySet)
+            .flatMap(Collection::stream)
+            .filter(index -> !liveIndices.contains(index))
+            .toList();
+    archivedIndices.forEach(searchEngineClient::deleteIndex);
+    LOG.debug("Deleted archived indices '{}'", archivedIndices);
+  }
+
   private IndexSettings getIndexSettingsFromConfig(final String indexName) {
     final var templateReplicas = getNumberOfReplicasFromConfig(indexName);
     final var templateShards =

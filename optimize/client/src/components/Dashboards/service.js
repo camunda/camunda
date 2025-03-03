@@ -7,20 +7,19 @@
  */
 
 import {get, del, post} from 'request';
-import {getFullURL} from '../../modules/api';
 
 export async function shareDashboard(dashboardId) {
   const body = {
     dashboardId,
   };
-  const response = await post(getFullURL(`api/share/dashboard`), body);
+  const response = await post(`api/share/dashboard`, body);
 
   const json = await response.json();
   return json.id;
 }
 
 export async function getSharedDashboard(reportId) {
-  const response = await get(getFullURL(`api/share/dashboard/${reportId}`));
+  const response = await get(`api/share/dashboard/${reportId}`);
 
   if (response.status > 201) {
     return '';
@@ -31,13 +30,13 @@ export async function getSharedDashboard(reportId) {
 }
 
 export async function revokeDashboardSharing(id) {
-  return await del(getFullURL(`api/share/dashboard/${id}`));
+  return await del(`api/share/dashboard/${id}`);
 }
 
 export async function isAuthorizedToShareDashboard(dashboardId) {
   try {
     const response = await get(
-      getFullURL(`api/share/dashboard/${dashboardId}/isAuthorizedToShare`)
+      `api/share/dashboard/${dashboardId}/isAuthorizedToShare`
     );
     return response.status === 200;
   } catch (_error) {

@@ -18,7 +18,8 @@ import org.opensearch.client.opensearch.indices.PutIndexTemplateRequest;
 import org.slf4j.Logger;
 
 public class OpenSearchTemplateOperations extends OpenSearchRetryOperation {
-  public OpenSearchTemplateOperations(Logger logger, OpenSearchClient openSearchClient) {
+  public OpenSearchTemplateOperations(
+      final Logger logger, final OpenSearchClient openSearchClient) {
     super(logger, openSearchClient);
   }
 
@@ -26,7 +27,8 @@ public class OpenSearchTemplateOperations extends OpenSearchRetryOperation {
     return openSearchClient.indices().existsIndexTemplate(it -> it.name(templatePattern)).value();
   }
 
-  public boolean createTemplateWithRetries(PutIndexTemplateRequest request, boolean overwrite) {
+  public boolean createTemplateWithRetries(
+      final PutIndexTemplateRequest request, final boolean overwrite) {
     return executeWithRetries(
         "CreateTemplate " + request.name(),
         () -> {
