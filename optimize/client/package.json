@@ -117,7 +117,7 @@
     "patch-package": "^8.0.0",
     "prettier": "^3.3.3",
     "react-scripts": "5.0.1",
-    "rollup-plugin-license": "3.5.3",
+    "rollup-plugin-license": "3.6.0",
     "sass": "^1.77.2",
     "styled-components": "^6.1.9",
     "testcafe": "^3.7.0",
