@@ -1,4 +1,4 @@
-import { ChangeEvent, FC, useId, useMemo } from "react";
+import { ChangeEvent, FC, useId } from "react";
 import { PasswordInput, TextArea, TextInput } from "@carbon/react";
 import useTranslate from "src/utility/localization";
 
@@ -14,6 +14,9 @@ export type TextFieldProps = {
   onBlur?: () => void;
   readOnly?: boolean;
   onChange?: (newValue: string) => void;
+  maxCount?: number;
+  enableCounter?: boolean;
+  counterMode?: "character" | "word";
 };
 
 const TextField: FC<TextFieldProps> = ({
@@ -28,6 +31,9 @@ const TextField: FC<TextFieldProps> = ({
   autoFocus = false,
   type = "text",
   readOnly,
+  maxCount = 255,
+  enableCounter = false,
+  counterMode = "character",
 }) => {
   const { t } = useTranslate();
   const fieldId = useId();
@@ -42,11 +48,6 @@ const TextField: FC<TextFieldProps> = ({
         ? TextArea
         : TextInput;
 
-  const additionalProps = useMemo(
-    () => (autoFocus ? { "data-modal-primary-focus": true } : {}),
-    [autoFocus],
-  );
-
   return (
     <InputComponent
       labelText={label}
@@ -56,12 +57,15 @@ const TextField: FC<TextFieldProps> = ({
       value={value}
       placeholder={placeholder}
       onChange={handleChange}
-      invalid={errors.length > 0}
-      invalidText={errors.map((e) => t(e)).join(" ")}
+      invalid={errors && errors.length > 0}
+      invalidText={errors?.map((e) => t(e)).join(" ")}
       type={type}
       onBlur={onBlur}
       readOnly={readOnly}
-      {...additionalProps}
+      maxCount={maxCount}
+      enableCounter={enableCounter}
+      counterMode={counterMode}
+      {...(autoFocus && { "data-modal-primary-focus": true })}
     />
   );
 };
