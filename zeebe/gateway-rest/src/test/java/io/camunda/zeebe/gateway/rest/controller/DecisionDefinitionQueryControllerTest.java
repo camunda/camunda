@@ -13,7 +13,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.camunda.search.entities.DecisionDefinitionEntity;
-import io.camunda.search.exception.NotFoundException;
+import io.camunda.search.exception.CamundaSearchException;
 import io.camunda.search.filter.DecisionDefinitionFilter;
 import io.camunda.search.query.DecisionDefinitionQuery;
 import io.camunda.search.query.SearchQueryResult;
@@ -321,7 +321,9 @@ public class DecisionDefinitionQueryControllerTest extends RestControllerTest {
     // given
     final Long decisionDefinitionKey = 1L;
     when(decisionDefinitionServices.getDecisionDefinitionXml(decisionDefinitionKey))
-        .thenThrow(new NotFoundException("Decision with key 1 was not found."));
+        .thenThrow(
+            new CamundaSearchException(
+                "Decision with key 1 was not found.", CamundaSearchException.Reason.NOT_FOUND));
 
     // when/then
     final var expectedResponse =
@@ -441,7 +443,9 @@ public class DecisionDefinitionQueryControllerTest extends RestControllerTest {
     // given
     final Long decisionDefinitionKey = 1L;
     when(decisionDefinitionServices.getByKey(decisionDefinitionKey))
-        .thenThrow(new NotFoundException("Decision with key 1 was not found."));
+        .thenThrow(
+            new CamundaSearchException(
+                "Decision with key 1 was not found.", CamundaSearchException.Reason.NOT_FOUND));
 
     // when/then
     final var expectedResponse =

@@ -15,7 +15,7 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.search.clients.TenantSearchClient;
 import io.camunda.search.entities.TenantEntity;
-import io.camunda.search.exception.NotFoundException;
+import io.camunda.search.exception.CamundaSearchException;
 import io.camunda.search.filter.TenantFilter;
 import io.camunda.search.query.SearchQueryBuilders;
 import io.camunda.search.query.SearchQueryResult;
@@ -113,8 +113,10 @@ public class TenantServiceTest {
     // when / then
 
     assertThatCode(() -> services.getById("non-existent-tenant-id"))
-        .isInstanceOf(NotFoundException.class)
-        .hasMessageMatching("Tenant matching TenantQuery\\[.*] not found");
+        .isInstanceOf(CamundaSearchException.class)
+        .hasMessageMatching("Tenant matching TenantQuery\\[.*] not found")
+        .extracting(e -> ((CamundaSearchException) e).getReason())
+        .isEqualTo(CamundaSearchException.Reason.NOT_FOUND);
   }
 
   @Test
