@@ -21,19 +21,20 @@ import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
 import org.springframework.boot.context.properties.NestedConfigurationProperty;
+import org.springframework.util.unit.DataSize;
 
 public class ZeebeClientProperties extends ApiProperties {
   private Integer executionThreads;
   private Duration messageTimeToLive;
-  private Integer maxMessageSize;
-  private Integer maxMetadataSize;
+  private DataSize maxMessageSize;
+  private DataSize maxMetadataSize;
   private Duration requestTimeout;
   private String caCertificatePath;
   private Duration keepAlive;
   private String overrideAuthority;
   @NestedConfigurationProperty private ZeebeWorkerValue defaults = new ZeebeWorkerValue();
   @NestedConfigurationProperty private Map<String, ZeebeWorkerValue> override = new HashMap<>();
-  private boolean preferRestOverGrpc;
+  private Boolean preferRestOverGrpc;
   private URI grpcAddress;
   private URI restAddress;
 
@@ -101,27 +102,27 @@ public class ZeebeClientProperties extends ApiProperties {
     this.overrideAuthority = overrideAuthority;
   }
 
-  public Integer getMaxMessageSize() {
+  public DataSize getMaxMessageSize() {
     return maxMessageSize;
   }
 
-  public void setMaxMessageSize(final Integer maxMessageSize) {
+  public void setMaxMessageSize(final DataSize maxMessageSize) {
     this.maxMessageSize = maxMessageSize;
   }
 
-  public Integer getMaxMetadataSize() {
+  public DataSize getMaxMetadataSize() {
     return maxMetadataSize;
   }
 
-  public void setMaxMetadataSize(final Integer maxMetadataSize) {
+  public void setMaxMetadataSize(final DataSize maxMetadataSize) {
     this.maxMetadataSize = maxMetadataSize;
   }
 
-  public boolean isPreferRestOverGrpc() {
+  public Boolean getPreferRestOverGrpc() {
     return preferRestOverGrpc;
   }
 
-  public void setPreferRestOverGrpc(final boolean preferRestOverGrpc) {
+  public void setPreferRestOverGrpc(final Boolean preferRestOverGrpc) {
     this.preferRestOverGrpc = preferRestOverGrpc;
   }
 
@@ -163,5 +164,40 @@ public class ZeebeClientProperties extends ApiProperties {
       throw new IllegalArgumentException("restAddress must be an absolute URI");
     }
     this.restAddress = restAddress;
+  }
+
+  @Override
+  public String toString() {
+    return "ZeebeClientProperties{"
+        + "executionThreads="
+        + executionThreads
+        + ", messageTimeToLive="
+        + messageTimeToLive
+        + ", maxMessageSize="
+        + maxMessageSize
+        + ", maxMetadataSize="
+        + maxMetadataSize
+        + ", requestTimeout="
+        + requestTimeout
+        + ", caCertificatePath='"
+        + caCertificatePath
+        + '\''
+        + ", keepAlive="
+        + keepAlive
+        + ", overrideAuthority='"
+        + overrideAuthority
+        + '\''
+        + ", defaults="
+        + defaults
+        + ", override="
+        + override
+        + ", preferRestOverGrpc="
+        + preferRestOverGrpc
+        + ", grpcAddress="
+        + grpcAddress
+        + ", restAddress="
+        + restAddress
+        + "} "
+        + super.toString();
   }
 }

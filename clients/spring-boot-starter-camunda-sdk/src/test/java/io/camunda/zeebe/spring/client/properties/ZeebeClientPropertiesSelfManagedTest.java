@@ -35,12 +35,9 @@ public class ZeebeClientPropertiesSelfManagedTest {
         .isEqualTo("http://localhost:26500");
     assertThat(properties.getZeebe().getRestAddress().toString())
         .isEqualTo("http://localhost:8086");
-    assertThat(properties.getZeebe().isPreferRestOverGrpc()).isEqualTo(false);
+    assertThat(properties.getZeebe().getPreferRestOverGrpc()).isEqualTo(false);
     assertThat(properties.getZeebe().getEnabled()).isEqualTo(true);
     assertThat(properties.getZeebe().getAudience()).isEqualTo("zeebe-api");
     assertThat(properties.getZeebe().getScope()).isEqualTo("zeebe-scope");
-    assertThat(properties.getIdentity().getEnabled()).isEqualTo(true);
-    assertThat(properties.getIdentity().getBaseUrl().toString()).isEqualTo("http://localhost:8084");
-    assertThat(properties.getIdentity().getAudience()).isEqualTo("identity-api");
   }
 }

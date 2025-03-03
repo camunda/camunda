@@ -15,7 +15,7 @@
  */
 package io.camunda.zeebe.spring.client.config;
 
-import static io.camunda.zeebe.spring.client.properties.ZeebeClientConfigurationProperties.*;
+import static io.camunda.zeebe.spring.client.configuration.ZeebeClientConfigurationImpl.DEFAULT;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.client.ZeebeClientConfiguration;
@@ -37,8 +37,8 @@ import org.springframework.boot.test.system.OutputCaptureExtension;
     classes = {ZeebeClientAllAutoConfiguration.class, ZeebeClientProdAutoConfiguration.class},
     properties = {
       "camunda.client.mode=saas",
-      "camunda.client.cluster-id=12345",
-      "camunda.client.region=bru-2",
+      "camunda.client.cloud.cluster-id=12345",
+      "camunda.client.cloud.region=bru-2",
       "camunda.client.auth.client-id=my-client-id",
       "camunda.client.auth.client-secret=my-client-secret"
     })
@@ -62,13 +62,13 @@ public class ZeebeClientConfigurationImplSaasTest {
   @Test
   void shouldHaveGrpcAddress() throws URISyntaxException {
     assertThat(zeebeClientConfiguration.getGrpcAddress())
-        .isEqualTo(new URI("https://12345.bru-2.zeebe.camunda.io"));
+        .isEqualTo(new URI("https://12345.bru-2.zeebe.camunda.io:443"));
   }
 
   @Test
   void shouldHaveRestAddress() throws URISyntaxException {
     assertThat(zeebeClientConfiguration.getRestAddress())
-        .isEqualTo(new URI("https://bru-2.zeebe.camunda.io/12345"));
+        .isEqualTo(new URI("https://bru-2.zeebe.camunda.io:443/12345"));
   }
 
   @Test

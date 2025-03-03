@@ -15,6 +15,10 @@
  */
 package io.camunda.zeebe.spring.client.properties.common;
 
+import java.net.URI;
+import java.time.Duration;
+import org.springframework.boot.context.properties.DeprecatedConfigurationProperty;
+
 public class AuthProperties {
 
   // simple
@@ -25,8 +29,12 @@ public class AuthProperties {
   private String clientId;
   private String clientSecret;
 
-  private String issuer;
+  @Deprecated private String issuer;
+  private URI tokenUrl;
+
   private String credentialsCachePath;
+  private Duration connectTimeout;
+  private Duration readTimeout;
 
   public String getCredentialsCachePath() {
     return credentialsCachePath;
@@ -36,10 +44,37 @@ public class AuthProperties {
     this.credentialsCachePath = credentialsCachePath;
   }
 
+  public Duration getConnectTimeout() {
+    return connectTimeout;
+  }
+
+  public void setConnectTimeout(final Duration connectTimeout) {
+    this.connectTimeout = connectTimeout;
+  }
+
+  public Duration getReadTimeout() {
+    return readTimeout;
+  }
+
+  public void setReadTimeout(final Duration readTimeout) {
+    this.readTimeout = readTimeout;
+  }
+
+  public URI getTokenUrl() {
+    return tokenUrl;
+  }
+
+  public void setTokenUrl(final URI tokenUrl) {
+    this.tokenUrl = tokenUrl;
+  }
+
+  @Deprecated
   public String getIssuer() {
     return issuer;
   }
 
+  @Deprecated
+  @DeprecatedConfigurationProperty(replacement = "camunda.client.auth.token-url")
   public void setIssuer(final String issuer) {
     this.issuer = issuer;
   }
@@ -74,5 +109,32 @@ public class AuthProperties {
 
   public void setClientSecret(final String clientSecret) {
     this.clientSecret = clientSecret;
+  }
+
+  @Override
+  public String toString() {
+    return "AuthProperties{"
+        + "username='"
+        + username
+        + '\''
+        + ", password='"
+        + (password != null ? "***" : null)
+        + '\''
+        + ", clientId='"
+        + (clientId != null ? "***" : null)
+        + '\''
+        + ", clientSecret='"
+        + (clientSecret != null ? "***" : null)
+        + '\''
+        + ", tokenUrl="
+        + tokenUrl
+        + ", credentialsCachePath='"
+        + credentialsCachePath
+        + '\''
+        + ", connectTimeout="
+        + connectTimeout
+        + ", readTimeout="
+        + readTimeout
+        + '}';
   }
 }
