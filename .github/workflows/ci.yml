@@ -937,7 +937,7 @@ jobs:
           vacuum lint zeebe/gateway-protocol/src/main/proto/rest-api.yaml
           --ruleset zeebe/gateway-protocol/vacuum-ruleset.yaml
           --ignore-file zeebe/gateway-protocol/vacuum-ignores.yaml
-          --details --errors
+          --details --no-clip --errors
         shell: bash
       - name: Observe build status
         if: always()
