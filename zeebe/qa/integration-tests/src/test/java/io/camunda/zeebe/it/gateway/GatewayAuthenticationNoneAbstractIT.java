@@ -18,10 +18,8 @@ import io.camunda.zeebe.client.ZeebeClientBuilder;
 import io.camunda.zeebe.client.api.command.CommandWithCommunicationApiStep;
 import io.camunda.zeebe.client.api.command.TopologyRequestStep1;
 import io.camunda.zeebe.client.api.response.Topology;
-import io.camunda.zeebe.qa.util.cluster.TestHealthProbe;
-import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
+import io.camunda.zeebe.qa.util.cluster.TestGateway;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
-import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
 import io.camunda.zeebe.qa.util.testcontainers.DefaultTestContainers;
 import io.camunda.zeebe.test.util.testcontainers.ContainerLogsDumper;
 import java.time.Duration;
@@ -44,23 +42,23 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.utility.DockerImageName;
 
 /**
- * This test is mostly a copy of {@link GatewayAuthenticationIdentityIT} but with the authentication
- * mode set to none. It verifies that the gateway can be configured to not require authentication,
- * even when the {@link Profile#IDENTITY_AUTH} profile is active. In other words, users must be able
- * to override the security configuration with env vars.
+ * This test is mostly a copy of {@link GatewayAuthenticationIdentityAbstractIT} but with the
+ * authentication mode set to none. It verifies that the gateway can be configured to not require
+ * authentication, even when the {@link Profile#IDENTITY_AUTH} profile is active. In other words,
+ * users must be able to override the security configuration with env vars.
  */
 @Testcontainers
 @ZeebeIntegration
-public class GatewayAuthenticationNoneIT {
+public abstract class GatewayAuthenticationNoneAbstractIT<T extends TestGateway<T>> {
 
   public static final String KEYCLOAK_USER = "admin";
   public static final String KEYCLOAK_PASSWORD = "admin";
   // with authentication enabled, the first grpc response includes the warmup of the identity sdk
   public static final Duration FIRST_REQUEST_TIMEOUT = Duration.ofSeconds(5);
   public static final String SNAPSHOT_TAG = "SNAPSHOT";
+  protected static final String ZEEBE_CLIENT_AUDIENCE = "zeebe-api";
   private static final String KEYCLOAK_PATH_CAMUNDA_REALM = "/realms/camunda-platform";
   private static final String ZEEBE_CLIENT_ID = "zeebe";
-  private static final String ZEEBE_CLIENT_AUDIENCE = "zeebe-api";
   private static final String ZEEBE_CLIENT_SECRET = "zecret";
   private static final Network NETWORK = Network.newNetwork();
 
@@ -117,17 +115,9 @@ public class GatewayAuthenticationNoneIT {
   final ContainerLogsDumper logsWatcher =
       new ContainerLogsDumper(() -> Map.of("keycloak", KEYCLOAK, "identity", IDENTITY));
 
-  @TestZeebe(autoStart = false) // must configure in BeforeAll once containers have been started
-  private final TestStandaloneBroker zeebe =
-      new TestStandaloneBroker()
-          .withAdditionalProfile(Profile.IDENTITY_AUTH)
-          .withProperty("zeebe.broker.gateway.security.authentication.mode", "none")
-          .withProperty("camunda.identity.issuerBackendUrl", getKeycloakRealmAddress())
-          .withProperty("camunda.identity.audience", ZEEBE_CLIENT_AUDIENCE);
-
   @BeforeEach
   void beforeEach() {
-    zeebe.start().await(TestHealthProbe.READY);
+    getGateway().start();
   }
 
   @ParameterizedTest
@@ -193,7 +183,7 @@ public class GatewayAuthenticationNoneIT {
         .succeedsWithin(Duration.ofSeconds(1));
   }
 
-  private static String getKeycloakRealmAddress() {
+  protected static String getKeycloakRealmAddress() {
     return "http://"
         + KEYCLOAK.getHost()
         + ":"
@@ -203,8 +193,8 @@ public class GatewayAuthenticationNoneIT {
 
   private ZeebeClientBuilder createZeebeClientBuilder() {
     return ZeebeClient.newClientBuilder()
-        .grpcAddress(zeebe.grpcAddress())
-        .restAddress(zeebe.restAddress())
+        .grpcAddress(getGateway().grpcAddress())
+        .restAddress(getGateway().restAddress())
         .defaultRequestTimeout(Duration.ofMinutes(1))
         .usePlaintext();
   }
@@ -216,6 +206,8 @@ public class GatewayAuthenticationNoneIT {
 
     return dockerImageTag.contains("SNAPSHOT") ? SNAPSHOT_TAG : dockerImageTag;
   }
+
+  protected abstract TestGateway<T> getGateway();
 
   private static final class InvalidAuthTokenProvider implements CredentialsProvider {
 
