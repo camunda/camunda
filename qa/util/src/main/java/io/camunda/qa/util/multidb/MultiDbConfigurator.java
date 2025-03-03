@@ -71,6 +71,20 @@ public class MultiDbConfigurator {
                       io.camunda.search.connect.configuration.DatabaseType.ELASTICSEARCH),
                   "index",
                   Map.of("prefix", indexPrefix),
+                  "archiver",
+                  Map.of(
+                      "waitPeriodBeforeArchiving",
+                      retentionEnabled ? "1s" : "1h", // find completed instances almost directly
+                      "retention",
+                      Map.of(
+                          "enabled",
+                          "true",
+                          "policyName",
+                          indexPrefix + "-ilm",
+                          "minimumAge",
+                          // 0s causes ILM to move data asap - it is normally the default
+                          // https://www.elastic.co/guide/en/elasticsearch/reference/current/ilm-index-lifecycle.html#ilm-phase-transitions
+                          "0s")),
                   "bulk",
                   Map.of("size", 1)));
         });
@@ -144,6 +158,20 @@ public class MultiDbConfigurator {
                       userPassword),
                   "index",
                   Map.of("prefix", indexPrefix),
+                  "archiver",
+                  Map.of(
+                      "waitPeriodBeforeArchiving",
+                      retentionEnabled ? "1s" : "1h", // find completed instances almost directly
+                      "retention",
+                      Map.of(
+                          "enabled",
+                          "true",
+                          "policyName",
+                          indexPrefix + "-ilm",
+                          "minimumAge",
+                          // 0s causes ILM to move data asap - it is normally the default
+                          // https://www.elastic.co/guide/en/elasticsearch/reference/current/ilm-index-lifecycle.html#ilm-phase-transitions
+                          "0s")),
                   "bulk",
                   Map.of("size", 1)));
         });
