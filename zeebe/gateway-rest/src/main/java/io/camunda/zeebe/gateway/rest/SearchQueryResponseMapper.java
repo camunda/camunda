@@ -13,6 +13,7 @@ import static java.util.Optional.ofNullable;
 
 import io.camunda.search.entities.AdHocSubprocessActivityEntity;
 import io.camunda.search.entities.AuthorizationEntity;
+import io.camunda.search.entities.BatchOperationEntity;
 import io.camunda.search.entities.DecisionDefinitionEntity;
 import io.camunda.search.entities.DecisionInstanceEntity;
 import io.camunda.search.entities.DecisionInstanceEntity.DecisionDefinitionType;
@@ -37,6 +38,8 @@ import io.camunda.search.query.SearchQueryResult;
 import io.camunda.zeebe.gateway.protocol.rest.AdHocSubprocessActivityResult;
 import io.camunda.zeebe.gateway.protocol.rest.AuthorizationResult;
 import io.camunda.zeebe.gateway.protocol.rest.AuthorizationSearchResult;
+import io.camunda.zeebe.gateway.protocol.rest.BatchOperation;
+import io.camunda.zeebe.gateway.protocol.rest.BatchOperationSearchQueryResult;
 import io.camunda.zeebe.gateway.protocol.rest.DecisionDefinitionResult;
 import io.camunda.zeebe.gateway.protocol.rest.DecisionDefinitionSearchQueryResult;
 import io.camunda.zeebe.gateway.protocol.rest.DecisionDefinitionTypeEnum;
@@ -81,6 +84,7 @@ import io.camunda.zeebe.gateway.protocol.rest.VariableSearchQueryResult;
 import io.camunda.zeebe.gateway.rest.cache.ProcessCacheItem;
 import io.camunda.zeebe.gateway.rest.util.KeyUtil;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -89,7 +93,8 @@ import java.util.stream.Collectors;
 
 public final class SearchQueryResponseMapper {
 
-  private SearchQueryResponseMapper() {}
+  private SearchQueryResponseMapper() {
+  }
 
   public static UsageMetricsResponse toUsageMetricsResponse(
       final UsageMetricsCount usageMetricsCount) {
@@ -230,6 +235,17 @@ public final class SearchQueryResponseMapper {
                 .orElseGet(Collections::emptyList));
   }
 
+  public static BatchOperationSearchQueryResult toBatchOperationSearchQueryResult(
+      final SearchQueryResult<BatchOperationEntity> result) {
+    final var page = toSearchQueryPageResponse(result);
+    return new BatchOperationSearchQueryResult()
+        .page(page)
+        .items(
+            ofNullable(result.items())
+                .map(SearchQueryResponseMapper::toBatchOperations)
+                .orElseGet(Collections::emptyList));
+  }
+
   public static IncidentSearchQueryResult toIncidentSearchQueryResponse(
       final SearchQueryResult<IncidentEntity> result) {
     final var page = toSearchQueryPageResponse(result);
@@ -291,6 +307,23 @@ public final class SearchQueryResponseMapper {
         .state(toProtocolState(p.state()))
         .hasIncident(p.hasIncident())
         .tenantId(p.tenantId());
+  }
+
+  private static List<BatchOperation> toBatchOperations(
+      final List<BatchOperationEntity> batchOperations) {
+    return batchOperations.stream().map(SearchQueryResponseMapper::toBatchOperation).toList();
+  }
+
+  public static BatchOperation toBatchOperation(final BatchOperationEntity entity) {
+    return new BatchOperation()
+        .batchOperationKey(entity.batchOperationKey().toString())
+        .batchOperationType(entity.operationType())
+        .startDate(formatDate(entity.startDate()))
+        .endDate(formatDate(entity.endDate()))
+        .operationsTotalCount(entity.operationsTotalCount())
+        .operationsFailedCount(entity.operationsFailedCount())
+        .operationsCompletedCount(entity.operationsCompletedCount())
+        .items(entity.items().stream().map(Object::toString).toList());
   }
 
   private static List<RoleResult> toRoles(final List<RoleEntity> roles) {
@@ -672,5 +705,7 @@ public final class SearchQueryResponseMapper {
     return ProcessInstanceStateEnum.fromValue(value.name());
   }
 
-  private record RuleIdentifier(String ruleId, int ruleIndex) {}
+  private record RuleIdentifier(String ruleId, int ruleIndex) {
+
+  }
 }
