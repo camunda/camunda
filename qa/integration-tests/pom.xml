@@ -454,7 +454,7 @@
               <value>${version.identity}</value>
             </property>
           </systemProperties>
-          <excludedGroups>rdbms, multi-db-test</excludedGroups>
+          <excludedGroups>rdbms, multi-db-test, history-multi-db-test</excludedGroups>
         </configuration>
         <dependencies>
           <dependency>
