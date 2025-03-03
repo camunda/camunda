@@ -27,7 +27,7 @@ public class StandaloneGatewayAuthenticationNoneIT
           .withProperty("camunda.identity.audience", ZEEBE_CLIENT_AUDIENCE);
 
   @Override
-  protected TestGateway getZeebe() {
+  protected TestGateway<TestStandaloneGateway> getGateway() {
     return zeebe;
   }
 }

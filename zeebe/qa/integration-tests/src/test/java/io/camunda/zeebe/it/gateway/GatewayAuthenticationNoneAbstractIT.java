@@ -117,7 +117,7 @@ public abstract class GatewayAuthenticationNoneAbstractIT<T extends TestGateway<
 
   @BeforeEach
   void beforeEach() {
-    getZeebe().start();
+    getGateway().start();
   }
 
   @ParameterizedTest
@@ -193,8 +193,8 @@ public abstract class GatewayAuthenticationNoneAbstractIT<T extends TestGateway<
 
   private ZeebeClientBuilder createZeebeClientBuilder() {
     return ZeebeClient.newClientBuilder()
-        .grpcAddress(getZeebe().grpcAddress())
-        .restAddress(getZeebe().restAddress())
+        .grpcAddress(getGateway().grpcAddress())
+        .restAddress(getGateway().restAddress())
         .defaultRequestTimeout(Duration.ofMinutes(1))
         .usePlaintext();
   }
@@ -207,7 +207,7 @@ public abstract class GatewayAuthenticationNoneAbstractIT<T extends TestGateway<
     return dockerImageTag.contains("SNAPSHOT") ? SNAPSHOT_TAG : dockerImageTag;
   }
 
-  protected abstract TestGateway<T> getZeebe();
+  protected abstract TestGateway<T> getGateway();
 
   private static final class InvalidAuthTokenProvider implements CredentialsProvider {
 
