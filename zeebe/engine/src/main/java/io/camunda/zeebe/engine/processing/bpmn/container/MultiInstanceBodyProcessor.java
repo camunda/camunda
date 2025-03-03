@@ -17,9 +17,9 @@ import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnIncidentBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateTransitionBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.MultiInstanceOutputCollectionBehavior;
-import io.camunda.zeebe.engine.processing.common.ExpressionProcessor;
 import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableMultiInstanceBody;
+import io.camunda.zeebe.engine.processing.expression.ExpressionProcessor;
 import io.camunda.zeebe.engine.state.instance.ElementInstance;
 import io.camunda.zeebe.msgpack.spec.MsgPackHelper;
 import io.camunda.zeebe.msgpack.spec.MsgPackWriter;
@@ -394,12 +394,10 @@ public final class MultiInstanceBodyProcessor
     final Optional<Expression> completionCondition =
         element.getLoopCharacteristics().getCompletionCondition();
 
-    final ExpressionProcessor primaryContextExpressionProcessor =
-        expressionBehavior.withPrimaryContext(
-            (variableName -> getVariable(context.getFlowScopeKey(), variableName)));
     if (completionCondition.isPresent()) {
-      return primaryContextExpressionProcessor.evaluateBooleanExpression(
-          completionCondition.get(), context.getElementInstanceKey());
+      return expressionBehavior
+          .withPrimaryContext(variableName -> getVariable(context.getFlowScopeKey(), variableName))
+          .evaluateBooleanExpression(completionCondition.get(), context.getElementInstanceKey());
     }
     return Either.right(false);
   }
