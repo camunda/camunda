@@ -7,8 +7,8 @@ services:
       - elasticsearch
       - identity
     ports:
-      - "8080:8080"
-      - "9600:9600"
+      - "8090:8090"
+      - "8092:8092"
     environment:
       - SPRING_PROFILES_ACTIVE=ccsm
       - CAMUNDA_OPTIMIZE_IDENTITY_ISSUER_URL=http://localhost:18080/auth/realms/camunda-platform
@@ -39,8 +39,8 @@ services:
     depends_on:
       - identity
     ports:
-      - "8080:8080"
-      - "9600:9600"
+      - "8090:8090"
+      - "8092:8092"
     environment:
       - SPRING_PROFILES_ACTIVE=ccsm
       - CAMUNDA_OPTIMIZE_DATABASE=opensearch
