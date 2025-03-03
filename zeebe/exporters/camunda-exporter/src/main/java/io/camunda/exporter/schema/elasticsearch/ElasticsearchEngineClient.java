@@ -8,13 +8,17 @@
 package io.camunda.exporter.schema.elasticsearch;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
+import co.elastic.clients.elasticsearch._types.AcknowledgedResponse;
 import co.elastic.clients.elasticsearch._types.ElasticsearchException;
 import co.elastic.clients.elasticsearch._types.mapping.Property;
 import co.elastic.clients.elasticsearch._types.mapping.TypeMapping;
+import co.elastic.clients.elasticsearch.core.DeleteByQueryRequest;
+import co.elastic.clients.elasticsearch.core.DeleteByQueryResponse;
 import co.elastic.clients.elasticsearch.core.SearchRequest;
 import co.elastic.clients.elasticsearch.ilm.PutLifecycleRequest;
 import co.elastic.clients.elasticsearch.indices.Alias;
 import co.elastic.clients.elasticsearch.indices.CreateIndexRequest;
+import co.elastic.clients.elasticsearch.indices.DeleteIndexRequest;
 import co.elastic.clients.elasticsearch.indices.IndexTemplateSummary;
 import co.elastic.clients.elasticsearch.indices.PutIndexTemplateRequest;
 import co.elastic.clients.elasticsearch.indices.PutIndicesSettingsRequest;
@@ -248,6 +252,32 @@ public class ElasticsearchEngineClient implements SearchEngineClient {
               "Expected to update index template settings '%s' with '%s', but failed ",
               indexTemplateDescriptor.getTemplateName(), updateIndexTemplateSettingsRequest),
           e);
+    }
+  }
+
+  @Override
+  public void deleteIndex(final String indexName) {
+    final DeleteIndexRequest deleteIndexRequest =
+        new DeleteIndexRequest.Builder().index(indexName).build();
+    try {
+      final AcknowledgedResponse deleteIndexResponse = client.indices().delete(deleteIndexRequest);
+      LOG.debug("Delete index acknowledged: {}", deleteIndexResponse.acknowledged());
+    } catch (final IOException e) {
+      final var errMsg = String.format("Failed to delete index %s", indexName);
+      throw new ElasticsearchExporterException(errMsg, e);
+    }
+  }
+
+  @Override
+  public void truncateIndex(final String indexName) {
+    final DeleteByQueryRequest deleteByQueryRequest =
+        new DeleteByQueryRequest.Builder().index(indexName).query(q -> q.matchAll(m -> m)).build();
+    try {
+      final DeleteByQueryResponse response = client.deleteByQuery(deleteByQueryRequest);
+      LOG.debug("Deleted {} documents from index {}", response.deleted(), indexName);
+    } catch (final IOException e) {
+      final var errMsg = String.format("Failed to delete docs from index %s", indexName);
+      throw new ElasticsearchExporterException(errMsg, e);
     }
   }
 
