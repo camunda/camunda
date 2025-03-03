@@ -18,35 +18,34 @@ import io.camunda.document.api.DocumentLink;
 import io.camunda.document.api.DocumentMetadataModel;
 import io.camunda.document.api.DocumentReference;
 import io.camunda.document.api.DocumentStore;
+import io.camunda.document.store.InputStreamHashCalculator;
 import io.camunda.zeebe.util.Either;
-import java.security.DigestInputStream;
-import java.security.MessageDigest;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.HexFormat;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
-import org.apache.commons.codec.digest.MessageDigestAlgorithms;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import software.amazon.awssdk.core.ResponseInputStream;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.http.HttpStatusCode;
 import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.model.CopyObjectRequest;
 import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
 import software.amazon.awssdk.services.s3.model.GetObjectRequest;
 import software.amazon.awssdk.services.s3.model.GetObjectResponse;
 import software.amazon.awssdk.services.s3.model.HeadBucketRequest;
 import software.amazon.awssdk.services.s3.model.HeadObjectRequest;
 import software.amazon.awssdk.services.s3.model.HeadObjectResponse;
+import software.amazon.awssdk.services.s3.model.MetadataDirective;
 import software.amazon.awssdk.services.s3.model.NoSuchBucketException;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 import software.amazon.awssdk.services.s3.model.S3Exception;
@@ -290,26 +289,41 @@ public class AwsDocumentStore implements DocumentStore {
       final DocumentCreationRequest request, final String documentId) {
     final String fileName = resolveFileName(request.metadata(), documentId);
 
-    final MessageDigest md;
-    try {
-      md = MessageDigest.getInstance(MessageDigestAlgorithms.SHA_256);
-    } catch (final Exception e) {
-      // should never happen
-      return Either.left(new UnknownDocumentError(e));
-    }
-    final DigestInputStream digestStream = new DigestInputStream(request.contentInputStream(), md);
-    final String contentHash = HexFormat.of().formatHex(md.digest());
-
-    final PutObjectRequest putObjectRequest =
+    final var putObjectRequest =
         PutObjectRequest.builder()
             .key(resolveKey(documentId))
             .bucket(bucketName)
-            .metadata(toS3MetaData(request.metadata(), fileName, contentHash))
+            .metadata(toS3MetaData(request.metadata(), fileName, ""))
             .tagging(generateExpiryTag(request.metadata().expiresAt()))
+            .contentType(request.metadata().contentType())
             .build();
 
-    client.putObject(
-        putObjectRequest, RequestBody.fromInputStream(digestStream, request.metadata().size()));
+    final String hash;
+    try {
+      hash =
+          InputStreamHashCalculator.streamAndCalculateHash(
+              request.contentInputStream(),
+              stream ->
+                  client.putObject(
+                      putObjectRequest,
+                      RequestBody.fromInputStream(stream, request.metadata().size())));
+
+      final var copyObjectRequest =
+          CopyObjectRequest.builder()
+              .sourceKey(resolveKey(documentId))
+              .destinationKey(resolveKey(documentId))
+              .sourceBucket(bucketName)
+              .destinationBucket(bucketName)
+              .metadata(toS3MetaData(request.metadata(), fileName, hash))
+              .metadataDirective(MetadataDirective.REPLACE)
+              .tagging(generateExpiryTag(request.metadata().expiresAt()))
+              .contentType(request.metadata().contentType())
+              .build();
+
+      client.copyObject(copyObjectRequest);
+    } catch (final Exception e) {
+      return Either.left(new UnknownDocumentError(e));
+    }
 
     final var updatedMetadata =
         new DocumentMetadataModel(
@@ -320,7 +334,7 @@ public class AwsDocumentStore implements DocumentStore {
             request.metadata().processDefinitionId(),
             request.metadata().processInstanceKey(),
             request.metadata().customProperties());
-    return Either.right(new DocumentReference(documentId, contentHash, updatedMetadata));
+    return Either.right(new DocumentReference(documentId, hash, updatedMetadata));
   }
 
   private Map<String, String> toS3MetaData(
