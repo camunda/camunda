@@ -160,8 +160,8 @@ public class TenantDeleteProcessor implements DistributedTypedRecordProcessor<Te
                 default ->
                     throw new UnsupportedOperationException(
                         String.format(
-                            "Expected to remove entity with key %d and type %s from tenant %s, but type %s is not supported.",
-                            record.getEntityKey(),
+                            "Expected to remove entity with id %s and type %s from tenant %s, but type %s is not supported.",
+                            record.getEntityId(),
                             record.getEntityType(),
                             tenant.getTenantId(),
                             entityType));

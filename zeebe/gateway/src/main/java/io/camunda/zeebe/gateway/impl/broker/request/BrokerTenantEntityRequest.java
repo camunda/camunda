@@ -44,16 +44,6 @@ public final class BrokerTenantEntityRequest extends BrokerExecuteCommand<Tenant
     return this;
   }
 
-  public BrokerTenantEntityRequest setEntity(final EntityType entityType, final long entityKey) {
-    if (!ALLOWED_ENTITY_TYPES.contains(entityType)) {
-      throw new IllegalArgumentException(
-          "For now, tenants can only be assigned to %s".formatted(ALLOWED_ENTITY_TYPES));
-    }
-    tenantDto.setEntityType(entityType);
-    tenantDto.setEntityKey(entityKey);
-    return this;
-  }
-
   public BrokerTenantEntityRequest setEntity(final EntityType entityType, final String entityId) {
     if (!ALLOWED_ENTITY_TYPES.contains(entityType)) {
       throw new IllegalArgumentException(
