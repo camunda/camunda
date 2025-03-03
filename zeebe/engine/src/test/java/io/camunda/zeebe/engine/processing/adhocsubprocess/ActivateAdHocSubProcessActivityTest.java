@@ -14,7 +14,6 @@ import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.engine.util.RecordToWrite;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
-import io.camunda.zeebe.model.bpmn.builder.AdHocSubProcessBuilder;
 import io.camunda.zeebe.protocol.impl.record.value.adhocsubprocess.AdHocSubProcessActivityActivationRecord;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.AdHocSubProcessActivityActivationIntent;
@@ -23,7 +22,6 @@ import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.util.List;
-import java.util.function.Consumer;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Rule;
@@ -43,12 +41,18 @@ public class ActivateAdHocSubProcessActivityTest {
   @Before
   public void setUp() {
     final BpmnModelInstance processInstance =
-        process(
-            adHocSubProcess -> {
-              adHocSubProcess.task("A");
-              adHocSubProcess.task("B");
-              adHocSubProcess.task("C");
-            });
+        Bpmn.createExecutableProcess(PROCESS_ID)
+            .startEvent()
+            .adHocSubProcess(
+                AD_HOC_SUB_PROCESS_ELEMENT_ID,
+                adHocSubProcess -> {
+                  adHocSubProcess.task("A");
+                  adHocSubProcess.task("B");
+                  adHocSubProcess.task("C");
+                })
+            .endEvent()
+            .done();
+
     ENGINE.deployment().withXmlResource(processInstance).deploy();
     processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
 
@@ -60,14 +64,6 @@ public class ActivateAdHocSubProcessActivityTest {
             .limit(1)
             .toList()
             .getFirst();
-  }
-
-  private BpmnModelInstance process(final Consumer<AdHocSubProcessBuilder> modifier) {
-    return Bpmn.createExecutableProcess(PROCESS_ID)
-        .startEvent()
-        .adHocSubProcess(AD_HOC_SUB_PROCESS_ELEMENT_ID, modifier)
-        .endEvent()
-        .done();
   }
 
   @Test
