@@ -195,6 +195,7 @@ public interface CompleteJobCommandStep1
      * }</pre>
      *
      * @param isDenied indicates if the worker has denied the reason for the job
+     * @param deniedReason indicates the reason why the worker denied the job
      * @return the builder for this command. Call {@link #send()} to complete the command and send
      *     it to the broker.
      */
