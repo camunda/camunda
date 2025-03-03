@@ -302,7 +302,7 @@ public class UserTaskListenersTest {
                 .newCompleteCommand(job)
                 .withResult()
                 .deny(true)
-                .denyReason("Reason to deny lifecycle transition")
+                .deniedReason("Reason to deny lifecycle transition")
                 .send()
                 .join();
     client.newWorker().jobType(listenerType).handler(completeJobWithDenialHandler).open();
@@ -354,7 +354,7 @@ public class UserTaskListenersTest {
                 .newCompleteCommand(job)
                 .withResult()
                 .deny(true)
-                .denyReason("Reason to deny lifecycle transition")
+                .deniedReason("Reason to deny lifecycle transition")
                 .send()
                 .join();
     final var recordingHandler = new RecordingJobHandler(completeJobHandler);
@@ -411,7 +411,7 @@ public class UserTaskListenersTest {
                 .newCompleteCommand(job)
                 .withResult()
                 .deny(true)
-                .denyReason("Reason to deny lifecycle transition")
+                .deniedReason("Reason to deny lifecycle transition")
                 .send()
                 .join();
     final var recordingHandler = new RecordingJobHandler(completeJobHandler);
