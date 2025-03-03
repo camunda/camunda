@@ -24,7 +24,7 @@ jest.mock('react', () => {
     },
   });
   return {
-    ...jest.requireActual('react'),
+    ...jest.requireActual('react-18'),
     useEffect: (fn: () => void) => outstandingEffects.push(fn),
     runLastEffect: () => {
       if (outstandingEffects.length) {

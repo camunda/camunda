@@ -89,9 +89,6 @@ export default function MultiUserInput({
   }
 
   return (
-    // @ts-expect-error remove when
-    // https://github.com/carbon-design-system/carbon/issues/16993
-    // is fixed
     <FilterableMultiSelect
       titleText={titleText}
       id={getRandomId()}

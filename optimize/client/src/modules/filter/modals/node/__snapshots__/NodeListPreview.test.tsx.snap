@@ -2,7 +2,7 @@
 
 exports[`should create preview of nodes 1`] = `
 <Fragment>
-  <ForwardRef(Tag)
+  <ForwardRef
     className="parameterName"
     type="blue"
   >
@@ -11,7 +11,7 @@ exports[`should create preview of nodes 1`] = `
     >
       Running, canceled, or completed flow nodes
     </span>
-  </ForwardRef(Tag)>
+  </ForwardRef>
   <ul
     className="previewList filterText"
   >
@@ -32,7 +32,7 @@ exports[`should create preview of nodes 1`] = `
 
 exports[`should create preview of selected nodes linked by nor 1`] = `
 <Fragment>
-  <ForwardRef(Tag)
+  <ForwardRef
     className="parameterName"
     type="blue"
   >
@@ -41,7 +41,7 @@ exports[`should create preview of selected nodes linked by nor 1`] = `
     >
       Not executed flow nodes
     </span>
-  </ForwardRef(Tag)>
+  </ForwardRef>
   <ul
     className="previewList filterText"
   >
@@ -80,7 +80,7 @@ exports[`should create preview of selected nodes linked by nor 1`] = `
 
 exports[`should create preview of selected nodes linked by or 1`] = `
 <Fragment>
-  <ForwardRef(Tag)
+  <ForwardRef
     className="parameterName"
     type="blue"
   >
@@ -89,7 +89,7 @@ exports[`should create preview of selected nodes linked by or 1`] = `
     >
       Running, canceled, or completed flow nodes
     </span>
-  </ForwardRef(Tag)>
+  </ForwardRef>
   <ul
     className="previewList filterText"
   >
