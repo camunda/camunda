@@ -10,6 +10,7 @@ package io.camunda.zeebe.engine.processing.adhocsubprocess;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableAdHocSubProcess;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior.AuthorizationRequest;
+import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior.ForbiddenException;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
@@ -70,10 +71,7 @@ public class AdHocSubProcessActivityActivateProcessor
           command.getValue().getAdHocSubProcessInstanceKey());
     }
 
-    if (!isAuthorized(command, adHocSubprocessElementInstance)) {
-      return;
-    }
-
+    authorize(command, adHocSubprocessElementInstance);
     validateDuplicateElements(command);
 
     final var adHocSubprocessElementId = adHocSubprocessElementInstance.getValue().getElementId();
@@ -150,6 +148,10 @@ public class AdHocSubProcessActivityActivateProcessor
         writeRejectionError(command, RejectionType.INVALID_STATE, e);
         yield ProcessingError.EXPECTED_ERROR;
       }
+      case final ForbiddenException e -> {
+        writeRejectionError(command, e.getRejectionType(), e);
+        yield ProcessingError.EXPECTED_ERROR;
+      }
       default -> ProcessingError.UNEXPECTED_ERROR;
     };
   }
@@ -178,7 +180,7 @@ public class AdHocSubProcessActivityActivateProcessor
     }
   }
 
-  private boolean isAuthorized(
+  private void authorize(
       final TypedRecord<AdHocSubProcessActivityActivationRecord> command,
       final ElementInstance adHocSubprocessElementInstance) {
     final var authRequest =
@@ -188,22 +190,11 @@ public class AdHocSubProcessActivityActivateProcessor
                 PermissionType.UPDATE_PROCESS_INSTANCE,
                 adHocSubprocessElementInstance.getValue().getTenantId())
             .addResourceId(adHocSubprocessElementInstance.getValue().getBpmnProcessId());
-    final var isAuthorized = authCheckBehavior.isAuthorized(authRequest);
-    if (isAuthorized.isLeft()) {
-      final var rejection = isAuthorized.getLeft();
-      final String errorMessage =
-          RejectionType.NOT_FOUND.equals(rejection.type())
-              ? AuthorizationCheckBehavior.NOT_FOUND_ERROR_MESSAGE.formatted(
-                  "modify a process instance",
-                  command.getValue().getAdHocSubProcessInstanceKey(),
-                  "such process instance")
-              : rejection.reason();
-      rejectionWriter.appendRejection(command, rejection.type(), errorMessage);
-      responseWriter.writeRejectionOnCommand(command, rejection.type(), errorMessage);
-      return false;
-    }
 
-    return true;
+    final var authResult = authCheckBehavior.isAuthorized(authRequest);
+    if (authResult.isLeft()) {
+      throw new ForbiddenException(authRequest);
+    }
   }
 
   private static final class DuplicateElementsException extends IllegalArgumentException {
