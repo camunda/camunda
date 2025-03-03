@@ -8,6 +8,7 @@
 package io.camunda.zeebe.engine.state.appliers;
 
 import io.camunda.zeebe.engine.state.TypedEventApplier;
+import io.camunda.zeebe.engine.state.immutable.UserTaskState.LifecycleState;
 import io.camunda.zeebe.engine.state.instance.ElementInstance;
 import io.camunda.zeebe.engine.state.mutable.MutableElementInstanceState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
@@ -28,7 +29,14 @@ public final class UserTaskCreatingApplier
 
   @Override
   public void applyState(final long key, final UserTaskRecord value) {
-    userTaskState.create(value);
+    // todo: should we actually store the user task fully already, or wait until we finalize?
+    final var copy = value.copy();
+    copy.unsetAssignee();
+    userTaskState.create(copy);
+
+    userTaskState.storeIntermediateState(copy, LifecycleState.CREATING);
+
+    userTaskState.storeIntermediateAssignee(key, value.getAssignee());
 
     final long elementInstanceKey = value.getElementInstanceKey();
     if (elementInstanceKey > 0) {

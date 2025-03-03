@@ -153,7 +153,7 @@ public final class IncidentResolveProcessor implements TypedRecordProcessor<Inci
             });
   }
 
-  private void processFailedCommand(TypedRecord<? extends UnifiedRecordValue> failedCommand) {
+  private void processFailedCommand(final TypedRecord<? extends UnifiedRecordValue> failedCommand) {
     if (failedCommand.getValue() instanceof ProcessInstanceRecord) {
       bpmnStreamProcessor.processRecord((TypedRecord<ProcessInstanceRecord>) failedCommand);
     } else if (failedCommand.getValue() instanceof UserTaskRecord) {
@@ -223,11 +223,12 @@ public final class IncidentResolveProcessor implements TypedRecordProcessor<Inci
   private Either<String, UserTaskIntent> getFailedUserTaskCommandIntent(
       final LifecycleState lifecycleState) {
     return switch (lifecycleState) {
+      case CREATING -> Either.right(UserTaskIntent.CREATE);
       case ASSIGNING -> Either.right(UserTaskIntent.ASSIGN);
       case CLAIMING -> Either.right(UserTaskIntent.CLAIM);
       case UPDATING -> Either.right(UserTaskIntent.UPDATE);
       case COMPLETING -> Either.right(UserTaskIntent.COMPLETE);
-      case CREATING, CANCELING ->
+      case CANCELING ->
           Either.left(String.format(LIFECYCLE_STATE_CONVERSION_NOT_SUPPORTED_MSG, lifecycleState));
       default ->
           Either.left(String.format(UNEXPECTED_LIFECYCLE_STATE_CONVERSION_MSG, lifecycleState));
