@@ -101,7 +101,7 @@
     "monaco-editor": "0.52.2",
     "msw": "2.7.0",
     "prettier": "3.4.2",
-    "rollup-plugin-license": "3.5.3",
+    "rollup-plugin-license": "3.6.0",
     "serve": "14.2.4",
     "source-map-explorer": "2.5.3",
     "stylelint": "16.14.1",
