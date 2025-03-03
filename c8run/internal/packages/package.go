@@ -1,4 +1,11 @@
-package main
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+package packages
 
 import (
 	"encoding/base64"
@@ -88,7 +95,7 @@ func getFilesToArchive(osType, elasticsearchVersion, connectorsFilePath, camunda
 		filepath.Join("c8run", connectorsFilePath),
 		filepath.Join("c8run", "elasticsearch-"+elasticsearchVersion),
 		filepath.Join("c8run", "custom_connectors"),
-		filepath.Join("c8run", "endpoints.txt"),
+		filepath.Join("c8run", "../endpoints.txt"),
 		filepath.Join("c8run", "log"),
 		filepath.Join("c8run", "camunda-zeebe-"+camundaVersion),
 		filepath.Join("c8run", ".env"),
@@ -122,7 +129,7 @@ func createZipArchive(filesToArchive []string, outputPath string) error {
 	return nil
 }
 
-func Package(camundaVersion string, elasticsearchVersion string, connectorsVersion string) error {
+func New(camundaVersion string, elasticsearchVersion string, connectorsVersion string) error {
 	var osType, architecture, pkgName, extractFunc, err = setOsSpecificValues()
 	if err != nil {
 		fmt.Printf("%+v", err)
