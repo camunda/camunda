@@ -1,0 +1,31 @@
+name: "Run Core Application E2E Test Suite"
+description: "A GitHub action to run the Core Application E2E tests"
+
+inputs:
+  version:
+    description: "C8 version"
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - name: Install Playwright Browsers
+      shell: bash
+      run: npx playwright install --with-deps chromium
+      working-directory: qa/e2e-tests/core-application-e2e-test-suite
+
+    - name: Set minor version
+      shell: bash
+      run: |
+        c8_version="${{ github.event.inputs.c8Version }}"
+        minor_version=${c8_version}
+        echo "minor_version=$minor_version" >> $GITHUB_ENV
+      working-directory: qa/e2e-tests/core-application-e2e-test-suite
+
+    - name: Run tests
+      shell: bash
+      env:
+        CLUSTER_VERSION: ${{ inputs.version }}
+        MINOR_VERSION: ${{ env.minor_version }}
+      run: npm run test -- --project=chromium
+      working-directory: qa/e2e-tests/core-application-e2e-test-suite

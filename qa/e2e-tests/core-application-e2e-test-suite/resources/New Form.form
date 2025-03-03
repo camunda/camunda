@@ -1,0 +1,24 @@
+{
+  "executionPlatform": "Camunda Cloud",
+  "executionPlatformVersion": "8.6.0",
+  "exporter": {
+    "name": "Camunda Web Modeler",
+    "version": "aae0663"
+  },
+  "schemaVersion": 16,
+  "id": "Form_00xfy2q",
+  "components": [
+    {
+      "type": "textfield",
+      "id": "Textfield_0",
+      "label": "Name",
+      "validate": {
+        "minLength": 2,
+        "required": true
+      },
+      "key": "name"
+    }
+  ],
+  "generated": true,
+  "type": "default"
+}
