@@ -58,9 +58,10 @@ class AssignGroupToTenantTest {
     client.newAssignGroupToTenantCommand(TENANT_ID).groupKey(groupKey).send().join();
 
     // then
+    // TODO remove the String parsing once Groups are migrated to work with ids instead of keys
     ZeebeAssertHelper.assertEntityAssignedToTenant(
         TENANT_ID,
-        groupKey,
+        String.valueOf(groupKey),
         tenant -> {
           assertThat(tenant.getTenantKey()).isEqualTo(tenantKey);
           assertThat(tenant.getEntityType()).isEqualTo(EntityType.GROUP);
@@ -103,7 +104,7 @@ class AssignGroupToTenantTest {
         .isInstanceOf(ProblemException.class)
         .hasMessageContaining("Failed with code 404: 'Not Found'")
         .hasMessageContaining(
-            "Expected to add entity with key '%d' to tenant with tenantId '%s', but the entity doesn't exist."
+            "Expected to add entity with id '%d' to tenant with tenantId '%s', but the entity doesn't exist."
                 .formatted(nonExistentGroupKey, TENANT_ID));
   }
 
@@ -118,7 +119,7 @@ class AssignGroupToTenantTest {
         .isInstanceOf(ProblemException.class)
         .hasMessageContaining("Failed with code 400: 'Bad Request'")
         .hasMessageContaining(
-            "Expected to add entity with key '%d' to tenant with tenantId '%s', but the entity is already assigned to the tenant."
+            "Expected to add entity with id '%d' to tenant with tenantId '%s', but the entity is already assigned to the tenant."
                 .formatted(groupKey, TENANT_ID));
   }
 }

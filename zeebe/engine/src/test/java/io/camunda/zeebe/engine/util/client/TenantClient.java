@@ -130,17 +130,6 @@ public class TenantClient {
     }
 
     /**
-     * Sets the entityKey for the tenant record.
-     *
-     * @param entityKey the key of the tenant entity
-     * @return this instance
-     */
-    public TenantCreationClient withEntityKey(final Long entityKey) {
-      tenantRecord.setEntityKey(entityKey);
-      return this;
-    }
-
-    /**
      * Creates the tenant record and returns the resulting record.
      *
      * @return the created tenant record
@@ -211,17 +200,6 @@ public class TenantClient {
     }
 
     /**
-     * Sets the entityKey for the tenant record.
-     *
-     * @param entityKey the key of the tenant entity
-     * @return this instance
-     */
-    public TenantUpdateClient withEntityKey(final Long entityKey) {
-      tenantRecord.setEntityKey(entityKey);
-      return this;
-    }
-
-    /**
      * Submits the update command for the tenant record and returns the updated record.
      *
      * @return the updated tenant record
@@ -267,11 +245,6 @@ public class TenantClient {
       this.writer = writer;
       tenantRecord = new TenantRecord();
       tenantRecord.setTenantId(tenantId);
-    }
-
-    public TenantAddEntityClient withEntityKey(final long entityKey) {
-      tenantRecord.setEntityKey(entityKey);
-      return this;
     }
 
     public TenantAddEntityClient withEntityId(final String entityId) {
