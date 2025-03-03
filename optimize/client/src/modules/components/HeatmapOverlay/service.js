@@ -7,7 +7,7 @@
  */
 
 import HeatmapJS from 'heatmap.js';
-import ReactDOM from 'react-dom';
+import {createRoot} from 'react-dom/client';
 
 const SEQUENCEFLOW_RADIUS = 30;
 const SEQUENCEFLOW_STEPWIDTH = 10;
@@ -252,6 +252,7 @@ export async function addDiagramTooltip({
 
 function insertReactContent(tooltipContent, overlayHtml) {
   return new Promise((resolve) => {
-    ReactDOM.render(tooltipContent, overlayHtml, resolve);
+    createRoot(overlayHtml).render(tooltipContent);
+    requestIdleCallback(resolve);
   });
 }

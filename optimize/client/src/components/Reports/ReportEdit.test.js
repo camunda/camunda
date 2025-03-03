@@ -40,7 +40,7 @@ jest.mock('notifications', () => ({addNotification: jest.fn()}));
 jest.mock('saveGuard', () => ({nowDirty: jest.fn(), nowPristine: jest.fn()}));
 jest.mock('tracking', () => ({track: jest.fn()}));
 jest.mock('hooks', () => ({
-  useChangedState: jest.requireActual('react').useState,
+  useChangedState: jest.requireActual('react-18').useState,
   useErrorHandling: jest.fn(() => ({
     mightFail: jest.fn().mockImplementation((data, cb) => cb(data)),
   })),
