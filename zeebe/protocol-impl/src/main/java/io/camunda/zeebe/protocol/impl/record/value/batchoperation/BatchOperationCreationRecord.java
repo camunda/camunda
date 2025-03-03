@@ -7,36 +7,34 @@
  */
 package io.camunda.zeebe.protocol.impl.record.value.batchoperation;
 
-import io.camunda.zeebe.msgpack.property.ArrayProperty;
+import io.camunda.search.filter.FilterBase;
+import io.camunda.zeebe.msgpack.property.DocumentProperty;
 import io.camunda.zeebe.msgpack.property.EnumProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
-import io.camunda.zeebe.msgpack.value.LongValue;
+import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.value.BatchOperationCreationRecordValue;
 import io.camunda.zeebe.protocol.record.value.BatchOperationType;
-import java.util.Set;
-import java.util.stream.Collectors;
+import org.agrona.DirectBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
 
 public final class BatchOperationCreationRecord extends UnifiedRecordValue
     implements BatchOperationCreationRecordValue {
 
   public static final String PROP_BATCH_OPERATION_KEY = "batchOperationKey";
-  public static final String PROP_KEY_LIST = "keys";
   public static final String PROP_BATCH_OPERATION_TYPE = "batchOperationType";
 
   private final LongProperty batchOperationKeyProp =
       new LongProperty(PROP_BATCH_OPERATION_KEY, -1);
-  private final ArrayProperty<LongValue> keysProp =
-      new ArrayProperty<>(PROP_KEY_LIST, LongValue::new);
   private final EnumProperty<BatchOperationType> batchOperationTypeProp =
       new EnumProperty<>(
           PROP_BATCH_OPERATION_TYPE, BatchOperationType.class, BatchOperationType.UNSPECIFIED);
+  private final DocumentProperty filterProp = new DocumentProperty("filter");
 
   public BatchOperationCreationRecord() {
-    super(2);
+    super(3);
     declareProperty(batchOperationKeyProp)
-        .declareProperty(keysProp)
-        .declareProperty(batchOperationTypeProp);
+        .declareProperty(batchOperationTypeProp).declareProperty(filterProp);
   }
 
   @Override
@@ -50,31 +48,34 @@ public final class BatchOperationCreationRecord extends UnifiedRecordValue
   }
 
   @Override
-  public Set<Long> getKeys() {
-    return keysProp.stream()
-        .map(LongValue::getValue)
-        .collect(Collectors.toSet());
-  }
-
-  public BatchOperationCreationRecord setKeys(final Set<Long> keys) {
-    keysProp.reset();
-    keys.forEach(key -> keysProp.add().setValue(key));
-    return this;
-  }
-
-  @Override
   public BatchOperationType getBatchOperationType() {
     return batchOperationTypeProp.getValue();
   }
 
-  public BatchOperationCreationRecord setBatchOperationType(final BatchOperationType batchOperationType) {
+  public BatchOperationCreationRecord setBatchOperationType(
+      final BatchOperationType batchOperationType) {
     batchOperationTypeProp.setValue(batchOperationType);
     return this;
   }
 
-  public void wrap(final BatchOperationCreationRecord record) {
-    setKeys(record.getKeys());
-    setBatchOperationType(record.getBatchOperationType());
+  @Override
+  public DirectBuffer getFilterBuffer() {
+    return filterProp.getValue();
   }
 
+  public BatchOperationCreationRecord setFilter(final DirectBuffer filterBuffer) {
+    filterProp.setValue(new UnsafeBuffer(filterBuffer));
+    return this;
+  }
+
+  public BatchOperationCreationRecord setFilter(final FilterBase filter) {
+    setFilter(new UnsafeBuffer(MsgPackConverter.convertToMsgPack(filter)));
+    return this;
+  }
+
+  public void wrap(final BatchOperationCreationRecord record) {
+    setBatchOperationKey(record.getBatchOperationKey());
+    setBatchOperationType(record.getBatchOperationType());
+    setFilter(record.getFilterBuffer());
+  }
 }

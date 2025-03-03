@@ -14,6 +14,7 @@ import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationIntent;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
+import java.time.Duration;
 
 public final class BatchOperationSetupProcessors {
 
@@ -23,16 +24,12 @@ public final class BatchOperationSetupProcessors {
       final ProcessingState processingState,
       final Writers writers,
       final CommandDistributionBehavior commandDistributionBehavior,
-      final int partitionId
-  ) {
+      final int partitionId) {
     typedRecordProcessors
         .onCommand(
             ValueType.BATCH_OPERATION,
             BatchOperationIntent.CREATE,
-            new BatchOperationActivateProcessor(
-                writers,
-                keyGenerator,
-                commandDistributionBehavior))
+            new BatchOperationActivateProcessor(writers, keyGenerator, commandDistributionBehavior))
         .onCommand(
             ValueType.BATCH_OPERATION_EXECUTION,
             BatchOperationIntent.CANCEL,
@@ -61,9 +58,11 @@ public final class BatchOperationSetupProcessors {
             ValueType.BATCH_OPERATION_EXECUTION,
             BatchOperationIntent.EXECUTE,
             new BatchOperationExecuteProcessor(
-                writers,
-                processingState,
-                commandDistributionBehavior,
-                partitionId));
+                writers, processingState, partitionId))
+        // FIXME pass process instance services (or a list of query services) to the scheduler
+        // FIXME pass the polling interval from configurations to the scheduler
+        .withListener(
+            new BatchOperationExecutionScheduler(
+                processingState, null, writers, keyGenerator, Duration.ofSeconds(10)));
   }
 }

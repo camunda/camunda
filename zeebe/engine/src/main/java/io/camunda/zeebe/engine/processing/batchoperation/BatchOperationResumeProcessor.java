@@ -15,7 +15,7 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWr
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
-import io.camunda.zeebe.engine.state.batchoperation.BatchOperation;
+import io.camunda.zeebe.engine.state.batchoperation.PersistedBatchOperation;
 import io.camunda.zeebe.engine.state.immutable.BatchOperationState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationExecutionRecord;
@@ -30,8 +30,7 @@ import org.slf4j.LoggerFactory;
 public final class BatchOperationResumeProcessor
     implements DistributedTypedRecordProcessor<BatchOperationExecutionRecord> {
 
-  private static final Logger LOGGER = LoggerFactory.getLogger(
-      BatchOperationResumeProcessor.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(BatchOperationResumeProcessor.class);
 
   private static final String MESSAGE_PREFIX =
       "Expected to pause a batch operation with key '%d', but ";
@@ -51,8 +50,7 @@ public final class BatchOperationResumeProcessor
       final Writers writers,
       final KeyGenerator keyGenerator,
       final CommandDistributionBehavior commandDistributionBehavior,
-      final ProcessingState processingState
-  ) {
+      final ProcessingState processingState) {
     stateWriter = writers.state();
     commandWriter = writers.command();
     responseWriter = writers.response();
@@ -70,8 +68,7 @@ public final class BatchOperationResumeProcessor
 
     // validation
     final var batchOperation = batchOperationState.get(batchKey).orElse(null);
-    if (batchOperation == null
-        || !batchOperation.canResume()) {
+    if (batchOperation == null || !batchOperation.canResume()) {
       rejectionWriter.appendRejection(
           command,
           RejectionType.NOT_FOUND,
@@ -85,43 +82,39 @@ public final class BatchOperationResumeProcessor
 
     resumeBatchOperation(command, batchOperation);
     responseWriter.writeEventOnCommand(
-        batchKey,
-        BatchOperationIntent.RESUMED,
-        command.getValue(),
-        command);
+        batchKey, BatchOperationIntent.RESUMED, command.getValue(), command);
     final var key = keyGenerator.nextKey();
-    commandDistributionBehavior
-        .withKey(key)
-        .unordered()
-        .distribute(command);
+    commandDistributionBehavior.withKey(key).unordered().distribute(command);
   }
 
   @Override
   public void processDistributedCommand(final TypedRecord<BatchOperationExecutionRecord> command) {
     final var recordValue = command.getValue();
 
-    LOGGER.debug("Processing distributed command with key '{}': {}",
-        command.getValue().getBatchOperationKey(), recordValue);
+    LOGGER.debug(
+        "Processing distributed command with key '{}': {}",
+        command.getValue().getBatchOperationKey(),
+        recordValue);
 
-    final var batchOperation = batchOperationState.get(recordValue.getBatchOperationKey())
-        .orElse(null);
+    final var batchOperation =
+        batchOperationState.get(recordValue.getBatchOperationKey()).orElse(null);
     resumeBatchOperation(command, batchOperation);
     commandDistributionBehavior.acknowledgeCommand(command);
   }
 
-  private void resumeBatchOperation(final TypedRecord<BatchOperationExecutionRecord> command,
-      final BatchOperation batchOperation) {
+  private void resumeBatchOperation(
+      final TypedRecord<BatchOperationExecutionRecord> command,
+      final PersistedBatchOperation batchOperation) {
     final var key = command.getValue().getBatchOperationKey();
-    stateWriter.appendFollowUpEvent(command.getValue().getBatchOperationKey(),
+    stateWriter.appendFollowUpEvent(
+        command.getValue().getBatchOperationKey(),
         BatchOperationIntent.RESUMED,
         command.getValue());
 
     final var batchExecute = new BatchOperationExecutionRecord();
     batchExecute.setBatchOperationKey(key);
-    batchExecute.setBatchOperationType(batchOperation.getType());
+    batchExecute.setBatchOperationType(batchOperation.getBatchOperationType());
     batchExecute.setOffset(batchOperation.getOffset());
-    commandWriter.appendFollowUpCommand(key, BatchOperationIntent.EXECUTE,
-        batchExecute);
-
+    commandWriter.appendFollowUpCommand(key, BatchOperationIntent.EXECUTE, batchExecute);
   }
 }

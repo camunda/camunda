@@ -17,21 +17,19 @@ package io.camunda.zeebe.protocol.record.value;
 
 import io.camunda.zeebe.protocol.record.ImmutableProtocol;
 import io.camunda.zeebe.protocol.record.RecordValue;
-import java.util.Set;
+import org.agrona.DirectBuffer;
 import org.immutables.value.Value;
 
 @Value.Immutable
 @ImmutableProtocol(builder = ImmutableBatchOperationCreationRecordValue.Builder.class)
-public interface BatchOperationCreationRecordValue
-    extends BatchOperationRelated, RecordValue {
-
-  /**
-   * @return set of keys for the batch operation
-   */
-  Set<Long> getKeys();
-
+public interface BatchOperationCreationRecordValue extends BatchOperationRelated, RecordValue {
   /**
    * @return batch operation type which defines the batch operation which should operate on the keys
    */
   BatchOperationType getBatchOperationType();
+
+  /**
+   * @return filter to apply to the batch operation
+   */
+  DirectBuffer getFilterBuffer();
 }

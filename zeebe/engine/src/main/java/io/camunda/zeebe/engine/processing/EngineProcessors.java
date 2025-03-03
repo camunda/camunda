@@ -78,8 +78,7 @@ import java.util.function.Supplier;
 
 public final class EngineProcessors {
 
-  private EngineProcessors() {
-  }
+  private EngineProcessors() {}
 
   public static TypedRecordProcessors createEngineProcessors(
       final TypedRecordProcessorContext typedRecordProcessorContext,
