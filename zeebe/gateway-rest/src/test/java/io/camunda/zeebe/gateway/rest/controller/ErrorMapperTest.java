@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.gateway.rest.controller;
 
+import static io.camunda.zeebe.gateway.rest.RestErrorMapper.DEFAULT_REJECTION_MAPPER;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -22,10 +24,12 @@ import io.camunda.zeebe.broker.client.api.RequestRetriesExhaustedException;
 import io.camunda.zeebe.broker.client.api.dto.BrokerError;
 import io.camunda.zeebe.gateway.protocol.rest.UserTaskCompletionRequest;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
+import io.camunda.zeebe.gateway.rest.RestErrorMapper;
 import io.camunda.zeebe.gateway.rest.cache.ProcessCache;
 import io.camunda.zeebe.msgpack.spec.MsgpackException;
 import io.camunda.zeebe.protocol.record.ErrorCode;
 import io.netty.channel.ConnectTimeoutException;
+import java.io.IOException;
 import java.net.ConnectException;
 import java.net.URI;
 import java.util.concurrent.CompletableFuture;
@@ -551,5 +555,138 @@ public class ErrorMapperTest extends RestControllerTest {
         .isEqualTo(HttpStatus.SERVICE_UNAVAILABLE)
         .expectBody(ProblemDetail.class)
         .isEqualTo(expectedBody);
+  }
+
+  @Test
+  public void shouldMapCamundaSearchExceptionWhenNoReason() {
+    // given
+    final CamundaSearchException cse = new CamundaSearchException("No reason");
+
+    // when
+    final ProblemDetail problemDetail =
+        RestErrorMapper.mapCamundaSearchExceptionToProblem(cse, DEFAULT_REJECTION_MAPPER);
+
+    // when
+    assertThat(problemDetail.getStatus()).isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR.value());
+    assertThat(problemDetail.getDetail())
+        .isEqualTo("Expected to handle REST request, but unexpected error occured: No reason");
+    assertThat(problemDetail.getTitle())
+        .isEqualTo("io.camunda.search.exception.CamundaSearchException");
+  }
+
+  @Test
+  public void shouldMapCamundaSearchExceptionWhenNotFound() {
+    // given
+    final CamundaSearchException cse =
+        new CamundaSearchException("Item not found", CamundaSearchException.Reason.NOT_FOUND);
+
+    // when
+    final ProblemDetail problemDetail =
+        RestErrorMapper.mapCamundaSearchExceptionToProblem(cse, DEFAULT_REJECTION_MAPPER);
+
+    // when
+    assertThat(problemDetail.getStatus()).isEqualTo(HttpStatus.NOT_FOUND.value());
+    assertThat(problemDetail.getDetail()).isEqualTo("Item not found");
+    assertThat(problemDetail.getTitle()).isEqualTo("NOT_FOUND");
+  }
+
+  @Test
+  public void shouldMapCamundaSearchExceptionWhenNotUnique() {
+    // given
+    final CamundaSearchException cse =
+        new CamundaSearchException("Item not unique", CamundaSearchException.Reason.NOT_UNIQUE);
+
+    // when
+    final ProblemDetail problemDetail =
+        RestErrorMapper.mapCamundaSearchExceptionToProblem(cse, DEFAULT_REJECTION_MAPPER);
+
+    // when
+    assertThat(problemDetail.getStatus()).isEqualTo(HttpStatus.CONFLICT.value());
+    assertThat(problemDetail.getDetail()).isEqualTo("Item not unique");
+    assertThat(problemDetail.getTitle()).isEqualTo("INVALID_STATE");
+  }
+
+  @Test
+  public void shouldMapCamundaSearchExceptionWhenESClientCannotConnect() {
+    // given
+    final CamundaSearchException cse =
+        new CamundaSearchException(
+            "Request failed",
+            new ConnectException("No connection"),
+            CamundaSearchException.Reason.ES_CLIENT_FAILED);
+
+    // when
+    final ProblemDetail problemDetail =
+        RestErrorMapper.mapCamundaSearchExceptionToProblem(cse, DEFAULT_REJECTION_MAPPER);
+
+    // when
+    assertThat(problemDetail.getStatus()).isEqualTo(HttpStatus.SERVICE_UNAVAILABLE.value());
+    assertThat(problemDetail.getDetail())
+        .isEqualTo(
+            "Expected to handle REST request, but ElasticSearch client could to connect to ElasticSearch server: (java.net.ConnectException) No connection");
+    assertThat(problemDetail.getTitle()).isEqualTo("java.net.ConnectException");
+  }
+
+  @Test
+  public void shouldMapCamundaSearchExceptionWhenESClientIOException() {
+    // given
+    final CamundaSearchException cse =
+        new CamundaSearchException(
+            "Request failed",
+            new IOException("Generic IO Error"),
+            CamundaSearchException.Reason.ES_CLIENT_FAILED);
+
+    // when
+    final ProblemDetail problemDetail =
+        RestErrorMapper.mapCamundaSearchExceptionToProblem(cse, DEFAULT_REJECTION_MAPPER);
+
+    // when
+    assertThat(problemDetail.getStatus()).isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR.value());
+    assertThat(problemDetail.getDetail())
+        .isEqualTo(
+            "Expected to handle REST request, but ElasticSearch client was unable to process the request: (java.io.IOException) Generic IO Error");
+    assertThat(problemDetail.getTitle()).isEqualTo("java.io.IOException");
+  }
+
+  @Test
+  public void shouldMapCamundaSearchExceptionWhenOSClientCannotConnect() {
+    // given
+    final CamundaSearchException cse =
+        new CamundaSearchException(
+            "Request failed",
+            new ConnectException("No connection"),
+            CamundaSearchException.Reason.OS_CLIENT_FAILED);
+
+    // when
+    final ProblemDetail problemDetail =
+        RestErrorMapper.mapCamundaSearchExceptionToProblem(cse, DEFAULT_REJECTION_MAPPER);
+
+    // when
+    assertThat(problemDetail.getStatus()).isEqualTo(HttpStatus.SERVICE_UNAVAILABLE.value());
+    assertThat(problemDetail.getDetail())
+        .isEqualTo(
+            "Expected to handle REST request, but OpenSearch client could to connect to OpenSearch server: (java.net.ConnectException) No connection");
+    assertThat(problemDetail.getTitle()).isEqualTo("java.net.ConnectException");
+  }
+
+  @Test
+  public void shouldMapCamundaSearchExceptionWhenOSClientIOException() {
+    // given
+    final CamundaSearchException cse =
+        new CamundaSearchException(
+            "Request failed",
+            new IOException("Generic IO Error"),
+            CamundaSearchException.Reason.OS_CLIENT_FAILED);
+
+    // when
+    final ProblemDetail problemDetail =
+        RestErrorMapper.mapCamundaSearchExceptionToProblem(cse, DEFAULT_REJECTION_MAPPER);
+
+    // when
+    assertThat(problemDetail.getStatus()).isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR.value());
+    assertThat(problemDetail.getDetail())
+        .isEqualTo(
+            "Expected to handle REST request, but OpenSearch client was unable to process the request: (java.io.IOException) Generic IO Error");
+    assertThat(problemDetail.getTitle()).isEqualTo("java.io.IOException");
   }
 }
