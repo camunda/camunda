@@ -630,10 +630,10 @@ public class AuthorizationCheckBehaviorTest {
     final var mappingKey = mapping.getMappingKey();
     final var mappingId = String.valueOf(mappingKey);
     final var tenantId = "tenant";
-    final var tenantKey = engine.tenant().newTenant().withTenantId(tenantId).create().getKey();
+    engine.tenant().newTenant().withTenantId(tenantId).create();
     engine
         .tenant()
-        .addEntity(tenantKey)
+        .addEntity(tenantId)
         .withEntityType(EntityType.MAPPING)
         .withEntityKey(mappingKey)
         .add();
@@ -669,10 +669,10 @@ public class AuthorizationCheckBehaviorTest {
     final var mappingKey = mapping.getMappingKey();
     final var mappingId = String.valueOf(mappingKey);
     final var tenantId = "tenant";
-    final var tenantKey = engine.tenant().newTenant().withTenantId(tenantId).create().getKey();
+    engine.tenant().newTenant().withTenantId(tenantId).create();
     engine
         .tenant()
-        .addEntity(tenantKey)
+        .addEntity(tenantId)
         .withEntityType(EntityType.MAPPING)
         .withEntityKey(mappingKey)
         .add();
@@ -1045,13 +1045,13 @@ public class AuthorizationCheckBehaviorTest {
         engine.mapping().newMapping(claimName).withClaimValue(claimValue).create().getValue();
     final var mappingKey = mapping.getMappingKey();
     final var tenantId = "tenant";
-    final var tenantKey = engine.tenant().newTenant().withTenantId(tenantId).create().getKey();
+    engine.tenant().newTenant().withTenantId(tenantId).create();
     final var command = mockCommandWithMapping(claimName, claimValue);
 
     // when
     engine
         .tenant()
-        .addEntity(tenantKey)
+        .addEntity(tenantId)
         .withEntityType(EntityType.MAPPING)
         .withEntityKey(mappingKey)
         .add();
@@ -1138,8 +1138,8 @@ public class AuthorizationCheckBehaviorTest {
 
   private String createAndAssignTenant(final long entityKey, final EntityType entityType) {
     final var tenantId = UUID.randomUUID().toString();
-    final var tenantKey = engine.tenant().newTenant().withTenantId(tenantId).create().getKey();
-    engine.tenant().addEntity(tenantKey).withEntityKey(entityKey).withEntityType(entityType).add();
+    engine.tenant().newTenant().withTenantId(tenantId).create();
+    engine.tenant().addEntity(tenantId).withEntityKey(entityKey).withEntityType(entityType).add();
     return tenantId;
   }
 

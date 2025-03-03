@@ -122,12 +122,13 @@ public class MappingDeleteProcessor implements DistributedTypedRecordProcessor<M
     final var mappingKey = mapping.getMappingKey();
     deleteAuthorizations(mappingKey);
     for (final var tenantId : mapping.getTenantIdsList()) {
-      final long tenantKey = tenantState.getTenantKeyById(tenantId).orElseThrow();
+      final var tenant = tenantState.getTenantById(tenantId).orElseThrow();
       stateWriter.appendFollowUpEvent(
-          tenantKey,
+          tenant.getTenantKey(),
           TenantIntent.ENTITY_REMOVED,
           new TenantRecord()
-              .setTenantKey(tenantKey)
+              .setTenantKey(tenant.getTenantKey())
+              .setTenantId(tenant.getTenantId())
               .setEntityKey(mappingKey)
               .setEntityType(EntityType.MAPPING));
     }

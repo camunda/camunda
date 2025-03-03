@@ -1544,7 +1544,7 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    *
    * <pre>
    * camundaClient
-   *  .newDeleteTenantCommand(tenantKey)
+   *  .newDeleteTenantCommand(tenantId)
    *  .send();
    * </pre>
    *
@@ -1560,7 +1560,7 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    *
    * <pre>
    * camundaClient
-   *   .newAssignMappingToTenantCommand(tenantKey)
+   *   .newAssignMappingToTenantCommand(tenantId)
    *   .mappingKey(mappingKey)
    *   .send();
    * </pre>
@@ -1568,10 +1568,10 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    * <p>This command sends an HTTP PUT request to assign the specified mapping rule to the given
    * tenant.
    *
-   * @param tenantKey the unique identifier of the tenant
+   * @param tenantId the unique identifier of the tenant
    * @return a builder for the assign mapping rule to tenant command
    */
-  AssignMappingToTenantCommandStep1 newAssignMappingToTenantCommand(long tenantKey);
+  AssignMappingToTenantCommandStep1 newAssignMappingToTenantCommand(String tenantId);
 
   /**
    * Command to assign a user to a tenant.
@@ -1599,7 +1599,7 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    *
    * <pre>
    * camundaClient
-   *   .newRemoveUserFromTenantCommand(tenantId)
+   *   .newUnassignUserFromTenantCommand(tenantId)
    *   .username(username)
    *   .send();
    * </pre>
@@ -1610,7 +1610,7 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    * @param tenantId the unique identifier of the tenant
    * @return a builder for the remove user from tenant command
    */
-  RemoveUserFromTenantCommandStep1 newRemoveUserFromTenantCommand(String tenantId);
+  RemoveUserFromTenantCommandStep1 newUnassignUserFromTenantCommand(String tenantId);
 
   /**
    * Command to assign a group to a tenant.
@@ -1619,15 +1619,15 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    *
    * <pre>
    * camundaClient
-   *   .newAssignGroupToTenantCommand(tenantKey)
+   *   .newAssignGroupToTenantCommand(tenantId)
    *   .groupKey(groupKey)
    *   .send();
    * </pre>
    *
-   * @param tenantKey the unique identifier of the tenant
+   * @param tenantId the unique identifier of the tenant
    * @return a builder to configure and send the assign group to tenant command
    */
-  AssignGroupToTenantCommandStep1 newAssignGroupToTenantCommand(long tenantKey);
+  AssignGroupToTenantCommandStep1 newAssignGroupToTenantCommand(String tenantId);
 
   /**
    * Command to unassign a group from a tenant.
@@ -1636,15 +1636,15 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    *
    * <pre>
    * camundaClient
-   *   .newUnassignGroupFromTenantCommand(tenantKey)
+   *   .newUnassignGroupFromTenantCommand(tenantId)
    *   .groupKey(groupKey)
    *   .send();
    * </pre>
    *
-   * @param tenantKey the unique identifier of the tenant
+   * @param tenantId the unique identifier of the tenant
    * @return a builder to configure and send the unassign group from tenant command
    */
-  UnassignGroupFromTenantCommandStep1 newUnassignGroupFromTenantCommand(long tenantKey);
+  UnassignGroupFromTenantCommandStep1 newUnassignGroupFromTenantCommand(String tenantId);
 
   /**
    * Command to create an authorization

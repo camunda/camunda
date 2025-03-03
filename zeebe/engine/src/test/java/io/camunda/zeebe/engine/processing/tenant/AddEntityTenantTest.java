@@ -49,7 +49,7 @@ public class AddEntityTenantTest {
     final var updatedTenant =
         engine
             .tenant()
-            .addEntity(tenantKey)
+            .addEntity(tenantId)
             .withEntityKey(entityKey)
             .withEntityType(entityType)
             .add()
@@ -63,6 +63,7 @@ public class AddEntityTenantTest {
         .isNotNull()
         .hasFieldOrPropertyWithValue("entityKey", entityKey)
         .hasFieldOrPropertyWithValue("tenantKey", tenantKey)
+        .hasFieldOrPropertyWithValue("tenantId", tenantId)
         .hasFieldOrPropertyWithValue("entityType", entityType);
   }
 
@@ -88,7 +89,7 @@ public class AddEntityTenantTest {
     final var updatedTenant =
         engine
             .tenant()
-            .addEntity(tenantKey)
+            .addEntity(tenantId)
             .withEntityId(username)
             .withEntityType(entityType)
             .add()
@@ -102,6 +103,7 @@ public class AddEntityTenantTest {
         .isNotNull()
         .hasFieldOrPropertyWithValue("entityId", username)
         .hasFieldOrPropertyWithValue("tenantKey", tenantKey)
+        .hasFieldOrPropertyWithValue("tenantId", tenantId)
         .hasFieldOrPropertyWithValue("entityType", entityType);
   }
 
@@ -125,7 +127,7 @@ public class AddEntityTenantTest {
     final var updatedTenant =
         engine
             .tenant()
-            .addEntity(tenantKey)
+            .addEntity(tenantId)
             .withEntityKey(entityKey)
             .withEntityType(entityType)
             .add()
@@ -139,35 +141,35 @@ public class AddEntityTenantTest {
         .isNotNull()
         .hasFieldOrPropertyWithValue("entityKey", entityKey)
         .hasFieldOrPropertyWithValue("tenantKey", tenantKey)
+        .hasFieldOrPropertyWithValue("tenantId", tenantId)
         .hasFieldOrPropertyWithValue("entityType", entityType);
   }
 
   @Test
   public void shouldRejectIfTenantIsNotPresentWhileAddingEntity() {
     // when try adding entity to a non-existent tenant
-    final var entityKey = 1L;
-    final var notPresentUpdateRecord = engine.tenant().addEntity(entityKey).expectRejection().add();
+    final var nonExistingTenantId = UUID.randomUUID().toString();
+    final var notPresentUpdateRecord =
+        engine.tenant().addEntity(nonExistingTenantId).expectRejection().add();
     // then assert that the rejection is for tenant not found
     assertThat(notPresentUpdateRecord)
         .hasRejectionType(RejectionType.NOT_FOUND)
         .hasRejectionReason(
-            "Expected to add entity to tenant with key '%s', but no tenant with this key exists."
-                .formatted(entityKey));
+            "Expected to add entity to tenant with id '%s', but no tenant with this id exists."
+                .formatted(nonExistingTenantId));
   }
 
   @Test
   public void shouldRejectIfEntityIsNotPresentWhileAddingToTenant() {
     // given
     final var tenantId = UUID.randomUUID().toString();
-    final var tenantRecord =
-        engine.tenant().newTenant().withTenantId(tenantId).withName("Tenant 1").create();
+    engine.tenant().newTenant().withTenantId(tenantId).withName("Tenant 1").create();
 
     // when try adding a non-existent entity to the tenant
-    final var tenantKey = tenantRecord.getValue().getTenantKey();
     final var notPresentUpdateRecord =
         engine
             .tenant()
-            .addEntity(tenantKey)
+            .addEntity(tenantId)
             .withEntityId("does-not-exist")
             .withEntityType(USER)
             .expectRejection()
@@ -186,17 +188,15 @@ public class AddEntityTenantTest {
     // given
     final var user = createUser();
     final var tenantId = UUID.randomUUID().toString();
-    final var tenantRecord =
-        engine.tenant().newTenant().withTenantId(tenantId).withName("Tenant 1").create();
-    final var tenantKey = tenantRecord.getValue().getTenantKey();
+    engine.tenant().newTenant().withTenantId(tenantId).withName("Tenant 1").create();
     final var username = user.getUsername();
-    engine.tenant().addEntity(tenantKey).withEntityId(username).withEntityType(USER).add();
+    engine.tenant().addEntity(tenantId).withEntityId(username).withEntityType(USER).add();
 
     // when try adding a non-existent entity to the tenant
     final var alreadyAssignedRecord =
         engine
             .tenant()
-            .addEntity(tenantKey)
+            .addEntity(tenantId)
             .withEntityId(username)
             .withEntityType(USER)
             .expectRejection()
