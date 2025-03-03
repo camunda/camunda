@@ -5,7 +5,7 @@ exports[`should combine multiple variable values with or 1`] = `
   <span
     title="Var: varName"
   >
-    <ForwardRef(Tag)
+    <ForwardRef
       className="parameterName"
       type="blue"
     >
@@ -14,7 +14,7 @@ exports[`should combine multiple variable values with or 1`] = `
       <b>
         varName
       </b>
-    </ForwardRef(Tag)>
+    </ForwardRef>
   </span>
   <span
     className="filterText"
@@ -54,7 +54,7 @@ exports[`should combine multiple variable values with or 2`] = `
   <span
     title="Var: varName"
   >
-    <ForwardRef(Tag)
+    <ForwardRef
       className="parameterName"
       type="blue"
     >
@@ -63,7 +63,7 @@ exports[`should combine multiple variable values with or 2`] = `
       <b>
         varName
       </b>
-    </ForwardRef(Tag)>
+    </ForwardRef>
   </span>
   <span
     className="filterText"
@@ -127,7 +127,7 @@ exports[`should display correct preview even if no operator is defined 1`] = `
   <span
     title="Var: varName"
   >
-    <ForwardRef(Tag)
+    <ForwardRef
       className="parameterName"
       type="blue"
     >
@@ -136,7 +136,7 @@ exports[`should display correct preview even if no operator is defined 1`] = `
       <b>
         varName
       </b>
-    </ForwardRef(Tag)>
+    </ForwardRef>
   </span>
   <span
     className="filterText"
@@ -176,7 +176,7 @@ exports[`should use contains operators 1`] = `
   <span
     title="Var: varName"
   >
-    <ForwardRef(Tag)
+    <ForwardRef
       className="parameterName"
       type="blue"
     >
@@ -185,7 +185,7 @@ exports[`should use contains operators 1`] = `
       <b>
         varName
       </b>
-    </ForwardRef(Tag)>
+    </ForwardRef>
   </span>
   <span
     className="filterText"
@@ -211,7 +211,7 @@ exports[`should use less/greater for comparison operators 1`] = `
   <span
     title="Var: varName"
   >
-    <ForwardRef(Tag)
+    <ForwardRef
       className="parameterName"
       type="blue"
     >
@@ -220,7 +220,7 @@ exports[`should use less/greater for comparison operators 1`] = `
       <b>
         varName
       </b>
-    </ForwardRef(Tag)>
+    </ForwardRef>
   </span>
   <span
     className="filterText"
