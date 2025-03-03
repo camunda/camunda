@@ -30,7 +30,10 @@ class EmbeddedGatewayServiceStep extends AbstractBrokerStartupStep {
     final var scheduler = brokerStartupContext.getActorSchedulingService();
     final var brokerClient = brokerStartupContext.getBrokerClient();
     final var jobStreamClient =
-        new JobStreamClientImpl(scheduler, clusterServices.getCommunicationService());
+        new JobStreamClientImpl(
+            scheduler,
+            clusterServices.getCommunicationService(),
+            brokerStartupContext.getMeterRegistry());
     final var userService = brokerStartupContext.getUserServices();
     final var passwordEncoder = brokerStartupContext.getPasswordEncoder();
 

@@ -57,8 +57,6 @@ const entities = [
     created: '2017-11-11T11:11:11.1111+0200',
     owner: 'user_id',
     lastModifier: 'user_id',
-    reportType: 'process', // or "decision"
-    combined: false,
     entityType: 'report',
     data: {
       subEntityCounts: {},

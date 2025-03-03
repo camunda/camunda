@@ -52,7 +52,6 @@ const report = {
   name: 'name',
   lastModifier: 'lastModifier',
   lastModified: '2017-11-11T11:11:11.1111+0200',
-  reportType: 'process',
   currentUserRole: 'editor',
   data: {
     processDefinitionKey: null,

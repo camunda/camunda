@@ -41,11 +41,14 @@ import org.opensearch.client.opensearch.OpenSearchClient;
 import org.opensearch.client.opensearch._types.OpenSearchException;
 import org.opensearch.client.opensearch._types.mapping.Property;
 import org.opensearch.client.opensearch._types.mapping.TypeMapping;
+import org.opensearch.client.opensearch.core.DeleteByQueryRequest;
+import org.opensearch.client.opensearch.core.DeleteByQueryResponse;
 import org.opensearch.client.opensearch.core.SearchRequest;
 import org.opensearch.client.opensearch.generic.Body;
 import org.opensearch.client.opensearch.generic.Request;
 import org.opensearch.client.opensearch.generic.Requests;
 import org.opensearch.client.opensearch.indices.CreateIndexRequest;
+import org.opensearch.client.opensearch.indices.DeleteIndexRequest;
 import org.opensearch.client.opensearch.indices.PutIndexTemplateRequest;
 import org.opensearch.client.opensearch.indices.PutIndicesSettingsRequest;
 import org.opensearch.client.opensearch.indices.PutMappingRequest;
@@ -264,6 +267,33 @@ public class OpensearchEngineClient implements SearchEngineClient {
               "Expected to update index template settings '%s' with '%s', but failed ",
               indexTemplateDescriptor.getTemplateName(), updateIndexTemplateSettingsRequest),
           e);
+    }
+  }
+
+  @Override
+  public void deleteIndex(final String indexName) {
+    final DeleteIndexRequest request = new DeleteIndexRequest.Builder().index(indexName).build();
+
+    try {
+      client.indices().delete(request);
+      LOG.debug("Index [{}] was successfully deleted", indexName);
+    } catch (final IOException ioe) {
+      final var errMsg = String.format("Index [%s] was not deleted", indexName);
+      throw new OpensearchExporterException(errMsg, ioe);
+    }
+  }
+
+  @Override
+  public void truncateIndex(final String indexName) {
+    final DeleteByQueryRequest request =
+        new DeleteByQueryRequest.Builder().index(indexName).query(q -> q.matchAll(m -> m)).build();
+
+    try {
+      final DeleteByQueryResponse response = client.deleteByQuery(request);
+      LOG.debug("Deleted {} documents from index {}", response.deleted(), indexName);
+    } catch (final IOException ioe) {
+      final var errMsg = String.format("Failed to delete docs from index %s", indexName);
+      throw new OpensearchExporterException(errMsg, ioe);
     }
   }
 

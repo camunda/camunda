@@ -9,6 +9,7 @@ package io.camunda.it.client;
 
 import static io.camunda.client.api.search.response.UserTaskState.COMPLETED;
 import static io.camunda.client.api.search.response.UserTaskState.CREATED;
+import static io.camunda.qa.util.multidb.CamundaMultiDBExtension.TIMEOUT_DATA_AVAILABILITY;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
@@ -17,10 +18,9 @@ import io.camunda.client.api.command.ProblemException;
 import io.camunda.client.api.search.response.UserTask;
 import io.camunda.client.api.search.response.UserTaskState;
 import io.camunda.client.protocol.rest.UserTaskVariableFilterRequest;
-import io.camunda.it.utils.MultiDbTest;
+import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import java.io.InputStream;
-import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
@@ -1297,7 +1297,7 @@ class UserTaskQueryTest {
 
   private static void waitForTasksBeingExported() {
     Awaitility.await("should receive data from ES")
-        .atMost(Duration.ofMinutes(1))
+        .atMost(TIMEOUT_DATA_AVAILABILITY)
         .ignoreExceptions() // Ignore exceptions and continue retrying
         .untilAsserted(
             () -> {
@@ -1316,7 +1316,7 @@ class UserTaskQueryTest {
     camundaClient.newUserTaskCompleteCommand(userTaskKeyTaskAssigned).send().join();
 
     Awaitility.await("should export Assigned task and Completed to ElasticSearch")
-        .atMost(Duration.ofMinutes(1))
+        .atMost(TIMEOUT_DATA_AVAILABILITY)
         .ignoreExceptions() // Ignore exceptions and continue retrying
         .untilAsserted(
             () -> {

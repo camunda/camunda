@@ -6,6 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 import { FC, useState } from "react";
+import { InlineNotification } from "@carbon/react";
 import { FormModal, UseModalProps } from "src/components/modal";
 import useTranslate from "src/utility/localization";
 import { useApiCall } from "src/utility/api/hooks";
@@ -15,7 +16,9 @@ import { createGroup } from "src/utility/api/groups";
 const AddModal: FC<UseModalProps> = ({ open, onClose, onSuccess }) => {
   const { t } = useTranslate();
 
-  const [callAddGroup, { loading, namedErrors }] = useApiCall(createGroup);
+  const [callAddGroup, { loading, error }] = useApiCall(createGroup, {
+    suppressErrorNotification: true,
+  });
 
   const [name, setName] = useState("");
 
@@ -44,9 +47,17 @@ const AddModal: FC<UseModalProps> = ({ open, onClose, onSuccess }) => {
         value={name}
         placeholder={t("My group")}
         onChange={setName}
-        errors={namedErrors?.name}
         autoFocus
       />
+      {error && (
+        <InlineNotification
+          kind="error"
+          role="alert"
+          lowContrast
+          title={error.title}
+          subtitle={error.detail}
+        />
+      )}
     </FormModal>
   );
 };

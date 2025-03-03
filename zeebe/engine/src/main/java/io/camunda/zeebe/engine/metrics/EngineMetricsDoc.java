@@ -139,6 +139,131 @@ public enum EngineMetricsDoc implements ExtendedMeterDocumentation {
     public KeyName[] getAdditionalKeyNames() {
       return PartitionKeyNames.values();
     }
+  },
+
+  /** Number of banned instances */
+  BANNED_INSTANCES {
+    @Override
+    public String getDescription() {
+      return "Number of banned instances";
+    }
+
+    @Override
+    public String getName() {
+      return "zeebe.banned.instances.total";
+    }
+
+    @Override
+    public Type getType() {
+      return Type.GAUGE;
+    }
+
+    @Override
+    public KeyName[] getAdditionalKeyNames() {
+      return PartitionKeyNames.values();
+    }
+  },
+
+  /** Current number of buffered messages */
+  BUFFERED_MESSAGES {
+    @Override
+    public String getDescription() {
+      return "Current number of buffered messages";
+    }
+
+    @Override
+    public String getName() {
+      return "zeebe.buffered.messages.count";
+    }
+
+    @Override
+    public Type getType() {
+      return Type.GAUGE;
+    }
+
+    @Override
+    public KeyName[] getAdditionalKeyNames() {
+      return PartitionKeyNames.values();
+    }
+  },
+
+  /** Number of incident events */
+  INCIDENT_EVENTS {
+    @Override
+    public String getDescription() {
+      return "Number of incident events";
+    }
+
+    @Override
+    public String getName() {
+      return "zeebe.incidents.events.total";
+    }
+
+    @Override
+    public Type getType() {
+      return Type.COUNTER;
+    }
+
+    @Override
+    public KeyName[] getKeyNames() {
+      return new KeyName[] {EngineKeyNames.INCIDENT_ACTION};
+    }
+
+    @Override
+    public KeyName[] getAdditionalKeyNames() {
+      return PartitionKeyNames.values();
+    }
+  },
+
+  /** Number of pending incidents */
+  PENDING_INCIDENTS {
+    @Override
+    public String getDescription() {
+      return "Number of pending incidents";
+    }
+
+    @Override
+    public String getName() {
+      return "zeebe.pending.incidents.total";
+    }
+
+    @Override
+    public Type getType() {
+      return Type.GAUGE;
+    }
+
+    @Override
+    public KeyName[] getAdditionalKeyNames() {
+      return PartitionKeyNames.values();
+    }
+  },
+
+  /** Number of job events */
+  JOB_EVENTS {
+    @Override
+    public String getDescription() {
+      return "Number of job events";
+    }
+
+    @Override
+    public String getName() {
+      return "zeebe.job.events.total";
+    }
+
+    @Override
+    public Type getType() {
+      return Type.COUNTER;
+    }
+
+    @Override
+    public KeyName[] getKeyNames() {
+      return new KeyName[] {EngineKeyNames.JOB_ACTION};
+    }
+
+    @Override
+    public KeyName[] getAdditionalKeyNames() {
+      return PartitionKeyNames.values();
+    }
   };
 
   /** Tags/label values possibly used by the engine metrics. */
@@ -167,6 +292,14 @@ public enum EngineMetricsDoc implements ExtendedMeterDocumentation {
       }
     },
 
+    /** The possible actions performed on an incident; see {@link IncidentAction} for more. */
+    INCIDENT_ACTION {
+      @Override
+      public String asString() {
+        return "action";
+      }
+    },
+
     /**
      * The BPMN element type which trigger the modification of the given meter. See {@link
      * io.camunda.zeebe.protocol.record.value.BpmnElementType} for values.
@@ -186,6 +319,34 @@ public enum EngineMetricsDoc implements ExtendedMeterDocumentation {
       @Override
       public String asString() {
         return "eventType";
+      }
+    },
+
+    /** The possible actions performed on a job; see {@link JobAction} for possible values. */
+    JOB_ACTION {
+      @Override
+      public String asString() {
+        return "action";
+      }
+    },
+
+    /** The type of the job that triggered the job event */
+    JOB_TYPE {
+      @Override
+      public String asString() {
+        return "type";
+      }
+    },
+
+    /**
+     * Specifies the kind of job triggered the event, e.g. service task related, user tasks, etc.
+     *
+     * <p>See {@link io.camunda.zeebe.protocol.record.value.JobKind} for possible values
+     */
+    JOB_KIND {
+      @Override
+      public String asString() {
+        return "job_kind";
       }
     },
 
@@ -228,6 +389,38 @@ public enum EngineMetricsDoc implements ExtendedMeterDocumentation {
     @Override
     public String toString() {
       return name().toLowerCase();
+    }
+  }
+
+  public enum IncidentAction {
+    CREATED,
+    RESOLVED;
+
+    @Override
+    public String toString() {
+      return name().toLowerCase();
+    }
+  }
+
+  public enum JobAction {
+    CREATED("created"),
+    ACTIVATED("activated"),
+    TIMED_OUT("timed out"),
+    COMPLETED("completed"),
+    FAILED("failed"),
+    CANCELED("canceled"),
+    ERROR_THROWN("error thrown"),
+    WORKERS_NOTIFIED("workers notified"),
+    PUSHED("pushed");
+
+    private final String label;
+
+    JobAction(final String label) {
+      this.label = label;
+    }
+
+    public String getLabel() {
+      return label;
     }
   }
 }

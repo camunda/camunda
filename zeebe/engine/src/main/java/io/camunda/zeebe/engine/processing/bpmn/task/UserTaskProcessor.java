@@ -166,7 +166,9 @@ public final class UserTaskProcessor extends JobWorkerTaskSupportingProcessor<Ex
     element.getTaskListeners(ZeebeTaskListenerEventType.assigning).stream()
         .findFirst()
         .ifPresentOrElse(
-            listener -> jobBehavior.createNewTaskListenerJob(context, userTaskRecord, listener),
+            listener ->
+                jobBehavior.createNewTaskListenerJob(
+                    context, userTaskRecord, listener, userTaskRecord.getChangedAttributes()),
             () -> userTaskBehavior.userTaskAssigned(userTaskRecord, assignee));
   }
 

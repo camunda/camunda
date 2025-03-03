@@ -43,7 +43,7 @@ final class SwimMembershipProtocolMetrics {
                 SwimMembershipProtocolMetricsDoc.MEMBERS_INCARNATION_NUMBER.getName(), inside::get)
             .description(
                 SwimMembershipProtocolMetricsDoc.MEMBERS_INCARNATION_NUMBER.getDescription())
-            .tags(SwimKeyNames.MEMBER_ID.asString(), member)
+            .tag(SwimKeyNames.MEMBER_ID.asString(), member)
             .register(registry);
       }
       // always return what is present in the map, not what was just allocated

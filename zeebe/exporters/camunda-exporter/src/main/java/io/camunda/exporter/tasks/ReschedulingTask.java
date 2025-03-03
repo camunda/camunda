@@ -7,26 +7,21 @@
  */
 package io.camunda.exporter.tasks;
 
+import io.camunda.exporter.tasks.util.ReschedulingTaskLogger;
 import io.camunda.zeebe.util.ExponentialBackoff;
-import java.net.ConnectException;
-import java.net.SocketException;
-import java.net.SocketTimeoutException;
-import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import org.slf4j.Logger;
 
 public final class ReschedulingTask implements Runnable {
-  private static final Set<Class<? extends Exception>> BACKGROUND_SUPPRESSED_EXCEPTIONS =
-      Set.of(SocketTimeoutException.class, ConnectException.class, SocketException.class);
   private final BackgroundTask task;
   private final int minimumWorkCount;
   private final ScheduledExecutorService executor;
   private final Logger logger;
+  private final ReschedulingTaskLogger periodicLogger;
   private final ExponentialBackoff idleStrategy;
   private final ExponentialBackoff errorStrategy;
-
   private long delayMs;
   private long errorDelayMs;
 
@@ -42,6 +37,7 @@ public final class ReschedulingTask implements Runnable {
     this.executor = executor;
     this.logger = logger;
 
+    periodicLogger = new ReschedulingTaskLogger(logger);
     idleStrategy = new ExponentialBackoff(maxDelayBetweenRunsMs, delayBetweenRunsMs, 1.2, 0);
     errorStrategy = new ExponentialBackoff(10_000, delayBetweenRunsMs, 1.2, 0);
   }
@@ -76,17 +72,19 @@ public final class ReschedulingTask implements Runnable {
   }
 
   private long onError(final Throwable error) {
-    final String logMessage =
-        "Error occurred while performing a background task; operation will be retried";
     errorDelayMs = errorStrategy.applyAsLong(errorDelayMs);
 
-    if (BACKGROUND_SUPPRESSED_EXCEPTIONS.contains(error.getCause().getClass())) {
-      logger.warn("{}. `{}`", logMessage, error.getCause().getMessage());
-    } else {
-      logger.error(logMessage, error);
-    }
+    logError(error);
 
     return errorDelayMs;
+  }
+
+  private void logError(final Throwable error) {
+    periodicLogger.logError(
+        "Error occurred while performing a background task {}; error message {}; operation will be retried",
+        error,
+        task.getCaption(),
+        error.getCause().getMessage());
   }
 
   private void reschedule(final long delay) {

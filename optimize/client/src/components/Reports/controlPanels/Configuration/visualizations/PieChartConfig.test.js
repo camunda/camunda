@@ -25,7 +25,6 @@ it('it should display correct configuration for piechart', () => {
   expect(node.find('RelativeAbsoluteSelection').props()).toEqual({
     absolute: true,
     relative: false,
-    reportType: undefined,
     hideRelative: false,
     onChange: expect.any(Function),
   });

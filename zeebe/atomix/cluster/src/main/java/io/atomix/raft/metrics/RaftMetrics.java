@@ -19,10 +19,6 @@ package io.atomix.raft.metrics;
 import org.slf4j.LoggerFactory;
 
 public class RaftMetrics {
-  protected static final String NAMESPACE = "atomix";
-  protected static final String PARTITION_GROUP_NAME_LABEL = "partitionGroupName";
-  protected static final String PARTITION_LABEL = "partition";
-
   protected final String partition;
   protected final String partitionGroupName;
 

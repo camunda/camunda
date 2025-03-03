@@ -4,7 +4,7 @@ on:
     branches:
       - 'main'
       - 'stable/**'
-      - 'release/**'
+      - 'release**'
     paths:
       - '.github/workflows/operate-frontend.yml'
       - 'operate/client/**'

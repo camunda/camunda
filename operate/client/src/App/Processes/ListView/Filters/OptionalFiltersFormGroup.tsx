@@ -237,6 +237,17 @@ const OptionalFiltersFormGroup: React.FC<Props> = observer(
                             return (
                               <TextInputField
                                 {...input}
+                                onChange={(event) => {
+                                  if (input.name === 'errorMessage') {
+                                    // clear errorMessageHashCode when error message is changed manually.
+                                    form.change(
+                                      'incidentErrorHashCode',
+                                      undefined,
+                                    );
+                                  }
+
+                                  input.onChange(event);
+                                }}
                                 id={filter}
                                 size="sm"
                                 labelText={field.label}

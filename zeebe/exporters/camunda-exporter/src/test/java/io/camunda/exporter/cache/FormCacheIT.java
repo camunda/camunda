@@ -9,7 +9,7 @@ package io.camunda.exporter.cache;
 
 import static io.camunda.exporter.utils.SearchDBExtension.FORM_INDEX;
 import static io.camunda.exporter.utils.SearchDBExtension.IDX_FORM_PREFIX;
-import static io.camunda.exporter.utils.SearchDBExtension.IT_OPENSEARCH_AWS_INSTANCE_URL_PROPERTY;
+import static io.camunda.exporter.utils.SearchDBExtension.TEST_INTEGRATION_OPENSEARCH_AWS_URL;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatException;
 
@@ -73,7 +73,7 @@ class FormCacheIT {
   }
 
   static Stream<Arguments> provideFormCache() {
-    if (System.getProperty(IT_OPENSEARCH_AWS_INSTANCE_URL_PROPERTY) == null) {
+    if (System.getProperty(TEST_INTEGRATION_OPENSEARCH_AWS_URL) == null) {
       return Stream.of(
           Arguments.of(
               Named.of("ElasticSearch", getESFormCache(FORM_INDEX.getFullQualifiedName()))),
@@ -85,7 +85,7 @@ class FormCacheIT {
   }
 
   static Stream<Arguments> provideFailingFormCache() {
-    if (System.getProperty(IT_OPENSEARCH_AWS_INSTANCE_URL_PROPERTY) == null) {
+    if (System.getProperty(TEST_INTEGRATION_OPENSEARCH_AWS_URL) == null) {
       return Stream.of(
           Arguments.of(Named.of("ElasticSearch", getESFormCache("invalid-index-name"))),
           Arguments.of(Named.of("OpenSearch", getOSFormCache("invalid-index-name"))));

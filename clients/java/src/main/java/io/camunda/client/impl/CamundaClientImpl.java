@@ -90,6 +90,7 @@ import io.camunda.client.api.fetch.UserTaskGetRequest;
 import io.camunda.client.api.fetch.VariableGetRequest;
 import io.camunda.client.api.response.ActivatedJob;
 import io.camunda.client.api.response.DocumentReferenceResponse;
+import io.camunda.client.api.search.query.AdHocSubprocessActivityQuery;
 import io.camunda.client.api.search.query.DecisionDefinitionQuery;
 import io.camunda.client.api.search.query.DecisionInstanceQuery;
 import io.camunda.client.api.search.query.DecisionRequirementsQuery;
@@ -166,6 +167,7 @@ import io.camunda.client.impl.fetch.UserTaskGetRequestImpl;
 import io.camunda.client.impl.fetch.VariableGetRequestImpl;
 import io.camunda.client.impl.http.HttpClient;
 import io.camunda.client.impl.http.HttpClientFactory;
+import io.camunda.client.impl.search.query.AdHocSubprocessActivityQueryImpl;
 import io.camunda.client.impl.search.query.DecisionDefinitionQueryImpl;
 import io.camunda.client.impl.search.query.DecisionInstanceQueryImpl;
 import io.camunda.client.impl.search.query.DecisionRequirementsQueryImpl;
@@ -674,6 +676,22 @@ public final class CamundaClientImpl implements CamundaClient {
   }
 
   @Override
+  public AdHocSubprocessActivityQuery newAdHocSubprocessActivityQuery() {
+    return new AdHocSubprocessActivityQueryImpl(httpClient, jsonMapper);
+  }
+
+  @Override
+  public AdHocSubprocessActivityQuery newAdHocSubprocessActivityQuery(
+      final long processDefinitionKey, final String adHocSubprocessId) {
+    return newAdHocSubprocessActivityQuery()
+        .filter(
+            filter ->
+                filter
+                    .processDefinitionKey(processDefinitionKey)
+                    .adHocSubprocessId(adHocSubprocessId));
+  }
+
+  @Override
   public UserTaskQuery newUserTaskQuery() {
     return new UserTaskQueryImpl(httpClient, jsonMapper);
   }
@@ -869,8 +887,8 @@ public final class CamundaClientImpl implements CamundaClient {
   }
 
   @Override
-  public AssignMappingToTenantCommandStep1 newAssignMappingToTenantCommand(final long tenantKey) {
-    return new AssignMappingToTenantCommandImpl(httpClient, tenantKey);
+  public AssignMappingToTenantCommandStep1 newAssignMappingToTenantCommand(final String tenantId) {
+    return new AssignMappingToTenantCommandImpl(httpClient, tenantId);
   }
 
   @Override
@@ -879,14 +897,19 @@ public final class CamundaClientImpl implements CamundaClient {
   }
 
   @Override
-  public AssignGroupToTenantCommandStep1 newAssignGroupToTenantCommand(final long tenantKey) {
-    return new AssignGroupToTenantCommandImpl(httpClient, tenantKey);
+  public RemoveUserFromTenantCommandStep1 newUnassignUserFromTenantCommand(final String tenantId) {
+    return new RemoveUserFromTenantCommandImpl(httpClient, tenantId);
+  }
+
+  @Override
+  public AssignGroupToTenantCommandStep1 newAssignGroupToTenantCommand(final String tenantId) {
+    return new AssignGroupToTenantCommandImpl(httpClient, tenantId);
   }
 
   @Override
   public UnassignGroupFromTenantCommandStep1 newUnassignGroupFromTenantCommand(
-      final long tenantKey) {
-    return new UnassignGroupFromTenantCommandImpl(httpClient, tenantKey);
+      final String tenantId) {
+    return new UnassignGroupFromTenantCommandImpl(httpClient, tenantId);
   }
 
   @Override
@@ -904,11 +927,6 @@ public final class CamundaClientImpl implements CamundaClient {
   public UpdateAuthorizationCommandStep1 newUpdateAuthorizationCommand(
       final long authorizationKey) {
     return new UpdateAuthorizationCommandImpl(httpClient, jsonMapper, authorizationKey);
-  }
-
-  @Override
-  public RemoveUserFromTenantCommandStep1 newRemoveUserFromTenantCommand(final String tenantId) {
-    return new RemoveUserFromTenantCommandImpl(httpClient, tenantId);
   }
 
   private JobClient newJobClient() {

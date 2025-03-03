@@ -49,9 +49,6 @@ test('create, edit, copy and remove an alert', async (t) => {
     replace: true,
   });
 
-  await t.click(Alert.webhookDropdown);
-  await t.click(Common.carbonOption('testWebhook'));
-
   await t.click(Common.comboBox);
   await t.click(Common.carbonOption('Number Report'));
 

@@ -114,8 +114,13 @@ public class UserTaskProcessor implements TypedRecordProcessor<UserTaskRecord> {
 
     findNextTaskListener(listenerEventType, userTaskElement, userTaskElementInstance)
         .ifPresentOrElse(
-            listener ->
-                jobBehavior.createNewTaskListenerJob(context, intermediateUserTaskRecord, listener),
+            listener -> {
+              final var currentUserTask = userTaskState.getUserTask(command.getKey());
+              final var changedAttributes =
+                  intermediateUserTaskRecord.determineChangedAttributes(currentUserTask);
+              jobBehavior.createNewTaskListenerJob(
+                  context, intermediateUserTaskRecord, listener, changedAttributes);
+            },
             () -> finalizeCommand(command, lifecycleState, intermediateUserTaskRecord));
   }
 
@@ -194,7 +199,8 @@ public class UserTaskProcessor implements TypedRecordProcessor<UserTaskRecord> {
       final var listener = userTaskElement.getTaskListeners(eventType).getFirst();
       final var userTaskElementInstance = getUserTaskElementInstance(persistedRecord);
       final var context = buildContext(userTaskElementInstance);
-      jobBehavior.createNewTaskListenerJob(context, persistedRecord, listener);
+      jobBehavior.createNewTaskListenerJob(
+          context, persistedRecord, listener, persistedRecord.getChangedAttributes());
     } else {
       processor.onFinalizeCommand(command, persistedRecord);
     }
@@ -233,11 +239,11 @@ public class UserTaskProcessor implements TypedRecordProcessor<UserTaskRecord> {
       final UserTaskRecord persistedRecord,
       final UserTaskIntent intent) {
 
+    persistedRecord.setDeniedReason(command.getValue().getDeniedReason());
     final var recordRequestMetadata =
         userTaskState.findRecordRequestMetadata(persistedRecord.getUserTaskKey());
 
     stateWriter.appendFollowUpEvent(persistedRecord.getUserTaskKey(), intent, persistedRecord);
-
     recordRequestMetadata.ifPresent(
         metadata -> {
           responseWriter.writeRejection(

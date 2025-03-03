@@ -7,7 +7,6 @@
  */
 
 import {post} from 'request';
-import { getFullURL } from '../../../modules/api';
 
 export function isDurationHeatmap({view, visualization, definitions}) {
   return (
@@ -30,7 +29,10 @@ export async function loadTenants(type, definitions, collectionId) {
     payload.filterByCollectionScope = collectionId;
   }
 
-  const response = await post(getFullURL(`api/definition/${type}/_resolveTenantsForVersions`), payload);
+  const response = await post(
+    `api/definition/${type}/_resolveTenantsForVersions`,
+    payload
+  );
 
   return await response.json();
 }

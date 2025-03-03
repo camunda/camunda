@@ -14,9 +14,9 @@ import com.auth0.jwt.interfaces.Claim;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.webapp.dto.C8AppLink;
 import io.camunda.tasklist.webapp.dto.UserDTO;
+import io.camunda.tasklist.webapp.group.UserGroupService;
 import io.camunda.tasklist.webapp.security.Permission;
 import io.camunda.tasklist.webapp.security.UserReader;
-import io.camunda.tasklist.webapp.security.identity.IdentityAuthorizationService;
 import io.camunda.tasklist.webapp.security.sso.model.C8ConsoleService;
 import io.camunda.tasklist.webapp.security.sso.model.ClusterMetadata;
 import jakarta.json.Json;
@@ -37,7 +37,7 @@ public class SSOUserReader implements UserReader {
 
   @Autowired private C8ConsoleService c8ConsoleService;
 
-  @Autowired private IdentityAuthorizationService identityAuthorizationService;
+  @Autowired private UserGroupService userGroupService;
 
   @Override
   public Optional<UserDTO> getCurrentUserBy(final Authentication authentication) {
@@ -59,7 +59,7 @@ public class SSOUserReader implements UserReader {
               // For testing assignee migration locally use 'authentication.getName()'
               .setUserId(/*authentication.getName()*/ email)
               .setDisplayName(name)
-              .setGroups(identityAuthorizationService.getUserGroups())
+              .setGroups(userGroupService.getUserGroups())
               .setPermissions(tokenAuthentication.getPermissions())
               .setRoles(
                   tokenAuthentication.getRoles(tasklistProperties.getAuth0().getOrganizationsKey()))

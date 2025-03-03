@@ -313,22 +313,15 @@ export interface SingleProcessReportResultData {
   value: string | number;
 }
 
-export type ReportType = 'process';
-
-export interface Report<
-  Type extends ReportType = 'process',
-  Data extends object = SingleProcessReportData,
-  Result = unknown | undefined,
-> extends GenericEntity<Data> {
+export interface Report<Data extends object = SingleProcessReportData, Result = unknown | undefined>
+  extends GenericEntity<Data> {
   id: string;
   collectionId?: string | null;
-  reportType: Type;
   description: string | null;
   result: Result;
 }
 
 export type SingleProcessReport = Report<
-  'process',
   SingleProcessReportData,
   {data: SingleProcessReportResultData[]}
 >;

@@ -18,8 +18,11 @@ import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.stream.api.StreamClock;
 import io.micrometer.core.instrument.MeterRegistry;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public final class ClusterChangeExecutorImpl implements ClusterChangeExecutor {
+  private static final Logger LOG = LoggerFactory.getLogger(ClusterChangeExecutorImpl.class);
 
   private final ConcurrencyControl concurrencyControl;
   private final ExporterRepository exporterRepository;
@@ -36,18 +39,19 @@ public final class ClusterChangeExecutorImpl implements ClusterChangeExecutor {
 
   @Override
   public ActorFuture<Void> deleteHistory() {
-    final ActorFuture<Void> result = concurrencyControl.createFuture();
-    concurrencyControl.run(() -> purgeExporters(result));
-    return result;
-  }
 
-  private void purgeExporters(final ActorFuture<Void> result) {
-    try {
-      exporterRepository.getExporters().forEach(this::purgeExporter);
-      result.complete(null);
-    } catch (final Exception e) {
-      result.completeExceptionally(e);
-    }
+    final ActorFuture<Void> result = concurrencyControl.createFuture();
+    concurrencyControl.run(
+        () -> {
+          try {
+            exporterRepository.getExporters().forEach(this::purgeExporter);
+            result.complete(null);
+          } catch (final Exception e) {
+            result.completeExceptionally(e);
+          }
+        });
+
+    return result;
   }
 
   private void purgeExporter(final String id, final ExporterDescriptor descriptor) {
@@ -64,6 +68,7 @@ public final class ClusterChangeExecutorImpl implements ClusterChangeExecutor {
     try {
       exporter.configure(exporterContext);
       exporter.purge();
+      LOG.info("Purged history for {}", id);
       exporter.close();
     } catch (final Exception e) {
       throw new ExporterPurgeException(

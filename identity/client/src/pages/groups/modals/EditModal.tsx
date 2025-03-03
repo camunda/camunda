@@ -7,6 +7,7 @@
  */
 
 import { FC, useState } from "react";
+import { InlineNotification } from "@carbon/react";
 import { EditFormModal, UseEntityModalProps } from "src/components/modal";
 import useTranslate from "src/utility/localization";
 import { useApiCall } from "src/utility/api/hooks";
@@ -23,7 +24,9 @@ const EditModal: FC<UseEntityModalProps<Group>> = ({
   const { t } = useTranslate();
   const { enqueueNotification } = useNotifications();
 
-  const [callUpdateGroup, { namedErrors, loading }] = useApiCall(updateGroup);
+  const [callUpdateGroup, { error, loading }] = useApiCall(updateGroup, {
+    suppressErrorNotification: true,
+  });
 
   const [name, setName] = useState(group.name);
 
@@ -57,9 +60,17 @@ const EditModal: FC<UseEntityModalProps<Group>> = ({
         value={name}
         placeholder={t("My group")}
         onChange={setName}
-        errors={namedErrors?.name}
         autoFocus
       />
+      {error && (
+        <InlineNotification
+          kind="error"
+          role="alert"
+          lowContrast
+          title={error.title}
+          subtitle={error.detail}
+        />
+      )}
     </EditFormModal>
   );
 };

@@ -36,9 +36,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.util.apps.sso.AuthSSOApplication;
 import io.camunda.tasklist.webapp.dto.UserDTO;
+import io.camunda.tasklist.webapp.group.UserGroupService;
 import io.camunda.tasklist.webapp.security.AssigneeMigrator;
 import io.camunda.tasklist.webapp.security.AuthenticationTestable;
-import io.camunda.tasklist.webapp.security.identity.IdentityAuthorizationService;
 import io.camunda.tasklist.webapp.security.sso.model.ClusterInfo;
 import io.camunda.tasklist.webapp.security.sso.model.ClusterMetadata;
 import jakarta.json.Json;
@@ -101,7 +101,7 @@ public class AuthenticationWithPersistentSessionsIT implements AuthenticationTes
   @MockBean private AuthenticationController authenticationController;
 
   @MockBean private AssigneeMigrator assigneeMigrator;
-  @MockBean private IdentityAuthorizationService identityAuthorizationService;
+  @MockBean private UserGroupService userGroupService;
 
   @MockBean
   @Qualifier("auth0_restTemplate")

@@ -24,7 +24,7 @@ import org.junit.jupiter.api.Test;
 @ZeebeIntegration
 class DeleteTenantTest {
 
-  private static final String TENANT_ID = "tenant-id";
+  private static final String TENANT_ID = "tenantId";
 
   @TestZeebe
   private final TestStandaloneBroker zeebe =
@@ -53,7 +53,7 @@ class DeleteTenantTest {
 
     // then
     ZeebeAssertHelper.assertTenantDeleted(
-        "tenant-id", tenant -> assertThat(tenant.getTenantKey()).isEqualTo(tenantKey));
+        "tenantId", tenant -> assertThat(tenant.getTenantKey()).isEqualTo(tenantKey));
   }
 
   @Test

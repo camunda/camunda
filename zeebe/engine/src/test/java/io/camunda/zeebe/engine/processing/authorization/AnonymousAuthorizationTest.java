@@ -53,7 +53,9 @@ public class AnonymousAuthorizationTest {
 
   @Rule
   public final EngineRule engine =
-      EngineRule.singlePartition().withSecurityConfig(c -> c.getAuthorizations().setEnabled(true));
+      EngineRule.singlePartition()
+          .withIdentitySetup()
+          .withSecurityConfig(c -> c.getAuthorizations().setEnabled(true));
 
   @Rule
   public final RecordingExporterTestWatcher recordingExporterTestWatcher =
@@ -64,12 +66,7 @@ public class AnonymousAuthorizationTest {
     username = UUID.randomUUID().toString();
     final var user = engine.user().newUser(username).create().getValue();
     final var tenantKey = engine.tenant().newTenant().withTenantId(TENANT).create().getKey();
-    engine
-        .tenant()
-        .addEntity(tenantKey)
-        .withEntityId(username)
-        .withEntityType(EntityType.USER)
-        .add();
+    engine.tenant().addEntity(TENANT).withEntityId(username).withEntityType(EntityType.USER).add();
 
     engine
         .authorization()

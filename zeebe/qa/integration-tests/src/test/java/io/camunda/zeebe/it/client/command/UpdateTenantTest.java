@@ -26,7 +26,7 @@ class UpdateTenantTest {
 
   private static final String UPDATED_TENANT_NAME = "Updated Tenant Name";
   private static final String UPDATED_TENANT_DESCRIPTION = "Updated Tenant Description";
-  private static final String TENANT_ID = "tenant-id";
+  private static final String TENANT_ID = "tenantId";
 
   @TestZeebe
   private final TestStandaloneBroker zeebe =

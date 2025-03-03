@@ -12,7 +12,6 @@ import {OverflowMenu, OverflowMenuItem} from '@carbon/react';
 
 import {AlertModal, Deleter} from 'components';
 import {loadReports, loadAlerts, editAlert, addAlert, removeAlert, getCollection} from 'services';
-import {getWebhooks} from 'config';
 
 import {AlertsDropdown} from './AlertsDropdown';
 
@@ -58,7 +57,6 @@ jest.mock('services', () => {
         lastModifier: 'Admin',
         lastModified: '2017-11-11T11:11:11.1111+0200',
         reportId: '4',
-        webhook: null,
       },
       {
         id: 'alert2',
@@ -67,7 +65,6 @@ jest.mock('services', () => {
         lastModifier: 'Admin',
         lastModified: '2017-11-11T11:11:11.1111+0200',
         reportId: '2',
-        webhook: null,
       },
     ]),
     addAlert: jest.fn(),
@@ -78,7 +75,6 @@ jest.mock('services', () => {
   };
 });
 
-jest.mock('config', () => ({getWebhooks: jest.fn().mockReturnValue(['webhook1', 'webhook2'])}));
 jest.mock('notifications', () => ({addNotification: jest.fn()}));
 jest.mock('hooks', () => ({
   useErrorHandling: jest.fn(() => ({
@@ -94,14 +90,13 @@ const props = {
   location: {},
 };
 
-it('should load existing alerts, reports and webhooks', () => {
+it('should load existing alerts and reports', () => {
   shallow(<AlertsDropdown {...props} dashboardTiles={[]} />);
 
   runAllEffects();
 
   expect(loadReports).toHaveBeenCalled();
   expect(loadAlerts).toHaveBeenCalled();
-  expect(getWebhooks).toHaveBeenCalled();
 });
 
 it('should only show the dropdown inside a collection', () => {

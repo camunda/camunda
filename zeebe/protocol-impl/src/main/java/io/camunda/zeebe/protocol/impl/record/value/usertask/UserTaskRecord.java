@@ -142,9 +142,10 @@ public final class UserTaskRecord extends UnifiedRecordValue implements UserTask
   private final StringProperty actionProp = new StringProperty("action", EMPTY_STRING);
   private final LongProperty creationTimestampProp = new LongProperty("creationTimestamp", -1L);
   private final IntegerProperty priorityProp = new IntegerProperty(PRIORITY, 50);
+  private final StringProperty deniedReasonProp = new StringProperty("deniedReason", EMPTY_STRING);
 
   public UserTaskRecord() {
-    super(21);
+    super(22);
     declareProperty(userTaskKeyProp)
         .declareProperty(assigneeProp)
         .declareProperty(candidateGroupsListProp)
@@ -165,7 +166,8 @@ public final class UserTaskRecord extends UnifiedRecordValue implements UserTask
         .declareProperty(changedAttributesProp)
         .declareProperty(actionProp)
         .declareProperty(creationTimestampProp)
-        .declareProperty(priorityProp);
+        .declareProperty(priorityProp)
+        .declareProperty(deniedReasonProp);
   }
 
   /** Like {@link #wrap(UserTaskRecord)} but does not set the variables. */
@@ -191,6 +193,7 @@ public final class UserTaskRecord extends UnifiedRecordValue implements UserTask
     setChangedAttributesProp(record.getChangedAttributesProp());
     actionProp.setValue(record.getActionBuffer());
     priorityProp.setValue(record.getPriority());
+    deniedReasonProp.setValue(record.getDeniedReason());
   }
 
   /**
@@ -538,6 +541,15 @@ public final class UserTaskRecord extends UnifiedRecordValue implements UserTask
     return this;
   }
 
+  public String getDeniedReason() {
+    return bufferAsString(deniedReasonProp.getValue());
+  }
+
+  public UserTaskRecord setDeniedReason(final String deniedReason) {
+    deniedReasonProp.setValue(deniedReason);
+    return this;
+  }
+
   public UserTaskRecord setAssigneeChanged() {
     changedAttributesProp.add().wrap(ASSIGNEE_VALUE);
     return this;
@@ -612,10 +624,26 @@ public final class UserTaskRecord extends UnifiedRecordValue implements UserTask
 
   public void setDiffAsChangedAttributes(final UserTaskRecord other) {
     changedAttributesProp.reset();
-    ATTRIBUTE_GETTER_MAP.keySet().stream()
+    determineChangedAttributes(other).forEach(this::addChangedAttribute);
+  }
+
+  /**
+   * Determines which attributes have changed between this {@link UserTaskRecord} and another
+   * instance.
+   *
+   * <p>This method compares all trackable user task attributes and returns a list of attribute
+   * names that have different values between the two records.
+   *
+   * @param other the {@link UserTaskRecord} to compare against
+   * @return a list of attribute names that have changed
+   * @implNote Attributes are compared using {@link UserTaskRecord#ATTRIBUTE_GETTER_MAP}, ensuring
+   *     that all supported fields are checked dynamically.
+   */
+  public List<String> determineChangedAttributes(final UserTaskRecord other) {
+    return ATTRIBUTE_GETTER_MAP.keySet().stream()
         .sorted()
         .filter(attribute -> isAttributeValueChanged(attribute, other))
-        .forEach(this::addChangedAttribute);
+        .toList();
   }
 
   public boolean hasChangedAttributes() {

@@ -10,6 +10,7 @@ package io.camunda.zeebe.protocol.record.value;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 public enum AuthorizationResourceType {
   AUTHORIZATION(
@@ -54,5 +55,16 @@ public enum AuthorizationResourceType {
 
   public Set<PermissionType> getSupportedPermissionTypes() {
     return supportedPermissionTypes;
+  }
+
+  /**
+   * Returns all the resource types that are user provided. This is everything in this enum, except
+   * for UNSPECIFIED. UNSPECIFIED is only used as a default internally. By having this we prevent
+   * accidentally creating a wrong permission because the resource type wasn't set properly.
+   *
+   * @return a set of all user provided resource types
+   */
+  public static Set<AuthorizationResourceType> getUserProvidedResourceTypes() {
+    return Arrays.stream(values()).filter(type -> type != UNSPECIFIED).collect(Collectors.toSet());
   }
 }

@@ -44,7 +44,6 @@ const newAlert = {
   },
   reminder: null,
   fixNotification: false,
-  webhook: undefined,
 };
 
 export class AlertModal extends React.Component {
@@ -55,7 +54,6 @@ export class AlertModal extends React.Component {
       ...newAlert,
       reportId: '',
       name: t('alert.newAlert'),
-      inactive: false,
       invalid: false,
       validEmails: true,
       report: null,
@@ -84,8 +82,6 @@ export class AlertModal extends React.Component {
 
     this.setState({
       ...alert,
-      inactive:
-        alert.webhook && !alert.emails?.length && !this.props.webhooks?.includes(alert.webhook),
       threshold:
         this.getReportMeasure(alert.reportId) === 'duration'
           ? formatters.convertDurationToObject(alert.threshold)
@@ -161,7 +157,7 @@ export class AlertModal extends React.Component {
   };
 
   componentDidUpdate({initialAlert}) {
-    const {name, webhook, emails, reportId, checkInterval, reminder, validEmails} = this.state;
+    const {name, emails, reportId, checkInterval, reminder, validEmails} = this.state;
 
     if (this.props.initialAlert !== initialAlert) {
       this.loadAlert();
@@ -174,7 +170,7 @@ export class AlertModal extends React.Component {
       this.setInvalid(true);
       return;
     }
-    if (!emails?.length && !webhook) {
+    if (!emails?.length) {
       this.setInvalid(true);
       return;
     }
@@ -224,10 +220,6 @@ export class AlertModal extends React.Component {
     this.loadReport(id);
   };
 
-  updateWebhook = (webhook) => {
-    this.setState({webhook});
-  };
-
   render() {
     const {
       name,
@@ -239,14 +231,12 @@ export class AlertModal extends React.Component {
       reminder,
       fixNotification,
       emailNotificationIsEnabled,
-      inactive,
       invalid,
-      webhook,
       validEmails,
       report,
     } = this.state;
 
-    const {reports, webhooks, onClose, onRemove, disabled, generateDocsLink} = this.props;
+    const {reports, onClose, onRemove, disabled, generateDocsLink} = this.props;
     const selectedReport = reports.find((report) => report.id === reportId) || {};
     const reportMeasure = this.getReportMeasure(reportId);
 
@@ -268,15 +258,6 @@ export class AlertModal extends React.Component {
                           'self-managed/optimize-deployment/configuration/system-configuration/#email'
                         ),
                       })}
-                    />
-                  )}
-                  {inactive && (
-                    <ActionableNotification
-                      inline
-                      kind="warning"
-                      hideCloseButton
-                      title={t('alert.inactiveStatus')}
-                      subtitle={t('alert.activateInfo')}
                     />
                   )}
                   <TextInput
@@ -381,29 +362,6 @@ export class AlertModal extends React.Component {
                     invalid={!validEmails}
                     invalidText={t('alert.form.invalidEmail')}
                   />
-                  {webhooks?.length > 0 && (
-                    <Stack gap={6} orientation="horizontal">
-                      <ComboBox
-                        id="webhooks"
-                        key={webhook}
-                        size="sm"
-                        items={webhooks}
-                        selectedItem={webhook}
-                        titleText={t('alert.form.webhook')}
-                        placeholder={t('alert.form.webookPlaceholder')}
-                        onChange={({selectedItem}) => this.updateWebhook(selectedItem || undefined)}
-                      />
-                      <Button
-                        size="sm"
-                        disabled={!webhook}
-                        kind="secondary"
-                        onClick={() => this.setState({webhook: undefined})}
-                        className="reset"
-                      >
-                        {t('common.reset')}
-                      </Button>
-                    </Stack>
-                  )}
                   <Checkbox
                     id="sendNotification"
                     labelText={t('alert.form.sendNotification')}

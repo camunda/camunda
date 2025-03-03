@@ -12,7 +12,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.security.configuration.ConfiguredUser;
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
-import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
 import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
@@ -43,6 +42,7 @@ public class UserTaskUpdateAuthorizationTest {
   @Rule
   public final EngineRule engine =
       EngineRule.singlePartition()
+          .withIdentitySetup()
           .withSecurityConfig(cfg -> cfg.getAuthorizations().setEnabled(true))
           .withSecurityConfig(cfg -> cfg.getInitialization().setUsers(List.of(DEFAULT_USER)));
 
@@ -69,10 +69,7 @@ public class UserTaskUpdateAuthorizationTest {
     final var processInstanceKey = createProcessInstance();
 
     // when
-    engine
-        .userTask()
-        .ofInstance(processInstanceKey)
-        .update(new UserTaskRecord(), DEFAULT_USER.getUsername());
+    engine.userTask().ofInstance(processInstanceKey).update(DEFAULT_USER.getUsername());
 
     // then
     assertThat(
@@ -94,10 +91,7 @@ public class UserTaskUpdateAuthorizationTest {
         PROCESS_ID);
 
     // when
-    engine
-        .userTask()
-        .ofInstance(processInstanceKey)
-        .update(new UserTaskRecord(), user.getUsername());
+    engine.userTask().ofInstance(processInstanceKey).update(user.getUsername());
 
     // then
     assertThat(
@@ -119,7 +113,7 @@ public class UserTaskUpdateAuthorizationTest {
             .userTask()
             .ofInstance(processInstanceKey)
             .expectRejection()
-            .update(new UserTaskRecord(), user.getUsername());
+            .update(user.getUsername());
 
     // then
     Assertions.assertThat(rejection)

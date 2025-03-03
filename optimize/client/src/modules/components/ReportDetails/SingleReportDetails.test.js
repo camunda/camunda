@@ -49,7 +49,6 @@ const props = {
       groupBy: {type: 'startDate', value: {unit: 'automatic'}},
     },
     name: 'Report Name',
-    reportType: 'process',
     owner: 'Test Person',
     lastModified: '2020-06-23T09:32:48.938+0200',
     lastModifier: 'Test Person',

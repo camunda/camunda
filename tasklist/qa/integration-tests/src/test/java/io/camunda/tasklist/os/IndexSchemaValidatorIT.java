@@ -20,6 +20,7 @@ import io.camunda.tasklist.schema.manager.SchemaManager;
 import io.camunda.tasklist.util.TasklistIntegrationTest;
 import io.camunda.webapps.schema.descriptors.AbstractIndexDescriptor;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
+import io.camunda.webapps.schema.descriptors.tasklist.TasklistIndexDescriptor;
 import java.lang.reflect.Field;
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -28,6 +29,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -164,7 +166,7 @@ public class IndexSchemaValidatorIT extends TasklistIntegrationTest {
   }
 
   private IndexDescriptor createIndexDescriptor() {
-    return new IndexDescriptor() {
+    return new TasklistIndexDescriptor("", false) {
       @Override
       public String getFullQualifiedName() {
         return getFullIndexName();
@@ -176,11 +178,6 @@ public class IndexSchemaValidatorIT extends TasklistIntegrationTest {
       }
 
       @Override
-      public String getIndexName() {
-        return INDEX_NAME;
-      }
-
-      @Override
       public String getMappingsClasspathFilename() {
         return ORIGINAL_SCHEMA_PATH_OPENSEARCH;
       }
@@ -194,11 +191,21 @@ public class IndexSchemaValidatorIT extends TasklistIntegrationTest {
       public String getVersion() {
         return "1.0.0";
       }
+
+      @Override
+      public String getIndexPrefix() {
+        return getIndexPrefixForTest();
+      }
+
+      @Override
+      public String getIndexName() {
+        return INDEX_NAME;
+      }
     };
   }
 
   private IndexDescriptor createDatedIndexDescriptor(final String suffix) {
-    return new IndexDescriptor() {
+    return new TasklistIndexDescriptor("", false) {
       @Override
       public String getFullQualifiedName() {
         return getFullIndexName() + suffix;
@@ -210,11 +217,6 @@ public class IndexSchemaValidatorIT extends TasklistIntegrationTest {
       }
 
       @Override
-      public String getIndexName() {
-        return INDEX_NAME + suffix;
-      }
-
-      @Override
       public String getMappingsClasspathFilename() {
         return ORIGINAL_SCHEMA_PATH_OPENSEARCH;
       }
@@ -227,6 +229,16 @@ public class IndexSchemaValidatorIT extends TasklistIntegrationTest {
       @Override
       public String getVersion() {
         return "1.0.0";
+      }
+
+      @Override
+      public String getIndexPrefix() {
+        return getIndexPrefixForTest();
+      }
+
+      @Override
+      public String getIndexName() {
+        return INDEX_NAME + suffix;
       }
     };
   }
@@ -275,9 +287,11 @@ public class IndexSchemaValidatorIT extends TasklistIntegrationTest {
   }
 
   private String getFullIndexName() {
-    return AbstractIndexDescriptor.formatIndexPrefix(schemaManager.getIndexPrefix())
-        + TASK_LIST
-        + "-"
-        + INDEX_NAME;
+    return getIndexPrefixForTest() + TASK_LIST + "-" + INDEX_NAME;
+  }
+
+  @NotNull
+  private String getIndexPrefixForTest() {
+    return AbstractIndexDescriptor.formatIndexPrefix(schemaManager.getIndexPrefix());
   }
 }

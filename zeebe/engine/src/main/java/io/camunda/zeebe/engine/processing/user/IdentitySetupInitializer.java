@@ -22,6 +22,7 @@ import io.camunda.zeebe.stream.api.StreamProcessorLifecycleAware;
 import io.camunda.zeebe.stream.api.scheduling.Task;
 import io.camunda.zeebe.stream.api.scheduling.TaskResult;
 import io.camunda.zeebe.stream.api.scheduling.TaskResultBuilder;
+import io.camunda.zeebe.util.FeatureFlags;
 import org.slf4j.Logger;
 import org.springframework.security.crypto.factory.PasswordEncoderFactories;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -32,15 +33,24 @@ public final class IdentitySetupInitializer implements StreamProcessorLifecycleA
   public static final String DEFAULT_TENANT_NAME = "Default";
   private static final Logger LOG = Loggers.PROCESS_PROCESSOR_LOGGER;
   private final SecurityConfiguration securityConfig;
+  private final FeatureFlags featureFlags;
   private final PasswordEncoder passwordEncoder;
 
-  public IdentitySetupInitializer(final SecurityConfiguration securityConfig) {
+  public IdentitySetupInitializer(
+      final SecurityConfiguration securityConfig, final FeatureFlags featureFlags) {
     this.securityConfig = securityConfig;
+    this.featureFlags = featureFlags;
     passwordEncoder = PasswordEncoderFactories.createDelegatingPasswordEncoder();
   }
 
   @Override
   public void onRecovered(final ReadonlyStreamProcessorContext context) {
+    // We can disable identity setup by disabling the feature flag. This is useful to prevent
+    // interference in our engine tests, as this setup will write "unexpected" commands/events
+    if (!featureFlags.enableIdentitySetup()) {
+      return;
+    }
+
     if (context.getPartitionId() != Protocol.DEPLOYMENT_PARTITION) {
       // We should only create users on the deployment partition. The command will be distributed to
       // the other partitions using our command distribution mechanism.
