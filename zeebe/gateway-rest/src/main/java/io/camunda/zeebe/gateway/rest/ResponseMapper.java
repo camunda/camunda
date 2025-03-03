@@ -174,7 +174,7 @@ public final class ResponseMapper {
               final var detail = new DocumentCreationFailureDetail();
               final var defaultProblemDetail = mapDocumentErrorToProblem(error.error());
               detail.setDetail(defaultProblemDetail.getDetail());
-              detail.setFilename(error.request().metadata().fileName());
+              detail.setFileName(error.request().metadata().fileName());
               response.addFailedDocumentsItem(detail);
             });
     return ResponseEntity.status(HttpStatus.MULTI_STATUS)

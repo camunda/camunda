@@ -8,7 +8,7 @@ info:
     url: https://github.com/camunda/camunda/blob/main/licenses/CAMUNDA-LICENSE-1.0.txt
 externalDocs:
   description: Find out more
-  url: https://docs.camunda.io/docs/apis-tools/camunda-api-rest/overview/
+  url: https://docs.camunda.io/docs/apis-tools/camunda-api-rest/camunda-api-rest-overview/
 
 servers:
   - url: "{schema}://{host}:{port}/v2"
@@ -1399,7 +1399,7 @@ paths:
 
         The caller must provide a file name for each document, which will be used in case of a multi-status response
         to identify which documents failed to upload. The file name can be provided in the `Content-Disposition` header
-        of the file part or in the `filename` field of the metadata part. If both are provided, the `filename` field
+        of the file part or in the `fileName` field of the metadata part. If both are provided, the `fileName` field
         takes precedence.
 
         In case of a multi-status response, the response body will contain a list of `DocumentBatchProblemDetail` objects,
@@ -4251,7 +4251,7 @@ components:
     DocumentCreationFailureDetail:
       type: object
       properties:
-        filename:
+        fileName:
           type: string
           description: The name of the file.
         detail:
@@ -5036,3 +5036,4 @@ components:
       type: http
       scheme: bearer
       bearerFormat: JWT
+
