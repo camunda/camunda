@@ -82,7 +82,7 @@
     "@types/jest": "29.5.14",
     "@types/node": "20.16.15",
     "@types/react": "^18.0.11",
-    "@types/react-date-range": "1.4.9",
+    "@types/react-date-range": "1.4.10",
     "@types/react-dom": "^18.0.11",
     "@types/react-router-dom": "^5.3.3",
     "@types/react-table": "7.7.20",
