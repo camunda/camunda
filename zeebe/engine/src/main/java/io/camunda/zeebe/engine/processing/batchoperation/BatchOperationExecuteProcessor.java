@@ -32,8 +32,8 @@ import org.slf4j.LoggerFactory;
 public final class BatchOperationExecuteProcessor
     implements TypedRecordProcessor<BatchOperationExecutionRecord> {
 
-  private static final Logger LOGGER = LoggerFactory.getLogger(
-      BatchOperationExecuteProcessor.class);
+  private static final Logger LOGGER =
+      LoggerFactory.getLogger(BatchOperationExecuteProcessor.class);
 
   private static final int BATCH_SIZE = 10;
 
@@ -49,8 +49,7 @@ public final class BatchOperationExecuteProcessor
       final ProcessingState processingState,
       final KeyGenerator keyGenerator,
       final CommandDistributionBehavior commandDistributionBehavior,
-      final int partitionId
-  ) {
+      final int partitionId) {
     commandWriter = writers.command();
     stateWriter = writers.state();
     batchOperationState = processingState.getBatchOperationState();
@@ -61,53 +60,52 @@ public final class BatchOperationExecuteProcessor
   @Override
   public void processRecord(final TypedRecord<BatchOperationExecutionRecord> command) {
     final var recordValue = command.getValue();
-    LOGGER.debug("Processing new command with key '{}' on partition{} : {}", command.getKey(),
-        partitionId, recordValue);
+    LOGGER.debug(
+        "Processing new command with key '{}' on partition{} : {}",
+        command.getKey(),
+        partitionId,
+        recordValue);
     final long batchKey = command.getValue().getBatchOperationKey();
     final int offset = command.getValue().getOffset();
 
     final var filteredEntityKeys = fetchFilteredEntityKeys(batchKey);
-    final var entityKeys = filteredEntityKeys.subList(offset,
-        Math.min(offset + BATCH_SIZE, filteredEntityKeys.size()));
+    if (filteredEntityKeys.size() <= offset) {
+      LOGGER.debug(
+          "No items to process for BatchOperation {} on partition {}", batchKey, partitionId);
+      appendBatchOperationExecutionCompletedEvent(0, command);
+      return;
+    }
+
+    final var entityKeys =
+        filteredEntityKeys.subList(
+            offset, Math.min(offset + BATCH_SIZE, filteredEntityKeys.size()));
 
     // TODO do we need more states here? Like EXECUTE, EXECUTING, EXECUTED
     // when do we apply this event?
-//    stateWriter.appendFollowUpEvent(
-//        command.getKey(), BatchOperationIntent.EXECUTING, command.getValue());
+    //    stateWriter.appendFollowUpEvent(
+    //        command.getKey(), BatchOperationIntent.EXECUTING, command.getValue());
 
     switch (recordValue.getBatchOperationType()) {
       case PROCESS_CANCELLATION:
         entityKeys.forEach(this::cancelProcessInstance);
     }
 
-    if (hasNextBatch(filteredEntityKeys, offset)) {
-      LOGGER.debug("Scheduling next batch for BatchOperation {} on partition {}", batchKey,
-          partitionId);
-      final var newOffset = command.getValue().getOffset() + BATCH_SIZE;
-      final var followupCommand = new BatchOperationExecutionRecord();
-      followupCommand.setBatchOperationKey(batchKey);
-      followupCommand.setBatchOperationType(command.getValue().getBatchOperationType());
-      followupCommand.setOffset(newOffset);
-      commandWriter.appendFollowUpCommand(command.getKey(), BatchOperationIntent.EXECUTE,
-          followupCommand);
-      appendBatchOperationExecutionExecutedEvent(command, Set.copyOf(entityKeys));
-    } else {
-      LOGGER.debug("BatchOperation {} has no more items on partition {}, completing it", batchKey,
-          partitionId);
-      appendBatchOperationExecutionCompletedEvent(filteredEntityKeys.size(), command);
-    }
+    LOGGER.debug(
+        "Scheduling next batch for BatchOperation {} on partition {}", batchKey, partitionId);
+    final var newOffset = command.getValue().getOffset() + BATCH_SIZE;
+    final var followupCommand = new BatchOperationExecutionRecord();
+    followupCommand.setBatchOperationKey(batchKey);
+    followupCommand.setBatchOperationType(command.getValue().getBatchOperationType());
+    followupCommand.setOffset(newOffset);
+    commandWriter.appendFollowUpCommand(
+        command.getKey(), BatchOperationIntent.EXECUTE, followupCommand);
+    appendBatchOperationExecutionExecutedEvent(command, Set.copyOf(entityKeys));
   }
 
   private List<Long> fetchFilteredEntityKeys(final long batchOperationKey) {
-    final var keys = batchOperationState.get(batchOperationKey).map(ItemKeys::getKeys)
-        .orElseThrow();
-    return keys.stream()
-        .filter(key -> Protocol.decodePartitionId(key) == partitionId)
-        .toList();
-  }
-
-  private boolean hasNextBatch(final List<Long> filteredKeysByPartition, final int offset) {
-    return filteredKeysByPartition.size() > offset + BATCH_SIZE;
+    final var keys =
+        batchOperationState.get(batchOperationKey).map(ItemKeys::getKeys).orElseThrow();
+    return keys.stream().filter(key -> Protocol.decodePartitionId(key) == partitionId).toList();
   }
 
   private void cancelProcessInstance(final long processInstanceKey) {
@@ -115,41 +113,25 @@ public final class BatchOperationExecuteProcessor
 
     final var command = new ProcessInstanceRecord();
     command.setProcessInstanceKey(processInstanceKey);
-    commandWriter.appendFollowUpCommand(
-        processInstanceKey,
-        ProcessInstanceIntent.CANCEL,
-        command
-    );
+    commandWriter.appendFollowUpCommand(processInstanceKey, ProcessInstanceIntent.CANCEL, command);
   }
 
   private void appendBatchOperationExecutionExecutedEvent(
-      final TypedRecord<BatchOperationExecutionRecord> command,
-      final Set<Long> keys) {
+      final TypedRecord<BatchOperationExecutionRecord> command, final Set<Long> keys) {
     final var batchExecute = new BatchOperationExecutionRecord();
     batchExecute.setBatchOperationKey(command.getKey());
     batchExecute.setKeys(keys);
     batchExecute.setBatchOperationType(command.getValue().getBatchOperationType());
     batchExecute.setOffset(command.getValue().getOffset());
-    stateWriter.appendFollowUpEvent(
-        command.getKey(),
-        BatchOperationIntent.EXECUTED,
-        batchExecute
-    );
+    stateWriter.appendFollowUpEvent(command.getKey(), BatchOperationIntent.EXECUTED, batchExecute);
   }
 
-  private void appendBatchOperationExecutionCompletedEvent(final int offset,
-      final TypedRecord<BatchOperationExecutionRecord> command
-  ) {
+  private void appendBatchOperationExecutionCompletedEvent(
+      final int offset, final TypedRecord<BatchOperationExecutionRecord> command) {
     final var batchExecute = new BatchOperationExecutionRecord();
     batchExecute.setBatchOperationKey(command.getKey());
     batchExecute.setBatchOperationType(command.getValue().getBatchOperationType());
     batchExecute.setOffset(offset);
-    stateWriter.appendFollowUpEvent(
-        command.getKey(),
-        BatchOperationIntent.COMPLETED,
-        batchExecute
-    );
+    stateWriter.appendFollowUpEvent(command.getKey(), BatchOperationIntent.COMPLETED, batchExecute);
   }
-
-
 }
