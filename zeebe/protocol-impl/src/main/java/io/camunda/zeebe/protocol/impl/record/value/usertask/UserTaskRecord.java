@@ -733,4 +733,9 @@ public final class UserTaskRecord extends UnifiedRecordValue implements UserTask
     setChangedAttributes(changedAttributes);
     return this;
   }
+
+  public UserTaskRecord resetChangedAttributes() {
+    changedAttributesProp.reset();
+    return this;
+  }
 }

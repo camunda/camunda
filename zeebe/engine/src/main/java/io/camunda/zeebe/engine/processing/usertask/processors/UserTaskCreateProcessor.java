@@ -103,6 +103,9 @@ public final class UserTaskCreateProcessor implements UserTaskCommandProcessor {
     }
 
     if (intermediateAssignee != null) {
+      // clean up the changed attributes because we have already finished the creation, and are now
+      // starting a new transition to assigning
+      userTaskRecord.resetChangedAttributes();
       assignUserTask(userTaskRecord, intermediateAssignee);
     }
   }

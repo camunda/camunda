@@ -3512,6 +3512,14 @@ public class TaskListenerTest {
         .describedAs(
             "Expect to ignore the correction, the assigning listener sees the initial assignee")
         .containsEntry(Protocol.USER_TASK_ASSIGNEE_HEADER_NAME, "initial_assignee");
+
+    assertThat(
+            RecordingExporter.userTaskRecords(UserTaskIntent.ASSIGNING)
+                .withProcessInstanceKey(processInstanceKey)
+                .getFirst()
+                .getValue()
+                .getChangedAttributes())
+        .containsExactly(UserTaskRecord.ASSIGNEE);
   }
 
   private static void completeRecreatedJobWithType(

@@ -15,7 +15,6 @@ import io.camunda.zeebe.engine.state.mutable.MutableUserTaskState;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskListenerEventType;
 import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
-import java.util.List;
 
 public final class UserTaskAssignedV2Applier
     implements TypedEventApplier<UserTaskIntent, UserTaskRecord> {
@@ -32,7 +31,7 @@ public final class UserTaskAssignedV2Applier
   public void applyState(final long key, final UserTaskRecord value) {
     final var userTaskRecord = new UserTaskRecord();
     userTaskRecord.wrapWithoutVariables(value);
-    userTaskState.update(userTaskRecord.setChangedAttributes(List.of()).setAction(""));
+    userTaskState.update(userTaskRecord.resetChangedAttributes().setAction(""));
     userTaskState.updateUserTaskLifecycleState(key, LifecycleState.CREATED);
 
     // Clear operational data related to the current assign(claim) transition
