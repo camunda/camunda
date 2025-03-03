@@ -357,6 +357,9 @@ jobs:
           # Default is 5 - unit is minutes
           # https://opensearch.org/docs/latest/im-plugin/ism/settings/
           plugins.index_state_management.job_interval: "1"
+          # A randomized delay that is added to a job’s base run time to prevent a surge of activity from all indexes at the same time.
+          plugins.index_state_management.jitter: "0"
+          knn.algo_param.index_thread_qty: 4
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/setup-build
