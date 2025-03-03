@@ -5,12 +5,12 @@ exports[`should show a preview of the process part 1`] = `
   onClick={[Function]}
   onEdit={[Function]}
 >
-  <ForwardRef(Tag)
+  <ForwardRef
     size="sm"
     type="blue"
   >
     Process instance part
-  </ForwardRef(Tag)>
+  </ForwardRef>
   <div>
     <b>
       Start Node

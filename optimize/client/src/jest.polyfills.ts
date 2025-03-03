@@ -14,3 +14,7 @@ Object.defineProperties(globalThis, {
   TextEncoder: {value: TextEncoder},
   ReadableStream: {value: ReadableStream},
 });
+
+jest.mock('react-dom/test-utils', () => {
+  return jest.requireActual('react-dom-18/test-utils');
+});
