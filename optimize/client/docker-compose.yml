@@ -193,7 +193,7 @@ services:
     ports:
       - '28080:8080'
     healthcheck:
-      test: ['CMD-SHELL', "wget -O - -q 'http://localhost:28080/actuator/health/readiness'"]
+      test: ['CMD-SHELL', "wget -O - -q 'http://localhost:8080/actuator/health/readiness'"]
       interval: 30s
       timeout: 1s
       retries: 5
@@ -225,7 +225,7 @@ services:
     ports:
       - '28080:8080'
     healthcheck:
-      test: ['CMD-SHELL', "wget -O - -q 'http://localhost:28080/actuator/health/readiness'"]
+      test: ['CMD-SHELL', "wget -O - -q 'http://localhost:8080/actuator/health/readiness'"]
       interval: 30s
       timeout: 1s
       retries: 5
