@@ -1393,6 +1393,60 @@ public final class MultiInstanceActivityTest {
   }
 
   @Test
+  public void shouldApplyOutputMappingForOutputCollection() {
+    // given
+    final ServiceTask task = process(miBuilder).getModelElementById(ELEMENT_ID);
+    final var process =
+        task.builder()
+            .zeebeOutputExpression(OUTPUT_COLLECTION_VARIABLE, "resultsFromOutput")
+            .done();
+
+    ENGINE.deployment().withXmlResource(process).deploy();
+
+    // when
+    final long processInstanceKey =
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId(PROCESS_ID)
+            .withVariable(INPUT_COLLECTION_EXPRESSION, INPUT_COLLECTION)
+            .create();
+
+    completeJobs(processInstanceKey, INPUT_COLLECTION.size());
+
+    // then
+    assertThat(
+            RecordingExporter.variableRecords()
+                .withScopeKey(processInstanceKey)
+                .withName(OUTPUT_COLLECTION_VARIABLE)
+                .getFirst()
+                .getValue())
+        .hasValue("[11,22,33]");
+
+    final var multiInstanceBody =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_COMPLETED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementType(BpmnElementType.MULTI_INSTANCE_BODY)
+            .getFirst();
+
+    assertThat(
+            RecordingExporter.variableRecords()
+                .withName(OUTPUT_COLLECTION_VARIABLE)
+                .withScopeKey(multiInstanceBody.getKey())
+                .limit(INPUT_COLLECTION.size() + 1))
+        .extracting(r -> r.getValue().getValue())
+        .contains("[null,null,null]", "[11,null,null]", "[11,22,null]", "[11,22,33]");
+
+    assertThat(
+            RecordingExporter.records()
+                .betweenProcessInstance(processInstanceKey)
+                .variableRecords()
+                .withName("resultsFromOutput")
+                .withScopeKey(processInstanceKey))
+        .extracting(r -> r.getValue().getValue())
+        .containsExactly("[null,null,null]", "[11,null,null]", "[11,22,null]", "[11,22,33]");
+  }
+
+  @Test
   public void shouldTriggerInterruptingBoundaryEvent() {
     // given
     final ServiceTask task = process(miBuilder).getModelElementById(ELEMENT_ID);
