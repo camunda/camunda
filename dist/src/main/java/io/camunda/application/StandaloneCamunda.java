@@ -36,7 +36,7 @@ public class StandaloneCamunda {
     MainSupport.putSystemPropertyIfAbsent(
         "spring.banner.location", "classpath:/assets/camunda_banner.txt");
 
-    final var defaultActiveProfiles = getDefaultActiveProfiles();
+    final var defaultProperties = getDefaultProperties();
     final var standaloneCamundaApplication =
         MainSupport.createDefaultApplicationBuilder()
             .sources(
@@ -47,7 +47,9 @@ public class StandaloneCamunda {
                 WebappsModuleConfiguration.class,
                 BrokerModuleConfiguration.class,
                 GatewayModuleConfiguration.class)
-            .properties(defaultActiveProfiles)
+            // https://docs.spring.io/spring-boot/docs/2.3.9.RELEASE/reference/html/spring-boot-features.html#boot-features-external-config
+            // Default properties are only used, if not overridden by any other config
+            .properties(defaultProperties)
             .initializers(
                 new DefaultAuthenticationInitializer(),
                 new HealthConfigurationInitializer(),
@@ -58,9 +60,14 @@ public class StandaloneCamunda {
     standaloneCamundaApplication.run(args);
   }
 
-  public static Map<String, Object> getDefaultActiveProfiles() {
+  public static Map<String, Object> getDefaultProperties() {
     final var defaultProperties = new HashMap<String, Object>();
     defaultProperties.put(SPRING_PROFILES_ACTIVE_PROPERTY, DEFAULT_CAMUNDA_PROFILES);
+    // Per default, we target a green field installation with the StandaloneCamunda application.
+    // Meaning, we will disable the importers per default
+    // Importers can still be enabled by configuration
+    defaultProperties.put("camunda.operate.importerEnabled", "false");
+    defaultProperties.put("camunda.tasklist.importerEnabled", "false");
     return defaultProperties;
   }
 }
