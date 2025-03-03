@@ -13,7 +13,6 @@ import io.camunda.client.CamundaClient;
 import io.camunda.qa.util.auth.Authenticated;
 import io.camunda.qa.util.auth.User;
 import io.camunda.qa.util.auth.UserDefinition;
-import io.camunda.qa.util.cluster.TestSimpleCamundaApplication;
 import io.camunda.webapps.schema.descriptors.IndexDescriptors;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneApplication;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
@@ -49,9 +48,8 @@ import org.testcontainers.elasticsearch.ElasticsearchContainer;
  * <p>Per default, for example if no property is set, local environment is expected. In a local
  * environment case the extension will bootstrap a database via test containers.
  *
- * <p>For simplicity tests can be annotated with {@link MultiDbTest}, and all the magic happens inside
- * the extension. It will fallback to {@link TestSimpleCamundaApplication}, to bootstrap a single
- * camunda application, configure it accordingly to the detected database.
+ * <p>For simplicity tests can be annotated with {@link MultiDbTest} or {@link HistoryMultiDbTest}, and all the magic happens inside
+ * the extension. It will fallback to {@link TestStandaloneBroker}, to bootstrap the broker (reducing the scope), configure it accordingly to the detected database.
  *
  * <pre>{@code
  * @MultiDbTest
@@ -69,6 +67,28 @@ import org.testcontainers.elasticsearch.ElasticsearchContainer;
  *
  *     // then
  *     assertThat(topology.getClusterSize()).isEqualTo(1);
+ *   }
+ * }</pre>
+ *
+ * If we need to test history clean up, e.g. process instances or task related data are cleaned up.
+ * We can use the {@link HistoryMultiDbTest}, that will communicate to enable the retention.
+ *
+ * <pre>{@code
+ * @HistoryMultiDbTest
+ * final class MyHistoryMultiDbTest {
+ *
+ *   private CamundaClient client;
+ *
+ *   @Test
+ *   void shouldMakeUseOfClient() {
+ *     // given
+ *     // ... set up
+ *
+ *     // when
+ *     // client complete task - PI completion
+ *
+ *     // then
+ *     // assert data is cleaned up
  *   }
  * }</pre>
  *
@@ -185,24 +205,31 @@ public class CamundaMultiDBExtension
   public void beforeAll(final ExtensionContext context) {
     LOGGER.info("Starting up Camunda instance, with {}", databaseType);
     final Class<?> testClass = context.getRequiredTestClass();
+    final var isHistoryRelatedTest = testClass.getAnnotation(HistoryMultiDbTest.class) != null;
     testPrefix = testClass.getSimpleName().toLowerCase();
 
     switch (databaseType) {
       case LOCAL -> {
         final ElasticsearchContainer elasticsearchContainer = setupElasticsearch();
         final String elasticSearchUrl = "http://" + elasticsearchContainer.getHttpHostAddress();
-        multiDbConfigurator.configureElasticsearchSupport(elasticSearchUrl, testPrefix);
+        multiDbConfigurator.configureElasticsearchSupport(
+            elasticSearchUrl, testPrefix, isHistoryRelatedTest);
         final var expectedDescriptors = new IndexDescriptors(testPrefix, true).all();
         setupHelper = new ElasticOpenSearchSetupHelper(elasticSearchUrl, expectedDescriptors);
       }
       case ES -> {
-        multiDbConfigurator.configureElasticsearchSupport(DEFAULT_ES_URL, testPrefix);
+        multiDbConfigurator.configureElasticsearchSupport(
+            DEFAULT_ES_URL, testPrefix, isHistoryRelatedTest);
         final var expectedDescriptors = new IndexDescriptors(testPrefix, true).all();
         setupHelper = new ElasticOpenSearchSetupHelper(DEFAULT_ES_URL, expectedDescriptors);
       }
       case OS -> {
         multiDbConfigurator.configureOpenSearchSupport(
-            DEFAULT_OS_URL, testPrefix, DEFAULT_OS_ADMIN_USER, DEFAULT_OS_ADMIN_PW);
+            DEFAULT_OS_URL,
+            testPrefix,
+            DEFAULT_OS_ADMIN_USER,
+            DEFAULT_OS_ADMIN_PW,
+            isHistoryRelatedTest);
         final var expectedDescriptors = new IndexDescriptors(testPrefix, true).all();
         setupHelper = new ElasticOpenSearchSetupHelper(DEFAULT_OS_URL, expectedDescriptors);
       }
@@ -215,6 +242,7 @@ public class CamundaMultiDBExtension
       }
       default -> throw new RuntimeException("Unknown exporter type");
     }
+
     // we need to close the test application before cleaning up
     closeables.add(() -> setupHelper.cleanup(testPrefix));
     closeables.add(setupHelper);

@@ -19,13 +19,13 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.response.ProcessInstanceEvent;
 import io.camunda.client.api.search.response.UserTask;
-import io.camunda.qa.util.multidb.MultiDbTest;
+import io.camunda.qa.util.multidb.HistoryMultiDbTest;
 import java.time.Duration;
 import java.util.Objects;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Test;
 
-@MultiDbTest
+@HistoryMultiDbTest
 public class HistoryCleanupIT {
 
   static final String RESOURCE_NAME = "process/process_with_assigned_user_task.bpmn";

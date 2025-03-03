@@ -31,6 +31,11 @@ public class MultiDbConfigurator {
 
   public void configureElasticsearchSupport(
       final String elasticsearchUrl, final String indexPrefix) {
+    configureElasticsearchSupport(elasticsearchUrl, indexPrefix, false);
+  }
+
+  public void configureElasticsearchSupport(
+      final String elasticsearchUrl, final String indexPrefix, final boolean retentionEnabled) {
     this.indexPrefix = indexPrefix;
     final Map<String, Object> elasticsearchProperties = new HashMap<>();
 
@@ -78,7 +83,7 @@ public class MultiDbConfigurator {
                       "retention",
                       Map.of(
                           "enabled",
-                          "true",
+                          Boolean.toString(retentionEnabled),
                           "policyName",
                           indexPrefix + "-ilm",
                           "minimumAge",
@@ -106,6 +111,15 @@ public class MultiDbConfigurator {
       final String indexPrefix,
       final String userName,
       final String userPassword) {
+    configureOpenSearchSupport(opensearchUrl, indexPrefix, userName, userPassword, false);
+  }
+
+  public void configureOpenSearchSupport(
+      final String opensearchUrl,
+      final String indexPrefix,
+      final String userName,
+      final String userPassword,
+      final boolean retentionEnabled) {
     this.indexPrefix = indexPrefix;
 
     final Map<String, Object> opensearchProperties = new HashMap<>();
@@ -165,7 +179,7 @@ public class MultiDbConfigurator {
                       "retention",
                       Map.of(
                           "enabled",
-                          "true",
+                          Boolean.toString(retentionEnabled),
                           "policyName",
                           indexPrefix + "-ilm",
                           "minimumAge",
