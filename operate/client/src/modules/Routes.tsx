@@ -33,6 +33,9 @@ const Paths = {
   decisionInstance(decisionInstanceId: string = ':decisionInstanceId') {
     return `/decisions/${decisionInstanceId}`;
   },
+  forbidden() {
+    return '/forbidden';
+  },
 } as const;
 
 const Locations = {
