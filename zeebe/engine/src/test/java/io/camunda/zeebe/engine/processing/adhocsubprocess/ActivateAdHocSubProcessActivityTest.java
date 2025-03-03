@@ -43,12 +43,18 @@ public class ActivateAdHocSubProcessActivityTest {
   @Before
   public void setUp() {
     final BpmnModelInstance processInstance =
-        process(
-            adHocSubProcess -> {
-              adHocSubProcess.task("A");
-              adHocSubProcess.task("B");
-              adHocSubProcess.task("C");
-            });
+        Bpmn.createExecutableProcess(PROCESS_ID)
+            .startEvent()
+            .adHocSubProcess(
+                AD_HOC_SUB_PROCESS_ELEMENT_ID,
+                adHocSubProcess -> {
+                  adHocSubProcess.task("A");
+                  adHocSubProcess.task("B");
+                  adHocSubProcess.task("C");
+                })
+            .endEvent()
+            .done();
+
     ENGINE.deployment().withXmlResource(processInstance).deploy();
     processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
 
