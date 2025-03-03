@@ -3279,7 +3279,7 @@ __metadata:
     react-transition-group: "npm:4.4.5"
     rollup: "npm:4.34.9"
     rollup-plugin-license: "npm:^3.5.3"
-    sass: "npm:1.83.0"
+    sass: "npm:1.85.1"
     styled-components: "npm:6.1.13"
     typescript: "npm:5.7.3"
     vite: "npm:6.0.9"
@@ -5155,9 +5155,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"sass@npm:1.83.0":
-  version: 1.83.0
-  resolution: "sass@npm:1.83.0"
+"sass@npm:1.85.1":
+  version: 1.85.1
+  resolution: "sass@npm:1.85.1"
   dependencies:
     "@parcel/watcher": "npm:^2.4.1"
     chokidar: "npm:^4.0.0"
@@ -5168,7 +5168,7 @@ __metadata:
       optional: true
   bin:
     sass: sass.js
-  checksum: 10c0/4415361229879a9041d77c953da85482e89032aa4321ba13250a9987d39c80fac6c88af3777f2a2d76a4e8b0c8afbd21c1970fdbe84e0b3ec25fb26741f92beb
+  checksum: 10c0/f843aa1df1dca2f0e9cb2fb247e4939fd514ae4c182cdd1900a0622c0d71b40dfb1c4225f78b78e165a318287ca137ec597695db3e496408bd16a921a2bc2b3f
   languageName: node
   linkType: hard
 
