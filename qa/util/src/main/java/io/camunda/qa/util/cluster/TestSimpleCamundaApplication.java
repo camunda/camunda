@@ -14,6 +14,7 @@ import io.camunda.application.commons.configuration.BrokerBasedConfiguration.Bro
 import io.camunda.application.commons.security.CamundaSecurityConfiguration.CamundaSecurityProperties;
 import io.camunda.application.initializers.WebappsConfigurationInitializer;
 import io.camunda.authentication.config.AuthenticationProperties;
+import io.camunda.identity.IdentityModuleConfiguration;
 import io.camunda.operate.OperateModuleConfiguration;
 import io.camunda.security.configuration.ConfiguredUser;
 import io.camunda.security.configuration.InitializationConfiguration;
@@ -58,6 +59,7 @@ public final class TestSimpleCamundaApplication
         CommonsModuleConfiguration.class,
         OperateModuleConfiguration.class,
         TasklistModuleConfiguration.class,
+        IdentityModuleConfiguration.class,
         WebappsModuleConfiguration.class,
         BrokerModuleConfiguration.class,
         // test overrides - to control data clean up; (and some components are not installed on
@@ -102,6 +104,7 @@ public final class TestSimpleCamundaApplication
         .withAdditionalProfile(Profile.BROKER)
         .withAdditionalProfile(Profile.OPERATE)
         .withAdditionalProfile(Profile.TASKLIST)
+        .withAdditionalProfile(Profile.IDENTITY)
         .withAdditionalInitializer(new WebappsConfigurationInitializer());
   }
 

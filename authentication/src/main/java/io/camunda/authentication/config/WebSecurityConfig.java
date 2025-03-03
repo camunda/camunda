@@ -13,6 +13,7 @@ import com.google.common.collect.Sets;
 import io.camunda.authentication.CamundaUserDetailsService;
 import io.camunda.authentication.ConditionalOnAuthenticationMethod;
 import io.camunda.authentication.filters.TenantRequestAttributeFilter;
+import io.camunda.authentication.filters.WebApplicationAuthorizationCheckFilter;
 import io.camunda.authentication.handler.AuthFailureHandler;
 import io.camunda.authentication.handler.CustomMethodSecurityExpressionHandler;
 import io.camunda.security.configuration.MultiTenancyConfiguration;
@@ -230,9 +231,25 @@ public class WebSecurityConfig {
     return new FilterRegistrationBean<>(new TenantRequestAttributeFilter(configuration));
   }
 
+  @Bean
+  public FilterRegistrationBean<WebApplicationAuthorizationCheckFilter>
+      applicationAuthorizationFilterFilterRegistrationBean(
+          final WebApplicationAuthorizationCheckFilter filter) {
+    final FilterRegistrationBean<WebApplicationAuthorizationCheckFilter> registration =
+        new FilterRegistrationBean<>();
+    registration.setFilter(filter);
+    registration.addUrlPatterns("/identity/*", "/operate/*", "/tasklist/*");
+    return registration;
+  }
+
+  @Bean
+  public WebApplicationAuthorizationCheckFilter webApplicationAuthorizationCheckFilter(
+      final SecurityConfiguration securityConfiguration) {
+    return new WebApplicationAuthorizationCheckFilter(securityConfiguration);
+  }
+
   private static boolean isBasicAuthRequest(final HttpServletRequest request) {
     final String authorizationHeader = request.getHeader(HttpHeaders.AUTHORIZATION);
-    // If the client sends an `Authorization: Basic` header, treat this as a basic auth request.
     return authorizationHeader != null && authorizationHeader.startsWith("Basic ");
   }
 
