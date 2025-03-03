@@ -21,8 +21,6 @@ import io.camunda.optimize.dto.optimize.DefinitionOptimizeResponseDto;
 import io.camunda.optimize.dto.optimize.query.collection.CollectionEntity;
 import io.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import io.camunda.optimize.dto.optimize.rest.AuthorizedReportDefinitionResponseDto;
-import io.camunda.optimize.service.util.configuration.ConfigurationService;
-import io.camunda.optimize.service.util.configuration.ConfigurationServiceBuilder;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Date;
@@ -36,21 +34,15 @@ import org.springframework.http.converter.json.Jackson2ObjectMapperBuilder;
 public class ObjectMapperFactory {
 
   private static final ObjectMapperFactory FACTORY =
-      new ObjectMapperFactory(
-          new OptimizeDateTimeFormatterFactory().getObject(),
-          ConfigurationServiceBuilder.createDefaultConfiguration());
+      new ObjectMapperFactory(new OptimizeDateTimeFormatterFactory().getObject());
   public static final ObjectMapper OPTIMIZE_MAPPER = FACTORY.createOptimizeMapper();
   public static final ObjectMapper OPTIMIZE_MAPPER_UNKNOWN_FAIL_DISABLED =
       FACTORY.createOptimizeMapper(false);
 
   private final DateTimeFormatter optimizeDateTimeFormatter;
-  private final ConfigurationService configurationService;
 
-  public ObjectMapperFactory(
-      final DateTimeFormatter optimizeDateTimeFormatter,
-      final ConfigurationService configurationService) {
+  public ObjectMapperFactory(final DateTimeFormatter optimizeDateTimeFormatter) {
     this.optimizeDateTimeFormatter = optimizeDateTimeFormatter;
-    this.configurationService = configurationService;
   }
 
   @Qualifier("optimizeMapper")
@@ -62,16 +54,6 @@ public class ObjectMapperFactory {
 
   public ObjectMapper createOptimizeMapper(final boolean unknownPropsEnable) {
     return buildObjectMapper(optimizeDateTimeFormatter, unknownPropsEnable);
-  }
-
-  @Qualifier("engineMapper")
-  @Bean
-  public ObjectMapper createEngineMapper() {
-    return buildObjectMapper(createEngineDateTimeFormatter(), true);
-  }
-
-  private DateTimeFormatter createEngineDateTimeFormatter() {
-    return DateTimeFormatter.ofPattern(configurationService.getEngineDateFormat());
   }
 
   private ObjectMapper buildObjectMapper(

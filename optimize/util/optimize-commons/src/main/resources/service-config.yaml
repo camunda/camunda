@@ -487,11 +487,6 @@ es:
       className: ${CAMUNDA_OPTIMIZE_ELASTICSEARCH_INTERCEPTORPLUGINS_4_CLASSNAME:}
       jarPath: ${CAMUNDA_OPTIMIZE_ELASTICSEARCH_INTERCEPTORPLUGINS_4_JARPATH:}
 
-serialization:
-  # Define a custom date format that should be used for
-  # fetching date data from the engine(should be the same as in the engine)
-  engineDateFormat: yyyy-MM-dd'T'HH:mm:ss.SSSZ
-
 alerting:
   quartz:
     jobStore: 'org.quartz.simpl.RAMJobStore'

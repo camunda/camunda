@@ -9,7 +9,6 @@ package io.camunda.optimize.service.util;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.optimize.dto.optimize.ReportType;
 import io.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
@@ -18,13 +17,9 @@ import io.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecis
 import io.camunda.optimize.dto.optimize.query.report.single.filter.data.variable.BooleanVariableFilterDataDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
-import io.camunda.optimize.service.util.configuration.ConfigurationService;
-import io.camunda.optimize.service.util.configuration.ConfigurationServiceBuilder;
 import io.camunda.optimize.service.util.mapper.ObjectMapperFactory;
 import io.camunda.optimize.service.util.mapper.OptimizeDateTimeFormatterFactory;
-import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
-import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import org.junit.jupiter.api.BeforeEach;
@@ -35,18 +30,12 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 public class ObjectMapperFactoryTest {
 
-  private ConfigurationService configurationService;
   private ObjectMapperFactory objectMapperFactory;
 
   @BeforeEach
   public void init() {
-    configurationService =
-        ConfigurationServiceBuilder.createConfiguration()
-            .loadConfigurationFrom("service-config.yaml")
-            .build();
     objectMapperFactory =
-        new ObjectMapperFactory(
-            new OptimizeDateTimeFormatterFactory().getObject(), configurationService);
+        new ObjectMapperFactory(new OptimizeDateTimeFormatterFactory().getObject());
   }
 
   /**
@@ -176,7 +165,7 @@ public class ObjectMapperFactoryTest {
 
     // when
     final DateHolder instance = new DateHolder();
-    instance.setDate(OffsetDateTime.parse(dateString, createEngineDateFormatter()));
+    instance.setDate(OffsetDateTime.parse(dateString, createOptimizeDateFormatter()));
     final String parsedString = createOptimizeMapper().writeValueAsString(instance);
 
     // then
@@ -188,7 +177,7 @@ public class ObjectMapperFactoryTest {
     // given
     final String dateString = "2017-12-11T17:28:38.222+0100";
     final OffsetDateTime expectedOffsetDateTime =
-        OffsetDateTime.parse(dateString, createEngineDateFormatter());
+        OffsetDateTime.parse(dateString, createOptimizeDateFormatter());
 
     // when
     final OffsetDateTime parsedOffsetDateTime =
@@ -200,66 +189,8 @@ public class ObjectMapperFactoryTest {
     assertThat(parsedOffsetDateTime).isEqualTo(expectedOffsetDateTime);
   }
 
-  @Test
-  public void testEngineMapperDateSerialization() throws Exception {
-    // given
-    final String dateString = "2017-12-11T17:28:38.222+0100";
-
-    // when
-    final DateHolder instance = new DateHolder();
-    instance.setDate(OffsetDateTime.parse(dateString, createEngineDateFormatter()));
-    final String parsedString = createEngineMapper().writeValueAsString(instance);
-
-    // then
-    assertThat(parsedString).contains(dateString);
-  }
-
-  @Test
-  public void testEngineMapperDateDeserialization() throws JsonProcessingException {
-    // given
-    final String dateString = "2017-12-11T17:28:38.222+0100";
-    final OffsetDateTime expectedOffsetDateTime =
-        OffsetDateTime.parse(dateString, createEngineDateFormatter());
-
-    // when
-    final OffsetDateTime parsedOffsetDateTime =
-        createEngineMapper()
-            .readValue(createDateHolderJsonString(dateString), DateHolder.class)
-            .getDate();
-
-    // then
-    assertThat(parsedOffsetDateTime).isEqualTo(expectedOffsetDateTime);
-  }
-
-  @Test
-  public void testEngineMapperDateDeserializationFromStringWithoutMillisAndTimezone()
-      throws JsonProcessingException {
-    // given
-    final String datePattern = "yyyy-MM-dd'T'HH:mm:ss";
-    configurationService.setEngineDateFormat(datePattern);
-
-    final String dateString = "2017-12-11T17:28:38";
-    final OffsetDateTime expectedOffsetDateTime =
-        LocalDateTime.parse(dateString, createEngineDateFormatter())
-            .atZone(ZoneId.systemDefault())
-            .toOffsetDateTime();
-
-    // when
-    final OffsetDateTime parsedOffsetDateTime =
-        createEngineMapper()
-            .readValue(createDateHolderJsonString(dateString), DateHolder.class)
-            .getDate();
-
-    // then
-    assertThat(parsedOffsetDateTime).isEqualTo(expectedOffsetDateTime);
-  }
-
-  private DateTimeFormatter createEngineDateFormatter() {
-    return DateTimeFormatter.ofPattern(configurationService.getEngineDateFormat());
-  }
-
-  private ObjectMapper createEngineMapper() {
-    return objectMapperFactory.createEngineMapper();
+  private DateTimeFormatter createOptimizeDateFormatter() {
+    return new OptimizeDateTimeFormatterFactory().getObject();
   }
 
   private ObjectMapper createOptimizeMapper() {

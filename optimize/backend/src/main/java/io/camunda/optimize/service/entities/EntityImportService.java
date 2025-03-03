@@ -30,7 +30,6 @@ import io.camunda.optimize.service.entities.report.ReportImportService;
 import io.camunda.optimize.service.exceptions.OptimizeImportFileInvalidException;
 import io.camunda.optimize.service.exceptions.OptimizeValidationException;
 import io.camunda.optimize.service.security.AuthorizedCollectionService;
-import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import io.camunda.optimize.service.util.mapper.ObjectMapperFactory;
 import io.camunda.optimize.service.util.mapper.OptimizeDateTimeFormatterFactory;
 import jakarta.validation.ConstraintViolation;
@@ -44,30 +43,25 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import org.apache.commons.lang3.StringUtils;
-import org.slf4j.Logger;
 import org.springframework.stereotype.Component;
 
 @Component
 public class EntityImportService {
 
-  private static final Logger LOG = org.slf4j.LoggerFactory.getLogger(EntityImportService.class);
   private final ReportImportService reportImportService;
   private final DashboardImportService dashboardImportService;
   private final AuthorizedCollectionService authorizedCollectionService;
   private final CollectionService collectionService;
-  private final ConfigurationService configurationService;
 
   public EntityImportService(
       final ReportImportService reportImportService,
       final DashboardImportService dashboardImportService,
       final AuthorizedCollectionService authorizedCollectionService,
-      final CollectionService collectionService,
-      final ConfigurationService configurationService) {
+      final CollectionService collectionService) {
     this.reportImportService = reportImportService;
     this.dashboardImportService = dashboardImportService;
     this.authorizedCollectionService = authorizedCollectionService;
     this.collectionService = collectionService;
-    this.configurationService = configurationService;
   }
 
   public List<EntityIdResponseDto> importEntities(
@@ -136,8 +130,7 @@ public class EntityImportService {
     }
 
     final ObjectMapper objectMapper =
-        new ObjectMapperFactory(
-                new OptimizeDateTimeFormatterFactory().getObject(), configurationService)
+        new ObjectMapperFactory(new OptimizeDateTimeFormatterFactory().getObject())
             .createOptimizeMapper();
 
     try {
