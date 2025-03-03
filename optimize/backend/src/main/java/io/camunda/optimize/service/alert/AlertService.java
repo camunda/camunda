@@ -10,9 +10,6 @@ package io.camunda.optimize.service.alert;
 import static io.camunda.optimize.service.db.schema.index.AlertIndex.CHECK_INTERVAL;
 import static io.camunda.optimize.service.db.schema.index.AlertIndex.INTERVAL_UNIT;
 import static io.camunda.optimize.service.db.schema.index.AlertIndex.THRESHOLD_OPERATOR;
-import static java.util.stream.Collectors.groupingBy;
-import static java.util.stream.Collectors.mapping;
-import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
 import static org.camunda.bpm.engine.EntityTypes.REPORT;
 
@@ -55,7 +52,6 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.apache.commons.collections4.CollectionUtils;
-import org.apache.commons.lang3.StringUtils;
 import org.quartz.JobDetail;
 import org.quartz.JobKey;
 import org.quartz.JobListener;
@@ -109,7 +105,6 @@ public class AlertService implements ReportReferencingService {
   @PostConstruct
   public void init() {
     final List<AlertDefinitionDto> alerts = alertReader.getStoredAlerts();
-    checkAlertWebhooksAllExist(alerts);
     try {
       if (schedulerFactoryBean == null) {
         final SpringBeanJobFactory sampleJobFactory = new SpringBeanJobFactory();
@@ -445,10 +440,8 @@ public class AlertService implements ReportReferencingService {
     if (emailsDefined) {
       alertRecipientValidator.validateAlertRecipientEmailAddresses(toCreate.getEmails());
     }
-    final boolean webhookDefined = StringUtils.isNotBlank(toCreate.getWebhook());
-    if (!emailsDefined && !webhookDefined) {
-      throw new OptimizeValidationException(
-          "The fields [emails] and [webhook] are not allowed to both be empty. At least one of them must be set.");
+    if (!emailsDefined) {
+      throw new OptimizeValidationException("The field [emails] is not allowed to be empty.");
     }
   }
 
@@ -498,35 +491,5 @@ public class AlertService implements ReportReferencingService {
 
   private JobListener createReminderListener() {
     return new ReminderHandlingListener(alertReminderJobFactory);
-  }
-
-  private void checkAlertWebhooksAllExist(final List<AlertDefinitionDto> alerts) {
-    final Set<String> webhooks = configurationService.getConfiguredWebhooks().keySet();
-    final Map<String, List<String>> missingWebhookMap =
-        alerts.stream()
-            .filter(
-                alert ->
-                    StringUtils.isNotEmpty(alert.getWebhook())
-                        && !webhooks.contains(alert.getWebhook()))
-            .collect(
-                groupingBy(
-                    AlertCreationRequestDto::getWebhook,
-                    mapping(AlertDefinitionDto::getId, toList())));
-    if (!missingWebhookMap.isEmpty()) {
-      final String missingWebhookSummary =
-          missingWebhookMap.entrySet().stream()
-              .map(
-                  entry ->
-                      String.format(
-                          "Webhook: [%s] - Associated with alert(s): %s",
-                          entry.getKey(), entry.getValue()))
-              .collect(Collectors.joining("\n"));
-      final String errorMsg =
-          String.format(
-              "The following webhooks no longer exist in Optimize configuration, yet are associated with existing "
-                  + "alerts:%n%s",
-              missingWebhookSummary);
-      LOG.error(errorMsg);
-    }
   }
 }
