@@ -86,8 +86,8 @@ public class TenantServices extends SearchQueryService<TenantServices, TenantQue
   }
 
   /**
-   * This is a temporary method which can be removed once groups and mappings are refactored to work
-   * with ids instead of keys.
+   * TODO: This is a temporary method which can be removed once groups and mappings are refactored
+   * to work with ids instead of keys.
    */
   public CompletableFuture<TenantRecord> addMember(
       final String tenantId, final EntityType entityType, final long entityKey) {
@@ -106,8 +106,8 @@ public class TenantServices extends SearchQueryService<TenantServices, TenantQue
   }
 
   /**
-   * This is a temporary method which can be removed once groups and mappings are refactored to work
-   * with ids instead of keys.
+   * TODO: This is a temporary method which can be removed once groups and mappings are refactored
+   * to work with ids instead of keys.
    */
   public CompletableFuture<TenantRecord> removeMember(
       final String tenantId, final EntityType entityType, final long entityKey) {
