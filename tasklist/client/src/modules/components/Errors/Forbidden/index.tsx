@@ -6,7 +6,6 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-
 import {useTranslation} from "react-i18next";
 import styles from "../SomethingWentWrong/styles.module.scss";
 import {Heading, Link, Stack} from "@carbon/react";
