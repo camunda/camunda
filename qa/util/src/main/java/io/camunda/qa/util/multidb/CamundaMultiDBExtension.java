@@ -244,7 +244,12 @@ public class CamundaMultiDBExtension
 
   private ElasticsearchContainer setupElasticsearch() {
     final ElasticsearchContainer elasticsearchContainer =
-        TestSearchContainers.createDefeaultElasticsearchContainer();
+        TestSearchContainers.createDefeaultElasticsearchContainer()
+            // We need to configure ILM to run more often, to make sure data is cleaned up earlier
+            // Useful for tests where we verify history clean up
+            // Default is 10m
+            // https://www.elastic.co/guide/en/elasticsearch/reference/current/ilm-settings.html
+            .withEnv("indices.lifecycle.poll_interval", "1s");
     elasticsearchContainer.start();
     closeables.add(elasticsearchContainer);
     return elasticsearchContainer;
