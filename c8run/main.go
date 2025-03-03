@@ -1,73 +1,35 @@
 package main
 
 import (
-	"crypto/tls"
 	"errors"
 	"flag"
 	"fmt"
-	"net/http"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"runtime"
 	"strconv"
 	"strings"
-	"time"
 
+	"github.com/camunda/camunda/c8run/internal/health"
+	"github.com/camunda/camunda/c8run/internal/packages"
 	"github.com/camunda/camunda/c8run/internal/unix"
 	"github.com/camunda/camunda/c8run/internal/windows"
 	"github.com/joho/godotenv"
 )
 
-func getStatus() error {
-	endpoints, err := os.ReadFile("endpoints.txt")
-	fmt.Println(string(endpoints))
-	return err
+type processes struct {
+	camunda       process
+	connectors    process
+	elasticsearch process
 }
 
-func queryElasticsearchHealth(name string, url string) {
-	if isRunning(name, url, 12, 10*time.Second) {
-		fmt.Println(name + " has successfully been started.")
-	} else {
-		fmt.Println("Error: " + name + " did not start!")
-		os.Exit(1)
-	}
+type process struct {
+	version string
+	pid     string
 }
 
-func queryCamundaHealth(c8 C8Run, name string, url string) error {
-	http.DefaultTransport.(*http.Transport).TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
-	if isRunning(name, url, 24, 14*time.Second) {
-		fmt.Println(name + " has successfully been started.")
-		err := c8.OpenBrowser()
-		if err != nil {
-			fmt.Println("Failed to open browser")
-			return nil
-		}
-		if err := getStatus(); err != nil {
-			fmt.Println("Failed to print status:", err)
-			return err
-		}
-		return nil
-	} else {
-		return fmt.Errorf("Error: %s did not start!", name)
-	}
-	return nil
-}
-
-func isRunning(name, url string, retries int, delay time.Duration) bool {
-	for retries >= 0 {
-		fmt.Printf("Waiting for %s to start. %d retries left\n", name, retries)
-		time.Sleep(delay)
-		resp, err := http.Get(url)
-		if err == nil && resp.StatusCode >= 200 && resp.StatusCode <= 400 {
-			return true
-		}
-		retries--
-	}
-	return false
-}
-
-func stopProcess(c8 C8Run, pidfile string) {
+func stopProcess(c8 C8Run, pidfile string) error {
 	if _, err := os.Stat(pidfile); err == nil {
 		commandPidText, _ := os.ReadFile(pidfile)
 		commandPidStripped := strings.TrimSpace(string(commandPidText))
@@ -77,17 +39,15 @@ func stopProcess(c8 C8Run, pidfile string) {
 			process.Kill()
 		}
 		os.Remove(pidfile)
-
+		return nil
 	} else if errors.Is(err, os.ErrNotExist) {
 		// path/to/whatever does *not* exist
-
+		return nil
 	} else {
 		// Schrodinger: file may or may not exist. See err for details.
-
 		// Therefore, do *NOT* use !os.IsNotExist(err) to test for file existence
-
+		return err
 	}
-
 }
 
 func getC8RunPlatform() C8Run {
@@ -223,9 +183,9 @@ func main() {
 	connectorsVersion := os.Getenv("CONNECTORS_VERSION")
 
 	expectedJavaVersion := 21
-	elasticsearchPidPath := filepath.Join(baseDir, "elasticsearch.pid")
-	connectorsPidPath := filepath.Join(baseDir, "connectors.pid")
-	camundaPidPath := filepath.Join(baseDir, "camunda.pid")
+	elasticsearchPidPath := filepath.Join(baseDir, "elasticsearch.process")
+	connectorsPidPath := filepath.Join(baseDir, "connectors.process")
+	camundaPidPath := filepath.Join(baseDir, "camunda.process")
 
 	err = setEnvVars()
 	if err != nil {
@@ -281,169 +241,189 @@ func main() {
 	}
 	os.Setenv("ES_JAVA_HOME", javaHome)
 
-	if baseCommand == "start" {
-		javaVersion := os.Getenv("JAVA_VERSION")
-		if javaVersion == "" {
-			javaVersionCmd := c8.VersionCmd(javaBinary)
-			var out strings.Builder
-			var stderr strings.Builder
-			javaVersionCmd.Stdout = &out
-			javaVersionCmd.Stderr = &stderr
-			javaVersionCmd.Run()
-			javaVersionOutput := out.String()
-			javaVersionOutputSplit := strings.Split(javaVersionOutput, " ")
-			if len(javaVersionOutputSplit) < 2 {
-				fmt.Println("Java needs to be installed. Please install JDK " + strconv.Itoa(expectedJavaVersion) + " or newer.")
-				fmt.Println("If java is already installed, try explicitly setting JAVA_HOME and JAVA_VERSION")
-				os.Exit(1)
-			}
-			output := javaVersionOutputSplit[1]
-			os.Setenv("JAVA_VERSION", output)
-			javaVersion = output
-		}
-		fmt.Print("Java version is " + javaVersion + "\n")
+	processInfo := processes{
+		camunda: process{
+			version: camundaVersion,
+			pid:     camundaPidPath,
+		},
+		connectors: process{
+			version: connectorsVersion,
+			pid:     connectorsPidPath,
+		},
+		elasticsearch: process{
+			version: elasticsearchVersion,
+			pid:     elasticsearchPidPath,
+		},
+	}
 
-		versionSplit := strings.Split(javaVersion, ".")
-		if len(versionSplit) == 0 {
+	switch baseCommand {
+	case "start":
+		startCommand(c8, settings, processInfo, parentDir, javaBinary, expectedJavaVersion)
+	case "stop":
+		stopCommand(c8, settings, processInfo)
+	case "package":
+		err := packages.New(camundaVersion, elasticsearchVersion, connectorsVersion)
+		if err != nil {
+			fmt.Printf("%+v", err)
+			os.Exit(1)
+		}
+	case "clean":
+		cleanCommand(camundaVersion, elasticsearchVersion)
+	}
+}
+
+func startCommand(c8 C8Run, settings C8RunSettings, processInfo processes, parentDir, javaBinary string, expectedJavaVersion int) {
+	javaVersion := os.Getenv("JAVA_VERSION")
+	if javaVersion == "" {
+		javaVersionCmd := c8.VersionCmd(javaBinary)
+		var out strings.Builder
+		var stderr strings.Builder
+		javaVersionCmd.Stdout = &out
+		javaVersionCmd.Stderr = &stderr
+		err := javaVersionCmd.Run()
+		if err != nil {
+			fmt.Println(err)
+			os.Exit(1)
+		}
+		javaVersionOutput := out.String()
+		javaVersionOutputSplit := strings.Split(javaVersionOutput, " ")
+		if len(javaVersionOutputSplit) < 2 {
 			fmt.Println("Java needs to be installed. Please install JDK " + strconv.Itoa(expectedJavaVersion) + " or newer.")
+			fmt.Println("If java is already installed, try explicitly setting JAVA_HOME and JAVA_VERSION")
 			os.Exit(1)
 		}
-		javaMajorVersion := versionSplit[0]
-		javaMajorVersionInt, _ := strconv.Atoi(javaMajorVersion)
-		if javaMajorVersionInt < expectedJavaVersion {
-			fmt.Print("You must use at least JDK " + strconv.Itoa(expectedJavaVersion) + " to start Camunda Platform Run.\n")
-			os.Exit(1)
+		output := javaVersionOutputSplit[1]
+		os.Setenv("JAVA_VERSION", output)
+		javaVersion = output
+	}
+	fmt.Print("Java version is " + javaVersion + "\n")
+
+	versionSplit := strings.Split(javaVersion, ".")
+	if len(versionSplit) == 0 {
+		fmt.Println("Java needs to be installed. Please install JDK " + strconv.Itoa(expectedJavaVersion) + " or newer.")
+		os.Exit(1)
+	}
+	javaMajorVersion := versionSplit[0]
+	javaMajorVersionInt, _ := strconv.Atoi(javaMajorVersion)
+	if javaMajorVersionInt < expectedJavaVersion {
+		fmt.Print("You must use at least JDK " + strconv.Itoa(expectedJavaVersion) + " to start Camunda Platform Run.\n")
+		os.Exit(1)
+	}
+
+	javaOpts := os.Getenv("JAVA_OPTS")
+	if javaOpts != "" {
+		fmt.Print("JAVA_OPTS: " + javaOpts + "\n")
+	}
+	os.Setenv("ES_JAVA_OPTS", "-Xms1g -Xmx1g")
+
+	fmt.Print("Starting Elasticsearch " + processInfo.elasticsearch.version + "...\n")
+	fmt.Print("(Hint: you can find the log output in the 'elasticsearch.log' file in the 'log' folder of your distribution.)\n")
+
+	elasticsearchLogFilePath := filepath.Join(parentDir, "log", "elasticsearch.log")
+	elasticsearchLogFile, err := os.OpenFile(elasticsearchLogFilePath, os.O_RDWR|os.O_CREATE, 0644)
+	if err != nil {
+		fmt.Print("Failed to open file: " + elasticsearchLogFilePath)
+		os.Exit(1)
+	}
+
+	elasticsearchCmd := c8.ElasticsearchCmd(processInfo.elasticsearch.version, parentDir)
+	elasticsearchCmd.Stdout = elasticsearchLogFile
+	elasticsearchCmd.Stderr = elasticsearchLogFile
+	err = elasticsearchCmd.Start()
+	if err != nil {
+		fmt.Printf("%+v", err)
+		os.Exit(1)
+	}
+	fmt.Print("Process id ", elasticsearchCmd.Process.Pid, "\n")
+
+	elasticsearchPidFile, err := os.OpenFile(processInfo.elasticsearch.pid, os.O_RDWR|os.O_CREATE, 0644)
+	if err != nil {
+		fmt.Print("Failed to open file: " + processInfo.elasticsearch.pid)
+		os.Exit(1)
+	}
+	elasticsearchPidFile.Write([]byte(strconv.Itoa(elasticsearchCmd.Process.Pid)))
+	health.QueryElasticsearch("Elasticsearch", "http://localhost:9200/_cluster/health?wait_for_status=green&wait_for_active_shards=all&wait_for_no_initializing_shards=true&timeout=120s")
+
+	connectorsCmd := c8.ConnectorsCmd(javaBinary, parentDir, processInfo.camunda.version)
+	connectorsLogPath := filepath.Join(parentDir, "log", "connectors.log")
+	startApplication(connectorsCmd, processInfo.connectors.pid, connectorsLogPath)
+
+	var extraArgs string
+	if settings.config != "" {
+		path := filepath.Join(parentDir, settings.config)
+		var slash string
+		if runtime.GOOS == "linux" || runtime.GOOS == "darwin" {
+			slash = "/"
+		} else if runtime.GOOS == "windows" {
+			slash = "\\"
 		}
 
-		javaOpts := os.Getenv("JAVA_OPTS")
-		if javaOpts != "" {
-			fmt.Print("JAVA_OPTS: " + javaOpts + "\n")
-		}
-
-		os.Setenv("ES_JAVA_OPTS", "-Xms1g -Xmx1g")
-
-		fmt.Print("Starting Elasticsearch " + elasticsearchVersion + "...\n")
-		fmt.Print("(Hint: you can find the log output in the 'elasticsearch.log' file in the 'log' folder of your distribution.)\n")
-
-		elasticsearchLogFilePath := filepath.Join(parentDir, "log", "elasticsearch.log")
-		elasticsearchLogFile, err := os.OpenFile(elasticsearchLogFilePath, os.O_RDWR|os.O_CREATE, 0644)
+		configStat, err := os.Stat(path)
 		if err != nil {
-			fmt.Print("Failed to open file: " + elasticsearchLogFilePath)
+			fmt.Printf("Failed to read config file: %s\n", path)
 			os.Exit(1)
 		}
-
-		elasticsearchCmd := c8.ElasticsearchCmd(elasticsearchVersion, parentDir)
-		elasticsearchCmd.Stdout = elasticsearchLogFile
-		elasticsearchCmd.Stderr = elasticsearchLogFile
-		err = elasticsearchCmd.Start()
-		if err != nil {
-			fmt.Printf("%+v", err)
-			os.Exit(1)
-		}
-		fmt.Print("Process id ", elasticsearchCmd.Process.Pid, "\n")
-
-		elasticsearchPidFile, err := os.OpenFile(elasticsearchPidPath, os.O_RDWR|os.O_CREATE, 0644)
-		if err != nil {
-			fmt.Print("Failed to open file: " + elasticsearchPidPath)
-			os.Exit(1)
-		}
-		elasticsearchPidFile.Write([]byte(strconv.Itoa(elasticsearchCmd.Process.Pid)))
-		queryElasticsearchHealth("Elasticsearch", "http://localhost:9200/_cluster/health?wait_for_status=green&wait_for_active_shards=all&wait_for_no_initializing_shards=true&timeout=120s")
-
-		connectorsCmd := c8.ConnectorsCmd(javaBinary, parentDir, camundaVersion)
-		connectorsLogPath := filepath.Join(parentDir, "log", "connectors.log")
-		connectorsLogFile, err := os.OpenFile(connectorsLogPath, os.O_RDWR|os.O_CREATE, 0644)
-		if err != nil {
-			fmt.Print("Failed to open file: " + connectorsLogPath)
-			os.Exit(1)
-		}
-		connectorsCmd.Stdout = connectorsLogFile
-		connectorsCmd.Stderr = connectorsLogFile
-		err = connectorsCmd.Start()
-		if err != nil {
-			fmt.Printf("%+v", err)
-			os.Exit(1)
-		}
-
-		connectorsPidFile, err := os.OpenFile(connectorsPidPath, os.O_RDWR|os.O_CREATE, 0644)
-		if err != nil {
-			fmt.Print("Failed to open file: " + connectorsPidPath)
-			os.Exit(1)
-		}
-
-		_, err = connectorsPidFile.Write([]byte(strconv.Itoa(connectorsCmd.Process.Pid)))
-		if err != nil {
-			fmt.Print("Failed to write to file: " + connectorsPidPath + " continuing...")
-		}
-
-		var extraArgs string
-
-		if settings.config != "" {
-			path := filepath.Join(parentDir, settings.config)
-			var slash string
-			if runtime.GOOS == "linux" || runtime.GOOS == "darwin" {
-				slash = "/"
-			} else if runtime.GOOS == "windows" {
-				slash = "\\"
-			}
-
-			configStat, err := os.Stat(path)
-			if err != nil {
-				fmt.Printf("Failed to read config file: %s\n", path)
-				os.Exit(1)
-			}
-			if configStat.IsDir() {
-				extraArgs = "--spring.config.additional-location=file:" + settings.config + slash
-			} else {
-				extraArgs = "--spring.config.additional-location=file:" + settings.config
-			}
-		}
-
-		camundaCmd := c8.CamundaCmd(camundaVersion, parentDir, extraArgs)
-		camundaLogPath := filepath.Join(parentDir, "log", "camunda.log")
-		camundaLogFile, err := os.OpenFile(camundaLogPath, os.O_RDWR|os.O_CREATE, 0644)
-		if err != nil {
-			fmt.Print("Failed to open file: " + camundaLogPath)
-			os.Exit(1)
-		}
-		camundaCmd.Stdout = camundaLogFile
-		camundaCmd.Stderr = camundaLogFile
-		err = camundaCmd.Start()
-		if err != nil {
-			fmt.Printf("%+v", err)
-			os.Exit(1)
-		}
-		camundaPidFile, err := os.OpenFile(camundaPidPath, os.O_RDWR|os.O_CREATE, 0644)
-		if err != nil {
-			fmt.Print("Failed to open file: " + camundaPidPath)
-			os.Exit(1)
-		}
-		camundaPidFile.Write([]byte(strconv.Itoa(camundaCmd.Process.Pid)))
-		err = queryCamundaHealth(c8, "Camunda", "http://localhost:8080/operate/login")
-		if err != nil {
-			fmt.Printf("%+v", err)
-			os.Exit(1)
+		if configStat.IsDir() {
+			extraArgs = "--spring.config.additional-location=file:" + settings.config + slash
+		} else {
+			extraArgs = "--spring.config.additional-location=file:" + settings.config
 		}
 	}
 
-	if baseCommand == "stop" {
-		stopProcess(c8, elasticsearchPidPath)
-		fmt.Println("Elasticsearch is stopped.")
-		stopProcess(c8, connectorsPidPath)
-		fmt.Println("Connectors is stopped.")
-		stopProcess(c8, camundaPidPath)
-		fmt.Println("Camunda is stopped.")
+	camundaCmd := c8.CamundaCmd(processInfo.camunda.version, parentDir, extraArgs)
+	camundaLogPath := filepath.Join(parentDir, "log", "camunda.log")
+	startApplication(camundaCmd, processInfo.camunda.pid, camundaLogPath)
+	err = health.QueryCamunda(c8, "Camunda", "http://localhost:8080/operate/login")
+	if err != nil {
+		fmt.Printf("%+v", err)
+		os.Exit(1)
 	}
 
-	if baseCommand == "package" {
-		err := Package(camundaVersion, elasticsearchVersion, connectorsVersion)
-		if err != nil {
-			fmt.Printf("%+v", err)
-			os.Exit(1)
-		}
+}
+
+func stopCommand(c8 C8Run, settings C8RunSettings, processes processes) {
+	err := stopProcess(c8, processes.elasticsearch.pid)
+	if err != nil {
+		fmt.Printf("%+v", err)
+	}
+	fmt.Println("Elasticsearch is stopped.")
+	err = stopProcess(c8, processes.connectors.pid)
+	if err != nil {
+		fmt.Printf("%+v", err)
+	}
+	fmt.Println("Connectors is stopped.")
+	err = stopProcess(c8, processes.camunda.pid)
+	if err != nil {
+		fmt.Printf("%+v", err)
+	}
+	fmt.Println("Camunda is stopped.")
+}
+
+func cleanCommand(camundaVersion string, elasticsearchVersion string) {
+	packages.Clean(camundaVersion, elasticsearchVersion)
+}
+
+func startApplication(cmd *exec.Cmd, pid string, logPath string) {
+	logFile, err := os.OpenFile(logPath, os.O_RDWR|os.O_CREATE, 0644)
+	if err != nil {
+		fmt.Print("Failed to open file: " + logPath)
+		os.Exit(1)
+	}
+	cmd.Stdout = logFile
+	cmd.Stderr = logFile
+	err = cmd.Start()
+	if err != nil {
+		fmt.Printf("%+v", err)
+		os.Exit(1)
 	}
 
-	if baseCommand == "clean" {
-		Clean(camundaVersion, elasticsearchVersion)
+	pidFile, err := os.OpenFile(pid, os.O_RDWR|os.O_CREATE, 0644)
+	if err != nil {
+		fmt.Print("Failed to open file: " + pid)
+		os.Exit(1)
+	}
+	_, err = pidFile.Write([]byte(strconv.Itoa(cmd.Process.Pid)))
+	if err != nil {
+		fmt.Print("Failed to write to file: " + pid + " continuing...")
 	}
 }
