@@ -14,9 +14,16 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.it.migration.util.MigrationHelper;
 import io.camunda.it.migration.util.MigrationITExtension;
+import io.camunda.search.clients.core.SearchQueryHit;
+import io.camunda.search.clients.core.SearchQueryRequest;
+import io.camunda.search.clients.query.SearchQueryBuilders;
 import io.camunda.search.connect.configuration.DatabaseType;
 import io.camunda.tasklist.webapp.api.rest.v1.entities.TaskSearchRequest;
 import io.camunda.tasklist.webapp.api.rest.v1.entities.TaskSearchResponse;
+import io.camunda.webapps.schema.descriptors.tasklist.template.TaskTemplate;
+import io.camunda.webapps.schema.entities.tasklist.TaskEntity;
+import io.camunda.webapps.schema.entities.tasklist.TaskJoinRelationship.TaskJoinRelationshipType;
+import io.camunda.webapps.schema.entities.tasklist.TasklistEntity;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.builder.AbstractUserTaskBuilder;
 import io.camunda.zeebe.model.bpmn.builder.UserTaskBuilder;
@@ -26,6 +33,7 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.Duration;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.UnaryOperator;
 import org.awaitility.Awaitility;
@@ -95,8 +103,43 @@ public class MigrationUserTaskUpdateIT {
                   userTaskKey.set(Long.parseLong(tasks.getFirst().getId()));
                   return true;
                 }
-              } catch (final IOException ignore) {
-                // ignore
+              } catch (final IOException ignored) {
+              }
+              return false;
+            });
+
+    return userTaskKey.get();
+  }
+
+  private long waitFor88TaskToBeImportedReturningId(
+      final MigrationHelper helper, final long piKey) {
+    final AtomicLong userTaskKey = new AtomicLong();
+
+    final var processInstanceQuery =
+        SearchQueryBuilders.and(
+            SearchQueryBuilders.term(TaskTemplate.PROCESS_INSTANCE_ID, piKey),
+            SearchQueryBuilders.term(
+                TaskTemplate.JOIN_FIELD_NAME, TaskJoinRelationshipType.TASK.getType()));
+    final var req =
+        SearchQueryRequest.of(
+            s ->
+                s.query(processInstanceQuery)
+                    .index(helper.indexFor(TaskTemplate.class).getAlias()));
+    Awaitility.await("Wait for tasks to be imported")
+        .ignoreExceptions()
+        .pollInterval(Duration.ofSeconds(1))
+        .atMost(Duration.ofSeconds(30))
+        .until(
+            () -> {
+              final Optional<Long> taskId =
+                  helper.getSearchClients().search(req, TaskEntity.class).hits().stream()
+                      .findFirst()
+                      .map(SearchQueryHit::source)
+                      .map(TasklistEntity::getKey);
+
+              if (taskId.isPresent()) {
+                userTaskKey.set(taskId.get());
+                return true;
               }
               return false;
             });
@@ -154,7 +197,7 @@ public class MigrationUserTaskUpdateIT {
 
       final var piKey =
           deployAndStartUserTaskProcess(databaseType, AbstractUserTaskBuilder::zeebeUserTask);
-      final var taskKey = waitForTaskToBeImportedReturningId(helper, piKey);
+      final var taskKey = waitFor88TaskToBeImportedReturningId(helper, piKey);
 
       final var res =
           helper
@@ -174,7 +217,7 @@ public class MigrationUserTaskUpdateIT {
 
       final var piKey =
           deployAndStartUserTaskProcess(databaseType, AbstractUserTaskBuilder::zeebeUserTask);
-      final var taskKey = waitForTaskToBeImportedReturningId(helper, piKey);
+      final var taskKey = waitFor88TaskToBeImportedReturningId(helper, piKey);
 
       PROVIDER
           .getCamundaClient(databaseType)
@@ -206,13 +249,12 @@ public class MigrationUserTaskUpdateIT {
     }
 
     @TestTemplate
-    void shouldAssign88JobWorkerV1(final DatabaseType databaseType, final MigrationHelper helper)
-        throws IOException {
+    void shouldAssign88JobWorkerV1(final DatabaseType databaseType, final MigrationHelper helper) {
 
       PROVIDER.upgrade(databaseType);
 
       final var piKey = deployAndStartUserTaskProcess(databaseType, t -> t);
-      final var taskKey = waitForTaskToBeImportedReturningId(helper, piKey);
+      final var taskKey = waitFor88TaskToBeImportedReturningId(helper, piKey);
 
       final var res =
           helper
@@ -282,14 +324,14 @@ public class MigrationUserTaskUpdateIT {
     }
 
     @TestTemplate
-    void shouldUnassign88ZeebeTaskV1(final DatabaseType databaseType, final MigrationHelper helper)
-        throws IOException {
+    void shouldUnassign88ZeebeTaskV1(
+        final DatabaseType databaseType, final MigrationHelper helper) {
 
       PROVIDER.upgrade(databaseType);
 
       final var piKey =
           deployAndStartUserTaskProcess(databaseType, t -> t.zeebeUserTask().zeebeAssignee("test"));
-      final var taskKey = waitForTaskToBeImportedReturningId(helper, piKey);
+      final var taskKey = waitFor88TaskToBeImportedReturningId(helper, piKey);
 
       final var res =
           helper.getTasklistClient().withAuthentication("demo", "demo").unassignUserTask(taskKey);
@@ -299,14 +341,14 @@ public class MigrationUserTaskUpdateIT {
     }
 
     @TestTemplate
-    void shouldUnassign88ZeebeTaskV2(final DatabaseType databaseType, final MigrationHelper helper)
-        throws IOException {
+    void shouldUnassign88ZeebeTaskV2(
+        final DatabaseType databaseType, final MigrationHelper helper) {
 
       PROVIDER.upgrade(databaseType);
 
       final var piKey =
           deployAndStartUserTaskProcess(databaseType, t -> t.zeebeUserTask().zeebeAssignee("test"));
-      final var taskKey = waitForTaskToBeImportedReturningId(helper, piKey);
+      final var taskKey = waitFor88TaskToBeImportedReturningId(helper, piKey);
 
       PROVIDER.getCamundaClient(databaseType).newUserTaskUnassignCommand(taskKey).send().join();
 
@@ -331,13 +373,13 @@ public class MigrationUserTaskUpdateIT {
     }
 
     @TestTemplate
-    void shouldUnAssign88JobWorkerV1(final DatabaseType databaseType, final MigrationHelper helper)
-        throws IOException {
+    void shouldUnAssign88JobWorkerV1(
+        final DatabaseType databaseType, final MigrationHelper helper) {
 
       PROVIDER.upgrade(databaseType);
 
       final var piKey = deployAndStartUserTaskProcess(databaseType, t -> t.zeebeAssignee("test"));
-      final var taskKey = waitForTaskToBeImportedReturningId(helper, piKey);
+      final var taskKey = waitFor88TaskToBeImportedReturningId(helper, piKey);
 
       final var res =
           helper.getTasklistClient().withAuthentication("demo", "demo").unassignUserTask(taskKey);
@@ -405,14 +447,14 @@ public class MigrationUserTaskUpdateIT {
     }
 
     @TestTemplate
-    void shouldComplete88ZeebeTaskV1(final DatabaseType databaseType, final MigrationHelper helper)
-        throws IOException {
+    void shouldComplete88ZeebeTaskV1(
+        final DatabaseType databaseType, final MigrationHelper helper) {
 
       PROVIDER.upgrade(databaseType);
 
       final var piKey =
           deployAndStartUserTaskProcess(databaseType, t -> t.zeebeUserTask().zeebeAssignee("demo"));
-      final var taskKey = waitForTaskToBeImportedReturningId(helper, piKey);
+      final var taskKey = waitFor88TaskToBeImportedReturningId(helper, piKey);
 
       final var res =
           helper.getTasklistClient().withAuthentication("demo", "demo").completeUserTask(taskKey);
@@ -422,14 +464,14 @@ public class MigrationUserTaskUpdateIT {
     }
 
     @TestTemplate
-    void shouldComplete88ZeebeTaskV2(final DatabaseType databaseType, final MigrationHelper helper)
-        throws IOException {
+    void shouldComplete88ZeebeTaskV2(
+        final DatabaseType databaseType, final MigrationHelper helper) {
 
       PROVIDER.upgrade(databaseType);
 
       final var piKey =
           deployAndStartUserTaskProcess(databaseType, t -> t.zeebeUserTask().zeebeAssignee("demo"));
-      final var taskKey = waitForTaskToBeImportedReturningId(helper, piKey);
+      final var taskKey = waitFor88TaskToBeImportedReturningId(helper, piKey);
 
       PROVIDER.getCamundaClient(databaseType).newUserTaskCompleteCommand(taskKey).send().join();
 
@@ -454,13 +496,13 @@ public class MigrationUserTaskUpdateIT {
     }
 
     @TestTemplate
-    void shouldComplete88JobWorkerV1(final DatabaseType databaseType, final MigrationHelper helper)
-        throws IOException {
+    void shouldComplete88JobWorkerV1(
+        final DatabaseType databaseType, final MigrationHelper helper) {
 
       PROVIDER.upgrade(databaseType);
 
       final var piKey = deployAndStartUserTaskProcess(databaseType, t -> t.zeebeAssignee("demo"));
-      final var taskKey = waitForTaskToBeImportedReturningId(helper, piKey);
+      final var taskKey = waitFor88TaskToBeImportedReturningId(helper, piKey);
 
       final var res =
           helper.getTasklistClient().withAuthentication("demo", "demo").completeUserTask(taskKey);
