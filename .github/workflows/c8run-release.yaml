@@ -49,6 +49,7 @@ jobs:
     outputs:
       NEXUS_USERNAME: ${{ steps.secrets.outputs.NEXUS_PASSWORD }}
       NEXUS_PASSWORD: ${{ steps.secrets.outputs.NEXUS_PASSWORD }}
+      GCP_CREDENTIALS_NAME: ${{ steps.secrets.outputs.GCP_CREDENTIALS_NAME }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -64,6 +65,7 @@ jobs:
           secrets: |
             secret/data/products/distribution/ci NEXUS_USERNAME;
             secret/data/products/distribution/ci NEXUS_PASSWORD;
+            secret/data/common/jenkins/downloads-camunda-cloud_google_sa_key DOWNLOAD_CENTER_GCLOUD_KEY_BYTES | GCP_CREDENTIALS_NAME;
       - name: Clean up old release
         env:
           GH_TOKEN: '${{ secrets.GITHUB_TOKEN }}'
@@ -168,6 +170,14 @@ jobs:
             ${{ env.CAMUNDA_RUN_NAME_ARTIFACT_WITH_PATCH_VERSION }}*
         env:
           GH_TOKEN: ${{ github.token }}
+      - name: upload asset to camunda download center
+        uses: camunda/infra-global-github-actions/download-center-upload@main
+        with:
+          gcp_credentials: ${{ steps.secrets.outputs.GCP_CREDENTIALS_NAME }}
+          env: 'prod'
+          version: ${{ inputs.camundaRelease }}
+          artifact_file: ./c8run/camunda8-run-*
+          artifact_subpath: c8run
       - name: Add release URL to workflow summary
         shell: bash
         run: |
