@@ -53,7 +53,7 @@ public class OperatePermissionsIT {
     testInstance =
         new TestStandaloneCamunda()
             .withCamundaExporter()
-            .withSecurityConfig(c -> c.getAuthorizations().setEnabled(true))
+            .withAuthorizationsEnabled()
             .withAuthenticationMethod(AuthenticationMethod.BASIC);
   }
 

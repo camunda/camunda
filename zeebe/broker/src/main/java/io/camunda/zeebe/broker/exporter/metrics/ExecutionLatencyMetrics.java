@@ -7,96 +7,69 @@
  */
 package io.camunda.zeebe.broker.exporter.metrics;
 
-import io.micrometer.core.instrument.Gauge;
+import static io.camunda.zeebe.broker.exporter.metrics.ExecutionLatencyMetricsDoc.CACHED_INSTANCES;
+import static io.camunda.zeebe.broker.exporter.metrics.ExecutionLatencyMetricsDoc.JOB_ACTIVATION_TIME;
+import static io.camunda.zeebe.broker.exporter.metrics.ExecutionLatencyMetricsDoc.JOB_LIFETIME;
+import static io.camunda.zeebe.broker.exporter.metrics.ExecutionLatencyMetricsDoc.PROCESS_INSTANCE_EXECUTION;
+
+import io.camunda.zeebe.broker.exporter.metrics.ExecutionLatencyMetricsDoc.CacheKeyNames;
+import io.camunda.zeebe.broker.exporter.metrics.ExecutionLatencyMetricsDoc.CacheType;
+import io.camunda.zeebe.util.micrometer.MicrometerUtil;
+import io.camunda.zeebe.util.micrometer.StatefulGauge;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
-import java.time.Duration;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.stream.Stream;
 
 public class ExecutionLatencyMetrics {
 
-  private static final Duration[] JOB_LIFE_TIME_BUCKETS =
-      Stream.of(25, 50, 75, 100, 250, 500, 750, 1000, 2500, 5000, 10000, 15000, 30000, 45000)
-          .map(Duration::ofMillis)
-          .toArray(Duration[]::new);
-
-  private static final Duration[] JOB_ACTIVATION_TIME_BUCKETS =
-      Stream.of(10, 25, 50, 75, 100, 250, 500, 750, 1000, 2500, 5000, 10000, 15000, 30000)
-          .map(Duration::ofMillis)
-          .toArray(Duration[]::new);
-
-  private static final Duration[] PROCESS_INSTANCE_EXECUTION_BUCKETS =
-      Stream.of(50, 75, 100, 250, 500, 750, 1000, 2500, 5000, 10000, 15000, 30000, 45000, 60000)
-          .map(Duration::ofMillis)
-          .toArray(Duration[]::new);
-
-  private final MeterRegistry meterRegistry;
-  private final Map<Integer, AtomicInteger> currentCachedInstanceJobsCount =
-      new ConcurrentHashMap<>();
-  private final Map<Integer, AtomicInteger> currentCacheInstanceProcessInstances =
-      new ConcurrentHashMap<>();
-  private final int partitionId;
+  private final StatefulGauge currentCachedInstanceJobsCount;
+  private final StatefulGauge currentCacheInstanceProcessInstances;
+  private final Timer processInstanceExecutionTime;
+  private final Timer jobLifeTime;
+  private final Timer jobActivationTime;
 
   public ExecutionLatencyMetrics() {
-    this(new SimpleMeterRegistry(), 1);
+    this(new SimpleMeterRegistry());
   }
 
-  public ExecutionLatencyMetrics(final MeterRegistry meterRegistry, final int partitionId) {
-    this.meterRegistry = meterRegistry;
-    this.partitionId = partitionId;
+  public ExecutionLatencyMetrics(final MeterRegistry meterRegistry) {
+
+    processInstanceExecutionTime =
+        MicrometerUtil.buildTimer(PROCESS_INSTANCE_EXECUTION).register(meterRegistry);
+    jobLifeTime = MicrometerUtil.buildTimer(JOB_LIFETIME).register(meterRegistry);
+    jobActivationTime = MicrometerUtil.buildTimer(JOB_ACTIVATION_TIME).register(meterRegistry);
+    currentCacheInstanceProcessInstances =
+        registerCacheCount(CacheType.PROCESS_INSTANCES, meterRegistry);
+    currentCachedInstanceJobsCount = registerCacheCount(CacheType.JOBS, meterRegistry);
+  }
+
+  private StatefulGauge registerCacheCount(
+      final CacheType type, final MeterRegistry meterRegistry) {
+    return StatefulGauge.builder(CACHED_INSTANCES.getName())
+        .description(CACHED_INSTANCES.getDescription())
+        .tag(CacheKeyNames.TYPE.asString(), type.getTagValue())
+        .register(meterRegistry);
   }
 
   public void observeProcessInstanceExecutionTime(
       final long creationTimeMs, final long completionTimeMs) {
-    Timer.builder("zeebe.process.instance.execution.time")
-        .description("The execution time of processing a complete process instance")
-        .sla(PROCESS_INSTANCE_EXECUTION_BUCKETS)
-        .register(meterRegistry)
-        .record(completionTimeMs - creationTimeMs, TimeUnit.MILLISECONDS);
+    processInstanceExecutionTime.record(completionTimeMs - creationTimeMs, TimeUnit.MILLISECONDS);
   }
 
   public void observeJobLifeTime(final long creationTimeMs, final long completionTimeMs) {
-    Timer.builder("zeebe.job.life.time")
-        .description("The life time of an job")
-        .sla(JOB_LIFE_TIME_BUCKETS)
-        .register(meterRegistry)
-        .record(completionTimeMs - creationTimeMs, TimeUnit.MILLISECONDS);
+    jobLifeTime.record(completionTimeMs - creationTimeMs, TimeUnit.MILLISECONDS);
   }
 
   public void observeJobActivationTime(final long creationTimeMs, final long activationTimeMs) {
-    Timer.builder("zeebe.job.activation.time")
-        .description("The time until an job was activated")
-        .sla(JOB_ACTIVATION_TIME_BUCKETS)
-        .register(meterRegistry)
-        .record(activationTimeMs - creationTimeMs, TimeUnit.MILLISECONDS);
+    jobActivationTime.record(activationTimeMs - creationTimeMs, TimeUnit.MILLISECONDS);
   }
 
   public void setCurrentJobsCount(final int count) {
-    setCurrentCachedInstanceGauge(count, "jobs");
+    currentCachedInstanceJobsCount.set(count);
   }
 
   public void setCurrentProcessInstanceCount(final int count) {
-    setCurrentCachedInstanceGauge(count, "processInstances");
-  }
-
-  private void setCurrentCachedInstanceGauge(final int count, final String type) {
-    final var collection =
-        "jobs".equals(type) ? currentCachedInstanceJobsCount : currentCacheInstanceProcessInstances;
-
-    collection.putIfAbsent(partitionId, new AtomicInteger());
-    collection.get(partitionId).set(count);
-
-    Gauge.builder(
-            "zeebe.execution.latency.current.cached.instances",
-            () -> collection.get(partitionId).get())
-        .description(
-            "The current cached instances for counting their execution latency. If only short-lived instances are handled this can be seen or observed as the current active instance count.")
-        .tags("type", type)
-        .register(meterRegistry);
+    currentCacheInstanceProcessInstances.set(count);
   }
 }

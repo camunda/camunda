@@ -26,7 +26,7 @@ import io.atomix.raft.cluster.RaftMember;
 import io.atomix.raft.cluster.impl.DefaultRaftMember;
 import io.atomix.raft.cluster.impl.RaftMemberContext;
 import io.atomix.raft.impl.RaftContext;
-import io.atomix.raft.metrics.LeaderMetrics;
+import io.atomix.raft.metrics.LeaderAppenderMetrics;
 import io.atomix.raft.protocol.AppendRequest;
 import io.atomix.raft.protocol.AppendResponse;
 import io.atomix.raft.protocol.ConfigureRequest;
@@ -70,7 +70,7 @@ final class LeaderAppender {
   private final RaftContext raft;
   private boolean open = true;
 
-  private final LeaderMetrics metrics;
+  private final LeaderAppenderMetrics metrics;
   private final long leaderTime;
   private final long leaderIndex;
   private final long electionTimeout;
@@ -85,7 +85,7 @@ final class LeaderAppender {
     log =
         ContextualLoggerFactory.getLogger(
             getClass(), LoggerContext.builder(RaftServer.class).addValue(raft.getName()).build());
-    metrics = new LeaderMetrics(raft.getName(), raft.getMeterRegistry());
+    metrics = new LeaderAppenderMetrics(raft.getName(), raft.getMeterRegistry());
     maxBatchSizePerAppend = raft.getMaxAppendBatchSize();
     leaderTime = System.currentTimeMillis();
     leaderIndex =
@@ -864,6 +864,7 @@ final class LeaderAppender {
 
   public void close() {
     open = false;
+    metrics.close();
     completeCommits(raft.getCommitIndex());
     appendFutures
         .values()

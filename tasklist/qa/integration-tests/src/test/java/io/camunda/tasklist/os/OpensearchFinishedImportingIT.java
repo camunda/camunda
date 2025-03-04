@@ -68,6 +68,7 @@ public class OpensearchFinishedImportingIT extends TasklistZeebeIntegrationTest 
   @Autowired private TasklistImportPositionIndex importPositionIndex;
   @Autowired private MeterRegistry meterRegistry;
   private final ProtocolFactory factory = new ProtocolFactory();
+  private int emptyBatches;
 
   @BeforeAll
   public static void beforeClass() {
@@ -84,7 +85,7 @@ public class OpensearchFinishedImportingIT extends TasklistZeebeIntegrationTest 
     CONFIG.index.createTemplate = true;
     CONFIG.retention.setEnabled(false);
     CONFIG.bulk.size = 1; // force flushing on the first record
-
+    emptyBatches = tasklistProperties.getImporter().getCompletedReaderMinEmptyBatches();
     // here enable all indexes that needed during the tests beforehand as they will be created once
     TestSupport.provideValueTypes()
         .forEach(valueType -> TestSupport.setIndexingForValueType(CONFIG.index, valueType, true));
@@ -122,7 +123,7 @@ public class OpensearchFinishedImportingIT extends TasklistZeebeIntegrationTest 
     // require multiple checks to avoid race condition. If records are written to zeebe indices and
     // before a refresh, the record reader pulls the import batch is empty so it then says that the
     // record reader is done when it is not.
-    for (int i = 0; i < RecordsReaderHolder.MINIMUM_EMPTY_BATCHES_FOR_COMPLETED_READER; i++) {
+    for (int i = 0; i < emptyBatches; i++) {
       zeebeImporter.performOneRoundOfImport();
     }
 
@@ -155,7 +156,7 @@ public class OpensearchFinishedImportingIT extends TasklistZeebeIntegrationTest 
     final var newVersionJobRecord = generateRecord(ValueType.JOB, "8.8.0", 1);
     EXPORTER.export(newVersionJobRecord);
 
-    for (int i = 0; i <= RecordsReaderHolder.MINIMUM_EMPTY_BATCHES_FOR_COMPLETED_READER; i++) {
+    for (int i = 0; i <= emptyBatches; i++) {
       // simulate existing variable records left to process so it is not marked as completed
       final var decisionRecord2 = generateRecord(ValueType.VARIABLE, "8.7.0", 1);
       EXPORTER.export(decisionRecord2);
@@ -191,7 +192,7 @@ public class OpensearchFinishedImportingIT extends TasklistZeebeIntegrationTest 
     EXPORTER.export(partitionTwoRecord2);
     openSearchClient.indices().refresh(new RefreshRequest.Builder().index("*").build());
 
-    for (int i = 0; i <= RecordsReaderHolder.MINIMUM_EMPTY_BATCHES_FOR_COMPLETED_READER; i++) {
+    for (int i = 0; i <= emptyBatches; i++) {
       zeebeImporter.performOneRoundOfImport();
     }
 
@@ -225,7 +226,7 @@ public class OpensearchFinishedImportingIT extends TasklistZeebeIntegrationTest 
     // require multiple checks to avoid race condition. If records are written to zeebe indices and
     // before a refresh, the record reader pulls the import batch is empty so it then says that the
     // record reader is done when it is not.
-    for (int i = 0; i < RecordsReaderHolder.MINIMUM_EMPTY_BATCHES_FOR_COMPLETED_READER; i++) {
+    for (int i = 0; i < emptyBatches; i++) {
       zeebeImporter.performOneRoundOfImport();
     }
 
@@ -255,7 +256,7 @@ public class OpensearchFinishedImportingIT extends TasklistZeebeIntegrationTest 
     openSearchClient.indices().refresh(new RefreshRequest.Builder().index("*").build());
 
     // when
-    for (int i = 0; i <= RecordsReaderHolder.MINIMUM_EMPTY_BATCHES_FOR_COMPLETED_READER; i++) {
+    for (int i = 0; i <= emptyBatches; i++) {
       zeebeImporter.performOneRoundOfImport();
     }
 
@@ -290,7 +291,7 @@ public class OpensearchFinishedImportingIT extends TasklistZeebeIntegrationTest 
     EXPORTER.export(partitionTwoRecord2);
     openSearchClient.indices().refresh(new RefreshRequest.Builder().index("*").build());
 
-    for (int i = 0; i <= RecordsReaderHolder.MINIMUM_EMPTY_BATCHES_FOR_COMPLETED_READER; i++) {
+    for (int i = 0; i <= emptyBatches; i++) {
       zeebeImporter.performOneRoundOfImport();
     }
 
@@ -382,7 +383,7 @@ public class OpensearchFinishedImportingIT extends TasklistZeebeIntegrationTest 
     openSearchClient.indices().refresh(new RefreshRequest.Builder().index("*").build());
 
     // when
-    for (int i = 0; i <= RecordsReaderHolder.MINIMUM_EMPTY_BATCHES_FOR_COMPLETED_READER; i++) {
+    for (int i = 0; i <= emptyBatches; i++) {
       zeebeImporter.performOneRoundOfImport();
     }
 

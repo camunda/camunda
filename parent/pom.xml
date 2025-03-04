@@ -89,7 +89,7 @@
     <version.slf4j>2.0.17</version.slf4j>
     <version.snakeyaml>2.4</version.snakeyaml>
     <version.javax>1.3.2</version.javax>
-    <version.wiremock>3.12.0</version.wiremock>
+    <version.wiremock>3.12.1</version.wiremock>
     <version.conscrypt>2.5.2</version.conscrypt>
     <version.asm>9.3</version.asm>
     <version.testcontainers>1.20.5</version.testcontainers>
@@ -128,7 +128,7 @@
     <version.jnr-posix>3.1.20</version.jnr-posix>
     <version.zpt>8.6.10</version.zpt>
     <version.feign>13.5</version.feign>
-    <version.google-sdk>26.55.0</version.google-sdk>
+    <version.google-sdk>26.56.0</version.google-sdk>
     <version.azure-sdk>1.2.31</version.azure-sdk>
     <version.awssdk>2.29.50</version.awssdk>
     <version.toxiproxy>2.1.7</version.toxiproxy>
