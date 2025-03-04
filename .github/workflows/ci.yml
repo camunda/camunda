@@ -9,7 +9,12 @@ on:
       - release-*
   pull_request: {}
   merge_group: {}
-  workflow_dispatch: {}
+  workflow_dispatch:
+    inputs:
+      c8Version:
+        description: "C8 Version"
+        required: true
+
   schedule:
     - cron: '0 6 * * *' # daily full build in the morning to re-populate GHA caches
 
@@ -968,6 +973,35 @@ jobs:
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+
+  core-component-tests:
+    needs: [build-platform-frontend]
+    name: Run tests
+    runs-on: "ubuntu-latest"
+    strategy:
+      max-parallel: 1
+      fail-fast: false
+      matrix:
+        version: ["${{ github.event.inputs.c8Version }}"]
+        project: ["chromium"]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: qa/e2e-tests/core-application-e2e-test-suite/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+        working-directory: qa/e2e-tests/core-application-e2e-test-suite
+
+      - name: Run tests
+        uses: ./.github/actions/core-application-e2e-test-suite
+        with:
+          version: ${{ matrix.version }}
 
   check-results:
     # Used by the merge queue to check all tests, including the unit test matrix.
