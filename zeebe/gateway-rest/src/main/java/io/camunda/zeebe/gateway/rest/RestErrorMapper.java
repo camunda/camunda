@@ -326,52 +326,43 @@ public class RestErrorMapper {
         (cse.getReason() == null) ? CamundaSearchException.Reason.UNKNOWN : cse.getReason();
     final Throwable cause = (cse.getCause() == null) ? cse : cse.getCause();
     final String name = cause.getClass().getName();
-    final String simpleName = cause.getClass().getSimpleName();
-    final String message = cause.getMessage();
     switch (reason) {
       case NOT_FOUND:
         {
-          final String detail =
-              "Expected to handle REST request, but resource was not found: %s".formatted(message);
+          final String detail = "Expected to handle REST request, but resource was not found.";
           REST_GATEWAY_LOGGER.debug(detail);
-          return createProblemDetail(HttpStatus.NOT_FOUND, message, RejectionType.NOT_FOUND.name());
+          return createProblemDetail(HttpStatus.NOT_FOUND, detail, RejectionType.NOT_FOUND.name());
         }
       case NOT_UNIQUE:
         {
-          final String detail =
-              "Expected to handle REST request, but resource is not unique: %s".formatted(message);
+          final String detail = "Expected to handle REST request, but resource is not unique.";
           return createProblemDetail(
-              HttpStatus.CONFLICT, message, RejectionType.INVALID_STATE.name());
+              HttpStatus.CONFLICT, detail, RejectionType.INVALID_STATE.name());
         }
       case CONNECTION_FAILED:
         {
           final String detail =
-              "Expected to handle REST request, but the search client could to connect to the search server: (%s) %s"
-                  .formatted(name, message);
+              "Expected to handle REST request, but the search client could to connect to the search server.";
           REST_GATEWAY_LOGGER.debug(detail);
           return createProblemDetail(HttpStatus.SERVICE_UNAVAILABLE, detail, name);
         }
       case SEARCH_SERVER_FAILED:
         {
           final String detail =
-              "Expected to handle REST request, but the search server was unable to process the request: (%s) %s"
-                  .formatted(name, message);
-          REST_GATEWAY_LOGGER.debug(detail);
+              "Expected to handle REST request, but the search server was unable to process the request.";
           return createProblemDetail(HttpStatus.INTERNAL_SERVER_ERROR, detail, name);
         }
       case SEARCH_CLIENT_FAILED:
         {
           final String detail =
-              "Expected to handle REST request, but the search client was unable to process the request: (%s) %s"
-                  .formatted(name, message);
-          REST_GATEWAY_LOGGER.debug(detail);
+              "Expected to handle REST request, but the search client was unable to process the request.";
           return createProblemDetail(HttpStatus.INTERNAL_SERVER_ERROR, detail, name);
         }
       default:
         {
           final String detail =
               "Expected to handle REST request, but unexpected error occured: %s"
-                  .formatted(message);
+                  .formatted(cause.getMessage());
           REST_GATEWAY_LOGGER.debug(detail);
           return createProblemDetail(HttpStatus.INTERNAL_SERVER_ERROR, detail, name);
         }

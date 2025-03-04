@@ -586,7 +586,8 @@ public class ErrorMapperTest extends RestControllerTest {
 
     // when
     assertThat(problemDetail.getStatus()).isEqualTo(HttpStatus.NOT_FOUND.value());
-    assertThat(problemDetail.getDetail()).isEqualTo("Item not found");
+    assertThat(problemDetail.getDetail())
+        .isEqualTo("Expected to handle REST request, but resource was not found.");
     assertThat(problemDetail.getTitle()).isEqualTo("NOT_FOUND");
   }
 
@@ -602,7 +603,8 @@ public class ErrorMapperTest extends RestControllerTest {
 
     // when
     assertThat(problemDetail.getStatus()).isEqualTo(HttpStatus.CONFLICT.value());
-    assertThat(problemDetail.getDetail()).isEqualTo("Item not unique");
+    assertThat(problemDetail.getDetail())
+        .isEqualTo("Expected to handle REST request, but resource is not unique.");
     assertThat(problemDetail.getTitle()).isEqualTo("INVALID_STATE");
   }
 
@@ -623,7 +625,7 @@ public class ErrorMapperTest extends RestControllerTest {
     assertThat(problemDetail.getStatus()).isEqualTo(HttpStatus.SERVICE_UNAVAILABLE.value());
     assertThat(problemDetail.getDetail())
         .isEqualTo(
-            "Expected to handle REST request, but the search client could to connect to the search server: (java.net.ConnectException) No connection");
+            "Expected to handle REST request, but the search client could to connect to the search server.");
     assertThat(problemDetail.getTitle()).isEqualTo("java.net.ConnectException");
   }
 
@@ -644,7 +646,7 @@ public class ErrorMapperTest extends RestControllerTest {
     assertThat(problemDetail.getStatus()).isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR.value());
     assertThat(problemDetail.getDetail())
         .isEqualTo(
-            "Expected to handle REST request, but the search client was unable to process the request: (java.io.IOException) Generic IO Error");
+            "Expected to handle REST request, but the search client was unable to process the request.");
     assertThat(problemDetail.getTitle()).isEqualTo("java.io.IOException");
   }
 
@@ -665,7 +667,7 @@ public class ErrorMapperTest extends RestControllerTest {
     assertThat(problemDetail.getStatus()).isEqualTo(HttpStatus.SERVICE_UNAVAILABLE.value());
     assertThat(problemDetail.getDetail())
         .isEqualTo(
-            "Expected to handle REST request, but the search client could to connect to the search server: (java.net.ConnectException) No connection");
+            "Expected to handle REST request, but the search client could to connect to the search server.");
     assertThat(problemDetail.getTitle()).isEqualTo("java.net.ConnectException");
   }
 
@@ -686,7 +688,7 @@ public class ErrorMapperTest extends RestControllerTest {
     assertThat(problemDetail.getStatus()).isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR.value());
     assertThat(problemDetail.getDetail())
         .isEqualTo(
-            "Expected to handle REST request, but the search client was unable to process the request: (java.io.IOException) Generic IO Error");
+            "Expected to handle REST request, but the search client was unable to process the request.");
     assertThat(problemDetail.getTitle()).isEqualTo("java.io.IOException");
   }
 }
