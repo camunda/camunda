@@ -78,7 +78,6 @@ public class ConfigurationService {
   private SecurityConfiguration securityConfiguration;
   private UsersConfiguration usersConfiguration;
   private ZeebeConfiguration configuredZeebe;
-  private String engineDateFormat;
   private Long initialBackoff;
   private Long maximumBackoff;
   // engine import settings
@@ -296,17 +295,6 @@ public class ConfigurationService {
   @JsonIgnore
   public AuthConfiguration getAuthConfiguration() {
     return getSecurityConfiguration().getAuth();
-  }
-
-  public String getEngineDateFormat() {
-    if (engineDateFormat == null) {
-      engineDateFormat = configJsonContext.read(ConfigurationServiceConstants.ENGINE_DATE_FORMAT);
-    }
-    return engineDateFormat;
-  }
-
-  public void setEngineDateFormat(final String engineDateFormat) {
-    this.engineDateFormat = engineDateFormat;
   }
 
   public int getImportIndexAutoStorageIntervalInSec() {
