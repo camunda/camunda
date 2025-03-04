@@ -13,6 +13,8 @@ import static io.camunda.webapps.schema.descriptors.operate.template.JobTemplate
 import static io.camunda.webapps.schema.descriptors.operate.template.JobTemplate.ERROR_MESSAGE;
 import static io.camunda.webapps.schema.descriptors.operate.template.JobTemplate.FLOW_NODE_ID;
 import static io.camunda.webapps.schema.descriptors.operate.template.JobTemplate.JOB_DEADLINE;
+import static io.camunda.webapps.schema.descriptors.operate.template.JobTemplate.JOB_DENIED;
+import static io.camunda.webapps.schema.descriptors.operate.template.JobTemplate.JOB_DENIED_REASON;
 import static io.camunda.webapps.schema.descriptors.operate.template.JobTemplate.JOB_FAILED_WITH_RETRIES_LEFT;
 import static io.camunda.webapps.schema.descriptors.operate.template.JobTemplate.JOB_STATE;
 import static io.camunda.webapps.schema.descriptors.operate.template.JobTemplate.JOB_WORKER;
@@ -100,7 +102,10 @@ public class JobHandler implements ExportHandler<JobEntity, JobRecordValue> {
         .setEndTime(DateUtil.toOffsetDateTime(Instant.ofEpochMilli(record.getTimestamp())))
         .setCustomHeaders(recordValue.getCustomHeaders())
         .setJobKind(recordValue.getJobKind().name())
-        .setFlowNodeId(recordValue.getElementId());
+        .setFlowNodeId(recordValue.getElementId())
+        .setJobDenied(recordValue.getResult() == null ? null : recordValue.getResult().isDenied())
+        .setJobDeniedReason(
+            recordValue.getResult() == null ? null : recordValue.getResult().getDeniedReason());
 
     if (recordValue.getJobListenerEventType() != null) {
       entity.setListenerEventType(recordValue.getJobListenerEventType().name());
@@ -126,6 +131,12 @@ public class JobHandler implements ExportHandler<JobEntity, JobRecordValue> {
     final Map<String, Object> updateFields = new HashMap<>();
     if (jobEntity.getFlowNodeId() != null) {
       updateFields.put(FLOW_NODE_ID, jobEntity.getFlowNodeId());
+    }
+    if (jobEntity.getJobDeniedReason() != null) {
+      updateFields.put(JOB_DENIED_REASON, jobEntity.getJobDeniedReason());
+    }
+    if (jobEntity.isJobDenied() != null) {
+      updateFields.put(JOB_DENIED, jobEntity.isJobDenied());
     }
     updateFields.put(JOB_WORKER, jobEntity.getWorker());
     updateFields.put(JOB_STATE, jobEntity.getState());
