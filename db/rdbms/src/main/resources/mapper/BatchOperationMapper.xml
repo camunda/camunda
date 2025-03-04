@@ -18,9 +18,16 @@
     <result column="OPERATIONS_TOTAL_COUNT" property="operationsTotalCount" javaType="int"/>
     <result column="OPERATIONS_FAILED_COUNT" property="operationsFailedCount" javaType="int"/>
     <result column="OPERATIONS_COMPLETED_COUNT" property="operationsCompletedCount" javaType="int"/>
-    <collection property="items" ofType="java.lang.Long" javaType="java.util.Set">
-      <id column="ITEM_KEY"/>
-    </collection>
+  </resultMap>
+
+  <resultMap id="BatchOperationItemResultMap"
+    type="io.camunda.search.entities.BatchOperationEntity$BatchOperationItemEntity">
+    <constructor>
+      <idArg column="BATCH_OPERATION_KEY" javaType="java.lang.Long"/>
+      <arg column="ITEM_KEY" javaType="java.lang.Long"/>
+      <arg column="STATE"
+        javaType="io.camunda.search.entities.BatchOperationEntity$BatchOperationItemState"/>
+    </constructor>
   </resultMap>
 
   <insert id="insert" parameterType="io.camunda.db.rdbms.write.domain.BatchOperationDbModel">
@@ -60,6 +67,22 @@
         OPERATIONS_COMPLETED_COUNT = #{operationsCompletedCount}
     WHERE BATCH_OPERATION_KEY = #{batchOperationKey}
   </update>
+
+  <update id="updateItem"
+    parameterType="io.camunda.db.rdbms.sql.BatchOperationMapper$BatchOperationItemDto">
+    UPDATE BATCH_OPERATION_ITEM
+    SET STATE = #{state}
+    WHERE BATCH_OPERATION_KEY = #{batchOperationKey}
+      AND ITEM_KEY = #{itemKey}
+  </update>
+
+  <select id="getItems"
+    parameterType="java.lang.Long"
+    resultMap="BatchOperationItemResultMap">
+    SELECT BATCH_OPERATION_KEY, ITEM_KEY, STATE
+    FROM BATCH_OPERATION_ITEM
+    WHERE BATCH_OPERATION_KEY = #{batchOperationKey}
+  </select>
 
   <select id="count" resultType="java.lang.Long">
     SELECT COUNT(*)

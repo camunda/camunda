@@ -14,6 +14,7 @@ import static java.util.Optional.ofNullable;
 import io.camunda.search.entities.AdHocSubprocessActivityEntity;
 import io.camunda.search.entities.AuthorizationEntity;
 import io.camunda.search.entities.BatchOperationEntity;
+import io.camunda.search.entities.BatchOperationEntity.BatchOperationItemEntity;
 import io.camunda.search.entities.DecisionDefinitionEntity;
 import io.camunda.search.entities.DecisionInstanceEntity;
 import io.camunda.search.entities.DecisionInstanceEntity.DecisionDefinitionType;
@@ -39,6 +40,7 @@ import io.camunda.search.query.SearchQueryResult;
 import io.camunda.zeebe.gateway.protocol.rest.AdHocSubprocessActivityResult;
 import io.camunda.zeebe.gateway.protocol.rest.AuthorizationResult;
 import io.camunda.zeebe.gateway.protocol.rest.AuthorizationSearchResult;
+import io.camunda.zeebe.gateway.protocol.rest.BatchOperationItemResponse;
 import io.camunda.zeebe.gateway.protocol.rest.BatchOperationResponse;
 import io.camunda.zeebe.gateway.protocol.rest.BatchOperationSearchQueryResult;
 import io.camunda.zeebe.gateway.protocol.rest.DecisionDefinitionResult;
@@ -329,7 +331,7 @@ public final class SearchQueryResponseMapper {
         .tenantId(p.tenantId());
   }
 
-  private static List<BatchOperationResponse> toBatchOperations(
+  public static List<BatchOperationResponse> toBatchOperations(
       final List<BatchOperationEntity> batchOperations) {
     return batchOperations.stream().map(SearchQueryResponseMapper::toBatchOperation).toList();
   }
@@ -343,8 +345,19 @@ public final class SearchQueryResponseMapper {
         .endDate(formatDate(entity.endDate()))
         .operationsTotalCount(entity.operationsTotalCount())
         .operationsFailedCount(entity.operationsFailedCount())
-        .operationsCompletedCount(entity.operationsCompletedCount())
-        .items(entity.items().stream().map(Object::toString).toList());
+        .operationsCompletedCount(entity.operationsCompletedCount());
+  }
+
+  public static List<BatchOperationItemResponse> toBatchOperationItems(
+      final List<BatchOperationItemEntity> batchOperations) {
+    return batchOperations.stream().map(SearchQueryResponseMapper::toBatchOperationItem).toList();
+  }
+
+  public static BatchOperationItemResponse toBatchOperationItem(final BatchOperationItemEntity entity) {
+    return new BatchOperationItemResponse()
+        .batchOperationKey(entity.batchOperationKey().toString())
+        .itemKey(entity.itemKey().toString())
+        .state(entity.state().toString());
   }
 
   private static List<RoleResult> toRoles(final List<RoleEntity> roles) {

@@ -3448,6 +3448,85 @@ paths:
                 $ref: "#/components/schemas/ProblemDetail"
         "500":
           $ref: "#/components/responses/InternalServerError"
+
+  /batch-operations/{batchOperationKey}:
+    get:
+      tags:
+        - Batch Operation
+      operationId: getBatchOperation
+      summary: Get Batch Operation for batch operation key
+      description: Get Batch Operation
+      parameters:
+        - name: batchOperationKey
+          in: path
+          required: true
+          description: |
+            The key of the batch operation
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Batch Operation
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BatchOperationResponse"
+        "400":
+          description: The provided data is not valid.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "404":
+          description: The signal is not found.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+  /batch-operations/{batchOperationKey}/items:
+    get:
+      tags:
+        - Batch Operation Items
+      operationId: getBatchOperationItems
+      summary: Get Items for Batch Operation
+      description: Get Batch Operation Items
+      parameters:
+        - name: batchOperationKey
+          in: path
+          required: true
+          description: |
+            The key of the batch operation
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Batch Operation Items
+          content:
+            application/json:
+              schema:
+                items:
+                  description: The batch operation items
+                  type: array
+                  items:
+                    $ref: "#/components/schemas/BatchOperationItemResponse"
+        "400":
+          description: The provided data is not valid.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "404":
+          description: The signal is not found.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
   /batch-operations/search:
     get:
       tags:
@@ -7268,10 +7347,19 @@ components:
         operationsCompletedCount:
           type: integer
           format: int32
-        items:
-          type: array
-          items:
-            type: string
+
+    BatchOperationItemResponse:
+      type: object
+      properties:
+        batchOperationKey:
+          description: Key of the batch operation
+          type: string
+        itemKey:
+          description: Key of the item, e.g. a process instance key
+          type: string
+        state:
+          description: State of the item
+          type: string
 
   responses:
     InternalServerError:
