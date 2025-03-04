@@ -70,6 +70,6 @@ public final class BatchOperationSetupProcessors {
                 searchQueryServices,
                 writers,
                 keyGenerator,
-                Duration.ofSeconds(10)));
+                Duration.ofMillis(100)));
   }
 }
