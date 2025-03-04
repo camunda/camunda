@@ -99,7 +99,7 @@ public class CompactRecordLogger {
           entry("PROCESS_INSTANCE_MODIFICATION", "MOD"),
           entry("PROCESS_INSTANCE", "PI"),
           entry("PROCESS", "PROC"),
-          entry("AD_HOC_SUB_PROCESS_ACTIVITY_ACTIVATION", "ADHOC_ACT"),
+          entry("AD_HOC_SUB_PROC_ACTIVITY_ACTIVATION", "AH_ACT"),
           entry("TIMER", "TIME"),
           entry("MESSAGE", "MSG"),
           entry("SUBSCRIPTION", "SUB"),
