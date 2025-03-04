@@ -86,6 +86,7 @@ public enum BatchOperationIntent implements Intent {
   public boolean isEvent() {
     switch (this) {
       case CREATED:
+      case EXECUTING:
       case EXECUTED:
       case CANCELED:
       case PAUSED:

@@ -22,7 +22,6 @@ import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstan
 import io.camunda.zeebe.protocol.record.intent.BatchOperationIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
-import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import java.util.List;
 import java.util.Set;
 import org.slf4j.Logger;
@@ -38,7 +37,6 @@ public final class BatchOperationExecuteProcessor
   private static final int BATCH_SIZE = 10;
 
   private final TypedCommandWriter commandWriter;
-  private final KeyGenerator keyGenerator;
   private final StateWriter stateWriter;
   private final int partitionId;
 
@@ -47,13 +45,11 @@ public final class BatchOperationExecuteProcessor
   public BatchOperationExecuteProcessor(
       final Writers writers,
       final ProcessingState processingState,
-      final KeyGenerator keyGenerator,
       final CommandDistributionBehavior commandDistributionBehavior,
       final int partitionId) {
     commandWriter = writers.command();
     stateWriter = writers.state();
     batchOperationState = processingState.getBatchOperationState();
-    this.keyGenerator = keyGenerator;
     this.partitionId = partitionId;
   }
 
@@ -91,19 +87,16 @@ public final class BatchOperationExecuteProcessor
         filteredEntityKeys.subList(
             offset, Math.min(offset + BATCH_SIZE, filteredEntityKeys.size()));
 
-    // TODO do we need more states here? Like EXECUTE, EXECUTING, EXECUTED
-    // when do we apply this event?
-    //    stateWriter.appendFollowUpEvent(
-    //        command.getKey(), BatchOperationIntent.EXECUTING, command.getValue());
-
     if (entityKeys.isEmpty()) {
       LOGGER.warn("No items to process for BatchOperation {} on partition {} and offset {}",
           batchKey, partitionId, offset);
     }
 
+    appendBatchOperationExecutionExecutingEvent(command, Set.copyOf(entityKeys));
+
     switch (recordValue.getBatchOperationType()) {
       case PROCESS_CANCELLATION:
-        entityKeys.forEach(this::cancelProcessInstance);
+        entityKeys.forEach(entityKey -> cancelProcessInstance(entityKey, batchKey));
     }
 
     final var newOffset = command.getValue().getOffset() + BATCH_SIZE;
@@ -115,7 +108,8 @@ public final class BatchOperationExecuteProcessor
     followupCommand.setBatchOperationType(command.getValue().getBatchOperationType());
     followupCommand.setOffset(newOffset);
     commandWriter.appendFollowUpCommand(
-        command.getKey(), BatchOperationIntent.EXECUTE, followupCommand);
+        command.getKey(), BatchOperationIntent.EXECUTE, followupCommand, batchKey);
+
     appendBatchOperationExecutionExecutedEvent(command, Set.copyOf(entityKeys));
   }
 
@@ -128,12 +122,22 @@ public final class BatchOperationExecuteProcessor
     return batchOperationState.get(batchOperationKey).orElse(null);
   }
 
-  private void cancelProcessInstance(final long processInstanceKey) {
+  private void cancelProcessInstance(final long processInstanceKey, final long batchKey) {
     LOGGER.info("Cancelling process instance with key '{}'", processInstanceKey);
 
     final var command = new ProcessInstanceRecord();
     command.setProcessInstanceKey(processInstanceKey);
-    commandWriter.appendFollowUpCommand(processInstanceKey, ProcessInstanceIntent.CANCEL, command);
+    commandWriter.appendFollowUpCommand(processInstanceKey, ProcessInstanceIntent.CANCEL, command, batchKey);
+  }
+
+  private void appendBatchOperationExecutionExecutingEvent(
+      final TypedRecord<BatchOperationExecutionRecord> command, final Set<Long> keys) {
+    final var batchExecute = new BatchOperationExecutionRecord();
+    batchExecute.setBatchOperationKey(command.getKey());
+    batchExecute.setKeys(keys);
+    batchExecute.setBatchOperationType(command.getValue().getBatchOperationType());
+    batchExecute.setOffset(command.getValue().getOffset());
+    stateWriter.appendFollowUpEvent(command.getKey(), BatchOperationIntent.EXECUTING, batchExecute);
   }
 
   private void appendBatchOperationExecutionExecutedEvent(

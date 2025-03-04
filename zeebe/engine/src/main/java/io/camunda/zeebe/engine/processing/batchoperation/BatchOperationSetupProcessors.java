@@ -63,7 +63,6 @@ public final class BatchOperationSetupProcessors {
             new BatchOperationExecuteProcessor(
                 writers,
                 processingState,
-                keyGenerator,
                 commandDistributionBehavior,
                 partitionId));
   }
