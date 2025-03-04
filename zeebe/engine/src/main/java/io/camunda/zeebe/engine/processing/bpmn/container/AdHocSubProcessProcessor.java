@@ -231,6 +231,9 @@ public class AdHocSubProcessProcessor
       final BpmnElementContext childContext,
       final Boolean satisfiesCompletionCondition) {
     if (satisfiesCompletionCondition == null) {
+      // completion condition is not set - complete the ad-hoc subprocess if possible (no other
+      // activity is active), otherwise skip completion as the same block will be evaluated when
+      // the next activity is completed
       if (stateBehavior.canBeCompleted(childContext)) {
         stateTransitionBehavior.completeElement(adHocSubProcessContext);
       }
@@ -240,12 +243,16 @@ public class AdHocSubProcessProcessor
 
     if (satisfiesCompletionCondition) {
       if (adHocSubProcess.isCancelRemainingInstances()) {
+        // terminate all remaining child instances & directly complete ad-hoc subprocess if there
+        // is no child activity left - otherwise see onChildTerminated
         final boolean hasNoActiveChildren =
             stateTransitionBehavior.terminateChildInstances(adHocSubProcessContext);
         if (hasNoActiveChildren) {
           stateTransitionBehavior.completeElement(adHocSubProcessContext);
         }
       } else {
+        // complete ad-hoc subprocess if possible, otherwise skip completion as the same block
+        // will be evaluated when the next activity is completed
         if (stateBehavior.canBeCompleted(childContext)) {
           stateTransitionBehavior.completeElement(adHocSubProcessContext);
         }
@@ -259,6 +266,8 @@ public class AdHocSubProcessProcessor
       final BpmnElementContext adHocSubProcessContext,
       final BpmnElementContext childContext) {
     if (adHocSubProcessContext.getIntent() == ProcessInstanceIntent.ELEMENT_TERMINATING) {
+      // child termination is initiated in onTerminate
+      // terminate ad-hoc subprocess as soon as all child instances have been terminated
       if (stateBehavior.canBeTerminated(childContext)) {
         terminate(adHocSubProcess, adHocSubProcessContext);
       }
