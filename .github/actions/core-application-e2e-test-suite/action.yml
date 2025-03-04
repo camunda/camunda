@@ -27,8 +27,8 @@ runs:
       env:
         CLUSTER_VERSION: ${{ inputs.version }}
         MINOR_VERSION: ${{ env.minor_version }}
-        LOCAL_TEST=false
-        CORE_COMPONENT_TASKLIST_URL: http://localhost:8080
-        CORE_COMPONENT_OPERATE_URL: http://localhost:8081
+        LOCAL_TEST: "false"
+        CORE_COMPONENT_TASKLIST_URL: "http://localhost:8080"
+        CORE_COMPONENT_OPERATE_URL: "http://localhost:8081"
       run: npm run test -- --project=chromium
       working-directory: qa/e2e-tests/core-application-e2e-test-suite
