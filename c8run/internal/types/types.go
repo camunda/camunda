@@ -1,4 +1,4 @@
-package main
+package types
 
 import (
 	"os"
@@ -15,23 +15,20 @@ type C8Run interface {
 }
 
 type C8RunSettings struct {
-	config               string
-	detached             bool
-	port                 int
-	keystore             string
-	keystorePassword     string
-	logLevel             string
-	disableElasticsearch bool
-	username             string
-	password             string
-	docker               bool
+	Config               string
+	Detached             bool
+	Port                 int
+	Keystore             string
+	KeystorePassword     string
+	LogLevel             string
+	DisableElasticsearch bool
+	Username             string
+	Password             string
+	Docker               bool
 }
 
 // HasKeyStore returns true when the keystore and password are set
 func (c C8RunSettings) HasKeyStore() bool {
-	return c.keystore != "" && c.keystorePassword != ""
+	return c.Keystore != "" && c.KeystorePassword != ""
 }
 
-func (c C8RunSettings) Port() int {
-	return c.port
-}
