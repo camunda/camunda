@@ -22,6 +22,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.Map;
 import org.apache.hc.client5.http.async.methods.SimpleHttpRequest;
 import org.apache.hc.client5.http.async.methods.SimpleRequestBuilder;
 import org.apache.hc.client5.http.async.methods.SimpleRequestProducer;
@@ -100,6 +101,17 @@ public final class HttpClient implements AutoCloseable {
 
   public <HttpT, RespT> void get(
       final String path,
+      final Map<String, String> queryParams,
+      final RequestConfig requestConfig,
+      final Class<HttpT> responseType,
+      final JsonResponseTransformer<HttpT, RespT> transformer,
+      final HttpZeebeFuture<RespT> result) {
+    sendRequest(
+        Method.GET, path, queryParams, null, requestConfig, responseType, transformer, result);
+  }
+
+  public <HttpT, RespT> void get(
+      final String path,
       final RequestConfig requestConfig,
       final Class<HttpT> responseType,
       final JsonResponseTransformer<HttpT, RespT> transformer,
@@ -123,6 +135,32 @@ public final class HttpClient implements AutoCloseable {
       final JsonResponseTransformer<HttpT, RespT> transformer,
       final HttpZeebeFuture<RespT> result) {
     sendRequest(Method.POST, path, body, requestConfig, responseType, transformer, result);
+  }
+
+  public <HttpT, RespT> void post(
+      final String path,
+      final Map<String, String> queryParams,
+      final String body,
+      final RequestConfig requestConfig,
+      final Class<HttpT> responseType,
+      final JsonResponseTransformer<HttpT, RespT> transformer,
+      final HttpZeebeFuture<RespT> result) {
+    sendRequest(
+        Method.POST, path, queryParams, body, requestConfig, responseType, transformer, result);
+  }
+
+  public <HttpT, RespT> void postMultipart(
+      final String path,
+      final Map<String, String> queryParams,
+      final MultipartEntityBuilder multipartBuilder,
+      final RequestConfig requestConfig,
+      final Class<HttpT> responseType,
+      final JsonResponseTransformer<HttpT, RespT> transformer,
+      final HttpZeebeFuture<RespT> result) {
+
+    final HttpEntity entity = multipartBuilder.build();
+    sendRequest(
+        Method.POST, path, queryParams, entity, requestConfig, responseType, transformer, result);
   }
 
   public <HttpT, RespT> void postMultipart(
@@ -158,9 +196,30 @@ public final class HttpClient implements AutoCloseable {
     sendRequest(Method.DELETE, path, null, requestConfig, Void.class, r -> null, result);
   }
 
+  public <RespT> void delete(
+      final String path,
+      final Map<String, String> queryParams,
+      final RequestConfig requestConfig,
+      final HttpZeebeFuture<RespT> result) {
+    sendRequest(
+        Method.DELETE, path, queryParams, null, requestConfig, Void.class, r -> null, result);
+  }
+
   private <HttpT, RespT> void sendRequest(
       final Method httpMethod,
       final String path,
+      final Object body, // Can be a String (for JSON) or HttpEntity (for Multipart)
+      final RequestConfig requestConfig,
+      final Class<HttpT> responseType,
+      final JsonResponseTransformer<HttpT, RespT> transformer,
+      final HttpZeebeFuture<RespT> result) {
+    sendRequest(httpMethod, path, null, body, requestConfig, responseType, transformer, result);
+  }
+
+  private <HttpT, RespT> void sendRequest(
+      final Method httpMethod,
+      final String path,
+      final Map<String, String> queryParams,
       final Object body, // Can be a String (for JSON) or HttpEntity (for Multipart)
       final RequestConfig requestConfig,
       final Class<HttpT> responseType,
@@ -174,11 +233,23 @@ public final class HttpClient implements AutoCloseable {
           if (result.isCancelled()) {
             return;
           }
-          sendRequest(httpMethod, path, body, requestConfig, responseType, transformer, result);
+          sendRequest(
+              httpMethod,
+              path,
+              queryParams,
+              body,
+              requestConfig,
+              responseType,
+              transformer,
+              result);
         };
 
     final SimpleRequestBuilder requestBuilder =
         SimpleRequestBuilder.create(httpMethod).setUri(target);
+
+    if (queryParams != null && !queryParams.isEmpty()) {
+      queryParams.forEach(requestBuilder::addParameter);
+    }
 
     if (body != null) {
       if (body instanceof String) {
