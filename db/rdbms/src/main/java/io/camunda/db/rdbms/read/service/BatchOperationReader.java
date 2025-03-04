@@ -7,18 +7,16 @@
  */
 package io.camunda.db.rdbms.read.service;
 
+import io.camunda.db.rdbms.read.domain.BatchOperationDbQuery;
 import io.camunda.db.rdbms.read.domain.DbQuerySorting;
-import io.camunda.db.rdbms.read.domain.ProcessDefinitionDbQuery;
+import io.camunda.db.rdbms.read.domain.IncidentDbQuery;
 import io.camunda.db.rdbms.read.mapper.BatchOperationEntityMapper;
 import io.camunda.db.rdbms.sql.BatchOperationMapper;
-import io.camunda.db.rdbms.sql.ProcessDefinitionMapper;
 import io.camunda.db.rdbms.sql.columns.BatchOperationSearchColumn;
-import io.camunda.db.rdbms.sql.columns.ProcessDefinitionSearchColumn;
+import io.camunda.db.rdbms.sql.columns.IncidentSearchColumn;
 import io.camunda.search.entities.BatchOperationEntity;
-import io.camunda.search.entities.ProcessDefinitionEntity;
-import io.camunda.search.query.ProcessDefinitionQuery;
+import io.camunda.search.query.BatchOperationQuery;
 import io.camunda.search.query.SearchQueryResult;
-import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -33,10 +31,17 @@ public class BatchOperationReader extends AbstractEntityReader<BatchOperationEnt
     this.batchOperationMapper = batchOperationMapper;
   }
 
-  public SearchQueryResult<BatchOperationEntity> search() {
-    LOG.trace("[RDBMS DB] Search for batch operations");
-    final var totalHits = batchOperationMapper.count();
-    final var hits = batchOperationMapper.search().stream().map(BatchOperationEntityMapper::toEntity).toList();
-    return buildSearchQueryResult(totalHits, hits, DbQuerySorting.of(b -> b));
+  public SearchQueryResult<BatchOperationEntity> search(final BatchOperationQuery query) {
+    final var dbSort = convertSort(query.sort(), BatchOperationSearchColumn.BATCH_OPERATION_KEY);
+    final var dbQuery =
+        BatchOperationDbQuery.of(
+            b -> b.filter(query.filter()).sort(dbSort).page(convertPaging(dbSort, query.page())));
+
+    LOG.trace("[RDBMS DB] Search for batch operations with filter {}", dbQuery);
+    final var totalHits = batchOperationMapper.count(dbQuery);
+    final var hits = batchOperationMapper.search(dbQuery).stream()
+        .map(BatchOperationEntityMapper::toEntity)
+        .toList();
+    return buildSearchQueryResult(totalHits, hits, dbSort);
   }
 }

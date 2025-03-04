@@ -1,5 +1,6 @@
 package io.camunda.db.rdbms.write.domain;
 
+import io.camunda.search.entities.BatchOperationEntity.BatchOperationState;
 import io.camunda.util.ObjectBuilder;
 import java.time.OffsetDateTime;
 import java.util.Set;
@@ -7,6 +8,7 @@ import java.util.Set;
 public class BatchOperationDbModel {
 
   private Long batchOperationKey;
+  private BatchOperationState state;
   private String operationType;
   private OffsetDateTime startDate;
   private OffsetDateTime endDate;
@@ -21,6 +23,7 @@ public class BatchOperationDbModel {
 
   public BatchOperationDbModel(
       Long batchOperationKey,
+      BatchOperationState state,
       String operationType,
       OffsetDateTime startDate,
       OffsetDateTime endDate,
@@ -29,6 +32,7 @@ public class BatchOperationDbModel {
       int operationsCompletedCount,
       Set<Long> items) {
     this.batchOperationKey = batchOperationKey;
+    this.state = state;
     this.operationType = operationType;
     this.startDate = startDate;
     this.endDate = endDate;
@@ -45,6 +49,14 @@ public class BatchOperationDbModel {
 
   public void batchOperationKey(Long batchOperationKey) {
     this.batchOperationKey = batchOperationKey;
+  }
+
+  public BatchOperationState state() {
+    return state;
+  }
+
+  public void state(BatchOperationState state) {
+    this.state = state;
   }
 
   public String operationType() {
@@ -107,6 +119,7 @@ public class BatchOperationDbModel {
   public static class Builder implements ObjectBuilder<BatchOperationDbModel> {
 
     private Long batchOperationKey;
+    private BatchOperationState state;
     private String operationType;
     private OffsetDateTime startDate;
     private OffsetDateTime endDate;
@@ -119,6 +132,11 @@ public class BatchOperationDbModel {
 
     public Builder batchOperationKey(Long batchOperationKey) {
       this.batchOperationKey = batchOperationKey;
+      return this;
+    }
+
+    public Builder state(BatchOperationState state) {
+      this.state = state;
       return this;
     }
 
@@ -161,6 +179,7 @@ public class BatchOperationDbModel {
     public BatchOperationDbModel build() {
       return new BatchOperationDbModel(
           batchOperationKey,
+          state,
           operationType,
           startDate,
           endDate,

@@ -159,6 +159,15 @@ public final class SortOptionBuilders {
     return fn.apply(incident()).build();
   }
 
+  public static BatchOperationSort.Builder batchOperationSort() {
+    return new BatchOperationSort.Builder();
+  }
+
+  public static BatchOperationSort batchOperationSort(
+      final Function<BatchOperationSort.Builder, ObjectBuilder<BatchOperationSort>> fn) {
+    return fn.apply(batchOperationSort()).build();
+  }
+
   public static AuthorizationSort authorization(
       final Function<AuthorizationSort.Builder, ObjectBuilder<AuthorizationSort>> fn) {
     return fn.apply(authorization()).build();

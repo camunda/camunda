@@ -17,23 +17,7 @@ package io.camunda.client.api.search.response;
 
 public enum BatchOperationState {
   ACTIVE,
+  FAILED,
   COMPLETED,
-  TERMINATED,
-  UNKNOWN_ENUM_VALUE;
-
-/*  public static ProcessInstanceStateEnum toProtocolState(final BatchOperationState value) {
-    return (value == null) ? null : ProcessInstanceStateEnum.fromValue(value.name());
-  }
-
-  public static BatchOperationState fromProtocolState(final ProcessInstanceStateEnum value) {
-    if (value == null) {
-      return null;
-    }
-    try {
-      return BatchOperationState.valueOf(value.name());
-    } catch (final IllegalArgumentException e) {
-      EnumUtil.logUnknownEnumValue(value, "process instance state", values());
-      return UNKNOWN_ENUM_VALUE;
-    }
-  }*/
+  CANCELED
 }

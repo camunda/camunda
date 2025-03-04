@@ -473,22 +473,13 @@
       <column name="BATCH_OPERATION_KEY" type="BIGINT">
         <constraints primaryKey="true" nullable="false"/>
       </column>
-      <column name="OPERATION_TYPE" type="VARCHAR(255)">
-        <constraints nullable="false"/>
-      </column>
-      <column name="START_DATE" type="TIMESTAMP WITH TIME ZONE(3)">
-        <constraints nullable="false"/>
-      </column>
+      <column name="STATE" type="VARCHAR(255)"/>
+      <column name="OPERATION_TYPE" type="VARCHAR(255)"/>
+      <column name="START_DATE" type="TIMESTAMP WITH TIME ZONE(3)"/>
       <column name="END_DATE" type="TIMESTAMP WITH TIME ZONE(3)"/>
-      <column name="OPERATIONS_TOTAL_COUNT" type="INT">
-        <constraints nullable="false"/>
-      </column>
-      <column name="OPERATIONS_FAILED_COUNT" type="INT">
-        <constraints nullable="false"/>
-      </column>
-      <column name="OPERATIONS_COMPLETED_COUNT" type="INT">
-        <constraints nullable="false"/>
-      </column>
+      <column name="OPERATIONS_TOTAL_COUNT" type="INT"/>
+      <column name="OPERATIONS_FAILED_COUNT" type="INT"/>
+      <column name="OPERATIONS_COMPLETED_COUNT" type="INT"/>
     </createTable>
 
     <createTable tableName="${prefix}BATCH_OPERATION_ITEM">
@@ -501,6 +492,7 @@
         />
       </column>
       <column name="ITEM_KEY" type="BIGINT"/>
+      <column name="STATE" type="VARCHAR(20)"/>
     </createTable>
 
     <modifySql dbms="mariadb">

@@ -9,12 +9,13 @@ package io.camunda.search.clients;
 
 import io.camunda.search.entities.BatchOperationEntity;
 import io.camunda.search.entities.ProcessInstanceEntity;
+import io.camunda.search.query.BatchOperationQuery;
 import io.camunda.search.query.ProcessInstanceQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.auth.SecurityContext;
 
 public interface BatchOperationSearchClient {
 
-  SearchQueryResult<BatchOperationEntity> searchBatchOperations();
+  SearchQueryResult<BatchOperationEntity> searchBatchOperations(BatchOperationQuery query);
 
 }

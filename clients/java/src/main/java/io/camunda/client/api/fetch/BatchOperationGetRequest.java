@@ -13,28 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.camunda.client.api.search.response;
+package io.camunda.client.api.fetch;
 
-import java.time.OffsetDateTime;
-import java.util.List;
+import io.camunda.client.api.command.FinalCommandStep;
+import io.camunda.client.api.search.response.BatchOperation;
+import io.camunda.client.api.search.response.Incident;
 
-public interface BatchOperation {
-
-  Long getBatchOperationKey();
-
-  List<Long> keys();
-
-  BatchOperationState getState();
-
-  BatchOperationType getType();
-
-  String getStartDate();
-
-  String getEndDate();
-
-  Integer getOperationsTotalCount();
-
-  Integer getOperationsFailedCount();
-
-  Integer getOperationsCompletedCount();
-}
+public interface BatchOperationGetRequest extends FinalCommandStep<BatchOperation> {}

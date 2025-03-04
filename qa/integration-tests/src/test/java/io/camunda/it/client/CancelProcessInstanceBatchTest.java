@@ -20,6 +20,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.response.Process;
 import io.camunda.client.api.response.ProcessInstanceEvent;
+import io.camunda.client.api.search.response.BatchOperationState;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import java.util.ArrayList;
 import java.util.List;
@@ -86,8 +87,14 @@ public class CancelProcessInstanceBatchTest {
     assertThat(result).isNotNull();
     assertThat(result.getBatchOperationKey()).isNotNull();
 
+    // and
+    final var batch = camundaClient.newGetBatchOperationCommand(result.getBatchOperationKey())
+        .send()
+        .join();
 
-    assertThat(result.keys()).hasSize(3);
+    assertThat(batch).isNotNull();
+    assertThat(batch.getState()).isEqualTo(BatchOperationState.COMPLETED);
+    assertThat(batch.keys()).hasSize(3);
 
     for (final Long key : result.keys()) {
       waitForProcessInstanceToBeTerminated(camundaClient, key);

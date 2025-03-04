@@ -15,6 +15,7 @@ import java.util.Set;
 @JsonIgnoreProperties(ignoreUnknown = true)
 public record BatchOperationEntity(
     Long batchOperationKey,
+    BatchOperationState state,
     String operationType,
     OffsetDateTime startDate,
     OffsetDateTime endDate,
@@ -22,4 +23,11 @@ public record BatchOperationEntity(
     Integer operationsFailedCount,
     Integer operationsCompletedCount,
     Set<Long> items) {
+
+  public enum BatchOperationState {
+    ACTIVE,
+    FAILED,
+    COMPLETED,
+    CANCELED
+  }
 }

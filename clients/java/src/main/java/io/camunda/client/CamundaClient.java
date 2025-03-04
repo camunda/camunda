@@ -63,6 +63,7 @@ import io.camunda.client.api.command.UpdateRetriesJobCommandStep1;
 import io.camunda.client.api.command.UpdateTenantCommandStep1;
 import io.camunda.client.api.command.UpdateTimeoutJobCommandStep1;
 import io.camunda.client.api.command.UpdateUserTaskCommandStep1;
+import io.camunda.client.api.fetch.BatchOperationGetRequest;
 import io.camunda.client.api.fetch.DecisionDefinitionGetRequest;
 import io.camunda.client.api.fetch.DecisionDefinitionGetXmlRequest;
 import io.camunda.client.api.fetch.DecisionInstanceGetRequest;
@@ -318,6 +319,8 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    */
   CancelProcessInstancesBatchRequest newCancelInstancesBatchCommand(
       Consumer<ProcessInstanceFilter> filterModifier);
+
+  BatchOperationGetRequest newGetBatchOperationCommand(Long batchOperationKey);
 
   /**
    * Command to set and/or update the variables of a given flow element (e.g. process instance,

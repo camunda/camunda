@@ -10,6 +10,8 @@
     <constructor>
       <idArg column="BATCH_OPERATION_KEY" javaType="java.lang.Long"/>
     </constructor>
+    <result column="STATE" property="state"
+      javaType="io.camunda.search.entities.BatchOperationEntity$BatchOperationState"/>
     <result column="OPERATION_TYPE" property="operationType" javaType="java.lang.String"/>
     <result column="START_DATE" property="startDate" javaType="java.time.OffsetDateTime"/>
     <result column="END_DATE" property="endDate" javaType="java.time.OffsetDateTime"/>
@@ -23,6 +25,7 @@
 
   <insert id="insert" parameterType="io.camunda.db.rdbms.write.domain.BatchOperationDbModel">
     INSERT INTO BATCH_OPERATION (BATCH_OPERATION_KEY,
+                                 STATE,
                                  OPERATION_TYPE,
                                  START_DATE,
                                  END_DATE,
@@ -30,6 +33,7 @@
                                  OPERATIONS_FAILED_COUNT,
                                  OPERATIONS_COMPLETED_COUNT)
     VALUES (#{batchOperationKey},
+            #{state},
             #{operationType},
             #{startDate},
             #{endDate},
@@ -50,7 +54,8 @@
   <update id="updateCompleted"
     parameterType="io.camunda.db.rdbms.sql.BatchOperationMapper$BatchOperationUpdateDto">
     UPDATE BATCH_OPERATION
-    SET END_DATE                   = #{endDate},
+    SET STATE    = #{state},
+        END_DATE = #{endDate},
         OPERATIONS_FAILED_COUNT    = #{operationsFailedCount},
         OPERATIONS_COMPLETED_COUNT = #{operationsCompletedCount}
     WHERE BATCH_OPERATION_KEY = #{batchOperationKey}
@@ -59,14 +64,60 @@
   <select id="count" resultType="java.lang.Long">
     SELECT COUNT(*)
     FROM BATCH_OPERATION
+    <include refid="io.camunda.db.rdbms.sql.BatchOperationMapper.searchFilter"/>
   </select>
 
-  <select id="search" resultMap="BatchOperationResultMap">
-    SELECT bo.*,
-           boi.ITEM_KEY
+  <select id="search"
+    parameterType="io.camunda.db.rdbms.read.domain.BatchOperationDbQuery"
+    resultMap="BatchOperationResultMap"
+    statementType="PREPARED">
+    SELECT * FROM (
+    SELECT
+    bo.*,
+    boi.ITEM_KEY
+    FROM
+    ( SELECT * FROM (
+    SELECT
+    bo.BATCH_OPERATION_KEY,
+    bo.STATE,
+    bo.OPERATION_TYPE,
+    bo.START_DATE,
+    bo.END_DATE,
+    bo.OPERATIONS_TOTAL_COUNT,
+    bo.OPERATIONS_FAILED_COUNT,
+    bo.OPERATIONS_COMPLETED_COUNT
     FROM BATCH_OPERATION bo
-           LEFT JOIN ${prefix}BATCH_OPERATION_ITEM boi
-                     ON (bo.BATCH_OPERATION_KEY = boi.BATCH_OPERATION_KEY)
+    <include refid="io.camunda.db.rdbms.sql.BatchOperationMapper.searchFilter"/>
+    ) filtered
+    <include refid="io.camunda.db.rdbms.sql.Commons.keySetPageFilter"/>
+    <include refid="io.camunda.db.rdbms.sql.Commons.orderBy"/>
+    <include refid="io.camunda.db.rdbms.sql.Commons.paging"/>
+    ) bo
+    LEFT JOIN BATCH_OPERATION_ITEM boi ON (bo.BATCH_OPERATION_KEY = boi.BATCH_OPERATION_KEY)
+    ) sorted
+    <include refid="io.camunda.db.rdbms.sql.Commons.orderBy"/>
   </select>
+
+  <sql id="searchFilter">
+    WHERE 1 = 1
+    <!-- basic filters -->
+    <if test="filter.batchOperationKeys != null and !filter.batchOperationKeys.isEmpty()">
+      AND BATCH_OPERATION_KEY IN
+      <foreach collection="filter.batchOperationKeys" item="value" open="(" separator=", "
+        close=")">#{value}
+      </foreach>
+    </if>
+    <if test="filter.operationTypes != null and !filter.operationTypes.isEmpty()">
+      AND OPERATION_TYPE IN
+      <foreach collection="filter.operationTypes" item="value" open="(" separator=", " close=")">
+        #{value}
+      </foreach>
+    </if>
+    <if test="filter.states != null and !filter.states.isEmpty()">
+      AND STATE IN
+      <foreach collection="filter.states" item="value" open="(" separator=", " close=")">#{value}
+      </foreach>
+    </if>
+  </sql>
 
 </mapper>
