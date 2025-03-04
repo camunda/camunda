@@ -17,9 +17,11 @@ import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.DistributionSummary;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
-import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import net.jcip.annotations.ThreadSafe;
 
+@ThreadSafe
 final class MessagingMetricsImpl implements MessagingMetrics {
 
   private final Map<String, Timer> requestResponseLatency;
@@ -40,12 +42,12 @@ final class MessagingMetricsImpl implements MessagingMetrics {
 
   MessagingMetricsImpl(final MeterRegistry registry) {
     this.registry = registry;
-    requestResponseLatency = new HashMap<>();
-    requestSize = Table.simple();
-    requestMessageCounter = Table.simple();
-    requestRespCounter = Table.simple();
-    responseCounter = Map3D.simple();
-    inFlightCounter = Table.simple();
+    requestResponseLatency = new ConcurrentHashMap<>();
+    requestSize = Table.concurrent();
+    requestMessageCounter = Table.concurrent();
+    requestRespCounter = Table.concurrent();
+    responseCounter = Map3D.concurrent();
+    inFlightCounter = Table.concurrent();
   }
 
   @Override
@@ -120,7 +122,7 @@ final class MessagingMetricsImpl implements MessagingMetrics {
             Timer.builder(REQUEST_RESPONSE_LATENCY.getName())
                 .description(REQUEST_RESPONSE_LATENCY.getDescription())
                 .serviceLevelObjectives(REQUEST_RESPONSE_LATENCY.getTimerSLOs())
-                .tags(MessagingKeyNames.TOPIC.asString(), t)
+                .tag(MessagingKeyNames.TOPIC.asString(), t)
                 .register(registry));
   }
 

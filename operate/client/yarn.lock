@@ -1234,9 +1234,9 @@
     react-markdown "8.0.7"
 
 "@camunda8/sdk@^8.6.8":
-  version "8.6.28"
-  resolved "https://registry.yarnpkg.com/@camunda8/sdk/-/sdk-8.6.28.tgz#52429dd17901b0e4e920077f4fc6a9aa87d06d4d"
-  integrity sha512-E8Lne/10XaBwYmL4AuRP4I6ZA97/ONraciAesAQJpOmmWl4wxfZyhBgszBxFy7xQRfEprdveIx2IRbvTolK4ng==
+  version "8.6.29"
+  resolved "https://registry.yarnpkg.com/@camunda8/sdk/-/sdk-8.6.29.tgz#77be8bb5e855b7e436b3dcf121c56c465b3ea37e"
+  integrity sha512-OhYvRWrZmXb8pCBYtbKsDiAH2qhEf0oSYf2VpcL38sENR6U3E/MXz8OqT1kSjdMLdvsscwrg4devEXAz18/cPA==
   dependencies:
     "@grpc/grpc-js" "1.12.5"
     "@grpc/proto-loader" "0.7.13"
@@ -2930,9 +2930,9 @@
     "@types/node" "*"
 
 "@types/node@*", "@types/node@>=13.7.0":
-  version "22.13.5"
-  resolved "https://registry.yarnpkg.com/@types/node/-/node-22.13.5.tgz#23add1d71acddab2c6a4d31db89c0f98d330b511"
-  integrity sha512-+lTU0PxZXn0Dr1NBtC7Y8cR21AJr87dLLU953CWA6pMxxv/UDc7jYAY90upcrie1nRcD6XNG5HOYEDtgW5TxAg==
+  version "22.13.9"
+  resolved "https://registry.yarnpkg.com/@types/node/-/node-22.13.9.tgz#5d9a8f7a975a5bd3ef267352deb96fb13ec02eca"
+  integrity sha512-acBjXdRJ3A6Pb3tqnw9HZmyR3Fiol3aGxRCK1x3d+6CDAMjl7I649wpSd+yNURCjbOUGu9tqtLKnTGxmK6CyGw==
   dependencies:
     undici-types "~6.20.0"
 

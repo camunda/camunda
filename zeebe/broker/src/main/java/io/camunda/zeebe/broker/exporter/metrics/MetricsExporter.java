@@ -52,32 +52,21 @@ public class MetricsExporter implements Exporter {
   private InstantSource clock;
 
   private Controller controller;
-  private MeterRegistry meterRegistry;
 
   public MetricsExporter() {
-    this(
-        new ExecutionLatencyMetrics(),
-        new TtlKeyCache(TIME_TO_LIVE.toMillis()),
-        new TtlKeyCache(TIME_TO_LIVE.toMillis()),
-        null);
+    this(new TtlKeyCache(TIME_TO_LIVE.toMillis()), new TtlKeyCache(TIME_TO_LIVE.toMillis()));
   }
 
   @VisibleForTesting
-  MetricsExporter(
-      final ExecutionLatencyMetrics executionLatencyMetrics,
-      final TtlKeyCache processInstanceCache,
-      final TtlKeyCache jobCache,
-      final MeterRegistry meterRegistry) {
-    this.executionLatencyMetrics = executionLatencyMetrics;
+  MetricsExporter(final TtlKeyCache processInstanceCache, final TtlKeyCache jobCache) {
     this.processInstanceCache = processInstanceCache;
     this.jobCache = jobCache;
-    this.meterRegistry = meterRegistry;
   }
 
   @Override
   public void configure(final Context context) throws Exception {
-    meterRegistry = context.getMeterRegistry();
-    executionLatencyMetrics = new ExecutionLatencyMetrics(meterRegistry, context.getPartitionId());
+    final MeterRegistry meterRegistry = context.getMeterRegistry();
+    executionLatencyMetrics = new ExecutionLatencyMetrics(meterRegistry);
     clock = context.clock();
     context.setFilter(
         new RecordFilter() {
