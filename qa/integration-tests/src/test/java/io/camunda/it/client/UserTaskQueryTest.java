@@ -17,6 +17,7 @@ import io.camunda.client.CamundaClient;
 import io.camunda.client.api.command.ProblemException;
 import io.camunda.client.api.search.response.UserTask;
 import io.camunda.client.api.search.response.UserTaskState;
+import io.camunda.client.impl.search.filter.builder.StringPropertyImpl;
 import io.camunda.client.protocol.rest.UserTaskVariableFilterRequest;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.zeebe.model.bpmn.Bpmn;
@@ -70,7 +71,9 @@ class UserTaskQueryTest {
   @Test
   public void shouldRetrieveTaskByLocalVariable() {
     final UserTaskVariableFilterRequest variableValueFilter =
-        new UserTaskVariableFilterRequest().name("task02").value("1");
+        new UserTaskVariableFilterRequest()
+            .name("task02")
+            .value(new StringPropertyImpl().eq("1").build());
 
     final var result =
         camundaClient
@@ -105,7 +108,9 @@ class UserTaskQueryTest {
   @Test
   public void shouldRetrieveTaskByProcessInstanceVariable() {
     final UserTaskVariableFilterRequest variableValueFilter =
-        new UserTaskVariableFilterRequest().name("task02").value("1");
+        new UserTaskVariableFilterRequest()
+            .name("task02")
+            .value(new StringPropertyImpl().eq("1").build());
 
     final var result =
         camundaClient
@@ -141,26 +146,31 @@ class UserTaskQueryTest {
 
   @Test
   public void shouldRetrieveTaskByProcessInstanceAndLocalVariable() {
-    final UserTaskVariableFilterRequest variableValueFilter =
-        new UserTaskVariableFilterRequest().name("task02");
+    final UserTaskVariableFilterRequest variableValueFilter1 =
+        new UserTaskVariableFilterRequest()
+            .name("task02")
+            .value(new StringPropertyImpl().eq("1").build());
+    final UserTaskVariableFilterRequest variableValueFilter2 =
+        new UserTaskVariableFilterRequest()
+            .name("task02")
+            .value(new StringPropertyImpl().eq("1").build());
 
     final var result =
         camundaClient
             .newUserTaskQuery()
             .filter(
                 f ->
-                    f.processInstanceVariables(List.of(variableValueFilter))
-                        .localVariables(List.of(variableValueFilter)))
+                    f.processInstanceVariables(List.of(variableValueFilter1))
+                        .localVariables(List.of(variableValueFilter2)))
             .send()
             .join();
 
     // Validate the size of the items
-    assertThat(result.items()).hasSize(2);
+    assertThat(result.items()).hasSize(1);
 
-    // Validate that names "P1" and "P2" exist in the result
+    // Validate that name "P1" exists in the result
     // Also validate no duplicated itens once it is 2 elements.
-    assertThat(result.items().stream().map(item -> item.getName()))
-        .containsExactlyInAnyOrder("P1", "P2");
+    assertThat(result.items().stream().map(item -> item.getName())).containsExactlyInAnyOrder("P1");
   }
 
   @Test
@@ -186,7 +196,9 @@ class UserTaskQueryTest {
   @Test
   public void shouldRetrieveVariablesFromUserTask() {
     final UserTaskVariableFilterRequest variableValueFilter =
-        new UserTaskVariableFilterRequest().name("task02").value("1");
+        new UserTaskVariableFilterRequest()
+            .name("task02")
+            .value(new StringPropertyImpl().eq("1").build());
 
     final var resultUserTaskQuery =
         camundaClient
@@ -255,23 +267,32 @@ class UserTaskQueryTest {
   }
 
   @Test
-  public void shouldRetrieveTaskByVariableNameSearch() {
+  public void shouldReturn400BadRequestIfVariableValueNull() {
+
+    // given
     final UserTaskVariableFilterRequest variableValueFilter =
         new UserTaskVariableFilterRequest().name("process01");
 
-    final var result =
-        camundaClient
-            .newUserTaskQuery()
-            .filter(f -> f.processInstanceVariables(List.of(variableValueFilter)))
-            .send()
-            .join();
-    assertThat(result.items().size()).isEqualTo(2);
+    // when
+    final var problemException =
+        assertThrows(
+            ProblemException.class,
+            () ->
+                camundaClient
+                    .newUserTaskQuery()
+                    .filter(f -> f.processInstanceVariables(List.of(variableValueFilter)))
+                    .send()
+                    .join());
+    // then
+    assertThat(problemException.code()).isEqualTo(400);
   }
 
   @Test
   public void shouldNotRetrieveTaskByInvalidVariableValue() {
     final UserTaskVariableFilterRequest variableValueFilter =
-        new UserTaskVariableFilterRequest().name("process01").value("\"pVariable\"");
+        new UserTaskVariableFilterRequest()
+            .name("process01")
+            .value(new StringPropertyImpl().eq("\"pVariable\"").build());
 
     final var result =
         camundaClient
@@ -283,12 +304,16 @@ class UserTaskQueryTest {
   }
 
   @Test
-  public void shouldRetrieveTaskByOrLocalVariableCondition() {
+  public void shouldNotRetrieveTaskIfNotAllLocalVariablesMatch() {
     final UserTaskVariableFilterRequest variableValueFilter1 =
-        new UserTaskVariableFilterRequest().name("task02").value("1");
+        new UserTaskVariableFilterRequest()
+            .name("task02")
+            .value(new StringPropertyImpl().eq("1").build());
 
     final UserTaskVariableFilterRequest variableValueFilter2 =
-        new UserTaskVariableFilterRequest().name("task01").value("\"test\"");
+        new UserTaskVariableFilterRequest()
+            .name("task01")
+            .value(new StringPropertyImpl().eq("\"test\"").build());
 
     final var result =
         camundaClient
@@ -296,7 +321,39 @@ class UserTaskQueryTest {
             .filter(f -> f.localVariables(List.of(variableValueFilter1, variableValueFilter2)))
             .send()
             .join();
-    assertThat(result.items().size()).isEqualTo(2);
+    assertThat(result.items()).isEmpty();
+  }
+
+  @Test
+  public void shouldRetrieveTaskByLocalVariablesLike() {
+    final UserTaskVariableFilterRequest variableValueFilter1 =
+        new UserTaskVariableFilterRequest()
+            .name("task01")
+            .value(new StringPropertyImpl().like("\"te*\"").build());
+
+    final var result =
+        camundaClient
+            .newUserTaskQuery()
+            .filter(f -> f.localVariables(List.of(variableValueFilter1)))
+            .send()
+            .join();
+    assertThat(result.items().size()).isEqualTo(1);
+  }
+
+  @Test
+  public void shouldRetrieveTaskByLocalVariablesIn() {
+    final UserTaskVariableFilterRequest variableValueFilter1 =
+        new UserTaskVariableFilterRequest()
+            .name("task01")
+            .value(new StringPropertyImpl().in("\"test\"").build());
+
+    final var result =
+        camundaClient
+            .newUserTaskQuery()
+            .filter(f -> f.localVariables(List.of(variableValueFilter1)))
+            .send()
+            .join();
+    assertThat(result.items().size()).isEqualTo(1);
   }
 
   @Test
