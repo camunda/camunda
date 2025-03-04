@@ -13,12 +13,9 @@ import io.camunda.search.entities.ProcessInstanceEntity;
 import io.camunda.search.filter.ProcessInstanceFilter;
 import io.camunda.service.ProcessInstanceServices;
 import io.camunda.service.search.core.SearchQueryService;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.batchoperation.PersistedBatchOperation;
 import io.camunda.zeebe.engine.state.immutable.BatchOperationState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
-import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationCreationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationExecutionRecord;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationIntent;
 import io.camunda.zeebe.stream.api.ReadonlyStreamProcessorContext;
@@ -37,7 +34,6 @@ public class BatchOperationExecutionScheduler implements StreamProcessorLifecycl
   private static final int BATCH_SIZE = 10;
   private final Duration pollingInterval;
   private final KeyGenerator keyGenerator;
-  private final StateWriter stateWriter;
 
   private final BatchOperationState batchOperationState;
   private ReadonlyStreamProcessorContext processingContext;
@@ -46,11 +42,9 @@ public class BatchOperationExecutionScheduler implements StreamProcessorLifecycl
   public BatchOperationExecutionScheduler(
       final ProcessingState processingState,
       final Set<SearchQueryService> queryServices,
-      final Writers writers,
       final KeyGenerator keyGenerator,
       final Duration pollingInterval) {
     batchOperationState = processingState.getBatchOperationState();
-    stateWriter = writers.state();
     this.keyGenerator = keyGenerator;
     this.queryServices = queryServices;
     this.pollingInterval = pollingInterval;
@@ -84,14 +78,6 @@ public class BatchOperationExecutionScheduler implements StreamProcessorLifecycl
     command.setBatchOperationType(batchOperation.getBatchOperationType());
     command.setKeys(keys);
     taskResultBuilder.appendCommandRecord(key, BatchOperationIntent.EXECUTE, command);
-
-    // FIXME do we need separate intents for creation and execution records?
-    stateWriter.appendFollowUpEvent(
-        batchOperation.getKey(),
-        BatchOperationIntent.EXECUTING,
-        new BatchOperationCreationRecord()
-            .setBatchOperationType(batchOperation.getBatchOperationType())
-            .setFilter(batchOperation.getFilterBuffer()));
 
     LOG.debug("Executing batch operation with key {}", key);
   }
