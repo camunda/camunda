@@ -27,6 +27,8 @@
 
 zeebe:
   broker:
+    processing:
+      maxCommandsInBatch: 1
     gateway:
       # Enable the embedded gateway to start on broker startup.
       # This setting can also be overridden using the environment variable ZEEBE_BROKER_GATEWAY_ENABLE.
@@ -154,8 +156,12 @@ camunda:
       prefix: zeebe-record
 logging:
   level:
-    io:
-      camunda: DEBUG
+    io.camunda: INFO
+    io.camunda.zeebe.transport: ERROR
+    io.camunda.zeebe.snapshots: WARN
+    io.camunda.zeebe.logstreams: WARN
+    io.camunda.zeebe.journal: WARN
+    io.camunda.zeebe.engine.processing.batchoperation: DEBUG
     io.camunda.db.rdbms: WARN
     io.camunda.exporter.rdbms: INFO
-    io.camunda.zeebe.engine.processing.batchoperation: DEBUG
+    io.camunda.service: DEBUG

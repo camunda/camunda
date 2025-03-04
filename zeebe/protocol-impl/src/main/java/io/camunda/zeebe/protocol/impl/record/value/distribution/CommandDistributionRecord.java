@@ -19,6 +19,7 @@ import io.camunda.zeebe.protocol.impl.record.value.authorization.IdentitySetupRe
 import io.camunda.zeebe.protocol.impl.record.value.authorization.MappingRecord;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.RoleRecord;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationCreationRecord;
+import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationExecutionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.clock.ClockRecord;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
 import io.camunda.zeebe.protocol.impl.record.value.group.GroupRecord;
@@ -59,6 +60,7 @@ public final class CommandDistributionRecord extends UnifiedRecordValue
     RECORDS_BY_TYPE.put(ValueType.REDISTRIBUTION, RedistributionRecord::new);
     RECORDS_BY_TYPE.put(ValueType.IDENTITY_SETUP, IdentitySetupRecord::new);
     RECORDS_BY_TYPE.put(ValueType.BATCH_OPERATION, BatchOperationCreationRecord::new);
+    RECORDS_BY_TYPE.put(ValueType.BATCH_OPERATION_EXECUTION, BatchOperationExecutionRecord::new);
   }
 
   /*
