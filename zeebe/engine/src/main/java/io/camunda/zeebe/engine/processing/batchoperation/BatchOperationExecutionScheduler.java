@@ -12,6 +12,7 @@ import static io.camunda.search.query.SearchQueryBuilders.processInstanceSearchQ
 import io.camunda.search.entities.ProcessInstanceEntity;
 import io.camunda.search.filter.ProcessInstanceFilter;
 import io.camunda.service.ProcessInstanceServices;
+import io.camunda.service.search.core.SearchQueryService;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
@@ -40,11 +41,11 @@ public class BatchOperationExecutionScheduler implements StreamProcessorLifecycl
 
   private final BatchOperationState batchOperationState;
   private ReadonlyStreamProcessorContext processingContext;
-  private final ProcessInstanceServices processInstanceServices;
+  private final Set<SearchQueryService> queryServices;
 
   public BatchOperationExecutionScheduler(
       final ProcessingState processingState,
-      final ProcessInstanceServices processInstanceServices,
+      final Set<SearchQueryService> queryServices,
       final Writers writers,
       final KeyGenerator keyGenerator,
       final Duration pollingInterval) {
@@ -52,7 +53,7 @@ public class BatchOperationExecutionScheduler implements StreamProcessorLifecycl
     commandWriter = writers.command();
     stateWriter = writers.state();
     this.keyGenerator = keyGenerator;
-    this.processInstanceServices = processInstanceServices;
+    this.queryServices = queryServices;
     this.pollingInterval = pollingInterval;
   }
 
@@ -110,8 +111,18 @@ public class BatchOperationExecutionScheduler implements StreamProcessorLifecycl
                 q.filter(filter)
                     .page(p -> p.from(0).size(BATCH_SIZE))
                     .resultConfig(r -> r.onlyKey(true)));
+    final ProcessInstanceServices processInstanceServices =
+        getQueryService(ProcessInstanceServices.class);
     return processInstanceServices.search(query).items().stream()
         .map(ProcessInstanceEntity::processInstanceKey)
         .collect(Collectors.toSet());
+  }
+
+  private <T extends SearchQueryService> T getQueryService(final Class<T> queryServicesClass) {
+    return queryServices.stream()
+        .filter(queryServicesClass::isInstance)
+        .map(queryServicesClass::cast)
+        .findFirst()
+        .orElseThrow();
   }
 }

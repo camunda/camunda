@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.batchoperation;
 
+import io.camunda.service.search.core.SearchQueryService;
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessors;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
@@ -15,6 +16,7 @@ import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationIntent;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import java.time.Duration;
+import java.util.Set;
 
 public final class BatchOperationSetupProcessors {
 
@@ -24,6 +26,7 @@ public final class BatchOperationSetupProcessors {
       final ProcessingState processingState,
       final Writers writers,
       final CommandDistributionBehavior commandDistributionBehavior,
+      final Set<SearchQueryService> searchQueryServices,
       final int partitionId) {
     typedRecordProcessors
         .onCommand(
@@ -63,6 +66,10 @@ public final class BatchOperationSetupProcessors {
         // FIXME pass the polling interval from configurations to the scheduler
         .withListener(
             new BatchOperationExecutionScheduler(
-                processingState, null, writers, keyGenerator, Duration.ofSeconds(10)));
+                processingState,
+                searchQueryServices,
+                writers,
+                keyGenerator,
+                Duration.ofSeconds(10)));
   }
 }
