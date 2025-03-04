@@ -842,12 +842,12 @@ jobs:
       - name: Build optimize dependencies
         uses: ./.github/actions/run-maven
         with:
-          parameters: -pl optimize/backend -am install -Dquickly -PskipFrontendBuild
+          parameters: -f optimize/pom.xml -pl backend -am install -Dskip.docker -DskipTests -PskipFrontendBuild
           threads: .5C
       - name: Test
         uses: ./.github/actions/run-maven
         with:
-          parameters: -f optimize/pom.xml  test -PskipFrontendBuild -Dskip.docker
+          parameters: -f optimize/pom.xml test -PskipFrontendBuild -Dskip.docker
           threads: .5C
       - name: Upload Test Results
         if: always()
