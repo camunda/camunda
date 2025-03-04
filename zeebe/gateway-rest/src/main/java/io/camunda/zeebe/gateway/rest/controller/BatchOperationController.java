@@ -11,10 +11,13 @@ import static io.camunda.zeebe.gateway.rest.RestErrorMapper.mapErrorToResponse;
 
 import io.camunda.service.BatchOperationServices;
 import io.camunda.zeebe.gateway.protocol.rest.BatchOperationSearchQueryResult;
+import io.camunda.zeebe.gateway.rest.RequestMapper;
 import io.camunda.zeebe.gateway.rest.SearchQueryResponseMapper;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaGetMapping;
-import io.camunda.zeebe.gateway.rest.annotation.CamundaPostMapping;
+import io.camunda.zeebe.gateway.rest.annotation.CamundaPutMapping;
+import java.util.concurrent.ExecutionException;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 
 @CamundaRestController
@@ -30,6 +33,48 @@ public class BatchOperationController {
   @CamundaGetMapping(path = "/search")
   public ResponseEntity<BatchOperationSearchQueryResult> searchBatchOperations() {
     return search();
+  }
+
+  @CamundaPutMapping(path = "/{key}/cancel")
+  public ResponseEntity<Object> cancelBatchOperation(@PathVariable final long key) {
+    // TODO better return value
+    try {
+      final var result = batchOperationServices
+          .withAuthentication(RequestMapper.getAuthentication())
+          .cancel(key).get();
+    } catch (final InterruptedException | ExecutionException e) {
+      throw new RuntimeException(e);
+    }
+
+    return ResponseEntity.noContent().build();
+  }
+
+  @CamundaPutMapping(path = "/{key}/pause")
+  public ResponseEntity<Object> PauseBatchOperation(@PathVariable final long key) {
+    // TODO better return value
+    try {
+      final var result = batchOperationServices
+          .withAuthentication(RequestMapper.getAuthentication())
+          .pause(key).get();
+    } catch (final InterruptedException | ExecutionException e) {
+      throw new RuntimeException(e);
+    }
+
+    return ResponseEntity.noContent().build();
+  }
+
+  @CamundaPutMapping(path = "/{key}/resume")
+  public ResponseEntity<Object> resumeBatchOperation(@PathVariable final long key) {
+    // TODO better return value
+    try {
+      final var result = batchOperationServices
+          .withAuthentication(RequestMapper.getAuthentication())
+          .resume(key).get();
+    } catch (final InterruptedException | ExecutionException e) {
+      throw new RuntimeException(e);
+    }
+
+    return ResponseEntity.noContent().build();
   }
 
   private ResponseEntity<BatchOperationSearchQueryResult> search() {

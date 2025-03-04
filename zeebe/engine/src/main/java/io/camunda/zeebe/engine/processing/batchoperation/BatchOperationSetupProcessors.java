@@ -35,6 +35,30 @@ public final class BatchOperationSetupProcessors {
                 commandDistributionBehavior))
         .onCommand(
             ValueType.BATCH_OPERATION_EXECUTION,
+            BatchOperationIntent.CANCEL,
+            new BatchOperationCancelProcessor(
+                writers,
+                keyGenerator,
+                commandDistributionBehavior,
+                processingState))
+        .onCommand(
+            ValueType.BATCH_OPERATION_EXECUTION,
+            BatchOperationIntent.PAUSE,
+            new BatchOperationPauseProcessor(
+                writers,
+                keyGenerator,
+                commandDistributionBehavior,
+                processingState))
+        .onCommand(
+            ValueType.BATCH_OPERATION_EXECUTION,
+            BatchOperationIntent.RESUME,
+            new BatchOperationResumeProcessor(
+                writers,
+                keyGenerator,
+                commandDistributionBehavior,
+                processingState))
+        .onCommand(
+            ValueType.BATCH_OPERATION_EXECUTION,
             BatchOperationIntent.EXECUTE,
             new BatchOperationExecuteProcessor(
                 writers,

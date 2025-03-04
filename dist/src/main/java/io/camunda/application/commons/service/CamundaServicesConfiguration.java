@@ -7,7 +7,6 @@
  */
 package io.camunda.application.commons.service;
 
-import com.google.api.gax.rpc.Batch;
 import io.camunda.document.store.EnvironmentConfigurationLoader;
 import io.camunda.document.store.SimpleDocumentStoreRegistry;
 import io.camunda.search.clients.AuthorizationSearchClient;
@@ -273,8 +272,11 @@ public class CamundaServicesConfiguration {
 
   @Bean
   public BatchOperationServices batchOperationServices(
+      final BrokerClient brokerClient,
+      final SecurityContextProvider securityContextProvider,
       final BatchOperationSearchClient batchOperationSearchClient) {
-    return new BatchOperationServices(batchOperationSearchClient);
+    return new BatchOperationServices(
+        brokerClient, securityContextProvider, batchOperationSearchClient, null);
   }
 
   @Bean
