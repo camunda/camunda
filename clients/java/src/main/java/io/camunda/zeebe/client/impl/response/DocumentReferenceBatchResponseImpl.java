@@ -15,10 +15,10 @@
  */
 package io.camunda.zeebe.client.impl.response;
 
+import io.camunda.client.protocol.rest.DocumentCreationBatchResponse;
+import io.camunda.client.protocol.rest.DocumentCreationFailureDetail;
 import io.camunda.zeebe.client.api.response.DocumentReferenceBatchResponse;
 import io.camunda.zeebe.client.api.response.DocumentReferenceResponse;
-import io.camunda.zeebe.client.protocol.rest.DocumentCreationBatchResponse;
-import io.camunda.zeebe.client.protocol.rest.DocumentCreationFailureDetail;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;

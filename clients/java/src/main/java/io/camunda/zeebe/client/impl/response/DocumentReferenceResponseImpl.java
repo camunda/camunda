@@ -15,9 +15,9 @@
  */
 package io.camunda.zeebe.client.impl.response;
 
+import io.camunda.client.protocol.rest.DocumentReference;
 import io.camunda.zeebe.client.api.response.DocumentMetadata;
 import io.camunda.zeebe.client.api.response.DocumentReferenceResponse;
-import io.camunda.zeebe.client.protocol.rest.DocumentReference;
 
 public class DocumentReferenceResponseImpl implements DocumentReferenceResponse {
 

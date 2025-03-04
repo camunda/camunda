@@ -21,10 +21,9 @@ import java.util.Map;
 
 public class DocumentMetadataImpl implements DocumentMetadata {
 
-  private final io.camunda.zeebe.client.protocol.rest.DocumentMetadata response;
+  private final io.camunda.client.protocol.rest.DocumentMetadata response;
 
-  public DocumentMetadataImpl(
-      final io.camunda.zeebe.client.protocol.rest.DocumentMetadata response) {
+  public DocumentMetadataImpl(final io.camunda.client.protocol.rest.DocumentMetadata response) {
     this.response = response;
   }
 

@@ -17,9 +17,9 @@ package io.camunda.zeebe.client.impl.util;
 
 import static io.camunda.zeebe.client.impl.command.ArgumentUtil.ensureNotNull;
 
+import io.camunda.client.protocol.rest.DocumentMetadata;
 import io.camunda.zeebe.client.api.command.DocumentBuilderStep1;
 import io.camunda.zeebe.client.api.command.DocumentBuilderStep1.DocumentBuilderStep2;
-import io.camunda.zeebe.client.protocol.rest.DocumentMetadata;
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.time.Duration;
