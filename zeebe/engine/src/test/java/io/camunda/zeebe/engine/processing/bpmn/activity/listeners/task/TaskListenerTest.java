@@ -2200,7 +2200,9 @@ public class TaskListenerTest {
             record.getIntent() == UserTaskIntent.COMPLETE_TASK_LISTENER
                 || record.getIntent() == UserTaskIntent.CORRECTED;
     assertThat(
-            RecordingExporter.userTaskRecords().limit(r -> r.getIntent() == terminalActionIntent))
+            RecordingExporter.userTaskRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .limit(r -> r.getIntent() == terminalActionIntent))
         .filteredOn(isRelevantUserTaskIntent)
         .extracting(Record::getIntent, r -> r.getValue().getChangedAttributes())
         .describedAs(
