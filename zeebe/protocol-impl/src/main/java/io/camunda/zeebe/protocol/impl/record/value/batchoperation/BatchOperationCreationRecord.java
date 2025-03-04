@@ -9,6 +9,7 @@ package io.camunda.zeebe.protocol.impl.record.value.batchoperation;
 
 import io.camunda.zeebe.msgpack.property.ArrayProperty;
 import io.camunda.zeebe.msgpack.property.EnumProperty;
+import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.value.LongValue;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.value.BatchOperationCreationRecordValue;
@@ -19,9 +20,12 @@ import java.util.stream.Collectors;
 public final class BatchOperationCreationRecord extends UnifiedRecordValue
     implements BatchOperationCreationRecordValue {
 
+  public static final String PROP_BATCH_OPERATION_KEY = "batchOperationKey";
   public static final String PROP_KEY_LIST = "keys";
   public static final String PROP_BATCH_OPERATION_TYPE = "batchOperationType";
 
+  private final LongProperty batchOperationKeyProp =
+      new LongProperty(PROP_BATCH_OPERATION_KEY, -1);
   private final ArrayProperty<LongValue> keysProp =
       new ArrayProperty<>(PROP_KEY_LIST, LongValue::new);
   private final EnumProperty<BatchOperationType> batchOperationTypeProp =
@@ -30,8 +34,19 @@ public final class BatchOperationCreationRecord extends UnifiedRecordValue
 
   public BatchOperationCreationRecord() {
     super(2);
-    declareProperty(keysProp)
+    declareProperty(batchOperationKeyProp)
+        .declareProperty(keysProp)
         .declareProperty(batchOperationTypeProp);
+  }
+
+  @Override
+  public Long getBatchOperationKey() {
+    return batchOperationKeyProp.getValue();
+  }
+
+  public void setBatchOperationKey(final Long batchOperationKey) {
+    batchOperationKeyProp.reset();
+    batchOperationKeyProp.setValue(batchOperationKey);
   }
 
   @Override

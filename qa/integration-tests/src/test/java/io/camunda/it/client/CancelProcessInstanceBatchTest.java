@@ -84,6 +84,9 @@ public class CancelProcessInstanceBatchTest {
 
     // then
     assertThat(result).isNotNull();
+    assertThat(result.getBatchOperationKey()).isNotNull();
+
+
     assertThat(result.keys()).hasSize(3);
 
     for (final Long key : result.keys()) {

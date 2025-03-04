@@ -75,8 +75,11 @@ public final class BatchOperationActivateProcessor
 
   private void createBatchOperationExecution(final Long key,
       final TypedRecord<BatchOperationCreationRecord> command) {
+    final var batchCreated = new BatchOperationCreationRecord();
+    batchCreated.wrap(command.getValue());
+    batchCreated.setBatchOperationKey(key);
     stateWriter.appendFollowUpEvent(key, BatchOperationIntent.CREATED,
-        command.getValue());
+        batchCreated);
 
     final var batchExecute = new BatchOperationExecutionRecord();
     batchExecute.setBatchOperationKey(key);
