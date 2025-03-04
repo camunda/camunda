@@ -223,7 +223,7 @@
       <groupId>io.camunda</groupId>
       <artifactId>camunda-search-client-opensearch</artifactId>
     </dependency>
-    
+
     <dependency>
       <groupId>org.opensearch.client</groupId>
       <artifactId>opensearch-java</artifactId>
