@@ -14,18 +14,14 @@ import (
 	"os"
 	"text/template"
 	"time"
+        "github.com/camunda/camunda/c8run/internal/types"
 )
 
 type opener interface {
 	OpenBrowser(protocol string, port int) error
 }
 
-type settings interface {
-	HasKeyStore() bool
-	Port() int
-}
-
-func QueryCamunda(c8 opener, name string, settings settings) error {
+func QueryCamunda(c8 opener, name string, settings types.C8RunSettings) error {
 	protocol := "http"
 	http.DefaultTransport.(*http.Transport).TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
 	if settings.HasKeyStore() {
@@ -34,12 +30,12 @@ func QueryCamunda(c8 opener, name string, settings settings) error {
 	healthEndpoint := protocol + "://localhost:9600/actuator/health"
 	if isRunning(name, healthEndpoint, 24, 14*time.Second) {
 		fmt.Println(name + " has successfully been started.")
-		err := c8.OpenBrowser(protocol, settings.Port())
+		err := c8.OpenBrowser(protocol, settings.Port)
 		if err != nil {
 			fmt.Println("Failed to open browser")
 			return nil
 		}
-		if err := printStatus(settings.Port()); err != nil {
+		if err := printStatus(settings.Port); err != nil {
 			fmt.Println("Failed to print status:", err)
 			return err
 		}
