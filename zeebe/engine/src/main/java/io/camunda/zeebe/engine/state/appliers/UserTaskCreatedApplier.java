@@ -31,6 +31,5 @@ public final class UserTaskCreatedApplier
 
     // Clear operational data related to the current update transition
     userTaskState.deleteIntermediateState(key);
-    userTaskState.deleteRecordRequestMetadata(key);
   }
 }
