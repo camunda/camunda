@@ -50,7 +50,7 @@ public class DbBatchOperationState implements MutableBatchOperationState {
     this.batchKey.wrapLong(batchKey);
     final var batch = columnFamily.get(this.batchKey);
     batch.setOffset(record.getOffset());
-    columnFamily.insert(this.batchKey, batch);
+    columnFamily.update(this.batchKey, batch);
   }
 
   @Override

@@ -23,12 +23,7 @@ import org.immutables.value.Value;
 @Value.Immutable
 @ImmutableProtocol(builder = ImmutableBatchOperationExecutionRecordValue.Builder.class)
 public interface BatchOperationExecutionRecordValue
-    extends RecordValue {
-
-  /**
-   * @return key of the root batch operation
-   */
-  Long getBatchOperationKey();
+    extends BatchOperationRelated, RecordValue {
 
   /**
    * @return last processed position in the log stream
