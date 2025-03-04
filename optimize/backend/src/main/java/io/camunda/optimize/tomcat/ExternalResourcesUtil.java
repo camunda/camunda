@@ -56,7 +56,7 @@ public class ExternalResourcesUtil extends HttpServlet {
     }
 
     /* serve file */
-    final InputStream fileStream = servletContext.getResourceAsStream("/optimize" + filename);
+    final InputStream fileStream = servletContext.getResourceAsStream(filename);
     final String mimeType = getMimeType(filename);
     response.setContentType(mimeType != null ? mimeType : DEFAULT_MIME_TYPE);
     StreamUtils.copy(fileStream, response.getOutputStream());

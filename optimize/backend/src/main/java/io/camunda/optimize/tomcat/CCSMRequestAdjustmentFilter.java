@@ -55,6 +55,7 @@ public class CCSMRequestAdjustmentFilter implements Filter {
     /* serve static external resource (Optimize only) */
     if (ExternalResourcesUtil.shouldServeStaticResource(httpRequest)) {
       ExternalResourcesUtil.serveStaticResource(httpRequest, httpResponse, servletContext);
+      return;
     }
 
     chain.doFilter(request, response);
