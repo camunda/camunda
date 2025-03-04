@@ -9,7 +9,7 @@ package io.camunda.it.migration.util;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.camunda.it.utils.ElasticOpenSearchSetupHelper;
+import io.camunda.qa.util.multidb.ElasticOpenSearchSetupHelper;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import java.io.IOException;
 import java.net.URI;
