@@ -21,6 +21,7 @@ import io.camunda.service.UserServices.UserDTO;
 import io.camunda.zeebe.gateway.protocol.rest.UserRequest;
 import io.camunda.zeebe.gateway.protocol.rest.UserUpdateRequest;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
+import io.camunda.zeebe.gateway.rest.validator.IdentifierPatterns;
 import io.camunda.zeebe.protocol.impl.record.value.user.UserRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import java.net.URI;
@@ -55,7 +56,7 @@ public class UserControllerTest extends RestControllerTest {
   }
 
   @ParameterizedTest
-  @ValueSource(strings = {"foo", "Foo", "foo@bar.baz", "f_oo@bar.baz", "foo123"})
+  @ValueSource(strings = {"foo", "Foo", "foo@bar.baz", "f_oo@bar.baz", "foo123", "foo-"})
   void createUserShouldReturnCreated(final String username) {
     // given
     final var dto = validCreateUserRequest(username);
@@ -331,7 +332,7 @@ public class UserControllerTest extends RestControllerTest {
       strings = {
         "foo~", "foo!", "foo#", "foo$", "foo%", "foo^", "foo&", "foo*", "foo(", "foo)", "foo=",
         "foo+", "foo{", "foo[", "foo}", "foo]", "foo|", "foo\\", "foo:", "foo;", "foo\"", "foo'",
-        "foo<", "foo>", "foo,", "foo?", "foo/", "foo ", "foo\t", "foo\n", "foo\r",
+        "foo<", "foo>", "foo,", "foo?", "foo/", "foo ", "foo\t", "foo\n", "foo\r"
       })
   void shouldRejectUserCreationWithIllegalCharactersInUsername(final String username) {
     // given
@@ -345,10 +346,10 @@ public class UserControllerTest extends RestControllerTest {
               "type": "about:blank",
               "status": 400,
               "title": "INVALID_ARGUMENT",
-              "detail": "The provided username contains illegal characters. It must match the pattern '[a-zA-Z0-9@._]+'.",
+              "detail": "The provided username contains illegal characters. It must match the pattern '%s'.",
               "instance": "%s"
             }"""
-            .formatted(USER_BASE_URL));
+            .formatted(IdentifierPatterns.ID_PATTERN, USER_BASE_URL));
     verifyNoInteractions(userServices);
   }
 
