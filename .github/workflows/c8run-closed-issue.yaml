@@ -1,10 +1,26 @@
-name: Close Issue
+name: "C8Run: Issue Closed"
 
 on:
   issues:
     types:
       - closed
-        
+
+permissions:
+  actions: write
+  attestations: none
+  checks: write
+  contents: read
+  deployments: none
+  id-token: none
+  issues: write
+  discussions: none
+  packages: none
+  pages: none
+  pull-requests: none
+  repository-projects: none
+  security-events: none
+  statuses: write
+
 jobs:
   update-closed-at-field:
     name: Update closed at field
