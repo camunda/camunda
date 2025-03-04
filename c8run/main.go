@@ -355,8 +355,6 @@ func startCommand(c8 types.C8Run, settings types.C8RunSettings, processInfo proc
 	}
 	javaOpts = overrides.AdjustJavaOpts(javaOpts, settings)
 
-	os.Setenv("ES_JAVA_OPTS", "-Xms1g -Xmx1g")
-
 	if !settings.DisableElasticsearch {
 		fmt.Print("Starting Elasticsearch " + processInfo.elasticsearch.version + "...\n")
 		fmt.Print("(Hint: you can find the log output in the 'elasticsearch.log' file in the 'log' folder of your distribution.)\n")
