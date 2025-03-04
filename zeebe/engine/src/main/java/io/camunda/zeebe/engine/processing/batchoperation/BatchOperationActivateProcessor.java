@@ -11,11 +11,9 @@ import io.camunda.zeebe.engine.processing.ExcludeAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.DistributedTypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationCreationRecord;
-import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationExecutionRecord;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationIntent;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
@@ -26,10 +24,9 @@ import org.slf4j.LoggerFactory;
 public final class BatchOperationActivateProcessor
     implements DistributedTypedRecordProcessor<BatchOperationCreationRecord> {
 
-  private static final Logger LOGGER = LoggerFactory.getLogger(
-      BatchOperationActivateProcessor.class);
+  private static final Logger LOGGER =
+      LoggerFactory.getLogger(BatchOperationActivateProcessor.class);
 
-  private final TypedCommandWriter commandWriter;
   private final KeyGenerator keyGenerator;
   private final CommandDistributionBehavior commandDistributionBehavior;
   private final StateWriter stateWriter;
@@ -38,9 +35,7 @@ public final class BatchOperationActivateProcessor
   public BatchOperationActivateProcessor(
       final Writers writers,
       final KeyGenerator keyGenerator,
-      final CommandDistributionBehavior commandDistributionBehavior
-  ) {
-    commandWriter = writers.command();
+      final CommandDistributionBehavior commandDistributionBehavior) {
     stateWriter = writers.state();
     responseWriter = writers.response();
     this.keyGenerator = keyGenerator;
@@ -52,20 +47,15 @@ public final class BatchOperationActivateProcessor
     final long key = keyGenerator.nextKey();
     final var recordValue = command.getValue();
     LOGGER.debug("Processing new command with key '{}': {}", key, recordValue);
+
     final var batchCreated = new BatchOperationCreationRecord();
     batchCreated.wrap(command.getValue());
     batchCreated.setBatchOperationKey(key);
 
-    createBatchOperationExecution(key, batchCreated);
+    stateWriter.appendFollowUpEvent(key, BatchOperationIntent.CREATED, batchCreated);
     responseWriter.writeEventOnCommand(
-        key,
-        BatchOperationIntent.CREATED,
-        batchCreated,
-        command);
-    commandDistributionBehavior
-        .withKey(key)
-        .unordered()
-        .distribute(command);
+        key, BatchOperationIntent.CREATED, batchCreated, command);
+    commandDistributionBehavior.withKey(key).unordered().distribute(command);
   }
 
   @Override
@@ -73,24 +63,8 @@ public final class BatchOperationActivateProcessor
     final var recordValue = command.getValue();
 
     LOGGER.debug("Processing distributed command with key '{}': {}", command.getKey(), recordValue);
-    createBatchOperationExecution(command.getKey(), command.getValue());
+    stateWriter.appendFollowUpEvent(
+        command.getKey(), BatchOperationIntent.CREATED, command.getValue());
     commandDistributionBehavior.acknowledgeCommand(command);
   }
-
-  private void createBatchOperationExecution(final Long key,
-      final BatchOperationCreationRecord value) {
-    stateWriter.appendFollowUpEvent(
-        key,
-        BatchOperationIntent.CREATED,
-        value
-    );
-
-    final var batchExecute = new BatchOperationExecutionRecord();
-    batchExecute.setBatchOperationKey(value.getBatchOperationKey());
-    batchExecute.setBatchOperationType(value.getBatchOperationType());
-    batchExecute.setOffset(0);
-    commandWriter.appendFollowUpCommand(key, BatchOperationIntent.EXECUTE,
-        batchExecute);
-  }
-
 }
