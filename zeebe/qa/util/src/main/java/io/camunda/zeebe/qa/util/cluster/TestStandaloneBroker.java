@@ -12,7 +12,7 @@ import io.camunda.application.Profile;
 import io.camunda.application.commons.CommonsModuleConfiguration;
 import io.camunda.application.commons.configuration.BrokerBasedConfiguration.BrokerBasedProperties;
 import io.camunda.application.commons.configuration.WorkingDirectoryConfiguration.WorkingDirectory;
-import io.camunda.application.commons.search.SearchEngineDatabaseConfiguration.SearchEngineConnectProperties;
+import io.camunda.application.commons.se.SearchEngineDatabaseConfiguration.SearchEngineConnectProperties;
 import io.camunda.application.commons.security.CamundaSecurityConfiguration.CamundaSecurityProperties;
 import io.camunda.authentication.config.AuthenticationProperties;
 import io.camunda.security.configuration.ConfiguredUser;
@@ -267,9 +267,12 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
           cfg.setClassName("io.camunda.exporter.CamundaExporter");
           cfg.setArgs(exporterConfigArgs);
         });
-    final var searchClient = new SearchEngineConnectProperties();
-    searchClient.setUrl(elasticSearchUrl);
-    withBean("camundaSearchClient", searchClient, SearchEngineConnectProperties.class);
+    final var searchEngineConnectConfig = new SearchEngineConnectProperties();
+    searchEngineConnectConfig.setUrl(elasticSearchUrl);
+    withBean(
+        "searchEngineConnectConfig",
+        searchEngineConnectConfig,
+        SearchEngineConnectProperties.class);
     return this;
   }
 

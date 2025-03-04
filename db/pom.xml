@@ -17,6 +17,7 @@
   <modules>
     <module>rdbms</module>
     <module>rdbms-schema</module>
+    <module>search-engine-client</module>
   </modules>
 
 </project>

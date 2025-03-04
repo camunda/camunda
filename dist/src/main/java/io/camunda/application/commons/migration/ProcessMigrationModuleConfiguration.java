@@ -7,7 +7,7 @@
  */
 package io.camunda.application.commons.migration;
 
-import io.camunda.application.commons.search.SearchEngineDatabaseConfiguration;
+import io.camunda.application.commons.se.SearchEngineDatabaseConfiguration;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
