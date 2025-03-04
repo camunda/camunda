@@ -7,15 +7,20 @@
  */
 package io.camunda.it.migration.util;
 
+import io.camunda.application.Profile;
 import io.camunda.client.CamundaClient;
-import io.camunda.it.utils.MultiDbConfigurator;
 import io.camunda.qa.util.cluster.TestRestOperateClient;
 import io.camunda.qa.util.cluster.TestRestTasklistClient;
 import io.camunda.qa.util.cluster.TestSimpleCamundaApplication;
+import io.camunda.qa.util.multidb.MultiDbConfigurator;
+import io.camunda.search.clients.DocumentBasedSearchClient;
+import io.camunda.search.connect.configuration.ConnectConfiguration;
 import io.camunda.search.connect.configuration.DatabaseType;
-import io.camunda.security.entity.AuthenticationMethod;
+import io.camunda.webapps.schema.descriptors.IndexDescriptor;
+import io.camunda.webapps.schema.descriptors.IndexDescriptors;
 import io.camunda.zeebe.exporter.ElasticsearchExporter;
 import io.camunda.zeebe.exporter.opensearch.OpensearchExporter;
+import io.camunda.zeebe.it.util.SearchClientsUtil;
 import io.camunda.zeebe.qa.util.actuator.PartitionsActuator;
 import io.camunda.zeebe.qa.util.cluster.TestZeebePort;
 import io.camunda.zeebe.util.FileUtil;
@@ -50,6 +55,7 @@ public class MigrationHelper implements ApiCallable {
   private MultiDbConfigurator multiDbConfigurator;
   private TestRestTasklistClient tasklistClient;
   private TestRestOperateClient operateClient;
+  private DocumentBasedSearchClient searchClients;
 
   public MigrationHelper(final Network network, final String indexPrefix) {
     this.network = network;
@@ -161,6 +167,12 @@ public class MigrationHelper implements ApiCallable {
     url = URL.formatted(broker.host(), broker.mappedPort(TestZeebePort.REST));
     tasklistClient = new TestRestTasklistClient(URI.create(url + "/"), databaseUrl);
     operateClient = new TestRestOperateClient(URI.create(url + "/"), "demo", "demo");
+    searchClients =
+        databaseType.isElasticSearch()
+            ? SearchClientsUtil.createLowLevelElasticsearchSearchClient(
+                getConnectConfiguration(databaseType))
+            : SearchClientsUtil.createLowLevelOpensearchSearchClient(
+                getConnectConfiguration(databaseType));
     return this;
   }
 
@@ -236,6 +248,15 @@ public class MigrationHelper implements ApiCallable {
     return camundaClient;
   }
 
+  /** Returns the search client. This is only usable on 8.8 version */
+  public DocumentBasedSearchClient getSearchClients() {
+    return searchClients;
+  }
+
+  public IndexDescriptor indexFor(final Class<? extends IndexDescriptor> clazz) {
+    return new IndexDescriptors(indexPrefix, true).get(clazz);
+  }
+
   private Map<String, String> elasticsearchConfiguration87() {
     return new HashMap<>() {
       {
@@ -305,5 +326,18 @@ public class MigrationHelper implements ApiCallable {
     } catch (final IOException e) {
       throw new RuntimeException(e);
     }
+  }
+
+  private ConnectConfiguration getConnectConfiguration(final DatabaseType databaseType) {
+    final ConnectConfiguration connectConfiguration = new ConnectConfiguration();
+    connectConfiguration.setType(databaseType.name());
+    connectConfiguration.setClusterName("elasticsearch");
+    connectConfiguration.setUrl(databaseUrl);
+    connectConfiguration.setIndexPrefix(indexPrefix);
+    if (databaseType.isOpenSearch()) {
+      connectConfiguration.setUsername(OS_USER);
+      connectConfiguration.setPassword(OS_PASSWORD);
+    }
+    return connectConfiguration;
   }
 }
