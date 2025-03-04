@@ -74,6 +74,7 @@ import io.camunda.client.api.command.UpdateRetriesJobCommandStep1;
 import io.camunda.client.api.command.UpdateTenantCommandStep1;
 import io.camunda.client.api.command.UpdateTimeoutJobCommandStep1;
 import io.camunda.client.api.command.UpdateUserTaskCommandStep1;
+import io.camunda.client.api.fetch.BatchOperationGetRequest;
 import io.camunda.client.api.fetch.DecisionDefinitionGetRequest;
 import io.camunda.client.api.fetch.DecisionDefinitionGetXmlRequest;
 import io.camunda.client.api.fetch.DecisionInstanceGetRequest;
@@ -153,6 +154,7 @@ import io.camunda.client.impl.command.UpdateAuthorizationCommandImpl;
 import io.camunda.client.impl.command.UpdateGroupCommandImpl;
 import io.camunda.client.impl.command.UpdateTenantCommandImpl;
 import io.camunda.client.impl.command.UpdateUserTaskCommandImpl;
+import io.camunda.client.impl.fetch.BatchOperationGetRequestImpl;
 import io.camunda.client.impl.fetch.DecisionDefinitionGetRequestImpl;
 import io.camunda.client.impl.fetch.DecisionDefinitionGetXmlRequestImpl;
 import io.camunda.client.impl.fetch.DecisionInstanceGetRequestImpl;
@@ -505,6 +507,11 @@ public final class CamundaClientImpl implements CamundaClient {
     filterModifier.accept(filter);
 
     return new CancelProcessInstancesBatchRequestImpl(httpClient, filter, jsonMapper);
+  }
+
+  @Override
+  public BatchOperationGetRequest newGetBatchOperationCommand(final Long batchOperationKey) {
+    return new BatchOperationGetRequestImpl(httpClient, batchOperationKey);
   }
 
   @Override

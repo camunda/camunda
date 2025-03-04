@@ -7,9 +7,11 @@
  */
 package io.camunda.service;
 
+import static io.camunda.search.query.SearchQueryBuilders.batchOperationQuery;
+
 import io.camunda.search.clients.BatchOperationSearchClient;
 import io.camunda.search.entities.BatchOperationEntity;
-import io.camunda.search.query.ProcessInstanceQuery;
+import io.camunda.search.query.BatchOperationQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.auth.Authentication;
 import io.camunda.service.search.core.SearchQueryService;
@@ -24,7 +26,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public final class BatchOperationServices extends
-    SearchQueryService<BatchOperationServices, ProcessInstanceQuery, BatchOperationEntity> {
+    SearchQueryService<BatchOperationServices, BatchOperationQuery, BatchOperationEntity> {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(BatchOperationServices.class);
 
@@ -45,15 +47,17 @@ public final class BatchOperationServices extends
         brokerClient, securityContextProvider, batchOperationSearchClient, authentication);
   }
 
-
-  // TODO not working, no filter is applied
+  // TODO Auth
   @Override
-  public SearchQueryResult<BatchOperationEntity> search(final ProcessInstanceQuery query) {
-    return search();
+  public SearchQueryResult<BatchOperationEntity> search(final BatchOperationQuery query) {
+    return batchOperationSearchClient.searchBatchOperations(query);
   }
 
-  public SearchQueryResult<BatchOperationEntity> search() {
-    return batchOperationSearchClient.searchBatchOperations();
+  public BatchOperationEntity getByKey(final Long key) {
+    final var result =
+        batchOperationSearchClient
+            .searchBatchOperations(batchOperationQuery(q -> q.filter(f -> f.batchOperationKeys(key))));
+    return getSingleResultOrThrow(result, key, "BatchOperation");
   }
 
   public CompletableFuture<BatchOperationExecutionRecord> cancel(final long batchKey) {

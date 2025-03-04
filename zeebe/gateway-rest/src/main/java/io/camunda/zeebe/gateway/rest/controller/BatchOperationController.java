@@ -7,9 +7,11 @@
  */
 package io.camunda.zeebe.gateway.rest.controller;
 
+import static io.camunda.search.query.SearchQueryBuilders.batchOperationQuery;
 import static io.camunda.zeebe.gateway.rest.RestErrorMapper.mapErrorToResponse;
 
 import io.camunda.service.BatchOperationServices;
+import io.camunda.zeebe.gateway.protocol.rest.BatchOperationResponse;
 import io.camunda.zeebe.gateway.protocol.rest.BatchOperationSearchQueryResult;
 import io.camunda.zeebe.gateway.rest.RequestMapper;
 import io.camunda.zeebe.gateway.rest.SearchQueryResponseMapper;
@@ -28,6 +30,21 @@ public class BatchOperationController {
 
   public BatchOperationController(final BatchOperationServices batchOperationServices) {
     this.batchOperationServices = batchOperationServices;
+  }
+
+  @CamundaGetMapping(path = "/{batchOperationKey}")
+  public ResponseEntity<BatchOperationResponse> getByKey(
+      @PathVariable("batchOperationKey") final Long batchOperationKey) {
+    try {
+      return ResponseEntity.ok()
+          .body(
+              SearchQueryResponseMapper.toBatchOperation(
+                  batchOperationServices
+                      .withAuthentication(RequestMapper.getAuthentication())
+                      .getByKey(batchOperationKey)));
+    } catch (final Exception e) {
+      return mapErrorToResponse(e);
+    }
   }
 
   @CamundaGetMapping(path = "/search")
@@ -79,7 +96,8 @@ public class BatchOperationController {
 
   private ResponseEntity<BatchOperationSearchQueryResult> search() {
     try {
-      final var result = batchOperationServices.search();
+      // TODO use query
+      final var result = batchOperationServices.search(batchOperationQuery().build());
       return ResponseEntity.ok(
           SearchQueryResponseMapper.toBatchOperationSearchQueryResult(result));
     } catch (final Exception e) {
