@@ -220,7 +220,8 @@ public final class EngineRule extends ExternalResource {
                         new SubscriptionCommandSender(partitionId, interPartitionCommandSender),
                         interPartitionCommandSender,
                         featureFlags,
-                        jobStreamer)
+                        jobStreamer,
+                        null)
                     .withListener(
                         new ProcessingExporterTransistor(
                             environmentRule.getLogStream(partitionId)));

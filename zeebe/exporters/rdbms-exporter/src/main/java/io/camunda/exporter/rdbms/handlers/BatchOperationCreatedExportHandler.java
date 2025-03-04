@@ -53,7 +53,7 @@ public class BatchOperationCreatedExportHandler
         .operationType(value.getBatchOperationType().name())
         .startDate(DateUtil.toOffsetDateTime(record.getTimestamp()))
         .endDate(null)
-        // TODO that needs to rely on something else, we don't have the keys here
+        // FIXME no more keys list in the creation record, that needs to rely on something else
         .operationsTotalCount(0)
         .operationsFailedCount(0)
         .operationsCompletedCount(0)
