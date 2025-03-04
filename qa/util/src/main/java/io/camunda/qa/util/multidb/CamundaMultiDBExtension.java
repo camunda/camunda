@@ -230,7 +230,7 @@ public class CamundaMultiDBExtension
             DEFAULT_OS_ADMIN_USER,
             DEFAULT_OS_ADMIN_PW,
             isHistoryRelatedTest);
-        final var expectedDescriptors = new IndexDescriptors(testPrefix, true).all();
+        final var expectedDescriptors = new IndexDescriptors(testPrefix, false).all();
         setupHelper = new ElasticOpenSearchSetupHelper(DEFAULT_OS_URL, expectedDescriptors);
       }
       case RDBMS -> multiDbConfigurator.configureRDBMSSupport();
