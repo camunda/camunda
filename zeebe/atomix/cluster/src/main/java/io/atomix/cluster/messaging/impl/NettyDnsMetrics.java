@@ -25,7 +25,7 @@ final class NettyDnsMetrics implements DnsQueryLifecycleObserver {
 
   private final Counter error;
   private final Counter written;
-  private final Counter succeded;
+  private final Counter succeeded;
 
   /** indexed by {@link DnsResponseCode#intValue()} */
   private final MeterProvider<Counter> failed;
@@ -34,7 +34,7 @@ final class NettyDnsMetrics implements DnsQueryLifecycleObserver {
     error = Counter.builder(ERROR.getName()).description(ERROR.getDescription()).register(registry);
     written =
         Counter.builder(WRITTEN.getName()).description(WRITTEN.getDescription()).register(registry);
-    succeded =
+    succeeded =
         Counter.builder(SUCCESS.getName()).description(SUCCESS.getDescription()).register(registry);
     failed =
         Counter.builder(FAILED.getName())
@@ -73,6 +73,6 @@ final class NettyDnsMetrics implements DnsQueryLifecycleObserver {
 
   @Override
   public void querySucceed() {
-    succeded.increment();
+    succeeded.increment();
   }
 }
