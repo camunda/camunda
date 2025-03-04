@@ -18,14 +18,19 @@ import io.camunda.webapps.schema.entities.usermanagement.MappingEntity;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.MappingIntent;
+import io.camunda.zeebe.protocol.record.value.ImmutableMappingRecordValue;
 import io.camunda.zeebe.protocol.record.value.MappingRecordValue;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
+import org.junit.jupiter.params.provider.EnumSource.Mode;
 
-public class MappingCreatedHandlerTest {
+public class MappingCreatedUpdatedHandlerTest {
   private final ProtocolFactory factory = new ProtocolFactory();
   private final String indexName = "test-mapping";
-  private final MappingCreatedHandler underTest = new MappingCreatedHandler(indexName);
+  private final MappingCreatedUpdatedHandler underTest =
+      new MappingCreatedUpdatedHandler(indexName);
 
   @Test
   void testGetHandledValueType() {
@@ -37,21 +42,29 @@ public class MappingCreatedHandlerTest {
     assertThat(underTest.getEntityType()).isEqualTo(MappingEntity.class);
   }
 
-  @Test
-  void shouldHandleRecord() {
-    // given
-    final Record<MappingRecordValue> mappingCreatedRecord =
-        factory.generateRecordWithIntent(ValueType.MAPPING, MappingIntent.CREATED);
-
-    // when - then
-    assertThat(underTest.handlesRecord(mappingCreatedRecord)).isTrue();
-  }
-
-  @Test
-  void shouldGenerateIds() {
+  @ParameterizedTest
+  @EnumSource(
+      value = MappingIntent.class,
+      names = {"CREATED", "UPDATED"},
+      mode = Mode.INCLUDE)
+  void shouldHandleRecord(final MappingIntent intent) {
     // given
     final Record<MappingRecordValue> mappingRecord =
-        factory.generateRecordWithIntent(ValueType.MAPPING, MappingIntent.CREATED);
+        factory.generateRecordWithIntent(ValueType.MAPPING, intent);
+
+    // when - then
+    assertThat(underTest.handlesRecord(mappingRecord)).isTrue();
+  }
+
+  @ParameterizedTest
+  @EnumSource(
+      value = MappingIntent.class,
+      names = {"CREATED", "UPDATED"},
+      mode = Mode.INCLUDE)
+  void shouldGenerateIds(final MappingIntent intent) {
+    // given
+    final Record<MappingRecordValue> mappingRecord =
+        factory.generateRecordWithIntent(ValueType.MAPPING, intent);
 
     // when
     final var idList = underTest.generateIds(mappingRecord);
@@ -68,6 +81,40 @@ public class MappingCreatedHandlerTest {
     // then
     assertThat(result).isNotNull();
     assertThat(result.getId()).isEqualTo("id");
+  }
+
+  @Test
+  void shouldUpdateEntityFromRecord() {
+    // given
+    final MappingRecordValue mappingRecordValue =
+        ImmutableMappingRecordValue.builder()
+            .from(factory.generateObject(MappingRecordValue.class))
+            .withClaimName("updated-claim")
+            .withClaimValue("updated-value")
+            .withName("updated-name")
+            .withId("updated-id")
+            .build();
+
+    final Record<MappingRecordValue> mappingRecord =
+        factory.generateRecord(
+            ValueType.MAPPING,
+            r -> r.withIntent(MappingIntent.CREATED).withValue(mappingRecordValue));
+
+    // when
+    final MappingEntity mappingEntity =
+        new MappingEntity()
+            .setClaimName("old-claim")
+            .setClaimValue("old-value")
+            .setName("old-name")
+            .setId("old-id");
+    underTest.updateEntity(mappingRecord, mappingEntity);
+
+    // then
+    assertThat(mappingEntity.getClaimName()).isEqualTo("updated-claim");
+    assertThat(mappingEntity.getClaimValue()).isEqualTo("updated-value");
+    assertThat(mappingEntity.getName()).isEqualTo("updated-name");
+    // should not update id
+    assertThat(mappingEntity.getId()).isEqualTo("old-id");
   }
 
   @Test

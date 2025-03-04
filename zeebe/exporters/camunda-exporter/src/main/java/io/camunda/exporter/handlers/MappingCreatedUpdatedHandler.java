@@ -12,14 +12,20 @@ import io.camunda.exporter.store.BatchRequest;
 import io.camunda.webapps.schema.entities.usermanagement.MappingEntity;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.intent.MappingIntent;
 import io.camunda.zeebe.protocol.record.value.MappingRecordValue;
 import java.util.List;
+import java.util.Set;
 
-public class MappingCreatedHandler implements ExportHandler<MappingEntity, MappingRecordValue> {
+public class MappingCreatedUpdatedHandler
+    implements ExportHandler<MappingEntity, MappingRecordValue> {
+  private static final Set<Intent> SUPPORTED_INTENTS =
+      Set.of(MappingIntent.CREATED, MappingIntent.UPDATED);
+
   private final String indexName;
 
-  public MappingCreatedHandler(final String indexName) {
+  public MappingCreatedUpdatedHandler(final String indexName) {
     this.indexName = indexName;
   }
 
@@ -36,7 +42,7 @@ public class MappingCreatedHandler implements ExportHandler<MappingEntity, Mappi
   @Override
   public boolean handlesRecord(final Record<MappingRecordValue> record) {
     return getHandledValueType().equals(record.getValueType())
-        && MappingIntent.CREATED.equals(record.getIntent());
+        && SUPPORTED_INTENTS.contains(record.getIntent());
   }
 
   @Override
