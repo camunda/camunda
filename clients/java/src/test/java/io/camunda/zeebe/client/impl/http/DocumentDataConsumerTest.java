@@ -28,7 +28,7 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.camunda.zeebe.client.protocol.rest.ProblemDetail;
+import io.camunda.client.protocol.rest.ProblemDetail;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
