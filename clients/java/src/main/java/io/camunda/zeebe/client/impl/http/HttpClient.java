@@ -20,6 +20,7 @@ import io.camunda.zeebe.client.CredentialsProvider;
 import io.camunda.zeebe.client.api.command.ClientException;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.Map;
@@ -32,6 +33,7 @@ import org.apache.hc.client5.http.impl.async.CloseableHttpAsyncClient;
 import org.apache.hc.core5.http.ContentType;
 import org.apache.hc.core5.http.HttpEntity;
 import org.apache.hc.core5.http.Method;
+import org.apache.hc.core5.http.nio.AsyncEntityConsumer;
 import org.apache.hc.core5.io.CloseMode;
 import org.apache.hc.core5.net.URIBuilder;
 import org.apache.hc.core5.util.TimeValue;
@@ -286,10 +288,17 @@ public final class HttpClient implements AutoCloseable {
     final SimpleHttpRequest request = requestBuilder.build();
     request.setConfig(requestConfig);
 
+    final AsyncEntityConsumer<ApiEntity<HttpT>> entityConsumer;
+    if (responseType == InputStream.class) {
+      entityConsumer = new DocumentDataConsumer<>(maxMessageSize, jsonMapper);
+    } else {
+      entityConsumer = new ApiEntityConsumer<>(jsonMapper, responseType, maxMessageSize);
+    }
+
     result.transportFuture(
         client.execute(
             SimpleRequestProducer.create(request),
-            new ApiResponseConsumer<>(jsonMapper, responseType, maxMessageSize),
+            new ApiResponseConsumer<>(entityConsumer),
             new ApiCallback<>(
                 result, transformer, credentialsProvider::shouldRetryRequest, retryAction)));
   }
