@@ -173,7 +173,7 @@ jobs:
       - name: upload asset to camunda download center
         uses: camunda/infra-global-github-actions/download-center-upload@main
         with:
-          gcp_credentials: ${{ steps.secrets.outputs.GCP_CREDENTIALS_NAME }}
+          gcp_credentials: ${{ needs.init.outputs.GCP_CREDENTIALS_NAME }}
           env: 'prod'
           version: ${{ inputs.camundaRelease }}
           artifact_file: ./c8run/camunda8-run-*
