@@ -221,7 +221,6 @@ public class RdbmsExporter {
       LOG.warn("Unnecessary flush called, since flush interval is zero or max queue size is zero");
       return;
     }
-    LOG.trace("[RDBMS Exporter] flushing queue");
     rdbmsWriter.flush();
   }
 }
