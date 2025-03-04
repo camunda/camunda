@@ -15,8 +15,8 @@
  */
 package io.camunda.zeebe.spring.client.configuration;
 
-import static io.camunda.zeebe.spring.client.configuration.PropertyUtil.getOrLegacyOrDefault;
-import static io.camunda.zeebe.spring.client.properties.ZeebeClientConfigurationProperties.DEFAULT;
+import static io.camunda.zeebe.spring.client.configuration.ZeebeClientConfigurationImpl.DEFAULT;
+import static java.util.Optional.ofNullable;
 
 import io.camunda.zeebe.client.api.JsonMapper;
 import io.camunda.zeebe.client.api.worker.BackoffSupplier;
@@ -33,7 +33,6 @@ import io.camunda.zeebe.spring.client.jobhandling.result.ResultProcessorStrategy
 import io.camunda.zeebe.spring.client.metrics.MetricsRecorder;
 import io.camunda.zeebe.spring.client.properties.CamundaClientProperties;
 import io.camunda.zeebe.spring.client.properties.PropertyBasedZeebeWorkerValueCustomizer;
-import io.camunda.zeebe.spring.client.properties.ZeebeClientConfigurationProperties;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
@@ -46,24 +45,16 @@ import org.springframework.context.annotation.Import;
     havingValue = "true",
     matchIfMissing = true)
 @Import({AnnotationProcessorConfiguration.class, JsonMapperConfiguration.class})
-@EnableConfigurationProperties({
-  ZeebeClientConfigurationProperties.class,
-  CamundaClientProperties.class
-})
+@EnableConfigurationProperties({CamundaClientProperties.class})
 public class ZeebeClientAllAutoConfiguration {
 
   @Bean
   @ConditionalOnMissingBean
   public ZeebeClientExecutorService zeebeClientExecutorService(
-      final ZeebeClientConfigurationProperties configurationProperties,
       final CamundaClientProperties camundaClientProperties) {
     return ZeebeClientExecutorService.createDefault(
-        getOrLegacyOrDefault(
-            "NumJobWorkerExecutionThreads",
-            () -> camundaClientProperties.getZeebe().getExecutionThreads(),
-            configurationProperties::getNumJobWorkerExecutionThreads,
-            DEFAULT.getNumJobWorkerExecutionThreads(),
-            null));
+        ofNullable(camundaClientProperties.getZeebe().getExecutionThreads())
+            .orElse(DEFAULT.getNumJobWorkerExecutionThreads()));
   }
 
   @Bean
@@ -112,9 +103,7 @@ public class ZeebeClientAllAutoConfiguration {
   @Bean("propertyBasedZeebeWorkerValueCustomizer")
   @ConditionalOnMissingBean(name = "propertyBasedZeebeWorkerValueCustomizer")
   public ZeebeWorkerValueCustomizer propertyBasedZeebeWorkerValueCustomizer(
-      final ZeebeClientConfigurationProperties configurationProperties,
       final CamundaClientProperties camundaClientProperties) {
-    return new PropertyBasedZeebeWorkerValueCustomizer(
-        configurationProperties, camundaClientProperties);
+    return new PropertyBasedZeebeWorkerValueCustomizer(camundaClientProperties);
   }
 }

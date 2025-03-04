@@ -51,13 +51,6 @@ public class PropertyBasedZeebeWorkerValueCustomizerTest {
     }
   }
 
-  private static ZeebeClientConfigurationProperties legacyProperties() {
-    final ZeebeClientConfigurationProperties properties =
-        new ZeebeClientConfigurationProperties(null);
-    properties.applyOverrides();
-    return properties;
-  }
-
   private static CamundaClientProperties properties() {
     return new CamundaClientProperties();
   }
@@ -79,9 +72,8 @@ public class PropertyBasedZeebeWorkerValueCustomizerTest {
   @Test
   void shouldNotAdjustVariableFilterVariablesAsActivatedJobIsInjectedLegacy() {
     // given
-    final ZeebeClientConfigurationProperties properties = legacyProperties();
     final PropertyBasedZeebeWorkerValueCustomizer customizer =
-        new PropertyBasedZeebeWorkerValueCustomizer(properties, properties());
+        new PropertyBasedZeebeWorkerValueCustomizer(properties());
     final ZeebeWorkerValue zeebeWorkerValue = new ZeebeWorkerValue();
     zeebeWorkerValue.setFetchVariables(List.of("a", "var1", "b"));
     zeebeWorkerValue.setMethodInfo(methodInfo(this, "testBean", "activatedJobWorker"));
@@ -95,7 +87,7 @@ public class PropertyBasedZeebeWorkerValueCustomizerTest {
   void shouldNotAdjustVariableFilterVariablesAsActivatedJobIsInjected() {
     // given
     final PropertyBasedZeebeWorkerValueCustomizer customizer =
-        new PropertyBasedZeebeWorkerValueCustomizer(legacyProperties(), properties());
+        new PropertyBasedZeebeWorkerValueCustomizer(properties());
     final ZeebeWorkerValue zeebeWorkerValue = new ZeebeWorkerValue();
     zeebeWorkerValue.setFetchVariables(List.of("a", "var1", "b"));
     zeebeWorkerValue.setMethodInfo(methodInfo(this, "testBean", "activatedJobWorker"));
@@ -103,21 +95,6 @@ public class PropertyBasedZeebeWorkerValueCustomizerTest {
     customizer.customize(zeebeWorkerValue);
     // then
     assertThat(zeebeWorkerValue.getFetchVariables()).containsExactly("a", "var1", "b");
-  }
-
-  @Test
-  void shouldSetDefaultNameLegacy() {
-    // given
-    final ZeebeClientConfigurationProperties properties = legacyProperties();
-    properties.getWorker().setDefaultName("defaultName");
-    final PropertyBasedZeebeWorkerValueCustomizer customizer =
-        new PropertyBasedZeebeWorkerValueCustomizer(properties, properties());
-    final ZeebeWorkerValue zeebeWorkerValue = new ZeebeWorkerValue();
-    zeebeWorkerValue.setMethodInfo(methodInfo(this, "testBean", "sampleWorker"));
-    // when
-    customizer.customize(zeebeWorkerValue);
-    // then
-    assertThat(zeebeWorkerValue.getName()).isEqualTo("defaultName");
   }
 
   @Test
@@ -129,7 +106,7 @@ public class PropertyBasedZeebeWorkerValueCustomizerTest {
     properties.setZeebe(zeebeClientProperties);
     properties.getZeebe().getDefaults().setName("defaultName");
     final PropertyBasedZeebeWorkerValueCustomizer customizer =
-        new PropertyBasedZeebeWorkerValueCustomizer(legacyProperties(), properties);
+        new PropertyBasedZeebeWorkerValueCustomizer(properties);
     final ZeebeWorkerValue zeebeWorkerValue = new ZeebeWorkerValue();
     zeebeWorkerValue.setMethodInfo(methodInfo(this, "testBean", "sampleWorker"));
     // when
@@ -142,7 +119,7 @@ public class PropertyBasedZeebeWorkerValueCustomizerTest {
   void shouldSetGeneratedNameLegacy() {
     // given
     final PropertyBasedZeebeWorkerValueCustomizer customizer =
-        new PropertyBasedZeebeWorkerValueCustomizer(legacyProperties(), properties());
+        new PropertyBasedZeebeWorkerValueCustomizer(properties());
     final ZeebeWorkerValue zeebeWorkerValue = new ZeebeWorkerValue();
     zeebeWorkerValue.setMethodInfo(methodInfo(this, "testBean", "sampleWorker"));
     // when
@@ -155,7 +132,7 @@ public class PropertyBasedZeebeWorkerValueCustomizerTest {
   void shouldSetGeneratedName() {
     // given
     final PropertyBasedZeebeWorkerValueCustomizer customizer =
-        new PropertyBasedZeebeWorkerValueCustomizer(legacyProperties(), properties());
+        new PropertyBasedZeebeWorkerValueCustomizer(properties());
     final ZeebeWorkerValue zeebeWorkerValue = new ZeebeWorkerValue();
     zeebeWorkerValue.setMethodInfo(methodInfo(this, "testBean", "sampleWorker"));
     // when
@@ -165,31 +142,13 @@ public class PropertyBasedZeebeWorkerValueCustomizerTest {
   }
 
   @Test
-  void shouldSetDefaultTenantIdsLegacy() {
-    // given
-    final ZeebeClientConfigurationProperties properties = legacyProperties();
-    properties.setDefaultJobWorkerTenantIds(List.of("customTenantId"));
-
-    final PropertyBasedZeebeWorkerValueCustomizer customizer =
-        new PropertyBasedZeebeWorkerValueCustomizer(properties, properties());
-
-    final ZeebeWorkerValue zeebeWorkerValue = new ZeebeWorkerValue();
-    zeebeWorkerValue.setMethodInfo(methodInfo(this, "testBean", "sampleWorker"));
-
-    // when
-    customizer.customize(zeebeWorkerValue);
-    // then
-    assertThat(zeebeWorkerValue.getTenantIds()).contains("customTenantId");
-  }
-
-  @Test
   void shouldSetDefaultTenantIds() {
     // given
     final CamundaClientProperties properties = properties();
-    properties.setTenantIds(List.of("customTenantId"));
+    properties.getZeebe().getDefaults().setTenantIds(List.of("customTenantId"));
 
     final PropertyBasedZeebeWorkerValueCustomizer customizer =
-        new PropertyBasedZeebeWorkerValueCustomizer(legacyProperties(), properties);
+        new PropertyBasedZeebeWorkerValueCustomizer(properties);
 
     final ZeebeWorkerValue zeebeWorkerValue = new ZeebeWorkerValue();
     zeebeWorkerValue.setMethodInfo(methodInfo(this, "testBean", "sampleWorker"));
@@ -197,21 +156,6 @@ public class PropertyBasedZeebeWorkerValueCustomizerTest {
     customizer.customize(zeebeWorkerValue);
     // then
     assertThat(zeebeWorkerValue.getTenantIds()).contains("customTenantId");
-  }
-
-  @Test
-  void shouldSetDefaultTypeLegacy() {
-    // given
-    final ZeebeClientConfigurationProperties properties = legacyProperties();
-    properties.getWorker().setDefaultType("defaultType");
-    final PropertyBasedZeebeWorkerValueCustomizer customizer =
-        new PropertyBasedZeebeWorkerValueCustomizer(properties, properties());
-    final ZeebeWorkerValue zeebeWorkerValue = new ZeebeWorkerValue();
-    zeebeWorkerValue.setMethodInfo(methodInfo(this, "testBean", "sampleWorker"));
-    // when
-    customizer.customize(zeebeWorkerValue);
-    // then
-    assertThat(zeebeWorkerValue.getType()).isEqualTo("defaultType");
   }
 
   @Test
@@ -223,7 +167,7 @@ public class PropertyBasedZeebeWorkerValueCustomizerTest {
     properties.setZeebe(zeebeClientProperties);
     properties.getZeebe().getDefaults().setType("defaultType");
     final PropertyBasedZeebeWorkerValueCustomizer customizer =
-        new PropertyBasedZeebeWorkerValueCustomizer(legacyProperties(), properties);
+        new PropertyBasedZeebeWorkerValueCustomizer(properties);
     final ZeebeWorkerValue zeebeWorkerValue = new ZeebeWorkerValue();
     zeebeWorkerValue.setMethodInfo(methodInfo(this, "testBean", "sampleWorker"));
     // when
@@ -236,7 +180,7 @@ public class PropertyBasedZeebeWorkerValueCustomizerTest {
   void shouldSetGeneratedTypeLegacy() {
     // given
     final PropertyBasedZeebeWorkerValueCustomizer customizer =
-        new PropertyBasedZeebeWorkerValueCustomizer(legacyProperties(), properties());
+        new PropertyBasedZeebeWorkerValueCustomizer(properties());
     final ZeebeWorkerValue zeebeWorkerValue = new ZeebeWorkerValue();
     zeebeWorkerValue.setMethodInfo(methodInfo(this, "testBean", "sampleWorker"));
     // when
@@ -249,7 +193,7 @@ public class PropertyBasedZeebeWorkerValueCustomizerTest {
   void shouldSetGeneratedType() {
     // given
     final PropertyBasedZeebeWorkerValueCustomizer customizer =
-        new PropertyBasedZeebeWorkerValueCustomizer(legacyProperties(), properties());
+        new PropertyBasedZeebeWorkerValueCustomizer(properties());
     final ZeebeWorkerValue zeebeWorkerValue = new ZeebeWorkerValue();
     zeebeWorkerValue.setMethodInfo(methodInfo(this, "testBean", "sampleWorker"));
     // when
@@ -262,7 +206,7 @@ public class PropertyBasedZeebeWorkerValueCustomizerTest {
   void shouldSetVariablesFromVariableAnnotation() {
     // given
     final PropertyBasedZeebeWorkerValueCustomizer customizer =
-        new PropertyBasedZeebeWorkerValueCustomizer(legacyProperties(), properties());
+        new PropertyBasedZeebeWorkerValueCustomizer(properties());
     final ZeebeWorkerValue zeebeWorkerValue = new ZeebeWorkerValue();
     zeebeWorkerValue.setMethodInfo(methodInfo(this, "testBean", "sampleWorker"));
     // when
@@ -275,7 +219,7 @@ public class PropertyBasedZeebeWorkerValueCustomizerTest {
   void shouldSetVariablesFromVariablesAsTypeAnnotation() {
     // given
     final PropertyBasedZeebeWorkerValueCustomizer customizer =
-        new PropertyBasedZeebeWorkerValueCustomizer(legacyProperties(), properties());
+        new PropertyBasedZeebeWorkerValueCustomizer(properties());
     final ZeebeWorkerValue zeebeWorkerValue = new ZeebeWorkerValue();
     zeebeWorkerValue.setMethodInfo(methodInfo(this, "testBean", "sampleWorker"));
     // when
@@ -288,7 +232,7 @@ public class PropertyBasedZeebeWorkerValueCustomizerTest {
   void shouldNotSetNameOfVariablesAsTypeAnnotatedFieldLegacy() {
     // given
     final PropertyBasedZeebeWorkerValueCustomizer customizer =
-        new PropertyBasedZeebeWorkerValueCustomizer(legacyProperties(), properties());
+        new PropertyBasedZeebeWorkerValueCustomizer(properties());
     final ZeebeWorkerValue zeebeWorkerValue = new ZeebeWorkerValue();
     zeebeWorkerValue.setMethodInfo(methodInfo(this, "testBean", "sampleWorker"));
     // when
@@ -301,31 +245,13 @@ public class PropertyBasedZeebeWorkerValueCustomizerTest {
   void shouldNotSetNameOfVariablesAsTypeAnnotatedField() {
     // given
     final PropertyBasedZeebeWorkerValueCustomizer customizer =
-        new PropertyBasedZeebeWorkerValueCustomizer(legacyProperties(), properties());
+        new PropertyBasedZeebeWorkerValueCustomizer(properties());
     final ZeebeWorkerValue zeebeWorkerValue = new ZeebeWorkerValue();
     zeebeWorkerValue.setMethodInfo(methodInfo(this, "testBean", "sampleWorker"));
     // when
     customizer.customize(zeebeWorkerValue);
     // then
     assertThat(zeebeWorkerValue.getFetchVariables()).doesNotContain("var2");
-  }
-
-  @Test
-  void shouldApplyOverridesLegacy() {
-    // given
-    final ZeebeClientConfigurationProperties properties = legacyProperties();
-    final ZeebeWorkerValue override = new ZeebeWorkerValue();
-    override.setEnabled(false);
-    properties.getWorker().getOverride().put("sampleWorker", override);
-    final PropertyBasedZeebeWorkerValueCustomizer customizer =
-        new PropertyBasedZeebeWorkerValueCustomizer(properties, properties());
-    final ZeebeWorkerValue zeebeWorkerValue = new ZeebeWorkerValue();
-    zeebeWorkerValue.setMethodInfo(methodInfo(this, "testBean", "sampleWorker"));
-    assertThat(zeebeWorkerValue.getEnabled()).isNull();
-    // when
-    customizer.customize(zeebeWorkerValue);
-    // then
-    assertThat(zeebeWorkerValue.getEnabled()).isFalse();
   }
 
   @Test
@@ -340,7 +266,7 @@ public class PropertyBasedZeebeWorkerValueCustomizerTest {
     zeebeClientProperties.setOverride(overrideMap);
     properties.setZeebe(zeebeClientProperties);
     final PropertyBasedZeebeWorkerValueCustomizer customizer =
-        new PropertyBasedZeebeWorkerValueCustomizer(legacyProperties(), properties);
+        new PropertyBasedZeebeWorkerValueCustomizer(properties);
     final ZeebeWorkerValue zeebeWorkerValue = new ZeebeWorkerValue();
     zeebeWorkerValue.setMethodInfo(methodInfo(this, "testBean", "sampleWorker"));
     assertThat(zeebeWorkerValue.getEnabled()).isNull();
@@ -360,7 +286,7 @@ public class PropertyBasedZeebeWorkerValueCustomizerTest {
     zeebeClientProperties.setDefaults(override);
     properties.setZeebe(zeebeClientProperties);
     final PropertyBasedZeebeWorkerValueCustomizer customizer =
-        new PropertyBasedZeebeWorkerValueCustomizer(legacyProperties(), properties);
+        new PropertyBasedZeebeWorkerValueCustomizer(properties);
     final ZeebeWorkerValue zeebeWorkerValue = new ZeebeWorkerValue();
     zeebeWorkerValue.setMethodInfo(methodInfo(this, "testBean", "sampleWorker"));
     assertThat(zeebeWorkerValue.getEnabled()).isNull();
@@ -385,7 +311,7 @@ public class PropertyBasedZeebeWorkerValueCustomizerTest {
     zeebeClientProperties.setDefaults(globalOverride);
     properties.setZeebe(zeebeClientProperties);
     final PropertyBasedZeebeWorkerValueCustomizer customizer =
-        new PropertyBasedZeebeWorkerValueCustomizer(legacyProperties(), properties);
+        new PropertyBasedZeebeWorkerValueCustomizer(properties);
     final ZeebeWorkerValue zeebeWorkerValue = new ZeebeWorkerValue();
     zeebeWorkerValue.setMethodInfo(methodInfo(this, "testBean", "sampleWorker"));
     assertThat(zeebeWorkerValue.getEnabled()).isNull();
@@ -399,7 +325,7 @@ public class PropertyBasedZeebeWorkerValueCustomizerTest {
   void shouldApplyPropertyAnnotationOnVariableFiltering() {
     // given
     final PropertyBasedZeebeWorkerValueCustomizer customizer =
-        new PropertyBasedZeebeWorkerValueCustomizer(legacyProperties(), properties());
+        new PropertyBasedZeebeWorkerValueCustomizer(properties());
     final ZeebeWorkerValue zeebeWorkerValue = new ZeebeWorkerValue();
     zeebeWorkerValue.setMethodInfo(methodInfo(this, "testBean", "sampleWorkerWithJsonProperty"));
 
@@ -414,7 +340,7 @@ public class PropertyBasedZeebeWorkerValueCustomizerTest {
   void shouldNotApplyPropertyAnnotationOnEmptyValue() {
     // given
     final PropertyBasedZeebeWorkerValueCustomizer customizer =
-        new PropertyBasedZeebeWorkerValueCustomizer(legacyProperties(), properties());
+        new PropertyBasedZeebeWorkerValueCustomizer(properties());
     final ZeebeWorkerValue zeebeWorkerValue = new ZeebeWorkerValue();
     zeebeWorkerValue.setMethodInfo(
         methodInfo(this, "testBean", "sampleWorkerWithEmptyJsonProperty"));
@@ -433,7 +359,7 @@ public class PropertyBasedZeebeWorkerValueCustomizerTest {
     properties.getZeebe().getDefaults().setName("globalName");
     properties.getZeebe().getDefaults().setFetchVariables(List.of("overrideVariable"));
     final PropertyBasedZeebeWorkerValueCustomizer customizer =
-        new PropertyBasedZeebeWorkerValueCustomizer(legacyProperties(), properties);
+        new PropertyBasedZeebeWorkerValueCustomizer(properties);
     final ZeebeWorkerValue jobWorkerValue = new ZeebeWorkerValue();
     jobWorkerValue.setMethodInfo(methodInfo(this, "testBean", "sampleWorkerWithJsonProperty"));
     jobWorkerValue.setType("initialValue");
@@ -451,7 +377,7 @@ public class PropertyBasedZeebeWorkerValueCustomizerTest {
     properties.getZeebe().getDefaults().setType("globalOverride");
     properties.getZeebe().getDefaults().setName("globalName");
     final PropertyBasedZeebeWorkerValueCustomizer customizer =
-        new PropertyBasedZeebeWorkerValueCustomizer(legacyProperties(), properties);
+        new PropertyBasedZeebeWorkerValueCustomizer(properties);
     final ZeebeWorkerValue jobWorkerValue = new ZeebeWorkerValue();
     jobWorkerValue.setMethodInfo(methodInfo(this, "testBean", "sampleWorkerWithJsonProperty"));
     customizer.customize(jobWorkerValue);
@@ -468,7 +394,7 @@ public class PropertyBasedZeebeWorkerValueCustomizerTest {
     override.setFetchVariables(List.of("overrideVariable"));
     properties.getZeebe().getOverride().put("initialValue", override);
     final PropertyBasedZeebeWorkerValueCustomizer customizer =
-        new PropertyBasedZeebeWorkerValueCustomizer(legacyProperties(), properties);
+        new PropertyBasedZeebeWorkerValueCustomizer(properties);
     final ZeebeWorkerValue jobWorkerValue = new ZeebeWorkerValue();
     jobWorkerValue.setMethodInfo(methodInfo(this, "testBean", "sampleWorkerWithJsonProperty"));
     jobWorkerValue.setType("initialValue");

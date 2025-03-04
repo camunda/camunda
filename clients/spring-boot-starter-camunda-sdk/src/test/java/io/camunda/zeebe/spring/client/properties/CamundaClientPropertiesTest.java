@@ -37,4 +37,18 @@ public class CamundaClientPropertiesTest {
           .isEqualTo("/some/path");
     }
   }
+
+  @Nested
+  @SpringBootTest(
+      classes = CamundaClientPropertiesTestConfig.class,
+      properties = {"zeebe.client.cloud.credentials-cache-path=/some/path"})
+  class LegacyCredentialsCachePathConfigTest {
+    @Autowired CamundaClientProperties camundaClientProperties;
+
+    @Test
+    void shouldApplyProperty() {
+      assertThat(camundaClientProperties.getAuth().getCredentialsCachePath())
+          .isEqualTo("/some/path");
+    }
+  }
 }

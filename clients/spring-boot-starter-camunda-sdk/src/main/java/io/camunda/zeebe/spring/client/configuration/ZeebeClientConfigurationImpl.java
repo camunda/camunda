@@ -15,239 +15,145 @@
  */
 package io.camunda.zeebe.spring.client.configuration;
 
-import static io.camunda.zeebe.spring.client.configuration.PropertyUtil.*;
-import static io.camunda.zeebe.spring.client.properties.ZeebeClientConfigurationProperties.*;
-import static org.springframework.util.StringUtils.hasText;
+import static java.util.Optional.ofNullable;
 
 import io.camunda.zeebe.client.CredentialsProvider;
 import io.camunda.zeebe.client.ZeebeClientConfiguration;
 import io.camunda.zeebe.client.api.JsonMapper;
-import io.camunda.zeebe.client.impl.NoopCredentialsProvider;
-import io.camunda.zeebe.client.impl.oauth.OAuthCredentialsProviderBuilder;
-import io.camunda.zeebe.client.impl.util.Environment;
+import io.camunda.zeebe.client.impl.ZeebeClientBuilderImpl;
 import io.camunda.zeebe.spring.client.jobhandling.ZeebeClientExecutorService;
 import io.camunda.zeebe.spring.client.properties.CamundaClientProperties;
-import io.camunda.zeebe.spring.client.properties.CamundaClientProperties.ClientMode;
-import io.camunda.zeebe.spring.client.properties.PropertiesUtil;
-import io.camunda.zeebe.spring.client.properties.ZeebeClientConfigurationProperties;
 import io.grpc.ClientInterceptor;
-import jakarta.annotation.PostConstruct;
 import java.net.MalformedURLException;
 import java.net.URI;
 import java.time.Duration;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
+import java.util.Properties;
 import java.util.concurrent.ScheduledExecutorService;
 import org.apache.hc.client5.http.async.AsyncExecChainHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.util.unit.DataSize;
 
 public class ZeebeClientConfigurationImpl implements ZeebeClientConfiguration {
+  public static final ZeebeClientBuilderImpl DEFAULT =
+      (ZeebeClientBuilderImpl) new ZeebeClientBuilderImpl().withProperties(new Properties());
 
   private static final Logger LOG = LoggerFactory.getLogger(ZeebeClientConfigurationImpl.class);
-  private final Map<String, Object> configCache = new HashMap<>();
-  private final ZeebeClientConfigurationProperties properties;
   private final CamundaClientProperties camundaClientProperties;
   private final JsonMapper jsonMapper;
   private final List<ClientInterceptor> interceptors;
   private final List<AsyncExecChainHandler> chainHandlers;
   private final ZeebeClientExecutorService zeebeClientExecutorService;
+  private final CredentialsProvider credentialsProvider;
 
   @Autowired
   public ZeebeClientConfigurationImpl(
-      final ZeebeClientConfigurationProperties properties,
       final CamundaClientProperties camundaClientProperties,
       final JsonMapper jsonMapper,
       final List<ClientInterceptor> interceptors,
       final List<AsyncExecChainHandler> chainHandlers,
-      final ZeebeClientExecutorService zeebeClientExecutorService) {
-    this.properties = properties;
+      final ZeebeClientExecutorService zeebeClientExecutorService,
+      final CredentialsProvider credentialsProvider) {
     this.camundaClientProperties = camundaClientProperties;
     this.jsonMapper = jsonMapper;
     this.interceptors = interceptors;
     this.chainHandlers = chainHandlers;
     this.zeebeClientExecutorService = zeebeClientExecutorService;
-  }
-
-  @PostConstruct
-  public void applyLegacy() {
-    // make sure environment variables and other legacy config options are taken into account
-    // (duplicate, also done by  qPostConstruct, whatever)
-    properties.applyOverrides();
+    this.credentialsProvider = credentialsProvider;
   }
 
   @Override
   public String getGatewayAddress() {
-    return getOrLegacyOrDefault(
-        "GatewayAddress",
-        this::composeGatewayAddress,
-        () -> PropertiesUtil.getZeebeGatewayAddress(properties),
-        DEFAULT.getGatewayAddress(),
-        configCache);
+    return ofNullable(composeGatewayAddress()).orElse(DEFAULT.getGatewayAddress());
   }
 
   @Override
   public URI getRestAddress() {
-    return getOrLegacyOrDefault(
-        "RestAddress",
-        () -> camundaClientProperties.getZeebe().getRestAddress(),
-        () -> properties.getBroker().getRestAddress(),
-        DEFAULT.getRestAddress(),
-        configCache);
+    return ofNullable(camundaClientProperties.getZeebe().getRestAddress())
+        .orElse(DEFAULT.getRestAddress());
   }
 
   @Override
   public URI getGrpcAddress() {
-    return getOrLegacyOrDefault(
-        "GrpcAddress",
-        () -> camundaClientProperties.getZeebe().getGrpcAddress(),
-        properties::getGrpcAddress,
-        DEFAULT.getGrpcAddress(),
-        configCache);
+    return ofNullable(camundaClientProperties.getZeebe().getGrpcAddress())
+        .orElse(DEFAULT.getGrpcAddress());
   }
 
   @Override
   public String getDefaultTenantId() {
-    return getOrLegacyOrDefault(
-        "DefaultTenantId",
-        prioritized(
-            DEFAULT.getDefaultTenantId(),
-            List.of(
-                () -> camundaClientProperties.getTenantIds().get(0),
-                () -> camundaClientProperties.getZeebe().getDefaults().getTenantIds().get(0))),
-        properties::getDefaultTenantId,
-        DEFAULT.getDefaultTenantId(),
-        configCache);
+    return ofNullable(camundaClientProperties.getTenantId()).orElse(DEFAULT.getDefaultTenantId());
   }
 
   @Override
   public List<String> getDefaultJobWorkerTenantIds() {
-    return getOrLegacyOrDefault(
-        "DefaultJobWorkerTenantIds",
-        prioritized(
-            DEFAULT.getDefaultJobWorkerTenantIds(),
-            List.of(
-                camundaClientProperties::getTenantIds,
-                () -> camundaClientProperties.getZeebe().getDefaults().getTenantIds())),
-        properties::getDefaultJobWorkerTenantIds,
-        DEFAULT.getDefaultJobWorkerTenantIds(),
-        configCache);
+    return ofNullable(camundaClientProperties.getZeebe().getDefaults().getTenantIds())
+        .orElse(DEFAULT.getDefaultJobWorkerTenantIds());
   }
 
   @Override
   public int getNumJobWorkerExecutionThreads() {
-    return getOrLegacyOrDefault(
-        "NumJobWorkerExecutionThreads",
-        () -> camundaClientProperties.getZeebe().getExecutionThreads(),
-        () -> properties.getWorker().getThreads(),
-        DEFAULT.getNumJobWorkerExecutionThreads(),
-        configCache);
+    return ofNullable(camundaClientProperties.getZeebe().getExecutionThreads())
+        .orElse(DEFAULT.getNumJobWorkerExecutionThreads());
   }
 
   @Override
   public int getDefaultJobWorkerMaxJobsActive() {
-    return getOrLegacyOrDefault(
-        "DefaultJobWorkerMaxJobsActive",
-        () -> camundaClientProperties.getZeebe().getDefaults().getMaxJobsActive(),
-        () -> properties.getWorker().getMaxJobsActive(),
-        DEFAULT.getDefaultJobWorkerMaxJobsActive(),
-        configCache);
+    return ofNullable(camundaClientProperties.getZeebe().getDefaults().getMaxJobsActive())
+        .orElse(DEFAULT.getDefaultJobWorkerMaxJobsActive());
   }
 
   @Override
   public String getDefaultJobWorkerName() {
-    return getOrLegacyOrDefault(
-        "DefaultJobWorkerName",
-        () -> camundaClientProperties.getZeebe().getDefaults().getName(),
-        () -> properties.getWorker().getDefaultName(),
-        DEFAULT.getDefaultJobWorkerName(),
-        configCache);
+    return ofNullable(camundaClientProperties.getZeebe().getDefaults().getName())
+        .orElse(DEFAULT.getDefaultJobWorkerName());
   }
 
   @Override
   public Duration getDefaultJobTimeout() {
-    return getOrLegacyOrDefault(
-        "DefaultJobTimeout",
-        () -> camundaClientProperties.getZeebe().getDefaults().getTimeout(),
-        () -> properties.getJob().getTimeout(),
-        DEFAULT.getDefaultJobTimeout(),
-        configCache);
+    return ofNullable(camundaClientProperties.getZeebe().getDefaults().getTimeout())
+        .orElse(DEFAULT.getDefaultJobTimeout());
   }
 
   @Override
   public Duration getDefaultJobPollInterval() {
-    return getOrLegacyOrDefault(
-        "DefaultJobPollInterval",
-        () -> camundaClientProperties.getZeebe().getDefaults().getPollInterval(),
-        () -> properties.getJob().getPollInterval(),
-        DEFAULT.getDefaultJobPollInterval(),
-        configCache);
+    return ofNullable(camundaClientProperties.getZeebe().getDefaults().getPollInterval())
+        .orElse(DEFAULT.getDefaultJobPollInterval());
   }
 
   @Override
   public Duration getDefaultMessageTimeToLive() {
-    return getOrLegacyOrDefault(
-        "DefaultMessageTimeToLive",
-        () -> camundaClientProperties.getZeebe().getMessageTimeToLive(),
-        () -> properties.getMessage().getTimeToLive(),
-        DEFAULT.getDefaultMessageTimeToLive(),
-        configCache);
+    return ofNullable(camundaClientProperties.getZeebe().getMessageTimeToLive())
+        .orElse(DEFAULT.getDefaultMessageTimeToLive());
   }
 
   @Override
   public Duration getDefaultRequestTimeout() {
-    return getOrLegacyOrDefault(
-        "DefaultRequestTimeout",
-        prioritized(
-            DEFAULT.getDefaultRequestTimeout(),
-            List.of(
-                () -> camundaClientProperties.getZeebe().getRequestTimeout(),
-                () -> camundaClientProperties.getZeebe().getDefaults().getRequestTimeout())),
-        properties::getRequestTimeout,
-        DEFAULT.getDefaultRequestTimeout(),
-        configCache);
+    return ofNullable(camundaClientProperties.getZeebe().getRequestTimeout())
+        .orElse(DEFAULT.getDefaultRequestTimeout());
   }
 
   @Override
   public boolean isPlaintextConnectionEnabled() {
-    return getOrLegacyOrDefault(
-        "PlaintextConnectionEnabled",
-        this::composePlaintext,
-        () -> properties.getSecurity().isPlaintext(),
-        DEFAULT.isPlaintextConnectionEnabled(),
-        configCache);
+    return composePlaintext();
   }
 
   @Override
   public String getCaCertificatePath() {
-    return getOrLegacyOrDefault(
-        "CaCertificatePath",
-        () -> camundaClientProperties.getZeebe().getCaCertificatePath(),
-        () -> properties.getSecurity().getCertPath(),
-        DEFAULT.getCaCertificatePath(),
-        configCache);
+    return ofNullable(camundaClientProperties.getZeebe().getCaCertificatePath())
+        .orElse(DEFAULT.getCaCertificatePath());
   }
 
   @Override
   public CredentialsProvider getCredentialsProvider() {
-    return getOrLegacyOrDefault(
-        "CredentialsProvider",
-        this::credentialsProvider,
-        this::legacyCredentialsProvider,
-        null,
-        configCache);
+    return credentialsProvider;
   }
 
   @Override
   public Duration getKeepAlive() {
-    return getOrLegacyOrDefault(
-        "KeepAlive",
-        () -> camundaClientProperties.getZeebe().getKeepAlive(),
-        () -> properties.getBroker().getKeepAlive(),
-        DEFAULT.getKeepAlive(),
-        configCache);
+    return ofNullable(camundaClientProperties.getZeebe().getKeepAlive())
+        .orElse(DEFAULT.getKeepAlive());
   }
 
   @Override
@@ -267,31 +173,24 @@ public class ZeebeClientConfigurationImpl implements ZeebeClientConfiguration {
 
   @Override
   public String getOverrideAuthority() {
-    return getOrLegacyOrDefault(
-        "OverrideAuthority",
-        () -> camundaClientProperties.getZeebe().getOverrideAuthority(),
-        () -> properties.getSecurity().getOverrideAuthority(),
-        DEFAULT.getOverrideAuthority(),
-        configCache);
+    return ofNullable(camundaClientProperties.getZeebe().getOverrideAuthority())
+        .orElse(DEFAULT.getOverrideAuthority());
   }
 
   @Override
   public int getMaxMessageSize() {
-    return getOrLegacyOrDefault(
-        "MaxMessageSize",
-        () -> camundaClientProperties.getZeebe().getMaxMessageSize(),
-        () -> properties.getMessage().getMaxMessageSize(),
-        DEFAULT.getMaxMessageSize(),
-        configCache);
+    return ofNullable(camundaClientProperties.getZeebe().getMaxMessageSize())
+        .map(DataSize::toBytes)
+        .map(Math::toIntExact)
+        .orElse(DEFAULT.getMaxMessageSize());
   }
 
   @Override
   public int getMaxMetadataSize() {
-    return getOrDefault(
-        "MaxMetadataSize",
-        () -> camundaClientProperties.getZeebe().getMaxMessageSize(),
-        DEFAULT.getMaxMetadataSize(),
-        configCache);
+    return ofNullable(camundaClientProperties.getZeebe().getMaxMetadataSize())
+        .map(DataSize::toBytes)
+        .map(Math::toIntExact)
+        .orElse(DEFAULT.getMaxMetadataSize());
   }
 
   @Override
@@ -301,22 +200,13 @@ public class ZeebeClientConfigurationImpl implements ZeebeClientConfiguration {
 
   @Override
   public boolean ownsJobWorkerExecutor() {
-    return getOrLegacyOrDefault(
-        "ownsJobWorkerExecutor",
-        zeebeClientExecutorService::isOwnedByZeebeClient,
-        properties::ownsJobWorkerExecutor,
-        DEFAULT.ownsJobWorkerExecutor(),
-        configCache);
+    return zeebeClientExecutorService.isOwnedByZeebeClient();
   }
 
   @Override
   public boolean getDefaultJobWorkerStreamEnabled() {
-    return getOrLegacyOrDefault(
-        "DefaultJobWorkerStreamEnabled",
-        () -> camundaClientProperties.getZeebe().getDefaults().getStreamEnabled(),
-        properties::getDefaultJobWorkerStreamEnabled,
-        DEFAULT.getDefaultJobWorkerStreamEnabled(),
-        configCache);
+    return ofNullable(camundaClientProperties.getZeebe().getDefaults().getStreamEnabled())
+        .orElse(DEFAULT.getDefaultJobWorkerStreamEnabled());
   }
 
   @Override
@@ -326,30 +216,12 @@ public class ZeebeClientConfigurationImpl implements ZeebeClientConfiguration {
 
   @Override
   public boolean preferRestOverGrpc() {
-    return getOrDefault(
-        "preferRestOverGrpc",
-        () -> camundaClientProperties.getZeebe().isPreferRestOverGrpc(),
-        DEFAULT.preferRestOverGrpc(),
-        configCache);
-  }
-
-  private CredentialsProvider credentialsProvider() {
-    final ClientMode clientMode = camundaClientProperties.getMode();
-    if (ClientMode.selfManaged.equals(clientMode) || ClientMode.saas.equals(clientMode)) {
-      return CredentialsProvider.newCredentialsProviderBuilder()
-          .clientId(camundaClientProperties.getAuth().getClientId())
-          .clientSecret(camundaClientProperties.getAuth().getClientSecret())
-          .audience(camundaClientProperties.getZeebe().getAudience())
-          .authorizationServerUrl(camundaClientProperties.getAuth().getIssuer())
-          .scope(camundaClientProperties.getZeebe().getScope())
-          .credentialsCachePath(camundaClientProperties.getAuth().getCredentialsCachePath())
-          .build();
-    }
-    return new NoopCredentialsProvider();
+    return ofNullable(camundaClientProperties.getZeebe().getPreferRestOverGrpc())
+        .orElse(DEFAULT.preferRestOverGrpc());
   }
 
   private String composeGatewayAddress() {
-    final URI gatewayUrl = camundaClientProperties.getZeebe().getGrpcAddress();
+    final URI gatewayUrl = getGrpcAddress();
     final int port = gatewayUrl.getPort();
     final String host = gatewayUrl.getHost();
 
@@ -384,7 +256,7 @@ public class ZeebeClientConfigurationImpl implements ZeebeClientConfiguration {
   }
 
   private boolean composePlaintext() {
-    final String protocol = camundaClientProperties.getZeebe().getGrpcAddress().getScheme();
+    final String protocol = getGrpcAddress().getScheme();
     return switch (protocol) {
       case "http" -> true;
       case "https" -> false;
@@ -394,37 +266,10 @@ public class ZeebeClientConfigurationImpl implements ZeebeClientConfiguration {
     };
   }
 
-  private CredentialsProvider legacyCredentialsProvider() {
-    if (hasText(properties.getCloud().getClientId())
-        && hasText(properties.getCloud().getClientSecret())) {
-      return CredentialsProvider.newCredentialsProviderBuilder()
-          .clientId(properties.getCloud().getClientId())
-          .clientSecret(properties.getCloud().getClientSecret())
-          .audience(properties.getCloud().getAudience())
-          .scope(properties.getCloud().getScope())
-          .authorizationServerUrl(properties.getCloud().getAuthUrl())
-          .credentialsCachePath(properties.getCloud().getCredentialsCachePath())
-          .build();
-    } else if (Environment.system().get("ZEEBE_CLIENT_ID") != null
-        && Environment.system().get("ZEEBE_CLIENT_SECRET") != null) {
-      // Copied from ZeebeClientBuilderImpl
-      final OAuthCredentialsProviderBuilder builder =
-          CredentialsProvider.newCredentialsProviderBuilder();
-      final int separatorIndex = properties.getBroker().getGatewayAddress().lastIndexOf(58); // ":"
-      if (separatorIndex > 0) {
-        builder.audience(properties.getBroker().getGatewayAddress().substring(0, separatorIndex));
-      }
-      return builder.build();
-    }
-    return null;
-  }
-
   @Override
   public String toString() {
     return "ZeebeClientConfigurationImpl{"
-        + "properties="
-        + properties
-        + ", camundaClientProperties="
+        + "camundaClientProperties="
         + camundaClientProperties
         + ", jsonMapper="
         + jsonMapper
@@ -434,6 +279,8 @@ public class ZeebeClientConfigurationImpl implements ZeebeClientConfiguration {
         + chainHandlers
         + ", zeebeClientExecutorService="
         + zeebeClientExecutorService
+        + ", credentialsProvider="
+        + credentialsProvider
         + '}';
   }
 }
