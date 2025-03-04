@@ -18,6 +18,11 @@ package io.camunda.zeebe.client.api.response;
 import java.time.OffsetDateTime;
 import java.util.Map;
 
+/**
+ * @deprecated since 8.8 for removal in 8.9, replaced by {@link
+ *     io.camunda.client.api.response.DocumentMetadata}
+ */
+@Deprecated
 public interface DocumentMetadata {
 
   /**
