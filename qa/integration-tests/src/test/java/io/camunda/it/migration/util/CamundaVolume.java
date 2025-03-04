@@ -85,6 +85,9 @@ public class CamundaVolume extends ZeebeVolume {
         TarArchiveEntry entry;
         while ((entry = tarInput.getNextEntry()) != null) {
           final Path entryPath = destination.resolve(entry.getName()).normalize();
+          if (!entryPath.startsWith(destination)) {
+            throw new IOException("Bad tar entry: " + entry.getName());
+          }
 
           if (entry.isDirectory()) {
             Files.createDirectories(entryPath);
