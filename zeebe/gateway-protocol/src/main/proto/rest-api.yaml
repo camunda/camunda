@@ -4537,6 +4537,10 @@ components:
           description: The batch operation ID.
           allOf:
             - $ref: "#/components/schemas/StringFilterProperty"
+        errorMessage:
+          description: The error message related to the process.
+          allOf:
+            - $ref: "#/components/schemas/StringFilterProperty"
     ProcessInstanceVariableFilterRequest:
       description: Process instance variable filter.
       type: object
