@@ -7,8 +7,6 @@
  */
 package io.camunda.zeebe.gateway.rest;
 
-import static io.camunda.search.exception.CamundaSearchException.Reason.ES_CLIENT_FAILED;
-
 import com.fasterxml.jackson.core.JsonParseException;
 import io.atomix.cluster.messaging.MessagingException;
 import io.camunda.document.api.DocumentError.DocumentAlreadyExists;
@@ -345,31 +343,29 @@ public class RestErrorMapper {
           return createProblemDetail(
               HttpStatus.CONFLICT, message, RejectionType.INVALID_STATE.name());
         }
-      case ES_CLIENT_FAILED:
-      case OS_CLIENT_FAILED:
+      case CONNECTION_FAILED:
         {
-          final String dataLayer = (reason == ES_CLIENT_FAILED) ? "ElasticSearch" : "OpenSearch";
-          final String detail;
-          final ProblemDetail problemDetail;
-          if ("ConnectException".equals(simpleName)) {
-            detail =
-                "Expected to handle REST request, but %s client could to connect to %s server: (%s) %s"
-                    .formatted(dataLayer, dataLayer, name, message);
-            problemDetail = createProblemDetail(HttpStatus.SERVICE_UNAVAILABLE, detail, name);
-          } else if ("ElasticsearchException".equals(simpleName)
-              || "OpenSearchException".equals(simpleName)) {
-            detail =
-                "Expected to handle REST request, but %s server was unable to process the request: (%s) %s"
-                    .formatted(dataLayer, name, message);
-            problemDetail = createProblemDetail(HttpStatus.INTERNAL_SERVER_ERROR, detail, name);
-          } else {
-            detail =
-                "Expected to handle REST request, but %s client was unable to process the request: (%s) %s"
-                    .formatted(dataLayer, name, message);
-            problemDetail = createProblemDetail(HttpStatus.INTERNAL_SERVER_ERROR, detail, name);
-          }
+          final String detail =
+              "Expected to handle REST request, but the search client could to connect to the search server: (%s) %s"
+                  .formatted(name, message);
           REST_GATEWAY_LOGGER.debug(detail);
-          return problemDetail;
+          return createProblemDetail(HttpStatus.SERVICE_UNAVAILABLE, detail, name);
+        }
+      case SEARCH_SERVER_FAILED:
+        {
+          final String detail =
+              "Expected to handle REST request, but the search server was unable to process the request: (%s) %s"
+                  .formatted(name, message);
+          REST_GATEWAY_LOGGER.debug(detail);
+          return createProblemDetail(HttpStatus.INTERNAL_SERVER_ERROR, detail, name);
+        }
+      case SEARCH_CLIENT_FAILED:
+        {
+          final String detail =
+              "Expected to handle REST request, but the search client was unable to process the request: (%s) %s"
+                  .formatted(name, message);
+          REST_GATEWAY_LOGGER.debug(detail);
+          return createProblemDetail(HttpStatus.INTERNAL_SERVER_ERROR, detail, name);
         }
       default:
         {

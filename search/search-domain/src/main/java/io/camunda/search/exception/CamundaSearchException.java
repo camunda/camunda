@@ -47,8 +47,9 @@ public class CamundaSearchException extends RuntimeException {
   public enum Reason {
     NOT_FOUND,
     NOT_UNIQUE,
-    ES_CLIENT_FAILED,
-    OS_CLIENT_FAILED,
-    UNKNOWN,
+    CONNECTION_FAILED,
+    SEARCH_CLIENT_FAILED,
+    SEARCH_SERVER_FAILED,
+    UNKNOWN
   }
 }

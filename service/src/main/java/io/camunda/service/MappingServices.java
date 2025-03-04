@@ -10,6 +10,7 @@ package io.camunda.service;
 import io.camunda.search.clients.MappingSearchClient;
 import io.camunda.search.entities.MappingEntity;
 import io.camunda.search.exception.CamundaSearchException;
+import io.camunda.search.exception.ErrorMessages;
 import io.camunda.search.filter.MappingFilter.Claim;
 import io.camunda.search.query.MappingQuery;
 import io.camunda.search.query.SearchQueryBuilders;
@@ -18,7 +19,6 @@ import io.camunda.security.auth.Authentication;
 import io.camunda.security.auth.Authorization;
 import io.camunda.service.search.core.SearchQueryService;
 import io.camunda.service.security.SecurityContextProvider;
-import io.camunda.util.ExceptionUtil;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerMappingCreateRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerMappingDeleteRequest;
@@ -81,7 +81,7 @@ public class MappingServices
         .orElseThrow(
             () ->
                 new CamundaSearchException(
-                    ExceptionUtil.ERROR_NOT_FOUND_MAPPING_BY_KEY.formatted(mappingKey),
+                    ErrorMessages.ERROR_NOT_FOUND_MAPPING_BY_KEY.formatted(mappingKey),
                     CamundaSearchException.Reason.NOT_FOUND));
   }
 

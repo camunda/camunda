@@ -5,9 +5,9 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.util;
+package io.camunda.search.exception;
 
-public class ExceptionUtil {
+public class ErrorMessages {
 
   public static final String ERROR_FAILED_DELETE_REQUEST = "Failed to execute delete request";
   public static final String ERROR_FAILED_FIND_ALL_QUERY = "Failed to execute findAll query";

@@ -613,7 +613,7 @@ public class ErrorMapperTest extends RestControllerTest {
         new CamundaSearchException(
             "Request failed",
             new ConnectException("No connection"),
-            CamundaSearchException.Reason.ES_CLIENT_FAILED);
+            CamundaSearchException.Reason.CONNECTION_FAILED);
 
     // when
     final ProblemDetail problemDetail =
@@ -623,7 +623,7 @@ public class ErrorMapperTest extends RestControllerTest {
     assertThat(problemDetail.getStatus()).isEqualTo(HttpStatus.SERVICE_UNAVAILABLE.value());
     assertThat(problemDetail.getDetail())
         .isEqualTo(
-            "Expected to handle REST request, but ElasticSearch client could to connect to ElasticSearch server: (java.net.ConnectException) No connection");
+            "Expected to handle REST request, but the search client could to connect to the search server: (java.net.ConnectException) No connection");
     assertThat(problemDetail.getTitle()).isEqualTo("java.net.ConnectException");
   }
 
@@ -634,7 +634,7 @@ public class ErrorMapperTest extends RestControllerTest {
         new CamundaSearchException(
             "Request failed",
             new IOException("Generic IO Error"),
-            CamundaSearchException.Reason.ES_CLIENT_FAILED);
+            CamundaSearchException.Reason.SEARCH_CLIENT_FAILED);
 
     // when
     final ProblemDetail problemDetail =
@@ -644,7 +644,7 @@ public class ErrorMapperTest extends RestControllerTest {
     assertThat(problemDetail.getStatus()).isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR.value());
     assertThat(problemDetail.getDetail())
         .isEqualTo(
-            "Expected to handle REST request, but ElasticSearch client was unable to process the request: (java.io.IOException) Generic IO Error");
+            "Expected to handle REST request, but the search client was unable to process the request: (java.io.IOException) Generic IO Error");
     assertThat(problemDetail.getTitle()).isEqualTo("java.io.IOException");
   }
 
@@ -655,7 +655,7 @@ public class ErrorMapperTest extends RestControllerTest {
         new CamundaSearchException(
             "Request failed",
             new ConnectException("No connection"),
-            CamundaSearchException.Reason.OS_CLIENT_FAILED);
+            CamundaSearchException.Reason.CONNECTION_FAILED);
 
     // when
     final ProblemDetail problemDetail =
@@ -665,7 +665,7 @@ public class ErrorMapperTest extends RestControllerTest {
     assertThat(problemDetail.getStatus()).isEqualTo(HttpStatus.SERVICE_UNAVAILABLE.value());
     assertThat(problemDetail.getDetail())
         .isEqualTo(
-            "Expected to handle REST request, but OpenSearch client could to connect to OpenSearch server: (java.net.ConnectException) No connection");
+            "Expected to handle REST request, but the search client could to connect to the search server: (java.net.ConnectException) No connection");
     assertThat(problemDetail.getTitle()).isEqualTo("java.net.ConnectException");
   }
 
@@ -676,7 +676,7 @@ public class ErrorMapperTest extends RestControllerTest {
         new CamundaSearchException(
             "Request failed",
             new IOException("Generic IO Error"),
-            CamundaSearchException.Reason.OS_CLIENT_FAILED);
+            CamundaSearchException.Reason.SEARCH_CLIENT_FAILED);
 
     // when
     final ProblemDetail problemDetail =
@@ -686,7 +686,7 @@ public class ErrorMapperTest extends RestControllerTest {
     assertThat(problemDetail.getStatus()).isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR.value());
     assertThat(problemDetail.getDetail())
         .isEqualTo(
-            "Expected to handle REST request, but OpenSearch client was unable to process the request: (java.io.IOException) Generic IO Error");
+            "Expected to handle REST request, but the search client was unable to process the request: (java.io.IOException) Generic IO Error");
     assertThat(problemDetail.getTitle()).isEqualTo("java.io.IOException");
   }
 }

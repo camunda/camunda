@@ -10,6 +10,7 @@ package io.camunda.service;
 import io.camunda.search.clients.RoleSearchClient;
 import io.camunda.search.entities.RoleEntity;
 import io.camunda.search.exception.CamundaSearchException;
+import io.camunda.search.exception.ErrorMessages;
 import io.camunda.search.query.RoleQuery;
 import io.camunda.search.query.SearchQueryBuilders;
 import io.camunda.search.query.SearchQueryResult;
@@ -17,7 +18,6 @@ import io.camunda.security.auth.Authentication;
 import io.camunda.security.auth.Authorization;
 import io.camunda.service.search.core.SearchQueryService;
 import io.camunda.service.security.SecurityContextProvider;
-import io.camunda.util.ExceptionUtil;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerRoleEntityRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerRoleUpdateRequest;
@@ -88,7 +88,7 @@ public class RoleServices extends SearchQueryService<RoleServices, RoleQuery, Ro
         .orElseThrow(
             () ->
                 new CamundaSearchException(
-                    ExceptionUtil.ERROR_NOT_FOUND_ROLE_BY_KEY.formatted(roleKey),
+                    ErrorMessages.ERROR_NOT_FOUND_ROLE_BY_KEY.formatted(roleKey),
                     CamundaSearchException.Reason.NOT_FOUND));
   }
 

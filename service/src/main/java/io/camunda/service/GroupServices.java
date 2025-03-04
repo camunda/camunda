@@ -10,6 +10,7 @@ package io.camunda.service;
 import io.camunda.search.clients.GroupSearchClient;
 import io.camunda.search.entities.GroupEntity;
 import io.camunda.search.exception.CamundaSearchException;
+import io.camunda.search.exception.ErrorMessages;
 import io.camunda.search.query.GroupQuery;
 import io.camunda.search.query.SearchQueryBuilders;
 import io.camunda.search.query.SearchQueryResult;
@@ -17,7 +18,6 @@ import io.camunda.security.auth.Authentication;
 import io.camunda.security.auth.Authorization;
 import io.camunda.service.search.core.SearchQueryService;
 import io.camunda.service.security.SecurityContextProvider;
-import io.camunda.util.ExceptionUtil;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.gateway.impl.broker.request.group.BrokerGroupCreateRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.group.BrokerGroupDeleteRequest;
@@ -75,7 +75,7 @@ public class GroupServices extends SearchQueryService<GroupServices, GroupQuery,
         .orElseThrow(
             () ->
                 new CamundaSearchException(
-                    ExceptionUtil.ERROR_NOT_FOUND_GROUP_BY_KEY.formatted(groupKey),
+                    ErrorMessages.ERROR_NOT_FOUND_GROUP_BY_KEY.formatted(groupKey),
                     CamundaSearchException.Reason.NOT_FOUND));
   }
 
@@ -91,7 +91,7 @@ public class GroupServices extends SearchQueryService<GroupServices, GroupQuery,
         .orElseThrow(
             () ->
                 new CamundaSearchException(
-                    ExceptionUtil.ERROR_NOT_FOUND_GROUP_BY_NAME.formatted(name),
+                    ErrorMessages.ERROR_NOT_FOUND_GROUP_BY_NAME.formatted(name),
                     CamundaSearchException.Reason.NOT_FOUND));
   }
 

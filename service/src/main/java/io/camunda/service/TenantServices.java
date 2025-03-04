@@ -10,6 +10,7 @@ package io.camunda.service;
 import io.camunda.search.clients.TenantSearchClient;
 import io.camunda.search.entities.TenantEntity;
 import io.camunda.search.exception.CamundaSearchException;
+import io.camunda.search.exception.ErrorMessages;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.query.TenantQuery;
 import io.camunda.security.auth.Authentication;
@@ -17,7 +18,6 @@ import io.camunda.security.auth.Authorization;
 import io.camunda.service.exception.ForbiddenException;
 import io.camunda.service.search.core.SearchQueryService;
 import io.camunda.service.security.SecurityContextProvider;
-import io.camunda.util.ExceptionUtil;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerTenantEntityRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.tenant.BrokerTenantCreateRequest;
@@ -144,11 +144,11 @@ public class TenantServices extends SearchQueryService<TenantServices, TenantQue
             .searchTenants(query);
     if (result.total() < 1) {
       throw new CamundaSearchException(
-          ExceptionUtil.ERROR_NOT_FOUND_TENANT.formatted(query),
+          ErrorMessages.ERROR_NOT_FOUND_TENANT.formatted(query),
           CamundaSearchException.Reason.NOT_FOUND);
     } else if (result.total() > 1) {
       throw new CamundaSearchException(
-          ExceptionUtil.ERROR_NOT_UNIQUE_TENANT.formatted(query),
+          ErrorMessages.ERROR_NOT_UNIQUE_TENANT.formatted(query),
           CamundaSearchException.Reason.NOT_UNIQUE);
     }
 
