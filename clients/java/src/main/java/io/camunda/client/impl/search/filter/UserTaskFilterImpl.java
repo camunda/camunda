@@ -157,7 +157,9 @@ public class UserTaskFilterImpl
                     final UserTaskVariableFilterRequest request =
                         new UserTaskVariableFilterRequest();
                     request.setName(entry.getKey());
-                    request.setValue(entry.getValue().toString());
+                    final StringProperty property = new StringPropertyImpl();
+                    property.eq(entry.getValue().toString());
+                    request.setValue(property.build());
                     return request;
                   })
               .collect(Collectors.toList());
@@ -183,7 +185,9 @@ public class UserTaskFilterImpl
                     final UserTaskVariableFilterRequest request =
                         new UserTaskVariableFilterRequest();
                     request.setName(entry.getKey());
-                    request.setValue(entry.getValue().toString());
+                    final StringProperty property = new StringPropertyImpl();
+                    property.eq(entry.getValue().toString());
+                    request.setValue(property.build());
                     return request;
                   })
               .collect(Collectors.toList());

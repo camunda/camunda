@@ -23,6 +23,7 @@ import com.github.tomakehurst.wiremock.verification.LoggedRequest;
 import io.camunda.client.api.search.response.ProcessInstanceState;
 import io.camunda.client.impl.search.SearchQuerySortRequest;
 import io.camunda.client.impl.search.SearchQuerySortRequestMapper;
+import io.camunda.client.impl.search.filter.builder.StringPropertyImpl;
 import io.camunda.client.protocol.rest.*;
 import io.camunda.client.util.ClientRestTest;
 import io.camunda.client.util.RestGatewayService;
@@ -65,8 +66,12 @@ public class QueryProcessInstanceTest extends ClientRestTest {
     final OffsetDateTime endDate = OffsetDateTime.now();
     final List<ProcessInstanceVariableFilterRequest> variables =
         Arrays.asList(
-            new ProcessInstanceVariableFilterRequest().name("n1").value("v1"),
-            new ProcessInstanceVariableFilterRequest().name("n2").value("v2"));
+            new ProcessInstanceVariableFilterRequest()
+                .name("n1")
+                .value(new StringPropertyImpl().eq("v1").build()),
+            new ProcessInstanceVariableFilterRequest()
+                .name("n2")
+                .value(new StringPropertyImpl().eq("v2").build()));
     client
         .newProcessInstanceQuery()
         .filter(
@@ -169,8 +174,12 @@ public class QueryProcessInstanceTest extends ClientRestTest {
     // given
     final List<ProcessInstanceVariableFilterRequest> variables =
         Arrays.asList(
-            new ProcessInstanceVariableFilterRequest().name("n1").value("v1"),
-            new ProcessInstanceVariableFilterRequest().name("n2").value("v2"));
+            new ProcessInstanceVariableFilterRequest()
+                .name("n1")
+                .value(new StringPropertyImpl().eq("v1").build()),
+            new ProcessInstanceVariableFilterRequest()
+                .name("n2")
+                .value(new StringPropertyImpl().eq("v2").build()));
 
     // when
     client.newProcessInstanceQuery().filter(f -> f.variables(variables)).send().join();
