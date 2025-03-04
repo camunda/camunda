@@ -1,4 +1,4 @@
-package main
+package types
 
 import (
 	"os"
@@ -15,6 +15,6 @@ type C8Run interface {
 }
 
 type C8RunSettings struct {
-	config   string
-	detached bool
+	Config   string
+	Detached bool
 }
