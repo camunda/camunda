@@ -114,11 +114,6 @@ import:
     # Cron expression for when the identity sync should run, defaults to every second hour.
     cronTrigger: '0 */2 * * *'
 
-serialization:
-  # Define a custom date format that should be used for
-  # fetching date data from the engine(should be the same as in the engine)
-  engineDateFormat: yyyy-MM-dd'T'HH:mm:ss.SSSZ
-
 email:
   # A switch to control email sending process.
   enabled: false

@@ -15,11 +15,11 @@ import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.client.CamundaClient;
-import io.camunda.it.utils.CamundaMultiDBExtension;
 import io.camunda.qa.util.auth.Authenticated;
 import io.camunda.qa.util.auth.Permissions;
 import io.camunda.qa.util.auth.User;
 import io.camunda.qa.util.auth.UserDefinition;
+import io.camunda.qa.util.multidb.CamundaMultiDBExtension;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.collection.Tuple;
@@ -57,8 +57,8 @@ class TenantAuthorizationIT {
   static final CamundaMultiDBExtension EXTENSION = new CamundaMultiDBExtension(BROKER);
 
   private static final String ADMIN = "admin";
-  private static final String RESTRICTED = "restricted-user";
-  private static final String UNAUTHORIZED = "unauthorized-user";
+  private static final String RESTRICTED = "restrictedUser";
+  private static final String UNAUTHORIZED = "unauthorizedUser";
 
   @UserDefinition
   private static final User ADMIN_USER =

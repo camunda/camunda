@@ -9,7 +9,7 @@ package io.camunda.exporter.utils;
 
 import static io.camunda.exporter.config.ConnectionTypes.ELASTICSEARCH;
 import static io.camunda.exporter.config.ConnectionTypes.OPENSEARCH;
-import static io.camunda.exporter.utils.SearchDBExtension.IT_OPENSEARCH_AWS_INSTANCE_URL_PROPERTY;
+import static io.camunda.exporter.utils.SearchDBExtension.TEST_INTEGRATION_OPENSEARCH_AWS_URL;
 import static java.util.Arrays.asList;
 
 import io.camunda.exporter.config.ConnectionTypes;
@@ -54,7 +54,7 @@ public class CamundaExporterITTemplateExtension
   public Stream<TestTemplateInvocationContext> provideTestTemplateInvocationContexts(
       final ExtensionContext extensionContext) {
     final var openSearchAwsInstanceUrl =
-        Optional.ofNullable(System.getProperty(IT_OPENSEARCH_AWS_INSTANCE_URL_PROPERTY)).orElse("");
+        Optional.ofNullable(System.getProperty(TEST_INTEGRATION_OPENSEARCH_AWS_URL)).orElse("");
     if (openSearchAwsInstanceUrl.isEmpty()) {
       return Stream.of(
           invocationContext(getConfigWithConnectionDetails(OPENSEARCH), osClientAdapter),
@@ -134,8 +134,7 @@ public class CamundaExporterITTemplateExtension
 
   @Override
   public void beforeAll(final ExtensionContext context) throws Exception {
-    if (Optional.ofNullable(System.getProperty(IT_OPENSEARCH_AWS_INSTANCE_URL_PROPERTY))
-        .isEmpty()) {
+    if (Optional.ofNullable(System.getProperty(TEST_INTEGRATION_OPENSEARCH_AWS_URL)).isEmpty()) {
       elsClientAdapter = new SearchClientAdapter(extension.esClient(), extension.objectMapper());
     }
     osClientAdapter = new SearchClientAdapter(extension.osClient(), extension.objectMapper());

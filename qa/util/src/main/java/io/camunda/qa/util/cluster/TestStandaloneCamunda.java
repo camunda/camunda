@@ -15,12 +15,12 @@ import io.camunda.application.commons.configuration.WorkingDirectoryConfiguratio
 import io.camunda.application.commons.security.CamundaSecurityConfiguration.CamundaSecurityProperties;
 import io.camunda.application.initializers.WebappsConfigurationInitializer;
 import io.camunda.authentication.config.AuthenticationProperties;
-import io.camunda.client.CamundaClientBuilder;
 import io.camunda.exporter.CamundaExporter;
 import io.camunda.operate.OperateModuleConfiguration;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.security.configuration.ConfiguredUser;
 import io.camunda.security.configuration.InitializationConfiguration;
+import io.camunda.security.entity.AuthenticationMethod;
 import io.camunda.tasklist.TasklistModuleConfiguration;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.webapps.WebappsModuleConfiguration;
@@ -43,6 +43,7 @@ import java.nio.file.Path;
 import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 import java.util.function.Consumer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -50,8 +51,14 @@ import org.springframework.boot.builder.SpringApplicationBuilder;
 import org.springframework.util.unit.DataSize;
 import org.testcontainers.elasticsearch.ElasticsearchContainer;
 
-/** Represents an instance of the {@link BrokerModuleConfiguration} Spring application. */
+/**
+ * Represents an instance of the {@link BrokerModuleConfiguration} Spring application.
+ *
+ * @deprecated Make use of {@link TestSimpleCamundaApplication} together with {@link
+ *     io.camunda.qa.util.multidb.MultiDbTest}.
+ */
 @SuppressWarnings("UnusedReturnValue")
+@Deprecated(forRemoval = true)
 public final class TestStandaloneCamunda extends TestSpringApplication<TestStandaloneCamunda>
     implements TestGateway<TestStandaloneCamunda>,
         TestStandaloneApplication<TestStandaloneCamunda> {
@@ -245,22 +252,6 @@ public final class TestStandaloneCamunda extends TestSpringApplication<TestStand
     return brokerProperties.getGateway();
   }
 
-  @Override
-  public CamundaClientBuilder newClientBuilder() {
-    if (!isGateway()) {
-      throw new IllegalStateException(
-          "Cannot create a new client for this broker, as it does not have an embedded gateway");
-    }
-
-    return TestStandaloneApplication.super.newClientBuilder();
-  }
-
-  /** Returns the broker configuration */
-  @Override
-  public BrokerBasedProperties brokerConfig() {
-    return brokerProperties;
-  }
-
   /**
    * Modifies the security configuration. Will still mutate the configuration if the broker is
    * started, but likely has no effect until it's restarted.
@@ -353,6 +344,17 @@ public final class TestStandaloneCamunda extends TestSpringApplication<TestStand
     return this;
   }
 
+  /** Returns the broker configuration */
+  @Override
+  public BrokerBasedProperties brokerConfig() {
+    return brokerProperties;
+  }
+
+  @Override
+  public Optional<AuthenticationMethod> clientAuthenticationMethod() {
+    return apiAuthenticationMethod();
+  }
+
   private void setExportersConfig() {
     registeredExporters.forEach(
         (id, exporterModifier) -> {
@@ -375,6 +377,8 @@ public final class TestStandaloneCamunda extends TestSpringApplication<TestStand
   }
 
   public TestStandaloneCamunda withAuthorizationsEnabled() {
+    // when using authorizations, api authentication needs to be enforced too
+    withAuthenticatedAccess();
     return withSecurityConfig(
         securityConfig -> securityConfig.getAuthorizations().setEnabled(true));
   }

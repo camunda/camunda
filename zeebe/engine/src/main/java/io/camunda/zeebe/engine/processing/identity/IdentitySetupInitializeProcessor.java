@@ -137,9 +137,9 @@ public final class IdentitySetupInitializeProcessor
 
     final var tenant = record.getDefaultTenant();
     tenantState
-        .getTenantKeyById(tenant.getTenantId())
+        .getTenantById(tenant.getTenantId())
         .ifPresentOrElse(
-            tenant::setTenantKey,
+            t -> tenant.setTenantKey(t.getTenantKey()),
             () -> {
               createdNewEntities.set(true);
               final long tenantKey = keyGenerator.nextKey();
@@ -189,7 +189,7 @@ public final class IdentitySetupInitializeProcessor
                                 role.getRoleKey(), userKey.getUserKey(), EntityType.USER),
                         () -> createUser(user, role.getRoleKey())));
 
-    if (tenantState.getTenantByKey(record.getDefaultTenant().getTenantKey()).isEmpty()) {
+    if (tenantState.getTenantById(record.getDefaultTenant().getTenantId()).isEmpty()) {
       createTenant(record.getDefaultTenant());
     }
 

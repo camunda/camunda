@@ -13,13 +13,12 @@ import static org.assertj.core.api.Assertions.assertThatNoException;
 import feign.FeignException.NotFound;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.search.response.ProcessInstanceState;
-import io.camunda.it.utils.MultiDbConfigurator;
 import io.camunda.management.backups.StateCode;
 import io.camunda.management.backups.TakeBackupHistoryResponse;
 import io.camunda.qa.util.cluster.HistoryBackupClient;
 import io.camunda.qa.util.cluster.TestSimpleCamundaApplication;
+import io.camunda.qa.util.multidb.MultiDbConfigurator;
 import io.camunda.search.connect.configuration.DatabaseType;
-import io.camunda.security.entity.AuthenticationMethod;
 import io.camunda.webapps.backup.BackupService.SnapshotRequest;
 import io.camunda.webapps.backup.BackupStateDto;
 import io.camunda.webapps.backup.Metadata;
@@ -105,8 +104,7 @@ public class BackupRestoreIT {
   }
 
   private void setup(final BackupRestoreTestConfig config) throws Exception {
-    testStandaloneApplication =
-        new TestSimpleCamundaApplication().withAuthenticationMethod(AuthenticationMethod.BASIC);
+    testStandaloneApplication = new TestSimpleCamundaApplication().withUnauthenticatedAccess();
     configurator = new MultiDbConfigurator(testStandaloneApplication);
     testStandaloneApplication.withBrokerConfig(this::configureZeebeBackupStore);
     final String dbUrl;

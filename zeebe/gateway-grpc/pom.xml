@@ -175,6 +175,11 @@
     </dependency>
 
     <dependency>
+      <groupId>io.micrometer</groupId>
+      <artifactId>micrometer-commons</artifactId>
+    </dependency>
+
+    <dependency>
       <groupId>com.fasterxml.jackson.core</groupId>
       <artifactId>jackson-core</artifactId>
     </dependency>
@@ -247,11 +252,6 @@
       <groupId>io.netty</groupId>
       <artifactId>netty-tcnative-boringssl-static</artifactId>
       <scope>runtime</scope>
-    </dependency>
-
-    <dependency>
-      <groupId>io.prometheus</groupId>
-      <artifactId>simpleclient</artifactId>
     </dependency>
 
     <dependency>

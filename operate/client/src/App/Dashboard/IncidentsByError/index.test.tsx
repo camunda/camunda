@@ -132,7 +132,7 @@ describe('IncidentsByError', () => {
 
     expect(processLink).toHaveAttribute(
       'href',
-      '/processes?errorMessage=JSON+path+%27%24.paid%27+has+no+result.&incidents=true',
+      '/processes?errorMessage=JSON+path+%27%24.paid%27+has+no+result.&incidentErrorHashCode=234254&incidents=true',
     );
 
     // this button click has no effect (check useEffect in Collapse component)
@@ -151,7 +151,7 @@ describe('IncidentsByError', () => {
 
     expect(firstVersion).toHaveAttribute(
       'href',
-      '/processes?process=mockProcess&version=1&errorMessage=JSON+path+%27%24.paid%27+has+no+result.&incidents=true',
+      '/processes?process=mockProcess&version=1&errorMessage=JSON+path+%27%24.paid%27+has+no+result.&incidentErrorHashCode=234254&incidents=true',
     );
   });
 
@@ -218,7 +218,7 @@ describe('IncidentsByError', () => {
       }),
     ).toHaveAttribute(
       'href',
-      '/processes?errorMessage=Lorem+ipsum+dolor+sit+amet%2C+consectetur+adipiscing+elit%2C+sed+do+eiusmod+tempor+incididunt+ut+labore&incidents=true',
+      '/processes?errorMessage=Lorem+ipsum+dolor+sit+amet%2C+consectetur+adipiscing+elit%2C+sed+do+eiusmod+tempor+incididunt+ut+labore&incidentErrorHashCode=234254&incidents=true',
     );
 
     // this button click has no effect (check useEffect in Collapse component)
@@ -230,7 +230,7 @@ describe('IncidentsByError', () => {
       }),
     ).toHaveAttribute(
       'href',
-      '/processes?process=mockProcess&version=1&errorMessage=Lorem+ipsum+dolor+sit+amet%2C+consectetur+adipiscing+elit%2C+sed+do+eiusmod+tempor+incididunt+ut+labore&incidents=true',
+      '/processes?process=mockProcess&version=1&errorMessage=Lorem+ipsum+dolor+sit+amet%2C+consectetur+adipiscing+elit%2C+sed+do+eiusmod+tempor+incididunt+ut+labore&incidentErrorHashCode=234254&incidents=true',
     );
   });
 
@@ -262,7 +262,7 @@ describe('IncidentsByError', () => {
 
     await waitFor(() =>
       expect(screen.getByTestId('search')).toHaveTextContent(
-        /^\?errorMessage=JSON\+path\+%27%24.paid%27\+has\+no\+result.&incidents=true$/,
+        /^\?errorMessage=JSON\+path\+%27%24.paid%27\+has\+no\+result.&incidentErrorHashCode=234254&incidents=true$/,
       ),
     );
     expect(panelStatesStore.state.isFiltersCollapsed).toBe(false);

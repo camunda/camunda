@@ -24,6 +24,7 @@ servers:
         description: The schema of the Camunda 8 REST API server.
 
 tags:
+  - name: Ad-hoc subprocess
   - name: Authentication
   - name: Authorization
   - name: Clock
@@ -518,8 +519,7 @@ paths:
           required: true
           description: The unique identifier of the user.
           schema:
-            type: integer
-            format: int64
+            type: string
       responses:
         "202":
           description: The user was successfully removed from the tenant.
@@ -540,7 +540,6 @@ paths:
     post:
       tags:
         - Tenant
-        - User
       operationId: searchUsersForTenant
       summary: Query users for tenant
       description: Retrieves a filtered and sorted list of users for a specified tenant.
@@ -564,14 +563,8 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/UserSearchResult"
-            application/vnd.camunda.api.keys.number+json:
-              schema:
-                $ref: "#/components/schemas/UserSearchResult"
-            application/vnd.camunda.api.keys.string+json:
-              schema:
-                $ref: "#/components/schemas/UserSearchResult"
 
-  /tenants/{tenantKey}/mapping-rules/{mappingKey}:
+  /tenants/{tenantId}/mapping-rules/{mappingKey}:
     put:
       tags:
         - Tenant
@@ -579,7 +572,7 @@ paths:
       summary: Assign a mapping rule to a tenant
       description: Assign a single mapping rule to a specified tenant.
       parameters:
-        - name: tenantKey
+        - name: tenantId
           in: path
           required: true
           description: The unique identifier of the tenant.
@@ -615,7 +608,7 @@ paths:
       summary: Remove a mapping rule from a tenant
       description: Removes a single mapping rule from a specified tenant without deleting the rule.
       parameters:
-        - name: tenantKey
+        - name: tenantId
           in: path
           required: true
           description: The unique identifier of the tenant.
@@ -644,7 +637,7 @@ paths:
         "500":
           $ref: "#/components/responses/InternalServerError"
 
-  /tenants/{tenantKey}/groups/{groupKey}:
+  /tenants/{tenantId}/groups/{groupKey}:
     put:
       tags:
         - Tenant
@@ -652,7 +645,7 @@ paths:
       summary: Assign a group to a tenant
       description: Assign a single group to a specified tenant.
       parameters:
-        - name: tenantKey
+        - name: tenantId
           in: path
           required: true
           description: The unique identifier of the tenant.
@@ -688,7 +681,7 @@ paths:
       summary: Remove a group from a tenant
       description: Removes a single group from a specified tenant without deleting the group.
       parameters:
-        - name: tenantKey
+        - name: tenantId
           in: path
           required: true
           description: The unique identifier of the tenant.
@@ -1293,7 +1286,7 @@ paths:
         "500":
           $ref: "#/components/responses/InternalServerError"
 
-  /process-definitions/{processDefinitionsKey}/form:
+  /process-definitions/{processDefinitionKey}/form:
     get:
       tags:
         - Process definition
@@ -1304,7 +1297,7 @@ paths:
 
         Note that this endpoint will only return linked forms. This endpoint does not support embedded forms.
       parameters:
-        - name: processDefinitionsKey
+        - name: processDefinitionKey
           in: path
           required: true
           description: The process key.
@@ -1603,7 +1596,7 @@ paths:
         "500":
           $ref: "#/components/responses/InternalServerError"
 
-  /flownode-instances/{flownodeInstanceKey}:
+  /flownode-instances/{flowNodeInstanceKey}:
     get:
       tags:
         - Flow node instance
@@ -1612,7 +1605,7 @@ paths:
       description: |
         Returns flow node instance as JSON.
       parameters:
-        - name: flownodeInstanceKey
+        - name: flowNodeInstanceKey
           in: path
           required: true
           description: The assigned key of the flow node instance, which acts as a unique identifier for this flow node instance.
@@ -2723,7 +2716,7 @@ paths:
 
         The caller must provide a file name for each document, which will be used in case of a multi-status response
         to identify which documents failed to upload. The file name can be provided in the `Content-Disposition` header
-        of the file part or in the `filename` field of the metadata part. If both are provided, the `filename` field
+        of the file part or in the `fileName` field of the metadata part. If both are provided, the `fileName` field
         takes precedence.
 
         In case of a multi-status response, the response body will contain a list of `DocumentBatchProblemDetail` objects,
@@ -3264,6 +3257,49 @@ paths:
         "500":
           $ref: "#/components/responses/InternalServerError"
 
+  /element-instances/ad-hoc-activities/search:
+    post:
+      tags:
+        - Ad-hoc subprocess
+      operationId: findAdHocSubprocessActivities
+      summary: Query activatable activities (alpha)
+      description: |
+        Search for activatable activities within ad-hoc subprocesses based on given criteria.
+
+        Note that this API currently requires filters for both process definition key and ad-hoc
+        subprocess ID and does not support paging or sorting.
+
+        This endpoint is an alpha feature and may be subject to change
+        in future releases.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdHocSubprocessActivitySearchQuery"
+      responses:
+        "200":
+          description: >
+            The ad-hoc subprocess activities search result.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdHocSubprocessActivitySearchQueryResult"
+        "400":
+          description: >
+            The ad-hoc subprocess activities search query failed.
+            More details are provided in the response body.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
   /signals/broadcast:
     post:
       tags:
@@ -3374,11 +3410,6 @@ components:
         tenantKey:
           type: string
           description: The unique system-generated internal tenant ID.
-        assignedMemberKeys:
-          type: array
-          description: The set of keys of members assigned to the tenant.
-          items:
-            type: string
     TenantSearchQuerySortRequest:
       type: object
       properties:
@@ -4437,6 +4468,83 @@ components:
         incidentKey:
           description: Incident key associated with this flow node instance.
           type: string
+    AdHocSubprocessActivitySearchQuery:
+      description: Ad-hoc subprocess activities search request.
+      type: object
+      required:
+        - filter
+      properties:
+        filter:
+          description: The ad-hoc subprocess activity search filters.
+          allOf:
+            - $ref: "#/components/schemas/AdHocSubprocessActivityFilter"
+    AdHocSubprocessActivityFilter:
+      description: Flow node instance filter.
+      type: object
+      required:
+        - processDefinitionKey
+        - adHocSubprocessId
+      properties:
+        processDefinitionKey:
+          description: The process definition key.
+          type: string
+        adHocSubprocessId:
+          description: The ad-hoc subprocess element ID.
+          type: string
+    AdHocSubprocessActivitySearchQueryResult:
+      type: object
+      properties:
+        items:
+          description: The matching ad-hoc subprocess activities.
+          type: array
+          items:
+            $ref: "#/components/schemas/AdHocSubprocessActivityResult"
+    AdHocSubprocessActivityResult:
+      type: object
+      properties:
+        processDefinitionKey:
+          description: The process definition key associated to this activity.
+          type: string
+        processDefinitionId:
+          description: The process definition ID associated to this activity.
+          type: string
+        adHocSubprocessId:
+          description: The ad-hoc subprocess element ID.
+          type: string
+        elementId:
+          description: The element ID for this activity.
+          type: string
+        elementName:
+          description: The element name for this activity.
+          type: string
+        type:
+          description: Type of activity with a defined set of values.
+          type: string
+          enum:
+            - UNSPECIFIED
+            - PROCESS
+            - SUB_PROCESS
+            - EVENT_SUB_PROCESS
+            - INTERMEDIATE_CATCH_EVENT
+            - INTERMEDIATE_THROW_EVENT
+            - BOUNDARY_EVENT
+            - SERVICE_TASK
+            - RECEIVE_TASK
+            - USER_TASK
+            - MANUAL_TASK
+            - TASK
+            - MULTI_INSTANCE_BODY
+            - CALL_ACTIVITY
+            - BUSINESS_RULE_TASK
+            - SCRIPT_TASK
+            - SEND_TASK
+            - UNKNOWN
+        documentation:
+          description: The documentation for this activity.
+          type: string
+        tenantId:
+          description: The tenant ID for this activity.
+          type: string
     DecisionDefinitionSearchQuerySortRequest:
       type: object
       properties:
@@ -5065,10 +5173,6 @@ components:
     UserResult:
       type: "object"
       properties:
-        id:
-          description: The ID of the user.
-          type: "integer"
-          format: "int64"
         username:
           description: The username of the user.
           type: "string"
@@ -5292,7 +5396,7 @@ components:
         - claimValue
         - name
         - id
-    MappingRuleCreateResponseBase:
+    MappingRuleCreateResult:
       type: object
       properties:
         claimName:
@@ -5307,20 +5411,6 @@ components:
         id:
           type: string
           description: The unique external id of the mapping.
-    MappingRuleCreateResponse:
-      type: object
-      allOf:
-        - $ref: "#/components/schemas/MappingRuleCreateResponseBase"
-      properties:
-        mappingKey:
-          description: The key of the created mapping rule.
-          type: integer
-          format: int64
-    MappingRuleCreateResult:
-      type: object
-      allOf:
-        - $ref: "#/components/schemas/MappingRuleCreateResponseBase"
-      properties:
         mappingKey:
           description: The key of the created mapping rule.
           type: string
@@ -6416,7 +6506,7 @@ components:
     DocumentCreationFailureDetail:
       type: object
       properties:
-        filename:
+        fileName:
           type: string
           description: The name of the file.
         detail:
@@ -6487,33 +6577,12 @@ components:
           format: date-time
           description: The date and time when the link expires.
 
-    DeploymentResponseBase:
-      description: Base properties for DeploymentResponse.
+    DeploymentResult:
       type: object
       properties:
         tenantId:
           description: The tenant ID associated with the deployment.
           type: string
-    DeploymentResponse:
-      deprecated: true
-      type: object
-      allOf:
-        - $ref: "#/components/schemas/DeploymentResponseBase"
-      properties:
-        deploymentKey:
-          type: integer
-          format: int64
-          description: The unique key identifying the deployment.
-        deployments:
-          description: Items deployed by the request.
-          type: array
-          items:
-            $ref: "#/components/schemas/DeploymentMetadata"
-    DeploymentResult:
-      type: object
-      allOf:
-        - $ref: "#/components/schemas/DeploymentResponseBase"
-      properties:
         deploymentKey:
           type: string
           description: The unique key identifying the deployment.
@@ -6535,21 +6604,8 @@ components:
           $ref: "#/components/schemas/DeploymentFormResult"
         resource:
           $ref: "#/components/schemas/DeploymentResourceResult"
-    DeploymentMetadata:
-      type: object
-      properties:
-        processDefinition:
-          $ref: "#/components/schemas/DeploymentProcess"
-        decisionDefinition:
-          $ref: "#/components/schemas/DeploymentDecision"
-        decisionRequirements:
-          $ref: "#/components/schemas/DeploymentDecisionRequirements"
-        form:
-          $ref: "#/components/schemas/DeploymentForm"
-        resource:
-          $ref: "#/components/schemas/DeploymentResource"
-    DeploymentProcessBase:
-      description: Base properties for DeploymentProcess.
+    DeploymentProcessResult:
+      description: A deployed process.
       type: object
       properties:
         processDefinitionId:
@@ -6567,27 +6623,11 @@ components:
         tenantId:
           type: string
           description: The tenant ID of the deployed process.
-    DeploymentProcess:
-      description: A deployed process.
-      type: object
-      allOf:
-        - $ref: "#/components/schemas/DeploymentProcessBase"
-      properties:
-        processDefinitionKey:
-          type: integer
-          format: int64
-          description: The assigned key, which acts as a unique identifier for this process.
-    DeploymentProcessResult:
-      description: A deployed process.
-      type: object
-      allOf:
-        - $ref: "#/components/schemas/DeploymentProcessBase"
-      properties:
         processDefinitionKey:
           type: string
           description: The assigned key, which acts as a unique identifier for this process.
-    DeploymentDecisionBase:
-      description: Base properties for DeploymentDecision.
+    DeploymentDecisionResult:
+      description: A deployed decision.
       type: object
       properties:
         decisionDefinitionId:
@@ -6609,28 +6649,6 @@ components:
           type: string
           description: |
             The dmn ID of the decision requirements graph that this decision is part of, as parsed during deployment.
-    DeploymentDecision:
-      description: A deployed decision.
-      type: object
-      allOf:
-        - $ref: "#/components/schemas/DeploymentDecisionBase"
-      properties:
-        decisionDefinitionKey:
-          type: integer
-          format: int64
-          description: |
-            The assigned decision key, which acts as a unique identifier for this decision.
-        decisionRequirementsKey:
-          type: integer
-          format: int64
-          description: |
-            The assigned key of the decision requirements graph that this decision is part of.
-    DeploymentDecisionResult:
-      description: A deployed decision.
-      type: object
-      allOf:
-        - $ref: "#/components/schemas/DeploymentDecisionBase"
-      properties:
         decisionDefinitionKey:
           type: string
           description: |
@@ -6639,8 +6657,8 @@ components:
           type: string
           description: |
             The assigned key of the decision requirements graph that this decision is part of.
-    DeploymentDecisionRequirementsBase:
-      description: Base properties for DeploymentDecisionRequirements.
+    DeploymentDecisionRequirementsResult:
+      description: Deployed decision requirements.
       type: object
       properties:
         decisionRequirementsId:
@@ -6660,29 +6678,12 @@ components:
         resourceName:
           type: string
           description: The resource name from which this decision requirements was parsed.
-    DeploymentDecisionRequirements:
-      description: Deployed decision requirements.
-      type: object
-      allOf:
-        - $ref: "#/components/schemas/DeploymentDecisionRequirementsBase"
-      properties:
-        decisionRequirementsKey:
-          type: integer
-          format: int64
-          description: |
-            The assigned decision requirements key, which acts as a unique identifier for this decision requirements.
-    DeploymentDecisionRequirementsResult:
-      description: Deployed decision requirements.
-      type: object
-      allOf:
-        - $ref: "#/components/schemas/DeploymentDecisionRequirementsBase"
-      properties:
         decisionRequirementsKey:
           type: string
           description: |
             The assigned decision requirements key, which acts as a unique identifier for this decision requirements.
-    DeploymentFormBase:
-      description: Base properties for DeploymentForm.
+    DeploymentFormResult:
+      description: A deployed form.
       type: object
       properties:
         formId:
@@ -6700,27 +6701,11 @@ components:
         tenantId:
           type: string
           description: The tenant ID of the deployed form.
-    DeploymentForm:
-      description: A deployed form.
-      type: object
-      allOf:
-        - $ref: "#/components/schemas/DeploymentFormBase"
-      properties:
-        formKey:
-          type: integer
-          format: int64
-          description: The assigned key, which acts as a unique identifier for this form.
-    DeploymentFormResult:
-      description: A deployed form.
-      type: object
-      allOf:
-        - $ref: "#/components/schemas/DeploymentFormBase"
-      properties:
         formKey:
           type: string
           description: The assigned key, which acts as a unique identifier for this form.
-    DeploymentResourceBase:
-      description: Base properties for DeploymentResource.
+    DeploymentResourceResult:
+      description: A deployed Resource.
       type: object
       properties:
         resourceId:
@@ -6738,22 +6723,6 @@ components:
         tenantId:
           type: string
           description: The tenant ID of the deployed form.
-    DeploymentResource:
-      description: A deployed Resource.
-      type: object
-      allOf:
-        - $ref: "#/components/schemas/DeploymentResourceBase"
-      properties:
-        resourceKey:
-          type: integer
-          format: int64
-          description: The assigned key, which acts as a unique identifier for this Resource.
-    DeploymentResourceResult:
-      description: A deployed Resource.
-      type: object
-      allOf:
-        - $ref: "#/components/schemas/DeploymentResourceBase"
-      properties:
         resourceKey:
           type: string
           description: The assigned key, which acts as a unique identifier for this Resource.
@@ -7088,3 +7057,4 @@ components:
       type: http
       scheme: bearer
       bearerFormat: JWT
+

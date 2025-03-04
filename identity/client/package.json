@@ -47,11 +47,11 @@
     "event-source-polyfill": "1.0.31",
     "license-checker": "25.0.1",
     "prettier": "3.3.3",
-    "rollup": "4.29.1",
+    "rollup": "4.34.9",
     "rollup-plugin-license": "^3.5.3",
-    "sass": "1.83.0",
+    "sass": "1.85.1",
     "typescript": "5.7.3",
-    "vite": "6.0.9"
+    "vite": "6.2.0"
   },
   "packageManager": "yarn@4.3.1",
   "stableVersion": "8.8.0-SNAPSHOT"

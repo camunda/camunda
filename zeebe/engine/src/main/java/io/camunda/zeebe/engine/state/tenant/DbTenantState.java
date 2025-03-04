@@ -12,7 +12,6 @@ import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.db.impl.DbCompositeKey;
 import io.camunda.zeebe.db.impl.DbForeignKey;
-import io.camunda.zeebe.db.impl.DbLong;
 import io.camunda.zeebe.db.impl.DbString;
 import io.camunda.zeebe.engine.state.authorization.EntityTypeValue;
 import io.camunda.zeebe.engine.state.mutable.MutableTenantState;
@@ -29,106 +28,80 @@ import java.util.function.Function;
 public class DbTenantState implements MutableTenantState {
 
   private final DbString tenantId = new DbString();
-  private final DbLong tenantKey = new DbLong();
   private final PersistedTenant persistedTenant = new PersistedTenant();
-  private final ColumnFamily<DbLong, PersistedTenant> tenantsColumnFamily;
+  private final ColumnFamily<DbString, PersistedTenant> tenantsColumnFamily;
 
-  private final DbForeignKey<DbLong> fkTenantKey;
-  private final DbLong entityKey = new DbLong();
+  private final DbForeignKey<DbString> fkTenantId;
+  private final DbString entityId = new DbString();
   private final EntityTypeValue entityType = new EntityTypeValue();
-  private final DbCompositeKey<DbForeignKey<DbLong>, DbLong> entityByTenantKey;
-  private final ColumnFamily<DbCompositeKey<DbForeignKey<DbLong>, DbLong>, EntityTypeValue>
+  private final DbCompositeKey<DbForeignKey<DbString>, DbString> entityIdByTenantId;
+  private final ColumnFamily<DbCompositeKey<DbForeignKey<DbString>, DbString>, EntityTypeValue>
       entityByTenantColumnFamily;
-
-  private final ColumnFamily<DbString, DbForeignKey<DbLong>> tenantByIdColumnFamily;
 
   public DbTenantState(
       final ZeebeDb<ZbColumnFamilies> zeebeDb, final TransactionContext transactionContext) {
     tenantsColumnFamily =
         zeebeDb.createColumnFamily(
-            ZbColumnFamilies.TENANTS, transactionContext, tenantKey, new PersistedTenant());
+            ZbColumnFamilies.TENANTS, transactionContext, tenantId, new PersistedTenant());
 
-    fkTenantKey = new DbForeignKey<>(tenantKey, ZbColumnFamilies.TENANTS);
+    fkTenantId = new DbForeignKey<>(tenantId, ZbColumnFamilies.TENANTS);
 
-    entityByTenantKey = new DbCompositeKey<>(fkTenantKey, entityKey);
+    entityIdByTenantId = new DbCompositeKey<>(fkTenantId, entityId);
     entityByTenantColumnFamily =
         zeebeDb.createColumnFamily(
-            ZbColumnFamilies.ENTITY_BY_TENANT, transactionContext, entityByTenantKey, entityType);
-
-    tenantByIdColumnFamily =
-        zeebeDb.createColumnFamily(
-            ZbColumnFamilies.TENANT_BY_ID, transactionContext, tenantId, fkTenantKey);
+            ZbColumnFamilies.ENTITY_BY_TENANT, transactionContext, entityIdByTenantId, entityType);
   }
 
   @Override
   public void createTenant(final TenantRecord tenantRecord) {
-    tenantKey.wrapLong(tenantRecord.getTenantKey());
     tenantId.wrapString(tenantRecord.getTenantId());
     persistedTenant.from(tenantRecord);
-    tenantsColumnFamily.insert(tenantKey, persistedTenant);
-    tenantByIdColumnFamily.insert(tenantId, fkTenantKey);
+    tenantsColumnFamily.insert(tenantId, persistedTenant);
   }
 
   @Override
   public void updateTenant(final TenantRecord updatedTenantRecord) {
-    tenantKey.wrapLong(updatedTenantRecord.getTenantKey());
-    final var persistedTenant = tenantsColumnFamily.get(tenantKey);
+    tenantId.wrapString(updatedTenantRecord.getTenantId());
+    final var persistedTenant = tenantsColumnFamily.get(tenantId);
     persistedTenant.setName(updatedTenantRecord.getName());
     persistedTenant.setDescription(updatedTenantRecord.getDescription());
-    tenantsColumnFamily.update(tenantKey, persistedTenant);
+    tenantsColumnFamily.update(tenantId, persistedTenant);
   }
 
   @Override
   public void addEntity(final TenantRecord tenantRecord) {
-    tenantKey.wrapLong(tenantRecord.getTenantKey());
-    entityKey.wrapLong(tenantRecord.getEntityKey());
+    tenantId.wrapString(tenantRecord.getTenantId());
+    entityId.wrapString(tenantRecord.getEntityId());
     entityType.setEntityType(tenantRecord.getEntityType());
-    entityByTenantColumnFamily.insert(entityByTenantKey, entityType);
+    entityByTenantColumnFamily.insert(entityIdByTenantId, entityType);
   }
 
   @Override
-  public void removeEntity(final long tenantKey, final long entityKey) {
-    this.tenantKey.wrapLong(tenantKey);
-    this.entityKey.wrapLong(entityKey);
-    entityByTenantColumnFamily.deleteExisting(entityByTenantKey);
+  public void removeEntity(final TenantRecord tenantRecord) {
+    tenantId.wrapString(tenantRecord.getTenantId());
+    entityId.wrapString(tenantRecord.getEntityId());
+    entityByTenantColumnFamily.deleteExisting(entityIdByTenantId);
   }
 
   @Override
   public void delete(final TenantRecord tenantRecord) {
-    tenantKey.wrapLong(tenantRecord.getTenantKey());
     tenantId.wrapString(tenantRecord.getTenantId());
 
-    tenantByIdColumnFamily.deleteExisting(tenantId);
-
     entityByTenantColumnFamily.whileEqualPrefix(
-        fkTenantKey,
+        fkTenantId,
         (compositeKey, entityTypeValue) -> {
           entityByTenantColumnFamily.deleteExisting(compositeKey);
         });
 
-    tenantsColumnFamily.deleteExisting(tenantKey);
+    tenantsColumnFamily.deleteExisting(tenantId);
   }
 
   @Override
-  public Optional<PersistedTenant> getTenantByKey(final long tenantKey) {
-    this.tenantKey.wrapLong(tenantKey);
-    final PersistedTenant persistedTenant = tenantsColumnFamily.get(this.tenantKey);
-    return Optional.ofNullable(persistedTenant);
-  }
-
-  @Override
-  public Optional<Long> getTenantKeyById(final String tenantId) {
+  public Optional<EntityType> getEntityType(final String tenantId, final String entityId) {
     this.tenantId.wrapString(tenantId);
-    return Optional.ofNullable(tenantByIdColumnFamily.get(this.tenantId))
-        .map(fkTenantKey -> fkTenantKey.inner().getValue());
-  }
+    this.entityId.wrapString(entityId);
 
-  @Override
-  public Optional<EntityType> getEntityType(final long tenantKey, final long entityKey) {
-    this.tenantKey.wrapLong(tenantKey);
-    this.entityKey.wrapLong(entityKey);
-
-    final var entityTypeValue = entityByTenantColumnFamily.get(entityByTenantKey);
+    final var entityTypeValue = entityByTenantColumnFamily.get(entityIdByTenantId);
 
     if (entityTypeValue == null) {
       return Optional.empty();
@@ -138,24 +111,17 @@ public class DbTenantState implements MutableTenantState {
   }
 
   @Override
-  public boolean isEntityAssignedToTenant(final long entityKey, final long tenantKey) {
-    this.tenantKey.wrapLong(tenantKey);
-    this.entityKey.wrapLong(entityKey);
-    return entityByTenantColumnFamily.exists(entityByTenantKey);
-  }
-
-  @Override
-  public Map<EntityType, List<Long>> getEntitiesByType(final long tenantKey) {
-    final Map<EntityType, List<Long>> entitiesMap = new HashMap<>();
-    this.tenantKey.wrapLong(tenantKey);
+  public Map<EntityType, List<String>> getEntitiesByType(final String tenantId) {
+    final Map<EntityType, List<String>> entitiesMap = new HashMap<>();
+    this.tenantId.wrapString(tenantId);
 
     entityByTenantColumnFamily.whileEqualPrefix(
-        fkTenantKey,
+        fkTenantId,
         (compositeKey, entityTypeValue) -> {
           final var entityType = entityTypeValue.getEntityType();
-          final var entityKey = compositeKey.second().getValue();
+          final var entityId = compositeKey.second().toString();
           entitiesMap.putIfAbsent(entityType, new ArrayList<>());
-          entitiesMap.get(entityType).add(entityKey);
+          entitiesMap.get(entityType).add(entityId);
         });
 
     return entitiesMap;
@@ -168,7 +134,8 @@ public class DbTenantState implements MutableTenantState {
 
   @Override
   public Optional<PersistedTenant> getTenantById(final String tenantId) {
-    // TODO: Change cfs to look up by id directly
-    return getTenantKeyById(tenantId).flatMap(this::getTenantByKey);
+    this.tenantId.wrapString(tenantId);
+    final var persistedTenant = tenantsColumnFamily.get(this.tenantId);
+    return Optional.ofNullable(persistedTenant);
   }
 }

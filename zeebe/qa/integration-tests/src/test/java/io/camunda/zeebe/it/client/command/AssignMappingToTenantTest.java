@@ -25,7 +25,7 @@ import org.junit.jupiter.api.Test;
 @ZeebeIntegration
 class AssignMappingToTenantTest {
 
-  private static final String TENANT_ID = "tenant-id";
+  private static final String TENANT_ID = "tenantId";
   private static final String CLAIM_NAME = "claimName";
   private static final String CLAIM_VALUE = "claimValue";
   private static final String NAME = "name";
@@ -70,11 +70,11 @@ class AssignMappingToTenantTest {
   @Test
   void shouldAssignMappingToTenant() {
     // When
-    client.newAssignMappingToTenantCommand(tenantKey).mappingKey(mappingKey).send().join();
+    client.newAssignMappingToTenantCommand(TENANT_ID).mappingKey(mappingKey).send().join();
 
     // Then
     ZeebeAssertHelper.assertEntityAssignedToTenant(
-        tenantKey,
+        TENANT_ID,
         mappingKey,
         tenant -> {
           assertThat(tenant.getTenantKey()).isEqualTo(tenantKey);
@@ -85,21 +85,21 @@ class AssignMappingToTenantTest {
   @Test
   void shouldRejectAssignIfTenantDoesNotExist() {
     // Given
-    final long invalidTenantKey = 99999L;
+    final var invalidTenantId = "invalidTenantId";
 
     // When / Then
     assertThatThrownBy(
             () ->
                 client
-                    .newAssignMappingToTenantCommand(invalidTenantKey)
+                    .newAssignMappingToTenantCommand(invalidTenantId)
                     .mappingKey(mappingKey)
                     .send()
                     .join())
         .isInstanceOf(ProblemException.class)
         .hasMessageContaining("Failed with code 404: 'Not Found'")
         .hasMessageContaining(
-            "Command 'ADD_ENTITY' rejected with code 'NOT_FOUND': Expected to add entity to tenant with key '%d', but no tenant with this key exists."
-                .formatted(invalidTenantKey));
+            "Command 'ADD_ENTITY' rejected with code 'NOT_FOUND': Expected to add entity to tenant with id '%s', but no tenant with this id exists."
+                .formatted(invalidTenantId));
   }
 
   @Test
@@ -111,7 +111,7 @@ class AssignMappingToTenantTest {
     assertThatThrownBy(
             () ->
                 client
-                    .newAssignMappingToTenantCommand(tenantKey)
+                    .newAssignMappingToTenantCommand(TENANT_ID)
                     .mappingKey(invalidMappingKey)
                     .send()
                     .join())

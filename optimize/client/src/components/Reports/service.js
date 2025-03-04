@@ -7,20 +7,19 @@
  */
 
 import {get, del, post} from 'request';
-import {getFullURL} from '../../modules/api';
 
 export async function shareReport(reportId) {
   const body = {
     reportId,
   };
-  const response = await post(getFullURL(`api/share/report`), body);
+  const response = await post(`api/share/report`, body);
 
   const json = await response.json();
   return json.id;
 }
 
 export async function getSharedReport(reportId) {
-  const response = await get(getFullURL(`api/share/report/${reportId}`));
+  const response = await get(`api/share/report/${reportId}`);
 
   if (response.status > 201) {
     return '';
@@ -31,5 +30,5 @@ export async function getSharedReport(reportId) {
 }
 
 export async function revokeReportSharing(id) {
-  return await del(getFullURL(`api/share/report/${id}`));
+  return await del(`api/share/report/${id}`);
 }

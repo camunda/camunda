@@ -21,7 +21,6 @@ import io.camunda.zeebe.protocol.record.intent.JobBatchIntent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
-import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
@@ -33,21 +32,28 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
 class MetricsExporterTest {
-  private static final TtlKeyCache DEFAULT_KEY_CACHE =
-      new TtlKeyCache(MetricsExporter.TIME_TO_LIVE.toMillis());
+  private final ExporterTestContext context = new ExporterTestContext();
 
   @Test
-  void shouldObserveJobLifetime() {
+  void shouldObserveJobLifetime() throws Exception {
     // given
-    final var meterRegistry = new SimpleMeterRegistry();
-    final var partitionId = 1;
-    final var metrics = new ExecutionLatencyMetrics(meterRegistry, 1);
-    final var exporter =
-        new MetricsExporter(metrics, DEFAULT_KEY_CACHE, DEFAULT_KEY_CACHE, meterRegistry);
+    final var exporter = new MetricsExporter();
+    exporter.configure(context);
     exporter.open(new ExporterTestController());
-    assertThat(meterRegistry.getMeters().size())
-        .isEqualTo(0)
-        .describedAs("Expected no metrics to be measured at start");
+    assertThat(context.getMeterRegistry().getMeters())
+        .describedAs("Expected no metrics to be measured at start")
+        .allSatisfy(
+            meter ->
+                meter.match(
+                    g -> assertThat(g.value()).isZero(),
+                    ignored -> null,
+                    t -> assertThat(t.count()).isZero(),
+                    ignored -> null,
+                    ignored -> null,
+                    ignored -> null,
+                    ignored -> null,
+                    ignored -> null,
+                    ignored -> null));
 
     // when
     exporter.export(
@@ -56,7 +62,7 @@ class MetricsExporterTest {
             .withValueType(ValueType.JOB)
             .withIntent(JobIntent.CREATED)
             .withTimestamp(1651505728460L)
-            .withKey(Protocol.encodePartitionId(partitionId, 1))
+            .withKey(Protocol.encodePartitionId(1, 1))
             .build());
 
     // pass a job batch activated to simulate the full lifetime
@@ -77,14 +83,14 @@ class MetricsExporterTest {
             .withValueType(ValueType.JOB)
             .withIntent(JobIntent.COMPLETED)
             .withTimestamp(1651505729571L)
-            .withKey(Protocol.encodePartitionId(partitionId, 1))
+            .withKey(Protocol.encodePartitionId(1, 1))
             .build());
 
     // then
-    final var jobLifeTime = meterRegistry.timer("zeebe.job.life.time");
+    final var jobLifeTime = context.getMeterRegistry().timer("zeebe.job.life.time");
 
     assertThat(jobLifeTime.count())
-        .isEqualTo(1)
+        .isOne()
         .describedAs("Expected exactly 1 observed job_life_time sample counted");
 
     assertThat(
@@ -98,13 +104,9 @@ class MetricsExporterTest {
   void shouldCleanupProcessInstancesWithSameStartTime() throws Exception {
     // given
     final var processCache = new TtlKeyCache();
-    final var exporter =
-        new MetricsExporter(
-            new ExecutionLatencyMetrics(),
-            processCache,
-            new TtlKeyCache(),
-            new SimpleMeterRegistry());
+    final var exporter = new MetricsExporter(processCache, new TtlKeyCache());
     final var controller = new ExporterTestController();
+    exporter.configure(context);
     exporter.open(controller);
     exporter.configure(new ExporterTestContext());
 
@@ -140,6 +142,7 @@ class MetricsExporterTest {
     final var jobCache = new TtlKeyCache();
     final var exporter = new MetricsExporter();
     final var controller = new ExporterTestController();
+    exporter.configure(context);
     exporter.open(controller);
     exporter.configure(new ExporterTestContext());
     exporter.export(

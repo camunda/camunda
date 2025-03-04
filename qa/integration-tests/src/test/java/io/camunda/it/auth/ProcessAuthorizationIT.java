@@ -17,11 +17,11 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.command.ProblemException;
 import io.camunda.client.api.response.DeploymentEvent;
-import io.camunda.it.utils.CamundaMultiDBExtension;
 import io.camunda.qa.util.auth.Authenticated;
 import io.camunda.qa.util.auth.Permissions;
 import io.camunda.qa.util.auth.User;
 import io.camunda.qa.util.auth.UserDefinition;
+import io.camunda.qa.util.multidb.CamundaMultiDBExtension;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import java.time.Duration;
 import java.util.List;
@@ -44,7 +44,7 @@ class ProcessAuthorizationIT {
   static final CamundaMultiDBExtension EXTENSION = new CamundaMultiDBExtension(BROKER);
 
   private static final String ADMIN = "admin";
-  private static final String RESTRICTED = "restricted-user";
+  private static final String RESTRICTED = "restrictedUser";
 
   @UserDefinition
   private static final User ADMIN_USER =

@@ -22,6 +22,8 @@ import io.camunda.zeebe.protocol.impl.record.value.authorization.MappingRecord;
 import java.util.concurrent.CompletableFuture;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
@@ -38,8 +40,9 @@ public class MappingControllerTest extends RestControllerTest {
     when(mappingServices.withAuthentication(any(Authentication.class))).thenReturn(mappingServices);
   }
 
-  @Test
-  void createMappingShouldReturnCreated() {
+  @ParameterizedTest
+  @ValueSource(strings = {"foo", "Foo", "foo123"})
+  void createMappingShouldReturnCreated(final String id) {
     // given
     final var dto = validCreateMappingRequest();
     final var mappingRecord =
@@ -47,7 +50,7 @@ public class MappingControllerTest extends RestControllerTest {
             .setMappingKey(1L)
             .setClaimName(dto.claimName())
             .setClaimValue(dto.claimValue())
-            .setId(dto.id())
+            .setId(id)
             .setName(dto.name());
 
     when(mappingServices.createMapping(dto))
@@ -212,6 +215,64 @@ public class MappingControllerTest extends RestControllerTest {
               "status": 400,
               "title": "INVALID_ARGUMENT",
               "detail": "No name provided.",
+              "instance": "%s"
+            }"""
+            .formatted(MAPPING_RULES_PATH));
+    verifyNoInteractions(mappingServices);
+  }
+
+  @ParameterizedTest
+  @ValueSource(
+      strings = {
+        "foo~", "foo!", "foo#", "foo$", "foo%", "foo^", "foo&", "foo*", "foo(", "foo)", "foo=",
+        "foo+", "foo{", "foo[", "foo}", "foo]", "foo|", "foo\\", "foo:", "foo;", "foo\"", "foo'",
+        "foo<", "foo>", "foo,", "foo?", "foo/", "foo ", "foo@", "foo_", "foo.", "foo\t", "foo\n",
+        "foo\r",
+      })
+  void shouldRejectMappingCreationWithIllegalCharactersInId(final String id) {
+    // given
+    final var request =
+        new MappingRuleCreateRequest()
+            .id(id)
+            .claimName("claimName")
+            .claimValue("claimValue")
+            .name("name");
+
+    // when then
+    assertRequestRejectedExceptionally(
+        request,
+        """
+            {
+              "type": "about:blank",
+              "status": 400,
+              "title": "INVALID_ARGUMENT",
+              "detail": "The provided id contains illegal characters. It must match the pattern '[a-zA-Z0-9]+'.",
+              "instance": "%s"
+            }"""
+            .formatted(MAPPING_RULES_PATH));
+    verifyNoInteractions(mappingServices);
+  }
+
+  @Test
+  void shouldRejectMappingWithTooLongId() {
+    // given
+    final var id = "x".repeat(257);
+    final var request =
+        new MappingRuleCreateRequest()
+            .id(id)
+            .claimName("claimName")
+            .claimValue("claimValue")
+            .name("name");
+
+    // when then
+    assertRequestRejectedExceptionally(
+        request,
+        """
+            {
+              "type": "about:blank",
+              "status": 400,
+              "title": "INVALID_ARGUMENT",
+              "detail": "The provided id exceeds the limit of 256 characters.",
               "instance": "%s"
             }"""
             .formatted(MAPPING_RULES_PATH));

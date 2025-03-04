@@ -15,7 +15,6 @@ import io.camunda.zeebe.engine.state.mutable.MutableTenantState;
 import io.camunda.zeebe.engine.state.mutable.MutableUserState;
 import io.camunda.zeebe.protocol.impl.record.value.tenant.TenantRecord;
 import io.camunda.zeebe.protocol.record.intent.TenantIntent;
-import io.camunda.zeebe.protocol.record.value.EntityType;
 
 public class TenantEntityAddedApplier implements TypedEventApplier<TenantIntent, TenantRecord> {
 
@@ -32,18 +31,11 @@ public class TenantEntityAddedApplier implements TypedEventApplier<TenantIntent,
   }
 
   @Override
-  public void applyState(final long key, final TenantRecord tenant) {
+  public void applyState(final long tenantKey, final TenantRecord tenant) {
     switch (tenant.getEntityType()) {
       case USER -> {
-        final var username = tenant.getEntityId();
-        final var userKey = userState.getUser(username).orElseThrow().getUserKey();
-        final var tenantKey = tenantState.getTenantKeyById(tenant.getTenantId()).orElseThrow();
-        tenantState.addEntity(
-            new TenantRecord()
-                .setTenantKey(tenantKey)
-                .setEntityType(EntityType.USER)
-                .setEntityKey(userKey));
-        userState.addTenantId(username, tenant.getTenantId());
+        tenantState.addEntity(tenant);
+        userState.addTenantId(tenant.getEntityId(), tenant.getTenantId());
       }
       case MAPPING -> {
         tenantState.addEntity(tenant);

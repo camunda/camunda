@@ -20,11 +20,11 @@ import io.camunda.client.api.command.ProblemException;
 import io.camunda.client.api.response.DeploymentEvent;
 import io.camunda.client.api.response.EvaluateDecisionResponse;
 import io.camunda.client.api.search.response.DecisionInstance;
-import io.camunda.it.utils.CamundaMultiDBExtension;
 import io.camunda.qa.util.auth.Authenticated;
 import io.camunda.qa.util.auth.Permissions;
 import io.camunda.qa.util.auth.User;
 import io.camunda.qa.util.auth.UserDefinition;
+import io.camunda.qa.util.multidb.CamundaMultiDBExtension;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import java.time.Duration;
 import java.util.List;
@@ -49,7 +49,7 @@ class DecisionInstanceAuthorizationIT {
   private static final String DECISION_DEFINITION_ID_1 = "decision_1";
   private static final String DECISION_DEFINITION_ID_2 = "test_qa";
   private static final String ADMIN = "admin";
-  private static final String RESTRICTED = "restricted-user";
+  private static final String RESTRICTED = "restrictedUser";
 
   @UserDefinition
   private static final User ADMIN_USER =

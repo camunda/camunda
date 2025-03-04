@@ -20,45 +20,70 @@ import io.camunda.zeebe.qa.util.actuator.ClusterActuator;
 import io.camunda.zeebe.qa.util.cluster.TestCluster;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
-import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
 import io.camunda.zeebe.qa.util.topology.ClusterActuatorAssert;
 import io.camunda.zeebe.test.util.asserts.TopologyAssert;
 import java.time.Duration;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Consumer;
+import java.util.function.Supplier;
+import java.util.stream.Stream;
 import org.assertj.core.api.Assertions;
 import org.assertj.core.api.InstanceOfAssertFactories;
 import org.awaitility.Awaitility;
-import org.junit.jupiter.api.AutoClose;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.TestInstance;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
-/** TODO: We currently only test RDBMS because purge is not implemented in the others (yet). */
+/**
+ * TODO: We currently only test RDBMS, this should be tested by the ClusterPurgeMultiDbIT, once RDMS
+ * works with the multi-db extension.
+ */
 @ZeebeIntegration
+@TestInstance(TestInstance.Lifecycle.PER_CLASS)
 public class ClusterPurgeIT {
 
   private static final int BROKER_COUNT = 1;
   private static final int PARTITION_COUNT = 1;
   private static final int REPLICATION_FACTOR = 1;
 
-  @TestZeebe
-  final TestCluster cluster =
-      TestCluster.builder()
-          .withBrokersCount(BROKER_COUNT)
-          .withPartitionsCount(PARTITION_COUNT)
-          .withReplicationFactor(REPLICATION_FACTOR)
-          .withEmbeddedGateway(true)
-          .withBrokerConfig(TestStandaloneBroker::withRdbmsExporter)
-          .build();
+  private TestCluster cluster;
+  private CamundaClient client;
 
-  @AutoClose CamundaClient client;
+  void setupCluster(final TestBrokerConfig config) {
+    // Setup cluster based on the provided broker configuration
+    cluster =
+        TestCluster.builder()
+            .withBrokersCount(BROKER_COUNT)
+            .withPartitionsCount(PARTITION_COUNT)
+            .withReplicationFactor(REPLICATION_FACTOR)
+            .withEmbeddedGateway(true)
+            .withBrokerConfig(config.brokerConfig)
+            .build()
+            .start()
+            .awaitHealthyTopology();
+    client = cluster.newClientBuilder().preferRestOverGrpc(true).build();
+  }
 
-  @Test
-  void shouldPurgeProcessDefinitions() {
+  @AfterEach
+  void tearDownCluster() {
+    if (client != null) {
+      client.close();
+    }
+    if (cluster != null) {
+      cluster.close();
+    }
+  }
+
+  @ParameterizedTest
+  @MethodSource("brokerConfigs")
+  void shouldPurgeProcessDefinitions(final TestBrokerConfig config) {
     // GIVEN
+    setupCluster(config);
     final var processModel =
         Bpmn.createExecutableProcess("test-process").startEvent().endEvent().done();
-    client = cluster.newClientBuilder().preferRestOverGrpc(true).build();
     final var processDefinitionKey = deployProcessModel(processModel);
     final var actuator = ClusterActuator.of(cluster.availableGateway());
 
@@ -68,14 +93,16 @@ public class ClusterPurgeIT {
     // THEN
     assertThatChangesAreApplied(planChangeResponse);
     assertThatEntityNotFound(
-        client.newCreateInstanceCommand().processDefinitionKey(processDefinitionKey).send());
-    assertThatEntityNotFound(client.newProcessDefinitionGetRequest(processDefinitionKey).send());
+        () -> client.newCreateInstanceCommand().processDefinitionKey(processDefinitionKey).send());
+    assertThatEntityNotFound(
+        () -> client.newProcessDefinitionGetRequest(processDefinitionKey).send());
   }
 
-  @Test
-  void shouldPurgeProcessInstances() {
+  @ParameterizedTest
+  @MethodSource("brokerConfigs")
+  void shouldPurgeProcessInstances(final TestBrokerConfig config) {
     // GIVEN
-    client = cluster.newClientBuilder().preferRestOverGrpc(true).build();
+    setupCluster(config);
     final var processModel =
         Bpmn.createExecutableProcess("test-process")
             .startEvent()
@@ -93,14 +120,15 @@ public class ClusterPurgeIT {
 
     // THEN
     assertThatChangesAreApplied(planChangeResponse);
-    assertThatEntityNotFound(client.newCancelInstanceCommand(processInstanceKey).send());
-    assertThatEntityNotFound(client.newProcessInstanceGetRequest(processInstanceKey).send());
+    assertThatEntityNotFound(() -> client.newCancelInstanceCommand(processInstanceKey).send());
+    assertThatEntityNotFound(() -> client.newProcessInstanceGetRequest(processInstanceKey).send());
   }
 
-  @Test
-  void shouldPurgeServiceTask() {
+  @ParameterizedTest
+  @MethodSource("brokerConfigs")
+  void shouldPurgeServiceTask(final TestBrokerConfig config) {
     // GIVEN
-    client = cluster.newClientBuilder().preferRestOverGrpc(true).build();
+    setupCluster(config);
     final var processModel =
         Bpmn.createExecutableProcess("test-process")
             .startEvent()
@@ -128,12 +156,14 @@ public class ClusterPurgeIT {
 
     // THEN
     assertThatChangesAreApplied(planChangeResponse);
-    assertThatEntityNotFound(client.newCompleteCommand(activeJob).send());
+    assertThatEntityNotFound(() -> client.newCompleteCommand(activeJob).send());
   }
 
-  @Test
-  void shouldPurgeUserTask() {
+  @ParameterizedTest
+  @MethodSource("brokerConfigs")
+  void shouldPurgeUserTask(final TestBrokerConfig config) {
     // GIVEN
+    setupCluster(config);
     client = cluster.newClientBuilder().preferRestOverGrpc(true).build();
     final var processModel =
         Bpmn.createExecutableProcess("test-process")
@@ -169,13 +199,19 @@ public class ClusterPurgeIT {
 
     // THEN
     assertThatChangesAreApplied(planChangeResponse);
+    assertThatEntityNotFound(() -> client.newUserTaskCompleteCommand(userTaskKey.get()).send());
 
-    assertThatEntityNotFound(client.newUserTaskCompleteCommand(userTaskKey.get()).send());
-    final Future<SearchQueryResponse<UserTask>> userTaskFuture = client.newUserTaskQuery().send();
-    Assertions.assertThat(userTaskFuture)
-        .succeedsWithin(Duration.ofSeconds(10))
-        .extracting(SearchQueryResponse::items)
-        .satisfies(items -> Assertions.assertThat(items).isEmpty());
+    Awaitility.await("until user task query returns empty list")
+        .atMost(Duration.ofSeconds(20))
+        .untilAsserted(
+            () -> {
+              final Future<SearchQueryResponse<UserTask>> userTaskFuture =
+                  client.newUserTaskQuery().send();
+              Assertions.assertThat(userTaskFuture)
+                  .succeedsWithin(Duration.ofSeconds(10))
+                  .extracting(SearchQueryResponse::items)
+                  .satisfies(items -> Assertions.assertThat(items).isEmpty());
+            });
   }
 
   /**
@@ -222,16 +258,20 @@ public class ClusterPurgeIT {
     return processInstanceKey;
   }
 
-  private void assertThatEntityNotFound(final Future<?> future) {
-    Assertions.assertThat(future)
-        .failsWithin(Duration.ofSeconds(10))
-        .withThrowableOfType(ExecutionException.class)
-        .extracting(Throwable::getCause)
-        .asInstanceOf(InstanceOfAssertFactories.type(ProblemException.class))
-        .extracting(ProblemException::details)
-        .asInstanceOf(InstanceOfAssertFactories.type(ProblemDetail.class))
-        .extracting(ProblemDetail::getStatus)
-        .isEqualTo(404);
+  private void assertThatEntityNotFound(final Supplier<Future<?>> sendRequest) {
+    Awaitility.await("until entity not found")
+        .atMost(Duration.ofSeconds(20))
+        .untilAsserted(
+            () ->
+                Assertions.assertThat(sendRequest.get())
+                    .failsWithin(Duration.ofSeconds(10))
+                    .withThrowableOfType(ExecutionException.class)
+                    .extracting(Throwable::getCause)
+                    .asInstanceOf(InstanceOfAssertFactories.type(ProblemException.class))
+                    .extracting(ProblemException::details)
+                    .asInstanceOf(InstanceOfAssertFactories.type(ProblemDetail.class))
+                    .extracting(ProblemDetail::getStatus)
+                    .isEqualTo(404));
   }
 
   private void assertThatChangesAreApplied(final PlannedOperationsResponse planChangeResponse) {
@@ -239,12 +279,38 @@ public class ClusterPurgeIT {
         .untilAsserted(
             () ->
                 ClusterActuatorAssert.assertThat(cluster).hasCompletedChanges(planChangeResponse));
-    Awaitility.await("until cluster is healthy and ready")
+    Awaitility.await("until cluster is ready")
         .untilAsserted(
             () ->
                 TopologyAssert.assertThat(client.newTopologyRequest().send().join())
                     .isComplete(BROKER_COUNT, PARTITION_COUNT, REPLICATION_FACTOR));
+    Awaitility.await("until cluster is healthy")
+        .untilAsserted(
+            () -> TopologyAssert.assertThat(client.newTopologyRequest().send().join()).isHealthy());
 
     Assertions.assertThat(planChangeResponse.getPlannedChanges()).isNotEmpty();
+  }
+
+  private static Stream<TestBrokerConfig> brokerConfigs() {
+    return Stream.of(
+        new TestBrokerConfig("RdbmsExporter", TestStandaloneBroker::withRdbmsExporter)
+        /*,
+        new TestBrokerConfig(
+            "CamundaExporter", t -> t.withCamundaExporter("http://localhost:9200", null))*/ );
+  }
+
+  static class TestBrokerConfig {
+    private final String name;
+    private final Consumer<TestStandaloneBroker> brokerConfig;
+
+    TestBrokerConfig(final String name, final Consumer<TestStandaloneBroker> brokerConfig) {
+      this.name = name;
+      this.brokerConfig = brokerConfig;
+    }
+
+    @Override
+    public String toString() {
+      return name;
+    }
   }
 }

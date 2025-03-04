@@ -34,7 +34,7 @@ public class RemoveUserFromTenantTest extends ClientRestTest {
   @Test
   void shouldRemoveUserFromTenant() {
     // when
-    client.newRemoveUserFromTenantCommand(TENANT_ID).username(USERNAME).send().join();
+    client.newUnassignUserFromTenantCommand(TENANT_ID).username(USERNAME).send().join();
 
     // then
     final String requestPath = RestGatewayService.getLastRequest().getUrl();
@@ -53,7 +53,8 @@ public class RemoveUserFromTenantTest extends ClientRestTest {
 
     // when / then
     assertThatThrownBy(
-            () -> client.newRemoveUserFromTenantCommand(TENANT_ID).username(USERNAME).send().join())
+            () ->
+                client.newUnassignUserFromTenantCommand(TENANT_ID).username(USERNAME).send().join())
         .isInstanceOf(ProblemException.class)
         .hasMessageContaining("Failed with code 404: 'Not Found'");
   }
@@ -67,7 +68,8 @@ public class RemoveUserFromTenantTest extends ClientRestTest {
 
     // when / then
     assertThatThrownBy(
-            () -> client.newRemoveUserFromTenantCommand(TENANT_ID).username(USERNAME).send().join())
+            () ->
+                client.newUnassignUserFromTenantCommand(TENANT_ID).username(USERNAME).send().join())
         .isInstanceOf(ProblemException.class)
         .hasMessageContaining("Failed with code 404: 'Not Found'");
   }
@@ -81,7 +83,8 @@ public class RemoveUserFromTenantTest extends ClientRestTest {
 
     // when / then
     assertThatThrownBy(
-            () -> client.newRemoveUserFromTenantCommand(TENANT_ID).username(USERNAME).send().join())
+            () ->
+                client.newUnassignUserFromTenantCommand(TENANT_ID).username(USERNAME).send().join())
         .isInstanceOf(ProblemException.class)
         .hasMessageContaining("Failed with code 500: 'Internal Server Error'");
   }
@@ -95,7 +98,8 @@ public class RemoveUserFromTenantTest extends ClientRestTest {
 
     // when / then
     assertThatThrownBy(
-            () -> client.newRemoveUserFromTenantCommand(TENANT_ID).username(USERNAME).send().join())
+            () ->
+                client.newUnassignUserFromTenantCommand(TENANT_ID).username(USERNAME).send().join())
         .isInstanceOf(ProblemException.class)
         .hasMessageContaining("Failed with code 403: 'Forbidden'");
   }

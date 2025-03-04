@@ -8,8 +8,12 @@
 package io.camunda.zeebe.gateway.rest.validator;
 
 import static io.camunda.zeebe.gateway.rest.validator.ErrorMessages.ERROR_MESSAGE_EMPTY_ATTRIBUTE;
+import static io.camunda.zeebe.gateway.rest.validator.ErrorMessages.ERROR_MESSAGE_ILLEGAL_CHARACTER;
 import static io.camunda.zeebe.gateway.rest.validator.ErrorMessages.ERROR_MESSAGE_INVALID_EMAIL;
 import static io.camunda.zeebe.gateway.rest.validator.ErrorMessages.ERROR_MESSAGE_TOO_MANY_CHARACTERS;
+import static io.camunda.zeebe.gateway.rest.validator.IdentifierPatterns.MAX_LENGTH;
+import static io.camunda.zeebe.gateway.rest.validator.IdentifierPatterns.USERNAME_PATTERN;
+import static io.camunda.zeebe.gateway.rest.validator.IdentifierPatterns.USERNAME_REGEX;
 import static io.camunda.zeebe.gateway.rest.validator.RequestValidator.validate;
 
 import io.camunda.zeebe.gateway.protocol.rest.UserRequest;
@@ -21,8 +25,6 @@ import org.apache.commons.validator.routines.EmailValidator;
 import org.springframework.http.ProblemDetail;
 
 public final class UserValidator {
-
-  private static final int MAX_USERNAME_LENGTH = 256;
 
   public static Optional<ProblemDetail> validateUserUpdateRequest(final UserUpdateRequest request) {
     return validate(
@@ -46,8 +48,10 @@ public final class UserValidator {
     final var username = request.getUsername();
     if (username == null || username.isBlank()) {
       violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("username"));
-    } else if (username.length() > MAX_USERNAME_LENGTH) {
-      violations.add(ERROR_MESSAGE_TOO_MANY_CHARACTERS.formatted("username", MAX_USERNAME_LENGTH));
+    } else if (username.length() > MAX_LENGTH) {
+      violations.add(ERROR_MESSAGE_TOO_MANY_CHARACTERS.formatted("username", MAX_LENGTH));
+    } else if (!USERNAME_PATTERN.matcher(username).matches()) {
+      violations.add(ERROR_MESSAGE_ILLEGAL_CHARACTER.formatted("username", USERNAME_REGEX));
     }
   }
 
@@ -56,11 +60,13 @@ public final class UserValidator {
     if (name == null || name.isBlank()) {
       violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("name"));
     }
+
     if (email == null || email.isBlank()) {
       violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("email"));
     } else if (!EmailValidator.getInstance().isValid(email)) {
       violations.add(ERROR_MESSAGE_INVALID_EMAIL.formatted(email));
     }
+
     return violations;
   }
 }

@@ -102,7 +102,7 @@
     <!-- remove these versions.anything properties once we inherit from zeebe-parent -->
     <version.node>v20.9.0</version.node>
     <version.yarn>v1.22.19</version.yarn>
-    <version.jackson>2.18.2</version.jackson>
+    <version.jackson>2.18.3</version.jackson>
 
     <!-- testing config -->
     <mockito.version>5.15.2</mockito.version>
@@ -240,7 +240,7 @@
     <dependency>
       <groupId>org.awaitility</groupId>
       <artifactId>awaitility</artifactId>
-      <version>4.2.2</version>
+      <version>4.3.0</version>
       <scope>test</scope>
     </dependency>
 
@@ -319,7 +319,7 @@
             <failOnWarning>${dependencyAnalyze.failOnWarning}</failOnWarning>
             <ignoredUnusedDeclaredDependencies combine.children="append">
               <dep>io.camunda:identity-spring-boot-starter</dep>
-              <dep>io.micrometer:micrometer-registry-prometheus-simpleclient</dep>
+              <dep>io.micrometer:micrometer-registry-prometheus</dep>
               <dep>jakarta.annotation:jakarta.annotation-api</dep>
               <dep>jakarta.servlet:jakarta.servlet-api</dep>
               <dep>org.apache.httpcomponents.core5:httpcore5</dep>
@@ -460,7 +460,7 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-deploy-plugin</artifactId>
-          <version>3.1.3</version>
+          <version>3.1.4</version>
         </plugin>
         <plugin>
           <groupId>com.github.eirslett</groupId>
@@ -554,7 +554,7 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-compiler-plugin</artifactId>
-        <version>3.13.0</version>
+        <version>3.14.0</version>
         <configuration>
           <release>${maven.compiler.target}</release>
         </configuration>

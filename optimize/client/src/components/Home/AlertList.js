@@ -151,7 +151,6 @@ const AlertList = ({collection, readOnly}) => {
           !isLoading &&
           alerts.map((alert) => {
             const {id, name, emails, reportId, threshold, thresholdOperator} = alert;
-            const inactive = emails?.length === 0;
 
             return {
               id,
@@ -164,7 +163,6 @@ const AlertList = ({collection, readOnly}) => {
                 formatDescription(reportId, thresholdOperator, threshold),
                 emails?.join(', '),
               ],
-              warning: inactive && t('alert.inactiveStatus'),
               actions: !readOnly && [
                 {
                   icon: <Edit />,

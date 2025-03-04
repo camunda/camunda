@@ -17,29 +17,28 @@ package io.atomix.raft.metrics;
 
 import static io.atomix.raft.metrics.RaftStartupMetricsDoc.*;
 
-import io.micrometer.core.instrument.Gauge;
+import io.camunda.zeebe.util.micrometer.StatefulGauge;
 import io.micrometer.core.instrument.MeterRegistry;
-import java.util.concurrent.atomic.AtomicLong;
 
 public class RaftStartupMetrics extends RaftMetrics {
 
-  private final AtomicLong bootstrapDuration;
-  private final AtomicLong joinDuration;
+  private final StatefulGauge bootstrapDuration;
+  private final StatefulGauge joinDuration;
 
   public RaftStartupMetrics(final String partitionName, final MeterRegistry registry) {
     super(partitionName);
-    bootstrapDuration = new AtomicLong(0L);
-    joinDuration = new AtomicLong(0L);
 
-    Gauge.builder(BOOTSTRAP_DURATION.getName(), bootstrapDuration::get)
-        .description(BOOTSTRAP_DURATION.getDescription())
-        .tags(RaftKeyNames.PARTITION_GROUP.asString(), partitionGroupName)
-        .register(registry);
+    bootstrapDuration =
+        StatefulGauge.builder(BOOTSTRAP_DURATION.getName())
+            .description(BOOTSTRAP_DURATION.getDescription())
+            .tag(RaftKeyNames.PARTITION_GROUP.asString(), partitionGroupName)
+            .register(registry);
 
-    Gauge.builder(JOIN_DURATION.getName(), joinDuration::get)
-        .description(JOIN_DURATION.getDescription())
-        .tags(RaftKeyNames.PARTITION_GROUP.asString(), partitionGroupName)
-        .register(registry);
+    joinDuration =
+        StatefulGauge.builder(JOIN_DURATION.getName())
+            .description(JOIN_DURATION.getDescription())
+            .tag(RaftKeyNames.PARTITION_GROUP.asString(), partitionGroupName)
+            .register(registry);
   }
 
   public void observeBootstrapDuration(final long durationMillis) {

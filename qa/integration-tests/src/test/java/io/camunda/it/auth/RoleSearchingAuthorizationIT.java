@@ -15,11 +15,11 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.protocol.rest.PermissionTypeEnum;
 import io.camunda.client.protocol.rest.ResourceTypeEnum;
-import io.camunda.it.utils.CamundaMultiDBExtension;
 import io.camunda.qa.util.auth.Authenticated;
 import io.camunda.qa.util.auth.Permissions;
 import io.camunda.qa.util.auth.User;
 import io.camunda.qa.util.auth.UserDefinition;
+import io.camunda.qa.util.multidb.CamundaMultiDBExtension;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import java.io.IOException;
 import java.net.URI;
@@ -52,8 +52,8 @@ class RoleSearchingAuthorizationIT {
       new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 
   private static final String ADMIN = "admin";
-  private static final String RESTRICTED = "restricted-user";
-  private static final String RESTRICTED_WITH_READ = "restricted-user-2";
+  private static final String RESTRICTED = "restrictedUser";
+  private static final String RESTRICTED_WITH_READ = "restrictedUser2";
   private static final String DEFAULT_PASSWORD = "password";
   private static final String ROLE_SEARCH_ENDPOINT = "v2/roles/search";
   private static final Duration AWAIT_TIMEOUT = Duration.ofSeconds(15);
