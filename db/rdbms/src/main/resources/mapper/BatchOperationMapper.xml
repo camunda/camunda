@@ -62,9 +62,7 @@
     parameterType="io.camunda.db.rdbms.sql.BatchOperationMapper$BatchOperationUpdateDto">
     UPDATE BATCH_OPERATION
     SET STATE    = #{state},
-        END_DATE = #{endDate},
-        OPERATIONS_FAILED_COUNT    = #{operationsFailedCount},
-        OPERATIONS_COMPLETED_COUNT = #{operationsCompletedCount}
+        END_DATE = #{endDate}
     WHERE BATCH_OPERATION_KEY = #{batchOperationKey}
   </update>
 
@@ -74,6 +72,18 @@
     SET STATE = #{state}
     WHERE BATCH_OPERATION_KEY = #{batchOperationKey}
       AND ITEM_KEY = #{itemKey}
+  </update>
+
+  <update id="incrementFailedOperationsCount" parameterType="java.lang.Long">
+    UPDATE BATCH_OPERATION
+    SET OPERATIONS_FAILED_COUNT = OPERATIONS_FAILED_COUNT + 1
+    WHERE BATCH_OPERATION_KEY = #{batchOperationKey}
+  </update>
+
+  <update id="incrementCompletedOperationsCount" parameterType="java.lang.Long">
+    UPDATE BATCH_OPERATION
+    SET OPERATIONS_COMPLETED_COUNT = OPERATIONS_COMPLETED_COUNT + 1
+    WHERE BATCH_OPERATION_KEY = #{batchOperationKey}
   </update>
 
   <select id="getItems"
