@@ -492,7 +492,7 @@
         />
       </column>
       <column name="ITEM_KEY" type="BIGINT"/>
-      <column name="STATE" type="VARCHAR(20)"/>
+      <column name="STATE" type="VARCHAR(20)" defaultValue="ACTIVE"/>
     </createTable>
 
     <modifySql dbms="mariadb">

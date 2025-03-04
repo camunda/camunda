@@ -21,10 +21,8 @@ import io.camunda.client.api.search.response.BatchOperationType;
 import io.camunda.client.impl.util.ParseUtil;
 import io.camunda.client.protocol.rest.BatchOperationCreatedResult;
 import io.camunda.client.protocol.rest.BatchOperationResponse;
-import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
 
 public class BatchOperationImpl implements BatchOperation {
 
@@ -58,13 +56,6 @@ public class BatchOperationImpl implements BatchOperation {
     operationsTotalCount = item.getOperationsTotalCount();
     operationsFailedCount = item.getOperationsFailedCount();
     operationsCompletedCount = item.getOperationsCompletedCount();
-
-    if(item.getItems() != null) {
-      keys.addAll(item.getItems().stream()
-          .map(ParseUtil::parseLongOrNull)
-          .collect(Collectors.toList())
-      );
-    }
   }
 
   @Override

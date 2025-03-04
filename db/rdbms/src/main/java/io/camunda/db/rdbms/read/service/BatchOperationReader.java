@@ -15,8 +15,10 @@ import io.camunda.db.rdbms.sql.BatchOperationMapper;
 import io.camunda.db.rdbms.sql.columns.BatchOperationSearchColumn;
 import io.camunda.db.rdbms.sql.columns.IncidentSearchColumn;
 import io.camunda.search.entities.BatchOperationEntity;
+import io.camunda.search.entities.BatchOperationEntity.BatchOperationItemEntity;
 import io.camunda.search.query.BatchOperationQuery;
 import io.camunda.search.query.SearchQueryResult;
+import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -43,5 +45,11 @@ public class BatchOperationReader extends AbstractEntityReader<BatchOperationEnt
         .map(BatchOperationEntityMapper::toEntity)
         .toList();
     return buildSearchQueryResult(totalHits, hits, dbSort);
+  }
+
+  public List<BatchOperationItemEntity> getItems(final Long batchOperationKey) {
+
+    return batchOperationMapper.getItems(batchOperationKey).stream()
+        .toList();
   }
 }
