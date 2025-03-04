@@ -10,20 +10,27 @@ package io.camunda.it.rdbms.db.tenant;
 import static io.camunda.it.rdbms.db.fixtures.CommonFixtures.nextStringId;
 import static io.camunda.it.rdbms.db.fixtures.TenantFixtures.createAndSaveRandomTenants;
 import static io.camunda.it.rdbms.db.fixtures.TenantFixtures.createAndSaveTenant;
+import static io.camunda.it.rdbms.db.fixtures.UserFixtures.createAndSaveUser;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.db.rdbms.RdbmsService;
 import io.camunda.db.rdbms.read.service.TenantReader;
+import io.camunda.db.rdbms.read.service.UserReader;
 import io.camunda.db.rdbms.write.RdbmsWriter;
 import io.camunda.db.rdbms.write.domain.TenantDbModel;
+import io.camunda.db.rdbms.write.domain.TenantMemberDbModel;
 import io.camunda.it.rdbms.db.fixtures.TenantFixtures;
+import io.camunda.it.rdbms.db.fixtures.UserFixtures;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsInvocationContextProviderExtension;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsTestApplication;
 import io.camunda.search.entities.TenantEntity;
 import io.camunda.search.filter.TenantFilter;
+import io.camunda.search.filter.UserFilter;
 import io.camunda.search.page.SearchQueryPage;
 import io.camunda.search.query.TenantQuery;
+import io.camunda.search.query.UserQuery;
 import io.camunda.search.sort.TenantSort;
+import io.camunda.search.sort.UserSort;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.TestTemplate;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -184,6 +191,61 @@ public class TenantIT {
     assertThat(nextPage.total()).isEqualTo(20);
     assertThat(nextPage.items()).hasSize(5);
     assertThat(nextPage.items()).isEqualTo(searchResult.items().subList(10, 15));
+  }
+
+  @TestTemplate
+  public void shouldAddMemberToTenant(final CamundaRdbmsTestApplication testApplication) {
+    // given
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+    final RdbmsWriter rdbmsWriter = rdbmsService.createWriter(PARTITION_ID);
+    final UserReader userReader = rdbmsService.getUserReader();
+    final var tenant = TenantFixtures.createRandomized(b -> b);
+    createAndSaveTenant(rdbmsWriter, tenant);
+    final var user = UserFixtures.createRandomized(b -> b);
+    createAndSaveUser(rdbmsWriter, user);
+
+    // when
+    rdbmsWriter
+        .getTenantWriter()
+        .addMember(new TenantMemberDbModel(tenant.tenantId(), user.username(), "USER"));
+    rdbmsWriter.flush();
+
+    final var users =
+        userReader.search(
+            new UserQuery(
+                new UserFilter.Builder().tenantId(tenant.tenantId()).build(),
+                UserSort.of(b -> b),
+                SearchQueryPage.of(b -> b.from(0).size(5))));
+    assertThat(users.total()).isEqualTo(1);
+  }
+
+  @TestTemplate
+  public void shouldRemoveMemberFromTenant(final CamundaRdbmsTestApplication testApplication) {
+    // given
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+    final RdbmsWriter rdbmsWriter = rdbmsService.createWriter(PARTITION_ID);
+    final UserReader userReader = rdbmsService.getUserReader();
+    final var tenant = TenantFixtures.createRandomized(b -> b);
+    createAndSaveTenant(rdbmsWriter, tenant);
+    final var user = UserFixtures.createRandomized(b -> b);
+    createAndSaveUser(rdbmsWriter, user);
+    rdbmsWriter
+        .getTenantWriter()
+        .addMember(new TenantMemberDbModel(tenant.tenantId(), user.username(), "USER"));
+
+    // when
+    rdbmsWriter
+        .getTenantWriter()
+        .removeMember(new TenantMemberDbModel(tenant.tenantId(), user.username(), "USER"));
+    rdbmsWriter.flush();
+
+    final var users =
+        userReader.search(
+            new UserQuery(
+                new UserFilter.Builder().tenantId(tenant.tenantId()).build(),
+                UserSort.of(b -> b),
+                SearchQueryPage.of(b -> b.from(0).size(5))));
+    assertThat(users.total()).isEqualTo(0);
   }
 
   private static void compareTenant(final TenantEntity actual, final TenantDbModel expected) {
