@@ -12,26 +12,16 @@ import io.camunda.zeebe.engine.state.mutable.MutableMappingState;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.MappingRecord;
 import io.camunda.zeebe.protocol.record.intent.MappingIntent;
 
-public class MappingDeletedApplier implements TypedEventApplier<MappingIntent, MappingRecord> {
+public class MappingUpdatedApplier implements TypedEventApplier<MappingIntent, MappingRecord> {
 
   private final MutableMappingState mappingState;
 
-  public MappingDeletedApplier(final MutableMappingState mappingState) {
+  public MappingUpdatedApplier(final MutableMappingState mappingState) {
     this.mappingState = mappingState;
   }
 
   @Override
   public void applyState(final long key, final MappingRecord value) {
-    // retrieve mapping from the state
-    final var mappingKey = value.getMappingKey();
-    // TODO: refactor when Mapping Rules use String-based IDs
-    final var mapping = mappingState.get(mappingKey);
-    if (mapping.isEmpty()) {
-      throw new IllegalStateException(
-          String.format(
-              "Expected to delete mapping with key '%s', but a mapping with this key does not exist.",
-              value.getMappingKey()));
-    }
-    mappingState.delete(mappingKey);
+    mappingState.update(value);
   }
 }

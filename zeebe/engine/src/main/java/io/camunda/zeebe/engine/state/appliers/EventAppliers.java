@@ -556,7 +556,8 @@ public final class EventAppliers implements EventApplier {
 
   private void registerMappingAppliers(final MutableProcessingState state) {
     register(MappingIntent.CREATED, new MappingCreatedApplier(state.getMappingState()));
-    register(MappingIntent.DELETED, new MappingDeletedApplier(state));
+    register(MappingIntent.DELETED, new MappingDeletedApplier(state.getMappingState()));
+    register(MappingIntent.UPDATED, new MappingUpdatedApplier(state.getMappingState()));
   }
 
   private void registerIdentitySetupAppliers() {
