@@ -9,7 +9,7 @@ function runRule(input) {
   if (/Key$/.test(name) && type !== "string") {
     return [
       {
-        message: "`...Key` properties must be of type `string`.",
+        message: `\`${name}\` parameter must be of type \`string\`.`,
       },
     ];
   }

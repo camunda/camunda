@@ -42,7 +42,7 @@ rules:
     category:
       id: schemas
     id: schema-key-properties-must-be-strings
-    description: "`...Key` parameters must be of type `string`."
+    description: "`...Key` properties must be of type `string`."
     howToFix: Make the `...Key` property a `string`.
     given: $.components.schemas[*].properties
     then:

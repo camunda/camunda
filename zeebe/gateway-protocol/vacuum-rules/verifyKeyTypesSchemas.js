@@ -5,9 +5,9 @@ function runRule(input) {
     .filter(([name, schema]) => {
       return /Key$/.test(name) && schema.type !== "string";
     })
-    .map((_) => {
+    .map(([name]) => {
       return {
-        message: "`...Key` properties must be of type `string`.",
+        message: `\`${name}\` property must be of type \`string\`.`,
       };
     });
 }
