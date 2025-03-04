@@ -121,7 +121,7 @@ public class ActivateAdHocSubprocessActivityTest {
         .isInstanceOf(ProblemException.class)
         .hasMessageContaining("Failed with code 400: 'Bad Request'")
         .hasMessageContaining(
-            "Command 'ACTIVATE' rejected with code 'INVALID_ARGUMENT': Duplicate flow nodes [A, A] not allowed.");
+            "Command 'ACTIVATE' rejected with code 'INVALID_ARGUMENT': Duplicate elements [A, A] not allowed.");
   }
 
   private void deploy(final TestInfo testInfo) {
