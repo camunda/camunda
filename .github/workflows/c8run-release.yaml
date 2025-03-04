@@ -44,7 +44,7 @@ env:
 jobs:
   init:
     name: Create C8Run tag/release
-    runs-on: windows-latest
+    runs-on: ubuntu-latest
     timeout-minutes: 15
     outputs:
       NEXUS_USERNAME: ${{ steps.secrets.outputs.NEXUS_PASSWORD }}
@@ -79,7 +79,7 @@ jobs:
             --notes "${{ env.CAMUNDA_RUN_NAME }}"
         env:
           GH_TOKEN: ${{ github.token }}
-          
+
   release:
     needs: init
     name: C8Run - ${{ matrix.os.name }}
