@@ -25,14 +25,12 @@ public final class AdHocSubProcessActivityActivationRecord extends UnifiedRecord
       new StringProperty("adHocSubProcessInstanceKey", DEFAULT_STRING);
   private final ArrayProperty<AdHocSubProcessActivityActivationElement> elements =
       new ArrayProperty<>("elements", AdHocSubProcessActivityActivationElement::new);
-  private final StringProperty tenantIdProp =
+  private final StringProperty tenantId =
       new StringProperty("tenantId", TenantOwned.DEFAULT_TENANT_IDENTIFIER);
 
   public AdHocSubProcessActivityActivationRecord() {
     super(3);
-    declareProperty(adHocSubProcessInstanceKey)
-        .declareProperty(elements)
-        .declareProperty(tenantIdProp);
+    declareProperty(adHocSubProcessInstanceKey).declareProperty(elements).declareProperty(tenantId);
   }
 
   @Override
@@ -64,11 +62,11 @@ public final class AdHocSubProcessActivityActivationRecord extends UnifiedRecord
 
   @Override
   public String getTenantId() {
-    return BufferUtil.bufferAsString(tenantIdProp.getValue());
+    return BufferUtil.bufferAsString(tenantId.getValue());
   }
 
   public AdHocSubProcessActivityActivationRecord setTenantId(final String tenantId) {
-    tenantIdProp.setValue(tenantId);
+    this.tenantId.setValue(tenantId);
     return this;
   }
 }
