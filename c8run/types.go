@@ -28,3 +28,12 @@ type C8RunSettings struct {
 type TemplateData struct {
 	ServerPort int
 }
+
+// HasKeyStore returns true when the keystore and password are set
+func (c C8RunSettings) HasKeyStore() bool {
+	return c.keystore != "" && c.keystorePassword != ""
+}
+
+func (c C8RunSettings) Port() int {
+	return c.port
+}
