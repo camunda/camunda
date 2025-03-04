@@ -9,12 +9,13 @@ package io.camunda.zeebe.exporter.opensearch;
 
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
 import java.util.Optional;
+import org.junit.jupiter.api.extension.AfterAllCallback;
 import org.junit.jupiter.api.extension.AfterEachCallback;
 import org.junit.jupiter.api.extension.BeforeAllCallback;
 import org.junit.jupiter.api.extension.BeforeEachCallback;
 
 public abstract class SearchDBExtension
-    implements BeforeAllCallback, BeforeEachCallback, AfterEachCallback {
+    implements BeforeAllCallback, BeforeEachCallback, AfterEachCallback, AfterAllCallback {
 
   protected static final String TEST_INTEGRATION_OPENSEARCH_AWS_URL =
       "test.integration.opensearch.aws.url";
