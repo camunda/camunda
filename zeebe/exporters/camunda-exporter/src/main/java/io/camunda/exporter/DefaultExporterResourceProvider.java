@@ -41,7 +41,7 @@ import io.camunda.exporter.handlers.ListViewFlowNodeFromJobHandler;
 import io.camunda.exporter.handlers.ListViewFlowNodeFromProcessInstanceHandler;
 import io.camunda.exporter.handlers.ListViewProcessInstanceFromProcessInstanceHandler;
 import io.camunda.exporter.handlers.ListViewVariableFromVariableHandler;
-import io.camunda.exporter.handlers.MappingCreatedHandler;
+import io.camunda.exporter.handlers.MappingCreatedUpdatedHandler;
 import io.camunda.exporter.handlers.MappingDeletedHandler;
 import io.camunda.exporter.handlers.MetricFromDecisionEvaluationHandler;
 import io.camunda.exporter.handlers.MetricFromProcessInstanceHandler;
@@ -261,7 +261,7 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
                 indexDescriptors.get(OperationTemplate.class).getFullQualifiedName()),
             new OperationFromIncidentHandler(
                 indexDescriptors.get(OperationTemplate.class).getFullQualifiedName()),
-            new MappingCreatedHandler(
+            new MappingCreatedUpdatedHandler(
                 indexDescriptors.get(MappingIndex.class).getFullQualifiedName()),
             new MappingDeletedHandler(
                 indexDescriptors.get(MappingIndex.class).getFullQualifiedName()),
