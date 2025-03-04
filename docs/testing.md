@@ -27,11 +27,13 @@ have:
 
 ## General conventions
 
+- Every public change should be verified via an automated test.
+  - Every bug fix should be verified via a regression test.
 - It's perfectly fine to repeat yourself in tests; the focus is on readability.
   - One caveat here, is with acceptance tests, where set up can be expensive.
 - Where possible, use junit 5 to write tests.
   - When modifying an existing junit 4 test, if possible, first take the time to migrate it to junit 5.
-  - If it would be too time-consuming to migrate (e.g. uses lots of custom junit 4 rules), you can omit that.
+  - If it is too time-consuming to migrate (e.g. uses lots of custom junit 4 rules), you can omit that.
 - Where possible, avoid waiting for something to happen; this will reduce flakiness.
   - If you have to, use [Awaitility](http://www.awaitility.org/) to await conditions, **do not use `Thread.sleep` or the likes**.
 - Avoid using any shaded dependencies, and use direct ones.
@@ -267,11 +269,10 @@ Some examples of class unit tests:
 Of course, sometimes you're not testing a class, but rather multiple as one unit. In this case,
 name the test class such that it conveys the logical grouping of the tests it contains.
 
-For example, look at
-the [ObjectMappingDefaultValuesTest](zeebe/msgpack-value/src/test/java/io/camunda/zeebe/msgpack/ObjectMappingDefaultValuesTest.java),
+For example, take a look at:
+- [ObjectMappingDefaultValuesTest](zeebe/msgpack-value/src/test/java/io/camunda/zeebe/msgpack/ObjectMappingDefaultValuesTest.java),
 which tests the serialization and deserialization of default properties in `UnpackedObject` types.
-Or
-the [JsonSerializableToJsonTest](zeebe/protocol-impl/src/test/java/io/camunda/zeebe/protocol/impl/JsonSerializableToJsonTest.java),
+- [JsonSerializableToJsonTest](zeebe/protocol-impl/src/test/java/io/camunda/zeebe/protocol/impl/JsonSerializableToJsonTest.java),
 which tests that all protocol values can be serialized to JSON.
 
 In both cases, we are testing a few classes interacting together, but testing logically similar
