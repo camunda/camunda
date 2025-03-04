@@ -237,18 +237,6 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
     return apiAuthenticationMethod();
   }
 
-  /**
-   * Sets the broker's working directory, aka its data directory. If a path is given, the broker
-   * will not delete it on shutdown.
-   *
-   * @param directory path to the broker's root data directory
-   * @return itself for chaining
-   */
-  public TestStandaloneBroker withWorkingDirectory(final Path directory) {
-    return withBean(
-        "workingDirectory", new WorkingDirectory(directory, false), WorkingDirectory.class);
-  }
-
   public TestStandaloneBroker withCamundaExporter(final String elasticSearchUrl) {
     return withCamundaExporter(elasticSearchUrl, null);
   }
