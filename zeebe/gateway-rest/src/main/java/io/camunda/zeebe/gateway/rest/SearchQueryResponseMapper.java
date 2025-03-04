@@ -39,7 +39,7 @@ import io.camunda.search.query.SearchQueryResult;
 import io.camunda.zeebe.gateway.protocol.rest.AdHocSubprocessActivityResult;
 import io.camunda.zeebe.gateway.protocol.rest.AuthorizationResult;
 import io.camunda.zeebe.gateway.protocol.rest.AuthorizationSearchResult;
-import io.camunda.zeebe.gateway.protocol.rest.BatchOperation;
+import io.camunda.zeebe.gateway.protocol.rest.BatchOperationResponse;
 import io.camunda.zeebe.gateway.protocol.rest.BatchOperationSearchQueryResult;
 import io.camunda.zeebe.gateway.protocol.rest.DecisionDefinitionResult;
 import io.camunda.zeebe.gateway.protocol.rest.DecisionDefinitionSearchQueryResult;
@@ -86,7 +86,6 @@ import io.camunda.zeebe.gateway.protocol.rest.VariableSearchQueryResult;
 import io.camunda.zeebe.gateway.rest.cache.ProcessCacheItem;
 import io.camunda.zeebe.gateway.rest.util.KeyUtil;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -330,14 +329,15 @@ public final class SearchQueryResponseMapper {
         .tenantId(p.tenantId());
   }
 
-  private static List<BatchOperation> toBatchOperations(
+  private static List<BatchOperationResponse> toBatchOperations(
       final List<BatchOperationEntity> batchOperations) {
     return batchOperations.stream().map(SearchQueryResponseMapper::toBatchOperation).toList();
   }
 
-  public static BatchOperation toBatchOperation(final BatchOperationEntity entity) {
-    return new BatchOperation()
+  public static BatchOperationResponse toBatchOperation(final BatchOperationEntity entity) {
+    return new BatchOperationResponse()
         .batchOperationKey(entity.batchOperationKey().toString())
+        .state(entity.state().toString())
         .batchOperationType(entity.operationType())
         .startDate(formatDate(entity.startDate()))
         .endDate(formatDate(entity.endDate()))

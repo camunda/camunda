@@ -44,6 +44,7 @@ import io.camunda.search.entities.UserEntity;
 import io.camunda.search.entities.UserTaskEntity;
 import io.camunda.search.entities.VariableEntity;
 import io.camunda.search.query.AuthorizationQuery;
+import io.camunda.search.query.BatchOperationQuery;
 import io.camunda.search.query.DecisionDefinitionQuery;
 import io.camunda.search.query.DecisionInstanceQuery;
 import io.camunda.search.query.DecisionRequirementsQuery;
@@ -303,9 +304,10 @@ public class RdbmsSearchClient
   }
 
   @Override
-  public SearchQueryResult<BatchOperationEntity> searchBatchOperations() {
-    LOG.debug("[RDBMS Search Client] Search for batch operations");
+  public SearchQueryResult<BatchOperationEntity> searchBatchOperations(
+      final BatchOperationQuery query) {
+    LOG.debug("[RDBMS Search Client] Search for batch operations: {}", query);
 
-    return rdbmsService.getBatchOperationReader().search();
+    return rdbmsService.getBatchOperationReader().search(query);
   }
 }

@@ -3,6 +3,7 @@ package io.camunda.exporter.rdbms.handlers;
 import io.camunda.db.rdbms.write.domain.BatchOperationDbModel;
 import io.camunda.db.rdbms.write.service.BatchOperationWriter;
 import io.camunda.exporter.rdbms.RdbmsExportHandler;
+import io.camunda.search.entities.BatchOperationEntity.BatchOperationState;
 import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
@@ -45,6 +46,7 @@ public class BatchOperationCreatedExportHandler implements RdbmsExportHandler<Ba
     final var value = record.getValue();
     return new BatchOperationDbModel.Builder()
         .batchOperationKey(record.getKey())
+        .state(BatchOperationState.ACTIVE)
         .operationType(value.getBatchOperationType().name())
         .startDate(DateUtil.toOffsetDateTime(record.getTimestamp()))
         .endDate(null)

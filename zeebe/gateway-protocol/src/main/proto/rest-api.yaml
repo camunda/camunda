@@ -7238,12 +7238,15 @@ components:
           description: The matching batch operations.
           type: array
           items:
-            $ref: "#/components/schemas/BatchOperation"
-    BatchOperation:
+            $ref: "#/components/schemas/BatchOperationResponse"
+    BatchOperationResponse:
       type: object
       properties:
         batchOperationKey:
           description: Key of the batch operation
+          type: string
+        state:
+          description: Batch operation state
           type: string
         batchOperationType:
           description: Batch operation type

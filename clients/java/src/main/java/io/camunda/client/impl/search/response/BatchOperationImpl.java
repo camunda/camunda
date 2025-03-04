@@ -15,27 +15,56 @@
  */
 package io.camunda.client.impl.search.response;
 
-import static java.util.Collections.emptyList;
-
 import io.camunda.client.api.search.response.BatchOperation;
 import io.camunda.client.api.search.response.BatchOperationState;
 import io.camunda.client.api.search.response.BatchOperationType;
 import io.camunda.client.impl.util.ParseUtil;
 import io.camunda.client.protocol.rest.BatchOperationCreatedResult;
+import io.camunda.client.protocol.rest.BatchOperationResponse;
+import java.time.OffsetDateTime;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 public class BatchOperationImpl implements BatchOperation {
 
   private final Long batchOperationKey;
   private final BatchOperationType type;
   private final BatchOperationState state;
-  private final List<Long> keys;
+  private final String startDate;
+  private final String endDate;
+  private final Integer operationsTotalCount;
+  private final Integer operationsFailedCount;
+  private final Integer operationsCompletedCount;
+  private final List<Long> keys = new ArrayList<>();
 
   public BatchOperationImpl(final BatchOperationCreatedResult item) {
     batchOperationKey = ParseUtil.parseLongOrNull(item.getBatchOperationKey());
     type = BatchOperationType.valueOf(item.getBatchOperationType());
     state = null;
-    keys = emptyList(); //todo
+    startDate = null;
+    endDate = null;
+    operationsTotalCount = null;
+    operationsFailedCount = null;
+    operationsCompletedCount = null;
+  }
+
+  public BatchOperationImpl(final BatchOperationResponse item) {
+    batchOperationKey = ParseUtil.parseLongOrNull(item.getBatchOperationKey());
+    type = BatchOperationType.valueOf(item.getBatchOperationType());
+    state = BatchOperationState.valueOf(item.getState());
+    startDate = item.getStartDate();
+    endDate = item.getEndDate();
+    operationsTotalCount = item.getOperationsTotalCount();
+    operationsFailedCount = item.getOperationsFailedCount();
+    operationsCompletedCount = item.getOperationsCompletedCount();
+
+    if(item.getItems() != null) {
+      keys.addAll(item.getItems().stream()
+          .map(ParseUtil::parseLongOrNull)
+          .collect(Collectors.toList())
+      );
+    }
   }
 
   @Override
@@ -56,5 +85,30 @@ public class BatchOperationImpl implements BatchOperation {
   @Override
   public BatchOperationType getType() {
     return type;
+  }
+
+  @Override
+  public String getStartDate() {
+    return startDate;
+  }
+
+  @Override
+  public String getEndDate() {
+    return endDate;
+  }
+
+  @Override
+  public Integer getOperationsTotalCount() {
+    return operationsTotalCount;
+  }
+
+  @Override
+  public Integer getOperationsFailedCount() {
+    return operationsFailedCount;
+  }
+
+  @Override
+  public Integer getOperationsCompletedCount() {
+    return operationsCompletedCount;
   }
 }

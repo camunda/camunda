@@ -52,11 +52,15 @@ public final class BatchOperationActivateProcessor
     final long key = keyGenerator.nextKey();
     final var recordValue = command.getValue();
     LOGGER.debug("Processing new command with key '{}': {}", key, recordValue);
-    createBatchOperationExecution(key, command);
+    final var batchCreated = new BatchOperationCreationRecord();
+    batchCreated.wrap(command.getValue());
+    batchCreated.setBatchOperationKey(key);
+
+    createBatchOperationExecution(key, batchCreated);
     responseWriter.writeEventOnCommand(
         key,
         BatchOperationIntent.CREATED,
-        command.getValue(),
+        batchCreated,
         command);
     commandDistributionBehavior
         .withKey(key)
@@ -69,21 +73,21 @@ public final class BatchOperationActivateProcessor
     final var recordValue = command.getValue();
 
     LOGGER.debug("Processing distributed command with key '{}': {}", command.getKey(), recordValue);
-    createBatchOperationExecution(command.getKey(), command);
+    createBatchOperationExecution(command.getKey(), command.getValue());
     commandDistributionBehavior.acknowledgeCommand(command);
   }
 
   private void createBatchOperationExecution(final Long key,
-      final TypedRecord<BatchOperationCreationRecord> command) {
-    final var batchCreated = new BatchOperationCreationRecord();
-    batchCreated.wrap(command.getValue());
-    batchCreated.setBatchOperationKey(key);
-    stateWriter.appendFollowUpEvent(key, BatchOperationIntent.CREATED,
-        batchCreated);
+      final BatchOperationCreationRecord value) {
+    stateWriter.appendFollowUpEvent(
+        key,
+        BatchOperationIntent.CREATED,
+        value
+    );
 
     final var batchExecute = new BatchOperationExecutionRecord();
-    batchExecute.setBatchOperationKey(key);
-    batchExecute.setBatchOperationType(command.getValue().getBatchOperationType());
+    batchExecute.setBatchOperationKey(value.getBatchOperationKey());
+    batchExecute.setBatchOperationType(value.getBatchOperationType());
     batchExecute.setOffset(0);
     commandWriter.appendFollowUpCommand(key, BatchOperationIntent.EXECUTE,
         batchExecute);
