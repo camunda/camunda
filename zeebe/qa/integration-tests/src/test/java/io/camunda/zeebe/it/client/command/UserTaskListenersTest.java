@@ -398,6 +398,55 @@ public class UserTaskListenersTest {
   }
 
   @Test
+  public void shouldRejectUserTaskCompletionWhenTaskListenerDeniesTheWorkNoReasonProvided() {
+    // given
+    final var listenerType = "my_listener";
+    final var userTaskKey =
+        resourcesHelper.createSingleUserTask(
+            t -> t.zeebeTaskListener(l -> l.completing().type(listenerType)));
+
+    final JobHandler completeJobHandler =
+        (jobClient, job) -> client.newCompleteCommand(job).withResult().deny(true).send().join();
+    final var recordingHandler = new RecordingJobHandler(completeJobHandler);
+
+    client.newWorker().jobType(listenerType).handler(recordingHandler).open();
+
+    // when: invoke complete user task command
+    final CamundaFuture<CompleteUserTaskResponse> completeUserTaskFuture =
+        client.newUserTaskCompleteCommand(userTaskKey).send();
+
+    // TL job should be successfully completed with the result "denied" set correctly
+    ZeebeAssertHelper.assertJobCompleted(
+        listenerType,
+        userTaskListener -> {
+          assertThat(userTaskListener.getResult().isDenied()).isTrue();
+          assertThat(userTaskListener.getResult().getDeniedReason()).isEqualTo("");
+        });
+
+    final var rejectionReason =
+        String.format(
+            "Command 'COMPLETE' rejected with code 'INVALID_STATE': Completion of the User Task with key '%s' was denied by Task Listener. "
+                + "Reason to deny: ''",
+            userTaskKey);
+
+    // verify the rejection
+    assertThatExceptionOfType(ProblemException.class)
+        .isThrownBy(completeUserTaskFuture::join)
+        .satisfies(
+            ex -> {
+              assertThat(ex.details().getTitle()).isEqualTo(RejectionType.INVALID_STATE.name());
+              assertThat(ex.details().getDetail()).isEqualTo(rejectionReason);
+              assertThat(ex.details().getStatus()).isEqualTo(HttpStatus.SC_CONFLICT);
+            });
+
+    // verify the expected sequence of User Task intents
+    assertUserTaskIntentsSequence(
+        UserTaskIntent.COMPLETING,
+        UserTaskIntent.DENY_TASK_LISTENER,
+        UserTaskIntent.COMPLETION_DENIED);
+  }
+
+  @Test
   public void shouldRejectUserTaskAssignmentWhenTaskListenerDeniesTheWork() {
     // given
     final var listenerType = "my_listener";
