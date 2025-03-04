@@ -326,18 +326,18 @@ public class RestErrorMapper {
         (cse.getReason() == null) ? CamundaSearchException.Reason.UNKNOWN : cse.getReason();
     final Throwable cause = (cse.getCause() == null) ? cse : cse.getCause();
     final String name = cause.getClass().getName();
+    final String message = cause.getMessage();
     switch (reason) {
       case NOT_FOUND:
         {
-          final String detail = "Expected to handle REST request, but resource was not found.";
-          REST_GATEWAY_LOGGER.debug(detail);
-          return createProblemDetail(HttpStatus.NOT_FOUND, detail, RejectionType.NOT_FOUND.name());
+          REST_GATEWAY_LOGGER.debug(message);
+          return createProblemDetail(HttpStatus.NOT_FOUND, message, RejectionType.NOT_FOUND.name());
         }
       case NOT_UNIQUE:
         {
-          final String detail = "Expected to handle REST request, but resource is not unique.";
+          REST_GATEWAY_LOGGER.debug(message);
           return createProblemDetail(
-              HttpStatus.CONFLICT, detail, RejectionType.INVALID_STATE.name());
+              HttpStatus.CONFLICT, message, RejectionType.INVALID_STATE.name());
         }
       case CONNECTION_FAILED:
         {
@@ -362,7 +362,7 @@ public class RestErrorMapper {
         {
           final String detail =
               "Expected to handle REST request, but unexpected error occured: %s"
-                  .formatted(cause.getMessage());
+                  .formatted(message);
           REST_GATEWAY_LOGGER.debug(detail);
           return createProblemDetail(HttpStatus.INTERNAL_SERVER_ERROR, detail, name);
         }

@@ -586,8 +586,7 @@ public class ErrorMapperTest extends RestControllerTest {
 
     // when
     assertThat(problemDetail.getStatus()).isEqualTo(HttpStatus.NOT_FOUND.value());
-    assertThat(problemDetail.getDetail())
-        .isEqualTo("Expected to handle REST request, but resource was not found.");
+    assertThat(problemDetail.getDetail()).isEqualTo("Item not found");
     assertThat(problemDetail.getTitle()).isEqualTo("NOT_FOUND");
   }
 
@@ -603,8 +602,7 @@ public class ErrorMapperTest extends RestControllerTest {
 
     // when
     assertThat(problemDetail.getStatus()).isEqualTo(HttpStatus.CONFLICT.value());
-    assertThat(problemDetail.getDetail())
-        .isEqualTo("Expected to handle REST request, but resource is not unique.");
+    assertThat(problemDetail.getDetail()).isEqualTo("Item not unique");
     assertThat(problemDetail.getTitle()).isEqualTo("INVALID_STATE");
   }
 
