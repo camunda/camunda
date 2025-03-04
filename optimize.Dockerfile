@@ -1,4 +1,4 @@
-ARG BASE_IMAGE_NAME="alpine:3.21.3"
+ARG BASE_IMAGE_NAME="alpine:3.21.0"
 ARG BASE_SHA="sha256:21dc6063fd678b478f57c0e13f47560d0ea4eeba26dfc947b2a4f81f686b9f45"
 
 FROM ${BASE_IMAGE_NAME}@${BASE_SHA} AS base
@@ -24,12 +24,6 @@ RUN rm ${BUILD_DIR}/config/environment-config.yaml
 
 ##### FINAL IMAGE #####
 FROM base
-
-
-
-
-
-
 ARG VERSION=""
 ARG DATE=""
 ARG REVISION=""
@@ -49,7 +43,9 @@ LABEL org.opencontainers.image.source="https://github.com/camunda/camunda-optimi
 LABEL org.opencontainers.image.version="${VERSION}"
 LABEL org.opencontainers.image.revision="${REVISION}"
 LABEL org.opencontainers.image.vendor="Camunda Services GmbH"
-@@ -50,7 +51,7 @@ LABEL org.opencontainers.image.description="Provides business activity monitorin
+LABEL org.opencontainers.image.licenses="Proprietary"
+LABEL org.opencontainers.image.title="Camunda Optimize"
+LABEL org.opencontainers.image.description="Provides business activity monitoring for workflows and uses BPMN-based analysis to uncover process bottlenecks"
 
 # OpenShift labels: https://docs.openshift.com/container-platform/4.10/openshift_images/create-images.html#defining-image-metadata
 LABEL io.openshift.tags="bpmn,optimization,camunda"
@@ -57,18 +53,15 @@ LABEL io.openshift.wants="zeebe,elasticsearch,identity,keycloak"
 LABEL io.k8s.description="Provides business activity monitoring for workflows and uses BPMN-based analysis to uncover process bottlenecks"
 LABEL io.openshift.non-scalable="false"
 LABEL io.openshift.min-memory="2Gi"
-@@ -63,21 +64,25 @@ ENV CONTAINER_HOST=0.0.0.0
+LABEL io.openshift.min-cpu="1"
+
+ENV WAIT_FOR=
+ENV WAIT_FOR_TIMEOUT=30
+ENV TZ=UTC
+ENV CONTAINER_HOST=0.0.0.0
 
 EXPOSE 8090 8091
-
-
-
-
-
-
-
 VOLUME /tmp
-
 
 RUN apk add --no-cache bash curl tini openjdk21-jre tzdata && \
     apk -U upgrade && \
