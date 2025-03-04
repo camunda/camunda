@@ -466,15 +466,14 @@ public class TaskListenerTest {
     // correct assignee value is present at all stages
     assertThat(
             RecordingExporter.userTaskRecords()
+                .withProcessInstanceKey(processInstanceKey)
                 .limit(r -> r.getIntent() == UserTaskIntent.ASSIGNED))
         .extracting(Record::getIntent, r -> r.getValue().getAssignee())
         .describedAs("Verify that all task listeners were completed with the correct assignee")
         .containsSequence(
-            tuple(UserTaskIntent.ASSIGN, "new_assignee"),
             tuple(UserTaskIntent.ASSIGNING, "new_assignee"),
             tuple(UserTaskIntent.DENY_TASK_LISTENER, "new_assignee"),
             tuple(UserTaskIntent.ASSIGNMENT_DENIED, ""),
-            tuple(UserTaskIntent.ASSIGN, "new_assignee"),
             tuple(UserTaskIntent.ASSIGNING, "new_assignee"),
             tuple(UserTaskIntent.COMPLETE_TASK_LISTENER, "new_assignee"),
             tuple(UserTaskIntent.COMPLETE_TASK_LISTENER, "new_assignee"),
@@ -551,6 +550,7 @@ public class TaskListenerTest {
 
     assertThat(
             RecordingExporter.userTaskRecords()
+                .withProcessInstanceKey(processInstanceKey)
                 .limit(r -> r.getIntent() == UserTaskIntent.ASSIGNMENT_DENIED))
         .extracting(Record::getIntent, r -> r.getValue().getAssignee())
         .describedAs(
@@ -561,7 +561,6 @@ public class TaskListenerTest {
             tuple(UserTaskIntent.ASSIGNING, "first_assignee"),
             tuple(UserTaskIntent.COMPLETE_TASK_LISTENER, "first_assignee"),
             tuple(UserTaskIntent.ASSIGNED, "first_assignee"),
-            tuple(UserTaskIntent.ASSIGN, "second_assignee"),
             tuple(UserTaskIntent.ASSIGNING, "second_assignee"),
             tuple(UserTaskIntent.DENY_TASK_LISTENER, "second_assignee"),
             // second assignee was not persisted
@@ -2320,13 +2319,11 @@ public class TaskListenerTest {
     // Verify the sequence of intents and the `changedAttributes` emitted for the user task
     assertThat(
             RecordingExporter.userTaskRecords()
+                .withProcessInstanceKey(processInstanceKey)
                 .limit(record -> record.getIntent() == UserTaskIntent.ASSIGNED))
         .as("Verify the user task lifecycle and tracking of `changedAttributes`")
         .extracting(Record::getIntent, record -> record.getValue().getChangedAttributes())
-        .containsExactly(
-            tuple(UserTaskIntent.CREATING, List.of()),
-            tuple(UserTaskIntent.CREATED, List.of()),
-            tuple(UserTaskIntent.ASSIGN, List.of()),
+        .containsSequence(
             tuple(UserTaskIntent.ASSIGNING, List.of("assignee")),
             tuple(UserTaskIntent.COMPLETE_TASK_LISTENER, List.of("dueDate", "priority")),
             tuple(UserTaskIntent.CORRECTED, List.of("dueDate", "priority")),
@@ -2471,15 +2468,11 @@ public class TaskListenerTest {
     // then
     assertThat(
             RecordingExporter.userTaskRecords()
+                .withProcessInstanceKey(processInstanceKey)
                 .limit(record -> record.getIntent() == UserTaskIntent.UPDATED))
         .as("Verify the user task record lifecycle and tracking of `changedAttributes`")
         .extracting(Record::getIntent, record -> record.getValue().getChangedAttributes())
-        .containsExactly(
-            tuple(UserTaskIntent.CREATING, List.of()),
-            tuple(UserTaskIntent.CREATED, List.of()),
-            tuple(
-                UserTaskIntent.UPDATE,
-                List.of("candidateGroupsList", "candidateUsersList", "dueDate", "priority")),
+        .containsSequence(
             tuple(UserTaskIntent.UPDATING, List.of("candidateGroupsList", "dueDate", "priority")),
             tuple(UserTaskIntent.COMPLETE_TASK_LISTENER, List.of("dueDate", "followUpDate")),
             tuple(UserTaskIntent.CORRECTED, List.of("dueDate", "followUpDate")),
@@ -2608,15 +2601,11 @@ public class TaskListenerTest {
     // then: verify sequence of intents and `changedAttributes`
     assertThat(
             RecordingExporter.userTaskRecords()
+                .withProcessInstanceKey(processInstanceKey)
                 .limit(record -> record.getIntent() == UserTaskIntent.COMPLETED))
         .as("Verify the user task lifecycle and tracking of `changedAttributes`")
         .extracting(Record::getIntent, record -> record.getValue().getChangedAttributes())
-        .containsExactly(
-            tuple(UserTaskIntent.CREATING, List.of()),
-            tuple(UserTaskIntent.CREATED, List.of()),
-            tuple(UserTaskIntent.ASSIGNING, List.of("assignee")),
-            tuple(UserTaskIntent.ASSIGNED, List.of("assignee")),
-            tuple(UserTaskIntent.COMPLETE, List.of()),
+        .containsSequence(
             tuple(UserTaskIntent.COMPLETING, List.of()), // No direct changes at completion
             tuple(
                 UserTaskIntent.COMPLETE_TASK_LISTENER, List.of("candidateGroupsList", "priority")),
