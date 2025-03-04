@@ -7,6 +7,8 @@
  */
 package io.camunda.qa.util.multidb;
 
+import static org.assertj.core.api.Fail.fail;
+
 import io.camunda.client.CamundaClient;
 import io.camunda.qa.util.auth.Authenticated;
 import io.camunda.qa.util.auth.User;
@@ -233,7 +235,7 @@ public class CamundaMultiDBExtension
     // we support only static fields for now - to make sure test setups are build in a way
     // such they are reusable and tests methods are not relying on order, etc.
     // We want to run tests in a efficient manner, and reduce setup time
-    injectFields(testClass, null, ModifierSupport::isStatic);
+    injectStaticClientField(testClass);
     final List<User> users = findUsers(testClass, null, ModifierSupport::isStatic);
     if (!users.isEmpty()) {
       authenticatedClientFactory.withUsers(users);
@@ -269,14 +271,16 @@ public class CamundaMultiDBExtension
     return users;
   }
 
-  private void injectFields(
-      final Class<?> testClass, final Object testInstance, Predicate<Field> predicate) {
-    predicate = predicate.and(field -> field.getType() == CamundaClient.class);
+  private void injectStaticClientField(final Class<?> testClass) {
     for (final Field field : testClass.getDeclaredFields()) {
       try {
-        if (predicate.test(field)) {
-          field.setAccessible(true);
-          field.set(testInstance, createCamundaClient(field.getAnnotation(Authenticated.class)));
+        if (field.getType() == CamundaClient.class) {
+          if (ModifierSupport.isStatic(field)) {
+            field.setAccessible(true);
+            field.set(null, createCamundaClient(field.getAnnotation(Authenticated.class)));
+          } else {
+            fail("Camunda Client field couldn't be injected. Make sure it is static.");
+          }
         }
       } catch (final Exception ex) {
         throw new RuntimeException(ex);
