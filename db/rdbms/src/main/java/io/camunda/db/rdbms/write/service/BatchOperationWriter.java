@@ -1,5 +1,6 @@
 package io.camunda.db.rdbms.write.service;
 
+import io.camunda.db.rdbms.sql.BatchOperationMapper.BatchOperationItemDto;
 import io.camunda.db.rdbms.sql.BatchOperationMapper.BatchOperationItemsDto;
 import io.camunda.db.rdbms.sql.BatchOperationMapper.BatchOperationUpdateDto;
 import io.camunda.db.rdbms.write.domain.BatchOperationDbModel;
@@ -7,6 +8,7 @@ import io.camunda.db.rdbms.write.queue.ContextType;
 import io.camunda.db.rdbms.write.queue.ExecutionQueue;
 import io.camunda.db.rdbms.write.queue.QueueItem;
 import io.camunda.db.rdbms.write.queue.WriteStatementType;
+import io.camunda.search.entities.BatchOperationEntity.BatchOperationItemState;
 import io.camunda.search.entities.BatchOperationEntity.BatchOperationState;
 import java.time.OffsetDateTime;
 import java.util.List;
@@ -49,6 +51,22 @@ public class BatchOperationWriter {
     if(items != null && !items.isEmpty()) {
       insertItems(new BatchOperationItemsDto(batchOperationKey, items));
     }
+  }
+
+  public void updateItem(final long batchOperationKey,
+      final long itemKey,
+      final BatchOperationItemState state) {
+    executionQueue.executeInQueue(
+        new QueueItem(
+            ContextType.BATCH_OPERATION,
+            WriteStatementType.UPDATE,
+            batchOperationKey,
+            "io.camunda.db.rdbms.sql.BatchOperationMapper.updateItem",
+            new BatchOperationItemDto(
+                batchOperationKey,
+                itemKey,
+                state)
+        ));
   }
 
   public void finish(final long batchOperationKey,

@@ -15,7 +15,6 @@
  */
 package io.camunda.client.api.search.response;
 
-import java.time.OffsetDateTime;
 import java.util.List;
 
 public interface BatchOperation {

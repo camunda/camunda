@@ -21,8 +21,13 @@ public record BatchOperationEntity(
     OffsetDateTime endDate,
     Integer operationsTotalCount,
     Integer operationsFailedCount,
-    Integer operationsCompletedCount,
-    Set<Long> items) {
+    Integer operationsCompletedCount) {
+
+  public record BatchOperationItemEntity(
+    Long batchOperationKey,
+    Long itemKey,
+    BatchOperationItemState state
+  ) {}
 
   public enum BatchOperationState {
     ACTIVE,
@@ -30,4 +35,12 @@ public record BatchOperationEntity(
     COMPLETED,
     CANCELED
   }
+
+  public enum BatchOperationItemState {
+    ACTIVE,
+    FAILED,
+    COMPLETED,
+    CANCELED
+  }
+
 }

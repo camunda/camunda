@@ -15,7 +15,6 @@ public class BatchOperationDbModel {
   private int operationsTotalCount;
   private int operationsFailedCount;
   private int operationsCompletedCount;
-  private Set<Long> items;
 
   public BatchOperationDbModel(final Long batchOperationKey) {
     this.batchOperationKey = batchOperationKey;
@@ -29,8 +28,7 @@ public class BatchOperationDbModel {
       OffsetDateTime endDate,
       int operationsTotalCount,
       int operationsFailedCount,
-      int operationsCompletedCount,
-      Set<Long> items) {
+      int operationsCompletedCount) {
     this.batchOperationKey = batchOperationKey;
     this.state = state;
     this.operationType = operationType;
@@ -39,7 +37,6 @@ public class BatchOperationDbModel {
     this.operationsTotalCount = operationsTotalCount;
     this.operationsFailedCount = operationsFailedCount;
     this.operationsCompletedCount = operationsCompletedCount;
-    this.items = items;
   }
 
   // Methods without set/get prefix
@@ -107,14 +104,6 @@ public class BatchOperationDbModel {
     this.operationsCompletedCount = operationsCompletedCount;
   }
 
-  public Set<Long> items() {
-    return items;
-  }
-
-  public void items(Set<Long> items) {
-    this.items = items;
-  }
-
   // Builder class
   public static class Builder implements ObjectBuilder<BatchOperationDbModel> {
 
@@ -126,7 +115,6 @@ public class BatchOperationDbModel {
     private int operationsTotalCount;
     private int operationsFailedCount;
     private int operationsCompletedCount;
-    private Set<Long> items;
 
     public Builder() {}
 
@@ -170,11 +158,6 @@ public class BatchOperationDbModel {
       return this;
     }
 
-    public Builder items(Set<Long> items) {
-      this.items = items;
-      return this;
-    }
-
     @Override
     public BatchOperationDbModel build() {
       return new BatchOperationDbModel(
@@ -185,8 +168,7 @@ public class BatchOperationDbModel {
           endDate,
           operationsTotalCount,
           operationsFailedCount,
-          operationsCompletedCount,
-          items);
+          operationsCompletedCount);
     }
   }
 }
