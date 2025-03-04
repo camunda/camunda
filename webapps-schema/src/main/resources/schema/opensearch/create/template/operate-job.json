@@ -70,6 +70,12 @@
       },
       "position" : {
         "type": "long"
+      },
+      "jobDenied" : {
+        "type" : "boolean"
+      },
+      "jobDeniedReason": {
+        "type": "keyword"
       }
     }
   }
