@@ -92,21 +92,18 @@ public class MigrationUserTaskUpdateIT {
         .atMost(Duration.ofSeconds(30))
         .until(
             () -> {
-              try {
-                final var response =
-                    migrator.request(
-                        b ->
-                            b.POST(HttpRequest.BodyPublishers.ofString(body))
-                                .uri(URI.create(migrator.getWebappsUrl() + "/tasks/search")),
-                        HttpResponse.BodyHandlers.ofString());
-                final var tasks =
-                    OBJECT_MAPPER.readValue(
-                        response.body(), new TypeReference<List<TaskSearchResponse>>() {});
-                if (!tasks.isEmpty()) {
-                  userTaskKey.set(Long.parseLong(tasks.getFirst().getId()));
-                  return true;
-                }
-              } catch (final IOException ignored) {
+              final var response =
+                  migrator.request(
+                      b ->
+                          b.POST(HttpRequest.BodyPublishers.ofString(body))
+                              .uri(URI.create(migrator.getWebappsUrl() + "/tasks/search")),
+                      HttpResponse.BodyHandlers.ofString());
+              final var tasks =
+                  OBJECT_MAPPER.readValue(
+                      response.body(), new TypeReference<List<TaskSearchResponse>>() {});
+              if (!tasks.isEmpty()) {
+                userTaskKey.set(Long.parseLong(tasks.getFirst().getId()));
+                return true;
               }
               return false;
             });
@@ -252,7 +249,8 @@ public class MigrationUserTaskUpdateIT {
     }
 
     @TestTemplate
-    void shouldAssign88JobWorkerV1(final DatabaseType databaseType, final CamundaMigrator migrator) {
+    void shouldAssign88JobWorkerV1(
+        final DatabaseType databaseType, final CamundaMigrator migrator) {
 
       PROVIDER.upgrade(databaseType);
 
@@ -293,8 +291,8 @@ public class MigrationUserTaskUpdateIT {
   @Nested
   class UnassignUserTaskTests {
     @TestTemplate
-    void shouldUnassign87ZeebeTaskV1(final DatabaseType databaseType, final CamundaMigrator migrator)
-        throws IOException {
+    void shouldUnassign87ZeebeTaskV1(
+        final DatabaseType databaseType, final CamundaMigrator migrator) throws IOException {
 
       final var piKey =
           deployAndStartUserTaskProcess(databaseType, t -> t.zeebeUserTask().zeebeAssignee("test"));
@@ -311,8 +309,8 @@ public class MigrationUserTaskUpdateIT {
     }
 
     @TestTemplate
-    void shouldUnassign87ZeebeTaskV2(final DatabaseType databaseType, final CamundaMigrator migrator)
-        throws IOException {
+    void shouldUnassign87ZeebeTaskV2(
+        final DatabaseType databaseType, final CamundaMigrator migrator) throws IOException {
 
       final var piKey =
           deployAndStartUserTaskProcess(databaseType, t -> t.zeebeUserTask().zeebeAssignee("test"));
@@ -359,8 +357,8 @@ public class MigrationUserTaskUpdateIT {
     }
 
     @TestTemplate
-    void shouldUnAssign87JobWorkerV1(final DatabaseType databaseType, final CamundaMigrator migrator)
-        throws IOException {
+    void shouldUnAssign87JobWorkerV1(
+        final DatabaseType databaseType, final CamundaMigrator migrator) throws IOException {
 
       final var piKey = deployAndStartUserTaskProcess(databaseType, t -> t.zeebeAssignee("test"));
       final var taskKey = waitForTaskToBeImportedReturningId(migrator, piKey);
@@ -415,8 +413,8 @@ public class MigrationUserTaskUpdateIT {
   @Nested
   class CompleteUserTaskTests {
     @TestTemplate
-    void shouldComplete87ZeebeTaskV1(final DatabaseType databaseType, final CamundaMigrator migrator)
-        throws IOException {
+    void shouldComplete87ZeebeTaskV1(
+        final DatabaseType databaseType, final CamundaMigrator migrator) throws IOException {
 
       final var piKey =
           deployAndStartUserTaskProcess(databaseType, t -> t.zeebeUserTask().zeebeAssignee("demo"));
@@ -433,8 +431,8 @@ public class MigrationUserTaskUpdateIT {
     }
 
     @TestTemplate
-    void shouldComplete87ZeebeTaskV2(final DatabaseType databaseType, final CamundaMigrator migrator)
-        throws IOException {
+    void shouldComplete87ZeebeTaskV2(
+        final DatabaseType databaseType, final CamundaMigrator migrator) throws IOException {
 
       final var piKey =
           deployAndStartUserTaskProcess(databaseType, t -> t.zeebeUserTask().zeebeAssignee("demo"));
@@ -482,8 +480,8 @@ public class MigrationUserTaskUpdateIT {
     }
 
     @TestTemplate
-    void shouldComplete87JobWorkerV1(final DatabaseType databaseType, final CamundaMigrator migrator)
-        throws IOException {
+    void shouldComplete87JobWorkerV1(
+        final DatabaseType databaseType, final CamundaMigrator migrator) throws IOException {
 
       final var piKey = deployAndStartUserTaskProcess(databaseType, t -> t.zeebeAssignee("demo"));
       final var taskKey = waitForTaskToBeImportedReturningId(migrator, piKey);
