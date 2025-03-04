@@ -59,13 +59,13 @@ func isRunning(name, url string, retries int, delay time.Duration) bool {
 }
 
 func printStatus(port int) error {
-	endpoints, err := os.ReadFile("../endpoints.txt")
+	endpoints, err := os.ReadFile("endpoints.txt")
 	fmt.Println(string(endpoints))
 	return err
 }
 
 func getStatus() error {
-	endpoints, err := os.ReadFile("../endpoints.txt")
+	endpoints, err := os.ReadFile("endpoints.txt")
 	fmt.Println(string(endpoints))
 	return err
 }
