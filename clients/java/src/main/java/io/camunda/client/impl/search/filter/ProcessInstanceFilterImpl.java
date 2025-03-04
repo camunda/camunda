@@ -237,7 +237,9 @@ public class ProcessInstanceFilterImpl
                     final ProcessInstanceVariableFilterRequest request =
                         new ProcessInstanceVariableFilterRequest();
                     request.setName(entry.getKey());
-                    request.setValue(entry.getValue().toString());
+                    final StringProperty property = new StringPropertyImpl();
+                    property.eq(entry.getValue().toString());
+                    request.setValue(property.build());
                     return request;
                   })
               .collect(Collectors.toList());

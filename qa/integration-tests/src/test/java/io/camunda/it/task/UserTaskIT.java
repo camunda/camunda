@@ -15,6 +15,7 @@ import io.camunda.client.api.command.DeployResourceCommandStep1;
 import io.camunda.client.api.response.DeploymentEvent;
 import io.camunda.client.api.search.filter.UserTaskFilter;
 import io.camunda.client.api.search.response.UserTask;
+import io.camunda.client.impl.search.filter.builder.StringPropertyImpl;
 import io.camunda.client.protocol.rest.UserTaskVariableFilterRequest;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.zeebe.model.bpmn.Bpmn;
@@ -286,7 +287,7 @@ public class UserTaskIT {
                         List.of(
                             new UserTaskVariableFilterRequest()
                                 .name("stringVariable")
-                                .value("wrong-value"))))
+                                .value(new StringPropertyImpl().eq("wrong-value").build()))))
             .send()
             .join()
             .items();

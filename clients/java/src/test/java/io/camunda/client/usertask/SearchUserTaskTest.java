@@ -21,6 +21,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.github.tomakehurst.wiremock.http.RequestMethod;
 import com.github.tomakehurst.wiremock.verification.LoggedRequest;
 import io.camunda.client.api.search.response.UserTaskState;
+import io.camunda.client.impl.search.filter.builder.StringPropertyImpl;
 import io.camunda.client.protocol.rest.*;
 import io.camunda.client.util.ClientRestTest;
 import java.time.OffsetDateTime;
@@ -168,7 +169,9 @@ public final class SearchUserTaskTest extends ClientRestTest {
   void shouldSearchUserTaskByProcessInstanceVariable() {
     // when
     final UserTaskVariableFilterRequest userTaskVariableFilterRequest =
-        new UserTaskVariableFilterRequest().name("test").value("test");
+        new UserTaskVariableFilterRequest()
+            .name("test")
+            .value(new StringPropertyImpl().eq("test").build());
     final ArrayList<UserTaskVariableFilterRequest> listFilter = new ArrayList<>();
 
     listFilter.add(userTaskVariableFilterRequest);
@@ -184,7 +187,9 @@ public final class SearchUserTaskTest extends ClientRestTest {
   void shouldSearchUserTaskByLocalVariable() {
     // when
     final UserTaskVariableFilterRequest userTaskVariableFilterRequest =
-        new UserTaskVariableFilterRequest().name("test").value("test");
+        new UserTaskVariableFilterRequest()
+            .name("test")
+            .value(new StringPropertyImpl().eq("test").build());
     final ArrayList<UserTaskVariableFilterRequest> listFilter = new ArrayList<>();
 
     listFilter.add(userTaskVariableFilterRequest);
