@@ -24,6 +24,10 @@ public interface BatchOperationMapper {
 
   void updateCompleted(BatchOperationUpdateDto dto);
 
+  void incrementFailedOperationsCount(Long batchOperationKey);
+
+  void incrementCompletedOperationsCount(Long batchOperationKey);
+
   Long count(BatchOperationDbQuery query);
 
   List<BatchOperationDbModel> search( BatchOperationDbQuery query);
@@ -33,9 +37,7 @@ public interface BatchOperationMapper {
   record BatchOperationUpdateDto(
       long batchOperationKey,
       BatchOperationState state,
-      OffsetDateTime endDate,
-      int operationsFailedCount,
-      int operationsCompletedCount) {}
+      OffsetDateTime endDate) {}
 
   record BatchOperationItemsDto(
       Long batchOperationKey,

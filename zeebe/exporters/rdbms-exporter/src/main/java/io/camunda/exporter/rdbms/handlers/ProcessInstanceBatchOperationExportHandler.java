@@ -9,6 +9,7 @@ import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.BatchOperationExecutionRecordValue;
+import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import io.camunda.zeebe.util.DateUtil;
 import java.time.OffsetDateTime;
@@ -29,6 +30,7 @@ public class ProcessInstanceBatchOperationExportHandler implements RdbmsExportHa
   @Override
   public boolean canExport(final Record<ProcessInstanceRecordValue> record) {
     return record.getValueType() == ValueType.PROCESS_INSTANCE
+        && record.getValue().getBpmnElementType() == BpmnElementType.PROCESS
         && record.getIntent().equals(ProcessInstanceIntent.ELEMENT_TERMINATED)
         && record.getOperationReference() != DEFAULT_NOT_SET;
   }

@@ -24,19 +24,19 @@ public class BatchOperationExecutionExportHandler implements RdbmsExportHandler<
   @Override
   public boolean canExport(final Record<BatchOperationExecutionRecordValue> record) {
     return record.getValueType() == ValueType.BATCH_OPERATION_EXECUTION
-        && (record.getIntent().equals(BatchOperationIntent.EXECUTED)
+        && (record.getIntent().equals(BatchOperationIntent.EXECUTING)
+          || record.getIntent().equals(BatchOperationIntent.EXECUTED)
         || record.getIntent().equals(BatchOperationIntent.COMPLETED));
   }
 
   @Override
   public void export(final Record<BatchOperationExecutionRecordValue> record) {
     final var value = record.getValue();
-    if (record.getIntent().equals(BatchOperationIntent.EXECUTED)) {
+    if (record.getIntent().equals(BatchOperationIntent.EXECUTING)) {
       batchOperationWriter.update(
           record.getKey(),
-          0,
-          value.getOffset(),
-          value.getKeys());
+          value.getKeys()
+      );
     } else if (record.getIntent().equals(BatchOperationIntent.COMPLETED)) {
       final OffsetDateTime endDate = DateUtil.toOffsetDateTime(record.getTimestamp());
       batchOperationWriter.finish(record.getKey(),

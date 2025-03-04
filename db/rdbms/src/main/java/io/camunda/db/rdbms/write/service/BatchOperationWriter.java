@@ -33,8 +33,6 @@ public class BatchOperationWriter {
   }
 
   public void update(final long batchOperationKey,
-      final int operationsFailedCount,
-      final int operationsCompletedCount,
       final Set<Long> items) {
     executionQueue.executeInQueue(
         new QueueItem(
@@ -44,9 +42,7 @@ public class BatchOperationWriter {
             "io.camunda.db.rdbms.sql.BatchOperationMapper.updateCompleted",
             new BatchOperationUpdateDto(batchOperationKey,
                 BatchOperationState.ACTIVE,
-                null,
-                operationsFailedCount,
-                operationsCompletedCount)));
+                null)));
 
     if(items != null && !items.isEmpty()) {
       insertItems(new BatchOperationItemsDto(batchOperationKey, items));
@@ -56,6 +52,8 @@ public class BatchOperationWriter {
   public void updateItem(final long batchOperationKey,
       final long itemKey,
       final BatchOperationItemState state) {
+
+    // TODO merging this into one statement would be more efficient
     executionQueue.executeInQueue(
         new QueueItem(
             ContextType.BATCH_OPERATION,
@@ -67,6 +65,25 @@ public class BatchOperationWriter {
                 itemKey,
                 state)
         ));
+
+    // TODO merging this into one statement would be more efficient
+    if(state == BatchOperationItemState.FAILED) {
+      executionQueue.executeInQueue(
+          new QueueItem(
+              ContextType.BATCH_OPERATION,
+              WriteStatementType.UPDATE,
+              batchOperationKey,
+              "io.camunda.db.rdbms.sql.BatchOperationMapper.incrementFailedOperationsCount",
+              batchOperationKey));
+    } else if(state == BatchOperationItemState.COMPLETED) {
+      executionQueue.executeInQueue(
+          new QueueItem(
+              ContextType.BATCH_OPERATION,
+              WriteStatementType.UPDATE,
+              batchOperationKey,
+              "io.camunda.db.rdbms.sql.BatchOperationMapper.incrementCompletedOperationsCount",
+              batchOperationKey));
+    }
   }
 
   public void finish(final long batchOperationKey,
@@ -82,9 +99,7 @@ public class BatchOperationWriter {
             "io.camunda.db.rdbms.sql.BatchOperationMapper.updateCompleted",
             new BatchOperationUpdateDto(batchOperationKey,
                 BatchOperationState.COMPLETED,
-                endDate,
-                operationsFailedCount,
-                operationsCompletedCount)));
+                endDate)));
 
     if(items != null && !items.isEmpty()) {
       insertItems(new BatchOperationItemsDto(batchOperationKey, items));
