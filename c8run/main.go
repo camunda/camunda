@@ -12,7 +12,9 @@ import (
 	"strings"
 
 	"github.com/camunda/camunda/c8run/internal/health"
+	"github.com/camunda/camunda/c8run/internal/overrides"
 	"github.com/camunda/camunda/c8run/internal/packages"
+	"github.com/camunda/camunda/c8run/internal/types"
 	"github.com/camunda/camunda/c8run/internal/unix"
 	"github.com/camunda/camunda/c8run/internal/windows"
 	"github.com/joho/godotenv"
@@ -29,7 +31,7 @@ type process struct {
 	pid     string
 }
 
-func stopProcess(c8 C8Run, pidfile string) error {
+func stopProcess(c8 types.C8Run, pidfile string) error {
 	if _, err := os.Stat(pidfile); err == nil {
 		commandPidText, _ := os.ReadFile(pidfile)
 		commandPidStripped := strings.TrimSpace(string(commandPidText))
@@ -50,7 +52,7 @@ func stopProcess(c8 C8Run, pidfile string) error {
 	}
 }
 
-func getC8RunPlatform() C8Run {
+func getC8RunPlatform() types.C8Run {
 	if runtime.GOOS == "windows" {
 		return &windows.WindowsC8Run{}
 	} else if runtime.GOOS == "linux" || runtime.GOOS == "darwin" {
@@ -59,73 +61,9 @@ func getC8RunPlatform() C8Run {
 	panic("Unsupported operating system")
 }
 
-func startDocker(extractedComposePath string) error {
-	os.Chdir(extractedComposePath)
-
-	_, err := exec.LookPath("docker")
-	if err != nil {
-		return err
-	}
-
-	composeCmd := exec.Command("docker", "compose", "up", "-d")
-	composeCmd.Stdout = os.Stdout
-	composeCmd.Stderr = os.Stderr
-	err = composeCmd.Run()
-	if err != nil {
-		return err
-	}
-	os.Chdir("..")
-	return nil
-}
-
-func stopDocker(extractedComposePath string) error {
-	os.Chdir(extractedComposePath)
-	_, err := exec.LookPath("docker")
-	if err != nil {
-		return err
-	}
-	composeCmd := exec.Command("docker", "compose", "down")
-	composeCmd.Stdout = os.Stdout
-	composeCmd.Stderr = os.Stderr
-	err = composeCmd.Run()
-	if err != nil {
-		return err
-	}
-	os.Chdir("..")
-	return nil
-}
-
 func usage(exitcode int) {
 	fmt.Printf("Usage: %s [command] [options]\nCommands:\n  start\n  stop\n  package\n", os.Args[0])
 	os.Exit(exitcode)
-}
-
-func setEnvVars(javaHome string) error {
-	envVars := map[string]string{
-		"CAMUNDA_OPERATE_CSRFPREVENTIONENABLED":                  "false",
-		"CAMUNDA_OPERATE_IMPORTER_READERBACKOFF":                 "1000",
-		"CAMUNDA_REST_QUERY_ENABLED":                             "true",
-		"CAMUNDA_TASKLIST_CSRFPREVENTIONENABLED":                 "false",
-		"ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_BULK_DELAY":   "1",
-		"ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_BULK_SIZE":    "1",
-		"ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_INDEX_PREFIX": "zeebe-record",
-		"ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_URL":          "http://localhost:9200",
-		"ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_CLASSNAME":         "io.camunda.zeebe.exporter.ElasticsearchExporter",
-		"ES_JAVA_HOME": javaHome,
-		"ES_JAVA_OPTS": "-Xms1g -Xmx1g",
-	}
-
-	for key, value := range envVars {
-		currentValue := os.Getenv(key)
-		if currentValue != "" {
-			continue
-		}
-		if err := os.Setenv(key, value); err != nil {
-			return fmt.Errorf("failed to set environment variable %s: %w", key, err)
-		}
-	}
-
-	return nil
 }
 
 func getBaseCommand() (string, error) {
@@ -151,9 +89,8 @@ func getBaseCommand() (string, error) {
 	return "", nil
 }
 
-func getBaseCommandSettings(baseCommand string) (C8RunSettings, error) {
-	var settings C8RunSettings
-
+func getBaseCommandSettings(baseCommand string) (types.C8RunSettings, error) {
+	var settings types.C8RunSettings
 	startFlagSet := createStartFlagSet(&settings)
 
 	switch baseCommand {
@@ -167,10 +104,10 @@ func getBaseCommandSettings(baseCommand string) (C8RunSettings, error) {
 	return settings, nil
 }
 
-func createStartFlagSet(settings *C8RunSettings) *flag.FlagSet {
+func createStartFlagSet(settings *types.C8RunSettings) *flag.FlagSet {
 	startFlagSet := flag.NewFlagSet("start", flag.ExitOnError)
-	startFlagSet.StringVar(&settings.config, "config", "", "Applies the specified configuration file.")
-	startFlagSet.BoolVar(&settings.detached, "detached", false, "Starts Camunda Run as a detached process")
+	startFlagSet.StringVar(&settings.Config, "config", "", "Applies the specified configuration file.")
+	startFlagSet.BoolVar(&settings.Detached, "detached", false, "Starts Camunda Run as a detached process")
 	return startFlagSet
 }
 
@@ -241,7 +178,7 @@ func main() {
 		javaBinary = path
 	}
 
-	err = setEnvVars(javaHome)
+	err = overrides.SetEnvVars(javaHome)
 	if err != nil {
 		fmt.Println("Failed to set envVars:", err)
 	}
@@ -277,7 +214,7 @@ func main() {
 	}
 }
 
-func startCommand(c8 C8Run, settings C8RunSettings, processInfo processes, parentDir, javaBinary string, expectedJavaVersion int) {
+func startCommand(c8 types.C8Run, settings types.C8RunSettings, processInfo processes, parentDir, javaBinary string, expectedJavaVersion int) {
 	javaVersion := os.Getenv("JAVA_VERSION")
 	if javaVersion == "" {
 		javaVersionCmd := c8.VersionCmd(javaBinary)
@@ -319,7 +256,6 @@ func startCommand(c8 C8Run, settings C8RunSettings, processInfo processes, paren
 	if javaOpts != "" {
 		fmt.Print("JAVA_OPTS: " + javaOpts + "\n")
 	}
-	os.Setenv("ES_JAVA_OPTS", "-Xms1g -Xmx1g")
 
 	fmt.Print("Starting Elasticsearch " + processInfo.elasticsearch.version + "...\n")
 	fmt.Print("(Hint: you can find the log output in the 'elasticsearch.log' file in the 'log' folder of your distribution.)\n")
@@ -354,8 +290,8 @@ func startCommand(c8 C8Run, settings C8RunSettings, processInfo processes, paren
 	startApplication(connectorsCmd, processInfo.connectors.pid, connectorsLogPath)
 
 	var extraArgs string
-	if settings.config != "" {
-		path := filepath.Join(parentDir, settings.config)
+	if settings.Config != "" {
+		path := filepath.Join(parentDir, settings.Config)
 		var slash string
 		if runtime.GOOS == "linux" || runtime.GOOS == "darwin" {
 			slash = "/"
@@ -369,9 +305,9 @@ func startCommand(c8 C8Run, settings C8RunSettings, processInfo processes, paren
 			os.Exit(1)
 		}
 		if configStat.IsDir() {
-			extraArgs = "--spring.config.additional-location=file:" + settings.config + slash
+			extraArgs = "--spring.config.additional-location=file:" + filepath.Join(parentDir, settings.Config) + slash
 		} else {
-			extraArgs = "--spring.config.additional-location=file:" + settings.config
+			extraArgs = "--spring.config.additional-location=file:" + filepath.Join(parentDir, settings.Config)
 		}
 	}
 
@@ -386,7 +322,7 @@ func startCommand(c8 C8Run, settings C8RunSettings, processInfo processes, paren
 
 }
 
-func stopCommand(c8 C8Run, settings C8RunSettings, processes processes) {
+func stopCommand(c8 types.C8Run, settings types.C8RunSettings, processes processes) {
 	err := stopProcess(c8, processes.elasticsearch.pid)
 	if err != nil {
 		fmt.Printf("%+v", err)
