@@ -59,7 +59,6 @@
     parameterType="io.camunda.db.rdbms.write.domain.TenantDbModel"
     flushCache="true">
     UPDATE ${prefix}TENANT SET
-                    TENANT_ID = #{tenantId},
                     NAME = #{name},
                     DESCRIPTION = #{description}
     WHERE TENANT_ID = #{tenantId}
@@ -88,15 +87,6 @@
     WHERE TENANT_ID = #{tenantId}
       AND ENTITY_ID = #{entityId}
       AND ENTITY_TYPE = #{entityType}
-  </delete>
-
-  <delete
-    id="deleteAllMembers"
-    parameterType="java.lang.String"
-    flushCache="true">
-    DELETE
-    FROM ${prefix}TENANT_MEMBER
-    WHERE TENANT_ID = #{tenantId}
   </delete>
 
 </mapper>
