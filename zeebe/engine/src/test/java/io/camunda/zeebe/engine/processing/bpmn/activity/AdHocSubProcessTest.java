@@ -32,7 +32,6 @@ import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.time.Duration;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
@@ -280,12 +279,7 @@ public final class AdHocSubProcessTest {
         ENGINE
             .processInstance()
             .ofBpmnProcessId(PROCESS_ID)
-            .withVariables(
-                variables(
-                    v -> {
-                      v.put("activateElements", List.of("A", "C"));
-                      v.put("condition", true);
-                    }))
+            .withVariables(Map.of("activateElements", List.of("A", "C"), "condition", true))
             .create();
 
     // then
@@ -324,11 +318,7 @@ public final class AdHocSubProcessTest {
             .processInstance()
             .ofBpmnProcessId(PROCESS_ID)
             .withVariables(
-                variables(
-                    v -> {
-                      v.put("activateElements", List.of("A", "ServiceTask"));
-                      v.put("condition", false);
-                    }))
+                Map.of("activateElements", List.of("A", "ServiceTask"), "condition", false))
             .create();
 
     // helps to stop at a specific point after the ad-hoc subprocess is activated
@@ -394,12 +384,7 @@ public final class AdHocSubProcessTest {
         ENGINE
             .processInstance()
             .ofBpmnProcessId(PROCESS_ID)
-            .withVariables(
-                variables(
-                    v -> {
-                      v.put("activateElements", List.of("A", "C"));
-                      v.put("condition", false);
-                    }))
+            .withVariables(Map.of("activateElements", List.of("A", "C"), "condition", false))
             .create();
 
     // helps to stop at a specific point after the ad-hoc subprocess is activated
@@ -446,11 +431,7 @@ public final class AdHocSubProcessTest {
             .processInstance()
             .ofBpmnProcessId(PROCESS_ID)
             .withVariables(
-                variables(
-                    v -> {
-                      v.put("activateElements", List.of("A", "ServiceTask"));
-                      v.put("condition", true);
-                    }))
+                Map.of("activateElements", List.of("A", "ServiceTask"), "condition", true))
             .create();
 
     // then
@@ -498,11 +479,7 @@ public final class AdHocSubProcessTest {
             .processInstance()
             .ofBpmnProcessId(PROCESS_ID)
             .withVariables(
-                variables(
-                    v -> {
-                      v.put("activateElements", List.of("A", "ServiceTask"));
-                      v.put("condition", true);
-                    }))
+                Map.of("activateElements", List.of("A", "ServiceTask"), "condition", true))
             .create();
 
     // helps to stop at a specific point after the ad-hoc subprocess is activated
@@ -899,12 +876,6 @@ public final class AdHocSubProcessTest {
             tuple("A", adHocSubProcessKeys.get(0)),
             tuple("B", adHocSubProcessKeys.get(1)),
             tuple("C", adHocSubProcessKeys.get(2)));
-  }
-
-  private static Map<String, Object> variables(final Consumer<Map<String, Object>> fn) {
-    final var variables = new HashMap<String, Object>();
-    fn.accept(variables);
-    return variables;
   }
 
   private static Predicate<Record<RecordValue>> signalBroadcasted(final String signalName) {
