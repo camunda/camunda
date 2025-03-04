@@ -163,15 +163,20 @@ final class CamundaExporterIT {
               final var p2ExporterController = new ExporterTestController();
               p2Exporter.open(p2ExporterController);
             });
-    assertThat(future).isNotCompletedExceptionally();
-    assertThat(future).isCompleted();
+    Awaitility.await("Partition one has been opened successfully")
+        .atMost(Duration.ofSeconds(30))
+        .untilAsserted(
+            () -> {
+              assertThat(future).isNotCompletedExceptionally();
+              assertThat(future).isCompleted();
+            });
   }
 
   @TestTemplate
   void shouldOpenDifferentPartitionsWithRetention(
       final ExporterConfiguration config, final SearchClientAdapter ignored) {
     // given
-    final RetentionConfiguration retention = config.getArchiver().getRetention();
+    final RetentionConfiguration retention = config.getHistory().getRetention();
     retention.setEnabled(true);
     retention.setPolicyName("shouldOpenDifferentPartitionsWithRetention");
     final var p1Exporter = new CamundaExporter();
@@ -197,8 +202,13 @@ final class CamundaExporterIT {
               final var p2ExporterController = new ExporterTestController();
               p2Exporter.open(p2ExporterController);
             });
-    assertThat(future).isNotCompletedExceptionally();
-    assertThat(future).isCompleted();
+    Awaitility.await("Partition one has been opened successfully")
+        .atMost(Duration.ofSeconds(30))
+        .untilAsserted(
+            () -> {
+              assertThat(future).isNotCompletedExceptionally();
+              assertThat(future).isCompleted();
+            });
   }
 
   @TestTemplate
