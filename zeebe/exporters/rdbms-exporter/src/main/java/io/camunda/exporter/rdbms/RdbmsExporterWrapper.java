@@ -24,6 +24,7 @@ import io.camunda.exporter.rdbms.handlers.GroupExportHandler;
 import io.camunda.exporter.rdbms.handlers.IncidentExportHandler;
 import io.camunda.exporter.rdbms.handlers.MappingExportHandler;
 import io.camunda.exporter.rdbms.handlers.ProcessExportHandler;
+import io.camunda.exporter.rdbms.handlers.ProcessInstanceBatchOperationExportHandler;
 import io.camunda.exporter.rdbms.handlers.ProcessInstanceExportHandler;
 import io.camunda.exporter.rdbms.handlers.ProcessInstanceIncidentExportHandler;
 import io.camunda.exporter.rdbms.handlers.RoleExportHandler;
@@ -77,7 +78,9 @@ public class RdbmsExporterWrapper implements Exporter {
             .flushInterval(readFlushInterval(context))
             .maxQueueSize(maxQueueSize)
             .rdbmsWriter(rdbmsWriter);
+
     createHandlers(partitionId, rdbmsWriter, builder);
+    createBatchOperationHandlers(partitionId, rdbmsWriter, builder);
 
     exporter = new RdbmsExporter(builder.build());
   }
@@ -197,6 +200,12 @@ public class RdbmsExporterWrapper implements Exporter {
     builder.withHandler(
         ValueType.USER_TASK, new UserTaskExportHandler(rdbmsWriter.getUserTaskWriter()));
     builder.withHandler(ValueType.FORM, new FormExportHandler(rdbmsWriter.getFormWriter()));
+  }
+
+  private static void createBatchOperationHandlers(
+      final long partitionId,
+      final RdbmsWriter rdbmsWriter,
+      final RdbmsExporterConfig.Builder builder) {
     builder.withHandler(
         ValueType.BATCH_OPERATION,
         new BatchOperationCreatedExportHandler(
@@ -207,5 +216,8 @@ public class RdbmsExporterWrapper implements Exporter {
         ValueType.BATCH_OPERATION_EXECUTION,
         new BatchOperationExecutionExportHandler(rdbmsWriter.getBatchOperationWriter()));
 
+    builder.withHandler(
+        ValueType.PROCESS_INSTANCE,
+        new ProcessInstanceBatchOperationExportHandler(rdbmsWriter.getBatchOperationWriter()));
   }
 }
