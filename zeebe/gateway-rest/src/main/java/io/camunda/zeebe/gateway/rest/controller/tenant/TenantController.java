@@ -28,7 +28,6 @@ import io.camunda.zeebe.gateway.rest.SearchQueryRequestMapper;
 import io.camunda.zeebe.gateway.rest.SearchQueryResponseMapper;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaDeleteMapping;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaGetMapping;
-import io.camunda.zeebe.gateway.rest.annotation.CamundaPatchMapping;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaPostMapping;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaPutMapping;
 import io.camunda.zeebe.gateway.rest.controller.CamundaRestController;
@@ -76,7 +75,7 @@ public class TenantController {
         .fold(RestErrorMapper::mapProblemToResponse, this::search);
   }
 
-  @CamundaPatchMapping(path = "/{tenantId}")
+  @CamundaPutMapping(path = "/{tenantId}")
   public CompletableFuture<ResponseEntity<Object>> updateTenant(
       @PathVariable final String tenantId,
       @RequestBody final TenantUpdateRequest tenantUpdateRequest) {

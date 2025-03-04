@@ -251,7 +251,7 @@ public class TenantControllerTest extends RestControllerTest {
 
     // when
     webClient
-        .patch()
+        .put()
         .uri("%s/%s".formatted(TENANT_BASE_URL, tenantId))
         .accept(MediaType.APPLICATION_JSON)
         .contentType(MediaType.APPLICATION_JSON)
@@ -285,7 +285,7 @@ public class TenantControllerTest extends RestControllerTest {
 
     // when / then
     webClient
-        .patch()
+        .put()
         .uri(uri)
         .accept(MediaType.APPLICATION_JSON)
         .contentType(MediaType.APPLICATION_JSON)
@@ -317,7 +317,7 @@ public class TenantControllerTest extends RestControllerTest {
 
     // when / then
     webClient
-        .patch()
+        .put()
         .uri(uri)
         .accept(MediaType.APPLICATION_JSON)
         .contentType(MediaType.APPLICATION_JSON)
@@ -360,7 +360,7 @@ public class TenantControllerTest extends RestControllerTest {
 
     // when / then
     webClient
-        .patch()
+        .put()
         .uri(path)
         .accept(MediaType.APPLICATION_JSON)
         .contentType(MediaType.APPLICATION_JSON)

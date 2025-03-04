@@ -68,7 +68,7 @@ public final class UpdateTenantCommandImpl implements UpdateTenantCommandStep1 {
     final HttpCamundaFuture<UpdateTenantResponse> result = new HttpCamundaFuture<>();
     final UpdateTenantResponseImpl response = new UpdateTenantResponseImpl();
 
-    httpClient.patch(
+    httpClient.put(
         "/tenants/" + tenantId,
         jsonMapper.toJson(request),
         httpRequestConfig.build(),
