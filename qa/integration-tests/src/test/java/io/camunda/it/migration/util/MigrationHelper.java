@@ -133,8 +133,9 @@ public class MigrationHelper implements ApiCallable {
     extractVolume();
     broker =
         new TestSimpleCamundaApplication()
-            .withAuthenticationMethod(AuthenticationMethod.BASIC)
-            /*.withAdditionalProfile(Profile.PROCESS_MIGRATION)*/
+            .withBasicAuth()
+            .withAuthenticatedAccess()
+            .withAdditionalProfile(Profile.PROCESS_MIGRATION)
             .withBrokerConfig(
                 cfg -> {
                   cfg.getExperimental().setVersionCheckRestrictionEnabled(false);
