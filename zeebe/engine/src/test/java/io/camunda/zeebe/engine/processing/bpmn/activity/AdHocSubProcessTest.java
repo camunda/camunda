@@ -340,11 +340,15 @@ public final class AdHocSubProcessTest {
                 .processInstanceRecords()
                 .withProcessInstanceKey(processInstanceKey))
         .extracting(r -> r.getValue().getElementId(), Record::getIntent)
+        .describedAs(
+            "Expect task A to complete while service task is activated and prevents subprocess completion")
         .containsSubsequence(
             tuple(AD_HOC_SUB_PROCESS_ELEMENT_ID, ProcessInstanceIntent.ELEMENT_ACTIVATED),
             tuple("A", ProcessInstanceIntent.ELEMENT_ACTIVATED),
             tuple("ServiceTask", ProcessInstanceIntent.ELEMENT_ACTIVATED),
             tuple("A", ProcessInstanceIntent.ELEMENT_COMPLETED))
+        .describedAs(
+            "Expect service task not to be terminated because completion condition does not apply")
         .doesNotContain(
             tuple("ServiceTask", ProcessInstanceIntent.TERMINATE_ELEMENT),
             tuple(AD_HOC_SUB_PROCESS_ELEMENT_ID, ProcessInstanceIntent.ELEMENT_COMPLETED));
@@ -363,6 +367,7 @@ public final class AdHocSubProcessTest {
                 .withProcessInstanceKey(processInstanceKey)
                 .limitToProcessInstanceCompleted())
         .extracting(r -> r.getValue().getElementId(), Record::getIntent)
+        .describedAs("Expect ad-hoc subprocess to complete after service task is completed")
         .containsSubsequence(
             tuple(AD_HOC_SUB_PROCESS_ELEMENT_ID, ProcessInstanceIntent.ELEMENT_COMPLETING),
             tuple(AD_HOC_SUB_PROCESS_ELEMENT_ID, ProcessInstanceIntent.ELEMENT_COMPLETED),
@@ -407,10 +412,12 @@ public final class AdHocSubProcessTest {
                 .processInstanceRecords()
                 .withProcessInstanceKey(processInstanceKey))
         .extracting(r -> r.getValue().getElementId(), Record::getIntent)
+        .describedAs("Expect activated activities to be completed")
         .containsSubsequence(
             tuple(AD_HOC_SUB_PROCESS_ELEMENT_ID, ProcessInstanceIntent.ELEMENT_ACTIVATED),
             tuple("A", ProcessInstanceIntent.ELEMENT_COMPLETED),
             tuple("C", ProcessInstanceIntent.ELEMENT_COMPLETED))
+        .describedAs("Expect ad-hoc subprocess to not complete when condition does not apply")
         .doesNotContain(
             tuple(AD_HOC_SUB_PROCESS_ELEMENT_ID, ProcessInstanceIntent.ELEMENT_COMPLETING),
             tuple(AD_HOC_SUB_PROCESS_ELEMENT_ID, ProcessInstanceIntent.ELEMENT_COMPLETED),
@@ -418,7 +425,7 @@ public final class AdHocSubProcessTest {
   }
 
   @Test
-  public void shouldCancelRemainingInstancesWhenFlagIsEnabled() {
+  public void shouldCancelRemainingInstancesWhenCancellationIsEnabled() {
     // given
     final BpmnModelInstance process =
         process(
@@ -452,6 +459,7 @@ public final class AdHocSubProcessTest {
                 .withProcessInstanceKey(processInstanceKey)
                 .limitToProcessInstanceCompleted())
         .extracting(r -> r.getValue().getElementId(), Record::getIntent)
+        .describedAs("Expect ad-hoc subprocess to complete and to terminate service task")
         .containsSubsequence(
             tuple(AD_HOC_SUB_PROCESS_ELEMENT_ID, ProcessInstanceIntent.ELEMENT_ACTIVATED),
             tuple("A", ProcessInstanceIntent.ELEMENT_ACTIVATED),
@@ -462,13 +470,15 @@ public final class AdHocSubProcessTest {
             tuple(AD_HOC_SUB_PROCESS_ELEMENT_ID, ProcessInstanceIntent.ELEMENT_COMPLETING),
             tuple(AD_HOC_SUB_PROCESS_ELEMENT_ID, ProcessInstanceIntent.ELEMENT_COMPLETED),
             tuple(PROCESS_ID, ProcessInstanceIntent.ELEMENT_COMPLETED))
+        .describedAs(
+            "Expect service task and dependent activity to never complete as it is terminated")
         .doesNotContain(
             tuple("ServiceTask", ProcessInstanceIntent.ELEMENT_COMPLETED),
             tuple("C", ProcessInstanceIntent.ELEMENT_ACTIVATED));
   }
 
   @Test
-  public void shouldNotCancelRemainingInstancesWhenFlagIsDisabled() {
+  public void shouldNotCancelRemainingInstancesWhenCancellationIsDisabled() {
     final BpmnModelInstance process =
         process(
             adHocSubProcess -> {
@@ -505,13 +515,16 @@ public final class AdHocSubProcessTest {
                 .processInstanceRecords()
                 .withProcessInstanceKey(processInstanceKey))
         .extracting(r -> r.getValue().getElementId(), Record::getIntent)
+        .describedAs("Expect service task be activated and ad-hoc subprocess to not complete")
         .containsSubsequence(
             tuple(AD_HOC_SUB_PROCESS_ELEMENT_ID, ProcessInstanceIntent.ELEMENT_ACTIVATED),
             tuple("A", ProcessInstanceIntent.ELEMENT_ACTIVATED),
             tuple("ServiceTask", ProcessInstanceIntent.ELEMENT_ACTIVATED),
             tuple("A", ProcessInstanceIntent.ELEMENT_COMPLETED))
+        .describedAs(
+            "Expect service task not to be terminated because cancelRemainingInstances is false")
         .doesNotContain(
-            tuple("ServiceTask", ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple("ServiceTask", ProcessInstanceIntent.ELEMENT_TERMINATED),
             tuple(AD_HOC_SUB_PROCESS_ELEMENT_ID, ProcessInstanceIntent.ELEMENT_COMPLETED));
 
     // complete service task
@@ -522,6 +535,8 @@ public final class AdHocSubProcessTest {
                 .withProcessInstanceKey(processInstanceKey)
                 .limitToProcessInstanceCompleted())
         .extracting(r -> r.getValue().getElementId(), Record::getIntent)
+        .describedAs(
+            "Expect ad-hoc subprocess to complete after service task is completed and condition applies")
         .containsSubsequence(
             tuple("ServiceTask", ProcessInstanceIntent.ELEMENT_COMPLETED),
             tuple(AD_HOC_SUB_PROCESS_ELEMENT_ID, ProcessInstanceIntent.ELEMENT_COMPLETING),
