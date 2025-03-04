@@ -74,10 +74,10 @@ export default defineConfig(({mode}) => ({
     open: true,
     proxy: {
       '^/(api|external/api|external/static)': {
-        target: 'http://localhost:8080',
+        target: 'http://localhost:8090',
       },
       '^/': {
-        target: 'http://localhost:8080',
+        target: 'http://localhost:8090',
         bypass: (req) => {
           const path = req.url;
           if (path?.includes('/sso-callback')) {

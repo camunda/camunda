@@ -94,18 +94,5 @@
         <module>qa</module>
       </modules>
     </profile>
-
-    <profile>
-      <id>include-optimize</id>
-      <activation>
-        <property>
-          <name>skipOptimize</name>
-          <value>!true</value>
-        </property>
-      </activation>
-      <modules>
-        <module>optimize</module>
-      </modules>
-    </profile>
   </profiles>
 </project>

@@ -21,7 +21,7 @@
   </organization>
 
   <modules>
-    <!-- client should be built before distro -->
+    <!-- client should be built before optimize-distro and before backend -->
     <module>client</module>
     <module>util</module>
     <module>backend</module>
@@ -93,7 +93,6 @@
     <opensearch.test.version>2.10.0</opensearch.test.version>
     <!-- the opensearch version of the previous Optimize version -->
     <previous.optimize.opensearch.version>2.9.0</previous.optimize.opensearch.version>
-    <awssdk.version>2.29.32</awssdk.version>
     <jsonpath.version>2.9.0</jsonpath.version>
     <apache.http5-client.version>5.4</apache.http5-client.version>
     <quartz.version>2.5.0</quartz.version>
@@ -125,6 +124,11 @@
     <maven.compiler.target>21</maven.compiler.target>
     <maven.compiler.source>21</maven.compiler.source>
     <spring-boot.version>3.4.3</spring-boot.version>
+
+    <it.test.excludedGroups></it.test.excludedGroups>
+    <it.test.includedGroups></it.test.includedGroups>
+    <test.forkCount></test.forkCount>
+    <version.tomcat>10.1.34</version.tomcat>
   </properties>
 
   <dependencyManagement>
