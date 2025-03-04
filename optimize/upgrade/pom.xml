@@ -28,6 +28,7 @@
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>camunda-search-client-connect</artifactId>
+      <version>${project.version}</version>
     </dependency>
 
     <!-- this is necessary. Dependency:analyze error suppressed -->
@@ -86,8 +87,7 @@
     <dependency>
       <groupId>co.elastic.clients</groupId>
       <artifactId>elasticsearch-java</artifactId>
-      <version>8.13.4</version>
-      <scope>compile</scope>
+      <version>${version.elasticsearch}</version>
     </dependency>
 
     <dependency>
@@ -131,6 +131,7 @@
     <dependency>
       <groupId>org.opensearch.client</groupId>
       <artifactId>opensearch-java</artifactId>
+      <version>${version.opensearch-java}</version>
       <exclusions>
         <exclusion>
           <groupId>commons-logging</groupId>
@@ -186,6 +187,7 @@
     <dependency>
       <groupId>org.opensearch.client</groupId>
       <artifactId>opensearch-rest-client</artifactId>
+      <version>${version.opensearch}</version>
       <scope>runtime</scope>
     </dependency>
   </dependencies>

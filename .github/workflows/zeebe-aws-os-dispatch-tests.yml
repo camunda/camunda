@@ -107,7 +107,7 @@ jobs:
       - uses: ./.github/actions/build-zeebe
         id: build-zeebe
         with:
-          maven-extra-args: -T1C -D skipOptimize -D skip.fe.build -D skip.yarn -D skip.docker
+          maven-extra-args: -T1C -D skip.fe.build -D skip.yarn -D skip.docker
       - name: Create build output log file
         run: echo "BUILD_OUTPUT_FILE_PATH=$(mktemp)" >> $GITHUB_ENV
       - name: Maven Test Build
@@ -115,7 +115,7 @@ jobs:
           ./mvnw -B -T ${{ matrix.maven-build-threads }} --no-snapshot-updates
           -D forkCount=${{ matrix.maven-test-fork-count }}
           -D maven.javadoc.skip=true
-          -D skipUTs -D skipChecks -D skipOptimize
+          -D skipUTs -D skipChecks
           -D test.integration.opensearch.aws.url="${{ env.OS_URL }}"
           -D test.integration.camunda.database.type=AWS_OS
           -D test.integration.opensearch.aws.timeout.seconds=180

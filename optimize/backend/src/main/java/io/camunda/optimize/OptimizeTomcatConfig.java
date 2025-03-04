@@ -89,11 +89,7 @@ public class OptimizeTomcatConfig {
 
         factory.addConnectorCustomizers(
             connector -> {
-              // TODO: Remove once we read the configuration from the single application
-              if ("true".equals(environment.getProperty("useLegacyPort"))) {
-                connector.setPort(8090);
-              }
-
+              connector.setPort(getPort(EnvironmentPropertiesConstants.HTTP_PORT_KEY));
               connector.setProperty(
                   "maxHttpRequestHeaderSize",
                   String.valueOf(configurationService.getMaxRequestHeaderSizeInBytes()));
