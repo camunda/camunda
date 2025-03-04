@@ -4282,6 +4282,10 @@ components:
           description: The process definition key.
           allOf:
             - $ref: "#/components/schemas/BasicStringFilterProperty"
+        errorMessage:
+          description: The error message related to the process.
+          allOf:
+            - $ref: "#/components/schemas/StringFilterProperty"
     ProcessInstanceVariableFilterRequest:
       description: Process instance variable filter.
       type: object
@@ -5013,7 +5017,7 @@ components:
           items:
             type: string
             allOf:
-             - $ref: "#/components/schemas/PermissionTypeEnum"
+              - $ref: "#/components/schemas/PermissionTypeEnum"
       required:
         - ownerId
         - ownerType
@@ -7174,4 +7178,3 @@ components:
       type: http
       scheme: bearer
       bearerFormat: JWT
-
