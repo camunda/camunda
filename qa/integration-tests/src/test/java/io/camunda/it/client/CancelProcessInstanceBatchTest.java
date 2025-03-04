@@ -20,7 +20,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.response.Process;
 import io.camunda.client.api.response.ProcessInstanceEvent;
-import io.camunda.it.utils.MultiDbTest;
+import io.camunda.qa.util.multidb.MultiDbTest;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;

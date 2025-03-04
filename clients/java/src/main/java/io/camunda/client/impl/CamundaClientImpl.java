@@ -501,7 +501,7 @@ public final class CamundaClientImpl implements CamundaClient {
   @Override
   public CancelProcessInstancesBatchRequest newCancelInstancesBatchCommand(
       final Consumer<ProcessInstanceFilter> filterModifier) {
-    ProcessInstanceFilter filter = new ProcessInstanceFilterImpl();
+    final ProcessInstanceFilter filter = new ProcessInstanceFilterImpl();
     filterModifier.accept(filter);
 
     return new CancelProcessInstancesBatchRequestImpl(httpClient, filter, jsonMapper);
@@ -910,11 +910,6 @@ public final class CamundaClientImpl implements CamundaClient {
   @Override
   public AssignUserToTenantCommandStep1 newAssignUserToTenantCommand(final String tenantId) {
     return new AssignUserToTenantCommandImpl(httpClient, tenantId);
-  }
-
-  @Override
-  public RemoveUserFromTenantCommandStep1 newRemoveUserFromTenantCommand(final String tenantId) {
-    return new RemoveUserFromTenantCommandImpl(httpClient, tenantId);
   }
 
   @Override
