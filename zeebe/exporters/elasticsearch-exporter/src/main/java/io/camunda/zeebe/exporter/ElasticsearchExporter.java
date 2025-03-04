@@ -90,7 +90,27 @@ public class ElasticsearchExporter implements Exporter {
 
   @Override
   public void close() {
+<<<<<<< HEAD
 
+=======
+    // the client is only created in some lifecycles, so during others (e.g. validation) it may not
+    // exist, in which case there's no point flushing or doing anything
+    if (client != null) {
+      try {
+        flush();
+        updateLastExportedPosition();
+      } catch (final Exception e) {
+        log.warn("Failed to flush records before closing exporter.", e);
+      }
+
+      try {
+        client.close();
+      } catch (final Exception e) {
+        log.warn("Failed to close elasticsearch client", e);
+      }
+    }
+
+>>>>>>> 71f2e230 (fix: fix npe when closing OS exporter before open is called)
     try {
       flush();
       updateLastExportedPosition();
