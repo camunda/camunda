@@ -9,7 +9,7 @@ package io.camunda.tasklist.property;
 
 import static io.camunda.tasklist.util.ConversionUtils.stringIsEmpty;
 
-import io.camunda.search.connect.plugin.PluginConfiguration;
+import io.camunda.db.se.config.PluginConfiguration;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.List;

@@ -7,14 +7,14 @@
  */
 package io.camunda.application.commons.migration;
 
+import io.camunda.db.se.config.ConnectConfiguration;
+import io.camunda.db.se.config.DatabaseType;
 import io.camunda.exporter.schema.PrefixMigrationClient;
 import io.camunda.exporter.schema.elasticsearch.ElasticsearchPrefixMigrationClient;
 import io.camunda.exporter.schema.opensearch.OpensearchPrefixMigrationClient;
 import io.camunda.exporter.utils.CloneResult;
 import io.camunda.exporter.utils.ReindexResult;
 import io.camunda.operate.property.OperateProperties;
-import io.camunda.search.connect.configuration.ConnectConfiguration;
-import io.camunda.search.connect.configuration.DatabaseType;
 import io.camunda.search.connect.es.ElasticsearchConnector;
 import io.camunda.search.connect.os.OpensearchConnector;
 import io.camunda.tasklist.property.TasklistProperties;

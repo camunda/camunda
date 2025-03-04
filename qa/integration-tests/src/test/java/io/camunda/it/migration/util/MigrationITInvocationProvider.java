@@ -12,7 +12,7 @@ import co.elastic.clients.elasticsearch.core.reindex.Destination;
 import co.elastic.clients.elasticsearch.core.reindex.Source;
 import co.elastic.clients.elasticsearch.indices.GetIndexRequest;
 import io.camunda.client.CamundaClient;
-import io.camunda.search.connect.configuration.ConnectConfiguration;
+import io.camunda.db.se.config.ConnectConfiguration;
 import io.camunda.search.connect.es.ElasticsearchConnector;
 import io.camunda.search.connect.os.OpensearchConnector;
 import io.camunda.webapps.schema.entities.tasklist.TaskEntity.TaskImplementation;

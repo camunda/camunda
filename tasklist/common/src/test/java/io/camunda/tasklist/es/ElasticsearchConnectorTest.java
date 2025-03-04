@@ -11,7 +11,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.transport.rest_client.RestClientTransport;
-import io.camunda.search.connect.plugin.PluginConfiguration;
+import io.camunda.db.se.config.PluginConfiguration;
 import io.camunda.search.connect.plugin.PluginRepository;
 import io.camunda.tasklist.property.ElasticsearchProperties;
 import io.camunda.tasklist.property.TasklistProperties;

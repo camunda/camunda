@@ -8,9 +8,9 @@
 package io.camunda.application.commons.backup;
 
 import io.camunda.application.commons.conditions.WebappEnabledCondition;
+import io.camunda.db.se.config.ConnectConfiguration;
 import io.camunda.optimize.service.db.schema.OptimizeIndexNameService;
 import io.camunda.search.clients.DocumentBasedSearchClient;
-import io.camunda.search.connect.configuration.ConnectConfiguration;
 import io.camunda.webapps.backup.DynamicIndicesProvider;
 import io.camunda.webapps.profiles.ProfileWebApp;
 import org.springframework.beans.factory.annotation.Autowired;

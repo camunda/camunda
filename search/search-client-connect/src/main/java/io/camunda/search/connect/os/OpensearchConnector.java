@@ -9,9 +9,9 @@ package io.camunda.search.connect.os;
 
 import com.amazonaws.regions.DefaultAwsRegionProviderChain;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.camunda.db.se.config.ConnectConfiguration;
+import io.camunda.db.se.config.SecurityConfiguration;
 import io.camunda.search.connect.SearchClientConnectException;
-import io.camunda.search.connect.configuration.ConnectConfiguration;
-import io.camunda.search.connect.configuration.SecurityConfiguration;
 import io.camunda.search.connect.jackson.JacksonConfiguration;
 import io.camunda.search.connect.os.json.SearchRequestJacksonJsonpMapperWrapper;
 import io.camunda.search.connect.plugin.PluginRepository;

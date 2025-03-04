@@ -8,11 +8,11 @@
 package io.camunda.exporter.adapters;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.camunda.db.se.config.DatabaseType;
 import io.camunda.exporter.cache.ExporterEntityCacheProvider;
 import io.camunda.exporter.config.ExporterConfiguration;
 import io.camunda.exporter.schema.SearchEngineClient;
 import io.camunda.exporter.store.BatchRequest;
-import io.camunda.search.connect.configuration.DatabaseType;
 import java.io.IOException;
 
 public interface ClientAdapter {

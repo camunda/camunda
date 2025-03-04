@@ -7,13 +7,13 @@
  */
 package io.camunda.migration.process.adapter.os;
 
+import io.camunda.db.se.config.ConnectConfiguration;
 import io.camunda.migration.api.MigrationException;
 import io.camunda.migration.process.adapter.Adapter;
 import io.camunda.migration.process.adapter.MigrationRepositoryIndex;
 import io.camunda.migration.process.adapter.ProcessorStep;
 import io.camunda.migration.process.config.ProcessMigrationProperties;
 import io.camunda.migration.process.util.AdapterRetryDecorator;
-import io.camunda.search.connect.configuration.ConnectConfiguration;
 import io.camunda.search.connect.os.OpensearchConnector;
 import io.camunda.webapps.schema.descriptors.operate.index.ImportPositionIndex;
 import io.camunda.webapps.schema.descriptors.operate.index.ProcessIndex;

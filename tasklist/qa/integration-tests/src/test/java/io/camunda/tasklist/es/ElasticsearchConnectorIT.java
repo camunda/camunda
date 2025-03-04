@@ -11,7 +11,7 @@ import com.github.tomakehurst.wiremock.WireMockServer;
 import com.github.tomakehurst.wiremock.client.CountMatchingStrategy;
 import com.github.tomakehurst.wiremock.client.WireMock;
 import com.github.tomakehurst.wiremock.core.WireMockConfiguration;
-import io.camunda.search.connect.plugin.PluginConfiguration;
+import io.camunda.db.se.config.PluginConfiguration;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.util.TestPlugin;
 import io.camunda.zeebe.util.FileUtil;

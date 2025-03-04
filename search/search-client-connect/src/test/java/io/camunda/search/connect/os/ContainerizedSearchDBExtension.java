@@ -7,7 +7,7 @@
  */
 package io.camunda.search.connect.os;
 
-import io.camunda.search.connect.configuration.ConnectConfiguration;
+import io.camunda.db.se.config.ConnectConfiguration;
 import io.camunda.zeebe.test.util.testcontainers.TestSearchContainers;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.opensearch.client.opensearch.OpenSearchAsyncClient;

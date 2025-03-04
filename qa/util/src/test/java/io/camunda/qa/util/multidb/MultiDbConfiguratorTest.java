@@ -90,7 +90,7 @@ public class MultiDbConfiguratorTest {
                 "indexPrefix",
                 EXPECTED_PREFIX,
                 "type",
-                io.camunda.search.connect.configuration.DatabaseType.ELASTICSEARCH));
+                DatabaseType.ELASTICSEARCH));
 
     assertThat(exporterArgs.get("archiver"))
         .isEqualTo(
@@ -250,7 +250,7 @@ public class MultiDbConfiguratorTest {
                 "indexPrefix",
                 EXPECTED_PREFIX,
                 "type",
-                io.camunda.search.connect.configuration.DatabaseType.OPENSEARCH,
+                DatabaseType.OPENSEARCH,
                 "username",
                 EXPECTED_USER,
                 "password",

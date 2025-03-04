@@ -8,8 +8,8 @@
 package io.camunda.exporter.tasks.archiver;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import io.camunda.db.se.config.RetentionConfiguration;
 import io.camunda.exporter.config.ExporterConfiguration.ArchiverConfiguration;
-import io.camunda.exporter.config.ExporterConfiguration.RetentionConfiguration;
 import io.camunda.exporter.metrics.CamundaExporterMetrics;
 import io.camunda.exporter.tasks.util.OpensearchRepository;
 import io.camunda.webapps.schema.descriptors.AbstractIndexDescriptor;

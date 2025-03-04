@@ -11,12 +11,12 @@ import static io.camunda.optimize.service.util.configuration.ConfigurationUtil.e
 import static io.camunda.optimize.service.util.configuration.ConfigurationUtil.resolvePathAsAbsoluteUrl;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import io.camunda.db.se.config.PluginConfiguration;
 import io.camunda.optimize.service.util.configuration.db.DatabaseBackup;
 import io.camunda.optimize.service.util.configuration.db.DatabaseConnection;
 import io.camunda.optimize.service.util.configuration.db.DatabaseSecurity;
 import io.camunda.optimize.service.util.configuration.db.DatabaseSettings;
 import io.camunda.optimize.service.util.configuration.elasticsearch.DatabaseConnectionNodeConfiguration;
-import io.camunda.search.connect.plugin.PluginConfiguration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
