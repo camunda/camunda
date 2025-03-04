@@ -86,7 +86,8 @@ class EmbeddedGatewayServiceStepTest {
               TEST_SHUTDOWN_TIMEOUT,
               new SecurityConfiguration(),
               mock(UserServices.class),
-              mock(PasswordEncoder.class));
+              mock(PasswordEncoder.class),
+              null);
 
       final var port = SocketUtil.getNextAddress().getPort();
       final var commandApiCfg = TEST_BROKER_CONFIG.getGateway().getNetwork();
@@ -158,7 +159,8 @@ class EmbeddedGatewayServiceStepTest {
               TEST_SHUTDOWN_TIMEOUT,
               new SecurityConfiguration(),
               mock(UserServices.class),
-              mock(PasswordEncoder.class));
+              mock(PasswordEncoder.class),
+              null);
 
       testBrokerStartupContext.setEmbeddedGatewayService(mockEmbeddedGatewayService);
       shutdownFuture = CONCURRENCY_CONTROL.createFuture();

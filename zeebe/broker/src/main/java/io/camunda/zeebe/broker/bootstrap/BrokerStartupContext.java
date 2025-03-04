@@ -11,6 +11,7 @@ import io.atomix.cluster.messaging.ManagedMessagingService;
 import io.camunda.identity.sdk.IdentityConfiguration;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.service.UserServices;
+import io.camunda.service.search.core.SearchQueryService;
 import io.camunda.zeebe.broker.PartitionListener;
 import io.camunda.zeebe.broker.PartitionRaftListener;
 import io.camunda.zeebe.broker.SpringBrokerBridge;
@@ -34,6 +35,7 @@ import io.camunda.zeebe.transport.impl.AtomixServerTransport;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.time.Duration;
 import java.util.List;
+import java.util.Set;
 import org.agrona.concurrent.SnowflakeIdGenerator;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
@@ -129,4 +131,6 @@ public interface BrokerStartupContext {
   UserServices getUserServices();
 
   PasswordEncoder getPasswordEncoder();
+
+  Set<SearchQueryService> getSearchQueryServices();
 }

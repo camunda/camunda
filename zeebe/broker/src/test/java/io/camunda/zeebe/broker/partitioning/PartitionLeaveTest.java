@@ -228,6 +228,7 @@ final class PartitionLeaveTest {
             brokerClient,
             SecurityConfigurations.unauthenticated(),
             null,
+            null,
             null);
 
     return new Broker(systemContext, new SpringBrokerBridge(), List.of());

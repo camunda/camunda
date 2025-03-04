@@ -9,6 +9,7 @@ package io.camunda.zeebe.broker.partitioning.startup;
 
 import io.atomix.raft.partition.RaftPartition;
 import io.camunda.security.configuration.SecurityConfiguration;
+import io.camunda.service.search.core.SearchQueryService;
 import io.camunda.zeebe.broker.PartitionListener;
 import io.camunda.zeebe.broker.PartitionRaftListener;
 import io.camunda.zeebe.broker.clustering.ClusterServices;
@@ -70,6 +71,7 @@ import java.io.UncheckedIOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
+import java.util.Set;
 
 public final class ZeebePartitionFactory {
 
@@ -107,6 +109,7 @@ public final class ZeebePartitionFactory {
   private final FeatureFlags featureFlags;
   private final List<PartitionRaftListener> partitionRaftListeners;
   private final SecurityConfiguration securityConfig;
+  private final Set<SearchQueryService> searchQueryServices;
 
   public ZeebePartitionFactory(
       final ActorSchedulingService actorSchedulingService,
@@ -122,7 +125,8 @@ public final class ZeebePartitionFactory {
       final List<PartitionRaftListener> partitionRaftListeners,
       final TopologyManagerImpl topologyManager,
       final FeatureFlags featureFlags,
-      final SecurityConfiguration securityConfig) {
+      final SecurityConfiguration securityConfig,
+      final Set<SearchQueryService> searchQueryServices) {
     this.actorSchedulingService = actorSchedulingService;
     this.brokerCfg = brokerCfg;
     this.localBroker = localBroker;
@@ -137,6 +141,7 @@ public final class ZeebePartitionFactory {
     this.topologyManager = topologyManager;
     this.featureFlags = featureFlags;
     this.securityConfig = securityConfig;
+    this.searchQueryServices = searchQueryServices;
   }
 
   public ZeebePartition constructPartition(
@@ -232,7 +237,8 @@ public final class ZeebePartitionFactory {
           subscriptionCommandSender,
           partitionCommandSender,
           featureFlags,
-          jobStreamer);
+          jobStreamer,
+          searchQueryServices);
     };
   }
 }

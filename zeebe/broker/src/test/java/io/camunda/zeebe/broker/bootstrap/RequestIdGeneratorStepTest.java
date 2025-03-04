@@ -62,7 +62,8 @@ class RequestIdGeneratorStepTest {
             TEST_SHUTDOWN_TIMEOUT,
             new SecurityConfiguration(),
             mock(UserServices.class),
-            mock(PasswordEncoder.class));
+            mock(PasswordEncoder.class),
+            null);
     testBrokerStartupContext.setConcurrencyControl(spyConcurrencyControl);
   }
 

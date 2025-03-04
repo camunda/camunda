@@ -14,6 +14,7 @@ import io.atomix.cluster.messaging.ManagedMessagingService;
 import io.camunda.identity.sdk.IdentityConfiguration;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.service.UserServices;
+import io.camunda.service.search.core.SearchQueryService;
 import io.camunda.zeebe.broker.PartitionListener;
 import io.camunda.zeebe.broker.PartitionRaftListener;
 import io.camunda.zeebe.broker.SpringBrokerBridge;
@@ -41,6 +42,7 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 import org.agrona.concurrent.SnowflakeIdGenerator;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
@@ -75,6 +77,7 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
   private BrokerAdminServiceImpl brokerAdminService;
   private JobStreamService jobStreamService;
   private ClusterConfigurationService clusterConfigurationService;
+  private final Set<SearchQueryService> searchQueryServices;
 
   public BrokerStartupContextImpl(
       final BrokerInfo brokerInfo,
@@ -91,7 +94,8 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
       final MeterRegistry meterRegistry,
       final SecurityConfiguration securityConfiguration,
       final UserServices userServices,
-      final PasswordEncoder passwordEncoder) {
+      final PasswordEncoder passwordEncoder,
+      final Set<SearchQueryService> searchQueryServices) {
 
     this.brokerInfo = requireNonNull(brokerInfo);
     this.configuration = requireNonNull(configuration);
@@ -107,6 +111,7 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
     this.securityConfiguration = requireNonNull(securityConfiguration);
     this.userServices = userServices;
     this.passwordEncoder = passwordEncoder;
+    this.searchQueryServices = searchQueryServices;
     partitionListeners.addAll(additionalPartitionListeners);
   }
 
@@ -124,7 +129,8 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
       final Duration shutdownTimeout,
       final SecurityConfiguration securityConfiguration,
       final UserServices userServices,
-      final PasswordEncoder passwordEncoder) {
+      final PasswordEncoder passwordEncoder,
+      final Set<SearchQueryService> searchQueryServices) {
 
     this(
         brokerInfo,
@@ -141,7 +147,8 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
         new SimpleMeterRegistry(),
         securityConfiguration,
         userServices,
-        passwordEncoder);
+        passwordEncoder,
+        searchQueryServices);
   }
 
   @Override
@@ -367,5 +374,10 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
   @Override
   public PasswordEncoder getPasswordEncoder() {
     return passwordEncoder;
+  }
+
+  @Override
+  public Set<SearchQueryService> getSearchQueryServices() {
+    return searchQueryServices;
   }
 }

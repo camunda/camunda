@@ -71,7 +71,8 @@ public final class SimpleBrokerStartTest {
                       mock(BrokerClient.class),
                       new SecurityConfiguration(),
                       mock(UserServices.class),
-                      mock(PasswordEncoder.class));
+                      mock(PasswordEncoder.class),
+                      null);
               new Broker(systemContext, TEST_SPRING_BROKER_BRIDGE, emptyList());
             });
 
@@ -99,7 +100,8 @@ public final class SimpleBrokerStartTest {
             brokerClient,
             new SecurityConfiguration(),
             mock(UserServices.class),
-            mock(PasswordEncoder.class));
+            mock(PasswordEncoder.class),
+            null);
 
     final var leaderLatch = new CountDownLatch(1);
     final var listener =
