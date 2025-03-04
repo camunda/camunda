@@ -175,7 +175,7 @@ jobs:
         with:
           gcp_credentials: ${{ needs.init.outputs.GCP_CREDENTIALS_NAME }}
           env: 'prod'
-          version: ${{ inputs.camundaRelease }}
+          version: ${{ inputs.camundaAppsRelease }}
           artifact_file: ./c8run/camunda8-run-*
           artifact_subpath: c8run
       - name: Add release URL to workflow summary
@@ -183,3 +183,8 @@ jobs:
         run: |
           release_url="https://github.com/camunda/camunda/releases/tag/${{ inputs.camundaAppsRelease }}"
           echo "⭐ Release URL: ${release_url}" >> $GITHUB_STEP_SUMMARY
+      - name: Add release URL to workflow summary
+        shell: bash
+        run: |
+          release_url="https://downloads.camunda.cloud/release/c8run/${{ inputs.camundaAppsRelease }}"
+          echo "⭐ Download Center Release URL: ${release_url}" >> $GITHUB_STEP_SUMMARY
