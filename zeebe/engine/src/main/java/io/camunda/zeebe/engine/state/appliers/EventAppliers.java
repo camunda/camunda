@@ -79,7 +79,8 @@ import java.util.Objects;
 public final class EventAppliers implements EventApplier {
 
   public static final TypedEventApplier<Intent, RecordValue> NOOP_EVENT_APPLIER =
-      (key, value) -> {};
+      (key, value) -> {
+      };
 
   private final Map<Intent, Map<Integer, TypedEventApplier>> mapping = new HashMap<>();
 
@@ -566,9 +567,18 @@ public final class EventAppliers implements EventApplier {
   }
 
   private void registerBatchOperationAppliers(final MutableProcessingState state) {
-    register(BatchOperationIntent.CREATED, new BatchOperationCreatedApplier(state.getBatchOperationState()));
-    register(BatchOperationIntent.EXECUTED, new BatchOperationExecutedApplier(state.getBatchOperationState()));
-    register(BatchOperationIntent.COMPLETED, new BatchOperationCompletedApplier(state.getBatchOperationState()));
+    register(BatchOperationIntent.CREATED,
+        new BatchOperationCreatedApplier(state.getBatchOperationState()));
+    register(BatchOperationIntent.EXECUTED,
+        new BatchOperationExecutedApplier(state.getBatchOperationState()));
+    register(BatchOperationIntent.PAUSED,
+        new BatchOperationPausedApplier(state.getBatchOperationState()));
+    register(BatchOperationIntent.RESUMED,
+        new BatchOperationResumedApplier(state.getBatchOperationState()));
+    register(BatchOperationIntent.CANCELED,
+        new BatchOperationCanceledApplier(state.getBatchOperationState()));
+    register(BatchOperationIntent.COMPLETED,
+        new BatchOperationCompletedApplier(state.getBatchOperationState()));
   }
 
   private <I extends Intent> void register(final I intent, final TypedEventApplier<I, ?> applier) {

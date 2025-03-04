@@ -7,11 +7,11 @@
  */
 package io.camunda.zeebe.engine.state.immutable;
 
-import io.camunda.zeebe.engine.state.batchoperation.ItemKeys;
+import io.camunda.zeebe.engine.state.batchoperation.BatchOperation;
 import java.util.Optional;
 
 public interface BatchOperationState {
 
-  Optional<ItemKeys> get(final long batchKey);
+  Optional<BatchOperation> get(final long batchKey);
 
 }
