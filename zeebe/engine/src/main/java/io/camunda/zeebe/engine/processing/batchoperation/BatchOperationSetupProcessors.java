@@ -66,10 +66,6 @@ public final class BatchOperationSetupProcessors {
         // FIXME pass the polling interval from configurations to the scheduler
         .withListener(
             new BatchOperationExecutionScheduler(
-                processingState,
-                searchQueryServices,
-                writers,
-                keyGenerator,
-                Duration.ofMillis(100)));
+                processingState, searchQueryServices, keyGenerator, Duration.ofMillis(100)));
   }
 }
