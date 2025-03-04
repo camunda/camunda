@@ -50,7 +50,7 @@ public class MappingAppliersTest {
     tenantState = processingState.getTenantState();
     authorizationState = processingState.getAuthorizationState();
     groupState = processingState.getGroupState();
-    mappingDeletedApplier = new MappingDeletedApplier(processingState);
+    mappingDeletedApplier = new MappingDeletedApplier(processingState.getMappingState());
   }
 
   @Test

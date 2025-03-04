@@ -41,5 +41,14 @@ public class MappingProcessors {
             keyGenerator,
             writers,
             commandDistributionBehavior));
+    typedRecordProcessors.onCommand(
+        ValueType.MAPPING,
+        MappingIntent.UPDATE,
+        new MappingUpdateProcessor(
+            processingState.getMappingState(),
+            authCheckBehavior,
+            keyGenerator,
+            writers,
+            commandDistributionBehavior));
   }
 }
