@@ -55,7 +55,7 @@ public class DbBatchOperationState implements MutableBatchOperationState {
         .setFilter(record.getFilterBuffer())
         .setOffset(0);
     batchOperationColumnFamily.insert(this.batchKey, batchOperation);
-    pendingBatchOperationColumnFamily.insert(this.batchKey, DbNil.INSTANCE);
+    pendingBatchOperationColumnFamily.upsert(this.batchKey, DbNil.INSTANCE);
   }
 
   @Override
