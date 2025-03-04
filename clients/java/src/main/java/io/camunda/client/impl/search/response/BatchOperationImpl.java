@@ -15,6 +15,8 @@
  */
 package io.camunda.client.impl.search.response;
 
+import static java.util.Collections.emptyList;
+
 import io.camunda.client.api.search.response.BatchOperation;
 import io.camunda.client.api.search.response.BatchOperationState;
 import io.camunda.client.api.search.response.BatchOperationType;
@@ -33,8 +35,7 @@ public class BatchOperationImpl implements BatchOperation {
     batchOperationKey = ParseUtil.parseLongOrNull(item.getBatchOperationKey());
     type = BatchOperationType.valueOf(item.getBatchOperationType());
     state = null;
-    this.keys = item.getKeys();
-//    state = BatchOperationState.valueOf(item.getState().name());
+    keys = emptyList(); //todo
   }
 
   @Override

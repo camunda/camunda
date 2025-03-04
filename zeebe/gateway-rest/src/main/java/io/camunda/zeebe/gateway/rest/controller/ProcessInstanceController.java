@@ -109,7 +109,7 @@ public class ProcessInstanceController {
       @RequestBody(required = false) final ProcessInstanceFilter filter) {
 
     // TODO with Either and ProblemDetail
-    return this.batchOperationCancellation(
+    return batchOperationCancellation(
         SearchQueryRequestMapper.toProcessInstanceFilter(filter));
   }
 
@@ -134,7 +134,7 @@ public class ProcessInstanceController {
             processInstanceServices
                 .withAuthentication(RequestMapper.getAuthentication())
                 .cancelProcessInstanceBatchOperationWithResult(filter),
-        ResponseEntity::ok); // TODO better response
+        ResponseMapper::toCancelProcessInstanceBatchOperationWithResultResponse); // TODO better response
   }
 
   private CompletableFuture<ResponseEntity<Object>> createProcessInstance(
