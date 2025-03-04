@@ -14,7 +14,6 @@ import io.camunda.search.filter.ProcessInstanceFilter;
 import io.camunda.service.ProcessInstanceServices;
 import io.camunda.service.search.core.SearchQueryService;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.batchoperation.PersistedBatchOperation;
 import io.camunda.zeebe.engine.state.immutable.BatchOperationState;
@@ -24,6 +23,8 @@ import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperation
 import io.camunda.zeebe.protocol.record.intent.BatchOperationIntent;
 import io.camunda.zeebe.stream.api.ReadonlyStreamProcessorContext;
 import io.camunda.zeebe.stream.api.StreamProcessorLifecycleAware;
+import io.camunda.zeebe.stream.api.scheduling.TaskResult;
+import io.camunda.zeebe.stream.api.scheduling.TaskResultBuilder;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import java.time.Duration;
 import java.util.Set;
@@ -35,7 +36,6 @@ public class BatchOperationExecutionScheduler implements StreamProcessorLifecycl
   private static final Logger LOG = LoggerFactory.getLogger(BatchOperationExecutionScheduler.class);
   private static final int BATCH_SIZE = 10;
   private final Duration pollingInterval;
-  private final TypedCommandWriter commandWriter;
   private final KeyGenerator keyGenerator;
   private final StateWriter stateWriter;
 
@@ -50,7 +50,6 @@ public class BatchOperationExecutionScheduler implements StreamProcessorLifecycl
       final KeyGenerator keyGenerator,
       final Duration pollingInterval) {
     batchOperationState = processingState.getBatchOperationState();
-    commandWriter = writers.command();
     stateWriter = writers.state();
     this.keyGenerator = keyGenerator;
     this.queryServices = queryServices;
@@ -60,26 +59,31 @@ public class BatchOperationExecutionScheduler implements StreamProcessorLifecycl
   @Override
   public void onRecovered(final ReadonlyStreamProcessorContext context) {
     processingContext = context;
-    processingContext.getScheduleService().runAtFixedRate(pollingInterval, this::execute);
+    processingContext.getScheduleService().runAtFixedRateAsync(pollingInterval, this::execute);
   }
 
   @Override
   public void onResumed() {
-    processingContext.getScheduleService().runAtFixedRate(pollingInterval, this::execute);
+    processingContext.getScheduleService().runAtFixedRateAsync(pollingInterval, this::execute);
   }
 
-  private void execute() {
+  private TaskResult execute(final TaskResultBuilder taskResultBuilder) {
     LOG.debug("Executing batch operation");
-    batchOperationState.foreachPendingBatchOperation(this::executeBatchOperation);
+    batchOperationState.foreachPendingBatchOperation(
+        bo -> executeBatchOperation(bo, taskResultBuilder));
+    return taskResultBuilder.build();
   }
 
-  private void executeBatchOperation(final PersistedBatchOperation batchOperation) {
+  private void executeBatchOperation(
+      final PersistedBatchOperation batchOperation, final TaskResultBuilder taskResultBuilder) {
     final var keys = queryKeys(batchOperation);
 
     final var key = keyGenerator.nextKey();
     final var command = new BatchOperationExecutionRecord();
+    command.setBatchOperationKey(batchOperation.getKey());
+    command.setBatchOperationType(batchOperation.getBatchOperationType());
     command.setKeys(keys);
-    commandWriter.appendFollowUpCommand(key, BatchOperationIntent.EXECUTE, command);
+    taskResultBuilder.appendCommandRecord(key, BatchOperationIntent.EXECUTE, command);
 
     // FIXME do we need separate intents for creation and execution records?
     stateWriter.appendFollowUpEvent(
