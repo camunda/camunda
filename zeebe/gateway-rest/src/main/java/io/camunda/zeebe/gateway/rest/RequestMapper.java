@@ -597,6 +597,10 @@ public class RequestMapper {
         .build();
   }
 
+  public static List<String> getAuthorizedTenants() {
+    return TenantAttributeHolder.getTenantIds();
+  }
+
   public static Authentication getAnonymousAuthentication() {
     return new Builder().claims(Map.of(Authorization.AUTHORIZED_ANONYMOUS_USER, true)).build();
   }
