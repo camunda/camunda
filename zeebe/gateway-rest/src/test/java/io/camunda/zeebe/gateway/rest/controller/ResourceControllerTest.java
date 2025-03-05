@@ -211,7 +211,7 @@ public class ResourceControllerTest extends RestControllerTest {
               "type": "about:blank",
               "status": 401,
               "title": "UNAUTHORIZED",
-              "detail": "Expected to handle request Deploy Resources with tenant identifier 'unauthorizedTenant', but tenant is not authorized to perform this request",
+              "detail": "Expected to handle request Deploy Resources with tenant identifier 'unauthorizedTenant', but the user is not authorized for that tenant",
               "instance": "%s"
             }"""
                 .formatted(DEPLOY_RESOURCES_ENDPOINT));
