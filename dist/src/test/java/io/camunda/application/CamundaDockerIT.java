@@ -43,7 +43,7 @@ public class CamundaDockerIT {
   private static final String ELASTICSEARCH_DOCKER_IMAGE =
       System.getProperty(
           "camunda.docker.test.elasticsearch.image",
-          "docker.elastic.co/elasticsearch/elasticsearch:8.14.1");
+          "docker.elastic.co/elasticsearch/elasticsearch:8.16.4");
   private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
   private final List<GenericContainer> createdContainers = new ArrayList<>();

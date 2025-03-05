@@ -73,7 +73,7 @@ public class ElasticsearchConnectorBasicAuthNoClusterPrivilegesIT extends Taskli
   private static final String ES_ADMIN_USER = "elastic";
   private static final String ES_ADMIN_PASSWORD = "changeme";
   static ElasticsearchContainer elasticsearch =
-      new ElasticsearchContainer("docker.elastic.co/elasticsearch/elasticsearch:8.15.2")
+      new ElasticsearchContainer("docker.elastic.co/elasticsearch/elasticsearch:8.16.4")
           .withEnv(Map.of("xpack.security.enabled", "true", "ELASTIC_PASSWORD", ES_ADMIN_PASSWORD))
           .withExposedPorts(9200);
   private static final String TASKLIST_ES_USER = "tasklist_user";
