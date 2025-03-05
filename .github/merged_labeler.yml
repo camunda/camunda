@@ -1,0 +1,38 @@
+component:desktop modeler:
+  '(Desktop Modeler*)'
+component/connectors:
+  '(Connectors*)'
+component/optimize:
+  '(Optimize*)'
+component/zeebe:
+  '(Zeebe*)'
+component/web modeler:
+  '(Web Modeler*)'
+component/RPA:
+  '(RPA*)'
+component/operate:
+  '(Operate*)'
+component/tasklist:
+  '(Tasklist*)'
+component/identity:
+  '(Identity*)'
+component/console:
+  '(Console*)'
+component/InfEx:
+  '(InfEx*)'
+component/distribution:
+  '(Distribution*)'
+component/SRE:
+  '(SRE*)'
+component/controller:
+  '(Controller*)'
+component/infrastructure:
+  '(Infrastructure*)'
+component/DevEx:
+  '(DevEx*)'
+component/c8run:
+  '(C8Run*)'
+component/helm:
+  '(Helm*)'
+needs component label:
+  '(Not sure*)'
