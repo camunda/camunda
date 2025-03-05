@@ -157,7 +157,7 @@ jobs:
             ${{ env.CAMUNDA_RUN_NAME_ARTIFACT_WITH_MINOR_VERSION }}*
         env:
           GH_TOKEN: ${{ github.token }}
-      - name: Upload artifact to Camuna apps release
+      - name: Upload artifact to Camunda apps release
         if: inputs.publishToCamundaAppsRelease
         working-directory: ${{ matrix.os.workingDir }}
         shell: bash
@@ -166,10 +166,10 @@ jobs:
             ${{ env.CAMUNDA_RUN_NAME_ARTIFACT_WITH_PATCH_VERSION }}*
         env:
           GH_TOKEN: ${{ github.token }}
-      - name: upload asset to camunda download center
+      - name: Upload artifact to Camunda download center
         uses: camunda/infra-global-github-actions/download-center-upload@main
         with:
-          gcp_credentials: ${{ needs.init.outputs.GCP_CREDENTIALS_NAME }}
+          gcp_credentials: ${{ steps.secrets.outputs.GCP_CREDENTIALS_NAME }}
           env: 'prod'
           version: ${{ inputs.camundaAppsRelease }}
           artifact_file: ./c8run/camunda8-run-*
