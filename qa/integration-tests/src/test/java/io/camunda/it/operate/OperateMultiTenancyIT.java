@@ -14,13 +14,11 @@ import static org.springframework.http.HttpStatus.OK;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.qa.util.cluster.TestStandaloneCamunda;
-import io.camunda.security.entity.AuthenticationMethod;
 import io.camunda.zeebe.it.util.AuthorizationsUtil;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import java.time.Duration;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 @ZeebeIntegration
@@ -38,10 +36,7 @@ public class OperateMultiTenancyIT {
 
   @ZeebeIntegration.TestZeebe
   private final TestStandaloneCamunda testInstance =
-      new TestStandaloneCamunda()
-          .withCamundaExporter()
-          .withAuthenticationMethod(AuthenticationMethod.BASIC)
-          .withMultiTenancyEnabled();
+      new TestStandaloneCamunda().withCamundaExporter().withBasicAuth().withMultiTenancyEnabled();
 
   @BeforeEach
   public void beforeEach() {
@@ -77,7 +72,6 @@ public class OperateMultiTenancyIT {
   }
 
   @Test
-  @Disabled
   public void shouldGetProcessByKeyOnlyForProcessesInAuthenticatedTenants() {
     try (final var operateClient1 = testInstance.newOperateClient(USERNAME_1, PASSWORD);
         final var operateClient2 = testInstance.newOperateClient(USERNAME_2, PASSWORD)) {
