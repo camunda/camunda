@@ -3507,11 +3507,7 @@ paths:
           content:
             application/json:
               schema:
-                items:
-                  description: The batch operation items
-                  type: array
-                  items:
-                    $ref: "#/components/schemas/BatchOperationItemResponse"
+                $ref: "#/components/schemas/BatchOperationItemSearchQueryResult"
         "400":
           description: The provided data is not valid.
           content:
@@ -7347,6 +7343,17 @@ components:
         operationsCompletedCount:
           type: integer
           format: int32
+
+    BatchOperationItemSearchQueryResult:
+      type: object
+      allOf:
+        - $ref: "#/components/schemas/SearchQueryResponse"
+      properties:
+        items:
+          description: The matching batch operations.
+          type: array
+          items:
+            $ref: "#/components/schemas/BatchOperationItemResponse"
 
     BatchOperationItemResponse:
       type: object

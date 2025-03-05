@@ -7,7 +7,7 @@ import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationIntent;
 import io.camunda.zeebe.protocol.record.value.BatchOperationExecutionRecordValue;
 import io.camunda.zeebe.util.DateUtil;
-import java.time.OffsetDateTime;
+import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -17,6 +17,16 @@ public class BatchOperationExecutionExportHandler implements
   private static final Logger LOGGER = LoggerFactory.getLogger(
       BatchOperationExecutionExportHandler.class);
 
+  private static final Set<BatchOperationIntent> EXPORTABLE_INTENTS =
+      Set.of(
+          BatchOperationIntent.EXECUTING,
+          BatchOperationIntent.EXECUTED,
+          BatchOperationIntent.COMPLETED,
+          BatchOperationIntent.CANCELED,
+          BatchOperationIntent.PAUSED,
+          BatchOperationIntent.RESUMED
+      );
+
   private final BatchOperationWriter batchOperationWriter;
 
   public BatchOperationExecutionExportHandler(final BatchOperationWriter batchOperationWriter) {
@@ -25,27 +35,40 @@ public class BatchOperationExecutionExportHandler implements
 
   @Override
   public boolean canExport(final Record<BatchOperationExecutionRecordValue> record) {
-    return record.getValueType() == ValueType.BATCH_OPERATION_EXECUTION
-        && (record.getIntent().equals(BatchOperationIntent.EXECUTING)
-        || record.getIntent().equals(BatchOperationIntent.EXECUTED)
-        || record.getIntent().equals(BatchOperationIntent.COMPLETED));
+    if(record.getValueType() == ValueType.BATCH_OPERATION_EXECUTION
+        && record.getIntent() instanceof final BatchOperationIntent intent) {
+      return EXPORTABLE_INTENTS.contains(intent);
+    }
+
+    return  false;
   }
 
   @Override
   public void export(final Record<BatchOperationExecutionRecordValue> record) {
     final var value = record.getValue();
+    final var batchOperationKey = value.getBatchOperationKey();
     if (record.getIntent().equals(BatchOperationIntent.EXECUTING)) {
       batchOperationWriter.update(
-          record.getKey(),
+          batchOperationKey,
           value.getKeys()
       );
     } else if (record.getIntent().equals(BatchOperationIntent.COMPLETED)) {
-      final OffsetDateTime endDate = DateUtil.toOffsetDateTime(record.getTimestamp());
-      batchOperationWriter.finish(record.getValue().getBatchOperationKey(),
-          endDate,
-          0,
-          value.getOffset(),
-          value.getKeys()
+      batchOperationWriter.finish(
+          batchOperationKey,
+          DateUtil.toOffsetDateTime(record.getTimestamp())
+      );
+    } else if (record.getIntent().equals(BatchOperationIntent.CANCELED)) {
+      batchOperationWriter.cancel(
+          batchOperationKey,
+          DateUtil.toOffsetDateTime(record.getTimestamp())
+      );
+    } else if (record.getIntent().equals(BatchOperationIntent.PAUSED)) {
+      batchOperationWriter.paused(
+          batchOperationKey
+      );
+    } else if (record.getIntent().equals(BatchOperationIntent.RESUMED)) {
+      batchOperationWriter.resumed(
+          batchOperationKey
       );
     }
   }

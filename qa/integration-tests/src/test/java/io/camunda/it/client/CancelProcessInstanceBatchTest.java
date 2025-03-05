@@ -11,6 +11,7 @@ import io.camunda.client.CamundaClient;
 import io.camunda.client.api.response.Process;
 import io.camunda.client.api.response.ProcessInstanceEvent;
 import io.camunda.client.api.search.response.BatchOperationState;
+import io.camunda.client.api.search.response.BatchOperationItems.BatchOperationItem;
 import static io.camunda.it.client.QueryTest.deployResource;
 import static io.camunda.it.client.QueryTest.startProcessInstance;
 import static io.camunda.it.client.QueryTest.waitForFlowNodeInstances;
@@ -19,12 +20,13 @@ import static io.camunda.it.client.QueryTest.waitForProcessInstancesToStart;
 import static io.camunda.it.client.QueryTest.waitForProcessesToBeDeployed;
 import static io.camunda.it.client.QueryTest.waitUntilFlowNodeInstanceHasIncidents;
 import static io.camunda.it.client.QueryTest.waitUntilProcessInstanceHasIncidents;
-import io.camunda.qa.util.multidb.MultiDbTest;
 import java.time.Duration;
+import org.apache.commons.lang3.ThreadUtils;
+import static org.assertj.core.api.Assertions.assertThat;
+import io.camunda.qa.util.multidb.MultiDbTest;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
-import static org.assertj.core.api.Assertions.assertThat;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -34,7 +36,7 @@ import org.junit.jupiter.api.Test;
 public class CancelProcessInstanceBatchTest {
 
   static final List<Process> DEPLOYED_PROCESSES = new ArrayList<>();
-  static final List<ProcessInstanceEvent> PROCESS_INSTANCES = new ArrayList<>();
+  static final List<ProcessInstanceEvent> ACTIVE_PROCESS_INSTANCES = new ArrayList<>();
 
   private static CamundaClient camundaClient;
 
@@ -57,13 +59,15 @@ public class CancelProcessInstanceBatchTest {
 
     waitForProcessesToBeDeployed(camundaClient, DEPLOYED_PROCESSES.size());
 
-    PROCESS_INSTANCES.add(
+    // Does two will not be active when we cancel, since they just have manual steps
+    startProcessInstance(camundaClient, "manual_process");
+    startProcessInstance(camundaClient, "parent_process_v1");
+
+    ACTIVE_PROCESS_INSTANCES.add(
         startProcessInstance(camundaClient, "service_tasks_v1", "{\"xyz\":\"bar\"}"));
-    PROCESS_INSTANCES.add(
+    ACTIVE_PROCESS_INSTANCES.add(
         startProcessInstance(camundaClient, "service_tasks_v2", "{\"path\":222}"));
-    PROCESS_INSTANCES.add(startProcessInstance(camundaClient, "manual_process"));
-    PROCESS_INSTANCES.add(startProcessInstance(camundaClient, "incident_process_v1"));
-    PROCESS_INSTANCES.add(startProcessInstance(camundaClient, "parent_process_v1"));
+    ACTIVE_PROCESS_INSTANCES.add(startProcessInstance(camundaClient, "incident_process_v1"));
 
     waitForProcessInstancesToStart(camundaClient, 6);
     waitForFlowNodeInstances(camundaClient, 20);
@@ -74,20 +78,24 @@ public class CancelProcessInstanceBatchTest {
   @AfterAll
   static void afterAll() {
     DEPLOYED_PROCESSES.clear();
-    PROCESS_INSTANCES.clear();
+    ACTIVE_PROCESS_INSTANCES.clear();
   }
 
   @Test
-  void shouldCancelProcessInstancesWithBatch() {
+  void shouldCancelProcessInstancesWithBatch() throws InterruptedException {
     // when
     final var result = camundaClient.newCancelInstancesBatchCommand(b -> {
         })
         .send().join();
+    final var batchOperationKey = result.getBatchOperationKey();
+
+    ThreadUtils.sleep(Duration.ofMillis(2000));
 
     // then
     assertThat(result).isNotNull();
-    assertThat(result.getBatchOperationKey()).isNotNull();
+    assertThat(batchOperationKey).isNotNull();
 
+    // and
     Awaitility.await("should complete batch operation")
         .atMost(Duration.ofSeconds(15))
         .pollInterval(Duration.ofMillis(100))
@@ -100,17 +108,24 @@ public class CancelProcessInstanceBatchTest {
                   .send()
                   .join();
               assertThat(batch).isNotNull();
+              assertThat(batch.getEndDate()).isNotNull();
               assertThat(batch.getState()).isEqualTo(BatchOperationState.COMPLETED);
             });
 
-    // TODO fetch keys
-    final var batch = camundaClient.newGetBatchOperationCommand(
-            result.getBatchOperationKey())
-        .send()
-        .join();
-
-    for (final Long key : batch.keys()) {
+    final var activeKeys = ACTIVE_PROCESS_INSTANCES.stream().map(ProcessInstanceEvent::getProcessInstanceKey).toList();
+    for (final Long key : activeKeys) {
       waitForProcessInstanceToBeTerminated(camundaClient, key);
     }
+
+    // and
+    final var itemsObj = camundaClient.newGetBatchOperationItemsCommand(batchOperationKey)
+        .send()
+        .join();
+    final var itemKeys = itemsObj.items().stream().map(BatchOperationItem::getKey).toList();
+
+    assertThat(itemsObj.items()).hasSize(3);
+    assertThat(itemsObj.items().stream().map(BatchOperationItem::getState).distinct().toList())
+        .containsExactly(BatchOperationState.COMPLETED.name());
+    assertThat(itemKeys).containsExactlyInAnyOrder(activeKeys.toArray(Long[]::new));
   }
 }

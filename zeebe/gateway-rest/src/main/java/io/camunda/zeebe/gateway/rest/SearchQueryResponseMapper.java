@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.gateway.rest;
 
+import io.camunda.zeebe.gateway.protocol.rest.BatchOperationItemSearchQueryResult;
 import static io.camunda.zeebe.gateway.rest.ResponseMapper.formatDate;
 import static java.util.Collections.emptyList;
 import static java.util.Optional.ofNullable;
@@ -348,9 +349,10 @@ public final class SearchQueryResponseMapper {
         .operationsCompletedCount(entity.operationsCompletedCount());
   }
 
-  public static List<BatchOperationItemResponse> toBatchOperationItems(
+  public static BatchOperationItemSearchQueryResult toBatchOperationItemSearchQueryResult(
       final List<BatchOperationItemEntity> batchOperations) {
-    return batchOperations.stream().map(SearchQueryResponseMapper::toBatchOperationItem).toList();
+    return new BatchOperationItemSearchQueryResult()
+        .items(batchOperations.stream().map(SearchQueryResponseMapper::toBatchOperationItem).toList());
   }
 
   public static BatchOperationItemResponse toBatchOperationItem(final BatchOperationItemEntity entity) {

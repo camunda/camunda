@@ -26,18 +26,12 @@ public record BatchOperationEntity(
   public record BatchOperationItemEntity(
     Long batchOperationKey,
     Long itemKey,
-    BatchOperationItemState state
+    BatchOperationState state
   ) {}
 
   public enum BatchOperationState {
     ACTIVE,
-    FAILED,
-    COMPLETED,
-    CANCELED
-  }
-
-  public enum BatchOperationItemState {
-    ACTIVE,
+    PAUSED,
     FAILED,
     COMPLETED,
     CANCELED
