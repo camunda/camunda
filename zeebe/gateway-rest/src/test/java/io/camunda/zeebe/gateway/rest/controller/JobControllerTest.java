@@ -547,11 +547,56 @@ public class JobControllerTest extends RestControllerTest {
     verifyNoInteractions(jobServices);
   }
 
+  @ParameterizedTest
+  @MethodSource("tenantLists")
+  void shouldRejectActivateJobWithTenantsWhenMultiTenancyDisabled(final List<String> tenantIds) {
+    // given
+    when(multiTenancyCfg.isEnabled()).thenReturn(false);
+    final var request =
+        """
+        {
+          "type": "TEST",
+          "maxJobsToActivate": 2,
+          "requestTimeout": 100,
+          "timeout": 100,
+          "fetchVariable": [],
+          "tenantIds": %s,
+          "worker": "bar"
+        }"""
+            .formatted(tenantIds.stream().map("\"%s\""::formatted).toList());
+
+    // when then
+    webClient
+        .post()
+        .uri(JOBS_BASE_URL + "/activation")
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectBody()
+        .json(
+            """
+            {
+              "type": "about:blank",
+              "status": 400,
+              "title": "INVALID_ARGUMENT",
+              "detail": "Expected to handle request Activate Jobs with tenant %s, but multi-tenancy is disabled",
+              "instance": "%s"
+            }"""
+                .formatted(
+                    tenantIds.size() == 1
+                        ? "identifier '" + tenantIds.getFirst() + "'"
+                        : "identifiers " + tenantIds,
+                    JOBS_BASE_URL + "/activation"));
+    verifyNoInteractions(jobServices);
+  }
+
   static Stream<Arguments> tenantLists() {
     return Stream.of(
         Arguments.of(List.of("unauthorizedTenant")),
         Arguments.of(List.of("tenantId", "unauthorizedTenant")),
-        Arguments.of(List.of("tenantId", "<default>")),
-        Arguments.of(List.of("<default>")));
+        Arguments.of(List.of("tenantId", "<default>")));
   }
 }
