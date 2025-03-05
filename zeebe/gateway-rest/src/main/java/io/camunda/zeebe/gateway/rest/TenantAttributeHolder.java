@@ -10,8 +10,10 @@ package io.camunda.zeebe.gateway.rest;
 import static io.camunda.zeebe.protocol.record.value.TenantOwned.DEFAULT_TENANT_IDENTIFIER;
 import static org.springframework.web.context.request.RequestAttributes.SCOPE_REQUEST;
 
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import org.springframework.web.context.request.RequestAttributes;
 import org.springframework.web.context.request.RequestContextHolder;
 
@@ -20,14 +22,15 @@ public final class TenantAttributeHolder {
 
   private TenantAttributeHolder() {}
 
-  public static List<String> tenantIds() {
+  public static Set<String> tenantIds() {
     final var requestAttributes = getCurrentRequestAttributes();
     return getTenantsOrDefaultTenant(requestAttributes);
   }
 
   public static void withTenantIds(final List<String> tenantIds) {
     final var requestAttributes = getCurrentRequestAttributes();
-    final var tenantsOptional = Optional.ofNullable(tenantIds);
+    final var tenantsOptional =
+        Optional.ofNullable(tenantIds == null ? null : new HashSet<>(tenantIds));
     requestAttributes.setAttribute(ATTRIBUTE_KEY, tenantsOptional, SCOPE_REQUEST);
   }
 
@@ -35,13 +38,13 @@ public final class TenantAttributeHolder {
     return RequestContextHolder.currentRequestAttributes();
   }
 
-  private static List<String> getTenantsOrDefaultTenant(final RequestAttributes requestAttributes) {
+  private static Set<String> getTenantsOrDefaultTenant(final RequestAttributes requestAttributes) {
     final var tenants = requestAttributes.getAttribute(ATTRIBUTE_KEY, SCOPE_REQUEST);
 
     if (tenants != null) {
-      return ((Optional<List<String>>) tenants).orElse(null);
+      return ((Optional<Set<String>>) tenants).orElse(null);
     } else {
-      return List.of(DEFAULT_TENANT_IDENTIFIER);
+      return Set.of(DEFAULT_TENANT_IDENTIFIER);
     }
   }
 }

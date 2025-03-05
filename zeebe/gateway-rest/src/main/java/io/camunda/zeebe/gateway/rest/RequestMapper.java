@@ -98,6 +98,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -492,7 +493,7 @@ public class RequestMapper {
   }
 
   public static Authentication getAuthentication() {
-    final List<String> authorizedTenants = TenantAttributeHolder.tenantIds();
+    final Set<String> authorizedTenants = getAuthorizedTenants();
 
     final String token =
         Authorization.jwtEncoder()
@@ -502,6 +503,10 @@ public class RequestMapper {
             .withClaim(Authorization.AUTHORIZED_TENANTS, authorizedTenants)
             .encode();
     return new Builder().token(token).tenants(authorizedTenants).build();
+  }
+
+  public static Set<String> getAuthorizedTenants() {
+    return TenantAttributeHolder.tenantIds();
   }
 
   public static Authentication getAnonymousAuthentication() {

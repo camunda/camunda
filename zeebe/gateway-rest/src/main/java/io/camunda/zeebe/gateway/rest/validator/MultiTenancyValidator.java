@@ -47,7 +47,7 @@ public final class MultiTenancyValidator {
       return Optional.empty();
     }
 
-    final var authorizedTenants = RequestMapper.getAuthentication().authenticatedTenantIds();
+    final var authorizedTenants = RequestMapper.getAuthorizedTenants();
     if (authorizedTenants == null || !authorizedTenants.containsAll(tenantIds)) {
       return Optional.of(
           RestErrorMapper.createProblemDetail(
