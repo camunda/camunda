@@ -62,7 +62,7 @@ const AddTenantModal: FC<UseModalProps> = ({ open, onClose, onSuccess }) => {
           placeholder={t("tenantIdPlaceholder")}
           onChange={setTenantId}
           value={tenantId}
-          helperText="tenantIdHelperText"
+          helperText={t("tenantIdHelperText")}
           autoFocus
         />
         <TextField
