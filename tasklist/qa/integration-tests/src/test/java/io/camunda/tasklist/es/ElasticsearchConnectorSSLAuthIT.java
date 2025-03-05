@@ -46,7 +46,7 @@ public class ElasticsearchConnectorSSLAuthIT extends TasklistIntegrationTest {
   static String certDir = new File("src/test/resources/certs").getAbsolutePath();
 
   static ElasticsearchContainer elasticsearch =
-      new ElasticsearchContainer("docker.elastic.co/elasticsearch/elasticsearch:8.9.2")
+      new ElasticsearchContainer("docker.elastic.co/elasticsearch/elasticsearch:8.16.4")
           .withCopyFileToContainer(
               MountableFile.forHostPath("src/test/resources/certs/elastic-stack-ca.p12"),
               "/usr/share/elasticsearch/config/certs/elastic-stack-ca.p12")
@@ -83,7 +83,7 @@ public class ElasticsearchConnectorSSLAuthIT extends TasklistIntegrationTest {
       implements ApplicationContextInitializer<ConfigurableApplicationContext> {
 
     @Override
-    public void initialize(ConfigurableApplicationContext applicationContext) {
+    public void initialize(final ConfigurableApplicationContext applicationContext) {
       elasticsearch.start();
 
       final String elsUrl =

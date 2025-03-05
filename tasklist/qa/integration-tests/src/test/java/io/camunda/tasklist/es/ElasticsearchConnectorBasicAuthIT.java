@@ -53,7 +53,7 @@ import org.testcontainers.elasticsearch.ElasticsearchContainer;
 public class ElasticsearchConnectorBasicAuthIT extends TasklistIntegrationTest {
 
   static ElasticsearchContainer elasticsearch =
-      new ElasticsearchContainer("docker.elastic.co/elasticsearch/elasticsearch:8.9.2")
+      new ElasticsearchContainer("docker.elastic.co/elasticsearch/elasticsearch:8.16.4")
           .withEnv(
               Map.of(
                   "xpack.security.enabled", "true",
