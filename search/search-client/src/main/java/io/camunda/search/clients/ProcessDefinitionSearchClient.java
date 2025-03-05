@@ -8,14 +8,23 @@
 package io.camunda.search.clients;
 
 import io.camunda.search.entities.ProcessDefinitionEntity;
+import io.camunda.search.entities.ProcessDefinitionFlowNodeStatisticsEntity;
+import io.camunda.search.filter.ProcessDefinitionStatisticsFilter;
 import io.camunda.search.query.ProcessDefinitionQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.auth.SecurityContext;
+import java.util.List;
 
 public interface ProcessDefinitionSearchClient {
 
   SearchQueryResult<ProcessDefinitionEntity> searchProcessDefinitions(
       ProcessDefinitionQuery filter);
+
+  default List<ProcessDefinitionFlowNodeStatisticsEntity> processDefinitionFlowNodeStatistics(
+      final ProcessDefinitionStatisticsFilter filter) {
+    // TODO not implemented yet
+    return null;
+  }
 
   ProcessDefinitionSearchClient withSecurityContext(SecurityContext securityContext);
 }
