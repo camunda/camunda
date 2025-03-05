@@ -87,19 +87,20 @@ jobs:
 
     - name: Wait for Optimize to start
       run: ./.github/optimize/scripts/wait-for.sh http://localhost:8090/ready
-    - name: Execute health check and push docker image
-      uses: ./.github/actions/execute-healthcheck-and-push-image
-      with:
-        version: ${{ env.VERSION }}
-        date: ${{ env.DATE }}
-        revision: ${{ env.REVISION }}
+      # TODO temporarily commented out, add back in after review
+#    - name: Execute health check and push docker image
+#      uses: ./.github/actions/execute-healthcheck-and-push-image
+#      with:
+#        version: ${{ env.VERSION }}
+#        date: ${{ env.DATE }}
+#        revision: ${{ env.REVISION }}
     # We're running under the same condition of main / stable
     # We have all dependencies presents, therefore doesn't justify another job
-    - name: Deploy to Artifactory
-      uses: ./.github/actions/run-maven
-      with:
-        parameters: deploy -f optimize -Dskip.fe.build -DskipTests -Dskip.docker -PrunAssembly
-        threads: 4C
+#    - name: Deploy to Artifactory
+#      uses: ./.github/actions/run-maven
+#      with:
+#        parameters: deploy -f optimize -Dskip.fe.build -DskipTests -Dskip.docker -PrunAssembly
+#        threads: 4C
     - name: Docker log dump
       uses: ./.github/actions/docker-logs
       if: always()

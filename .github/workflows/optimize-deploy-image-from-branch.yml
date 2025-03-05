@@ -1,0 +1,27 @@
+
+name: Optimize Deploy Image from branch
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: 'read'
+  id-token: 'write'
+
+jobs:
+  deploy-optimize-image-from-branch:
+    name: Deploy Optimize image from branch
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - name: Optimize Build
+        uses: ./.github/workflows/optimize-ci-build-reusable.yml
+        secrets: inherit
+        with:
+          branch: ${{ github.ref_name }}
+
+        # Only deploy artifacts on non main/stable branches to avoid overwriting latest snapshots
+        - name: deploy-artifacts
+          if: github.ref_name != 'main' && !startsWith(github.ref_name, 'stable/'))
+          name: Deploy Artifacts
+          uses: ./.github/workflows/optimize-deploy-artifacts.yml
+          secrets: inherit
