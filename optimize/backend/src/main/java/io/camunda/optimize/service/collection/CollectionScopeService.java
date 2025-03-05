@@ -9,6 +9,7 @@ package io.camunda.optimize.service.collection;
 
 import com.google.common.collect.Sets;
 import io.camunda.optimize.dto.optimize.DefinitionType;
+import static io.camunda.optimize.dto.optimize.ReportConstants.API_IMPORT_OWNER_NAME;
 import io.camunda.optimize.dto.optimize.ReportType;
 import io.camunda.optimize.dto.optimize.TenantDto;
 import io.camunda.optimize.dto.optimize.query.collection.CollectionDefinitionDto;
@@ -204,6 +205,12 @@ public class CollectionScopeService {
         userId, collectionId);
     verifyUserIsAuthorizedToAccessScopesOrFail(userId, scopeUpdates);
     collectionWriter.addScopeEntriesToCollection(userId, collectionId, scopeUpdates);
+  }
+
+  public void addScopeEntriesToCollectionAsAService(
+      final String collectionId,
+      final List<CollectionScopeEntryDto> scopeUpdates) {
+    collectionWriter.addScopeEntriesToCollection(API_IMPORT_OWNER_NAME, collectionId, scopeUpdates);
   }
 
   private void verifyUserIsAuthorizedToAccessScopesOrFail(
