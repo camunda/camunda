@@ -118,7 +118,7 @@ public class TaskListenerTest {
     // ensure that `COMPLETE_TASK_LISTENER` commands were triggered between
     // `COMPLETING` and `COMPLETED` events
     assertUserTaskIntentsSequence(
-        UserTaskIntent.COMPLETE,
+        processInstanceKey,
         UserTaskIntent.COMPLETING,
         UserTaskIntent.COMPLETE_TASK_LISTENER,
         UserTaskIntent.COMPLETE_TASK_LISTENER,
@@ -167,7 +167,7 @@ public class TaskListenerTest {
     // ensure that `COMPLETE_TASK_LISTENER` commands were triggered between
     // `ASSIGNING` and `ASSIGNED` events
     assertUserTaskIntentsSequence(
-        UserTaskIntent.ASSIGN,
+        processInstanceKey,
         UserTaskIntent.ASSIGNING,
         UserTaskIntent.COMPLETE_TASK_LISTENER,
         UserTaskIntent.COMPLETE_TASK_LISTENER,
@@ -261,7 +261,7 @@ public class TaskListenerTest {
     // ensure that `COMPLETE_TASK_LISTENER` commands were triggered between
     // `UPDATING` and `UPDATED` events
     assertUserTaskIntentsSequence(
-        UserTaskIntent.UPDATE,
+        processInstanceKey,
         UserTaskIntent.UPDATING,
         UserTaskIntent.COMPLETE_TASK_LISTENER,
         UserTaskIntent.COMPLETE_TASK_LISTENER,
@@ -425,6 +425,7 @@ public class TaskListenerTest {
     // then: ensure that `DENY_TASK_LISTENER` and `ASSIGNMENT_DENIED`
     // are written after `ASSIGNING` event
     assertUserTaskIntentsSequence(
+        processInstanceKey,
         UserTaskIntent.ASSIGNING,
         UserTaskIntent.DENY_TASK_LISTENER,
         UserTaskIntent.ASSIGNMENT_DENIED);
@@ -465,15 +466,14 @@ public class TaskListenerTest {
     // correct assignee value is present at all stages
     assertThat(
             RecordingExporter.userTaskRecords()
+                .withProcessInstanceKey(processInstanceKey)
                 .limit(r -> r.getIntent() == UserTaskIntent.ASSIGNED))
         .extracting(Record::getIntent, r -> r.getValue().getAssignee())
         .describedAs("Verify that all task listeners were completed with the correct assignee")
         .containsSequence(
-            tuple(UserTaskIntent.ASSIGN, "new_assignee"),
             tuple(UserTaskIntent.ASSIGNING, "new_assignee"),
             tuple(UserTaskIntent.DENY_TASK_LISTENER, "new_assignee"),
             tuple(UserTaskIntent.ASSIGNMENT_DENIED, ""),
-            tuple(UserTaskIntent.ASSIGN, "new_assignee"),
             tuple(UserTaskIntent.ASSIGNING, "new_assignee"),
             tuple(UserTaskIntent.COMPLETE_TASK_LISTENER, "new_assignee"),
             tuple(UserTaskIntent.COMPLETE_TASK_LISTENER, "new_assignee"),
@@ -550,6 +550,7 @@ public class TaskListenerTest {
 
     assertThat(
             RecordingExporter.userTaskRecords()
+                .withProcessInstanceKey(processInstanceKey)
                 .limit(r -> r.getIntent() == UserTaskIntent.ASSIGNMENT_DENIED))
         .extracting(Record::getIntent, r -> r.getValue().getAssignee())
         .describedAs(
@@ -560,7 +561,6 @@ public class TaskListenerTest {
             tuple(UserTaskIntent.ASSIGNING, "first_assignee"),
             tuple(UserTaskIntent.COMPLETE_TASK_LISTENER, "first_assignee"),
             tuple(UserTaskIntent.ASSIGNED, "first_assignee"),
-            tuple(UserTaskIntent.ASSIGN, "second_assignee"),
             tuple(UserTaskIntent.ASSIGNING, "second_assignee"),
             tuple(UserTaskIntent.DENY_TASK_LISTENER, "second_assignee"),
             // second assignee was not persisted
@@ -604,7 +604,7 @@ public class TaskListenerTest {
     // ensure that `COMPLETE_TASK_LISTENER` commands were triggered between
     // `CLAIMING` and `ASSIGNED` events
     assertUserTaskIntentsSequence(
-        UserTaskIntent.CLAIM,
+        processInstanceKey,
         UserTaskIntent.CLAIMING,
         UserTaskIntent.COMPLETE_TASK_LISTENER,
         UserTaskIntent.COMPLETE_TASK_LISTENER,
@@ -1389,7 +1389,10 @@ public class TaskListenerTest {
     // then: ensure that `DENY_TASK_LISTENER` and `UPDATE_DENIED`
     // are written right after `UPDATING` event
     assertUserTaskIntentsSequence(
-        UserTaskIntent.UPDATING, UserTaskIntent.DENY_TASK_LISTENER, UserTaskIntent.UPDATE_DENIED);
+        processInstanceKey,
+        UserTaskIntent.UPDATING,
+        UserTaskIntent.DENY_TASK_LISTENER,
+        UserTaskIntent.UPDATE_DENIED);
   }
 
   @Test
@@ -1409,6 +1412,7 @@ public class TaskListenerTest {
     // then: ensure that `DENY_TASK_LISTENER` and `COMPLETION_DENIED`
     // are written after `COMPLETING` event
     assertUserTaskIntentsSequence(
+        processInstanceKey,
         UserTaskIntent.COMPLETING,
         UserTaskIntent.DENY_TASK_LISTENER,
         UserTaskIntent.COMPLETION_DENIED);
@@ -1564,10 +1568,10 @@ public class TaskListenerTest {
     // then: ensure that `COMPLETING` `COMPLETE_TASK_LISTENER` and `COMPLETED events
     // are present after `DENY_TASK_LISTENER` and `COMPLETION_DENIED` events
     assertUserTaskIntentsSequence(
+        processInstanceKey,
         UserTaskIntent.COMPLETING,
         UserTaskIntent.DENY_TASK_LISTENER,
         UserTaskIntent.COMPLETION_DENIED,
-        UserTaskIntent.COMPLETE,
         UserTaskIntent.COMPLETING,
         UserTaskIntent.COMPLETE_TASK_LISTENER,
         UserTaskIntent.COMPLETED);
@@ -1596,10 +1600,10 @@ public class TaskListenerTest {
     // then: ensure that all three `COMPLETE_TASK_LISTENER` events were triggered after the
     // rejection from the first Task Listener
     assertUserTaskIntentsSequence(
+        processInstanceKey,
         UserTaskIntent.COMPLETING,
         UserTaskIntent.DENY_TASK_LISTENER,
         UserTaskIntent.COMPLETION_DENIED,
-        UserTaskIntent.COMPLETE,
         UserTaskIntent.COMPLETING,
         UserTaskIntent.COMPLETE_TASK_LISTENER,
         UserTaskIntent.COMPLETE_TASK_LISTENER,
@@ -1630,14 +1634,12 @@ public class TaskListenerTest {
     // `COMPLETE` Task Listener. Ensure that user task could be completed after assignment
     // and `COMPLETE_TASK_LISTENER` event was triggered successfully
     assertUserTaskIntentsSequence(
-        UserTaskIntent.COMPLETE,
+        processInstanceKey,
         UserTaskIntent.COMPLETING,
         UserTaskIntent.DENY_TASK_LISTENER,
         UserTaskIntent.COMPLETION_DENIED,
-        UserTaskIntent.ASSIGN,
         UserTaskIntent.ASSIGNING,
         UserTaskIntent.ASSIGNED,
-        UserTaskIntent.COMPLETE,
         UserTaskIntent.COMPLETING,
         UserTaskIntent.COMPLETE_TASK_LISTENER,
         UserTaskIntent.COMPLETED);
@@ -1833,7 +1835,6 @@ public class TaskListenerTest {
         false,
         userTask -> userTask.withAssignee("initial_assignee").assign(),
         List.of(
-            UserTaskIntent.ASSIGN,
             UserTaskIntent.ASSIGNING,
             UserTaskIntent.COMPLETE_TASK_LISTENER,
             UserTaskIntent.CORRECTED,
@@ -1850,7 +1851,6 @@ public class TaskListenerTest {
         false,
         userTask -> userTask.withAssignee("initial_assignee").claim(),
         List.of(
-            UserTaskIntent.CLAIM,
             UserTaskIntent.CLAIMING,
             UserTaskIntent.COMPLETE_TASK_LISTENER,
             UserTaskIntent.CORRECTED,
@@ -1873,7 +1873,6 @@ public class TaskListenerTest {
                 .withFollowUpDate("2095-09-21T11:22:33+02:00")
                 .update(),
         List.of(
-            UserTaskIntent.UPDATE,
             UserTaskIntent.UPDATING,
             UserTaskIntent.COMPLETE_TASK_LISTENER,
             UserTaskIntent.CORRECTED,
@@ -1890,7 +1889,6 @@ public class TaskListenerTest {
         false,
         UserTaskClient::complete,
         List.of(
-            UserTaskIntent.COMPLETE,
             UserTaskIntent.COMPLETING,
             UserTaskIntent.COMPLETE_TASK_LISTENER,
             UserTaskIntent.CORRECTED,
@@ -2050,7 +2048,8 @@ public class TaskListenerTest {
     completeJobs(processInstanceKey, listenerType + "_3");
 
     // Step 4: Validate the complete sequence of user task lifecycle intents
-    assertUserTaskIntentsSequence(expectedUserTaskIntents.toArray(UserTaskIntent[]::new));
+    assertUserTaskIntentsSequence(
+        processInstanceKey, expectedUserTaskIntents.toArray(UserTaskIntent[]::new));
   }
 
   @Test
@@ -2200,7 +2199,9 @@ public class TaskListenerTest {
             record.getIntent() == UserTaskIntent.COMPLETE_TASK_LISTENER
                 || record.getIntent() == UserTaskIntent.CORRECTED;
     assertThat(
-            RecordingExporter.userTaskRecords().limit(r -> r.getIntent() == terminalActionIntent))
+            RecordingExporter.userTaskRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .limit(r -> r.getIntent() == terminalActionIntent))
         .filteredOn(isRelevantUserTaskIntent)
         .extracting(Record::getIntent, r -> r.getValue().getChangedAttributes())
         .describedAs(
@@ -2318,13 +2319,11 @@ public class TaskListenerTest {
     // Verify the sequence of intents and the `changedAttributes` emitted for the user task
     assertThat(
             RecordingExporter.userTaskRecords()
+                .withProcessInstanceKey(processInstanceKey)
                 .limit(record -> record.getIntent() == UserTaskIntent.ASSIGNED))
         .as("Verify the user task lifecycle and tracking of `changedAttributes`")
         .extracting(Record::getIntent, record -> record.getValue().getChangedAttributes())
-        .containsExactly(
-            tuple(UserTaskIntent.CREATING, List.of()),
-            tuple(UserTaskIntent.CREATED, List.of()),
-            tuple(UserTaskIntent.ASSIGN, List.of()),
+        .containsSequence(
             tuple(UserTaskIntent.ASSIGNING, List.of("assignee")),
             tuple(UserTaskIntent.COMPLETE_TASK_LISTENER, List.of("dueDate", "priority")),
             tuple(UserTaskIntent.CORRECTED, List.of("dueDate", "priority")),
@@ -2469,15 +2468,11 @@ public class TaskListenerTest {
     // then
     assertThat(
             RecordingExporter.userTaskRecords()
+                .withProcessInstanceKey(processInstanceKey)
                 .limit(record -> record.getIntent() == UserTaskIntent.UPDATED))
         .as("Verify the user task record lifecycle and tracking of `changedAttributes`")
         .extracting(Record::getIntent, record -> record.getValue().getChangedAttributes())
-        .containsExactly(
-            tuple(UserTaskIntent.CREATING, List.of()),
-            tuple(UserTaskIntent.CREATED, List.of()),
-            tuple(
-                UserTaskIntent.UPDATE,
-                List.of("candidateGroupsList", "candidateUsersList", "dueDate", "priority")),
+        .containsSequence(
             tuple(UserTaskIntent.UPDATING, List.of("candidateGroupsList", "dueDate", "priority")),
             tuple(UserTaskIntent.COMPLETE_TASK_LISTENER, List.of("dueDate", "followUpDate")),
             tuple(UserTaskIntent.CORRECTED, List.of("dueDate", "followUpDate")),
@@ -2606,15 +2601,11 @@ public class TaskListenerTest {
     // then: verify sequence of intents and `changedAttributes`
     assertThat(
             RecordingExporter.userTaskRecords()
+                .withProcessInstanceKey(processInstanceKey)
                 .limit(record -> record.getIntent() == UserTaskIntent.COMPLETED))
         .as("Verify the user task lifecycle and tracking of `changedAttributes`")
         .extracting(Record::getIntent, record -> record.getValue().getChangedAttributes())
-        .containsExactly(
-            tuple(UserTaskIntent.CREATING, List.of()),
-            tuple(UserTaskIntent.CREATED, List.of()),
-            tuple(UserTaskIntent.ASSIGNING, List.of("assignee")),
-            tuple(UserTaskIntent.ASSIGNED, List.of("assignee")),
-            tuple(UserTaskIntent.COMPLETE, List.of()),
+        .containsSequence(
             tuple(UserTaskIntent.COMPLETING, List.of()), // No direct changes at completion
             tuple(
                 UserTaskIntent.COMPLETE_TASK_LISTENER, List.of("candidateGroupsList", "priority")),
@@ -3260,10 +3251,12 @@ public class TaskListenerTest {
         .containsExactly(listenerTypes);
   }
 
-  private void assertUserTaskIntentsSequence(final UserTaskIntent... intents) {
+  private void assertUserTaskIntentsSequence(
+      final long processInstanceKey, final UserTaskIntent... intents) {
     assertThat(intents).describedAs("Expected intents not to be empty").isNotEmpty();
     assertThat(
             RecordingExporter.userTaskRecords()
+                .withProcessInstanceKey(processInstanceKey)
                 .limit(r -> r.getIntent() == intents[intents.length - 1]))
         .extracting(Record::getIntent)
         .describedAs("Verify the expected sequence of User Task intents")
