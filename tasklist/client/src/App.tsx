@@ -17,16 +17,19 @@ import {
   createRoutesFromElements,
 } from 'react-router-dom';
 import {ErrorBoundary} from 'react-error-boundary';
-import {Notifications} from 'modules/notifications';
-import {NetworkStatusWatcher} from './NetworkStatusWatcher';
-import {ThemeProvider} from 'modules/theme/ThemeProvider';
-import {SessionWatcher} from './SessionWatcher';
-import {TrackPagination} from 'modules/tracking/TrackPagination';
-import {ReactQueryProvider} from 'modules/react-query/ReactQueryProvider';
-import {ErrorWithinLayout, FallbackErrorPage} from 'errorBoundaries';
-import {tracking} from 'modules/tracking';
-import {getClientConfig} from 'modules/getClientConfig';
-import {Forbidden} from './modules/components/Errors/Forbidden';
+import {Notifications} from 'common/notifications';
+import {NetworkStatusWatcher} from 'common/NetworkStatusWatcher';
+import {ThemeProvider} from 'common/theme/ThemeProvider';
+import {SessionWatcher} from 'common/auth/SessionWatcher';
+import {TrackPagination} from 'common/tracking/TrackPagination';
+import {ReactQueryProvider} from 'common/react-query/ReactQueryProvider';
+import {
+  ErrorWithinLayout,
+  FallbackErrorPage,
+} from 'common/error-handling/errorBoundaries';
+import {tracking} from 'common/tracking';
+import {getClientConfig} from 'common/config/getClientConfig';
+import {Forbidden} from 'common/error-handling/Forbidden';
 
 const Wrapper: React.FC = () => {
   return (
@@ -42,38 +45,38 @@ const router = createBrowserRouter(
   createRoutesFromElements(
     <Route path="/" element={<Wrapper />} ErrorBoundary={ErrorWithinLayout}>
       <Route path="forbidden" element={<Forbidden />} />
-      <Route path="login" lazy={() => import('./Login')} />
+      <Route path="login" lazy={() => import('common/auth/Login')} />
       <Route
         path="new/:bpmnProcessId"
-        lazy={() => import('./StartProcessFromForm')}
+        lazy={() => import('./v1/StartProcessFromForm')}
       />
-      <Route path="/" lazy={() => import('./Layout')}>
+      <Route path="/" lazy={() => import('./v1/Layout')}>
         <Route path="processes" ErrorBoundary={ErrorWithinLayout}>
-          <Route index lazy={() => import('./Processes')} />
+          <Route index lazy={() => import('./v1/Processes')} />
           <Route
             path=":bpmnProcessId/start"
-            lazy={() => import('./Processes')}
+            lazy={() => import('./v1/Processes')}
           />
         </Route>
         <Route
           path="/"
-          lazy={() => import('./Tasks')}
+          lazy={() => import('./v1/Tasks')}
           ErrorBoundary={ErrorWithinLayout}
         >
           <Route
             index
-            lazy={() => import('./Tasks/EmptyPage')}
+            lazy={() => import('./v1/Tasks/EmptyPage')}
             ErrorBoundary={ErrorWithinLayout}
           />
           <Route
             path=":id"
-            lazy={() => import('./Tasks/Task/Details')}
+            lazy={() => import('./v1/Tasks/Task/Details')}
             ErrorBoundary={ErrorWithinLayout}
           >
-            <Route index lazy={() => import('./Tasks/Task')} />
+            <Route index lazy={() => import('./v1/Tasks/Task')} />
             <Route
               path="process"
-              lazy={() => import('./Tasks/Task/ProcessView')}
+              lazy={() => import('./v1/Tasks/Task/ProcessView')}
             />
           </Route>
         </Route>
