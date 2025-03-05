@@ -10,8 +10,8 @@ package io.camunda.search.clients.transformers.filter;
 import static io.camunda.search.clients.query.SearchQueryBuilders.and;
 import static io.camunda.search.clients.query.SearchQueryBuilders.hasChildQuery;
 import static io.camunda.search.clients.query.SearchQueryBuilders.hasParentQuery;
-import static io.camunda.search.clients.query.SearchQueryBuilders.longTerms;
 import static io.camunda.search.clients.query.SearchQueryBuilders.matchNone;
+import static io.camunda.search.clients.query.SearchQueryBuilders.stringTerms;
 import static io.camunda.search.clients.query.SearchQueryBuilders.term;
 import static io.camunda.webapps.schema.descriptors.usermanagement.index.TenantIndex.KEY;
 import static io.camunda.webapps.schema.descriptors.usermanagement.index.TenantIndex.NAME;
@@ -35,13 +35,13 @@ public class TenantFilterTransformer extends IndexFilterTransformer<TenantFilter
         filter.key() == null ? null : term(KEY, filter.key()),
         filter.tenantId() == null ? null : term(TENANT_ID, filter.tenantId()),
         filter.name() == null ? null : term(NAME, filter.name()),
-        filter.memberKeys() == null || filter.memberKeys().isEmpty()
+        filter.memberIds() == null
             ? null
-            : filter.memberKeys().isEmpty()
+            : filter.memberIds().isEmpty()
                 ? matchNone()
                 : hasChildQuery(
                     IdentityJoinRelationshipType.MEMBER.getType(),
-                    longTerms(TenantIndex.MEMBER_KEY, filter.memberKeys())),
+                    stringTerms(TenantIndex.MEMBER_ID, filter.memberIds())),
         filter.entityType() == null
             ? null
             : term(TenantIndex.MEMBER_TYPE, filter.entityType().name()),
