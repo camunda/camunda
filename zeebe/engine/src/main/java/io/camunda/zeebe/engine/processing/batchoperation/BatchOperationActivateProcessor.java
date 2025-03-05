@@ -48,14 +48,18 @@ public final class BatchOperationActivateProcessor
     final var recordValue = command.getValue();
     LOGGER.debug("Processing new command with key '{}': {}", key, recordValue);
 
-    final var batchCreated = new BatchOperationCreationRecord();
-    batchCreated.wrap(command.getValue());
-    batchCreated.setBatchOperationKey(key);
+    final var recordWithKey = new BatchOperationCreationRecord();
+    recordWithKey.wrap(command.getValue());
+    recordWithKey.setBatchOperationKey(key);
 
-    stateWriter.appendFollowUpEvent(key, BatchOperationIntent.CREATED, batchCreated);
+    stateWriter.appendFollowUpEvent(key, BatchOperationIntent.CREATED, recordWithKey);
     responseWriter.writeEventOnCommand(
-        key, BatchOperationIntent.CREATED, batchCreated, command);
-    commandDistributionBehavior.withKey(key).unordered().distribute(command);
+        key, BatchOperationIntent.CREATED, recordWithKey, command);
+    commandDistributionBehavior.withKey(key).unordered().distribute(
+        command.getValueType(),
+        command.getIntent(),
+        recordWithKey
+    );
   }
 
   @Override

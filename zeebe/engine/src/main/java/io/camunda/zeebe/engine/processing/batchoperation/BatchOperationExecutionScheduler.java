@@ -63,7 +63,7 @@ public class BatchOperationExecutionScheduler implements StreamProcessorLifecycl
   }
 
   private TaskResult execute(final TaskResultBuilder taskResultBuilder) {
-    LOG.debug("Executing batch operation");
+    LOG.trace("Looking for pending batch operations to execute (scheduled)");
     batchOperationState.foreachPendingBatchOperation(
         bo -> executeBatchOperation(bo, taskResultBuilder));
     return taskResultBuilder.build();
@@ -73,12 +73,13 @@ public class BatchOperationExecutionScheduler implements StreamProcessorLifecycl
       final PersistedBatchOperation batchOperation, final TaskResultBuilder taskResultBuilder) {
     final var keys = queryKeys(batchOperation);
 
+    final var batchOperationKey = batchOperation.getKey();
     final var key = keyGenerator.nextKey();
     final var command = new BatchOperationExecutionRecord();
-    command.setBatchOperationKey(batchOperation.getKey());
+    command.setBatchOperationKey(batchOperationKey);
     command.setBatchOperationType(batchOperation.getBatchOperationType());
     command.setKeys(keys);
-    taskResultBuilder.appendCommandRecord(key, BatchOperationIntent.EXECUTE, command);
+    taskResultBuilder.appendCommandRecord(key, BatchOperationIntent.EXECUTE, command, batchOperationKey);
 
     LOG.debug("Executing batch operation with key {}", key);
   }
