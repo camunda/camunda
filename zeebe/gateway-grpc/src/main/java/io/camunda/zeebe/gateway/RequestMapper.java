@@ -81,6 +81,7 @@ public final class RequestMapper extends RequestUtil {
 
   public static BrokerDeployResourceRequest toDeployProcessRequest(
       final DeployProcessRequest grpcRequest) {
+    ensureTenantIdSet("DeployProcess", TenantOwned.DEFAULT_TENANT_IDENTIFIER);
     final BrokerDeployResourceRequest brokerRequest = new BrokerDeployResourceRequest();
 
     for (final ProcessRequestObject process : grpcRequest.getProcessesList()) {
