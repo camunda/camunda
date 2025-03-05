@@ -12,6 +12,7 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class PartialCollectionDefinitionRequestDto {
 
+  protected String ownerId;
   protected String name;
   protected PartialCollectionDataDto data;
 
@@ -25,6 +26,11 @@ public class PartialCollectionDefinitionRequestDto {
     this.data = data;
   }
 
+  public PartialCollectionDefinitionRequestDto(final String name, final String ownerId) {
+    this.name = name;
+    this.ownerId = ownerId;
+  }
+
   public PartialCollectionDefinitionRequestDto() {}
 
   public String getName() {
@@ -33,6 +39,14 @@ public class PartialCollectionDefinitionRequestDto {
 
   public void setName(final String name) {
     this.name = name;
+  }
+
+  public String getOwnerId() {
+    return ownerId;
+  }
+
+  public void setOwnerId(final String ownerId) {
+    this.ownerId = ownerId;
   }
 
   public PartialCollectionDataDto getData() {
@@ -59,6 +73,13 @@ public class PartialCollectionDefinitionRequestDto {
 
   @Override
   public String toString() {
-    return "PartialCollectionDefinitionRequestDto(name=" + getName() + ", data=" + getData() + ")";
+    return "PartialCollectionDefinitionRequestDto("
+        + "ownerId="
+        + getOwnerId()
+        + ", name="
+        + getName()
+        + ", data="
+        + getData()
+        + ")";
   }
 }
