@@ -5242,7 +5242,7 @@ components:
         name:
           type: string
           description: The role name.
-        key:
+        roleKey:
           type: string
           description: The role key.
         assignedMemberKeys:
