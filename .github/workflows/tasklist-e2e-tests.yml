@@ -35,7 +35,7 @@ jobs:
     if: ${{ needs.detect-changes.outputs.tasklist-backend-changes == 'true' || needs.detect-changes.outputs.tasklist-frontend-changes == 'true' }}
     services:
       elasticsearch:
-        image: docker.elastic.co/elasticsearch/elasticsearch:8.17.2
+        image: docker.elastic.co/elasticsearch/elasticsearch:8.17.3
         env:
           discovery.type: single-node
           cluster.name: docker-cluster
