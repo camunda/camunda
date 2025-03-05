@@ -30,7 +30,6 @@ import co.elastic.clients.elasticsearch.core.reindex.Source;
 import co.elastic.clients.elasticsearch.core.search.Hit;
 import co.elastic.clients.elasticsearch.indices.GetIndexRequest;
 import co.elastic.clients.elasticsearch.indices.PutIndicesSettingsRequest;
-import co.elastic.clients.json.JsonData;
 import io.camunda.exporter.config.ExporterConfiguration.HistoryConfiguration;
 import io.camunda.exporter.config.ExporterConfiguration.RetentionConfiguration;
 import io.camunda.exporter.metrics.CamundaExporterMetrics;
@@ -204,8 +203,8 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
     final var endDateQ =
         QueryBuilders.range(
             q ->
-                q.field(ListViewTemplate.END_DATE)
-                    .lte(JsonData.of(config.getArchivingTimePoint())));
+                q.date(
+                    d -> d.field(ListViewTemplate.END_DATE).lte(config.getArchivingTimePoint())));
     final var isProcessInstanceQ =
         QueryBuilders.term(
             q ->
@@ -304,8 +303,10 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
     final var endDateQ =
         QueryBuilders.range(
             q ->
-                q.field(BatchOperationTemplate.END_DATE)
-                    .lte(JsonData.of(config.getArchivingTimePoint())));
+                q.date(
+                    d ->
+                        d.field(BatchOperationTemplate.END_DATE)
+                            .lte(config.getArchivingTimePoint())));
 
     return createSearchRequest(
         batchOperationIndex, endDateQ, aggregation, BatchOperationTemplate.END_DATE);
