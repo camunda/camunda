@@ -125,17 +125,18 @@ public final class BatchOperationExecuteProcessor
   private void appendBatchOperationExecutionExecutingEvent(
       final TypedRecord<BatchOperationExecutionRecord> command, final Set<Long> keys) {
     final var batchExecute = new BatchOperationExecutionRecord();
-    batchExecute.setBatchOperationKey(command.getKey());
+    batchExecute.setBatchOperationKey(command.getValue().getBatchOperationKey());
     batchExecute.setKeys(keys);
     batchExecute.setBatchOperationType(command.getValue().getBatchOperationType());
     batchExecute.setOffset(command.getValue().getOffset());
-    stateWriter.appendFollowUpEvent(command.getKey(), BatchOperationIntent.EXECUTING, batchExecute);
+    stateWriter.appendFollowUpEvent(command.getValue().getBatchOperationKey(),
+        BatchOperationIntent.EXECUTING, batchExecute);
   }
 
   private void appendBatchOperationExecutionExecutedEvent(
       final TypedRecord<BatchOperationExecutionRecord> command, final Set<Long> keys) {
     final var batchExecute = new BatchOperationExecutionRecord();
-    batchExecute.setBatchOperationKey(command.getKey());
+    batchExecute.setBatchOperationKey(command.getValue().getBatchOperationKey());
     batchExecute.setKeys(keys);
     batchExecute.setBatchOperationType(command.getValue().getBatchOperationType());
     batchExecute.setOffset(command.getValue().getOffset());
@@ -145,7 +146,7 @@ public final class BatchOperationExecuteProcessor
   private void appendBatchOperationExecutionCompletedEvent(
       final int offset, final TypedRecord<BatchOperationExecutionRecord> command) {
     final var batchExecute = new BatchOperationExecutionRecord();
-    batchExecute.setBatchOperationKey(command.getKey());
+    batchExecute.setBatchOperationKey(command.getValue().getBatchOperationKey());
     batchExecute.setBatchOperationType(command.getValue().getBatchOperationType());
     batchExecute.setOffset(offset);
     stateWriter.appendFollowUpEvent(command.getKey(), BatchOperationIntent.COMPLETED, batchExecute);
