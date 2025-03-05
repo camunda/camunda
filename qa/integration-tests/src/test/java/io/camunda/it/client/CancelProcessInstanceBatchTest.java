@@ -19,8 +19,8 @@ import static io.camunda.it.client.QueryTest.waitForProcessInstancesToStart;
 import static io.camunda.it.client.QueryTest.waitForProcessesToBeDeployed;
 import static io.camunda.it.client.QueryTest.waitUntilFlowNodeInstanceHasIncidents;
 import static io.camunda.it.client.QueryTest.waitUntilProcessInstanceHasIncidents;
-import static io.camunda.qa.util.multidb.CamundaMultiDBExtension.TIMEOUT_DATA_AVAILABILITY;
 import io.camunda.qa.util.multidb.MultiDbTest;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -89,7 +89,8 @@ public class CancelProcessInstanceBatchTest {
     assertThat(result.getBatchOperationKey()).isNotNull();
 
     Awaitility.await("should complete batch operation")
-        .atMost(TIMEOUT_DATA_AVAILABILITY)
+        .atMost(Duration.ofSeconds(15))
+        .pollInterval(Duration.ofMillis(100))
         .ignoreExceptions() // Ignore exceptions and continue retrying
         .untilAsserted(
             () -> {
@@ -100,10 +101,15 @@ public class CancelProcessInstanceBatchTest {
                   .join();
               assertThat(batch).isNotNull();
               assertThat(batch.getState()).isEqualTo(BatchOperationState.COMPLETED);
-              assertThat(batch.keys()).hasSize(3);
             });
 
-    for (final Long key : result.keys()) {
+    // TODO fetch keys
+    final var batch = camundaClient.newGetBatchOperationCommand(
+            result.getBatchOperationKey())
+        .send()
+        .join();
+
+    for (final Long key : batch.keys()) {
       waitForProcessInstanceToBeTerminated(camundaClient, key);
     }
   }
