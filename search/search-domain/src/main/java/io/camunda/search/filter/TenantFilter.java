@@ -18,7 +18,7 @@ public record TenantFilter(
     String name,
     String joinParentId,
     EntityType entityType,
-    Set<Long> memberKeys)
+    Set<String> memberIds)
     implements FilterBase {
 
   public static TenantFilter of(final Function<Builder, Builder> builderFunction) {
@@ -32,7 +32,7 @@ public record TenantFilter(
     private String name;
     private String joinParentId;
     private EntityType entityType;
-    private Set<Long> memberKeys;
+    private Set<String> memberIds;
 
     public Builder key(final Long value) {
       key = value;
@@ -64,14 +64,14 @@ public record TenantFilter(
       return this;
     }
 
-    public Builder memberKeys(final Set<Long> value) {
-      memberKeys = value;
+    public Builder memberIds(final Set<String> value) {
+      memberIds = value;
       return this;
     }
 
     @Override
     public TenantFilter build() {
-      return new TenantFilter(key, tenantId, name, joinParentId, entityType, memberKeys);
+      return new TenantFilter(key, tenantId, name, joinParentId, entityType, memberIds);
     }
   }
 }
