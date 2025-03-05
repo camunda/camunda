@@ -54,6 +54,7 @@ import java.time.Duration;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicLong;
@@ -126,7 +127,7 @@ public class LongPollingActivateJobsRestTest {
     failJobStub.registerWith(brokerClient);
 
     tenantAttributeHolderMock = mockStatic(TenantAttributeHolder.class);
-    tenantAttributeHolderMock.when(TenantAttributeHolder::tenantIds).thenReturn(List.of());
+    tenantAttributeHolderMock.when(TenantAttributeHolder::tenantIds).thenReturn(Set.of());
   }
 
   @AfterEach
