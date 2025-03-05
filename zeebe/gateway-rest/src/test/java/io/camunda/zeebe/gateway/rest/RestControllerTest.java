@@ -14,6 +14,7 @@ import io.camunda.zeebe.gateway.rest.config.JacksonConfig;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.util.List;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -83,6 +84,7 @@ public abstract class RestControllerTest {
       mockRequestMapper
           .when(RequestMapper::getAuthentication)
           .thenReturn(Authentication.of(a -> a.user("foo").group(456L).tenant(tenantId)));
+      mockRequestMapper.when(RequestMapper::getAuthorizedTenants).thenReturn(Set.of(tenantId));
       return function.apply(webClient);
     }
   }
