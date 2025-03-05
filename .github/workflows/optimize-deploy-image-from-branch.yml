@@ -1,0 +1,127 @@
+name: Optimize Deploy Image from branch
+on:
+  # TODO remove branch push trigger once tested
+  push:
+    branches:
+      - '**'
+  workflow_dispatch:
+
+jobs:
+  deploy-optimize-image-from-branch:
+    name: Deploy optimize image from branch
+    # This workflow is supposed to not be used on main/stable to not overwrite snapshots
+    if: github.ref_name != 'main' && !startsWith(github.ref_name, 'stable/')
+    runs-on: gcp-core-4-default
+    timeout-minutes: 30
+    env:
+      DOCKER_IMAGE_TEAM: registry.camunda.cloud/team-optimize/optimize
+      DOCKER_IMAGE_DOCKER_HUB: camunda/optimize
+    steps:
+      - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4
+
+      - name: Install common tooling (buildx)  # required on self-hosted runners
+        uses: camunda/infra-global-github-actions/common-tooling@main
+        with:
+          buildx-enabled: true
+          java-enabled: false
+          node-enabled: false
+          python-enabled: false
+          yarn-enabled: false
+
+      - name: Define common variables
+        id: define-values
+        uses: ./.github/actions/git-environment
+
+      - name: "Read Java / Version Info"
+        id: "pom-info"
+        uses: YunaBraska/java-info-action@main
+        with:
+          work-dir: ./optimize
+
+      - name: Expose common variables as Env
+        run: |
+          {
+            echo "DOCKER_BRANCH_TAG=${{ steps.define-values.outputs.branch_slug }}"
+            echo "DOCKER_LATEST_TAG=${{ steps.define-values.outputs.latest_tag }}"
+            echo "DOCKER_TAG=${{ steps.define-values.outputs.image_tag }}"
+            echo "VERSION=${{ steps.pom-info.outputs.project_version }}"
+            echo "PUSH_LATEST_TAG=${{ steps.define-values.outputs.is_main_or_stable_branch }}"
+            echo "IS_MAIN=${{ steps.define-values.outputs.is_main_branch }}"
+            echo "IS_STABLE_87=${{ github.ref == 'refs/heads/stable/optimize-8.7' }}"
+            echo "REVISION=${{ steps.define-values.outputs.git_commit_hash }}"
+          } >> "$GITHUB_ENV"
+
+      - name: Login to Harbor registry
+        uses: ./.github/actions/login-registry
+        with:
+          secrets: ${{ toJSON(secrets) }}
+
+      - name: Import secrets
+        id: secrets
+        uses: hashicorp/vault-action@8b7eaceb79bd7be97b311993e7c1cc5d051213c7
+        with:
+          url: ${{ secrets.VAULT_ADDR }}
+          method: approle
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secrets: |
+            secret/data/products/optimize/ci/camunda-optimize REGISTRY_HUB_DOCKER_COM_USR;
+            secret/data/products/optimize/ci/camunda-optimize REGISTRY_HUB_DOCKER_COM_PSW;
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@9780b0c442fbb1117ed29e0efdff1e18412f7567 # v3
+        with:
+          username: ${{ steps.secrets.outputs.REGISTRY_HUB_DOCKER_COM_USR }}
+          password: ${{ steps.secrets.outputs.REGISTRY_HUB_DOCKER_COM_PSW }}
+
+      # Generating a production build
+      - name: Setup Maven
+        uses: ./.github/actions/setup-maven
+        with:
+          secrets: ${{ toJSON(secrets) }}
+
+      - name: Generate production .tar.gz
+        uses: ./.github/actions/run-maven
+        with:
+          parameters: install -f optimize -DskipTests -Dskip.docker -PrunAssembly -T1
+
+      - name: Build Docker Image
+        run: ./.github/optimize/scripts/build-docker-image.sh
+
+      # The SmokeTest is running as part of the "deploy-artifact" job to ensure we only push the artifact on success
+      # It uses the previously created docker image before it was pushed
+      - name: Start Smoketest
+        uses: ./.github/actions/compose
+        with:
+          compose_file: .github/actions/compose/docker-compose.smoketest.yml
+          project_name: smoketest
+        env:
+          OPTIMIZE_IMAGE_TAG: ${{ env.DOCKER_TAG }}
+          ELASTIC_VERSION: ${{ steps.pom-info.outputs.x_elasticsearch_test_version }}
+          ZEEBE_VERSION: ${{ steps.pom-info.outputs.x_zeebe_version }}
+          IDENTITY_VERSION: ${{ steps.pom-info.outputs.x_identity_version }}
+
+      - name: Wait for Optimize to start
+        run: ./.github/optimize/scripts/wait-for.sh http://localhost:8090/ready
+
+        # TODO temporarily commented out, add back in after review
+      #    - name: Execute health check and push docker image
+      #      uses: ./.github/actions/execute-healthcheck-and-push-image
+      #      with:
+      #        version: ${{ env.VERSION }}
+      #        date: ${{ env.DATE }}
+      #        revision: ${{ env.REVISION }}
+
+      # We're running under the same condition of main / stable
+      # We have all dependencies presents, therefore doesn't justify another job
+      #    - name: Deploy to Artifactory
+      #      uses: ./.github/actions/run-maven
+      #      with:
+      #        parameters: deploy -f optimize -Dskip.fe.build -DskipTests -Dskip.docker -PrunAssembly
+      #        threads: 4C
+
+      - name: Docker log dump
+        uses: ./.github/actions/docker-logs
+        if: always()
+        with:
+          archive_name: deploy-optimize-image-from-branch-docker
