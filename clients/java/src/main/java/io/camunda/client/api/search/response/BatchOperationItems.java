@@ -15,10 +15,15 @@
  */
 package io.camunda.client.api.search.response;
 
-public enum BatchOperationState {
-  ACTIVE,
-  PAUSED,
-  FAILED,
-  COMPLETED,
-  CANCELED
+import java.util.List;
+
+public interface BatchOperationItems {
+
+  List<BatchOperationItem> items();
+
+  interface BatchOperationItem {
+    Long getBatchOperationKey();
+    Long getKey();
+    String getState();
+  }
 }

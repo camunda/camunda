@@ -64,6 +64,7 @@ import io.camunda.client.api.command.UpdateTenantCommandStep1;
 import io.camunda.client.api.command.UpdateTimeoutJobCommandStep1;
 import io.camunda.client.api.command.UpdateUserTaskCommandStep1;
 import io.camunda.client.api.fetch.BatchOperationGetRequest;
+import io.camunda.client.api.fetch.BatchOperationItemsGetRequest;
 import io.camunda.client.api.fetch.DecisionDefinitionGetRequest;
 import io.camunda.client.api.fetch.DecisionDefinitionGetXmlRequest;
 import io.camunda.client.api.fetch.DecisionInstanceGetRequest;
@@ -320,7 +321,33 @@ public interface CamundaClient extends AutoCloseable, JobClient {
   CancelProcessInstancesBatchRequest newCancelInstancesBatchCommand(
       Consumer<ProcessInstanceFilter> filterModifier);
 
+  /**
+   * Command to get a single batch operation by batch operation key.
+   *
+   * <pre>
+   * camundaClient
+   *  .newGetBatchOperationCommand(batchOperationKey)
+   *  .send();
+   * </pre>
+   *
+   * @param batchOperationKey the key which identifies the corresponding batch operation
+   * @return a builder for the command
+   */
   BatchOperationGetRequest newGetBatchOperationCommand(Long batchOperationKey);
+
+  /**
+   * Command to get a all items for a batch operation by batch operation key.
+   *
+   * <pre>
+   * camundaClient
+   *  .newGetBatchOperationItemsCommand(batchOperationKey)
+   *  .send();
+   * </pre>
+   *
+   * @param batchOperationKey the key which identifies the corresponding batch operation
+   * @return a builder for the command
+   */
+  BatchOperationItemsGetRequest newGetBatchOperationItemsCommand(Long batchOperationKey);
 
   /**
    * Command to set and/or update the variables of a given flow element (e.g. process instance,

@@ -15,13 +15,9 @@
  */
 package io.camunda.client.api.search.response;
 
-import java.util.List;
-
 public interface BatchOperation {
 
   Long getBatchOperationKey();
-
-  List<Long> keys();
 
   BatchOperationState getState();
 

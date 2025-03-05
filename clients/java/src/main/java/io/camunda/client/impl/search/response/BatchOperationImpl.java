@@ -64,11 +64,6 @@ public class BatchOperationImpl implements BatchOperation {
   }
 
   @Override
-  public List<Long> keys() {
-    return keys;
-  }
-
-  @Override
   public BatchOperationState getState() {
     return state;
   }

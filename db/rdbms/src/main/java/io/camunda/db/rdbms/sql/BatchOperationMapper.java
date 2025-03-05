@@ -24,6 +24,8 @@ public interface BatchOperationMapper {
 
   void updateCompleted(BatchOperationUpdateDto dto);
 
+  void updateItemsWithState(BatchOperationItemStateUpdateDto dto);
+
   void incrementFailedOperationsCount(Long batchOperationKey);
 
   void incrementCompletedOperationsCount(Long batchOperationKey);
@@ -46,5 +48,10 @@ public interface BatchOperationMapper {
   record BatchOperationItemDto(
       Long batchOperationKey,
       Long itemKey,
-      BatchOperationEntity.BatchOperationItemState state) {}
+      BatchOperationEntity.BatchOperationState state) {}
+
+  record BatchOperationItemStateUpdateDto(
+      Long batchOperationKey,
+      BatchOperationEntity.BatchOperationState oldState,
+      BatchOperationEntity.BatchOperationState newState) {}
 }
