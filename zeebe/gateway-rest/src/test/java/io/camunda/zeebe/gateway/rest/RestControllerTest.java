@@ -7,9 +7,7 @@
  */
 package io.camunda.zeebe.gateway.rest;
 
-import io.camunda.service.security.auth.Authentication;
 import io.camunda.zeebe.gateway.rest.config.JacksonConfig;
-import java.util.List;
 import java.util.Set;
 import java.util.function.Function;
 import org.mockito.MockedStatic;
@@ -33,9 +31,7 @@ public abstract class RestControllerTest {
       final String tenantId, final Function<WebTestClient, ResponseSpec> function) {
     try (final MockedStatic<RequestMapper> mockRequestMapper =
         Mockito.mockStatic(RequestMapper.class, Mockito.CALLS_REAL_METHODS)) {
-      mockRequestMapper
-          .when(RequestMapper::getAuthentication)
-          .thenReturn(new Authentication("user", List.of("group"), Set.of(tenantId), "token"));
+      mockRequestMapper.when(RequestMapper::getAuthorizedTenants).thenReturn(Set.of(tenantId));
       return function.apply(webClient);
     }
   }
