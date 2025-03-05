@@ -96,6 +96,111 @@
     </constructor>
   </resultMap>
 
+  <select id="flowNodeStatistics"
+    parameterType="io.camunda.search.filter.ProcessDefinitionStatisticsFilter"
+    resultMap="io.camunda.db.rdbms.sql.ProcessDefinitionMapper.flowNodeStatisticsResultMap">
+    SELECT
+      fni.FLOW_NODE_ID,
+      SUM(CASE WHEN fni.STATE = 'ACTIVE' AND
+                    fni.NUM_SUBPROCESS_INCIDENTS = 0 AND
+                    fni.INCIDENT_KEY IS NULL THEN 1 ELSE 0 END)
+        AS COUNT_ACTIVE,
+      SUM(CASE WHEN fni.STATE = 'TERMINATED' THEN 1 ELSE 0 END)
+        AS COUNT_CANCELED,
+      SUM(CASE WHEN fni.STATE = 'COMPLETED' AND fni.TYPE = 'END_EVENT' THEN 1 ELSE 0 END)
+        AS COUNT_COMPLETED,
+      SUM(CASE WHEN fni.STATE = 'ACTIVE' AND
+                    (fni.NUM_SUBPROCESS_INCIDENTS > 0 OR
+                     fni.INCIDENT_KEY IS NOT NULL) THEN 1 ELSE 0 END)
+        AS COUNT_INCIDENTS
+    FROM ${prefix}PROCESS_DEFINITION pd
+      JOIN ${prefix}PROCESS_INSTANCE pi ON (pd.PROCESS_DEFINITION_KEY = pi.PROCESS_DEFINITION_KEY)
+      JOIN ${prefix}FLOW_NODE_INSTANCE fni ON (pi.PROCESS_INSTANCE_KEY = fni.PROCESS_INSTANCE_KEY)
+
+    <bind name="filter" value="_parameter" />
+    WHERE pd.PROCESS_DEFINITION_KEY = #{filter.processDefinitionKey}
+      AND (fni.STATE != 'COMPLETED' OR fni.TYPE = 'END_EVENT')
+    <!-- basic filters -->
+    <if test="filter.processInstanceKeyOperations != null and !filter.processInstanceKeyOperations.isEmpty()">
+      <foreach collection="filter.processInstanceKeyOperations" item="operation">
+        AND pi.PROCESS_INSTANCE_KEY <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+      </foreach>
+    </if>
+    <if test="filter.parentProcessInstanceKeyOperations != null and !filter.parentProcessInstanceKeyOperations.isEmpty()">
+      <foreach collection="filter.parentProcessInstanceKeyOperations" item="operation">
+        AND pi.PARENT_PROCESS_INSTANCE_KEY <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+      </foreach>
+    </if>
+    <if test="filter.parentFlowNodeInstanceKeyOperations != null and !filter.parentFlowNodeInstanceKeyOperations.isEmpty()">
+      <foreach collection="filter.parentFlowNodeInstanceKeyOperations" item="operation">
+        AND pi.PARENT_ELEMENT_INSTANCE_KEY <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+      </foreach>
+    </if>
+    <if test="filter.stateOperations != null and !filter.stateOperations.isEmpty()">
+      <foreach collection="filter.stateOperations" item="operation">
+        AND pi.STATE <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+      </foreach>
+    </if>
+    <if test="filter.tenantIdOperations != null and !filter.tenantIdOperations.isEmpty()">
+      <foreach collection="filter.tenantIdOperations" item="operation">
+        AND TENANT_ID <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+      </foreach>
+    </if>
+    <if test="filter.hasIncident != null">
+      <if test="filter.hasIncident == true">
+        AND pi.NUM_INCIDENTS > 0
+      </if>
+      <if test="filter.hasIncident == false">
+        AND pi.NUM_INCIDENTS = 0
+      </if>
+    </if>
+
+    <!-- date filters -->
+    <if test="filter.startDateOperations != null and !filter.startDateOperations.isEmpty()">
+      <foreach collection="filter.startDateOperations" item="operation">
+        AND pi.START_DATE <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+      </foreach>
+    </if>
+    <if test="filter.endDateOperations != null and !filter.endDateOperations.isEmpty()">
+      <foreach collection="filter.endDateOperations" item="operation">
+        AND pi.END_DATE <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+      </foreach>
+    </if>
+
+    <!-- Variable filters -->
+    <if test="filter.variableFilters != null and !filter.variableFilters.isEmpty()">
+      <foreach collection="filter.variableFilters" item="variableFilter"
+        open="AND (" separator=" OR " close=")">
+        EXISTS (
+        SELECT 1
+        FROM ${prefix}VARIABLE v
+        WHERE v.PROCESS_INSTANCE_KEY = pi.PROCESS_INSTANCE_KEY
+        AND v.VAR_NAME = #{variableFilter.name}
+        <if
+          test="variableFilter.valueOperations != null and !variableFilter.valueOperations.isEmpty()">
+          <foreach collection="variableFilter.valueOperations" item="operation">
+            AND
+            <include refid="io.camunda.db.rdbms.sql.Commons.variableOperationCondition"/>
+          </foreach>
+        </if>
+        )
+      </foreach>
+    </if>
+
+    GROUP BY fni.FLOW_NODE_ID
+  </select>
+
+  <resultMap id="flowNodeStatisticsResultMap"
+    type="io.camunda.search.entities.ProcessDefinitionFlowNodeStatisticsEntity">
+    <constructor>
+      <idArg column="FLOW_NODE_ID" javaType="java.lang.String"/>
+      <arg column="COUNT_ACTIVE" javaType="java.lang.Long"/>
+      <arg column="COUNT_CANCELED" javaType="java.lang.Long"/>
+      <arg column="COUNT_INCIDENTS" javaType="java.lang.Long"/>
+      <arg column="COUNT_COMPLETED" javaType="java.lang.Long"/>
+    </constructor>
+  </resultMap>
+
   <insert
     id="insert"
     parameterType="io.camunda.db.rdbms.write.domain.ProcessDefinitionDbModel"
