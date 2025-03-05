@@ -24,6 +24,7 @@ import co.elastic.clients.elasticsearch._types.FieldValue;
 import co.elastic.clients.elasticsearch._types.query_dsl.BoolQuery;
 import co.elastic.clients.elasticsearch._types.query_dsl.ChildScoreMode;
 import co.elastic.clients.elasticsearch._types.query_dsl.Query;
+import co.elastic.clients.json.JsonData;
 import io.camunda.optimize.dto.optimize.query.report.single.filter.data.OperatorMultipleValuesFilterDataDto;
 import io.camunda.optimize.dto.optimize.query.report.single.filter.data.variable.BooleanVariableFilterDataDto;
 import io.camunda.optimize.dto.optimize.query.report.single.filter.data.variable.DateVariableFilterDataDto;
@@ -151,6 +152,28 @@ public abstract class AbstractProcessVariableQueryFilterES extends AbstractVaria
     return queryBuilder;
   }
 
+  private static Query.Builder getBuilder(final String valueToContain) {
+    final String lowerCaseValue = valueToContain.toLowerCase(Locale.ENGLISH);
+
+    final Query.Builder filter = new Query.Builder();
+    if (lowerCaseValue.length() > MAX_GRAM) {
+      /*
+        using the slow wildcard query for uncommonly large filter strings (> 10 chars)
+      */
+      filter.wildcard(
+          w ->
+              w.field(getValueSearchField(LOWERCASE_FIELD))
+                  .wildcard(buildWildcardQuery(lowerCaseValue)));
+    } else {
+      /*
+        using Elasticsearch ngrams to filter for strings < 10 chars,
+        because it's fast but increasing the number of chars makes the index bigger
+      */
+      filter.term(t -> t.field(getValueSearchField(N_GRAM_FIELD)).value(lowerCaseValue));
+    }
+    return filter;
+  }
+
   @Override
   protected Query.Builder createEqualsOneOrMoreValuesQueryBuilder(
       final OperatorMultipleValuesVariableFilterDataDto dto) {
@@ -176,6 +199,63 @@ public abstract class AbstractProcessVariableQueryFilterES extends AbstractVaria
         dto.getName(), dto.getType(), dto.getData().getValues());
   }
 
+  private Query.Builder createEqualsOneOrMoreValuesFilterQuery(
+      final String variableName, final VariableType variableType, final List<?> values) {
+    final Query.Builder builder = new Query.Builder();
+    final BoolQuery.Builder variableFilterBuilder = new BoolQuery.Builder().minimumShouldMatch("1");
+    final String nestedVariableNameFieldLabel = getNestedVariableNameField();
+    final String nestedVariableValueFieldLabel = getVariableValueFieldForType(variableType);
+
+    final List<?> nonNullValues = values.stream().filter(Objects::nonNull).toList();
+
+    if (!nonNullValues.isEmpty()) {
+      variableFilterBuilder.should(
+          s ->
+              s.nested(
+                  n ->
+                      n.path(VARIABLES)
+                          .query(
+                              q ->
+                                  q.bool(
+                                      b ->
+                                          b.must(
+                                                  m ->
+                                                      m.term(
+                                                          t ->
+                                                              t.field(nestedVariableNameFieldLabel)
+                                                                  .value(variableName)))
+                                              .must(
+                                                  m ->
+                                                      m.term(
+                                                          t ->
+                                                              t.field(getNestedVariableTypeField())
+                                                                  .value(variableType.getId())))
+                                              .must(
+                                                  m ->
+                                                      m.terms(
+                                                          t ->
+                                                              t.field(nestedVariableValueFieldLabel)
+                                                                  .terms(
+                                                                      tt ->
+                                                                          tt.value(
+                                                                              nonNullValues.stream()
+                                                                                  .map(
+                                                                                      FieldValue
+                                                                                          ::of)
+                                                                                  .toList()))))))));
+    }
+
+    final boolean hasNullValues = nonNullValues.size() < values.size();
+    if (hasNullValues) {
+      variableFilterBuilder.should(
+          s ->
+              s.bool(
+                  createFilterForUndefinedOrNullQueryBuilder(variableName, variableType).build()));
+    }
+    builder.bool(variableFilterBuilder.build());
+    return builder;
+  }
+
   @Override
   protected Query.Builder createNumericQueryBuilder(
       final OperatorMultipleValuesVariableFilterDataDto dto) {
@@ -189,7 +269,7 @@ public abstract class AbstractProcessVariableQueryFilterES extends AbstractVaria
         .must(m -> m.term(t -> t.field(getNestedVariableNameField()).value(dto.getName())))
         .must(m -> m.term(t -> t.field(getNestedVariableTypeField()).value(dto.getType().getId())));
 
-    final String value = dto.getData().getValues().get(0);
+    final Object value = OperatorMultipleValuesVariableFilterDataDtoUtil.retrieveValue(dto);
     switch (data.getOperator()) {
       case IN:
       case NOT_IN:
@@ -206,10 +286,8 @@ public abstract class AbstractProcessVariableQueryFilterES extends AbstractVaria
                                         m ->
                                             m.range(
                                                 r ->
-                                                    r.number(
-                                                        num ->
-                                                            num.field(nestedVariableValueFieldLabel)
-                                                                .lt(Double.parseDouble(value)))))
+                                                    r.field(nestedVariableValueFieldLabel)
+                                                        .lt(JsonData.of(value))))
                                     .build())));
         break;
       case GREATER_THAN:
@@ -224,10 +302,8 @@ public abstract class AbstractProcessVariableQueryFilterES extends AbstractVaria
                                         m ->
                                             m.range(
                                                 r ->
-                                                    r.number(
-                                                        num ->
-                                                            num.field(nestedVariableValueFieldLabel)
-                                                                .gt(Double.parseDouble(value)))))
+                                                    r.field(nestedVariableValueFieldLabel)
+                                                        .gt(JsonData.of(value))))
                                     .build())));
         break;
       case LESS_THAN_EQUALS:
@@ -242,10 +318,8 @@ public abstract class AbstractProcessVariableQueryFilterES extends AbstractVaria
                                         m ->
                                             m.range(
                                                 r ->
-                                                    r.number(
-                                                        num ->
-                                                            num.field(nestedVariableValueFieldLabel)
-                                                                .lte(Double.parseDouble(value)))))
+                                                    r.field(nestedVariableValueFieldLabel)
+                                                        .lte(JsonData.of(value))))
                                     .build())));
         break;
       case GREATER_THAN_EQUALS:
@@ -260,10 +334,8 @@ public abstract class AbstractProcessVariableQueryFilterES extends AbstractVaria
                                         m ->
                                             m.range(
                                                 r ->
-                                                    r.number(
-                                                        num ->
-                                                            num.field(nestedVariableValueFieldLabel)
-                                                                .gte(Double.parseDouble(value)))))
+                                                    r.field(nestedVariableValueFieldLabel)
+                                                        .gte(JsonData.of(value))))
                                     .build())));
         break;
       default:
@@ -327,85 +399,6 @@ public abstract class AbstractProcessVariableQueryFilterES extends AbstractVaria
         });
 
     return dateFilterBuilder;
-  }
-
-  private static Query.Builder getBuilder(final String valueToContain) {
-    final String lowerCaseValue = valueToContain.toLowerCase(Locale.ENGLISH);
-
-    final Query.Builder filter = new Query.Builder();
-    if (lowerCaseValue.length() > MAX_GRAM) {
-      /*
-        using the slow wildcard query for uncommonly large filter strings (> 10 chars)
-      */
-      filter.wildcard(
-          w ->
-              w.field(getValueSearchField(LOWERCASE_FIELD))
-                  .wildcard(buildWildcardQuery(lowerCaseValue)));
-    } else {
-      /*
-        using Elasticsearch ngrams to filter for strings < 10 chars,
-        because it's fast but increasing the number of chars makes the index bigger
-      */
-      filter.term(t -> t.field(getValueSearchField(N_GRAM_FIELD)).value(lowerCaseValue));
-    }
-    return filter;
-  }
-
-  private Query.Builder createEqualsOneOrMoreValuesFilterQuery(
-      final String variableName, final VariableType variableType, final List<?> values) {
-    final Query.Builder builder = new Query.Builder();
-    final BoolQuery.Builder variableFilterBuilder = new BoolQuery.Builder().minimumShouldMatch("1");
-    final String nestedVariableNameFieldLabel = getNestedVariableNameField();
-    final String nestedVariableValueFieldLabel = getVariableValueFieldForType(variableType);
-
-    final List<?> nonNullValues = values.stream().filter(Objects::nonNull).toList();
-
-    if (!nonNullValues.isEmpty()) {
-      variableFilterBuilder.should(
-          s ->
-              s.nested(
-                  n ->
-                      n.path(VARIABLES)
-                          .query(
-                              q ->
-                                  q.bool(
-                                      b ->
-                                          b.must(
-                                                  m ->
-                                                      m.term(
-                                                          t ->
-                                                              t.field(nestedVariableNameFieldLabel)
-                                                                  .value(variableName)))
-                                              .must(
-                                                  m ->
-                                                      m.term(
-                                                          t ->
-                                                              t.field(getNestedVariableTypeField())
-                                                                  .value(variableType.getId())))
-                                              .must(
-                                                  m ->
-                                                      m.terms(
-                                                          t ->
-                                                              t.field(nestedVariableValueFieldLabel)
-                                                                  .terms(
-                                                                      tt ->
-                                                                          tt.value(
-                                                                              nonNullValues.stream()
-                                                                                  .map(
-                                                                                      FieldValue
-                                                                                          ::of)
-                                                                                  .toList()))))))));
-    }
-
-    final boolean hasNullValues = nonNullValues.size() < values.size();
-    if (hasNullValues) {
-      variableFilterBuilder.should(
-          s ->
-              s.bool(
-                  createFilterForUndefinedOrNullQueryBuilder(variableName, variableType).build()));
-    }
-    builder.bool(variableFilterBuilder.build());
-    return builder;
   }
 
   private String getVariableValueFieldForType(final VariableType type) {
