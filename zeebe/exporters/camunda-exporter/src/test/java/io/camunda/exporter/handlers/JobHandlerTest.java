@@ -28,11 +28,11 @@ import static org.mockito.Mockito.verify;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.webapps.schema.descriptors.operate.template.JobTemplate;
 import io.camunda.webapps.schema.entities.operate.JobEntity;
-import io.camunda.zeebe.protocol.impl.record.value.job.JobResult;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.value.ImmutableJobRecordValue;
+import io.camunda.zeebe.protocol.record.value.ImmutableJobResultValue;
 import io.camunda.zeebe.protocol.record.value.JobKind;
 import io.camunda.zeebe.protocol.record.value.JobListenerEventType;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
@@ -172,7 +172,11 @@ final class JobHandlerTest {
             .withJobListenerEventType(jobListenerEventType)
             .withDeadline(deadline)
             .withErrorCode(errorCode)
-            .withResult(new JobResult().setDenied(jobDenied).setDeniedReason(jobDeniedReason))
+            .withResult(
+                ImmutableJobResultValue.builder()
+                    .withDenied(jobDenied)
+                    .withDeniedReason(jobDeniedReason)
+                    .build())
             .build();
     final Record<JobRecordValue> record =
         factory.generateRecord(
