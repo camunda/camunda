@@ -18,6 +18,23 @@ type RequestParams = {
   signal?: RequestInit['signal'];
 };
 
+async function requestWithThrow({
+  url,
+  method,
+  body,
+  headers,
+  signal,
+}: RequestParams) {
+  const response = await request({url, method, body, headers, signal});
+
+  if (!response.ok) {
+    const json = await response.json();
+    throw new Error(json.error);
+  }
+
+  return response;
+}
+
 async function request({url, method, body, headers, signal}: RequestParams) {
   const csrfToken = sessionStorage.getItem('X-CSRF-TOKEN');
   const hasCsrfToken =
@@ -119,4 +136,4 @@ async function requestAndParse<T>(
   }
 }
 
-export {request, requestAndParse};
+export {request, requestAndParse, requestWithThrow};
