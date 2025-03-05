@@ -1,0 +1,56 @@
+name: Task
+description: Describe a generic activity we should carry out.
+labels: ["kind/task"]
+body:
+  - type: dropdown
+    id: Component
+    attributes:
+      label: Component
+      description: In which component did the issue occur?
+      options:
+        - Not sure-
+        - Operate-
+        - Optimize-
+        - Tasklist-
+        - Identity-
+        - Zeebe-
+        - C8Run-
+      default: 0
+    validations:
+      required: true
+  - type: textarea
+    id: description
+    attributes:
+      label: Description
+      description: Clearly describe the activity we should carry out.
+    validations:
+      required: true
+  - type: textarea
+    id: motivation
+    attributes:
+      label: Motivation
+      description: Argue why doing it is a healthy investment of our time.
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance criteria
+      description: add the TODOs in here (optional).
+      value: |
+        - [ ] ...
+    validations:
+      required: false
+  - type: textarea
+    id: links
+    attributes:
+      label: Links
+      description: Add the support ticket- or other links here if applicable.
+    validations:
+      required: false
+  - type: textarea
+    id: breakdown
+    attributes:
+      label: Breakdown
+    validations:
+      required: false

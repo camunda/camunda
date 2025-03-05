@@ -1,0 +1,84 @@
+name: Feature Request
+description: Suggest an idea or a general improvement.
+labels: ["kind/feature"]
+body:
+  - type: dropdown
+    id: Component
+    attributes:
+      label: Component
+      description: For which component your improvement idea is for?
+      options:
+        - Not sure-
+        - Operate-
+        - Optimize-
+        - Tasklist-
+        - Identity-
+        - Zeebe-
+        - C8Run-
+      default: 0
+    validations:
+      required: true
+  - type: textarea
+    id: user-story
+    attributes:
+      label: User Story
+      description: Please describe the problem you are trying to solve
+    validations:
+      required: true
+  - type: textarea
+    id: design
+    attributes:
+      label: Design
+      description: Please describe the solution you would like to see implemented
+    validations:
+      required: true
+  - type: textarea
+    id: functional-requirements
+    attributes:
+      label: Functional requirements
+    validations:
+      required: false
+  - type: textarea
+    id: technical-requirements
+    attributes:
+      label: Technical requirements
+    validations:
+      required: false
+  - type: textarea
+    id: dev-qa-handover
+    attributes:
+      label: Dev -> QA handover
+      description:
+      value: |
+             - Resources:
+             - Versions to validate:
+             - Release version (in which version this feature will be released):
+  - type: textarea
+    id: qa-test
+    attributes:
+      label: QA test case
+    validations:
+      required: false
+  - type: textarea
+    id: links
+    attributes:
+      label: Links
+      description: Add the support ticket- or other links here if applicable.
+    validations:
+      required: false
+  - type: textarea
+    id: breakdown
+    attributes:
+      label: Breakdown
+    validations:
+      required: false
+  - type: textarea
+    id: additional-context
+    attributes:
+      label: Additional context
+      description: | 
+       - Include screenshots or animated gifs to illustrate your suggestion. Use tools like LICEcap for macOS and Windows, or byzanz for Linux.
+       - Provide any other context or information that might help us understand your suggestion.
+       - Explain why this suggestion would be beneficial for the users.
+    validations:
+      required: false
