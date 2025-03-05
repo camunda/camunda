@@ -1,0 +1,78 @@
+name: Feature Request
+description: Suggest an idea or a general improvement.
+labels: ["kind/feature"]
+body:
+  - type: dropdown
+    id: Component
+    attributes:
+      label: Component
+      description: For which component your improvement idea is for?
+      options:
+        - Not sure*
+        - Operate*
+        - Optimize*
+        - Tasklist*
+        - Zeebe*
+        - Desktop Modeler*
+        - Web Modeler*
+        - Connectors*
+        - Identity*
+        - Console*
+        - Controller*
+        - Helm*
+        - C8Run*
+        - RPA*
+      default: 0
+    validations:
+      required: true
+  - type: textarea
+    id: describe_problem
+    attributes:
+      label: Describe the problem
+      description: Please describe the problem you are trying to solve
+    validations:
+      required: true
+  - type: textarea
+    id: describe_solution
+    attributes:
+      label: Describe the solution
+      description: Please describe the solution you would like to see implemented
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Describe the alternatives
+      description: Please describe the alternatives you have considered
+    validations:
+      required: false
+  - type: textarea
+    id: additional-context
+    attributes:
+      label: Additional context
+      description: | 
+       - Include screenshots or animated gifs to illustrate your suggestion. Use tools like LICEcap for macOS and Windows, or byzanz for Linux.
+       - Provide any other context or information that might help us understand your suggestion.
+       - Explain why this suggestion would be beneficial for the users.
+    validations:
+      required: false
+  - type: markdown
+    attributes:
+      value: |
+        ## To be filled out by the support:
+  - type: checkboxes
+    id: DOR
+    attributes:
+      label: Definition of Ready
+      description: 
+      options:
+        - label: The issue has a meaningful title, description and testable acceptance criteria.
+          required: false
+        - label: The acceptance criteria has been reviewed by another peer.
+          required: false
+        - label: Edge cases and limitations are clear.
+          required: false
+        - label: Unclear requirements have been broken down into separate issues (always make progress)
+          required: false
+        - label: For UI features, wireframes are attached / linked to the ticket if UX is involved.
+          required: false
