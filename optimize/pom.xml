@@ -39,7 +39,7 @@
     <!-- https://www.elastic.co/guide/en/elasticsearch/client/java-api/6.5/_using_another_logger.html -->
     <elasticsearch.log4j.version>2.24.3</elasticsearch.log4j.version>
 
-    <jetty.version>12.0.16</jetty.version>
+    <jetty.version>12.0.17</jetty.version>
     <jackson.version>2.17.2</jackson.version>
     <jsonpath.version>2.9.0</jsonpath.version>
     <apache.http5-client.version>5.4.2</apache.http5-client.version>
