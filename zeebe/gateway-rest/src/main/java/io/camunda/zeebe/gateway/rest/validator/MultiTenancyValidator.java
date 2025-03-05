@@ -56,9 +56,9 @@ public final class MultiTenancyValidator {
                   ? ERROR_MESSAGE_INVALID_TENANT.formatted(
                       commandName,
                       tenantIds.getFirst(),
-                      "tenant is not authorized to perform this request")
+                      "the user is not authorized for that tenant")
                   : ERROR_MESSAGE_INVALID_TENANTS.formatted(
-                      commandName, tenantIds, "tenant is not authorized to perform this request"),
+                      commandName, tenantIds, "the user is not authorized for that tenant"),
               HttpStatus.UNAUTHORIZED.name()));
     }
 
