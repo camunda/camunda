@@ -536,13 +536,14 @@ public class JobControllerTest extends RestControllerTest {
               "type": "about:blank",
               "status": 401,
               "title": "UNAUTHORIZED",
-              "detail": "Expected to handle request Activate Jobs with tenant %s, but the user is not authorized for that tenant",
+              "detail": "Expected to handle request Activate Jobs with tenant %s, but the user is not authorized for %s",
               "instance": "%s"
             }"""
                 .formatted(
                     tenantIds.size() == 1
                         ? "identifier '" + tenantIds.getFirst() + "'"
                         : "identifiers " + tenantIds,
+                    tenantIds.size() == 1 ? "that tenant" : "all those tenants",
                     JOBS_BASE_URL + "/activation"));
     verifyNoInteractions(jobServices);
   }
