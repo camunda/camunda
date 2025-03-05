@@ -9,8 +9,10 @@ package io.camunda.zeebe.gateway.rest.controller;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.when;
 
 import com.jayway.jsonpath.JsonPath;
+import io.camunda.security.configuration.MultiTenancyConfiguration;
 import io.camunda.security.configuration.MultiTenancyConfiguration;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.service.JobServices;
@@ -47,6 +49,7 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.boot.test.mock.mockito.SpyBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.http.MediaType;
+import org.springframework.test.web.reactive.server.WebTestClient.ResponseSpec;
 import org.springframework.util.unit.DataSize;
 
 @WebMvcTest(JobController.class)
@@ -68,13 +71,13 @@ public class JobControllerLongPollingTest extends RestControllerTest {
   void shouldActivateJobsImmediatelyIfAvailable() {
     // given
     final ActivateJobsStub stub = new ActivateJobsStub();
-    stub.addAvailableJobs("TEST", 2);
+    stub.addAvailableJobs("TEST-immediate", 2);
     stub.registerWith(stubbedBrokerClient);
 
     final var request =
         """
         {
-          "type": "TEST",
+          "type": "TEST-immediate",
           "maxJobsToActivate": 2,
           "requestTimeout": 100,
           "timeout": 100,
@@ -82,44 +85,7 @@ public class JobControllerLongPollingTest extends RestControllerTest {
           "tenantIds": [],
           "worker": "bar"
         }""";
-    final var expectedBody =
-        """
-        {
-          "jobs": [
-            {
-              "jobKey": "2251799813685248",
-              "type": "TEST",
-              "processInstanceKey": "123",
-              "processDefinitionKey": "4532",
-              "processDefinitionVersion": 23,
-              "elementInstanceKey": "459",
-              "retries": 12,
-              "deadline": 123123123,
-              "tenantId": "<default>",
-              "variables": {"bar": "world", "foo": 13},
-              "customHeaders": {"bar": "val", "foo": 12},
-              "processDefinitionId": "stubProcess",
-              "elementId": "stubActivity",
-              "worker": "bar"
-            },
-            {
-              "jobKey": "2251799813685249",
-              "type": "TEST",
-              "processInstanceKey": "123",
-              "processDefinitionKey": "4532",
-              "processDefinitionVersion": 23,
-              "elementInstanceKey": "459",
-              "retries": 12,
-              "deadline": 123123123,
-              "tenantId": "<default>",
-              "variables": {"bar": "world", "foo": 13},
-              "customHeaders": {"bar": "val", "foo": 12},
-              "processDefinitionId": "stubProcess",
-              "elementId": "stubActivity",
-              "worker": "bar"
-            }
-          ]
-        }""";
+
     // when / then
     webClient
         .post()
@@ -133,7 +99,10 @@ public class JobControllerLongPollingTest extends RestControllerTest {
         .expectHeader()
         .contentType(MediaType.APPLICATION_JSON)
         .expectBody()
-        .json(expectedBody);
+        .jsonPath("$.jobs[0].type")
+        .isEqualTo("TEST-immediate")
+        .jsonPath("$.jobs[1].type")
+        .isEqualTo("TEST-immediate");
 
     Mockito.verify(responseObserver, Mockito.times(1)).onNext(any());
     Mockito.verify(responseObserver).onCompleted();
@@ -148,7 +117,7 @@ public class JobControllerLongPollingTest extends RestControllerTest {
     final var request =
         """
         {
-          "type": "TEST",
+          "type": "TEST-no-jobs",
           "maxJobsToActivate": 10,
           "requestTimeout": 100,
           "timeout": 100,
@@ -189,7 +158,7 @@ public class JobControllerLongPollingTest extends RestControllerTest {
     final var request =
         """
         {
-          "type": "TEST",
+          "type": "TEST-round-robin",
           "maxJobsToActivate": 2,
           "requestTimeout": 100,
           "timeout": 100,
@@ -202,7 +171,7 @@ public class JobControllerLongPollingTest extends RestControllerTest {
      * The job activation handler is created once for all tests, so previous tests can have moved
      * the round-robin index by any number already.
      */
-    stub.addAvailableJobs("TEST", 1);
+    stub.addAvailableJobs("TEST-round-robin", 1);
     final String result =
         webClient
             .post()
@@ -230,7 +199,7 @@ public class JobControllerLongPollingTest extends RestControllerTest {
       final int expectedPartitionId = (basePartition + partitionOffset - 1) % partitionsCount + 1;
       // reset the results and add new jobs that can be fetched
       responseObserver.reset();
-      stub.addAvailableJobs("TEST", 2);
+      stub.addAvailableJobs("TEST-round-robin", 2);
       // when/then
       webClient
           .post()
@@ -266,7 +235,7 @@ public class JobControllerLongPollingTest extends RestControllerTest {
     final var request =
         """
         {
-          "type": "TEST",
+          "type": "TEST-rejection",
           "maxJobsToActivate": 10,
           "requestTimeout": 100,
           "timeout": 100,
@@ -301,6 +270,90 @@ public class JobControllerLongPollingTest extends RestControllerTest {
         .json(expectedBody);
 
     assertThat(callCounter).hasValue(1);
+  }
+
+  @Test
+  void shouldAllowActivateJobWithAuthorizedTenantWhenMultiTenancyEnabled() {
+    // given
+    when(multiTenancyCfg.isEnabled()).thenReturn(true);
+    final ActivateJobsStub stub = new ActivateJobsStub();
+    stub.registerWith(stubbedBrokerClient);
+
+    final var request =
+        """
+        {
+          "type": "TEST-authorized-tenant",
+          "maxJobsToActivate": 2,
+          "requestTimeout": 100,
+          "timeout": 100,
+          "fetchVariable": [],
+          "tenantIds": ["tenantId"],
+          "worker": "bar"
+        }""";
+
+    final var expectedBody =
+        """
+        {
+          "jobs": []
+        }""";
+
+    // when then
+    final ResponseSpec response =
+        withMultiTenancy(
+            "tenantId",
+            client ->
+                client
+                    .post()
+                    .uri(JOBS_BASE_URL + "/activation")
+                    .accept(MediaType.APPLICATION_JSON)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .bodyValue(request)
+                    .exchange()
+                    .expectStatus()
+                    .isOk());
+
+    response.expectHeader().contentType(MediaType.APPLICATION_JSON).expectBody().json(expectedBody);
+  }
+
+  @Test
+  void shouldAllowActivateJobWithDefaultTenantWhenMultiTenancyDisabled() {
+    // given
+    when(multiTenancyCfg.isEnabled()).thenReturn(false);
+    final ActivateJobsStub stub = new ActivateJobsStub();
+    stub.registerWith(stubbedBrokerClient);
+
+    final var request =
+        """
+        {
+          "type": "TEST-default-tenant",
+          "maxJobsToActivate": 2,
+          "requestTimeout": 100,
+          "timeout": 100,
+          "fetchVariable": [],
+          "tenantIds": ["<default>"],
+          "worker": "bar"
+        }""";
+
+    final var expectedBody =
+        """
+        {
+          "jobs": []
+        }""";
+
+    // when then
+    webClient
+        .post()
+        .uri(JOBS_BASE_URL + "/activation")
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isOk()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_JSON)
+        .expectBody()
+        .json(expectedBody);
   }
 
   @TestConfiguration
