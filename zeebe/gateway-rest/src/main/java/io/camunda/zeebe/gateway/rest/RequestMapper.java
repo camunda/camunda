@@ -19,7 +19,9 @@ import static io.camunda.zeebe.gateway.rest.validator.JobRequestValidator.valida
 import static io.camunda.zeebe.gateway.rest.validator.MessageRequestValidator.validateMessageCorrelationRequest;
 import static io.camunda.zeebe.gateway.rest.validator.MessageRequestValidator.validateMessagePublicationRequest;
 import static io.camunda.zeebe.gateway.rest.validator.MultiTenancyValidator.validateAuthorization;
+import static io.camunda.zeebe.gateway.rest.validator.MultiTenancyValidator.validateAuthorizations;
 import static io.camunda.zeebe.gateway.rest.validator.MultiTenancyValidator.validateTenantId;
+import static io.camunda.zeebe.gateway.rest.validator.MultiTenancyValidator.validateTenantIds;
 import static io.camunda.zeebe.gateway.rest.validator.ProcessInstanceRequestValidator.validateCancelProcessInstanceRequest;
 import static io.camunda.zeebe.gateway.rest.validator.ProcessInstanceRequestValidator.validateCreateProcessInstanceRequest;
 import static io.camunda.zeebe.gateway.rest.validator.ProcessInstanceRequestValidator.validateMigrateProcessInstanceRequest;
@@ -88,10 +90,13 @@ import io.camunda.zeebe.util.Either;
 import java.io.IOException;
 import java.io.InputStream;
 import java.time.ZonedDateTime;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -165,15 +170,30 @@ public class RequestMapper {
   }
 
   public static Either<ProblemDetail, ActivateJobsRequest> toJobsActivationRequest(
-      final JobActivationRequest activationRequest) {
+      final JobActivationRequest activationRequest, final boolean multiTenancyEnabled) {
 
-    return getResult(
-        validateJobActivationRequest(activationRequest),
-        () ->
+    final Either<ProblemDetail, List<String>> validationResponse =
+        validateTenantIds(
+                getStringListOrEmpty(activationRequest, JobActivationRequest::getTenantIds),
+                multiTenancyEnabled,
+                "Activate Jobs")
+            .flatMap(
+                tenantIds ->
+                    validateAuthorizations(tenantIds, multiTenancyEnabled, "Activate Jobs")
+                        .map(Either::<ProblemDetail, List<String>>left)
+                        .orElseGet(() -> Either.right(tenantIds)))
+            .flatMap(
+                tenantIds ->
+                    validateJobActivationRequest(activationRequest)
+                        .map(Either::<ProblemDetail, List<String>>left)
+                        .orElseGet(() -> Either.right(tenantIds)));
+
+    return validationResponse.map(
+        tenantIds ->
             new ActivateJobsRequest(
                 activationRequest.getType(),
                 activationRequest.getMaxJobsToActivate(),
-                getStringListOrEmpty(activationRequest, JobActivationRequest::getTenantIds),
+                tenantIds,
                 activationRequest.getTimeout(),
                 getStringOrEmpty(activationRequest, JobActivationRequest::getWorker),
                 getStringListOrEmpty(activationRequest, JobActivationRequest::getFetchVariable),
@@ -428,6 +448,11 @@ public class RequestMapper {
             .withClaim(Authorization.AUTHORIZED_TENANTS, authorizedTenants)
             .encode();
     return new Builder().token(token).tenants(authorizedTenants).build();
+  }
+
+  public static Set<String> getAuthorizedTenants() {
+    final List<String> tenantIds = TenantAttributeHolder.tenantIds();
+    return tenantIds == null ? Collections.emptySet() : new HashSet<>(tenantIds);
   }
 
   public static Authentication getAnonymousAuthentication() {
