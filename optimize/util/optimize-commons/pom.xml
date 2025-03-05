@@ -249,6 +249,7 @@
     <dependency>
       <groupId>org.elasticsearch.client</groupId>
       <artifactId>elasticsearch-rest-client</artifactId>
+      <version>8.13.4</version>
       <scope>compile</scope>
     </dependency>
 

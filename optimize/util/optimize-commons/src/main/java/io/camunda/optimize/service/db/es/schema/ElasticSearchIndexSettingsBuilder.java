@@ -48,10 +48,9 @@ public class ElasticSearchIndexSettingsBuilder {
                         m.nestedObjects(
                             n ->
                                 n.limit(
-                                    (long)
-                                        configurationService
-                                            .getElasticSearchConfiguration()
-                                            .getNestedDocumentsLimit()))));
+                                    configurationService
+                                        .getElasticSearchConfiguration()
+                                        .getNestedDocumentsLimit()))));
   }
 
   public static IndexSettings buildAllSettings(
@@ -77,10 +76,9 @@ public class ElasticSearchIndexSettingsBuilder {
                       m.nestedObjects(
                           n ->
                               n.limit(
-                                  (long)
-                                      configurationService
-                                          .getElasticSearchConfiguration()
-                                          .getNestedDocumentsLimit())));
+                                  configurationService
+                                      .getElasticSearchConfiguration()
+                                      .getNestedDocumentsLimit())));
           try {
             indexMappingCreator.getStaticSettings(i, configurationService);
           } catch (final IOException e) {

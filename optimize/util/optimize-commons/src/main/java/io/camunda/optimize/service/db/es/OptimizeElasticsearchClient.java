@@ -560,13 +560,16 @@ public class OptimizeElasticsearchClient extends DatabaseClient {
                       .id(entityId)
                       .script(
                           sb ->
-                              sb.params(
-                                      script.params().entrySet().stream()
-                                          .collect(
-                                              Collectors.toMap(
-                                                  Entry::getKey, e -> JsonData.of(e.getValue()))))
-                                  .source(script.scriptString())
-                                  .lang(ScriptLanguage.Painless))
+                              sb.inline(
+                                  ib ->
+                                      ib.params(
+                                              script.params().entrySet().stream()
+                                                  .collect(
+                                                      Collectors.toMap(
+                                                          Entry::getKey,
+                                                          e -> JsonData.of(e.getValue()))))
+                                          .source(script.scriptString())
+                                          .lang(ScriptLanguage.Painless)))
                       .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT)),
           Object.class);
     } catch (final IOException e) {
@@ -840,11 +843,15 @@ public class OptimizeElasticsearchClient extends DatabaseClient {
       final String inlineUpdateScript, final Map<String, T> params) {
     return Script.of(
         b ->
-            b.lang(ScriptLanguage.Painless)
-                .source(inlineUpdateScript)
-                .params(
-                    params.entrySet().stream()
-                        .collect(Collectors.toMap(Entry::getKey, e -> JsonData.of(e.getValue())))));
+            b.inline(
+                i ->
+                    i.lang(ScriptLanguage.Painless)
+                        .source(inlineUpdateScript)
+                        .params(
+                            params.entrySet().stream()
+                                .collect(
+                                    Collectors.toMap(
+                                        Entry::getKey, e -> JsonData.of(e.getValue()))))));
   }
 
   public void doBulkRequest(

@@ -99,10 +99,10 @@ public final class DateFilterQueryUtilES {
       return Optional.empty();
     }
 
-    final var queryDate = new RangeQuery.Builder();
+    final RangeQuery.Builder queryDate = new RangeQuery.Builder();
     queryDate.field(dateField);
     final OffsetDateTime now = LocalDateUtil.getCurrentTimeWithTimezone(timezone);
-    queryDate.lte(FORMATTER.format(now));
+    queryDate.lte(JsonData.of(FORMATTER.format(now)));
 
     if (QUARTERS.equals(startDto.getUnit())) {
       LOG.warn(
@@ -115,9 +115,9 @@ public final class DateFilterQueryUtilES {
     final OffsetDateTime dateBeforeGivenFilter =
         now.minus(
             startDto.getValue(), ChronoUnit.valueOf(startDto.getUnit().getId().toUpperCase()));
-    queryDate.gte(FORMATTER.format(dateBeforeGivenFilter));
+    queryDate.gte(JsonData.of(FORMATTER.format(dateBeforeGivenFilter)));
     queryDate.format(OPTIMIZE_DATE_FORMAT);
-    return Optional.of();
+    return Optional.of(queryDate);
   }
 
   private static Optional<RangeQuery.Builder> createRelativeDateFilter(
