@@ -6,7 +6,7 @@
   <parent>
     <groupId>io.camunda</groupId>
     <artifactId>zeebe-bom</artifactId>
-    <version>8.6.11-rc1</version>
+    <version>8.6.12-SNAPSHOT</version>
     <relativePath>../bom/pom.xml</relativePath>
   </parent>
 
@@ -2308,7 +2308,7 @@
                 <goal>check</goal>
               </goals>
               <phase>validate</phase>
-              <configuration />
+              <configuration></configuration>
             </execution>
           </executions>
         </plugin>
@@ -2338,7 +2338,7 @@
               <usePhrasedTestCaseClassName>true</usePhrasedTestCaseClassName>
               <usePhrasedTestCaseMethodName>true</usePhrasedTestCaseMethodName>
             </statelessTestsetReporter>
-            <consoleOutputReporter implementation="io.camunda.zeebe.ZeebeConsoleOutputReporter" />
+            <consoleOutputReporter implementation="io.camunda.zeebe.ZeebeConsoleOutputReporter"></consoleOutputReporter>
             <skip>${skipUTs}</skip>
           </configuration>
           <dependencies>
@@ -2378,7 +2378,7 @@
               <usePhrasedTestCaseClassName>true</usePhrasedTestCaseClassName>
               <usePhrasedTestCaseMethodName>true</usePhrasedTestCaseMethodName>
             </statelessTestsetReporter>
-            <consoleOutputReporter implementation="io.camunda.zeebe.ZeebeConsoleOutputReporter" />
+            <consoleOutputReporter implementation="io.camunda.zeebe.ZeebeConsoleOutputReporter"></consoleOutputReporter>
             <skip>${skipITs}</skip>
           </configuration>
           <dependencies>
@@ -2468,7 +2468,7 @@
                   <argument>-classpath</argument>
                   <!-- automatically creates the classpath using all project dependencies,
                      also adding the project build directory -->
-                  <classpath />
+                  <classpath></classpath>
                   <argument>uk.co.real_logic.sbe.SbeTool</argument>
                 </arguments>
                 <workingDirectory>${project.build.directory}/generated-sources</workingDirectory>
@@ -2503,7 +2503,7 @@
                     </goals>
                   </pluginExecutionFilter>
                   <action>
-                    <ignore />
+                    <ignore></ignore>
                   </action>
                 </pluginExecution>
               </pluginExecutions>
@@ -2588,7 +2588,7 @@
               </goals>
               <configuration>
                 <rules>
-                  <banDuplicatePomDependencyVersions />
+                  <banDuplicatePomDependencyVersions></banDuplicatePomDependencyVersions>
                 </rules>
               </configuration>
             </execution>
@@ -2863,7 +2863,7 @@
             <configuration>
               <groups>strace</groups>
               <!-- Reset <excludedGroups> as it take precedence over <groups> -->
-              <excludedGroups combine.self="override" />
+              <excludedGroups combine.self="override"></excludedGroups>
             </configuration>
           </plugin>
         </plugins>
@@ -2881,7 +2881,7 @@
             <configuration>
               <groups>performance</groups>
               <!-- Reset <excludedGroups> as it take precedence over <groups> -->
-              <excludedGroups combine.self="override" />
+              <excludedGroups combine.self="override"></excludedGroups>
             </configuration>
           </plugin>
         </plugins>

@@ -6,7 +6,7 @@
   <parent>
     <groupId>io.camunda</groupId>
     <artifactId>zeebe-parent</artifactId>
-    <version>8.6.11-rc1</version>
+    <version>8.6.12-SNAPSHOT</version>
     <relativePath>parent/pom.xml</relativePath>
   </parent>
 
@@ -40,7 +40,7 @@
   <scm>
     <connection>scm:git:https://${env.GITHUB_TOKEN_USR}:${env.GITHUB_TOKEN_PSW}@github.com/camunda/camunda.git</connection>
     <developerConnection>scm:git:https://${env.GITHUB_TOKEN_USR}:${env.GITHUB_TOKEN_PSW}@github.com/camunda/camunda.git</developerConnection>
-    <tag>8.6.11-rc1</tag>
+    <tag>8.6.0</tag>
     <url>https://github.com/camunda/camunda</url>
   </scm>
 
@@ -64,7 +64,7 @@
               <exclude>tasklist/client/**/*.md</exclude>
               <exclude>optimize/client/**/*.md</exclude>
             </excludes>
-            <flexmark />
+            <flexmark></flexmark>
           </markdown>
         </configuration>
       </plugin>

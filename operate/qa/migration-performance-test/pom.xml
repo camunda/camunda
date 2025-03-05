@@ -4,7 +4,7 @@
   <parent>
     <groupId>io.camunda</groupId>
     <artifactId>operate-qa</artifactId>
-    <version>8.6.11-rc1</version>
+    <version>8.6.12-SNAPSHOT</version>
   </parent>
   <artifactId>operate-qa-migration-performance-test</artifactId>
 
