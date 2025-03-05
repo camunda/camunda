@@ -7,6 +7,7 @@
  */
 package io.camunda.application;
 
+import static io.camunda.webapps.schema.SupportedVersions.SUPPORTED_ELASTICSEARCH_VERSION;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.fail;
 
@@ -43,7 +44,7 @@ public class CamundaDockerIT {
   private static final String ELASTICSEARCH_DOCKER_IMAGE =
       System.getProperty(
           "camunda.docker.test.elasticsearch.image",
-          "docker.elastic.co/elasticsearch/elasticsearch:8.16.4");
+          "docker.elastic.co/elasticsearch/elasticsearch:" + SUPPORTED_ELASTICSEARCH_VERSION);
   private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
   private final List<GenericContainer> createdContainers = new ArrayList<>();

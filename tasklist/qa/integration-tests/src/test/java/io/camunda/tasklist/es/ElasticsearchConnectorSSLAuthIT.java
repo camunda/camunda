@@ -7,6 +7,7 @@
  */
 package io.camunda.tasklist.es;
 
+import static io.camunda.webapps.schema.SupportedVersions.SUPPORTED_ELASTICSEARCH_VERSION;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
@@ -46,7 +47,8 @@ public class ElasticsearchConnectorSSLAuthIT extends TasklistIntegrationTest {
   static String certDir = new File("src/test/resources/certs").getAbsolutePath();
 
   static ElasticsearchContainer elasticsearch =
-      new ElasticsearchContainer("docker.elastic.co/elasticsearch/elasticsearch:8.16.4")
+      new ElasticsearchContainer(
+              "docker.elastic.co/elasticsearch/elasticsearch:" + SUPPORTED_ELASTICSEARCH_VERSION)
           .withCopyFileToContainer(
               MountableFile.forHostPath("src/test/resources/certs/elastic-stack-ca.p12"),
               "/usr/share/elasticsearch/config/certs/elastic-stack-ca.p12")

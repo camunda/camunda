@@ -9,6 +9,7 @@ package io.camunda.operate.qa.util;
 
 import static io.camunda.operate.qa.util.ContainerVersionsUtil.ZEEBE_CURRENTVERSION_DOCKER_REPO_PROPERTY_NAME;
 import static io.camunda.operate.util.ThreadUtil.sleepFor;
+import static io.camunda.webapps.schema.SupportedVersions.SUPPORTED_ELASTICSEARCH_VERSION;
 import static org.testcontainers.images.PullPolicy.alwaysPull;
 
 import io.camunda.operate.exceptions.OperateRuntimeException;
@@ -297,11 +298,7 @@ public class TestContainerUtil {
     elsContainer =
         new ElasticsearchContainer(
                 String.format(
-                    "%s:%s",
-                    DOCKER_ELASTICSEARCH_IMAGE_NAME,
-                    co.elastic.clients.elasticsearch.ElasticsearchClient.class
-                        .getPackage()
-                        .getImplementationVersion()))
+                    "%s:%s", DOCKER_ELASTICSEARCH_IMAGE_NAME, SUPPORTED_ELASTICSEARCH_VERSION))
             .withNetwork(getNetwork())
             .withEnv("xpack.security.enabled", "false")
             .withEnv("path.repo", "~/")

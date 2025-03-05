@@ -7,6 +7,7 @@
  */
 package io.camunda.tasklist.es;
 
+import static io.camunda.webapps.schema.SupportedVersions.SUPPORTED_ELASTICSEARCH_VERSION;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
@@ -53,7 +54,8 @@ import org.testcontainers.elasticsearch.ElasticsearchContainer;
 public class ElasticsearchConnectorBasicAuthIT extends TasklistIntegrationTest {
 
   static ElasticsearchContainer elasticsearch =
-      new ElasticsearchContainer("docker.elastic.co/elasticsearch/elasticsearch:8.16.4")
+      new ElasticsearchContainer(
+              "docker.elastic.co/elasticsearch/elasticsearch:" + SUPPORTED_ELASTICSEARCH_VERSION)
           .withEnv(
               Map.of(
                   "xpack.security.enabled", "true",

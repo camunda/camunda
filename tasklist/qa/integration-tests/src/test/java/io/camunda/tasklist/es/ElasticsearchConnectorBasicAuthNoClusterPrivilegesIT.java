@@ -7,6 +7,7 @@
  */
 package io.camunda.tasklist.es;
 
+import static io.camunda.webapps.schema.SupportedVersions.SUPPORTED_ELASTICSEARCH_VERSION;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
@@ -73,7 +74,8 @@ public class ElasticsearchConnectorBasicAuthNoClusterPrivilegesIT extends Taskli
   private static final String ES_ADMIN_USER = "elastic";
   private static final String ES_ADMIN_PASSWORD = "changeme";
   static ElasticsearchContainer elasticsearch =
-      new ElasticsearchContainer("docker.elastic.co/elasticsearch/elasticsearch:8.16.4")
+      new ElasticsearchContainer(
+              "docker.elastic.co/elasticsearch/elasticsearch:" + SUPPORTED_ELASTICSEARCH_VERSION)
           .withEnv(Map.of("xpack.security.enabled", "true", "ELASTIC_PASSWORD", ES_ADMIN_PASSWORD))
           .withExposedPorts(9200);
   private static final String TASKLIST_ES_USER = "tasklist_user";
