@@ -5,7 +5,7 @@
   <parent>
     <groupId>io.camunda</groupId>
     <artifactId>operate-parent</artifactId>
-    <version>8.5.12</version>
+    <version>8.5.13-SNAPSHOT</version>
     <relativePath>../operate/pom.xml</relativePath>
   </parent>
 
