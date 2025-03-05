@@ -71,7 +71,7 @@
     <version.junit4>4.13.2</version.junit4>
     <version.log4j>2.24.3</version.log4j>
     <version.minlog>1.3.1</version.minlog>
-    <version.mockito>5.15.2</version.mockito>
+    <version.mockito>5.16.0</version.mockito>
     <version.model>7.7.0</version.model>
     <version.msgpack>0.9.9</version.msgpack>
     <version.netty>4.1.119.Final</version.netty>
