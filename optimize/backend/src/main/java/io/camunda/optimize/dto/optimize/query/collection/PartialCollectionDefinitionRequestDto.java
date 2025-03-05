@@ -17,10 +17,17 @@ import lombok.NoArgsConstructor;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @Data
 public class PartialCollectionDefinitionRequestDto {
+
+  protected String ownerId;
   protected String name;
   protected PartialCollectionDataDto data;
 
   public PartialCollectionDefinitionRequestDto(final String name) {
     this.name = name;
+  }
+
+  public PartialCollectionDefinitionRequestDto(final String name, final String ownerId) {
+    this.name = name;
+    this.ownerId = ownerId;
   }
 }
