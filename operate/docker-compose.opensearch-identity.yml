@@ -2,7 +2,7 @@ version: "3.6"
 
 services:
   opensearch:
-    image: opensearchproject/opensearch:2.18.0
+    image: opensearchproject/opensearch:2.19.1
     container_name: opensearch
     environment:
       - cluster.name=opensearch
