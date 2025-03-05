@@ -124,7 +124,9 @@ import java.io.InputStream;
 import java.time.Duration;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -597,8 +599,9 @@ public class RequestMapper {
         .build();
   }
 
-  public static List<String> getAuthorizedTenants() {
-    return TenantAttributeHolder.getTenantIds();
+  public static Set<String> getAuthorizedTenants() {
+    final List<String> tenantIds = TenantAttributeHolder.getTenantIds();
+    return tenantIds == null ? Collections.emptySet() : new HashSet<>(tenantIds);
   }
 
   public static Authentication getAnonymousAuthentication() {
