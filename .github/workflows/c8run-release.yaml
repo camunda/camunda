@@ -97,8 +97,8 @@ jobs:
           - name: Windows (AMD64)
             id: windows-latest
             artifactSuffix: windows-x86_64.zip
-            workingDir: .\c8run
-            command: .\c8run.exe
+            workingDir: ./c8run
+            command: ./c8run.exe
     steps:
       - uses: actions/checkout@v4
         with:
@@ -130,15 +130,14 @@ jobs:
         env:
           JAVA_ARTIFACTS_USER: ${{ steps.secrets.outputs.NEXUS_USERNAME }}
           JAVA_ARTIFACTS_PASSWORD: ${{ steps.secrets.outputs.NEXUS_PASSWORD }}
-      - name: Create artifact checksums
-        working-directory: ${{ matrix.os.workingDir }}
-        shell: bash
-        run: |
-          set -eoux
-          artifact_file="${{ env.CAMUNDA_RUN_NAME_ARTIFACT_WITH_PATCH_VERSION }}"
-          checksum_file="${artifact_file}.sha1sum"
-          echo "# ${{ env.CAMUNDA_RUN_NAME_ARTIFACT_WITH_PATCH_VERSION }}" >> ${checksum_file}
-          sha1sum "${artifact_file}" >> "${checksum_file}"
+      - name: Generate artifact checksum
+        id: checksum
+        uses: jmgilman/actions-generate-checksum@3ea6dc9bf8eecf28e2ecc982fab683484a1a8561 # v1
+        with:
+          method: sha1
+          output: "${{ env.CAMUNDA_RUN_NAME_ARTIFACT_WITH_PATCH_VERSION }}.sha1sum"
+          patterns: |
+            ${{ env.CAMUNDA_RUN_NAME_ARTIFACT_WITH_PATCH_VERSION }}
       - name: Copy artifact
         working-directory: ${{ matrix.os.workingDir }}
         shell: bash
