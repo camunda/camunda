@@ -41,13 +41,13 @@ import java.util.Optional;
 public class UserTaskProcessor implements TypedRecordProcessor<UserTaskRecord> {
 
   private static final String USER_TASK_COMPLETION_REJECTION =
-      "Completion of the User Task with key '%d' was denied by Task Listener";
+      "Completion of the User Task with key '%d' was denied by Task Listener. Reason to deny: '%s'";
 
   private static final String USER_TASK_ASSIGNMENT_REJECTION =
-      "Assignment of the User Task with key '%d' was denied by Task Listener";
+      "Assignment of the User Task with key '%d' was denied by Task Listener. Reason to deny: '%s'";
 
   private static final String USER_TASK_UPDATE_REJECTION =
-      "Update of the User Task with key '%d' was denied by Task Listener";
+      "Update of the User Task with key '%d' was denied by Task Listener. Reason to deny: '%s'";
 
   private final UserTaskCommandProcessors commandProcessors;
   private final ProcessState processState;
@@ -252,7 +252,8 @@ public class UserTaskProcessor implements TypedRecordProcessor<UserTaskRecord> {
               command.getValue(),
               command.getValueType(),
               RejectionType.INVALID_STATE,
-              mapDeniedIntentToResponseRejectionReason(intent, persistedRecord.getUserTaskKey()),
+              mapDeniedIntentToResponseRejectionReason(
+                  intent, persistedRecord.getUserTaskKey(), command.getValue().getDeniedReason()),
               metadata.getRequestId(),
               metadata.getRequestStreamId());
         });
@@ -301,11 +302,11 @@ public class UserTaskProcessor implements TypedRecordProcessor<UserTaskRecord> {
   }
 
   private String mapDeniedIntentToResponseRejectionReason(
-      final UserTaskIntent intent, final long userTaskKey) {
+      final UserTaskIntent intent, final long userTaskKey, final String deniedReason) {
     return switch (intent) {
-      case COMPLETION_DENIED -> USER_TASK_COMPLETION_REJECTION.formatted(userTaskKey);
-      case ASSIGNMENT_DENIED -> USER_TASK_ASSIGNMENT_REJECTION.formatted(userTaskKey);
-      case UPDATE_DENIED -> USER_TASK_UPDATE_REJECTION.formatted(userTaskKey);
+      case COMPLETION_DENIED -> USER_TASK_COMPLETION_REJECTION.formatted(userTaskKey, deniedReason);
+      case ASSIGNMENT_DENIED -> USER_TASK_ASSIGNMENT_REJECTION.formatted(userTaskKey, deniedReason);
+      case UPDATE_DENIED -> USER_TASK_UPDATE_REJECTION.formatted(userTaskKey, deniedReason);
       default ->
           throw new IllegalArgumentException("Unexpected user task intent: '%s'".formatted(intent));
     };
