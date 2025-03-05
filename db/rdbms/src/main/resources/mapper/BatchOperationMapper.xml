@@ -26,7 +26,7 @@
       <idArg column="BATCH_OPERATION_KEY" javaType="java.lang.Long"/>
       <arg column="ITEM_KEY" javaType="java.lang.Long"/>
       <arg column="STATE"
-        javaType="io.camunda.search.entities.BatchOperationEntity$BatchOperationItemState"/>
+        javaType="io.camunda.search.entities.BatchOperationEntity$BatchOperationState"/>
     </constructor>
   </resultMap>
 
@@ -72,6 +72,14 @@
     SET STATE = #{state}
     WHERE BATCH_OPERATION_KEY = #{batchOperationKey}
       AND ITEM_KEY = #{itemKey}
+  </update>
+
+  <update id="updateItemsWithState"
+    parameterType="io.camunda.db.rdbms.sql.BatchOperationMapper$BatchOperationItemDto">
+    UPDATE BATCH_OPERATION_ITEM
+    SET STATE = #{newState}
+    WHERE BATCH_OPERATION_KEY = #{batchOperationKey}
+      AND STATE = #{oldState}
   </update>
 
   <update id="incrementFailedOperationsCount" parameterType="java.lang.Long">

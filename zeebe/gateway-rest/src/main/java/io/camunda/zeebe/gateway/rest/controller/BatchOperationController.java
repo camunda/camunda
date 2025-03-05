@@ -8,17 +8,16 @@
 package io.camunda.zeebe.gateway.rest.controller;
 
 import static io.camunda.search.query.SearchQueryBuilders.batchOperationQuery;
+import io.camunda.zeebe.gateway.protocol.rest.BatchOperationItemSearchQueryResult;
 import static io.camunda.zeebe.gateway.rest.RestErrorMapper.mapErrorToResponse;
 
 import io.camunda.service.BatchOperationServices;
-import io.camunda.zeebe.gateway.protocol.rest.BatchOperationItemResponse;
 import io.camunda.zeebe.gateway.protocol.rest.BatchOperationResponse;
 import io.camunda.zeebe.gateway.protocol.rest.BatchOperationSearchQueryResult;
 import io.camunda.zeebe.gateway.rest.RequestMapper;
 import io.camunda.zeebe.gateway.rest.SearchQueryResponseMapper;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaGetMapping;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaPutMapping;
-import java.util.List;
 import java.util.concurrent.ExecutionException;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -50,12 +49,12 @@ public class BatchOperationController {
   }
 
   @CamundaGetMapping(path = "/{batchOperationKey}/items")
-  public ResponseEntity<List<BatchOperationItemResponse>> getItemsByKey(
+  public ResponseEntity<BatchOperationItemSearchQueryResult> getItemsByKey(
       @PathVariable("batchOperationKey") final Long batchOperationKey) {
     try {
       return ResponseEntity.ok()
           .body(
-              SearchQueryResponseMapper.toBatchOperationItems(
+              SearchQueryResponseMapper.toBatchOperationItemSearchQueryResult(
                   batchOperationServices
                       .withAuthentication(RequestMapper.getAuthentication())
                       .getItemsByKey(batchOperationKey)));
