@@ -509,7 +509,7 @@
     <dependency>
       <groupId>org.apache.tomcat</groupId>
       <artifactId>tomcat-annotations-api</artifactId>
-      <version>11.0.4</version>
+      <version>11.0.5</version>
       <scope>test</scope>
     </dependency>
   </dependencies>
