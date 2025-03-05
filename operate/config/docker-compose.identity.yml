@@ -2,7 +2,7 @@ version: "3.6"
 
 services:
   elasticsearch:
-    image: docker.elastic.co/elasticsearch/elasticsearch:8.17.2
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.17.3
     container_name: elasticsearch
     environment:
       - discovery.type=single-node

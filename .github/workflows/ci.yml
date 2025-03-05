@@ -240,7 +240,7 @@ jobs:
       # Set up an elastic search service container
       # https://docs.github.com/en/actions/use-cases-and-examples/using-containerized-services/about-service-containers
       elasticsearch:
-        image: docker.elastic.co/elasticsearch/elasticsearch:8.17.2
+        image: docker.elastic.co/elasticsearch/elasticsearch:8.17.3
         # Exposing the ports allow to be accessible via http://localhost:9200 in the runner
         ports:
           - 9200:9200
@@ -258,6 +258,11 @@ jobs:
           # Disabling to make sure we can delete indices via wildcards
           # https://www.elastic.co/guide/en/elasticsearch/reference/current/index-management-settings.html
           action.destructive_requires_name: "false"
+          # We need to configure ILM to run more often, to make sure data is cleaned up earlier
+          # Useful for tests where we verify history clean up
+          # Default is 10m
+          # https://www.elastic.co/guide/en/elasticsearch/reference/current/ilm-settings.html
+          indices.lifecycle.poll_interval: "1s"
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/setup-build
@@ -317,7 +322,7 @@ jobs:
     if: needs.detect-changes.outputs.java-code-changes == 'true'
     needs: [ detect-changes ]
     name: "[IT] OpenSearch"
-    timeout-minutes: 10
+    timeout-minutes: 15
     permissions: {}  # GITHUB_TOKEN unused in this job
     runs-on: gcp-perf-core-8-default
     env:
@@ -347,6 +352,14 @@ jobs:
           # We have to specify an initial password to bootstrap OpenSearch
           # https://opensearch.org/blog/replacing-default-admin-credentials/
           OPENSEARCH_INITIAL_ADMIN_PASSWORD: "yourStrongPassword123!"
+          # We need to configure ISM to run more often, to make sure data is cleaned up earlier
+          # Useful for tests where we verify history clean up
+          # Default is 5 - unit is minutes
+          # https://opensearch.org/docs/latest/im-plugin/ism/settings/
+          plugins.index_state_management.job_interval: "1"
+          # A randomized delay that is added to a job’s base run time to prevent a surge of activity from all indexes at the same time.
+          plugins.index_state_management.jitter: "0"
+          knn.algo_param.index_thread_qty: 4
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/setup-build
@@ -370,7 +383,7 @@ jobs:
       - name: Run integration test with externalized OS
         run: >
           ./mvnw -B -T 1 --no-snapshot-updates
-          -D forkCount=1
+          -D forkCount=2
           -D maven.javadoc.skip=true
           -D skipUTs -D skipChecks
           -D failsafe.rerunFailingTestsCount=3 -D flaky.test.reportDir=failsafe-reports

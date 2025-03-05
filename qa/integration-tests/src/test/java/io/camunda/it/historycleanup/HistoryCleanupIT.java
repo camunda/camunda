@@ -19,21 +19,20 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.response.ProcessInstanceEvent;
 import io.camunda.client.api.search.response.UserTask;
-import io.camunda.it.utils.BrokerITInvocationProvider;
-import org.junit.jupiter.api.TestTemplate;
-import org.junit.jupiter.api.extension.RegisterExtension;
+import io.camunda.qa.util.multidb.HistoryMultiDbTest;
+import java.time.Duration;
+import java.util.Objects;
+import org.awaitility.Awaitility;
+import org.junit.jupiter.api.Test;
 
+@HistoryMultiDbTest
 public class HistoryCleanupIT {
 
   static final String RESOURCE_NAME = "process/process_with_assigned_user_task.bpmn";
+  private static CamundaClient camundaClient;
 
-  // TODO use MultiDbTest when camunda exporter also supports it
-  @RegisterExtension
-  static final BrokerITInvocationProvider PROVIDER =
-      new BrokerITInvocationProvider().withoutCamundaExporter();
-
-  @TestTemplate
-  void shouldDeleteProcessesWhichAreMarkedForCleanup(final CamundaClient camundaClient) {
+  @Test
+  void shouldDeleteProcessesWhichAreMarkedForCleanup() {
     // given
     deployResource(camundaClient, RESOURCE_NAME).getProcesses().getFirst();
     waitForProcessesToBeDeployed(camundaClient, 1);
@@ -43,8 +42,13 @@ public class HistoryCleanupIT {
     waitForFlowNodeInstances(camundaClient, 2);
 
     // when we complete the user task
+    Awaitility.await("until a task is available for completion")
+        .atMost(Duration.ofMinutes(1))
+        .ignoreExceptions() // Ignore exceptions and continue retrying
+        .until(
+            () -> camundaClient.newUserTaskQuery().send().join().items().getFirst(),
+            Objects::nonNull);
     final UserTask userTask = camundaClient.newUserTaskQuery().send().join().items().getFirst();
-    assertThat(userTask).isNotNull();
     camundaClient.newUserTaskCompleteCommand(userTask.getUserTaskKey()).send().join();
 
     // then process should be ended
@@ -52,14 +56,21 @@ public class HistoryCleanupIT {
 
     // and soon it should be gone
     waitUntilProcessInstanceIsGone(camundaClient, processInstanceEvent.getProcessInstanceKey());
-    final var taskAmount =
-        camundaClient
-            .newUserTaskQuery()
-            .filter(b -> b.userTaskKey(userTask.getUserTaskKey()))
-            .send()
-            .join()
-            .page()
-            .totalItems();
-    assertThat(taskAmount).isZero();
+
+    Awaitility.await("should wait until tasks are deleted")
+        .atMost(Duration.ofMinutes(5))
+        .ignoreExceptions() // Ignore exceptions and continue retrying
+        .untilAsserted(
+            () -> {
+              final var taskAmount =
+                  camundaClient
+                      .newUserTaskQuery()
+                      .filter(b -> b.userTaskKey(userTask.getUserTaskKey()))
+                      .send()
+                      .join()
+                      .page()
+                      .totalItems();
+              assertThat(taskAmount).isZero();
+            });
   }
 }
