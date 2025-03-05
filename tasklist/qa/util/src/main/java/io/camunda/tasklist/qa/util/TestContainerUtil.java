@@ -7,6 +7,8 @@
  */
 package io.camunda.tasklist.qa.util;
 
+import static io.camunda.webapps.schema.SupportedVersions.SUPPORTED_ELASTICSEARCH_VERSION;
+
 import com.github.dockerjava.api.model.Bind;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
 import io.camunda.tasklist.util.RetryOperation;
@@ -285,11 +287,7 @@ public class TestContainerUtil {
     elsContainer =
         new ElasticsearchContainer(
                 String.format(
-                    "%s:%s",
-                    DOCKER_ELASTICSEARCH_IMAGE_NAME,
-                    co.elastic.clients.elasticsearch.ElasticsearchClient.class
-                        .getPackage()
-                        .getImplementationVersion()))
+                    "%s:%s", DOCKER_ELASTICSEARCH_IMAGE_NAME, SUPPORTED_ELASTICSEARCH_VERSION))
             .withNetwork(Network.SHARED)
             .withEnv("xpack.security.enabled", "false")
             .withEnv("path.repo", "~/")
