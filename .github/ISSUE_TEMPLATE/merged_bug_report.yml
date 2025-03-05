@@ -1,7 +1,6 @@
 name: Bug Report
 description: Report a problem and help us fix it.
 labels: ["kind/bug"]
-projects: ["camunda/138"]
 body:
   - type: dropdown
     id: Component
