@@ -35,7 +35,6 @@ import org.apache.http.HttpHost;
 import org.elasticsearch.ElasticsearchException;
 import org.elasticsearch.action.admin.cluster.health.ClusterHealthRequest;
 import org.elasticsearch.action.admin.cluster.health.ClusterHealthResponse;
-import org.elasticsearch.client.ElasticsearchClient;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestClient;
 import org.elasticsearch.client.RestHighLevelClient;
@@ -300,7 +299,9 @@ public class TestContainerUtil {
                 String.format(
                     "%s:%s",
                     DOCKER_ELASTICSEARCH_IMAGE_NAME,
-                    ElasticsearchClient.class.getPackage().getImplementationVersion()))
+                    co.elastic.clients.elasticsearch.ElasticsearchClient.class
+                        .getPackage()
+                        .getImplementationVersion()))
             .withNetwork(getNetwork())
             .withEnv("xpack.security.enabled", "false")
             .withEnv("path.repo", "~/")
@@ -309,6 +310,7 @@ public class TestContainerUtil {
     elsContainer.setWaitStrategy(
         new HostPortWaitStrategy().withStartupTimeout(Duration.ofSeconds(240L)));
     elsContainer.start();
+    elsContainer.followOutput(new Slf4jLogConsumer(LOGGER));
 
     testContext.setNetwork(getNetwork());
     testContext.setExternalElsHost(elsContainer.getContainerIpAddress());
