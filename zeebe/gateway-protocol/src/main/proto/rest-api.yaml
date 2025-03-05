@@ -5182,7 +5182,7 @@ components:
         email:
           description: The email of the user.
           type: "string"
-        key:
+        userKey:
           description: The key of the user.
           type: "string"
     UserSearchResult:

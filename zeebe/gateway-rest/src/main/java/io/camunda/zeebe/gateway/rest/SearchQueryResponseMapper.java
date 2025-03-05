@@ -487,7 +487,7 @@ public final class SearchQueryResponseMapper {
 
   public static UserResult toUser(final UserEntity user) {
     return new UserResult()
-        .key(KeyUtil.keyToString(user.userKey()))
+        .userKey(KeyUtil.keyToString(user.userKey()))
         .username(user.username())
         .email(user.email())
         .name(user.name());
