@@ -48,7 +48,7 @@ public final class MultiTenancyValidator {
     }
 
     final var authorizedTenants = RequestMapper.getAuthorizedTenants();
-    if (authorizedTenants == null || !authorizedTenants.containsAll(tenantIds)) {
+    if (!authorizedTenants.containsAll(tenantIds)) {
       return Optional.of(
           RestErrorMapper.createProblemDetail(
               HttpStatus.UNAUTHORIZED,
@@ -58,7 +58,7 @@ public final class MultiTenancyValidator {
                       tenantIds.getFirst(),
                       "the user is not authorized for that tenant")
                   : ERROR_MESSAGE_INVALID_TENANTS.formatted(
-                      commandName, tenantIds, "the user is not authorized for that tenant"),
+                      commandName, tenantIds, "the user is not authorized for all those tenants"),
               HttpStatus.UNAUTHORIZED.name()));
     }
 

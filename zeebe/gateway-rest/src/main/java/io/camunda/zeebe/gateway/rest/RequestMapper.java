@@ -90,7 +90,9 @@ import io.camunda.zeebe.util.Either;
 import java.io.IOException;
 import java.io.InputStream;
 import java.time.ZonedDateTime;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -436,7 +438,7 @@ public class RequestMapper {
   }
 
   public static Authentication getAuthentication() {
-    final Set<String> authorizedTenants = getAuthorizedTenants();
+    final List<String> authorizedTenants = TenantAttributeHolder.tenantIds();
 
     final String token =
         Authorization.jwtEncoder()
@@ -449,7 +451,8 @@ public class RequestMapper {
   }
 
   public static Set<String> getAuthorizedTenants() {
-    return TenantAttributeHolder.tenantIds();
+    final List<String> tenantIds = TenantAttributeHolder.tenantIds();
+    return tenantIds == null ? Collections.emptySet() : new HashSet<>(tenantIds);
   }
 
   public static Authentication getAnonymousAuthentication() {
