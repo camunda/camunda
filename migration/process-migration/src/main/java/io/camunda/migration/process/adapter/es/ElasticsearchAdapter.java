@@ -19,7 +19,6 @@ import co.elastic.clients.elasticsearch.core.SearchResponse;
 import co.elastic.clients.elasticsearch.core.UpdateRequest;
 import co.elastic.clients.elasticsearch.core.bulk.BulkResponseItem;
 import co.elastic.clients.elasticsearch.core.search.Hit;
-import co.elastic.clients.json.JsonData;
 import io.camunda.migration.api.MigrationException;
 import io.camunda.migration.process.adapter.Adapter;
 import io.camunda.migration.process.adapter.MigrationRepositoryIndex;
@@ -90,10 +89,13 @@ public class ElasticsearchAdapter implements Adapter {
                 q ->
                     q.range(
                         m ->
-                            m.field(PROCESS_DEFINITION_KEY)
-                                .gt(
-                                    JsonData.of(
-                                        lastMigratedEntity == null ? "" : lastMigratedEntity))))
+                            m.number(
+                                n ->
+                                    n.field(PROCESS_DEFINITION_KEY)
+                                        .gt(
+                                            lastMigratedEntity == null
+                                                ? null
+                                                : Double.valueOf(lastMigratedEntity)))))
             .build();
     final SearchResponse<ProcessEntity> searchResponse;
     try {
