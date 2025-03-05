@@ -18,6 +18,7 @@ import io.camunda.zeebe.broker.client.api.dto.BrokerRejectionResponse;
 import io.camunda.zeebe.gateway.api.job.ActivateJobsStub;
 import io.camunda.zeebe.gateway.api.util.StubbedBrokerClient;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerActivateJobsRequest;
+import io.camunda.zeebe.gateway.impl.configuration.MultiTenancyCfg;
 import io.camunda.zeebe.gateway.impl.job.ActivateJobsHandler;
 import io.camunda.zeebe.gateway.impl.job.LongPollingActivateJobsHandler;
 import io.camunda.zeebe.gateway.metrics.LongPollingMetrics;
@@ -41,6 +42,7 @@ import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.context.TestConfiguration;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.boot.test.mock.mockito.SpyBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.http.MediaType;
@@ -54,6 +56,7 @@ public class JobControllerLongPollingTest extends RestControllerTest {
   @Autowired ActivateJobsHandler<JobActivationResponse> activateJobsHandler;
   @Autowired StubbedBrokerClient stubbedBrokerClient;
   @SpyBean ResettableJobActivationRequestResponseObserver responseObserver;
+  @MockBean MultiTenancyCfg multiTenancyCfg;
 
   @BeforeEach
   void setup() {
@@ -75,7 +78,7 @@ public class JobControllerLongPollingTest extends RestControllerTest {
           "requestTimeout": 100,
           "timeout": 100,
           "fetchVariable": [],
-          "tenantIds": ["default"],
+          "tenantIds": [],
           "worker": "bar"
         }""";
     final var expectedBody =
@@ -91,7 +94,7 @@ public class JobControllerLongPollingTest extends RestControllerTest {
               "elementInstanceKey": "459",
               "retries": 12,
               "deadline": 123123123,
-              "tenantId": "default",
+              "tenantId": "<default>",
               "variables": {"bar": "world", "foo": 13},
               "customHeaders": {"bar": "val", "foo": 12},
               "processDefinitionId": "stubProcess",
@@ -107,7 +110,7 @@ public class JobControllerLongPollingTest extends RestControllerTest {
               "elementInstanceKey": "459",
               "retries": 12,
               "deadline": 123123123,
-              "tenantId": "default",
+              "tenantId": "<default>",
               "variables": {"bar": "world", "foo": 13},
               "customHeaders": {"bar": "val", "foo": 12},
               "processDefinitionId": "stubProcess",
@@ -150,7 +153,7 @@ public class JobControllerLongPollingTest extends RestControllerTest {
           "requestTimeout": 100,
           "timeout": 100,
           "fetchVariable": [],
-          "tenantIds": ["default"],
+          "tenantIds": [],
           "worker": "bar"
         }""";
     final var expectedBody =
@@ -166,7 +169,7 @@ public class JobControllerLongPollingTest extends RestControllerTest {
               "elementInstanceKey": 459,
               "retries": 12,
               "deadline": 123123123,
-              "tenantId": "default",
+              "tenantId": "<default>",
               "variables": {},
               "customHeaders": {},
               "processDefinitionId": "stubProcess",
@@ -182,7 +185,7 @@ public class JobControllerLongPollingTest extends RestControllerTest {
               "elementInstanceKey": 459,
               "retries": 12,
               "deadline": 123123123,
-              "tenantId": "default",
+              "tenantId": "<default>",
               "variables": {},
               "customHeaders": {},
               "processDefinitionId": "stubProcess",
@@ -224,7 +227,7 @@ public class JobControllerLongPollingTest extends RestControllerTest {
           "requestTimeout": 100,
           "timeout": 100,
           "fetchVariable": ["foo"],
-          "tenantIds": ["default"],
+          "tenantIds": [],
           "worker": "bar"
         }""";
     final var expectedBody =
@@ -264,7 +267,7 @@ public class JobControllerLongPollingTest extends RestControllerTest {
           "maxJobsToActivate": 2,
           "requestTimeout": 100,
           "timeout": 100,
-          "tenantIds": ["default"],
+          "tenantIds": [],
           "worker": "bar"
         }""";
 
@@ -342,7 +345,7 @@ public class JobControllerLongPollingTest extends RestControllerTest {
           "requestTimeout": 100,
           "timeout": 100,
           "fetchVariable": ["foo"],
-          "tenantIds": ["default"],
+          "tenantIds": [],
           "worker": "bar"
         }""";
     final var expectedBody =
