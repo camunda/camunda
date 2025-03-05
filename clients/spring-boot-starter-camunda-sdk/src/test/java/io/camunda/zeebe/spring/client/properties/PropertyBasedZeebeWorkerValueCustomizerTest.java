@@ -426,6 +426,60 @@ public class PropertyBasedZeebeWorkerValueCustomizerTest {
     assertThat(zeebeWorkerValue.getFetchVariables()).containsExactly("value");
   }
 
+  @Test
+  void shouldNotOverrideTypeAndNameAndFetchVariablesFromGlobalsIfSet() {
+    final CamundaClientProperties properties = properties();
+    properties.getZeebe().getDefaults().setType("globalOverride");
+    properties.getZeebe().getDefaults().setName("globalName");
+    properties.getZeebe().getDefaults().setFetchVariables(List.of("overrideVariable"));
+    final PropertyBasedZeebeWorkerValueCustomizer customizer =
+        new PropertyBasedZeebeWorkerValueCustomizer(legacyProperties(), properties);
+    final ZeebeWorkerValue jobWorkerValue = new ZeebeWorkerValue();
+    jobWorkerValue.setMethodInfo(methodInfo(this, "testBean", "sampleWorkerWithJsonProperty"));
+    jobWorkerValue.setType("initialValue");
+    jobWorkerValue.setName("someName");
+    jobWorkerValue.setFetchVariables(List.of("initialVariable"));
+    customizer.customize(jobWorkerValue);
+    assertThat(jobWorkerValue.getType()).isEqualTo("initialValue");
+    assertThat(jobWorkerValue.getName()).isEqualTo("someName");
+    assertThat(jobWorkerValue.getFetchVariables()).contains("initialVariable");
+  }
+
+  @Test
+  void shouldOverrideTypeAndNameFromGlobalsIfNotSet() {
+    final CamundaClientProperties properties = properties();
+    properties.getZeebe().getDefaults().setType("globalOverride");
+    properties.getZeebe().getDefaults().setName("globalName");
+    final PropertyBasedZeebeWorkerValueCustomizer customizer =
+        new PropertyBasedZeebeWorkerValueCustomizer(legacyProperties(), properties);
+    final ZeebeWorkerValue jobWorkerValue = new ZeebeWorkerValue();
+    jobWorkerValue.setMethodInfo(methodInfo(this, "testBean", "sampleWorkerWithJsonProperty"));
+    customizer.customize(jobWorkerValue);
+    assertThat(jobWorkerValue.getType()).isEqualTo("globalOverride");
+    assertThat(jobWorkerValue.getName()).isEqualTo("globalName");
+  }
+
+  @Test
+  void shouldOverrideTypeAndNameAndFetchVariablesFromLocalsIfSet() {
+    final CamundaClientProperties properties = properties();
+    final ZeebeWorkerValue override = new ZeebeWorkerValue();
+    override.setType("localOverride");
+    override.setName("localName");
+    override.setFetchVariables(List.of("overrideVariable"));
+    properties.getZeebe().getOverride().put("initialValue", override);
+    final PropertyBasedZeebeWorkerValueCustomizer customizer =
+        new PropertyBasedZeebeWorkerValueCustomizer(legacyProperties(), properties);
+    final ZeebeWorkerValue jobWorkerValue = new ZeebeWorkerValue();
+    jobWorkerValue.setMethodInfo(methodInfo(this, "testBean", "sampleWorkerWithJsonProperty"));
+    jobWorkerValue.setType("initialValue");
+    jobWorkerValue.setName("someName");
+    jobWorkerValue.setFetchVariables(List.of("initialVariable"));
+    customizer.customize(jobWorkerValue);
+    assertThat(jobWorkerValue.getType()).isEqualTo("localOverride");
+    assertThat(jobWorkerValue.getName()).isEqualTo("localName");
+    assertThat(jobWorkerValue.getFetchVariables()).contains("overrideVariable");
+  }
+
   private static final class ComplexProcessVariable {
     private String var3;
     private String var4;

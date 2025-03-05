@@ -28,6 +28,7 @@ import io.camunda.zeebe.spring.client.annotation.VariablesAsType;
 import io.camunda.zeebe.spring.client.annotation.customizer.ZeebeWorkerValueCustomizer;
 import io.camunda.zeebe.spring.client.annotation.value.ZeebeWorkerValue;
 import io.camunda.zeebe.spring.client.bean.CopyNotNullBeanUtilsBean;
+import io.camunda.zeebe.spring.client.bean.CopyWithProtectionBeanUtilsBean;
 import io.camunda.zeebe.spring.client.bean.MethodInfo;
 import io.camunda.zeebe.spring.client.bean.ParameterInfo;
 import io.camunda.zeebe.spring.client.properties.common.ZeebeClientProperties;
@@ -47,7 +48,10 @@ import org.springframework.util.ReflectionUtils;
 public class PropertyBasedZeebeWorkerValueCustomizer implements ZeebeWorkerValueCustomizer {
   private static final Logger LOG =
       LoggerFactory.getLogger(PropertyBasedZeebeWorkerValueCustomizer.class);
-  private static final CopyNotNullBeanUtilsBean BEAN_UTILS_BEAN = new CopyNotNullBeanUtilsBean();
+  private static final CopyNotNullBeanUtilsBean COPY_NOT_NULL_BEAN_UTILS_BEAN =
+      new CopyNotNullBeanUtilsBean();
+  private static final CopyWithProtectionBeanUtilsBean COPY_WITH_PROTECTION_BEAN_UTILS_BEAN =
+      new CopyWithProtectionBeanUtilsBean(Set.of("name", "type", "fetchVariables"));
 
   private final ZeebeClientConfigurationProperties zeebeClientConfigurationProperties;
   private final CamundaClientProperties camundaClientProperties;
@@ -146,7 +150,7 @@ public class PropertyBasedZeebeWorkerValueCustomizer implements ZeebeWorkerValue
       if (ofNullable(camundaClientProperties.getZeebe())
           .map(ZeebeClientProperties::getDefaults)
           .isPresent()) {
-        BEAN_UTILS_BEAN.copyProperties(
+        COPY_WITH_PROTECTION_BEAN_UTILS_BEAN.copyProperties(
             zeebeWorker, camundaClientProperties.getZeebe().getDefaults());
       }
     } catch (final IllegalAccessException | InvocationTargetException e) {
@@ -162,7 +166,7 @@ public class PropertyBasedZeebeWorkerValueCustomizer implements ZeebeWorkerValue
       final ZeebeWorkerValue zeebeWorkerValue = workerConfigurationMap.get(workerType);
       LOG.debug("Worker '{}': Applying overrides {}", workerType, zeebeWorkerValue);
       try {
-        BEAN_UTILS_BEAN.copyProperties(zeebeWorker, zeebeWorkerValue);
+        COPY_NOT_NULL_BEAN_UTILS_BEAN.copyProperties(zeebeWorker, zeebeWorkerValue);
       } catch (final IllegalAccessException | InvocationTargetException e) {
         throw new RuntimeException(
             "Error while copying properties from " + zeebeWorkerValue + " to " + zeebeWorker, e);
