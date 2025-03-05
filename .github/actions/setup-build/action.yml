@@ -136,7 +136,7 @@ runs:
     # Secrets are imported only if current workflow run is not related to a fork PR
     if: steps.is-fork.outputs.is-fork != 'true'
     id: secrets
-    uses: hashicorp/vault-action@v3.0.0
+    uses: hashicorp/vault-action@v3.3.0
     with:
       url: ${{ inputs.vault-address }}
       method: approle

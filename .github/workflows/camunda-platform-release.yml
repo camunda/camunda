@@ -51,7 +51,7 @@ jobs:
           ref: ${{ env.RELEASE_BRANCH }}
       - name: Import Secrets
         id: secrets
-        uses: hashicorp/vault-action@v3.0.0
+        uses: hashicorp/vault-action@v3.3.0
         with:
           url: ${{ secrets.VAULT_ADDR }}
           method: approle
@@ -344,7 +344,7 @@ jobs:
           ref: ${{ env.RELEASE_BRANCH }}
       - name: Import Secrets
         id: secrets
-        uses: hashicorp/vault-action@v3.0.0
+        uses: hashicorp/vault-action@v3.3.0
         with:
           url: ${{ secrets.VAULT_ADDR }}
           method: approle
@@ -423,7 +423,7 @@ jobs:
           ref: ${{ env.RELEASE_BRANCH }}
       - name: Import Secrets
         id: secrets
-        uses: hashicorp/vault-action@v3.0.0
+        uses: hashicorp/vault-action@v3.3.0
         with:
           url: ${{ secrets.VAULT_ADDR }}
           method: approle
@@ -510,7 +510,7 @@ jobs:
           ref: ${{ env.RELEASE_BRANCH }}
       - name: Import Secrets
         id: secrets
-        uses: hashicorp/vault-action@d1720f055e0635fd932a1d2a48f87a666a57906c # v3.0.0
+        uses: hashicorp/vault-action@7709c609789c5e27b757a85817483caadbb5939a # v3.3.0
         with:
           url: ${{ secrets.VAULT_ADDR }}
           method: approle
@@ -596,7 +596,7 @@ jobs:
           ref: ${{ env.RELEASE_BRANCH }}
       - name: Import Secrets
         id: secrets
-        uses: hashicorp/vault-action@v3.0.0
+        uses: hashicorp/vault-action@v3.3.0
         with:
           url: ${{ secrets.VAULT_ADDR }}
           method: approle
@@ -678,7 +678,7 @@ jobs:
           ref: ${{ env.RELEASE_BRANCH }}
       - name: Import Secrets
         id: secrets
-        uses: hashicorp/vault-action@v3.0.0
+        uses: hashicorp/vault-action@v3.3.0
         with:
           url: ${{ secrets.VAULT_ADDR }}
           method: approle
