@@ -20,7 +20,6 @@ import io.camunda.exporter.schema.SearchEngineClient;
 import io.camunda.exporter.schema.elasticsearch.ElasticsearchEngineClient;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.exporter.store.ElasticsearchBatchRequest;
-import io.camunda.exporter.utils.ElasticsearchScriptBuilder;
 import io.camunda.search.connect.configuration.ConnectConfiguration;
 import io.camunda.search.connect.es.ElasticsearchConnector;
 import java.io.IOException;
@@ -51,8 +50,7 @@ class ElasticsearchAdapter implements ClientAdapter {
 
   @Override
   public BatchRequest createBatchRequest() {
-    return new ElasticsearchBatchRequest(
-        client, new BulkRequest.Builder(), new ElasticsearchScriptBuilder());
+    return new ElasticsearchBatchRequest(client, new BulkRequest.Builder());
   }
 
   @Override
