@@ -8,6 +8,7 @@
 package io.camunda.zeebe.gateway.rest.validator;
 
 import static io.camunda.zeebe.gateway.rest.validator.ErrorMessages.ERROR_MESSAGE_INVALID_TENANT;
+import static io.camunda.zeebe.gateway.rest.validator.ErrorMessages.ERROR_MESSAGE_INVALID_TENANTS;
 import static io.camunda.zeebe.gateway.rest.validator.RequestValidator.createProblemDetail;
 import static io.camunda.zeebe.protocol.record.RejectionType.INVALID_ARGUMENT;
 
@@ -36,17 +37,28 @@ public final class MultiTenancyValidator {
    */
   public static Optional<ProblemDetail> validateAuthorization(
       final String tenantId, final boolean multiTenancyEnabled, final String commandName) {
+    return validateAuthorizations(
+        tenantId == null ? List.of() : List.of(tenantId), multiTenancyEnabled, commandName);
+  }
+
+  public static Optional<ProblemDetail> validateAuthorizations(
+      final List<String> tenantIds, final boolean multiTenancyEnabled, final String commandName) {
     if (!multiTenancyEnabled) {
       return Optional.empty();
     }
 
     final var authorizedTenants = RequestMapper.getAuthentication().authenticatedTenantIds();
-    if (authorizedTenants == null || !authorizedTenants.contains(tenantId)) {
+    if (authorizedTenants == null || !authorizedTenants.containsAll(tenantIds)) {
       return Optional.of(
           RestErrorMapper.createProblemDetail(
               HttpStatus.UNAUTHORIZED,
-              ERROR_MESSAGE_INVALID_TENANT.formatted(
-                  commandName, tenantId, "tenant is not authorized to perform this request"),
+              tenantIds.size() == 1
+                  ? ERROR_MESSAGE_INVALID_TENANT.formatted(
+                      commandName,
+                      tenantIds.getFirst(),
+                      "tenant is not authorized to perform this request")
+                  : ERROR_MESSAGE_INVALID_TENANTS.formatted(
+                      commandName, tenantIds, "tenant is not authorized to perform this request"),
               HttpStatus.UNAUTHORIZED.name()));
     }
 
@@ -70,39 +82,60 @@ public final class MultiTenancyValidator {
    */
   public static Either<ProblemDetail, String> validateTenantId(
       final String tenantId, final boolean multiTenancyEnabled, final String commandName) {
-    final var hasTenantId = tenantId != null && !tenantId.isBlank();
+    return validateTenantIds(
+            tenantId == null ? List.of() : List.of(tenantId), multiTenancyEnabled, commandName)
+        .map(List::getFirst);
+  }
+
+  public static Either<ProblemDetail, List<String>> validateTenantIds(
+      final List<String> tenantIds, final boolean multiTenancyEnabled, final String commandName) {
+    final var hasTenantId =
+        tenantIds != null
+            && !tenantIds.isEmpty()
+            && tenantIds.stream().anyMatch(id -> !id.isBlank());
     if (!multiTenancyEnabled) {
-      if (hasTenantId && !TenantOwned.DEFAULT_TENANT_IDENTIFIER.equals(tenantId)) {
+      if (hasTenantId
+          && tenantIds.stream()
+              .anyMatch(tenantId -> !TenantOwned.DEFAULT_TENANT_IDENTIFIER.equals(tenantId))) {
+        // Anything else than the default tenant was provided
         return Either.left(
             RestErrorMapper.createProblemDetail(
                 HttpStatus.BAD_REQUEST,
-                ERROR_MESSAGE_INVALID_TENANT.formatted(
-                    commandName, tenantId, "multi-tenancy is disabled"),
+                tenantIds.size() > 1
+                    ? ERROR_MESSAGE_INVALID_TENANTS.formatted(
+                        commandName, tenantIds, "multi-tenancy is disabled")
+                    : ERROR_MESSAGE_INVALID_TENANT.formatted(
+                        commandName, tenantIds.getFirst(), "multi-tenancy is disabled"),
                 INVALID_ARGUMENT.name()));
       }
 
-      return Either.right(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+      return Either.right(List.of(TenantOwned.DEFAULT_TENANT_IDENTIFIER));
     }
 
     final List<String> violations = new ArrayList<>();
     if (!hasTenantId) {
       violations.add(
-          ERROR_MESSAGE_INVALID_TENANT.formatted(
-              commandName, tenantId, "no tenant identifier was provided"));
-    } else if (tenantId.length() > 31) {
-      violations.add(
-          ERROR_MESSAGE_INVALID_TENANT.formatted(
-              commandName, tenantId, "tenant identifier is longer than 31 characters"));
-    } else if (!TenantOwned.DEFAULT_TENANT_IDENTIFIER.equals(tenantId)
-        && !TENANT_ID_MASK.matcher(tenantId).matches()) {
-      violations.add(
-          ERROR_MESSAGE_INVALID_TENANT.formatted(
-              commandName, tenantId, "tenant identifier contains illegal characters"));
+          ERROR_MESSAGE_INVALID_TENANTS.formatted(
+              commandName, tenantIds, "no tenant identifier was provided"));
+    } else {
+      tenantIds.forEach(
+          tenantId -> {
+            if (tenantId.length() > 31) {
+              violations.add(
+                  ERROR_MESSAGE_INVALID_TENANT.formatted(
+                      commandName, tenantId, "tenant identifier is longer than 31 characters"));
+            } else if (!TenantOwned.DEFAULT_TENANT_IDENTIFIER.equals(tenantId)
+                && !TENANT_ID_MASK.matcher(tenantId).matches()) {
+              violations.add(
+                  ERROR_MESSAGE_INVALID_TENANT.formatted(
+                      commandName, tenantId, "tenant identifier contains illegal characters"));
+            }
+          });
     }
 
     final var problemDetail = createProblemDetail(violations);
     return problemDetail
-        .<Either<ProblemDetail, String>>map(Either::left)
-        .orElseGet(() -> Either.right(tenantId));
+        .<Either<ProblemDetail, List<String>>>map(Either::left)
+        .orElseGet(() -> Either.right(tenantIds));
   }
 }
