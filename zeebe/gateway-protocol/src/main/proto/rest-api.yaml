@@ -4195,6 +4195,11 @@ components:
           description: The parent flow node instance key.
           allOf:
             - $ref: "#/components/schemas/BasicStringFilterProperty"
+        batchOperationId:
+          description: The batch operation ID.
+          allOf:
+            - $ref: "#/components/schemas/StringFilterProperty"
+
     ProcessInstanceVariableFilterRequest:
       description: Process instance variable filter.
       type: object
