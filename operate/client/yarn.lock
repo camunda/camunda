@@ -1234,9 +1234,9 @@
     react-markdown "8.0.7"
 
 "@camunda8/sdk@^8.6.8":
-  version "8.6.29"
-  resolved "https://registry.yarnpkg.com/@camunda8/sdk/-/sdk-8.6.29.tgz#77be8bb5e855b7e436b3dcf121c56c465b3ea37e"
-  integrity sha512-OhYvRWrZmXb8pCBYtbKsDiAH2qhEf0oSYf2VpcL38sENR6U3E/MXz8OqT1kSjdMLdvsscwrg4devEXAz18/cPA==
+  version "8.6.30"
+  resolved "https://registry.yarnpkg.com/@camunda8/sdk/-/sdk-8.6.30.tgz#b2474cdda6c68c8cc451f70b67d3d6aa90bd0bf2"
+  integrity sha512-zQe+IL7XMXNASE5gNmNvYhifJrjknEwPhbZ9dKtMs1nhD6svwEed93DCqlTmU3fs4raNi7FPO/yqWicavGQTKg==
   dependencies:
     "@grpc/grpc-js" "1.12.5"
     "@grpc/proto-loader" "0.7.13"
