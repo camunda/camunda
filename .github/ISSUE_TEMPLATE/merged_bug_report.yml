@@ -1,0 +1,97 @@
+name: Bug Report
+description: Report a problem and help us fix it.
+labels: ["kind/bug"]
+projects: ["camunda/138"]
+body:
+  - type: dropdown
+    id: Component
+    attributes:
+      label: Component
+      description: In which component did the issue occur?
+      options:
+        - Not sure*
+        - Operate*
+        - Optimize*
+        - Tasklist*
+        - Zeebe*
+        - Desktop Modeler*
+        - Web Modeler*
+        - Connectors*
+        - Identity*
+        - Console*
+        - Controller*
+        - Helm*
+        - C8Run*
+        - RPA*
+      default: 0
+    validations:
+      required: true
+  - type: textarea
+    id: description
+    attributes:
+      label: Describe the bug
+      description: A clear and concise description of what the bug is.
+    validations:
+      required: true
+  - type: textarea
+    id: steps-reproduction
+    attributes:
+      label: Steps to reproduce
+      description: Clear steps that allow us to reproduce the error.
+      value: |
+             1. do this
+             2. do that
+             3. now this happens
+    validations:
+      required: true
+  - type: textarea
+    id: expected-behavior
+    attributes:
+      label: Expected behavior
+      description: A clear and concise description of what you expected to happen. 
+    validations:
+      required: true
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: 'The environment on which this error was observed. Hint: you may use the "Provide feedback" button in the bottom-right corner of the Camunda Modeler to copy environment info directly to your clipboard!'
+      value: |
+             - OS: [e.g. MacOS 10.2, Windows 10]
+             - Camunda Modeler Version: [e.g. 2.0.0]
+             - Execution Platform: [e.g. Camunda 7, Camunda 8]
+             - Installed plug-ins: [...]
+    validations:
+      required: true
+  - type: textarea
+    id: additional-context
+    attributes:
+      label: Additional context
+      description: Anything else that might help us to evaluate the error.
+    validations:
+      required: false
+  - type: textarea
+    id: links
+    attributes:
+      label: Support ticket link
+      description: Add link to the support ticket here if applicable.
+    validations:
+      required: false
+  - type: markdown
+    attributes:
+      value: |
+        ## To be filled out by the engineer:
+  - type: checkboxes
+    id: DOR
+    attributes:
+      label: Definition of Ready
+      description: 
+      options:
+        - label: The bug has been reproduced by the assignee. Otherwise the issue has been closed with a comment.
+          required: false
+        - label: The issue has a meaningful title, description and testable acceptance criteria.
+          required: false
+        - label: Necessary screenshots, screen recordingns or files has been attached to the bug report.
+          required: false
+        - label: Environment details are checked and complete.
+          required: false
