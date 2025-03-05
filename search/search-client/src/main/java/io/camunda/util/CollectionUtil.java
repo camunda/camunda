@@ -10,8 +10,10 @@ package io.camunda.util;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 public final class CollectionUtil {
@@ -54,6 +56,29 @@ public final class CollectionUtil {
   public static <T> List<T> addValuesToList(final List<T> list, final List<T> values) {
     final List<T> result = Objects.requireNonNullElse(list, new ArrayList<>());
     result.addAll(Objects.requireNonNullElse(values, new ArrayList<>()));
+    return result;
+  }
+
+  /**
+   * Adds given values to a set.
+   *
+   * <p>This method can handle null-values gracefully.
+   *
+   * <p>This means, if either one of the given set is empty, and empty HashSet will be used instead.
+   *
+   * <p>Example:
+   *
+   * <p>* addValuesToSet(null, Set.of(1)) -> Set(1) * addValuesToSet(Set.of(1), null) -> Set(1) *
+   * addValuesToSet(null, null) -> Set() * addValuesToSet(Set.of(1), Set.of(2)) -> Set(1, 2)
+   *
+   * @param set where the values should be added to
+   * @param values the values which should be added
+   * @return the given set (when not empty) otherwise a new set containing the values
+   * @param <T> the set value type
+   */
+  public static <T> Set<T> addValuesToSet(final Set<T> set, final Collection<T> values) {
+    final Set<T> result = Objects.requireNonNullElse(set, new HashSet<>());
+    result.addAll(Objects.requireNonNullElse(values, new HashSet<>()));
     return result;
   }
 
