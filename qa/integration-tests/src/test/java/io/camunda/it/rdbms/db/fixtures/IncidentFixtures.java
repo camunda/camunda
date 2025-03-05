@@ -17,7 +17,8 @@ import java.util.function.Function;
 
 public final class IncidentFixtures extends CommonFixtures {
 
-  private IncidentFixtures() {}
+  private IncidentFixtures() {
+  }
 
   public static IncidentDbModel createRandomized(
       final Function<IncidentDbModel.Builder, IncidentDbModel.Builder> builderFunction) {
@@ -35,7 +36,8 @@ public final class IncidentFixtures extends CommonFixtures {
             .errorMessage("error-" + generateRandomString(20))
             .creationDate(NOW.plus(RANDOM.nextInt(), ChronoUnit.MILLIS))
             .tenantId("tenant-" + generateRandomString(20))
-            .treePath("tree-" + generateRandomString(20));
+            .treePath("tree-" + generateRandomString(20))
+            .partitionId(RANDOM.nextInt(100));
 
     return builderFunction.apply(builder).build();
   }

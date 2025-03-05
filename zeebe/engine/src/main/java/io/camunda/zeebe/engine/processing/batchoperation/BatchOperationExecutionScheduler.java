@@ -7,10 +7,9 @@
  */
 package io.camunda.zeebe.engine.processing.batchoperation;
 
-import static io.camunda.search.query.SearchQueryBuilders.processInstanceSearchQuery;
-
 import io.camunda.search.entities.ProcessInstanceEntity;
 import io.camunda.search.filter.ProcessInstanceFilter;
+import static io.camunda.search.query.SearchQueryBuilders.processInstanceSearchQuery;
 import io.camunda.service.ProcessInstanceServices;
 import io.camunda.service.search.core.SearchQueryService;
 import io.camunda.zeebe.engine.state.batchoperation.PersistedBatchOperation;
@@ -24,12 +23,14 @@ import io.camunda.zeebe.stream.api.scheduling.TaskResult;
 import io.camunda.zeebe.stream.api.scheduling.TaskResultBuilder;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import java.time.Duration;
+import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class BatchOperationExecutionScheduler implements StreamProcessorLifecycleAware {
+
   private static final Logger LOG = LoggerFactory.getLogger(BatchOperationExecutionScheduler.class);
   private static final int BATCH_SIZE = 10;
   private final Duration pollingInterval;
@@ -85,16 +86,15 @@ public class BatchOperationExecutionScheduler implements StreamProcessorLifecycl
   private Set<Long> queryKeys(final PersistedBatchOperation batchOperation) {
     return switch (batchOperation.getBatchOperationType()) {
       case PROCESS_CANCELLATION -> queryProcessInstanceKeys(batchOperation);
-      default ->
-          throw new IllegalArgumentException(
-              "Unexpected batch operation type: " + batchOperation.getBatchOperationType());
+      default -> throw new IllegalArgumentException(
+          "Unexpected batch operation type: " + batchOperation.getBatchOperationType());
     };
   }
 
   private Set<Long> queryProcessInstanceKeys(final PersistedBatchOperation batchOperation) {
-    final var filter = batchOperation.getFilter(ProcessInstanceFilter.class);
-    final var partitionId = processingContext.getPartitionId();
-    // TODO add partition id to the filter
+    final var filter = batchOperation.getFilter(ProcessInstanceFilter.class).toBuilder()
+        .partitionIds(List.of(processingContext.getPartitionId()))
+        .build();
     final var query =
         processInstanceSearchQuery(
             q ->
