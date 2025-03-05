@@ -11,6 +11,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 
 import com.jayway.jsonpath.JsonPath;
+import io.camunda.security.configuration.MultiTenancyConfiguration;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.service.JobServices;
 import io.camunda.service.security.SecurityContextProvider;
@@ -42,6 +43,7 @@ import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.context.TestConfiguration;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.boot.test.mock.mockito.SpyBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.http.MediaType;
@@ -55,6 +57,7 @@ public class JobControllerLongPollingTest extends RestControllerTest {
   @Autowired ActivateJobsHandler<JobActivationResult> activateJobsHandler;
   @Autowired StubbedBrokerClient stubbedBrokerClient;
   @SpyBean ResettableJobActivationRequestResponseObserver responseObserver;
+  @MockBean MultiTenancyConfiguration multiTenancyCfg;
 
   @BeforeEach
   void setup() {
@@ -76,7 +79,7 @@ public class JobControllerLongPollingTest extends RestControllerTest {
           "requestTimeout": 100,
           "timeout": 100,
           "fetchVariable": [],
-          "tenantIds": ["default"],
+          "tenantIds": [],
           "worker": "bar"
         }""";
     final var expectedBody =
@@ -92,7 +95,7 @@ public class JobControllerLongPollingTest extends RestControllerTest {
               "elementInstanceKey": "459",
               "retries": 12,
               "deadline": 123123123,
-              "tenantId": "default",
+              "tenantId": "<default>",
               "variables": {"bar": "world", "foo": 13},
               "customHeaders": {"bar": "val", "foo": 12},
               "processDefinitionId": "stubProcess",
@@ -108,7 +111,7 @@ public class JobControllerLongPollingTest extends RestControllerTest {
               "elementInstanceKey": "459",
               "retries": 12,
               "deadline": 123123123,
-              "tenantId": "default",
+              "tenantId": "<default>",
               "variables": {"bar": "world", "foo": 13},
               "customHeaders": {"bar": "val", "foo": 12},
               "processDefinitionId": "stubProcess",
@@ -150,7 +153,7 @@ public class JobControllerLongPollingTest extends RestControllerTest {
           "requestTimeout": 100,
           "timeout": 100,
           "fetchVariable": ["foo"],
-          "tenantIds": ["default"],
+          "tenantIds": [],
           "worker": "bar"
         }""";
     final var expectedBody =
@@ -190,7 +193,7 @@ public class JobControllerLongPollingTest extends RestControllerTest {
           "maxJobsToActivate": 2,
           "requestTimeout": 100,
           "timeout": 100,
-          "tenantIds": ["default"],
+          "tenantIds": [],
           "worker": "bar"
         }""";
 
@@ -268,7 +271,7 @@ public class JobControllerLongPollingTest extends RestControllerTest {
           "requestTimeout": 100,
           "timeout": 100,
           "fetchVariable": ["foo"],
-          "tenantIds": ["default"],
+          "tenantIds": [],
           "worker": "bar"
         }""";
     final var expectedBody =

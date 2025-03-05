@@ -13,9 +13,11 @@ import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import io.camunda.security.auth.Authentication;
+import io.camunda.security.configuration.MultiTenancyConfiguration;
 import io.camunda.service.JobServices;
 import io.camunda.service.JobServices.UpdateJobChangeset;
 import io.camunda.zeebe.gateway.protocol.rest.JobActivationResult;
@@ -27,13 +29,18 @@ import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
+import org.springframework.test.web.reactive.server.WebTestClient.ResponseSpec;
 
 @WebMvcTest(JobController.class)
 public class JobControllerTest extends RestControllerTest {
@@ -41,6 +48,7 @@ public class JobControllerTest extends RestControllerTest {
   static final String JOBS_BASE_URL = "/v2/jobs";
 
   @MockBean JobServices<JobActivationResult> jobServices;
+  @MockBean MultiTenancyConfiguration multiTenancyCfg;
   @MockBean ResponseObserverProvider responseObserverProvider;
 
   @BeforeEach
@@ -799,5 +807,65 @@ public class JobControllerTest extends RestControllerTest {
         .contentType(MediaType.APPLICATION_PROBLEM_JSON)
         .expectBody()
         .json(expectedBody);
+  }
+
+  @ParameterizedTest
+  @MethodSource("tenantLists")
+  void shouldRejectActivateJobWithUnauthorizedTenantWhenMultiTenancyEnabled(
+      final List<String> tenantIds) {
+    // given
+    when(multiTenancyCfg.isEnabled()).thenReturn(true);
+    final var request =
+        """
+        {
+          "type": "TEST",
+          "maxJobsToActivate": 2,
+          "requestTimeout": 100,
+          "timeout": 100,
+          "fetchVariable": [],
+          "tenantIds": %s,
+          "worker": "bar"
+        }"""
+            .formatted(tenantIds.stream().map("\"%s\""::formatted).toList());
+
+    // when then
+    final ResponseSpec response =
+        withMultiTenancy(
+            "tenantId",
+            client ->
+                client
+                    .post()
+                    .uri(JOBS_BASE_URL + "/activation")
+                    .accept(MediaType.APPLICATION_JSON)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .bodyValue(request)
+                    .exchange()
+                    .expectStatus()
+                    .isUnauthorized());
+    response
+        .expectBody()
+        .json(
+            """
+            {
+              "type": "about:blank",
+              "status": 401,
+              "title": "UNAUTHORIZED",
+              "detail": "Expected to handle request Activate Jobs with tenant %s, but tenant is not authorized to perform this request",
+              "instance": "%s"
+            }"""
+                .formatted(
+                    tenantIds.size() == 1
+                        ? "identifier '" + tenantIds.getFirst() + "'"
+                        : "identifiers " + tenantIds,
+                    JOBS_BASE_URL + "/activation"));
+    verifyNoInteractions(jobServices);
+  }
+
+  static Stream<Arguments> tenantLists() {
+    return Stream.of(
+        Arguments.of(List.of("unauthorizedTenant")),
+        Arguments.of(List.of("tenantId", "unauthorizedTenant")),
+        Arguments.of(List.of("tenantId", "<default>")),
+        Arguments.of(List.of("<default>")));
   }
 }
