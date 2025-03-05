@@ -83,6 +83,8 @@ public class MultiTenancyOverIdentityIT {
   private static final String KEYCLOAK_PASSWORD = "admin";
   private static final String KEYCLOAK_PATH_CAMUNDA_REALM = "/realms/camunda-platform";
   private static final String ZEEBE_CLIENT_ID_TENANT_A = "zeebe-tenant-a-and-default";
+  private static final String ZEEBE_CLIENT_ID_TENANT_A_WITHOUT_DEFAULT_TENANT =
+      "zeebe-tenant-a-without-default";
   private static final String ZEEBE_CLIENT_ID_TENANT_B = "zeebe-tenant-b-and-default";
   private static final String ZEEBE_CLIENT_ID_TENANT_A_AND_B = "zeebe-tenant-a-and-b-and-default";
   private static final String ZEEBE_CLIENT_ID_TENANT_DEFAULT = ZEEBE_CLIENT_ID_TENANT_A;
@@ -141,6 +143,12 @@ public class MultiTenancyOverIdentityIT {
           .withEnv("KEYCLOAK_CLIENTS_0_TYPE", "m2m")
           .withEnv("KEYCLOAK_CLIENTS_0_PERMISSIONS_0_RESOURCE_SERVER_ID", ZEEBE_CLIENT_AUDIENCE)
           .withEnv("KEYCLOAK_CLIENTS_0_PERMISSIONS_0_DEFINITION", "write:*")
+          .withEnv("KEYCLOAK_CLIENTS_4_NAME", ZEEBE_CLIENT_ID_TENANT_A_WITHOUT_DEFAULT_TENANT)
+          .withEnv("KEYCLOAK_CLIENTS_4_ID", ZEEBE_CLIENT_ID_TENANT_A_WITHOUT_DEFAULT_TENANT)
+          .withEnv("KEYCLOAK_CLIENTS_4_SECRET", ZEEBE_CLIENT_SECRET)
+          .withEnv("KEYCLOAK_CLIENTS_4_TYPE", "m2m")
+          .withEnv("KEYCLOAK_CLIENTS_4_PERMISSIONS_0_RESOURCE_SERVER_ID", ZEEBE_CLIENT_AUDIENCE)
+          .withEnv("KEYCLOAK_CLIENTS_4_PERMISSIONS_0_DEFINITION", "write:*")
           .withEnv("KEYCLOAK_CLIENTS_1_NAME", ZEEBE_CLIENT_ID_TENANT_B)
           .withEnv("KEYCLOAK_CLIENTS_1_ID", ZEEBE_CLIENT_ID_TENANT_B)
           .withEnv("KEYCLOAK_CLIENTS_1_SECRET", ZEEBE_CLIENT_SECRET)
@@ -216,6 +224,7 @@ public class MultiTenancyOverIdentityIT {
         .await(TestHealthProbe.READY);
 
     associateTenantsWithClient(List.of(DEFAULT_TENANT, TENANT_A), ZEEBE_CLIENT_ID_TENANT_A);
+    associateTenantsWithClient(List.of(TENANT_A), ZEEBE_CLIENT_ID_TENANT_A_WITHOUT_DEFAULT_TENANT);
     associateTenantsWithClient(List.of(DEFAULT_TENANT, TENANT_B), ZEEBE_CLIENT_ID_TENANT_B);
     associateTenantsWithClient(
         List.of(DEFAULT_TENANT, TENANT_A, TENANT_B), ZEEBE_CLIENT_ID_TENANT_A_AND_B);
@@ -283,7 +292,7 @@ public class MultiTenancyOverIdentityIT {
   }
 
   @Test
-  void shouldDenyDeployProcessWhenUnauthorized() {
+  void shouldDenyDeployResourceWhenUnauthorized() {
     // given
     try (final var client = createZeebeClient(ZEEBE_CLIENT_ID_TENANT_A)) {
       // when
@@ -301,6 +310,50 @@ public class MultiTenancyOverIdentityIT {
           .withMessageContaining("PERMISSION_DENIED")
           .withMessageContaining(
               "Expected to handle gRPC request DeployResource with tenant identifier 'tenant-b'")
+          .withMessageContaining("but tenant is not authorized to perform this request");
+    }
+  }
+
+  @Test
+  void shouldDenyDeployResourceWhenUnauthorizedForDefaultTenant() {
+    // given
+    try (final var client = createZeebeClient(ZEEBE_CLIENT_ID_TENANT_A_WITHOUT_DEFAULT_TENANT)) {
+      // when
+      final Future<DeploymentEvent> result =
+          client
+              .newDeployResourceCommand()
+              .addProcessModel(process, "process.bpmn")
+              .tenantId(DEFAULT_TENANT)
+              .send();
+
+      // then
+      assertThat(result)
+          .failsWithin(Duration.ofSeconds(10))
+          .withThrowableThat()
+          .withMessageContaining("PERMISSION_DENIED")
+          .withMessageContaining(
+              "Expected to handle gRPC request DeployResource with tenant identifier '<default>'")
+          .withMessageContaining("but tenant is not authorized to perform this request");
+    }
+  }
+
+  @SuppressWarnings("deprecation")
+  @Test
+  void shouldDenyDeployProcessWhenUnauthorizedForDefaultTenant() {
+    // given
+    try (final var client = createZeebeClient(ZEEBE_CLIENT_ID_TENANT_A_WITHOUT_DEFAULT_TENANT)) {
+      // when
+      // note that deploy process command is always only for the default tenant
+      final Future<DeploymentEvent> result =
+          client.newDeployCommand().addProcessModel(process, "process.bpmn").send();
+
+      // then
+      assertThat(result)
+          .failsWithin(Duration.ofSeconds(10))
+          .withThrowableThat()
+          .withMessageContaining("PERMISSION_DENIED")
+          .withMessageContaining(
+              "Expected to handle gRPC request DeployProcess with tenant identifier '<default>'")
           .withMessageContaining("but tenant is not authorized to perform this request");
     }
   }
