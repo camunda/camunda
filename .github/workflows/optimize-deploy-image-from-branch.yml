@@ -1,6 +1,10 @@
 
 name: Optimize Deploy Image from branch
 on:
+  # TODO remove branch push trigger once tested
+  push:
+    branches:
+      - '**'
   workflow_dispatch:
 
 permissions:
