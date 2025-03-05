@@ -374,6 +374,7 @@ public final class TestStandaloneCamunda extends TestSpringApplication<TestStand
   }
 
   public TestStandaloneCamunda withMultiTenancyEnabled() {
-    return withSecurityConfig(securityConfig -> securityConfig.getMultiTenancy().setEnabled(true));
+    return withAuthenticatedAccess()
+        .withSecurityConfig(securityConfig -> securityConfig.getMultiTenancy().setEnabled(true));
   }
 }
