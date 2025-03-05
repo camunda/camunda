@@ -117,6 +117,12 @@
         AND pi.NUM_INCIDENTS = 0
       </if>
     </if>
+    <if test="filter.partitionIds != null and !filter.partitionIds.isEmpty()">
+      AND PARTITION_ID IN
+      <foreach collection="filter.partitionIds" item="value" open="(" separator="," close=")">
+        #{value}
+      </foreach>
+    </if>
 
     <!-- date filters -->
     <if test="filter.startDateOperations != null and !filter.startDateOperations.isEmpty()">

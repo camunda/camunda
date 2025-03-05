@@ -7,6 +7,10 @@
  */
 package io.camunda.it.client;
 
+import io.camunda.client.CamundaClient;
+import io.camunda.client.api.response.Process;
+import io.camunda.client.api.response.ProcessInstanceEvent;
+import io.camunda.client.api.search.response.BatchOperationState;
 import static io.camunda.it.client.QueryTest.deployResource;
 import static io.camunda.it.client.QueryTest.startProcessInstance;
 import static io.camunda.it.client.QueryTest.waitForFlowNodeInstances;
@@ -15,16 +19,13 @@ import static io.camunda.it.client.QueryTest.waitForProcessInstancesToStart;
 import static io.camunda.it.client.QueryTest.waitForProcessesToBeDeployed;
 import static io.camunda.it.client.QueryTest.waitUntilFlowNodeInstanceHasIncidents;
 import static io.camunda.it.client.QueryTest.waitUntilProcessInstanceHasIncidents;
-import static org.assertj.core.api.Assertions.assertThat;
-
-import io.camunda.client.CamundaClient;
-import io.camunda.client.api.response.Process;
-import io.camunda.client.api.response.ProcessInstanceEvent;
-import io.camunda.client.api.search.response.BatchOperationState;
+import static io.camunda.qa.util.multidb.CamundaMultiDBExtension.TIMEOUT_DATA_AVAILABILITY;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import static org.assertj.core.api.Assertions.assertThat;
+import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -87,14 +88,20 @@ public class CancelProcessInstanceBatchTest {
     assertThat(result).isNotNull();
     assertThat(result.getBatchOperationKey()).isNotNull();
 
-    // and
-    final var batch = camundaClient.newGetBatchOperationCommand(result.getBatchOperationKey())
-        .send()
-        .join();
-
-    assertThat(batch).isNotNull();
-    assertThat(batch.getState()).isEqualTo(BatchOperationState.COMPLETED);
-    assertThat(batch.keys()).hasSize(3);
+    Awaitility.await("should complete batch operation")
+        .atMost(TIMEOUT_DATA_AVAILABILITY)
+        .ignoreExceptions() // Ignore exceptions and continue retrying
+        .untilAsserted(
+            () -> {
+              // and
+              final var batch = camundaClient.newGetBatchOperationCommand(
+                      result.getBatchOperationKey())
+                  .send()
+                  .join();
+              assertThat(batch).isNotNull();
+              assertThat(batch.getState()).isEqualTo(BatchOperationState.COMPLETED);
+              assertThat(batch.keys()).hasSize(3);
+            });
 
     for (final Long key : result.keys()) {
       waitForProcessInstanceToBeTerminated(camundaClient, key);
