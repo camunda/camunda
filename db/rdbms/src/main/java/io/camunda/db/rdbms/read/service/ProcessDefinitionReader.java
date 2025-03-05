@@ -11,8 +11,11 @@ import io.camunda.db.rdbms.read.domain.ProcessDefinitionDbQuery;
 import io.camunda.db.rdbms.sql.ProcessDefinitionMapper;
 import io.camunda.db.rdbms.sql.columns.ProcessDefinitionSearchColumn;
 import io.camunda.search.entities.ProcessDefinitionEntity;
+import io.camunda.search.entities.ProcessDefinitionFlowNodeStatisticsEntity;
+import io.camunda.search.filter.ProcessDefinitionStatisticsFilter;
 import io.camunda.search.query.ProcessDefinitionQuery;
 import io.camunda.search.query.SearchQueryResult;
+import java.util.List;
 import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -51,5 +54,11 @@ public class ProcessDefinitionReader extends AbstractEntityReader<ProcessDefinit
     final var totalHits = processDefinitionMapper.count(dbQuery);
     final var hits = processDefinitionMapper.search(dbQuery);
     return buildSearchQueryResult(totalHits, hits, dbSort);
+  }
+
+  public List<ProcessDefinitionFlowNodeStatisticsEntity> flowNodeStatistics(
+      final ProcessDefinitionStatisticsFilter filter) {
+    LOG.trace("[RDBMS DB] Query process definition flow node statistics with filter {}", filter);
+    return processDefinitionMapper.flowNodeStatistics(filter);
   }
 }
