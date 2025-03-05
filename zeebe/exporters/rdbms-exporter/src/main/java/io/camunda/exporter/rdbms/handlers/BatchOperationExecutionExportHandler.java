@@ -11,9 +11,11 @@ import java.time.OffsetDateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class BatchOperationExecutionExportHandler implements RdbmsExportHandler<BatchOperationExecutionRecordValue> {
+public class BatchOperationExecutionExportHandler implements
+    RdbmsExportHandler<BatchOperationExecutionRecordValue> {
 
-  private static final Logger LOGGER = LoggerFactory.getLogger(BatchOperationExecutionExportHandler.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(
+      BatchOperationExecutionExportHandler.class);
 
   private final BatchOperationWriter batchOperationWriter;
 
@@ -25,7 +27,7 @@ public class BatchOperationExecutionExportHandler implements RdbmsExportHandler<
   public boolean canExport(final Record<BatchOperationExecutionRecordValue> record) {
     return record.getValueType() == ValueType.BATCH_OPERATION_EXECUTION
         && (record.getIntent().equals(BatchOperationIntent.EXECUTING)
-          || record.getIntent().equals(BatchOperationIntent.EXECUTED)
+        || record.getIntent().equals(BatchOperationIntent.EXECUTED)
         || record.getIntent().equals(BatchOperationIntent.COMPLETED));
   }
 
@@ -39,7 +41,7 @@ public class BatchOperationExecutionExportHandler implements RdbmsExportHandler<
       );
     } else if (record.getIntent().equals(BatchOperationIntent.COMPLETED)) {
       final OffsetDateTime endDate = DateUtil.toOffsetDateTime(record.getTimestamp());
-      batchOperationWriter.finish(record.getKey(),
+      batchOperationWriter.finish(record.getValue().getBatchOperationKey(),
           endDate,
           0,
           value.getOffset(),

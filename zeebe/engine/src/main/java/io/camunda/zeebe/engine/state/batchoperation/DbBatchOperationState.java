@@ -45,10 +45,11 @@ public class DbBatchOperationState implements MutableBatchOperationState {
 
   @Override
   public void create(final long batchKey, final BatchOperationCreationRecord record) {
-    this.batchKey.wrapLong(batchKey);
+    LOGGER.debug("Creating batch operation with key {}", record.getBatchOperationKey());
+    this.batchKey.wrapLong(record.getBatchOperationKey());
     final var batchOperation = new PersistedBatchOperation();
     batchOperation
-        .setKey(batchKey)
+        .setKey(record.getBatchOperationKey())
         .setStatus(BatchOperationState.ACTIVATED)
         .setBatchOperationType(record.getBatchOperationType())
         .setIntent(BatchOperationIntent.CREATED)
@@ -60,8 +61,13 @@ public class DbBatchOperationState implements MutableBatchOperationState {
 
   @Override
   public void update(final long batchKey, final BatchOperationExecutionRecord record) {
-    this.batchKey.wrapLong(batchKey);
+    this.batchKey.wrapLong(record.getBatchOperationKey());
     final var batch = batchOperationColumnFamily.get(this.batchKey);
+    if (batch == null) {
+      LOGGER.warn("Batch operation with key {} not found for updating",
+          record.getBatchOperationKey());
+      return;
+    }
     batch.setOffset(record.getOffset());
     batchOperationColumnFamily.update(this.batchKey, batch);
     pendingBatchOperationColumnFamily.deleteIfExists(this.batchKey);
@@ -69,10 +75,11 @@ public class DbBatchOperationState implements MutableBatchOperationState {
 
   @Override
   public void pause(final long batchKey, final BatchOperationExecutionRecord record) {
-    this.batchKey.wrapLong(batchKey);
+    this.batchKey.wrapLong(record.getBatchOperationKey());
     final var batch = batchOperationColumnFamily.get(this.batchKey);
     if (batch == null) {
-      LOGGER.warn("Batch operation with key {} not found for pausing", batchKey);
+      LOGGER.warn("Batch operation with key {} not found for pausing",
+          record.getBatchOperationKey());
       return;
     }
     batch.setStatus(BatchOperationState.PAUSED);
@@ -81,10 +88,11 @@ public class DbBatchOperationState implements MutableBatchOperationState {
 
   @Override
   public void resume(final long batchKey, final BatchOperationExecutionRecord record) {
-    this.batchKey.wrapLong(batchKey);
+    this.batchKey.wrapLong(record.getBatchOperationKey());
     final var batch = batchOperationColumnFamily.get(this.batchKey);
     if (batch == null) {
-      LOGGER.warn("Batch operation with key {} not found for resuming", batchKey);
+      LOGGER.warn("Batch operation with key {} not found for resuming",
+          record.getBatchOperationKey());
       return;
     }
     batch.setStatus(BatchOperationState.ACTIVATED);
@@ -93,13 +101,15 @@ public class DbBatchOperationState implements MutableBatchOperationState {
 
   @Override
   public void cancel(final long batchKey, final BatchOperationExecutionRecord record) {
-    this.batchKey.wrapLong(batchKey);
+    this.batchKey.wrapLong(record.getBatchOperationKey());
     batchOperationColumnFamily.deleteExisting(this.batchKey);
   }
 
   @Override
   public void complete(final long batchKey, final BatchOperationExecutionRecord record) {
-    this.batchKey.wrapLong(batchKey);
+    LOGGER.debug("Completing batch operation with key {}", record.getBatchOperationKey());
+
+    this.batchKey.wrapLong(record.getBatchOperationKey());
     batchOperationColumnFamily.deleteExisting(this.batchKey);
   }
 
