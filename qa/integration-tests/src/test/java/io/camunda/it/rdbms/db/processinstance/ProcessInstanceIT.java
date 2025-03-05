@@ -7,18 +7,16 @@
  */
 package io.camunda.it.rdbms.db.processinstance;
 
-import static io.camunda.it.rdbms.db.fixtures.CommonFixtures.nextKey;
-import static io.camunda.it.rdbms.db.fixtures.ProcessInstanceFixtures.createAndSaveProcessInstance;
-import static io.camunda.it.rdbms.db.fixtures.ProcessInstanceFixtures.createAndSaveRandomProcessInstance;
-import static io.camunda.it.rdbms.db.fixtures.ProcessInstanceFixtures.createAndSaveRandomProcessInstances;
-import static org.assertj.core.api.Assertions.assertThat;
-
 import io.camunda.db.rdbms.RdbmsService;
 import io.camunda.db.rdbms.read.service.ProcessInstanceReader;
 import io.camunda.db.rdbms.write.RdbmsWriter;
 import io.camunda.db.rdbms.write.domain.ProcessInstanceDbModel;
+import static io.camunda.it.rdbms.db.fixtures.CommonFixtures.nextKey;
 import io.camunda.it.rdbms.db.fixtures.ProcessDefinitionFixtures;
 import io.camunda.it.rdbms.db.fixtures.ProcessInstanceFixtures;
+import static io.camunda.it.rdbms.db.fixtures.ProcessInstanceFixtures.createAndSaveProcessInstance;
+import static io.camunda.it.rdbms.db.fixtures.ProcessInstanceFixtures.createAndSaveRandomProcessInstance;
+import static io.camunda.it.rdbms.db.fixtures.ProcessInstanceFixtures.createAndSaveRandomProcessInstances;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsInvocationContextProviderExtension;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsTestApplication;
 import io.camunda.search.entities.ProcessInstanceEntity;
@@ -27,6 +25,8 @@ import io.camunda.search.query.ProcessInstanceQuery;
 import io.camunda.search.sort.ProcessInstanceSort;
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
+import java.util.List;
+import static org.assertj.core.api.Assertions.assertThat;
 import org.assertj.core.data.TemporalUnitWithinOffset;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.TestTemplate;
@@ -240,6 +240,7 @@ public class ProcessInstanceIT {
                     .endDate(NOW)
                     .parentProcessInstanceKey(-1L)
                     .parentElementInstanceKey(-1L)
+                    .partitionId(1)
                     .version(1)));
 
     final var searchResult =
@@ -253,7 +254,8 @@ public class ProcessInstanceIT {
                                     .processDefinitionKeys(1337L)
                                     .states(ProcessInstanceState.ACTIVE.name())
                                     .parentProcessInstanceKeys(-1L)
-                                    .parentFlowNodeInstanceKeys(-1L))
+                                    .parentFlowNodeInstanceKeys(-1L)
+                                    .partitionIds(List.of(1)))
                         .sort(s -> s)
                         .page(p -> p.from(0).size(5))));
 
@@ -304,11 +306,11 @@ public class ProcessInstanceIT {
                             p ->
                                 p.size(5)
                                     .searchAfter(
-                                        new Object[] {
-                                          instanceAfter.processDefinitionName(),
-                                          instanceAfter.processDefinitionVersion(),
-                                          instanceAfter.startDate(),
-                                          instanceAfter.processInstanceKey()
+                                        new Object[]{
+                                            instanceAfter.processDefinitionName(),
+                                            instanceAfter.processDefinitionVersion(),
+                                            instanceAfter.startDate(),
+                                            instanceAfter.processInstanceKey()
                                         }))));
 
     assertThat(nextPage.total()).isEqualTo(20);

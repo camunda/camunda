@@ -31,7 +31,8 @@ public record ProcessInstanceFilter(
     List<Operation<String>> stateOperations,
     Boolean hasIncident,
     List<Operation<String>> tenantIdOperations,
-    List<VariableValueFilter> variableFilters)
+    List<VariableValueFilter> variableFilters,
+    List<Integer> partitionIds)
     implements FilterBase {
 
   public Builder toBuilder() {
@@ -49,7 +50,8 @@ public record ProcessInstanceFilter(
         .stateOperations(stateOperations)
         .hasIncident(hasIncident)
         .tenantIdOperations(tenantIdOperations)
-        .variables(variableFilters);
+        .variables(variableFilters)
+        .partitionIds(partitionIds);
   }
 
   public static final class Builder implements ObjectBuilder<ProcessInstanceFilter> {
@@ -68,6 +70,7 @@ public record ProcessInstanceFilter(
     private Boolean hasIncident;
     private List<Operation<String>> tenantIdOperations;
     private List<VariableValueFilter> variableFilters;
+    private List<Integer> partitionIds;
 
     public Builder processInstanceKeyOperations(final List<Operation<Long>> operations) {
       processInstanceKeyOperations = addValuesToList(processInstanceKeyOperations, operations);
@@ -257,6 +260,11 @@ public record ProcessInstanceFilter(
       return this;
     }
 
+    public Builder partitionIds(final List<Integer> partitionIds) {
+      this.partitionIds = addValuesToList(this.partitionIds, partitionIds);
+      return this;
+    }
+
     @Override
     public ProcessInstanceFilter build() {
       return new ProcessInstanceFilter(
@@ -274,7 +282,8 @@ public record ProcessInstanceFilter(
           Objects.requireNonNullElse(stateOperations, Collections.emptyList()),
           hasIncident,
           Objects.requireNonNullElse(tenantIdOperations, Collections.emptyList()),
-          Objects.requireNonNullElse(variableFilters, Collections.emptyList()));
+          Objects.requireNonNullElse(variableFilters, Collections.emptyList()),
+          Objects.requireNonNullElse(partitionIds, Collections.emptyList()));
     }
   }
 }
