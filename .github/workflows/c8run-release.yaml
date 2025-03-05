@@ -130,14 +130,13 @@ jobs:
         env:
           JAVA_ARTIFACTS_USER: ${{ steps.secrets.outputs.NEXUS_USERNAME }}
           JAVA_ARTIFACTS_PASSWORD: ${{ steps.secrets.outputs.NEXUS_PASSWORD }}
-      - name: Generate artifact checksum
-        id: checksum
-        uses: jmgilman/actions-generate-checksum@3ea6dc9bf8eecf28e2ecc982fab683484a1a8561 # v1
-        with:
-          method: sha1
-          output: "${{ env.CAMUNDA_RUN_NAME_ARTIFACT_WITH_PATCH_VERSION }}.sha1sum"
-          patterns: |
-            ${{ env.CAMUNDA_RUN_NAME_ARTIFACT_WITH_PATCH_VERSION }}
+      # - name: Generate artifact checksum
+      #   uses: jmgilman/actions-generate-checksum@3ea6dc9bf8eecf28e2ecc982fab683484a1a8561 # v1
+      #   with:
+      #     method: sha1
+      #     output: "${{ env.CAMUNDA_RUN_NAME_ARTIFACT_WITH_PATCH_VERSION }}.sha1sum"
+      #     patterns: |
+      #       ${{ env.CAMUNDA_RUN_NAME_ARTIFACT_WITH_PATCH_VERSION }}
       - name: Copy artifact
         working-directory: ${{ matrix.os.workingDir }}
         shell: bash
@@ -145,9 +144,9 @@ jobs:
           # Artifact.
           cp -a ${{ env.CAMUNDA_RUN_NAME_ARTIFACT_WITH_PATCH_VERSION }} \
             ${{ env.CAMUNDA_RUN_NAME_ARTIFACT_WITH_MINOR_VERSION }}
-          # Hash sum.
-          cp -a ${{ env.CAMUNDA_RUN_NAME_ARTIFACT_WITH_PATCH_VERSION }}.sha1sum \
-            ${{ env.CAMUNDA_RUN_NAME_ARTIFACT_WITH_MINOR_VERSION }}.sha1sum
+          # # Hash sum.
+          # cp -a ${{ env.CAMUNDA_RUN_NAME_ARTIFACT_WITH_PATCH_VERSION }}.sha1sum \
+          #   ${{ env.CAMUNDA_RUN_NAME_ARTIFACT_WITH_MINOR_VERSION }}.sha1sum
       - name: Upload artifact to C8Run release
         working-directory: ${{ matrix.os.workingDir }}
         shell: bash
