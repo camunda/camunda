@@ -1,0 +1,14 @@
+component/optimize:
+  '(Optimize*)'
+component/zeebe:
+  '(Zeebe*)'
+component/operate:
+  '(Operate*)'
+component/tasklist:
+  '(Tasklist*)'
+component/tasklist:
+  '(Identity*)'
+component/identity:
+  '(C8Run*)'
+needs component label:
+  '(Not sure*)'
