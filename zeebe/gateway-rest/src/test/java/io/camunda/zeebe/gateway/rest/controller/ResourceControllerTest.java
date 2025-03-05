@@ -10,6 +10,7 @@ package io.camunda.zeebe.gateway.rest.controller;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import io.camunda.service.CamundaServiceException;
@@ -41,6 +42,7 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.client.MultipartBodyBuilder;
+import org.springframework.test.web.reactive.server.WebTestClient.ResponseSpec;
 
 @WebMvcTest(ResourceController.class)
 public class ResourceControllerTest extends RestControllerTest {
@@ -247,6 +249,47 @@ public class ResourceControllerTest extends RestControllerTest {
              "tenantId":"<default>"
           }
          """);
+  }
+
+  @Test
+  void shouldRejectDeployResourcesWithUnauthorizedTenantWhenMultiTenancyEnabled() {
+    // given
+    when(multiTenancyCfg.isEnabled()).thenReturn(true);
+
+    final var filename = "process.bpmn";
+    final var contentType = MediaType.APPLICATION_OCTET_STREAM;
+    final var content = new byte[] {1, 2, 3};
+    final var multipartBodyBuilder = new MultipartBodyBuilder();
+    multipartBodyBuilder.part("resources", content).contentType(contentType).filename(filename);
+    multipartBodyBuilder.part("tenantId", "unauthorizedTenant");
+
+    // when then
+    final ResponseSpec response =
+        withMultiTenancy(
+            "tenantId",
+            client ->
+                client
+                    .post()
+                    .uri(DEPLOY_RESOURCES_ENDPOINT)
+                    .contentType(MediaType.MULTIPART_FORM_DATA)
+                    .bodyValue(multipartBodyBuilder.build())
+                    .accept(MediaType.APPLICATION_JSON)
+                    .exchange()
+                    .expectStatus()
+                    .isUnauthorized());
+    response
+        .expectBody()
+        .json(
+            """
+            {
+              "type": "about:blank",
+              "status": 401,
+              "title": "UNAUTHORIZED",
+              "detail": "Expected to handle request Deploy Resources with tenant identifier 'unauthorizedTenant', but tenant is not authorized to perform this request",
+              "instance": "%s"
+            }"""
+                .formatted(DEPLOY_RESOURCES_ENDPOINT));
+    verifyNoInteractions(resourceServices);
   }
 
   @Test
