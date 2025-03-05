@@ -23,7 +23,7 @@ services:
       - ./els-snapshots:/usr/local/els-snapshots
   postgres:
     container_name: postgres
-    image: postgres:17.2-alpine
+    image: postgres:17.4-alpine
     ports:
       - "5432:5432"
     environment:
