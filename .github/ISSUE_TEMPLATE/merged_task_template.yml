@@ -1,0 +1,55 @@
+name: Task
+description: Describe a generic activity we should carry out.
+labels: ["kind/task"]
+body:
+  - type: dropdown
+    id: Component
+    attributes:
+      label: Component
+      description: In which component did the issue occur?
+      options:
+        - Not sure*
+        - Operate*
+        - Optimize*
+        - Tasklist*
+        - Zeebe*
+        - Desktop Modeler*
+        - Web Modeler*
+        - Connectors*
+        - Identity*
+        - Console*
+        - Controller*
+        - Helm*
+        - C8Run*
+        - RPA*
+      default: 0
+    validations:
+      required: true
+  - type: textarea
+    id: what
+    attributes:
+      label: What should we do?
+      description: Clearly describe the activity we should carry out.
+    validations:
+      required: true
+  - type: textarea
+    id: why
+    attributes:
+      label: Why should we do it?
+      description: Argue why doing it is a healthy investment of our time.
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance criteria
+      description: add the TODOs in here (optional).
+    validations:
+      required: false
+  - type: textarea
+    id: links
+    attributes:
+      label: Support ticket link
+      description: Add link to the support ticket here if applicable.
+    validations:
+      required: false
