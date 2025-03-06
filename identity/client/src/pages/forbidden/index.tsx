@@ -7,13 +7,13 @@
  */
 
 import { FC } from "react";
-import ForbiddenComponent from "src/pages/forbidden/component.tsx";
+import ForbiddenPage from "src/pages/forbidden/ForbiddenPage";
 import AppRoot from "src/components/global/AppRoot.tsx";
 
 const Forbidden: FC = () => {
   return (
     <AppRoot>
-      <ForbiddenComponent />
+      <ForbiddenPage />
     </AppRoot>
   );
 };
