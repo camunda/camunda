@@ -30,6 +30,10 @@ public class MappingClient {
     return new MappingDeleteClient(writer, key);
   }
 
+  public MappingUpdateClient updateMapping(final String id) {
+    return new MappingUpdateClient(writer, id);
+  }
+
   public static class MappingCreateClient {
 
     private static final Function<Long, Record<MappingRecordValue>> SUCCESS_SUPPLIER =
@@ -119,6 +123,47 @@ public class MappingClient {
     }
 
     public MappingDeleteClient expectRejection() {
+      expectation = REJECTION_SUPPLIER;
+      return this;
+    }
+  }
+
+  public static class MappingUpdateClient {
+
+    private static final Function<String, Record<MappingRecordValue>> SUCCESS_SUPPLIER =
+        (position) ->
+            RecordingExporter.mappingRecords()
+                .withIntent(MappingIntent.UPDATED)
+                .filter(
+                    mappingRecordValueRecord ->
+                        mappingRecordValueRecord.getValue().getId().equals(position))
+                .getFirst();
+
+    private static final Function<String, Record<MappingRecordValue>> REJECTION_SUPPLIER =
+        (position) ->
+            RecordingExporter.mappingRecords()
+                .onlyCommandRejections()
+                .withIntent(MappingIntent.UPDATE)
+                .filter(
+                    mappingRecordValueRecord ->
+                        mappingRecordValueRecord.getValue().getId().equals(position))
+                .getFirst();
+    private final CommandWriter writer;
+    private final MappingRecord mappingRecord;
+    private Function<String, Record<MappingRecordValue>> expectation = SUCCESS_SUPPLIER;
+
+    public MappingUpdateClient(final CommandWriter writer, final String id) {
+      this.writer = writer;
+      mappingRecord = new MappingRecord();
+      mappingRecord.setId(id);
+    }
+
+    public Record<MappingRecordValue> update() {
+      writer.writeCommand(MappingIntent.UPDATE, mappingRecord);
+      return expectation.apply(mappingRecord.getId());
+    }
+
+    public MappingUpdateClient expectRejection() {
       expectation = REJECTION_SUPPLIER;
       return this;
     }

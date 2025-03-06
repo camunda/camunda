@@ -87,7 +87,7 @@ public class DbMappingState implements MutableMappingState {
   public void update(final MappingRecord mappingRecord) {
     mappingId.wrapString(mappingRecord.getId());
     get(mappingRecord.getId())
-        .ifPresent(
+        .ifPresentOrElse(
             persistedMapping -> {
               mappingKey.wrapLong(persistedMapping.getMappingKey());
 
@@ -96,15 +96,21 @@ public class DbMappingState implements MutableMappingState {
               claimValue.wrapString(persistedMapping.getClaimValue());
               mappingColumnFamily.deleteExisting(claim);
 
-              persistedMapping.setName(persistedMapping.getName());
-              persistedMapping.setClaimName(persistedMapping.getClaimName());
-              persistedMapping.setClaimValue(persistedMapping.getClaimValue());
+              persistedMapping.setName(mappingRecord.getName());
+              persistedMapping.setClaimName(mappingRecord.getClaimName());
+              persistedMapping.setClaimValue(mappingRecord.getClaimValue());
 
               claimName.wrapString(persistedMapping.getClaimName());
               claimValue.wrapString(persistedMapping.getClaimValue());
               mappingColumnFamily.insert(claim, persistedMapping);
               claimByKeyColumnFamily.update(mappingKey, fkClaim);
               claimByIdColumnFamily.update(mappingId, fkClaim);
+            },
+            () -> {
+              throw new IllegalStateException(
+                  String.format(
+                      "Expected to update mapping with id '%s', but a mapping with this id does not exist.",
+                      mappingRecord.getId()));
             });
   }
 
