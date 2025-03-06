@@ -1,0 +1,34 @@
+zeebe.broker.exporters.elasticsearch:
+  className: io.camunda.zeebe.exporter.ElasticsearchExporter
+  args:
+    index:
+      createTemplate: true
+    retention:
+      enabled: true
+    # Example assuming an existing user called 'camunda-admin' who has 'superuser' privileges
+    authentication:
+      username: camunda-admin
+      password: camunda123
+camunda:
+  operate:
+    backup:
+      repositoryName: "els-test"
+    elasticsearch:
+      # Example assuming an existing user called 'camunda-admin' who has 'superuser' privileges
+      username: camunda-admin
+      password: camunda123
+      healthCheckEnabled: false
+    archiver:
+      # Optional, only if ILM is enabled
+      ilmEnabled: true
+  tasklist:
+    backup:
+      repositoryName: "els-test"
+    elasticsearch:
+      # Example assuming an existing user called 'camunda-admin' who has 'superuser' privileges
+      username: camunda-admin
+      password: camunda123
+      healthCheckEnabled: false
+    archiver:
+      # Optional, only if ILM is enabled
+      ilmEnabled: true
