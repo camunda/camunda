@@ -40,11 +40,12 @@ const DeleteModal: FC<UseEntityModalProps<User>> = ({
       loading={loading}
       loadingDescription={t("Deleting user...")}
       onClose={onClose}
+      confirmLabel={t("Delete user")}
     >
       <p>
         <Translate>Are you sure you want to delete the user</Translate>{" "}
         <strong>{username}</strong>?{" "}
-        <Translate>this action cannot be undone.</Translate>
+        <Translate>This action cannot be undone.</Translate>
       </p>
     </Modal>
   );

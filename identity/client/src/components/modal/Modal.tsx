@@ -129,12 +129,13 @@ const Modal: FC<ModalProps> = ({
 };
 
 export const DeleteModal: FC<
-  Omit<ModalProps, "confirmLabel" | "buttons" | "size">
+  Omit<ModalProps, "confirmLabel" | "buttons" | "size"> &
+    Partial<Pick<ModalProps, "confirmLabel">>
 > = ({ children, ...modalProps }) => {
   const { t } = useTranslate("components");
 
   return (
-    <Modal {...modalProps} confirmLabel={t("delete")} danger size="sm">
+    <Modal confirmLabel={t("delete")} {...modalProps} danger size="sm">
       {children}
     </Modal>
   );
