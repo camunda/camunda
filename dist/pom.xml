@@ -597,6 +597,10 @@
               <mainClass>io.camunda.application.StandaloneSchemaManager</mainClass>
             </program>
             <program>
+              <id>backup</id>
+              <mainClass>io.camunda.application.StandaloneBackupManager</mainClass>
+            </program>
+            <program>
               <id>tasklist</id>
               <mainClass>io.camunda.application.StandaloneTasklist</mainClass>
             </program>
