@@ -10,12 +10,33 @@ package io.camunda.zeebe.it.multitenancy;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.client.CamundaClient;
+import io.camunda.client.api.command.ProblemException;
 import io.camunda.client.api.command.TopologyRequestStep1;
+import io.camunda.client.api.response.ActivateJobsResponse;
+import io.camunda.client.api.response.ActivatedJob;
+import io.camunda.client.api.response.AssignUserTaskResponse;
+import io.camunda.client.api.response.BroadcastSignalResponse;
+import io.camunda.client.api.response.CompleteJobResponse;
+import io.camunda.client.api.response.CompleteUserTaskResponse;
+import io.camunda.client.api.response.DeleteResourceResponse;
+import io.camunda.client.api.response.DeploymentEvent;
+import io.camunda.client.api.response.EvaluateDecisionResponse;
+import io.camunda.client.api.response.MigrateProcessInstanceResponse;
+import io.camunda.client.api.response.ModifyProcessInstanceResponse;
+import io.camunda.client.api.response.Process;
+import io.camunda.client.api.response.ProcessInstanceEvent;
+import io.camunda.client.api.response.PublishMessageResponse;
+import io.camunda.client.api.response.ResolveIncidentResponse;
+import io.camunda.client.api.response.UnassignUserTaskResponse;
+import io.camunda.client.api.response.UpdateTimeoutJobResponse;
+import io.camunda.client.api.response.UpdateUserTaskResponse;
 import io.camunda.client.impl.basicauth.BasicAuthCredentialsProviderBuilder;
 import io.camunda.security.configuration.ConfiguredUser;
 import io.camunda.zeebe.it.util.AuthorizationsUtil;
+import io.camunda.zeebe.it.util.ZeebeResourcesHelper;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
+import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
@@ -26,11 +47,16 @@ import io.camunda.zeebe.test.util.testcontainers.TestSearchContainers;
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
 import java.util.function.UnaryOperator;
 import java.util.stream.Stream;
+import org.apache.http.HttpStatus;
+import org.assertj.core.api.InstanceOfAssertFactories;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Named;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.testcontainers.elasticsearch.ElasticsearchContainer;
@@ -52,6 +78,7 @@ public class MultiTenancyOverIdentityIT {
   private static final String USER_TENANT_B = "userTenantB";
   private static final String USER_TENANT_A_AND_B = "userTenantAB";
   private static final String USER_TENANT_A_WITHOUT_DEFAULT_TENANT = "userTenantANoDefault";
+  private static final String USER_WITHOUT_TENANT = "userNoTenant";
 
   @TestZeebe(autoStart = false)
   private static final TestStandaloneBroker BROKER =
@@ -78,6 +105,11 @@ public class MultiTenancyOverIdentityIT {
                                   USER_TENANT_A_WITHOUT_DEFAULT_TENANT,
                                   USER_TENANT_A_WITHOUT_DEFAULT_TENANT,
                                   USER_TENANT_A_WITHOUT_DEFAULT_TENANT,
+                                  "test@camunda.com"),
+                              new ConfiguredUser(
+                                  USER_WITHOUT_TENANT,
+                                  USER_WITHOUT_TENANT,
+                                  USER_WITHOUT_TENANT,
                                   "test@camunda.com"))));
 
   private String processId;
@@ -96,6 +128,7 @@ public class MultiTenancyOverIdentityIT {
       authUtil.awaitUserExistsInElasticsearch(USER_TENANT_B);
       authUtil.awaitUserExistsInElasticsearch(USER_TENANT_A_AND_B);
       authUtil.awaitUserExistsInElasticsearch(USER_TENANT_A_WITHOUT_DEFAULT_TENANT);
+      authUtil.awaitUserExistsInElasticsearch(USER_WITHOUT_TENANT);
 
       assignUsersToTenant(
           client, DEFAULT_TENANT, USER_TENANT_A, USER_TENANT_B, USER_TENANT_A_AND_B);
@@ -142,1374 +175,1346 @@ public class MultiTenancyOverIdentityIT {
     }
   }
 
+  @ParameterizedTest
+  @MethodSource("provideTopologyCases")
+  void shouldAuthorizeTopologyRequestWithoutTenantAccess(
+      final UnaryOperator<TopologyRequestStep1> apiPicker) {
+    try (final var client = createCamundaClient(USER_TENANT_A_WITHOUT_DEFAULT_TENANT)) {
+      // when
+      final var topology = apiPicker.apply(client.newTopologyRequest()).send().join();
 
-    @ParameterizedTest
-    @MethodSource("provideTopologyCases")
-    void shouldAuthorizeTopologyRequestWithoutTenantAccess(
-        final UnaryOperator<TopologyRequestStep1> apiPicker) {
-      try (final var client = createZeebeClient(ZEEBE_CLIENT_ID_WITHOUT_TENANT)) {
-        // when
-        final var topology = apiPicker.apply(client.newTopologyRequest()).send().join();
-
-        // then
-        assertThat(topology.getBrokers()).hasSize(1);
-      }
+      // then
+      assertThat(topology.getBrokers()).hasSize(1);
     }
+  }
 
-    @Test
-    void shouldAuthorizeDeployProcess() {
-      // given
-      try (final var client = createZeebeClient(ZEEBE_CLIENT_ID_TENANT_A)) {
-        // when
-        final Future<DeploymentEvent> response =
-            client
-                .newDeployResourceCommand()
-                .addProcessModel(process, "process.bpmn")
-                .tenantId(TENANT_A)
-                .send();
+  @Test
+  void shouldAuthorizeDeployProcess() {
+    // given
+    try (final var client = createCamundaClient(USER_TENANT_A)) {
+      // when
+      final Future<DeploymentEvent> response =
+          client
+              .newDeployResourceCommand()
+              .addProcessModel(process, "process.bpmn")
+              .tenantId(TENANT_A)
+              .send();
 
-        // then
-        assertThat(response)
-            .describedAs("Expect that process can be deployed for tenant-a")
-            .succeedsWithin(Duration.ofSeconds(10));
-      }
+      // then
+      assertThat(response)
+          .describedAs("Expect that process can be deployed for tenant-a")
+          .succeedsWithin(Duration.ofSeconds(10));
     }
+  }
 
-    @Test
-    void shouldDenyDeployResourceWhenUnauthorized() {
-      // given
-      try (final var client = createZeebeClient(ZEEBE_CLIENT_ID_TENANT_A)) {
-        // when
-        final Future<DeploymentEvent> result =
-            client
-                .newDeployResourceCommand()
-                .addProcessModel(process, "process.bpmn")
-                .tenantId(TENANT_B)
-                .send();
+  @Test
+  void shouldDenyDeployResourceWhenUnauthorized() {
+    // given
+    try (final var client = createCamundaClient(USER_TENANT_A)) {
+      // when
+      final Future<DeploymentEvent> result =
+          client
+              .newDeployResourceCommand()
+              .addProcessModel(process, "process.bpmn")
+              .tenantId(TENANT_B)
+              .send();
 
-        // then
-        assertThat(result)
-            .failsWithin(Duration.ofSeconds(10))
-            .withThrowableThat()
-            .withMessageContaining("PERMISSION_DENIED")
-            .withMessageContaining(
-                "Expected to handle gRPC request DeployResource with tenant identifier
-   'tenant-b'")
-            .withMessageContaining("but tenant is not authorized to perform this request");
-      }
+      // then
+      assertThat(result)
+          .failsWithin(Duration.ofSeconds(10))
+          .withThrowableThat()
+          .withMessageContaining("PERMISSION_DENIED")
+          .withMessageContaining(
+              "Expected to handle gRPC request DeployResource with tenant identifier 'tenant-b'")
+          .withMessageContaining("but tenant is not authorized to perform this request");
     }
+  }
 
-    @Test
-    void shouldDenyDeployResourceWhenUnauthorizedForDefaultTenant() {
-      // given
-      try (final var client = createZeebeClient(ZEEBE_CLIENT_ID_TENANT_A_WITHOUT_DEFAULT_TENANT))
-   {
-        // when
-        final Future<DeploymentEvent> result =
-            client
-                .newDeployResourceCommand()
-                .addProcessModel(process, "process.bpmn")
-                .tenantId(DEFAULT_TENANT)
-                .send();
+  @Test
+  void shouldDenyDeployResourceWhenUnauthorizedForDefaultTenant() {
+    // given
+    try (final var client = createCamundaClient(USER_TENANT_A_WITHOUT_DEFAULT_TENANT)) {
+      // when
+      final Future<DeploymentEvent> result =
+          client
+              .newDeployResourceCommand()
+              .addProcessModel(process, "process.bpmn")
+              .tenantId(DEFAULT_TENANT)
+              .send();
 
-        // then
-        assertThat(result)
-            .failsWithin(Duration.ofSeconds(10))
-            .withThrowableThat()
-            .withMessageContaining("PERMISSION_DENIED")
-            .withMessageContaining(
-                "Expected to handle gRPC request DeployResource with tenant identifier
-   '<default>'")
-            .withMessageContaining("but tenant is not authorized to perform this request");
-      }
+      // then
+      assertThat(result)
+          .failsWithin(Duration.ofSeconds(10))
+          .withThrowableThat()
+          .withMessageContaining("PERMISSION_DENIED")
+          .withMessageContaining(
+              "Expected to handle gRPC request DeployResource with tenant identifier '<default>'")
+          .withMessageContaining("but tenant is not authorized to perform this request");
     }
+  }
 
-    @SuppressWarnings("deprecation")
-    @Test
-    void shouldDenyDeployProcessWhenUnauthorizedForDefaultTenant() {
-      // given
-      try (final var client = createZeebeClient(ZEEBE_CLIENT_ID_TENANT_A_WITHOUT_DEFAULT_TENANT))
-   {
-        // when
-        // note that deploy process command is always only for the default tenant
-        final Future<DeploymentEvent> result =
-            client.newDeployCommand().addProcessModel(process, "process.bpmn").send();
+  @SuppressWarnings("deprecation")
+  @Test
+  void shouldDenyDeployProcessWhenUnauthorizedForDefaultTenant() {
+    // given
+    try (final var client = createCamundaClient(USER_TENANT_A_WITHOUT_DEFAULT_TENANT)) {
+      // when
+      // note that deploy process command is always only for the default tenant
+      final Future<DeploymentEvent> result =
+          client.newDeployCommand().addProcessModel(process, "process.bpmn").send();
 
-        // then
-        assertThat(result)
-            .failsWithin(Duration.ofSeconds(10))
-            .withThrowableThat()
-            .withMessageContaining("PERMISSION_DENIED")
-            .withMessageContaining(
-                "Expected to handle gRPC request DeployProcess with tenant identifier
-   '<default>'")
-            .withMessageContaining("but tenant is not authorized to perform this request");
-      }
+      // then
+      assertThat(result)
+          .failsWithin(Duration.ofSeconds(10))
+          .withThrowableThat()
+          .withMessageContaining("PERMISSION_DENIED")
+          .withMessageContaining(
+              "Expected to handle gRPC request DeployProcess with tenant identifier '<default>'")
+          .withMessageContaining("but tenant is not authorized to perform this request");
     }
+  }
 
-    @Test
-    void shouldAuthorizeDeleteResource() throws ExecutionException, InterruptedException {
-      // given
-      try (final var client = createZeebeClient(ZEEBE_CLIENT_ID_TENANT_A)) {
-        final Future<DeploymentEvent> deploymentResponse =
-            client
-                .newDeployResourceCommand()
-                .addProcessModel(process, "process.bpmn")
-                .tenantId(TENANT_A)
-                .send();
-        assertThat(deploymentResponse)
-            .describedAs("Expect that process was deployed for tenant-a")
-            .succeedsWithin(Duration.ofSeconds(10));
-        final long resourceKey =
-            deploymentResponse.get().getProcesses().get(0).getProcessDefinitionKey();
-
-        // when
-        final Future<DeleteResourceResponse> response =
-            client.newDeleteResourceCommand(resourceKey).send();
-
-        // then
-        assertThat(response)
-            .describedAs("Expect that process can be deleted for tenant-a")
-            .succeedsWithin(Duration.ofSeconds(10));
-      }
-    }
-
-    @Test
-    void shouldDenyDeleteResourceWhenUnauthorized() throws ExecutionException,
-   InterruptedException {
-      // given
-      final long resourceKey;
-      try (final var client = createZeebeClient(ZEEBE_CLIENT_ID_TENANT_A)) {
-        final Future<DeploymentEvent> deploymentResponse =
-            client
-                .newDeployResourceCommand()
-                .addProcessModel(process, "process.bpmn")
-                .tenantId(TENANT_A)
-                .send();
-        assertThat(deploymentResponse)
-            .describedAs("Expect that process was deployed for tenant-a")
-            .succeedsWithin(Duration.ofSeconds(10));
-        resourceKey = deploymentResponse.get().getProcesses().get(0).getProcessDefinitionKey();
-      }
+  @Test
+  void shouldAuthorizeDeleteResource() throws ExecutionException, InterruptedException {
+    // given
+    try (final var client = createCamundaClient(USER_TENANT_A)) {
+      final Future<DeploymentEvent> deploymentResponse =
+          client
+              .newDeployResourceCommand()
+              .addProcessModel(process, "process.bpmn")
+              .tenantId(TENANT_A)
+              .send();
+      assertThat(deploymentResponse)
+          .describedAs("Expect that process was deployed for tenant-a")
+          .succeedsWithin(Duration.ofSeconds(10));
+      final long resourceKey =
+          deploymentResponse.get().getProcesses().get(0).getProcessDefinitionKey();
 
       // when
-      try (final var client = createZeebeClient(ZEEBE_CLIENT_ID_TENANT_B)) {
-        final Future<DeleteResourceResponse> response =
-            client.newDeleteResourceCommand(resourceKey).send();
+      final Future<DeleteResourceResponse> response =
+          client.newDeleteResourceCommand(resourceKey).send();
 
-        // then
-        assertThat(response)
-            .failsWithin(Duration.ofSeconds(10))
-            .withThrowableThat()
-            .withMessageContaining("NOT_FOUND");
-      }
+      // then
+      assertThat(response)
+          .describedAs("Expect that process can be deleted for tenant-a")
+          .succeedsWithin(Duration.ofSeconds(10));
+    }
+  }
+
+  @Test
+  void shouldDenyDeleteResourceWhenUnauthorized() throws ExecutionException, InterruptedException {
+    // given
+    final long resourceKey;
+    try (final var client = createCamundaClient(USER_TENANT_A)) {
+      final Future<DeploymentEvent> deploymentResponse =
+          client
+              .newDeployResourceCommand()
+              .addProcessModel(process, "process.bpmn")
+              .tenantId(TENANT_A)
+              .send();
+      assertThat(deploymentResponse)
+          .describedAs("Expect that process was deployed for tenant-a")
+          .succeedsWithin(Duration.ofSeconds(10));
+      resourceKey = deploymentResponse.get().getProcesses().get(0).getProcessDefinitionKey();
     }
 
-    @Test
-    void shouldIncrementProcessVersionPerTenant() {
-      // given
-      try (final var client = createZeebeClient(ZEEBE_CLIENT_ID_TENANT_A)) {
-        client
-            .newDeployResourceCommand()
-            .addProcessModel(process, "process.bpmn")
-            .tenantId(TENANT_A)
-            .send()
-            .join();
-      }
-      try (final var client = createZeebeClient(ZEEBE_CLIENT_ID_TENANT_B)) {
-        client
-            .newDeployResourceCommand()
-            .addProcessModel(process, "process.bpmn")
-            .tenantId(TENANT_B)
-            .send()
-            .join();
-      }
+    // when
+    try (final var client = createCamundaClient(USER_TENANT_B)) {
+      final Future<DeleteResourceResponse> response =
+          client.newDeleteResourceCommand(resourceKey).send();
 
-      try (final var client = createZeebeClient(ZEEBE_CLIENT_ID_TENANT_B)) {
-        // when
-        final var processV2 = Bpmn.createExecutableProcess(processId).startEvent().done();
-        final Future<DeploymentEvent> result =
-            client
-                .newDeployResourceCommand()
-                .addProcessModel(processV2, "process.bpmn")
-                .tenantId(TENANT_B)
-                .send();
+      // then
+      assertThat(response)
+          .failsWithin(Duration.ofSeconds(10))
+          .withThrowableThat()
+          .withMessageContaining("NOT_FOUND");
+    }
+  }
 
-        // then
-        assertThat(result)
-            .succeedsWithin(Duration.ofSeconds(10))
-            .describedAs("Process version is incremented for tenant-b but not for tenant-a")
-            .extracting(deploymentEvent -> deploymentEvent.getProcesses().get(0))
-            .extracting(Process::getVersion, Process::getTenantId)
-            .containsExactly(2, TENANT_B);
-      }
+  @Test
+  void shouldIncrementProcessVersionPerTenant() {
+    // given
+    try (final var client = createCamundaClient(USER_TENANT_A)) {
+      client
+          .newDeployResourceCommand()
+          .addProcessModel(process, "process.bpmn")
+          .tenantId(TENANT_A)
+          .send()
+          .join();
+    }
+    try (final var client = createCamundaClient(USER_TENANT_B)) {
+      client
+          .newDeployResourceCommand()
+          .addProcessModel(process, "process.bpmn")
+          .tenantId(TENANT_B)
+          .send()
+          .join();
     }
 
-    @Test
-    void shouldAuthorizeCreateProcessInstance() {
-      // given
-      final long processDefinitionKey;
-      try (final var client = createZeebeClient(ZEEBE_CLIENT_ID_TENANT_A_AND_B)) {
-        processDefinitionKey =
-            client
-                .newDeployResourceCommand()
-                .addProcessModel(process, "process.bpmn")
-                .tenantId(TENANT_A)
-                .send()
-                .join()
-                .getProcesses()
-                .stream()
-                .map(Process::getProcessDefinitionKey)
-                .findFirst()
-                .orElseThrow();
+    try (final var client = createCamundaClient(USER_TENANT_B)) {
+      // when
+      final var processV2 = Bpmn.createExecutableProcess(processId).startEvent().done();
+      final Future<DeploymentEvent> result =
+          client
+              .newDeployResourceCommand()
+              .addProcessModel(processV2, "process.bpmn")
+              .tenantId(TENANT_B)
+              .send();
 
-        // when
-        final Future<ProcessInstanceEvent> result =
-            client
-                .newCreateInstanceCommand()
-                .processDefinitionKey(processDefinitionKey)
-                .tenantId(TENANT_A)
-                .send();
-
-        // then
-        assertThat(result)
-            .describedAs(
-                "Expect that process instance can be created as the client has access process of
-   tenant-a")
-            .succeedsWithin(Duration.ofSeconds(10));
-      }
+      // then
+      assertThat(result)
+          .succeedsWithin(Duration.ofSeconds(10))
+          .describedAs("Process version is incremented for tenant-b but not for tenant-a")
+          .extracting(deploymentEvent -> deploymentEvent.getProcesses().get(0))
+          .extracting(Process::getVersion, Process::getTenantId)
+          .containsExactly(2, TENANT_B);
     }
+  }
 
-    @Test
-    void shouldNotFindOtherTenantsProcessById() {
-      // given
-      try (final var client = createZeebeClient(ZEEBE_CLIENT_ID_TENANT_A)) {
-        client
-            .newDeployResourceCommand()
-            .addProcessModel(process, "process.bpmn")
-            .tenantId(TENANT_A)
-            .send()
-            .join();
-      }
-
-      try (final var client = createZeebeClient(ZEEBE_CLIENT_ID_TENANT_B)) {
-        // when
-        final Future<ProcessInstanceEvent> result =
-            client
-                .newCreateInstanceCommand()
-                .bpmnProcessId(processId)
-                .latestVersion()
-                .tenantId(TENANT_B)
-                .send();
-
-        // then
-        assertThat(result)
-            .failsWithin(Duration.ofSeconds(10))
-            .withThrowableThat()
-            .describedAs("Process definition should exist for tenant-a but not for tenant-b")
-            .withMessageContaining("NOT_FOUND")
-            .withMessageContaining("Expected to find process definition with process ID")
-            .withMessageContaining("but none found");
-      }
-    }
-
-    @Test
-    void shouldNotFindOtherTenantsProcessByKey() {
-      // given
-      final long processDefinitionKey;
-      try (final var client = createZeebeClient(ZEEBE_CLIENT_ID_TENANT_A)) {
-        processDefinitionKey =
-            client
-                .newDeployResourceCommand()
-                .addProcessModel(process, "process.bpmn")
-                .tenantId(TENANT_A)
-                .send()
-                .join()
-                .getProcesses()
-                .stream()
-                .map(Process::getProcessDefinitionKey)
-                .findFirst()
-                .orElseThrow();
-      }
-
-      try (final var client = createZeebeClient(ZEEBE_CLIENT_ID_TENANT_B)) {
-        // when
-        final Future<ProcessInstanceEvent> result =
-            client
-                .newCreateInstanceCommand()
-                .processDefinitionKey(processDefinitionKey)
-                .tenantId(TENANT_B)
-                .send();
-
-        // then
-        assertThat(result)
-            .failsWithin(Duration.ofSeconds(10))
-            .withThrowableThat()
-            .describedAs("Process definition should exist for tenant-a but not for tenant-b")
-            .withMessageContaining("NOT_FOUND")
-            .withMessageContaining("Expected to find process definition with key")
-            .withMessageContaining("but none found");
-      }
-    }
-
-    @Test
-    void shouldNotFindOtherTenantsProcessInCallActivity() {
-      // given
-      try (final var client = createZeebeClient(ZEEBE_CLIENT_ID_TENANT_A)) {
-        client
-            .newDeployResourceCommand()
-            .addProcessModel(process, "process.bpmn")
-            .tenantId(TENANT_A)
-            .send()
-            .join();
-      }
-
-      try (final var client = createZeebeClient(ZEEBE_CLIENT_ID_TENANT_B)) {
-        client
-            .newDeployResourceCommand()
-            .addProcessModel(
-                Bpmn.createExecutableProcess("parent")
-                    .startEvent()
-                    .callActivity("call", c -> c.zeebeProcessId(processId))
-                    .endEvent()
-                    .done(),
-                "parent.bpmn")
-            .tenantId(TENANT_B)
-            .send()
-            .join();
-      }
-
-      try (final var client = createZeebeClient(ZEEBE_CLIENT_ID_TENANT_B)) {
-        // when
-        client
-            .newCreateInstanceCommand()
-            .bpmnProcessId("parent")
-            .latestVersion()
-            .tenantId(TENANT_B)
-            .send();
-
-        // then
-        Assertions.assertThat(
-
-   RecordingExporter.incidentRecords().withBpmnProcessId("parent").getFirst().getValue())
-            .hasErrorMessage(
-                "Expected process with BPMN process id '%s' to be deployed, but not found."
-                    .formatted(processId));
-      }
-    }
-
-    /**
-     * This test case may become obsolete when we allow shared processes definitions across
-   tenants.
-     */
-    @Test
-    void shouldNotFindOtherTenantsProcessEvenWhenClientIsAuthorizedForTenant() {
-      // given
-      final long processDefinitionKey;
-      try (final var client = createZeebeClient(ZEEBE_CLIENT_ID_TENANT_A_AND_B)) {
-        processDefinitionKey =
-            client
-                .newDeployResourceCommand()
-                .addProcessModel(process, "process.bpmn")
-                .tenantId(TENANT_A)
-                .send()
-                .join()
-                .getProcesses()
-                .stream()
-                .map(Process::getProcessDefinitionKey)
-                .findFirst()
-                .orElseThrow();
-      }
-
-      try (final var client = createZeebeClient(ZEEBE_CLIENT_ID_TENANT_A_AND_B)) {
-        // when
-        final Future<ProcessInstanceEvent> result =
-            client
-                .newCreateInstanceCommand()
-                .processDefinitionKey(processDefinitionKey)
-                .tenantId(TENANT_B)
-                .send();
-
-        // then
-        assertThat(result)
-            .failsWithin(Duration.ofSeconds(10))
-            .withThrowableThat()
-            .describedAs("Process definition should exist for tenant-a but not for tenant-b")
-            .withMessageContaining("NOT_FOUND")
-            .withMessageContaining("Expected to find process definition with key")
-            .withMessageContaining("but none found");
-      }
-    }
-
-    @Test
-    void shouldStartProcessWhenPublishingMessageForTenant() {
-      // given
-      final String messageName = "message";
-      process =
-
-   Bpmn.createExecutableProcess(processId).startEvent().message(messageName).endEvent().done();
-      try (final var client = createZeebeClient(ZEEBE_CLIENT_ID_TENANT_A)) {
-        client
-            .newDeployResourceCommand()
-            .addProcessModel(process, "process.bpmn")
-            .tenantId(TENANT_A)
-            .send()
-            .join();
-
-        // when
-        final Future<PublishMessageResponse> result =
-            client
-                .newPublishMessageCommand()
-                .messageName(messageName)
-                .withoutCorrelationKey()
-                .tenantId(TENANT_A)
-                .send();
-
-        // then
-        assertThat(result)
-            .describedAs(
-                "Expect that message can be published as the client has access process of
-   tenant-a")
-            .succeedsWithin(Duration.ofSeconds(10));
-      }
-    }
-
-    @Test
-    void shouldDenyPublishMessageWhenUnauthorized() {
-      // given
-      final String messageName = "message";
-      process =
-
-   Bpmn.createExecutableProcess(processId).startEvent().message(messageName).endEvent().done();
-      try (final var client = createZeebeClient(ZEEBE_CLIENT_ID_TENANT_A)) {
-        client
-            .newDeployResourceCommand()
-            .addProcessModel(process, "process.bpmn")
-            .tenantId(TENANT_A)
-            .send()
-            .join();
-
-        // when
-        final Future<PublishMessageResponse> result =
-            client
-                .newPublishMessageCommand()
-                .messageName(messageName)
-                .withoutCorrelationKey()
-                .tenantId(TENANT_B)
-                .send();
-
-        // then
-        assertThat(result)
-            .failsWithin(Duration.ofSeconds(10))
-            .withThrowableThat()
-            .withMessageContaining("PERMISSION_DENIED")
-            .withMessageContaining(
-                "Expected to handle gRPC request PublishMessage with tenant identifier
-   'tenant-b'")
-            .withMessageContaining("but tenant is not authorized to perform this request");
-      }
-    }
-
-    @Test
-    void shouldActivateJobForTenant() {
-      // given
-      try (final var client = createZeebeClient(ZEEBE_CLIENT_ID_TENANT_A)) {
-        client
-            .newDeployResourceCommand()
-            .addProcessModel(process, "process.bpmn")
-            .tenantId(TENANT_A)
-            .send()
-            .join();
-        client
-            .newCreateInstanceCommand()
-            .bpmnProcessId(processId)
-            .latestVersion()
-            .tenantId(TENANT_A)
-            .send()
-            .join();
-
-        // when
-        final Future<ActivateJobsResponse> result =
-            client
-                .newActivateJobsCommand()
-                .jobType("type")
-                .maxJobsToActivate(1)
-                .tenantId(TENANT_A)
-                .send();
-
-        // then
-        assertThat(result)
-            .describedAs(
-                "Expect that job can be activated as the client has access process of tenant-a")
-            .succeedsWithin(Duration.ofSeconds(10));
-      }
-    }
-
-    @Test
-    void shouldDenyActivateJobWhenUnauthorized() {
-      // given
-      try (final var client = createZeebeClient(ZEEBE_CLIENT_ID_TENANT_A)) {
-        client
-            .newDeployResourceCommand()
-            .addProcessModel(process, "process.bpmn")
-            .tenantId(TENANT_A)
-            .send()
-            .join();
-        client
-            .newCreateInstanceCommand()
-            .bpmnProcessId(processId)
-            .latestVersion()
-            .tenantId(TENANT_A)
-            .send()
-            .join();
-      }
+  @Test
+  void shouldAuthorizeCreateProcessInstance() {
+    // given
+    final long processDefinitionKey;
+    try (final var client = createCamundaClient(USER_TENANT_A_AND_B)) {
+      processDefinitionKey =
+          client
+              .newDeployResourceCommand()
+              .addProcessModel(process, "process.bpmn")
+              .tenantId(TENANT_A)
+              .send()
+              .join()
+              .getProcesses()
+              .stream()
+              .map(Process::getProcessDefinitionKey)
+              .findFirst()
+              .orElseThrow();
 
       // when
-      try (final var client = createZeebeClient(ZEEBE_CLIENT_ID_TENANT_B)) {
-        final Future<ActivateJobsResponse> result =
-            client
-                .newActivateJobsCommand()
-                .jobType("type")
-                .maxJobsToActivate(1)
-                .tenantId(TENANT_A)
-                .send();
+      final Future<ProcessInstanceEvent> result =
+          client
+              .newCreateInstanceCommand()
+              .processDefinitionKey(processDefinitionKey)
+              .tenantId(TENANT_A)
+              .send();
 
-        // then
-        assertThat(result)
-            .failsWithin(Duration.ofSeconds(10))
-            .withThrowableThat()
-            .withMessageContaining("PERMISSION_DENIED")
-            .withMessageContaining(
-                "Expected to handle gRPC request ActivateJobs with tenant identifier 'tenant-a'")
-            .withMessageContaining("but tenant is not authorized to perform this request");
-      }
+      // then
+      assertThat(result)
+          .describedAs(
+              "Expect that process instance can be created as the client has access process of tenant-a")
+          .succeedsWithin(Duration.ofSeconds(10));
+    }
+  }
+
+  @Test
+  void shouldNotFindOtherTenantsProcessById() {
+    // given
+    try (final var client = createCamundaClient(USER_TENANT_A)) {
+      client
+          .newDeployResourceCommand()
+          .addProcessModel(process, "process.bpmn")
+          .tenantId(TENANT_A)
+          .send()
+          .join();
     }
 
-    @Test
-    void shouldCompleteJobForTenant() {
-      // given
-      try (final var client = createZeebeClient(ZEEBE_CLIENT_ID_TENANT_A)) {
-        client
-            .newDeployResourceCommand()
-            .addProcessModel(process, "process.bpmn")
-            .tenantId(TENANT_A)
-            .send()
-            .join();
-        client
-            .newCreateInstanceCommand()
-            .bpmnProcessId(processId)
-            .latestVersion()
-            .tenantId(TENANT_A)
-            .send()
-            .join();
+    try (final var client = createCamundaClient(USER_TENANT_B)) {
+      // when
+      final Future<ProcessInstanceEvent> result =
+          client
+              .newCreateInstanceCommand()
+              .bpmnProcessId(processId)
+              .latestVersion()
+              .tenantId(TENANT_B)
+              .send();
 
-        final var activatedJob =
-            client
-                .newActivateJobsCommand()
-                .jobType("type")
-                .maxJobsToActivate(1)
-                .tenantId(TENANT_A)
-                .send()
-                .join()
-                .getJobs()
-                .get(0);
+      // then
+      assertThat(result)
+          .failsWithin(Duration.ofSeconds(10))
+          .withThrowableThat()
+          .describedAs("Process definition should exist for tenant-a but not for tenant-b")
+          .withMessageContaining("NOT_FOUND")
+          .withMessageContaining("Expected to find process definition with process ID")
+          .withMessageContaining("but none found");
+    }
+  }
 
-        // when
-        final Future<CompleteJobResponse> result = client.newCompleteCommand(activatedJob).send();
-
-        // then
-        assertThat(result)
-            .describedAs(
-                "Expect that job can be competed as the client has access process of tenant-a")
-            .succeedsWithin(Duration.ofSeconds(10));
-      }
+  @Test
+  void shouldNotFindOtherTenantsProcessByKey() {
+    // given
+    final long processDefinitionKey;
+    try (final var client = createCamundaClient(USER_TENANT_A)) {
+      processDefinitionKey =
+          client
+              .newDeployResourceCommand()
+              .addProcessModel(process, "process.bpmn")
+              .tenantId(TENANT_A)
+              .send()
+              .join()
+              .getProcesses()
+              .stream()
+              .map(Process::getProcessDefinitionKey)
+              .findFirst()
+              .orElseThrow();
     }
 
-    @Test
-    void shouldCompleteUserTaskForTenant() {
-      // given
-      try (final var client = createZeebeClient(ZEEBE_CLIENT_ID_TENANT_A)) {
-        client
-            .newDeployResourceCommand()
-            .addProcessModel(process, "process.bpmn")
-            .tenantId(TENANT_A)
-            .send()
-            .join();
-        client
-            .newCreateInstanceCommand()
-            .bpmnProcessId(processId)
-            .latestVersion()
-            .tenantId(TENANT_A)
-            .send()
-            .join();
+    try (final var client = createCamundaClient(USER_TENANT_B)) {
+      // when
+      final Future<ProcessInstanceEvent> result =
+          client
+              .newCreateInstanceCommand()
+              .processDefinitionKey(processDefinitionKey)
+              .tenantId(TENANT_B)
+              .send();
 
-        final var activatedJob =
-            client
-                .newActivateJobsCommand()
-                .jobType("type")
-                .maxJobsToActivate(1)
-                .tenantId(TENANT_A)
-                .send()
-                .join()
-                .getJobs()
-                .get(0);
+      // then
+      assertThat(result)
+          .failsWithin(Duration.ofSeconds(10))
+          .withThrowableThat()
+          .describedAs("Process definition should exist for tenant-a but not for tenant-b")
+          .withMessageContaining("NOT_FOUND")
+          .withMessageContaining("Expected to find process definition with key")
+          .withMessageContaining("but none found");
+    }
+  }
 
-        // when
-        final Future<CompleteJobResponse> result = client.newCompleteCommand(activatedJob).send();
-
-        // then
-        assertThat(result)
-            .describedAs(
-                "Expect that job can be competed as the client has access process of tenant-a")
-            .succeedsWithin(Duration.ofSeconds(10));
-      }
+  @Test
+  void shouldNotFindOtherTenantsProcessInCallActivity() {
+    // given
+    try (final var client = createCamundaClient(USER_TENANT_A)) {
+      client
+          .newDeployResourceCommand()
+          .addProcessModel(process, "process.bpmn")
+          .tenantId(TENANT_A)
+          .send()
+          .join();
     }
 
-    @Test
-    void shouldUpdateJobTimeoutForTenant() {
-      // given
-      try (final var client = createZeebeClient(ZEEBE_CLIENT_ID_TENANT_A)) {
-        client
-            .newDeployResourceCommand()
-            .addProcessModel(process, "process.bpmn")
-            .tenantId(TENANT_A)
-            .send()
-            .join();
-        client
-            .newCreateInstanceCommand()
-            .bpmnProcessId(processId)
-            .latestVersion()
-            .tenantId(TENANT_A)
-            .send()
-            .join();
-
-        final var activatedJob =
-            client
-                .newActivateJobsCommand()
-                .jobType("type")
-                .maxJobsToActivate(1)
-                .tenantId(TENANT_A)
-                .timeout(Duration.ofMinutes(10))
-                .send()
-                .join()
-                .getJobs()
-                .get(0);
-
-        // when
-        final Future<UpdateTimeoutJobResponse> result =
-            client.newUpdateTimeoutCommand(activatedJob).timeout(Duration.ofMinutes(11)).send();
-
-        // then
-        assertThat(result)
-            .describedAs(
-                "Expect that job timeout can be updated as the client has access process of
-   tenant-a")
-            .succeedsWithin(Duration.ofSeconds(10));
-      }
+    try (final var client = createCamundaClient(USER_TENANT_B)) {
+      client
+          .newDeployResourceCommand()
+          .addProcessModel(
+              Bpmn.createExecutableProcess("parent")
+                  .startEvent()
+                  .callActivity("call", c -> c.zeebeProcessId(processId))
+                  .endEvent()
+                  .done(),
+              "parent.bpmn")
+          .tenantId(TENANT_B)
+          .send()
+          .join();
     }
 
-    @Test
-    void shouldNotUpdateJobTimeoutWhenUnauthorized() {
-      // given
-      final ActivatedJob activatedJob;
-      try (final var client = createZeebeClient(ZEEBE_CLIENT_ID_TENANT_A)) {
-        client
-            .newDeployResourceCommand()
-            .addProcessModel(process, "process.bpmn")
-            .tenantId(TENANT_A)
-            .send()
-            .join();
-        client
-            .newCreateInstanceCommand()
-            .bpmnProcessId(processId)
-            .latestVersion()
-            .tenantId(TENANT_A)
-            .send()
-            .join();
-        activatedJob =
-            client
-                .newActivateJobsCommand()
-                .jobType("type")
-                .maxJobsToActivate(1)
-                .tenantId(TENANT_A)
-                .timeout(Duration.ofMinutes(10))
-                .send()
-                .join()
-                .getJobs()
-                .get(0);
-      }
+    try (final var client = createCamundaClient(USER_TENANT_B)) {
+      // when
+      client
+          .newCreateInstanceCommand()
+          .bpmnProcessId("parent")
+          .latestVersion()
+          .tenantId(TENANT_B)
+          .send();
+
+      // then
+      Assertions.assertThat(
+              RecordingExporter.incidentRecords().withBpmnProcessId("parent").getFirst().getValue())
+          .hasErrorMessage(
+              "Expected process with BPMN process id '%s' to be deployed, but not found."
+                  .formatted(processId));
+    }
+  }
+
+  /**
+   * This test case may become obsolete when we allow shared processes definitions across tenants.
+   */
+  @Test
+  void shouldNotFindOtherTenantsProcessEvenWhenClientIsAuthorizedForTenant() {
+    // given
+    final long processDefinitionKey;
+    try (final var client = createCamundaClient(USER_TENANT_A_AND_B)) {
+      processDefinitionKey =
+          client
+              .newDeployResourceCommand()
+              .addProcessModel(process, "process.bpmn")
+              .tenantId(TENANT_A)
+              .send()
+              .join()
+              .getProcesses()
+              .stream()
+              .map(Process::getProcessDefinitionKey)
+              .findFirst()
+              .orElseThrow();
+    }
+
+    try (final var client = createCamundaClient(USER_TENANT_A_AND_B)) {
+      // when
+      final Future<ProcessInstanceEvent> result =
+          client
+              .newCreateInstanceCommand()
+              .processDefinitionKey(processDefinitionKey)
+              .tenantId(TENANT_B)
+              .send();
+
+      // then
+      assertThat(result)
+          .failsWithin(Duration.ofSeconds(10))
+          .withThrowableThat()
+          .describedAs("Process definition should exist for tenant-a but not for tenant-b")
+          .withMessageContaining("NOT_FOUND")
+          .withMessageContaining("Expected to find process definition with key")
+          .withMessageContaining("but none found");
+    }
+  }
+
+  @Test
+  void shouldStartProcessWhenPublishingMessageForTenant() {
+    // given
+    final String messageName = "message";
+    process =
+        Bpmn.createExecutableProcess(processId).startEvent().message(messageName).endEvent().done();
+    try (final var client = createCamundaClient(USER_TENANT_A)) {
+      client
+          .newDeployResourceCommand()
+          .addProcessModel(process, "process.bpmn")
+          .tenantId(TENANT_A)
+          .send()
+          .join();
 
       // when
-      try (final var client = createZeebeClient(ZEEBE_CLIENT_ID_TENANT_B)) {
-        final Future<UpdateTimeoutJobResponse> result =
-            client.newUpdateTimeoutCommand(activatedJob).timeout(Duration.ofMinutes(11)).send();
+      final Future<PublishMessageResponse> result =
+          client
+              .newPublishMessageCommand()
+              .messageName(messageName)
+              .withoutCorrelationKey()
+              .tenantId(TENANT_A)
+              .send();
 
-        // then
-        assertThat(result)
-            .failsWithin(Duration.ofSeconds(10))
-            .withThrowableThat()
-            .withMessageContaining("NOT_FOUND")
-            .withMessageContaining(
-                "Command 'UPDATE_TIMEOUT' rejected with code 'NOT_FOUND': Expected to update job
-   with key '%d', but no such job was found"
-                    .formatted(activatedJob.getKey()));
-      }
+      // then
+      assertThat(result)
+          .describedAs(
+              "Expect that message can be published as the client has access process of tenant-a")
+          .succeedsWithin(Duration.ofSeconds(10));
     }
+  }
 
-    @Test
-    void shouldNotFindJobWhenUnauthorized() {
-      // given
-      final ActivatedJob activatedJob;
-      try (final var client = createZeebeClient(ZEEBE_CLIENT_ID_TENANT_A)) {
-        client
-            .newDeployResourceCommand()
-            .addProcessModel(process, "process.bpmn")
-            .tenantId(TENANT_A)
-            .send()
-            .join();
-        client
-            .newCreateInstanceCommand()
-            .bpmnProcessId(processId)
-            .latestVersion()
-            .tenantId(TENANT_A)
-            .send()
-            .join();
-        activatedJob =
-            client
-                .newActivateJobsCommand()
-                .jobType("type")
-                .maxJobsToActivate(1)
-                .tenantId(TENANT_A)
-                .send()
-                .join()
-                .getJobs()
-                .get(0);
-      }
+  @Test
+  void shouldDenyPublishMessageWhenUnauthorized() {
+    // given
+    final String messageName = "message";
+    process =
+        Bpmn.createExecutableProcess(processId).startEvent().message(messageName).endEvent().done();
+    try (final var client = createCamundaClient(USER_TENANT_A)) {
+      client
+          .newDeployResourceCommand()
+          .addProcessModel(process, "process.bpmn")
+          .tenantId(TENANT_A)
+          .send()
+          .join();
 
       // when
-      try (final var client = createZeebeClient(ZEEBE_CLIENT_ID_TENANT_B)) {
-        final Future<CompleteJobResponse> result = client.newCompleteCommand(activatedJob).send();
+      final Future<PublishMessageResponse> result =
+          client
+              .newPublishMessageCommand()
+              .messageName(messageName)
+              .withoutCorrelationKey()
+              .tenantId(TENANT_B)
+              .send();
 
-        // then
-        assertThat(result)
-            .failsWithin(Duration.ofSeconds(10))
-            .withThrowableThat()
-            .withMessageContaining("NOT_FOUND")
-            .withMessageContaining(
-                "Command 'COMPLETE' rejected with code 'NOT_FOUND': Expected to update retries for
-   job with key '%d', but no such job was found"
-                    .formatted(activatedJob.getKey()));
-      }
+      // then
+      assertThat(result)
+          .failsWithin(Duration.ofSeconds(10))
+          .withThrowableThat()
+          .withMessageContaining("PERMISSION_DENIED")
+          .withMessageContaining(
+              "Expected to handle gRPC request PublishMessage with tenant identifier 'tenant-b'")
+          .withMessageContaining("but tenant is not authorized to perform this request");
     }
+  }
 
-    @Test
-    void shouldResolveIncidentForTenant() {
-      // given
-      process =
-          Bpmn.createExecutableProcess(processId)
-              .startEvent()
-              .zeebeOutputExpression("assert(foo, foo != null)", "target")
-              .endEvent()
-              .done();
-      try (final var client = createZeebeClient(ZEEBE_CLIENT_ID_TENANT_A)) {
-        client
-            .newDeployResourceCommand()
-            .addProcessModel(process, "process.bpmn")
-            .tenantId(TENANT_A)
-            .send()
-            .join();
-        client
-            .newCreateInstanceCommand()
-            .bpmnProcessId(processId)
-            .latestVersion()
-            .tenantId(TENANT_A)
-            .send()
-            .join();
-
-        final var incidentKey =
-            RecordingExporter.incidentRecords().withBpmnProcessId(processId).getFirst().getKey();
-
-        // when
-        final Future<ResolveIncidentResponse> result =
-            client.newResolveIncidentCommand(incidentKey).send();
-
-        // then
-        assertThat(result)
-            .describedAs(
-                "Expect that incident can be resolved as the client has access process of
-   tenant-a")
-            .succeedsWithin(Duration.ofSeconds(10));
-      }
-    }
-
-    @Test
-    void shouldNotFindIncidentForTenantWhenUnauthorized() {
-      // given
-      process =
-          Bpmn.createExecutableProcess(processId)
-              .startEvent()
-              .zeebeOutputExpression("assert(foo, foo != null)", "target")
-              .endEvent()
-              .done();
-      final long incidentKey;
-      try (final var client = createZeebeClient(ZEEBE_CLIENT_ID_TENANT_A)) {
-        client
-            .newDeployResourceCommand()
-            .addProcessModel(process, "process.bpmn")
-            .tenantId(TENANT_A)
-            .send()
-            .join();
-        client
-            .newCreateInstanceCommand()
-            .bpmnProcessId(processId)
-            .latestVersion()
-            .tenantId(TENANT_A)
-            .send()
-            .join();
-
-        incidentKey =
-            RecordingExporter.incidentRecords().withBpmnProcessId(processId).getFirst().getKey();
-      }
-
-      try (final var client = createZeebeClient(ZEEBE_CLIENT_ID_TENANT_B)) {
-        // when
-        final Future<ResolveIncidentResponse> result =
-            client.newResolveIncidentCommand(incidentKey).send();
-
-        // then
-        assertThat(result)
-            .failsWithin(Duration.ofSeconds(10))
-            .withThrowableThat()
-            .withMessageContaining("NOT_FOUND")
-            .withMessageContaining(
-                "Command 'RESOLVE' rejected with code 'NOT_FOUND': Expected to resolve incident
-   with key '%d', but no such incident was found"
-                    .formatted(incidentKey));
-      }
-    }
-
-    @Test
-    void shouldAllowModifyProcessInstanceForDefaultTenant() {
-      try (final var client = createZeebeClient(ZEEBE_CLIENT_ID_TENANT_DEFAULT)) {
-        // given
-        client.newDeployResourceCommand().addProcessModel(process, "process.bpmn").send().join();
-
-        final long processInstanceKey =
-            client
-                .newCreateInstanceCommand()
-                .bpmnProcessId(processId)
-                .latestVersion()
-                .send()
-                .join()
-                .getProcessInstanceKey();
-
-        // when
-        final Future<ModifyProcessInstanceResponse> response =
-
-   client.newModifyProcessInstanceCommand(processInstanceKey).activateElement("task").send();
-
-        // then
-        assertThat(response).succeedsWithin(Duration.ofSeconds(10));
-      }
-    }
-
-    @Test
-    void shouldAllowModifyProcessInstanceForOtherTenant() {
-      try (final var client = createZeebeClient(ZEEBE_CLIENT_ID_TENANT_A)) {
-        // given
-        client
-            .newDeployResourceCommand()
-            .addProcessModel(process, "process.bpmn")
-            .tenantId(TENANT_A)
-            .send()
-            .join();
-
-        final long processInstanceKey =
-            client
-                .newCreateInstanceCommand()
-                .bpmnProcessId(processId)
-                .latestVersion()
-                .tenantId(TENANT_A)
-                .send()
-                .join()
-                .getProcessInstanceKey();
-
-        // when
-        final Future<ModifyProcessInstanceResponse> response =
-
-   client.newModifyProcessInstanceCommand(processInstanceKey).activateElement("task").send();
-
-        // then
-        assertThat(response).succeedsWithin(Duration.ofSeconds(10));
-      }
-    }
-
-    @Test
-    void shouldRejectModifyProcessInstanceForUnauthorizedTenant() {
-      final long processInstanceKey;
-      try (final var client = createZeebeClient(ZEEBE_CLIENT_ID_TENANT_A)) {
-        // given
-        client
-            .newDeployResourceCommand()
-            .addProcessModel(process, "process.bpmn")
-            .tenantId(TENANT_A)
-            .send()
-            .join();
-
-        processInstanceKey =
-            client
-                .newCreateInstanceCommand()
-                .bpmnProcessId(processId)
-                .latestVersion()
-                .tenantId(TENANT_A)
-                .send()
-                .join()
-                .getProcessInstanceKey();
-      }
+  @Test
+  void shouldActivateJobForTenant() {
+    // given
+    try (final var client = createCamundaClient(USER_TENANT_A)) {
+      client
+          .newDeployResourceCommand()
+          .addProcessModel(process, "process.bpmn")
+          .tenantId(TENANT_A)
+          .send()
+          .join();
+      client
+          .newCreateInstanceCommand()
+          .bpmnProcessId(processId)
+          .latestVersion()
+          .tenantId(TENANT_A)
+          .send()
+          .join();
 
       // when
-      try (final var client = createZeebeClient(ZEEBE_CLIENT_ID_TENANT_B)) {
-        final Future<ModifyProcessInstanceResponse> response =
+      final Future<ActivateJobsResponse> result =
+          client
+              .newActivateJobsCommand()
+              .jobType("type")
+              .maxJobsToActivate(1)
+              .tenantId(TENANT_A)
+              .send();
 
-   client.newModifyProcessInstanceCommand(processInstanceKey).activateElement("task").send();
+      // then
+      assertThat(result)
+          .describedAs(
+              "Expect that job can be activated as the client has access process of tenant-a")
+          .succeedsWithin(Duration.ofSeconds(10));
+    }
+  }
 
-        // then
-        assertThat(response)
-            .failsWithin(Duration.ofSeconds(10))
-            .withThrowableThat()
-            .withMessageContaining("NOT_FOUND")
-            .withMessageContaining(
-                "Expected to modify process instance but no process instance found with key");
-      }
+  @Test
+  void shouldDenyActivateJobWhenUnauthorized() {
+    // given
+    try (final var client = createCamundaClient(USER_TENANT_A)) {
+      client
+          .newDeployResourceCommand()
+          .addProcessModel(process, "process.bpmn")
+          .tenantId(TENANT_A)
+          .send()
+          .join();
+      client
+          .newCreateInstanceCommand()
+          .bpmnProcessId(processId)
+          .latestVersion()
+          .tenantId(TENANT_A)
+          .send()
+          .join();
     }
 
-    @Test
-    void shouldAllowMigrateProcessInstanceForDefaultTenant() {
-      try (final var client = createZeebeClient(ZEEBE_CLIENT_ID_TENANT_DEFAULT)) {
-        // given
-        client.newDeployResourceCommand().addProcessModel(process, "process.bpmn").send().join();
-        final var deploymentResponse =
-            client
-                .newDeployResourceCommand()
-                .addProcessModel(migratedProcess, "migrated-process.bpmn")
-                .send()
-                .join();
-        final long targetProcessDefinitionKey =
-            deploymentResponse.getProcesses().get(0).getProcessDefinitionKey();
+    // when
+    try (final var client = createCamundaClient(USER_TENANT_B)) {
+      final Future<ActivateJobsResponse> result =
+          client
+              .newActivateJobsCommand()
+              .jobType("type")
+              .maxJobsToActivate(1)
+              .tenantId(TENANT_A)
+              .send();
 
-        final long processInstanceKey =
-            client
-                .newCreateInstanceCommand()
-                .bpmnProcessId(processId)
-                .latestVersion()
-                .send()
-                .join()
-                .getProcessInstanceKey();
-
-        // when
-        final Future<MigrateProcessInstanceResponse> response =
-            client
-                .newMigrateProcessInstanceCommand(processInstanceKey)
-                .migrationPlan(targetProcessDefinitionKey)
-                .addMappingInstruction("task", "migrated-task")
-                .send();
-
-        // then
-        assertThat(response).succeedsWithin(Duration.ofSeconds(10));
-      }
+      // then
+      assertThat(result)
+          .failsWithin(Duration.ofSeconds(10))
+          .withThrowableThat()
+          .withMessageContaining("PERMISSION_DENIED")
+          .withMessageContaining(
+              "Expected to handle gRPC request ActivateJobs with tenant identifier 'tenant-a'")
+          .withMessageContaining("but tenant is not authorized to perform this request");
     }
+  }
 
-    @Test
-    void shouldAllowMigrateProcessInstanceForOtherTenant() {
-      try (final var client = createZeebeClient(ZEEBE_CLIENT_ID_TENANT_A)) {
-        // given
-        client
-            .newDeployResourceCommand()
-            .addProcessModel(process, "process.bpmn")
-            .tenantId(TENANT_A)
-            .send()
-            .join();
-        final var deploymentResponse =
-            client
-                .newDeployResourceCommand()
-                .addProcessModel(migratedProcess, "migrated-process.bpmn")
-                .tenantId(TENANT_A)
-                .send()
-                .join();
-        final long targetProcessDefinitionKey =
-            deploymentResponse.getProcesses().get(0).getProcessDefinitionKey();
+  @Test
+  void shouldCompleteJobForTenant() {
+    // given
+    try (final var client = createCamundaClient(USER_TENANT_A)) {
+      client
+          .newDeployResourceCommand()
+          .addProcessModel(process, "process.bpmn")
+          .tenantId(TENANT_A)
+          .send()
+          .join();
+      client
+          .newCreateInstanceCommand()
+          .bpmnProcessId(processId)
+          .latestVersion()
+          .tenantId(TENANT_A)
+          .send()
+          .join();
 
-        final long processInstanceKey =
-            client
-                .newCreateInstanceCommand()
-                .bpmnProcessId(processId)
-                .latestVersion()
-                .tenantId(TENANT_A)
-                .send()
-                .join()
-                .getProcessInstanceKey();
-
-        // when
-        final Future<MigrateProcessInstanceResponse> response =
-            client
-                .newMigrateProcessInstanceCommand(processInstanceKey)
-                .migrationPlan(targetProcessDefinitionKey)
-                .addMappingInstruction("task", "migrated-task")
-                .send();
-
-        // then
-        assertThat(response).succeedsWithin(Duration.ofSeconds(10));
-      }
-    }
-
-    @Test
-    void shouldRejectMigrateProcessInstanceForUnauthorizedTenant() {
-      final long processInstanceKey;
-      final long targetProcessDefinitionKey;
-      try (final var client = createZeebeClient(ZEEBE_CLIENT_ID_TENANT_A)) {
-        // given
-        client
-            .newDeployResourceCommand()
-            .addProcessModel(process, "process.bpmn")
-            .tenantId(TENANT_A)
-            .send()
-            .join();
-        final var deploymentResponse =
-            client
-                .newDeployResourceCommand()
-                .addProcessModel(migratedProcess, "process.bpmn")
-                .tenantId(TENANT_A)
-                .send()
-                .join();
-        targetProcessDefinitionKey =
-            deploymentResponse.getProcesses().get(0).getProcessDefinitionKey();
-
-        processInstanceKey =
-            client
-                .newCreateInstanceCommand()
-                .bpmnProcessId(processId)
-                .latestVersion()
-                .tenantId(TENANT_A)
-                .send()
-                .join()
-                .getProcessInstanceKey();
-      }
+      final var activatedJob =
+          client
+              .newActivateJobsCommand()
+              .jobType("type")
+              .maxJobsToActivate(1)
+              .tenantId(TENANT_A)
+              .send()
+              .join()
+              .getJobs()
+              .get(0);
 
       // when
-      try (final var client = createZeebeClient(ZEEBE_CLIENT_ID_TENANT_B)) {
-        final Future<MigrateProcessInstanceResponse> response =
-            client
-                .newMigrateProcessInstanceCommand(processInstanceKey)
-                .migrationPlan(targetProcessDefinitionKey)
-                .addMappingInstruction("task", "migrated-task")
-                .send();
+      final Future<CompleteJobResponse> result = client.newCompleteCommand(activatedJob).send();
 
-        // then
-        assertThat(response)
-            .failsWithin(Duration.ofSeconds(10))
-            .withThrowableThat()
-            .withMessageContaining("NOT_FOUND")
-            .withMessageContaining(
-                String.format(
-                    "Expected to migrate process instance but no process instance found with key
-   '%s'",
-                    processInstanceKey));
-      }
+      // then
+      assertThat(result)
+          .describedAs(
+              "Expect that job can be competed as the client has access process of tenant-a")
+          .succeedsWithin(Duration.ofSeconds(10));
+    }
+  }
+
+  @Test
+  void shouldCompleteUserTaskForTenant() {
+    // given
+    try (final var client = createCamundaClient(USER_TENANT_A)) {
+      client
+          .newDeployResourceCommand()
+          .addProcessModel(process, "process.bpmn")
+          .tenantId(TENANT_A)
+          .send()
+          .join();
+      client
+          .newCreateInstanceCommand()
+          .bpmnProcessId(processId)
+          .latestVersion()
+          .tenantId(TENANT_A)
+          .send()
+          .join();
+
+      final var activatedJob =
+          client
+              .newActivateJobsCommand()
+              .jobType("type")
+              .maxJobsToActivate(1)
+              .tenantId(TENANT_A)
+              .send()
+              .join()
+              .getJobs()
+              .get(0);
+
+      // when
+      final Future<CompleteJobResponse> result = client.newCompleteCommand(activatedJob).send();
+
+      // then
+      assertThat(result)
+          .describedAs(
+              "Expect that job can be competed as the client has access process of tenant-a")
+          .succeedsWithin(Duration.ofSeconds(10));
+    }
+  }
+
+  @Test
+  void shouldUpdateJobTimeoutForTenant() {
+    // given
+    try (final var client = createCamundaClient(USER_TENANT_A)) {
+      client
+          .newDeployResourceCommand()
+          .addProcessModel(process, "process.bpmn")
+          .tenantId(TENANT_A)
+          .send()
+          .join();
+      client
+          .newCreateInstanceCommand()
+          .bpmnProcessId(processId)
+          .latestVersion()
+          .tenantId(TENANT_A)
+          .send()
+          .join();
+
+      final var activatedJob =
+          client
+              .newActivateJobsCommand()
+              .jobType("type")
+              .maxJobsToActivate(1)
+              .tenantId(TENANT_A)
+              .timeout(Duration.ofMinutes(10))
+              .send()
+              .join()
+              .getJobs()
+              .get(0);
+
+      // when
+      final Future<UpdateTimeoutJobResponse> result =
+          client.newUpdateTimeoutCommand(activatedJob).timeout(Duration.ofMinutes(11)).send();
+
+      // then
+      assertThat(result)
+          .describedAs(
+              "Expect that job timeout can be updated as the client has access process of tenant-a")
+          .succeedsWithin(Duration.ofSeconds(10));
+    }
+  }
+
+  @Test
+  void shouldNotUpdateJobTimeoutWhenUnauthorized() {
+    // given
+    final ActivatedJob activatedJob;
+    try (final var client = createCamundaClient(USER_TENANT_A)) {
+      client
+          .newDeployResourceCommand()
+          .addProcessModel(process, "process.bpmn")
+          .tenantId(TENANT_A)
+          .send()
+          .join();
+      client
+          .newCreateInstanceCommand()
+          .bpmnProcessId(processId)
+          .latestVersion()
+          .tenantId(TENANT_A)
+          .send()
+          .join();
+      activatedJob =
+          client
+              .newActivateJobsCommand()
+              .jobType("type")
+              .maxJobsToActivate(1)
+              .tenantId(TENANT_A)
+              .timeout(Duration.ofMinutes(10))
+              .send()
+              .join()
+              .getJobs()
+              .get(0);
     }
 
-    @Test
-    void shouldAllowEvaluateDecisionForDefaultTenant() {
-      try (final var client = createZeebeClient(ZEEBE_CLIENT_ID_TENANT_DEFAULT)) {
-        // given
-        client
-            .newDeployResourceCommand()
-            .addResourceFromClasspath("dmn/decision-table.dmn")
-            .send()
-            .join();
+    // when
+    try (final var client = createCamundaClient(USER_TENANT_B)) {
+      final Future<UpdateTimeoutJobResponse> result =
+          client.newUpdateTimeoutCommand(activatedJob).timeout(Duration.ofMinutes(11)).send();
 
-        // when
-        final Future<EvaluateDecisionResponse> response =
-            client
-                .newEvaluateDecisionCommand()
-                .decisionId("jedi_or_sith")
-                .variable("lightsaberColor", "blue")
-                .send();
-        // then
-        assertThat(response).succeedsWithin(Duration.ofSeconds(10));
-      }
+      // then
+      assertThat(result)
+          .failsWithin(Duration.ofSeconds(10))
+          .withThrowableThat()
+          .withMessageContaining("NOT_FOUND")
+          .withMessageContaining(
+              "Command 'UPDATE_TIMEOUT' rejected with code 'NOT_FOUND': Expected to update job with key '%d', but no such job was found"
+                  .formatted(activatedJob.getKey()));
+    }
+  }
+
+  @Test
+  void shouldNotFindJobWhenUnauthorized() {
+    // given
+    final ActivatedJob activatedJob;
+    try (final var client = createCamundaClient(USER_TENANT_A)) {
+      client
+          .newDeployResourceCommand()
+          .addProcessModel(process, "process.bpmn")
+          .tenantId(TENANT_A)
+          .send()
+          .join();
+      client
+          .newCreateInstanceCommand()
+          .bpmnProcessId(processId)
+          .latestVersion()
+          .tenantId(TENANT_A)
+          .send()
+          .join();
+      activatedJob =
+          client
+              .newActivateJobsCommand()
+              .jobType("type")
+              .maxJobsToActivate(1)
+              .tenantId(TENANT_A)
+              .send()
+              .join()
+              .getJobs()
+              .get(0);
     }
 
-    @Test
-    void shouldAllowEvaluateDecisionForCustomTenant() {
-      try (final var client = createZeebeClient(ZEEBE_CLIENT_ID_TENANT_DEFAULT)) {
-        // given
-        client
-            .newDeployResourceCommand()
-            .addResourceFromClasspath("dmn/decision-table.dmn")
-            .tenantId(TENANT_A)
-            .send()
-            .join();
+    // when
+    try (final var client = createCamundaClient(USER_TENANT_B)) {
+      final Future<CompleteJobResponse> result = client.newCompleteCommand(activatedJob).send();
 
-        // when
-        final Future<EvaluateDecisionResponse> response =
-            client
-                .newEvaluateDecisionCommand()
-                .decisionId("jedi_or_sith")
-                .variable("lightsaberColor", "blue")
-                .tenantId(TENANT_A)
-                .send();
-        // then
-        assertThat(response).succeedsWithin(Duration.ofSeconds(10));
-      }
+      // then
+      assertThat(result)
+          .failsWithin(Duration.ofSeconds(10))
+          .withThrowableThat()
+          .withMessageContaining("NOT_FOUND")
+          .withMessageContaining(
+              "Command 'COMPLETE' rejected with code 'NOT_FOUND': Expected to update retries for job with key '%d', but no such job was found"
+                  .formatted(activatedJob.getKey()));
+    }
+  }
+
+  @Test
+  void shouldResolveIncidentForTenant() {
+    // given
+    process =
+        Bpmn.createExecutableProcess(processId)
+            .startEvent()
+            .zeebeOutputExpression("assert(foo, foo != null)", "target")
+            .endEvent()
+            .done();
+    try (final var client = createCamundaClient(USER_TENANT_A)) {
+      client
+          .newDeployResourceCommand()
+          .addProcessModel(process, "process.bpmn")
+          .tenantId(TENANT_A)
+          .send()
+          .join();
+      client
+          .newCreateInstanceCommand()
+          .bpmnProcessId(processId)
+          .latestVersion()
+          .tenantId(TENANT_A)
+          .send()
+          .join();
+
+      final var incidentKey =
+          RecordingExporter.incidentRecords().withBpmnProcessId(processId).getFirst().getKey();
+
+      // when
+      final Future<ResolveIncidentResponse> result =
+          client.newResolveIncidentCommand(incidentKey).send();
+
+      // then
+      assertThat(result)
+          .describedAs(
+              "Expect that incident can be resolved as the client has access process of tenant-a")
+          .succeedsWithin(Duration.ofSeconds(10));
+    }
+  }
+
+  @Test
+  void shouldNotFindIncidentForTenantWhenUnauthorized() {
+    // given
+    process =
+        Bpmn.createExecutableProcess(processId)
+            .startEvent()
+            .zeebeOutputExpression("assert(foo, foo != null)", "target")
+            .endEvent()
+            .done();
+    final long incidentKey;
+    try (final var client = createCamundaClient(USER_TENANT_A)) {
+      client
+          .newDeployResourceCommand()
+          .addProcessModel(process, "process.bpmn")
+          .tenantId(TENANT_A)
+          .send()
+          .join();
+      client
+          .newCreateInstanceCommand()
+          .bpmnProcessId(processId)
+          .latestVersion()
+          .tenantId(TENANT_A)
+          .send()
+          .join();
+
+      incidentKey =
+          RecordingExporter.incidentRecords().withBpmnProcessId(processId).getFirst().getKey();
     }
 
-    @Test
-    void shouldDenyEvaluateDecisionForCustomTenant() {
-      try (final var client = createZeebeClient(ZEEBE_CLIENT_ID_TENANT_DEFAULT)) {
-        // given
-        client
-            .newDeployResourceCommand()
-            .addResourceFromClasspath("dmn/decision-table.dmn")
-            .tenantId(TENANT_A)
-            .send()
-            .join();
+    try (final var client = createCamundaClient(USER_TENANT_B)) {
+      // when
+      final Future<ResolveIncidentResponse> result =
+          client.newResolveIncidentCommand(incidentKey).send();
 
-        // when
-        final Future<EvaluateDecisionResponse> response =
-            client
-                .newEvaluateDecisionCommand()
-                .decisionId("jedi_or_sith")
-                .variable("lightsaberColor", "blue")
-                .tenantId(TENANT_B)
-                .send();
-        // then
-        assertThat(response)
-            .failsWithin(Duration.ofSeconds(10))
-            .withThrowableThat()
-            .withMessageContaining("PERMISSION_DENIED")
-            .withMessageContaining(
-                "Expected to handle gRPC request EvaluateDecision with tenant identifier
-   'tenant-b'")
-            .withMessageContaining("but tenant is not authorized to perform this request");
-      }
+      // then
+      assertThat(result)
+          .failsWithin(Duration.ofSeconds(10))
+          .withThrowableThat()
+          .withMessageContaining("NOT_FOUND")
+          .withMessageContaining(
+              "Command 'RESOLVE' rejected with code 'NOT_FOUND': Expected to resolve incident with key '%d', but no such incident was found"
+                  .formatted(incidentKey));
+    }
+  }
+
+  @Test
+  void shouldAllowModifyProcessInstanceForDefaultTenant() {
+    try (final var client = createCamundaClient(USER_TENANT_A)) {
+      // given
+      client.newDeployResourceCommand().addProcessModel(process, "process.bpmn").send().join();
+
+      final long processInstanceKey =
+          client
+              .newCreateInstanceCommand()
+              .bpmnProcessId(processId)
+              .latestVersion()
+              .send()
+              .join()
+              .getProcessInstanceKey();
+
+      // when
+      final Future<ModifyProcessInstanceResponse> response =
+          client.newModifyProcessInstanceCommand(processInstanceKey).activateElement("task").send();
+
+      // then
+      assertThat(response).succeedsWithin(Duration.ofSeconds(10));
+    }
+  }
+
+  @Test
+  void shouldAllowModifyProcessInstanceForOtherTenant() {
+    try (final var client = createCamundaClient(USER_TENANT_A)) {
+      // given
+      client
+          .newDeployResourceCommand()
+          .addProcessModel(process, "process.bpmn")
+          .tenantId(TENANT_A)
+          .send()
+          .join();
+
+      final long processInstanceKey =
+          client
+              .newCreateInstanceCommand()
+              .bpmnProcessId(processId)
+              .latestVersion()
+              .tenantId(TENANT_A)
+              .send()
+              .join()
+              .getProcessInstanceKey();
+
+      // when
+      final Future<ModifyProcessInstanceResponse> response =
+          client.newModifyProcessInstanceCommand(processInstanceKey).activateElement("task").send();
+
+      // then
+      assertThat(response).succeedsWithin(Duration.ofSeconds(10));
+    }
+  }
+
+  @Test
+  void shouldRejectModifyProcessInstanceForUnauthorizedTenant() {
+    final long processInstanceKey;
+    try (final var client = createCamundaClient(USER_TENANT_A)) {
+      // given
+      client
+          .newDeployResourceCommand()
+          .addProcessModel(process, "process.bpmn")
+          .tenantId(TENANT_A)
+          .send()
+          .join();
+
+      processInstanceKey =
+          client
+              .newCreateInstanceCommand()
+              .bpmnProcessId(processId)
+              .latestVersion()
+              .tenantId(TENANT_A)
+              .send()
+              .join()
+              .getProcessInstanceKey();
     }
 
-    @Test
-    void shouldStartInstanceWhenBroadcastSignalForTenant() {
-      final String signalName = "signal";
-      process =
+    // when
+    try (final var client = createCamundaClient(USER_TENANT_B)) {
+      final Future<ModifyProcessInstanceResponse> response =
+          client.newModifyProcessInstanceCommand(processInstanceKey).activateElement("task").send();
 
-   Bpmn.createExecutableProcess(processId).startEvent().signal(signalName).endEvent().done();
-      try (final var client = createZeebeClient(ZEEBE_CLIENT_ID_TENANT_A)) {
-        // given
-        client
-            .newDeployResourceCommand()
-            .addProcessModel(process, "process.bpmn")
-            .tenantId(TENANT_A)
-            .send()
-            .join();
+      // then
+      assertThat(response)
+          .failsWithin(Duration.ofSeconds(10))
+          .withThrowableThat()
+          .withMessageContaining("NOT_FOUND")
+          .withMessageContaining(
+              "Expected to modify process instance but no process instance found with key");
+    }
+  }
 
-        // when
-        final Future<BroadcastSignalResponse> result =
-            client.newBroadcastSignalCommand().signalName(signalName).tenantId(TENANT_A).send();
+  @Test
+  void shouldAllowMigrateProcessInstanceForDefaultTenant() {
+    try (final var client = createCamundaClient(USER_TENANT_A)) {
+      // given
+      client.newDeployResourceCommand().addProcessModel(process, "process.bpmn").send().join();
+      final var deploymentResponse =
+          client
+              .newDeployResourceCommand()
+              .addProcessModel(migratedProcess, "migrated-process.bpmn")
+              .send()
+              .join();
+      final long targetProcessDefinitionKey =
+          deploymentResponse.getProcesses().get(0).getProcessDefinitionKey();
 
-        // then
-        assertThat(result)
-            .describedAs(
-                "Expect that signal can be broadcast as the client has access to the process of
-   'tenant-a'")
-            .succeedsWithin(Duration.ofSeconds(20));
-      }
+      final long processInstanceKey =
+          client
+              .newCreateInstanceCommand()
+              .bpmnProcessId(processId)
+              .latestVersion()
+              .send()
+              .join()
+              .getProcessInstanceKey();
+
+      // when
+      final Future<MigrateProcessInstanceResponse> response =
+          client
+              .newMigrateProcessInstanceCommand(processInstanceKey)
+              .migrationPlan(targetProcessDefinitionKey)
+              .addMappingInstruction("task", "migrated-task")
+              .send();
+
+      // then
+      assertThat(response).succeedsWithin(Duration.ofSeconds(10));
+    }
+  }
+
+  @Test
+  void shouldAllowMigrateProcessInstanceForOtherTenant() {
+    try (final var client = createCamundaClient(USER_TENANT_A)) {
+      // given
+      client
+          .newDeployResourceCommand()
+          .addProcessModel(process, "process.bpmn")
+          .tenantId(TENANT_A)
+          .send()
+          .join();
+      final var deploymentResponse =
+          client
+              .newDeployResourceCommand()
+              .addProcessModel(migratedProcess, "migrated-process.bpmn")
+              .tenantId(TENANT_A)
+              .send()
+              .join();
+      final long targetProcessDefinitionKey =
+          deploymentResponse.getProcesses().get(0).getProcessDefinitionKey();
+
+      final long processInstanceKey =
+          client
+              .newCreateInstanceCommand()
+              .bpmnProcessId(processId)
+              .latestVersion()
+              .tenantId(TENANT_A)
+              .send()
+              .join()
+              .getProcessInstanceKey();
+
+      // when
+      final Future<MigrateProcessInstanceResponse> response =
+          client
+              .newMigrateProcessInstanceCommand(processInstanceKey)
+              .migrationPlan(targetProcessDefinitionKey)
+              .addMappingInstruction("task", "migrated-task")
+              .send();
+
+      // then
+      assertThat(response).succeedsWithin(Duration.ofSeconds(10));
+    }
+  }
+
+  @Test
+  void shouldRejectMigrateProcessInstanceForUnauthorizedTenant() {
+    final long processInstanceKey;
+    final long targetProcessDefinitionKey;
+    try (final var client = createCamundaClient(USER_TENANT_A)) {
+      // given
+      client
+          .newDeployResourceCommand()
+          .addProcessModel(process, "process.bpmn")
+          .tenantId(TENANT_A)
+          .send()
+          .join();
+      final var deploymentResponse =
+          client
+              .newDeployResourceCommand()
+              .addProcessModel(migratedProcess, "process.bpmn")
+              .tenantId(TENANT_A)
+              .send()
+              .join();
+      targetProcessDefinitionKey =
+          deploymentResponse.getProcesses().get(0).getProcessDefinitionKey();
+
+      processInstanceKey =
+          client
+              .newCreateInstanceCommand()
+              .bpmnProcessId(processId)
+              .latestVersion()
+              .tenantId(TENANT_A)
+              .send()
+              .join()
+              .getProcessInstanceKey();
     }
 
-    @Test
-    void shouldDenyBroadcastSignalWhenUnauthorized() {
-      final String signalName = "signal";
-      process =
+    // when
+    try (final var client = createCamundaClient(USER_TENANT_B)) {
+      final Future<MigrateProcessInstanceResponse> response =
+          client
+              .newMigrateProcessInstanceCommand(processInstanceKey)
+              .migrationPlan(targetProcessDefinitionKey)
+              .addMappingInstruction("task", "migrated-task")
+              .send();
 
-   Bpmn.createExecutableProcess(processId).startEvent().signal(signalName).endEvent().done();
-      try (final var client = createZeebeClient(ZEEBE_CLIENT_ID_TENANT_A)) {
-        // given
-        client
-            .newDeployResourceCommand()
-            .addProcessModel(process, "process.bpmn")
-            .tenantId(TENANT_A)
-            .send()
-            .join();
-
-        // when
-        final Future<BroadcastSignalResponse> result =
-            client.newBroadcastSignalCommand().signalName(signalName).tenantId(TENANT_B).send();
-
-        // then
-        assertThat(result)
-            .failsWithin(Duration.ofSeconds(10))
-            .withThrowableThat()
-            .withMessageContaining("PERMISSION_DENIED")
-            .withMessageContaining(
-                "Expected to handle gRPC request BroadcastSignal with tenant identifier
-   'tenant-b'")
-            .withMessageContaining("but tenant is not authorized to perform this request");
-      }
+      // then
+      assertThat(response)
+          .failsWithin(Duration.ofSeconds(10))
+          .withThrowableThat()
+          .withMessageContaining("NOT_FOUND")
+          .withMessageContaining(
+              String.format(
+                  "Expected to migrate process instance but no process instance found with key '%s'",
+                  processInstanceKey));
     }
+  }
 
-    @Test
-    void shouldAllowAssignUserTaskForTenant() {
-      try (final var clientTenantA = createZeebeClient(ZEEBE_CLIENT_ID_TENANT_A);
-          final var clientTenantB = createZeebeClient(ZEEBE_CLIENT_ID_TENANT_A_AND_B)) {
-        // given
-        final var resourceHelper = new ZeebeResourcesHelper(clientTenantA);
-        final var userTaskKey = resourceHelper.createSingleUserTask(TENANT_A);
+  @Test
+  void shouldAllowEvaluateDecisionForDefaultTenant() {
+    try (final var client = createCamundaClient(USER_TENANT_A)) {
+      // given
+      client
+          .newDeployResourceCommand()
+          .addResourceFromClasspath("dmn/decision-table.dmn")
+          .send()
+          .join();
 
-        // when
-        final Future<AssignUserTaskResponse> result =
-            clientTenantB.newUserTaskAssignCommand(userTaskKey).assignee("Skeletor").send();
-
-        // then
-        assertThat(result).succeedsWithin(Duration.ofSeconds(10));
-      }
+      // when
+      final Future<EvaluateDecisionResponse> response =
+          client
+              .newEvaluateDecisionCommand()
+              .decisionId("jedi_or_sith")
+              .variable("lightsaberColor", "blue")
+              .send();
+      // then
+      assertThat(response).succeedsWithin(Duration.ofSeconds(10));
     }
+  }
 
-    @Test
-    void shouldRejectAssignUserTaskForTenant() {
-      try (final var clientTenantA = createZeebeClient(ZEEBE_CLIENT_ID_TENANT_A);
-          final var skeletorClient = createZeebeClient(ZEEBE_CLIENT_ID_WITHOUT_TENANT)) {
-        // given
-        final var resourceHelper = new ZeebeResourcesHelper(clientTenantA);
-        final var userTaskKey = resourceHelper.createSingleUserTask(TENANT_A);
+  @Test
+  void shouldAllowEvaluateDecisionForCustomTenant() {
+    try (final var client = createCamundaClient(USER_TENANT_A)) {
+      // given
+      client
+          .newDeployResourceCommand()
+          .addResourceFromClasspath("dmn/decision-table.dmn")
+          .tenantId(TENANT_A)
+          .send()
+          .join();
 
-        // when
-        final Future<AssignUserTaskResponse> result =
-            skeletorClient.newUserTaskAssignCommand(userTaskKey).assignee("Skeletor").send();
-
-        // then
-        assertThat(result)
-            .failsWithin(Duration.ofSeconds(10))
-            .withThrowableThat()
-            .havingCause()
-            .asInstanceOf(InstanceOfAssertFactories.throwable(ProblemException.class))
-            .returns(HttpStatus.SC_NOT_FOUND, ProblemException::code);
-      }
+      // when
+      final Future<EvaluateDecisionResponse> response =
+          client
+              .newEvaluateDecisionCommand()
+              .decisionId("jedi_or_sith")
+              .variable("lightsaberColor", "blue")
+              .tenantId(TENANT_A)
+              .send();
+      // then
+      assertThat(response).succeedsWithin(Duration.ofSeconds(10));
     }
+  }
 
-    @Test
-    void shouldAllowCompleteUserTaskForTenant() {
-      try (final var clientTenantA = createZeebeClient(ZEEBE_CLIENT_ID_TENANT_A);
-          final var clientTenantB = createZeebeClient(ZEEBE_CLIENT_ID_TENANT_A_AND_B)) {
-        // given
-        final var resourceHelper = new ZeebeResourcesHelper(clientTenantA);
-        final var userTaskKey = resourceHelper.createSingleUserTask(TENANT_A);
+  @Test
+  void shouldDenyEvaluateDecisionForCustomTenant() {
+    try (final var client = createCamundaClient(USER_TENANT_A)) {
+      // given
+      client
+          .newDeployResourceCommand()
+          .addResourceFromClasspath("dmn/decision-table.dmn")
+          .tenantId(TENANT_A)
+          .send()
+          .join();
 
-        // when
-        final Future<CompleteUserTaskResponse> result =
-            clientTenantB.newUserTaskCompleteCommand(userTaskKey).send();
-
-        // then
-        assertThat(result).succeedsWithin(Duration.ofSeconds(10));
-      }
+      // when
+      final Future<EvaluateDecisionResponse> response =
+          client
+              .newEvaluateDecisionCommand()
+              .decisionId("jedi_or_sith")
+              .variable("lightsaberColor", "blue")
+              .tenantId(TENANT_B)
+              .send();
+      // then
+      assertThat(response)
+          .failsWithin(Duration.ofSeconds(10))
+          .withThrowableThat()
+          .withMessageContaining("PERMISSION_DENIED")
+          .withMessageContaining(
+              "Expected to handle gRPC request EvaluateDecision with tenant identifier 'tenant-b'")
+          .withMessageContaining("but tenant is not authorized to perform this request");
     }
+  }
 
-    @Test
-    void shouldRejectCompleteUserTaskForTenant() {
-      try (final var clientTenantA = createZeebeClient(ZEEBE_CLIENT_ID_TENANT_A);
-          final var invalidClient = createZeebeClient(ZEEBE_CLIENT_ID_WITHOUT_TENANT)) {
-        // given
-        final var resourceHelper = new ZeebeResourcesHelper(clientTenantA);
-        final var userTaskKey = resourceHelper.createSingleUserTask(TENANT_A);
+  @Test
+  void shouldStartInstanceWhenBroadcastSignalForTenant() {
+    final String signalName = "signal";
+    process =
+        Bpmn.createExecutableProcess(processId).startEvent().signal(signalName).endEvent().done();
+    try (final var client = createCamundaClient(USER_TENANT_A)) {
+      // given
+      client
+          .newDeployResourceCommand()
+          .addProcessModel(process, "process.bpmn")
+          .tenantId(TENANT_A)
+          .send()
+          .join();
 
-        // when
-        final Future<CompleteUserTaskResponse> result =
-            invalidClient.newUserTaskCompleteCommand(userTaskKey).send();
+      // when
+      final Future<BroadcastSignalResponse> result =
+          client.newBroadcastSignalCommand().signalName(signalName).tenantId(TENANT_A).send();
 
-        // then
-        assertThat(result)
-            .failsWithin(Duration.ofSeconds(10))
-            .withThrowableThat()
-            .havingCause()
-            .asInstanceOf(InstanceOfAssertFactories.throwable(ProblemException.class))
-            .returns(HttpStatus.SC_NOT_FOUND, ProblemException::code);
-      }
+      // then
+      assertThat(result)
+          .describedAs(
+              "Expect that signal can be broadcast as the client has access to the process of 'tenant-a'")
+          .succeedsWithin(Duration.ofSeconds(20));
     }
+  }
 
-    @Test
-    void shouldAllowUnassignUserTaskForTenant() {
-      try (final var clientTenantA = createZeebeClient(ZEEBE_CLIENT_ID_TENANT_A);
-          final var clientTenantB = createZeebeClient(ZEEBE_CLIENT_ID_TENANT_A_AND_B)) {
-        // given
-        final var resourceHelper = new ZeebeResourcesHelper(clientTenantA);
-        final var userTaskKey = resourceHelper.createSingleUserTask(TENANT_A);
-        clientTenantA.newUserTaskAssignCommand(userTaskKey).assignee("Skeletor").send().join();
+  @Test
+  void shouldDenyBroadcastSignalWhenUnauthorized() {
+    final String signalName = "signal";
+    process =
+        Bpmn.createExecutableProcess(processId).startEvent().signal(signalName).endEvent().done();
+    try (final var client = createCamundaClient(USER_TENANT_A)) {
+      // given
+      client
+          .newDeployResourceCommand()
+          .addProcessModel(process, "process.bpmn")
+          .tenantId(TENANT_A)
+          .send()
+          .join();
 
-        // when
-        final Future<UnassignUserTaskResponse> result =
-            clientTenantB.newUserTaskUnassignCommand(userTaskKey).send();
+      // when
+      final Future<BroadcastSignalResponse> result =
+          client.newBroadcastSignalCommand().signalName(signalName).tenantId(TENANT_B).send();
 
-        // then
-        assertThat(result).succeedsWithin(Duration.ofSeconds(10));
-      }
+      // then
+      assertThat(result)
+          .failsWithin(Duration.ofSeconds(10))
+          .withThrowableThat()
+          .withMessageContaining("PERMISSION_DENIED")
+          .withMessageContaining(
+              "Expected to handle gRPC request BroadcastSignal with tenant identifier 'tenant-b'")
+          .withMessageContaining("but tenant is not authorized to perform this request");
     }
+  }
 
-    @Test
-    void shouldRejectUnassignUserTaskForTenant() {
-      try (final var clientTenantA = createZeebeClient(ZEEBE_CLIENT_ID_TENANT_A);
-          final var invalidClient = createZeebeClient(ZEEBE_CLIENT_ID_WITHOUT_TENANT)) {
-        // given
-        final var resourceHelper = new ZeebeResourcesHelper(clientTenantA);
-        final var userTaskKey = resourceHelper.createSingleUserTask(TENANT_A);
-        clientTenantA.newUserTaskAssignCommand(userTaskKey).assignee("Skeletor").send().join();
+  @Test
+  void shouldAllowAssignUserTaskForTenant() {
+    try (final var clientTenantA = createCamundaClient(USER_TENANT_A);
+        final var clientTenantB = createCamundaClient(USER_TENANT_A_AND_B)) {
+      // given
+      final var resourceHelper = new ZeebeResourcesHelper(clientTenantA);
+      final var userTaskKey = resourceHelper.createSingleUserTask(TENANT_A);
 
-        // when
-        final Future<UnassignUserTaskResponse> result =
-            invalidClient.newUserTaskUnassignCommand(userTaskKey).send();
+      // when
+      final Future<AssignUserTaskResponse> result =
+          clientTenantB.newUserTaskAssignCommand(userTaskKey).assignee("Skeletor").send();
 
-        // then
-        assertThat(result)
-            .failsWithin(Duration.ofSeconds(10))
-            .withThrowableThat()
-            .havingCause()
-            .asInstanceOf(InstanceOfAssertFactories.throwable(ProblemException.class))
-            .returns(HttpStatus.SC_NOT_FOUND, ProblemException::code);
-      }
+      // then
+      assertThat(result).succeedsWithin(Duration.ofSeconds(10));
     }
+  }
 
-    @Test
-    void shouldAllowUpdateUserTaskForTenant() {
-      try (final var clientTenantA = createZeebeClient(ZEEBE_CLIENT_ID_TENANT_A);
-          final var clientTenantB = createZeebeClient(ZEEBE_CLIENT_ID_TENANT_A_AND_B)) {
-        // given
-        final var resourceHelper = new ZeebeResourcesHelper(clientTenantA);
-        final var userTaskKey = resourceHelper.createSingleUserTask(TENANT_A);
+  @Test
+  void shouldRejectAssignUserTaskForTenant() {
+    try (final var clientTenantA = createCamundaClient(USER_TENANT_A);
+        final var skeletorClient = createCamundaClient(USER_WITHOUT_TENANT)) {
+      // given
+      final var resourceHelper = new ZeebeResourcesHelper(clientTenantA);
+      final var userTaskKey = resourceHelper.createSingleUserTask(TENANT_A);
 
-        // when
-        final Future<UpdateUserTaskResponse> result =
-            clientTenantB.newUserTaskUpdateCommand(userTaskKey).candidateUsers("Skeletor").send();
+      // when
+      final Future<AssignUserTaskResponse> result =
+          skeletorClient.newUserTaskAssignCommand(userTaskKey).assignee("Skeletor").send();
 
-        // then
-        assertThat(result).succeedsWithin(Duration.ofSeconds(10));
-      }
+      // then
+      assertThat(result)
+          .failsWithin(Duration.ofSeconds(10))
+          .withThrowableThat()
+          .havingCause()
+          .asInstanceOf(InstanceOfAssertFactories.throwable(ProblemException.class))
+          .returns(HttpStatus.SC_NOT_FOUND, ProblemException::code);
     }
+  }
 
-    @Test
-    void shouldRejectUpdateUserTaskForTenant() {
-      try (final var clientTenantA = createZeebeClient(ZEEBE_CLIENT_ID_TENANT_A);
-          final var invalidClient = createZeebeClient(ZEEBE_CLIENT_ID_WITHOUT_TENANT)) {
-        // given
-        final var resourceHelper = new ZeebeResourcesHelper(clientTenantA);
-        final var userTaskKey = resourceHelper.createSingleUserTask(TENANT_A);
+  @Test
+  void shouldAllowCompleteUserTaskForTenant() {
+    try (final var clientTenantA = createCamundaClient(USER_TENANT_A);
+        final var clientTenantB = createCamundaClient(USER_TENANT_A_AND_B)) {
+      // given
+      final var resourceHelper = new ZeebeResourcesHelper(clientTenantA);
+      final var userTaskKey = resourceHelper.createSingleUserTask(TENANT_A);
 
-        // when
-        final Future<UpdateUserTaskResponse> result =
-            invalidClient.newUserTaskUpdateCommand(userTaskKey).candidateUsers("Skeletor").send();
+      // when
+      final Future<CompleteUserTaskResponse> result =
+          clientTenantB.newUserTaskCompleteCommand(userTaskKey).send();
 
-        // then
-        assertThat(result)
-            .failsWithin(Duration.ofSeconds(10))
-            .withThrowableThat()
-            .havingCause()
-            .asInstanceOf(InstanceOfAssertFactories.throwable(ProblemException.class))
-            .returns(HttpStatus.SC_NOT_FOUND, ProblemException::code);
-      }
+      // then
+      assertThat(result).succeedsWithin(Duration.ofSeconds(10));
     }
+  }
+
+  @Test
+  void shouldRejectCompleteUserTaskForTenant() {
+    try (final var clientTenantA = createCamundaClient(USER_TENANT_A);
+        final var invalidClient = createCamundaClient(USER_WITHOUT_TENANT)) {
+      // given
+      final var resourceHelper = new ZeebeResourcesHelper(clientTenantA);
+      final var userTaskKey = resourceHelper.createSingleUserTask(TENANT_A);
+
+      // when
+      final Future<CompleteUserTaskResponse> result =
+          invalidClient.newUserTaskCompleteCommand(userTaskKey).send();
+
+      // then
+      assertThat(result)
+          .failsWithin(Duration.ofSeconds(10))
+          .withThrowableThat()
+          .havingCause()
+          .asInstanceOf(InstanceOfAssertFactories.throwable(ProblemException.class))
+          .returns(HttpStatus.SC_NOT_FOUND, ProblemException::code);
+    }
+  }
+
+  @Test
+  void shouldAllowUnassignUserTaskForTenant() {
+    try (final var clientTenantA = createCamundaClient(USER_TENANT_A);
+        final var clientTenantB = createCamundaClient(USER_TENANT_A_AND_B)) {
+      // given
+      final var resourceHelper = new ZeebeResourcesHelper(clientTenantA);
+      final var userTaskKey = resourceHelper.createSingleUserTask(TENANT_A);
+      clientTenantA.newUserTaskAssignCommand(userTaskKey).assignee("Skeletor").send().join();
+
+      // when
+      final Future<UnassignUserTaskResponse> result =
+          clientTenantB.newUserTaskUnassignCommand(userTaskKey).send();
+
+      // then
+      assertThat(result).succeedsWithin(Duration.ofSeconds(10));
+    }
+  }
+
+  @Test
+  void shouldRejectUnassignUserTaskForTenant() {
+    try (final var clientTenantA = createCamundaClient(USER_TENANT_A);
+        final var invalidClient = createCamundaClient(USER_WITHOUT_TENANT)) {
+      // given
+      final var resourceHelper = new ZeebeResourcesHelper(clientTenantA);
+      final var userTaskKey = resourceHelper.createSingleUserTask(TENANT_A);
+      clientTenantA.newUserTaskAssignCommand(userTaskKey).assignee("Skeletor").send().join();
+
+      // when
+      final Future<UnassignUserTaskResponse> result =
+          invalidClient.newUserTaskUnassignCommand(userTaskKey).send();
+
+      // then
+      assertThat(result)
+          .failsWithin(Duration.ofSeconds(10))
+          .withThrowableThat()
+          .havingCause()
+          .asInstanceOf(InstanceOfAssertFactories.throwable(ProblemException.class))
+          .returns(HttpStatus.SC_NOT_FOUND, ProblemException::code);
+    }
+  }
+
+  @Test
+  void shouldAllowUpdateUserTaskForTenant() {
+    try (final var clientTenantA = createCamundaClient(USER_TENANT_A);
+        final var clientTenantB = createCamundaClient(USER_TENANT_A_AND_B)) {
+      // given
+      final var resourceHelper = new ZeebeResourcesHelper(clientTenantA);
+      final var userTaskKey = resourceHelper.createSingleUserTask(TENANT_A);
+
+      // when
+      final Future<UpdateUserTaskResponse> result =
+          clientTenantB.newUserTaskUpdateCommand(userTaskKey).candidateUsers("Skeletor").send();
+
+      // then
+      assertThat(result).succeedsWithin(Duration.ofSeconds(10));
+    }
+  }
+
+  @Test
+  void shouldRejectUpdateUserTaskForTenant() {
+    try (final var clientTenantA = createCamundaClient(USER_TENANT_A);
+        final var invalidClient = createCamundaClient(USER_WITHOUT_TENANT)) {
+      // given
+      final var resourceHelper = new ZeebeResourcesHelper(clientTenantA);
+      final var userTaskKey = resourceHelper.createSingleUserTask(TENANT_A);
+
+      // when
+      final Future<UpdateUserTaskResponse> result =
+          invalidClient.newUserTaskUpdateCommand(userTaskKey).candidateUsers("Skeletor").send();
+
+      // then
+      assertThat(result)
+          .failsWithin(Duration.ofSeconds(10))
+          .withThrowableThat()
+          .havingCause()
+          .asInstanceOf(InstanceOfAssertFactories.throwable(ProblemException.class))
+          .returns(HttpStatus.SC_NOT_FOUND, ProblemException::code);
+    }
+  }
 
   private static Stream<Named<UnaryOperator<TopologyRequestStep1>>> provideTopologyCases() {
     return Stream.of(
