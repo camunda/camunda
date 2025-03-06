@@ -151,7 +151,7 @@
     <version.liquibase>4.31.1</version.liquibase>
     <version.sqlformatter>2.0.5</version.sqlformatter>
     <version.caffeine>3.2.0</version.caffeine>
-    <version.commons-collections>3.2.2</version.commons-collections>
+    <version.commons-collections>20040616</version.commons-collections>
 
     <version.commons-io>2.18.0</version.commons-io>
     <version.thymeleaf>3.1.3.RELEASE</version.thymeleaf>
