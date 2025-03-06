@@ -19,6 +19,7 @@ import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.webapp.es.backup.BackupManager;
 import io.camunda.tasklist.webapp.management.dto.TakeBackupRequestDto;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
+import java.util.Arrays;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.CommandLineRunner;
@@ -142,7 +143,20 @@ public class StandaloneBackupManager implements CommandLineRunner {
 
   @Override
   public void run(final String... args) throws Exception {
-    final var backupId = 0xCAFEL;
+    if (args.length != 1) {
+      throw new IllegalArgumentException(
+          String.format(
+              "Expected one argument, the backup ID, but got: [%s]", Arrays.asList(args)));
+    }
+
+    final long backupId;
+    try {
+      backupId = Long.parseLong(args[0]);
+    } catch (final NumberFormatException nfe) {
+      throw new IllegalArgumentException(
+          String.format("Expected as argument the backup ID as long, but got %s", args[0]));
+    }
+
     try {
       // Operate
       final var operateTakeBackupRequestDto =
