@@ -6,12 +6,29 @@ function runRule(input) {
       return (
         /Key$/.test(name) &&
         schema.type !== "string" &&
-        !Array.isArray(schema.allOf)
+        !composesBasicStringFilterProperty(schema)
       );
     })
-    .map(([name]) => {
+    .map(([name, schema]) => {
+      console.log(JSON.stringify(schema, null, 2));
       return {
         message: `\`${name}\` property must be of type \`string\` or \`BasicStringFilterProperty\`.`,
       };
     });
+}
+
+function composesBasicStringFilterProperty(schema) {
+  // This is what we're looking for, but it catches false negatives!
+  //   For some reason, _some_ allOf arrays are expanded inline, while most include the unexpanded `$ref`.
+
+  //   if (!Array.isArray(schema.allOf)) {
+  //     return false;
+  //   }
+
+  //   return schema.allOf.some((subSchema) => {
+  //     return subSchema.$ref === "#/components/schemas/BasicStringFilterProperty";
+  //   });
+
+  // This is a simpler alternative, which could catch false positives instead, if we compose a schema other than BasicStringFilterProperty.
+  return Array.isArray(schema.allOf);
 }
