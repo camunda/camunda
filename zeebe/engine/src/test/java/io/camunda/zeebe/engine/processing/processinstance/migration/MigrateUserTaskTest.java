@@ -14,8 +14,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskListenerEventType;
+import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
+import io.camunda.zeebe.protocol.record.intent.ProcessInstanceMigrationIntent;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.JobKind;
@@ -237,7 +239,9 @@ public class MigrateUserTaskTest {
                 .getFirst()
                 .getValue())
         .describedAs("Expect that the user task is assigned")
+        .describedAs("External form reference is not set for internal forms")
         .hasExternalFormReference("")
+        .describedAs("Form key is set for internal forms")
         .hasFormKey(form.getFormKey())
         .hasCandidateGroupsList("foo", "bar")
         .hasCandidateUsersList("oof", "rab")
@@ -248,7 +252,7 @@ public class MigrateUserTaskTest {
   }
 
   @Test
-  public void shouldMigrateJobBasedUserTaskToZeebeUserTaskAndRaiseIncidentWithEmbeddedForm() {
+  public void shouldMigrateJobBasedUserTaskToZeebeUserTaskWithExternalForm() {
     // given
     final String processId = helper.getBpmnProcessId();
     final String targetProcessId = helper.getBpmnProcessId() + "2";
@@ -266,7 +270,8 @@ public class MigrateUserTaskTest {
                                 .zeebeCandidateGroups("foo, bar")
                                 .zeebeCandidateUsers("oof, rab")
                                 .zeebeDueDate("2023-03-02T16:35+02:00")
-                                .zeebeFollowUpDate("2023-03-02T15:35+02:00"))
+                                .zeebeFollowUpDate("2023-03-02T15:35+02:00")
+                                .zeebeFormKey("https://my-form.com"))
                     .endEvent()
                     .done())
             .withXmlResource(
@@ -274,6 +279,179 @@ public class MigrateUserTaskTest {
                     .startEvent()
                     .userTask("B")
                     .zeebeUserTask()
+                    .endEvent()
+                    .done())
+            .deploy();
+
+    final long targetProcessDefinitionKey =
+        extractProcessDefinitionKeyByProcessId(deployment, targetProcessId);
+
+    final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(processId).create();
+
+    RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+        .withProcessInstanceKey(processInstanceKey)
+        .withElementType(BpmnElementType.USER_TASK)
+        .await();
+
+    // when
+    ENGINE
+        .processInstance()
+        .withInstanceKey(processInstanceKey)
+        .migration()
+        .withTargetProcessDefinitionKey(targetProcessDefinitionKey)
+        .addMappingInstruction("A", "B")
+        .migrate();
+
+    // then
+    assertThat(
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_MIGRATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .withElementType(BpmnElementType.USER_TASK)
+                .getFirst()
+                .getValue())
+        .describedAs("Expect that process definition is updated")
+        .hasProcessDefinitionKey(targetProcessDefinitionKey)
+        .hasBpmnProcessId(targetProcessId)
+        .hasVersion(1)
+        .hasElementId("B");
+
+    assertThat(
+            RecordingExporter.jobRecords(JobIntent.CANCELED)
+                .withProcessInstanceKey(processInstanceKey)
+                .withJobKind(JobKind.BPMN_ELEMENT)
+                .exists())
+        .describedAs("Expect that the job is canceled for the job based user task")
+        .isTrue();
+
+    assertThat(
+            RecordingExporter.userTaskRecords(UserTaskIntent.CREATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .withElementId("B")
+                .getFirst()
+                .getValue())
+        .describedAs("Expect that a new user task is created for the zeebe user task")
+        .describedAs("External form reference is set for external forms")
+        .hasExternalFormReference("https://my-form.com")
+        .describedAs("Form key is not set for external forms")
+        .hasFormKey(-1L)
+        .hasCandidateGroupsList("foo", "bar")
+        .hasCandidateUsersList("oof", "rab")
+        .hasDueDate("2023-03-02T16:35+02:00")
+        .hasFollowUpDate("2023-03-02T15:35+02:00")
+        .hasNoChangedAttributes()
+        .hasPriority(50); // default priority
+
+    assertThat(
+            RecordingExporter.userTaskRecords(UserTaskIntent.ASSIGNED)
+                .withProcessInstanceKey(processInstanceKey)
+                .withElementId("B")
+                .getFirst()
+                .getValue())
+        .describedAs("Expect that the user task is assigned")
+        .describedAs("External form reference is set for external forms")
+        .hasExternalFormReference("https://my-form.com")
+        .describedAs("Form key is not set for external forms")
+        .hasFormKey(-1L)
+        .hasCandidateGroupsList("foo", "bar")
+        .hasCandidateUsersList("oof", "rab")
+        .hasDueDate("2023-03-02T16:35+02:00")
+        .hasFollowUpDate("2023-03-02T15:35+02:00")
+        .hasOnlyChangedAttributes("assignee")
+        .hasPriority(50); // default priority
+  }
+
+  @Test
+  public void shouldRejectJobBasedUserTaskToZeebeUserTaskWithEmbeddedForm() {
+    // given
+    final String processId = helper.getBpmnProcessId();
+    final String targetProcessId = helper.getBpmnProcessId() + "2";
+
+    final var deployment =
+        ENGINE
+            .deployment()
+            .withXmlResource(
+                Bpmn.createExecutableProcess(processId)
+                    .startEvent()
+                    .userTask(
+                        "A",
+                        t ->
+                            t.zeebeAssignee("user")
+                                .zeebeCandidateGroups("foo, bar")
+                                .zeebeCandidateUsers("oof, rab")
+                                .zeebeDueDate("2023-03-02T16:35+02:00")
+                                .zeebeFollowUpDate("2023-03-02T15:35+02:00")
+                                .zeebeUserTaskForm("{}"))
+                    .endEvent()
+                    .done())
+            .withXmlResource(
+                Bpmn.createExecutableProcess(targetProcessId)
+                    .startEvent()
+                    .userTask("B")
+                    .zeebeUserTask()
+                    .endEvent()
+                    .done())
+            .deploy();
+    final long targetProcessDefinitionKey =
+        extractProcessDefinitionKeyByProcessId(deployment, targetProcessId);
+
+    final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(processId).create();
+
+    RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+        .withProcessInstanceKey(processInstanceKey)
+        .withElementType(BpmnElementType.USER_TASK)
+        .await();
+
+    // when
+    ENGINE
+        .processInstance()
+        .withInstanceKey(processInstanceKey)
+        .migration()
+        .withTargetProcessDefinitionKey(targetProcessDefinitionKey)
+        .addMappingInstruction("A", "B")
+        .expectRejection()
+        .migrate();
+
+    // then
+    final var rejectionRecord =
+        RecordingExporter.processInstanceMigrationRecords().onlyCommandRejections().getFirst();
+
+    assertThat(rejectionRecord)
+        .hasIntent(ProcessInstanceMigrationIntent.MIGRATE)
+        .hasRejectionType(RejectionType.INVALID_STATE)
+        .hasRejectionReason(
+            "Migrating Job-based User Task to User Task with embedded form is not supported")
+        .hasKey(rejectionRecord.getKey());
+  }
+
+  @Test
+  public void shouldMigrateJobBasedUserTaskToZeebeUserTaskAndCreateTaskListenerJob() {
+    // given
+    final String processId = helper.getBpmnProcessId();
+    final String targetProcessId = helper.getBpmnProcessId() + "2";
+
+    final var deployment =
+        ENGINE
+            .deployment()
+            .withXmlResource(
+                Bpmn.createExecutableProcess(processId)
+                    .startEvent()
+                    .userTask(
+                        "A",
+                        t ->
+                            t.zeebeAssignee("user")
+                                .zeebeCandidateGroups("foo, bar")
+                                .zeebeCandidateUsers("oof, rab")
+                                .zeebeDueDate("2023-03-02T16:35+02:00")
+                                .zeebeFollowUpDate("2023-03-02T15:35+02:00")
+                                .zeebeFormKey("test-form-1-key"))
+                    .endEvent()
+                    .done())
+            .withXmlResource(
+                Bpmn.createExecutableProcess(targetProcessId)
+                    .startEvent()
+                    .userTask("B")
+                    .zeebeUserTask()
+                    .zeebeTaskListener(l -> l.assigning().type("assignment_listener").retries("3"))
                     .endEvent()
                     .done())
             .deploy();
@@ -333,7 +511,7 @@ public class MigrateUserTaskTest {
         .hasPriority(50); // default priority
 
     assertThat(
-            RecordingExporter.userTaskRecords(UserTaskIntent.ASSIGNED)
+            RecordingExporter.userTaskRecords(UserTaskIntent.ASSIGNING)
                 .withProcessInstanceKey(processInstanceKey)
                 .withElementId("B")
                 .getFirst()
@@ -346,6 +524,17 @@ public class MigrateUserTaskTest {
         .hasFollowUpDate("2023-03-02T15:35+02:00")
         .hasOnlyChangedAttributes("assignee")
         .hasPriority(50); // default priority
+
+    assertThat(
+            RecordingExporter.jobRecords(JobIntent.CREATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .withElementId("B")
+                .withJobKind(JobKind.TASK_LISTENER)
+                .withType("assignment_listener")
+                .getFirst()
+                .getValue())
+        .describedAs("Expect that a job is created for the task listener")
+        .hasRetries(3);
   }
 
   @Test

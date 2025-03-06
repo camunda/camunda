@@ -13,6 +13,7 @@ import static io.camunda.zeebe.engine.state.immutable.IncidentState.MISSING_INCI
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.camunda.zeebe.el.Expression;
 import io.camunda.zeebe.engine.Loggers;
 import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContextImpl;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
@@ -258,8 +259,8 @@ public class ProcessInstanceMigrationMigrateProcessor
     requireNonNullTargetElementId(targetElementId, processInstanceKey, elementId);
     requireSameElementType(
         targetProcessDefinition, targetElementId, elementInstance, processInstanceKey);
-    /*requireSameUserTaskImplementation(
-    targetProcessDefinition, targetElementId, elementInstance, processInstanceKey);*/
+    requireSupportedUserTaskConversion(
+        targetProcessDefinition, targetElementId, elementInstance, processInstanceKey);
     requireUnchangedFlowScope(
         elementInstanceState, elementInstanceRecord, targetProcessDefinition, targetElementId);
     requireNoEventSubprocessInSource(
@@ -327,6 +328,13 @@ public class ProcessInstanceMigrationMigrateProcessor
         eventScopeInstanceState, elementInstanceState, elementInstance, processInstanceKey);
 
     updateElementInstanceRecord(elementInstance, targetProcessDefinition, targetElementId);
+    final boolean isUserTaskConversion =
+        isUserTaskConversion(targetProcessDefinition, targetElementId, elementInstance);
+
+    final long previousJobKey = elementInstance.getJobKey();
+    if (isUserTaskConversion) {
+      elementInstance.setJobKey(0L);
+    }
 
     stateWriter.appendFollowUpEvent(
         elementInstance.getKey(), ProcessInstanceIntent.ELEMENT_MIGRATED, elementInstanceRecord);
@@ -355,11 +363,8 @@ public class ProcessInstanceMigrationMigrateProcessor
               keyGenerator.nextKey(), ProcessInstanceIntent.ELEMENT_MIGRATED, sequenceFlowRecord);
         });
 
-    final boolean isUserTaskConversion =
-        isUserTaskConversion(targetProcessDefinition, targetElementId, elementInstance);
-
     if (isUserTaskConversion) {
-      final var job = jobState.getJob(elementInstance.getJobKey());
+      final var job = jobState.getJob(previousJobKey);
       if (job == null) {
         throw new SafetyCheckFailedException(
             String.format(
@@ -386,6 +391,7 @@ public class ProcessInstanceMigrationMigrateProcessor
           customHeaders.get(Protocol.USER_TASK_CANDIDATE_GROUPS_HEADER_NAME);
       if (candidateGroups != null) {
         try {
+          // TODO - check if I can use MsgPackConverter and ArrayValue
           userTaskProperties.candidateGroups(
               objectMapper.readValue(candidateGroups, new TypeReference<>() {}));
         } catch (final JsonProcessingException e) {
@@ -411,9 +417,18 @@ public class ProcessInstanceMigrationMigrateProcessor
         userTaskProperties.followUpDate(followUpDate);
       }
       final String formKey = customHeaders.get(Protocol.USER_TASK_FORM_KEY_HEADER_NAME);
+      final Expression formId = sourceElement.getJobWorkerProperties().getFormId();
+
       if (formKey != null) {
+        if (formKey.contains("bpmn:userTaskForm")) {
+          // embedded form
+          throw new ProcessInstanceMigrationPreconditionFailedException(
+              "Migrating Job-based User Task to User Task with embedded form is not supported",
+              RejectionType.INVALID_STATE);
+        }
+
         // external form
-        if (sourceElement.getJobWorkerProperties().getFormId() == null) {
+        if (formId == null) {
           userTaskProperties.externalFormReference(formKey);
         } else {
           // internal form
@@ -449,14 +464,12 @@ public class ProcessInstanceMigrationMigrateProcessor
       }
 
       stateWriter.appendFollowUpEvent(
-          elementInstance.getJobKey(),
+          previousJobKey,
           JobIntent.CANCELED,
           job.setProcessDefinitionKey(targetProcessDefinition.getKey())
               .setProcessDefinitionVersion(targetProcessDefinition.getVersion())
               .setBpmnProcessId(targetProcessDefinition.getBpmnProcessId())
               .setElementId(targetElementId));
-
-      // TODO: raise incident if job based user task contains an embedded form
     }
 
     if (elementInstance.getJobKey() > 0 && !isUserTaskConversion) {
