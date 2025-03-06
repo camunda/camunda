@@ -418,7 +418,7 @@ services:
 
   camunda:
     container_name: camunda
-    image: camunda/camunda:8.6.10
+    image: camunda/camunda:8.6.11
     environment:
       - SPRING_PROFILES_ACTIVE=tasklist,broker,auth
       - ZEEBE_BROKER_CLUSTER_PARTITIONS_COUNT=2
