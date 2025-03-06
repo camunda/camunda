@@ -52,7 +52,6 @@ body:
              - OS: [e.g. MacOS 10.2, Windows 10]
              - Component Version: [e.g. 2.0.0]
              - Execution Platform: [e.g. Camunda 8 SaaS or SM]
-             - Installed plug-ins: [...]
     validations:
       required: true
   - type: textarea
@@ -83,7 +82,7 @@ body:
           required: false
         - label: The issue has a meaningful title, description and testable acceptance criteria.
           required: false
-        - label: Necessary screenshots, screen recordingns or files has been attached to the bug report.
+        - label: Necessary screenshots, screen recordings or files has been attached to the bug report.
           required: false
         - label: Environment details are checked and complete.
           required: false

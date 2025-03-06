@@ -1,4 +1,4 @@
-name: "Merged Issue Labeler"
+name: "Opened Issue Labeler"
 on:
   issues:
     types: [opened]
@@ -13,5 +13,5 @@ jobs:
     steps:
     - uses: github/issue-labeler@v3.4
       with:
-        configuration-path: .github/merged_labeler.yml
+        configuration-path: .github/opened_issue_labeler.yml
         enable-versioned-regex: 0
