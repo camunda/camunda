@@ -157,7 +157,7 @@ public class MappingIT {
         mappingReader.search(
             new MappingQuery(
                 new MappingFilter.Builder()
-                    .mappingKey(randomizedMapping.mappingKey())
+                    .mappingId(randomizedMapping.id())
                     .claimName(randomizedMapping.claimName())
                     .claimValue(randomizedMapping.claimValue())
                     .name(randomizedMapping.name())
@@ -167,7 +167,7 @@ public class MappingIT {
 
     assertThat(searchResult.total()).isEqualTo(1);
     assertThat(searchResult.items()).hasSize(1);
-    assertThat(searchResult.items().getFirst().mappingKey())
-        .isEqualTo(randomizedMapping.mappingKey());
+    assertThat(searchResult.items().getFirst().id())
+        .isEqualTo(randomizedMapping.id());
   }
 }

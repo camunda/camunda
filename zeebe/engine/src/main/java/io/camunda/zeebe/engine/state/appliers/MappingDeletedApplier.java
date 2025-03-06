@@ -24,15 +24,14 @@ public class MappingDeletedApplier implements TypedEventApplier<MappingIntent, M
   @Override
   public void applyState(final long key, final MappingRecord value) {
     // retrieve mapping from the state
-    final var mappingKey = value.getMappingKey();
-    // TODO: refactor when Mapping Rules use String-based IDs
-    final var mapping = mappingState.get(mappingKey);
+    final var mappingId = value.getId();
+    final var mapping = mappingState.get(mappingId);
     if (mapping.isEmpty()) {
       throw new IllegalStateException(
           String.format(
-              "Expected to delete mapping with key '%s', but a mapping with this key does not exist.",
-              value.getMappingKey()));
+              "Expected to delete mapping with ID '%s', but a mapping with this ID does not exist.",
+              value.getId()));
     }
-    mappingState.delete(mappingKey);
+    mappingState.delete(mappingId);
   }
 }

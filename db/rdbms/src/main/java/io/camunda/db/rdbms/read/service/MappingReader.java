@@ -28,10 +28,10 @@ public class MappingReader extends AbstractEntityReader<MappingEntity> {
     this.mappingMapper = mappingMapper;
   }
 
-  public Optional<MappingEntity> findOne(final Long mappingKey) {
-    LOG.trace("[RDBMS DB] Search for mapping with mapping key {}", mappingKey);
+  public Optional<MappingEntity> findOne(final String mappingId) {
+    LOG.trace("[RDBMS DB] Search for mapping with mapping ID {}", mappingId);
     final SearchQueryResult<MappingEntity> queryResult =
-        search(MappingQuery.of(b -> b.filter(f -> f.mappingKey(mappingKey))));
+        search(MappingQuery.of(b -> b.filter(f -> f.mappingId(mappingId))));
     return Optional.ofNullable(queryResult.items()).flatMap(hits -> hits.stream().findFirst());
   }
 

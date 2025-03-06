@@ -23,9 +23,6 @@ import org.immutables.value.Value;
 @ImmutableProtocol(builder = ImmutableMappingRecordValue.Builder.class)
 public interface MappingRecordValue extends RecordValue {
 
-  /** The unique identifier of the mapping within our system. */
-  long getMappingKey();
-
   /** The name of the claim in the user token. */
   String getClaimName();
 

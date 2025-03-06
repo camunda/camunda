@@ -56,25 +56,25 @@ public class MappingController {
         ResponseMapper::toMappingCreateResponse);
   }
 
-  @CamundaDeleteMapping(path = "/{mappingKey}")
+  @CamundaDeleteMapping(path = "/{mappingId}")
   public CompletableFuture<ResponseEntity<Object>> deleteMapping(
-      @PathVariable final long mappingKey) {
+      @PathVariable final String mappingId) {
     return RequestMapper.executeServiceMethodWithNoContentResult(
         () ->
             mappingServices
                 .withAuthentication(RequestMapper.getAuthentication())
-                .deleteMapping(mappingKey));
+                .deleteMapping(mappingId));
   }
 
-  @CamundaGetMapping(path = "/{mappingKey}")
-  public ResponseEntity<MappingResult> getMapping(@PathVariable final long mappingKey) {
+  @CamundaGetMapping(path = "/{mappingId}")
+  public ResponseEntity<MappingResult> getMapping(@PathVariable final String mappingId) {
     try {
       return ResponseEntity.ok()
           .body(
               SearchQueryResponseMapper.toMapping(
                   mappingServices
                       .withAuthentication(RequestMapper.getAuthentication())
-                      .getMapping(mappingKey)));
+                      .getMapping(mappingId)));
     } catch (final Exception exception) {
       return RestErrorMapper.mapErrorToResponse(exception);
     }

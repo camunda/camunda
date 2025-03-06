@@ -41,7 +41,7 @@ import io.camunda.zeebe.stream.api.state.KeyGenerator;
 public class MappingDeleteProcessor implements DistributedTypedRecordProcessor<MappingRecord> {
 
   private static final String MAPPING_NOT_FOUND_ERROR_MESSAGE =
-      "Expected to delete mapping with key '%s', but a mapping with this key does not exist.";
+      "Expected to delete mapping with ID '%s', but a mapping with this ID does not exist.";
   private final MappingState mappingState;
   private final TenantState tenantState;
   private final AuthorizationState authorizationState;
@@ -72,10 +72,10 @@ public class MappingDeleteProcessor implements DistributedTypedRecordProcessor<M
   @Override
   public void processNewCommand(final TypedRecord<MappingRecord> command) {
     final var record = command.getValue();
-    final long mappingKey = record.getMappingKey();
-    final var persistedMapping = mappingState.get(mappingKey);
+    final var mappingId = record.getId();
+    final var persistedMapping = mappingState.get(mappingId);
     if (persistedMapping.isEmpty()) {
-      final var errorMessage = MAPPING_NOT_FOUND_ERROR_MESSAGE.formatted(mappingKey);
+      final var errorMessage = MAPPING_NOT_FOUND_ERROR_MESSAGE.formatted(mappingId);
       rejectionWriter.appendRejection(command, RejectionType.NOT_FOUND, errorMessage);
       responseWriter.writeRejectionOnCommand(command, RejectionType.NOT_FOUND, errorMessage);
       return;
@@ -93,7 +93,7 @@ public class MappingDeleteProcessor implements DistributedTypedRecordProcessor<M
     }
 
     deleteMapping(persistedMapping.get());
-    responseWriter.writeEventOnCommand(mappingKey, MappingIntent.DELETED, record, command);
+    responseWriter.writeEventOnCommand(mappingId, MappingIntent.DELETED, record, command);
 
     final long key = keyGenerator.nextKey();
     commandDistributionBehavior
@@ -106,12 +106,11 @@ public class MappingDeleteProcessor implements DistributedTypedRecordProcessor<M
   public void processDistributedCommand(final TypedRecord<MappingRecord> command) {
     final var record = command.getValue();
     mappingState
-        .get(record.getMappingKey())
+        .get(record.getId())
         .ifPresentOrElse(
             this::deleteMapping,
             () -> {
-              final var errorMessage =
-                  MAPPING_NOT_FOUND_ERROR_MESSAGE.formatted(record.getMappingKey());
+              final var errorMessage = MAPPING_NOT_FOUND_ERROR_MESSAGE.formatted(record.getId());
               rejectionWriter.appendRejection(command, RejectionType.NOT_FOUND, errorMessage);
             });
 
@@ -119,7 +118,7 @@ public class MappingDeleteProcessor implements DistributedTypedRecordProcessor<M
   }
 
   private void deleteMapping(final PersistedMapping mapping) {
-    final var mappingKey = mapping.getMappingKey();
+    final var mappingId = mapping.getMappingKey();
     deleteAuthorizations(mappingKey);
     for (final var tenantId : mapping.getTenantIdsList()) {
       final var tenant = tenantState.getTenantById(tenantId).orElseThrow();
@@ -147,11 +146,11 @@ public class MappingDeleteProcessor implements DistributedTypedRecordProcessor<M
           GroupIntent.ENTITY_REMOVED,
           new GroupRecord()
               .setGroupKey(groupKey)
-              .setEntityKey(mappingKey)
+              .setEntityKey(mappingId)
               .setEntityType(EntityType.MAPPING));
     }
     stateWriter.appendFollowUpEvent(
-        mappingKey, MappingIntent.DELETED, new MappingRecord().setMappingKey(mappingKey));
+        mappingKey, MappingIntent.DELETED, new MappingRecord().setId(mappingKey));
   }
 
   private void deleteAuthorizations(final long mappingKey) {
