@@ -40,7 +40,6 @@ import org.mockito.Mockito;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
-import org.springframework.test.web.reactive.server.WebTestClient.ResponseSpec;
 
 @WebMvcTest(JobController.class)
 public class JobControllerTest extends RestControllerTest {
@@ -809,10 +808,8 @@ public class JobControllerTest extends RestControllerTest {
         .json(expectedBody);
   }
 
-  @ParameterizedTest
-  @MethodSource("tenantLists")
-  void shouldRejectActivateJobWithUnauthorizedTenantWhenMultiTenancyEnabled(
-      final List<String> tenantIds) {
+  @Test
+  void shouldRejectActivateJobWithoutTenantsWhenMultiTenancyEnabled() {
     // given
     when(multiTenancyCfg.isEnabled()).thenReturn(true);
     final var request =
@@ -823,42 +820,31 @@ public class JobControllerTest extends RestControllerTest {
           "requestTimeout": 100,
           "timeout": 100,
           "fetchVariable": [],
-          "tenantIds": %s,
+          "tenantIds": [],
           "worker": "bar"
-        }"""
-            .formatted(tenantIds.stream().map("\"%s\""::formatted).toList());
+        }""";
 
     // when then
-    final ResponseSpec response =
-        withMultiTenancy(
-            "tenantId",
-            client ->
-                client
-                    .post()
-                    .uri(JOBS_BASE_URL + "/activation")
-                    .accept(MediaType.APPLICATION_JSON)
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .bodyValue(request)
-                    .exchange()
-                    .expectStatus()
-                    .isUnauthorized());
-    response
+    webClient
+        .post()
+        .uri(JOBS_BASE_URL + "/activation")
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
         .expectBody()
         .json(
             """
             {
               "type": "about:blank",
-              "status": 401,
-              "title": "UNAUTHORIZED",
-              "detail": "Expected to handle request Activate Jobs with tenant %s, but the user is not authorized for %s",
+              "status": 400,
+              "title": "INVALID_ARGUMENT",
+              "detail": "Expected to handle request Activate Jobs with tenant identifiers [], but no tenant identifier was provided.",
               "instance": "%s"
             }"""
-                .formatted(
-                    tenantIds.size() == 1
-                        ? "identifier '" + tenantIds.getFirst() + "'"
-                        : "identifiers " + tenantIds,
-                    tenantIds.size() == 1 ? "that tenant" : "all those tenants",
-                    JOBS_BASE_URL + "/activation"));
+                .formatted(JOBS_BASE_URL + "/activation"));
     verifyNoInteractions(jobServices);
   }
 

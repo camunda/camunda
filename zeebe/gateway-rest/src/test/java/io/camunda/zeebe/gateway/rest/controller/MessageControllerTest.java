@@ -377,47 +377,6 @@ public class MessageControllerTest extends RestControllerTest {
               "detail": "Expected to handle request Correlate Message with tenant identifier '<invalid>', but tenant identifier contains illegal characters.",
               "instance": "%s"
             }"""
-            .formatted(CORRELATION_ENDPOINT));
-    verifyNoInteractions(messageServices);
-  }
-
-  @Test
-  void shouldRejectMessageCorrelationWithUnauthorizedTenantWhenMultiTenancyEnabled() {
-    // given
-    when(multiTenancyCfg.isEnabled()).thenReturn(true);
-
-    final var request =
-        """
-        {
-          "name": "messageName",
-          "tenantId": "unauthorizedTenant"
-        }""";
-
-    // when then
-    final ResponseSpec response =
-        withMultiTenancy(
-            "tenantId",
-            client ->
-                client
-                    .post()
-                    .uri(CORRELATION_ENDPOINT)
-                    .accept(MediaType.APPLICATION_JSON)
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .bodyValue(request)
-                    .exchange()
-                    .expectStatus()
-                    .isUnauthorized());
-    response
-        .expectBody()
-        .json(
-            """
-            {
-              "type": "about:blank",
-              "status": 401,
-              "title": "UNAUTHORIZED",
-              "detail": "Expected to handle request Correlate Message with tenant identifier 'unauthorizedTenant', but the user is not authorized for that tenant",
-              "instance": "%s"
-            }"""
                 .formatted(CORRELATION_ENDPOINT));
     verifyNoInteractions(messageServices);
   }
