@@ -1,8 +1,6 @@
 {
   "name": "playwright-automation",
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
   "type": "module",
   "scripts": {
     "test": "playwright test",
@@ -10,9 +8,6 @@
     "lint": "tsc && eslint . --ext .ts",
     "lint:fix": "eslint . --ext .ts --fix"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
   "devDependencies": {
     "@inquirer/prompts": "^7.3.2",
     "@playwright/test": "^1.51.0",
