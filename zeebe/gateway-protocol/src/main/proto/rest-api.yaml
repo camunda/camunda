@@ -5182,7 +5182,7 @@ components:
         email:
           description: The email of the user.
           type: "string"
-        key:
+        userKey:
           description: The key of the user.
           type: "string"
     UserSearchResult:
@@ -5242,7 +5242,7 @@ components:
         name:
           type: string
           description: The role name.
-        key:
+        roleKey:
           type: string
           description: The role key.
         assignedMemberKeys:
