@@ -112,12 +112,8 @@
     parameterType="io.camunda.db.rdbms.read.domain.BatchOperationDbQuery"
     resultMap="BatchOperationResultMap"
     statementType="PREPARED">
-    SELECT * FROM (
-    SELECT
-    bo.*,
-    boi.ITEM_KEY
-    FROM
-    ( SELECT * FROM (
+
+  SELECT * FROM (
     SELECT
     bo.BATCH_OPERATION_KEY,
     bo.STATE,
@@ -133,10 +129,6 @@
     <include refid="io.camunda.db.rdbms.sql.Commons.keySetPageFilter"/>
     <include refid="io.camunda.db.rdbms.sql.Commons.orderBy"/>
     <include refid="io.camunda.db.rdbms.sql.Commons.paging"/>
-    ) bo
-    LEFT JOIN BATCH_OPERATION_ITEM boi ON (bo.BATCH_OPERATION_KEY = boi.BATCH_OPERATION_KEY)
-    ) sorted
-    <include refid="io.camunda.db.rdbms.sql.Commons.orderBy"/>
   </select>
 
   <sql id="searchFilter">
