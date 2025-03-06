@@ -11,7 +11,7 @@ import {test} from './test-fixtures';
 import schema from './resources/bigForm.json' assert {type: 'json'};
 
 const MOCK_TENANT = {
-  id: 'tenantA',
+  tenantId: 'tenantA',
   name: 'Tenant A',
 };
 
@@ -35,7 +35,7 @@ const MOCK_TASK = {
   followUpDate: null,
   candidateGroups: null,
   candidateUsers: null,
-  tenantId: MOCK_TENANT.id,
+  tenantId: MOCK_TENANT.tenantId,
   context: null,
 };
 
