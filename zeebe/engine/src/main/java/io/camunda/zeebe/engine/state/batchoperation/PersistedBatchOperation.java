@@ -124,7 +124,6 @@ public class PersistedBatchOperation extends UnpackedObject implements DbValue {
   }
 
   public PersistedBatchOperation appendKeys(final List<Long> keys) {
-    keysProp.reset();
     keys.forEach(key -> keysProp.add().setValue(key));
     return this;
   }
