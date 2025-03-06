@@ -39,8 +39,15 @@ ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_CLASSNAME=io.camunda.exporter.CamundaExpo
 ./dist/target/camunda-zeebe/bin/camunda
 ```
 
+If you would like to enable operate and tasklist, you can add their profile to the `SPRING_PROFILES_ACTIVE` variable like this:
+
+```
+SPRING_PROFILES_ACTIVE=operate,tasklist,consolidated-auth,broker,identity
+```
+
 4. Run the frontend by navigating to the `identity/client` folder and running:
 
 ```shell
 yarn dev
 ```
+
