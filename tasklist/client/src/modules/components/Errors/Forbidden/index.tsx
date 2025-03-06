@@ -6,31 +6,41 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {useTranslation} from "react-i18next";
-import styles from "../SomethingWentWrong/styles.module.scss";
-import {Heading, Link, Stack} from "@carbon/react";
-import {ErrorRobot} from "../../../images/error-robot";
+import {useTranslation, Trans} from 'react-i18next';
+import styles from './styles.module.scss';
+import {Link, Stack} from '@carbon/react';
+import {Launch} from '@carbon/react/icons';
+import Icon from './forbidden.svg?react';
 
 const Forbidden: React.FC = () => {
   const {t} = useTranslation();
 
   return (
-      <div className={styles.container}>
-        <div className={styles.content}>
-          <Stack gap={6} orientation="horizontal">
-            <ErrorRobot />
-            <Stack gap={4}>
-              <Heading>{t('403 - You do not have access to this component')}</Heading>
-              <p>{t('It looks like you don\'t have the necessary permissions to access this\n' +
-                  '        component. Please contact your cluster admin to get access.')}</p>
-              <Link
-                  href="">
-                { t('Learn more about permissions')}
-              </Link>
-            </Stack>
+    <div className={styles.container}>
+      <div className={styles.content}>
+        <Stack gap={6}>
+          <Icon />
+          <Stack gap={3}>
+            <h3 className={styles.title}>{t('forbiddenPageTitle')}</h3>
+            <div className={styles.description}>
+              <Trans
+                i18nKey="forbiddenPageDesc"
+                components={{
+                  strong: <strong />,
+                }}
+              />
+            </div>
           </Stack>
-        </div>
+          <Link
+            href="https://docs.camunda.io/docs/next/components/concepts/access-control/authorizations/"
+            target="_blank"
+            renderIcon={Launch}
+          >
+            {t('forbiddenPageLinkLabel')}
+          </Link>
+        </Stack>
       </div>
+    </div>
   );
 };
 

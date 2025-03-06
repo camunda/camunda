@@ -6,14 +6,27 @@
  * except in compliance with the Camunda License 1.0.
  */
 
+@use '@carbon/type';
+
 .container {
-  height: 100%;
-  padding: var(--cds-spacing-08);
-  background-color: var(--cds-background);
+  display: grid;
+  align-content: center;
+  padding: var(--cds-spacing-11);
+  margin-block: calc(var(--cds-spacing-07) + var(--cds-spacing-09))
+    var(--cds-spacing-09);
+  margin-inline: var(--cds-spacing-06);
+  background-color: var(--cds-layer);
+  height: calc(100vh - var(--cds-spacing-07) - 2 * var(--cds-spacing-09));
 }
 
 .content {
-  padding: var(--cds-spacing-12);
-  width: 100%;
-  background-color: var(--cds-layer);
+  max-width: 376px;
+}
+
+.title {
+  @include type.type-style('heading-03');
+}
+
+.description {
+  @include type.type-style('body-01');
 }
