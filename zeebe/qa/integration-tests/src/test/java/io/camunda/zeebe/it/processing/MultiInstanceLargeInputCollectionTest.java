@@ -15,6 +15,7 @@ import io.camunda.zeebe.broker.test.EmbeddedBrokerRule;
 import io.camunda.zeebe.it.util.GrpcClientRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
+import io.camunda.zeebe.protocol.record.intent.ProcessInstanceBatchIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.test.util.BrokerClassRuleHelper;
@@ -142,10 +143,12 @@ public final class MultiInstanceLargeInputCollectionTest {
     assertThat(
             RecordingExporter.processInstanceBatchRecords()
                 .withProcessInstanceKey(processInstanceKey)
-                .limit(2))
+                .limit(p -> p.getIntent() == ProcessInstanceBatchIntent.ACTIVATED))
         .describedAs(
             "Has activated in multiple batches. If this assertion fails please decrease "
                 + "the message size, or increase the input collection.")
-        .hasSize(2);
+        .hasSize(INPUT_COLLECTION_SIZE + 1)
+        .extracting(r -> r.getIntent())
+        .endsWith(ProcessInstanceBatchIntent.ACTIVATED);
   }
 }
