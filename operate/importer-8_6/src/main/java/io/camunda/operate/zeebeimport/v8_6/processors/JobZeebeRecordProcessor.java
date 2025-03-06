@@ -8,7 +8,6 @@
 package io.camunda.operate.zeebeimport.v8_6.processors;
 
 import static io.camunda.operate.schema.templates.JobTemplate.*;
-import static io.camunda.operate.schema.templates.TemplateDescriptor.POSITION;
 import static io.camunda.operate.util.LambdaExceptionUtil.rethrowConsumer;
 
 import io.camunda.operate.entities.*;
@@ -54,9 +53,7 @@ public class JobZeebeRecordProcessor {
   @Autowired private JobTemplate jobTemplate;
 
   public void processJobRecords(
-      final Map<Long, List<Record<JobRecordValue>>> records,
-      final BatchRequest batchRequest,
-      final boolean concurrencyMode)
+      final Map<Long, List<Record<JobRecordValue>>> records, final BatchRequest batchRequest)
       throws PersistenceException {
     LOGGER.debug("Importing Job records.");
     for (final List<Record<JobRecordValue>> flowNodeJobRecords : records.values()) {
@@ -70,7 +67,7 @@ public class JobZeebeRecordProcessor {
             rethrowConsumer(
                 record -> {
                   final JobRecordValue recordValue = (JobRecordValue) record.getValue();
-                  processJob(record, recordValue, batchRequest, concurrencyMode);
+                  processJob(record, recordValue, batchRequest);
                 }));
       }
     }
@@ -95,10 +92,7 @@ public class JobZeebeRecordProcessor {
   }
 
   private void processJob(
-      final Record record,
-      final JobRecordValue recordValue,
-      final BatchRequest batchRequest,
-      final boolean concurrencyMode)
+      final Record record, final JobRecordValue recordValue, final BatchRequest batchRequest)
       throws PersistenceException {
     final JobEntity jobEntity =
         new JobEntity()
@@ -147,59 +141,7 @@ public class JobZeebeRecordProcessor {
     updateFields.put(CUSTOM_HEADERS, jobEntity.getCustomHeaders());
     updateFields.put(JOB_DEADLINE, jobEntity.getDeadline());
 
-    batchRequest.upsertWithScript(
-        jobTemplate.getFullQualifiedName(),
-        jobEntity.getId(),
-        jobEntity,
-        getJobUpdateScript(),
-        updateFields);
-  }
-
-  private String getJobUpdateScript() {
-    return String.format(
-        "if (ctx._source.%s == null || ctx._source.%s < params.%s) { "
-            + "ctx._source.%s = params.%s; " // position
-            + "if (params.%s != null) {"
-            + "   ctx._source.%s = params.%s; " // flowNodeId
-            + "}"
-            + "ctx._source.%s = params.%s; " // state
-            + "ctx._source.%s = params.%s; " // retries
-            + "ctx._source.%s = params.%s; " // worker
-            + "if (params.%s != null) {"
-            + "   ctx._source.%s = params.%s; " // error message
-            + "   ctx._source.%s = params.%s; " // error code
-            + "}"
-            + "if (params.%s != null) { ctx._source.%s = params.%s; }" // end date
-            + "if (params.%s != null) { ctx._source.%s = params.%s; }" // headers
-            + "if (params.%s != null) { ctx._source.%s = params.%s; }" // deadline
-            + "}",
-        POSITION,
-        POSITION,
-        POSITION,
-        POSITION,
-        POSITION,
-        FLOW_NODE_ID,
-        FLOW_NODE_ID,
-        FLOW_NODE_ID,
-        JOB_STATE,
-        JOB_STATE,
-        RETRIES,
-        RETRIES,
-        JOB_WORKER,
-        JOB_WORKER,
-        ERROR_MESSAGE,
-        ERROR_MESSAGE,
-        ERROR_MESSAGE,
-        ERROR_CODE,
-        ERROR_CODE,
-        TIME,
-        TIME,
-        TIME,
-        CUSTOM_HEADERS,
-        CUSTOM_HEADERS,
-        CUSTOM_HEADERS,
-        JOB_DEADLINE,
-        JOB_DEADLINE,
-        JOB_DEADLINE);
+    batchRequest.upsert(
+        jobTemplate.getFullQualifiedName(), jobEntity.getId(), jobEntity, updateFields);
   }
 }

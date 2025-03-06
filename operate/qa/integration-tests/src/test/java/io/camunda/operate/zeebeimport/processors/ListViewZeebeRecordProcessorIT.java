@@ -74,19 +74,15 @@ public class ListViewZeebeRecordProcessorIT extends OperateSearchAbstractIT {
   @MockBean private ProcessCache processCache;
   @Autowired private ImportPositionHolder importPositionHolder;
   @Autowired private OperateProperties operateProperties;
-  private boolean concurrencyModeBefore;
 
   @Override
   protected void runAdditionalBeforeAllSetup() throws Exception {
     when(partitionHolder.getPartitionIds()).thenReturn(List.of(1));
-    concurrencyModeBefore = importPositionHolder.getConcurrencyMode();
-    importPositionHolder.setConcurrencyMode(true);
   }
 
   @Override
   @AfterAll
   public void afterAllTeardown() {
-    importPositionHolder.setConcurrencyMode(concurrencyModeBefore);
     super.afterAllTeardown();
   }
 
@@ -799,8 +795,7 @@ public class ListViewZeebeRecordProcessorIT extends OperateSearchAbstractIT {
     listViewZeebeRecordProcessor.processProcessInstanceRecord(
         (Map) Map.of(zeebeRecord.getKey(), List.of(zeebeRecord)),
         batchRequest,
-        mock(ImportBatch.class),
-        true);
+        mock(ImportBatch.class));
     batchRequest.execute();
     searchContainerManager.refreshIndices(listViewTemplate.getFullQualifiedName());
   }
@@ -808,7 +803,7 @@ public class ListViewZeebeRecordProcessorIT extends OperateSearchAbstractIT {
   private void importIncidentZeebeRecord(final Record<IncidentRecordValue> zeebeRecord)
       throws PersistenceException {
     final BatchRequest batchRequest = beanFactory.getBean(BatchRequest.class);
-    listViewZeebeRecordProcessor.processIncidentRecord(zeebeRecord, batchRequest, true);
+    listViewZeebeRecordProcessor.processIncidentRecord(zeebeRecord, batchRequest);
     batchRequest.execute();
     searchContainerManager.refreshIndices(listViewTemplate.getFullQualifiedName());
   }
@@ -817,7 +812,7 @@ public class ListViewZeebeRecordProcessorIT extends OperateSearchAbstractIT {
       throws PersistenceException {
     final BatchRequest batchRequest = beanFactory.getBean(BatchRequest.class);
     listViewZeebeRecordProcessor.processVariableRecords(
-        (Map) Map.of(zeebeRecord.getKey(), List.of(zeebeRecord)), batchRequest, true);
+        (Map) Map.of(zeebeRecord.getKey(), List.of(zeebeRecord)), batchRequest);
     batchRequest.execute();
     searchContainerManager.refreshIndices(listViewTemplate.getFullQualifiedName());
   }
@@ -826,7 +821,7 @@ public class ListViewZeebeRecordProcessorIT extends OperateSearchAbstractIT {
       throws PersistenceException {
     final BatchRequest batchRequest = beanFactory.getBean(BatchRequest.class);
     listViewZeebeRecordProcessor.processJobRecords(
-        (Map) Map.of(zeebeRecord.getKey(), List.of(zeebeRecord)), batchRequest, true);
+        (Map) Map.of(zeebeRecord.getKey(), List.of(zeebeRecord)), batchRequest);
     batchRequest.execute();
     searchContainerManager.refreshIndices(listViewTemplate.getFullQualifiedName());
   }
