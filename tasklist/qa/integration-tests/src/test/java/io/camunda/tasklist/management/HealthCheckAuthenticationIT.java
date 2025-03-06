@@ -14,7 +14,7 @@ import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.BDDMockito.given;
 
 import io.camunda.tasklist.JacksonConfig;
-import io.camunda.tasklist.es.ElasticsearchConnector;
+import io.camunda.tasklist.connect.ElasticsearchConnector;
 import io.camunda.tasklist.es.ElasticsearchInternalTask;
 import io.camunda.tasklist.es.RetryElasticsearchClient;
 import io.camunda.tasklist.property.TasklistProperties;
