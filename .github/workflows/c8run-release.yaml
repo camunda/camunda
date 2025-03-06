@@ -50,10 +50,10 @@ jobs:
       - name: ℹ️ Print workflow inputs ℹ️
         shell: bash
         env:
-          GITHUB_CONTEXT: ${{ toJson(inputs) }}
+          WORKFLOW_INPUTS: ${{ toJson(inputs) }}
         run: |
           echo "Action Inputs:"
-          echo "${GITHUB_CONTEXT}"
+          echo "${WORKFLOW_INPUTS}"
       - uses: actions/checkout@v4
         with:
           ref: ${{ inputs.branch }}
@@ -175,7 +175,6 @@ jobs:
         uses: camunda/infra-global-github-actions/download-center-upload@main
         with:
           gcp_credentials: ${{ steps.secrets.outputs.GCP_CREDENTIALS_NAME }}
-          env: 'prod'
           version: ${{ inputs.camundaAppsRelease }}
           artifact_file: ./c8run/camunda8-run-*
           artifact_subpath: c8run
