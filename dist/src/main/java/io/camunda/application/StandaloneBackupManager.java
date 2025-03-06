@@ -17,6 +17,7 @@ import io.camunda.operate.webapp.backup.BackupService;
 import io.camunda.tasklist.connect.ElasticsearchConnector;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.webapp.es.backup.BackupManager;
+import io.camunda.tasklist.webapp.management.dto.BackupStateDto;
 import io.camunda.tasklist.webapp.management.dto.TakeBackupRequestDto;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import java.util.Arrays;
@@ -178,12 +179,38 @@ public class StandaloneBackupManager implements CommandLineRunner {
       LOG.info(
           "Triggered ES snapshots for Tasklist indices: {}",
           tasklistBackupResponse.getScheduledSnapshots());
+
+      LOG.info("Will observe snapshot creation...");
+      boolean snapshotObservation = true;
+      do {
+        // we need to sleep here already otherwise the API fails, as it can't
+        // handle empty responses...
+        Thread.sleep(5 * 1_000);
+        final var operateBackup = operateBackupManager.getBackupState(backupId);
+        final var operateBackupState = operateBackup.getState();
+        final var tasklistBackup = tasklistBackupManager.getBackupState(backupId);
+        final var tasklistBackupState = tasklistBackup.getState();
+
+        LOG.info("Snapshot observation:");
+        LOG.info(
+            "Operate indices snapshot is {}. Details: [{}]", operateBackupState, operateBackup);
+        LOG.info(
+            "Tasklist indices snapshot is {}. Details: [{}]", tasklistBackupState, tasklistBackup);
+
+        if (tasklistBackupState != BackupStateDto.IN_PROGRESS
+            && operateBackupState
+                != io.camunda.operate.webapp.management.dto.BackupStateDto.IN_PROGRESS) {
+          snapshotObservation = false;
+        }
+      } while (snapshotObservation);
+
       //      final var elasticsearchConfig =
       //          new ExporterConfiguration(
       //                  "elasticsearch",
       // brokerProperties.getExporters().get("elasticsearch").getArgs())
       //              .instantiate(ElasticsearchExporterConfiguration.class);
 
+      //      tasklistBackupManager.getBackupState()
       // Not needed
       //      new io.camunda.zeebe.exporter.SchemaManager(elasticsearchConfig).createSchema();
       //      operateUserDetailsService.initializeUsers();
