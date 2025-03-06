@@ -14,6 +14,7 @@ import io.camunda.exporter.rdbms.handlers.BatchOperationCreatedExportHandler;
 import io.camunda.exporter.rdbms.handlers.BatchOperationExecutionExportHandler;
 import io.camunda.exporter.rdbms.handlers.BatchOperationCreatedExportHandler;
 import io.camunda.exporter.rdbms.handlers.BatchOperationExecutionExportHandler;
+import io.camunda.exporter.rdbms.handlers.BatchOperationSubBatchExportHandler;
 import io.camunda.exporter.rdbms.handlers.DecisionDefinitionExportHandler;
 import io.camunda.exporter.rdbms.handlers.DecisionInstanceExportHandler;
 import io.camunda.exporter.rdbms.handlers.DecisionRequirementsExportHandler;
@@ -213,9 +214,13 @@ public class RdbmsExporterWrapper implements Exporter {
             partitionId
         ));
     builder.withHandler(
+        ValueType.BATCH_OPERATION_SUBBATCH,
+        new BatchOperationSubBatchExportHandler(rdbmsWriter.getBatchOperationWriter()));
+    builder.withHandler(
         ValueType.BATCH_OPERATION_EXECUTION,
         new BatchOperationExecutionExportHandler(rdbmsWriter.getBatchOperationWriter()));
 
+    // Handlers per batch operation to track status
     builder.withHandler(
         ValueType.PROCESS_INSTANCE,
         new ProcessInstanceBatchOperationExportHandler(rdbmsWriter.getBatchOperationWriter()));

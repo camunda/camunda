@@ -47,12 +47,7 @@ public class BatchOperationExecutionExportHandler implements
   public void export(final Record<BatchOperationExecutionRecordValue> record) {
     final var value = record.getValue();
     final var batchOperationKey = value.getBatchOperationKey();
-    if (record.getIntent().equals(BatchOperationIntent.EXECUTING)) {
-      batchOperationWriter.updateBatchAndInsertItems(
-          batchOperationKey,
-          value.getKeys()
-      );
-    } else if (record.getIntent().equals(BatchOperationIntent.COMPLETED)) {
+    if (record.getIntent().equals(BatchOperationIntent.COMPLETED)) {
       batchOperationWriter.finish(
           batchOperationKey,
           DateUtil.toOffsetDateTime(record.getTimestamp())
