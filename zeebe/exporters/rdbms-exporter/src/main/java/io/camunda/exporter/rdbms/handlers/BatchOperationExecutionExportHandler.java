@@ -48,7 +48,7 @@ public class BatchOperationExecutionExportHandler implements
     final var value = record.getValue();
     final var batchOperationKey = value.getBatchOperationKey();
     if (record.getIntent().equals(BatchOperationIntent.EXECUTING)) {
-      batchOperationWriter.update(
+      batchOperationWriter.updateBatchAndInsertItems(
           batchOperationKey,
           value.getKeys()
       );

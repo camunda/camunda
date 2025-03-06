@@ -31,7 +31,7 @@ public class BatchOperationWriter {
             batchOperation));
   }
 
-  public void update(final long batchOperationKey,
+  public void updateBatchAndInsertItems(final long batchOperationKey,
       final Set<Long> items) {
     executionQueue.executeInQueue(
         new QueueItem(
