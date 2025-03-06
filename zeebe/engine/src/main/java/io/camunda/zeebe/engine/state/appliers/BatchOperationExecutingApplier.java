@@ -24,5 +24,6 @@ public class BatchOperationExecutingApplier implements
   @Override
   public void applyState(final long key, final BatchOperationExecutionRecord value) {
     batchOperationState.updateOffset(key, value);
+    batchOperationState.removeKeys(key, value);
   }
 }

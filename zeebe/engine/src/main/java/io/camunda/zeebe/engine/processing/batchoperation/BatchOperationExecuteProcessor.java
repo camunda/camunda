@@ -68,7 +68,7 @@ public final class BatchOperationExecuteProcessor
       return;
     }
 
-    final var entityKeys = batchOperation.getNextKeys(offset, BATCH_SIZE);
+    final var entityKeys = batchOperationState.getNextEntityKeys(batchKey, BATCH_SIZE);
     if (entityKeys.isEmpty()) {
       LOGGER.debug(
           "No items to process for BatchOperation {} on partition {}", batchKey, partitionId);
