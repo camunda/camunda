@@ -13,7 +13,6 @@ import static org.mockito.Mockito.when;
 
 import com.jayway.jsonpath.JsonPath;
 import io.camunda.security.configuration.MultiTenancyConfiguration;
-import io.camunda.security.configuration.MultiTenancyConfiguration;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.service.JobServices;
 import io.camunda.service.security.SecurityContextProvider;
