@@ -18,6 +18,6 @@ public class MappingEntityTransformer
   public MappingEntity apply(
       final io.camunda.webapps.schema.entities.usermanagement.MappingEntity value) {
     return new MappingEntity(
-        value.getKey(), value.getClaimName(), value.getClaimValue(), value.getName());
+        value.getId(), value.getClaimName(), value.getClaimValue(), value.getName());
   }
 }

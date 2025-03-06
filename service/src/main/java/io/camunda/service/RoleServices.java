@@ -51,13 +51,14 @@ public class RoleServices extends SearchQueryService<RoleServices, RoleQuery, Ro
         .searchRoles(query);
   }
 
-  public SearchQueryResult<RoleEntity> getMemberRoles(final long memberKey, final RoleQuery query) {
+  public SearchQueryResult<RoleEntity> getMemberRoles(
+      final String memberKey, final RoleQuery query) {
     return search(
-        query.toBuilder().filter(query.filter().toBuilder().memberKey(memberKey).build()).build());
+        query.toBuilder().filter(query.filter().toBuilder().memberId(memberKey).build()).build());
   }
 
-  public List<RoleEntity> getRolesByMemberKeys(final Set<Long> memberKeys) {
-    return findAll(RoleQuery.of(q -> q.filter(f -> f.memberKeys(memberKeys))));
+  public List<RoleEntity> getRolesByMemberKeys(final Set<String> memberKeys) {
+    return findAll(RoleQuery.of(q -> q.filter(f -> f.memberIds(memberKeys))));
   }
 
   public List<RoleEntity> findAll(final RoleQuery query) {

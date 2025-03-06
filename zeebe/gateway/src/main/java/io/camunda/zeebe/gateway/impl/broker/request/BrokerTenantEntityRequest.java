@@ -50,7 +50,7 @@ public final class BrokerTenantEntityRequest extends BrokerExecuteCommand<Tenant
           "For now, tenants can only be assigned to %s".formatted(ALLOWED_ENTITY_TYPES));
     }
     tenantDto.setEntityType(entityType);
-    tenantDto.setEntityKey(entityKey);
+    tenantDto.setEntityKey(String.valueOf(entityKey));
     return this;
   }
 

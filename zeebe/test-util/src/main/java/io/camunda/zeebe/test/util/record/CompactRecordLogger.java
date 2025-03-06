@@ -1015,7 +1015,7 @@ public class CompactRecordLogger {
         .append(", Name=")
         .append(formatId(value.getName()))
         .append(", EntityKey=")
-        .append(shortenKey(value.getEntityKey()))
+        .append(formatId(value.getEntityKey()))
         .append(", EntityId=")
         .append(formatId(value.getEntityId()))
         .append("]");
@@ -1046,8 +1046,8 @@ public class CompactRecordLogger {
 
     final StringBuilder builder = new StringBuilder("Mapping[");
     builder
-        .append("Key=")
-        .append(shortenKey(value.getMappingKey()))
+        .append("Id=")
+        .append(value.getId())
         .append(", claimName=")
         .append(value.getClaimName())
         .append(", claimValue=")

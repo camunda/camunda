@@ -89,13 +89,16 @@ public class GroupServices extends SearchQueryService<GroupServices, GroupQuery,
   }
 
   public List<GroupEntity> getGroupsByUserKey(final long userKey) {
-    return search(SearchQueryBuilders.groupSearchQuery().filter(f -> f.memberKey(userKey)).build())
+    return search(
+            SearchQueryBuilders.groupSearchQuery()
+                .filter(f -> f.memberKey(String.valueOf(userKey)))
+                .build())
         .items()
         .stream()
         .toList();
   }
 
-  public List<GroupEntity> getGroupsByMemberKeys(final Set<Long> memberKeys) {
+  public List<GroupEntity> getGroupsByMemberKeys(final Set<String> memberKeys) {
     return findAll(
         SearchQueryBuilders.groupSearchQuery().filter(f -> f.memberKeys(memberKeys)).build());
   }

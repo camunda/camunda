@@ -10,12 +10,13 @@ package io.camunda.search.filter;
 import io.camunda.util.ObjectBuilder;
 import java.util.Set;
 
-public record GroupFilter(Long groupKey, String name, Set<Long> memberKeys) implements FilterBase {
+public record GroupFilter(Long groupKey, String name, Set<String> memberKeys)
+    implements FilterBase {
 
   public static final class Builder implements ObjectBuilder<GroupFilter> {
     private Long groupKey;
     private String name;
-    private Set<Long> memberKeys;
+    private Set<String> memberKeys;
 
     public Builder groupKey(final Long value) {
       groupKey = value;
@@ -27,11 +28,11 @@ public record GroupFilter(Long groupKey, String name, Set<Long> memberKeys) impl
       return this;
     }
 
-    public Builder memberKey(final Long value) {
+    public Builder memberKey(final String value) {
       return memberKeys(Set.of(value));
     }
 
-    public Builder memberKeys(final Set<Long> value) {
+    public Builder memberKeys(final Set<String> value) {
       memberKeys = value;
       return this;
     }

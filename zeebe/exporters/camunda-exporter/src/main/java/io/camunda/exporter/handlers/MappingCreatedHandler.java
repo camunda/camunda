@@ -41,7 +41,7 @@ public class MappingCreatedHandler implements ExportHandler<MappingEntity, Mappi
 
   @Override
   public List<String> generateIds(final Record<MappingRecordValue> record) {
-    return List.of(String.valueOf(record.getKey()));
+    return List.of(record.getValue().getId());
   }
 
   @Override
@@ -53,7 +53,7 @@ public class MappingCreatedHandler implements ExportHandler<MappingEntity, Mappi
   public void updateEntity(final Record<MappingRecordValue> record, final MappingEntity entity) {
     final MappingRecordValue value = record.getValue();
     entity
-        .setKey(value.getMappingKey())
+        .setId(value.getId())
         .setClaimName(value.getClaimName())
         .setClaimValue(value.getClaimValue())
         .setName(value.getName());

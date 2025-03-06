@@ -46,7 +46,7 @@ public class UserRolesController {
       final var result =
           roleServices
               .withAuthentication(RequestMapper.getAuthentication())
-              .getMemberRoles(userKey, query);
+              .getMemberRoles(String.valueOf(userKey), query);
       return ResponseEntity.ok(SearchQueryResponseMapper.toRoleSearchQueryResponse(result));
     } catch (final Exception e) {
       return RestErrorMapper.mapErrorToResponse(e);

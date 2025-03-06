@@ -38,7 +38,7 @@ class AssignMappingToTenantTest {
   @AutoClose private CamundaClient client;
 
   private long tenantKey;
-  private long mappingKey;
+  private String mappingId;
 
   @BeforeEach
   void initClientAndInstances() {
@@ -55,7 +55,7 @@ class AssignMappingToTenantTest {
             .getTenantKey();
 
     // Create Mapping
-    mappingKey =
+    mappingId =
         client
             .newCreateMappingCommand()
             .claimName(CLAIM_NAME)
@@ -64,18 +64,18 @@ class AssignMappingToTenantTest {
             .id(ID)
             .send()
             .join()
-            .getMappingKey();
+            .getMappingId();
   }
 
   @Test
   void shouldAssignMappingToTenant() {
     // When
-    client.newAssignMappingToTenantCommand(TENANT_ID).mappingKey(mappingKey).send().join();
+    client.newAssignMappingToTenantCommand(TENANT_ID).mappingId(mappingId).send().join();
 
     // Then
     ZeebeAssertHelper.assertEntityAssignedToTenant(
         TENANT_ID,
-        mappingKey,
+        mappingId,
         tenant -> {
           assertThat(tenant.getTenantKey()).isEqualTo(tenantKey);
           assertThat(tenant.getEntityType()).isEqualTo(EntityType.MAPPING);
@@ -92,7 +92,7 @@ class AssignMappingToTenantTest {
             () ->
                 client
                     .newAssignMappingToTenantCommand(invalidTenantId)
-                    .mappingKey(mappingKey)
+                    .mappingId(mappingId)
                     .send()
                     .join())
         .isInstanceOf(ProblemException.class)
@@ -105,20 +105,20 @@ class AssignMappingToTenantTest {
   @Test
   void shouldRejectAssignIfMappingDoesNotExist() {
     // Given
-    final long invalidMappingKey = 99999L;
+    final long invalidmappingId = 99999L;
 
     // When / Then
     assertThatThrownBy(
             () ->
                 client
                     .newAssignMappingToTenantCommand(TENANT_ID)
-                    .mappingKey(invalidMappingKey)
+                    .mappingId(invalidmappingId)
                     .send()
                     .join())
         .isInstanceOf(ProblemException.class)
         .hasMessageContaining("Failed with code 404: 'Not Found'")
         .hasMessageContaining(
             "Expected to add entity with key '%d' to tenant with tenantId '%s', but the entity doesn't exist."
-                .formatted(invalidMappingKey, TENANT_ID));
+                .formatted(invalidmappingId, TENANT_ID));
   }
 }

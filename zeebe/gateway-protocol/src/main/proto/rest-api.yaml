@@ -564,7 +564,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/UserSearchResult"
 
-  /tenants/{tenantId}/mapping-rules/{mappingKey}:
+  /tenants/{tenantId}/mapping-rules/{mappingId}:
     put:
       tags:
         - Tenant
@@ -578,7 +578,7 @@ paths:
           description: The unique identifier of the tenant.
           schema:
             type: string
-        - name: mappingKey
+        - name: mappingId
           in: path
           required: true
           description: The unique identifier of the mapping rule.
@@ -614,7 +614,7 @@ paths:
           description: The unique identifier of the tenant.
           schema:
             type: string
-        - name: mappingKey
+        - name: mappingId
           in: path
           required: true
           description: The unique identifier of the mapping rule.
@@ -2529,7 +2529,7 @@ paths:
                 $ref: "#/components/schemas/ProblemDetail"
         "500":
           $ref: "#/components/responses/InternalServerError"
-  /mapping-rules/{mappingKey}:
+  /mapping-rules/{mappingId}:
     delete:
       tags:
         - Mapping rule
@@ -2537,7 +2537,7 @@ paths:
       summary: Delete a mapping rule
       description: Deletes the mapping rule with the given key.
       parameters:
-        - name: mappingKey
+        - name: mappingId
           in: path
           required: true
           description: The key of the mapping rule to delete.
@@ -2549,7 +2549,7 @@ paths:
         "401":
           $ref: "#/components/responses/Unauthorized"
         "404":
-          description: The mapping rule with the mappingKey was not found.
+          description: The mapping rule with the mappingId was not found.
           content:
             application/problem+json:
               schema:
@@ -5062,7 +5062,7 @@ components:
           description: The field to sort by.
           type: string
           enum:
-            - mappingKey
+            - mappingId
             - claimName
             - claimValue
             - name
@@ -5411,7 +5411,7 @@ components:
         id:
           type: string
           description: The unique external id of the mapping.
-        mappingKey:
+        mappingId:
           description: The key of the created mapping rule.
           type: string
     MappingSearchQueryResult:
@@ -5436,7 +5436,7 @@ components:
         name:
           type: string
           description: The name of the mapping.
-        mappingKey:
+        mappingId:
           description: The key of the created mapping rule.
           type: string
 

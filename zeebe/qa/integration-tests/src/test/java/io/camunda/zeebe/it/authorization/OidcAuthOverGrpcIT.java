@@ -225,7 +225,7 @@ public class OidcAuthOverGrpcIT {
             .join();
     defaultMappingClient
         .newCreateAuthorizationCommand()
-        .ownerId(String.valueOf(mapping.getMappingKey()))
+        .ownerId(String.valueOf(mapping.getMappingId()))
         .ownerType(OwnerTypeEnum.MAPPING)
         .resourceId("*")
         .resourceType(ResourceTypeEnum.RESOURCE)

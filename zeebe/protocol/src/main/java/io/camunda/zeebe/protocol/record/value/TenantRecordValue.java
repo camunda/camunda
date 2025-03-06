@@ -36,7 +36,7 @@ public interface TenantRecordValue extends RecordValue {
   String getDescription();
 
   /** Key of the entity associated with this tenant. */
-  long getEntityKey();
+  String getEntityKey();
 
   /** Identifier of the entity associated with this tenant. */
   String getEntityId();
