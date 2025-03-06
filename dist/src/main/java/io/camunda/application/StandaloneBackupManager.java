@@ -162,17 +162,29 @@ public class StandaloneBackupManager implements CommandLineRunner {
     LOG.info("... triggered Elasticsearch snapshot based on Camunda's backup procedure");
   }
 
+  // LEARNING - basePackageClasses - defining a class causes to scan the whole package with * doing
+  // a traversal to include all childs
+  // This approach doesnt work pretty good as we include a lot of other things
+
   @SpringBootConfiguration
   @EnableConfigurationProperties(BrokerBasedProperties.class)
   @ConfigurationPropertiesScan
   @ComponentScan(
+      //      basePackages = {"io.camunda.operate.*"}
       basePackageClasses = {
         //        OperateUserDetailsService.class, - Not needed
         // Schema startup - to have access on index descriptors
         // TODO: Find a better way
         //        io.camunda.tasklist.schema.SchemaStartup.class, // - Not needed
         io.camunda.tasklist.schema.indices.IndexDescriptor.class,
+        io.camunda.tasklist.schema.templates.TemplateDescriptor.class,
         io.camunda.operate.schema.indices.IndexDescriptor.class,
+        io.camunda.operate.schema.templates.TemplateDescriptor.class,
+        // we need this metrics for the ElasticsearchImportStore; todo: why do we need it?
+        // WE DONT WANT THIS
+        //        io.camunda.operate.Metrics.class,
+        //        io.camunda.tasklist.Metrics.class,
+
         //        io.camunda.operate.schema.SchemaStartup.class, // - Not needed
         // Backup services from Operate / Tasklist - to be used to create backups
         io.camunda.operate.webapp.backup.BackupService.class,
@@ -181,9 +193,15 @@ public class StandaloneBackupManager implements CommandLineRunner {
         // Containing the properties/configurations for Operate/Tasklist
         OperateProperties.class,
         TasklistProperties.class,
+        io.camunda.operate.conditions.DatabaseInfo.class,
         // To set up the right clients, that have to be used by other components
-        io.camunda.tasklist.es.RetryElasticsearchClient.class,
+        io.camunda.operate.connect.ElasticsearchConnector
+            .class, // we need this to find the right clients for Operate
+        // WE DONT WANT THIS
+        io.camunda.operate.tenant.TenantAwareElasticsearchClient
+            .class, // needed for decision store - that is pulled in from somwhere TODO; clarify
         io.camunda.operate.store.elasticsearch.RetryElasticsearchClient.class,
+        io.camunda.tasklist.es.RetryElasticsearchClient.class,
         // Object mapper used by other components
         DefaultObjectMapperConfiguration.class,
       },
