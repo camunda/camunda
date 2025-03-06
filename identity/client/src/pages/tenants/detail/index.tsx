@@ -4,6 +4,7 @@
 import { FC } from "react";
 import { useNavigate, useParams } from "react-router";
 import { OverflowMenu, OverflowMenuItem, Section, Stack } from "@carbon/react";
+import { spacing01, spacing03 } from "@carbon/elements";
 import useTranslate from "src/utility/localization";
 import { useApi } from "src/utility/api/hooks";
 import NotFound from "src/pages/not-found";
@@ -15,7 +16,6 @@ import { DetailPageHeaderFallback } from "src/components/fallbacks";
 import Flex from "src/components/layout/Flex";
 import { useEntityModal } from "src/components/modal";
 import DeleteModal from "src/pages/tenants/modals/DeleteModal";
-import { spacing01, spacing03 } from "@carbon/elements";
 import { Description } from "src/pages/tenants/detail/components";
 import Members from "src/pages/tenants/detail/members";
 
@@ -60,9 +60,11 @@ const Details: FC = () => {
                   <p>
                     {t("tenantId")}: {tenant.tenantId}
                   </p>
-                  <Description>
-                    {t("description")}: {tenant.description || "-"}
-                  </Description>
+                  {tenant?.description && (
+                    <Description>
+                      {t("description")}: {tenant.description}
+                    </Description>
+                  )}
                 </Stack>
               )}
             </Flex>

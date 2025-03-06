@@ -70,8 +70,8 @@ const List: FC = () => {
       <EntityList
         data={tenantSearchResults == null ? [] : tenantSearchResults.items}
         headers={[
-          { header: t("name"), key: "name" },
           { header: t("tenantId"), key: "tenantId" },
+          { header: t("name"), key: "name" },
         ]}
         sortProperty="name"
         onEntityClick={showDetails}
