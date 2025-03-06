@@ -17,6 +17,7 @@ import io.camunda.zeebe.engine.state.mutable.MutableBatchOperationState;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationCreationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationExecutionRecord;
+import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationSubbatchRecord;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationIntent;
 import java.util.Optional;
 import org.slf4j.Logger;
@@ -60,7 +61,7 @@ public class DbBatchOperationState implements MutableBatchOperationState {
   }
 
   @Override
-  public void update(final long batchKey, final BatchOperationExecutionRecord record) {
+  public void updateOffset(final long batchKey, final BatchOperationExecutionRecord record) {
     this.batchKey.wrapLong(record.getBatchOperationKey());
     final var batch = batchOperationColumnFamily.get(this.batchKey);
     if (batch == null) {
@@ -71,6 +72,18 @@ public class DbBatchOperationState implements MutableBatchOperationState {
     batch.setOffset(record.getOffset());
     batchOperationColumnFamily.update(this.batchKey, batch);
     pendingBatchOperationColumnFamily.deleteIfExists(this.batchKey);
+  }
+
+  @Override
+  public void appendKeys(final long batchKey, final BatchOperationSubbatchRecord record) {
+    final var batch = batchOperationColumnFamily.get(this.batchKey);
+    if (batch == null) {
+      LOGGER.warn("Batch operation with key {} not found for appending keys",
+          record.getBatchOperationKey());
+      return;
+    }
+    batch.appendKeys(record.getKeys());
+    batchOperationColumnFamily.update(this.batchKey, batch);
   }
 
   @Override

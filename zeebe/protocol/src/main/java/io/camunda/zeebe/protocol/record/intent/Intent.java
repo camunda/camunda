@@ -181,6 +181,7 @@ public interface Intent {
         return IdentitySetupIntent.from(intent);
       case BATCH_OPERATION:
       case BATCH_OPERATION_EXECUTION:
+      case BATCH_OPERATION_SUBBATCH:
         return BatchOperationIntent.from(intent);
       case NULL_VAL:
       case SBE_UNKNOWN:
@@ -281,6 +282,7 @@ public interface Intent {
         return IdentitySetupIntent.valueOf(intent);
       case BATCH_OPERATION:
       case BATCH_OPERATION_EXECUTION:
+      case BATCH_OPERATION_SUBBATCH:
         return BatchOperationIntent.valueOf(intent);
       case NULL_VAL:
       case SBE_UNKNOWN:
