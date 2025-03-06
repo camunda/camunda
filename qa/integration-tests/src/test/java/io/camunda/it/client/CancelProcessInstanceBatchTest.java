@@ -10,8 +10,8 @@ package io.camunda.it.client;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.response.Process;
 import io.camunda.client.api.response.ProcessInstanceEvent;
-import io.camunda.client.api.search.response.BatchOperationState;
 import io.camunda.client.api.search.response.BatchOperationItems.BatchOperationItem;
+import io.camunda.client.api.search.response.BatchOperationState;
 import static io.camunda.it.client.QueryTest.deployResource;
 import static io.camunda.it.client.QueryTest.startProcessInstance;
 import static io.camunda.it.client.QueryTest.waitForFlowNodeInstances;
@@ -20,13 +20,12 @@ import static io.camunda.it.client.QueryTest.waitForProcessInstancesToStart;
 import static io.camunda.it.client.QueryTest.waitForProcessesToBeDeployed;
 import static io.camunda.it.client.QueryTest.waitUntilFlowNodeInstanceHasIncidents;
 import static io.camunda.it.client.QueryTest.waitUntilProcessInstanceHasIncidents;
-import java.time.Duration;
-import org.apache.commons.lang3.ThreadUtils;
-import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.qa.util.multidb.MultiDbTest;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import static org.assertj.core.api.Assertions.assertThat;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -89,8 +88,6 @@ public class CancelProcessInstanceBatchTest {
         .send().join();
     final var batchOperationKey = result.getBatchOperationKey();
 
-    ThreadUtils.sleep(Duration.ofMillis(2000));
-
     // then
     assertThat(result).isNotNull();
     assertThat(batchOperationKey).isNotNull();
@@ -112,7 +109,8 @@ public class CancelProcessInstanceBatchTest {
               assertThat(batch.getState()).isEqualTo(BatchOperationState.COMPLETED);
             });
 
-    final var activeKeys = ACTIVE_PROCESS_INSTANCES.stream().map(ProcessInstanceEvent::getProcessInstanceKey).toList();
+    final var activeKeys = ACTIVE_PROCESS_INSTANCES.stream()
+        .map(ProcessInstanceEvent::getProcessInstanceKey).toList();
     for (final Long key : activeKeys) {
       waitForProcessInstanceToBeTerminated(camundaClient, key);
     }

@@ -10,13 +10,16 @@ package io.camunda.zeebe.engine.state.batchoperation;
 import io.camunda.search.filter.FilterBase;
 import io.camunda.zeebe.db.DbValue;
 import io.camunda.zeebe.msgpack.UnpackedObject;
+import io.camunda.zeebe.msgpack.property.ArrayProperty;
 import io.camunda.zeebe.msgpack.property.DocumentProperty;
 import io.camunda.zeebe.msgpack.property.EnumProperty;
 import io.camunda.zeebe.msgpack.property.IntegerProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
+import io.camunda.zeebe.msgpack.value.LongValue;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationIntent;
 import io.camunda.zeebe.protocol.record.value.BatchOperationType;
+import java.util.List;
 import org.agrona.DirectBuffer;
 
 public class PersistedBatchOperation extends UnpackedObject implements DbValue {
@@ -31,15 +34,19 @@ public class PersistedBatchOperation extends UnpackedObject implements DbValue {
       new EnumProperty<>("status", BatchOperationState.class);
   private final IntegerProperty offsetProp = new IntegerProperty("offset", 0);
   private final DocumentProperty filterProp = new DocumentProperty("filter");
+  private final ArrayProperty<LongValue> keysProp = new ArrayProperty<LongValue>("keys",
+      LongValue::new);
 
   public PersistedBatchOperation() {
-    super(6);
+    super(7);
     declareProperty(keyProp)
         .declareProperty(batchOperationTypeProp)
         .declareProperty(intentProp)
         .declareProperty(statusProp)
         .declareProperty(offsetProp)
-        .declareProperty(filterProp);
+        .declareProperty(filterProp)
+        .declareProperty(keysProp);
+
   }
 
   public boolean canCancel() {
@@ -110,6 +117,24 @@ public class PersistedBatchOperation extends UnpackedObject implements DbValue {
   public PersistedBatchOperation setFilter(final DirectBuffer filter) {
     filterProp.setValue(filter);
     return this;
+  }
+
+  public List<Long> getKeys() {
+    return keysProp.stream().map(LongValue::getValue).toList();
+  }
+
+  public PersistedBatchOperation appendKeys(final List<Long> keys) {
+    keysProp.reset();
+    keys.forEach(key -> keysProp.add().setValue(key));
+    return this;
+  }
+
+  public List<Long> getNextKeys(final int offset, final int maxBatchSize) {
+    return keysProp.stream()
+        .skip(offset)
+        .limit(maxBatchSize)
+        .map(LongValue::getValue)
+        .toList();
   }
 
   public DirectBuffer getFilterBuffer() {

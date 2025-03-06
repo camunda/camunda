@@ -34,6 +34,10 @@ public final class BatchOperationSetupProcessors {
             BatchOperationIntent.CREATE,
             new BatchOperationActivateProcessor(writers, keyGenerator, commandDistributionBehavior))
         .onCommand(
+            ValueType.BATCH_OPERATION_SUBBATCH,
+            BatchOperationIntent.CREATE_SUBBATCH,
+            new BatchOperationCreateSubbatchProcessor(writers))
+        .onCommand(
             ValueType.BATCH_OPERATION_EXECUTION,
             BatchOperationIntent.CANCEL,
             new BatchOperationCancelProcessor(
