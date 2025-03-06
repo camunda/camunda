@@ -31,6 +31,7 @@ import io.camunda.zeebe.broker.client.api.dto.BrokerResponse;
 import io.camunda.zeebe.gateway.api.util.StubbedBrokerClient;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerMappingCreateRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerMappingDeleteRequest;
+import io.camunda.zeebe.gateway.impl.broker.request.BrokerMappingUpdateRequest;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.MappingRecord;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.MappingIntent;
@@ -45,6 +46,7 @@ import org.mockito.ArgumentCaptor;
 public class MappingServicesTest {
 
   ArgumentCaptor<BrokerMappingDeleteRequest> mappingDeleteRequestArgumentCaptor;
+  ArgumentCaptor<BrokerMappingUpdateRequest> mappingUpdateRequestArgumentCaptor;
   private MappingServices services;
   private MappingSearchClient client;
   private Authentication authentication;
@@ -57,6 +59,7 @@ public class MappingServicesTest {
     client = mock(MappingSearchClient.class);
     when(client.withSecurityContext(any())).thenReturn(client);
     mappingDeleteRequestArgumentCaptor = ArgumentCaptor.forClass(BrokerMappingDeleteRequest.class);
+    mappingUpdateRequestArgumentCaptor = ArgumentCaptor.forClass(BrokerMappingUpdateRequest.class);
     services =
         new MappingServices(
             stubbedBrokerClient, mock(SecurityContextProvider.class), client, authentication);
@@ -160,6 +163,37 @@ public class MappingServicesTest {
     verify(mockBrokerClient).sendRequest(mappingDeleteRequestArgumentCaptor.capture());
     final var request = mappingDeleteRequestArgumentCaptor.getValue();
     assertThat(request.getRequestWriter().getMappingKey()).isEqualTo(1234L);
+  }
+
+  @Test
+  public void shouldTriggerUpdateRequest() {
+    // given
+    final Authentication testAuthentication = mock(Authentication.class);
+    when(testAuthentication.claims()).thenReturn(Map.of());
+    final BrokerClient mockBrokerClient = mock(BrokerClient.class);
+    final MappingServices testMappingServices =
+        new MappingServices(
+            mockBrokerClient, mock(SecurityContextProvider.class), client, testAuthentication);
+
+    final var mappingRecord = new MappingRecord();
+    mappingRecord.setId("id");
+    when(mockBrokerClient.sendRequest(any()))
+        .thenReturn(CompletableFuture.completedFuture(new BrokerResponse<>(mappingRecord)));
+
+    final var mappingDTO =
+        new MappingDTO(
+            "newClaimName", "newClaimValue", "newMappingRuleName", mappingRecord.getId());
+
+    //  when
+    testMappingServices.updateMapping(mappingDTO);
+
+    // then
+    verify(mockBrokerClient).sendRequest(mappingUpdateRequestArgumentCaptor.capture());
+    final var request = mappingUpdateRequestArgumentCaptor.getValue();
+    assertThat(request.getRequestWriter().getId()).isEqualTo(mappingDTO.id());
+    assertThat(request.getRequestWriter().getClaimName()).isEqualTo(mappingDTO.claimName());
+    assertThat(request.getRequestWriter().getClaimValue()).isEqualTo(mappingDTO.claimValue());
+    assertThat(request.getRequestWriter().getName()).isEqualTo(mappingDTO.name());
   }
 
   @Test
