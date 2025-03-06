@@ -9,11 +9,11 @@ package io.camunda.zeebe.engine.state.appliers;
 
 import io.camunda.zeebe.engine.state.TypedEventApplier;
 import io.camunda.zeebe.engine.state.mutable.MutableBatchOperationState;
-import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationCreationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationExecutionRecord;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationIntent;
 
-public class BatchOperationExecutedApplier implements TypedEventApplier<BatchOperationIntent, BatchOperationExecutionRecord> {
+public class BatchOperationExecutedApplier implements
+    TypedEventApplier<BatchOperationIntent, BatchOperationExecutionRecord> {
 
   private final MutableBatchOperationState batchOperationState;
 
@@ -23,6 +23,6 @@ public class BatchOperationExecutedApplier implements TypedEventApplier<BatchOpe
 
   @Override
   public void applyState(final long key, final BatchOperationExecutionRecord value) {
-    batchOperationState.update(key, value);
+    batchOperationState.updateOffset(key, value);
   }
 }

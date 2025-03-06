@@ -33,6 +33,9 @@ public enum BatchOperationIntent implements Intent {
 
   RESUME((short) 10),
   RESUMED((short) 11),
+
+  CREATE_SUBBATCH((short) 12),
+  CREATED_SUBBATCH((short) 13),
   ;
 
   private final short value;
@@ -71,6 +74,10 @@ public enum BatchOperationIntent implements Intent {
         return RESUME;
       case 11:
         return RESUMED;
+      case 12:
+        return CREATE_SUBBATCH;
+      case 13:
+        return CREATED_SUBBATCH;
 
       default:
         return Intent.UNKNOWN;
@@ -92,6 +99,7 @@ public enum BatchOperationIntent implements Intent {
       case PAUSED:
       case RESUMED:
       case COMPLETED:
+      case CREATED_SUBBATCH:
         return true;
       default:
         return false;

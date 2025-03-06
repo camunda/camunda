@@ -68,22 +68,12 @@ public final class BatchOperationExecuteProcessor
       return;
     }
 
-    final var filteredEntityKeys = recordValue.getKeys();
-    if (filteredEntityKeys.size() <= offset) {
+    final var entityKeys = batchOperation.getNextKeys(offset, BATCH_SIZE);
+    if (entityKeys.isEmpty()) {
       LOGGER.debug(
           "No items to process for BatchOperation {} on partition {}", batchKey, partitionId);
-      appendBatchOperationExecutionCompletedEvent(0, command);
+      appendBatchOperationExecutionCompletedEvent(offset, command);
       return;
-    }
-
-    final var entityKeys = filteredEntityKeys.stream().skip(offset).limit(BATCH_SIZE).toList();
-
-    if (entityKeys.isEmpty()) {
-      LOGGER.warn(
-          "No items to process for BatchOperation {} on partition {} and offset {}",
-          batchKey,
-          partitionId,
-          offset);
     }
 
     appendBatchOperationExecutionExecutingEvent(command, Set.copyOf(entityKeys));
@@ -93,7 +83,7 @@ public final class BatchOperationExecuteProcessor
           entityKeys.forEach(entityKey -> cancelProcessInstance(entityKey, batchKey));
     }
 
-    final var newOffset = command.getValue().getOffset() + BATCH_SIZE;
+    final var newOffset = offset + entityKeys.size();
     LOGGER.debug(
         "Scheduling next batch for BatchOperation {} on partition {} with offset {}",
         batchKey,
