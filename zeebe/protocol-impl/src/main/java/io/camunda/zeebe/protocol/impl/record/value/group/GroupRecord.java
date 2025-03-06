@@ -21,7 +21,7 @@ public class GroupRecord extends UnifiedRecordValue implements GroupRecordValue 
 
   private final LongProperty groupKeyProp = new LongProperty("groupKey", -1L);
   private final StringProperty nameProp = new StringProperty("name", "");
-  private final LongProperty entityKeyProp = new LongProperty("entityKey", -1L);
+  private final StringProperty entityKeyProp = new StringProperty("entityKey", "");
   private final EnumProperty<EntityType> entityTypeProp =
       new EnumProperty<>("entityType", EntityType.class, EntityType.UNSPECIFIED);
 
@@ -54,11 +54,11 @@ public class GroupRecord extends UnifiedRecordValue implements GroupRecordValue 
   }
 
   @Override
-  public long getEntityKey() {
+  public String getEntityKey() {
     return entityKeyProp.getValue();
   }
 
-  public GroupRecord setEntityKey(final long entityKey) {
+  public GroupRecord setEntityKey(final String entityKey) {
     entityKeyProp.setValue(entityKey);
     return this;
   }

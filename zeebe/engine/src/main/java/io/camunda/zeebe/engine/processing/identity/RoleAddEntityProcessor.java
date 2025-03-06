@@ -135,7 +135,7 @@ public class RoleAddEntityProcessor implements DistributedTypedRecordProcessor<R
       return userState.getUser(entityKey).isPresent();
     }
     if (EntityType.MAPPING == entityType) {
-      return mappingState.get(entityKey).isPresent();
+      return mappingState.get(String.valueOf(entityKey)).isPresent();
     }
     return false;
   }

@@ -118,8 +118,8 @@ public class MappingDeleteProcessor implements DistributedTypedRecordProcessor<M
   }
 
   private void deleteMapping(final PersistedMapping mapping) {
-    final var mappingId = mapping.getMappingKey();
-    deleteAuthorizations(mappingKey);
+    final var mappingId = mapping.getId();
+    deleteAuthorizations(mappingId);
     for (final var tenantId : mapping.getTenantIdsList()) {
       final var tenant = tenantState.getTenantById(tenantId).orElseThrow();
       stateWriter.appendFollowUpEvent(
@@ -128,7 +128,7 @@ public class MappingDeleteProcessor implements DistributedTypedRecordProcessor<M
           new TenantRecord()
               .setTenantKey(tenant.getTenantKey())
               .setTenantId(tenant.getTenantId())
-              .setEntityKey(mappingKey)
+              .setEntityKey(mappingId)
               .setEntityType(EntityType.MAPPING));
     }
     for (final var roleKey : mapping.getRoleKeysList()) {
@@ -137,7 +137,7 @@ public class MappingDeleteProcessor implements DistributedTypedRecordProcessor<M
           RoleIntent.ENTITY_REMOVED,
           new RoleRecord()
               .setRoleKey(roleKey)
-              .setEntityKey(mappingKey)
+              .setEntityKey(mappingId)
               .setEntityType(EntityType.MAPPING));
     }
     for (final var groupKey : mapping.getGroupKeysList()) {
@@ -150,13 +150,13 @@ public class MappingDeleteProcessor implements DistributedTypedRecordProcessor<M
               .setEntityType(EntityType.MAPPING));
     }
     stateWriter.appendFollowUpEvent(
-        mappingKey, MappingIntent.DELETED, new MappingRecord().setId(mappingKey));
+        keyGenerator.nextKey(), MappingIntent.DELETED, new MappingRecord().setId(mappingId));
   }
 
-  private void deleteAuthorizations(final long mappingKey) {
+  private void deleteAuthorizations(final String mappingId) {
     final var authorizationKeysForMapping =
         authorizationState.getAuthorizationKeysForOwner(
-            AuthorizationOwnerType.MAPPING, String.valueOf(mappingKey));
+            AuthorizationOwnerType.MAPPING, mappingId);
 
     authorizationKeysForMapping.forEach(
         authorizationKey -> {

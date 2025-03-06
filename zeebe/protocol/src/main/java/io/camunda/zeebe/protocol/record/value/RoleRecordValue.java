@@ -30,7 +30,7 @@ public interface RoleRecordValue extends RecordValue {
   String getName();
 
   /** The key of a user/mapping to assign/remove from a role. */
-  long getEntityKey();
+  String getEntityKey();
 
   /** The type of the entity to assign/remove from a role. */
   EntityType getEntityType();

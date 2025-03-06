@@ -35,7 +35,8 @@ public class RoleEntityRemovedApplier implements TypedEventApplier<RoleIntent, R
           userState
               .getUser(value.getEntityKey())
               .ifPresent(user -> userState.removeRole(user.getUsername(), value.getRoleKey()));
-      case MAPPING -> mappingState.removeRole(value.getEntityKey(), value.getRoleKey());
+      case MAPPING ->
+          mappingState.removeRole(String.valueOf(value.getEntityKey()), value.getRoleKey());
       default ->
           throw new IllegalStateException(
               String.format(

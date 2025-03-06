@@ -997,7 +997,7 @@ public class CompactRecordLogger {
         .append(", Name=")
         .append(formatId(value.getName()))
         .append(", EntityKey=")
-        .append(shortenKey(value.getEntityKey()))
+        .append(formatId(value.getEntityKey()))
         .append("]");
 
     return builder.toString();
@@ -1033,7 +1033,7 @@ public class CompactRecordLogger {
         .append(", Name=")
         .append(formatId(value.getName()))
         .append(", EntityKey=")
-        .append(shortenKey(value.getEntityKey()))
+        .append(formatId(value.getEntityKey()))
         .append(", EntityType=")
         .append(value.getEntityType())
         .append("]");
