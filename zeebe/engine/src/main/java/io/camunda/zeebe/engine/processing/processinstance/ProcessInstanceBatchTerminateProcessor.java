@@ -19,7 +19,7 @@ import io.camunda.zeebe.protocol.record.intent.ProcessInstanceBatchIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
-import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReferenceArray;
 
 public final class ProcessInstanceBatchTerminateProcessor
     implements TypedRecordProcessor<ProcessInstanceBatchRecord> {
@@ -43,32 +43,47 @@ public final class ProcessInstanceBatchTerminateProcessor
   public void processRecord(final TypedRecord<ProcessInstanceBatchRecord> record) {
     final var recordValue = record.getValue();
 
-    final AtomicBoolean hasChildren = new AtomicBoolean(false);
+    final AtomicReferenceArray<ElementInstance> elementInstanceStateArray =
+        new AtomicReferenceArray<>(2);
     elementInstanceState.forEachChild(
         recordValue.getBatchElementInstanceKey(),
         recordValue.getIndex(),
         (childKey, childInstance) -> {
-          hasChildren.set(true);
-          if (canWriteCommand(record, childInstance)) {
-            terminateChildInstance(childInstance);
+          if (!childInstance.canTerminate()) {
+            return true;
+          }
+
+          if (elementInstanceStateArray.get(0) == null) {
+            elementInstanceStateArray.set(0, childInstance);
             return true;
           } else {
-            final var nextBatchRecord =
-                new ProcessInstanceBatchRecord()
-                    .setProcessInstanceKey(recordValue.getProcessInstanceKey())
-                    .setBatchElementInstanceKey(recordValue.getBatchElementInstanceKey())
-                    .setIndex(childKey);
-            final long key = keyGenerator.nextKey();
-            commandWriter.appendFollowUpCommand(
-                key, ProcessInstanceBatchIntent.TERMINATE, nextBatchRecord);
+            elementInstanceStateArray.set(1, childInstance);
             return false;
           }
         });
 
-    if (!hasChildren.get()) {
+    if (elementInstanceStateArray.get(0) != null) {
+      terminateChildInstance(elementInstanceStateArray.get(0));
+    }
+
+    if (elementInstanceStateArray.get(1) != null) {
+      appendFollowupBatchCommand(elementInstanceStateArray.get(1), recordValue);
+    } else {
       stateWriter.appendFollowUpEvent(
           record.getKey(), ProcessInstanceBatchIntent.TERMINATED, recordValue);
     }
+  }
+
+  private void appendFollowupBatchCommand(
+      final ElementInstance childInstance, final ProcessInstanceBatchRecord recordValue) {
+    final var nextBatchRecord =
+        new ProcessInstanceBatchRecord()
+            .setProcessInstanceKey(recordValue.getProcessInstanceKey())
+            .setBatchElementInstanceKey(recordValue.getBatchElementInstanceKey())
+            .setIndex(childInstance.getKey());
+
+    commandWriter.appendFollowUpCommand(
+        keyGenerator.nextKey(), ProcessInstanceBatchIntent.TERMINATE, nextBatchRecord);
   }
 
   private boolean canWriteCommand(
