@@ -82,6 +82,13 @@
       AND STATE = #{oldState}
   </update>
 
+  <update id="incrementOperationsTotalCount"
+    parameterType="io.camunda.db.rdbms.sql.BatchOperationMapper$BatchOperationUpdateTotalCountDto">
+    UPDATE BATCH_OPERATION
+    SET OPERATIONS_TOTAL_COUNT = OPERATIONS_TOTAL_COUNT + #{operationsTotalCount}
+    WHERE BATCH_OPERATION_KEY = #{batchOperationKey}
+  </update>
+
   <update id="incrementFailedOperationsCount" parameterType="java.lang.Long">
     UPDATE BATCH_OPERATION
     SET OPERATIONS_FAILED_COUNT = OPERATIONS_FAILED_COUNT + 1
