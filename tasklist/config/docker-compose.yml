@@ -135,7 +135,7 @@ services:
 
   zeebe: &zeebe
     container_name: zeebe-${DATABASE}
-    image: camunda/zeebe:8.6.10
+    image: camunda/zeebe:8.6.11
     environment:
       - "JAVA_TOOL_OPTIONS=-Xms512m -Xmx512m"
       #- "JAVA_OPTS=-agentlib:jdwp=transport=dt_socket,address=8000,server=y,suspend=n"
@@ -348,7 +348,7 @@ services:
 
   zeebe-e2e:
     container_name: zeebe-e2e
-    image: camunda/zeebe:8.6.10
+    image: camunda/zeebe:8.6.11
     environment:
       - "JAVA_TOOL_OPTIONS=-Xms512m -Xmx512m"
       - ZEEBE_BROKER_NETWORK_HOST=zeebe-e2e
