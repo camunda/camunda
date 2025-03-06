@@ -61,8 +61,8 @@ jobs:
           sleep 5
       - name: Create new release
         run: |
-          gh release create ${{ env.CAMUNDA_RUN_NAME }} --target ${{ inputs.branch }} \
-            --notes "${{ env.CAMUNDA_RUN_NAME }}"
+          gh release create ${{ env.CAMUNDA_RUN_NAME }} --title ${{ env.CAMUNDA_RUN_NAME }}
+            --target ${{ inputs.branch }} --notes "${{ env.CAMUNDA_RUN_NAME }}"
         env:
           GH_TOKEN: ${{ github.token }}
 
