@@ -15,18 +15,39 @@ const mockStatisticsV2 = [
       return res(
         ctx.json([
           {
-            flowNodeId: 'messageCatchEvent',
-            active: 2,
-            canceled: 1,
-            incidents: 3,
-            completed: 4,
+            flowNodeId: 'Gateway_15jzrqe',
+            active: 0,
+            canceled: 0,
+            incidents: 20,
+            completed: 0,
           },
           {
             flowNodeId: 'exclusiveGateway',
+            active: 0,
+            canceled: 0,
+            incidents: 20,
+            completed: 0,
+          },
+          {
+            flowNodeId: 'alwaysFailingTask',
             active: 20,
-            canceled: 10,
-            incidents: 30,
-            completed: 40,
+            canceled: 0,
+            incidents: 0,
+            completed: 0,
+          },
+          {
+            flowNodeId: 'messageCatchEvent',
+            active: 0,
+            canceled: 0,
+            incidents: 20,
+            completed: 0,
+          },
+          {
+            flowNodeId: 'upperTask',
+            active: 20,
+            canceled: 0,
+            incidents: 0,
+            completed: 0,
           },
         ]),
       );

@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {requestWithThrow} from 'modules/request';
+import {RequestResult, requestWithThrow} from 'modules/request';
 
 type ProcessInstancesStatisticsDto = {
   flowNodeId: string;
@@ -21,19 +21,19 @@ type ProcessInstanceState = 'RUNNING' | 'COMPLETED' | 'CANCELED' | 'INCIDENT';
 type ProcessInstancesStatisticsRequest = {
   groupBy?: string;
   startDate?: {
-    $lt: string;
-    $gt: string;
+    $lt?: string;
+    $gt?: string;
   };
   endDate?: {
-    $lt: string;
-    $gt: string;
+    $lt?: string;
+    $gt?: string;
   };
   processDefinitionKey?: {
     $in: string[];
   };
   processInstanceKey?: {
-    $in: string[];
-    $nin: string[];
+    $in?: string[];
+    $nin?: string[];
   };
   parentProcessInstanceKey?: string;
   variables?: [
@@ -54,8 +54,8 @@ type ProcessInstancesStatisticsRequest = {
 
 const fetchProcessInstancesStatistics = async (
   payload: ProcessInstancesStatisticsRequest,
-): Promise<Response> => {
-  return requestWithThrow({
+): RequestResult<ProcessInstancesStatisticsDto[]> => {
+  return requestWithThrow<ProcessInstancesStatisticsDto[]>({
     url: '/v2/process-instances/statistics',
     method: 'POST',
     body: payload,

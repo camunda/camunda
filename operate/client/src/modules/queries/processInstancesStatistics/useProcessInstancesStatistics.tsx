@@ -6,37 +6,35 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {useQuery, UseQueryOptions} from '@tanstack/react-query';
+import {UseQueryOptions} from '@tanstack/react-query';
 import {
   fetchProcessInstancesStatistics,
   ProcessInstancesStatisticsDto,
   ProcessInstancesStatisticsRequest,
 } from 'modules/api/v2/processInstances/fetchProcessInstancesStatistics';
+import {RequestError} from 'modules/request';
 
-function getProcessInstanceStatisticsOptions<T>(
+function getProcessInstanceStatisticsOptions<T, P>(
   payload: ProcessInstancesStatisticsRequest,
-  parser?: (data: ProcessInstancesStatisticsDto) => T,
-): UseQueryOptions<T> {
+  parser?: (data: ProcessInstancesStatisticsDto[], params: P) => T,
+  parserParams?: P,
+): UseQueryOptions<T, RequestError> {
   return {
     queryKey: getQueryKey(Object.values(payload)),
-    queryFn: async () => {
-      const response = await fetchProcessInstancesStatistics(payload);
-      const data = await response.json();
-      return parser?.(data) ?? data;
+    queryFn: async (): Promise<T> => {
+      const {response, error} = await fetchProcessInstancesStatistics(payload);
+
+      if (response !== null) {
+        return (parser ? parser(response, parserParams!) : response) as T;
+      }
+
+      throw error ?? new Error('Failed to fetch process instances statistics');
     },
   };
 }
 
-function useProcessInstancesStatistics(
-  payload: ProcessInstancesStatisticsRequest,
-) {
-  return useQuery(
-    getProcessInstanceStatisticsOptions<ProcessInstancesStatisticsDto>(payload),
-  );
-}
-
-function getQueryKey(keys: any[]) {
+function getQueryKey(keys: unknown[]) {
   return ['processInstances', ...keys];
 }
 
-export {useProcessInstancesStatistics};
+export {getProcessInstanceStatisticsOptions};
