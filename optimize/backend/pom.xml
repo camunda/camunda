@@ -5,16 +5,16 @@
   <parent>
     <groupId>io.camunda.optimize</groupId>
     <artifactId>optimize-parent</artifactId>
-    <version>8.8.0-SNAPSHOT</version>
+    <version>8.8.0-alpha2</version>
   </parent>
 
   <artifactId>optimize-backend</artifactId>
   <name>Optimize Backend</name>
 
   <properties>
-    <it.test.excludedGroups></it.test.excludedGroups>
-    <it.test.includedGroups></it.test.includedGroups>
-    <test.forkCount></test.forkCount>
+    <it.test.excludedGroups />
+    <it.test.includedGroups />
+    <test.forkCount />
     <version.tomcat>10.1.34</version.tomcat>
   </properties>
 
@@ -421,7 +421,7 @@
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>zeebe-bpmn-model</artifactId>
-      <version>8.8.0-SNAPSHOT</version>
+      <version>8.8.0-alpha2</version>
     </dependency>
 
     <dependency>
