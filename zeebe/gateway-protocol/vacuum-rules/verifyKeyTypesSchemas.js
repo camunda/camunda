@@ -9,8 +9,7 @@ function runRule(input) {
         !composesBasicStringFilterProperty(schema)
       );
     })
-    .map(([name, schema]) => {
-      console.log(JSON.stringify(schema, null, 2));
+    .map(([name]) => {
       return {
         message: `\`${name}\` property must be of type \`string\` or \`BasicStringFilterProperty\`.`,
       };
