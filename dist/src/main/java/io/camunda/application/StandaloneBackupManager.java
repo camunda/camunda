@@ -11,11 +11,11 @@ import io.camunda.application.StandaloneSchemaManager.SchemaManagerConfiguration
 import io.camunda.application.commons.sources.DefaultObjectMapperConfiguration;
 import io.camunda.application.listeners.ApplicationErrorListener;
 import io.camunda.operate.property.OperateProperties;
-import io.camunda.operate.webapp.security.auth.OperateUserDetailsService;
+import io.camunda.operate.webapp.backup.BackupService;
 import io.camunda.tasklist.property.TasklistProperties;
-import io.camunda.zeebe.broker.exporter.context.ExporterConfiguration;
+import io.camunda.tasklist.webapp.es.backup.BackupManager;
+import io.camunda.tasklist.webapp.management.dto.TakeBackupRequestDto;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
-import io.camunda.zeebe.exporter.ElasticsearchExporterConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.CommandLineRunner;
@@ -77,13 +77,16 @@ public class StandaloneBackupManager implements CommandLineRunner {
 
   private static final Logger LOG = LoggerFactory.getLogger(StandaloneBackupManager.class);
   private final BrokerBasedProperties brokerProperties;
-  private final OperateUserDetailsService operateUserDetailsService;
+  private final BackupManager tasklistBackupManager;
+  private final BackupService operateBackupManager;
 
   public StandaloneBackupManager(
       final BrokerBasedProperties brokerProperties,
-      final OperateUserDetailsService operateUserDetailsService) {
+      final BackupManager tasklistBackupManager,
+      final BackupService operateBackupManager) {
     this.brokerProperties = brokerProperties;
-    this.operateUserDetailsService = operateUserDetailsService;
+    this.tasklistBackupManager = tasklistBackupManager;
+    this.operateBackupManager = operateBackupManager;
   }
 
   public static void main(final String[] args) throws Exception {
@@ -120,21 +123,43 @@ public class StandaloneBackupManager implements CommandLineRunner {
 
   @Override
   public void run(final String... args) throws Exception {
+    final var backupId = 0xCAFEL;
     try {
-      final var elasticsearchConfig =
-          new ExporterConfiguration(
-                  "elasticsearch", brokerProperties.getExporters().get("elasticsearch").getArgs())
-              .instantiate(ElasticsearchExporterConfiguration.class);
+      // Operate
+      final var operateTakeBackupRequestDto =
+          new io.camunda.operate.webapp.management.dto.TakeBackupRequestDto();
+      operateTakeBackupRequestDto.setBackupId(backupId);
+      final var operateBackupResponse =
+          operateBackupManager.takeBackup(operateTakeBackupRequestDto);
+
+      LOG.info(
+          "Triggered ES snapshots for Operate indices: {}",
+          operateBackupResponse.getScheduledSnapshots());
+
+      // TASKLIST
+      final var tasklistTakeBackupRequestDto = new TakeBackupRequestDto();
+      tasklistTakeBackupRequestDto.setBackupId(backupId);
+      final var tasklistBackupResponse =
+          tasklistBackupManager.takeBackup(tasklistTakeBackupRequestDto);
+
+      LOG.info(
+          "Triggered ES snapshots for Tasklist indices: {}",
+          tasklistBackupResponse.getScheduledSnapshots());
+      //      final var elasticsearchConfig =
+      //          new ExporterConfiguration(
+      //                  "elasticsearch",
+      // brokerProperties.getExporters().get("elasticsearch").getArgs())
+      //              .instantiate(ElasticsearchExporterConfiguration.class);
 
       // Not needed
       //      new io.camunda.zeebe.exporter.SchemaManager(elasticsearchConfig).createSchema();
       //      operateUserDetailsService.initializeUsers();
     } catch (final Exception e) {
-      LOG.error("Failed to create/update schemas", e);
+      LOG.error("Expected to trigger ES snapshots for backupId {}, but failed", backupId, e);
       throw e;
     }
 
-    LOG.info("... finished creating/updating Elasticsearch schema for Camunda");
+    LOG.info("... triggered Elasticsearch snapshot based on Camunda's backup procedure");
   }
 
   @SpringBootConfiguration
@@ -143,12 +168,23 @@ public class StandaloneBackupManager implements CommandLineRunner {
   @ComponentScan(
       basePackageClasses = {
         //        OperateUserDetailsService.class, - Not needed
-        //        io.camunda.tasklist.schema.SchemaStartup.class, - Not needed
-        //        io.camunda.operate.schema.SchemaStartup.class, - Not needed
+        // Schema startup - to have access on index descriptors
+        // TODO: Find a better way
+        //        io.camunda.tasklist.schema.SchemaStartup.class, // - Not needed
+        io.camunda.tasklist.schema.indices.IndexDescriptor.class,
+        io.camunda.operate.schema.indices.IndexDescriptor.class,
+        //        io.camunda.operate.schema.SchemaStartup.class, // - Not needed
+        // Backup services from Operate / Tasklist - to be used to create backups
+        io.camunda.operate.webapp.backup.BackupService.class,
+        io.camunda.operate.webapp.elasticsearch.backup.ElasticsearchBackupRepository.class,
+        io.camunda.tasklist.webapp.es.backup.BackupManager.class,
+        // Containing the properties/configurations for Operate/Tasklist
         OperateProperties.class,
         TasklistProperties.class,
+        // To set up the right clients, that have to be used by other components
         io.camunda.tasklist.es.RetryElasticsearchClient.class,
         io.camunda.operate.store.elasticsearch.RetryElasticsearchClient.class,
+        // Object mapper used by other components
         DefaultObjectMapperConfiguration.class,
       },
       nameGenerator = FullyQualifiedAnnotationBeanNameGenerator.class)
