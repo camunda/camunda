@@ -16,7 +16,7 @@ import {
   parseISO,
   subDays,
 } from 'date-fns';
-import {logger} from '../utils/logger';
+import {logger} from 'common/utils/logger';
 import {t} from 'i18next';
 import {getCurrentDateLocale} from 'common/i18n';
 

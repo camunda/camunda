@@ -8,7 +8,7 @@
 
 import type {TaskFilters} from 'common/tasks/filters/useTaskFilters';
 import type {TasksSearchBody} from 'v1/api/types';
-import {getStateLocally} from '../../common/local-storage';
+import {getStateLocally} from 'common/local-storage';
 import {formatRFC3339} from 'date-fns';
 
 const SORT_BY_FIELD: Record<

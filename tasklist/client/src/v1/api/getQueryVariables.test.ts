@@ -8,7 +8,7 @@
 
 import type {TasksSearchBody} from 'v1/api/types';
 import {getQueryVariables} from './getQueryVariables';
-import {storeStateLocally} from '../../common/local-storage';
+import {storeStateLocally} from 'common/local-storage';
 
 function mergeWithDefaultQuery(
   query: Partial<TasksSearchBody>,
