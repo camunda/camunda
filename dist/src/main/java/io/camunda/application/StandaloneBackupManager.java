@@ -7,11 +7,14 @@
  */
 package io.camunda.application;
 
+import static org.springframework.core.env.AbstractEnvironment.ACTIVE_PROFILES_PROPERTY_NAME;
+
 import io.camunda.application.StandaloneSchemaManager.SchemaManagerConfiguration.BrokerBasedProperties;
 import io.camunda.application.commons.sources.DefaultObjectMapperConfiguration;
 import io.camunda.application.listeners.ApplicationErrorListener;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.webapp.backup.BackupService;
+import io.camunda.tasklist.connect.ElasticsearchConnector;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.webapp.es.backup.BackupManager;
 import io.camunda.tasklist.webapp.management.dto.TakeBackupRequestDto;
@@ -76,6 +79,9 @@ import org.springframework.context.annotation.FullyQualifiedAnnotationBeanNameGe
 public class StandaloneBackupManager implements CommandLineRunner {
 
   private static final Logger LOG = LoggerFactory.getLogger(StandaloneBackupManager.class);
+  private static final String SPRING_PROFILES_ACTIVE_PROPERTY = ACTIVE_PROFILES_PROPERTY_NAME;
+  private static final String DEFAULT_CAMUNDA_PROFILES =
+      String.join(",", Profile.OPERATE.getId(), Profile.TASKLIST.getId());
   private final BrokerBasedProperties brokerProperties;
   private final BackupManager tasklistBackupManager;
   private final BackupService operateBackupManager;
@@ -104,15 +110,21 @@ public class StandaloneBackupManager implements CommandLineRunner {
 
     LOG.info("Creating/updating Elasticsearch schema for Camunda ...");
 
+    //    final var defaultActiveProfiles = getDefaultActiveProfiles();
     MainSupport.createDefaultApplicationBuilder()
         .web(WebApplicationType.NONE)
         .logStartupInfo(true)
         .sources(
             BackupManagerConfiguration.class,
+            //            CommonsModuleConfiguration.class,
+            //            OperateModuleConfiguration.class,
+            //            TasklistModuleConfiguration.class,
+            //            WebappModuleConfiguration.class,
             StandaloneBackupManager.class,
             io.camunda.tasklist.JacksonConfig.class,
             io.camunda.operate.JacksonConfig.class)
         .addCommandLineProperties(true)
+        //        .properties(defaultActiveProfiles)
         .listeners(new ApplicationErrorListener())
         .run(args);
 
@@ -120,6 +132,13 @@ public class StandaloneBackupManager implements CommandLineRunner {
     // blocking shutdown.
     System.exit(0);
   }
+
+  //
+  //  public static Map<String, Object> getDefaultActiveProfiles() {
+  //    final var defaultProperties = new HashMap<String, Object>();
+  //    defaultProperties.put(SPRING_PROFILES_ACTIVE_PROPERTY, DEFAULT_CAMUNDA_PROFILES);
+  //    return defaultProperties;
+  //  }
 
   @Override
   public void run(final String... args) throws Exception {
@@ -197,11 +216,13 @@ public class StandaloneBackupManager implements CommandLineRunner {
         // To set up the right clients, that have to be used by other components
         io.camunda.operate.connect.ElasticsearchConnector
             .class, // we need this to find the right clients for Operate
+        ElasticsearchConnector.class,
         // WE DONT WANT THIS
-        io.camunda.operate.tenant.TenantAwareElasticsearchClient
-            .class, // needed for decision store - that is pulled in from somwhere TODO; clarify
-        io.camunda.operate.store.elasticsearch.RetryElasticsearchClient.class,
-        io.camunda.tasklist.es.RetryElasticsearchClient.class,
+        //        io.camunda.operate.tenant.TenantAwareElasticsearchClient
+        //            .class, // needed for decision store - that is pulled in from somwhere TODO;
+        // clarify
+        //        io.camunda.operate.store.elasticsearch.RetryElasticsearchClient.class,
+        //        io.camunda.tasklist.es.RetryElasticsearchClient.class,
         // Object mapper used by other components
         DefaultObjectMapperConfiguration.class,
       },
