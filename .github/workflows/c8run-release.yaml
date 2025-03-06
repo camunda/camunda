@@ -47,6 +47,13 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
+      - name: ℹ️ Print workflow inputs ℹ️
+        shell: bash
+        env:
+          GITHUB_CONTEXT: ${{ toJson(inputs) }}
+        run: |
+          echo "Action Inputs:"
+          echo "${GITHUB_CONTEXT}"
       - uses: actions/checkout@v4
         with:
           ref: ${{ inputs.branch }}
@@ -188,10 +195,10 @@ jobs:
       - name: C8Run release on GitHub
         shell: bash
         run: |
-          c8run_release_url_gh="https://github.com/camunda/camunda/releases/tag/${{ inputs.camundaVersion }}"
+          c8run_release_url_gh="https://github.com/camunda/camunda/releases/tag/${{ env.CAMUNDA_RUN_NAME }}"
           echo "⭐ Release URL - C8Run release on GitHub: ${c8run_release_url_gh}" >> $GITHUB_STEP_SUMMARY
       - name: C8Run release on Camunda Download Center
         shell: bash
         run: |
-          c8run_release_url_dc="https://downloads.camunda.cloud/release/camunda/c8run/${{ inputs.camundaAppsRelease }}"
+          c8run_release_url_dc="https://downloads.camunda.cloud/release/camunda/c8run/${{ inputs.camundaAppsRelease }}/"
           echo "⭐ Release URL - C8Run release on Camunda Download Center: ${c8run_release_url_dc}" >> $GITHUB_STEP_SUMMARY
