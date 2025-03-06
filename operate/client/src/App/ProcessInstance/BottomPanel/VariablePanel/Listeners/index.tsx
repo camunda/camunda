@@ -63,9 +63,6 @@ const Listeners: React.FC = observer(() => {
       if (selectedOption === 'All listeners')
         return 'This flow node has no execution listeners nor user task listeners';
 
-      if (selectedOption === 'Execution listeners')
-        return 'This flow node has no execution listeners';
-
       if (selectedOption === 'User task listeners')
         return 'This flow node has no user task listeners';
     }
