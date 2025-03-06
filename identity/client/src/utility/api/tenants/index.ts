@@ -6,9 +6,11 @@ import {
   apiPost,
   apiPatch,
   apiDelete,
+  apiPut,
 } from "src/utility/api/request";
 import { SearchResponse } from "src/utility/api";
 import { EntityData } from "src/components/entityList/EntityList";
+import { Group } from "src/utility/api/groups";
 
 export const TENANTS_ENDPOINT = "/tenants";
 
@@ -59,3 +61,26 @@ export const updateTenant: ApiDefinition<undefined, UpdateTenantParams> = ({
 export const deleteTenant: ApiDefinition<undefined, { tenantId: string }> = ({
   tenantId,
 }) => apiDelete(`${TENANTS_ENDPOINT}/${tenantId}`);
+
+export type GetTenantGroupsParams = {
+  tenantId: string;
+};
+export const getGroupsByTenantId: ApiDefinition<
+  SearchResponse<Group>,
+  GetTenantGroupsParams
+> = ({ tenantId }) => apiPost(`${TENANTS_ENDPOINT}/${tenantId}/groups/search`);
+
+type AssignTenantGroupParams = GetTenantGroupsParams & { groupKey: string };
+export const assignTenantGroup: ApiDefinition<
+  undefined,
+  AssignTenantGroupParams
+> = ({ tenantId, groupKey }) => {
+  return apiPut(`${TENANTS_ENDPOINT}/${tenantId}/groups/${groupKey}`);
+};
+
+type UnassignTenantGroupParams = AssignTenantGroupParams;
+export const unassignTenantGroup: ApiDefinition<
+  undefined,
+  UnassignTenantGroupParams
+> = ({ tenantId, groupKey }) =>
+  apiDelete(`${TENANTS_ENDPOINT}/${tenantId}/groups/${groupKey}`);
