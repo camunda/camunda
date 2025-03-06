@@ -72,7 +72,7 @@ public class MultiTenancyOverIdentityIT {
       TestSearchContainers.createDefeaultElasticsearchContainer();
 
   private static final String DEFAULT_TENANT = TenantOwned.DEFAULT_TENANT_IDENTIFIER;
-  private static final String TENANT_A = "tenanA";
+  private static final String TENANT_A = "tenantA";
   private static final String TENANT_B = "tenantB";
   private static final String USER_TENANT_A = "userTenantA";
   private static final String USER_TENANT_B = "userTenantB";
