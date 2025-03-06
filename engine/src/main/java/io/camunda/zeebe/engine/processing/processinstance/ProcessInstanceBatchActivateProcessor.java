@@ -10,6 +10,7 @@ package io.camunda.zeebe.engine.processing.processinstance;
 import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableMultiInstanceBody;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
@@ -23,6 +24,7 @@ import io.camunda.zeebe.stream.api.state.KeyGenerator;
 
 public final class ProcessInstanceBatchActivateProcessor
     implements TypedRecordProcessor<ProcessInstanceBatchRecord> {
+  private final StateWriter stateWriter;
   private final TypedCommandWriter commandWriter;
   private final KeyGenerator keyGenerator;
   private final ElementInstanceState elementInstanceState;
@@ -34,6 +36,7 @@ public final class ProcessInstanceBatchActivateProcessor
       final ElementInstanceState elementInstanceState,
       final ProcessState processState) {
     commandWriter = writers.command();
+    stateWriter = writers.state();
     this.keyGenerator = keyGenerator;
     this.elementInstanceState = elementInstanceState;
     this.processState = processState;
@@ -45,16 +48,24 @@ public final class ProcessInstanceBatchActivateProcessor
 
     final ProcessInstanceRecord childInstanceRecord = createChildInstanceRecord(recordValue);
     var amountOfChildInstancesToActivate = recordValue.getIndex();
-    while (amountOfChildInstancesToActivate > 0) {
-      if (canWriteCommands(record, childInstanceRecord)) {
-        final long childInstanceKey = keyGenerator.nextKey();
-        commandWriter.appendFollowUpCommand(
-            childInstanceKey, ProcessInstanceIntent.ACTIVATE_ELEMENT, childInstanceRecord);
-        amountOfChildInstancesToActivate--;
-      } else {
-        writeFollowupBatchCommand(recordValue, amountOfChildInstancesToActivate);
-        break;
+
+    if (amountOfChildInstancesToActivate > 0) {
+      // loop the next
+      while (amountOfChildInstancesToActivate > 0) {
+        if (canWriteCommands(record, childInstanceRecord)) {
+          final long childInstanceKey = keyGenerator.nextKey();
+          commandWriter.appendFollowUpCommand(
+              childInstanceKey, ProcessInstanceIntent.ACTIVATE_ELEMENT, childInstanceRecord);
+          amountOfChildInstancesToActivate--;
+        } else {
+          writeFollowupBatchCommand(recordValue, amountOfChildInstancesToActivate);
+          break;
+        }
       }
+    } else {
+      // write activated even
+      stateWriter.appendFollowUpEvent(
+          record.getKey(), ProcessInstanceBatchIntent.ACTIVATED, recordValue);
     }
   }
 
