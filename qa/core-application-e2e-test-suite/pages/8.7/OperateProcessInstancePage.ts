@@ -27,11 +27,11 @@ class OperateProcessInstancePage {
   }
 
   async connectorResultVariableName(name: string): Promise<Locator> {
-    return await this.page.getByTestId(name);
+    return this.page.getByTestId(name);
   }
 
   async connectorResultVariableValue(variableName: string): Promise<Locator> {
-    return await this.page.getByTestId(variableName).locator('td').last();
+    return this.page.getByTestId(variableName).locator('td').last();
   }
 
   async completedIconAssertion(): Promise<void> {
@@ -43,7 +43,7 @@ class OperateProcessInstancePage {
           timeout: 90000,
         });
         return; // Exit the function if the expectation is met
-      } catch (error) {
+      } catch {
         // If the active icon isn't found, reload the page and try again
         retryCount++;
         console.log(`Attempt ${retryCount} failed. Retrying...`);
@@ -63,7 +63,7 @@ class OperateProcessInstancePage {
           timeout: 90000,
         });
         return; // Exit the function if the expectation is met
-      } catch (error) {
+      } catch {
         // If the active icon isn't found, reload the page and try again
         retryCount++;
         console.log(`Attempt ${retryCount} failed. Retrying...`);

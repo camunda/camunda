@@ -1,9 +1,4 @@
-import {
-  APIRequestContext,
-  APIResponse,
-  expect,
-  request,
-} from '@playwright/test';
+import {APIRequestContext, request} from '@playwright/test';
 
 export async function authAPI(
   name: string,
@@ -33,8 +28,4 @@ export async function authAPI(
     },
   });
   await apiRequestContext.storageState({path: 'utils/.auth'});
-}
-
-export function assertResponseStatus(response: APIResponse, status: number) {
-  expect(response.status()).toBe(status);
 }

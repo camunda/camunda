@@ -27,7 +27,7 @@ test.describe('HTO User Flow Tests', () => {
   test.beforeEach(async ({page, taskListLoginPage, taskPanelPage}) => {
     await navigateToApp(page, 'tasklist');
     await taskListLoginPage.login('demo', 'demo');
-    await taskPanelPage.taskListBannerIsVisible();
+    await expect(taskPanelPage.taskListPageBanner).toBeVisible();
   });
 
   test.afterEach(async ({page}, testInfo) => {
@@ -55,7 +55,7 @@ test.describe('HTO User Flow Tests', () => {
     await test.step('View Process Instance in Operate, complete User Task in Tasklist & assert process complete in Operate', async () => {
       await navigateToApp(page, 'operate');
       await operateLoginPage.login('demo', 'demo');
-      await operateHomePage.operateBannerIsVisible();
+      await expect(operateHomePage.operateBanner).toBeVisible();
       await expect(operateHomePage.processesTab).toBeVisible({timeout: 180000});
       await operateHomePage.clickProcessesTab();
       await operateProcessesPage.clickProcessInstanceLink('Job_Worker_Process');

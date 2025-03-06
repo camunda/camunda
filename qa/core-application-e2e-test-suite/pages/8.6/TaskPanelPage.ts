@@ -43,7 +43,7 @@ class TaskPanelPage {
     );
   }
 
-  async assertAssigmentStatus(status: string): Promise<void> {
+  async assertAssignmentStatus(status: string): Promise<void> {
     await expect(this.assignmentTag).toContainText(status);
   }
 

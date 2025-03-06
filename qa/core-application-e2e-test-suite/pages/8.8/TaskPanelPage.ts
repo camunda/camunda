@@ -43,7 +43,7 @@ class TaskPanelPage {
     );
   }
 
-  async assertAssigmentStatus(status: string): Promise<void> {
+  async assertAssignmentStatus(status: string): Promise<void> {
     await expect(this.assignmentTag).toContainText(status);
   }
 
@@ -65,10 +65,6 @@ class TaskPanelPage {
       .getByText(name, {exact: true})
       .nth(0)
       .click({timeout: 20000});
-  }
-
-  async taskListBannerIsVisible(): Promise<void> {
-    await expect(this.taskListPageBanner).toBeVisible();
   }
 
   async asssertUnnassignedTaskEmptyMessage(): Promise<void> {

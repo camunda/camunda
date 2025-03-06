@@ -13,6 +13,7 @@ export async function navigateToApp(
   appName: string,
 ): Promise<void> {
   if (appName == 'operate') {
+    // eslint-disable-next-line @typescript-eslint/no-floating-promises
     page.goto(
       process.env.CORE_APPLICATION_OPERATE_URL +
         '/' +
@@ -20,6 +21,7 @@ export async function navigateToApp(
         '/login',
     );
   } else if (appName == 'tasklist') {
+    // eslint-disable-next-line @typescript-eslint/no-floating-promises
     page.goto(
       process.env.CORE_APPLICATION_TASKLIST_URL +
         '/' +
@@ -30,5 +32,6 @@ export async function navigateToApp(
 }
 
 export async function validateURL(page: Page, URL: RegExp): Promise<void> {
+  // eslint-disable-next-line @typescript-eslint/no-floating-promises, playwright/missing-playwright-await
   expect(page).toHaveURL(URL);
 }

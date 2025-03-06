@@ -18,7 +18,7 @@ export async function captureScreenshot(page: Page, testInfo: TestInfo) {
 export async function captureFailureVideo(page: Page, testInfo: TestInfo) {
   if (testInfo.status === 'failed') {
     const videoPath = `test-results/videos/video-${testInfo.title}-chromium.webm`;
-    const video = await page.video();
+    const video = page.video();
     if (video) {
       await video.saveAs(videoPath);
       testInfo.annotations.push({

@@ -68,7 +68,7 @@ class OperateProcessesPage {
           .first()
           .click({timeout: 90000});
         return; // Exit the function if the click is successful
-      } catch (error) {
+      } catch {
         // If process isn't found, reload the page and try again
         retryCount++;
         console.log(`Attempt ${retryCount} failed. Retrying...`);

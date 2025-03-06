@@ -1,6 +1,6 @@
 import {test} from '@fixtures/8.6';
-import {expect} from 'playwright/test';
-import {authAPI, assertResponseStatus} from 'utils/apiHelpers';
+import {expect} from '@playwright/test';
+import {authAPI} from 'utils/apiHelpers';
 import {createInstances, deploy} from 'utils/zeebeClient';
 
 const baseURL = process.env.CORE_APPLICATION_OPERATE_URL;
@@ -23,7 +23,7 @@ test.describe('API tests', () => {
     const processDefinitionsList = await request.post(
       '/v1/process-definitions/search',
     );
-    await assertResponseStatus(processDefinitionsList, 200);
+    expect(processDefinitionsList.status()).toBe(200);
   });
 
   test('Get a process definition via key', async ({request}) => {
@@ -34,31 +34,30 @@ test.describe('API tests', () => {
     const response = await request.get(
       '/v1/process-definitions/' + processKey.items[1].key,
     );
-    await expect(response).toBeOK();
-    await assertResponseStatus(response, 200);
+    expect(response.status()).toBe(200);
   });
 
   test('Search for process instances', async ({request}) => {
     const processInstancesList = await request.post(
       'v1/process-instances/search',
     );
-    await assertResponseStatus(processInstancesList, 200);
+    expect(processInstancesList.status()).toBe(200);
   });
 
   test('Search for flownode-instances', async ({request}) => {
     const flowNodeInstancesList = await request.post(
       'v1/flownode-instances/search',
     );
-    await assertResponseStatus(flowNodeInstancesList, 200);
+    expect(flowNodeInstancesList.status()).toBe(200);
   });
 
-  test('Search for variables for process instancess', async ({request}) => {
+  test('Search for variables for process instances', async ({request}) => {
     const variablesInstancesList = await request.post('v1/variables/search');
-    await assertResponseStatus(variablesInstancesList, 200);
+    expect(variablesInstancesList.status()).toBe(200);
   });
 
   test('Search for incidents', async ({request}) => {
     const incidentsList = await request.post('v1/incidents/search');
-    await assertResponseStatus(incidentsList, 200);
+    expect(incidentsList.status()).toBe(200);
   });
 });

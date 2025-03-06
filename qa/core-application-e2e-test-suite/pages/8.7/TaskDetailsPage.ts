@@ -135,7 +135,7 @@ class TaskDetailsPage {
   async addVariable(payload: {name: string; value: string}) {
     const {name, value} = payload;
 
-    this.clickAddVariableButton();
+    await this.clickAddVariableButton();
     await this.getNthVariableNameInput(1).fill(name);
     await this.getNthVariableValueInput(1).fill(value);
   }
@@ -202,7 +202,7 @@ class TaskDetailsPage {
           timeout: 45000,
         });
         return; // Exit the function if the expectation is met
-      } catch (error) {
+      } catch {
         retryCount++;
         console.log(`Attempt ${retryCount} failed. Retrying...`);
         await this.page.reload();
@@ -221,7 +221,7 @@ class TaskDetailsPage {
           timeout: 45000,
         });
         return; // Exit the function if the expectation is met
-      } catch (error) {
+      } catch {
         retryCount++;
         console.log(`Attempt ${retryCount} failed. Retrying...`);
         await this.page.reload();

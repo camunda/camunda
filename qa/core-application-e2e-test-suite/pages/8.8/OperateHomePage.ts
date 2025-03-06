@@ -1,4 +1,4 @@
-import {Page, Locator, expect} from '@playwright/test';
+import {Page, Locator} from '@playwright/test';
 
 class OperateHomePage {
   private page: Page;
@@ -24,10 +24,6 @@ class OperateHomePage {
       .getByTestId('variable-operation-spinner')
       .locator('circle')
       .nth(1);
-  }
-
-  async operateBannerIsVisible(): Promise<void> {
-    await expect(this.operateBanner).toBeVisible();
   }
 
   async clickProcessesTab(): Promise<void> {

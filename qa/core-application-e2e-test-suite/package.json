@@ -5,8 +5,8 @@
   "scripts": {
     "test": "playwright test",
     "test:local": "node --env-file=.env ./runTest.js",
-    "lint": "tsc && eslint . --ext .ts",
-    "lint:fix": "eslint . --ext .ts --fix"
+    "lint": "tsc && eslint .",
+    "lint:fix": "eslint . --fix"
   },
   "devDependencies": {
     "@inquirer/prompts": "^7.3.2",
@@ -17,6 +17,7 @@
     "@typescript-eslint/parser": "8.26.0",
     "eslint": "9.21.0",
     "eslint-config-prettier": "^10.0.2",
+    "eslint-plugin-playwright": "2.2.0",
     "eslint-plugin-prettier": "5.2.3",
     "husky": "^9.1.7",
     "lint-staged": "^15.4.3",
