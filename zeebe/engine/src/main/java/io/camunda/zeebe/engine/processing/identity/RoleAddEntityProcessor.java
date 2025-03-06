@@ -130,12 +130,12 @@ public class RoleAddEntityProcessor implements DistributedTypedRecordProcessor<R
     commandDistributionBehavior.acknowledgeCommand(command);
   }
 
-  private boolean isEntityPresent(final long entityKey, final EntityType entityType) {
+  private boolean isEntityPresent(final String entityKey, final EntityType entityType) {
     if (EntityType.USER == entityType) {
-      return userState.getUser(entityKey).isPresent();
+      return userState.getUser(Long.parseLong(entityKey)).isPresent();
     }
     if (EntityType.MAPPING == entityType) {
-      return mappingState.get(String.valueOf(entityKey)).isPresent();
+      return mappingState.get(entityKey).isPresent();
     }
     return false;
   }

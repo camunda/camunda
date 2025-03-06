@@ -93,7 +93,7 @@ public class MappingDeleteProcessor implements DistributedTypedRecordProcessor<M
     }
 
     deleteMapping(persistedMapping.get());
-    responseWriter.writeEventOnCommand(mappingId, MappingIntent.DELETED, record, command);
+    responseWriter.writeEventOnCommand(keyGenerator.nextKey(), MappingIntent.DELETED, record, command);
 
     final long key = keyGenerator.nextKey();
     commandDistributionBehavior
@@ -155,8 +155,7 @@ public class MappingDeleteProcessor implements DistributedTypedRecordProcessor<M
 
   private void deleteAuthorizations(final String mappingId) {
     final var authorizationKeysForMapping =
-        authorizationState.getAuthorizationKeysForOwner(
-            AuthorizationOwnerType.MAPPING, mappingId);
+        authorizationState.getAuthorizationKeysForOwner(AuthorizationOwnerType.MAPPING, mappingId);
 
     authorizationKeysForMapping.forEach(
         authorizationKey -> {

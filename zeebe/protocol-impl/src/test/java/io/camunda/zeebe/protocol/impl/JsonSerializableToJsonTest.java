@@ -2783,13 +2783,13 @@ final class JsonSerializableToJsonTest {
                 new RoleRecord()
                     .setRoleKey(1L)
                     .setName("role")
-                    .setEntityKey(2L)
+                    .setEntityKey("2L")
                     .setEntityType(EntityType.USER),
         """
         {
           "roleKey": 1,
           "name": "role",
-          "entityKey": 2,
+          "entityKey": "2L",
           "entityType": "USER"
         }
         """
@@ -2919,13 +2919,13 @@ final class JsonSerializableToJsonTest {
                 new GroupRecord()
                     .setGroupKey(1L)
                     .setName("group")
-                    .setEntityKey(2L)
+                    .setEntityKey("2L")
                     .setEntityType(EntityType.USER),
         """
       {
         "groupKey": 1,
         "name": "group",
-        "entityKey": 2,
+        "entityKey": "2",
         "entityType": "USER"
       }
       """
@@ -2994,7 +2994,7 @@ final class JsonSerializableToJsonTest {
                         new RoleRecord()
                             .setRoleKey(1)
                             .setName("roleName")
-                            .setEntityKey(2)
+                            .setEntityKey("2")
                             .setEntityType(EntityType.USER))
                     .addUser(
                         new UserRecord()
@@ -3029,7 +3029,7 @@ final class JsonSerializableToJsonTest {
         "defaultRole": {
           "roleKey": 1,
           "name": "roleName",
-          "entityKey": 2,
+          "entityKey": "2",
           "entityType": "USER"
         },
         "users": [

@@ -119,7 +119,7 @@ public class GroupServices extends SearchQueryService<GroupServices, GroupQuery,
   }
 
   public CompletableFuture<GroupRecord> assignMember(
-      final long groupKey, final long memberKey, final EntityType memberType) {
+      final long groupKey, final String memberKey, final EntityType memberType) {
     return sendBrokerRequest(
         BrokerGroupMemberRequest.createAddRequest(groupKey)
             .setMemberKey(memberKey)
@@ -127,7 +127,7 @@ public class GroupServices extends SearchQueryService<GroupServices, GroupQuery,
   }
 
   public CompletableFuture<GroupRecord> removeMember(
-      final long groupKey, final long memberKey, final EntityType memberType) {
+      final long groupKey, final String memberKey, final EntityType memberType) {
     return sendBrokerRequest(
         BrokerGroupMemberRequest.createRemoveRequest(groupKey)
             .setMemberKey(memberKey)

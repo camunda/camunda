@@ -32,7 +32,7 @@ public class BrokerGroupMemberRequest extends BrokerExecuteCommand<GroupRecord> 
     return new BrokerGroupMemberRequest(groupKey, GroupIntent.REMOVE_ENTITY);
   }
 
-  public BrokerGroupMemberRequest setMemberKey(final Long memberKey) {
+  public BrokerGroupMemberRequest setMemberKey(final String memberKey) {
     requestDto.setEntityKey(memberKey);
     return this;
   }

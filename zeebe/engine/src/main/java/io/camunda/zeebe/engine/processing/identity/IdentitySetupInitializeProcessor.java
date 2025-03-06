@@ -124,7 +124,8 @@ public final class IdentitySetupInitializeProcessor
                     .ifPresentOrElse(
                         userKey -> {
                           user.setUserKey(userKey);
-                          if (assignEntityToRole(role.getRoleKey(), userKey, EntityType.USER)) {
+                          if (assignEntityToRole(
+                              role.getRoleKey(), String.valueOf(userKey), EntityType.USER)) {
                             createdNewEntities.set(true);
                           }
                         },
@@ -153,19 +154,19 @@ public final class IdentitySetupInitializeProcessor
             mapping ->
                 mappingState
                     .get(mapping.getClaimName(), mapping.getClaimValue())
-                    .map(PersistedMapping::getMappingKey)
+                    .map(PersistedMapping::getId)
                     .ifPresentOrElse(
-                        mappingKey -> {
-                          mapping.setMappingKey(mappingKey);
+                        mappingId -> {
+                          mapping.setId(mappingId);
                           if (assignEntityToRole(
-                              role.getRoleKey(), mappingKey, EntityType.MAPPING)) {
+                              role.getRoleKey(), mappingId, EntityType.MAPPING)) {
                             createdNewEntities.set(true);
                           }
                         },
                         () -> {
                           createdNewEntities.set(true);
-                          final long mappingKey = keyGenerator.nextKey();
-                          mapping.setMappingKey(mappingKey);
+                          final String mappingId = String.valueOf(keyGenerator.nextKey());
+                          mapping.setId(mappingId);
                           createMapping(mapping, role.getRoleKey());
                         }));
     return createdNewEntities.get();
@@ -186,7 +187,9 @@ public final class IdentitySetupInitializeProcessor
                     .ifPresentOrElse(
                         userKey ->
                             assignEntityToRole(
-                                role.getRoleKey(), userKey.getUserKey(), EntityType.USER),
+                                role.getRoleKey(),
+                                String.valueOf(userKey.getUserKey()),
+                                EntityType.USER),
                         () -> createUser(user, role.getRoleKey())));
 
     if (tenantState.getTenantById(record.getDefaultTenant().getTenantId()).isEmpty()) {
@@ -202,7 +205,7 @@ public final class IdentitySetupInitializeProcessor
                     .ifPresentOrElse(
                         mappingKey ->
                             assignEntityToRole(
-                                role.getRoleKey(), mappingKey.getMappingKey(), EntityType.MAPPING),
+                                role.getRoleKey(), mappingKey.getId(), EntityType.MAPPING),
                         () -> createMapping(mapping, role.getRoleKey())));
   }
 
@@ -212,7 +215,7 @@ public final class IdentitySetupInitializeProcessor
 
   private void createUser(final UserRecord user, final long roleKey) {
     stateWriter.appendFollowUpEvent(user.getUserKey(), UserIntent.CREATED, user);
-    assignEntityToRole(roleKey, user.getUserKey(), EntityType.USER);
+    assignEntityToRole(roleKey, String.valueOf(user.getUserKey()), EntityType.USER);
   }
 
   private void createTenant(final TenantRecord tenant) {
@@ -220,12 +223,12 @@ public final class IdentitySetupInitializeProcessor
   }
 
   private void createMapping(final MappingRecord mapping, final long roleKey) {
-    stateWriter.appendFollowUpEvent(mapping.getMappingKey(), MappingIntent.CREATED, mapping);
-    assignEntityToRole(roleKey, mapping.getMappingKey(), EntityType.MAPPING);
+    stateWriter.appendFollowUpEvent(keyGenerator.nextKey(), MappingIntent.CREATED, mapping);
+    assignEntityToRole(roleKey, mapping.getId(), EntityType.MAPPING);
   }
 
   private boolean assignEntityToRole(
-      final long roleKey, final long entityKey, final EntityType entityType) {
+      final long roleKey, final String entityKey, final EntityType entityType) {
     final var isAlreadyAssigned = roleState.getEntityType(roleKey, entityKey).isPresent();
     if (isAlreadyAssigned) {
       return false;

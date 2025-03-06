@@ -82,7 +82,7 @@ public class GroupController {
 
   @CamundaDeleteMapping(path = "/{groupKey}/users/{userKey}")
   public CompletableFuture<ResponseEntity<Object>> unassignUserFromGroup(
-      @PathVariable final long groupKey, @PathVariable final long userKey) {
+      @PathVariable final long groupKey, @PathVariable final String userKey) {
     return RequestMapper.executeServiceMethodWithAcceptedResult(
         () ->
             groupServices

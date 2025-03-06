@@ -55,7 +55,7 @@ public class GroupRecord extends UnifiedRecordValue implements GroupRecordValue 
 
   @Override
   public String getEntityKey() {
-    return entityKeyProp.getValue();
+    return BufferUtil.bufferAsString(entityKeyProp.getValue());
   }
 
   public GroupRecord setEntityKey(final String entityKey) {

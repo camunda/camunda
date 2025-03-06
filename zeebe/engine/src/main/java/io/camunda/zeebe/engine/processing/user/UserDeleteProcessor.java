@@ -143,7 +143,7 @@ public class UserDeleteProcessor implements DistributedTypedRecordProcessor<User
           RoleIntent.ENTITY_REMOVED,
           new RoleRecord()
               .setRoleKey(roleKey)
-              .setEntityKey(userKey)
+              .setEntityKey(String.valueOf(userKey))
               .setEntityType(EntityType.USER));
     }
     for (final var groupKey : user.getGroupKeysList()) {
@@ -152,7 +152,7 @@ public class UserDeleteProcessor implements DistributedTypedRecordProcessor<User
           GroupIntent.ENTITY_REMOVED,
           new GroupRecord()
               .setGroupKey(groupKey)
-              .setEntityKey(userKey)
+              .setEntityKey(String.valueOf(userKey))
               .setEntityType(EntityType.USER));
     }
 

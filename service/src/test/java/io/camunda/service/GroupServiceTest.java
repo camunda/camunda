@@ -176,7 +176,7 @@ public class GroupServiceTest {
   public void shouldAddMemberToGroup() {
     // given
     final var groupKey = Protocol.encodePartitionId(1, 123);
-    final var memberKey = 456L;
+    final var memberKey = "456L";
     final var memberType = EntityType.USER;
 
     // when
@@ -198,7 +198,7 @@ public class GroupServiceTest {
   public void shouldRemoveMemberFromGroup() {
     // given
     final var groupKey = Protocol.encodePartitionId(1, 123L);
-    final var memberKey = 456L;
+    final var memberKey = "456L";
     final var memberType = EntityType.USER;
 
     // when

@@ -120,7 +120,7 @@ public class RoleServicesTest {
   public void shouldAddUserToRole() {
     // given
     final var roleKey = 100L;
-    final var entityKey = 42;
+    final var entityKey = "42";
 
     // when
     services.addMember(roleKey, EntityType.USER, entityKey);
@@ -139,7 +139,7 @@ public class RoleServicesTest {
   public void shouldRemoveUserFromRole() {
     // given
     final var roleKey = 100L;
-    final var entityKey = 42;
+    final var entityKey = "42";
 
     // when
     services.removeMember(roleKey, EntityType.USER, entityKey);
