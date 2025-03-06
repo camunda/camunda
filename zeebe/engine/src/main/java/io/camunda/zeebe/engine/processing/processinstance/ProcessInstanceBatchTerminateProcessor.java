@@ -10,6 +10,7 @@ package io.camunda.zeebe.engine.processing.processinstance;
 import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.processing.ExcludeAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
@@ -19,11 +20,13 @@ import io.camunda.zeebe.protocol.record.intent.ProcessInstanceBatchIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 @ExcludeAuthorizationCheck
 public final class ProcessInstanceBatchTerminateProcessor
     implements TypedRecordProcessor<ProcessInstanceBatchRecord> {
 
+  private final StateWriter stateWriter;
   private final TypedCommandWriter commandWriter;
   private final KeyGenerator keyGenerator;
   private final ElementInstanceState elementInstanceState;
@@ -33,6 +36,7 @@ public final class ProcessInstanceBatchTerminateProcessor
       final KeyGenerator keyGenerator,
       final ElementInstanceState elementInstanceState) {
     commandWriter = writers.command();
+    stateWriter = writers.state();
     this.keyGenerator = keyGenerator;
     this.elementInstanceState = elementInstanceState;
   }
@@ -41,10 +45,12 @@ public final class ProcessInstanceBatchTerminateProcessor
   public void processRecord(final TypedRecord<ProcessInstanceBatchRecord> record) {
     final var recordValue = record.getValue();
 
+    final AtomicBoolean hasChildren = new AtomicBoolean(false);
     elementInstanceState.forEachChild(
         recordValue.getBatchElementInstanceKey(),
         recordValue.getIndex(),
         (childKey, childInstance) -> {
+          hasChildren.set(true);
           if (canWriteCommand(record, childInstance)) {
             terminateChildInstance(childInstance);
             return true;
@@ -60,6 +66,11 @@ public final class ProcessInstanceBatchTerminateProcessor
             return false;
           }
         });
+
+    if (!hasChildren.get()) {
+      stateWriter.appendFollowUpEvent(
+          record.getKey(), ProcessInstanceBatchIntent.TERMINATED, recordValue);
+    }
   }
 
   private boolean canWriteCommand(
