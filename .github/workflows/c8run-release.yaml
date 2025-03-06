@@ -172,6 +172,13 @@ jobs:
           version: ${{ inputs.camundaAppsRelease }}
           artifact_file: ./c8run/camunda8-run-*
           artifact_subpath: c8run
+
+  post:
+    needs: release
+    name: Add release summary
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
       - name: Add release URLs to workflow summary
         shell: bash
         run: |
