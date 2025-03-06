@@ -18,6 +18,7 @@ import { useEntityModal } from "src/components/modal";
 import DeleteModal from "src/pages/tenants/modals/DeleteModal";
 import { Description } from "src/pages/tenants/detail/components";
 import Members from "src/pages/tenants/detail/members";
+import Groups from "src/pages/tenants/detail/groups";
 
 const Details: FC = () => {
   const { t } = useTranslate("tenants");
@@ -78,6 +79,11 @@ const Details: FC = () => {
                   key: "users",
                   label: t("users"),
                   content: <Members tenantId={tenant.tenantId} />,
+                },
+                {
+                  key: "groups",
+                  label: t("groups"),
+                  content: <Groups tenantId={tenant.tenantId} />,
                 },
               ]}
               selectedTabKey={tab}

@@ -44,5 +44,16 @@
   "tenantIdPlaceholder": "Enter tenant ID",
   "tenantIdHelperText": "The tenant ID must be unique and cannot be modified.",
   "tenantNamePlaceholder": "Enter tenant name",
-  "tenantDescriptionPlaceholder": "Enter a tenant description (Max 255 characters)"
+  "tenantDescriptionPlaceholder": "Enter a tenant description (Max 255 characters)",
+  "removeGroup": "Remove group",
+  "removingGroup": "Removing group",
+  "tenantGroupRemoved": "Tenant member has been removed.",
+  "groupsCouldNotLoad": "Groups could not be loaded.",
+  "unableToLoadGroups": "We were unable to load the groups. Click \"Retry\" to try again.",
+  "searchByGroupId": "Search by group ID",
+  "assignGroupsToTenant": "Assign groups to this Tenant",
+  "assignGroup": "Assign group",
+  "assigningGroup": "Assigning group",
+  "groupId": "Group ID",
+  "groupName": "Group name"
 }
