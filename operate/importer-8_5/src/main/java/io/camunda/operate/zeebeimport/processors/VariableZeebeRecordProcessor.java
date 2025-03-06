@@ -93,55 +93,13 @@ public class VariableZeebeRecordProcessor {
           updateFields.put(IS_PREVIEW, variableEntity.getIsPreview());
         }
 
-        if (concurrencyMode) {
-          batchRequest.upsertWithScript(
-              variableTemplate.getFullQualifiedName(),
-              variableEntity.getId(),
-              variableEntity,
-              getScript(),
-              updateFields);
-        } else {
-          batchRequest.upsert(
-              variableTemplate.getFullQualifiedName(),
-              variableEntity.getId(),
-              variableEntity,
-              updateFields);
-        }
+        batchRequest.upsert(
+            variableTemplate.getFullQualifiedName(),
+            variableEntity.getId(),
+            variableEntity,
+            updateFields);
       }
     }
-  }
-
-  private String getScript() {
-    return String.format(
-        "if (ctx._source.%s == null || ctx._source.%s < params.%s) { "
-            + "ctx._source.%s = params.%s; " // position
-            + "if (params.%s != null) {"
-            + "   ctx._source.%s = params.%s; " // VALUE
-            + "   ctx._source.%s = params.%s; " // FULL_VALUE
-            + "   ctx._source.%s = params.%s; " // IS_PREVIEW
-            + "}"
-            + "if (params.%s != null) {"
-            + "   ctx._source.%s = params.%s; " // PROCESS_DEFINITION_KEY
-            + "   ctx._source.%s = params.%s; " // BPMN_PROCESS_ID
-            + "}"
-            + "}",
-        POSITION,
-        POSITION,
-        POSITION,
-        POSITION,
-        POSITION,
-        VALUE,
-        VALUE,
-        VALUE,
-        FULL_VALUE,
-        FULL_VALUE,
-        IS_PREVIEW,
-        IS_PREVIEW,
-        PROCESS_DEFINITION_KEY,
-        PROCESS_DEFINITION_KEY,
-        PROCESS_DEFINITION_KEY,
-        BPMN_PROCESS_ID,
-        BPMN_PROCESS_ID);
   }
 
   private void processVariableRecord(
