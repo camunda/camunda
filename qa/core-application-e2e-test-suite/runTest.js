@@ -1,31 +1,18 @@
 import {select} from '@inquirer/prompts';
-import versions from './c8_versions.json' assert {type: 'json'};
+import versions from './c8_versions.json' with {type: 'json'};
 import {spawn} from 'node:child_process';
 import {object, string, safeParse} from 'valibot';
 
 const IS_LOCAL = Boolean(process.env.LOCAL_TEST);
 
-const VersionsSchema = object({
-  '8.6': string(),
-  '8.7': string(),
-  '8.8': string()
-});
+const VersionsSchema = object({8.6: string(), 8.7: string(), 8.8: string()});
 
 const browser = await select({
   message: 'Select the browser to run the tests on:',
   choices: [
-    {
-      name: 'Chrome',
-      value: 'chromium',
-    },
-    {
-      name: 'Firefox',
-      value: 'firefox',
-    },
-    {
-      name: 'Edge',
-      value: 'msedge',
-    },
+    {name: 'Chrome', value: 'chromium'},
+    {name: 'Firefox', value: 'firefox'},
+    {name: 'Edge', value: 'msedge'},
   ],
 });
 
@@ -38,10 +25,7 @@ const {minorVersion, exactVersion} = await select({
   message: 'Select a Camunda version to run the tests on:',
   choices: Object.entries(versions).map(([minorVersion, exactVersion]) => ({
     name: `${minorVersion} - ${exactVersion}`,
-    value: {
-      minorVersion,
-      exactVersion,
-    },
+    value: {minorVersion, exactVersion},
   })),
 });
 
@@ -50,14 +34,8 @@ const baseURL = getBaseURL(minorVersion, IS_LOCAL);
 const runMode = await select({
   message: 'Which mode would like to run Playwright:',
   choices: [
-    {
-      name: 'Headless',
-      value: 'headless',
-    },
-    {
-      name: 'Headed',
-      value: 'headed',
-    },
+    {name: 'Headless', value: 'headless'},
+    {name: 'Headed', value: 'headed'},
   ],
 });
 
