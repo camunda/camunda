@@ -7,7 +7,7 @@
  */
 
 import {format, parseISO} from 'date-fns';
-import {logger} from '../utils/logger';
+import {logger} from 'common/utils/logger';
 import {getCurrentDateLocale} from 'common/i18n';
 
 const formatDate = (dateString: string, showTime = true) => {

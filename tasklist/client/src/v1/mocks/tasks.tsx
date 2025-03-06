@@ -7,7 +7,7 @@
  */
 
 import type {Task} from 'v1/api/types';
-import {currentUser} from '../../common/mocks/current-user';
+import {currentUser} from 'common/mocks/current-user';
 import {DEFAULT_TENANT_ID} from 'common/multitenancy/constants';
 import {formatRFC3339} from 'date-fns';
 

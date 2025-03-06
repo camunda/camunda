@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import FormIcon from 'common/images//modeller-form-icon.svg?react';
+import FormIcon from 'common/images/modeller-form-icon.svg?react';
 
 const ModellerFormIcon: React.FC<
   Omit<React.ComponentProps<typeof FormIcon>, 'focusable' | 'aria-hidden'>
