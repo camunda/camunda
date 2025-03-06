@@ -955,7 +955,7 @@ public class LongPollingActivateJobsRestTest {
             .maxJobsToActivate(MAX_JOBS_TO_ACTIVATE)
             .requestTimeout(500L)
             .timeout(1000L);
-    final var requestMappingResult = RequestMapper.toJobsActivationRequest(restRequest);
+    final var requestMappingResult = RequestMapper.toJobsActivationRequest(restRequest, false);
     if (requestMappingResult.isLeft()) {
       fail("REST Request mapping failed unexpectedly: " + requestMappingResult.getLeft());
     }
@@ -1040,7 +1040,7 @@ public class LongPollingActivateJobsRestTest {
 
   private InflightActivateJobsRequest<JobActivationResponse> toInflightActivateJobsRequest(
       final JobActivationRequest restRequest) {
-    final var requestMappingResult = RequestMapper.toJobsActivationRequest(restRequest);
+    final var requestMappingResult = RequestMapper.toJobsActivationRequest(restRequest, false);
     if (requestMappingResult.isLeft()) {
       fail("REST Request mapping failed unexpectedly: " + requestMappingResult.getLeft());
     }

@@ -8,15 +8,18 @@
 package io.camunda.service.security.auth;
 
 import static io.camunda.util.CollectionUtil.addValuesToList;
+import static io.camunda.util.CollectionUtil.addValuesToSet;
 
 import io.camunda.service.search.filter.FilterBase;
 import io.camunda.util.ObjectBuilder;
+import java.util.Collection;
 import java.util.List;
+import java.util.Set;
 
 public record Authentication(
     String authenticatedUserId,
     List<String> authenticatedGroupIds,
-    List<String> authenticatedTenantIds,
+    Set<String> authenticatedTenantIds,
     String token)
     implements FilterBase {
 
@@ -24,7 +27,7 @@ public record Authentication(
 
     private String user;
     private List<String> groups;
-    private List<String> tenants;
+    private Set<String> tenants;
     private String token;
 
     public Builder user(final String value) {
@@ -42,11 +45,11 @@ public record Authentication(
     }
 
     public Builder tenant(final String tenant) {
-      return tenants(List.of(tenant));
+      return tenants(Set.of(tenant));
     }
 
-    public Builder tenants(final List<String> values) {
-      tenants = addValuesToList(tenants, values);
+    public Builder tenants(final Collection<String> values) {
+      tenants = addValuesToSet(tenants, values);
       return this;
     }
 
