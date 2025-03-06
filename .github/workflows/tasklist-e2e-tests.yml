@@ -49,7 +49,7 @@ jobs:
           - 9200:9200
           - 9300:9300
       zeebe:
-        image: camunda/zeebe:8.6.10
+        image: camunda/zeebe:8.6.11
         env:
           JAVA_TOOL_OPTIONS: "-Xms512m -Xmx512m"
           ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_CLASSNAME: io.camunda.zeebe.exporter.ElasticsearchExporter
