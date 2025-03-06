@@ -7,7 +7,6 @@
  */
 package io.camunda.zeebe.gateway.rest.controller;
 
-import static io.camunda.zeebe.gateway.rest.RestErrorMapper.DEFAULT_REJECTION_MAPPER;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
@@ -205,8 +204,7 @@ public class ErrorMapperTest extends RestControllerTest {
     final var request = new UserTaskCompletionRequest();
     final var expectedBody =
         ProblemDetail.forStatusAndDetail(
-            HttpStatus.INTERNAL_SERVER_ERROR,
-            "Expected to handle REST request, but unexpected error occured: Just an error");
+            HttpStatus.INTERNAL_SERVER_ERROR, "Unexpected error: Just an error");
     expectedBody.setTitle(NullPointerException.class.getName());
     expectedBody.setInstance(URI.create(USER_TASKS_BASE_URL + "/1/completion"));
 
@@ -563,13 +561,11 @@ public class ErrorMapperTest extends RestControllerTest {
     final CamundaSearchException cse = new CamundaSearchException("No reason");
 
     // when
-    final ProblemDetail problemDetail =
-        RestErrorMapper.mapCamundaSearchExceptionToProblem(cse, DEFAULT_REJECTION_MAPPER);
+    final ProblemDetail problemDetail = RestErrorMapper.mapCamundaSearchExceptionToProblem(cse);
 
     // when
     assertThat(problemDetail.getStatus()).isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR.value());
-    assertThat(problemDetail.getDetail())
-        .isEqualTo("Expected to handle REST request, but unexpected error occured: No reason");
+    assertThat(problemDetail.getDetail()).isEqualTo("Unexpected error: No reason");
     assertThat(problemDetail.getTitle())
         .isEqualTo("io.camunda.search.exception.CamundaSearchException");
   }
@@ -581,8 +577,7 @@ public class ErrorMapperTest extends RestControllerTest {
         new CamundaSearchException("Item not found", CamundaSearchException.Reason.NOT_FOUND);
 
     // when
-    final ProblemDetail problemDetail =
-        RestErrorMapper.mapCamundaSearchExceptionToProblem(cse, DEFAULT_REJECTION_MAPPER);
+    final ProblemDetail problemDetail = RestErrorMapper.mapCamundaSearchExceptionToProblem(cse);
 
     // when
     assertThat(problemDetail.getStatus()).isEqualTo(HttpStatus.NOT_FOUND.value());
@@ -597,8 +592,7 @@ public class ErrorMapperTest extends RestControllerTest {
         new CamundaSearchException("Item not unique", CamundaSearchException.Reason.NOT_UNIQUE);
 
     // when
-    final ProblemDetail problemDetail =
-        RestErrorMapper.mapCamundaSearchExceptionToProblem(cse, DEFAULT_REJECTION_MAPPER);
+    final ProblemDetail problemDetail = RestErrorMapper.mapCamundaSearchExceptionToProblem(cse);
 
     // when
     assertThat(problemDetail.getStatus()).isEqualTo(HttpStatus.CONFLICT.value());
@@ -616,15 +610,14 @@ public class ErrorMapperTest extends RestControllerTest {
             CamundaSearchException.Reason.CONNECTION_FAILED);
 
     // when
-    final ProblemDetail problemDetail =
-        RestErrorMapper.mapCamundaSearchExceptionToProblem(cse, DEFAULT_REJECTION_MAPPER);
+    final ProblemDetail problemDetail = RestErrorMapper.mapCamundaSearchExceptionToProblem(cse);
 
     // when
     assertThat(problemDetail.getStatus()).isEqualTo(HttpStatus.SERVICE_UNAVAILABLE.value());
     assertThat(problemDetail.getDetail())
-        .isEqualTo(
-            "Expected to handle REST request, but the search client could to connect to the search server.");
-    assertThat(problemDetail.getTitle()).isEqualTo("java.net.ConnectException");
+        .isEqualTo("The search client could to connect to the search server.");
+    assertThat(problemDetail.getTitle())
+        .isEqualTo(CamundaSearchException.Reason.CONNECTION_FAILED.name());
   }
 
   @Test
@@ -637,15 +630,14 @@ public class ErrorMapperTest extends RestControllerTest {
             CamundaSearchException.Reason.SEARCH_CLIENT_FAILED);
 
     // when
-    final ProblemDetail problemDetail =
-        RestErrorMapper.mapCamundaSearchExceptionToProblem(cse, DEFAULT_REJECTION_MAPPER);
+    final ProblemDetail problemDetail = RestErrorMapper.mapCamundaSearchExceptionToProblem(cse);
 
     // when
     assertThat(problemDetail.getStatus()).isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR.value());
     assertThat(problemDetail.getDetail())
-        .isEqualTo(
-            "Expected to handle REST request, but the search client was unable to process the request.");
-    assertThat(problemDetail.getTitle()).isEqualTo("java.io.IOException");
+        .isEqualTo("The search client was unable to process the request.");
+    assertThat(problemDetail.getTitle())
+        .isEqualTo(CamundaSearchException.Reason.SEARCH_CLIENT_FAILED.name());
   }
 
   @Test
@@ -658,15 +650,14 @@ public class ErrorMapperTest extends RestControllerTest {
             CamundaSearchException.Reason.CONNECTION_FAILED);
 
     // when
-    final ProblemDetail problemDetail =
-        RestErrorMapper.mapCamundaSearchExceptionToProblem(cse, DEFAULT_REJECTION_MAPPER);
+    final ProblemDetail problemDetail = RestErrorMapper.mapCamundaSearchExceptionToProblem(cse);
 
     // when
     assertThat(problemDetail.getStatus()).isEqualTo(HttpStatus.SERVICE_UNAVAILABLE.value());
     assertThat(problemDetail.getDetail())
-        .isEqualTo(
-            "Expected to handle REST request, but the search client could to connect to the search server.");
-    assertThat(problemDetail.getTitle()).isEqualTo("java.net.ConnectException");
+        .isEqualTo("The search client could to connect to the search server.");
+    assertThat(problemDetail.getTitle())
+        .isEqualTo(CamundaSearchException.Reason.CONNECTION_FAILED.name());
   }
 
   @Test
@@ -679,14 +670,13 @@ public class ErrorMapperTest extends RestControllerTest {
             CamundaSearchException.Reason.SEARCH_CLIENT_FAILED);
 
     // when
-    final ProblemDetail problemDetail =
-        RestErrorMapper.mapCamundaSearchExceptionToProblem(cse, DEFAULT_REJECTION_MAPPER);
+    final ProblemDetail problemDetail = RestErrorMapper.mapCamundaSearchExceptionToProblem(cse);
 
     // when
     assertThat(problemDetail.getStatus()).isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR.value());
     assertThat(problemDetail.getDetail())
-        .isEqualTo(
-            "Expected to handle REST request, but the search client was unable to process the request.");
-    assertThat(problemDetail.getTitle()).isEqualTo("java.io.IOException");
+        .isEqualTo("The search client was unable to process the request.");
+    assertThat(problemDetail.getTitle())
+        .isEqualTo(CamundaSearchException.Reason.SEARCH_CLIENT_FAILED.name());
   }
 }

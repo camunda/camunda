@@ -95,7 +95,7 @@ public class RestErrorMapper {
         REST_GATEWAY_LOGGER.trace("Expected to handle REST request, but was forbidden", fe);
         yield createProblemDetail(HttpStatus.FORBIDDEN, fe.getMessage(), fe.getClass().getName());
       case final CamundaSearchException cse:
-        yield mapCamundaSearchExceptionToProblem(cse, rejectionMapper);
+        yield mapCamundaSearchExceptionToProblem(cse);
       case final CamundaBrokerException cse:
         REST_GATEWAY_LOGGER.debug(
             "Expected to handle REST request, but broker request failed", cse);
@@ -320,51 +320,53 @@ public class RestErrorMapper {
     return mapProblemToResponse(mapDocumentHandlingExceptionToProblem(e));
   }
 
-  public static ProblemDetail mapCamundaSearchExceptionToProblem(
-      CamundaSearchException cse, final Function<BrokerRejection, ProblemDetail> rejectionMapper) {
+  public static ProblemDetail mapCamundaSearchExceptionToProblem(CamundaSearchException cse) {
     final CamundaSearchException.Reason reason =
         (cse.getReason() == null) ? CamundaSearchException.Reason.UNKNOWN : cse.getReason();
     final Throwable cause = (cse.getCause() == null) ? cse : cse.getCause();
-    final String name = cause.getClass().getName();
-    final String message = cause.getMessage();
+    final String title =
+        (reason == CamundaSearchException.Reason.UNKNOWN)
+            ? cause.getClass().getName()
+            : reason.name();
+    final String errorMessage = cause.getMessage();
+    final String logPrefix = "Expected to handle REST request, but error occured: ";
     switch (reason) {
       case NOT_FOUND:
         {
-          REST_GATEWAY_LOGGER.debug(message);
-          return createProblemDetail(HttpStatus.NOT_FOUND, message, RejectionType.NOT_FOUND.name());
+          REST_GATEWAY_LOGGER.debug(logPrefix + "{}", errorMessage);
+          return createProblemDetail(
+              HttpStatus.NOT_FOUND, errorMessage, RejectionType.NOT_FOUND.name());
         }
       case NOT_UNIQUE:
         {
-          REST_GATEWAY_LOGGER.debug(message);
+          REST_GATEWAY_LOGGER.debug(logPrefix + "{}", errorMessage);
           return createProblemDetail(
-              HttpStatus.CONFLICT, message, RejectionType.INVALID_STATE.name());
+              HttpStatus.CONFLICT, errorMessage, RejectionType.INVALID_STATE.name());
         }
       case CONNECTION_FAILED:
         {
-          final String detail =
-              "Expected to handle REST request, but the search client could to connect to the search server.";
-          REST_GATEWAY_LOGGER.debug(detail);
-          return createProblemDetail(HttpStatus.SERVICE_UNAVAILABLE, detail, name);
+          final String detail = "The search client could to connect to the search server.";
+          REST_GATEWAY_LOGGER.debug(logPrefix + "{}", detail);
+          return createProblemDetail(HttpStatus.SERVICE_UNAVAILABLE, detail, title);
         }
       case SEARCH_SERVER_FAILED:
         {
-          final String detail =
-              "Expected to handle REST request, but the search server was unable to process the request.";
-          return createProblemDetail(HttpStatus.INTERNAL_SERVER_ERROR, detail, name);
+          final String detail = "The search server was unable to process the request.";
+          REST_GATEWAY_LOGGER.debug(logPrefix + "{}", detail);
+          return createProblemDetail(HttpStatus.INTERNAL_SERVER_ERROR, detail, title);
         }
       case SEARCH_CLIENT_FAILED:
         {
-          final String detail =
-              "Expected to handle REST request, but the search client was unable to process the request.";
-          return createProblemDetail(HttpStatus.INTERNAL_SERVER_ERROR, detail, name);
+          final String detail = "The search client was unable to process the request.";
+          REST_GATEWAY_LOGGER.debug(logPrefix + "{}", detail);
+          return createProblemDetail(HttpStatus.INTERNAL_SERVER_ERROR, detail, title);
         }
       default:
         {
-          final String detail =
-              "Expected to handle REST request, but unexpected error occured: %s"
-                  .formatted(message);
-          REST_GATEWAY_LOGGER.debug(detail);
-          return createProblemDetail(HttpStatus.INTERNAL_SERVER_ERROR, detail, name);
+          final String detail = "Unexpected error: %s".formatted(errorMessage);
+          REST_GATEWAY_LOGGER.debug(logPrefix + "{}", detail);
+          return createProblemDetail(
+              HttpStatus.INTERNAL_SERVER_ERROR, detail.formatted(errorMessage), title);
         }
     }
   }
