@@ -112,7 +112,7 @@
     <version.jmock>2.13.1</version.jmock>
     <version.jmh>1.37</version.jmh>
     <version.json-smart>2.5.2</version.json-smart>
-    <version.byte-buddy>1.15.11</version.byte-buddy>
+    <version.byte-buddy>1.17.2</version.byte-buddy>
     <version.revapi>0.28.1</version.revapi>
     <version.resilience4j>2.3.0</version.resilience4j>
     <version.immutables>2.10.1</version.immutables>
