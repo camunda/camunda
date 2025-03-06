@@ -1,9 +1,11 @@
 package io.camunda.db.rdbms.write.service;
 
+import io.camunda.db.rdbms.sql.BatchOperationMapper;
 import io.camunda.db.rdbms.sql.BatchOperationMapper.BatchOperationItemDto;
 import io.camunda.db.rdbms.sql.BatchOperationMapper.BatchOperationItemStateUpdateDto;
 import io.camunda.db.rdbms.sql.BatchOperationMapper.BatchOperationItemsDto;
 import io.camunda.db.rdbms.sql.BatchOperationMapper.BatchOperationUpdateDto;
+import io.camunda.db.rdbms.sql.BatchOperationMapper.BatchOperationUpdateTotalCountDto;
 import io.camunda.db.rdbms.write.domain.BatchOperationDbModel;
 import io.camunda.db.rdbms.write.queue.ContextType;
 import io.camunda.db.rdbms.write.queue.ExecutionQueue;
@@ -11,6 +13,7 @@ import io.camunda.db.rdbms.write.queue.QueueItem;
 import io.camunda.db.rdbms.write.queue.WriteStatementType;
 import io.camunda.search.entities.BatchOperationEntity.BatchOperationState;
 import java.time.OffsetDateTime;
+import java.util.List;
 import java.util.Set;
 
 public class BatchOperationWriter {
@@ -32,18 +35,17 @@ public class BatchOperationWriter {
   }
 
   public void updateBatchAndInsertItems(final long batchOperationKey,
-      final Set<Long> items) {
-    executionQueue.executeInQueue(
-        new QueueItem(
-            ContextType.BATCH_OPERATION,
-            WriteStatementType.UPDATE,
-            batchOperationKey,
-            "io.camunda.db.rdbms.sql.BatchOperationMapper.updateCompleted",
-            new BatchOperationUpdateDto(batchOperationKey,
-                BatchOperationState.ACTIVE,
-                null)));
-
+      final List<Long> items) {
     if(items != null && !items.isEmpty()) {
+      executionQueue.executeInQueue(
+          new QueueItem(
+              ContextType.BATCH_OPERATION,
+              WriteStatementType.UPDATE,
+              batchOperationKey,
+              "io.camunda.db.rdbms.sql.BatchOperationMapper.incrementOperationsTotalCount",
+              new BatchOperationUpdateTotalCountDto(
+                  batchOperationKey,
+                  items.size())));
       insertItems(new BatchOperationItemsDto(batchOperationKey, items));
     }
   }

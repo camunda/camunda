@@ -14,7 +14,6 @@ import io.camunda.search.entities.BatchOperationEntity.BatchOperationItemEntity;
 import io.camunda.search.entities.BatchOperationEntity.BatchOperationState;
 import java.time.OffsetDateTime;
 import java.util.List;
-import java.util.Set;
 
 public interface BatchOperationMapper {
 
@@ -25,6 +24,8 @@ public interface BatchOperationMapper {
   void updateCompleted(BatchOperationUpdateDto dto);
 
   void updateItemsWithState(BatchOperationItemStateUpdateDto dto);
+
+  void incrementOperationsTotalCount(BatchOperationUpdateTotalCountDto dto);
 
   void incrementFailedOperationsCount(Long batchOperationKey);
 
@@ -41,9 +42,13 @@ public interface BatchOperationMapper {
       BatchOperationState state,
       OffsetDateTime endDate) {}
 
+  record BatchOperationUpdateTotalCountDto(
+      long batchOperationKey,
+      int operationsTotalCount) {}
+
   record BatchOperationItemsDto(
       Long batchOperationKey,
-      Set<Long> items) {}
+      List<Long> items) {}
 
   record BatchOperationItemDto(
       Long batchOperationKey,
