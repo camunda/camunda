@@ -2,7 +2,7 @@ version: '3'
 
 services:
   opensearch:
-    image: opensearchproject/opensearch:2.18.0
+    image: opensearchproject/opensearch:2.19.1
     container_name: opensearch
     environment:
       - "discovery.type=single-node"
@@ -11,7 +11,7 @@ services:
       - "9200:9200"
 
   opensearch-dashboards:
-    image: opensearchproject/opensearch-dashboards:2.18.0
+    image: opensearchproject/opensearch-dashboards:2.19.1
     container_name: opensearch-dashboards
     ports:
       - "5601:5601"

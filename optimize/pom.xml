@@ -105,7 +105,7 @@
     <version.jackson>2.18.3</version.jackson>
 
     <!-- testing config -->
-    <mockito.version>5.15.2</mockito.version>
+    <mockito.version>5.16.0</mockito.version>
     <mockito-inline.version>5.2.0</mockito-inline.version>
     <junit.jupiter.version>5.11.4</junit.jupiter.version>
     <junit.platform.version>1.11.4</junit.platform.version>
