@@ -37,7 +37,6 @@ type Task = {
   context: string | null;
 };
 
-
 const NON_FORM_TASK: Task = {
   id: '2251799813687061',
   formKey: null,
@@ -1102,7 +1101,7 @@ test.describe('tasks page', () => {
   test('tenant on task detail', async ({page, tasksPage}) => {
     const NON_FORM_TASK_WITH_TENANT = {
       ...NON_FORM_TASK,
-      tenantId: MOCK_TENANTS[0].id,
+      tenantId: MOCK_TENANTS[0].tenantId,
       context: null,
     };
 
