@@ -72,7 +72,8 @@ public final class AuthorizationCheckBehavior {
    *     {@link Void} if the user is authorized
    */
   public Either<Rejection, Void> isAuthorized(final AuthorizationRequest request) {
-    if (!securityConfig.getAuthorizations().isEnabled()) {
+    if (!securityConfig.getAuthorizations().isEnabled()
+        && !securityConfig.getMultiTenancy().isEnabled()) {
       return Either.right(null);
     }
 
@@ -112,15 +113,20 @@ public final class AuthorizationCheckBehavior {
                   request.getPermissionType(), request.getResourceType())));
     }
 
-    if (!isUserAuthorizedForTenant(request, userOptional.get())) {
-      return Either.left(
-          new Rejection(RejectionType.NOT_FOUND, request.getForbiddenErrorMessage()));
+    if (securityConfig.getMultiTenancy().isEnabled()) {
+      if (!isUserAuthorizedForTenant(request, userOptional.get())) {
+        return Either.left(
+            new Rejection(RejectionType.NOT_FOUND, request.getForbiddenErrorMessage()));
+      }
     }
 
-    final var authorizedResourceIdentifiers =
-        getUserAuthorizedResourceIdentifiers(
-            userOptional.get(), request.getResourceType(), request.getPermissionType());
-    return checkResourceIdentifiers(request, authorizedResourceIdentifiers);
+    if (securityConfig.getAuthorizations().isEnabled()) {
+      final var authorizedResourceIdentifiers =
+          getUserAuthorizedResourceIdentifiers(
+              userOptional.get(), request.getResourceType(), request.getPermissionType());
+      return checkResourceIdentifiers(request, authorizedResourceIdentifiers);
+    }
+    return Either.right(null);
   }
 
   /**
@@ -131,8 +137,11 @@ public final class AuthorizationCheckBehavior {
    * @return an {@link Either} containing a {@link Rejection} or {@link Void}
    */
   private Either<Rejection, Void> isMappingAuthorized(final AuthorizationRequest request) {
-    final var authorizedResourceIdentifiers = getMappingsAuthorizedResourceIdentifiers(request);
-    return checkResourceIdentifiers(request, authorizedResourceIdentifiers);
+    if (securityConfig.getAuthorizations().isEnabled()) {
+      final var authorizedResourceIdentifiers = getMappingsAuthorizedResourceIdentifiers(request);
+      return checkResourceIdentifiers(request, authorizedResourceIdentifiers);
+    }
+    return Either.right(null);
   }
 
   /**
