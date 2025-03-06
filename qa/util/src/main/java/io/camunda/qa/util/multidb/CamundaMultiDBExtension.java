@@ -236,7 +236,8 @@ public class CamundaMultiDBExtension
       case RDBMS -> multiDbConfigurator.configureRDBMSSupport();
       case AWS_OS -> {
         final var awsOSUrl = System.getProperty(TEST_INTEGRATION_OPENSEARCH_AWS_URL);
-        multiDbConfigurator.configureAWSOpenSearchSupport(awsOSUrl, testPrefix);
+        multiDbConfigurator.configureAWSOpenSearchSupport(
+            awsOSUrl, testPrefix, isHistoryRelatedTest);
         final var expectedDescriptors = new IndexDescriptors(testPrefix, false).all();
         setupHelper = new AWSOpenSearchSetupHelper(awsOSUrl, expectedDescriptors);
       }
