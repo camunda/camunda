@@ -96,7 +96,7 @@
     "dotenv": "^16.3.1",
     "enzyme": "3.11.0",
     "eslint": "^9.12.0",
-    "eslint-config-prettier": "^9.1.0",
+    "eslint-config-prettier": "^10.0.0",
     "eslint-plugin-jest": "^28.8.3",
     "eslint-plugin-license-header": "^0.8.0",
     "eslint-plugin-prettier": "^5.2.1",
