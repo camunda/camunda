@@ -14,7 +14,6 @@ import static io.camunda.search.clients.query.SearchQueryBuilders.hasChildQuery;
 import static io.camunda.search.clients.query.SearchQueryBuilders.hasParentQuery;
 import static io.camunda.search.clients.query.SearchQueryBuilders.intOperations;
 import static io.camunda.search.clients.query.SearchQueryBuilders.longTerms;
-import static io.camunda.search.clients.query.SearchQueryBuilders.or;
 import static io.camunda.search.clients.query.SearchQueryBuilders.stringOperations;
 import static io.camunda.search.clients.query.SearchQueryBuilders.stringTerms;
 import static io.camunda.webapps.schema.descriptors.tasklist.template.TaskTemplate.ASSIGNEE;
@@ -173,7 +172,7 @@ public class UserTaskFilterTransformer extends IndexFilterTransformer<UserTaskFi
               .map(transformer::apply)
               .map((q) -> hasChildQuery(TaskJoinRelationshipType.PROCESS_VARIABLE.getType(), q))
               .collect(Collectors.toList());
-      return or(queries);
+      return and(queries);
     }
     return null;
   }
@@ -187,7 +186,7 @@ public class UserTaskFilterTransformer extends IndexFilterTransformer<UserTaskFi
               .map(transformer::apply)
               .map((q) -> hasChildQuery(TaskJoinRelationshipType.LOCAL_VARIABLE.getType(), q))
               .collect(Collectors.toList());
-      return or(queries);
+      return and(queries);
     }
     return null;
   }

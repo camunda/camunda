@@ -7,7 +7,6 @@
  */
 package io.camunda.zeebe.gateway.rest;
 
-import static io.camunda.search.filter.Operation.eq;
 import static io.camunda.zeebe.gateway.rest.RequestMapper.getResult;
 import static io.camunda.zeebe.gateway.rest.util.AdvancedSearchFilterUtil.mapToOperations;
 import static io.camunda.zeebe.gateway.rest.validator.ErrorMessages.ERROR_SEARCH_BEFORE_AND_AFTER;
@@ -24,25 +23,17 @@ import io.camunda.search.entities.FlowNodeInstanceEntity.FlowNodeType;
 import io.camunda.search.entities.IncidentEntity;
 import io.camunda.search.entities.IncidentEntity.IncidentState;
 import io.camunda.search.entities.UserTaskEntity.UserTaskState;
+import io.camunda.search.filter.*;
 import io.camunda.search.filter.AuthorizationFilter;
-import io.camunda.search.filter.DateValueFilter;
 import io.camunda.search.filter.DecisionDefinitionFilter;
 import io.camunda.search.filter.DecisionInstanceFilter;
 import io.camunda.search.filter.DecisionRequirementsFilter;
-import io.camunda.search.filter.FilterBase;
-import io.camunda.search.filter.FilterBuilders;
 import io.camunda.search.filter.FlowNodeInstanceFilter;
 import io.camunda.search.filter.IncidentFilter;
-import io.camunda.search.filter.MappingFilter;
 import io.camunda.search.filter.ProcessDefinitionFilter;
 import io.camunda.search.filter.ProcessInstanceFilter;
-import io.camunda.search.filter.TenantFilter;
-import io.camunda.search.filter.UntypedOperation;
-import io.camunda.search.filter.UsageMetricsFilter;
-import io.camunda.search.filter.UserFilter;
 import io.camunda.search.filter.UserTaskFilter;
 import io.camunda.search.filter.VariableFilter;
-import io.camunda.search.filter.VariableValueFilter;
 import io.camunda.search.page.SearchQueryPage;
 import io.camunda.search.query.AuthorizationQuery;
 import io.camunda.search.query.DecisionDefinitionQuery;
@@ -668,10 +659,13 @@ public final class SearchQueryRequestMapper {
               Optional.ofNullable(f.getProcessInstanceVariables())
                   .filter(variables -> !variables.isEmpty())
                   .ifPresent(
-                      vars -> builder.processInstanceVariables(toVariableValueFilters(vars)));
+                      vars ->
+                          builder.processInstanceVariables(
+                              toVariableValueFiltersForUserTask(vars)));
               Optional.ofNullable(f.getLocalVariables())
                   .filter(variables -> !variables.isEmpty())
-                  .ifPresent(vars -> builder.localVariables(toVariableValueFilters(vars)));
+                  .ifPresent(
+                      vars -> builder.localVariables(toVariableValueFiltersForUserTask(vars)));
               Optional.ofNullable(f.getCreationDate())
                   .map(mapToOperations(OffsetDateTime.class))
                   .ifPresent(builder::creationDateOperations);
@@ -1005,40 +999,49 @@ public final class SearchQueryRequestMapper {
     return validationErrors;
   }
 
-  private static List<VariableValueFilter> toVariableValueFilters(
+  private static List<VariableValueFilter> toVariableValueFiltersForUserTask(
       final List<UserTaskVariableFilterRequest> filters) {
-
     if (filters != null && !filters.isEmpty()) {
-      return filters.stream()
-          .map(
-              filter -> {
-                final var builder = new VariableValueFilter.Builder().name(filter.getName());
-                if (filter.getValue() != null) {
-                  builder.valueOperation(UntypedOperation.of(eq(filter.getValue())));
-                }
-                return builder.build();
-              })
-          .toList();
+      final List<VariableValueFilter> variableValueFilters = new ArrayList<>();
+      filters.forEach(
+          filter ->
+              variableValueFilters.addAll(
+                  toVariableValueFilters(filter.getName(), filter.getValue())));
+      return variableValueFilters;
     }
-
     return null;
   }
 
   private static List<VariableValueFilter> toVariableValueFiltersForProcessInstance(
       final List<ProcessInstanceVariableFilterRequest> filters) {
-
     if (filters != null && !filters.isEmpty()) {
-      return filters.stream()
-          .map(
-              filter ->
-                  new VariableValueFilter.Builder()
-                      .name(filter.getName())
-                      .valueOperation(UntypedOperation.of(eq(filter.getValue())))
-                      .build())
-          .toList();
+      final List<VariableValueFilter> variableValueFilters = new ArrayList<>();
+      filters.forEach(
+          filter ->
+              variableValueFilters.addAll(
+                  toVariableValueFilters(filter.getName(), filter.getValue())));
+      return variableValueFilters;
     }
-
     return null;
+  }
+
+  private static List<VariableValueFilter> toVariableValueFilters(
+      String name, StringFilterProperty value) {
+    final List<VariableValueFilter> variableValueFilters = new ArrayList<>();
+    if (value == null) {
+      final VariableValueFilter variableValueFilter =
+          new VariableValueFilter.Builder().name(name).build();
+      variableValueFilters.add(variableValueFilter);
+    } else {
+      final List<Operation<String>> operations = mapToOperations(String.class).apply(value);
+      for (Operation<String> operation : operations) {
+        final UntypedOperation untypedOperation = UntypedOperation.of(operation);
+        final VariableValueFilter variableValueFilter =
+            new VariableValueFilter.Builder().name(name).valueOperation(untypedOperation).build();
+        variableValueFilters.add(variableValueFilter);
+      }
+    }
+    return variableValueFilters;
   }
 
   private static Either<List<String>, SearchQueryPage> toSearchQueryPage(
