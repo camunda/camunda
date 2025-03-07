@@ -126,7 +126,7 @@
     <version.easy-random>5.0.0</version.easy-random>
     <version.jcip>1.0</version.jcip>
     <version.jnr-posix>3.1.20</version.jnr-posix>
-    <version.zpt>8.6.10</version.zpt>
+    <version.zpt>8.6.11</version.zpt>
     <version.feign>13.5</version.feign>
     <version.google-sdk>26.56.0</version.google-sdk>
     <version.azure-sdk>1.2.32</version.azure-sdk>
