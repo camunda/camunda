@@ -148,6 +148,7 @@ jobs:
         working-directory: ${{ matrix.os.workingDir }}
         shell: bash
         run: |
+          ls -lsa
           # Artifact.
           cp -a ${{ env.CAMUNDA_RUN_NAME_ARTIFACT_WITH_PATCH_VERSION }} \
             ${{ env.CAMUNDA_RUN_NAME_ARTIFACT_WITH_MINOR_VERSION }}
