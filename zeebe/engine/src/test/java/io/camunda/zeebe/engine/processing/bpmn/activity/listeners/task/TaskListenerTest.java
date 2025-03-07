@@ -3100,19 +3100,18 @@ public class TaskListenerTest {
         userTask -> Assertions.assertThat(userTask).hasAssignee(assignee).hasAction(""));
   }
 
-  private static void completeRecreatedJobWithType(
-      final long processInstanceKey, final String jobType) {
+  private void completeRecreatedJobWithType(final long processInstanceKey, final String jobType) {
     final long jobKey = findRecreatedJobKey(processInstanceKey, jobType);
     ENGINE.job().ofInstance(processInstanceKey).withKey(jobKey).complete();
   }
 
-  private static void completeRecreatedJobWithTypeAndResult(
+  private void completeRecreatedJobWithTypeAndResult(
       final long processInstanceKey, final String jobType, final JobResult jobResult) {
     final long jobKey = findRecreatedJobKey(processInstanceKey, jobType);
     ENGINE.job().ofInstance(processInstanceKey).withKey(jobKey).withResult(jobResult).complete();
   }
 
-  private static long findRecreatedJobKey(final long processInstanceKey, final String jobType) {
+  private long findRecreatedJobKey(final long processInstanceKey, final String jobType) {
     return jobRecords(JobIntent.CREATED)
         .withProcessInstanceKey(processInstanceKey)
         .withType(jobType)
@@ -3261,7 +3260,7 @@ public class TaskListenerTest {
         .containsSequence(intents);
   }
 
-  private static JobListenerEventType mapToJobListenerEventType(
+  private JobListenerEventType mapToJobListenerEventType(
       final ZeebeTaskListenerEventType eventType) {
     return switch (eventType) {
       case ZeebeTaskListenerEventType.assigning -> JobListenerEventType.ASSIGNING;
@@ -3273,7 +3272,7 @@ public class TaskListenerTest {
     };
   }
 
-  private static void assertUserTaskRecordWithIntent(
+  private void assertUserTaskRecordWithIntent(
       final long processInstanceKey,
       final UserTaskIntent intent,
       final Consumer<UserTaskRecordValue> consumer) {
