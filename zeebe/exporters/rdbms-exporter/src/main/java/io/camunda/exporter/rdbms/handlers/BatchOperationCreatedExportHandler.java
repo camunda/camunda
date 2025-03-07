@@ -4,7 +4,6 @@ import io.camunda.db.rdbms.write.domain.BatchOperationDbModel;
 import io.camunda.db.rdbms.write.service.BatchOperationWriter;
 import io.camunda.exporter.rdbms.RdbmsExportHandler;
 import io.camunda.search.entities.BatchOperationEntity.BatchOperationState;
-import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationIntent;
@@ -35,14 +34,12 @@ public class BatchOperationCreatedExportHandler
   @Override
   public boolean canExport(final Record<BatchOperationCreationRecordValue> record) {
     return record.getValueType() == ValueType.BATCH_OPERATION
-        && record.getIntent().equals(BatchOperationIntent.CREATED)
-        && Protocol.decodePartitionId(record.getKey())
-            == (int) partitionId; // Just do it for the original partition
+        && record.getIntent().equals(BatchOperationIntent.CREATED);
   }
 
   @Override
   public void export(final Record<BatchOperationCreationRecordValue> record) {
-    batchOperationWriter.create(map(record));
+    batchOperationWriter.createIfNotAlreadyExists(map(record));
   }
 
   private BatchOperationDbModel map(final Record<BatchOperationCreationRecordValue> record) {
