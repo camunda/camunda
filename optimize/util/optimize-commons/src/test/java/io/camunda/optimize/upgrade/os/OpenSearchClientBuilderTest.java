@@ -9,12 +9,12 @@ package io.camunda.optimize.upgrade.os;
 
 import static org.mockserver.integration.ClientAndServer.startClientAndServer;
 
+import io.camunda.db.se.config.PluginConfiguration;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import io.camunda.optimize.service.util.configuration.OpenSearchConfiguration;
 import io.camunda.optimize.service.util.configuration.db.DatabaseConnection;
 import io.camunda.optimize.service.util.configuration.elasticsearch.DatabaseConnectionNodeConfiguration;
 import io.camunda.optimize.upgrade.util.TestPlugin;
-import io.camunda.search.connect.plugin.PluginConfiguration;
 import io.camunda.search.connect.plugin.PluginRepository;
 import java.util.List;
 import java.util.Map;

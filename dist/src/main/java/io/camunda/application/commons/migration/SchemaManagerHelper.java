@@ -7,11 +7,11 @@
  */
 package io.camunda.application.commons.migration;
 
+import io.camunda.db.se.config.ConnectConfiguration;
+import io.camunda.db.se.config.DatabaseType;
 import io.camunda.exporter.adapters.ClientAdapter;
 import io.camunda.exporter.config.ExporterConfiguration;
 import io.camunda.exporter.schema.SchemaManager;
-import io.camunda.search.connect.configuration.ConnectConfiguration;
-import io.camunda.search.connect.configuration.DatabaseType;
 import io.camunda.webapps.schema.descriptors.IndexDescriptors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

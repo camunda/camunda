@@ -7,8 +7,8 @@
  */
 package io.camunda.search.connect.util;
 
+import io.camunda.db.se.config.SecurityConfiguration;
 import io.camunda.search.connect.SearchClientConnectException;
-import io.camunda.search.connect.configuration.SecurityConfiguration;
 import java.io.BufferedInputStream;
 import java.io.FileInputStream;
 import java.security.KeyManagementException;
@@ -66,7 +66,7 @@ public final class SecurityUtil {
   private static Certificate loadCertificateFromPath(final String certificatePath) {
     final Certificate cert;
 
-    try (var bis = new BufferedInputStream(new FileInputStream(certificatePath))) {
+    try (final var bis = new BufferedInputStream(new FileInputStream(certificatePath))) {
       final CertificateFactory cf = CertificateFactory.getInstance("X.509");
 
       if (bis.available() > 0) {

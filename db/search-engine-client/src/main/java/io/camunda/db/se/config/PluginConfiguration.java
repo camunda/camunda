@@ -5,7 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.search.connect.plugin;
+package io.camunda.db.se.config;
 
 import java.nio.file.Path;
 
@@ -17,7 +17,7 @@ import java.nio.file.Path;
  * @param jarPath - file system path to JAR file with plugin implementation
  */
 public record PluginConfiguration(String id, String className, Path jarPath) {
-  boolean isExternal() {
+  public boolean isExternal() {
     return jarPath != null;
   }
 }

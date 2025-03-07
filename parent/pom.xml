@@ -840,6 +840,12 @@
         <version>${project.version}</version>
       </dependency>
 
+      <dependency>
+        <groupId>io.camunda</groupId>
+        <artifactId>camunda-search-engine-client</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+
       <!-- camunda search client -->
 
       <dependency>

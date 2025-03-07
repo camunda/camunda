@@ -11,6 +11,7 @@ import static io.camunda.qa.util.multidb.MultiDbConfigurator.zeebePrefix;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.application.commons.configuration.BrokerBasedConfiguration.BrokerBasedProperties;
+import io.camunda.db.se.config.DatabaseType;
 import io.camunda.qa.util.cluster.TestSimpleCamundaApplication;
 import io.camunda.zeebe.broker.system.configuration.ExporterCfg;
 import java.util.Map;
@@ -90,7 +91,7 @@ public class MultiDbConfiguratorTest {
                 "indexPrefix",
                 EXPECTED_PREFIX,
                 "type",
-                io.camunda.search.connect.configuration.DatabaseType.ELASTICSEARCH));
+                DatabaseType.ELASTICSEARCH));
 
     assertThat(exporterArgs.get("archiver"))
         .isEqualTo(
@@ -250,7 +251,7 @@ public class MultiDbConfiguratorTest {
                 "indexPrefix",
                 EXPECTED_PREFIX,
                 "type",
-                io.camunda.search.connect.configuration.DatabaseType.OPENSEARCH,
+                DatabaseType.OPENSEARCH,
                 "username",
                 EXPECTED_USER,
                 "password",

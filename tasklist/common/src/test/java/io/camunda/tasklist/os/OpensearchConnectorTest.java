@@ -13,7 +13,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.tomakehurst.wiremock.core.WireMockConfiguration;
 import com.github.tomakehurst.wiremock.junit5.WireMockExtension;
 import com.github.tomakehurst.wiremock.junit5.WireMockRuntimeInfo;
-import io.camunda.search.connect.plugin.PluginConfiguration;
+import io.camunda.db.se.config.PluginConfiguration;
 import io.camunda.search.connect.plugin.PluginRepository;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.util.TestPlugin;

@@ -421,7 +421,7 @@
 
     <dependency>
       <groupId>io.camunda</groupId>
-      <artifactId>camunda-search-client-connect</artifactId>
+      <artifactId>camunda-search-engine-client</artifactId>
       <scope>test</scope>
     </dependency>
 

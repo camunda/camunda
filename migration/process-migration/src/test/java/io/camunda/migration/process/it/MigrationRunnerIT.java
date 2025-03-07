@@ -10,6 +10,7 @@ package io.camunda.migration.process.it;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
+import io.camunda.db.se.config.ConnectConfiguration;
 import io.camunda.migration.api.MigrationException;
 import io.camunda.migration.process.MigrationRunner;
 import io.camunda.migration.process.TestData;
@@ -18,7 +19,6 @@ import io.camunda.migration.process.adapter.ProcessorStep;
 import io.camunda.migration.process.adapter.es.ElasticsearchAdapter;
 import io.camunda.migration.process.adapter.os.OpensearchAdapter;
 import io.camunda.migration.process.util.MigrationUtil;
-import io.camunda.search.connect.configuration.ConnectConfiguration;
 import io.camunda.webapps.schema.entities.operate.ImportPositionEntity;
 import io.camunda.webapps.schema.entities.operate.ProcessEntity;
 import java.io.IOException;

@@ -12,13 +12,13 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.amazonaws.regions.DefaultAwsRegionProviderChain;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.camunda.db.se.config.ConnectConfiguration;
+import io.camunda.db.se.config.RetentionConfiguration;
 import io.camunda.exporter.config.ExporterConfiguration.ArchiverConfiguration;
-import io.camunda.exporter.config.ExporterConfiguration.RetentionConfiguration;
 import io.camunda.exporter.metrics.CamundaExporterMetrics;
 import io.camunda.exporter.schema.opensearch.OpensearchEngineClient;
 import io.camunda.exporter.utils.SearchDBExtension;
 import io.camunda.exporter.utils.TestObjectMapper;
-import io.camunda.search.connect.configuration.ConnectConfiguration;
 import io.camunda.webapps.schema.descriptors.AbstractIndexDescriptor;
 import io.camunda.webapps.schema.descriptors.operate.template.BatchOperationTemplate;
 import io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate;

@@ -15,10 +15,10 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import io.camunda.db.se.config.DatabaseType;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import io.camunda.optimize.service.util.configuration.db.DatabaseBackup;
-import io.camunda.search.connect.configuration.DatabaseType;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.webapps.backup.repository.BackupRepositoryProps;
 import org.junit.jupiter.api.BeforeEach;

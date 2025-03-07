@@ -9,6 +9,7 @@ package io.camunda.exporter.adapters;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.benmanes.caffeine.cache.CacheLoader;
+import io.camunda.db.se.config.ConnectConfiguration;
 import io.camunda.exporter.cache.ExporterEntityCacheProvider;
 import io.camunda.exporter.cache.form.CachedFormEntity;
 import io.camunda.exporter.cache.form.OpenSearchFormCacheLoader;
@@ -18,13 +19,13 @@ import io.camunda.exporter.schema.SearchEngineClient;
 import io.camunda.exporter.schema.opensearch.OpensearchEngineClient;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.exporter.store.OpensearchBatchRequest;
-import io.camunda.search.connect.configuration.ConnectConfiguration;
 import io.camunda.search.connect.os.OpensearchConnector;
 import java.io.IOException;
 import org.opensearch.client.opensearch.OpenSearchClient;
 import org.opensearch.client.opensearch.core.BulkRequest;
 
 class OpensearchAdapter implements ClientAdapter {
+
   private final OpenSearchClient client;
   private final OpensearchEngineClient searchEngineClient;
   private final OpensearchExporterEntityCacheProvider entityCacheLoader;

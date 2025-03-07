@@ -9,8 +9,8 @@ package io.camunda.exporter.tasks.archiver;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.db.se.config.RetentionConfiguration;
 import io.camunda.exporter.config.ExporterConfiguration.ArchiverConfiguration;
-import io.camunda.exporter.config.ExporterConfiguration.RetentionConfiguration;
 import io.camunda.exporter.metrics.CamundaExporterMetrics;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.time.Duration;

@@ -7,7 +7,7 @@
  */
 package io.camunda.it.backup;
 
-import io.camunda.search.connect.configuration.DatabaseType;
+import io.camunda.db.se.config.DatabaseType;
 import io.camunda.webapps.backup.BackupRepository;
 import io.camunda.webapps.backup.repository.SnapshotNameProvider;
 import java.io.IOException;

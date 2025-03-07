@@ -8,6 +8,7 @@
 package io.camunda.migration.process;
 
 import co.elastic.clients.elasticsearch._types.ElasticsearchException;
+import io.camunda.db.se.config.ConnectConfiguration;
 import io.camunda.migration.api.MigrationException;
 import io.camunda.migration.api.Migrator;
 import io.camunda.migration.process.adapter.Adapter;
@@ -16,7 +17,6 @@ import io.camunda.migration.process.adapter.os.OpensearchAdapter;
 import io.camunda.migration.process.config.ProcessMigrationProperties;
 import io.camunda.migration.process.util.MetricRegistry;
 import io.camunda.migration.process.util.MigrationUtil;
-import io.camunda.search.connect.configuration.ConnectConfiguration;
 import io.camunda.webapps.schema.entities.operate.ImportPositionEntity;
 import io.camunda.webapps.schema.entities.operate.ProcessEntity;
 import io.micrometer.core.instrument.MeterRegistry;

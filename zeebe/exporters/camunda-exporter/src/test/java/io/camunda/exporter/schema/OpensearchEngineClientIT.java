@@ -12,7 +12,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatNoException;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import io.camunda.exporter.config.ExporterConfiguration.IndexSettings;
+import io.camunda.db.se.config.IndexSettings;
 import io.camunda.exporter.exceptions.OpensearchExporterException;
 import io.camunda.exporter.schema.opensearch.OpensearchEngineClient;
 import io.camunda.exporter.utils.SearchDBExtension;

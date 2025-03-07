@@ -9,8 +9,8 @@ package io.camunda.zeebe.broker;
 
 import io.camunda.application.commons.rdbms.RdbmsConfiguration;
 import io.camunda.db.rdbms.RdbmsService;
+import io.camunda.db.se.config.DatabaseConfig;
 import io.camunda.exporter.rdbms.RdbmsExporterFactory;
-import io.camunda.search.connect.configuration.DatabaseConfig;
 import io.camunda.zeebe.broker.exporter.repo.ExporterDescriptor;
 import io.camunda.zeebe.broker.system.configuration.ExporterCfg;
 import java.util.Map;

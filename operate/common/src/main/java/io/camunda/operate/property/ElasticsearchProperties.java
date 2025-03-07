@@ -9,8 +9,8 @@ package io.camunda.operate.property;
 
 import static io.camunda.operate.util.ConversionUtils.stringIsEmpty;
 
+import io.camunda.db.se.config.PluginConfiguration;
 import io.camunda.operate.connect.OperateDateTimeFormatter;
-import io.camunda.search.connect.plugin.PluginConfiguration;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.List;

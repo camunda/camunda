@@ -10,9 +10,9 @@ package io.camunda.exporter.tasks.incident;
 import static io.camunda.exporter.utils.SearchDBExtension.INCIDENT_IDX_PREFIX;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.db.se.config.IndexSettings;
 import io.camunda.exporter.adapters.ClientAdapter;
 import io.camunda.exporter.config.ExporterConfiguration;
-import io.camunda.exporter.config.ExporterConfiguration.IndexSettings;
 import io.camunda.exporter.exceptions.PersistenceException;
 import io.camunda.exporter.schema.SearchEngineClient;
 import io.camunda.exporter.tasks.incident.IncidentUpdateRepository.ActiveIncident;

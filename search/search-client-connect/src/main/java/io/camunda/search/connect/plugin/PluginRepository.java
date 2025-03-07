@@ -7,6 +7,7 @@
  */
 package io.camunda.search.connect.plugin;
 
+import io.camunda.db.se.config.PluginConfiguration;
 import io.camunda.plugin.search.header.DatabaseCustomHeaderSupplier;
 import io.camunda.zeebe.util.ReflectUtil;
 import io.camunda.zeebe.util.VisibleForTesting;
