@@ -31,8 +31,8 @@ public class GroupRecordStream extends ExporterRecordStream<GroupRecordValue, Gr
     return valueFilter(v -> v.getName().equals(name));
   }
 
-  public GroupRecordStream withEntityKey(final long entityKey) {
-    return valueFilter(v -> v.getEntityKey() == entityKey);
+  public GroupRecordStream withEntityKey(final String entityKey) {
+    return valueFilter(v -> v.getEntityKey().equals(entityKey));
   }
 
   public GroupRecordStream withEntityType(final EntityType entityType) {

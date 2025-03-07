@@ -31,10 +31,10 @@ public class DbRoleState implements MutableRoleState {
   private final ColumnFamily<DbLong, PersistedRole> roleColumnFamily;
 
   private final DbForeignKey<DbLong> fkRoleKey;
-  private final DbLong entityKey;
-  private final DbCompositeKey<DbForeignKey<DbLong>, DbLong> fkRoleKeyAndEntityKey;
+  private final DbString entityKey;
+  private final DbCompositeKey<DbForeignKey<DbLong>, DbString> fkRoleKeyAndEntityKey;
   private final EntityTypeValue entityTypeValue = new EntityTypeValue();
-  private final ColumnFamily<DbCompositeKey<DbForeignKey<DbLong>, DbLong>, EntityTypeValue>
+  private final ColumnFamily<DbCompositeKey<DbForeignKey<DbLong>, DbString>, EntityTypeValue>
       entityTypeByRoleColumnFamily;
 
   private final DbString roleName;
@@ -48,7 +48,7 @@ public class DbRoleState implements MutableRoleState {
             ZbColumnFamilies.ROLES, transactionContext, roleKey, new PersistedRole());
 
     fkRoleKey = new DbForeignKey<>(roleKey, ZbColumnFamilies.ROLES);
-    entityKey = new DbLong();
+    entityKey = new DbString();
     fkRoleKeyAndEntityKey = new DbCompositeKey<>(fkRoleKey, entityKey);
     entityTypeByRoleColumnFamily =
         zeebeDb.createColumnFamily(
@@ -98,15 +98,15 @@ public class DbRoleState implements MutableRoleState {
   @Override
   public void addEntity(final RoleRecord roleRecord) {
     roleKey.wrapLong(roleRecord.getRoleKey());
-    entityKey.wrapLong(roleRecord.getEntityKey());
+    entityKey.wrapString(roleRecord.getEntityKey());
     entityTypeValue.setEntityType(roleRecord.getEntityType());
     entityTypeByRoleColumnFamily.insert(fkRoleKeyAndEntityKey, entityTypeValue);
   }
 
   @Override
-  public void removeEntity(final long roleKey, final long entityKey) {
+  public void removeEntity(final long roleKey, final String entityKey) {
     this.roleKey.wrapLong(roleKey);
-    this.entityKey.wrapLong(entityKey);
+    this.entityKey.wrapString(entityKey);
     entityTypeByRoleColumnFamily.deleteExisting(fkRoleKeyAndEntityKey);
   }
 
@@ -141,22 +141,22 @@ public class DbRoleState implements MutableRoleState {
   }
 
   @Override
-  public Optional<EntityType> getEntityType(final long roleKey, final long entityKey) {
+  public Optional<EntityType> getEntityType(final long roleKey, final String entityKey) {
     this.roleKey.wrapLong(roleKey);
-    this.entityKey.wrapLong(entityKey);
+    this.entityKey.wrapString(entityKey);
     final var result = entityTypeByRoleColumnFamily.get(fkRoleKeyAndEntityKey);
     return Optional.ofNullable(result).map(EntityTypeValue::getEntityType);
   }
 
   @Override
-  public Map<EntityType, List<Long>> getEntitiesByType(final long roleKey) {
-    final Map<EntityType, List<Long>> entitiesMap = new HashMap<>();
+  public Map<EntityType, List<String>> getEntitiesByType(final long roleKey) {
+    final Map<EntityType, List<String>> entitiesMap = new HashMap<>();
     this.roleKey.wrapLong(roleKey);
     entityTypeByRoleColumnFamily.whileEqualPrefix(
         fkRoleKey,
         (compositeKey, entityTypeValue) -> {
           final var entityType = entityTypeValue.getEntityType();
-          final var entityKey = compositeKey.second().getValue();
+          final var entityKey = compositeKey.second().toString();
           entitiesMap.putIfAbsent(entityType, new ArrayList<>());
           entitiesMap.get(entityType).add(entityKey);
         });

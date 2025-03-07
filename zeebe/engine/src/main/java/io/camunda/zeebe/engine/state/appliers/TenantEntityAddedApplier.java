@@ -43,7 +43,8 @@ public class TenantEntityAddedApplier implements TypedEventApplier<TenantIntent,
       }
       case GROUP -> {
         tenantState.addEntity(tenant);
-        groupState.addTenant(tenant.getEntityKey(), tenant.getTenantId());
+        // todo remove parse long when will be ability to use group ID
+        groupState.addTenant(Long.parseLong(tenant.getEntityKey()), tenant.getTenantId());
       }
       default ->
           throw new IllegalStateException(

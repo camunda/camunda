@@ -137,13 +137,13 @@ public class MappingTest {
     engine
         .group()
         .addEntity(group.getKey())
-        .withEntityKey(mappingRecord.getKey())
+        .withEntityKey(mappingRecord.getValue().getId())
         .withEntityType(EntityType.MAPPING)
         .add();
     engine
         .role()
         .addEntity(role.getKey())
-        .withEntityKey(mappingRecord.getKey())
+        .withEntityKey(mappingRecord.getValue().getId())
         .withEntityType(EntityType.MAPPING)
         .add();
 
@@ -154,13 +154,13 @@ public class MappingTest {
     Assertions.assertThat(
             RecordingExporter.groupRecords(GroupIntent.ENTITY_REMOVED)
                 .withGroupKey(group.getKey())
-                .withEntityKey(mappingRecord.getKey())
+                .withEntityKey(mappingRecord.getValue().getId())
                 .exists())
         .isTrue();
     Assertions.assertThat(
             RecordingExporter.roleRecords(RoleIntent.ENTITY_REMOVED)
                 .withRoleKey(role.getKey())
-                .withEntityKey(mappingRecord.getKey())
+                .withEntityKey(mappingRecord.getValue().getId())
                 .exists())
         .isTrue();
   }

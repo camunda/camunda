@@ -153,7 +153,7 @@ public class RoleClient {
       roleRecord.setRoleKey(key);
     }
 
-    public RoleAddEntityClient withEntityKey(final long entityKey) {
+    public RoleAddEntityClient withEntityKey(final String entityKey) {
       roleRecord.setEntityKey(entityKey);
       return this;
     }

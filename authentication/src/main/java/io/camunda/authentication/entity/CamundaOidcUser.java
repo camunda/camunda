@@ -18,14 +18,14 @@ import org.springframework.security.oauth2.core.oidc.user.OidcUser;
 public class CamundaOidcUser implements OidcUser, CamundaPrincipal {
   private final OidcUser user;
   private final AuthenticationContext authentication;
-  private final Set<Long> mappingKeys;
+  private final Set<String> mappingIds;
 
   public CamundaOidcUser(
       final OidcUser oidcUser,
-      final Set<Long> mappingKeys,
+      final Set<String> mappingIds,
       final AuthenticationContext authentication) {
     user = oidcUser;
-    this.mappingKeys = mappingKeys;
+    this.mappingIds = mappingIds;
     this.authentication = authentication;
   }
 
@@ -74,7 +74,7 @@ public class CamundaOidcUser implements OidcUser, CamundaPrincipal {
     return user.getName();
   }
 
-  public Set<Long> getMappingKeys() {
-    return mappingKeys;
+  public Set<String> getMappingIds() {
+    return mappingIds;
   }
 }

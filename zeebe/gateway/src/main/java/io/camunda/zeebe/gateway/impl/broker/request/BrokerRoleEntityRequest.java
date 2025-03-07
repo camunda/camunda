@@ -34,7 +34,7 @@ public final class BrokerRoleEntityRequest extends BrokerExecuteCommand<RoleReco
     return this;
   }
 
-  public BrokerRoleEntityRequest setEntity(final EntityType entityType, final long entityKey) {
+  public BrokerRoleEntityRequest setEntity(final EntityType entityType, final String entityKey) {
     if (entityType != EntityType.USER && entityType != EntityType.MAPPING) {
       throw new IllegalArgumentException(
           "For now, roles can only be granted to users and mappings");

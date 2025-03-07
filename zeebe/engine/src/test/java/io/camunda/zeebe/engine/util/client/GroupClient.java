@@ -151,7 +151,7 @@ public class GroupClient {
       groupRecord.setGroupKey(groupKey);
     }
 
-    public GroupAddEntityClient withEntityKey(final long entityKey) {
+    public GroupAddEntityClient withEntityKey(final String entityKey) {
       groupRecord.setEntityKey(entityKey);
       return this;
     }

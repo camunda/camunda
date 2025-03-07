@@ -59,25 +59,22 @@ public class CamundaOidcUserService extends OidcUserService {
 
     final Map<String, Object> claims = userRequest.getIdToken().getClaims();
     final List<MappingEntity> mappings = mappingServices.getMatchingMappings(claims);
-    final Set<Long> mappingKeys =
-        mappings.stream().map(MappingEntity::mappingKey).collect(Collectors.toSet());
-    if (mappingKeys.isEmpty()) {
+    final Set<String> mappingIds =
+        mappings.stream().map(MappingEntity::id).collect(Collectors.toSet());
+    if (mappingIds.isEmpty()) {
       LOG.debug("No mappings found for these claims: {}", claims);
     }
 
     return new CamundaOidcUser(
         oidcUser,
-        mappingKeys,
+        mappingIds,
         new AuthenticationContext(
-            roleServices.getRolesByMemberKeys(mappingKeys),
-            authorizationServices.getAuthorizedApplications(
-                mappingKeys.stream()
-                    .map(String::valueOf)
-                    .collect(Collectors.toSet())), // TODO remove mapping when refactoring to IDs
-            tenantServices.getTenantsByMemberKeys(mappingKeys).stream()
+            roleServices.getRolesByMemberKeys(mappingIds),
+            authorizationServices.getAuthorizedApplications(mappingIds),
+            tenantServices.getTenantsByMemberKeys(mappingIds).stream()
                 .map(TenantDTO::fromEntity)
                 .toList(),
-            groupServices.getGroupsByMemberKeys(mappingKeys).stream()
+            groupServices.getGroupsByMemberKeys(mappingIds).stream()
                 .map(GroupEntity::name)
                 .toList()));
   }

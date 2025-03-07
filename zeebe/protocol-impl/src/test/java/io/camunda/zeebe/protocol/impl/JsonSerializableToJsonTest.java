@@ -2783,13 +2783,13 @@ final class JsonSerializableToJsonTest {
                 new RoleRecord()
                     .setRoleKey(1L)
                     .setName("role")
-                    .setEntityKey(2L)
+                    .setEntityKey("2L")
                     .setEntityType(EntityType.USER),
         """
         {
           "roleKey": 1,
           "name": "role",
-          "entityKey": 2,
+          "entityKey": "2L",
           "entityType": "USER"
         }
         """
@@ -2822,7 +2822,7 @@ final class JsonSerializableToJsonTest {
                     .setTenantId("tenant-abc")
                     .setName("Test Tenant")
                     .setDescription("Test Description")
-                    .setEntityKey(456L)
+                    .setEntityKey("456L")
                     .setEntityId("entity-xyz")
                     .setEntityType(EntityType.USER),
         """
@@ -2849,7 +2849,7 @@ final class JsonSerializableToJsonTest {
             "tenantId": "",
             "name": "",
             "description": "",
-            "entityKey": -1,
+            "entityKey": "",
             "entityId": "",
             "entityType": "UNSPECIFIED"
           }
@@ -2919,13 +2919,13 @@ final class JsonSerializableToJsonTest {
                 new GroupRecord()
                     .setGroupKey(1L)
                     .setName("group")
-                    .setEntityKey(2L)
+                    .setEntityKey("2L")
                     .setEntityType(EntityType.USER),
         """
       {
         "groupKey": 1,
         "name": "group",
-        "entityKey": 2,
+        "entityKey": "2",
         "entityType": "USER"
       }
       """
@@ -2953,14 +2953,12 @@ final class JsonSerializableToJsonTest {
         (Supplier<MappingRecord>)
             () ->
                 new MappingRecord()
-                    .setMappingKey(1L)
                     .setClaimName("claimName")
                     .setClaimValue("claimValue")
                     .setId("id1")
                     .setName("name"),
         """
       {
-        "mappingKey": 1,
         "claimName": "claimName",
         "claimValue": "claimValue",
         "id": "id1",
@@ -2996,7 +2994,7 @@ final class JsonSerializableToJsonTest {
                         new RoleRecord()
                             .setRoleKey(1)
                             .setName("roleName")
-                            .setEntityKey(2)
+                            .setEntityKey("2")
                             .setEntityType(EntityType.USER))
                     .addUser(
                         new UserRecord()
@@ -3016,14 +3014,12 @@ final class JsonSerializableToJsonTest {
                         new TenantRecord().setTenantKey(5).setTenantId("id").setName("name"))
                     .addMapping(
                         new MappingRecord()
-                            .setMappingKey(6)
                             .setId("id1")
                             .setClaimName("claim1")
                             .setClaimValue("value1")
                             .setName("Claim 1"))
                     .addMapping(
                         new MappingRecord()
-                            .setMappingKey(7)
                             .setId("id2")
                             .setClaimName("claim2")
                             .setClaimValue("value2")
@@ -3033,7 +3029,7 @@ final class JsonSerializableToJsonTest {
         "defaultRole": {
           "roleKey": 1,
           "name": "roleName",
-          "entityKey": 2,
+          "entityKey": "2",
           "entityType": "USER"
         },
         "users": [
@@ -3063,14 +3059,12 @@ final class JsonSerializableToJsonTest {
         },
         "mappings": [
           {
-            "mappingKey": 6,
             "id": "id1",
             "claimName": "claim1",
             "claimValue": "value1",
             "name": "Claim 1"
           },
           {
-            "mappingKey": 7,
             "id": "id2",
             "claimName": "claim2",
             "claimValue": "value2",

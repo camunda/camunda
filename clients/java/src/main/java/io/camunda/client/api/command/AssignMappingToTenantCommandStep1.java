@@ -24,9 +24,9 @@ public interface AssignMappingToTenantCommandStep1
   /**
    * Sets the mapping key for the assignment.
    *
-   * @param mappingKey the key of the mapping
+   * @param mappingId the key of the mapping
    * @return the builder for this command. Call {@link #send()} to complete the command and send it
    *     to the broker.
    */
-  AssignMappingToTenantCommandStep1 mappingKey(long mappingKey);
+  AssignMappingToTenantCommandStep1 mappingId(String mappingId);
 }

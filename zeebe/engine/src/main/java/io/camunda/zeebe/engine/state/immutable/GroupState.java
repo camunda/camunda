@@ -19,7 +19,7 @@ public interface GroupState {
 
   Optional<Long> getGroupKeyByName(String groupName);
 
-  Optional<EntityType> getEntityType(long groupKey, long entityKey);
+  Optional<EntityType> getEntityType(long groupKey, String entityKey);
 
-  Map<EntityType, List<Long>> getEntitiesByType(long groupKey);
+  Map<EntityType, List<String>> getEntitiesByType(long groupKey);
 }

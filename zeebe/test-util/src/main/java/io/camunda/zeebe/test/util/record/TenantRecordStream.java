@@ -36,8 +36,8 @@ public class TenantRecordStream
     return valueFilter(v -> v.getName().equals(name));
   }
 
-  public TenantRecordStream withEntityKey(final long entityKey) {
-    return valueFilter(v -> v.getEntityKey() == entityKey);
+  public TenantRecordStream withEntityKey(final String entityKey) {
+    return valueFilter(v -> v.getEntityKey().equals(entityKey));
   }
 
   public TenantRecordStream withEntityId(final String entityId) {

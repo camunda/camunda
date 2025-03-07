@@ -125,12 +125,12 @@ public class TenantServices extends SearchQueryService<TenantServices, TenantQue
             .setEntity(entityType, entityId));
   }
 
-  public Collection<TenantEntity> getTenantsByMemberKey(final long memberKey) {
+  public Collection<TenantEntity> getTenantsByMemberKey(final String memberKey) {
     return getTenantsByMemberKeys(Set.of(memberKey));
   }
 
-  public List<TenantEntity> getTenantsByMemberKeys(final Set<Long> memberKeys) {
-    return findAll(TenantQuery.of(q -> q.filter(b -> b.memberKeys(memberKeys))));
+  public List<TenantEntity> getTenantsByMemberKeys(final Set<String> memberIds) {
+    return findAll(TenantQuery.of(q -> q.filter(b -> b.memberKeys(memberIds))));
   }
 
   public TenantEntity getById(final String tenantId) {

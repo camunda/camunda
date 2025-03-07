@@ -54,7 +54,8 @@ public class CamundaUserDetailsService implements UserDetailsService {
 
     final Long userKey = storedUser.userKey();
 
-    final var roles = roleServices.findAll(RoleQuery.of(q -> q.filter(f -> f.memberKey(userKey))));
+    final var roles =
+        roleServices.findAll(RoleQuery.of(q -> q.filter(f -> f.memberId(String.valueOf(userKey)))));
 
     final var authorizedApplications =
         authorizationServices.getAuthorizedApplications(
@@ -64,7 +65,7 @@ public class CamundaUserDetailsService implements UserDetailsService {
                 .collect(Collectors.toSet()));
 
     final var tenants =
-        tenantServices.getTenantsByMemberKey(userKey).stream()
+        tenantServices.getTenantsByMemberKey(String.valueOf(userKey)).stream()
             .map(
                 entity ->
                     new TenantDTO(

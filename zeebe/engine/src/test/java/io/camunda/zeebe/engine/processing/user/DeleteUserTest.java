@@ -89,13 +89,13 @@ public class DeleteUserTest {
     Assertions.assertThat(
             RecordingExporter.groupRecords(GroupIntent.ENTITY_REMOVED)
                 .withGroupKey(group.getKey())
-                .withEntityKey(userRecord.getKey())
+                .withEntityKey(String.valueOf(userRecord.getKey()))
                 .exists())
         .isTrue();
     Assertions.assertThat(
             RecordingExporter.roleRecords(RoleIntent.ENTITY_REMOVED)
                 .withRoleKey(role.getKey())
-                .withEntityKey(userRecord.getKey())
+                .withEntityKey(String.valueOf(userRecord.getKey()))
                 .exists())
         .isTrue();
     Assertions.assertThat(

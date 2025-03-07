@@ -38,7 +38,8 @@ public class RoleEntityAddedApplier implements TypedEventApplier<RoleIntent, Rol
                       .getEntityKey()) // TODO should be removed once we refactor roles to work with
               // ids
               .ifPresent(user -> userState.addRole(user.getUsername(), value.getRoleKey()));
-      case MAPPING -> mappingState.addRole(value.getEntityKey(), value.getRoleKey());
+      case MAPPING ->
+          mappingState.addRole(String.valueOf(value.getEntityKey()), value.getRoleKey());
       default ->
           throw new IllegalStateException(
               String.format(

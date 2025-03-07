@@ -113,7 +113,7 @@ public class MappingServicesTest {
     when(client.searchMappings(any())).thenReturn(result);
 
     // when
-    final var searchQueryResult = services.findMapping(1L);
+    final var searchQueryResult = services.findMapping("1L");
 
     // then
     assertThat(searchQueryResult).contains(entity);
@@ -122,7 +122,7 @@ public class MappingServicesTest {
   @Test
   public void shouldReturnEmptyWhenNotFoundByFind() {
     // given
-    final var key = 100L;
+    final var key = "100L";
     when(client.searchMappings(any())).thenReturn(new SearchQueryResult(0, List.of(), null, null));
 
     // when / then
@@ -135,7 +135,7 @@ public class MappingServicesTest {
     when(client.searchMappings(any())).thenReturn(new SearchQueryResult(0, List.of(), null, null));
 
     // when / then
-    assertThrows(NotFoundException.class, () -> services.getMapping(1L));
+    assertThrows(NotFoundException.class, () -> services.getMapping("1L"));
   }
 
   @Test
@@ -149,17 +149,17 @@ public class MappingServicesTest {
             mockBrokerClient, mock(SecurityContextProvider.class), client, testAuthentication);
 
     final var mappingRecord = new MappingRecord();
-    mappingRecord.setMappingKey(1234L);
+    mappingRecord.setId("1234L");
     when(mockBrokerClient.sendRequest(any()))
         .thenReturn(CompletableFuture.completedFuture(new BrokerResponse<>(mappingRecord)));
 
     //  when
-    testMappingServices.deleteMapping(1234L);
+    testMappingServices.deleteMapping("1234L");
 
     // then
     verify(mockBrokerClient).sendRequest(mappingDeleteRequestArgumentCaptor.capture());
     final var request = mappingDeleteRequestArgumentCaptor.getValue();
-    assertThat(request.getRequestWriter().getMappingKey()).isEqualTo(1234L);
+    assertThat(request.getRequestWriter().getId()).isEqualTo("1234L");
   }
 
   @Test

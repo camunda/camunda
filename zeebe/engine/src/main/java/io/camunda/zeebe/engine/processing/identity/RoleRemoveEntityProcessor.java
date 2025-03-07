@@ -124,7 +124,7 @@ public class RoleRemoveEntityProcessor implements DistributedTypedRecordProcesso
     commandDistributionBehavior.acknowledgeCommand(command);
   }
 
-  private boolean isEntityPresent(final long entityKey, final EntityType entityType) {
+  private boolean isEntityPresent(final String entityKey, final EntityType entityType) {
     return switch (entityType) {
       case USER -> userState.getUser(entityKey).isPresent();
       case MAPPING -> mappingState.get(entityKey).isPresent();

@@ -26,7 +26,7 @@ public class MappingWriter {
         new QueueItem(
             ContextType.MAPPING,
             WriteStatementType.INSERT,
-            mapping.mappingKey(),
+            mapping.id(),
             "io.camunda.db.rdbms.sql.MappingMapper.insert",
             mapping));
   }

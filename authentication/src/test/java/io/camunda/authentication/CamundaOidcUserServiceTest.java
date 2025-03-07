@@ -69,8 +69,8 @@ public class CamundaOidcUserServiceTest {
     when(mappingServices.getMatchingMappings(claims))
         .thenReturn(
             List.of(
-                new MappingEntity(5L, "role", "R1", "role-r1"),
-                new MappingEntity(7L, "group", "G1", "group-g1")));
+                new MappingEntity("5L", "role", "R1", "role-r1"),
+                new MappingEntity("7L", "group", "G1", "group-g1")));
 
     // when
     final OidcUser oidcUser = camundaOidcUserService.loadUser(createOidcUserRequest(claims));
@@ -80,7 +80,7 @@ public class CamundaOidcUserServiceTest {
     assertThat(oidcUser).isInstanceOf(CamundaOidcUser.class);
     final var camundaUser = (CamundaOidcUser) oidcUser;
     assertThat(camundaUser.getEmail()).isEqualTo("foo@camunda.test");
-    assertThat(camundaUser.getMappingKeys()).isEqualTo(Set.of(5L, 7L));
+    assertThat(camundaUser.getMappingIds()).isEqualTo(Set.of("5L", "7L"));
     final AuthenticationContext authenticationContext = camundaUser.getAuthenticationContext();
     assertThat(authenticationContext.roles()).isEmpty();
     assertThat(authenticationContext.groups()).isEmpty();

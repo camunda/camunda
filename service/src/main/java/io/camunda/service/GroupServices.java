@@ -89,13 +89,16 @@ public class GroupServices extends SearchQueryService<GroupServices, GroupQuery,
   }
 
   public List<GroupEntity> getGroupsByUserKey(final long userKey) {
-    return search(SearchQueryBuilders.groupSearchQuery().filter(f -> f.memberKey(userKey)).build())
+    return search(
+            SearchQueryBuilders.groupSearchQuery()
+                .filter(f -> f.memberKey(String.valueOf(userKey)))
+                .build())
         .items()
         .stream()
         .toList();
   }
 
-  public List<GroupEntity> getGroupsByMemberKeys(final Set<Long> memberKeys) {
+  public List<GroupEntity> getGroupsByMemberKeys(final Set<String> memberKeys) {
     return findAll(
         SearchQueryBuilders.groupSearchQuery().filter(f -> f.memberKeys(memberKeys)).build());
   }
@@ -116,7 +119,7 @@ public class GroupServices extends SearchQueryService<GroupServices, GroupQuery,
   }
 
   public CompletableFuture<GroupRecord> assignMember(
-      final long groupKey, final long memberKey, final EntityType memberType) {
+      final long groupKey, final String memberKey, final EntityType memberType) {
     return sendBrokerRequest(
         BrokerGroupMemberRequest.createAddRequest(groupKey)
             .setMemberKey(memberKey)
@@ -124,7 +127,7 @@ public class GroupServices extends SearchQueryService<GroupServices, GroupQuery,
   }
 
   public CompletableFuture<GroupRecord> removeMember(
-      final long groupKey, final long memberKey, final EntityType memberType) {
+      final long groupKey, final String memberKey, final EntityType memberType) {
     return sendBrokerRequest(
         BrokerGroupMemberRequest.createRemoveRequest(groupKey)
             .setMemberKey(memberKey)

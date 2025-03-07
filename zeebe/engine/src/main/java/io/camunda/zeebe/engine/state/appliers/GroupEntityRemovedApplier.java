@@ -42,7 +42,7 @@ public class GroupEntityRemovedApplier implements TypedEventApplier<GroupIntent,
           userState
               .getUser(entityKey)
               .ifPresent(user -> userState.removeGroup(user.getUsername(), key));
-      case MAPPING -> mappingState.removeGroup(entityKey, key);
+      case MAPPING -> mappingState.removeGroup(String.valueOf(entityKey), key);
       default ->
           throw new IllegalStateException(
               String.format(

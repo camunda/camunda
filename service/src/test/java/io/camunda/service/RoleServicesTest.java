@@ -120,7 +120,7 @@ public class RoleServicesTest {
   public void shouldAddUserToRole() {
     // given
     final var roleKey = 100L;
-    final var entityKey = 42;
+    final var entityKey = "42";
 
     // when
     services.addMember(roleKey, EntityType.USER, entityKey);
@@ -139,7 +139,7 @@ public class RoleServicesTest {
   public void shouldRemoveUserFromRole() {
     // given
     final var roleKey = 100L;
-    final var entityKey = 42;
+    final var entityKey = "42";
 
     // when
     services.removeMember(roleKey, EntityType.USER, entityKey);
@@ -157,13 +157,13 @@ public class RoleServicesTest {
   @Test
   public void shouldGetAllRolesByMemberKey() {
     // given
-    final var memberKey = 100L;
+    final var memberKey = "100L";
     final var roleEntity = mock(RoleEntity.class);
-    when(client.findAllRoles(RoleQuery.of(q -> q.filter(f -> f.memberKey(memberKey)))))
+    when(client.findAllRoles(RoleQuery.of(q -> q.filter(f -> f.memberId(memberKey)))))
         .thenReturn(List.of(roleEntity));
 
     // when
-    final var result = services.findAll(RoleQuery.of(q -> q.filter(f -> f.memberKey(memberKey))));
+    final var result = services.findAll(RoleQuery.of(q -> q.filter(f -> f.memberId(memberKey))));
 
     // then
     assertThat(result).isEqualTo(List.of(roleEntity));

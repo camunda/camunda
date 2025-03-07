@@ -131,7 +131,7 @@ public class TenantAddEntityProcessor implements DistributedTypedRecordProcessor
     return switch (entityType) {
       case USER -> checkUserAssignment(command, tenantId);
       case MAPPING -> checkMappingAssignment(entityKey, command, tenantId);
-      case GROUP -> checkGroupAssignment(entityKey, command, tenantId);
+      case GROUP -> checkGroupAssignment(Long.parseLong(entityKey), command, tenantId);
       default ->
           throw new IllegalStateException(formatErrorMessage(entityKey, tenantId, "doesn't exist"));
     };
@@ -162,7 +162,7 @@ public class TenantAddEntityProcessor implements DistributedTypedRecordProcessor
   }
 
   private boolean checkMappingAssignment(
-      final long entityKey, final TypedRecord<TenantRecord> command, final String tenantId) {
+      final String entityKey, final TypedRecord<TenantRecord> command, final String tenantId) {
     final var mapping = mappingState.get(entityKey);
     if (mapping.isEmpty()) {
       rejectCommand(
@@ -183,25 +183,25 @@ public class TenantAddEntityProcessor implements DistributedTypedRecordProcessor
     final var group = groupState.get(entityKey);
 
     if (group.isEmpty()) {
-      createEntityNotExistRejectCommand(command, entityKey, tenantId);
+      createEntityNotExistRejectCommand(command, String.valueOf(entityKey), tenantId);
       return false;
     }
 
     if (group.get().getTenantIdsList().contains(tenantId)) {
-      createAlreadyAssignedRejectCommand(command, entityKey, tenantId);
+      createAlreadyAssignedRejectCommand(command, String.valueOf(entityKey), tenantId);
       return false;
     }
     return true;
   }
 
   private void createEntityNotExistRejectCommand(
-      final TypedRecord<TenantRecord> command, final long entityKey, final String tenantId) {
+      final TypedRecord<TenantRecord> command, final String entityKey, final String tenantId) {
     rejectCommand(
         command, RejectionType.NOT_FOUND, formatErrorMessage(entityKey, tenantId, "doesn't exist"));
   }
 
   private void createAlreadyAssignedRejectCommand(
-      final TypedRecord<TenantRecord> command, final long entityKey, final String tenantId) {
+      final TypedRecord<TenantRecord> command, final String entityKey, final String tenantId) {
     rejectCommand(
         command,
         RejectionType.INVALID_ARGUMENT,
@@ -209,7 +209,7 @@ public class TenantAddEntityProcessor implements DistributedTypedRecordProcessor
   }
 
   private String formatErrorMessage(
-      final long entityKey, final String tenantId, final String reason) {
+      final String entityKey, final String tenantId, final String reason) {
     return "Expected to add entity with key '%s' to tenant with tenantId '%s', but the entity %s."
         .formatted(entityKey, tenantId, reason);
   }

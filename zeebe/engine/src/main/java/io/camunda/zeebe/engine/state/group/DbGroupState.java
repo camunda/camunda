@@ -32,10 +32,10 @@ public class DbGroupState implements MutableGroupState {
   private final ColumnFamily<DbLong, PersistedGroup> groupColumnFamily;
 
   private final DbForeignKey<DbLong> fkGroupKey;
-  private final DbLong entityKey;
-  private final DbCompositeKey<DbForeignKey<DbLong>, DbLong> fkGroupKeyAndEntityKey;
+  private final DbString entityKey;
+  private final DbCompositeKey<DbForeignKey<DbLong>, DbString> fkGroupKeyAndEntityKey;
   private final EntityTypeValue entityTypeValue = new EntityTypeValue();
-  private final ColumnFamily<DbCompositeKey<DbForeignKey<DbLong>, DbLong>, EntityTypeValue>
+  private final ColumnFamily<DbCompositeKey<DbForeignKey<DbLong>, DbString>, EntityTypeValue>
       entityTypeByGroupColumnFamily;
 
   private final DbString groupName;
@@ -50,7 +50,7 @@ public class DbGroupState implements MutableGroupState {
             ZbColumnFamilies.GROUPS, transactionContext, groupKey, new PersistedGroup());
 
     fkGroupKey = new DbForeignKey<>(groupKey, ZbColumnFamilies.GROUPS);
-    entityKey = new DbLong();
+    entityKey = new DbString();
     fkGroupKeyAndEntityKey = new DbCompositeKey<>(fkGroupKey, entityKey);
     entityTypeByGroupColumnFamily =
         zeebeDb.createColumnFamily(
@@ -96,15 +96,15 @@ public class DbGroupState implements MutableGroupState {
   @Override
   public void addEntity(final long groupKey, final GroupRecord group) {
     this.groupKey.wrapLong(groupKey);
-    entityKey.wrapLong(group.getEntityKey());
+    entityKey.wrapString(group.getEntityKey());
     entityTypeValue.setEntityType(group.getEntityType());
     entityTypeByGroupColumnFamily.insert(fkGroupKeyAndEntityKey, entityTypeValue);
   }
 
   @Override
-  public void removeEntity(final long groupKey, final long entityKey) {
+  public void removeEntity(final long groupKey, final String entityKey) {
     this.groupKey.wrapLong(groupKey);
-    this.entityKey.wrapLong(entityKey);
+    this.entityKey.wrapString(entityKey);
     entityTypeByGroupColumnFamily.deleteExisting(fkGroupKeyAndEntityKey);
   }
 
@@ -159,22 +159,22 @@ public class DbGroupState implements MutableGroupState {
   }
 
   @Override
-  public Optional<EntityType> getEntityType(final long groupKey, final long entityKey) {
+  public Optional<EntityType> getEntityType(final long groupKey, final String entityKey) {
     this.groupKey.wrapLong(groupKey);
-    this.entityKey.wrapLong(entityKey);
+    this.entityKey.wrapString(entityKey);
     final var entityType = entityTypeByGroupColumnFamily.get(fkGroupKeyAndEntityKey);
     return Optional.ofNullable(entityType).map(EntityTypeValue::getEntityType);
   }
 
   @Override
-  public Map<EntityType, List<Long>> getEntitiesByType(final long groupKey) {
+  public Map<EntityType, List<String>> getEntitiesByType(final long groupKey) {
     this.groupKey.wrapLong(groupKey);
-    final Map<EntityType, List<Long>> entitiesMap = new HashMap<>();
+    final Map<EntityType, List<String>> entitiesMap = new HashMap<>();
     entityTypeByGroupColumnFamily.whileEqualPrefix(
         fkGroupKey,
         (compositeKey, value) -> {
           final var entityType = value.getEntityType();
-          final var entityKey = compositeKey.second().getValue();
+          final var entityKey = compositeKey.second().toString();
           entitiesMap.computeIfAbsent(entityType, k -> new ArrayList<>()).add(entityKey);
         });
     return entitiesMap;

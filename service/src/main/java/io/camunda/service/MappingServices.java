@@ -75,17 +75,16 @@ public class MappingServices
             .setId(request.id()));
   }
 
-  public MappingEntity getMapping(final Long mappingKey) {
-    return findMapping(mappingKey)
+  public MappingEntity getMapping(final String mappingId) {
+    return findMapping(mappingId)
         .orElseThrow(
             () ->
-                new NotFoundException(
-                    "Mapping with mappingKey %d not found".formatted(mappingKey)));
+                new NotFoundException("Mapping with mappingId %d not found".formatted(mappingId)));
   }
 
-  public Optional<MappingEntity> findMapping(final Long mappingKey) {
+  public Optional<MappingEntity> findMapping(final String mappingId) {
     return search(
-            SearchQueryBuilders.mappingSearchQuery().filter(f -> f.mappingKey(mappingKey)).build())
+            SearchQueryBuilders.mappingSearchQuery().filter(f -> f.mappingId(mappingId)).build())
         .items()
         .stream()
         .findFirst();
@@ -102,8 +101,8 @@ public class MappingServices
         .findFirst();
   }
 
-  public CompletableFuture<MappingRecord> deleteMapping(final long mappingKey) {
-    return sendBrokerRequest(new BrokerMappingDeleteRequest().setMappingKey(mappingKey));
+  public CompletableFuture<MappingRecord> deleteMapping(final String mappingId) {
+    return sendBrokerRequest(new BrokerMappingDeleteRequest().setMappingId(mappingId));
   }
 
   public List<MappingEntity> getMatchingMappings(final Map<String, Object> claims) {

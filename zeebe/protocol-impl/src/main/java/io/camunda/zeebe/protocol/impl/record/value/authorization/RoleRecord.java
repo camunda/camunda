@@ -19,7 +19,7 @@ public class RoleRecord extends UnifiedRecordValue implements RoleRecordValue {
 
   private final LongProperty roleKeyProp = new LongProperty("roleKey", -1L);
   private final StringProperty nameProp = new StringProperty("name", "");
-  private final LongProperty entityKeyProp = new LongProperty("entityKey", -1L);
+  private final StringProperty entityKeyProp = new StringProperty("entityKey", "");
   private final EnumProperty<EntityType> entityTypeProp =
       new EnumProperty<>("entityType", EntityType.class, EntityType.UNSPECIFIED);
 
@@ -52,8 +52,8 @@ public class RoleRecord extends UnifiedRecordValue implements RoleRecordValue {
   }
 
   @Override
-  public long getEntityKey() {
-    return entityKeyProp.getValue();
+  public String getEntityKey() {
+    return BufferUtil.bufferAsString(entityKeyProp.getValue());
   }
 
   @Override
@@ -66,7 +66,7 @@ public class RoleRecord extends UnifiedRecordValue implements RoleRecordValue {
     return this;
   }
 
-  public RoleRecord setEntityKey(final long entityKey) {
+  public RoleRecord setEntityKey(final String entityKey) {
     entityKeyProp.setValue(entityKey);
     return this;
   }

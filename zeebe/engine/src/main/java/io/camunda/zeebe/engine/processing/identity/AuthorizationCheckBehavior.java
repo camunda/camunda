@@ -255,7 +255,7 @@ public final class AuthorizationCheckBehavior {
             (mapping, stream) -> {
               getAuthorizedResourceIdentifiersForOwners(
                       AuthorizationOwnerType.MAPPING,
-                      List.of(mapping.getMappingKey()),
+                      List.of(mapping.getId()),
                       request.getResourceType(),
                       request.getPermissionType())
                   .forEach(stream);
@@ -278,7 +278,7 @@ public final class AuthorizationCheckBehavior {
   // https://github.com/camunda/camunda/issues/26981
   private Stream<String> getAuthorizedResourceIdentifiersForOwners(
       final AuthorizationOwnerType ownerType,
-      final List<Long> ownerKeys,
+      final List<String> ownerKeys,
       final AuthorizationResourceType resourceType,
       final PermissionType permissionType) {
     return ownerKeys.stream()
