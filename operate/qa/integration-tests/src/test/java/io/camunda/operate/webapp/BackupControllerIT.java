@@ -281,6 +281,7 @@ public class BackupControllerIT {
         SnapshotShardFailure.of(
             b ->
                 b.index("1")
+                    .indexUuid("uuid")
                     .nodeId("someNodeId1")
                     .shardId("someIndex1" + UUID.randomUUID() + 1)
                     .status("FAILURE")
@@ -289,6 +290,7 @@ public class BackupControllerIT {
         SnapshotShardFailure.of(
             b ->
                 b.index("2")
+                    .indexUuid("uuid2")
                     .nodeId("someNodeId2")
                     .shardId("someIndex2" + UUID.randomUUID() + 2)
                     .status("FAILURE")
