@@ -2107,9 +2107,12 @@ paths:
       tags:
         - Role
       operationId: createRole
-      summary: Create role
+      summary: Create role (Work-in-Progress)
       description: |
         Create a new role.
+
+        This API is in a Work-in-Progress state and will undergo potential breaking changes till
+        its release with an upcoming minor release.
       requestBody:
         content:
           application/json:
@@ -2136,9 +2139,12 @@ paths:
       tags:
         - Role
       operationId: getRole
-      summary: Get role
+      summary: Get role (Work-in-Progress)
       description: |
         Get a role by its key.
+
+        This API is in a Work-in-Progress state and will undergo potential breaking changes till
+        its release with an upcoming minor release.
       parameters:
         - name: roleKey
           in: path
@@ -2169,8 +2175,12 @@ paths:
       tags:
         - Role
       operationId: updateRole
-      summary: Update role
-      description: Update a role with the given key.
+      summary: Update role (Work-in-Progress)
+      description: |
+        Update a role with the given key.
+
+        This API is in a Work-in-Progress state and will undergo potential breaking changes till
+        its release with an upcoming minor release.
       parameters:
         - name: roleKey
           in: path
@@ -2203,8 +2213,12 @@ paths:
       tags:
         - Role
       operationId: deleteRole
-      summary: Delete role
-      description: Deletes the role with the given key.
+      summary: Delete role (Work-in-Progress)
+      description: |
+        Deletes the role with the given key.
+
+        This API is in a Work-in-Progress state and will undergo potential breaking changes till
+        its release with an upcoming minor release.
       parameters:
         - name: roleKey
           in: path
@@ -2230,9 +2244,12 @@ paths:
       tags:
         - Role
       operationId: searchRoles
-      summary: Query roles
+      summary: Query roles (Work-in-Progress)
       description: |
         Search for roles based on given criteria.
+
+        This API is in a Work-in-Progress state and will undergo potential breaking changes till
+        its release with an upcoming minor release.
       requestBody:
         required: false
         content:
@@ -2264,7 +2281,12 @@ paths:
       tags:
         - Group
       operationId: createGroup
-      summary: Create group
+      summary: Create group (Work-in-Progress)
+      description: |
+        Create a new group.
+
+        This API is in a Work-in-Progress state and will undergo potential breaking changes till
+        its release with an upcoming minor release.
       requestBody:
         content:
           application/json:
@@ -2290,9 +2312,12 @@ paths:
       tags:
         - Group
       operationId: getGroup
-      summary: Get group
+      summary: Get group (Work-in-Progress)
       description: |
         Get a group by its key.
+
+        This API is in a Work-in-Progress state and will undergo potential breaking changes till
+        its release with an upcoming minor release.
       parameters:
         - name: groupKey
           in: path
@@ -2323,8 +2348,12 @@ paths:
       tags:
         - Group
       operationId: updateGroup
-      summary: Update group
-      description: Update a group with the given key.
+      summary: Update group (Work-in-Progress)
+      description: |
+        Update a group with the given key.
+
+        This API is in a Work-in-Progress state and will undergo potential breaking changes till
+        its release with an upcoming minor release.
       parameters:
         - name: groupKey
           in: path
@@ -2357,8 +2386,12 @@ paths:
       tags:
         - Group
       operationId: deleteGroup
-      summary: Delete group
-      description: Deletes the group with the given key.
+      summary: Delete group (Work-in-Progress)
+      description: |
+        Deletes the group with the given key.
+
+        This API is in a Work-in-Progress state and will undergo potential breaking changes till
+        its release with an upcoming minor release.
       parameters:
         - name: groupKey
           in: path
@@ -2384,9 +2417,12 @@ paths:
       tags:
         - Group
       operationId: addUserToGroup
-      summary: Assign a user to a group
+      summary: Assign a user to a group (Work-in-Progress)
       description: |
         Assigns a user to a group.
+
+        This API is in a Work-in-Progress state and will undergo potential breaking changes till
+        its release with an upcoming minor release.
       parameters:
         - name: groupKey
           in: path
@@ -2426,9 +2462,12 @@ paths:
       tags:
         - Group
       operationId: unassignUserFromGroup
-      summary: Unassign a user from a group
+      summary: Unassign a user from a group (Work-in-Progress)
       description: |
         Unassigns a user from a group.
+
+        This API is in a Work-in-Progress state and will undergo potential breaking changes till
+        its release with an upcoming minor release.
       parameters:
         - name: groupKey
           in: path
@@ -2462,9 +2501,12 @@ paths:
       tags:
         - Group
       operationId: searchGroups
-      summary: Query groups
+      summary: Query groups (Work-in-Progress)
       description: |
         Search for groups based on given criteria.
+
+        This API is in a Work-in-Progress state and will undergo potential breaking changes till
+        its release with an upcoming minor release.
       requestBody:
         required: false
         content:
@@ -2534,8 +2576,12 @@ paths:
       tags:
         - Mapping rule
       operationId: deleteMappingRule
-      summary: Delete a mapping rule
-      description: Deletes the mapping rule with the given key.
+      summary: Delete a mapping rule (Work-in-Progress)
+      description: |
+        Deletes the mapping rule with the given key.
+
+        This API is in a Work-in-Progress state and will undergo potential breaking changes till
+        its release with an upcoming minor release.
       parameters:
         - name: mappingKey
           in: path
@@ -2562,9 +2608,12 @@ paths:
       tags:
         - Mapping rule
       operationId: findMappings
-      summary: Query mappings
+      summary: Query mappings (Work-in-Progress)
       description: |
         Search for mapping rules based on given criteria.
+
+        This API is in a Work-in-Progress state and will undergo potential breaking changes till
+        its release with an upcoming minor release.
       requestBody:
         content:
           application/json:
@@ -5182,7 +5231,7 @@ components:
         email:
           description: The email of the user.
           type: "string"
-        key:
+        userKey:
           description: The key of the user.
           type: "string"
     UserSearchResult:
@@ -5242,7 +5291,7 @@ components:
         name:
           type: string
           description: The role name.
-        key:
+        roleKey:
           type: string
           description: The role key.
         assignedMemberKeys:

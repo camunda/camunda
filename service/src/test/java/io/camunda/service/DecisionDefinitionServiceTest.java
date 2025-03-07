@@ -19,7 +19,7 @@ import io.camunda.search.clients.DecisionDefinitionSearchClient;
 import io.camunda.search.clients.DecisionRequirementSearchClient;
 import io.camunda.search.entities.DecisionDefinitionEntity;
 import io.camunda.search.entities.DecisionRequirementsEntity;
-import io.camunda.search.exception.NotFoundException;
+import io.camunda.search.exception.CamundaSearchException;
 import io.camunda.search.query.DecisionDefinitionQuery;
 import io.camunda.search.query.DecisionRequirementsQuery;
 import io.camunda.search.query.SearchQueryBuilders;
@@ -110,8 +110,9 @@ public final class DecisionDefinitionServiceTest {
 
     // then
     final var exception =
-        assertThrows(NotFoundException.class, () -> services.getDecisionDefinitionXml(1L));
+        assertThrows(CamundaSearchException.class, () -> services.getDecisionDefinitionXml(1L));
     assertThat(exception.getMessage()).isEqualTo("Decision definition with key 1 not found");
+    assertThat(exception.getReason()).isEqualTo(CamundaSearchException.Reason.NOT_FOUND);
     verify(client).searchDecisionDefinitions(any(DecisionDefinitionQuery.class));
     verify(decisionRequirementSearchClient, never())
         .searchDecisionRequirements(any(DecisionRequirementsQuery.class));
@@ -137,7 +138,8 @@ public final class DecisionDefinitionServiceTest {
 
     // then
     final var exception =
-        assertThrows(NotFoundException.class, () -> services.getDecisionDefinitionXml(1L));
+        assertThrows(CamundaSearchException.class, () -> services.getDecisionDefinitionXml(1L));
+    assertThat(exception.getReason()).isEqualTo(CamundaSearchException.Reason.NOT_FOUND);
     assertThat(exception.getMessage()).isEqualTo("Decision requirements with key 1 not found");
   }
 

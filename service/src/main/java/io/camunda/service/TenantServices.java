@@ -10,7 +10,7 @@ package io.camunda.service;
 import io.camunda.search.clients.TenantSearchClient;
 import io.camunda.search.entities.TenantEntity;
 import io.camunda.search.exception.CamundaSearchException;
-import io.camunda.search.exception.NotFoundException;
+import io.camunda.search.exception.ErrorMessages;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.query.TenantQuery;
 import io.camunda.security.auth.Authentication;
@@ -143,9 +143,13 @@ public class TenantServices extends SearchQueryService<TenantServices, TenantQue
             .withSecurityContext(securityContextProvider.provideSecurityContext(authentication))
             .searchTenants(query);
     if (result.total() < 1) {
-      throw new NotFoundException("Tenant matching %s not found".formatted(query));
+      throw new CamundaSearchException(
+          ErrorMessages.ERROR_NOT_FOUND_TENANT.formatted(query),
+          CamundaSearchException.Reason.NOT_FOUND);
     } else if (result.total() > 1) {
-      throw new CamundaSearchException("Found multiple tenants matching %s".formatted(query));
+      throw new CamundaSearchException(
+          ErrorMessages.ERROR_NOT_UNIQUE_TENANT.formatted(query),
+          CamundaSearchException.Reason.NOT_UNIQUE);
     }
 
     final var tenantEntity = result.items().stream().findFirst().orElseThrow();
