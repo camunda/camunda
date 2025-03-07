@@ -30,6 +30,7 @@ import {
   languageItems,
   type SelectionOption,
 } from 'modules/internationalization';
+import {isForbidden} from 'modules/utils/isForbidden';
 import styles from './styles.module.scss';
 
 function getInfoSidebarItems(isPaidPlan: boolean) {
@@ -143,38 +144,40 @@ const Header: React.FC = observer(() => {
       }}
       forwardRef={RouterLink}
       navbar={{
-        elements: [
-          {
-            isCurrentPage: !isProcessesPage,
-            key: 'tasks',
-            label: t('headerNavItemTasks'),
-            routeProps: {
-              to: pages.initial,
-              onClick: () => {
-                tracking.track({
-                  eventName: 'navigation',
-                  link: 'header-tasks',
-                });
+        elements: isForbidden(currentUser)
+          ? []
+          : [
+              {
+                isCurrentPage: !isProcessesPage,
+                key: 'tasks',
+                label: t('headerNavItemTasks'),
+                routeProps: {
+                  to: pages.initial,
+                  onClick: () => {
+                    tracking.track({
+                      eventName: 'navigation',
+                      link: 'header-tasks',
+                    });
+                  },
+                },
               },
-            },
-          },
-          {
-            isCurrentPage: isProcessesPage,
-            key: 'processes',
-            label: t('headerNavItemProcesses'),
-            routeProps: {
-              to: pages.processes({
-                tenantId: getStateLocally('tenantId') ?? undefined,
-              }),
-              onClick: () => {
-                tracking.track({
-                  eventName: 'navigation',
-                  link: 'header-processes',
-                });
+              {
+                isCurrentPage: isProcessesPage,
+                key: 'processes',
+                label: t('headerNavItemProcesses'),
+                routeProps: {
+                  to: pages.processes({
+                    tenantId: getStateLocally('tenantId') ?? undefined,
+                  }),
+                  onClick: () => {
+                    tracking.track({
+                      eventName: 'navigation',
+                      link: 'header-processes',
+                    });
+                  },
+                },
               },
-            },
-          },
-        ],
+            ],
         licenseTag: {
           show: license !== undefined && license.licenseType !== 'saas',
           isProductionLicense: license?.validLicense ?? false,
