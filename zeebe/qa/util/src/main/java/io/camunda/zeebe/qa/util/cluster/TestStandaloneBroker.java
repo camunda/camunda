@@ -12,7 +12,7 @@ import io.camunda.application.Profile;
 import io.camunda.application.commons.CommonsModuleConfiguration;
 import io.camunda.application.commons.configuration.BrokerBasedConfiguration.BrokerBasedProperties;
 import io.camunda.application.commons.configuration.WorkingDirectoryConfiguration.WorkingDirectory;
-import io.camunda.application.commons.search.SearchEngineDatabaseConfiguration.SearchEngineConnectProperties;
+import io.camunda.application.commons.se.SearchEngineDatabaseConfiguration.SearchEngineConnectProperties;
 import io.camunda.application.commons.security.CamundaSecurityConfiguration.CamundaSecurityProperties;
 import io.camunda.authentication.config.AuthenticationProperties;
 import io.camunda.security.configuration.ConfiguredUser;
@@ -36,7 +36,9 @@ import java.util.function.Consumer;
 import org.springframework.boot.builder.SpringApplicationBuilder;
 import org.springframework.util.unit.DataSize;
 
-/** Represents an instance of the {@link BrokerModuleConfiguration} Spring application. */
+/**
+ * Represents an instance of the {@link BrokerModuleConfiguration} Spring application.
+ */
 @SuppressWarnings("UnusedReturnValue")
 public final class TestStandaloneBroker extends TestSpringApplication<TestStandaloneBroker>
     implements TestGateway<TestStandaloneBroker>, TestStandaloneApplication<TestStandaloneBroker> {
@@ -186,7 +188,7 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
    * unique ID.
    *
    * @param useRecordingExporter if true, will enable the exporter; if false, will remove it from
-   *     the config
+   * the config
    * @return itself for chaining
    */
   public TestStandaloneBroker withRecordingExporter(final boolean useRecordingExporter) {
@@ -226,7 +228,9 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
     return this;
   }
 
-  /** Returns the broker configuration */
+  /**
+   * Returns the broker configuration
+   */
   @Override
   public BrokerBasedProperties brokerConfig() {
     return config;

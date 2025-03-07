@@ -52,7 +52,7 @@
 
     <dependency>
       <groupId>io.camunda</groupId>
-      <artifactId>camunda-search-engine-client</artifactId>
+      <artifactId>configuration</artifactId>
     </dependency>
 
     <dependency>
