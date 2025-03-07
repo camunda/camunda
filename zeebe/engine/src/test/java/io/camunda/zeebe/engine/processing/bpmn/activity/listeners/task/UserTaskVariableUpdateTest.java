@@ -7,17 +7,25 @@
  */
 package io.camunda.zeebe.engine.processing.bpmn.activity.listeners.task;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.groups.Tuple.tuple;
+
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.model.bpmn.builder.UserTaskBuilder;
+import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
 import io.camunda.zeebe.protocol.record.Assertions;
+import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
+import io.camunda.zeebe.protocol.record.intent.VariableDocumentIntent;
+import io.camunda.zeebe.protocol.record.intent.VariableIntent;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.function.UnaryOperator;
@@ -80,6 +88,55 @@ public class UserTaskVariableUpdateTest {
         .hasRejectionReason(
             "Expected to trigger update transition for user task with key '%d', but it is in state 'ASSIGNING'"
                 .formatted(assigningUserTaskRecord.getKey()));
+  }
+
+  @Test
+  public void shouldUpdateVariablesWhenUserTaskIsInCreatedState() {
+    // given: a process instance with a camunda user task
+    final long processInstanceKey =
+        createProcessInstanceWithVariables(
+            createProcessWithCamundaUserTask(t -> t), Map.of("approvalStatus", "PENDING"));
+
+    final var createdUserTaskRecord =
+        RecordingExporter.userTaskRecords(UserTaskIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst();
+
+    // when: updating task-scoped variables
+    final var variableUpdateRecord =
+        ENGINE
+            .variables()
+            .ofScope(createdUserTaskRecord.getValue().getElementInstanceKey())
+            .withDocument(Map.of("approvalStatus", "SUBMITTED"))
+            .update();
+
+    // then: variable update should be successful and trigger the user task update transition
+    Assertions.assertThat(variableUpdateRecord)
+        .describedAs("Expect variables to be successfully updated for a user task")
+        .hasRecordType(RecordType.EVENT)
+        .hasIntent(VariableDocumentIntent.UPDATED)
+        .hasValueType(ValueType.VARIABLE_DOCUMENT);
+
+    Assertions.assertThat(
+            RecordingExporter.variableRecords(VariableIntent.CREATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .withScopeKey(createdUserTaskRecord.getValue().getElementInstanceKey())
+                .getFirst()
+                .getValue())
+        .describedAs("Expect the variable to be created at the local scope of user task element")
+        .hasName("approvalStatus")
+        .hasValue("\"SUBMITTED\"");
+
+    assertThat(
+            RecordingExporter.userTaskRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .limit(r -> r.getIntent() == UserTaskIntent.UPDATED))
+        .extracting(Record::getIntent, r -> r.getValue().getChangedAttributes())
+        .describedAs(
+            "Expect the user task to pass the update transition with variables as a changed attribute")
+        .containsSequence(
+            tuple(UserTaskIntent.UPDATING, List.of(UserTaskRecord.VARIABLES)),
+            tuple(UserTaskIntent.UPDATED, List.of(UserTaskRecord.VARIABLES)));
   }
 
   // utils
