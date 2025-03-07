@@ -32,7 +32,6 @@ import io.camunda.zeebe.engine.processing.timer.DueDateTimerChecker;
 import io.camunda.zeebe.engine.processing.timer.TimerCancelProcessor;
 import io.camunda.zeebe.engine.processing.timer.TimerTriggerProcessor;
 import io.camunda.zeebe.engine.processing.variable.VariableDocumentUpdateProcessor;
-import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.state.immutable.ScheduledTaskState;
 import io.camunda.zeebe.engine.state.message.TransientPendingSubscriptionState;
@@ -99,7 +98,7 @@ public final class BpmnProcessors {
     addVariableDocumentStreamProcessors(
         typedRecordProcessors,
         bpmnBehaviors,
-        processingState.getElementInstanceState(),
+        processingState,
         keyGenerator,
         writers,
         authCheckBehavior);
@@ -213,7 +212,7 @@ public final class BpmnProcessors {
   private static void addVariableDocumentStreamProcessors(
       final TypedRecordProcessors typedRecordProcessors,
       final BpmnBehaviors bpmnBehaviors,
-      final ElementInstanceState elementInstanceState,
+      final ProcessingState processingState,
       final KeyGenerator keyGenerator,
       final Writers writers,
       final AuthorizationCheckBehavior authCheckBehavior) {
@@ -221,7 +220,7 @@ public final class BpmnProcessors {
         ValueType.VARIABLE_DOCUMENT,
         VariableDocumentIntent.UPDATE,
         new VariableDocumentUpdateProcessor(
-            elementInstanceState,
+            processingState,
             keyGenerator,
             bpmnBehaviors.variableBehavior(),
             writers,

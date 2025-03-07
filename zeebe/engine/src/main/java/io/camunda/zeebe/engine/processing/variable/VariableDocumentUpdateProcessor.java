@@ -12,12 +12,16 @@ import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior.Au
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
+import io.camunda.zeebe.engine.state.immutable.ProcessingState;
+import io.camunda.zeebe.engine.state.immutable.UserTaskState;
+import io.camunda.zeebe.engine.state.immutable.UserTaskState.LifecycleState;
 import io.camunda.zeebe.engine.state.instance.ElementInstance;
 import io.camunda.zeebe.msgpack.spec.MsgpackReaderException;
 import io.camunda.zeebe.protocol.impl.record.value.variable.VariableDocumentRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.VariableDocumentIntent;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
+import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.protocol.record.value.VariableDocumentUpdateSemantic;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
@@ -30,19 +34,24 @@ public final class VariableDocumentUpdateProcessor
   private static final String ERROR_MESSAGE_SCOPE_NOT_FOUND =
       "Expected to update variables for element with key '%d', but no such element was found";
 
+  private static final String INVALID_USER_TASK_STATE_MESSAGE =
+      "Expected to trigger update transition for user task with key '%d', but it is in state '%s'";
+
   private final ElementInstanceState elementInstanceState;
+  private final UserTaskState userTaskState;
   private final KeyGenerator keyGenerator;
   private final VariableBehavior variableBehavior;
   private final Writers writers;
   private final AuthorizationCheckBehavior authCheckBehavior;
 
   public VariableDocumentUpdateProcessor(
-      final ElementInstanceState elementInstanceState,
+      final ProcessingState processingState,
       final KeyGenerator keyGenerator,
       final VariableBehavior variableBehavior,
       final Writers writers,
       final AuthorizationCheckBehavior authCheckBehavior) {
-    this.elementInstanceState = elementInstanceState;
+    this.elementInstanceState = processingState.getElementInstanceState();
+    this.userTaskState = processingState.getUserTaskState();
     this.keyGenerator = keyGenerator;
     this.variableBehavior = variableBehavior;
     this.writers = writers;
@@ -83,6 +92,31 @@ public final class VariableDocumentUpdateProcessor
       return;
     }
 
+    if (isCamundaUserTask(scope)) {
+      final long userTaskKey = scope.getUserTaskKey();
+      final var lifecycleState = userTaskState.getLifecycleState(userTaskKey);
+      if (lifecycleState != LifecycleState.CREATED) {
+        final var reason = INVALID_USER_TASK_STATE_MESSAGE.formatted(userTaskKey, lifecycleState);
+        writers.rejection().appendRejection(record, RejectionType.INVALID_STATE, reason);
+        writers.response().writeRejectionOnCommand(record, RejectionType.INVALID_STATE, reason);
+        return;
+      }
+
+      // TODO:
+      //  - Add `variables` to user task record and mark them as changed attributes
+      //    when writing `UserTask.UPDATING` event.
+      //  - If `updating` listeners are defined at the user task:
+      //    - Create a new task listener job for the first `updating` listener.
+      //    - Track request metadata for later usage when finalizing the update.
+      //    - Append a new `VariableDocument.UPDATING` event for easy tracing in the log.
+      //  - If `updating` listeners are not defined at the user task:
+      //    - Immediately finalize the update:
+      //      - Merge variables into the local scope.
+      //      - Append and respond with `VariableDocument.UPDATED` event.
+      //      - Append `UserTask.UPDATED` event.
+      return;
+    }
+
     final long processDefinitionKey = scope.getValue().getProcessDefinitionKey();
     final long processInstanceKey = scope.getValue().getProcessInstanceKey();
     final DirectBuffer bpmnProcessId = scope.getValue().getBpmnProcessIdBuffer();
@@ -119,5 +153,10 @@ public final class VariableDocumentUpdateProcessor
 
     writers.state().appendFollowUpEvent(key, VariableDocumentIntent.UPDATED, value);
     writers.response().writeEventOnCommand(key, VariableDocumentIntent.UPDATED, value, record);
+  }
+
+  private static boolean isCamundaUserTask(ElementInstance elementInstance) {
+    return elementInstance.getValue().getBpmnElementType() == BpmnElementType.USER_TASK
+        && elementInstance.getUserTaskKey() > -1L;
   }
 }
