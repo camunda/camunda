@@ -120,15 +120,12 @@ class OpensearchConnectorTest {
     private static final NoopCallback INSTANCE = new NoopCallback();
 
     @Override
-    public void completed(final SimpleHttpResponse result) {
-    }
+    public void completed(final SimpleHttpResponse result) {}
 
     @Override
-    public void failed(final Exception ex) {
-    }
+    public void failed(final Exception ex) {}
 
     @Override
-    public void cancelled() {
-    }
+    public void cancelled() {}
   }
 }

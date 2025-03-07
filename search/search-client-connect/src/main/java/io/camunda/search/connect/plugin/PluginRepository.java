@@ -26,9 +26,7 @@ import org.agrona.LangUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/**
- * Loads and holds references to the configured plugins.
- */
+/** Loads and holds references to the configured plugins. */
 public final class PluginRepository implements AutoCloseable {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(PluginRepository.class);

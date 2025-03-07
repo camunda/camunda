@@ -15,6 +15,6 @@
     <relativePath>../parent/pom.xml</relativePath>
   </parent>
 
-  <artifactId>camunda-search-engine-client</artifactId>
+  <artifactId>configuration</artifactId>
 
 </project>

@@ -27,8 +27,7 @@ public final class SecurityUtil {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(SecurityUtil.class);
 
-  private SecurityUtil() {
-  }
+  private SecurityUtil() {}
 
   public static SSLContext getSSLContext(
       final SecurityConfiguration configuration, final String alias)

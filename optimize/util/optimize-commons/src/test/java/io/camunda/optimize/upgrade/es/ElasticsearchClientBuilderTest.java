@@ -10,7 +10,7 @@ package io.camunda.optimize.upgrade.es;
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.transport.rest_client.RestClientTransport;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.camunda.db.se.config.PluginConfiguration;
+import io.camunda.db.search.engine.config.PluginConfiguration;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import io.camunda.optimize.service.util.configuration.ElasticSearchConfiguration;
 import io.camunda.optimize.service.util.configuration.ProxyConfiguration;
@@ -145,12 +145,15 @@ class ElasticsearchClientBuilderTest {
     private static final NoopCallback INSTANCE = new NoopCallback();
 
     @Override
-    public void completed(final HttpResponse result) {}
+    public void completed(final HttpResponse result) {
+    }
 
     @Override
-    public void failed(final Exception ex) {}
+    public void failed(final Exception ex) {
+    }
 
     @Override
-    public void cancelled() {}
+    public void cancelled() {
+    }
   }
 }

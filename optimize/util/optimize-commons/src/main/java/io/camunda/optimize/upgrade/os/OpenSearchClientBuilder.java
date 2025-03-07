@@ -22,7 +22,6 @@ import com.fasterxml.jackson.databind.ser.std.DateSerializer;
 import com.fasterxml.jackson.databind.util.StdDateFormat;
 import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
-import io.camunda.db.se.config.PluginConfiguration;
 import io.camunda.optimize.dto.optimize.DefinitionOptimizeResponseDto;
 import io.camunda.optimize.dto.optimize.query.collection.CollectionEntity;
 import io.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
@@ -41,6 +40,7 @@ import io.camunda.optimize.service.util.mapper.CustomOffsetDateTimeDeserializer;
 import io.camunda.optimize.service.util.mapper.CustomOffsetDateTimeSerializer;
 import io.camunda.optimize.service.util.mapper.CustomReportDefinitionDeserializer;
 import io.camunda.optimize.service.util.mapper.ObjectMapperFactory;
+import io.camunda.search.connect.plugin.PluginConfiguration;
 import io.camunda.search.connect.plugin.PluginRepository;
 import java.io.BufferedInputStream;
 import java.io.FileInputStream;
@@ -336,7 +336,7 @@ public class OpenSearchClientBuilder {
     final KeyStore truststore = loadCustomTrustStore(configurationService);
     final org.apache.http.ssl.TrustStrategy trustStrategy =
         Boolean.TRUE.equals(
-                configurationService.getOpenSearchConfiguration().getSecuritySslSelfSigned())
+            configurationService.getOpenSearchConfiguration().getSecuritySslSelfSigned())
             ? new TrustSelfSignedStrategy()
             : null;
     if (truststore.size() > 0) {

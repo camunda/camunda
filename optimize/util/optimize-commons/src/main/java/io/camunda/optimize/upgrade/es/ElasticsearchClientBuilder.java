@@ -12,13 +12,13 @@ import co.elastic.clients.json.jackson.JacksonJsonpMapper;
 import co.elastic.clients.transport.TransportOptions;
 import co.elastic.clients.transport.rest_client.RestClientTransport;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.camunda.db.se.config.PluginConfiguration;
 import io.camunda.optimize.service.db.es.schema.TransportOptionsProvider;
 import io.camunda.optimize.service.exceptions.OptimizeConfigurationException;
 import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import io.camunda.optimize.service.util.configuration.ElasticSearchConfiguration;
 import io.camunda.optimize.service.util.configuration.ProxyConfiguration;
+import io.camunda.search.connect.plugin.PluginConfiguration;
 import io.camunda.search.connect.plugin.PluginRepository;
 import java.io.BufferedInputStream;
 import java.io.FileInputStream;
@@ -86,7 +86,7 @@ public class ElasticsearchClientBuilder {
         if (truststore.size() > 0) {
           final TrustStrategy trustStrategy =
               configurationService.getElasticSearchConfiguration().getSecuritySslSelfSigned()
-                      == Boolean.TRUE
+                  == Boolean.TRUE
                   ? new TrustSelfSignedStrategy()
                   : null;
           sslContext = SSLContexts.custom().loadTrustMaterial(truststore, trustStrategy).build();
@@ -105,7 +105,7 @@ public class ElasticsearchClientBuilder {
     } else {
       LOGGER.info("Setting up http rest client connection");
       return buildDefaultRestClient(
-              configurationService, HTTP, pluginRepository.asRequestInterceptor())
+          configurationService, HTTP, pluginRepository.asRequestInterceptor())
           .build();
     }
   }
