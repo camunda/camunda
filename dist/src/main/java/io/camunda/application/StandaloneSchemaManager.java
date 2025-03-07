@@ -149,6 +149,7 @@ public class StandaloneSchemaManager implements CommandLineRunner {
         io.camunda.tasklist.es.RetryElasticsearchClient.class,
         io.camunda.operate.store.elasticsearch.RetryElasticsearchClient.class,
         DefaultObjectMapperConfiguration.class,
+        io.camunda.tasklist.connect.ElasticsearchConnector.class,
       },
       nameGenerator = FullyQualifiedAnnotationBeanNameGenerator.class)
   public static class SchemaManagerConfiguration {
