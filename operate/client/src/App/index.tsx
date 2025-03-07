@@ -26,6 +26,7 @@ import {createBrowserHistory} from 'history';
 import {ThemeSwitcher} from 'modules/components/ThemeSwitcher';
 import loadable from '@loadable/component';
 import {Forbidden} from '../modules/components/Forbidden';
+import {ReactQueryProvider} from 'modules/react-query/ReactQueryProvider';
 
 const CarbonLogin = loadable(() => import('./Login/index'), {
   resolveComponent: (components) => components.Login,
@@ -71,41 +72,43 @@ const App: React.FC = () => {
 
   return (
     <ThemeProvider>
-      <ThemeSwitcher />
-      <Notifications />
-      <NetworkStatusWatcher />
-      <HistoryRouter
-        history={createBrowserHistory({window})}
-        basename={window.clientConfig?.baseName ?? '/'}
-      >
-        <RedirectDeprecatedRoutes />
-        <SessionWatcher />
-        <TrackPagination />
-        <Routes>
-          <Route path={Paths.login()} element={<CarbonLogin />} />
-          <Route path={Paths.forbidden()} element={<Forbidden />} />
-          <Route
-            path={Paths.dashboard()}
-            element={
-              <AuthenticationCheck redirectPath={Paths.login()}>
-                <CarbonLayout />
-              </AuthenticationCheck>
-            }
-          >
-            <Route index element={<CarbonDashboard />} />
-            <Route path={Paths.processes()} element={<CarbonProcesses />} />
+      <ReactQueryProvider>
+        <ThemeSwitcher />
+        <Notifications />
+        <NetworkStatusWatcher />
+        <HistoryRouter
+          history={createBrowserHistory({window})}
+          basename={window.clientConfig?.baseName ?? '/'}
+        >
+          <RedirectDeprecatedRoutes />
+          <SessionWatcher />
+          <TrackPagination />
+          <Routes>
+            <Route path={Paths.login()} element={<CarbonLogin />} />
+            <Route path={Paths.forbidden()} element={<Forbidden />} />
             <Route
-              path={Paths.processInstance()}
-              element={<CarbonProcessInstance />}
-            />
-            <Route path={Paths.decisions()} element={<CarbonDecisions />} />
-            <Route
-              path={Paths.decisionInstance()}
-              element={<CarbonDecisionInstance />}
-            />
-          </Route>
-        </Routes>
-      </HistoryRouter>
+              path={Paths.dashboard()}
+              element={
+                <AuthenticationCheck redirectPath={Paths.login()}>
+                  <CarbonLayout />
+                </AuthenticationCheck>
+              }
+            >
+              <Route index element={<CarbonDashboard />} />
+              <Route path={Paths.processes()} element={<CarbonProcesses />} />
+              <Route
+                path={Paths.processInstance()}
+                element={<CarbonProcessInstance />}
+              />
+              <Route path={Paths.decisions()} element={<CarbonDecisions />} />
+              <Route
+                path={Paths.decisionInstance()}
+                element={<CarbonDecisionInstance />}
+              />
+            </Route>
+          </Routes>
+        </HistoryRouter>
+      </ReactQueryProvider>
     </ThemeProvider>
   );
 };

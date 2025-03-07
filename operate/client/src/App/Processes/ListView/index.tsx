@@ -10,6 +10,7 @@ import {InstancesList} from '../../Layout/InstancesList';
 import {VisuallyHiddenH1} from 'modules/components/VisuallyHiddenH1';
 import {Filters} from './Filters';
 import {InstancesTable} from './InstancesTable';
+import {DiagramPanel as DiagramPanelV2} from './DiagramPanel/v2';
 import {DiagramPanel} from './DiagramPanel';
 import {observer} from 'mobx-react';
 import {useEffect} from 'react';
@@ -26,6 +27,7 @@ import {reaction} from 'mobx';
 import {tracking} from 'modules/tracking';
 import {OperationsPanel} from 'modules/components/OperationsPanel';
 import {batchModificationStore} from 'modules/stores/batchModification';
+import {IS_PROCESS_INSTANCE_STATISTICS_V2_ENABLED} from 'modules/feature-flags';
 
 type LocationType = Omit<Location, 'state'> & {
   state: {refreshContent?: boolean};
@@ -125,7 +127,13 @@ const ListView: React.FC = observer(() => {
       <InstancesList
         type="process"
         leftPanel={<Filters />}
-        topPanel={<DiagramPanel />}
+        topPanel={
+          IS_PROCESS_INSTANCE_STATISTICS_V2_ENABLED ? (
+            <DiagramPanelV2 />
+          ) : (
+            <DiagramPanel />
+          )
+        }
         bottomPanel={<InstancesTable />}
         rightPanel={<OperationsPanel />}
         frame={{
