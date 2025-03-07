@@ -66,5 +66,18 @@
   "unableToLoadRoles": "We were unable to load the roles. Click \"Retry\" to try again.",
   "assignRolesToTenant": "Assign roles to this Tenant",
   "roleId": "Role ID",
-  "roleName": "Role name"
+  "roleName": "Role name",
+  "assignMapping": "Assign mapping",
+  "assigningMapping": "Assigning mapping",
+  "searchByMappingId": "Search by mapping ID",
+  "mappingsCouldNotLoad": "Mappings could not be loaded.",
+  "tenantMappingRemoved": "Tenant mapping has been removed.",
+  "removeMapping": "Remove mapping",
+  "removingMapping": "Removing mapping",
+  "unableToLoadMappings": "We were unable to load the mappings. Click \"Retry\" to try again.",
+  "assignMappingsToTenant": "Assign mappings to this Tenant",
+  "mappingId": "Mapping ID",
+  "mappingName": "Mapping name",
+  "claimName": "Claim name",
+  "claimValue": "Claim value"
 }
