@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.exporter.opensearch;
 
-import io.camunda.db.se.config.PluginConfiguration;
+import io.camunda.db.search.engine.config.PluginConfiguration;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
@@ -18,10 +18,14 @@ public class OpensearchExporterConfiguration {
 
   private static final String DEFAULT_URL = "http://localhost:9200";
 
-  /** Comma-separated Opensearch http urls */
+  /**
+   * Comma-separated Opensearch http urls
+   */
   public String url = DEFAULT_URL;
 
-  /** The request timeout for the opensearch client. The timeout unit is milliseconds. */
+  /**
+   * The request timeout for the opensearch client. The timeout unit is milliseconds.
+   */
   public int requestTimeoutMs = 30_000;
 
   public final IndexConfiguration index = new IndexConfiguration();
@@ -156,6 +160,7 @@ public class OpensearchExporterConfiguration {
   }
 
   public static class IndexConfiguration {
+
     // prefix for index and templates
     public String prefix = "zeebe-record";
 
@@ -316,6 +321,7 @@ public class OpensearchExporterConfiguration {
   }
 
   public static class BulkConfiguration {
+
     // delay before forced flush
     public int delay = 5;
     // bulk size before flush
@@ -337,6 +343,7 @@ public class OpensearchExporterConfiguration {
   }
 
   public static class AuthenticationConfiguration {
+
     private String username;
     private String password;
 
@@ -391,6 +398,7 @@ public class OpensearchExporterConfiguration {
   }
 
   public static class RetentionConfiguration {
+
     private boolean enabled = false;
     private String minimumAge = "30d";
     private String policyName = "zeebe-record-retention-policy";

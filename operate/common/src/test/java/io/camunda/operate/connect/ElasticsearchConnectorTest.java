@@ -18,7 +18,7 @@ import static org.mockito.Mockito.verify;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.transport.rest_client.RestClientTransport;
-import io.camunda.db.se.config.PluginConfiguration;
+import io.camunda.db.search.engine.config.PluginConfiguration;
 import io.camunda.operate.property.ElasticsearchProperties;
 import io.camunda.operate.property.OperateElasticsearchProperties;
 import io.camunda.operate.property.OperateProperties;
@@ -129,15 +129,19 @@ class ElasticsearchConnectorTest {
   }
 
   private static final class NoopCallback implements FutureCallback<HttpResponse> {
+
     private static final NoopCallback INSTANCE = new NoopCallback();
 
     @Override
-    public void completed(final HttpResponse result) {}
+    public void completed(final HttpResponse result) {
+    }
 
     @Override
-    public void failed(final Exception ex) {}
+    public void failed(final Exception ex) {
+    }
 
     @Override
-    public void cancelled() {}
+    public void cancelled() {
+    }
   }
 }

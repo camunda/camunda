@@ -5,9 +5,10 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.db.se.config;
+package io.camunda.db.search.engine.config;
 
 public class RetentionConfiguration {
+
   private boolean enabled = false;
   private String minimumAge = "30d";
   private String policyName;

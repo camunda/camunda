@@ -9,7 +9,7 @@ package io.camunda.application;
 
 import io.camunda.application.commons.migration.SchemaManagerHelper;
 import io.camunda.application.listeners.ApplicationErrorListener;
-import io.camunda.db.se.config.ConnectConfiguration;
+import io.camunda.db.search.engine.config.ConnectConfiguration;
 import io.camunda.exporter.schema.SchemaManager;
 import java.io.IOException;
 import org.slf4j.Logger;
@@ -94,7 +94,11 @@ public class StandaloneSchemaManager {
     System.exit(0);
   }
 
-  /** Helper class to use Spring defaults to read properties for database connection */
+  /**
+   * Helper class to use Spring defaults to read properties for database connection
+   */
   @ConfigurationProperties("camunda.database")
-  public static final class SchemaManagerConnectConfiguration extends ConnectConfiguration {}
+  public static final class SchemaManagerConnectConfiguration extends ConnectConfiguration {
+
+  }
 }

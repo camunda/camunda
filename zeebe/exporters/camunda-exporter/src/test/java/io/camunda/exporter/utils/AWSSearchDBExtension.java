@@ -9,7 +9,7 @@ package io.camunda.exporter.utils;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.camunda.db.se.config.IndexSettings;
+import io.camunda.db.search.engine.config.IndexSettings;
 import io.camunda.exporter.config.ExporterConfiguration;
 import io.camunda.exporter.schema.opensearch.OpensearchEngineClient;
 import io.camunda.search.connect.os.OpensearchConnector;

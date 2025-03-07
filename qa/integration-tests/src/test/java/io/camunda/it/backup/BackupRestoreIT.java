@@ -13,7 +13,7 @@ import static org.assertj.core.api.Assertions.assertThatNoException;
 import feign.FeignException.NotFound;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.search.response.ProcessInstanceState;
-import io.camunda.db.se.config.DatabaseType;
+import io.camunda.db.DatabaseType;
 import io.camunda.management.backups.StateCode;
 import io.camunda.management.backups.TakeBackupHistoryResponse;
 import io.camunda.qa.util.cluster.HistoryBackupClient;
@@ -63,6 +63,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 @Testcontainers
 @ZeebeIntegration
 public class BackupRestoreIT {
+
   private static final Logger LOGGER = LoggerFactory.getLogger(BackupRestoreIT.class);
   private static final String REPOSITORY_NAME = "test-repository";
   private static final String INDEX_PREFIX = "backup-restore";
@@ -73,8 +74,10 @@ public class BackupRestoreIT {
   private static final Duration TIMEOUT = Duration.ofSeconds(500);
   private static final SnapshotNameProvider SNAPSHOT_NAME_PROVIDER =
       new ZeebeSnapshotNameProvider();
-  @Container private static final AzuriteContainer AZURITE_CONTAINER = new AzuriteContainer();
-  @AutoClose private static final Executor EXECUTOR = Executors.newSingleThreadExecutor();
+  @Container
+  private static final AzuriteContainer AZURITE_CONTAINER = new AzuriteContainer();
+  @AutoClose
+  private static final Executor EXECUTOR = Executors.newSingleThreadExecutor();
   protected CamundaClient camundaClient;
   protected ExportingActuator exportingActuator;
   protected BackupActuator backupActuator;
@@ -136,9 +139,8 @@ public class BackupRestoreIT {
             yield container;
           }
 
-          default ->
-              throw new IllegalArgumentException(
-                  "Unsupported database type: " + config.databaseType);
+          default -> throw new IllegalArgumentException(
+              "Unsupported database type: " + config.databaseType);
         };
 
     testStandaloneApplication.withProperty(
@@ -307,5 +309,7 @@ public class BackupRestoreIT {
             });
   }
 
-  public record BackupRestoreTestConfig(DatabaseType databaseType, String bucket) {}
+  public record BackupRestoreTestConfig(DatabaseType databaseType, String bucket) {
+
+  }
 }

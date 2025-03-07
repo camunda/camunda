@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.it.util;
 
-import io.camunda.db.se.config.ConnectConfiguration;
+import io.camunda.db.search.engine.config.ConnectConfiguration;
 import io.camunda.search.clients.SearchClients;
 import io.camunda.search.connect.es.ElasticsearchConnector;
 import io.camunda.search.es.clients.ElasticsearchSearchClient;

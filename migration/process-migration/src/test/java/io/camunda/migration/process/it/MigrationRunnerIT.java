@@ -10,7 +10,7 @@ package io.camunda.migration.process.it;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-import io.camunda.db.se.config.ConnectConfiguration;
+import io.camunda.db.search.engine.config.ConnectConfiguration;
 import io.camunda.migration.api.MigrationException;
 import io.camunda.migration.process.MigrationRunner;
 import io.camunda.migration.process.TestData;
@@ -80,11 +80,11 @@ public class MigrationRunnerIT extends AdapterTest {
     assertThat(processRecords.stream().filter(r -> r.getKey() == 1).findFirst().get().getFormKey())
         .isNull();
     assertThat(
-            processRecords.stream()
-                .filter(r -> r.getKey() == 1)
-                .findFirst()
-                .get()
-                .getIsFormEmbedded())
+        processRecords.stream()
+            .filter(r -> r.getKey() == 1)
+            .findFirst()
+            .get()
+            .getIsFormEmbedded())
         .isFalse();
 
     assertThat(processRecords.stream().filter(r -> r.getKey() == 2).findFirst().get().getIsPublic())
@@ -94,11 +94,11 @@ public class MigrationRunnerIT extends AdapterTest {
     assertThat(processRecords.stream().filter(r -> r.getKey() == 2).findFirst().get().getFormKey())
         .isNull();
     assertThat(
-            processRecords.stream()
-                .filter(r -> r.getKey() == 2)
-                .findFirst()
-                .get()
-                .getIsFormEmbedded())
+        processRecords.stream()
+            .filter(r -> r.getKey() == 2)
+            .findFirst()
+            .get()
+            .getIsFormEmbedded())
         .isNull();
     adapter.close();
   }
@@ -207,27 +207,27 @@ public class MigrationRunnerIT extends AdapterTest {
     assertThat(records.stream().filter(r -> r.getKey() <= 5).allMatch(r -> r.getFormKey() == null))
         .isTrue();
     assertThat(
-            records.stream()
-                .filter(r -> r.getKey() <= 5)
-                .allMatch(r -> r.getIsFormEmbedded() == null))
+        records.stream()
+            .filter(r -> r.getKey() <= 5)
+            .allMatch(r -> r.getIsFormEmbedded() == null))
         .isTrue();
 
     assertThat(
-            records.stream()
-                .filter(r -> r.getKey() > 5)
-                .allMatch(r -> r.getIsPublic().equals(Boolean.TRUE)))
+        records.stream()
+            .filter(r -> r.getKey() > 5)
+            .allMatch(r -> r.getIsPublic().equals(Boolean.TRUE)))
         .isTrue();
     assertThat(
-            records.stream()
-                .filter(r -> r.getKey() > 5)
-                .allMatch(r -> r.getFormId().equals("testForm")))
+        records.stream()
+            .filter(r -> r.getKey() > 5)
+            .allMatch(r -> r.getFormId().equals("testForm")))
         .isTrue();
     assertThat(records.stream().filter(r -> r.getKey() > 5).allMatch(r -> r.getFormKey() == null))
         .isTrue();
     assertThat(
-            records.stream()
-                .filter(r -> r.getKey() > 5)
-                .allMatch(r -> r.getIsFormEmbedded().equals(Boolean.FALSE)))
+        records.stream()
+            .filter(r -> r.getKey() > 5)
+            .allMatch(r -> r.getIsFormEmbedded().equals(Boolean.FALSE)))
         .isTrue();
   }
 
@@ -314,10 +314,10 @@ public class MigrationRunnerIT extends AdapterTest {
     final var latch = new CountDownLatch(1);
 
     new Thread(
-            () -> {
-              runMigration();
-              latch.countDown();
-            })
+        () -> {
+          runMigration();
+          latch.countDown();
+        })
         .start();
 
     assertThat(latch.getCount()).isEqualTo(1);

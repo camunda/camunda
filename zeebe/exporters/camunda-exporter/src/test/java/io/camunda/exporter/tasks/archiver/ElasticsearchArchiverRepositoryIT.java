@@ -19,7 +19,7 @@ import co.elastic.clients.elasticsearch.indices.IndexSettingsLifecycle;
 import co.elastic.clients.json.JsonData;
 import co.elastic.clients.json.jackson.JacksonJsonpMapper;
 import co.elastic.clients.transport.rest_client.RestClientTransport;
-import io.camunda.db.se.config.RetentionConfiguration;
+import io.camunda.db.search.engine.config.RetentionConfiguration;
 import io.camunda.exporter.config.ExporterConfiguration.ArchiverConfiguration;
 import io.camunda.exporter.metrics.CamundaExporterMetrics;
 import io.camunda.exporter.utils.SearchDBExtension;
@@ -56,12 +56,15 @@ import org.slf4j.LoggerFactory;
     matches = "^(?=\\s*\\S).*$",
     disabledReason = "Excluding from AWS OS IT CI")
 final class ElasticsearchArchiverRepositoryIT {
+
   private static final Logger LOGGER =
       LoggerFactory.getLogger(ElasticsearchArchiverRepositoryIT.class);
 
-  @RegisterExtension private static SearchDBExtension searchDB = SearchDBExtension.create();
+  @RegisterExtension
+  private static SearchDBExtension searchDB = SearchDBExtension.create();
 
-  @AutoClose private final RestClientTransport transport = createRestClient();
+  @AutoClose
+  private final RestClientTransport transport = createRestClient();
   private final SimpleMeterRegistry meterRegistry = new SimpleMeterRegistry();
   private final ArchiverConfiguration config = new ArchiverConfiguration();
   private final RetentionConfiguration retention = new RetentionConfiguration();
@@ -425,14 +428,21 @@ final class ElasticsearchArchiverRepositoryIT {
     testClient.indices().create(r -> r.index(batchOperationIndex).mappings(properties));
   }
 
-  private record TestDocument(String id) implements TDocument {}
+  private record TestDocument(String id) implements TDocument {
 
-  private record TestBatchOperation(String id, String endDate) implements TDocument {}
+  }
+
+  private record TestBatchOperation(String id, String endDate) implements TDocument {
+
+  }
 
   private record TestProcessInstance(
-      String id, String endDate, String joinRelation, int partitionId) implements TDocument {}
+      String id, String endDate, String joinRelation, int partitionId) implements TDocument {
+
+  }
 
   private interface TDocument {
+
     String id();
   }
 }

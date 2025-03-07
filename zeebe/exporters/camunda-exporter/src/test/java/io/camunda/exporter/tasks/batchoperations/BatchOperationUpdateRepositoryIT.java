@@ -7,13 +7,14 @@
  */
 package io.camunda.exporter.tasks.batchoperations;
 
-import static io.camunda.exporter.utils.SearchDBExtension.*;
+import static io.camunda.exporter.utils.SearchDBExtension.BATCH_IDX_PREFIX;
+import static io.camunda.exporter.utils.SearchDBExtension.create;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import co.elastic.clients.elasticsearch.ElasticsearchAsyncClient;
 import co.elastic.clients.json.jackson.JacksonJsonpMapper;
 import co.elastic.clients.transport.rest_client.RestClientTransport;
-import io.camunda.db.se.config.IndexSettings;
+import io.camunda.db.search.engine.config.IndexSettings;
 import io.camunda.exporter.adapters.ClientAdapter;
 import io.camunda.exporter.config.ExporterConfiguration;
 import io.camunda.exporter.exceptions.PersistenceException;
@@ -46,13 +47,16 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 abstract class BatchOperationUpdateRepositoryIT {
-  @RegisterExtension protected static SearchDBExtension searchDB = create();
+
+  @RegisterExtension
+  protected static SearchDBExtension searchDB = create();
   private static final Logger LOGGER =
       LoggerFactory.getLogger(BatchOperationUpdateRepositoryIT.class);
   private static final Duration REQUEST_TIMEOUT = Duration.ofSeconds(5);
   protected final BatchOperationTemplate batchOperationTemplate;
   protected final OperationTemplate operationTemplate;
-  @AutoClose protected final ClientAdapter clientAdapter;
+  @AutoClose
+  protected final ClientAdapter clientAdapter;
   protected final SearchEngineClient engineClient;
   protected final ExporterConfiguration config;
 
@@ -93,7 +97,8 @@ abstract class BatchOperationUpdateRepositoryIT {
 
   static final class ElasticsearchIT extends BatchOperationUpdateRepositoryIT {
 
-    @AutoClose private final RestClientTransport transport = createTransport();
+    @AutoClose
+    private final RestClientTransport transport = createTransport();
     private final ElasticsearchAsyncClient client;
 
     public ElasticsearchIT() {
@@ -146,6 +151,7 @@ abstract class BatchOperationUpdateRepositoryIT {
   @Nested
   @Order(1)
   final class GetNotFinishedBatchOperationsTest {
+
     @Test
     void shouldReturnEmptyList() {
       // given
@@ -191,6 +197,7 @@ abstract class BatchOperationUpdateRepositoryIT {
   @Nested
   @Order(2)
   final class GetFinishedOperationsCountTest {
+
     @Test
     void shouldReturnEmptyList() {
       // given

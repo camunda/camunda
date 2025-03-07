@@ -10,7 +10,7 @@ package io.camunda.exporter.tasks.incident;
 import static io.camunda.exporter.utils.SearchDBExtension.INCIDENT_IDX_PREFIX;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.db.se.config.IndexSettings;
+import io.camunda.db.search.engine.config.IndexSettings;
 import io.camunda.exporter.adapters.ClientAdapter;
 import io.camunda.exporter.config.ExporterConfiguration;
 import io.camunda.exporter.exceptions.PersistenceException;
@@ -79,6 +79,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
     matches = "^(?=\\s*\\S).*$",
     disabledReason = "Excluding from AWS OS IT CI")
 abstract class IncidentUpdateRepositoryIT {
+
   public static final int PARTITION_ID = 1;
   private static final Logger LOGGER = LoggerFactory.getLogger(IncidentUpdateRepositoryIT.class);
   private static final Duration REQUEST_TIMEOUT = Duration.ofSeconds(5);
@@ -87,7 +88,8 @@ abstract class IncidentUpdateRepositoryIT {
   protected final ListViewTemplate listViewTemplate;
   protected final FlowNodeInstanceTemplate flowNodeInstanceTemplate;
   protected final OperationTemplate operationTemplate;
-  @AutoClose private final ClientAdapter clientAdapter;
+  @AutoClose
+  private final ClientAdapter clientAdapter;
   private final SearchEngineClient engineClient;
 
   protected IncidentUpdateRepositoryIT(final String databaseUrl, final boolean isElastic) {
@@ -146,6 +148,7 @@ abstract class IncidentUpdateRepositoryIT {
       disabledReason = "Excluding from AWS OS IT CI")
   @Nested
   final class GetIncidentDocumentsTest {
+
     @Test
     void shouldReturnEmptyMap() {
       // given
@@ -224,6 +227,7 @@ abstract class IncidentUpdateRepositoryIT {
       disabledReason = "Excluding from AWS OS IT CI")
   @Nested
   final class GetPendingIncidentsBatchTest {
+
     @Test
     void shouldGetOnlyNewUpdatesByPosition() throws PersistenceException {
       // given
@@ -342,7 +346,8 @@ abstract class IncidentUpdateRepositoryIT {
 
     private void setupIncidentUpdates(final long fromPosition, final long toPosition)
         throws PersistenceException {
-      setupIncidentUpdates(fromPosition, toPosition, ignored -> {});
+      setupIncidentUpdates(fromPosition, toPosition, ignored -> {
+      });
     }
 
     private void setupIncidentUpdates(
@@ -367,6 +372,7 @@ abstract class IncidentUpdateRepositoryIT {
       disabledReason = "Excluding from AWS OS IT CI")
   @Nested
   final class BulkUpdateIT {
+
     @Test
     void shouldReportError() {
       // given
@@ -545,6 +551,7 @@ abstract class IncidentUpdateRepositoryIT {
       disabledReason = "Excluding from AWS OS IT CI")
   @Nested
   final class AnalyzeTreePathIT {
+
     @Test
     void shouldAnalyzeTreePath() {
       // given
@@ -657,6 +664,7 @@ abstract class IncidentUpdateRepositoryIT {
       disabledReason = "Excluding from AWS OS IT CI")
   @Nested
   final class WasProcessInstanceDeletedIT {
+
     @Test
     void shouldReturnNotDeletedIfDifferentKey() throws PersistenceException {
       // given
@@ -753,6 +761,7 @@ abstract class IncidentUpdateRepositoryIT {
       disabledReason = "Excluding from AWS OS IT CI")
   @Nested
   final class GetFlowNodesInListViewIT {
+
     @Test
     void shouldGetFlowNodes() throws PersistenceException {
       // given
@@ -843,6 +852,7 @@ abstract class IncidentUpdateRepositoryIT {
       disabledReason = "Excluding from AWS OS IT CI")
   @Nested
   final class GetFlowNodeInstancesIT {
+
     @Test
     void shouldGetFlowNodes() throws PersistenceException {
       // given
@@ -894,6 +904,7 @@ abstract class IncidentUpdateRepositoryIT {
       disabledReason = "Excluding from AWS OS IT CI")
   @Nested
   final class GetActiveIncidentsTest {
+
     @Test
     void shouldGetActiveIncidentsWithSharedPath() throws PersistenceException {
       // given
@@ -992,6 +1003,7 @@ abstract class IncidentUpdateRepositoryIT {
       disabledReason = "Excluding from AWS OS IT CI")
   @Nested
   final class GetProcessInstancesIT {
+
     @Test
     void shouldGetProcessInstances() throws PersistenceException {
       // given

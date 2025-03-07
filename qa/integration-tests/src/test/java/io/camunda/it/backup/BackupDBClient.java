@@ -7,7 +7,7 @@
  */
 package io.camunda.it.backup;
 
-import io.camunda.db.se.config.DatabaseType;
+import io.camunda.db.DatabaseType;
 import io.camunda.webapps.backup.BackupRepository;
 import io.camunda.webapps.backup.repository.SnapshotNameProvider;
 import java.io.IOException;
@@ -21,6 +21,7 @@ import java.util.concurrent.Executor;
  * application.
  */
 public interface BackupDBClient extends AutoCloseable {
+
   void restore(String repositoryName, Collection<String> snapshots) throws IOException;
 
   void createRepository(String repositoryName) throws IOException;

@@ -7,7 +7,7 @@
  */
 package io.camunda.qa.util.multidb;
 
-import io.camunda.db.se.config.DatabaseType;
+import io.camunda.db.DatabaseType;
 import io.camunda.exporter.CamundaExporter;
 import io.camunda.zeebe.exporter.ElasticsearchExporter;
 import io.camunda.zeebe.exporter.opensearch.OpensearchExporter;
@@ -17,9 +17,11 @@ import java.util.Map;
 import java.util.UUID;
 
 /**
- * Helper class to configure any {@link TestStandaloneApplication}, with specific secondary storage.
+ * Helper class to configure any {@link TestStandaloneApplication}, with specific secondary
+ * storage.
  */
 public class MultiDbConfigurator {
+
   public static String zeebePrefix = "-zeebe-records";
 
   private final TestStandaloneApplication<?> testApplication;

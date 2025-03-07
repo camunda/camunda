@@ -7,7 +7,7 @@
  */
 package io.camunda.search.connect.util;
 
-import io.camunda.db.se.config.SecurityConfiguration;
+import io.camunda.db.search.engine.config.SecurityConfiguration;
 import io.camunda.search.connect.SearchClientConnectException;
 import java.io.BufferedInputStream;
 import java.io.FileInputStream;
@@ -27,7 +27,8 @@ public final class SecurityUtil {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(SecurityUtil.class);
 
-  private SecurityUtil() {}
+  private SecurityUtil() {
+  }
 
   public static SSLContext getSSLContext(
       final SecurityConfiguration configuration, final String alias)

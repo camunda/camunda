@@ -10,11 +10,11 @@ package io.camunda.application.commons.se;
 import io.camunda.application.commons.se.SearchEngineDatabaseConfiguration.SearchEngineConnectProperties;
 import io.camunda.application.commons.se.SearchEngineDatabaseConfiguration.SearchEngineIndexProperties;
 import io.camunda.application.commons.se.SearchEngineDatabaseConfiguration.SearchEngineRetentionProperties;
-import io.camunda.db.se.config.ConnectConfiguration;
-import io.camunda.db.se.config.DatabaseConfig;
-import io.camunda.db.se.config.IndexSettings;
-import io.camunda.db.se.config.RetentionConfiguration;
-import io.camunda.db.se.config.SearchEngineConfiguration;
+import io.camunda.db.search.engine.config.ConnectConfiguration;
+import io.camunda.db.search.engine.config.DatabaseConfig;
+import io.camunda.db.search.engine.config.IndexSettings;
+import io.camunda.db.search.engine.config.RetentionConfiguration;
+import io.camunda.db.search.engine.config.SearchEngineConfiguration;
 import io.camunda.search.connect.es.ElasticsearchConnector;
 import io.camunda.search.connect.os.OpensearchConnector;
 import io.camunda.search.es.clients.ElasticsearchSearchClient;
@@ -29,9 +29,9 @@ import org.springframework.context.annotation.Configuration;
 @Configuration(proxyBeanMethods = false)
 @Conditional(SearchEngineEnabledCondition.class)
 @EnableConfigurationProperties({
-  SearchEngineConnectProperties.class,
-  SearchEngineIndexProperties.class,
-  SearchEngineRetentionProperties.class,
+    SearchEngineConnectProperties.class,
+    SearchEngineIndexProperties.class,
+    SearchEngineRetentionProperties.class,
 })
 public class SearchEngineDatabaseConfiguration {
 
@@ -71,11 +71,17 @@ public class SearchEngineDatabaseConfiguration {
   }
 
   @ConfigurationProperties("camunda.database")
-  public static final class SearchEngineConnectProperties extends ConnectConfiguration {}
+  public static final class SearchEngineConnectProperties extends ConnectConfiguration {
+
+  }
 
   @ConfigurationProperties("camunda.database.index")
-  public static final class SearchEngineIndexProperties extends IndexSettings {}
+  public static final class SearchEngineIndexProperties extends IndexSettings {
+
+  }
 
   @ConfigurationProperties("camunda.database.retention")
-  public static final class SearchEngineRetentionProperties extends RetentionConfiguration {}
+  public static final class SearchEngineRetentionProperties extends RetentionConfiguration {
+
+  }
 }

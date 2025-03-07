@@ -13,7 +13,7 @@ import io.camunda.application.commons.migration.PrefixMigrationHelper;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.CredentialsProvider;
 import io.camunda.client.api.response.ProcessInstanceEvent;
-import io.camunda.db.se.config.ConnectConfiguration;
+import io.camunda.db.search.engine.config.ConnectConfiguration;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.qa.util.cluster.TestSimpleCamundaApplication;
 import io.camunda.qa.util.multidb.MultiDbConfigurator;
@@ -143,7 +143,7 @@ public class PrefixMigrationIT {
       final String endpoint, final long processInstanceKey) {
 
     try (final HttpClient httpClient =
-        HttpClient.newBuilder().cookieHandler(new CookieManager()).build(); ) {
+        HttpClient.newBuilder().cookieHandler(new CookieManager()).build();) {
       sendPOSTRequest(
           httpClient,
           String.format("%sapi/login?username=%s&password=%s", endpoint, "demo", "demo"),

@@ -7,7 +7,7 @@
  */
 package io.camunda.application.commons.se;
 
-import io.camunda.db.se.config.DatabaseConfig;
+import io.camunda.db.search.engine.config.DatabaseConfig;
 import org.springframework.boot.autoconfigure.condition.AnyNestedCondition;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 
@@ -21,11 +21,15 @@ public class SearchEngineEnabledCondition extends AnyNestedCondition {
       name = "camunda.database",
       havingValue = DatabaseConfig.ELASTICSEARCH,
       matchIfMissing = true)
-  static class ElasticSearchEnabled {}
+  static class ElasticSearchEnabled {
+
+  }
 
   @ConditionalOnProperty(
       name = "camunda.database",
       havingValue = DatabaseConfig.OPENSEARCH,
       matchIfMissing = true)
-  static class OpenSearchEnabled {}
+  static class OpenSearchEnabled {
+
+  }
 }

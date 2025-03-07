@@ -5,7 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.db.se.config;
+package io.camunda.db.search.engine.config;
 
 public class SecurityConfiguration {
 
@@ -22,7 +22,7 @@ public class SecurityConfiguration {
     return enabled;
   }
 
-  public void setEnabled(boolean enabled) {
+  public void setEnabled(final boolean enabled) {
     this.enabled = enabled;
   }
 
@@ -30,7 +30,7 @@ public class SecurityConfiguration {
     return certificatePath;
   }
 
-  public void setCertificatePath(String certificatePath) {
+  public void setCertificatePath(final String certificatePath) {
     this.certificatePath = certificatePath;
   }
 
@@ -38,7 +38,7 @@ public class SecurityConfiguration {
     return verifyHostname;
   }
 
-  public void setVerifyHostname(boolean verifyHostname) {
+  public void setVerifyHostname(final boolean verifyHostname) {
     this.verifyHostname = verifyHostname;
   }
 
@@ -46,7 +46,7 @@ public class SecurityConfiguration {
     return selfSigned;
   }
 
-  public void setSelfSigned(boolean selfSigned) {
+  public void setSelfSigned(final boolean selfSigned) {
     this.selfSigned = selfSigned;
   }
 }

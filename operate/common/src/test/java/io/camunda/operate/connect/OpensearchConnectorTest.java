@@ -20,7 +20,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.tomakehurst.wiremock.core.WireMockConfiguration;
 import com.github.tomakehurst.wiremock.junit5.WireMockExtension;
 import com.github.tomakehurst.wiremock.junit5.WireMockRuntimeInfo;
-import io.camunda.db.se.config.PluginConfiguration;
+import io.camunda.db.search.engine.config.PluginConfiguration;
 import io.camunda.operate.property.OperateOpensearchProperties;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.util.TestPlugin;
@@ -256,15 +256,19 @@ public class OpensearchConnectorTest {
   }
 
   private static final class NoopCallback implements FutureCallback<SimpleHttpResponse> {
+
     private static final NoopCallback INSTANCE = new NoopCallback();
 
     @Override
-    public void completed(final SimpleHttpResponse result) {}
+    public void completed(final SimpleHttpResponse result) {
+    }
 
     @Override
-    public void failed(final Exception ex) {}
+    public void failed(final Exception ex) {
+    }
 
     @Override
-    public void cancelled() {}
+    public void cancelled() {
+    }
   }
 }

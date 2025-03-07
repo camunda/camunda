@@ -9,13 +9,14 @@ package io.camunda.search.connect.configuration;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.db.se.config.DatabaseConfig;
-import io.camunda.db.se.config.DatabaseType;
+import io.camunda.db.DatabaseType;
+import io.camunda.db.search.engine.config.DatabaseConfig;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 
 public class DatabaseTypeTest {
+
   @Test
   public void stringValuesShouldMatchEnum() {
     assertThat(DatabaseConfig.ELASTICSEARCH).isEqualTo(DatabaseType.ELASTICSEARCH.toString());

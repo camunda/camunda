@@ -8,7 +8,7 @@
 package io.camunda.application.commons.backup;
 
 import io.camunda.application.commons.conditions.WebappEnabledCondition;
-import io.camunda.db.se.config.ConnectConfiguration;
+import io.camunda.db.search.engine.config.ConnectConfiguration;
 import io.camunda.optimize.service.db.schema.OptimizeIndexNameService;
 import io.camunda.search.clients.DocumentBasedSearchClient;
 import io.camunda.webapps.backup.DynamicIndicesProvider;

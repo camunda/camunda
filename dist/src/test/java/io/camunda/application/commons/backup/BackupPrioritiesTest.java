@@ -20,7 +20,7 @@ import com.tngtech.archunit.core.domain.JavaClass;
 import com.tngtech.archunit.core.importer.ClassFileImporter;
 import io.camunda.application.commons.backup.BackupPriorityConfiguration.OptimizePrio1Delegate;
 import io.camunda.application.commons.backup.BackupPriorityConfiguration.OptimizePrio6Delegate;
-import io.camunda.db.se.config.DatabaseType;
+import io.camunda.db.DatabaseType;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.optimize.service.db.schema.OptimizeIndexNameService;
 import io.camunda.tasklist.property.TasklistProperties;
@@ -47,15 +47,15 @@ class BackupPrioritiesTest {
   static {
     ALL_IMPLEMENTATIONS =
         new ClassFileImporter()
-                .importPackages(
-                    "io.camunda.webapps.schema",
-                    // Just scan the ES instances of the classes
-                    "io.camunda.optimize.service.db.es.schema.index")
-                .that(implement(BackupPriority.class))
-                .stream()
-                .filter(clz -> !clz.getName().contains("Abstract"))
-                .filter(clz -> !OPTIMIZE_INDICES_TO_IGNORE.contains(clz.getName()))
-                .toList();
+            .importPackages(
+                "io.camunda.webapps.schema",
+                // Just scan the ES instances of the classes
+                "io.camunda.optimize.service.db.es.schema.index")
+            .that(implement(BackupPriority.class))
+            .stream()
+            .filter(clz -> !clz.getName().contains("Abstract"))
+            .filter(clz -> !OPTIMIZE_INDICES_TO_IGNORE.contains(clz.getName()))
+            .toList();
   }
 
   @Test
@@ -83,9 +83,9 @@ class BackupPrioritiesTest {
         .allSatisfy(
             clazz ->
                 assertThat(
-                        clazz.getAllRawInterfaces().stream()
-                            .filter(i -> i.getName().matches(".*.Prio\\d+Backup"))
-                            .count())
+                    clazz.getAllRawInterfaces().stream()
+                        .filter(i -> i.getName().matches(".*.Prio\\d+Backup"))
+                        .count())
                     .isEqualTo(1));
   }
 
@@ -94,7 +94,7 @@ class BackupPrioritiesTest {
         .flatMap(
             op ->
                 Stream.of(null, new TasklistProperties())
-                    .map(tasklist -> new Object[] {op, tasklist}))
+                    .map(tasklist -> new Object[]{op, tasklist}))
         // At least one property must be configured
         .filter(arr -> !Arrays.stream(arr).allMatch(Objects::isNull));
   }

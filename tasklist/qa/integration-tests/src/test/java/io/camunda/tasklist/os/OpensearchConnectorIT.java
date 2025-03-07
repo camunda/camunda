@@ -11,7 +11,7 @@ import com.github.tomakehurst.wiremock.WireMockServer;
 import com.github.tomakehurst.wiremock.client.CountMatchingStrategy;
 import com.github.tomakehurst.wiremock.client.WireMock;
 import com.github.tomakehurst.wiremock.core.WireMockConfiguration;
-import io.camunda.db.se.config.PluginConfiguration;
+import io.camunda.db.search.engine.config.PluginConfiguration;
 import io.camunda.tasklist.JacksonConfig;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.util.TestPlugin;
@@ -53,7 +53,8 @@ public class OpensearchConnectorIT {
       new WireMockServer(WireMockConfiguration.options().dynamicPort());
   private static final Path TEMP_DIR = createTempDir();
 
-  @Autowired private OpenSearchConnector connector;
+  @Autowired
+  private OpenSearchConnector connector;
 
   @BeforeAll
   static void beforeAll() {

@@ -7,7 +7,7 @@
  */
 package io.camunda.migration.process.adapter.os;
 
-import io.camunda.db.se.config.ConnectConfiguration;
+import io.camunda.db.search.engine.config.ConnectConfiguration;
 import io.camunda.migration.api.MigrationException;
 import io.camunda.migration.process.adapter.Adapter;
 import io.camunda.migration.process.adapter.MigrationRepositoryIndex;

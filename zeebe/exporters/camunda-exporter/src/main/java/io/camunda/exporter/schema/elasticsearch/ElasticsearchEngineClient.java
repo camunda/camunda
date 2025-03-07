@@ -29,7 +29,7 @@ import co.elastic.clients.json.JsonData;
 import co.elastic.clients.json.JsonpDeserializer;
 import co.elastic.clients.json.jackson.JacksonJsonpGenerator;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.camunda.db.se.config.IndexSettings;
+import io.camunda.db.search.engine.config.IndexSettings;
 import io.camunda.exporter.SchemaResourceSerializer;
 import io.camunda.exporter.exceptions.ElasticsearchExporterException;
 import io.camunda.exporter.exceptions.IndexSchemaValidationException;
@@ -54,6 +54,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class ElasticsearchEngineClient implements SearchEngineClient {
+
   private static final Logger LOG = LoggerFactory.getLogger(ElasticsearchEngineClient.class);
   private final ElasticsearchClient client;
   private final SearchEngineClientUtils utils;
@@ -121,7 +122,7 @@ public class ElasticsearchEngineClient implements SearchEngineClient {
       final var errorReason = e.error().reason();
       if (errorReason != null
           && errorReason.equals(
-              "index template [" + templateDescriptor.getTemplateName() + "] already exists")) {
+          "index template [" + templateDescriptor.getTemplateName() + "] already exists")) {
         LOG.debug(errorReason);
         return;
       }
@@ -448,11 +449,11 @@ public class ElasticsearchEngineClient implements SearchEngineClient {
         getResourceAsStream(indexTemplateDescriptor.getMappingsClasspathFilename())) {
       final var updatedTemplateSettings =
           deserializeJson(
-                  IndexTemplateMapping._DESERIALIZER,
-                  utils.new SchemaSettingsAppender(templateFile)
-                      .withNumberOfShards(currentSettings.getNumberOfShards())
-                      .withNumberOfReplicas(currentSettings.getNumberOfReplicas())
-                      .build())
+              IndexTemplateMapping._DESERIALIZER,
+              utils.new SchemaSettingsAppender(templateFile)
+                  .withNumberOfShards(currentSettings.getNumberOfShards())
+                  .withNumberOfReplicas(currentSettings.getNumberOfReplicas())
+                  .build())
               .settings();
 
       final var currentIndexTemplateState = getIndexTemplateState(indexTemplateDescriptor);

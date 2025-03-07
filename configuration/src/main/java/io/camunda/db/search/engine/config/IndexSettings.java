@@ -5,12 +5,13 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.db.se.config;
+package io.camunda.db.search.engine.config;
 
 import java.util.HashMap;
 import java.util.Map;
 
 public class IndexSettings {
+
   public static final int DEFAULT_VARIABLE_SIZE_THRESHOLD = 8191;
   private String prefix = "";
   private String zeebeIndexPrefix = "zeebe-record";

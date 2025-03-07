@@ -7,7 +7,7 @@
  */
 package io.camunda.exporter.schema;
 
-import io.camunda.db.se.config.IndexSettings;
+import io.camunda.db.search.engine.config.IndexSettings;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
 import java.util.Collection;
@@ -15,6 +15,7 @@ import java.util.List;
 import java.util.Map;
 
 public interface SearchEngineClient {
+
   void createIndex(final IndexDescriptor indexDescriptor, final IndexSettings settings);
 
   /**

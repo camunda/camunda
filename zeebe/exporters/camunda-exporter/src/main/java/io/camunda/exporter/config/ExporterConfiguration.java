@@ -7,9 +7,9 @@
  */
 package io.camunda.exporter.config;
 
-import io.camunda.db.se.config.ConnectConfiguration;
-import io.camunda.db.se.config.IndexSettings;
-import io.camunda.db.se.config.RetentionConfiguration;
+import io.camunda.db.search.engine.config.ConnectConfiguration;
+import io.camunda.db.search.engine.config.IndexSettings;
+import io.camunda.db.search.engine.config.RetentionConfiguration;
 
 public class ExporterConfiguration {
 
@@ -118,6 +118,7 @@ public class ExporterConfiguration {
   }
 
   public static class BulkConfiguration {
+
     // delay before forced flush
     private int delay = 5;
     // bulk size before flush
@@ -146,6 +147,7 @@ public class ExporterConfiguration {
   }
 
   public static class ArchiverConfiguration {
+
     private boolean rolloverEnabled = true;
     private String elsRolloverDateFormat = "date";
     private String rolloverInterval = "1d";
@@ -250,6 +252,7 @@ public class ExporterConfiguration {
   }
 
   public static class CacheConfiguration {
+
     private int maxCacheSize = 10000;
 
     public int getMaxCacheSize() {
@@ -267,6 +270,7 @@ public class ExporterConfiguration {
   }
 
   public static final class PostExportConfiguration {
+
     private int batchSize = 100;
     private int delayBetweenRuns = 2000;
     private int maxDelayBetweenRuns = 60000;
@@ -323,7 +327,9 @@ public class ExporterConfiguration {
 
     private String webhook;
 
-    /** Defines the domain which the user always sees */
+    /**
+     * Defines the domain which the user always sees
+     */
     private String auth0Domain;
 
     private String m2mClientId;

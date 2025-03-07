@@ -5,7 +5,14 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.db.se.config;
+package io.camunda.db.search.engine.config;
 
-public record SearchEngineConfiguration(
-    ConnectConfiguration connect, IndexSettings index, RetentionConfiguration retention) {}
+public final class DatabaseConfig {
+
+  public static final String ELASTICSEARCH = "elasticsearch";
+  public static final String RDBMS = "rdbms";
+  public static final String OPENSEARCH = "opensearch";
+
+  private DatabaseConfig() {
+  }
+}

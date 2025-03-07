@@ -15,8 +15,8 @@
 package io.camunda.application.commons.search;
 
 import io.camunda.db.rdbms.RdbmsService;
-import io.camunda.db.se.config.ConnectConfiguration;
-import io.camunda.db.se.config.DatabaseConfig;
+import io.camunda.db.search.engine.config.ConnectConfiguration;
+import io.camunda.db.search.engine.config.DatabaseConfig;
 import io.camunda.search.clients.DocumentBasedSearchClient;
 import io.camunda.search.clients.SearchClients;
 import io.camunda.search.rdbms.RdbmsSearchClient;

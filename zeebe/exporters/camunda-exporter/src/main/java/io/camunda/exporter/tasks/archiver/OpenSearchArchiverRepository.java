@@ -8,7 +8,7 @@
 package io.camunda.exporter.tasks.archiver;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import io.camunda.db.se.config.RetentionConfiguration;
+import io.camunda.db.search.engine.config.RetentionConfiguration;
 import io.camunda.exporter.config.ExporterConfiguration.ArchiverConfiguration;
 import io.camunda.exporter.metrics.CamundaExporterMetrics;
 import io.camunda.exporter.tasks.util.OpensearchRepository;
@@ -52,6 +52,7 @@ import org.slf4j.Logger;
 
 public final class OpenSearchArchiverRepository extends OpensearchRepository
     implements ArchiverRepository {
+
   private static final String DATES_AGG = "datesAgg";
   private static final String INSTANCES_AGG = "instancesAgg";
   private static final String DATES_SORTED_AGG = "datesSortedAgg";
@@ -212,9 +213,9 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
     final AddPolicyRequestBody value = new AddPolicyRequestBody(retention.getPolicyName());
     final var request = Requests.builder().method("POST").endpoint("_plugins/_ism/add/" + index);
     return sendRequestAsync(
-            () ->
-                genericClient.executeAsync(
-                    request.json(value, genericClient._transport().jsonpMapper()).build()))
+        () ->
+            genericClient.executeAsync(
+                request.json(value, genericClient._transport().jsonpMapper()).build()))
         .thenComposeAsync(
             response -> {
               if (response.getStatus() >= 400) {
@@ -363,10 +364,13 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
         .build();
   }
 
-  private record AddPolicyRequestBody(@JsonProperty("policy_id") String policyId) {}
+  private record AddPolicyRequestBody(@JsonProperty("policy_id") String policyId) {
+
+  }
 
   @FunctionalInterface
   private interface RequestSender<T> {
+
     CompletableFuture<T> sendRequest() throws IOException;
   }
 }

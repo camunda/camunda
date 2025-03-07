@@ -12,7 +12,7 @@ import io.camunda.authentication.session.WebSessionDeletionTask;
 import io.camunda.authentication.session.WebSessionMapper;
 import io.camunda.authentication.session.WebSessionMapper.SpringBasedWebSessionAttributeConverter;
 import io.camunda.authentication.session.WebSessionRepository;
-import io.camunda.db.se.config.ConnectConfiguration;
+import io.camunda.db.search.engine.config.ConnectConfiguration;
 import io.camunda.exporter.config.ConnectionTypes;
 import io.camunda.search.clients.DocumentBasedSearchClient;
 import io.camunda.search.clients.DocumentBasedWriteClient;

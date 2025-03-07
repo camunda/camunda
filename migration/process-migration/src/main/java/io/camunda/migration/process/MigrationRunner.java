@@ -8,7 +8,7 @@
 package io.camunda.migration.process;
 
 import co.elastic.clients.elasticsearch._types.ElasticsearchException;
-import io.camunda.db.se.config.ConnectConfiguration;
+import io.camunda.db.search.engine.config.ConnectConfiguration;
 import io.camunda.migration.api.MigrationException;
 import io.camunda.migration.api.Migrator;
 import io.camunda.migration.process.adapter.Adapter;
@@ -127,7 +127,8 @@ public class MigrationRunner implements Migrator {
   private void delayNextRound() {
     try {
       scheduler
-          .schedule(() -> {}, properties.getMinRetryDelay().toSeconds(), TimeUnit.SECONDS)
+          .schedule(() -> {
+          }, properties.getMinRetryDelay().toSeconds(), TimeUnit.SECONDS)
           .get();
     } catch (final InterruptedException | ExecutionException ex) {
       Thread.currentThread().interrupt();
@@ -163,8 +164,8 @@ public class MigrationRunner implements Migrator {
   private double migratedProcessesCount(
       final String lastMigratedProcessDefinitionKey, final List<ProcessEntity> processes) {
     return processes.stream()
-            .takeWhile(process -> !process.getId().equals(lastMigratedProcessDefinitionKey))
-            .count()
+        .takeWhile(process -> !process.getId().equals(lastMigratedProcessDefinitionKey))
+        .count()
         + 1;
   }
 
@@ -182,7 +183,6 @@ public class MigrationRunner implements Migrator {
    * cause the Spring Boot application to terminate. Some exceptions can be expected when dealing
    * with Greenfield deployments and these should be ignored.
    *
-   * @param exception
    * @return true if the exception should be rethrown, false otherwise
    */
   private boolean shouldThrowException(final Exception exception) {

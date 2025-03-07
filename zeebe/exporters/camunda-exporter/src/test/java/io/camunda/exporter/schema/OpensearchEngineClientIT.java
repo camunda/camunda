@@ -12,7 +12,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatNoException;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import io.camunda.db.se.config.IndexSettings;
+import io.camunda.db.search.engine.config.IndexSettings;
 import io.camunda.exporter.exceptions.OpensearchExporterException;
 import io.camunda.exporter.schema.opensearch.OpensearchEngineClient;
 import io.camunda.exporter.utils.SearchDBExtension;
@@ -41,7 +41,8 @@ import org.opensearch.client.opensearch.generic.Requests;
 
 public class OpensearchEngineClientIT {
 
-  @RegisterExtension private static final SearchDBExtension SEARCH_DB = SearchDBExtension.create();
+  @RegisterExtension
+  private static final SearchDBExtension SEARCH_DB = SearchDBExtension.create();
 
   private static OpenSearchClient openSearchClient;
   private static OpensearchEngineClient opensearchEngineClient;
@@ -300,16 +301,16 @@ public class OpensearchEngineClientIT {
     try (final var response = openSearchClient.generic().execute(req)) {
       assertThat(response.getStatus()).isEqualTo(200);
       assertThat(
-              TestObjectMapper.objectMapper()
-                  .readTree(response.getBody().get().body())
-                  .get("policy")
-                  .get("states")
-                  .get(0)
-                  .get("transitions")
-                  .get(0)
-                  .get("conditions")
-                  .get("min_index_age")
-                  .asText())
+          TestObjectMapper.objectMapper()
+              .readTree(response.getBody().get().body())
+              .get("policy")
+              .get("states")
+              .get(0)
+              .get("transitions")
+              .get(0)
+              .get("conditions")
+              .get("min_index_age")
+              .asText())
           .isEqualTo("20d");
     }
   }
@@ -318,7 +319,7 @@ public class OpensearchEngineClientIT {
   void shouldFailIfIndexStateManagementPolicyInvalid() {
     // given, when, then
     assertThatThrownBy(
-            () -> opensearchEngineClient.putIndexLifeCyclePolicy("policy_name", "test123"))
+        () -> opensearchEngineClient.putIndexLifeCyclePolicy("policy_name", "test123"))
         .isInstanceOf(OpensearchExporterException.class)
         .hasMessageContaining(
             "Creating index state management policy [policy_name] with min_deletion_age [test123] failed.");
@@ -326,6 +327,7 @@ public class OpensearchEngineClientIT {
 
   @Nested
   class ImportersCompleted {
+
     final String indexPrefix = "";
     final int partitionId = 1;
     final IndexDescriptor importPositionIndex = new ImportPositionIndex(indexPrefix, true);

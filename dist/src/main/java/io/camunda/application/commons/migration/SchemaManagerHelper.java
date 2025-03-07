@@ -7,8 +7,8 @@
  */
 package io.camunda.application.commons.migration;
 
-import io.camunda.db.se.config.ConnectConfiguration;
-import io.camunda.db.se.config.DatabaseType;
+import io.camunda.db.DatabaseType;
+import io.camunda.db.search.engine.config.ConnectConfiguration;
 import io.camunda.exporter.adapters.ClientAdapter;
 import io.camunda.exporter.config.ExporterConfiguration;
 import io.camunda.exporter.schema.SchemaManager;
@@ -17,9 +17,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public final class SchemaManagerHelper {
+
   private static final Logger LOG = LoggerFactory.getLogger(SchemaManagerHelper.class);
 
-  private SchemaManagerHelper() {}
+  private SchemaManagerHelper() {
+  }
 
   public static void createSchema(
       final ConnectConfiguration connectConfig, final ClientAdapter clientAdapter) {

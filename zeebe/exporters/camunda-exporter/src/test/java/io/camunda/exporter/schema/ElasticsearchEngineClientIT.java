@@ -10,12 +10,13 @@ package io.camunda.exporter.schema;
 import static io.camunda.exporter.schema.SchemaTestUtil.validateMappings;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatNoException;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.mock;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.elasticsearch.core.BulkRequest;
 import co.elastic.clients.elasticsearch.core.UpdateRequest;
-import io.camunda.db.se.config.IndexSettings;
+import io.camunda.db.search.engine.config.IndexSettings;
 import io.camunda.exporter.config.ExporterConfiguration;
 import io.camunda.exporter.schema.elasticsearch.ElasticsearchEngineClient;
 import io.camunda.search.connect.es.ElasticsearchConnector;
@@ -40,6 +41,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 
 @Testcontainers
 public class ElasticsearchEngineClientIT {
+
   @Container
   private static final ElasticsearchContainer CONTAINER =
       TestSearchContainers.createDefeaultElasticsearchContainer();
@@ -237,14 +239,14 @@ public class ElasticsearchEngineClientIT {
 
     assertThat(createdTemplate.size()).isEqualTo(1);
     assertThat(
-            createdTemplate
-                .getFirst()
-                .indexTemplate()
-                .template()
-                .settings()
-                .index()
-                .refreshInterval()
-                .time())
+        createdTemplate
+            .getFirst()
+            .indexTemplate()
+            .template()
+            .settings()
+            .index()
+            .refreshInterval()
+            .time())
         .isEqualTo("2s");
   }
 
@@ -317,6 +319,7 @@ public class ElasticsearchEngineClientIT {
 
   @Nested
   class ImportersCompleted {
+
     final String indexPrefix = "";
     final int partitionId = 1;
     final IndexDescriptor importPositionIndex = new ImportPositionIndex(indexPrefix, true);

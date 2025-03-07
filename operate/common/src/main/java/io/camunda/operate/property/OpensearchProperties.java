@@ -9,7 +9,7 @@ package io.camunda.operate.property;
 
 import static io.camunda.operate.util.ConversionUtils.stringIsEmpty;
 
-import io.camunda.db.se.config.PluginConfiguration;
+import io.camunda.db.search.engine.config.PluginConfiguration;
 import io.camunda.operate.connect.OperateDateTimeFormatter;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -18,15 +18,18 @@ import java.util.function.Function;
 import org.springframework.boot.context.properties.NestedConfigurationProperty;
 
 public class OpensearchProperties {
+
   public static final String OS_DATE_FORMAT_DEFAULT = "date_time";
 
   public static final int BULK_REQUEST_MAX_SIZE_IN_BYTES_DEFAULT = 1024 * 1024 * 90; // 90 MB
 
   private String clusterName = "opensearch";
 
-  @Deprecated private String host = "localhost";
+  @Deprecated
+  private String host = "localhost";
 
-  @Deprecated private int port = 9200;
+  @Deprecated
+  private int port = 9200;
 
   private String dateFormat = OperateDateTimeFormatter.DATE_FORMAT_DEFAULT;
 
@@ -39,7 +42,9 @@ public class OpensearchProperties {
 
   private boolean createSchema = true;
 
-  /** Indicates whether operate does a proper health check for ES/OS clusters. */
+  /**
+   * Indicates whether operate does a proper health check for ES/OS clusters.
+   */
   private boolean healthCheckEnabled = true;
 
   private String url;
@@ -50,7 +55,8 @@ public class OpensearchProperties {
 
   private boolean awsEnabled = false;
 
-  @NestedConfigurationProperty private SslProperties ssl;
+  @NestedConfigurationProperty
+  private SslProperties ssl;
 
   private List<PluginConfiguration> interceptorPlugins;
 

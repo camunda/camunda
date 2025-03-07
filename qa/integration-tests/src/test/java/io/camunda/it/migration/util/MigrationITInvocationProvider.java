@@ -12,7 +12,7 @@ import co.elastic.clients.elasticsearch.core.reindex.Destination;
 import co.elastic.clients.elasticsearch.core.reindex.Source;
 import co.elastic.clients.elasticsearch.indices.GetIndexRequest;
 import io.camunda.client.CamundaClient;
-import io.camunda.db.se.config.ConnectConfiguration;
+import io.camunda.db.search.engine.config.ConnectConfiguration;
 import io.camunda.search.connect.es.ElasticsearchConnector;
 import io.camunda.search.connect.os.OpensearchConnector;
 import io.camunda.webapps.schema.entities.tasklist.TaskEntity.TaskImplementation;
@@ -48,6 +48,7 @@ import org.testcontainers.elasticsearch.ElasticsearchContainer;
  */
 public class MigrationITInvocationProvider
     implements TestTemplateInvocationContextProvider, AfterAllCallback, BeforeAllCallback {
+
   private static final String API_V2 = "V2";
 
   private final Map<DatabaseType, Map<String, String>> zeebeEnvironmentBefore = new HashMap<>();
@@ -306,9 +307,9 @@ public class MigrationITInvocationProvider
             .until(
                 () ->
                     esClient
-                            .indices()
-                            .get(GetIndexRequest.of(req -> req.index("*")))
-                            .get("operate-process-8.3.0_")
+                        .indices()
+                        .get(GetIndexRequest.of(req -> req.index("*")))
+                        .get("operate-process-8.3.0_")
                         != null);
 
         // Copy previous tasklist-process to operate-process, required for V2 APIs
@@ -337,11 +338,11 @@ public class MigrationITInvocationProvider
             .until(
                 () ->
                     osClient
-                            .indices()
-                            .get(
-                                org.opensearch.client.opensearch.indices.GetIndexRequest.of(
-                                    req -> req.index("*")))
-                            .get("operate-process-8.3.0_")
+                        .indices()
+                        .get(
+                            org.opensearch.client.opensearch.indices.GetIndexRequest.of(
+                                req -> req.index("*")))
+                        .get("operate-process-8.3.0_")
                         != null);
 
         // Copy previous tasklist-process to operate-process, required for V2 APIs

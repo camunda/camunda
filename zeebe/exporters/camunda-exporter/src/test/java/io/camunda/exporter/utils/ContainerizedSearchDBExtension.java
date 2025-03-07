@@ -9,7 +9,7 @@ package io.camunda.exporter.utils;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.camunda.db.se.config.IndexSettings;
+import io.camunda.db.search.engine.config.IndexSettings;
 import io.camunda.exporter.config.ExporterConfiguration;
 import io.camunda.exporter.schema.elasticsearch.ElasticsearchEngineClient;
 import io.camunda.exporter.schema.opensearch.OpensearchEngineClient;
@@ -136,5 +136,6 @@ public class ContainerizedSearchDBExtension extends SearchDBExtension {
   }
 
   @Override
-  public void afterAll(final ExtensionContext context) throws Exception {}
+  public void afterAll(final ExtensionContext context) throws Exception {
+  }
 }

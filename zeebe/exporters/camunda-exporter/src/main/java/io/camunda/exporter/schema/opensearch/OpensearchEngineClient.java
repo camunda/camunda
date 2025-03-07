@@ -12,7 +12,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import io.camunda.db.se.config.IndexSettings;
+import io.camunda.db.search.engine.config.IndexSettings;
 import io.camunda.exporter.SchemaResourceSerializer;
 import io.camunda.exporter.exceptions.ElasticsearchExporterException;
 import io.camunda.exporter.exceptions.IndexSchemaValidationException;
@@ -59,6 +59,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class OpensearchEngineClient implements SearchEngineClient {
+
   private static final Logger LOG = LoggerFactory.getLogger(OpensearchEngineClient.class);
   private static final String OPERATE_DELETE_ARCHIVED_POLICY =
       "/schema/opensearch/create/policy/operate_delete_archived_indices.json";
@@ -120,9 +121,9 @@ public class OpensearchEngineClient implements SearchEngineClient {
     try {
       if (create
           && client
-              .indices()
-              .existsIndexTemplate(req -> req.name(templateDescriptor.getTemplateName()))
-              .value()) {
+          .indices()
+          .existsIndexTemplate(req -> req.name(templateDescriptor.getTemplateName()))
+          .value()) {
         // Creation should only occur once during initialisation but multiple partitions with
         // their own exporter will create race conditions where multiple exporters try to
         // create the same template
@@ -469,11 +470,11 @@ public class OpensearchEngineClient implements SearchEngineClient {
         getClass().getResourceAsStream(indexTemplateDescriptor.getMappingsClasspathFilename())) {
       final var updatedTemplateSettings =
           deserializeJson(
-                  IndexTemplateMapping._DESERIALIZER,
-                  utils.new SchemaSettingsAppender(templateFile)
-                      .withNumberOfShards(currentSettings.getNumberOfShards())
-                      .withNumberOfReplicas(currentSettings.getNumberOfReplicas())
-                      .build())
+              IndexTemplateMapping._DESERIALIZER,
+              utils.new SchemaSettingsAppender(templateFile)
+                  .withNumberOfShards(currentSettings.getNumberOfShards())
+                  .withNumberOfReplicas(currentSettings.getNumberOfReplicas())
+                  .build())
               .settings();
 
       final var currentIndexTemplateState = getIndexTemplateState(indexTemplateDescriptor);

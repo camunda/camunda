@@ -13,7 +13,7 @@ import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import io.camunda.db.se.config.PluginConfiguration;
+import io.camunda.db.search.engine.config.PluginConfiguration;
 import io.camunda.plugin.search.header.DatabaseCustomHeaderSupplier;
 import io.camunda.search.connect.plugin.util.TestDatabaseCustomHeaderSupplierImpl;
 import io.camunda.zeebe.util.jar.ExternalJarClassLoader;

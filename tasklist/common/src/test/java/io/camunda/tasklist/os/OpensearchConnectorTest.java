@@ -13,7 +13,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.tomakehurst.wiremock.core.WireMockConfiguration;
 import com.github.tomakehurst.wiremock.junit5.WireMockExtension;
 import com.github.tomakehurst.wiremock.junit5.WireMockRuntimeInfo;
-import io.camunda.db.se.config.PluginConfiguration;
+import io.camunda.db.search.engine.config.PluginConfiguration;
 import io.camunda.search.connect.plugin.PluginRepository;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.util.TestPlugin;
@@ -200,22 +200,26 @@ class OpensearchConnectorTest {
   }
 
   private static org.apache.http.impl.nio.client.CloseableHttpAsyncClient
-      getOpensearchNativeRestClient(final RestClient client) throws Exception {
+  getOpensearchNativeRestClient(final RestClient client) throws Exception {
     final var field = client.getClass().getDeclaredField("client");
     field.setAccessible(true);
     return (org.apache.http.impl.nio.client.CloseableHttpAsyncClient) field.get(client);
   }
 
   private static final class NoopCallback implements FutureCallback<SimpleHttpResponse> {
+
     private static final NoopCallback INSTANCE = new NoopCallback();
 
     @Override
-    public void completed(final SimpleHttpResponse result) {}
+    public void completed(final SimpleHttpResponse result) {
+    }
 
     @Override
-    public void failed(final Exception ex) {}
+    public void failed(final Exception ex) {
+    }
 
     @Override
-    public void cancelled() {}
+    public void cancelled() {
+    }
   }
 }

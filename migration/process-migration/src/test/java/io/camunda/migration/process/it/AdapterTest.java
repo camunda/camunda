@@ -21,8 +21,8 @@ import co.elastic.clients.elasticsearch.core.SearchRequest;
 import co.elastic.clients.elasticsearch.core.SearchResponse;
 import co.elastic.clients.elasticsearch.core.search.Hit;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.camunda.db.se.config.ConnectConfiguration;
-import io.camunda.db.se.config.IndexSettings;
+import io.camunda.db.search.engine.config.ConnectConfiguration;
+import io.camunda.db.search.engine.config.IndexSettings;
 import io.camunda.exporter.schema.elasticsearch.ElasticsearchEngineClient;
 import io.camunda.exporter.schema.opensearch.OpensearchEngineClient;
 import io.camunda.migration.process.MigrationRunner;
@@ -56,6 +56,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 
 @Testcontainers
 public abstract class AdapterTest {
+
   protected static final String MISCONFIGURED_PREFIX = "misconfigured";
   protected static ProcessIndex processIndex;
   protected static MigrationRepositoryIndex migrationRepositoryIndex;

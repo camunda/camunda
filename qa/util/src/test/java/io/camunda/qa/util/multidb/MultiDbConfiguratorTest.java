@@ -11,7 +11,7 @@ import static io.camunda.qa.util.multidb.MultiDbConfigurator.zeebePrefix;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.application.commons.configuration.BrokerBasedConfiguration.BrokerBasedProperties;
-import io.camunda.db.se.config.DatabaseType;
+import io.camunda.db.DatabaseType;
 import io.camunda.qa.util.cluster.TestSimpleCamundaApplication;
 import io.camunda.zeebe.broker.system.configuration.ExporterCfg;
 import java.util.Map;

@@ -9,7 +9,7 @@ package io.camunda.tasklist.property;
 
 import static io.camunda.tasklist.util.ConversionUtils.stringIsEmpty;
 
-import io.camunda.db.se.config.PluginConfiguration;
+import io.camunda.db.search.engine.config.PluginConfiguration;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.List;
@@ -24,9 +24,11 @@ public class ElasticsearchProperties {
 
   private String clusterName = "elasticsearch";
 
-  @Deprecated private String host = "localhost";
+  @Deprecated
+  private String host = "localhost";
 
-  @Deprecated private int port = 9200;
+  @Deprecated
+  private int port = 9200;
 
   private String dateFormat = DATE_FORMAT_DEFAULT;
 
@@ -45,7 +47,8 @@ public class ElasticsearchProperties {
 
   private boolean healthCheckEnabled = true;
 
-  @NestedConfigurationProperty private SslProperties ssl;
+  @NestedConfigurationProperty
+  private SslProperties ssl;
 
   private List<PluginConfiguration> interceptorPlugins;
 
