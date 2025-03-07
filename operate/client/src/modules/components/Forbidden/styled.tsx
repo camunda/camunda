@@ -6,32 +6,12 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {ReactComponent as ForbiddenIcon} from 'modules/components/Icon/forbidden.svg';
-import {styles} from '@carbon/elements';
 import styled from 'styled-components';
-import {Stack} from '@carbon/react';
+import {EmptyState as BaseEmptyState} from 'modules/components/EmptyState';
+import {ReactComponent as PermissionDenied} from 'modules/components/Icon/permission-denied.svg';
 
-const Grid = styled.div`
-  display: grid;
-  align-content: center;
-  padding: var(--cds-spacing-11);
-  margin-block: calc(var(--cds-spacing-07) + var(--cds-spacing-09))
-    var(--cds-spacing-09);
-  margin-inline: var(--cds-spacing-06);
+const EmptyState = styled(BaseEmptyState)`
   background-color: var(--cds-layer);
-  height: calc(100vh - var(--cds-spacing-07) - 2 * var(--cds-spacing-09));
 `;
 
-const Content = styled(Stack)`
-  max-width: 376px;
-`;
-
-const Title = styled.h3`
-  ${styles.heading03};
-`;
-
-const Description = styled.div`
-  ${styles.body01}
-`;
-
-export {Grid, Title, Content, Description, ForbiddenIcon};
+export {EmptyState, PermissionDenied};
