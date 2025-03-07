@@ -12,6 +12,7 @@ import { SearchResponse } from "src/utility/api";
 import { EntityData } from "src/components/entityList/EntityList";
 import { Group } from "src/utility/api/groups";
 import { Role } from "src/utility/api/roles";
+import { Mapping } from "src/utility/api/mappings";
 
 export const TENANTS_ENDPOINT = "/tenants";
 
@@ -108,3 +109,29 @@ export const unassignTenantRole: ApiDefinition<
   UnassignTenantRoleParams
 > = ({ tenantId, key }) =>
   apiDelete(`${TENANTS_ENDPOINT}/${tenantId}/roles/${key}`);
+
+// ----------------- Mappings within a Tenant -----------------
+
+export type GetTenantMappingsParams = {
+  tenantId: string;
+};
+export const getMappingsByTenantId: ApiDefinition<
+  SearchResponse<Mapping>,
+  GetTenantMappingsParams
+> = ({ tenantId }) =>
+  apiPost(`${TENANTS_ENDPOINT}/${tenantId}/mapping-rules/search`);
+
+type AssignTenantMappingParams = GetTenantMappingsParams & { id: string };
+export const assignTenantMapping: ApiDefinition<
+  undefined,
+  AssignTenantMappingParams
+> = ({ tenantId, id }) => {
+  return apiPut(`${TENANTS_ENDPOINT}/${tenantId}/mapping-rules/${id}`);
+};
+
+type UnassignTenantMappingParams = AssignTenantMappingParams;
+export const unassignTenantMapping: ApiDefinition<
+  undefined,
+  UnassignTenantMappingParams
+> = ({ tenantId, id }) =>
+  apiDelete(`${TENANTS_ENDPOINT}/${tenantId}/mapping-rules/${id}`);

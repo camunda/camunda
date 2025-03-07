@@ -20,9 +20,11 @@ import { Description } from "src/pages/tenants/detail/components";
 import Members from "src/pages/tenants/detail/members";
 import Groups from "src/pages/tenants/detail/groups";
 import Roles from "src/pages/tenants/detail/roles";
+import Mappings from "src/pages/tenants/detail/mappings";
 import {
   IS_TENANT_GROUPS_SUPPORTED,
   IS_TENANT_ROLES_SUPPORTED,
+  IS_TENANT_MAPPINGS_SUPPORTED,
 } from "src/feature-flags";
 
 const Details: FC = () => {
@@ -100,6 +102,15 @@ const Details: FC = () => {
                         key: "roles",
                         label: t("roles"),
                         content: <Roles tenantId={tenant.tenantId} />,
+                      },
+                    ]
+                  : []),
+                ...(IS_TENANT_MAPPINGS_SUPPORTED
+                  ? [
+                      {
+                        key: "mappings",
+                        label: t("mappings"),
+                        content: <Mappings tenantId={tenant.tenantId} />,
                       },
                     ]
                   : []),
