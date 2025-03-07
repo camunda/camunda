@@ -5,6 +5,8 @@ import io.camunda.exporter.rdbms.RdbmsExportHandler;
 import io.camunda.search.entities.BatchOperationEntity.BatchOperationState;
 import io.camunda.zeebe.protocol.record.Record;
 import static io.camunda.zeebe.protocol.record.RecordMetadataDecoder.operationReferenceNullValue;
+
+import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
@@ -25,21 +27,38 @@ public class ProcessInstanceBatchOperationExportHandler implements RdbmsExportHa
 
   @Override
   public boolean canExport(final Record<ProcessInstanceRecordValue> record) {
-    return record.getValueType() == ValueType.PROCESS_INSTANCE
-        && record.getValue().getBpmnElementType() == BpmnElementType.PROCESS
-        && record.getIntent().equals(ProcessInstanceIntent.ELEMENT_TERMINATED)
-        && record.getOperationReference() != operationReferenceNullValue(); // TODO this would also fire on NON Batch operations which have a reference
+    return record.getOperationReference() != operationReferenceNullValue()
+        && record.getValueType() == ValueType.PROCESS_INSTANCE
+        && (isProcessCanceled(record) || isRejectedCanceled(record));
+    // TODO this would also fire on NON Batch operations which have a reference
   }
 
   @Override
   public void export(final Record<ProcessInstanceRecordValue> record) {
     final var value = record.getValue();
-    if (record.getIntent().equals(ProcessInstanceIntent.ELEMENT_TERMINATED)) {
+    if (isProcessCanceled(record)) {
       batchOperationWriter.updateItem(
           record.getOperationReference(),
           value.getProcessInstanceKey(),
           BatchOperationState.COMPLETED
       );
+    } else if (isRejectedCanceled(record)) {
+      batchOperationWriter.updateItem(
+          record.getOperationReference(),
+          value.getProcessInstanceKey(),
+          BatchOperationState.FAILED
+      );
     }
+  }
+
+  private boolean isProcessCanceled(final Record<ProcessInstanceRecordValue> record) {
+    return record.getValue().getBpmnElementType() == BpmnElementType.PROCESS
+        && record.getIntent().equals(ProcessInstanceIntent.ELEMENT_TERMINATED);
+  }
+
+  private boolean isRejectedCanceled(final Record<ProcessInstanceRecordValue> record) {
+    return record.getIntent().equals(ProcessInstanceIntent.CANCEL)
+        && record.getRejectionType() != null
+        && record.getRejectionType().equals(RejectionType.INVALID_STATE);
   }
 }
