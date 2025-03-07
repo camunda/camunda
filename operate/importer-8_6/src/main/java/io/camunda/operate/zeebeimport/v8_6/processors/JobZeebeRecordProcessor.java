@@ -141,7 +141,59 @@ public class JobZeebeRecordProcessor {
     updateFields.put(CUSTOM_HEADERS, jobEntity.getCustomHeaders());
     updateFields.put(JOB_DEADLINE, jobEntity.getDeadline());
 
-    batchRequest.upsert(
-        jobTemplate.getFullQualifiedName(), jobEntity.getId(), jobEntity, updateFields);
+    batchRequest.upsertWithScript(
+        jobTemplate.getFullQualifiedName(),
+        jobEntity.getId(),
+        jobEntity,
+        getJobUpdateScript(),
+        updateFields);
+  }
+
+  private String getJobUpdateScript() {
+    return String.format(
+        "if (ctx._source.%s == null || ctx._source.%s < params.%s) { "
+            + "ctx._source.%s = params.%s; " // position
+            + "if (params.%s != null) {"
+            + "   ctx._source.%s = params.%s; " // flowNodeId
+            + "}"
+            + "ctx._source.%s = params.%s; " // state
+            + "ctx._source.%s = params.%s; " // retries
+            + "ctx._source.%s = params.%s; " // worker
+            + "if (params.%s != null) {"
+            + "   ctx._source.%s = params.%s; " // error message
+            + "   ctx._source.%s = params.%s; " // error code
+            + "}"
+            + "if (params.%s != null) { ctx._source.%s = params.%s; }" // end date
+            + "if (params.%s != null) { ctx._source.%s = params.%s; }" // headers
+            + "if (params.%s != null) { ctx._source.%s = params.%s; }" // deadline
+            + "}",
+        POSITION,
+        POSITION,
+        POSITION,
+        POSITION,
+        POSITION,
+        FLOW_NODE_ID,
+        FLOW_NODE_ID,
+        FLOW_NODE_ID,
+        JOB_STATE,
+        JOB_STATE,
+        RETRIES,
+        RETRIES,
+        JOB_WORKER,
+        JOB_WORKER,
+        ERROR_MESSAGE,
+        ERROR_MESSAGE,
+        ERROR_MESSAGE,
+        ERROR_CODE,
+        ERROR_CODE,
+        TIME,
+        TIME,
+        TIME,
+        CUSTOM_HEADERS,
+        CUSTOM_HEADERS,
+        CUSTOM_HEADERS,
+        JOB_DEADLINE,
+        JOB_DEADLINE,
+        JOB_DEADLINE);
   }
 }
