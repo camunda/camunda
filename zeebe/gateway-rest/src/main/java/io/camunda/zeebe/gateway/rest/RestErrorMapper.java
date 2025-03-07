@@ -321,7 +321,6 @@ public class RestErrorMapper {
 
   public static ProblemDetail mapCamundaSearchExceptionToProblem(CamundaSearchException cse) {
     final CamundaSearchException.Reason reason = cse.getReason();
-    final Throwable cause = (cse.getCause() == null) ? cse : cse.getCause();
     final String title = reason.name();
     final String errorMessage = cse.getMessage();
     final String logPrefix = "Expected to handle REST request, but: {}";
