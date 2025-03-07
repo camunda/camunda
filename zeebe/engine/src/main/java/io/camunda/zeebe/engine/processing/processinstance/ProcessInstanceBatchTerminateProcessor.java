@@ -7,7 +7,6 @@
  */
 package io.camunda.zeebe.engine.processing.processinstance;
 
-import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
@@ -19,7 +18,8 @@ import io.camunda.zeebe.protocol.record.intent.ProcessInstanceBatchIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
-import java.util.concurrent.atomic.AtomicReferenceArray;
+import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 public final class ProcessInstanceBatchTerminateProcessor
     implements TypedRecordProcessor<ProcessInstanceBatchRecord> {
@@ -43,35 +43,32 @@ public final class ProcessInstanceBatchTerminateProcessor
   public void processRecord(final TypedRecord<ProcessInstanceBatchRecord> record) {
     final var recordValue = record.getValue();
 
-    final AtomicReferenceArray<ElementInstance> elementInstanceStateArray =
-        new AtomicReferenceArray<>(2);
-    elementInstanceState.forEachChild(
-        recordValue.getBatchElementInstanceKey(),
-        recordValue.getIndex(),
-        (childKey, childInstance) -> {
-          if (!childInstance.canTerminate()) {
-            return true;
-          }
+    final List<ElementInstance> children = getChildInstances(recordValue, 2);
 
-          if (elementInstanceStateArray.get(0) == null) {
-            elementInstanceStateArray.set(0, childInstance);
-            return true;
-          } else {
-            elementInstanceStateArray.set(1, childInstance);
-            return false;
-          }
-        });
-
-    if (elementInstanceStateArray.get(0) != null) {
-      terminateChildInstance(elementInstanceStateArray.get(0));
+    if (children.size() > 0) {
+      terminateChildInstance(children.getFirst());
     }
 
-    if (elementInstanceStateArray.get(1) != null) {
-      appendFollowupBatchCommand(elementInstanceStateArray.get(1), recordValue);
+    if (children.size() > 1) {
+      appendFollowupBatchCommand(children.get(1), recordValue);
     } else {
       stateWriter.appendFollowUpEvent(
           record.getKey(), ProcessInstanceBatchIntent.TERMINATED, recordValue);
     }
+  }
+
+  private List<ElementInstance> getChildInstances(
+      final ProcessInstanceBatchRecord recordValue, final int limit) {
+    final CopyOnWriteArrayList<ElementInstance> elementInstances = new CopyOnWriteArrayList<>();
+    elementInstanceState.forEachChild(
+        recordValue.getBatchElementInstanceKey(),
+        recordValue.getIndex(),
+        (childKey, childInstance) -> {
+          elementInstances.add(childInstance);
+          return elementInstances.size() < limit;
+        },
+        childInstance -> childInstance.canTerminate());
+    return elementInstances;
   }
 
   private void appendFollowupBatchCommand(
@@ -84,18 +81,6 @@ public final class ProcessInstanceBatchTerminateProcessor
 
     commandWriter.appendFollowUpCommand(
         keyGenerator.nextKey(), ProcessInstanceBatchIntent.TERMINATE, nextBatchRecord);
-  }
-
-  private boolean canWriteCommand(
-      final TypedRecord<ProcessInstanceBatchRecord> record, final ElementInstance childInstance) {
-    // We must have space in the batch to write both the TERMINATE command as the potential
-    // follow-up batch command. An excessive 8Kb is added to account for metadata. This is way
-    // more than will be necessary.
-    final var expectedCommandLength =
-        childInstance.getValue().getLength()
-            + record.getLength()
-            + EngineConfiguration.BATCH_SIZE_CALCULATION_BUFFER;
-    return commandWriter.canWriteCommandOfLength(expectedCommandLength);
   }
 
   private void terminateChildInstance(final ElementInstance childInstance) {
