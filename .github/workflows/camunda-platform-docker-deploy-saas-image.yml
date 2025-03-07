@@ -8,6 +8,11 @@ on:
         description: 'Branch to deploy an image for'
         required: true
         type: string
+      camunda-image-only:
+        description: 'Whether to build the camunda/camunda image only'
+        required: false
+        default: false
+        type: boolean
 
 defaults:
   run:
@@ -64,8 +69,10 @@ jobs:
           BRANCH: ${{ inputs.branch }}
       - uses: ./.github/actions/build-zeebe
         id: build-camunda
+        name: Maven Build
       - uses: ./.github/actions/build-platform-docker
         id: build-push-camunda-docker
+        name: Build & Push zeebe-io/camunda
         with:
           repository: europe-docker.pkg.dev/camunda-saas-registry/zeebe-io/camunda
           version: ${{ steps.image-tag.outputs.image-tag }}
@@ -75,6 +82,8 @@ jobs:
           push: true
       - uses: ./.github/actions/build-platform-docker
         id: build-push-zeebe-docker
+        name: Build & Push zeebe-io/zeebe
+        if: ${{ inputs.camunda-image-only == 'false' }}
         with:
           repository: europe-docker.pkg.dev/camunda-saas-registry/zeebe-io/zeebe
           version: ${{ steps.image-tag.outputs.image-tag }}
@@ -84,6 +93,8 @@ jobs:
           push: true
       - uses: ./.github/actions/build-platform-docker
         id: build-push-operate-docker
+        name: Build & Push zeebe-io/operate
+        if: ${{ inputs.camunda-image-only == 'false' }}
         with:
           repository: europe-docker.pkg.dev/camunda-saas-registry/zeebe-io/operate
           version: ${{ steps.image-tag.outputs.image-tag }}
@@ -93,6 +104,8 @@ jobs:
           push: true
       - uses: ./.github/actions/build-platform-docker
         id: build-push-tasklist-docker
+        name: Build & Push zeebe-io/tasklist
+        if: ${{ inputs.camunda-image-only == 'false' }}
         with:
           repository: europe-docker.pkg.dev/camunda-saas-registry/zeebe-io/tasklist
           version: ${{ steps.image-tag.outputs.image-tag }}
@@ -102,6 +115,8 @@ jobs:
           push: true
       - uses: ./.github/actions/build-platform-docker
         id: build-push-optimize-docker
+        name: Build & Push zeebe-io/optimize
+        if: ${{ inputs.camunda-image-only == 'false' }}
         with:
           repository: europe-docker.pkg.dev/camunda-saas-registry/zeebe-io/optimize
           version: ${{ steps.image-tag.outputs.image-tag }}
