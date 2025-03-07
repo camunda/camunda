@@ -19,6 +19,11 @@ import DeleteModal from "src/pages/tenants/modals/DeleteModal";
 import { Description } from "src/pages/tenants/detail/components";
 import Members from "src/pages/tenants/detail/members";
 import Groups from "src/pages/tenants/detail/groups";
+import Roles from "src/pages/tenants/detail/roles";
+import {
+  IS_TENANT_GROUPS_SUPPORTED,
+  IS_TENANT_ROLES_SUPPORTED,
+} from "src/feature-flags";
 
 const Details: FC = () => {
   const { t } = useTranslate("tenants");
@@ -80,11 +85,24 @@ const Details: FC = () => {
                   label: t("users"),
                   content: <Members tenantId={tenant.tenantId} />,
                 },
-                {
-                  key: "groups",
-                  label: t("groups"),
-                  content: <Groups tenantId={tenant.tenantId} />,
-                },
+                ...(IS_TENANT_GROUPS_SUPPORTED
+                  ? [
+                      {
+                        key: "groups",
+                        label: t("groups"),
+                        content: <Groups tenantId={tenant.tenantId} />,
+                      },
+                    ]
+                  : []),
+                ...(IS_TENANT_ROLES_SUPPORTED
+                  ? [
+                      {
+                        key: "roles",
+                        label: t("roles"),
+                        content: <Roles tenantId={tenant.tenantId} />,
+                      },
+                    ]
+                  : []),
               ]}
               selectedTabKey={tab}
               path={`../${id}`}
