@@ -107,12 +107,13 @@ public final class VariableDocumentUpdateProcessor
       //  - If `updating` listeners are defined at the user task:
       //    - Create a new task listener job for the first `updating` listener.
       //    - Track request metadata for later usage when finalizing the update.
-      //    - Append a new `VariableDocument.UPDATING` event for easy tracing in the log.
       //  - If `updating` listeners are not defined at the user task:
       //    - Immediately finalize the update:
       //      - Merge variables into the local scope.
       //      - Append and respond with `VariableDocument.UPDATED` event.
       //      - Append `UserTask.UPDATED` event.
+      final long key = keyGenerator.nextKey();
+      writers.state().appendFollowUpEvent(key, VariableDocumentIntent.UPDATING, value);
 
       final var userTaskRecord = userTaskState.getUserTask(userTaskKey);
       userTaskRecord.setVariables(value.getVariablesBuffer()).setVariablesChanged();
@@ -130,7 +131,6 @@ public final class VariableDocumentUpdateProcessor
           .state()
           .appendFollowUpEvent(scope.getUserTaskKey(), UserTaskIntent.UPDATED, userTaskRecord);
 
-      final long key = keyGenerator.nextKey();
       writers.state().appendFollowUpEvent(key, VariableDocumentIntent.UPDATED, value);
       writers.response().writeEventOnCommand(key, VariableDocumentIntent.UPDATED, value, record);
       return;
