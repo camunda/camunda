@@ -16,10 +16,6 @@ import static org.assertj.core.api.Assertions.tuple;
 
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.engine.util.client.UserTaskClient;
-import io.camunda.zeebe.model.bpmn.Bpmn;
-import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
-import io.camunda.zeebe.model.bpmn.builder.AbstractFlowNodeBuilder;
-import io.camunda.zeebe.model.bpmn.builder.StartEventBuilder;
 import io.camunda.zeebe.model.bpmn.builder.UserTaskBuilder;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskListenerEventType;
 import io.camunda.zeebe.protocol.Protocol;
@@ -28,34 +24,26 @@ import io.camunda.zeebe.protocol.impl.record.value.job.JobResultCorrections;
 import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
 import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.Record;
-import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.ValueType;
-import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
-import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
-import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.ErrorType;
 import io.camunda.zeebe.protocol.record.value.JobKind;
 import io.camunda.zeebe.protocol.record.value.JobListenerEventType;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
 import io.camunda.zeebe.protocol.record.value.UserTaskRecordValue;
-import io.camunda.zeebe.protocol.record.value.deployment.FormMetadataValue;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
 import java.util.function.Consumer;
-import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.UnaryOperator;
-import java.util.stream.Stream;
 import org.apache.commons.lang3.StringUtils;
 import org.junit.Before;
 import org.junit.ClassRule;
@@ -66,8 +54,6 @@ import org.junit.Test;
 public class TaskListenerTest {
 
   @ClassRule public static final EngineRule ENGINE = EngineRule.singlePartition();
-
-  private static final String PROCESS_ID = "process";
 
   private static final String USER_TASK_ELEMENT_ID = "my_user_task";
   private static final List<String> ALL_CORRECTABLE_ATTRIBUTES =
@@ -95,8 +81,8 @@ public class TaskListenerTest {
   public void shouldCompleteUserTaskAfterAllCompleteTaskListenersAreExecuted() {
     // given
     final long processInstanceKey =
-        createProcessInstance(
-            createProcessWithCompletingTaskListeners(
+        helper.createProcessInstance(
+            helper.createProcessWithCompletingTaskListeners(
                 listenerType, listenerType + "_2", listenerType + "_3"));
 
     // when
@@ -106,10 +92,10 @@ public class TaskListenerTest {
         .withVariable("foo_var", "bar")
         .withAction("my_custom_action")
         .complete();
-    completeJobs(processInstanceKey, listenerType, listenerType + "_2", listenerType + "_3");
+    helper.completeJobs(processInstanceKey, listenerType, listenerType + "_2", listenerType + "_3");
 
     // then
-    assertTaskListenerJobsCompletionSequence(
+    helper.assertTaskListenerJobsCompletionSequence(
         processInstanceKey,
         JobListenerEventType.COMPLETING,
         listenerType,
@@ -118,7 +104,7 @@ public class TaskListenerTest {
 
     // ensure that `COMPLETE_TASK_LISTENER` commands were triggered between
     // `COMPLETING` and `COMPLETED` events
-    assertUserTaskIntentsSequence(
+    helper.assertUserTaskIntentsSequence(
         processInstanceKey,
         UserTaskIntent.COMPLETING,
         UserTaskIntent.COMPLETE_TASK_LISTENER,
@@ -126,7 +112,7 @@ public class TaskListenerTest {
         UserTaskIntent.COMPLETE_TASK_LISTENER,
         UserTaskIntent.COMPLETED);
 
-    assertUserTaskRecordWithIntent(
+    helper.assertUserTaskRecordWithIntent(
         processInstanceKey,
         UserTaskIntent.COMPLETED,
         userTask ->
@@ -134,15 +120,15 @@ public class TaskListenerTest {
                 .hasAction("my_custom_action")
                 .hasVariables(Map.of("foo_var", "bar"))
                 .hasNoChangedAttributes());
-    assertThatProcessInstanceCompleted(processInstanceKey);
+    helper.assertThatProcessInstanceCompleted(processInstanceKey);
   }
 
   @Test
   public void shouldAssignUserTaskAfterAllAssignmentTaskListenersAreExecuted() {
     // given
     final long processInstanceKey =
-        createProcessInstance(
-            createUserTaskWithTaskListeners(
+        helper.createProcessInstance(
+            helper.createUserTaskWithTaskListeners(
                 ZeebeTaskListenerEventType.assigning,
                 listenerType,
                 listenerType + "_2",
@@ -155,10 +141,10 @@ public class TaskListenerTest {
         .withAssignee("me")
         .withAction("my_assign_action")
         .assign();
-    completeJobs(processInstanceKey, listenerType, listenerType + "_2", listenerType + "_3");
+    helper.completeJobs(processInstanceKey, listenerType, listenerType + "_2", listenerType + "_3");
 
     // then
-    assertTaskListenerJobsCompletionSequence(
+    helper.assertTaskListenerJobsCompletionSequence(
         processInstanceKey,
         JobListenerEventType.ASSIGNING,
         listenerType,
@@ -167,7 +153,7 @@ public class TaskListenerTest {
 
     // ensure that `COMPLETE_TASK_LISTENER` commands were triggered between
     // `ASSIGNING` and `ASSIGNED` events
-    assertUserTaskIntentsSequence(
+    helper.assertUserTaskIntentsSequence(
         processInstanceKey,
         UserTaskIntent.ASSIGNING,
         UserTaskIntent.COMPLETE_TASK_LISTENER,
@@ -175,7 +161,7 @@ public class TaskListenerTest {
         UserTaskIntent.COMPLETE_TASK_LISTENER,
         UserTaskIntent.ASSIGNED);
 
-    assertUserTaskRecordWithIntent(
+    helper.assertUserTaskRecordWithIntent(
         processInstanceKey,
         UserTaskIntent.ASSIGNED,
         userTask ->
@@ -189,8 +175,8 @@ public class TaskListenerTest {
   public void shouldExecuteAllAssigningListenersOnUnassignmentAfterSuccessfulAssignment() {
     // given: a user task with multiple `assigning` task listeners
     final long processInstanceKey =
-        createProcessInstance(
-            createUserTaskWithTaskListeners(
+        helper.createProcessInstance(
+            helper.createUserTaskWithTaskListeners(
                 ZeebeTaskListenerEventType.assigning,
                 listenerType,
                 listenerType + "_2",
@@ -198,15 +184,15 @@ public class TaskListenerTest {
 
     // when: assign the user task to "me" and complete all `assigning` listener jobs
     ENGINE.userTask().ofInstance(processInstanceKey).withAssignee("me").assign();
-    completeJobs(processInstanceKey, listenerType, listenerType + "_2", listenerType + "_3");
+    helper.completeJobs(processInstanceKey, listenerType, listenerType + "_2", listenerType + "_3");
 
     // and: unassign the user task and complete all `assigning` listener jobs again
     ENGINE.userTask().ofInstance(processInstanceKey).unassign();
-    completeRecreatedJobs(
+    helper.completeRecreatedJobs(
         processInstanceKey, listenerType, listenerType + "_2", listenerType + "_3");
 
     // then: all `assigning` listeners should be executed for both assign and unassign operations
-    assertTaskListenerJobsCompletionSequence(
+    helper.assertTaskListenerJobsCompletionSequence(
         processInstanceKey,
         JobListenerEventType.ASSIGNING,
         listenerType,
@@ -234,8 +220,8 @@ public class TaskListenerTest {
   public void shouldUpdateUserTaskAfterAllUpdatingTaskListenersAreExecuted() {
     // given
     final long processInstanceKey =
-        createProcessInstance(
-            createUserTaskWithTaskListeners(
+        helper.createProcessInstance(
+            helper.createUserTaskWithTaskListeners(
                 ZeebeTaskListenerEventType.updating,
                 listenerType,
                 listenerType + "_2",
@@ -249,10 +235,10 @@ public class TaskListenerTest {
         .withCandidateUsers("samwise", "frodo")
         .withPriority(88)
         .update();
-    completeJobs(processInstanceKey, listenerType, listenerType + "_2", listenerType + "_3");
+    helper.completeJobs(processInstanceKey, listenerType, listenerType + "_2", listenerType + "_3");
 
     // then
-    assertTaskListenerJobsCompletionSequence(
+    helper.assertTaskListenerJobsCompletionSequence(
         processInstanceKey,
         JobListenerEventType.UPDATING,
         listenerType,
@@ -261,7 +247,7 @@ public class TaskListenerTest {
 
     // ensure that `COMPLETE_TASK_LISTENER` commands were triggered between
     // `UPDATING` and `UPDATED` events
-    assertUserTaskIntentsSequence(
+    helper.assertUserTaskIntentsSequence(
         processInstanceKey,
         UserTaskIntent.UPDATING,
         UserTaskIntent.COMPLETE_TASK_LISTENER,
@@ -269,7 +255,7 @@ public class TaskListenerTest {
         UserTaskIntent.COMPLETE_TASK_LISTENER,
         UserTaskIntent.UPDATED);
 
-    assertUserTaskRecordWithIntent(
+    helper.assertUserTaskRecordWithIntent(
         processInstanceKey,
         UserTaskIntent.UPDATED,
         userTask ->
@@ -288,8 +274,8 @@ public class TaskListenerTest {
   public void shouldExecuteAllUpdatingListenersOnRepeatedUserTaskUpdates() {
     // given: a user task with multiple `updating` task listeners
     final long processInstanceKey =
-        createProcessInstance(
-            createUserTaskWithTaskListeners(
+        helper.createProcessInstance(
+            helper.createUserTaskWithTaskListeners(
                 ZeebeTaskListenerEventType.updating,
                 listenerType,
                 listenerType + "_2",
@@ -303,7 +289,7 @@ public class TaskListenerTest {
         .update();
 
     // complete all `updating` listener jobs
-    completeJobs(processInstanceKey, listenerType, listenerType + "_2", listenerType + "_3");
+    helper.completeJobs(processInstanceKey, listenerType, listenerType + "_2", listenerType + "_3");
 
     // and: update the user task again with new candidate users and priority
     ENGINE
@@ -315,11 +301,11 @@ public class TaskListenerTest {
         .update();
 
     // complete all `updating` listener jobs for the second update
-    completeRecreatedJobs(
+    helper.completeRecreatedJobs(
         processInstanceKey, listenerType, listenerType + "_2", listenerType + "_3");
 
     // then: all `updating` listeners should execute for both update operations
-    assertTaskListenerJobsCompletionSequence(
+    helper.assertTaskListenerJobsCompletionSequence(
         processInstanceKey,
         JobListenerEventType.UPDATING,
         listenerType,
@@ -357,12 +343,12 @@ public class TaskListenerTest {
   public void shouldCancelTaskListenerJobWhenTerminatingElementInstance() {
     // given
     final long processInstanceKey =
-        createProcessInstance(
-            createProcessWithAssigningTaskListeners(listenerType, listenerType + "_2"));
+        helper.createProcessInstance(
+            helper.createProcessWithAssigningTaskListeners(listenerType, listenerType + "_2"));
 
     ENGINE.userTask().ofInstance(processInstanceKey).withAssignee("samwise").assign();
 
-    completeJobs(processInstanceKey, listenerType);
+    helper.completeJobs(processInstanceKey, listenerType);
 
     final var listenerJob =
         jobRecords(JobIntent.CREATED)
@@ -383,12 +369,12 @@ public class TaskListenerTest {
   public void shouldResolveTaskListenerIncidentWhenTerminatingElementInstance() {
     // given
     final long processInstanceKey =
-        createProcessInstance(
-            createProcessWithAssigningTaskListeners(listenerType, listenerType + "_2"));
+        helper.createProcessInstance(
+            helper.createProcessWithAssigningTaskListeners(listenerType, listenerType + "_2"));
 
     ENGINE.userTask().ofInstance(processInstanceKey).withAssignee("samwise").assign();
 
-    completeJobs(processInstanceKey, listenerType);
+    helper.completeJobs(processInstanceKey, listenerType);
     ENGINE.job().ofInstance(processInstanceKey).withType(listenerType + "_2").withRetries(0).fail();
 
     final var incident =
@@ -413,7 +399,7 @@ public class TaskListenerTest {
   public void shouldRejectUserTaskAssignmentWhenTaskListenerDeniesTheTransition() {
     // given
     final long processInstanceKey =
-        createProcessInstance(createProcessWithAssigningTaskListeners(listenerType));
+        helper.createProcessInstance(helper.createProcessWithAssigningTaskListeners(listenerType));
 
     ENGINE.userTask().ofInstance(processInstanceKey).withAssignee("new_assignee").assign();
     ENGINE
@@ -425,7 +411,7 @@ public class TaskListenerTest {
 
     // then: ensure that `DENY_TASK_LISTENER` and `ASSIGNMENT_DENIED`
     // are written after `ASSIGNING` event
-    assertUserTaskIntentsSequence(
+    helper.assertUserTaskIntentsSequence(
         processInstanceKey,
         UserTaskIntent.ASSIGNING,
         UserTaskIntent.DENY_TASK_LISTENER,
@@ -446,8 +432,8 @@ public class TaskListenerTest {
       shouldCompleteAllAssignmentTaskListenersWhenFirstTaskListenerAcceptTransitionAfterDenial() {
     // given
     final long processInstanceKey =
-        createProcessInstance(
-            createProcessWithAssigningTaskListeners(
+        helper.createProcessInstance(
+            helper.createProcessWithAssigningTaskListeners(
                 listenerType, listenerType + "_2", listenerType + "_3"));
     ENGINE.userTask().ofInstance(processInstanceKey).withAssignee("new_assignee").assign();
     // assignment fails
@@ -460,8 +446,8 @@ public class TaskListenerTest {
 
     ENGINE.userTask().ofInstance(processInstanceKey).withAssignee("new_assignee").assign();
     // assignment is successful
-    completeRecreatedJobWithType(processInstanceKey, listenerType);
-    completeJobs(processInstanceKey, listenerType + "_2", listenerType + "_3");
+    helper.completeRecreatedJobWithType(processInstanceKey, listenerType);
+    helper.completeJobs(processInstanceKey, listenerType + "_2", listenerType + "_3");
 
     // then: ensure that all three `COMPLETE_TASK_LISTENER` events were triggered
     // correct assignee value is present at all stages
@@ -486,8 +472,9 @@ public class TaskListenerTest {
   public void shouldUpdateTaskWhenUpdatingTaskListenerAcceptsTransitionAfterDenial() {
     // given
     final long processInstanceKey =
-        createProcessInstance(
-            createUserTaskWithTaskListeners(ZeebeTaskListenerEventType.updating, listenerType));
+        helper.createProcessInstance(
+            helper.createUserTaskWithTaskListeners(
+                ZeebeTaskListenerEventType.updating, listenerType));
 
     // when: attempting to update the user task priority for the first time
     ENGINE.userTask().ofInstance(processInstanceKey).withPriority(80).update();
@@ -504,7 +491,7 @@ public class TaskListenerTest {
     ENGINE.userTask().ofInstance(processInstanceKey).withPriority(100).update();
 
     // and: completing the re-created task listener job
-    completeRecreatedJobWithType(processInstanceKey, listenerType);
+    helper.completeRecreatedJobWithType(processInstanceKey, listenerType);
 
     // then
     assertThat(
@@ -534,8 +521,8 @@ public class TaskListenerTest {
       shouldRevertToPreviousAssigneeWhenRejectingAssignmentFromTaskListenerAfterPreviouslySuccessfulAssignment() {
     // given
     final long processInstanceKey =
-        createProcessInstance(
-            createUserTaskWithTaskListenersAndAssignee(listenerType, "first_assignee"));
+        helper.createProcessInstance(
+            helper.createUserTaskWithTaskListenersAndAssignee(listenerType, "first_assignee"));
 
     ENGINE
         .job()
@@ -546,7 +533,7 @@ public class TaskListenerTest {
 
     ENGINE.userTask().ofInstance(processInstanceKey).withAssignee("second_assignee").assign();
 
-    completeRecreatedJobWithTypeAndResult(
+    helper.completeRecreatedJobWithTypeAndResult(
         processInstanceKey, listenerType, new JobResult().setDenied(true));
 
     assertThat(
@@ -585,8 +572,8 @@ public class TaskListenerTest {
   public void shouldClaimUserTaskAfterAllAssignmentTaskListenersAreExecuted() {
     // given
     final long processInstanceKey =
-        createProcessInstance(
-            createUserTaskWithTaskListeners(
+        helper.createProcessInstance(
+            helper.createUserTaskWithTaskListeners(
                 ZeebeTaskListenerEventType.assigning, listenerType, listenerType + "_2"));
 
     // when
@@ -596,22 +583,22 @@ public class TaskListenerTest {
         .withAssignee("test_user")
         .withAction("claim_action")
         .claim();
-    completeJobs(processInstanceKey, listenerType, listenerType + "_2");
+    helper.completeJobs(processInstanceKey, listenerType, listenerType + "_2");
 
     // then
-    assertTaskListenerJobsCompletionSequence(
+    helper.assertTaskListenerJobsCompletionSequence(
         processInstanceKey, JobListenerEventType.ASSIGNING, listenerType, listenerType + "_2");
 
     // ensure that `COMPLETE_TASK_LISTENER` commands were triggered between
     // `CLAIMING` and `ASSIGNED` events
-    assertUserTaskIntentsSequence(
+    helper.assertUserTaskIntentsSequence(
         processInstanceKey,
         UserTaskIntent.CLAIMING,
         UserTaskIntent.COMPLETE_TASK_LISTENER,
         UserTaskIntent.COMPLETE_TASK_LISTENER,
         UserTaskIntent.ASSIGNED);
 
-    assertUserTaskRecordWithIntent(
+    helper.assertUserTaskRecordWithIntent(
         processInstanceKey,
         UserTaskIntent.ASSIGNED,
         userTask ->
@@ -629,8 +616,8 @@ public class TaskListenerTest {
 
     // when: process instance is created with a UT having an `assignee` and `assignment` listeners
     final long processInstanceKey =
-        createProcessInstance(
-            createProcessWithZeebeUserTask(
+        helper.createProcessInstance(
+            helper.createProcessWithZeebeUserTask(
                 task ->
                     task.zeebeAssignee(assignee)
                         .zeebeTaskListener(l -> l.assigning().type(listenerType))
@@ -643,10 +630,10 @@ public class TaskListenerTest {
         .await();
 
     // when
-    completeJobs(processInstanceKey, listenerType, listenerType + "_2", listenerType + "_3");
+    helper.completeJobs(processInstanceKey, listenerType, listenerType + "_2", listenerType + "_3");
 
     // then: verify the task listener completion sequence for the assignment event
-    assertTaskListenerJobsCompletionSequence(
+    helper.assertTaskListenerJobsCompletionSequence(
         processInstanceKey,
         JobListenerEventType.ASSIGNING,
         listenerType,
@@ -727,8 +714,8 @@ public class TaskListenerTest {
       final UserTaskIntent terminalActionIntent) {
     // given
     final long processInstanceKey =
-        createProcessInstance(
-            createProcessWithZeebeUserTask(
+        helper.createProcessInstance(
+            helper.createProcessWithZeebeUserTask(
                 t ->
                     userTaskBuilder
                         .apply(t)
@@ -741,7 +728,7 @@ public class TaskListenerTest {
     // when: fail listener job with retries
     ENGINE.job().ofInstance(processInstanceKey).withType(listenerType).withRetries(1).fail();
     // complete failed and remaining listeners job
-    completeJobs(processInstanceKey, listenerType, listenerType + "_2");
+    helper.completeJobs(processInstanceKey, listenerType, listenerType + "_2");
 
     // then: assert the listener job was completed after the failure
     assertThat(records().limit(r -> r.getIntent() == terminalActionIntent))
@@ -817,8 +804,8 @@ public class TaskListenerTest {
 
     // given
     final long processInstanceKey =
-        createProcessInstance(
-            createProcessWithZeebeUserTask(
+        helper.createProcessInstance(
+            helper.createProcessWithZeebeUserTask(
                 t ->
                     userTaskBuilder
                         .apply(t)
@@ -830,7 +817,7 @@ public class TaskListenerTest {
     userTaskAction.accept(ENGINE.userTask().ofInstance(processInstanceKey));
 
     // complete first listener job
-    completeJobs(processInstanceKey, listenerType);
+    helper.completeJobs(processInstanceKey, listenerType);
 
     // fail the second listener job with no retries
     final var failedJob =
@@ -862,7 +849,7 @@ public class TaskListenerTest {
     ENGINE.incident().ofInstance(processInstanceKey).withKey(incident.getKey()).resolve();
 
     // complete failed and remaining listener jobs
-    completeJobs(processInstanceKey, listenerType + "_2", listenerType + "_3");
+    helper.completeJobs(processInstanceKey, listenerType + "_2", listenerType + "_3");
 
     // then
     assertThat(records().limit(r -> r.getIntent() == terminalActionIntent))
@@ -894,8 +881,8 @@ public class TaskListenerTest {
   @Test
   public void shouldEvaluateExpressionsForTaskListeners() {
     final long processInstanceKey =
-        createProcessInstanceWithVariables(
-            createProcessWithZeebeUserTask(
+        helper.createProcessInstanceWithVariables(
+            helper.createProcessWithZeebeUserTask(
                 t ->
                     t.zeebeTaskListener(
                         l ->
@@ -906,7 +893,7 @@ public class TaskListenerTest {
 
     // when
     ENGINE.userTask().ofInstance(processInstanceKey).complete();
-    completeJobs(processInstanceKey, "listener_1_abc");
+    helper.completeJobs(processInstanceKey, "listener_1_abc");
 
     // then
     assertThat(
@@ -922,7 +909,7 @@ public class TaskListenerTest {
               assertThat(jobRecordValue.getType()).isEqualTo("listener_1_abc");
               assertThat(jobRecordValue.getRetries()).isEqualTo(8);
             });
-    assertThatProcessInstanceCompleted(processInstanceKey);
+    helper.assertThatProcessInstanceCompleted(processInstanceKey);
   }
 
   @Test
@@ -930,8 +917,8 @@ public class TaskListenerTest {
       "Ignored due to task listener job completion rejection when variables payload is provided (issue #24056). Re-enable after implementing issue #23702.")
   public void shouldMakeVariablesFromPreviousTaskListenersAvailableToSubsequentListeners() {
     final long processInstanceKey =
-        createProcessInstance(
-            createProcessWithCompletingTaskListeners(listenerType, listenerType + "_2"));
+        helper.createProcessInstance(
+            helper.createProcessWithCompletingTaskListeners(listenerType, listenerType + "_2"));
 
     ENGINE.userTask().ofInstance(processInstanceKey).complete();
 
@@ -944,7 +931,7 @@ public class TaskListenerTest {
         .complete();
 
     // then: `listener_1_var` variable accessible in subsequent TL
-    final var jobActivated = activateJob(processInstanceKey, listenerType + "_2");
+    final var jobActivated = helper.activateJob(processInstanceKey, listenerType + "_2");
     assertThat(jobActivated.getVariables()).contains(entry("listener_1_var", "foo"));
   }
 
@@ -954,8 +941,8 @@ public class TaskListenerTest {
   public void shouldNotExposeTaskListenerVariablesOutsideUserTaskScope() {
     // given: deploy a process with a user task having complete TL and service task following it
     final long processInstanceKey =
-        createProcessInstance(
-            createProcess(
+        helper.createProcessInstance(
+            helper.createProcess(
                 p ->
                     p.userTask(
                             USER_TASK_ELEMENT_ID,
@@ -978,9 +965,10 @@ public class TaskListenerTest {
         .complete();
 
     // then: assert the variable 'my_listener_var' isn't accessible in the subsequent element
-    final var subsequentServiceTaskJob = activateJob(processInstanceKey, "subsequent_service_task");
+    final var subsequentServiceTaskJob =
+        helper.activateJob(processInstanceKey, "subsequent_service_task");
     assertThat(subsequentServiceTaskJob.getVariables()).doesNotContainKey("my_listener_var");
-    completeJobs(processInstanceKey, "subsequent_service_task");
+    helper.completeJobs(processInstanceKey, "subsequent_service_task");
   }
 
   @Test
@@ -989,8 +977,8 @@ public class TaskListenerTest {
   public void shouldAllowTaskListenerVariablesInUserTaskOutputMappings() {
     // given: deploy a process with a user task having complete TL and service task following it
     final long processInstanceKey =
-        createProcessInstance(
-            createProcess(
+        helper.createProcessInstance(
+            helper.createProcess(
                 p ->
                     p.userTask(
                             USER_TASK_ELEMENT_ID,
@@ -1014,17 +1002,18 @@ public class TaskListenerTest {
         .complete();
 
     // then: assert the variable 'userTaskOutput' is accessible in the subsequent element
-    final var subsequentServiceTaskJob = activateJob(processInstanceKey, "subsequent_service_task");
+    final var subsequentServiceTaskJob =
+        helper.activateJob(processInstanceKey, "subsequent_service_task");
     assertThat(subsequentServiceTaskJob.getVariables()).containsEntry("userTaskOutput", "bar_abc");
-    completeJobs(processInstanceKey, "subsequent_service_task");
+    helper.completeJobs(processInstanceKey, "subsequent_service_task");
   }
 
   @Test
   public void shouldIncludeConfiguredUserTaskDataInCompleteTaskListenerJobHeaders() {
-    final var form = deployForm("/form/test-form-1.form");
+    final var form = helper.deployForm("/form/test-form-1.form");
     final long processInstanceKey =
-        createProcessInstance(
-            createProcessWithZeebeUserTask(
+        helper.createProcessInstance(
+            helper.createProcessWithZeebeUserTask(
                 t ->
                     t.zeebeAssignee("admin")
                         .zeebeCandidateUsers("user_A, user_B")
@@ -1038,7 +1027,7 @@ public class TaskListenerTest {
     final var userTaskCommand = ENGINE.userTask().ofInstance(processInstanceKey).complete();
 
     // then
-    final var activatedListenerJob = activateJob(processInstanceKey, listenerType);
+    final var activatedListenerJob = helper.activateJob(processInstanceKey, listenerType);
 
     assertThat(activatedListenerJob.getCustomHeaders())
         .containsOnly(
@@ -1052,14 +1041,14 @@ public class TaskListenerTest {
             entry(Protocol.USER_TASK_KEY_HEADER_NAME, String.valueOf(userTaskCommand.getKey())),
             entry(Protocol.USER_TASK_PRIORITY_HEADER_NAME, "88"),
             entry(Protocol.USER_TASK_ACTION_HEADER_NAME, "complete"));
-    completeJobs(processInstanceKey, listenerType);
+    helper.completeJobs(processInstanceKey, listenerType);
   }
 
   @Test
   public void shouldUseUpdatedUserTaskDataInCompleteTaskListenerJobHeadersAfterTaskUpdate() {
     final long processInstanceKey =
-        createProcessInstance(
-            createProcessWithZeebeUserTask(
+        helper.createProcessInstance(
+            helper.createProcessWithZeebeUserTask(
                 t ->
                     t.zeebeAssignee("admin")
                         .zeebeCandidateUsers("user_A, user_B")
@@ -1081,7 +1070,7 @@ public class TaskListenerTest {
     final var userTaskCommand = ENGINE.userTask().ofInstance(processInstanceKey).complete();
 
     // then
-    final var activatedListenerJob = activateJob(processInstanceKey, listenerType);
+    final var activatedListenerJob = helper.activateJob(processInstanceKey, listenerType);
     assertThat(activatedListenerJob.getCustomHeaders())
         .containsOnly(
             entry(Protocol.USER_TASK_CANDIDATE_GROUPS_HEADER_NAME, "[\"group_J\",\"group_R\"]"),
@@ -1092,7 +1081,7 @@ public class TaskListenerTest {
             entry(Protocol.USER_TASK_KEY_HEADER_NAME, String.valueOf(userTaskCommand.getKey())),
             entry(Protocol.USER_TASK_PRIORITY_HEADER_NAME, "42"),
             entry(Protocol.USER_TASK_ACTION_HEADER_NAME, "complete"));
-    completeJobs(processInstanceKey, listenerType);
+    helper.completeJobs(processInstanceKey, listenerType);
   }
 
   @Test
@@ -1101,8 +1090,8 @@ public class TaskListenerTest {
     // given: a process instance with a user task configured with an initial assignee, candidate
     // users/groups, due/follow-up dates, and a `completing` listener
     final long processInstanceKey =
-        createProcessInstance(
-            createProcessWithZeebeUserTask(
+        helper.createProcessInstance(
+            helper.createProcessWithZeebeUserTask(
                 userTask ->
                     userTask
                         .zeebeAssignee("admin")
@@ -1129,7 +1118,7 @@ public class TaskListenerTest {
     final var userTaskCommand = ENGINE.userTask().ofInstance(processInstanceKey).complete();
 
     // then: validate the headers of the completing listener job triggered after the task update
-    final var activatedListenerJob = activateJob(processInstanceKey, listenerType);
+    final var activatedListenerJob = helper.activateJob(processInstanceKey, listenerType);
 
     assertThat(activatedListenerJob.getCustomHeaders())
         .describedAs(
@@ -1158,8 +1147,8 @@ public class TaskListenerTest {
     // given: a process instance with a user task configured with an initial assignee and an
     // `assigning` listener
     final long processInstanceKey =
-        createProcessInstance(
-            createProcessWithZeebeUserTask(
+        helper.createProcessInstance(
+            helper.createProcessWithZeebeUserTask(
                 userTask ->
                     userTask
                         .zeebeAssignee("initial_assignee")
@@ -1170,7 +1159,7 @@ public class TaskListenerTest {
             .withProcessInstanceKey(processInstanceKey)
             .getFirst();
 
-    final var assigningListenerJob = activateJob(processInstanceKey, listenerType);
+    final var assigningListenerJob = helper.activateJob(processInstanceKey, listenerType);
 
     // assert the headers of the assigning listener job triggered after the user task creation
     final var userTaskKey = String.valueOf(createdUserTaskRecord.getKey());
@@ -1195,13 +1184,13 @@ public class TaskListenerTest {
             entry(Protocol.USER_TASK_CHANGED_ATTRIBUTES_HEADER_NAME, "[\"assignee\"]"));
 
     // Complete the assigning listener job triggered after the user task creation
-    completeJobs(processInstanceKey, listenerType);
+    helper.completeJobs(processInstanceKey, listenerType);
 
     // when: unassigning the user task
     ENGINE.userTask().ofInstance(processInstanceKey).unassign();
 
     // then
-    final var unassigningListenerJob = activateJob(processInstanceKey, listenerType);
+    final var unassigningListenerJob = helper.activateJob(processInstanceKey, listenerType);
     assertThat(unassigningListenerJob.getCustomHeaders())
         .describedAs(
             "Headers should not include the 'assignee' property, as it is cleared during unassignment")
@@ -1229,8 +1218,8 @@ public class TaskListenerTest {
   public void shouldProvideVariablesOfTaskCompletionToCompleteTaskListener() {
     // given
     final var processInstanceKey =
-        createProcessInstanceWithVariables(
-            createProcessWithCompletingTaskListeners(listenerType), Map.of("foo", "bar"));
+        helper.createProcessInstanceWithVariables(
+            helper.createProcessWithCompletingTaskListeners(listenerType), Map.of("foo", "bar"));
 
     // when
     ENGINE.userTask().ofInstance(processInstanceKey).withVariables(Map.of("baz", 123)).complete();
@@ -1249,8 +1238,8 @@ public class TaskListenerTest {
   public void shouldProvideVariablesOfTaskCompletionShadowingProcessVariables() {
     // given
     final var processInstanceKey =
-        createProcessInstanceWithVariables(
-            createProcessWithCompletingTaskListeners(listenerType), Map.of("foo", "bar"));
+        helper.createProcessInstanceWithVariables(
+            helper.createProcessWithCompletingTaskListeners(listenerType), Map.of("foo", "bar"));
 
     // when
     ENGINE
@@ -1271,8 +1260,8 @@ public class TaskListenerTest {
   public void shouldProvideVariablesOfTaskCompletionFetchingOnlySpecifiedVariables() {
     // given
     final var processInstanceKey =
-        createProcessInstanceWithVariables(
-            createProcessWithCompletingTaskListeners(listenerType),
+        helper.createProcessInstanceWithVariables(
+            helper.createProcessWithCompletingTaskListeners(listenerType),
             Map.ofEntries(Map.entry("foo", "bar"), Map.entry("bar", 123)));
 
     // when
@@ -1300,7 +1289,7 @@ public class TaskListenerTest {
   public void shouldRejectCompleteTaskListenerJobCompletionWhenVariablesAreSet() {
     // given
     final long processInstanceKey =
-        createProcessInstance(createProcessWithCompletingTaskListeners(listenerType));
+        helper.createProcessInstance(helper.createProcessWithCompletingTaskListeners(listenerType));
 
     ENGINE.userTask().ofInstance(processInstanceKey).complete();
 
@@ -1331,8 +1320,8 @@ public class TaskListenerTest {
   public void shouldCompleteTaskWithTaskListenerWhenJobResultDeniedIsFalse() {
     // given
     final long processInstanceKey =
-        createProcessInstance(
-            createProcessWithCompletingTaskListeners(
+        helper.createProcessInstance(
+            helper.createProcessWithCompletingTaskListeners(
                 listenerType, listenerType + "_2", listenerType + "_3"));
 
     // when
@@ -1374,8 +1363,9 @@ public class TaskListenerTest {
   public void shouldRejectUserTaskUpdateWhenUpdatingTaskListenerDeniesTheTransition() {
     // given
     final long processInstanceKey =
-        createProcessInstance(
-            createUserTaskWithTaskListeners(ZeebeTaskListenerEventType.updating, listenerType));
+        helper.createProcessInstance(
+            helper.createUserTaskWithTaskListeners(
+                ZeebeTaskListenerEventType.updating, listenerType));
 
     ENGINE.userTask().ofInstance(processInstanceKey).withPriority(99).update();
 
@@ -1389,7 +1379,7 @@ public class TaskListenerTest {
 
     // then: ensure that `DENY_TASK_LISTENER` and `UPDATE_DENIED`
     // are written right after `UPDATING` event
-    assertUserTaskIntentsSequence(
+    helper.assertUserTaskIntentsSequence(
         processInstanceKey,
         UserTaskIntent.UPDATING,
         UserTaskIntent.DENY_TASK_LISTENER,
@@ -1400,7 +1390,7 @@ public class TaskListenerTest {
   public void shouldRejectUserTaskCompletionWhenCompletingTaskListenerDeniesTheTransition() {
     // given
     final long processInstanceKey =
-        createProcessInstance(createProcessWithCompletingTaskListeners(listenerType));
+        helper.createProcessInstance(helper.createProcessWithCompletingTaskListeners(listenerType));
 
     ENGINE.userTask().ofInstance(processInstanceKey).complete();
     ENGINE
@@ -1412,7 +1402,7 @@ public class TaskListenerTest {
 
     // then: ensure that `DENY_TASK_LISTENER` and `COMPLETION_DENIED`
     // are written after `COMPLETING` event
-    assertUserTaskIntentsSequence(
+    helper.assertUserTaskIntentsSequence(
         processInstanceKey,
         UserTaskIntent.COMPLETING,
         UserTaskIntent.DENY_TASK_LISTENER,
@@ -1423,7 +1413,7 @@ public class TaskListenerTest {
   public void shouldAcceptUserTaskCompletionAfterTaskListenerRejectsTheOperationWithDeniedReason() {
     // given
     final long processInstanceKey =
-        createProcessInstance(createProcessWithCompletingTaskListeners(listenerType));
+        helper.createProcessInstance(helper.createProcessWithCompletingTaskListeners(listenerType));
 
     // deny the completion
     ENGINE.userTask().ofInstance(processInstanceKey).complete();
@@ -1437,8 +1427,8 @@ public class TaskListenerTest {
 
     // completion is successful
     ENGINE.userTask().ofInstance(processInstanceKey).complete();
-    completeRecreatedJobWithType(processInstanceKey, listenerType);
-    completeJobs(processInstanceKey);
+    helper.completeRecreatedJobWithType(processInstanceKey, listenerType);
+    helper.completeJobs(processInstanceKey);
 
     // validate reason to deny lifecycle transition in events
     assertThat(
@@ -1463,7 +1453,7 @@ public class TaskListenerTest {
   public void shouldAcceptUserTaskAssignmentAfterTaskListenerRejectsTheOperationWithDeniedReason() {
     // given
     final long processInstanceKey =
-        createProcessInstance(createProcessWithAssigningTaskListeners(listenerType));
+        helper.createProcessInstance(helper.createProcessWithAssigningTaskListeners(listenerType));
 
     ENGINE.userTask().ofInstance(processInstanceKey).withAssignee("new_assignee").assign();
 
@@ -1478,8 +1468,8 @@ public class TaskListenerTest {
 
     // accept the assignment
     ENGINE.userTask().ofInstance(processInstanceKey).withAssignee("new_assignee").assign();
-    completeRecreatedJobWithType(processInstanceKey, listenerType);
-    completeJobs(processInstanceKey);
+    helper.completeRecreatedJobWithType(processInstanceKey, listenerType);
+    helper.completeJobs(processInstanceKey);
 
     // validate the reason to deny lifecycle transition
     assertThat(
@@ -1504,8 +1494,9 @@ public class TaskListenerTest {
   public void shouldAcceptUserTaskUpdateAfterTaskListenerRejectsTheOperationWithDeniedReason() {
     // given
     final long processInstanceKey =
-        createProcessInstance(
-            createUserTaskWithTaskListeners(ZeebeTaskListenerEventType.updating, listenerType));
+        helper.createProcessInstance(
+            helper.createUserTaskWithTaskListeners(
+                ZeebeTaskListenerEventType.updating, listenerType));
 
     ENGINE.userTask().ofInstance(processInstanceKey).withPriority(80).update();
 
@@ -1520,8 +1511,8 @@ public class TaskListenerTest {
 
     // accept the update
     ENGINE.userTask().ofInstance(processInstanceKey).withPriority(80).update();
-    completeRecreatedJobWithType(processInstanceKey, listenerType);
-    completeJobs(processInstanceKey);
+    helper.completeRecreatedJobWithType(processInstanceKey, listenerType);
+    helper.completeJobs(processInstanceKey);
 
     // validate the reason to deny lifecycle transition
     assertThat(
@@ -1552,7 +1543,7 @@ public class TaskListenerTest {
   public void shouldCompleteTaskWhenCompletingTaskListenerAcceptsTransitionAfterDenial() {
     // given
     final long processInstanceKey =
-        createProcessInstance(createProcessWithCompletingTaskListeners(listenerType));
+        helper.createProcessInstance(helper.createProcessWithCompletingTaskListeners(listenerType));
 
     ENGINE.userTask().ofInstance(processInstanceKey).complete();
     ENGINE
@@ -1564,11 +1555,11 @@ public class TaskListenerTest {
 
     ENGINE.userTask().ofInstance(processInstanceKey).complete();
 
-    completeRecreatedJobWithType(processInstanceKey, listenerType);
+    helper.completeRecreatedJobWithType(processInstanceKey, listenerType);
 
     // then: ensure that `COMPLETING` `COMPLETE_TASK_LISTENER` and `COMPLETED events
     // are present after `DENY_TASK_LISTENER` and `COMPLETION_DENIED` events
-    assertUserTaskIntentsSequence(
+    helper.assertUserTaskIntentsSequence(
         processInstanceKey,
         UserTaskIntent.COMPLETING,
         UserTaskIntent.DENY_TASK_LISTENER,
@@ -1582,8 +1573,8 @@ public class TaskListenerTest {
   public void shouldCompleteAllTaskListenersWhenFirstTaskListenerAcceptTransitionAfterDenial() {
     // given
     final long processInstanceKey =
-        createProcessInstance(
-            createProcessWithCompletingTaskListeners(
+        helper.createProcessInstance(
+            helper.createProcessWithCompletingTaskListeners(
                 listenerType, listenerType + "_2", listenerType + "_3"));
 
     ENGINE.userTask().ofInstance(processInstanceKey).complete();
@@ -1595,12 +1586,12 @@ public class TaskListenerTest {
         .complete();
 
     ENGINE.userTask().ofInstance(processInstanceKey).complete();
-    completeRecreatedJobWithType(processInstanceKey, listenerType);
-    completeJobs(processInstanceKey, listenerType + "_2", listenerType + "_3");
+    helper.completeRecreatedJobWithType(processInstanceKey, listenerType);
+    helper.completeJobs(processInstanceKey, listenerType + "_2", listenerType + "_3");
 
     // then: ensure that all three `COMPLETE_TASK_LISTENER` events were triggered after the
     // rejection from the first Task Listener
-    assertUserTaskIntentsSequence(
+    helper.assertUserTaskIntentsSequence(
         processInstanceKey,
         UserTaskIntent.COMPLETING,
         UserTaskIntent.DENY_TASK_LISTENER,
@@ -1616,7 +1607,7 @@ public class TaskListenerTest {
   public void shouldAssignAndCompleteTaskAfterTaskListenerDeniesTheCompletion() {
     // given
     final long processInstanceKey =
-        createProcessInstance(createProcessWithCompletingTaskListeners(listenerType));
+        helper.createProcessInstance(helper.createProcessWithCompletingTaskListeners(listenerType));
 
     ENGINE.userTask().ofInstance(processInstanceKey).complete();
     ENGINE
@@ -1629,12 +1620,12 @@ public class TaskListenerTest {
     ENGINE.userTask().ofInstance(processInstanceKey).withAssignee("Test Assignee").assign();
     ENGINE.userTask().ofInstance(processInstanceKey).complete();
 
-    completeRecreatedJobWithType(processInstanceKey, listenerType);
+    helper.completeRecreatedJobWithType(processInstanceKey, listenerType);
 
     // then: ensure that user task could be assigned after completion was rejected from the
     // `COMPLETE` Task Listener. Ensure that user task could be completed after assignment
     // and `COMPLETE_TASK_LISTENER` event was triggered successfully
-    assertUserTaskIntentsSequence(
+    helper.assertUserTaskIntentsSequence(
         processInstanceKey,
         UserTaskIntent.COMPLETING,
         UserTaskIntent.DENY_TASK_LISTENER,
@@ -1693,8 +1684,8 @@ public class TaskListenerTest {
       final String expectedAction) {
     // given
     final long processInstanceKey =
-        createProcessInstance(
-            createProcessWithZeebeUserTask(
+        helper.createProcessInstance(
+            helper.createProcessWithZeebeUserTask(
                 t ->
                     userTaskBuilder
                         .apply(t)
@@ -1931,8 +1922,8 @@ public class TaskListenerTest {
 
     // given: a process instance with a user task configured with listeners and initial properties
     final long processInstanceKey =
-        createProcessInstance(
-            createProcessWithZeebeUserTask(
+        helper.createProcessInstance(
+            helper.createProcessWithZeebeUserTask(
                 userTask -> {
                   if (isAssigneeConfiguredOnTaskCreation) {
                     userTask.zeebeAssignee("initial_assignee");
@@ -1957,7 +1948,7 @@ public class TaskListenerTest {
     userTaskAction.accept(ENGINE.userTask().ofInstance(processInstanceKey));
 
     // Step 1: Validate headers of the first listener (initial user task state)
-    final var firstListenerJob = activateJob(processInstanceKey, listenerType);
+    final var firstListenerJob = helper.activateJob(processInstanceKey, listenerType);
     final var expectedInitialHeaders =
         new HashMap<String, String>() {
           {
@@ -2004,7 +1995,7 @@ public class TaskListenerTest {
                         "priority")))
         .complete();
 
-    final var secondListenerJob = activateJob(processInstanceKey, listenerType + "_2");
+    final var secondListenerJob = helper.activateJob(processInstanceKey, listenerType + "_2");
     assertThat(secondListenerJob.getCustomHeaders())
         .describedAs(
             "Headers should reflect the corrected user task data in the subsequent listener")
@@ -2035,7 +2026,7 @@ public class TaskListenerTest {
                         "priority")))
         .complete();
 
-    final var thirdListenerJob = activateJob(processInstanceKey, listenerType + "_3");
+    final var thirdListenerJob = helper.activateJob(processInstanceKey, listenerType + "_3");
     assertThat(thirdListenerJob.getCustomHeaders())
         .describedAs("Headers should not include cleared user task properties")
         .doesNotContainKeys(
@@ -2046,10 +2037,10 @@ public class TaskListenerTest {
             Protocol.USER_TASK_DUE_DATE_HEADER_NAME,
             Protocol.USER_TASK_FOLLOW_UP_DATE_HEADER_NAME);
 
-    completeJobs(processInstanceKey, listenerType + "_3");
+    helper.completeJobs(processInstanceKey, listenerType + "_3");
 
     // Step 4: Validate the complete sequence of user task lifecycle intents
-    assertUserTaskIntentsSequence(
+    helper.assertUserTaskIntentsSequence(
         processInstanceKey, expectedUserTaskIntents.toArray(UserTaskIntent[]::new));
   }
 
@@ -2122,8 +2113,8 @@ public class TaskListenerTest {
 
     // given: a process instance with a user task configured with listeners and initial properties
     final long processInstanceKey =
-        createProcessInstance(
-            createProcessWithZeebeUserTask(
+        helper.createProcessInstance(
+            helper.createProcessWithZeebeUserTask(
                 userTask -> {
                   if (isAssigneeConfiguredOnTaskCreation) {
                     userTask.zeebeAssignee("initial_assignee");
@@ -2227,8 +2218,8 @@ public class TaskListenerTest {
     // given
     final int initialPriority = 42;
     final long processInstanceKey =
-        createProcessInstance(
-            createProcessWithZeebeUserTask(
+        helper.createProcessInstance(
+            helper.createProcessWithZeebeUserTask(
                 task ->
                     task.zeebeTaskPriority(Integer.toString(initialPriority))
                         .zeebeTaskListener(listener -> listener.assigning().type(listenerType))
@@ -2241,7 +2232,7 @@ public class TaskListenerTest {
     ENGINE.userTask().ofInstance(processInstanceKey).withAssignee("merry").assign();
 
     // then: the first listener job receives `changedAttributes` header with only "assignee"
-    assertActivatedJob(
+    helper.assertActivatedJob(
         processInstanceKey,
         listenerType,
         job ->
@@ -2264,7 +2255,7 @@ public class TaskListenerTest {
         .complete();
 
     // then: the second listener job receives cumulative changes from assignment and corrections
-    assertActivatedJob(
+    helper.assertActivatedJob(
         processInstanceKey,
         listenerType + "_2",
         job ->
@@ -2293,7 +2284,7 @@ public class TaskListenerTest {
         .complete();
 
     // then: the third listener job sees only `dueDate` as changed after 2nd listener resets fields
-    assertActivatedJob(
+    helper.assertActivatedJob(
         processInstanceKey,
         listenerType + "_3",
         job ->
@@ -2368,8 +2359,8 @@ public class TaskListenerTest {
     // given
     final int initialPriority = 42;
     final long processInstanceKey =
-        createProcessInstance(
-            createProcessWithZeebeUserTask(
+        helper.createProcessInstance(
+            helper.createProcessWithZeebeUserTask(
                 task ->
                     task.zeebeTaskPriority(Integer.toString(initialPriority))
                         .zeebeCandidateUsers("legolas, thorin")
@@ -2388,7 +2379,7 @@ public class TaskListenerTest {
         .update();
 
     // then
-    assertActivatedJob(
+    helper.assertActivatedJob(
         processInstanceKey,
         listenerType,
         job ->
@@ -2415,7 +2406,7 @@ public class TaskListenerTest {
         .complete();
 
     // then: the second listener job receives cumulative changes from update and listener correction
-    assertActivatedJob(
+    helper.assertActivatedJob(
         processInstanceKey,
         listenerType + "_2",
         job ->
@@ -2440,7 +2431,7 @@ public class TaskListenerTest {
         .complete();
 
     // then: the third listener job sees only `candidateGroupsList` and `assignee` as changed
-    assertActivatedJob(
+    helper.assertActivatedJob(
         processInstanceKey,
         listenerType + "_3",
         job ->
@@ -2514,8 +2505,8 @@ public class TaskListenerTest {
   public void shouldTrackOnlyChangedAttributesDuringUserTaskCompletionWithMultipleListeners() {
     // given
     final long processInstanceKey =
-        createProcessInstance(
-            createProcessWithZeebeUserTask(
+        helper.createProcessInstance(
+            helper.createProcessWithZeebeUserTask(
                 task ->
                     task.zeebeAssignee("aragorn") // initially assigned
                         .zeebeTaskListener(l -> l.completing().type(listenerType))
@@ -2526,7 +2517,7 @@ public class TaskListenerTest {
     ENGINE.userTask().ofInstance(processInstanceKey).complete();
 
     // then
-    assertActivatedJob(
+    helper.assertActivatedJob(
         processInstanceKey,
         listenerType,
         job ->
@@ -2550,7 +2541,7 @@ public class TaskListenerTest {
         .complete();
 
     // then: the second listener job receives cumulative changes from first listener correction
-    assertActivatedJob(
+    helper.assertActivatedJob(
         processInstanceKey,
         listenerType + "_2",
         job ->
@@ -2574,7 +2565,7 @@ public class TaskListenerTest {
         .complete();
 
     // then: the third listener job receives cumulative changes from 2 listener corrections
-    assertActivatedJob(
+    helper.assertActivatedJob(
         processInstanceKey,
         listenerType + "_3",
         job ->
@@ -2691,8 +2682,8 @@ public class TaskListenerTest {
       final UserTaskIntent expectedUserTaskIntent) {
     // given
     final long processInstanceKey =
-        createProcessInstance(
-            createProcessWithZeebeUserTask(
+        helper.createProcessInstance(
+            helper.createProcessWithZeebeUserTask(
                 t ->
                     userTaskBuilder
                         .apply(t)
@@ -2736,7 +2727,7 @@ public class TaskListenerTest {
         .complete();
 
     // then
-    assertUserTaskRecordWithIntent(
+    helper.assertUserTaskRecordWithIntent(
         processInstanceKey,
         expectedUserTaskIntent,
         userTaskRecord ->
@@ -2810,8 +2801,8 @@ public class TaskListenerTest {
       final UserTaskIntent expectedUserTaskIntent) {
     // given
     final long processInstanceKey =
-        createProcessInstance(
-            createProcessWithZeebeUserTask(
+        helper.createProcessInstance(
+            helper.createProcessWithZeebeUserTask(
                 t ->
                     userTaskBuilder
                         .apply(t)
@@ -2852,7 +2843,7 @@ public class TaskListenerTest {
         .complete();
 
     // then
-    assertUserTaskRecordWithIntent(
+    helper.assertUserTaskRecordWithIntent(
         processInstanceKey,
         expectedUserTaskIntent,
         userTaskRecord ->
@@ -2871,8 +2862,8 @@ public class TaskListenerTest {
   public void shouldRejectDenyingTaskListenerWithCorrections() {
     // given
     final long processInstanceKey =
-        createProcessInstance(
-            createProcessWithCompletingTaskListeners(listenerType, listenerType + "_2"));
+        helper.createProcessInstance(
+            helper.createProcessWithCompletingTaskListeners(listenerType, listenerType + "_2"));
 
     ENGINE.userTask().ofInstance(processInstanceKey).complete();
 
@@ -2906,8 +2897,8 @@ public class TaskListenerTest {
   public void shouldRejectTaskListenerCompletionWithUnknownCorrections() {
     // given
     final long processInstanceKey =
-        createProcessInstance(
-            createProcessWithCompletingTaskListeners(listenerType, listenerType + "_2"));
+        helper.createProcessInstance(
+            helper.createProcessWithCompletingTaskListeners(listenerType, listenerType + "_2"));
 
     ENGINE.userTask().ofInstance(processInstanceKey).complete();
 
@@ -2987,8 +2978,8 @@ public class TaskListenerTest {
 
     // given
     final long processInstanceKey =
-        createProcessInstance(
-            createUserTaskWithTaskListeners(
+        helper.createProcessInstance(
+            helper.createUserTaskWithTaskListeners(
                 eventType, listenerType, "=" + variableName, listenerType + "_3"));
 
     // when: perform the user task action
@@ -3022,19 +3013,19 @@ public class TaskListenerTest {
     ENGINE.incident().ofInstance(processInstanceKey).withKey(incidentRecord.getKey()).resolve();
 
     // complete the retried task listener job and remaining task listeners
-    completeRecreatedJobWithType(processInstanceKey, listenerType);
-    completeJobs(processInstanceKey, variableValue, listenerType + "_3");
+    helper.completeRecreatedJobWithType(processInstanceKey, listenerType);
+    helper.completeJobs(processInstanceKey, variableValue, listenerType + "_3");
 
     // then
-    assertTaskListenerJobsCompletionSequence(
+    helper.assertTaskListenerJobsCompletionSequence(
         processInstanceKey,
-        mapToJobListenerEventType(eventType),
+        helper.mapToJobListenerEventType(eventType),
         listenerType,
         listenerType, // re-created task listener job
         variableValue,
         listenerType + "_3");
 
-    assertUserTaskRecordWithIntent(processInstanceKey, expectedIntent, assertion);
+    helper.assertUserTaskRecordWithIntent(processInstanceKey, expectedIntent, assertion);
   }
 
   @Test
@@ -3045,8 +3036,8 @@ public class TaskListenerTest {
 
     // when: process instance is created with a UT having an `assignee` and `assignment` listeners
     final long processInstanceKey =
-        createProcessInstance(
-            createProcessWithZeebeUserTask(
+        helper.createProcessInstance(
+            helper.createProcessWithZeebeUserTask(
                 task ->
                     task.zeebeAssignee(assignee)
                         .zeebeTaskListener(l -> l.assigning().type(listenerType))
@@ -3082,11 +3073,11 @@ public class TaskListenerTest {
     ENGINE.incident().ofInstance(processInstanceKey).withKey(incident.getKey()).resolve();
 
     // complete the retried task listener job and remaining task listeners
-    completeRecreatedJobWithType(processInstanceKey, listenerType);
-    completeJobs(processInstanceKey, "expression_assigning_listener_2", listenerType + "_3");
+    helper.completeRecreatedJobWithType(processInstanceKey, listenerType);
+    helper.completeJobs(processInstanceKey, "expression_assigning_listener_2", listenerType + "_3");
 
     // then
-    assertTaskListenerJobsCompletionSequence(
+    helper.assertTaskListenerJobsCompletionSequence(
         processInstanceKey,
         JobListenerEventType.ASSIGNING,
         listenerType,
@@ -3094,194 +3085,9 @@ public class TaskListenerTest {
         "expression_assigning_listener_2",
         listenerType + "_3");
 
-    assertUserTaskRecordWithIntent(
+    helper.assertUserTaskRecordWithIntent(
         processInstanceKey,
         UserTaskIntent.ASSIGNED,
         userTask -> Assertions.assertThat(userTask).hasAssignee(assignee).hasAction(""));
-  }
-
-  private void completeRecreatedJobWithType(final long processInstanceKey, final String jobType) {
-    final long jobKey = findRecreatedJobKey(processInstanceKey, jobType);
-    ENGINE.job().ofInstance(processInstanceKey).withKey(jobKey).complete();
-  }
-
-  private void completeRecreatedJobWithTypeAndResult(
-      final long processInstanceKey, final String jobType, final JobResult jobResult) {
-    final long jobKey = findRecreatedJobKey(processInstanceKey, jobType);
-    ENGINE.job().ofInstance(processInstanceKey).withKey(jobKey).withResult(jobResult).complete();
-  }
-
-  private long findRecreatedJobKey(final long processInstanceKey, final String jobType) {
-    return jobRecords(JobIntent.CREATED)
-        .withProcessInstanceKey(processInstanceKey)
-        .withType(jobType)
-        .skip(1)
-        .getFirst()
-        .getKey();
-  }
-
-  private void assertThatProcessInstanceCompleted(final long processInstanceKey) {
-    assertThat(
-            RecordingExporter.processInstanceRecords()
-                .withProcessInstanceKey(processInstanceKey)
-                .limitToProcessInstanceCompleted())
-        .extracting(r -> r.getValue().getBpmnElementType(), Record::getIntent)
-        .containsSubsequence(
-            tuple(BpmnElementType.PROCESS, ProcessInstanceIntent.ELEMENT_ACTIVATED),
-            tuple(BpmnElementType.PROCESS, ProcessInstanceIntent.ELEMENT_COMPLETED));
-  }
-
-  private BpmnModelInstance createProcessWithZeebeUserTask(
-      final UnaryOperator<UserTaskBuilder> userTaskBuilderFunction) {
-    return Bpmn.createExecutableProcess(PROCESS_ID)
-        .startEvent()
-        .userTask(USER_TASK_ELEMENT_ID, t -> userTaskBuilderFunction.apply(t.zeebeUserTask()))
-        .endEvent()
-        .done();
-  }
-
-  private BpmnModelInstance createProcess(
-      final Function<StartEventBuilder, AbstractFlowNodeBuilder<?, ?>> processBuilderFunction) {
-    return processBuilderFunction
-        .apply(Bpmn.createExecutableProcess(PROCESS_ID).startEvent())
-        .endEvent()
-        .done();
-  }
-
-  private BpmnModelInstance createProcessWithAssigningTaskListeners(final String... listenerTypes) {
-    return createUserTaskWithTaskListeners(ZeebeTaskListenerEventType.assigning, listenerTypes);
-  }
-
-  private BpmnModelInstance createUserTaskWithTaskListenersAndAssignee(
-      final String listenerType, final String assignee) {
-    return createProcessWithZeebeUserTask(
-        taskBuilder ->
-            taskBuilder
-                .zeebeAssignee(assignee)
-                .zeebeTaskListener(l -> l.assigning().type(listenerType)));
-  }
-
-  private BpmnModelInstance createProcessWithCompletingTaskListeners(
-      final String... listenerTypes) {
-    return createUserTaskWithTaskListeners(ZeebeTaskListenerEventType.completing, listenerTypes);
-  }
-
-  private BpmnModelInstance createUserTaskWithTaskListeners(
-      final ZeebeTaskListenerEventType listenerType, final String... listenerTypes) {
-    return createProcessWithZeebeUserTask(
-        taskBuilder -> {
-          Stream.of(listenerTypes)
-              .forEach(
-                  type -> taskBuilder.zeebeTaskListener(l -> l.eventType(listenerType).type(type)));
-          return taskBuilder;
-        });
-  }
-
-  private long createProcessInstance(final BpmnModelInstance modelInstance) {
-    return createProcessInstanceWithVariables(modelInstance, Collections.emptyMap());
-  }
-
-  private long createProcessInstanceWithVariables(
-      final BpmnModelInstance modelInstance, final Map<String, Object> processVariables) {
-    ENGINE.deployment().withXmlResource(modelInstance).deploy();
-    return ENGINE
-        .processInstance()
-        .ofBpmnProcessId(PROCESS_ID)
-        .withVariables(processVariables)
-        .create();
-  }
-
-  private void completeJobs(final long processInstanceKey, final String... jobTypes) {
-    for (final String jobType : jobTypes) {
-      ENGINE.job().ofInstance(processInstanceKey).withType(jobType).complete();
-    }
-  }
-
-  private void completeRecreatedJobs(final long processInstanceKey, final String... jobTypes) {
-    for (final String jobType : jobTypes) {
-      completeRecreatedJobWithType(processInstanceKey, jobType);
-    }
-  }
-
-  private JobRecordValue activateJob(final long processInstanceKey, final String jobType) {
-    return ENGINE.jobs().withType(jobType).activate().getValue().getJobs().stream()
-        .filter(job -> job.getProcessInstanceKey() == processInstanceKey)
-        .findFirst()
-        .orElseThrow(() -> new AssertionError("No job found with type " + jobType));
-  }
-
-  private void assertActivatedJob(
-      final long processInstanceKey,
-      final String jobType,
-      final Consumer<JobRecordValue> assertion) {
-    final var activatedJob = activateJob(processInstanceKey, jobType);
-    assertThat(activatedJob).satisfies(assertion);
-  }
-
-  private FormMetadataValue deployForm(final String formPath) {
-    final var deploymentEvent = ENGINE.deployment().withJsonClasspathResource(formPath).deploy();
-
-    Assertions.assertThat(deploymentEvent)
-        .hasIntent(DeploymentIntent.CREATED)
-        .hasValueType(ValueType.DEPLOYMENT)
-        .hasRecordType(RecordType.EVENT);
-
-    final var formMetadata = deploymentEvent.getValue().getFormMetadata();
-    assertThat(formMetadata).hasSize(1);
-    return formMetadata.getFirst();
-  }
-
-  private void assertTaskListenerJobsCompletionSequence(
-      final long processInstanceKey,
-      final JobListenerEventType eventType,
-      final String... listenerTypes) {
-    assertThat(
-            RecordingExporter.jobRecords()
-                .withProcessInstanceKey(processInstanceKey)
-                .withJobKind(JobKind.TASK_LISTENER)
-                .withJobListenerEventType(eventType)
-                .withIntent(JobIntent.COMPLETED)
-                .limit(listenerTypes.length))
-        .extracting(Record::getValue)
-        .extracting(JobRecordValue::getType)
-        .describedAs("Verify that all task listeners were completed in the correct sequence")
-        .containsExactly(listenerTypes);
-  }
-
-  private void assertUserTaskIntentsSequence(
-      final long processInstanceKey, final UserTaskIntent... intents) {
-    assertThat(intents).describedAs("Expected intents not to be empty").isNotEmpty();
-    assertThat(
-            RecordingExporter.userTaskRecords()
-                .withProcessInstanceKey(processInstanceKey)
-                .limit(r -> r.getIntent() == intents[intents.length - 1]))
-        .extracting(Record::getIntent)
-        .describedAs("Verify the expected sequence of User Task intents")
-        .containsSequence(intents);
-  }
-
-  private JobListenerEventType mapToJobListenerEventType(
-      final ZeebeTaskListenerEventType eventType) {
-    return switch (eventType) {
-      case ZeebeTaskListenerEventType.assigning -> JobListenerEventType.ASSIGNING;
-      case ZeebeTaskListenerEventType.updating -> JobListenerEventType.UPDATING;
-      case ZeebeTaskListenerEventType.completing -> JobListenerEventType.COMPLETING;
-      default ->
-          throw new IllegalArgumentException(
-              "Unsupported zeebe task listener event type: '%s'".formatted(eventType));
-    };
-  }
-
-  private void assertUserTaskRecordWithIntent(
-      final long processInstanceKey,
-      final UserTaskIntent intent,
-      final Consumer<UserTaskRecordValue> consumer) {
-    assertThat(
-            RecordingExporter.userTaskRecords(intent)
-                .withProcessInstanceKey(processInstanceKey)
-                .findFirst()
-                .map(Record::getValue))
-        .describedAs("Expected to have User Task record with '%s' intent", intent)
-        .hasValueSatisfying(consumer);
   }
 }
