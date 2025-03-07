@@ -134,7 +134,7 @@ services:
       - zeebe
       - identity
   tasklist:
-    image: camunda/tasklist:8.6.10
+    image: camunda/tasklist:8.6.11
     container_name: tasklist
     environment:
       - SERVER_PORT=8082
