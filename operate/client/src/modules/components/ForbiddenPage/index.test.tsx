@@ -8,7 +8,7 @@
 
 import {ReactNode} from 'react';
 import {render, screen} from 'modules/testing-library';
-import {Forbidden} from './index';
+import {ForbiddenPage} from './index';
 
 jest.mock('App/AuthenticationCheck', () => ({
   AuthenticationCheck: ({children}: {children: ReactNode}) => <>{children}</>,
@@ -20,7 +20,7 @@ jest.mock('App/Layout/AppHeader', () => ({
 
 describe('Forbidden', () => {
   it('should render Forbidden component with correct text and link', async () => {
-    render(<Forbidden />);
+    render(<ForbiddenPage />);
 
     expect(screen.getByTestId('app-header')).toBeInTheDocument();
     expect(
