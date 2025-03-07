@@ -193,13 +193,25 @@ public class DbMappingState implements MutableMappingState {
   }
 
   @Override
-  public void delete(final long key) {
-    mappingKey.wrapLong(key);
-    final var claimKey = claimByKeyColumnFamily.get(mappingKey);
-    if (claimKey != null) {
-      claimByKeyColumnFamily.deleteExisting(mappingKey);
-      mappingColumnFamily.deleteExisting(claimKey.inner());
-    }
+  public void delete(final String id) {
+
+    mappingId.wrapString(id);
+    get(id)
+        .ifPresentOrElse(
+            persistedMapping -> {
+              mappingKey.wrapLong(persistedMapping.getMappingKey());
+              claimName.wrapString(persistedMapping.getClaimName());
+              claimValue.wrapString(persistedMapping.getClaimValue());
+              mappingColumnFamily.deleteExisting(claim);
+              claimByKeyColumnFamily.deleteExisting(mappingKey);
+              claimByIdColumnFamily.deleteExisting(mappingId);
+            },
+            () -> {
+              throw new IllegalStateException(
+                  String.format(
+                      "Expected to delete mapping with id '%s', but a mapping with this id does not exist.",
+                      id));
+            });
   }
 
   @Override

@@ -64,20 +64,21 @@ public class MappingAppliersTest {
     mappingDeletedApplier.applyState(mappingRecord.getMappingKey(), mappingRecord);
 
     // then
-    assertThat(mappingState.get(mappingRecord.getMappingKey())).isEmpty();
+    assertThat(mappingState.get(mappingRecord.getId())).isEmpty();
   }
 
   @Test
   public void shouldThrowExceptionWhenDeleteNotExistingMapping() {
     // given
-    final long mappingKey = 1L;
-    final var mappingRecord = new MappingRecord().setMappingKey(mappingKey);
+    final String id = "id";
+    final var mappingRecord = new MappingRecord().setId(id);
 
     // when + then
-    assertThatThrownBy(() -> mappingDeletedApplier.applyState(mappingKey, mappingRecord))
+    assertThatThrownBy(
+            () -> mappingDeletedApplier.applyState(mappingRecord.getMappingKey(), mappingRecord))
         .isInstanceOf(IllegalStateException.class)
         .hasMessageContaining(
-            "Expected to delete mapping with key '1', but a mapping with this key does not exist.");
+            "Expected to delete mapping with id 'id', but a mapping with this id does not exist.");
   }
 
   @Test
