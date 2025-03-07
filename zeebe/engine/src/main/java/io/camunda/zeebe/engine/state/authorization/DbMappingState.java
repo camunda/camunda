@@ -194,8 +194,6 @@ public class DbMappingState implements MutableMappingState {
 
   @Override
   public void delete(final String id) {
-
-    mappingId.wrapString(id);
     get(id)
         .ifPresentOrElse(
             persistedMapping -> {

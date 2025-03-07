@@ -116,7 +116,8 @@ public class MappingTest {
         .withClaimValue(claimValue)
         .withName(name)
         .withId(id)
-        .create();
+        .create()
+        .getValue();
 
     // when
     final var deletedMapping = engine.mapping().deleteMapping(id).delete().getValue();
