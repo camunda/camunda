@@ -44,12 +44,7 @@ public class ExternalResourcesUtil extends HttpServlet {
       final ServletContext servletContext)
       throws ServletException, IOException {
     String filename = request.getRequestURI().replaceFirst("/external", ""); // e.g., /someFile.txt
-    final String contextPath = request.getContextPath();
-
-    /* Exclude contextPath from the business logic */
-    if (!contextPath.isEmpty() && filename.startsWith(contextPath)) {
-      filename = filename.substring(contextPath.length());
-    }
+    filename = stripContextPath(filename, request);
 
     if ("/".equals(filename)) {
       filename = INDEX_FILE;
@@ -64,11 +59,13 @@ public class ExternalResourcesUtil extends HttpServlet {
   }
 
   public static boolean shouldServeStaticResource(final HttpServletRequest request) {
-    final String requestURI = request.getRequestURI();
-    return requestURI != null
+    String requestURI = request.getRequestURI();
+    requestURI = stripContextPath(requestURI, request);
+    final boolean result = requestURI != null
         && requestURI.startsWith("/external")
         && !requestURI.startsWith("/external/api")
         && "GET".equals(request.getMethod());
+    return result;
   }
 
   public static String getMimeType(final String fileName) {
@@ -86,5 +83,14 @@ public class ExternalResourcesUtil extends HttpServlet {
       return fileName.substring(lastDotIndex + 1).toLowerCase();
     }
     return "";
+  }
+
+  public static String stripContextPath(final String filename, final HttpServletRequest request) {
+    final String contextPath = request.getContextPath();
+    String newName = filename;
+    if (!contextPath.isEmpty() && filename.startsWith(contextPath)) {
+      newName = filename.substring(contextPath.length());
+    }
+    return newName;
   }
 }
