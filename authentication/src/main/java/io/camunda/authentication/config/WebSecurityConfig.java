@@ -313,7 +313,14 @@ public class WebSecurityConfig {
                                   .findByRegistrationId(OidcClientRegistration.REGISTRATION_ID)
                                   .getProviderDetails()
                                   .getJwkSetUri())))
-          .oauth2Login(oauthLoginConfigurer -> {})
+          .oauth2Login(
+              oauthLoginConfigurer -> {
+                oauthLoginConfigurer
+                    .clientRegistrationRepository(clientRegistrationRepository)
+                    .redirectionEndpoint(
+                        redirectionEndpointConfig ->
+                            redirectionEndpointConfig.baseUri("/sso-callback"));
+              })
           .oidcLogout(httpSecurityOidcLogoutConfigurer -> {})
           .logout(
               (logout) ->
