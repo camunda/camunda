@@ -106,7 +106,7 @@ services:
       - 8000:8000
     restart: always
   operate:
-    image: camunda/operate:8.6.10
+    image: camunda/operate:8.6.11
     container_name: operate
     environment:
       - SERVER_PORT=8081
