@@ -72,6 +72,7 @@ public class WebSecurityConfig {
           "/v1/external/process/**");
   private static final Set<String> WEBAPP_PATHS =
       Set.of(
+          "/sso-callback/**",
           "/login/**",
           "/logout",
           "/oauth2/authorization/**",
