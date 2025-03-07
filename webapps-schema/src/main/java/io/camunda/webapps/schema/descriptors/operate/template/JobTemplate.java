@@ -38,6 +38,8 @@ public class JobTemplate extends OperateTemplateDescriptor
   public static final String JOB_KEY = "key";
   public static final String PARTITION_ID = "partitionId";
   public static final String JOB_FAILED_WITH_RETRIES_LEFT = "jobFailedWithRetriesLeft";
+  public static final String JOB_DENIED = "jobDenied"; // true/false
+  public static final String JOB_DENIED_REASON = "jobDeniedReason";
 
   public JobTemplate(final String indexPrefix, final boolean isElasticsearch) {
     super(indexPrefix, isElasticsearch);

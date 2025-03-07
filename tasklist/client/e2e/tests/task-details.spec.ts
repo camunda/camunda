@@ -173,7 +173,9 @@ test.describe('task details page', () => {
     await tasksPage.completeTaskButton.click();
     await expect(tasksPage.taskCompletionNotification).toBeVisible();
 
+    await page.waitForTimeout(1000);
     await tasksPage.openTask('JobWorker_user_task');
+    await expect(page.getByText('zeebeVar')).toBeVisible();
     await expect(tasksPage.completeTaskButton).toBeDisabled();
     await tasksPage.assignToMeButton.click();
     await expect(tasksPage.completeTaskButton).toBeEnabled();
