@@ -53,7 +53,8 @@ public record Configuration(
     long time,
     Collection<RaftMember> newMembers,
     Collection<RaftMember> oldMembers,
-    boolean force) {
+    boolean force,
+    long compactionBound) {
 
   public Configuration(
       final long index,
@@ -61,7 +62,8 @@ public record Configuration(
       final long time,
       final Collection<RaftMember> newMembers,
       final Collection<RaftMember> oldMembers,
-      final boolean force) {
+      final boolean force,
+      final long compactionBound) {
     checkArgument(time > 0, "time must be positive");
     checkNotNull(newMembers, "newMembers cannot be null");
     checkNotNull(oldMembers, "oldMembers cannot be null");
@@ -72,6 +74,7 @@ public record Configuration(
     this.newMembers = copyMembers(newMembers);
     this.oldMembers = copyMembers(oldMembers);
     this.force = force;
+    this.compactionBound = compactionBound;
 
     if (force) {
       checkArgument(oldMembers.isEmpty(), "oldMembers must be empty when force is true");
@@ -85,12 +88,12 @@ public record Configuration(
       final long time,
       final Collection<RaftMember> newMembers,
       final Collection<RaftMember> oldMembers) {
-    this(index, term, time, newMembers, oldMembers, false);
+    this(index, term, time, newMembers, oldMembers, false, -1);
   }
 
   public Configuration(
       final long index, final long term, final long time, final Collection<RaftMember> members) {
-    this(index, term, time, members, Collections.emptyList());
+    this(index, term, time, members, Collections.emptyList(), false, -1);
   }
 
   public boolean requiresJointConsensus() {

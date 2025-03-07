@@ -98,6 +98,11 @@ public class RdbmsExporterWrapper implements Exporter {
     exporter.purge();
   }
 
+  @Override
+  public long getExportedPosition() {
+    return exporter.getExportedPosition();
+  }
+
   private Duration readFlushInterval(final Context context) {
     return readDuration(context, "flushInterval", Duration.ofMillis(DEFAULT_FLUSH_INTERVAL));
   }

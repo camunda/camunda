@@ -29,7 +29,7 @@ import org.agrona.DirectBuffer;
 import org.slf4j.Logger;
 
 @SuppressWarnings("java:S112") // allow generic exception when calling Exporter#configure
-final class ExporterContainer implements Controller {
+public final class ExporterContainer implements Controller {
 
   private static final Logger LOG = Loggers.EXPORTER_LOGGER;
 
@@ -48,7 +48,7 @@ final class ExporterContainer implements Controller {
   private ActorControl actor;
   private final ExporterInitializationInfo initializationInfo;
 
-  ExporterContainer(
+  public ExporterContainer(
       final ExporterDescriptor descriptor,
       final int partitionId,
       final ExporterInitializationInfo initializationInfo,
@@ -66,7 +66,7 @@ final class ExporterContainer implements Controller {
     exporter = descriptor.newInstance();
   }
 
-  void initContainer(
+  public void initContainer(
       final ActorControl actor,
       final ExporterMetrics metrics,
       final ExportersState state,
@@ -112,7 +112,7 @@ final class ExporterContainer implements Controller {
     initPosition();
   }
 
-  void openExporter() {
+  public void openExporter() {
     LOG.debug("Open exporter with id '{}'", getId());
     ThreadContextUtil.runWithClassLoader(
         () -> exporter.open(this), exporter.getClass().getClassLoader());
@@ -209,7 +209,7 @@ final class ExporterContainer implements Controller {
         && filter.acceptValue(metadata.getValueType());
   }
 
-  void configureExporter() throws Exception {
+  public void configureExporter() throws Exception {
     LOG.debug("Configure exporter with id '{}'", getId());
     ThreadContextUtil.runCheckedWithClassLoader(
         () -> exporter.configure(context), exporter.getClass().getClassLoader());

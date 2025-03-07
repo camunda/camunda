@@ -249,6 +249,7 @@ public class RaftEntrySBESerializer implements RaftEntrySerializer {
         headerDecoder.version());
 
     final long timestamp = configurationEntryDecoder.timestamp();
+    final var compactionBound = configurationEntryDecoder.compactionBound();
 
     final NewMembersDecoder newMembersDecoder = configurationEntryDecoder.newMembers();
     final ArrayList<RaftMember> newMembers = new ArrayList<>(newMembersDecoder.count());
@@ -268,6 +269,6 @@ public class RaftEntrySBESerializer implements RaftEntrySerializer {
       oldMembers.add(new DefaultRaftMember(MemberId.from(memberId), type, updated));
     }
 
-    return new ConfigurationEntry(timestamp, newMembers, oldMembers);
+    return new ConfigurationEntry(timestamp, newMembers, oldMembers, compactionBound);
   }
 }

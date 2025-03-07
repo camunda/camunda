@@ -224,7 +224,7 @@ public class RaftEntrySBESerializerTest {
             new DefaultRaftMember(MemberId.from("4"), Type.ACTIVE, Instant.ofEpochMilli(123459L)));
 
     final ConfigurationEntry configurationEntryWritten =
-        new ConfigurationEntry(1234L, oldMembers, newMembers);
+        new ConfigurationEntry(1234L, oldMembers, newMembers, -1);
 
     // when
     serializer.writeConfigurationEntry(5, configurationEntryWritten, buffer, 0);
@@ -255,7 +255,7 @@ public class RaftEntrySBESerializerTest {
             new DefaultRaftMember(MemberId.from("5"), Type.ACTIVE, Instant.ofEpochMilli(123457L)));
 
     final ConfigurationEntry configurationEntry =
-        new ConfigurationEntry(1234L, newMembers, oldMembers);
+        new ConfigurationEntry(1234L, newMembers, oldMembers, -1);
 
     // when
     final int writtenBytes = serializer.writeConfigurationEntry(5, configurationEntry, buffer, 0);

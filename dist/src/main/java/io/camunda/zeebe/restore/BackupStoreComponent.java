@@ -12,12 +12,15 @@ import io.camunda.zeebe.backup.azure.AzureBackupStore;
 import io.camunda.zeebe.backup.filesystem.FilesystemBackupStore;
 import io.camunda.zeebe.backup.gcs.GcsBackupStore;
 import io.camunda.zeebe.backup.s3.S3BackupStore;
+import io.camunda.zeebe.broker.exporter.repo.ExporterDescriptor;
+import io.camunda.zeebe.broker.exporter.repo.ExporterRepository;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.configuration.backup.AzureBackupStoreConfig;
 import io.camunda.zeebe.broker.system.configuration.backup.BackupStoreCfg;
 import io.camunda.zeebe.broker.system.configuration.backup.FilesystemBackupStoreConfig;
 import io.camunda.zeebe.broker.system.configuration.backup.GcsBackupStoreConfig;
 import io.camunda.zeebe.broker.system.configuration.backup.S3BackupStoreConfig;
+import java.util.List;
 import java.util.concurrent.Executors;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
@@ -36,6 +39,16 @@ final class BackupStoreComponent {
   @Bean(destroyMethod = "closeAsync")
   BackupStore backupStore() {
     return buildBackupStore(brokerCfg.getData().getBackup());
+  }
+
+  @Bean
+  public ExporterRepository exporterRepository(
+      @Autowired(required = true) final List<ExporterDescriptor> exporterDescriptors) {
+    if (exporterDescriptors != null && !exporterDescriptors.isEmpty()) {
+      return new ExporterRepository(exporterDescriptors);
+    } else {
+      return new ExporterRepository();
+    }
   }
 
   private BackupStore buildBackupStore(final BackupStoreCfg backupCfg) {

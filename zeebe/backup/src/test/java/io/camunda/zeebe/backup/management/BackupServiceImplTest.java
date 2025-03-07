@@ -26,6 +26,7 @@ import io.camunda.zeebe.backup.api.BackupStore;
 import io.camunda.zeebe.backup.common.BackupIdentifierImpl;
 import io.camunda.zeebe.backup.common.BackupIdentifierWildcardImpl;
 import io.camunda.zeebe.backup.common.BackupStatusImpl;
+import io.camunda.zeebe.logstreams.storage.LogStorage;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.testing.TestActorFuture;
 import io.camunda.zeebe.scheduler.testing.TestConcurrencyControl;
@@ -46,6 +47,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class BackupServiceImplTest {
 
   @Mock BackupStore backupStore;
+  @Mock LogStorage logStorage;
 
   @Mock BackupStatus notExistingBackupStatus;
 
@@ -54,7 +56,7 @@ class BackupServiceImplTest {
 
   @BeforeEach
   void setup() {
-    backupService = new BackupServiceImpl(backupStore);
+    backupService = new BackupServiceImpl(backupStore, logStorage);
 
     lenient()
         .when(notExistingBackupStatus.statusCode())

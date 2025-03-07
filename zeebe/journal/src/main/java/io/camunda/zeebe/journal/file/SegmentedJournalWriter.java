@@ -126,7 +126,7 @@ final class SegmentedJournalWriter {
     flusher.flush(segments.getTailSegments(flusher.nextFlushIndex()).values());
   }
 
-  private void createNewSegment() {
+  void createNewSegment() {
     currentSegment.updateDescriptor();
     currentSegment = segments.getNextSegment();
     currentWriter = currentSegment.writer();

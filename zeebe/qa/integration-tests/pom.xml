@@ -89,6 +89,11 @@
 
     <dependency>
       <groupId>io.camunda</groupId>
+      <artifactId>rdbms-exporter</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>io.camunda</groupId>
       <artifactId>zeebe-transport</artifactId>
       <scope>test</scope>
     </dependency>

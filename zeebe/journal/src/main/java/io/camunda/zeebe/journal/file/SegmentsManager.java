@@ -287,9 +287,25 @@ final class SegmentsManager implements AutoCloseable {
     final var openDurationTimer = journalMetrics.startJournalOpenDurationTimer();
     // Load existing log segments from disk.
     for (final Segment segment : loadSegments()) {
-      segments.put(segment.descriptor().index(), segment);
+      final var firstIndex = segment.descriptor().index();
+      final var lastIndex = segment.descriptor().lastIndex();
+      LOG.trace(
+          "Opened segment {} with index {} and last index {}", segment, firstIndex, lastIndex);
+      //noinspection resource
+      segments.compute(
+          firstIndex,
+          (index, existingSegment) -> {
+            if (existingSegment == null || existingSegment.lastIndex() < lastIndex) {
+              LOG.trace("Replacing segment {} with {}", existingSegment, segment);
+              return segment;
+            } else {
+              return existingSegment;
+            }
+          });
       journalMetrics.incSegmentCount();
     }
+
+    validateLoadedSegments();
 
     // If a segment doesn't already exist, create an initial segment starting at index 1.
     if (!segments.isEmpty()) {
@@ -314,6 +330,27 @@ final class SegmentsManager implements AutoCloseable {
     // node was stopped. It is safe to delete it now since there are no readers opened for these
     // segments.
     deleteDeferredFiles();
+  }
+
+  private void validateLoadedSegments() {
+    if (segments.isEmpty()) {
+      return;
+    }
+    Segment previousSegment = null;
+    for (final Segment segment : segments.values()) {
+      if (previousSegment != null) {
+        // throws CorruptedJournalException if there is gap
+        checkForIndexGaps(previousSegment, segment);
+      }
+      previousSegment = segment;
+    }
+
+    final var lastFlushedIndex = metaStore.loadLastFlushedIndex();
+    if (previousSegment.lastIndex() < lastFlushedIndex) {
+      throw new CorruptedJournalException(
+          "Expected to find records until index %d, but last index is %d"
+              .formatted(lastFlushedIndex, previousSegment.lastIndex()));
+    }
   }
 
   private void prepareNextSegment() {
@@ -371,18 +408,6 @@ final class SegmentsManager implements AutoCloseable {
                 file.toPath(),
                 previousSegment != null ? previousSegment.lastAsqn() : INITIAL_ASQN,
                 journalIndex);
-
-        if (i > 0) {
-          // throws CorruptedJournalException if there is gap
-          checkForIndexGaps(segments.get(i - 1), segment);
-        }
-
-        final boolean isLastSegment = i == files.size() - 1;
-        if (isLastSegment && segment.lastIndex() < lastFlushedIndex) {
-          throw new CorruptedJournalException(
-              "Expected to find records until index %d, but last index is %d"
-                  .formatted(lastFlushedIndex, segment.lastIndex()));
-        }
 
         segments.add(segment);
         previousSegment = segment;

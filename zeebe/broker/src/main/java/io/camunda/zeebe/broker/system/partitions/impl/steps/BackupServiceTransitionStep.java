@@ -99,6 +99,7 @@ public final class BackupServiceTransitionStep implements PartitionTransitionSte
     // now because SegmentedJournal requires some information from RaftContext in its builder. Until
     // we can refactor SegmentedJournal and build it outside of raft, we have to do this in this
     // hacky way.
+    context.getRaftPartition().name();
     final BackupService backupManager =
         new BackupService(
             context.getNodeId(),
@@ -108,7 +109,9 @@ public final class BackupServiceTransitionStep implements PartitionTransitionSte
             context.getPersistedSnapshotStore(),
             context.getRaftPartition().dataDirectory().toPath(),
             index -> context.getRaftPartition().getServer().getTailSegments(index),
-            context.getPartitionTransitionMeterRegistry());
+            context.getPartitionTransitionMeterRegistry(),
+            context.getLogStorage(),
+            context.getRaftPartition().name());
 
     final ActorFuture<Void> installed = context.getConcurrencyControl().createFuture();
     context

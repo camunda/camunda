@@ -78,7 +78,7 @@ final class SegmentWriter {
     lastEntryPosition = segment.descriptor().lastPosition();
     this.metrics = metrics;
     if (lastEntryPosition > 0) {
-      LOG.trace(
+      LOG.info(
           "Found lastEntryPosition {} and lastIndex {} in descriptor.",
           lastEntryPosition,
           segment.descriptor().lastIndex());

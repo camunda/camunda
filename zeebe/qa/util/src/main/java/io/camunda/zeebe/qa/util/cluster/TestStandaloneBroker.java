@@ -275,9 +275,10 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
 
   public TestStandaloneBroker withRdbmsExporter() {
     withProperty("camunda.database.type", "rdbms");
+    withProperty("spring.h2.console.enabled", "true");
     withProperty(
         "camunda.database.url",
-        "jdbc:h2:mem:testdb+" + UUID.randomUUID() + ";DB_CLOSE_DELAY=-1;MODE=PostgreSQL");
+        "jdbc:h2:file:/tmp/testdb" + UUID.randomUUID() + ";DB_CLOSE_DELAY=-1;MODE=PostgreSQL");
     withProperty("camunda.database.username", "sa");
     withProperty("camunda.database.password", "");
     withProperty("logging.level.io.camunda.db.rdbms", "DEBUG");

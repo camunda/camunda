@@ -152,6 +152,7 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
   private final Random random;
   private PersistedSnapshot currentSnapshot;
   private final int snapshotChunkSize;
+  private long compactionBound;
 
   private boolean ongoingTransition = false;
   // Keeps track of snapshot replication to notify new listeners about missed events
@@ -1143,6 +1144,15 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
       meta.storeVote(lastVotedFor);
       log.debug("Set term {}", term);
     }
+  }
+
+  public long getCompactionBound() {
+    return compactionBound;
+  }
+
+  public void setCompactionBound(final long compactionBound) {
+    this.compactionBound = compactionBound;
+    logCompactor.setCompactionBound(compactionBound);
   }
 
   /**

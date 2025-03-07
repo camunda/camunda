@@ -36,7 +36,10 @@ import java.util.Collections;
  * quorum of the old members and a quorum of the new members.
  */
 public record ConfigurationEntry(
-    long timestamp, Collection<RaftMember> newMembers, Collection<RaftMember> oldMembers)
+    long timestamp,
+    Collection<RaftMember> newMembers,
+    Collection<RaftMember> oldMembers,
+    long compactionBound)
     implements RaftEntry {
 
   public ConfigurationEntry {
@@ -45,7 +48,7 @@ public record ConfigurationEntry(
   }
 
   public ConfigurationEntry(final long timestamp, final Collection<RaftMember> newMembers) {
-    this(timestamp, newMembers, Collections.emptyList());
+    this(timestamp, newMembers, Collections.emptyList(), -1);
   }
 
   /**
@@ -58,6 +61,7 @@ public record ConfigurationEntry(
 
   @Override
   public BufferWriter toSerializable(final long term, final RaftEntrySerializer serializer) {
+    // TODO: Update serialization to include compactionBound
     return new SerializedBufferWriterAdapter(
         () -> serializer.getConfigurationEntrySerializedLength(this),
         (buffer, offset) -> serializer.writeConfigurationEntry(term, this, buffer, offset));

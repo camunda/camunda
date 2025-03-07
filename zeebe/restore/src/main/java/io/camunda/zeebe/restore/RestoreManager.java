@@ -13,6 +13,10 @@ import io.atomix.raft.partition.RaftPartition;
 import io.camunda.zeebe.backup.api.BackupDescriptor;
 import io.camunda.zeebe.backup.api.BackupStatus;
 import io.camunda.zeebe.backup.api.BackupStore;
+import io.camunda.zeebe.broker.exporter.repo.ExporterLoadException;
+import io.camunda.zeebe.broker.exporter.repo.ExporterRepository;
+import io.camunda.zeebe.broker.exporter.stream.ExporterContainer;
+import io.camunda.zeebe.broker.exporter.stream.ExporterDirector.ExporterInitializationInfo;
 import io.camunda.zeebe.broker.partitioning.startup.RaftPartitionFactory;
 import io.camunda.zeebe.broker.partitioning.topology.PartitionDistribution;
 import io.camunda.zeebe.broker.partitioning.topology.StaticConfigurationGenerator;
@@ -20,13 +24,16 @@ import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.db.impl.rocksdb.ChecksumProviderRocksDBImpl;
 import io.camunda.zeebe.restore.PartitionRestoreService.BackupValidator;
 import io.camunda.zeebe.util.FileUtil;
+import io.camunda.zeebe.util.jar.ExternalJarLoadException;
 import io.camunda.zeebe.util.micrometer.MicrometerUtil;
 import io.camunda.zeebe.util.micrometer.MicrometerUtil.PartitionKeyNames;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.composite.CompositeMeterRegistry;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.io.IOException;
 import java.nio.file.DirectoryNotEmptyException;
 import java.nio.file.Path;
+import java.time.InstantSource;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
@@ -38,14 +45,17 @@ public class RestoreManager {
   private final BrokerCfg configuration;
   private final BackupStore backupStore;
   private final MeterRegistry meterRegistry;
+  private final ExporterRepository exporterRepository;
 
   public RestoreManager(
       final BrokerCfg configuration,
       final BackupStore backupStore,
-      final MeterRegistry meterRegistry) {
+      final MeterRegistry meterRegistry,
+      final ExporterRepository exporterRepository) {
     this.configuration = configuration;
     this.backupStore = backupStore;
     this.meterRegistry = meterRegistry;
+    this.exporterRepository = exporterRepository;
   }
 
   public CompletableFuture<Void> restore(final long backupId, final boolean validateConfig) {
@@ -69,7 +79,13 @@ public class RestoreManager {
 
     return CompletableFuture.allOf(
             partitionToRestore.stream()
-                .map(partition -> restorePartition(partition, backupId, validateConfig))
+                .map(
+                    partition ->
+                        restorePartition(
+                            partition,
+                            backupId,
+                            validateConfig,
+                            findExporterPosition(partition.partition().id().id())))
                 .toArray(CompletableFuture[]::new))
         .exceptionallyComposeAsync(error -> logFailureAndDeleteDataDirectory(dataDirectory, error));
   }
@@ -98,10 +114,11 @@ public class RestoreManager {
   private CompletableFuture<Void> restorePartition(
       final InstrumentedRaftPartition partition,
       final long backupId,
-      final boolean validateConfig) {
+      final boolean validateConfig,
+      final long exporterPosition) {
     final BackupValidator validator;
     final RaftPartition raftPartition = partition.partition();
-
+    LOG.info("Restoring to match exporter position {}", exporterPosition);
     if (validateConfig) {
       validator = new ValidatePartitionCount(configuration.getCluster().getPartitionsCount());
     } else {
@@ -116,9 +133,40 @@ public class RestoreManager {
             configuration.getCluster().getNodeId(),
             new ChecksumProviderRocksDBImpl(),
             partition.registry())
-        .restore(backupId, validator)
+        .restore(backupId, validator, exporterPosition)
         .thenAccept(backup -> logSuccessfulRestore(backup, raftPartition.id().id(), backupId))
         .whenComplete((ok, error) -> MicrometerUtil.close(registry));
+  }
+
+  private long findExporterPosition(final int partitionId) {
+    long lowestPosition = Long.MAX_VALUE;
+    for (final var exporterConfig : configuration.getExporters().entrySet()) {
+      try {
+        exporterRepository.load(exporterConfig.getKey(), exporterConfig.getValue());
+      } catch (final ExporterLoadException | ExternalJarLoadException e) {
+        throw new RuntimeException(e);
+      }
+      for (final var exporterDescriptor : exporterRepository.getExporters().entrySet()) {
+        final var controller =
+            new ExporterContainer(
+                exporterDescriptor.getValue(),
+                partitionId,
+                new ExporterInitializationInfo(0, null),
+                new SimpleMeterRegistry(),
+                InstantSource.system());
+        try {
+          controller.configureExporter();
+        } catch (final Exception e) {
+          throw new RuntimeException(e);
+        }
+        final var position = controller.getExporter().getExportedPosition();
+        controller.close();
+        if (position > -1) {
+          lowestPosition = Math.min(lowestPosition, position);
+        }
+      }
+    }
+    return lowestPosition == Long.MAX_VALUE ? -1 : lowestPosition;
   }
 
   private Set<InstrumentedRaftPartition> collectPartitions() {

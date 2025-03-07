@@ -55,6 +55,8 @@ public class RdbmsExporter {
         "[RDBMS Exporter] RdbmsExporter created with Configuration: flushInterval={}, maxQueueSize={}",
         flushInterval,
         maxQueueSize);
+    initializeRdbmsPosition();
+    lastPosition = exporterRdbmsPosition.lastExportedPosition();
   }
 
   public void open(final Controller controller) {
@@ -80,8 +82,8 @@ public class RdbmsExporter {
 
     // schedule first cleanup in 1 second. Future intervals are given by the history cleanup service
     // itself
-    currentCleanupTask =
-        controller.scheduleCancellableTask(Duration.ofSeconds(1), this::cleanupHistory);
+    //    currentCleanupTask =
+    //        controller.scheduleCancellableTask(Duration.ofSeconds(1), this::cleanupHistory);
 
     LOG.info("[RDBMS Exporter] Exporter opened with last exported position {}", lastPosition);
   }
@@ -223,5 +225,9 @@ public class RdbmsExporter {
     }
     LOG.trace("[RDBMS Exporter] flushing queue");
     rdbmsWriter.flush();
+  }
+
+  public long getExportedPosition() {
+    return lastPosition;
   }
 }

@@ -59,7 +59,8 @@ final class LogCompactorTest {
   @Test
   void shouldCompact() {
     // given
-    compactor.setCompactableIndex(12);
+    compactor.setSnapshotCompactionBound(12);
+    compactor.setCompactionBound(12);
 
     // when
     compactor.compact();
@@ -75,7 +76,8 @@ final class LogCompactorTest {
   @Test
   void shouldCompactIgnoringThreshold() {
     // given
-    compactor.setCompactableIndex(12);
+    compactor.setSnapshotCompactionBound(12);
+    compactor.setCompactionBound(12);
 
     // when
     compactor.compactIgnoringReplicationThreshold();
@@ -90,7 +92,8 @@ final class LogCompactorTest {
   void shouldNotCompactOnDifferentThread(final Consumer<LogCompactor> compactMethod) {
     // given
     Mockito.doThrow(new IllegalStateException("Invalid thread")).when(threadContext).checkThread();
-    compactor.setCompactableIndex(12);
+    compactor.setSnapshotCompactionBound(12);
+    compactor.setCompactionBound(12);
 
     // when
     assertThatCode(() -> compactMethod.accept(compactor)).isInstanceOf(IllegalStateException.class);

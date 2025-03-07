@@ -346,6 +346,7 @@ public final class RaftClusterContext implements RaftCluster, AutoCloseable {
     for (final var member : membersInNewConfiguration) {
       updateMemberContext(member, time);
     }
+
     this.configuration = configuration;
   }
 

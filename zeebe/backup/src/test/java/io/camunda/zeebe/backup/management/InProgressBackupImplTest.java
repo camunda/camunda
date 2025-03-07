@@ -62,7 +62,8 @@ class InProgressBackupImplTest {
             1,
             concurrencyControl,
             segmentsDirectory,
-            metadataProvider);
+            metadataProvider,
+            "partition-1");
 
     createSegmentFiles();
   }

@@ -21,9 +21,12 @@ import static io.camunda.zeebe.journal.file.SegmentedJournal.ASQN_IGNORE;
 import io.camunda.zeebe.journal.JournalReader;
 import io.camunda.zeebe.journal.JournalRecord;
 import java.util.NoSuchElementException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 class SegmentedJournalReader implements JournalReader {
 
+  private static final Logger LOG = LoggerFactory.getLogger(SegmentedJournalReader.class);
   private final SegmentedJournal journal;
   private Segment currentSegment;
   private SegmentReader currentReader;
@@ -223,21 +226,35 @@ class SegmentedJournalReader implements JournalReader {
   }
 
   private boolean unsafeHasNext() {
-    if (!currentReader.hasNext()) {
-      if (!currentSegment.isOpen()) {
-        // When the segment has been deleted concurrently, we do not want to allow the readers to
-        // read further until the reader is reset.
-        return false;
-      }
+    if (currentReader.hasNext()) {
+      return true;
+    }
 
-      final Segment nextSegment = journal.getNextSegment(currentSegment.index());
-      if (nextSegment != null && nextSegment.index() == getNextIndex()) {
-        replaceCurrentSegment(nextSegment);
-        return currentReader.hasNext();
-      }
+    if (!currentSegment.isOpen()) {
+      // When the segment has been deleted concurrently, we do not want to allow the readers to
+      // read further until the reader is reset.
       return false;
     }
-    return true;
+
+    while (true) {
+      final Segment nextSegment = journal.getNextSegment(currentSegment.index());
+      LOG.trace("Segment {} is done, rolling over to {}", currentSegment, nextSegment);
+      if (nextSegment != null) {
+        replaceCurrentSegment(nextSegment);
+        final var expectedIndex = getNextIndex();
+        LOG.trace("Seeking to {} as next expected index", expectedIndex);
+        currentReader.seek(expectedIndex);
+        if (expectedIndex == currentReader.getNextIndex()) {
+          LOG.trace("Found expected index, hasNext: {}", currentReader.hasNext());
+          return currentReader.hasNext();
+        } else {
+          // Try the next segment
+          continue;
+        }
+      } else {
+        return false;
+      }
+    }
   }
 
   private void replaceCurrentSegment(final Segment nextSegment) {

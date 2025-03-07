@@ -56,6 +56,7 @@ import io.atomix.raft.storage.log.entry.RaftLogEntry;
 import io.atomix.raft.storage.log.entry.SerializedApplicationEntry;
 import io.atomix.raft.storage.log.entry.UnserializedApplicationEntry;
 import io.atomix.raft.storage.system.Configuration;
+import io.atomix.raft.zeebe.CompactionBoundInformer;
 import io.atomix.raft.zeebe.EntryValidator.ValidationResult;
 import io.atomix.raft.zeebe.ZeebeLogAppender;
 import io.atomix.utils.concurrent.Scheduled;
@@ -71,7 +72,8 @@ import java.util.concurrent.CompletionException;
 import java.util.stream.Collectors;
 
 /** Leader state. */
-public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
+public final class LeaderRole extends ActiveRole
+    implements ZeebeLogAppender, CompactionBoundInformer {
 
   private static final int MAX_APPEND_ATTEMPTS = 5;
   private final LeaderAppender appender;
@@ -442,6 +444,38 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
     return raft.getCluster().getConfiguration().force();
   }
 
+  @Override
+  public void updateCompactionBound(final long compactionBound) {
+    raft.getThreadContext().execute(() -> updateCompactionBoundInternal(compactionBound));
+  }
+
+  private void updateCompactionBoundInternal(final long compactionBound) {
+    raft.checkThread();
+    log.warn("Updating compaction bound {}", compactionBound);
+
+    final var currentMembers = raft.getCluster().getConfiguration().newMembers();
+    final var oldMembers = raft.getCluster().getConfiguration().oldMembers();
+    final var configurationEntry =
+        new ConfigurationEntry(
+            System.currentTimeMillis(), currentMembers, oldMembers, compactionBound);
+    final var term = raft.getTerm();
+    final var entry = appendEntry(new RaftLogEntry(term, configurationEntry));
+    configuring = entry.index();
+    raft.getCluster()
+        .configure(
+            new Configuration(
+                entry.index(),
+                entry.term(),
+                configurationEntry.timestamp(),
+                configurationEntry.newMembers(),
+                configurationEntry.oldMembers(),
+                false,
+                configurationEntry.compactionBound()));
+    appender
+        .appendEntries(entry.index())
+        .whenCompleteAsync((index, error) -> configuring = 0, raft.getThreadContext());
+  }
+
   /** Commits the given configuration. */
   private CompletableFuture<Long> configure(
       final Collection<RaftMember> newMembers, final Collection<RaftMember> oldMembers) {
@@ -450,7 +484,8 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
     final long term = raft.getTerm();
 
     final var configurationEntry =
-        new ConfigurationEntry(System.currentTimeMillis(), newMembers, oldMembers);
+        new ConfigurationEntry(
+            System.currentTimeMillis(), newMembers, oldMembers, raft.getCompactionBound());
     final IndexedRaftLogEntry entry;
     try {
       entry = appendEntry(new RaftLogEntry(term, configurationEntry));

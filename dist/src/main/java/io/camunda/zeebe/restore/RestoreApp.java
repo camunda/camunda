@@ -11,7 +11,10 @@ import io.camunda.application.MainSupport;
 import io.camunda.application.Profile;
 import io.camunda.application.commons.configuration.BrokerBasedConfiguration;
 import io.camunda.application.commons.configuration.WorkingDirectoryConfiguration;
+import io.camunda.application.commons.search.SearchClientDatabaseConfiguration;
 import io.camunda.zeebe.backup.api.BackupStore;
+import io.camunda.zeebe.broker.RdbmsExporterConfiguration;
+import io.camunda.zeebe.broker.exporter.repo.ExporterRepository;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.micrometer.core.instrument.MeterRegistry;
 import org.slf4j.Logger;
@@ -27,7 +30,13 @@ import org.springframework.context.annotation.Import;
 
 @SpringBootApplication(scanBasePackages = {"io.camunda.zeebe.restore"})
 @ConfigurationPropertiesScan(basePackages = {"io.camunda.zeebe.restore"})
-@Import(value = {BrokerBasedConfiguration.class, WorkingDirectoryConfiguration.class})
+@Import(
+    value = {
+      BrokerBasedConfiguration.class,
+      WorkingDirectoryConfiguration.class,
+      RdbmsExporterConfiguration.class,
+      SearchClientDatabaseConfiguration.class,
+    })
 public class RestoreApp implements ApplicationRunner {
 
   private static final Logger LOG = LoggerFactory.getLogger(RestoreApp.class);
@@ -40,17 +49,20 @@ public class RestoreApp implements ApplicationRunner {
 
   private final RestoreConfiguration restoreConfiguration;
   private final MeterRegistry meterRegistry;
+  private final ExporterRepository exporterRepository;
 
   @Autowired
   public RestoreApp(
       final BrokerBasedConfiguration configuration,
       final BackupStore backupStore,
       final RestoreConfiguration restoreConfiguration,
-      final MeterRegistry meterRegistry) {
+      final MeterRegistry meterRegistry,
+      final ExporterRepository exporterRepository) {
     this.configuration = configuration.config();
     this.backupStore = backupStore;
     this.restoreConfiguration = restoreConfiguration;
     this.meterRegistry = meterRegistry;
+    this.exporterRepository = exporterRepository;
   }
 
   public static void main(final String[] args) {
@@ -58,7 +70,7 @@ public class RestoreApp implements ApplicationRunner {
 
     final var application =
         MainSupport.createDefaultApplicationBuilder()
-            .web(WebApplicationType.NONE)
+            .web(WebApplicationType.SERVLET)
             .sources(RestoreApp.class)
             .profiles(Profile.RESTORE.getId())
             .build();
@@ -69,7 +81,7 @@ public class RestoreApp implements ApplicationRunner {
   @Override
   public void run(final ApplicationArguments args) {
     LOG.info("Starting to restore from backup {}", backupId);
-    new RestoreManager(configuration, backupStore, meterRegistry)
+    new RestoreManager(configuration, backupStore, meterRegistry, exporterRepository)
         .restore(backupId, restoreConfiguration.validateConfig())
         .join();
     LOG.info("Successfully restored broker from backup {}", backupId);

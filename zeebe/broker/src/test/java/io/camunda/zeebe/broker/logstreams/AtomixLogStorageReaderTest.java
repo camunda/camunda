@@ -45,7 +45,7 @@ final class AtomixLogStorageReaderTest {
             .withMetaStore(mock(JournalMetaStore.class))
             .build();
     final Appender appender = new Appender();
-    logStorage = new AtomixLogStorage(log::openUncommittedReader, appender);
+    logStorage = new AtomixLogStorage(log::openUncommittedReader, appender, (bound) -> {});
     reader = logStorage.newReader();
   }
 

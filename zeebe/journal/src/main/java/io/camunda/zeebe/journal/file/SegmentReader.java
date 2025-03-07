@@ -23,10 +23,13 @@ import io.camunda.zeebe.journal.record.SBESerializer;
 import java.nio.ByteBuffer;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /** Log segment reader. */
 final class SegmentReader implements Iterator<JournalRecord> {
 
+  private static final Logger LOG = LoggerFactory.getLogger(SegmentReader.class);
   private final ByteBuffer buffer;
   private final JournalIndex index;
   private final Segment segment;
@@ -79,6 +82,7 @@ final class SegmentReader implements Iterator<JournalRecord> {
     checkSegmentOpen();
     final long firstIndex = segment.index();
     final long lastIndex = segment.lastIndex();
+    LOG.trace("Seeking to {}, first: {}, last: {}", index, firstIndex, lastIndex);
 
     reset();
 

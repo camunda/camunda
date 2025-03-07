@@ -256,7 +256,8 @@ public final class ReconfigurationHelper {
               Instant.now().toEpochMilli(),
               newMembers,
               Set.of(),
-              true);
+              true,
+              raftContext.getCompactionBound());
 
       raftContext.getCluster().configure(newConfiguration);
     } else if (!(currentConfiguration.allMembers().equals(newMembers))) {

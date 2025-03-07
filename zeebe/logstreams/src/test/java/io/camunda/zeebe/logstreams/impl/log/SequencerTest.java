@@ -311,5 +311,10 @@ final class SequencerTest {
     public void removeCommitListener(final CommitListener listener) {
       throw new UnsupportedOperationException();
     }
+
+    @Override
+    public void updateCompactionBound(final long compactionBound) {
+      throw new UnsupportedOperationException();
+    }
   }
 }

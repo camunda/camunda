@@ -28,7 +28,8 @@ public final class LogCompactor {
   private final RaftServiceMetrics metrics;
 
   // used when performing compaction; may be updated from a different thread
-  private volatile long compactableIndex;
+  private volatile long compactionBound;
+  private volatile long snapshotCompactionBound;
 
   public LogCompactor(
       final ThreadContext threadContext,
@@ -45,19 +46,7 @@ public final class LogCompactor {
 
   @VisibleForTesting
   public long getCompactableIndex() {
-    return compactableIndex;
-  }
-
-  /**
-   * Sets the compactable index to the given index; this will cause a call to {@link #compact()} or
-   * {@link #compactIgnoringReplicationThreshold()} to compact the log up to the given index here.
-   *
-   * <p>NOTE: this method is thread safe
-   */
-  @VisibleForTesting
-  void setCompactableIndex(final long index) {
-    logger.trace("Updated compactable index to {}", index);
-    compactableIndex = index;
+    return Math.min(compactionBound, snapshotCompactionBound);
   }
 
   /**
@@ -72,7 +61,7 @@ public final class LogCompactor {
    * @return true if any data was deleted, false otherwise
    */
   public boolean compact() {
-    return compact(compactableIndex - replicationThreshold);
+    return compact(getCompactableIndex() - replicationThreshold);
   }
 
   /**
@@ -85,7 +74,7 @@ public final class LogCompactor {
    * @return true if any data was deleted, false otherwise
    */
   public boolean compactIgnoringReplicationThreshold() {
-    return compact(compactableIndex);
+    return compact(getCompactableIndex());
   }
 
   /** Compacts the log based on the snapshot store's lowest compaction bound. */
@@ -116,7 +105,15 @@ public final class LogCompactor {
     }
 
     logger.debug("Scheduling log compaction up to index {}", index);
-    setCompactableIndex(index);
+    setSnapshotCompactionBound(index);
     compact();
+  }
+
+  public void setCompactionBound(final long compactionBound) {
+    this.compactionBound = compactionBound;
+  }
+
+  public void setSnapshotCompactionBound(final long snapshotCompactionBound) {
+    this.snapshotCompactionBound = snapshotCompactionBound;
   }
 }

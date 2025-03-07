@@ -116,7 +116,9 @@ class PartitionRestoreServiceTest {
             dataDirectory,
             // RaftPartitions implements this interface, but the RaftServer is not started
             index -> CompletableFuture.completedFuture(journal.getTailSegments(index).values()),
-            meterRegistry);
+            meterRegistry,
+            null,
+            raftPartition.name());
     actorScheduler.submitActor(backupService);
   }
 
@@ -145,7 +147,7 @@ class PartitionRestoreServiceTest {
     final var backup = takeBackup(backupId, 4);
 
     // when
-    restoreService.restore(backupId, BackupValidator.none()).join();
+    restoreService.restore(backupId, BackupValidator.none(), -1).join();
 
     // then
     assertThat(dataDirectoryToRestore).isNotEmptyDirectory();
@@ -183,7 +185,7 @@ class PartitionRestoreServiceTest {
     takeBackup(backupId, 5);
 
     // when - then
-    assertThat(restoreService.restore(backupId, new ValidatePartitionCount(1)))
+    assertThat(restoreService.restore(backupId, new ValidatePartitionCount(1), -1))
         .failsWithin(Duration.ofSeconds(1))
         .withThrowableOfType(ExecutionException.class)
         .withCauseInstanceOf(IllegalStateException.class)
@@ -209,7 +211,7 @@ class PartitionRestoreServiceTest {
         StandardOpenOption.APPEND);
 
     // when - then
-    assertThat(restoreService.restore(backupId, new ValidatePartitionCount(1)))
+    assertThat(restoreService.restore(backupId, new ValidatePartitionCount(1), -1))
         .failsWithin(Duration.ofSeconds(1))
         .withThrowableOfType(ExecutionException.class)
         .withCauseInstanceOf(CorruptedSnapshotException.class);
@@ -229,7 +231,7 @@ class PartitionRestoreServiceTest {
     takeBackup(backupId, 4);
 
     // when - then
-    assertThat(restoreService.restore(backupId, new ValidatePartitionCount(2)))
+    assertThat(restoreService.restore(backupId, new ValidatePartitionCount(2), -1))
         .failsWithin(Duration.ofSeconds(1))
         .withThrowableOfType(ExecutionException.class)
         .withCauseInstanceOf(BackupNotValidException.class)

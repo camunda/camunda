@@ -176,7 +176,8 @@ final class CheckpointRecordsProcessorTest {
     // then
 
     // backup is not triggered
-    verify(backupManager, never()).takeBackup(lowerCheckpointId, checkpointPosition + 10);
+    verify(backupManager, never())
+        .takeBackup(lowerCheckpointId, checkpointPosition + 10);
 
     // followup event is written
     assertThat(result.records()).hasSize(1);

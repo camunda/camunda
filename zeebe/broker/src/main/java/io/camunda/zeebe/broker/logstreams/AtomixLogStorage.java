@@ -8,6 +8,7 @@
 package io.camunda.zeebe.broker.logstreams;
 
 import io.atomix.raft.RaftCommitListener;
+import io.atomix.raft.zeebe.CompactionBoundInformer;
 import io.atomix.raft.zeebe.ZeebeLogAppender;
 import io.camunda.zeebe.logstreams.storage.LogStorage;
 import io.camunda.zeebe.util.buffer.BufferWriter;
@@ -25,17 +26,23 @@ public class AtomixLogStorage implements LogStorage, RaftCommitListener {
 
   private final AtomixReaderFactory readerFactory;
   private final ZeebeLogAppender logAppender;
+  private final CompactionBoundInformer compactionBoundInformer;
   private final Set<CommitListener> commitListeners = new CopyOnWriteArraySet<>();
 
   public AtomixLogStorage(
-      final AtomixReaderFactory readerFactory, final ZeebeLogAppender logAppender) {
+      final AtomixReaderFactory readerFactory,
+      final ZeebeLogAppender logAppender,
+      final CompactionBoundInformer compactionBoundInformer) {
     this.readerFactory = readerFactory;
     this.logAppender = logAppender;
+    this.compactionBoundInformer = compactionBoundInformer;
   }
 
   public static AtomixLogStorage ofPartition(
-      final AtomixReaderFactory readerFactory, final ZeebeLogAppender appender) {
-    return new AtomixLogStorage(readerFactory, appender);
+      final AtomixReaderFactory readerFactory,
+      final ZeebeLogAppender appender,
+      final CompactionBoundInformer compactionBoundInformer) {
+    return new AtomixLogStorage(readerFactory, appender, compactionBoundInformer);
   }
 
   @Override
@@ -61,6 +68,12 @@ public class AtomixLogStorage implements LogStorage, RaftCommitListener {
   @Override
   public void removeCommitListener(final CommitListener listener) {
     commitListeners.remove(listener);
+  }
+
+  @Override
+  public void updateCompactionBound(final long compactionBound) {
+
+    compactionBoundInformer.updateCompactionBound(compactionBound);
   }
 
   @Override

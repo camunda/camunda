@@ -18,7 +18,6 @@ import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
-import java.nio.file.StandardCopyOption;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -88,7 +87,15 @@ final class FileSetManager {
 
     final var pathByName =
         fileSet.files().stream()
-            .collect(Collectors.toMap(NamedFile::name, f -> targetFolder.resolve(f.name())));
+            .collect(
+                Collectors.toMap(
+                    NamedFile::name,
+                    f ->
+                        targetFolder.resolve(
+                            f.name().substring(0, f.name().length() - 4)
+                                + id.nodeId()
+                                + id.checkpointId()
+                                + ".log")));
 
     final Path fileSetPath = fileSetPath(id, fileSetName);
     for (final var entry : pathByName.entrySet()) {
@@ -97,7 +104,7 @@ final class FileSetManager {
       final var backupFilePath = fileSetPath.resolve(fileName);
 
       try {
-        Files.copy(backupFilePath, filePath, StandardCopyOption.REPLACE_EXISTING);
+        Files.copy(backupFilePath, filePath);
         FileUtil.flush(filePath);
       } catch (final IOException e) {
         throw new UncheckedIOException("Unable to restore file " + fileName, e);

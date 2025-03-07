@@ -84,4 +84,8 @@ public interface Exporter {
    * retried and therefore <i>must</i> be idempotent.
    */
   default void purge() throws Exception {}
+
+  default long getExportedPosition() {
+    return -1;
+  }
 }

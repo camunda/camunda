@@ -25,6 +25,7 @@ import io.camunda.zeebe.backup.management.BackupService;
 import io.camunda.zeebe.broker.utils.InlineThreadContext;
 import io.camunda.zeebe.journal.JournalMetaStore;
 import io.camunda.zeebe.journal.file.SegmentedJournal;
+import io.camunda.zeebe.logstreams.storage.LogStorage;
 import io.camunda.zeebe.scheduler.ActorScheduler;
 import io.camunda.zeebe.scheduler.SchedulingHints;
 import io.camunda.zeebe.snapshots.PersistedSnapshot;
@@ -75,6 +76,7 @@ public class ConcurrentBackupCompactionTest extends DynamicAutoCloseable {
   private LogCompactor logCompactor;
   private final ThreadContext threadContext = new InlineThreadContext();
   @Mock private RaftLog raftLog;
+  @Mock private LogStorage logStorage;
   private final RaftServiceMetrics raftMetrics = new RaftServiceMetrics("1", meterRegistry);
 
   @BeforeEach
@@ -124,7 +126,9 @@ public class ConcurrentBackupCompactionTest extends DynamicAutoCloseable {
                 dataDirectory,
                 // RaftPartitions implements this interface, but the RaftServer is not started
                 index -> CompletableFuture.completedFuture(journal.getTailSegments(index).values()),
-                meterRegistry));
+                meterRegistry,
+                logStorage,
+                raftPartition.name()));
     actorScheduler.submitActor(backupService);
   }
 

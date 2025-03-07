@@ -13,6 +13,7 @@ import static io.camunda.zeebe.util.Either.right;
 import io.atomix.raft.RaftServer.Role;
 import io.atomix.raft.partition.impl.RaftPartitionServer;
 import io.atomix.raft.storage.log.entry.ApplicationEntry;
+import io.atomix.raft.zeebe.CompactionBoundInformer;
 import io.atomix.raft.zeebe.ZeebeLogAppender;
 import io.camunda.zeebe.broker.logstreams.AtomixLogStorage;
 import io.camunda.zeebe.broker.system.partitions.PartitionTransitionContext;
@@ -93,17 +94,21 @@ public final class LogStoragePartitionTransitionStep implements PartitionTransit
         new AtomixLogStorage(
             server::openReader,
             // Prevent followers from writing new events
-            new LogAppenderForReadOnlyStorage()));
+            new LogAppenderForReadOnlyStorage(),
+            (bound) -> {}));
   }
 
   private Either<Exception, AtomixLogStorage> createWritableLogStorage(
       final PartitionTransitionContext context,
       final RaftPartitionServer server,
       final long targetTerm) {
+    final var compactionBoundInformer = server.getCompactionBoundInformer();
     final var appenderOptional = server.getAppender();
     return appenderOptional
         .map(
-            logAppender -> checkAndCreateAtomixLogStorage(context, server, logAppender, targetTerm))
+            logAppender ->
+                checkAndCreateAtomixLogStorage(
+                    context, server, logAppender, compactionBoundInformer, targetTerm))
         .orElseGet(
             () ->
                 left(
@@ -115,6 +120,7 @@ public final class LogStoragePartitionTransitionStep implements PartitionTransit
       final PartitionTransitionContext context,
       final RaftPartitionServer server,
       final ZeebeLogAppender logAppender,
+      final CompactionBoundInformer compactionBoundInformer,
       final long targetTerm) {
     final var raftTerm = server.getTerm();
 
@@ -123,7 +129,8 @@ public final class LogStoragePartitionTransitionStep implements PartitionTransit
           new NotLeaderException(
               String.format(WRONG_TERM_ERROR_MSG, targetTerm, raftTerm, context.getPartitionId())));
     } else {
-      final var logStorage = AtomixLogStorage.ofPartition(server::openReader, logAppender);
+      final var logStorage =
+          AtomixLogStorage.ofPartition(server::openReader, logAppender, compactionBoundInformer);
       return right(logStorage);
     }
   }

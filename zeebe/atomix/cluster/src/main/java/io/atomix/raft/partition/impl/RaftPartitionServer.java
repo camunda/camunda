@@ -37,6 +37,7 @@ import io.atomix.raft.partition.RaftStorageConfig;
 import io.atomix.raft.roles.RaftRole;
 import io.atomix.raft.storage.RaftStorage;
 import io.atomix.raft.storage.log.RaftLogReader;
+import io.atomix.raft.zeebe.CompactionBoundInformer;
 import io.atomix.raft.zeebe.ZeebeLogAppender;
 import io.atomix.utils.logging.ContextualLoggerFactory;
 import io.atomix.utils.logging.LoggerContext;
@@ -290,6 +291,14 @@ public class RaftPartitionServer implements HealthMonitorable {
     }
 
     return Optional.empty();
+  }
+
+  public CompactionBoundInformer getCompactionBoundInformer() {
+    final RaftRole role = server.getContext().getRaftRole();
+    if (role instanceof final CompactionBoundInformer informer) {
+      return informer;
+    }
+    throw new IllegalStateException("No compaction informer found");
   }
 
   public Role getRole() {

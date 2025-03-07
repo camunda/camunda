@@ -202,6 +202,13 @@ public final class TestCluster implements CloseableSilently {
         .orElseThrow(() -> new NoSuchElementException("No available gateway for cluster"));
   }
 
+  public TestStandaloneBroker availableBroker() {
+    return brokers.values().stream()
+        .filter(this::isReady)
+        .findFirst()
+        .orElseThrow(() -> new NoSuchElementException("No available broker for cluster"));
+  }
+
   /**
    * Returns the first gateway which is running. The gateway may not be ready to accept requests.
    *

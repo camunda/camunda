@@ -13,6 +13,9 @@ import io.camunda.zeebe.backup.api.NamedFileSet;
 import io.camunda.zeebe.backup.common.BackupDescriptorImpl;
 import io.camunda.zeebe.backup.common.BackupImpl;
 import io.camunda.zeebe.backup.common.NamedFileSetImpl;
+import io.camunda.zeebe.journal.JournalMetaStore.InMemory;
+import io.camunda.zeebe.journal.JournalReader;
+import io.camunda.zeebe.journal.file.SegmentedJournal;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.snapshots.PersistedSnapshot;
@@ -21,7 +24,9 @@ import io.camunda.zeebe.snapshots.SnapshotException.SnapshotNotFoundException;
 import io.camunda.zeebe.snapshots.SnapshotReservation;
 import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.VersionUtil;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collections;
@@ -52,6 +57,7 @@ final class InProgressBackupImpl implements InProgressBackup {
   private final Path segmentsDirectory;
 
   private final JournalInfoProvider journalInfoProvider;
+  private final String partitionName;
 
   // Snapshot related data
   private boolean hasSnapshot = true;
@@ -68,7 +74,8 @@ final class InProgressBackupImpl implements InProgressBackup {
       final int numberOfPartitions,
       final ConcurrencyControl concurrencyControl,
       final Path segmentsDirectory,
-      final JournalInfoProvider journalInfoProvider) {
+      final JournalInfoProvider journalInfoProvider,
+      final String partitionName) {
     this.snapshotStore = snapshotStore;
     this.backupId = backupId;
     this.checkpointPosition = checkpointPosition;
@@ -76,6 +83,7 @@ final class InProgressBackupImpl implements InProgressBackup {
     this.concurrencyControl = concurrencyControl;
     this.segmentsDirectory = segmentsDirectory;
     this.journalInfoProvider = journalInfoProvider;
+    this.partitionName = partitionName;
   }
 
   @Override
@@ -196,13 +204,16 @@ final class InProgressBackupImpl implements InProgressBackup {
               filesCollected.completeExceptionally(
                   new IllegalStateException("Segments must not be empty"));
             } else {
-              final Map<String, Path> map =
+              final var originalSegments =
                   journalMetadata.stream()
                       .collect(
                           Collectors.toMap(
                               path -> segmentsDirectory.relativize(path).toString(),
                               Function.identity()));
-              segmentsFileSet = new NamedFileSetImpl(map);
+              final var truncatedSegments =
+                  truncateUntilCheckpointPosition(originalSegments, checkpointPosition);
+
+              segmentsFileSet = new NamedFileSetImpl(truncatedSegments);
               filesCollected.complete(null);
             }
           });
@@ -234,6 +245,78 @@ final class InProgressBackupImpl implements InProgressBackup {
       snapshotReservation.release();
       LOG.debug("Released reservation for snapshot {}", reservedSnapshot.getId());
     }
+  }
+
+  private Map<String, Path> truncateUntilCheckpointPosition(
+      final Map<String, Path> paths, final long checkpointPosition) {
+    // move all files to a temporary directory
+    final Path tmp;
+    try {
+      tmp = Files.createTempDirectory("backup-" + checkpointId());
+    } catch (final IOException e) {
+      throw new UncheckedIOException(e);
+    }
+    final var copiedPaths = new HashMap<String, Path>();
+    for (final var entry : paths.entrySet()) {
+      // move file to a temporary directory
+      try {
+        final var fileName = entry.getKey();
+        final var filePath = tmp.resolve(fileName);
+        copiedPaths.put(fileName, filePath);
+        Files.copy(entry.getValue(), filePath);
+      } catch (final IOException e) {
+        throw new UncheckedIOException(e);
+      }
+    }
+
+    // open journal on the temporary directory
+    try (final var journal =
+        SegmentedJournal.builder(new SimpleMeterRegistry())
+            .withDirectory(tmp.toFile())
+            .withName(partitionName)
+            .withMetaStore(new InMemory())
+            .build()) {
+
+      // Reset to the checkpoint position
+      resetJournal(checkpointPosition, journal);
+    }
+
+    return copiedPaths;
+  }
+
+  private void resetJournal(final long checkpointPosition, final SegmentedJournal journal) {
+    try (final var reader = journal.openReader()) {
+      reader.seekToAsqn(checkpointPosition);
+      if (reader.hasNext()) {
+        final var checkpointRecord = reader.next();
+        // Here the assumption is the checkpointRecord is the only entry in the journal record. So
+        // the checkpointPosition will be the asqn of the record.
+        if (checkpointRecord.asqn() != checkpointPosition) {
+          failedToFindCheckpointRecord(checkpointPosition, reader);
+        }
+        journal.deleteAfter(checkpointRecord.index());
+      } else {
+        failedToFindCheckpointRecord(checkpointPosition, reader);
+      }
+    }
+  }
+
+  private static void failedToFindCheckpointRecord(
+      final long checkpointPosition, final JournalReader reader) {
+    reader.seekToFirst();
+    final var firstEntry = reader.hasNext() ? reader.next() : null;
+    reader.seekToLast();
+    final var lastEntry = reader.hasNext() ? reader.next() : null;
+    LOG.error(
+        "Cannot find the checkpoint record at position {}. Log contains first record: (index = {}, position= {}) last record: (index = {}, position= {}). Restoring from this state can lead to inconsistent state. Aborting restore.",
+        checkpointPosition,
+        firstEntry != null ? firstEntry.index() : -1,
+        firstEntry != null ? firstEntry.asqn() : -1,
+        lastEntry != null ? lastEntry.index() : -1,
+        lastEntry != null ? lastEntry.asqn() : -1);
+    throw new IllegalStateException(
+        "Failed to restore from backup. Cannot find a record at checkpoint position %d in the log."
+            .formatted(checkpointPosition));
   }
 
   private Either<String, Set<PersistedSnapshot>> findValidSnapshot(

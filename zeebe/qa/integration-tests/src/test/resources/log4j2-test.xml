@@ -9,7 +9,7 @@
   </Appenders>
 
   <Loggers>
-    <Logger name="io.camunda.zeebe" level="debug"/>
+    <Logger name="io.camunda" level="debug"/>
     <Logger name="io.atomix" level="debug"/>
     <Logger name="io.zeebe.containers.ZeebeTopologyWaitStrategy" level="trace"/>
 

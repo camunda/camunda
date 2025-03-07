@@ -34,6 +34,11 @@
 
     <dependency>
       <groupId>io.camunda</groupId>
+      <artifactId>rdbms-exporter</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
       <artifactId>camunda-search-client-connect</artifactId>
     </dependency>
 

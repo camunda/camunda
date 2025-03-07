@@ -92,6 +92,8 @@ public interface LogStorage {
    */
   void removeCommitListener(CommitListener listener);
 
+  public void updateCompactionBound(final long compactionBound);
+
   /**
    * An append listener can be added to an append call to be notified of different events that can
    * occur during the append operation.
@@ -114,7 +116,6 @@ public interface LogStorage {
      */
     default void onCommit(final long index, final long highestPosition) {}
   }
-
   /**
    * Consumers of LogStorage can use this listener to get notified when new records are committed.
    * The difference between this and {@link AppendListener} is that {@link AppendListener} can only

@@ -275,6 +275,8 @@ public final class ProcessingStateMachine {
       final var value = recordValues.readRecordValue(loggedEvent, metadata.getValueType());
       typedCommand.wrap(loggedEvent, metadata, value);
 
+      LOG.trace("Processing command: {}", metadata);
+
       zeebeDbTransaction = transactionContext.getCurrentTransaction();
       try (final var timer = processingMetrics.startBatchProcessingDurationTimer()) {
         zeebeDbTransaction.run(() -> batchProcessing(typedCommand));

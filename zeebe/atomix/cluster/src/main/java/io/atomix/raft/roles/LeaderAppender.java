@@ -316,6 +316,7 @@ final class LeaderAppender {
         .withTime(configuration.time())
         .withNewMembers(configuration.newMembers())
         .withOldMembers(configuration.oldMembers())
+        .withCompactionBound(raft.getCompactionBound())
         .build();
   }
 

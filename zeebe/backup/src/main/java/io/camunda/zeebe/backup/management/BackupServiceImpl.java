@@ -12,6 +12,7 @@ import io.camunda.zeebe.backup.api.BackupStatusCode;
 import io.camunda.zeebe.backup.api.BackupStore;
 import io.camunda.zeebe.backup.common.BackupIdentifierWildcardImpl;
 import io.camunda.zeebe.backup.processing.state.CheckpointState;
+import io.camunda.zeebe.logstreams.storage.LogStorage;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import java.util.Collection;
@@ -29,10 +30,12 @@ final class BackupServiceImpl {
   private static final Logger LOG = LoggerFactory.getLogger(BackupServiceImpl.class);
   private final Set<InProgressBackup> backupsInProgress = new HashSet<>();
   private final BackupStore backupStore;
+  private final LogStorage logStorage;
   private ConcurrencyControl concurrencyControl;
 
-  BackupServiceImpl(final BackupStore backupStore) {
+  BackupServiceImpl(final BackupStore backupStore, final LogStorage logStorage) {
     this.backupStore = backupStore;
+    this.logStorage = logStorage;
   }
 
   void close() {
@@ -144,6 +147,7 @@ final class BackupServiceImpl {
   }
 
   private void closeInProgressBackup(final InProgressBackup inProgressBackup) {
+    logStorage.updateCompactionBound(inProgressBackup.checkpointPosition());
     backupsInProgress.remove(inProgressBackup);
     inProgressBackup.close();
   }

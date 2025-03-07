@@ -295,7 +295,7 @@ class MetaStoreTest {
           Arguments.of(
               named(
                   "force configuration",
-                  new Configuration(2, 3, 1235L, getMembers("0", "3"), List.of(), true))));
+                  new Configuration(2, 3, 1235L, getMembers("0", "3"), List.of(), true, -1))));
     }
   }
 }

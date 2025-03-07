@@ -41,6 +41,7 @@ public class ConfigureRequest extends AbstractRaftRequest {
   private final long timestamp;
   private final Collection<RaftMember> members;
   private final Collection<RaftMember> oldMembers;
+  private final long compactionBound;
 
   public ConfigureRequest(
       final long term,
@@ -48,18 +49,20 @@ public class ConfigureRequest extends AbstractRaftRequest {
       final long index,
       final long timestamp,
       final Collection<RaftMember> newMembers,
-      final Collection<RaftMember> oldMembers) {
+      final Collection<RaftMember> oldMembers,
+      final long compactionBound) {
     this.term = term;
     this.leader = leader;
     this.index = index;
     this.timestamp = timestamp;
     members = newMembers;
     this.oldMembers = oldMembers;
+    this.compactionBound = compactionBound;
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(term, leader, index, timestamp, members, oldMembers);
+    return Objects.hash(term, leader, index, timestamp, members, oldMembers, compactionBound);
   }
 
   @Override
@@ -76,7 +79,8 @@ public class ConfigureRequest extends AbstractRaftRequest {
         && timestamp == that.timestamp
         && Objects.equals(leader, that.leader)
         && Objects.equals(members, that.members)
-        && Objects.equals(oldMembers, that.oldMembers);
+        && Objects.equals(oldMembers, that.oldMembers)
+        && compactionBound == that.compactionBound;
   }
 
   @Override
@@ -95,6 +99,8 @@ public class ConfigureRequest extends AbstractRaftRequest {
         + members
         + ", oldMembers="
         + oldMembers
+        + ", compactionBound="
+        + compactionBound
         + '}';
   }
 
@@ -143,6 +149,10 @@ public class ConfigureRequest extends AbstractRaftRequest {
     return timestamp;
   }
 
+  public long getCompactionBound() {
+    return compactionBound;
+  }
+
   /**
    * Returns the configuration members.
    *
@@ -175,6 +185,7 @@ public class ConfigureRequest extends AbstractRaftRequest {
     private long timestamp;
     private Collection<RaftMember> newMembers;
     private Collection<RaftMember> oldMembers = List.of();
+    private long compactionBound;
 
     /**
      * Sets the request term.
@@ -249,13 +260,19 @@ public class ConfigureRequest extends AbstractRaftRequest {
       return this;
     }
 
+    public Builder withCompactionBound(final long compactionBound) {
+      this.compactionBound = compactionBound;
+      return this;
+    }
+
     /**
      * @throws IllegalStateException if member is null
      */
     @Override
     public ConfigureRequest build() {
       validate();
-      return new ConfigureRequest(term, leader, index, timestamp, newMembers, oldMembers);
+      return new ConfigureRequest(
+          term, leader, index, timestamp, newMembers, oldMembers, compactionBound);
     }
 
     @Override

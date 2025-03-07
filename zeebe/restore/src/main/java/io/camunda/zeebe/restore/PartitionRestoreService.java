@@ -20,18 +20,22 @@ import io.camunda.zeebe.journal.JournalReader;
 import io.camunda.zeebe.journal.file.SegmentedJournal;
 import io.camunda.zeebe.snapshots.CRC32CChecksumProvider;
 import io.camunda.zeebe.snapshots.RestorableSnapshotStore;
+import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotId;
 import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotStore;
 import io.camunda.zeebe.util.FileUtil;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.nio.file.DirectoryNotEmptyException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
+import java.util.concurrent.atomic.AtomicReference;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -71,32 +75,73 @@ public class PartitionRestoreService {
    * @return the descriptor of the backup it restored
    */
   public CompletableFuture<BackupDescriptor> restore(
-      final long backupId, final BackupValidator validator) {
-    return getTargetDirectory(backupId)
-        .thenCompose(targetDirectory -> download(backupId, targetDirectory, validator))
-        .thenApply(this::moveFilesToDataDirectory)
-        .thenApply(
-            backup -> {
-              resetLogToCheckpointPosition(backup.descriptor().checkpointPosition(), rootDirectory);
-              return backup.descriptor();
-            })
-        .toCompletableFuture();
+      final long backupId, final BackupValidator validator, final long exporterPosition) {
+    final var allBackupStatuses =
+        backupStore
+            .list(
+                new BackupIdentifierWildcardImpl(
+                    Optional.empty(), Optional.of(partitionId), Optional.empty()))
+            .join();
+    final AtomicReference<Backup> lastBackupStatus = new AtomicReference<>();
+    final List<Backup> allBackups = new ArrayList<>();
+    for (final var backupStatus : allBackupStatuses) {
+      if (backupStatus.statusCode() != BackupStatusCode.COMPLETED) {
+        LOG.info("Backup {} is not completed. Skipping restore.", backupStatus);
+        continue;
+      }
+      getTargetDirectory(backupStatus.id().checkpointId())
+          .thenCompose(
+              targetDirectory ->
+                  download(backupStatus.id().checkpointId(), targetDirectory, validator))
+          .thenApply(this::moveFilesToDataDirectory)
+          .thenApply(
+              backup -> {
+                // No need to reset, this is done before uploading the backup.
+                //                resetLogToCheckpointPosition(
+                //                    backup.descriptor().checkpointPosition(), rootDirectory);
+                LOG.trace("Restored backup position {}", backup.descriptor().checkpointPosition());
+                lastBackupStatus.set(backup);
+                allBackups.add(backup);
+                return backup.descriptor();
+              })
+          .toCompletableFuture()
+          .join();
+    }
+
+    restoreSnapshot(allBackups, exporterPosition);
+
+    return CompletableFuture.completedFuture(lastBackupStatus.get().descriptor());
 
     // TODO: As an additional consistency check:
     // - Validate journal.firstIndex <= snapshotIndex + 1
     // - Verify journal.lastEntry.asqn == checkpointPosition
   }
 
+  private void restoreSnapshot(final List<Backup> backups, final long exporterPosition) {
+    // Find snapshot before the last exported position
+    final var backupWithMatchingSnapshot =
+        backups.stream()
+            .filter(backup -> backup.descriptor().snapshotId().isPresent())
+            .filter(backup -> exporterPositionOfBackup(backup) < exporterPosition)
+            .max(Comparator.comparingLong(PartitionRestoreService::exporterPositionOfBackup));
+
+    LOG.info(
+        "Picked {} as snapshot to match exporter position {}, backups: {}",
+        backupWithMatchingSnapshot,
+        exporterPosition,
+        backups);
+    // Restore snapshot
+    backupWithMatchingSnapshot.ifPresent(this::moveSnapshotFiles);
+  }
+
+  private static long exporterPositionOfBackup(final Backup backup) {
+    return FileBasedSnapshotId.ofFileName(backup.descriptor().snapshotId().orElseThrow())
+        .orElseThrow()
+        .getExportedPosition();
+  }
+
   private CompletionStage<Path> getTargetDirectory(final long backupId) {
     try {
-      if (!FileUtil.isEmpty(rootDirectory)) {
-        LOG.error(
-            "Partition's data directory {} is not empty. Aborting restore to avoid overwriting data. Please restart with a clean directory.",
-            rootDirectory);
-        return CompletableFuture.failedFuture(
-            new DirectoryNotEmptyException(rootDirectory.toString()));
-      }
-
       // First download the contents to a temporary directory and then move it to the correct
       // locations.
       final var tempTargetDirectory = rootDirectory.resolve("restoring-" + backupId);
@@ -165,7 +210,6 @@ public class PartitionRestoreService {
   // rootDirectory/snapshots/<snapshotId>/
   private Backup moveFilesToDataDirectory(final Backup backup) {
     moveSegmentFiles(backup);
-    moveSnapshotFiles(backup);
     return backup;
   }
 
@@ -174,7 +218,8 @@ public class PartitionRestoreService {
     final var segmentFileSet = backup.segments().namedFiles();
     final var segmentFileNames = segmentFileSet.keySet();
     segmentFileNames.forEach(
-        name -> copyNamedFileToDirectory(name, segmentFileSet.get(name), rootDirectory));
+        name ->
+            copyNamedFileToDirectory(backup.id(), name, segmentFileSet.get(name), rootDirectory));
 
     try {
       FileUtil.flushDirectory(rootDirectory);
@@ -206,8 +251,10 @@ public class PartitionRestoreService {
   }
 
   private void copyNamedFileToDirectory(
-      final String name, final Path source, final Path targetDirectory) {
-    final var targetFilePath = targetDirectory.resolve(name);
+      final BackupIdentifier id, final String name, final Path source, final Path targetDirectory) {
+    final var targetFilePath =
+        targetDirectory.resolve(
+            name.substring(0, name.length() - 4) + id.nodeId() + id.checkpointId() + ".log");
     try {
       Files.move(source, targetFilePath);
     } catch (final IOException e) {

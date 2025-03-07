@@ -289,7 +289,8 @@ final class Segment implements AutoCloseable, FlushableSegment {
 
   void resetLastEntryInDescriptor() {
     descriptor = descriptor.reset();
-    descriptorSerializer.writeTo(descriptor, buffer);
+    // Update the descriptor to set the last index and position to current values
+    updateDescriptor();
     // flush immediately to prevent inconsistencies between descriptor and actual last written entry
     buffer.force(0, descriptor.encodingLength());
   }

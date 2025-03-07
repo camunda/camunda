@@ -61,7 +61,7 @@ public final class TestRestoreApp extends TestSpringApplication<TestRestoreApp> 
 
   @Override
   protected SpringApplicationBuilder createSpringBuilder() {
-    return super.createSpringBuilder().web(WebApplicationType.NONE);
+    return super.createSpringBuilder().web(WebApplicationType.SERVLET);
   }
 
   public TestRestoreApp withBrokerConfig(final Consumer<BrokerCfg> modifier) {

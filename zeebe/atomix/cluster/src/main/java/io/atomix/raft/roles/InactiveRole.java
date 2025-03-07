@@ -70,7 +70,9 @@ public class InactiveRole extends AbstractRole {
             request.term(),
             request.timestamp(),
             request.newMembers(),
-            request.oldMembers() != null ? request.oldMembers() : List.of());
+            request.oldMembers() != null ? request.oldMembers() : List.of(),
+            false,
+            request.getCompactionBound());
 
     // Configure the cluster membership. This will cause this server to transition to the
     // appropriate state if its type has changed.
@@ -82,6 +84,8 @@ public class InactiveRole extends AbstractRole {
     if (raft.getCommitIndex() >= raft.getCluster().getConfiguration().index()) {
       raft.getCluster().commitCurrentConfiguration();
     }
+
+    raft.setCompactionBound(request.getCompactionBound());
 
     return CompletableFuture.completedFuture(
         logResponse(ConfigureResponse.builder().withStatus(RaftResponse.Status.OK).build()));

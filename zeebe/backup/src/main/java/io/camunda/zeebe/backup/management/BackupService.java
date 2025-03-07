@@ -14,6 +14,7 @@ import io.camunda.zeebe.backup.api.BackupStore;
 import io.camunda.zeebe.backup.common.BackupIdentifierImpl;
 import io.camunda.zeebe.backup.common.BackupStatusImpl;
 import io.camunda.zeebe.backup.metrics.BackupManagerMetrics;
+import io.camunda.zeebe.logstreams.storage.LogStorage;
 import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
@@ -37,6 +38,7 @@ public final class BackupService extends Actor implements BackupManager {
   private final PersistedSnapshotStore snapshotStore;
   private final Path segmentsDirectory;
   private final BackupManagerMetrics metrics;
+  private final String partitionName;
 
   public BackupService(
       final int nodeId,
@@ -46,14 +48,17 @@ public final class BackupService extends Actor implements BackupManager {
       final PersistedSnapshotStore snapshotStore,
       final Path segmentsDirectory,
       final JournalInfoProvider raftMetadataProvider,
-      final MeterRegistry partitionRegistry) {
+      final MeterRegistry partitionRegistry,
+      final LogStorage logStorage,
+      final String partitionName) {
     this.nodeId = nodeId;
     this.partitionId = partitionId;
     this.numberOfPartitions = numberOfPartitions;
     this.snapshotStore = snapshotStore;
     this.segmentsDirectory = segmentsDirectory;
     metrics = new BackupManagerMetrics(partitionRegistry);
-    internalBackupManager = new BackupServiceImpl(backupStore);
+    this.partitionName = partitionName;
+    internalBackupManager = new BackupServiceImpl(backupStore, logStorage);
     actorName = buildActorName("BackupService", partitionId);
     journalInfoProvider = raftMetadataProvider;
   }
@@ -82,7 +87,8 @@ public final class BackupService extends Actor implements BackupManager {
                   numberOfPartitions,
                   actor,
                   segmentsDirectory,
-                  journalInfoProvider);
+                  journalInfoProvider,
+                  partitionName);
 
           final var opMetrics = metrics.startTakingBackup();
           final var backupResult = internalBackupManager.takeBackup(inProgressBackup, actor);

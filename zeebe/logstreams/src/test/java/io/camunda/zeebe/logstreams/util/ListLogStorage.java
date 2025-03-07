@@ -91,6 +91,11 @@ public class ListLogStorage implements LogStorage {
     commitListeners.remove(listener);
   }
 
+  @Override
+  public void updateCompactionBound(final long compactionBound) {
+    // no-op
+  }
+
   public void reset() {
     final Integer lastIndex =
         listLogStorageReaders.stream().map(r -> r.currentIndex).min(Integer::compareTo).orElse(0);
