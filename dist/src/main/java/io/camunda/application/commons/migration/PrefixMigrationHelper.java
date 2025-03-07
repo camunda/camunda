@@ -7,14 +7,14 @@
  */
 package io.camunda.application.commons.migration;
 
+import io.camunda.db.DatabaseType;
+import io.camunda.db.search.engine.config.ConnectConfiguration;
 import io.camunda.exporter.schema.PrefixMigrationClient;
 import io.camunda.exporter.schema.elasticsearch.ElasticsearchPrefixMigrationClient;
 import io.camunda.exporter.schema.opensearch.OpensearchPrefixMigrationClient;
 import io.camunda.exporter.utils.CloneResult;
 import io.camunda.exporter.utils.ReindexResult;
 import io.camunda.operate.property.OperateProperties;
-import io.camunda.search.connect.configuration.ConnectConfiguration;
-import io.camunda.search.connect.configuration.DatabaseType;
 import io.camunda.search.connect.es.ElasticsearchConnector;
 import io.camunda.search.connect.os.OpensearchConnector;
 import io.camunda.tasklist.property.TasklistProperties;
@@ -53,6 +53,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public final class PrefixMigrationHelper {
+
   private static final Integer MIGRATION_MAX_RETRIES = 3;
   private static final Logger LOG = LoggerFactory.getLogger(PrefixMigrationHelper.class);
 
@@ -79,7 +80,8 @@ public final class PrefixMigrationHelper {
               FlowNodeInstanceTemplate.class,
               OperationTemplate.class));
 
-  private PrefixMigrationHelper() {}
+  private PrefixMigrationHelper() {
+  }
 
   public static void runPrefixMigration(
       final OperateProperties operateProperties,

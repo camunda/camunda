@@ -7,7 +7,7 @@
  */
 package io.camunda.application.commons.migration;
 
-import io.camunda.application.commons.search.SearchClientDatabaseConfiguration;
+import io.camunda.application.commons.se.SearchEngineDatabaseConfiguration;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
@@ -16,5 +16,7 @@ import org.springframework.context.annotation.Profile;
 @Configuration(proxyBeanMethods = false)
 @ComponentScan(basePackages = {"io.camunda.migration.process"})
 @Profile("process-migration")
-@Import({SearchClientDatabaseConfiguration.class})
-public class ProcessMigrationModuleConfiguration {}
+@Import({SearchEngineDatabaseConfiguration.class})
+public class ProcessMigrationModuleConfiguration {
+
+}

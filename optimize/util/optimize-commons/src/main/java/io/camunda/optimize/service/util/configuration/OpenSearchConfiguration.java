@@ -37,7 +37,8 @@ public class OpenSearchConfiguration {
 
   private Map<String, PluginConfiguration> interceptorPlugins;
 
-  public OpenSearchConfiguration() {}
+  public OpenSearchConfiguration() {
+  }
 
   @JsonIgnore
   public Integer getConnectionTimeout() {
@@ -170,78 +171,81 @@ public class OpenSearchConfiguration {
   }
 
   public DatabaseConnection getConnection() {
-    return this.connection;
-  }
-
-  public DatabaseBackup getBackup() {
-    return this.backup;
-  }
-
-  public DatabaseSecurity getSecurity() {
-    return this.security;
-  }
-
-  public int getScrollTimeoutInSeconds() {
-    return this.scrollTimeoutInSeconds;
-  }
-
-  public DatabaseSettings getSettings() {
-    return this.settings;
-  }
-
-  public Map<String, PluginConfiguration> getInterceptorPlugins() {
-    return this.interceptorPlugins;
+    return connection;
   }
 
   public void setConnection(final DatabaseConnection connection) {
     this.connection = connection;
   }
 
+  public DatabaseBackup getBackup() {
+    return backup;
+  }
+
   public void setBackup(final DatabaseBackup backup) {
     this.backup = backup;
+  }
+
+  public DatabaseSecurity getSecurity() {
+    return security;
   }
 
   public void setSecurity(final DatabaseSecurity security) {
     this.security = security;
   }
 
+  public int getScrollTimeoutInSeconds() {
+    return scrollTimeoutInSeconds;
+  }
+
   public void setScrollTimeoutInSeconds(final int scrollTimeoutInSeconds) {
     this.scrollTimeoutInSeconds = scrollTimeoutInSeconds;
+  }
+
+  public DatabaseSettings getSettings() {
+    return settings;
   }
 
   public void setSettings(final DatabaseSettings settings) {
     this.settings = settings;
   }
 
-  public void setInterceptorPlugins(final Map<String, PluginConfiguration> interceptorPlugins) {
-    this.interceptorPlugins = interceptorPlugins;
+  public Map<String, PluginConfiguration> getInterceptorPlugins() {
+    return interceptorPlugins;
   }
 
-  public boolean equals(final Object o) {
-    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
+  public void setInterceptorPlugins(final Map<String, PluginConfiguration> interceptorPlugins) {
+    this.interceptorPlugins = interceptorPlugins;
   }
 
   protected boolean canEqual(final Object other) {
     return other instanceof OpenSearchConfiguration;
   }
 
+  @Override
   public int hashCode() {
     return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
   }
 
+  @Override
+  public boolean equals(final Object o) {
+    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
+  }
+
+  @Override
   public String toString() {
     return "OpenSearchConfiguration(connection="
-        + this.getConnection()
+        + getConnection()
         + ", backup="
-        + this.getBackup()
+        + getBackup()
         + ", security="
-        + this.getSecurity()
+        + getSecurity()
         + ", scrollTimeoutInSeconds="
-        + this.getScrollTimeoutInSeconds()
+        + getScrollTimeoutInSeconds()
         + ", settings="
-        + this.getSettings()
+        + getSettings()
         + ", interceptorPlugins="
-        + this.getInterceptorPlugins()
+        + getInterceptorPlugins()
         + ")";
   }
 }

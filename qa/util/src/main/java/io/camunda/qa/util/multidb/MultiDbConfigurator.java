@@ -7,8 +7,8 @@
  */
 package io.camunda.qa.util.multidb;
 
+import io.camunda.db.DatabaseType;
 import io.camunda.exporter.CamundaExporter;
-import io.camunda.search.connect.configuration.DatabaseType;
 import io.camunda.zeebe.exporter.ElasticsearchExporter;
 import io.camunda.zeebe.exporter.opensearch.OpensearchExporter;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneApplication;
@@ -17,9 +17,11 @@ import java.util.Map;
 import java.util.UUID;
 
 /**
- * Helper class to configure any {@link TestStandaloneApplication}, with specific secondary storage.
+ * Helper class to configure any {@link TestStandaloneApplication}, with specific secondary
+ * storage.
  */
 public class MultiDbConfigurator {
+
   public static String zeebePrefix = "-zeebe-records";
 
   private final TestStandaloneApplication<?> testApplication;
@@ -52,9 +54,7 @@ public class MultiDbConfigurator {
     elasticsearchProperties.put("camunda.operate.zeebeElasticsearch.prefix", zeebeIndexPrefix());
 
     /* Camunda */
-    elasticsearchProperties.put(
-        "camunda.database.type",
-        io.camunda.search.connect.configuration.DatabaseType.ELASTICSEARCH);
+    elasticsearchProperties.put("camunda.database.type", DatabaseType.ELASTICSEARCH);
     elasticsearchProperties.put("camunda.database.indexPrefix", indexPrefix);
     elasticsearchProperties.put("camunda.database.url", elasticsearchUrl);
 
@@ -73,7 +73,7 @@ public class MultiDbConfigurator {
                       "indexPrefix",
                       indexPrefix,
                       "type",
-                      io.camunda.search.connect.configuration.DatabaseType.ELASTICSEARCH),
+                      DatabaseType.ELASTICSEARCH),
                   "index",
                   Map.of("prefix", indexPrefix),
                   "archiver",
@@ -141,8 +141,7 @@ public class MultiDbConfigurator {
     opensearchProperties.put("camunda.operate.opensearch.password", userPassword);
 
     /* Camunda */
-    opensearchProperties.put(
-        "camunda.database.type", io.camunda.search.connect.configuration.DatabaseType.OPENSEARCH);
+    opensearchProperties.put("camunda.database.type", DatabaseType.OPENSEARCH);
     opensearchProperties.put("camunda.operate.database", "opensearch");
     opensearchProperties.put("camunda.tasklist.database", "opensearch");
     opensearchProperties.put("camunda.database.indexPrefix", indexPrefix);
@@ -165,7 +164,7 @@ public class MultiDbConfigurator {
                       "indexPrefix",
                       indexPrefix,
                       "type",
-                      io.camunda.search.connect.configuration.DatabaseType.OPENSEARCH,
+                      DatabaseType.OPENSEARCH,
                       "username",
                       userName,
                       "password",

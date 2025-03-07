@@ -8,9 +8,9 @@
 package io.camunda.exporter.schema;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.camunda.db.search.engine.config.IndexSettings;
+import io.camunda.db.search.engine.config.RetentionConfiguration;
 import io.camunda.exporter.config.ExporterConfiguration;
-import io.camunda.exporter.config.ExporterConfiguration.IndexSettings;
-import io.camunda.exporter.config.ExporterConfiguration.RetentionConfiguration;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
 import java.util.Collection;

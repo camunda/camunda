@@ -7,19 +7,21 @@
  */
 package io.camunda.application.commons.migration;
 
+import io.camunda.db.DatabaseType;
+import io.camunda.db.search.engine.config.ConnectConfiguration;
 import io.camunda.exporter.adapters.ClientAdapter;
 import io.camunda.exporter.config.ExporterConfiguration;
 import io.camunda.exporter.schema.SchemaManager;
-import io.camunda.search.connect.configuration.ConnectConfiguration;
-import io.camunda.search.connect.configuration.DatabaseType;
 import io.camunda.webapps.schema.descriptors.IndexDescriptors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public final class SchemaManagerHelper {
+
   private static final Logger LOG = LoggerFactory.getLogger(SchemaManagerHelper.class);
 
-  private SchemaManagerHelper() {}
+  private SchemaManagerHelper() {
+  }
 
   public static void createSchema(
       final ConnectConfiguration connectConfig, final ClientAdapter clientAdapter) {

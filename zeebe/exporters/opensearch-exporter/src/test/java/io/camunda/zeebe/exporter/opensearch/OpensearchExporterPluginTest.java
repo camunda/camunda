@@ -10,9 +10,9 @@ package io.camunda.zeebe.exporter.opensearch;
 import com.github.tomakehurst.wiremock.client.WireMock;
 import com.github.tomakehurst.wiremock.junit5.WireMockRuntimeInfo;
 import com.github.tomakehurst.wiremock.junit5.WireMockTest;
+import io.camunda.db.search.engine.config.PluginConfiguration;
 import io.camunda.plugin.search.header.CustomHeader;
 import io.camunda.plugin.search.header.DatabaseCustomHeaderSupplier;
-import io.camunda.search.connect.plugin.PluginConfiguration;
 import io.camunda.zeebe.exporter.test.ExporterTestConfiguration;
 import io.camunda.zeebe.exporter.test.ExporterTestContext;
 import io.camunda.zeebe.exporter.test.ExporterTestController;
@@ -22,13 +22,15 @@ import org.junit.jupiter.api.Test;
 
 @WireMockTest
 final class OpensearchExporterPluginTest {
+
   private final ProtocolFactory recordFactory = new ProtocolFactory();
   private final OpensearchExporterConfiguration config = new OpensearchExporterConfiguration();
   private final ExporterTestContext context =
       new ExporterTestContext().setConfiguration(new ExporterTestConfiguration<>("test", config));
   private final ExporterTestController controller = new ExporterTestController();
 
-  @AutoClose private final OpensearchExporter exporter = new OpensearchExporter();
+  @AutoClose
+  private final OpensearchExporter exporter = new OpensearchExporter();
 
   @Test
   void shouldLoadPlugins(final WireMockRuntimeInfo wmRuntimeInfo) {

@@ -11,10 +11,10 @@ import com.github.tomakehurst.wiremock.WireMockServer;
 import com.github.tomakehurst.wiremock.client.CountMatchingStrategy;
 import com.github.tomakehurst.wiremock.client.WireMock;
 import com.github.tomakehurst.wiremock.core.WireMockConfiguration;
+import io.camunda.db.search.engine.config.PluginConfiguration;
 import io.camunda.operate.connect.ElasticsearchConnector;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.util.TestPlugin;
-import io.camunda.search.connect.plugin.PluginConfiguration;
 import io.camunda.zeebe.util.FileUtil;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -47,8 +47,8 @@ public class ElasticsearchConnectorIT {
   @Container
   static ElasticsearchContainer elasticsearch =
       new ElasticsearchContainer(
-              DockerImageName.parse("docker.elastic.co/elasticsearch/elasticsearch")
-                  .withTag(RestClient.class.getPackage().getImplementationVersion()))
+          DockerImageName.parse("docker.elastic.co/elasticsearch/elasticsearch")
+              .withTag(RestClient.class.getPackage().getImplementationVersion()))
           .withEnv("xpack.security.enabled", "false")
           .withEnv("xpack.security.http.ssl.enabled", "false");
 
@@ -59,7 +59,8 @@ public class ElasticsearchConnectorIT {
       new WireMockServer(WireMockConfiguration.options().dynamicPort());
   private static final Path TEMP_DIR = createTempDir();
 
-  @Autowired private ElasticsearchConnector connector;
+  @Autowired
+  private ElasticsearchConnector connector;
 
   @BeforeAll
   static void beforeAll() {

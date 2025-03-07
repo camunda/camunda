@@ -7,18 +7,20 @@
  */
 package io.camunda.exporter.tasks.archiver;
 
-import static io.camunda.exporter.utils.SearchDBExtension.*;
+import static io.camunda.exporter.utils.SearchDBExtension.ARCHIVER_IDX_PREFIX;
+import static io.camunda.exporter.utils.SearchDBExtension.TEST_INTEGRATION_OPENSEARCH_AWS_URL;
+import static io.camunda.exporter.utils.SearchDBExtension.create;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.amazonaws.regions.DefaultAwsRegionProviderChain;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.camunda.db.search.engine.config.ConnectConfiguration;
+import io.camunda.db.search.engine.config.RetentionConfiguration;
 import io.camunda.exporter.config.ExporterConfiguration.ArchiverConfiguration;
-import io.camunda.exporter.config.ExporterConfiguration.RetentionConfiguration;
 import io.camunda.exporter.metrics.CamundaExporterMetrics;
 import io.camunda.exporter.schema.opensearch.OpensearchEngineClient;
 import io.camunda.exporter.utils.SearchDBExtension;
 import io.camunda.exporter.utils.TestObjectMapper;
-import io.camunda.search.connect.configuration.ConnectConfiguration;
 import io.camunda.webapps.schema.descriptors.AbstractIndexDescriptor;
 import io.camunda.webapps.schema.descriptors.operate.template.BatchOperationTemplate;
 import io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate;
@@ -67,13 +69,16 @@ import software.amazon.awssdk.regions.Region;
 
 @SuppressWarnings("resource")
 final class OpenSearchArchiverRepositoryIT {
+
   private static final Logger LOGGER =
       LoggerFactory.getLogger(OpenSearchArchiverRepositoryIT.class);
 
-  @RegisterExtension private static SearchDBExtension searchDB = create();
+  @RegisterExtension
+  private static final SearchDBExtension searchDB = create();
 
   private static final ObjectMapper MAPPER = TestObjectMapper.objectMapper();
-  @AutoClose private final RestClientTransport transport = createRestClient();
+  @AutoClose
+  private final RestClientTransport transport = createRestClient();
   private final SimpleMeterRegistry meterRegistry = new SimpleMeterRegistry();
   private final ArchiverConfiguration config = new ArchiverConfiguration();
   private final ConnectConfiguration connectConfiguration = new ConnectConfiguration();
@@ -476,12 +481,18 @@ final class OpenSearchArchiverRepositoryIT {
     }
   }
 
-  private record TestBatchOperation(String id, String endDate) implements TDocument {}
+  private record TestBatchOperation(String id, String endDate) implements TDocument {
 
-  private record TestDocument(String id) implements TDocument {}
+  }
+
+  private record TestDocument(String id) implements TDocument {
+
+  }
 
   private record TestProcessInstance(
-      String id, String endDate, String joinRelation, int partitionId) implements TDocument {}
+      String id, String endDate, String joinRelation, int partitionId) implements TDocument {
+
+  }
 
   private record DeleteRequest(String endpoint) implements Request {
 
@@ -512,6 +523,7 @@ final class OpenSearchArchiverRepositoryIT {
   }
 
   private interface TDocument {
+
     String id();
   }
 }

@@ -13,8 +13,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import co.elastic.clients.transport.rest_client.RestClientTransport;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.camunda.search.connect.configuration.ConnectConfiguration;
-import io.camunda.search.connect.plugin.PluginConfiguration;
+import io.camunda.db.search.engine.config.ConnectConfiguration;
+import io.camunda.db.search.engine.config.PluginConfiguration;
 import io.camunda.search.connect.plugin.PluginRepository;
 import io.camunda.search.connect.plugin.util.TestDatabaseCustomHeaderSupplierImpl;
 import java.io.IOException;
@@ -91,6 +91,7 @@ class ElasticsearchConnectorTest {
   }
 
   private static final class NoopCallback implements FutureCallback<HttpResponse> {
+
     private static final NoopCallback INSTANCE = new NoopCallback();
 
     @Override

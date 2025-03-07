@@ -5,9 +5,9 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.search.connect.configuration;
+package io.camunda.db.search.engine.config;
 
-import io.camunda.search.connect.plugin.PluginConfiguration;
+import io.camunda.db.DatabaseType;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -31,7 +31,9 @@ public class ConnectConfiguration {
   private String indexPrefix;
   private List<PluginConfiguration> interceptorPlugins = new ArrayList<>();
 
-  /** Use {@link ConnectConfiguration#getTypeEnum()} */
+  /**
+   * Use {@link ConnectConfiguration#getTypeEnum()}
+   */
   @Deprecated
   public String getType() {
     return type;

@@ -11,6 +11,7 @@ import com.github.tomakehurst.wiremock.WireMockServer;
 import com.github.tomakehurst.wiremock.client.CountMatchingStrategy;
 import com.github.tomakehurst.wiremock.client.WireMock;
 import com.github.tomakehurst.wiremock.core.WireMockConfiguration;
+import io.camunda.db.search.engine.config.PluginConfiguration;
 import io.camunda.operate.JacksonConfig;
 import io.camunda.operate.conditions.DatabaseInfo;
 import io.camunda.operate.connect.OpensearchConnector;
@@ -19,7 +20,6 @@ import io.camunda.operate.property.OpensearchProperties;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.util.OperateAbstractIT;
 import io.camunda.operate.util.TestPlugin;
-import io.camunda.search.connect.plugin.PluginConfiguration;
 import io.camunda.zeebe.util.FileUtil;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -42,11 +42,11 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 @Testcontainers
 @SpringBootTest(
     classes = {
-      OpensearchConnector.class,
-      OpensearchProperties.class,
-      JacksonConfig.class,
-      OperateDateTimeFormatter.class,
-      DatabaseInfo.class
+        OpensearchConnector.class,
+        OpensearchProperties.class,
+        JacksonConfig.class,
+        OperateDateTimeFormatter.class,
+        DatabaseInfo.class
     },
     properties = OperateProperties.PREFIX + ".database=opensearch")
 @EnableConfigurationProperties(OperateProperties.class)
@@ -64,7 +64,8 @@ public class OpensearchConnectorIT extends OperateAbstractIT {
       new WireMockServer(WireMockConfiguration.options().dynamicPort());
   private static final Path TEMP_DIR = createTempDir();
 
-  @Autowired private OpensearchConnector connector;
+  @Autowired
+  private OpensearchConnector connector;
 
   @BeforeClass
   public static void beforeAll() {

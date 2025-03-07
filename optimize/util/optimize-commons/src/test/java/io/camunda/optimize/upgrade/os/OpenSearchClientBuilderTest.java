@@ -9,12 +9,12 @@ package io.camunda.optimize.upgrade.os;
 
 import static org.mockserver.integration.ClientAndServer.startClientAndServer;
 
+import io.camunda.db.search.engine.config.PluginConfiguration;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import io.camunda.optimize.service.util.configuration.OpenSearchConfiguration;
 import io.camunda.optimize.service.util.configuration.db.DatabaseConnection;
 import io.camunda.optimize.service.util.configuration.elasticsearch.DatabaseConnectionNodeConfiguration;
 import io.camunda.optimize.upgrade.util.TestPlugin;
-import io.camunda.search.connect.plugin.PluginConfiguration;
 import io.camunda.search.connect.plugin.PluginRepository;
 import java.util.List;
 import java.util.Map;
@@ -222,12 +222,15 @@ class OpenSearchClientBuilderTest {
     private static final NoopCallback INSTANCE = new NoopCallback();
 
     @Override
-    public void completed(final SimpleHttpResponse result) {}
+    public void completed(final SimpleHttpResponse result) {
+    }
 
     @Override
-    public void failed(final Exception ex) {}
+    public void failed(final Exception ex) {
+    }
 
     @Override
-    public void cancelled() {}
+    public void cancelled() {
+    }
   }
 }

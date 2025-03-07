@@ -7,6 +7,7 @@
  */
 package io.camunda.search.connect.plugin;
 
+import io.camunda.db.search.engine.config.PluginConfiguration;
 import io.camunda.plugin.search.header.DatabaseCustomHeaderSupplier;
 import io.camunda.zeebe.util.ReflectUtil;
 import io.camunda.zeebe.util.VisibleForTesting;
@@ -27,6 +28,7 @@ import org.slf4j.LoggerFactory;
 
 /** Loads and holds references to the configured plugins. */
 public final class PluginRepository implements AutoCloseable {
+
   private static final Logger LOGGER = LoggerFactory.getLogger(PluginRepository.class);
 
   private final ExternalJarRepository jarRepository;

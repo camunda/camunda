@@ -15,10 +15,10 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import io.camunda.db.DatabaseType;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import io.camunda.optimize.service.util.configuration.db.DatabaseBackup;
-import io.camunda.search.connect.configuration.DatabaseType;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.webapps.backup.repository.BackupRepositoryProps;
 import org.junit.jupiter.api.BeforeEach;
@@ -64,9 +64,9 @@ public class BackupConfigTest {
     operateProperties.getBackup().setRepositoryName("repo-1").setSnapshotTimeout(17);
     tasklistProperties.getBackup().setRepositoryName("repo-2");
     assertThatThrownBy(
-            () ->
-                new BackupConfig(operateProperties, tasklistProperties, null)
-                    .backupRepositoryProps(null))
+        () ->
+            new BackupConfig(operateProperties, tasklistProperties, null)
+                .backupRepositoryProps(null))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining(BackupConfig.differentRepoNameFormat.formatted(""))
         .hasMessageContaining("operate=Optional[repo-1]")
