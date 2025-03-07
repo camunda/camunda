@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {render, screen} from 'common/testing/testing-library';
+import {render, screen, waitFor} from 'common/testing/testing-library';
 import {nodeMockServer} from 'common/testing/nodeMockServer';
 import {authenticationStore} from 'common/auth/authentication';
 import {http, HttpResponse} from 'msw';
@@ -282,5 +282,30 @@ describe('User info', () => {
 
     window.open = originalWindowOpen;
     window.Osano = undefined;
+  });
+
+  it('should hide nav links if application is unauthorized', async () => {
+    nodeMockServer.use(
+      http.get(
+        '/v2/authentication/me',
+        () => {
+          return HttpResponse.json(userMocks.currentUnauthorizedUser);
+        },
+        {
+          once: true,
+        },
+      ),
+    );
+
+    render(<Header />, {
+      wrapper: getWrapper(),
+    });
+
+    await waitFor(() => {
+      expect(screen.queryByText('Tasks')).not.toBeInTheDocument();
+    });
+    await waitFor(() => {
+      expect(screen.queryByText('Processes')).not.toBeInTheDocument();
+    });
   });
 });
