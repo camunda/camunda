@@ -19,6 +19,7 @@ import io.camunda.zeebe.engine.state.instance.ElementInstance;
 import io.camunda.zeebe.msgpack.spec.MsgpackReaderException;
 import io.camunda.zeebe.protocol.impl.record.value.variable.VariableDocumentRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
+import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import io.camunda.zeebe.protocol.record.intent.VariableDocumentIntent;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
@@ -103,8 +104,6 @@ public final class VariableDocumentUpdateProcessor
       }
 
       // TODO:
-      //  - Add `variables` to user task record and mark them as changed attributes
-      //    when writing `UserTask.UPDATING` event.
       //  - If `updating` listeners are defined at the user task:
       //    - Create a new task listener job for the first `updating` listener.
       //    - Track request metadata for later usage when finalizing the update.
@@ -114,6 +113,26 @@ public final class VariableDocumentUpdateProcessor
       //      - Merge variables into the local scope.
       //      - Append and respond with `VariableDocument.UPDATED` event.
       //      - Append `UserTask.UPDATED` event.
+
+      final var userTaskRecord = userTaskState.getUserTask(userTaskKey);
+      userTaskRecord.setVariables(value.getVariablesBuffer()).setVariablesChanged();
+      writers.state().appendFollowUpEvent(userTaskKey, UserTaskIntent.UPDATING, userTaskRecord);
+
+      variableBehavior.mergeLocalDocument(
+          userTaskRecord.getElementInstanceKey(),
+          userTaskRecord.getProcessDefinitionKey(),
+          userTaskRecord.getProcessInstanceKey(),
+          userTaskRecord.getBpmnProcessIdBuffer(),
+          userTaskRecord.getTenantId(),
+          value.getVariablesBuffer());
+
+      writers
+          .state()
+          .appendFollowUpEvent(scope.getUserTaskKey(), UserTaskIntent.UPDATED, userTaskRecord);
+
+      final long key = keyGenerator.nextKey();
+      writers.state().appendFollowUpEvent(key, VariableDocumentIntent.UPDATED, value);
+      writers.response().writeEventOnCommand(key, VariableDocumentIntent.UPDATED, value, record);
       return;
     }
 
