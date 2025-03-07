@@ -43,23 +43,24 @@ import java.util.stream.Stream;
 
 public class TaskListenerTestHelper {
 
-  private static EngineRule ENGINE;
   private static final String PROCESS_ID = "process";
   private static final String USER_TASK_ELEMENT_ID = "my_user_task";
 
+  private final EngineRule engine;
+
   public TaskListenerTestHelper(final EngineRule engine) {
-    ENGINE = engine;
+    this.engine = engine;
   }
 
   void completeRecreatedJobWithType(final long processInstanceKey, final String jobType) {
     final long jobKey = findRecreatedJobKey(processInstanceKey, jobType);
-    ENGINE.job().ofInstance(processInstanceKey).withKey(jobKey).complete();
+    engine.job().ofInstance(processInstanceKey).withKey(jobKey).complete();
   }
 
   void completeRecreatedJobWithTypeAndResult(
       final long processInstanceKey, final String jobType, final JobResult jobResult) {
     final long jobKey = findRecreatedJobKey(processInstanceKey, jobType);
-    ENGINE.job().ofInstance(processInstanceKey).withKey(jobKey).withResult(jobResult).complete();
+    engine.job().ofInstance(processInstanceKey).withKey(jobKey).withResult(jobResult).complete();
   }
 
   long findRecreatedJobKey(final long processInstanceKey, final String jobType) {
@@ -135,8 +136,8 @@ public class TaskListenerTestHelper {
 
   long createProcessInstanceWithVariables(
       final BpmnModelInstance modelInstance, final Map<String, Object> processVariables) {
-    ENGINE.deployment().withXmlResource(modelInstance).deploy();
-    return ENGINE
+    engine.deployment().withXmlResource(modelInstance).deploy();
+    return engine
         .processInstance()
         .ofBpmnProcessId(PROCESS_ID)
         .withVariables(processVariables)
@@ -145,7 +146,7 @@ public class TaskListenerTestHelper {
 
   void completeJobs(final long processInstanceKey, final String... jobTypes) {
     for (final String jobType : jobTypes) {
-      ENGINE.job().ofInstance(processInstanceKey).withType(jobType).complete();
+      engine.job().ofInstance(processInstanceKey).withType(jobType).complete();
     }
   }
 
@@ -156,7 +157,7 @@ public class TaskListenerTestHelper {
   }
 
   JobRecordValue activateJob(final long processInstanceKey, final String jobType) {
-    return ENGINE.jobs().withType(jobType).activate().getValue().getJobs().stream()
+    return engine.jobs().withType(jobType).activate().getValue().getJobs().stream()
         .filter(job -> job.getProcessInstanceKey() == processInstanceKey)
         .findFirst()
         .orElseThrow(() -> new AssertionError("No job found with type " + jobType));
@@ -171,7 +172,7 @@ public class TaskListenerTestHelper {
   }
 
   FormMetadataValue deployForm(final String formPath) {
-    final var deploymentEvent = ENGINE.deployment().withJsonClasspathResource(formPath).deploy();
+    final var deploymentEvent = engine.deployment().withJsonClasspathResource(formPath).deploy();
 
     Assertions.assertThat(deploymentEvent)
         .hasIntent(DeploymentIntent.CREATED)
