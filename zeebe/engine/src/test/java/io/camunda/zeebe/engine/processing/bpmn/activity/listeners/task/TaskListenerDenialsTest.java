@@ -13,8 +13,13 @@ import static org.assertj.core.api.Assertions.tuple;
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskListenerEventType;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobResult;
+import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
 import io.camunda.zeebe.protocol.record.Record;
+import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
+import io.camunda.zeebe.protocol.record.value.JobKind;
+import io.camunda.zeebe.protocol.record.value.JobListenerEventType;
+import io.camunda.zeebe.protocol.record.value.JobRecordValue;
 import io.camunda.zeebe.protocol.record.value.UserTaskRecordValue;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
@@ -212,5 +217,326 @@ public class TaskListenerDenialsTest {
         .describedAs(
             "The assignee should remain unchanged as assignment was denied by Task Listener and the original value is provided")
         .containsExactly("first_assignee");
+  }
+
+  @Test
+  public void shouldCompleteTaskWithTaskListenerWhenJobResultDeniedIsFalse() {
+    // given
+    final long processInstanceKey =
+        helper.createProcessInstance(
+            helper.createProcessWithCompletingTaskListeners(
+                listenerType, listenerType + "_2", listenerType + "_3"));
+
+    // when
+    ENGINE.userTask().ofInstance(processInstanceKey).complete();
+    ENGINE.job().ofInstance(processInstanceKey).withType(listenerType).complete();
+
+    ENGINE
+        .job()
+        .ofInstance(processInstanceKey)
+        .withType(listenerType + "_2")
+        .withResult(new JobResult())
+        .complete();
+
+    ENGINE
+        .job()
+        .ofInstance(processInstanceKey)
+        .withType(listenerType + "_3")
+        .withResult(new JobResult().setDenied(false))
+        .complete();
+
+    // then
+    assertThat(
+            RecordingExporter.jobRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .withJobKind(JobKind.TASK_LISTENER)
+                .withJobListenerEventType(JobListenerEventType.COMPLETING)
+                .withIntent(JobIntent.COMPLETED)
+                .limit(3))
+        .extracting(Record::getValue)
+        .extracting(JobRecordValue::getType, v -> v.getResult().isDenied())
+        .describedAs("Verify that all task listeners were completed with `denied=false`")
+        .containsExactly(
+            tuple(listenerType, false),
+            tuple(listenerType + "_2", false),
+            tuple(listenerType + "_3", false));
+  }
+
+  @Test
+  public void shouldRejectUserTaskUpdateWhenUpdatingTaskListenerDeniesTheTransition() {
+    // given
+    final long processInstanceKey =
+        helper.createProcessInstance(
+            helper.createUserTaskWithTaskListeners(
+                ZeebeTaskListenerEventType.updating, listenerType));
+
+    ENGINE.userTask().ofInstance(processInstanceKey).withPriority(99).update();
+
+    // when: complete `updating` a listener job with a denied result
+    ENGINE
+        .job()
+        .ofInstance(processInstanceKey)
+        .withType(listenerType)
+        .withResult(new JobResult().setDenied(true))
+        .complete();
+
+    // then: ensure that `DENY_TASK_LISTENER` and `UPDATE_DENIED`
+    // are written right after `UPDATING` event
+    helper.assertUserTaskIntentsSequence(
+        processInstanceKey,
+        UserTaskIntent.UPDATING,
+        UserTaskIntent.DENY_TASK_LISTENER,
+        UserTaskIntent.UPDATE_DENIED);
+  }
+
+  @Test
+  public void shouldRejectUserTaskCompletionWhenCompletingTaskListenerDeniesTheTransition() {
+    // given
+    final long processInstanceKey =
+        helper.createProcessInstance(helper.createProcessWithCompletingTaskListeners(listenerType));
+
+    ENGINE.userTask().ofInstance(processInstanceKey).complete();
+    ENGINE
+        .job()
+        .ofInstance(processInstanceKey)
+        .withType(listenerType)
+        .withResult(new JobResult().setDenied(true))
+        .complete();
+
+    // then: ensure that `DENY_TASK_LISTENER` and `COMPLETION_DENIED`
+    // are written after `COMPLETING` event
+    helper.assertUserTaskIntentsSequence(
+        processInstanceKey,
+        UserTaskIntent.COMPLETING,
+        UserTaskIntent.DENY_TASK_LISTENER,
+        UserTaskIntent.COMPLETION_DENIED);
+  }
+
+  @Test
+  public void shouldAcceptUserTaskCompletionAfterTaskListenerRejectsTheOperationWithDeniedReason() {
+    // given
+    final long processInstanceKey =
+        helper.createProcessInstance(helper.createProcessWithCompletingTaskListeners(listenerType));
+
+    // deny the completion
+    ENGINE.userTask().ofInstance(processInstanceKey).complete();
+    ENGINE
+        .job()
+        .ofInstance(processInstanceKey)
+        .withType(listenerType)
+        .withResult(
+            new JobResult().setDenied(true).setDeniedReason("Reason to deny lifecycle transition"))
+        .complete();
+
+    // completion is successful
+    ENGINE.userTask().ofInstance(processInstanceKey).complete();
+    helper.completeRecreatedJobWithType(processInstanceKey, listenerType);
+    helper.completeJobs(processInstanceKey);
+
+    // validate reason to deny lifecycle transition in events
+    assertThat(
+            RecordingExporter.userTaskRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .limit(r -> r.getIntent() == UserTaskIntent.COMPLETED))
+        .extracting(Record::getIntent, r -> getDeniedReason(r.getValue()))
+        .describedAs(
+            "The reason to deny lifecycle transition should be present when task listener denies the work")
+        .containsExactly(
+            tuple(UserTaskIntent.CREATING, ""),
+            tuple(UserTaskIntent.CREATED, ""),
+            tuple(UserTaskIntent.COMPLETING, ""),
+            tuple(UserTaskIntent.DENY_TASK_LISTENER, "Reason to deny lifecycle transition"),
+            tuple(UserTaskIntent.COMPLETION_DENIED, "Reason to deny lifecycle transition"),
+            tuple(UserTaskIntent.COMPLETING, ""),
+            tuple(UserTaskIntent.COMPLETE_TASK_LISTENER, ""),
+            tuple(UserTaskIntent.COMPLETED, ""));
+  }
+
+  @Test
+  public void shouldAcceptUserTaskAssignmentAfterTaskListenerRejectsTheOperationWithDeniedReason() {
+    // given
+    final long processInstanceKey =
+        helper.createProcessInstance(helper.createProcessWithAssigningTaskListeners(listenerType));
+
+    ENGINE.userTask().ofInstance(processInstanceKey).withAssignee("new_assignee").assign();
+
+    // deny the assignment
+    ENGINE
+        .job()
+        .ofInstance(processInstanceKey)
+        .withType(listenerType)
+        .withResult(
+            new JobResult().setDenied(true).setDeniedReason("Reason to deny lifecycle transition"))
+        .complete();
+
+    // accept the assignment
+    ENGINE.userTask().ofInstance(processInstanceKey).withAssignee("new_assignee").assign();
+    helper.completeRecreatedJobWithType(processInstanceKey, listenerType);
+    helper.completeJobs(processInstanceKey);
+
+    // validate the reason to deny lifecycle transition
+    assertThat(
+            RecordingExporter.userTaskRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .limit(r -> r.getIntent() == UserTaskIntent.ASSIGNED))
+        .extracting(Record::getIntent, r -> getDeniedReason(r.getValue()))
+        .describedAs(
+            "The reason to deny lifecycle transition should be present when task listener denies the work")
+        .containsExactly(
+            tuple(UserTaskIntent.CREATING, ""),
+            tuple(UserTaskIntent.CREATED, ""),
+            tuple(UserTaskIntent.ASSIGNING, ""),
+            tuple(UserTaskIntent.DENY_TASK_LISTENER, "Reason to deny lifecycle transition"),
+            tuple(UserTaskIntent.ASSIGNMENT_DENIED, "Reason to deny lifecycle transition"),
+            tuple(UserTaskIntent.ASSIGNING, ""),
+            tuple(UserTaskIntent.COMPLETE_TASK_LISTENER, ""),
+            tuple(UserTaskIntent.ASSIGNED, ""));
+  }
+
+  @Test
+  public void shouldAcceptUserTaskUpdateAfterTaskListenerRejectsTheOperationWithDeniedReason() {
+    // given
+    final long processInstanceKey =
+        helper.createProcessInstance(
+            helper.createUserTaskWithTaskListeners(
+                ZeebeTaskListenerEventType.updating, listenerType));
+
+    ENGINE.userTask().ofInstance(processInstanceKey).withPriority(80).update();
+
+    // deny the update
+    ENGINE
+        .job()
+        .ofInstance(processInstanceKey)
+        .withType(listenerType)
+        .withResult(
+            new JobResult().setDenied(true).setDeniedReason("Reason to deny lifecycle transition"))
+        .complete();
+
+    // accept the update
+    ENGINE.userTask().ofInstance(processInstanceKey).withPriority(80).update();
+    helper.completeRecreatedJobWithType(processInstanceKey, listenerType);
+    helper.completeJobs(processInstanceKey);
+
+    // validate the reason to deny lifecycle transition
+    assertThat(
+            RecordingExporter.userTaskRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .limit(r -> r.getIntent() == UserTaskIntent.UPDATED))
+        .extracting(Record::getIntent, r -> getDeniedReason(r.getValue()))
+        .describedAs(
+            "The reason to deny lifecycle transition should be present when task listener denies the work")
+        .containsExactly(
+            tuple(UserTaskIntent.CREATING, ""),
+            tuple(UserTaskIntent.CREATED, ""),
+            tuple(UserTaskIntent.UPDATING, ""),
+            tuple(UserTaskIntent.DENY_TASK_LISTENER, "Reason to deny lifecycle transition"),
+            tuple(UserTaskIntent.UPDATE_DENIED, "Reason to deny lifecycle transition"),
+            tuple(UserTaskIntent.UPDATING, ""),
+            tuple(UserTaskIntent.COMPLETE_TASK_LISTENER, ""),
+            tuple(UserTaskIntent.UPDATED, ""));
+  }
+
+  private String getDeniedReason(final UserTaskRecordValue record) {
+    // This is to be removed when denied reason is exposed in the UserTaskRecordValue interface.
+    // Currently added in order to separate processing implementation.
+    return ((UserTaskRecord) record).getDeniedReason();
+  }
+
+  @Test
+  public void shouldCompleteTaskWhenCompletingTaskListenerAcceptsTransitionAfterDenial() {
+    // given
+    final long processInstanceKey =
+        helper.createProcessInstance(helper.createProcessWithCompletingTaskListeners(listenerType));
+
+    ENGINE.userTask().ofInstance(processInstanceKey).complete();
+    ENGINE
+        .job()
+        .ofInstance(processInstanceKey)
+        .withType(listenerType)
+        .withResult(new JobResult().setDenied(true))
+        .complete();
+
+    ENGINE.userTask().ofInstance(processInstanceKey).complete();
+
+    helper.completeRecreatedJobWithType(processInstanceKey, listenerType);
+
+    // then: ensure that `COMPLETING` `COMPLETE_TASK_LISTENER` and `COMPLETED events
+    // are present after `DENY_TASK_LISTENER` and `COMPLETION_DENIED` events
+    helper.assertUserTaskIntentsSequence(
+        processInstanceKey,
+        UserTaskIntent.COMPLETING,
+        UserTaskIntent.DENY_TASK_LISTENER,
+        UserTaskIntent.COMPLETION_DENIED,
+        UserTaskIntent.COMPLETING,
+        UserTaskIntent.COMPLETE_TASK_LISTENER,
+        UserTaskIntent.COMPLETED);
+  }
+
+  @Test
+  public void shouldCompleteAllTaskListenersWhenFirstTaskListenerAcceptTransitionAfterDenial() {
+    // given
+    final long processInstanceKey =
+        helper.createProcessInstance(
+            helper.createProcessWithCompletingTaskListeners(
+                listenerType, listenerType + "_2", listenerType + "_3"));
+
+    ENGINE.userTask().ofInstance(processInstanceKey).complete();
+    ENGINE
+        .job()
+        .ofInstance(processInstanceKey)
+        .withType(listenerType)
+        .withResult(new JobResult().setDenied(true))
+        .complete();
+
+    ENGINE.userTask().ofInstance(processInstanceKey).complete();
+    helper.completeRecreatedJobWithType(processInstanceKey, listenerType);
+    helper.completeJobs(processInstanceKey, listenerType + "_2", listenerType + "_3");
+
+    // then: ensure that all three `COMPLETE_TASK_LISTENER` events were triggered after the
+    // rejection from the first Task Listener
+    helper.assertUserTaskIntentsSequence(
+        processInstanceKey,
+        UserTaskIntent.COMPLETING,
+        UserTaskIntent.DENY_TASK_LISTENER,
+        UserTaskIntent.COMPLETION_DENIED,
+        UserTaskIntent.COMPLETING,
+        UserTaskIntent.COMPLETE_TASK_LISTENER,
+        UserTaskIntent.COMPLETE_TASK_LISTENER,
+        UserTaskIntent.COMPLETE_TASK_LISTENER,
+        UserTaskIntent.COMPLETED);
+  }
+
+  @Test
+  public void shouldAssignAndCompleteTaskAfterTaskListenerDeniesTheCompletion() {
+    // given
+    final long processInstanceKey =
+        helper.createProcessInstance(helper.createProcessWithCompletingTaskListeners(listenerType));
+
+    ENGINE.userTask().ofInstance(processInstanceKey).complete();
+    ENGINE
+        .job()
+        .ofInstance(processInstanceKey)
+        .withType(listenerType)
+        .withResult(new JobResult().setDenied(true))
+        .complete();
+
+    ENGINE.userTask().ofInstance(processInstanceKey).withAssignee("Test Assignee").assign();
+    ENGINE.userTask().ofInstance(processInstanceKey).complete();
+
+    helper.completeRecreatedJobWithType(processInstanceKey, listenerType);
+
+    // then: ensure that user task could be assigned after completion was rejected from the
+    // `COMPLETE` Task Listener. Ensure that user task could be completed after assignment
+    // and `COMPLETE_TASK_LISTENER` event was triggered successfully
+    helper.assertUserTaskIntentsSequence(
+        processInstanceKey,
+        UserTaskIntent.COMPLETING,
+        UserTaskIntent.DENY_TASK_LISTENER,
+        UserTaskIntent.COMPLETION_DENIED,
+        UserTaskIntent.ASSIGNING,
+        UserTaskIntent.ASSIGNED,
+        UserTaskIntent.COMPLETING,
+        UserTaskIntent.COMPLETE_TASK_LISTENER,
+        UserTaskIntent.COMPLETED);
   }
 }
