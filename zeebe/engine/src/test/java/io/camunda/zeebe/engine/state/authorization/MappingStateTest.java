@@ -224,4 +224,48 @@ public class MappingStateTest {
     assertThat(mappingState.get(key)).isEmpty();
     assertThat(mappingState.get(claimName, claimValue)).isEmpty();
   }
+
+  @Test
+  void shouldUpdateMapping() {
+    // given
+    final long key = 1L;
+    final String name = "name";
+    final String id = "id";
+    final String claimName = "claimName";
+    final String claimValue = "claimValue";
+    final var mapping =
+        new MappingRecord()
+            .setMappingKey(key)
+            .setId(id)
+            .setName(name)
+            .setClaimName(claimName)
+            .setClaimValue(claimValue);
+    mappingState.create(mapping);
+
+    // when
+    final String newName = "newName";
+    final String newClaimName = "newClaimName";
+    final String newClaimValue = "newClaimValue";
+    final var updateMapping =
+        new MappingRecord()
+            .setMappingKey(key)
+            .setId(id)
+            .setName(newName)
+            .setClaimName(newClaimName)
+            .setClaimValue(newClaimValue);
+    mappingState.update(updateMapping);
+
+    // then
+    assertThat(mappingState.get(id)).isNotEmpty();
+    final var mappingById = mappingState.get(id).get();
+    assertThat(mappingById.getName()).isEqualTo(newName);
+    assertThat(mappingById.getClaimValue()).isEqualTo(newClaimValue);
+    assertThat(mappingById.getClaimName()).isEqualTo(newClaimName);
+
+    assertThat(mappingState.get(claimName, claimValue)).isEmpty();
+    assertThat(mappingState.get(newClaimName, newClaimValue)).isNotEmpty();
+    final var mappingByClaim = mappingState.get(newClaimName, newClaimValue).get();
+    assertThat(mappingByClaim.getName()).isEqualTo(newName);
+    assertThat(mappingByClaim.getId()).isEqualTo(id);
+  }
 }
