@@ -460,7 +460,7 @@ public class TaskListenerTest {
 
     ENGINE.userTask().ofInstance(processInstanceKey).withAssignee("new_assignee").assign();
     // assignment is successful
-    completeRecreatedJobWithType(ENGINE, processInstanceKey, listenerType);
+    completeRecreatedJobWithType(processInstanceKey, listenerType);
     completeJobs(processInstanceKey, listenerType + "_2", listenerType + "_3");
 
     // then: ensure that all three `COMPLETE_TASK_LISTENER` events were triggered
@@ -504,7 +504,7 @@ public class TaskListenerTest {
     ENGINE.userTask().ofInstance(processInstanceKey).withPriority(100).update();
 
     // and: completing the re-created task listener job
-    completeRecreatedJobWithType(ENGINE, processInstanceKey, listenerType);
+    completeRecreatedJobWithType(processInstanceKey, listenerType);
 
     // then
     assertThat(
@@ -547,7 +547,7 @@ public class TaskListenerTest {
     ENGINE.userTask().ofInstance(processInstanceKey).withAssignee("second_assignee").assign();
 
     completeRecreatedJobWithTypeAndResult(
-        ENGINE, processInstanceKey, listenerType, new JobResult().setDenied(true));
+        processInstanceKey, listenerType, new JobResult().setDenied(true));
 
     assertThat(
             RecordingExporter.userTaskRecords()
@@ -1437,7 +1437,7 @@ public class TaskListenerTest {
 
     // completion is successful
     ENGINE.userTask().ofInstance(processInstanceKey).complete();
-    completeRecreatedJobWithType(ENGINE, processInstanceKey, listenerType);
+    completeRecreatedJobWithType(processInstanceKey, listenerType);
     completeJobs(processInstanceKey);
 
     // validate reason to deny lifecycle transition in events
@@ -1478,7 +1478,7 @@ public class TaskListenerTest {
 
     // accept the assignment
     ENGINE.userTask().ofInstance(processInstanceKey).withAssignee("new_assignee").assign();
-    completeRecreatedJobWithType(ENGINE, processInstanceKey, listenerType);
+    completeRecreatedJobWithType(processInstanceKey, listenerType);
     completeJobs(processInstanceKey);
 
     // validate the reason to deny lifecycle transition
@@ -1520,7 +1520,7 @@ public class TaskListenerTest {
 
     // accept the update
     ENGINE.userTask().ofInstance(processInstanceKey).withPriority(80).update();
-    completeRecreatedJobWithType(ENGINE, processInstanceKey, listenerType);
+    completeRecreatedJobWithType(processInstanceKey, listenerType);
     completeJobs(processInstanceKey);
 
     // validate the reason to deny lifecycle transition
@@ -1564,7 +1564,7 @@ public class TaskListenerTest {
 
     ENGINE.userTask().ofInstance(processInstanceKey).complete();
 
-    completeRecreatedJobWithType(ENGINE, processInstanceKey, listenerType);
+    completeRecreatedJobWithType(processInstanceKey, listenerType);
 
     // then: ensure that `COMPLETING` `COMPLETE_TASK_LISTENER` and `COMPLETED events
     // are present after `DENY_TASK_LISTENER` and `COMPLETION_DENIED` events
@@ -1595,7 +1595,7 @@ public class TaskListenerTest {
         .complete();
 
     ENGINE.userTask().ofInstance(processInstanceKey).complete();
-    completeRecreatedJobWithType(ENGINE, processInstanceKey, listenerType);
+    completeRecreatedJobWithType(processInstanceKey, listenerType);
     completeJobs(processInstanceKey, listenerType + "_2", listenerType + "_3");
 
     // then: ensure that all three `COMPLETE_TASK_LISTENER` events were triggered after the
@@ -1629,7 +1629,7 @@ public class TaskListenerTest {
     ENGINE.userTask().ofInstance(processInstanceKey).withAssignee("Test Assignee").assign();
     ENGINE.userTask().ofInstance(processInstanceKey).complete();
 
-    completeRecreatedJobWithType(ENGINE, processInstanceKey, listenerType);
+    completeRecreatedJobWithType(processInstanceKey, listenerType);
 
     // then: ensure that user task could be assigned after completion was rejected from the
     // `COMPLETE` Task Listener. Ensure that user task could be completed after assignment
@@ -3022,7 +3022,7 @@ public class TaskListenerTest {
     ENGINE.incident().ofInstance(processInstanceKey).withKey(incidentRecord.getKey()).resolve();
 
     // complete the retried task listener job and remaining task listeners
-    completeRecreatedJobWithType(ENGINE, processInstanceKey, listenerType);
+    completeRecreatedJobWithType(processInstanceKey, listenerType);
     completeJobs(processInstanceKey, variableValue, listenerType + "_3");
 
     // then
@@ -3082,7 +3082,7 @@ public class TaskListenerTest {
     ENGINE.incident().ofInstance(processInstanceKey).withKey(incident.getKey()).resolve();
 
     // complete the retried task listener job and remaining task listeners
-    completeRecreatedJobWithType(ENGINE, processInstanceKey, listenerType);
+    completeRecreatedJobWithType(processInstanceKey, listenerType);
     completeJobs(processInstanceKey, "expression_assigning_listener_2", listenerType + "_3");
 
     // then
@@ -3101,18 +3101,15 @@ public class TaskListenerTest {
   }
 
   private static void completeRecreatedJobWithType(
-      final EngineRule engine, final long processInstanceKey, final String jobType) {
+      final long processInstanceKey, final String jobType) {
     final long jobKey = findRecreatedJobKey(processInstanceKey, jobType);
-    engine.job().ofInstance(processInstanceKey).withKey(jobKey).complete();
+    ENGINE.job().ofInstance(processInstanceKey).withKey(jobKey).complete();
   }
 
   private static void completeRecreatedJobWithTypeAndResult(
-      final EngineRule engine,
-      final long processInstanceKey,
-      final String jobType,
-      final JobResult jobResult) {
+      final long processInstanceKey, final String jobType, final JobResult jobResult) {
     final long jobKey = findRecreatedJobKey(processInstanceKey, jobType);
-    engine.job().ofInstance(processInstanceKey).withKey(jobKey).withResult(jobResult).complete();
+    ENGINE.job().ofInstance(processInstanceKey).withKey(jobKey).withResult(jobResult).complete();
   }
 
   private static long findRecreatedJobKey(final long processInstanceKey, final String jobType) {
@@ -3203,7 +3200,7 @@ public class TaskListenerTest {
 
   private void completeRecreatedJobs(final long processInstanceKey, final String... jobTypes) {
     for (final String jobType : jobTypes) {
-      completeRecreatedJobWithType(ENGINE, processInstanceKey, jobType);
+      completeRecreatedJobWithType(processInstanceKey, jobType);
     }
   }
 
