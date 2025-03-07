@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.gateway.rest.controller;
 
+import io.camunda.security.configuration.MultiTenancyConfiguration;
 import io.camunda.service.JobServices;
 import io.camunda.service.JobServices.ActivateJobsRequest;
 import io.camunda.zeebe.gateway.protocol.rest.JobActivationRequest;
@@ -35,18 +36,21 @@ public class JobController {
 
   private final ResponseObserverProvider responseObserverProvider;
   private final JobServices<JobActivationResult> jobServices;
+  private final MultiTenancyConfiguration multiTenancyCfg;
 
   public JobController(
       final JobServices<JobActivationResult> jobServices,
-      final ResponseObserverProvider responseObserverProvider) {
+      final ResponseObserverProvider responseObserverProvider,
+      final MultiTenancyConfiguration multiTenancyCfg) {
     this.jobServices = jobServices;
     this.responseObserverProvider = responseObserverProvider;
+    this.multiTenancyCfg = multiTenancyCfg;
   }
 
   @CamundaPostMapping(path = "/activation")
   public CompletableFuture<ResponseEntity<Object>> activateJobs(
       @RequestBody final JobActivationRequest activationRequest) {
-    return RequestMapper.toJobsActivationRequest(activationRequest)
+    return RequestMapper.toJobsActivationRequest(activationRequest, multiTenancyCfg.isEnabled())
         .fold(RestErrorMapper::mapProblemToCompletedResponse, this::activateJobs);
   }
 
