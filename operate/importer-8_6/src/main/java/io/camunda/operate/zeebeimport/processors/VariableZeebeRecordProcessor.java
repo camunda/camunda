@@ -45,14 +45,6 @@ public class VariableZeebeRecordProcessor {
       final Map<Long, List<Record<VariableRecordValue>>> variablesGroupedByScopeKey,
       final BatchRequest batchRequest)
       throws PersistenceException {
-    processVariableRecords(variablesGroupedByScopeKey, batchRequest, false);
-  }
-
-  public void processVariableRecords(
-      final Map<Long, List<Record<VariableRecordValue>>> variablesGroupedByScopeKey,
-      final BatchRequest batchRequest,
-      final boolean concurrencyMode)
-      throws PersistenceException {
     for (final var variableRecords : variablesGroupedByScopeKey.entrySet()) {
       final var temporaryVariableCache = new HashMap<String, Tuple<Intent, VariableEntity>>();
       final var scopedVariables = variableRecords.getValue();
@@ -90,55 +82,13 @@ public class VariableZeebeRecordProcessor {
           updateFields.put(BPMN_PROCESS_ID, variableEntity.getBpmnProcessId());
         }
 
-        if (concurrencyMode) {
-          batchRequest.upsertWithScript(
-              variableTemplate.getFullQualifiedName(),
-              variableEntity.getId(),
-              variableEntity,
-              getScript(),
-              updateFields);
-        } else {
-          batchRequest.upsert(
-              variableTemplate.getFullQualifiedName(),
-              variableEntity.getId(),
-              variableEntity,
-              updateFields);
-        }
+        batchRequest.upsert(
+            variableTemplate.getFullQualifiedName(),
+            variableEntity.getId(),
+            variableEntity,
+            updateFields);
       }
     }
-  }
-
-  private String getScript() {
-    return String.format(
-        "if (ctx._source.%s == null || ctx._source.%s < params.%s) { "
-            + "ctx._source.%s = params.%s; " // position
-            + "if (params.%s != null) {"
-            + "   ctx._source.%s = params.%s; " // VALUE
-            + "   ctx._source.%s = params.%s; " // FULL_VALUE
-            + "   ctx._source.%s = params.%s; " // IS_PREVIEW
-            + "}"
-            + "if (params.%s != null) {"
-            + "   ctx._source.%s = params.%s; " // PROCESS_DEFINITION_KEY
-            + "   ctx._source.%s = params.%s; " // BPMN_PROCESS_ID
-            + "}"
-            + "}",
-        POSITION,
-        POSITION,
-        POSITION,
-        POSITION,
-        POSITION,
-        VALUE,
-        VALUE,
-        VALUE,
-        FULL_VALUE,
-        FULL_VALUE,
-        IS_PREVIEW,
-        IS_PREVIEW,
-        PROCESS_DEFINITION_KEY,
-        PROCESS_DEFINITION_KEY,
-        PROCESS_DEFINITION_KEY,
-        BPMN_PROCESS_ID,
-        BPMN_PROCESS_ID);
   }
 
   private void processVariableRecord(

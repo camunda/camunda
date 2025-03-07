@@ -9,8 +9,6 @@ package io.camunda.operate.zeebeimport.v8_5.processors;
 
 import static io.camunda.operate.schema.templates.IncidentTemplate.FLOW_NODE_ID;
 import static io.camunda.operate.schema.templates.TemplateDescriptor.POSITION;
-import static io.camunda.operate.schema.templates.VariableTemplate.BPMN_PROCESS_ID;
-import static io.camunda.operate.schema.templates.VariableTemplate.PROCESS_DEFINITION_KEY;
 import static io.camunda.operate.zeebeimport.util.ImportUtil.tenantOrDefault;
 
 import io.camunda.operate.entities.*;
@@ -56,12 +54,11 @@ public class IncidentZeebeRecordProcessor {
 
   @Autowired private IncidentNotifier incidentNotifier;
 
-  public void processIncidentRecord(
-      final List<Record> records, final BatchRequest batchRequest, final boolean concurrencyMode)
+  public void processIncidentRecord(final List<Record> records, final BatchRequest batchRequest)
       throws PersistenceException {
     final List<IncidentEntity> newIncidents = new ArrayList<>();
     for (final Record record : records) {
-      processIncidentRecord(record, batchRequest, newIncidents::add, concurrencyMode);
+      processIncidentRecord(record, batchRequest, newIncidents::add);
     }
     if (operateProperties.getAlert().getWebhook() != null) {
       incidentNotifier.notifyOnIncidents(newIncidents);
@@ -71,12 +68,11 @@ public class IncidentZeebeRecordProcessor {
   public void processIncidentRecord(
       final Record record,
       final BatchRequest batchRequest,
-      final Consumer<IncidentEntity> newIncidentHandler,
-      final boolean concurrencyMode)
+      final Consumer<IncidentEntity> newIncidentHandler)
       throws PersistenceException {
     final IncidentRecordValue recordValue = (IncidentRecordValue) record.getValue();
 
-    persistIncident(record, recordValue, batchRequest, newIncidentHandler, concurrencyMode);
+    persistIncident(record, recordValue, batchRequest, newIncidentHandler);
 
     persistPostImportQueueEntry(record, recordValue, batchRequest);
   }
@@ -107,8 +103,7 @@ public class IncidentZeebeRecordProcessor {
       final Record record,
       final IncidentRecordValue recordValue,
       final BatchRequest batchRequest,
-      final Consumer<IncidentEntity> newIncidentHandler,
-      final boolean concurrencyMode)
+      final Consumer<IncidentEntity> newIncidentHandler)
       throws PersistenceException {
     final String intentStr = record.getIntent().name();
     final Long incidentKey = record.getKey();
@@ -158,20 +153,11 @@ public class IncidentZeebeRecordProcessor {
 
       final Map<String, Object> updateFields = getUpdateFieldsMapByIntent(intentStr, incident);
       updateFields.put(POSITION, incident.getPosition());
-      if (concurrencyMode) {
-        batchRequest.upsertWithScript(
-            incidentTemplate.getFullQualifiedName(),
-            String.valueOf(incident.getKey()),
-            incident,
-            getScript(),
-            updateFields);
-      } else {
-        batchRequest.upsert(
-            incidentTemplate.getFullQualifiedName(),
-            String.valueOf(incident.getKey()),
-            incident,
-            updateFields);
-      }
+      batchRequest.upsert(
+          incidentTemplate.getFullQualifiedName(),
+          String.valueOf(incident.getKey()),
+          incident,
+          updateFields);
       newIncidentHandler.accept(incident);
     }
   }
@@ -186,28 +172,5 @@ public class IncidentZeebeRecordProcessor {
       updateFields.put(FLOW_NODE_ID, incidentEntity.getFlowNodeId());
     }
     return updateFields;
-  }
-
-  private String getScript() {
-    return String.format(
-        "if (ctx._source.%s == null || ctx._source.%s < params.%s) { "
-            + "ctx._source.%s = params.%s; " // position
-            + "if (params.%s != null) {"
-            + "   ctx._source.%s = params.%s; " // PROCESS_DEFINITION_KEY
-            + "   ctx._source.%s = params.%s; " // BPMN_PROCESS_ID
-            + "   ctx._source.%s = params.%s; " // FLOW_NODE_ID
-            + "}"
-            + "}",
-        POSITION,
-        POSITION,
-        POSITION,
-        POSITION,
-        POSITION,
-        PROCESS_DEFINITION_KEY,
-        PROCESS_DEFINITION_KEY,
-        BPMN_PROCESS_ID,
-        BPMN_PROCESS_ID,
-        FLOW_NODE_ID,
-        FLOW_NODE_ID);
   }
 }

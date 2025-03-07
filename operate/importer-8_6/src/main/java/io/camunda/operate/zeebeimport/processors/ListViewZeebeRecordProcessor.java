@@ -127,12 +127,6 @@ public class ListViewZeebeRecordProcessor {
 
   public void processIncidentRecord(final Record record, final BatchRequest batchRequest)
       throws PersistenceException {
-    processIncidentRecord(record, batchRequest, false);
-  }
-
-  public void processIncidentRecord(
-      final Record record, final BatchRequest batchRequest, final boolean concurrencyMode)
-      throws PersistenceException {
 
     final String intentStr = record.getIntent().name();
     final IncidentRecordValue recordValue = (IncidentRecordValue) record.getValue();
@@ -162,35 +156,17 @@ public class ListViewZeebeRecordProcessor {
     updateFields.put(ERROR_MSG, entity.getErrorMessage());
     updateFields.put(INCIDENT_POSITION, entity.getPositionIncident());
 
-    if (concurrencyMode) {
-      batchRequest.upsertWithScriptAndRouting(
-          listViewTemplate.getFullQualifiedName(),
-          entity.getId(),
-          entity,
-          getIncidentScript(),
-          updateFields,
-          String.valueOf(processInstanceKey));
-    } else {
-      batchRequest.upsertWithRouting(
-          listViewTemplate.getFullQualifiedName(),
-          entity.getId(),
-          entity,
-          updateFields,
-          processInstanceKey.toString());
-    }
+    batchRequest.upsertWithRouting(
+        listViewTemplate.getFullQualifiedName(),
+        entity.getId(),
+        entity,
+        updateFields,
+        processInstanceKey.toString());
   }
 
   public void processVariableRecords(
       final Map<Long, List<Record<VariableRecordValue>>> variablesGroupedByScopeKey,
       final BatchRequest batchRequest)
-      throws PersistenceException {
-    processVariableRecords(variablesGroupedByScopeKey, batchRequest, false);
-  }
-
-  public void processVariableRecords(
-      final Map<Long, List<Record<VariableRecordValue>>> variablesGroupedByScopeKey,
-      final BatchRequest batchRequest,
-      final boolean concurrencyMode)
       throws PersistenceException {
     for (final var variableRecords : variablesGroupedByScopeKey.entrySet()) {
       final var temporaryVariableCache =
@@ -227,22 +203,12 @@ public class ListViewZeebeRecordProcessor {
         updateFields.put(VAR_VALUE, variableEntity.getVarValue());
         updateFields.put(POSITION, variableEntity.getPosition());
 
-        if (concurrencyMode) {
-          batchRequest.upsertWithScriptAndRouting(
-              listViewTemplate.getFullQualifiedName(),
-              variableEntity.getId(),
-              variableEntity,
-              getVariableScript(),
-              updateFields,
-              String.valueOf(processInstanceKey));
-        } else {
-          batchRequest.upsertWithRouting(
-              listViewTemplate.getFullQualifiedName(),
-              variableEntity.getId(),
-              variableEntity,
-              updateFields,
-              processInstanceKey.toString());
-        }
+        batchRequest.upsertWithRouting(
+            listViewTemplate.getFullQualifiedName(),
+            variableEntity.getId(),
+            variableEntity,
+            updateFields,
+            processInstanceKey.toString());
       }
     }
   }
@@ -251,15 +217,6 @@ public class ListViewZeebeRecordProcessor {
       final Map<Long, List<Record<ProcessInstanceRecordValue>>> records,
       final BatchRequest batchRequest,
       final ImportBatch importBatch)
-      throws PersistenceException {
-    processProcessInstanceRecord(records, batchRequest, importBatch, false);
-  }
-
-  public void processProcessInstanceRecord(
-      final Map<Long, List<Record<ProcessInstanceRecordValue>>> records,
-      final BatchRequest batchRequest,
-      final ImportBatch importBatch,
-      final boolean concurrencyMode)
       throws PersistenceException {
 
     final Map<String, String> treePathMap = new HashMap<>();
@@ -317,18 +274,8 @@ public class ListViewZeebeRecordProcessor {
           updateFields.put(ListViewTemplate.STATE, piEntity.getState());
         }
 
-        if (concurrencyMode) {
-          batchRequest.upsertWithScriptAndRouting(
-              listViewTemplate.getFullQualifiedName(),
-              piEntity.getId(),
-              piEntity,
-              getProcessInstanceScript(),
-              updateFields,
-              String.valueOf(piEntity.getProcessInstanceKey()));
-        } else {
-          batchRequest.upsert(
-              listViewTemplate.getFullQualifiedName(), piEntity.getId(), piEntity, updateFields);
-        }
+        batchRequest.upsert(
+            listViewTemplate.getFullQualifiedName(), piEntity.getId(), piEntity, updateFields);
       }
       for (final FlowNodeInstanceForListViewEntity actEntity : actEntities.values()) {
         LOGGER.debug("Flow node instance for list view: id {}", actEntity.getId());
@@ -339,34 +286,14 @@ public class ListViewZeebeRecordProcessor {
         updateFields.put(ACTIVITY_TYPE, actEntity.getActivityType());
         updateFields.put(ACTIVITY_STATE, actEntity.getActivityState());
 
-        if (concurrencyMode) {
-          batchRequest.upsertWithScriptAndRouting(
-              listViewTemplate.getFullQualifiedName(),
-              actEntity.getId(),
-              actEntity,
-              getFlowNodeInstanceScript(),
-              updateFields,
-              processInstanceKey.toString());
-        } else {
-          batchRequest.upsertWithRouting(
-              listViewTemplate.getFullQualifiedName(),
-              actEntity.getId(),
-              actEntity,
-              updateFields,
-              processInstanceKey.toString());
-        }
+        batchRequest.upsertWithRouting(
+            listViewTemplate.getFullQualifiedName(),
+            actEntity.getId(),
+            actEntity,
+            updateFields,
+            processInstanceKey.toString());
       }
     }
-  }
-
-  private String getVariableScript() {
-    return String.format(
-        "if (ctx._source.%s == null || ctx._source.%s < params.%s) { "
-            + "ctx._source.%s = params.%s; " // position
-            + "ctx._source.%s = params.%s; " // var name
-            + "ctx._source.%s = params.%s; " // var value
-            + "}",
-        POSITION, POSITION, POSITION, POSITION, POSITION, VAR_NAME, VAR_NAME, VAR_VALUE, VAR_VALUE);
   }
 
   private String getFlowNodeInstanceFromJobScript() {
@@ -463,20 +390,12 @@ public class ListViewZeebeRecordProcessor {
   public void processJobRecords(
       final Map<Long, List<Record<JobRecordValue>>> records, final BatchRequest batchRequest)
       throws PersistenceException {
-    processJobRecords(records, batchRequest, false);
-  }
-
-  public void processJobRecords(
-      final Map<Long, List<Record<JobRecordValue>>> records,
-      final BatchRequest batchRequest,
-      final boolean concurrencyMode)
-      throws PersistenceException {
     for (final List<Record<JobRecordValue>> jobRecords : records.values()) {
       processLastRecord(
           jobRecords,
           rethrowConsumer(
               record -> {
-                updateFlowNodeInstanceFromJob(record, batchRequest, concurrencyMode);
+                updateFlowNodeInstanceFromJob(record, batchRequest);
               }));
     }
   }
@@ -647,9 +566,7 @@ public class ListViewZeebeRecordProcessor {
   }
 
   private void updateFlowNodeInstanceFromJob(
-      final Record<JobRecordValue> record,
-      final BatchRequest batchRequest,
-      final boolean concurrencyMode)
+      final Record<JobRecordValue> record, final BatchRequest batchRequest)
       throws PersistenceException {
     final FlowNodeInstanceForListViewEntity entity = new FlowNodeInstanceForListViewEntity();
 
@@ -683,22 +600,12 @@ public class ListViewZeebeRecordProcessor {
     updateFields.put(JOB_FAILED_WITH_RETRIES_LEFT, entity.isJobFailedWithRetriesLeft());
     updateFields.put(JOB_POSITION, entity.getPositionJob());
 
-    if (concurrencyMode) {
-      batchRequest.upsertWithScriptAndRouting(
-          listViewTemplate.getFullQualifiedName(),
-          entity.getId(),
-          entity,
-          getFlowNodeInstanceFromJobScript(),
-          updateFields,
-          String.valueOf(recordValue.getProcessInstanceKey()));
-    } else {
-      batchRequest.upsertWithRouting(
-          listViewTemplate.getFullQualifiedName(),
-          entity.getId(),
-          entity,
-          updateFields,
-          String.valueOf(recordValue.getProcessInstanceKey()));
-    }
+    batchRequest.upsertWithRouting(
+        listViewTemplate.getFullQualifiedName(),
+        entity.getId(),
+        entity,
+        updateFields,
+        String.valueOf(recordValue.getProcessInstanceKey()));
   }
 
   private void updateFlowNodeInstance(
