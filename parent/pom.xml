@@ -125,7 +125,7 @@
     <version.zpt>8.5.7</version.zpt>
     <version.feign>13.4</version.feign>
     <version.google-sdk>26.47.0</version.google-sdk>
-    <version.azure-sdk>1.2.31</version.azure-sdk>
+    <version.azure-sdk>1.2.32</version.azure-sdk>
     <version.awssdk>2.28.29</version.awssdk>
     <version.toxiproxy>2.1.7</version.toxiproxy>
     <version.validation-api>3.1.1</version.validation-api>
