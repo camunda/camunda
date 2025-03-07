@@ -71,7 +71,7 @@ const AppContent: FC<{ children?: ReactNode }> = ({ children }) => {
     return (
       <>
         <GridHeader>
-          <AppHeader />
+          <AppHeader hideNavLinks />
         </GridHeader>
         <GridMain>
           <GridMainContent>
