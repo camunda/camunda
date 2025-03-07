@@ -7,6 +7,8 @@
  */
 package io.camunda.search.exception;
 
+import java.util.Optional;
+
 public class CamundaSearchException extends RuntimeException {
 
   private static final long serialVersionUID = 1L;
@@ -27,17 +29,17 @@ public class CamundaSearchException extends RuntimeException {
 
   public CamundaSearchException(final String message, final Reason reason) {
     super(message);
-    this.reason = reason;
+    this.reason = Optional.ofNullable(reason).orElse(Reason.UNKNOWN);
   }
 
   public CamundaSearchException(final Throwable cause, final Reason reason) {
     super(cause);
-    this.reason = reason;
+    this.reason = Optional.ofNullable(reason).orElse(Reason.UNKNOWN);
   }
 
   public CamundaSearchException(final String message, final Throwable cause, final Reason reason) {
     super(message, cause);
-    this.reason = reason;
+    this.reason = Optional.ofNullable(reason).orElse(Reason.UNKNOWN);
   }
 
   public Reason getReason() {

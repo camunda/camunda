@@ -27,7 +27,6 @@ import io.camunda.zeebe.broker.client.api.RequestRetriesExhaustedException;
 import io.camunda.zeebe.broker.client.api.dto.BrokerError;
 import io.camunda.zeebe.broker.client.api.dto.BrokerRejection;
 import io.camunda.zeebe.msgpack.spec.MsgpackException;
-import io.camunda.zeebe.protocol.record.RejectionType;
 import io.netty.channel.ConnectTimeoutException;
 import jakarta.validation.constraints.NotNull;
 import java.net.ConnectException;
@@ -321,52 +320,48 @@ public class RestErrorMapper {
   }
 
   public static ProblemDetail mapCamundaSearchExceptionToProblem(CamundaSearchException cse) {
-    final CamundaSearchException.Reason reason =
-        (cse.getReason() == null) ? CamundaSearchException.Reason.UNKNOWN : cse.getReason();
+    final CamundaSearchException.Reason reason = cse.getReason();
     final Throwable cause = (cse.getCause() == null) ? cse : cse.getCause();
-    final String title =
-        (reason == CamundaSearchException.Reason.UNKNOWN)
-            ? cause.getClass().getName()
-            : reason.name();
-    final String errorMessage = cause.getMessage();
-    final String logPrefix = "Expected to handle REST request, but error occured: ";
+    final String title = reason.name();
+    final String errorMessage = cse.getMessage();
+    final String logPrefix = "Expected to handle REST request, but: {}";
     switch (reason) {
       case NOT_FOUND:
         {
-          REST_GATEWAY_LOGGER.debug(logPrefix + "{}", errorMessage);
-          return createProblemDetail(
-              HttpStatus.NOT_FOUND, errorMessage, RejectionType.NOT_FOUND.name());
+          REST_GATEWAY_LOGGER.debug(logPrefix, errorMessage);
+          return createProblemDetail(HttpStatus.NOT_FOUND, errorMessage, title);
         }
       case NOT_UNIQUE:
         {
-          REST_GATEWAY_LOGGER.debug(logPrefix + "{}", errorMessage);
-          return createProblemDetail(
-              HttpStatus.CONFLICT, errorMessage, RejectionType.INVALID_STATE.name());
+          REST_GATEWAY_LOGGER.debug(logPrefix, errorMessage);
+          return createProblemDetail(HttpStatus.CONFLICT, errorMessage, title);
         }
       case CONNECTION_FAILED:
         {
-          final String detail = "The search client could to connect to the search server.";
-          REST_GATEWAY_LOGGER.debug(logPrefix + "{}", detail);
+          final String detail =
+              errorMessage + ". The search client could not connect to the search server.";
+          REST_GATEWAY_LOGGER.debug(logPrefix, detail);
           return createProblemDetail(HttpStatus.SERVICE_UNAVAILABLE, detail, title);
         }
       case SEARCH_SERVER_FAILED:
         {
-          final String detail = "The search server was unable to process the request.";
-          REST_GATEWAY_LOGGER.debug(logPrefix + "{}", detail);
+          final String detail =
+              errorMessage + ". The search server was unable to process the request.";
+          REST_GATEWAY_LOGGER.debug(logPrefix, detail);
           return createProblemDetail(HttpStatus.INTERNAL_SERVER_ERROR, detail, title);
         }
       case SEARCH_CLIENT_FAILED:
         {
-          final String detail = "The search client was unable to process the request.";
-          REST_GATEWAY_LOGGER.debug(logPrefix + "{}", detail);
+          final String detail =
+              errorMessage + ". The search client was unable to process the request.";
+          REST_GATEWAY_LOGGER.debug(logPrefix, detail);
           return createProblemDetail(HttpStatus.INTERNAL_SERVER_ERROR, detail, title);
         }
       default:
         {
-          final String detail = "Unexpected error: %s".formatted(errorMessage);
-          REST_GATEWAY_LOGGER.debug(logPrefix + "{}", detail);
+          REST_GATEWAY_LOGGER.debug(logPrefix, errorMessage);
           return createProblemDetail(
-              HttpStatus.INTERNAL_SERVER_ERROR, detail.formatted(errorMessage), title);
+              HttpStatus.INTERNAL_SERVER_ERROR, errorMessage, "INTERNAL_ERROR");
         }
     }
   }

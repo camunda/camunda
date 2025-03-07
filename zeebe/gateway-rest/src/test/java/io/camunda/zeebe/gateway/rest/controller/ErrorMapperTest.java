@@ -204,8 +204,9 @@ public class ErrorMapperTest extends RestControllerTest {
     final var request = new UserTaskCompletionRequest();
     final var expectedBody =
         ProblemDetail.forStatusAndDetail(
-            HttpStatus.INTERNAL_SERVER_ERROR, "Unexpected error: Just an error");
-    expectedBody.setTitle(NullPointerException.class.getName());
+            HttpStatus.INTERNAL_SERVER_ERROR,
+            NullPointerException.class.getName() + ": Just an error");
+    expectedBody.setTitle("INTERNAL_ERROR");
     expectedBody.setInstance(URI.create(USER_TASKS_BASE_URL + "/1/completion"));
 
     // when / then
@@ -565,9 +566,8 @@ public class ErrorMapperTest extends RestControllerTest {
 
     // when
     assertThat(problemDetail.getStatus()).isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR.value());
-    assertThat(problemDetail.getDetail()).isEqualTo("Unexpected error: No reason");
-    assertThat(problemDetail.getTitle())
-        .isEqualTo("io.camunda.search.exception.CamundaSearchException");
+    assertThat(problemDetail.getDetail()).isEqualTo("No reason");
+    assertThat(problemDetail.getTitle()).isEqualTo("INTERNAL_ERROR");
   }
 
   @Test
@@ -582,7 +582,7 @@ public class ErrorMapperTest extends RestControllerTest {
     // when
     assertThat(problemDetail.getStatus()).isEqualTo(HttpStatus.NOT_FOUND.value());
     assertThat(problemDetail.getDetail()).isEqualTo("Item not found");
-    assertThat(problemDetail.getTitle()).isEqualTo("NOT_FOUND");
+    assertThat(problemDetail.getTitle()).isEqualTo(CamundaSearchException.Reason.NOT_FOUND.name());
   }
 
   @Test
@@ -597,7 +597,7 @@ public class ErrorMapperTest extends RestControllerTest {
     // when
     assertThat(problemDetail.getStatus()).isEqualTo(HttpStatus.CONFLICT.value());
     assertThat(problemDetail.getDetail()).isEqualTo("Item not unique");
-    assertThat(problemDetail.getTitle()).isEqualTo("INVALID_STATE");
+    assertThat(problemDetail.getTitle()).isEqualTo(CamundaSearchException.Reason.NOT_UNIQUE.name());
   }
 
   @Test
@@ -615,7 +615,7 @@ public class ErrorMapperTest extends RestControllerTest {
     // when
     assertThat(problemDetail.getStatus()).isEqualTo(HttpStatus.SERVICE_UNAVAILABLE.value());
     assertThat(problemDetail.getDetail())
-        .isEqualTo("The search client could to connect to the search server.");
+        .isEqualTo("Request failed. The search client could not connect to the search server.");
     assertThat(problemDetail.getTitle())
         .isEqualTo(CamundaSearchException.Reason.CONNECTION_FAILED.name());
   }
@@ -635,7 +635,7 @@ public class ErrorMapperTest extends RestControllerTest {
     // when
     assertThat(problemDetail.getStatus()).isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR.value());
     assertThat(problemDetail.getDetail())
-        .isEqualTo("The search client was unable to process the request.");
+        .isEqualTo("Request failed. The search client was unable to process the request.");
     assertThat(problemDetail.getTitle())
         .isEqualTo(CamundaSearchException.Reason.SEARCH_CLIENT_FAILED.name());
   }
@@ -655,7 +655,7 @@ public class ErrorMapperTest extends RestControllerTest {
     // when
     assertThat(problemDetail.getStatus()).isEqualTo(HttpStatus.SERVICE_UNAVAILABLE.value());
     assertThat(problemDetail.getDetail())
-        .isEqualTo("The search client could to connect to the search server.");
+        .isEqualTo("Request failed. The search client could not connect to the search server.");
     assertThat(problemDetail.getTitle())
         .isEqualTo(CamundaSearchException.Reason.CONNECTION_FAILED.name());
   }
@@ -675,7 +675,7 @@ public class ErrorMapperTest extends RestControllerTest {
     // when
     assertThat(problemDetail.getStatus()).isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR.value());
     assertThat(problemDetail.getDetail())
-        .isEqualTo("The search client was unable to process the request.");
+        .isEqualTo("Request failed. The search client was unable to process the request.");
     assertThat(problemDetail.getTitle())
         .isEqualTo(CamundaSearchException.Reason.SEARCH_CLIENT_FAILED.name());
   }
