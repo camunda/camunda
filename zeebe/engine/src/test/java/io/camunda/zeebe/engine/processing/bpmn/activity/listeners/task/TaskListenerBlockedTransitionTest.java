@@ -19,6 +19,7 @@ import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
+import io.camunda.zeebe.protocol.record.value.JobKind;
 import io.camunda.zeebe.protocol.record.value.JobListenerEventType;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
@@ -43,6 +44,40 @@ public class TaskListenerBlockedTransitionTest {
   @Before
   public void setup() {
     listenerType = "my_listener_" + UUID.randomUUID();
+  }
+
+  @Test
+  public void shouldEvaluateExpressionsForTaskListeners() {
+    final long processInstanceKey =
+        helper.createProcessInstanceWithVariables(
+            helper.createProcessWithZeebeUserTask(
+                t ->
+                    t.zeebeTaskListener(
+                        l ->
+                            l.completing()
+                                .typeExpression("\"listener_1_\"+my_var")
+                                .retriesExpression("5+3"))),
+            Map.of("my_var", "abc"));
+
+    // when
+    ENGINE.userTask().ofInstance(processInstanceKey).complete();
+    helper.completeJobs(processInstanceKey, "listener_1_abc");
+
+    // then
+    assertThat(
+            jobRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .withJobKind(JobKind.TASK_LISTENER)
+                .withIntent(JobIntent.COMPLETED)
+                .onlyEvents()
+                .getFirst()
+                .getValue())
+        .satisfies(
+            jobRecordValue -> {
+              assertThat(jobRecordValue.getType()).isEqualTo("listener_1_abc");
+              assertThat(jobRecordValue.getRetries()).isEqualTo(8);
+            });
+    helper.assertThatProcessInstanceCompleted(processInstanceKey);
   }
 
   @Test
@@ -362,8 +397,6 @@ public class TaskListenerBlockedTransitionTest {
         .extracting(Record::getKey)
         .isEqualTo(incident.getKey());
   }
-
-
 
   @Test
   public void shouldClaimUserTaskAfterAllAssignmentTaskListenersAreExecuted() {
