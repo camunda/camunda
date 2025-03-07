@@ -11,9 +11,13 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 
 import io.camunda.zeebe.engine.util.EngineRule;
+import io.camunda.zeebe.engine.util.client.UserTaskClient;
+import io.camunda.zeebe.model.bpmn.builder.UserTaskBuilder;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskListenerEventType;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobResult;
+import io.camunda.zeebe.protocol.impl.record.value.job.JobResultCorrections;
 import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
+import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
@@ -23,7 +27,10 @@ import io.camunda.zeebe.protocol.record.value.JobRecordValue;
 import io.camunda.zeebe.protocol.record.value.UserTaskRecordValue;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
+import java.util.List;
 import java.util.UUID;
+import java.util.function.Consumer;
+import java.util.function.UnaryOperator;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Rule;
@@ -538,5 +545,114 @@ public class TaskListenerDenialsTest {
         UserTaskIntent.COMPLETING,
         UserTaskIntent.COMPLETE_TASK_LISTENER,
         UserTaskIntent.COMPLETED);
+  }
+
+  @Test
+  public void shouldRevertCorrectedUserTaskDataWhenAssigningOnCreationTaskListenerDenies() {
+    testRevertCorrectedUserTaskDataWhenTaskListenerDenies(
+        ZeebeTaskListenerEventType.assigning,
+        u -> u.zeebeAssignee("initial_assignee"),
+        userTask -> {},
+        UserTaskIntent.ASSIGNMENT_DENIED);
+  }
+
+  @Test
+  public void shouldRevertCorrectedUserTaskDataWhenAssigningTaskListenerDenies() {
+    testRevertCorrectedUserTaskDataWhenTaskListenerDenies(
+        ZeebeTaskListenerEventType.assigning,
+        u -> u,
+        userTask -> userTask.withAssignee("initial_assignee").assign(),
+        UserTaskIntent.ASSIGNMENT_DENIED);
+  }
+
+  @Test
+  public void shouldRevertCorrectedUserTaskDataWhenClaimingTaskListenerDenies() {
+    testRevertCorrectedUserTaskDataWhenTaskListenerDenies(
+        ZeebeTaskListenerEventType.assigning,
+        u -> u,
+        userTask -> userTask.withAssignee("initial_assignee").claim(),
+        UserTaskIntent.ASSIGNMENT_DENIED);
+  }
+
+  @Test
+  public void shouldRevertCorrectedUserTaskDataWhenUpdatingTaskListenerDenies() {
+    testRevertCorrectedUserTaskDataWhenTaskListenerDenies(
+        ZeebeTaskListenerEventType.updating,
+        u -> u,
+        UserTaskClient::update,
+        UserTaskIntent.UPDATE_DENIED);
+  }
+
+  @Test
+  public void shouldRevertCorrectedUserTaskDataWhenCompletingTaskListenerDenies() {
+    testRevertCorrectedUserTaskDataWhenTaskListenerDenies(
+        ZeebeTaskListenerEventType.completing,
+        u -> u,
+        UserTaskClient::complete,
+        UserTaskIntent.COMPLETION_DENIED);
+  }
+
+  private void testRevertCorrectedUserTaskDataWhenTaskListenerDenies(
+      final ZeebeTaskListenerEventType eventType,
+      final UnaryOperator<UserTaskBuilder> userTaskBuilder,
+      final Consumer<UserTaskClient> userTaskAction,
+      final UserTaskIntent expectedUserTaskIntent) {
+    // given
+    final long processInstanceKey =
+        helper.createProcessInstance(
+            helper.createProcessWithZeebeUserTask(
+                t ->
+                    userTaskBuilder
+                        .apply(t)
+                        .zeebeTaskListener(l -> l.eventType(eventType).type(listenerType))
+                        .zeebeTaskListener(l -> l.eventType(eventType).type(listenerType + "_2"))));
+
+    userTaskAction.accept(ENGINE.userTask().ofInstance(processInstanceKey));
+
+    // when
+    ENGINE
+        .job()
+        .ofInstance(processInstanceKey)
+        .withType(listenerType)
+        .withResult(
+            new JobResult()
+                .setCorrections(
+                    new JobResultCorrections()
+                        .setAssignee("new_assignee")
+                        .setCandidateUsersList(List.of("new_candidate_user"))
+                        .setCandidateGroupsList(List.of("new_candidate_group"))
+                        .setDueDate("new_due_date")
+                        .setFollowUpDate("new_follow_up_date")
+                        .setPriority(100))
+                .setCorrectedAttributes(
+                    List.of(
+                        "assignee",
+                        "candidateUsersList",
+                        "candidateGroupsList",
+                        "dueDate",
+                        "followUpDate",
+                        "priority")))
+        .complete();
+    ENGINE
+        .job()
+        .ofInstance(processInstanceKey)
+        .withType(listenerType + "_2")
+        .withResult(new JobResult().setDenied(true))
+        .complete();
+
+    // then
+    helper.assertUserTaskRecordWithIntent(
+        processInstanceKey,
+        expectedUserTaskIntent,
+        userTaskRecord ->
+            Assertions.assertThat(userTaskRecord)
+                .describedAs("Expect that user task data is reverted to before the event")
+                .hasNoChangedAttributes()
+                .hasNoCandidateUsersList()
+                .hasNoCandidateGroupsList()
+                .hasDueDate("")
+                .hasFollowUpDate("")
+                .hasPriority(50)
+                .hasAssignee(""));
   }
 }
