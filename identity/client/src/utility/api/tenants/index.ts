@@ -11,6 +11,7 @@ import {
 import { SearchResponse } from "src/utility/api";
 import { EntityData } from "src/components/entityList/EntityList";
 import { Group } from "src/utility/api/groups";
+import { Role } from "src/utility/api/roles";
 
 export const TENANTS_ENDPOINT = "/tenants";
 
@@ -29,7 +30,6 @@ type GetTenantParams = {
   name?: string;
   description?: string;
 };
-
 export const getTenantDetails: ApiDefinition<
   SearchResponse<Tenant>,
   GetTenantParams
@@ -39,7 +39,6 @@ export const getTenantDetails: ApiDefinition<
   });
 
 type CreateTenantParams = Omit<Tenant, "tenantKey">;
-
 export const createTenant: ApiDefinition<undefined, CreateTenantParams> = (
   tenant,
 ) => apiPost(TENANTS_ENDPOINT, tenant);
@@ -49,18 +48,18 @@ export type UpdateTenantParams = {
   name: string;
   description: string;
 };
-
-export type DeleteTenantParams = UpdateTenantParams;
-
 export const updateTenant: ApiDefinition<undefined, UpdateTenantParams> = ({
   tenantId,
   name,
   description,
 }) => apiPatch(`${TENANTS_ENDPOINT}/${tenantId}`, { name, description });
 
+export type DeleteTenantParams = UpdateTenantParams;
 export const deleteTenant: ApiDefinition<undefined, { tenantId: string }> = ({
   tenantId,
 }) => apiDelete(`${TENANTS_ENDPOINT}/${tenantId}`);
+
+// ----------------- Groups within a Tenant -----------------
 
 export type GetTenantGroupsParams = {
   tenantId: string;
@@ -84,3 +83,28 @@ export const unassignTenantGroup: ApiDefinition<
   UnassignTenantGroupParams
 > = ({ tenantId, groupKey }) =>
   apiDelete(`${TENANTS_ENDPOINT}/${tenantId}/groups/${groupKey}`);
+
+// ----------------- Roles within a Tenant -----------------
+
+export type GetTenantRolesParams = {
+  tenantId: string;
+};
+export const getRolesByTenantId: ApiDefinition<
+  SearchResponse<Role>,
+  GetTenantRolesParams
+> = ({ tenantId }) => apiPost(`${TENANTS_ENDPOINT}/${tenantId}/roles/search`);
+
+type AssignTenantRoleParams = GetTenantRolesParams & { key: number };
+export const assignTenantRole: ApiDefinition<
+  undefined,
+  AssignTenantRoleParams
+> = ({ tenantId, key }) => {
+  return apiPut(`${TENANTS_ENDPOINT}/${tenantId}/roles/${key}`);
+};
+
+type UnassignTenantRoleParams = AssignTenantRoleParams;
+export const unassignTenantRole: ApiDefinition<
+  undefined,
+  UnassignTenantRoleParams
+> = ({ tenantId, key }) =>
+  apiDelete(`${TENANTS_ENDPOINT}/${tenantId}/roles/${key}`);
