@@ -75,7 +75,7 @@
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>camunda-search-client-connect</artifactId>
-      <version>8.6.10</version>
+      <version>8.6.11</version>
     </dependency>
 
     <!-- Zeebe dependencies -->
