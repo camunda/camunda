@@ -23,8 +23,7 @@ public enum MappingIntent implements Intent {
   DELETE(2),
   DELETED(3),
   UPDATE(4),
-  UPDATED(5),
-  ;
+  UPDATED(5);
 
   private final short value;
 
