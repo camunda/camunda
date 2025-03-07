@@ -18,6 +18,7 @@ import io.camunda.client.CamundaClient;
 import io.camunda.client.api.CamundaFuture;
 import io.camunda.client.api.command.ProblemException;
 import io.camunda.client.api.response.ActivatedJob;
+import io.camunda.client.api.response.AssignUserTaskResponse;
 import io.camunda.client.api.response.CompleteUserTaskResponse;
 import io.camunda.client.api.worker.JobHandler;
 import io.camunda.zeebe.it.util.RecordingJobHandler;
@@ -296,7 +297,14 @@ public class UserTaskListenersTest {
             t -> t.zeebeTaskListener(l -> l.updating().type(listenerType)));
 
     final JobHandler completeJobWithDenialHandler =
-        (jobClient, job) -> client.newCompleteCommand(job).withResult().deny(true).send().join();
+        (jobClient, job) ->
+            client
+                .newCompleteCommand(job)
+                .withResult()
+                .deny(true)
+                .deniedReason("Reason to deny lifecycle transition")
+                .send()
+                .join();
     client.newWorker().jobType(listenerType).handler(completeJobWithDenialHandler).open();
 
     // when: invoke `UPDATE` user task command
@@ -306,12 +314,17 @@ public class UserTaskListenersTest {
     // then: TL job should be successfully completed with the result "denied" set correctly
     ZeebeAssertHelper.assertJobCompleted(
         listenerType,
-        userTaskListener -> assertThat(userTaskListener.getResult().isDenied()).isTrue());
+        userTaskListener -> {
+          assertThat(userTaskListener.getResult().isDenied()).isTrue();
+          assertThat(userTaskListener.getResult().getDeniedReason())
+              .isEqualTo("Reason to deny lifecycle transition");
+        });
 
-    // and: verify the rejection
+    // and: verify the rejection and rejection reason
     final var rejectionReason =
         String.format(
-            "Command 'UPDATE' rejected with code 'INVALID_STATE': Update of the User Task with key '%s' was denied by Task Listener",
+            "Command 'UPDATE' rejected with code 'INVALID_STATE': Update of the User Task with key '%s' was denied by Task Listener. "
+                + "Reason to deny: 'Reason to deny lifecycle transition'",
             userTaskKey);
     assertThatExceptionOfType(ProblemException.class)
         .isThrownBy(updateUserTaskFuture::join)
@@ -336,7 +349,14 @@ public class UserTaskListenersTest {
             t -> t.zeebeTaskListener(l -> l.completing().type(listenerType)));
 
     final JobHandler completeJobHandler =
-        (jobClient, job) -> client.newCompleteCommand(job).withResult().deny(true).send().join();
+        (jobClient, job) ->
+            client
+                .newCompleteCommand(job)
+                .withResult()
+                .deny(true)
+                .deniedReason("Reason to deny lifecycle transition")
+                .send()
+                .join();
     final var recordingHandler = new RecordingJobHandler(completeJobHandler);
 
     client.newWorker().jobType(listenerType).handler(recordingHandler).open();
@@ -348,11 +368,16 @@ public class UserTaskListenersTest {
     // TL job should be successfully completed with the result "denied" set correctly
     ZeebeAssertHelper.assertJobCompleted(
         listenerType,
-        userTaskListener -> assertThat(userTaskListener.getResult().isDenied()).isTrue());
+        userTaskListener -> {
+          assertThat(userTaskListener.getResult().isDenied()).isTrue();
+          assertThat(userTaskListener.getResult().getDeniedReason())
+              .isEqualTo("Reason to deny lifecycle transition");
+        });
 
     final var rejectionReason =
         String.format(
-            "Command 'COMPLETE' rejected with code 'INVALID_STATE': Completion of the User Task with key '%s' was denied by Task Listener",
+            "Command 'COMPLETE' rejected with code 'INVALID_STATE': Completion of the User Task with key '%s' was denied by Task Listener. "
+                + "Reason to deny: 'Reason to deny lifecycle transition'",
             userTaskKey);
 
     // verify the rejection
@@ -370,6 +395,113 @@ public class UserTaskListenersTest {
         UserTaskIntent.COMPLETING,
         UserTaskIntent.DENY_TASK_LISTENER,
         UserTaskIntent.COMPLETION_DENIED);
+  }
+
+  @Test
+  public void shouldRejectUserTaskCompletionWhenTaskListenerDeniesTheWorkNoReasonProvided() {
+    // given
+    final var listenerType = "my_listener";
+    final var userTaskKey =
+        resourcesHelper.createSingleUserTask(
+            t -> t.zeebeTaskListener(l -> l.completing().type(listenerType)));
+
+    final JobHandler completeJobHandler =
+        (jobClient, job) -> client.newCompleteCommand(job).withResult().deny(true).send().join();
+    final var recordingHandler = new RecordingJobHandler(completeJobHandler);
+
+    client.newWorker().jobType(listenerType).handler(recordingHandler).open();
+
+    // when: invoke complete user task command
+    final CamundaFuture<CompleteUserTaskResponse> completeUserTaskFuture =
+        client.newUserTaskCompleteCommand(userTaskKey).send();
+
+    // TL job should be successfully completed with the result "denied" set correctly
+    ZeebeAssertHelper.assertJobCompleted(
+        listenerType,
+        userTaskListener -> {
+          assertThat(userTaskListener.getResult().isDenied()).isTrue();
+          assertThat(userTaskListener.getResult().getDeniedReason()).isEqualTo("");
+        });
+
+    final var rejectionReason =
+        String.format(
+            "Command 'COMPLETE' rejected with code 'INVALID_STATE': Completion of the User Task with key '%s' was denied by Task Listener. "
+                + "Reason to deny: ''",
+            userTaskKey);
+
+    // verify the rejection
+    assertThatExceptionOfType(ProblemException.class)
+        .isThrownBy(completeUserTaskFuture::join)
+        .satisfies(
+            ex -> {
+              assertThat(ex.details().getTitle()).isEqualTo(RejectionType.INVALID_STATE.name());
+              assertThat(ex.details().getDetail()).isEqualTo(rejectionReason);
+              assertThat(ex.details().getStatus()).isEqualTo(HttpStatus.SC_CONFLICT);
+            });
+
+    // verify the expected sequence of User Task intents
+    assertUserTaskIntentsSequence(
+        UserTaskIntent.COMPLETING,
+        UserTaskIntent.DENY_TASK_LISTENER,
+        UserTaskIntent.COMPLETION_DENIED);
+  }
+
+  @Test
+  public void shouldRejectUserTaskAssignmentWhenTaskListenerDeniesTheWork() {
+    // given
+    final var listenerType = "my_listener";
+    final var userTaskKey =
+        resourcesHelper.createSingleUserTask(
+            t -> t.zeebeTaskListener(l -> l.assigning().type(listenerType)));
+
+    final JobHandler completeJobHandler =
+        (jobClient, job) ->
+            client
+                .newCompleteCommand(job)
+                .withResult()
+                .deny(true)
+                .deniedReason("Reason to deny lifecycle transition")
+                .send()
+                .join();
+    final var recordingHandler = new RecordingJobHandler(completeJobHandler);
+
+    client.newWorker().jobType(listenerType).handler(recordingHandler).open();
+
+    // when: invoke complete user task command
+
+    final CamundaFuture<AssignUserTaskResponse> assignUserTaskFuture =
+        client.newUserTaskAssignCommand(userTaskKey).assignee("john").send();
+
+    // TL job should be successfully completed with the result "denied" set correctly
+    ZeebeAssertHelper.assertJobCompleted(
+        listenerType,
+        userTaskListener -> {
+          assertThat(userTaskListener.getResult().isDenied()).isTrue();
+          assertThat(userTaskListener.getResult().getDeniedReason())
+              .isEqualTo("Reason to deny lifecycle transition");
+        });
+
+    final var rejectionReason =
+        String.format(
+            "Command 'ASSIGN' rejected with code 'INVALID_STATE': Assignment of the User Task with key '%s' was denied by Task Listener. "
+                + "Reason to deny: 'Reason to deny lifecycle transition'",
+            userTaskKey);
+
+    // verify the rejection
+    assertThatExceptionOfType(ProblemException.class)
+        .isThrownBy(assignUserTaskFuture::join)
+        .satisfies(
+            ex -> {
+              assertThat(ex.details().getTitle()).isEqualTo(RejectionType.INVALID_STATE.name());
+              assertThat(ex.details().getDetail()).isEqualTo(rejectionReason);
+              assertThat(ex.details().getStatus()).isEqualTo(HttpStatus.SC_CONFLICT);
+            });
+
+    // verify the expected sequence of User Task intents
+    assertUserTaskIntentsSequence(
+        UserTaskIntent.ASSIGNING,
+        UserTaskIntent.DENY_TASK_LISTENER,
+        UserTaskIntent.ASSIGNMENT_DENIED);
   }
 
   @Test

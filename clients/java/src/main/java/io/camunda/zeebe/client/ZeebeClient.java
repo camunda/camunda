@@ -63,7 +63,7 @@ import io.camunda.zeebe.client.impl.ZeebeClientImpl;
 /**
  * The client to communicate with a Zeebe broker/cluster.
  *
- * @deprecated since 8.8 for removal in 8.0, replaced by {@link io.camunda.client.CamundaClient}
+ * @deprecated since 8.8 for removal in 8.9, replaced by {@link io.camunda.client.CamundaClient}
  */
 @Deprecated
 public interface ZeebeClient extends AutoCloseable, JobClient {

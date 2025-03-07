@@ -21,6 +21,11 @@ import java.io.InputStream;
 import java.time.Duration;
 import java.util.Map;
 
+/**
+ * @deprecated since 8.8 for removal in 8.9, replaced by {@link
+ *     io.camunda.client.api.command.CreateDocumentBatchCommandStep1}
+ */
+@Deprecated
 public interface CreateDocumentBatchCommandStep1
     extends FinalCommandStep<DocumentReferenceBatchResponse> {
 

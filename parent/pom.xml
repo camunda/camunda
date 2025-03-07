@@ -41,7 +41,7 @@
     <version.bouncycastle>1.79</version.bouncycastle>
     <version.camunda>7.22.0</version.camunda>
     <version.camunda-license-check>2.10.0</version.camunda-license-check>
-    <version.checkstyle>10.21.3</version.checkstyle>
+    <version.checkstyle>10.21.4</version.checkstyle>
     <version.commons-beanutils>1.10.1</version.commons-beanutils>
     <version.commons-lang>3.17.0</version.commons-lang>
     <version.commons-logging>1.3.5</version.commons-logging>
@@ -55,7 +55,7 @@
     <version.docker-java-api>3.4.1</version.docker-java-api>
     <version.elasticsearch>8.13.4</version.elasticsearch>
     <version.error-prone>2.36.0</version.error-prone>
-    <version.grpc>1.70.0</version.grpc>
+    <version.grpc>1.71.0</version.grpc>
     <version.gson>2.12.1</version.gson>
     <version.guava>33.4.0-jre</version.guava>
     <version.hamcrest>3.0</version.hamcrest>
@@ -64,14 +64,14 @@
     <version.httpclient5>5.4.2</version.httpclient5>
     <version.httpcore5>5.3.3</version.httpcore5>
     <version.httpcomponents>4.4.16</version.httpcomponents>
-    <version.identity>8.6.8</version.identity>
+    <version.identity>8.6.9</version.identity>
     <version.surefire>3.5.2</version.surefire>
     <version.jackson>2.18.3</version.jackson>
     <version.junit>5.11.4</version.junit>
     <version.junit4>4.13.2</version.junit4>
     <version.log4j>2.24.3</version.log4j>
     <version.minlog>1.3.1</version.minlog>
-    <version.mockito>5.15.2</version.mockito>
+    <version.mockito>5.16.0</version.mockito>
     <version.model>7.7.0</version.model>
     <version.msgpack>0.9.9</version.msgpack>
     <version.netty>4.1.119.Final</version.netty>
@@ -80,7 +80,7 @@
     <version.opensearch-java>2.19.0</version.opensearch-java>
     <version.opensearch.testcontainers>2.1.2</version.opensearch.testcontainers>
     <version.prometheus>0.16.0</version.prometheus>
-    <version.protobuf>4.29.3</version.protobuf>
+    <version.protobuf>4.30.0</version.protobuf>
     <version.protobuf-common>2.53.0</version.protobuf-common>
     <version.micrometer>1.14.4</version.micrometer>
     <version.rocksdbjni>9.4.0</version.rocksdbjni>
@@ -92,7 +92,7 @@
     <version.wiremock>3.12.1</version.wiremock>
     <version.conscrypt>2.5.2</version.conscrypt>
     <version.asm>9.3</version.asm>
-    <version.testcontainers>1.20.5</version.testcontainers>
+    <version.testcontainers>1.20.6</version.testcontainers>
     <version.mariadb-java-client>3.4.1</version.mariadb-java-client>
     <version.testcontainer-mariadb>1.20.0</version.testcontainer-mariadb>
     <version.postgressql-testcontainer>1.20.1</version.postgressql-testcontainer>
@@ -112,7 +112,7 @@
     <version.jmock>2.13.1</version.jmock>
     <version.jmh>1.37</version.jmh>
     <version.json-smart>2.5.2</version.json-smart>
-    <version.byte-buddy>1.15.11</version.byte-buddy>
+    <version.byte-buddy>1.17.2</version.byte-buddy>
     <version.revapi>0.28.1</version.revapi>
     <version.resilience4j>2.3.0</version.resilience4j>
     <version.immutables>2.10.1</version.immutables>
@@ -122,7 +122,7 @@
     <version.osgi>6.0.0</version.osgi>
     <version.findbugs-annotations>3.0.1u2</version.findbugs-annotations>
     <version.spotbugs>4.9.2</version.spotbugs>
-    <version.archunit>1.3.0</version.archunit>
+    <version.archunit>1.4.0</version.archunit>
     <version.easy-random>5.0.0</version.easy-random>
     <version.jcip>1.0</version.jcip>
     <version.jnr-posix>3.1.20</version.jnr-posix>
@@ -137,7 +137,7 @@
     <version.findbugs.jsr305>3.0.2</version.findbugs.jsr305>
     <version.jackson-annotations>2.18.3</version.jackson-annotations>
     <version.swagger-annotations>2.2.28</version.swagger-annotations>
-    <version.checker-qual>3.49.0</version.checker-qual>
+    <version.checker-qual>3.49.1</version.checker-qual>
     <version.java-jwt>4.5.0</version.java-jwt>
     <version.reactive-streams>1.0.4</version.reactive-streams>
     <version.postgresql>42.7.5</version.postgresql>
@@ -151,7 +151,7 @@
     <version.liquibase>4.31.1</version.liquibase>
     <version.sqlformatter>2.0.5</version.sqlformatter>
     <version.caffeine>3.2.0</version.caffeine>
-    <version.commons-collections>3.2.2</version.commons-collections>
+    <version.commons-collections>20040616</version.commons-collections>
 
     <version.commons-io>2.18.0</version.commons-io>
     <version.thymeleaf>3.1.3.RELEASE</version.thymeleaf>
@@ -164,8 +164,8 @@
     <version.yarn>v1.22.21</version.yarn>
 
     <version.aws-java-sdk>1.12.782</version.aws-java-sdk>
-    <version.elasticsearch-test-container>1.20.5</version.elasticsearch-test-container>
-    <version.postgres-test-container>1.20.5</version.postgres-test-container>
+    <version.elasticsearch-test-container>1.20.6</version.elasticsearch-test-container>
+    <version.postgres-test-container>1.20.6</version.postgres-test-container>
     <version.elasticsearch7>7.17.28</version.elasticsearch7>
     <!-- the lucene version must be coupled with version.elasticsearch7 -->
     <version.lucene>8.11.3</version.lucene>

@@ -17,6 +17,11 @@ package io.camunda.zeebe.client.api.response;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+/**
+ * @deprecated since 8.8 for removal in 8.9, replaced by {@link
+ *     io.camunda.client.api.response.DocumentReferenceResponse}
+ */
+@Deprecated
 public interface DocumentReferenceResponse {
 
   @JsonProperty("camunda.document.type")

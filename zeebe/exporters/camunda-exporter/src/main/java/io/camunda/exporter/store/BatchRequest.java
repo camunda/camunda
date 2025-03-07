@@ -33,27 +33,9 @@ public interface BatchRequest {
       Map<String, Object> updateFields,
       String routing);
 
-  BatchRequest upsertWithScript(
-      String index,
-      String id,
-      ExporterEntity entity,
-      String script,
-      Map<String, Object> parameters);
-
-  BatchRequest upsertWithScriptAndRouting(
-      String index,
-      String id,
-      ExporterEntity entity,
-      String script,
-      Map<String, Object> parameters,
-      String routing);
-
   BatchRequest update(String index, String id, Map<String, Object> updateFields);
 
   BatchRequest update(String index, String id, ExporterEntity entity) throws PersistenceException;
-
-  BatchRequest updateWithScript(
-      String index, String id, String script, Map<String, Object> parameters);
 
   BatchRequest delete(String index, String id);
 

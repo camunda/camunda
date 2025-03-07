@@ -2,7 +2,7 @@ version: "3.6"
 
 services:
   elasticsearch:
-    image: docker.elastic.co/elasticsearch/elasticsearch:8.17.2
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.17.3
     container_name: elasticsearch
     environment:
       - discovery.type=single-node
@@ -23,7 +23,7 @@ services:
       - ./els-snapshots:/usr/local/els-snapshots
   postgres:
     container_name: postgres
-    image: postgres:17.2-alpine
+    image: postgres:17.4-alpine
     ports:
       - "5432:5432"
     environment:
@@ -57,7 +57,7 @@ services:
     depends_on:
       - keycloak
     container_name: identity
-    image: camunda/identity:8.6.8
+    image: camunda/identity:8.6.9
     ports:
       - "8080:8080"
     volumes:

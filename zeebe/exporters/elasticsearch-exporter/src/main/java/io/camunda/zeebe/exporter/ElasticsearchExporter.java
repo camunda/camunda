@@ -95,6 +95,8 @@ public class ElasticsearchExporter implements Exporter {
 
   @Override
   public void close() {
+    // the client is only created in some lifecycles, so during others (e.g. validation) it may not
+    // exist, in which case there's no point flushing or doing anything
     if (client != null) {
       try {
         flush();
@@ -109,6 +111,7 @@ public class ElasticsearchExporter implements Exporter {
         log.warn("Failed to close elasticsearch client", e);
       }
     }
+
     try {
       pluginRepository.close();
     } catch (final Exception e) {
