@@ -26,7 +26,7 @@ env:
 jobs:
   deploy-camunda-docker-saas:
     name: Deploy Camunda Docker image
-    runs-on: ubuntu-latest
+    runs-on: gcp-perf-core-8-default
     timeout-minutes: 20
     permissions:
       contents: 'read'
