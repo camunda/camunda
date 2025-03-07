@@ -108,22 +108,21 @@ public class MappingTest {
     final var claimName = UUID.randomUUID().toString();
     final var claimValue = UUID.randomUUID().toString();
     final var name = UUID.randomUUID().toString();
-    final var mappingKey =
-        engine
-            .mapping()
-            .newMapping(claimName)
-            .withClaimValue(claimValue)
-            .withName(name)
-            .create()
-            .getKey();
+    final var id = UUID.randomUUID().toString();
+
+    engine
+        .mapping()
+        .newMapping(claimName)
+        .withClaimValue(claimValue)
+        .withName(name)
+        .withId(id)
+        .create();
 
     // when
-    final var deletedMapping = engine.mapping().deleteMapping(mappingKey).delete().getValue();
+    final var deletedMapping = engine.mapping().deleteMapping(id).delete().getValue();
 
     // then
-    Assertions.assertThat(deletedMapping)
-        .isNotNull()
-        .hasFieldOrPropertyWithValue("mappingKey", mappingKey);
+    Assertions.assertThat(deletedMapping).isNotNull().hasFieldOrPropertyWithValue("id", id);
   }
 
   @Test
@@ -148,7 +147,7 @@ public class MappingTest {
         .add();
 
     // when
-    engine.mapping().deleteMapping(mappingRecord.getKey()).delete();
+    engine.mapping().deleteMapping(mappingRecord.getValue().getId()).delete();
 
     // then
     Assertions.assertThat(
@@ -168,12 +167,12 @@ public class MappingTest {
   @Test
   public void shouldRejectIfMappingIsNotPresent() {
     // when
-    final var deletedMapping = engine.mapping().deleteMapping(1L).expectRejection().delete();
+    final var deletedMapping = engine.mapping().deleteMapping("id").expectRejection().delete();
 
     // then
     assertThat(deletedMapping)
         .hasRejectionType(RejectionType.NOT_FOUND)
         .hasRejectionReason(
-            "Expected to delete mapping with key '1', but a mapping with this key does not exist.");
+            "Expected to delete mapping with id 'id', but a mapping with this id does not exist.");
   }
 }

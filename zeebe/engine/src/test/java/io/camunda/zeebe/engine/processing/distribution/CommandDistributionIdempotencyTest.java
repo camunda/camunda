@@ -325,7 +325,7 @@ public class CommandDistributionIdempotencyTest {
                 MappingIntent.DELETE,
                 () -> {
                   final var mapping = createMapping();
-                  return ENGINE.mapping().deleteMapping(mapping.getKey()).delete();
+                  return ENGINE.mapping().deleteMapping(mapping.getValue().getId()).delete();
                 }),
             MappingDeleteProcessor.class
           },

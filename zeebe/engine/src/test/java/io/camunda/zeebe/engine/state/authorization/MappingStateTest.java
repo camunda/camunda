@@ -213,15 +213,21 @@ public class MappingStateTest {
     final long key = 1L;
     final String claimName = "foo";
     final String claimValue = "bar";
+    final String id = "id";
     final var mapping =
-        new MappingRecord().setMappingKey(key).setClaimName(claimName).setClaimValue(claimValue);
+        new MappingRecord()
+            .setId(id)
+            .setMappingKey(key)
+            .setClaimName(claimName)
+            .setClaimValue(claimValue);
     mappingState.create(mapping);
 
     // when
-    mappingState.delete(key);
+    mappingState.delete(id);
 
     // then
     assertThat(mappingState.get(key)).isEmpty();
+    assertThat(mappingState.get(id)).isEmpty();
     assertThat(mappingState.get(claimName, claimValue)).isEmpty();
   }
 
