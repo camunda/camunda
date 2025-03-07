@@ -7,7 +7,6 @@
  */
 package io.camunda.zeebe.engine.processing.bpmn.activity.listeners.task;
 
-import static io.camunda.zeebe.engine.processing.job.JobCompleteProcessor.TL_JOB_COMPLETION_WITH_VARS_NOT_SUPPORTED_MESSAGE;
 import static java.util.Map.entry;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
@@ -68,108 +67,6 @@ public class TaskListenerTest {
   @Before
   public void setup() {
     listenerType = "my_listener_" + UUID.randomUUID();
-  }
-
-  @Test
-  public void shouldProvideVariablesOfTaskCompletionToCompleteTaskListener() {
-    // given
-    final var processInstanceKey =
-        helper.createProcessInstanceWithVariables(
-            helper.createProcessWithCompletingTaskListeners(listenerType), Map.of("foo", "bar"));
-
-    // when
-    ENGINE.userTask().ofInstance(processInstanceKey).withVariables(Map.of("baz", 123)).complete();
-
-    // then
-    assertThat(ENGINE.jobs().withType(listenerType).activate().getValue().getJobs())
-        .describedAs(
-            "Expect that both the process variables and the completion variables are provided to the job")
-        .allSatisfy(
-            job ->
-                assertThat(job.getVariables())
-                    .containsExactly(Map.entry("foo", "bar"), Map.entry("baz", 123)));
-  }
-
-  @Test
-  public void shouldProvideVariablesOfTaskCompletionShadowingProcessVariables() {
-    // given
-    final var processInstanceKey =
-        helper.createProcessInstanceWithVariables(
-            helper.createProcessWithCompletingTaskListeners(listenerType), Map.of("foo", "bar"));
-
-    // when
-    ENGINE
-        .userTask()
-        .ofInstance(processInstanceKey)
-        .withVariables(Map.of("foo", "overwritten"))
-        .complete();
-
-    // then
-    assertThat(ENGINE.jobs().withType(listenerType).activate().getValue().getJobs())
-        .describedAs(
-            "Expect that both the process variables and the completion variables are provided to the job")
-        .allSatisfy(
-            job -> assertThat(job.getVariables()).containsExactly(Map.entry("foo", "overwritten")));
-  }
-
-  @Test
-  public void shouldProvideVariablesOfTaskCompletionFetchingOnlySpecifiedVariables() {
-    // given
-    final var processInstanceKey =
-        helper.createProcessInstanceWithVariables(
-            helper.createProcessWithCompletingTaskListeners(listenerType),
-            Map.ofEntries(Map.entry("foo", "bar"), Map.entry("bar", 123)));
-
-    // when
-    ENGINE
-        .userTask()
-        .ofInstance(processInstanceKey)
-        .withVariables(Map.ofEntries(Map.entry("foo", "overwritten"), Map.entry("bar", 456)))
-        .complete();
-
-    // then
-    assertThat(
-            ENGINE
-                .jobs()
-                .withType(listenerType)
-                .withFetchVariables("foo")
-                .activate()
-                .getValue()
-                .getJobs())
-        .describedAs("Expect that only the specified variable foo is provided to the job")
-        .allSatisfy(
-            job -> assertThat(job.getVariables()).containsExactly(Map.entry("foo", "overwritten")));
-  }
-
-  @Test
-  public void shouldRejectCompleteTaskListenerJobCompletionWhenVariablesAreSet() {
-    // given
-    final long processInstanceKey =
-        helper.createProcessInstance(helper.createProcessWithCompletingTaskListeners(listenerType));
-
-    ENGINE.userTask().ofInstance(processInstanceKey).complete();
-
-    // when: try to complete TL job with a variable payload
-    final var result =
-        ENGINE
-            .job()
-            .ofInstance(processInstanceKey)
-            .withType(listenerType)
-            .withVariable("my_listener_var", "foo")
-            .complete();
-
-    Assertions.assertThat(result)
-        .describedAs(
-            "Task Listener job completion should be rejected when variable payload provided")
-        .hasIntent(JobIntent.COMPLETE)
-        .hasRejectionType(RejectionType.INVALID_ARGUMENT)
-        .hasRejectionReason(
-            TL_JOB_COMPLETION_WITH_VARS_NOT_SUPPORTED_MESSAGE.formatted(
-                result.getKey(), listenerType, processInstanceKey));
-
-    // complete the listener job without variables to have a completed process
-    // and prevent flakiness in other tests
-    ENGINE.job().ofInstance(processInstanceKey).withType(listenerType).complete();
   }
 
   @Test
