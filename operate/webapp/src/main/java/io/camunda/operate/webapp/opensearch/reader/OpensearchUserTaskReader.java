@@ -7,7 +7,7 @@
  */
 package io.camunda.operate.webapp.opensearch.reader;
 
-import static io.camunda.operate.store.opensearch.dsl.QueryDSL.matchAll;
+import static io.camunda.operate.store.opensearch.dsl.QueryDSL.and;
 import static io.camunda.operate.store.opensearch.dsl.QueryDSL.term;
 import static io.camunda.operate.store.opensearch.dsl.QueryDSL.withTenantCheck;
 import static io.camunda.operate.store.opensearch.dsl.RequestDSL.searchRequestBuilder;
@@ -18,9 +18,11 @@ import io.camunda.webapps.schema.descriptors.tasklist.template.SnapshotTaskVaria
 import io.camunda.webapps.schema.descriptors.tasklist.template.TaskTemplate;
 import io.camunda.webapps.schema.entities.tasklist.SnapshotTaskVariableEntity;
 import io.camunda.webapps.schema.entities.tasklist.TaskEntity;
+import io.camunda.webapps.schema.entities.tasklist.TaskJoinRelationship.TaskJoinRelationshipType;
 import java.util.List;
 import java.util.Optional;
 import org.opensearch.client.opensearch._types.FieldValue;
+import org.opensearch.client.opensearch._types.query_dsl.Query;
 import org.opensearch.client.opensearch._types.query_dsl.QueryBuilders;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Conditional;
@@ -30,6 +32,8 @@ import org.springframework.stereotype.Component;
 @Component
 public class OpensearchUserTaskReader extends OpensearchAbstractReader implements UserTaskReader {
 
+  private static final Query TASK_QUERY =
+      term(TaskTemplate.JOIN_FIELD_NAME, TaskJoinRelationshipType.TASK.getType());
   private final TaskTemplate taskTemplate;
   private final SnapshotTaskVariableTemplate snapshotTaskVariableTemplate;
 
@@ -44,7 +48,7 @@ public class OpensearchUserTaskReader extends OpensearchAbstractReader implement
   @Override
   public List<TaskEntity> getUserTasks() {
     final var request =
-        searchRequestBuilder(taskTemplate.getAlias()).query(withTenantCheck(matchAll()));
+        searchRequestBuilder(taskTemplate.getAlias()).query(withTenantCheck(TASK_QUERY));
     return richOpenSearchClient.doc().searchValues(request, TaskEntity.class);
   }
 
@@ -52,7 +56,11 @@ public class OpensearchUserTaskReader extends OpensearchAbstractReader implement
   public Optional<TaskEntity> getUserTaskByFlowNodeInstanceKey(final long flowNodeInstanceKey) {
     final var request =
         searchRequestBuilder(taskTemplate.getAlias())
-            .query(withTenantCheck(term(TaskTemplate.FLOW_NODE_INSTANCE_ID, flowNodeInstanceKey)));
+            .query(
+                withTenantCheck(
+                    and(
+                        TASK_QUERY,
+                        term(TaskTemplate.FLOW_NODE_INSTANCE_ID, flowNodeInstanceKey))));
 
     final var hits = richOpenSearchClient.doc().search(request, TaskEntity.class).hits();
     if (hits.total().value() == 1) {
