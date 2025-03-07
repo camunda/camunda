@@ -7,12 +7,29 @@
  */
 package io.camunda.zeebe.engine.processing.bpmn.activity.listeners.task;
 
+import static io.camunda.zeebe.test.util.record.RecordingExporter.jobRecords;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.tuple;
+
 import io.camunda.zeebe.engine.util.EngineRule;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskListenerEventType;
+import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
+import io.camunda.zeebe.protocol.record.Assertions;
+import io.camunda.zeebe.protocol.record.Record;
+import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
+import io.camunda.zeebe.protocol.record.intent.JobIntent;
+import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
+import io.camunda.zeebe.protocol.record.value.JobListenerEventType;
+import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
+import java.util.List;
+import java.util.Map;
 import java.util.UUID;
+import org.apache.commons.lang3.StringUtils;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Rule;
+import org.junit.Test;
 import org.junit.rules.TestWatcher;
 
 /** Tests verifying that a task listener blocks the lifecycle transition of a user task. */
@@ -26,5 +43,419 @@ public class TaskListenerBlockedTransitionTest {
   @Before
   public void setup() {
     listenerType = "my_listener_" + UUID.randomUUID();
+  }
+
+  @Test
+  public void shouldCompleteUserTaskAfterAllCompleteTaskListenersAreExecuted() {
+    // given
+    final long processInstanceKey =
+        helper.createProcessInstance(
+            helper.createProcessWithCompletingTaskListeners(
+                listenerType, listenerType + "_2", listenerType + "_3"));
+
+    // when
+    ENGINE
+        .userTask()
+        .ofInstance(processInstanceKey)
+        .withVariable("foo_var", "bar")
+        .withAction("my_custom_action")
+        .complete();
+    helper.completeJobs(processInstanceKey, listenerType, listenerType + "_2", listenerType + "_3");
+
+    // then
+    helper.assertTaskListenerJobsCompletionSequence(
+        processInstanceKey,
+        JobListenerEventType.COMPLETING,
+        listenerType,
+        listenerType + "_2",
+        listenerType + "_3");
+
+    // ensure that `COMPLETE_TASK_LISTENER` commands were triggered between
+    // `COMPLETING` and `COMPLETED` events
+    helper.assertUserTaskIntentsSequence(
+        processInstanceKey,
+        UserTaskIntent.COMPLETING,
+        UserTaskIntent.COMPLETE_TASK_LISTENER,
+        UserTaskIntent.COMPLETE_TASK_LISTENER,
+        UserTaskIntent.COMPLETE_TASK_LISTENER,
+        UserTaskIntent.COMPLETED);
+
+    helper.assertUserTaskRecordWithIntent(
+        processInstanceKey,
+        UserTaskIntent.COMPLETED,
+        userTask ->
+            Assertions.assertThat(userTask)
+                .hasAction("my_custom_action")
+                .hasVariables(Map.of("foo_var", "bar"))
+                .hasNoChangedAttributes());
+    helper.assertThatProcessInstanceCompleted(processInstanceKey);
+  }
+
+  @Test
+  public void shouldAssignUserTaskAfterAllAssignmentTaskListenersAreExecuted() {
+    // given
+    final long processInstanceKey =
+        helper.createProcessInstance(
+            helper.createUserTaskWithTaskListeners(
+                ZeebeTaskListenerEventType.assigning,
+                listenerType,
+                listenerType + "_2",
+                listenerType + "_3"));
+
+    // when
+    ENGINE
+        .userTask()
+        .ofInstance(processInstanceKey)
+        .withAssignee("me")
+        .withAction("my_assign_action")
+        .assign();
+    helper.completeJobs(processInstanceKey, listenerType, listenerType + "_2", listenerType + "_3");
+
+    // then
+    helper.assertTaskListenerJobsCompletionSequence(
+        processInstanceKey,
+        JobListenerEventType.ASSIGNING,
+        listenerType,
+        listenerType + "_2",
+        listenerType + "_3");
+
+    // ensure that `COMPLETE_TASK_LISTENER` commands were triggered between
+    // `ASSIGNING` and `ASSIGNED` events
+    helper.assertUserTaskIntentsSequence(
+        processInstanceKey,
+        UserTaskIntent.ASSIGNING,
+        UserTaskIntent.COMPLETE_TASK_LISTENER,
+        UserTaskIntent.COMPLETE_TASK_LISTENER,
+        UserTaskIntent.COMPLETE_TASK_LISTENER,
+        UserTaskIntent.ASSIGNED);
+
+    helper.assertUserTaskRecordWithIntent(
+        processInstanceKey,
+        UserTaskIntent.ASSIGNED,
+        userTask ->
+            Assertions.assertThat(userTask)
+                .hasAssignee("me")
+                .hasAction("my_assign_action")
+                .hasOnlyChangedAttributes(UserTaskRecord.ASSIGNEE));
+  }
+
+  @Test
+  public void shouldExecuteAllAssigningListenersOnUnassignmentAfterSuccessfulAssignment() {
+    // given: a user task with multiple `assigning` task listeners
+    final long processInstanceKey =
+        helper.createProcessInstance(
+            helper.createUserTaskWithTaskListeners(
+                ZeebeTaskListenerEventType.assigning,
+                listenerType,
+                listenerType + "_2",
+                listenerType + "_3"));
+
+    // when: assign the user task to "me" and complete all `assigning` listener jobs
+    ENGINE.userTask().ofInstance(processInstanceKey).withAssignee("me").assign();
+    helper.completeJobs(processInstanceKey, listenerType, listenerType + "_2", listenerType + "_3");
+
+    // and: unassign the user task and complete all `assigning` listener jobs again
+    ENGINE.userTask().ofInstance(processInstanceKey).unassign();
+    helper.completeRecreatedJobs(
+        processInstanceKey, listenerType, listenerType + "_2", listenerType + "_3");
+
+    // then: all `assigning` listeners should be executed for both assign and unassign operations
+    helper.assertTaskListenerJobsCompletionSequence(
+        processInstanceKey,
+        JobListenerEventType.ASSIGNING,
+        listenerType,
+        listenerType + "_2",
+        listenerType + "_3",
+        listenerType,
+        listenerType + "_2",
+        listenerType + "_3");
+
+    // and: user task should be correctly assigned and unassigned
+    assertThat(
+            RecordingExporter.userTaskRecords(UserTaskIntent.ASSIGNED)
+                .withProcessInstanceKey(processInstanceKey)
+                .limit(2))
+        .describedAs(
+            "Expected user task assignment and unassignment actions to be recorded correctly")
+        .extracting(r -> r.getValue().getAssignee(), r -> r.getValue().getAction())
+        .containsExactly(
+            tuple("me", "assign"), // First assignment
+            tuple("", "unassign") // Unassignment
+            );
+  }
+
+  @Test
+  public void shouldUpdateUserTaskAfterAllUpdatingTaskListenersAreExecuted() {
+    // given
+    final long processInstanceKey =
+        helper.createProcessInstance(
+            helper.createUserTaskWithTaskListeners(
+                ZeebeTaskListenerEventType.updating,
+                listenerType,
+                listenerType + "_2",
+                listenerType + "_3"));
+
+    // when
+    ENGINE
+        .userTask()
+        .ofInstance(processInstanceKey)
+        .withAction("my_update_action")
+        .withCandidateUsers("samwise", "frodo")
+        .withPriority(88)
+        .update();
+    helper.completeJobs(processInstanceKey, listenerType, listenerType + "_2", listenerType + "_3");
+
+    // then
+    helper.assertTaskListenerJobsCompletionSequence(
+        processInstanceKey,
+        JobListenerEventType.UPDATING,
+        listenerType,
+        listenerType + "_2",
+        listenerType + "_3");
+
+    // ensure that `COMPLETE_TASK_LISTENER` commands were triggered between
+    // `UPDATING` and `UPDATED` events
+    helper.assertUserTaskIntentsSequence(
+        processInstanceKey,
+        UserTaskIntent.UPDATING,
+        UserTaskIntent.COMPLETE_TASK_LISTENER,
+        UserTaskIntent.COMPLETE_TASK_LISTENER,
+        UserTaskIntent.COMPLETE_TASK_LISTENER,
+        UserTaskIntent.UPDATED);
+
+    helper.assertUserTaskRecordWithIntent(
+        processInstanceKey,
+        UserTaskIntent.UPDATED,
+        userTask ->
+            Assertions.assertThat(userTask)
+                .hasAssignee("")
+                .hasCandidateGroupsList(List.of())
+                .hasCandidateUsersList(List.of("samwise", "frodo")) // updated
+                .hasDueDate("")
+                .hasFollowUpDate("")
+                .hasPriority(88) // updated
+                .hasAction("my_update_action")
+                .hasOnlyChangedAttributes(UserTaskRecord.CANDIDATE_USERS, UserTaskRecord.PRIORITY));
+  }
+
+  @Test
+  public void shouldExecuteAllUpdatingListenersOnRepeatedUserTaskUpdates() {
+    // given: a user task with multiple `updating` task listeners
+    final long processInstanceKey =
+        helper.createProcessInstance(
+            helper.createUserTaskWithTaskListeners(
+                ZeebeTaskListenerEventType.updating,
+                listenerType,
+                listenerType + "_2",
+                listenerType + "_3"));
+
+    // when: update the user task with new candidate users
+    ENGINE
+        .userTask()
+        .ofInstance(processInstanceKey)
+        .withCandidateUsers("frodo", "samwise")
+        .update();
+
+    // complete all `updating` listener jobs
+    helper.completeJobs(processInstanceKey, listenerType, listenerType + "_2", listenerType + "_3");
+
+    // and: update the user task again with new candidate users and priority
+    ENGINE
+        .userTask()
+        .ofInstance(processInstanceKey)
+        .withAction("escalate")
+        .withCandidateUsers("aragorn", "legolas")
+        .withPriority(99)
+        .update();
+
+    // complete all `updating` listener jobs for the second update
+    helper.completeRecreatedJobs(
+        processInstanceKey, listenerType, listenerType + "_2", listenerType + "_3");
+
+    // then: all `updating` listeners should execute for both update operations
+    helper.assertTaskListenerJobsCompletionSequence(
+        processInstanceKey,
+        JobListenerEventType.UPDATING,
+        listenerType,
+        listenerType + "_2",
+        listenerType + "_3",
+        listenerType,
+        listenerType + "_2",
+        listenerType + "_3");
+
+    // and: user task should be correctly updated after both update operations
+    assertThat(
+            RecordingExporter.userTaskRecords(UserTaskIntent.UPDATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .limit(2))
+        .describedAs(
+            "Expected user task updates to be recorded correctly after all updating listeners execute")
+        .extracting(
+            r -> r.getValue().getCandidateUsersList(),
+            r -> r.getValue().getPriority(),
+            r -> r.getValue().getAction(),
+            r -> r.getValue().getChangedAttributes())
+        .containsExactly(
+            // First update
+            tuple(
+                List.of("frodo", "samwise"), 50, "update", List.of(UserTaskRecord.CANDIDATE_USERS)),
+            // Second update
+            tuple(
+                List.of("aragorn", "legolas"),
+                99,
+                "escalate",
+                List.of(UserTaskRecord.CANDIDATE_USERS, UserTaskRecord.PRIORITY)));
+  }
+
+  @Test
+  public void shouldCancelTaskListenerJobWhenTerminatingElementInstance() {
+    // given
+    final long processInstanceKey =
+        helper.createProcessInstance(
+            helper.createProcessWithAssigningTaskListeners(listenerType, listenerType + "_2"));
+
+    ENGINE.userTask().ofInstance(processInstanceKey).withAssignee("samwise").assign();
+
+    helper.completeJobs(processInstanceKey, listenerType);
+
+    final var listenerJob =
+        jobRecords(JobIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withType(listenerType + "_2")
+            .getFirst();
+
+    // when
+    ENGINE.processInstance().withInstanceKey(processInstanceKey).cancel();
+
+    // then
+    assertThat(jobRecords(JobIntent.CANCELED).withProcessInstanceKey(processInstanceKey).getFirst())
+        .extracting(Record::getKey)
+        .isEqualTo(listenerJob.getKey());
+  }
+
+  @Test
+  public void shouldResolveTaskListenerIncidentWhenTerminatingElementInstance() {
+    // given
+    final long processInstanceKey =
+        helper.createProcessInstance(
+            helper.createProcessWithAssigningTaskListeners(listenerType, listenerType + "_2"));
+
+    ENGINE.userTask().ofInstance(processInstanceKey).withAssignee("samwise").assign();
+
+    helper.completeJobs(processInstanceKey, listenerType);
+    ENGINE.job().ofInstance(processInstanceKey).withType(listenerType + "_2").withRetries(0).fail();
+
+    final var incident =
+        RecordingExporter.incidentRecords(IncidentIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst();
+
+    // when
+    ENGINE.processInstance().withInstanceKey(processInstanceKey).cancel();
+
+    // then
+    assertThat(
+            RecordingExporter.incidentRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .withIntent(IncidentIntent.RESOLVED)
+                .getFirst())
+        .extracting(Record::getKey)
+        .isEqualTo(incident.getKey());
+  }
+
+
+
+  @Test
+  public void shouldClaimUserTaskAfterAllAssignmentTaskListenersAreExecuted() {
+    // given
+    final long processInstanceKey =
+        helper.createProcessInstance(
+            helper.createUserTaskWithTaskListeners(
+                ZeebeTaskListenerEventType.assigning, listenerType, listenerType + "_2"));
+
+    // when
+    ENGINE
+        .userTask()
+        .ofInstance(processInstanceKey)
+        .withAssignee("test_user")
+        .withAction("claim_action")
+        .claim();
+    helper.completeJobs(processInstanceKey, listenerType, listenerType + "_2");
+
+    // then
+    helper.assertTaskListenerJobsCompletionSequence(
+        processInstanceKey, JobListenerEventType.ASSIGNING, listenerType, listenerType + "_2");
+
+    // ensure that `COMPLETE_TASK_LISTENER` commands were triggered between
+    // `CLAIMING` and `ASSIGNED` events
+    helper.assertUserTaskIntentsSequence(
+        processInstanceKey,
+        UserTaskIntent.CLAIMING,
+        UserTaskIntent.COMPLETE_TASK_LISTENER,
+        UserTaskIntent.COMPLETE_TASK_LISTENER,
+        UserTaskIntent.ASSIGNED);
+
+    helper.assertUserTaskRecordWithIntent(
+        processInstanceKey,
+        UserTaskIntent.ASSIGNED,
+        userTask ->
+            Assertions.assertThat(userTask)
+                .hasAssignee("test_user")
+                .hasAction("claim_action")
+                .hasOnlyChangedAttributes(UserTaskRecord.ASSIGNEE));
+  }
+
+  @Test
+  public void shouldTriggerAssignmentListenersAfterUserTaskCreationWithDefinedAssigneeProperty() {
+    // given
+    final var assignee = "peregrin";
+    final var action = StringUtils.EMPTY;
+
+    // when: process instance is created with a UT having an `assignee` and `assignment` listeners
+    final long processInstanceKey =
+        helper.createProcessInstance(
+            helper.createProcessWithZeebeUserTask(
+                task ->
+                    task.zeebeAssignee(assignee)
+                        .zeebeTaskListener(l -> l.assigning().type(listenerType))
+                        .zeebeTaskListener(l -> l.assigning().type(listenerType + "_2"))
+                        .zeebeTaskListener(l -> l.assigning().type(listenerType + "_3"))));
+
+    // await user task creation
+    RecordingExporter.userTaskRecords(UserTaskIntent.CREATED)
+        .withProcessInstanceKey(processInstanceKey)
+        .await();
+
+    // when
+    helper.completeJobs(processInstanceKey, listenerType, listenerType + "_2", listenerType + "_3");
+
+    // then: verify the task listener completion sequence for the assignment event
+    helper.assertTaskListenerJobsCompletionSequence(
+        processInstanceKey,
+        JobListenerEventType.ASSIGNING,
+        listenerType,
+        listenerType + "_2",
+        listenerType + "_3");
+
+    // verify that UT records follows the expected intents sequence from `CREATING` to `ASSIGNED`
+    assertThat(
+            RecordingExporter.userTaskRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .limit(r -> r.getIntent() == UserTaskIntent.ASSIGNED))
+        .as(
+            "Verify the sequence of intents, `assignee`, `action` and `changedAttributes` properties emitted for the user task")
+        .extracting(
+            Record::getIntent,
+            r -> r.getValue().getAssignee(),
+            r -> r.getValue().getAction(),
+            r -> r.getValue().getChangedAttributes())
+        .containsExactly(
+            tuple(UserTaskIntent.CREATING, StringUtils.EMPTY, action, List.of()),
+            tuple(UserTaskIntent.CREATED, StringUtils.EMPTY, action, List.of()),
+            tuple(UserTaskIntent.ASSIGNING, assignee, action, List.of(UserTaskRecord.ASSIGNEE)),
+            tuple(UserTaskIntent.COMPLETE_TASK_LISTENER, assignee, action, List.of()),
+            tuple(UserTaskIntent.COMPLETE_TASK_LISTENER, assignee, action, List.of()),
+            tuple(UserTaskIntent.COMPLETE_TASK_LISTENER, assignee, action, List.of()),
+            tuple(UserTaskIntent.ASSIGNED, assignee, action, List.of(UserTaskRecord.ASSIGNEE)));
   }
 }
