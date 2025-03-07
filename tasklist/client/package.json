@@ -11,7 +11,7 @@
     "@carbon/elements": "11.62.0",
     "@carbon/react": "1.75.0",
     "@monaco-editor/react": "4.7.0",
-    "@tanstack/eslint-plugin-query": "5.66.0",
+    "@tanstack/eslint-plugin-query": "5.67.2",
     "@tanstack/react-query": "5.67.1",
     "@uidotdev/usehooks": "2.4.1",
     "bpmn-js": "18.3.1",
