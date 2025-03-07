@@ -8,7 +8,6 @@
 package io.camunda.operate.zeebeimport.v8_6.processors;
 
 import static io.camunda.operate.schema.templates.JobTemplate.*;
-import static io.camunda.operate.schema.templates.TemplateDescriptor.POSITION;
 import static io.camunda.operate.util.LambdaExceptionUtil.rethrowConsumer;
 
 import io.camunda.operate.entities.*;
@@ -54,9 +53,7 @@ public class JobZeebeRecordProcessor {
   @Autowired private JobTemplate jobTemplate;
 
   public void processJobRecords(
-      final Map<Long, List<Record<JobRecordValue>>> records,
-      final BatchRequest batchRequest,
-      final boolean concurrencyMode)
+      final Map<Long, List<Record<JobRecordValue>>> records, final BatchRequest batchRequest)
       throws PersistenceException {
     LOGGER.debug("Importing Job records.");
     for (final List<Record<JobRecordValue>> flowNodeJobRecords : records.values()) {
@@ -70,7 +67,7 @@ public class JobZeebeRecordProcessor {
             rethrowConsumer(
                 record -> {
                   final JobRecordValue recordValue = (JobRecordValue) record.getValue();
-                  processJob(record, recordValue, batchRequest, concurrencyMode);
+                  processJob(record, recordValue, batchRequest);
                 }));
       }
     }
@@ -95,10 +92,7 @@ public class JobZeebeRecordProcessor {
   }
 
   private void processJob(
-      final Record record,
-      final JobRecordValue recordValue,
-      final BatchRequest batchRequest,
-      final boolean concurrencyMode)
+      final Record record, final JobRecordValue recordValue, final BatchRequest batchRequest)
       throws PersistenceException {
     final JobEntity jobEntity =
         new JobEntity()
