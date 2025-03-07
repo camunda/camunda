@@ -8,12 +8,14 @@
 package io.camunda.zeebe.engine.processing.bpmn.activity.listeners.task;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.entry;
 import static org.assertj.core.groups.Tuple.tuple;
 
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.model.bpmn.builder.UserTaskBuilder;
+import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
 import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.Record;
@@ -22,12 +24,14 @@ import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import io.camunda.zeebe.protocol.record.intent.VariableDocumentIntent;
 import io.camunda.zeebe.protocol.record.intent.VariableIntent;
+import io.camunda.zeebe.protocol.record.value.JobRecordValue;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.function.Consumer;
 import java.util.function.UnaryOperator;
 import org.junit.Before;
 import org.junit.ClassRule;
@@ -139,6 +143,43 @@ public class UserTaskVariableUpdateTest {
             tuple(UserTaskIntent.UPDATED, List.of(UserTaskRecord.VARIABLES)));
   }
 
+  @Test
+  public void
+      shouldActivateUpdatingListenerJobWithCorrectChangedAttributesHeaderAndVariablesOnTaskVariableUpdate() {
+    // given: a process instance with a Camunda user task wit `updating` listener
+    final long processInstanceKey =
+        createProcessInstanceWithVariables(
+            createProcessWithCamundaUserTask(
+                t -> t.zeebeTaskListener(l -> l.updating().type(listenerType + "_updating"))),
+            Map.of("approvalStatus", "PENDING", "employeeId", "E12345"));
+
+    final var userTaskElementInstanceKey = getUserTaskElementInstanceKey(processInstanceKey);
+
+    // when: updating task-scoped variables
+    ENGINE
+        .variables()
+        .ofScope(userTaskElementInstanceKey)
+        .withDocument(Map.of("approvalStatus", "APPROVED"))
+        .expectPartialUpdate()
+        .update();
+
+    // then: expect a job to be activated for the first `updating` listener
+    assertActivatedJob(
+        processInstanceKey,
+        listenerType + "_updating",
+        job -> {
+          assertThat(job.getCustomHeaders())
+              .describedAs("Expect job custom headers to indicate that `variables` were changed")
+              .contains(
+                  entry(Protocol.USER_TASK_CHANGED_ATTRIBUTES_HEADER_NAME, "[\"variables\"]"));
+
+          assertThat(job.getVariables())
+              .describedAs(
+                  "Expect job variables to include the updated 'approvalStatus' and retain 'employeeId'")
+              .containsExactly(entry("approvalStatus", "APPROVED"), entry("employeeId", "E12345"));
+        });
+  }
+
   // utils
   private long createProcessInstance(final BpmnModelInstance modelInstance) {
     return createProcessInstanceWithVariables(modelInstance, Collections.emptyMap());
@@ -161,5 +202,25 @@ public class UserTaskVariableUpdateTest {
         .userTask(USER_TASK_ELEMENT_ID, t -> userTaskBuilderFunction.apply(t.zeebeUserTask()))
         .endEvent()
         .done();
+  }
+
+  private void assertActivatedJob(
+      final long processInstanceKey,
+      final String jobType,
+      final Consumer<JobRecordValue> assertion) {
+    final var activatedJob =
+        ENGINE.jobs().withType(jobType).activate().getValue().getJobs().stream()
+            .filter(job -> job.getProcessInstanceKey() == processInstanceKey)
+            .findFirst()
+            .orElseThrow(() -> new AssertionError("No job found with type " + jobType));
+    assertThat(activatedJob).satisfies(assertion);
+  }
+
+  private static long getUserTaskElementInstanceKey(final long processInstanceKey) {
+    return RecordingExporter.userTaskRecords(UserTaskIntent.CREATED)
+        .withProcessInstanceKey(processInstanceKey)
+        .getFirst()
+        .getValue()
+        .getElementInstanceKey();
   }
 }

@@ -29,6 +29,12 @@ public final class VariableClient {
               RecordingExporter.variableDocumentRecords(VariableDocumentIntent.UPDATED)
                   .withSourceRecordPosition(sourceRecordPosition)
                   .getFirst();
+  private static final LongFunction<Record<VariableDocumentRecordValue>>
+      PARTIAL_SUCCESS_EXPECTATION_SUPPLIER =
+          (sourceRecordPosition) ->
+              RecordingExporter.variableDocumentRecords(VariableDocumentIntent.UPDATING)
+                  .withSourceRecordPosition(sourceRecordPosition)
+                  .getFirst();
 
   private static final LongFunction<Record<VariableDocumentRecordValue>>
       REJECTION_EXPECTATION_SUPPLIER =
@@ -82,6 +88,11 @@ public final class VariableClient {
 
   public VariableClient expectRejection() {
     expectation = REJECTION_EXPECTATION_SUPPLIER;
+    return this;
+  }
+
+  public VariableClient expectPartialUpdate() {
+    expectation = PARTIAL_SUCCESS_EXPECTATION_SUPPLIER;
     return this;
   }
 

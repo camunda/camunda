@@ -225,11 +225,7 @@ public final class BpmnProcessors {
         ValueType.VARIABLE_DOCUMENT,
         VariableDocumentIntent.UPDATE,
         new VariableDocumentUpdateProcessor(
-            processingState,
-            keyGenerator,
-            bpmnBehaviors.variableBehavior(),
-            writers,
-            authCheckBehavior));
+            processingState, keyGenerator, bpmnBehaviors, writers, authCheckBehavior));
   }
 
   private static void addProcessInstanceCreationStreamProcessors(
