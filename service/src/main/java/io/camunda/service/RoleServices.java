@@ -9,7 +9,8 @@ package io.camunda.service;
 
 import io.camunda.search.clients.RoleSearchClient;
 import io.camunda.search.entities.RoleEntity;
-import io.camunda.search.exception.NotFoundException;
+import io.camunda.search.exception.CamundaSearchException;
+import io.camunda.search.exception.ErrorMessages;
 import io.camunda.search.query.RoleQuery;
 import io.camunda.search.query.SearchQueryBuilders;
 import io.camunda.search.query.SearchQueryResult;
@@ -85,7 +86,10 @@ public class RoleServices extends SearchQueryService<RoleServices, RoleQuery, Ro
   public RoleEntity getRole(final Long roleKey) {
     return findRole(roleKey)
         .orElseThrow(
-            () -> new NotFoundException("Role with roleKey %d not found".formatted(roleKey)));
+            () ->
+                new CamundaSearchException(
+                    ErrorMessages.ERROR_NOT_FOUND_ROLE_BY_KEY.formatted(roleKey),
+                    CamundaSearchException.Reason.NOT_FOUND));
   }
 
   public Optional<RoleEntity> findRole(final Long roleKey) {

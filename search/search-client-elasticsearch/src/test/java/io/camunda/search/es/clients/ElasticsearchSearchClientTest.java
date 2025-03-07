@@ -22,7 +22,7 @@ import co.elastic.clients.elasticsearch.core.SearchResponse;
 import co.elastic.clients.elasticsearch.core.search.Hit;
 import io.camunda.search.clients.core.SearchQueryRequest;
 import io.camunda.search.es.transformers.ElasticsearchTransformers;
-import io.camunda.search.exception.SearchQueryExecutionException;
+import io.camunda.search.exception.CamundaSearchException;
 import java.io.IOException;
 import java.util.List;
 import java.util.function.Function;
@@ -99,8 +99,7 @@ class ElasticsearchSearchClientTest {
 
     // when & Assert
     assertThrows(
-        SearchQueryExecutionException.class,
-        () -> searchClient.findAll(searchRequest, Object.class));
+        CamundaSearchException.class, () -> searchClient.findAll(searchRequest, Object.class));
     verify(client, never()).scroll(any(Function.class), any());
     verify(client, never()).clearScroll(any(Function.class));
   }
@@ -113,8 +112,7 @@ class ElasticsearchSearchClientTest {
 
     // when & Assert
     assertThrows(
-        SearchQueryExecutionException.class,
-        () -> searchClient.findAll(searchRequest, Object.class));
+        CamundaSearchException.class, () -> searchClient.findAll(searchRequest, Object.class));
     verify(client).clearScroll(any(Function.class));
   }
 }
