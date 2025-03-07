@@ -5,29 +5,40 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
+import {Camunda8} from '@camunda8/sdk';
+import {JSONDoc} from '@camunda8/sdk/dist/zeebe/types';
 
-import {ZBClient, IProcessVariables, JSONDoc} from 'zeebe-node';
-const zbc = new ZBClient(); // localhost:26500 || ZEEBE_GATEWAY_ADDRESS
-
-const deploy: typeof zbc.deployProcess = (processNames) => {
-  return zbc.deployProcess(processNames);
+const c8 = new Camunda8({
+  CAMUNDA_AUTH_STRATEGY: 'BASIC',
+  CAMUNDA_BASIC_AUTH_USERNAME: 'demo',
+  CAMUNDA_BASIC_AUTH_PASSWORD: 'demo',
+  CAMUNDA_OAUTH_DISABLED: true,
+  ZEEBE_REST_ADDRESS: 'http://localhost:8089',
+});
+const zeebe = c8.getCamundaRestClient();
+const deploy = async (processFilePaths: string[]) => {
+  try {
+    const results = await zeebe.deployResourcesFromFiles(processFilePaths);
+    return results;
+  } catch (error) {
+    console.error('Deployment failed:', error);
+    throw error;
+  }
 };
 
-const createInstances = <Variables extends JSONDoc = IProcessVariables>(
-  bpmnProcessId: string,
+const createInstances = async (
+  processDefinitionId: string,
   version: number,
   numberOfInstances: number,
-  variables?: Variables,
+  variables?: JSONDoc,
 ) => {
-  return Promise.all(
-    [...new Array(numberOfInstances)].map(() =>
-      zbc.createProcessInstance<Variables>({
-        bpmnProcessId,
-        version,
-        variables: variables || ({} as Variables),
-      }),
-    ),
-  );
+  for (let i = 0; i < numberOfInstances; i++) {
+    await zeebe.createProcessInstance({
+      processDefinitionId,
+      version,
+      variables: variables ?? {}, // Ensure it's never undefined
+    });
+  }
 };
 
 export {deploy, createInstances};

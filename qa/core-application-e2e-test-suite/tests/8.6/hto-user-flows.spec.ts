@@ -14,13 +14,15 @@ import {sleep} from 'utils/sleep';
 import {captureScreenshot, captureFailureVideo} from '@setup';
 
 test.beforeAll(async () => {
-  await deploy('./resources/Job_Worker_Process.bpmn');
-  await deploy('./resources/Variable_Process.bpmn');
-  await deploy('./resources/Zeebe_User_Task_Process.bpmn');
-  await deploy('./resources/New Form.form');
-  await deploy('./resources/User_Task_Process_With_Form.bpmn');
-  await deploy('./resources/Start_Form_Process.bpmn');
-  await deploy('./resources/Zeebe_User_Task_Process_With_Priority.bpmn');
+  await deploy([
+    './resources/Job_Worker_Process.bpmn',
+    './resources/Variable_Process.bpmn',
+    './resources/Zeebe_User_Task_Process.bpmn',
+    './resources/New Form.form',
+    './resources/User_Task_Process_With_Form.bpmn',
+    './resources/Start_Form_Process.bpmn',
+    './resources/Zeebe_User_Task_Process_With_Priority.bpmn',
+  ]);
   await createInstances('Job_Worker_Process', 1, 1);
   await createInstances('Zeebe_User_Task_Process', 1, 1);
   await createInstances('Variable_Process', 1, 1, {

@@ -15,7 +15,7 @@ const baseURL = process.env.CORE_APPLICATION_OPERATE_URL;
 
 test.beforeAll(async () => {
   await Promise.all([
-    deploy('./resources/User_Task_Process_With_Form_API.bpmn'),
+    deploy(['./resources/User_Task_Process_With_Form_API.bpmn']),
   ]);
   await createInstances('Form_User_Task_API', 1, 3);
   await authAPI('demo', 'demo', 'operate');
