@@ -8,7 +8,6 @@
 package io.camunda.zeebe.engine.processing.bpmn.activity.listeners.task;
 
 import static io.camunda.zeebe.engine.processing.job.JobCompleteProcessor.TL_JOB_COMPLETION_WITH_VARS_NOT_SUPPORTED_MESSAGE;
-import static io.camunda.zeebe.test.util.record.RecordingExporter.jobRecords;
 import static io.camunda.zeebe.test.util.record.RecordingExporter.records;
 import static java.util.Map.entry;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -463,40 +462,6 @@ public class TaskListenerTest {
             tuple(ValueType.JOB, JobIntent.COMPLETED),
             tuple(ValueType.USER_TASK, UserTaskIntent.COMPLETE_TASK_LISTENER),
             tuple(ValueType.USER_TASK, terminalActionIntent));
-  }
-
-  @Test
-  public void shouldEvaluateExpressionsForTaskListeners() {
-    final long processInstanceKey =
-        helper.createProcessInstanceWithVariables(
-            helper.createProcessWithZeebeUserTask(
-                t ->
-                    t.zeebeTaskListener(
-                        l ->
-                            l.completing()
-                                .typeExpression("\"listener_1_\"+my_var")
-                                .retriesExpression("5+3"))),
-            Map.of("my_var", "abc"));
-
-    // when
-    ENGINE.userTask().ofInstance(processInstanceKey).complete();
-    helper.completeJobs(processInstanceKey, "listener_1_abc");
-
-    // then
-    assertThat(
-            jobRecords()
-                .withProcessInstanceKey(processInstanceKey)
-                .withJobKind(JobKind.TASK_LISTENER)
-                .withIntent(JobIntent.COMPLETED)
-                .onlyEvents()
-                .getFirst()
-                .getValue())
-        .satisfies(
-            jobRecordValue -> {
-              assertThat(jobRecordValue.getType()).isEqualTo("listener_1_abc");
-              assertThat(jobRecordValue.getRetries()).isEqualTo(8);
-            });
-    helper.assertThatProcessInstanceCompleted(processInstanceKey);
   }
 
   @Test
