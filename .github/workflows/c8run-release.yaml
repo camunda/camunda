@@ -71,7 +71,7 @@ jobs:
           gh release create ${{ env.CAMUNDA_RUN_NAME }} --title ${{ env.CAMUNDA_RUN_NAME }} \
             --target ${{ inputs.branch }} --notes "${{ env.CAMUNDA_RUN_NAME }}"
         env:
-          GH_TOKEN: ${{ github.token }}
+          GH_TOKEN: '${{ secrets.GITHUB_TOKEN }}'
 
   release:
     needs: init
