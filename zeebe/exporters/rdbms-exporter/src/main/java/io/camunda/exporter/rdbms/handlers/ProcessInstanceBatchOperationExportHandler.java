@@ -29,6 +29,8 @@ public class ProcessInstanceBatchOperationExportHandler implements RdbmsExportHa
   public boolean canExport(final Record<ProcessInstanceRecordValue> record) {
     return record.getOperationReference() != operationReferenceNullValue()
         && record.getValueType() == ValueType.PROCESS_INSTANCE
+        && record.getValue() instanceof final ProcessInstanceRecordValue value
+        && value.getParentProcessInstanceKey() == -1
         && (isProcessCanceled(record) || isRejectedCanceled(record));
     // TODO this would also fire on NON Batch operations which have a reference
   }

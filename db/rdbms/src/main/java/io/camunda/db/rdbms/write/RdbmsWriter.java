@@ -8,7 +8,7 @@
 package io.camunda.db.rdbms.write;
 
 import io.camunda.db.rdbms.config.VendorDatabaseProperties;
-import io.camunda.db.rdbms.sql.BatchOperationMapper;
+import io.camunda.db.rdbms.read.service.BatchOperationReader;
 import io.camunda.db.rdbms.sql.DecisionInstanceMapper;
 import io.camunda.db.rdbms.sql.FlowNodeInstanceMapper;
 import io.camunda.db.rdbms.sql.IncidentMapper;
@@ -75,7 +75,8 @@ public class RdbmsWriter {
       final PurgeMapper purgeMapper,
       final UserTaskMapper userTaskMapper,
       final VariableMapper variableMapper,
-      final VendorDatabaseProperties vendorDatabaseProperties) {
+      final VendorDatabaseProperties vendorDatabaseProperties,
+      final BatchOperationReader batchOperationReader) {
     this.executionQueue = executionQueue;
     this.exporterPositionService = exporterPositionService;
     rdbmsPurger = new RdbmsPurger(purgeMapper, vendorDatabaseProperties);
@@ -95,7 +96,7 @@ public class RdbmsWriter {
     userTaskWriter = new UserTaskWriter(executionQueue, userTaskMapper);
     formWriter = new FormWriter(executionQueue);
     mappingWriter = new MappingWriter(executionQueue);
-    batchOperationWriter = new BatchOperationWriter(executionQueue);
+    batchOperationWriter = new BatchOperationWriter(batchOperationReader, executionQueue);
 
     historyCleanupService =
         new HistoryCleanupService(
