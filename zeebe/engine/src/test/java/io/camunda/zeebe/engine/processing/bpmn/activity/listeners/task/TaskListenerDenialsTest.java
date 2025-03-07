@@ -19,6 +19,7 @@ import org.junit.rules.TestWatcher;
 public class TaskListenerDenialsTest {
   @ClassRule public static final EngineRule ENGINE = EngineRule.singlePartition();
   @Rule public final TestWatcher watcher = new RecordingExporterTestWatcher();
+  private final TaskListenerTestHelper helper = new TaskListenerTestHelper(ENGINE);
 
   private String listenerType;
 

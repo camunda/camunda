@@ -83,6 +83,7 @@ public class TaskListenerTest {
   public final RecordingExporterTestWatcher recordingExporterTestWatcher =
       new RecordingExporterTestWatcher();
 
+  private final TaskListenerTestHelper helper = new TaskListenerTestHelper(ENGINE);
   private String listenerType;
 
   @Before
