@@ -22,6 +22,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.oauth2.client.oidc.userinfo.OidcUserRequest;
@@ -65,15 +66,19 @@ public class CamundaOidcUserService extends OidcUserService {
       LOG.debug("No mappings found for these claims: {}", claims);
     }
 
+    final var assignedRoles = roleServices.getRolesByMemberKeys(mappingKeys);
+
     return new CamundaOidcUser(
         oidcUser,
         mappingKeys,
         new AuthenticationContext(
-            roleServices.getRolesByMemberKeys(mappingKeys),
+            assignedRoles,
             authorizationServices.getAuthorizedApplications(
-                mappingKeys.stream()
-                    .map(String::valueOf)
-                    .collect(Collectors.toSet())), // TODO remove mapping when refactoring to IDs
+                Stream.concat(
+                        assignedRoles.stream().map(r -> r.roleKey().toString()),
+                        mappingKeys.stream()
+                            .map(String::valueOf)) // TODO remove mapping when refactoring to IDs
+                    .collect(Collectors.toSet())),
             tenantServices.getTenantsByMemberKeys(mappingKeys).stream()
                 .map(TenantDTO::fromEntity)
                 .toList(),
