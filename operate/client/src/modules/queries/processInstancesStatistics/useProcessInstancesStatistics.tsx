@@ -18,6 +18,7 @@ function getProcessInstanceStatisticsOptions<T, P>(
   payload: ProcessInstancesStatisticsRequest,
   parser?: (data: ProcessInstancesStatisticsDto[], params: P) => T,
   parserParams?: P,
+  enabled?: boolean,
 ): UseQueryOptions<T, RequestError> {
   return {
     queryKey: getQueryKey(Object.values(payload)),
@@ -30,6 +31,7 @@ function getProcessInstanceStatisticsOptions<T, P>(
 
       throw error ?? new Error('Failed to fetch process instances statistics');
     },
+    enabled: enabled ?? true,
   };
 }
 
