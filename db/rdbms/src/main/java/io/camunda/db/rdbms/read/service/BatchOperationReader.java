@@ -33,6 +33,14 @@ public class BatchOperationReader extends AbstractEntityReader<BatchOperationEnt
     this.batchOperationMapper = batchOperationMapper;
   }
 
+  public boolean exists(final Long batchOperationKey) {
+    var query = new BatchOperationDbQuery.Builder()
+        .filter(b -> b.batchOperationKeys(batchOperationKey))
+        .build();
+
+    return batchOperationMapper.count(query) == 1;
+  }
+
   public SearchQueryResult<BatchOperationEntity> search(final BatchOperationQuery query) {
     final var dbSort = convertSort(query.sort(), BatchOperationSearchColumn.BATCH_OPERATION_KEY);
     final var dbQuery =

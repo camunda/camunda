@@ -171,7 +171,8 @@ public class RdbmsConfiguration {
       final PurgeMapper purgeMapper,
       final UserTaskMapper userTaskMapper,
       final VariableMapper variableMapper,
-      final RdbmsWriterMetrics metrics) {
+      final RdbmsWriterMetrics metrics,
+      final BatchOperationReader batchOperationReader) {
     return new RdbmsWriterFactory(
         sqlSessionFactory,
         exporterPositionMapper,
@@ -183,7 +184,8 @@ public class RdbmsConfiguration {
         purgeMapper,
         userTaskMapper,
         variableMapper,
-        metrics);
+        metrics,
+        batchOperationReader);
   }
 
   @Bean

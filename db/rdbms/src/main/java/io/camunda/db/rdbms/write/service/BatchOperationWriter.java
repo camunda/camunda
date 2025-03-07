@@ -1,6 +1,6 @@
 package io.camunda.db.rdbms.write.service;
 
-import io.camunda.db.rdbms.sql.BatchOperationMapper;
+import io.camunda.db.rdbms.read.service.BatchOperationReader;
 import io.camunda.db.rdbms.sql.BatchOperationMapper.BatchOperationItemDto;
 import io.camunda.db.rdbms.sql.BatchOperationMapper.BatchOperationItemStateUpdateDto;
 import io.camunda.db.rdbms.sql.BatchOperationMapper.BatchOperationItemsDto;
@@ -14,17 +14,28 @@ import io.camunda.db.rdbms.write.queue.WriteStatementType;
 import io.camunda.search.entities.BatchOperationEntity.BatchOperationState;
 import java.time.OffsetDateTime;
 import java.util.List;
-import java.util.Set;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class BatchOperationWriter {
 
+  private final static Logger LOGGER = LoggerFactory.getLogger(BatchOperationWriter.class);
+
   private final ExecutionQueue executionQueue;
 
-  public BatchOperationWriter(final ExecutionQueue executionQueue) {
+  private final BatchOperationReader reader;
+
+  public BatchOperationWriter(final BatchOperationReader reader, final ExecutionQueue executionQueue) {
+    this.reader = reader;
     this.executionQueue = executionQueue;
   }
 
-  public void create(final BatchOperationDbModel batchOperation) {
+  public void createIfNotAlreadyExists(final BatchOperationDbModel batchOperation) {
+    if(reader.exists(batchOperation.batchOperationKey())) {
+      LOGGER.trace("Batch operation already exists: {}", batchOperation);
+      return;
+    }
+
     executionQueue.executeInQueue(
         new QueueItem(
             ContextType.BATCH_OPERATION,
@@ -32,6 +43,8 @@ public class BatchOperationWriter {
             batchOperation.batchOperationKey(),
             "io.camunda.db.rdbms.sql.BatchOperationMapper.insert",
             batchOperation));
+    LOGGER.trace("Force flush to directly create batch operation: {}", batchOperation);
+    executionQueue.flush();
   }
 
   public void updateBatchAndInsertItems(final long batchOperationKey,
