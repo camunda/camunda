@@ -15,6 +15,9 @@ import java.util.Map;
 public class ExecutableAdHocSubProcess extends ExecutableFlowElementContainer {
 
   private Expression activeElementsCollection;
+  private Expression completionCondition;
+  private boolean cancelRemainingInstances;
+
   private final Map<String, ExecutableFlowNode> adHocActivitiesById = new HashMap<>();
 
   public ExecutableAdHocSubProcess(final String id) {
@@ -27,6 +30,22 @@ public class ExecutableAdHocSubProcess extends ExecutableFlowElementContainer {
 
   public void setActiveElementsCollection(final Expression activeElementsCollection) {
     this.activeElementsCollection = activeElementsCollection;
+  }
+
+  public Expression getCompletionCondition() {
+    return completionCondition;
+  }
+
+  public void setCompletionCondition(final Expression completionCondition) {
+    this.completionCondition = completionCondition;
+  }
+
+  public boolean isCancelRemainingInstances() {
+    return cancelRemainingInstances;
+  }
+
+  public void setCancelRemainingInstances(final boolean cancelRemainingInstances) {
+    this.cancelRemainingInstances = cancelRemainingInstances;
   }
 
   public Map<String, ExecutableFlowNode> getAdHocActivitiesById() {
