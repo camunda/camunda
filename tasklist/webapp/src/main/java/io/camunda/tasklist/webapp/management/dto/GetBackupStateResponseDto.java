@@ -19,7 +19,7 @@ public class GetBackupStateResponseDto {
 
   public GetBackupStateResponseDto() {}
 
-  public GetBackupStateResponseDto(Long backupId) {
+  public GetBackupStateResponseDto(final Long backupId) {
     this.backupId = backupId;
   }
 
@@ -27,7 +27,7 @@ public class GetBackupStateResponseDto {
     return backupId;
   }
 
-  public GetBackupStateResponseDto setBackupId(Long backupId) {
+  public GetBackupStateResponseDto setBackupId(final Long backupId) {
     this.backupId = backupId;
     return this;
   }
@@ -36,7 +36,7 @@ public class GetBackupStateResponseDto {
     return state;
   }
 
-  public GetBackupStateResponseDto setState(BackupStateDto state) {
+  public GetBackupStateResponseDto setState(final BackupStateDto state) {
     this.state = state;
     return this;
   }
@@ -45,7 +45,7 @@ public class GetBackupStateResponseDto {
     return failureReason;
   }
 
-  public GetBackupStateResponseDto setFailureReason(String failureReason) {
+  public GetBackupStateResponseDto setFailureReason(final String failureReason) {
     this.failureReason = failureReason;
     return this;
   }
@@ -54,13 +54,18 @@ public class GetBackupStateResponseDto {
     return details;
   }
 
-  public GetBackupStateResponseDto setDetails(List<GetBackupStateResponseDetailDto> details) {
+  public GetBackupStateResponseDto setDetails(final List<GetBackupStateResponseDetailDto> details) {
     this.details = details;
     return this;
   }
 
   @Override
-  public boolean equals(Object o) {
+  public int hashCode() {
+    return Objects.hash(backupId, state, failureReason, details);
+  }
+
+  @Override
+  public boolean equals(final Object o) {
     if (this == o) {
       return true;
     }
@@ -75,7 +80,17 @@ public class GetBackupStateResponseDto {
   }
 
   @Override
-  public int hashCode() {
-    return Objects.hash(backupId, state, failureReason, details);
+  public String toString() {
+    return "GetBackupStateResponseDto{"
+        + "backupId="
+        + backupId
+        + ", state="
+        + state
+        + ", failureReason='"
+        + failureReason
+        + '\''
+        + ", details="
+        + details
+        + '}';
   }
 }

@@ -13,7 +13,6 @@ import io.camunda.operate.conditions.ElasticsearchCondition;
 import io.camunda.operate.schema.indices.DecisionIndex;
 import io.camunda.operate.store.BatchRequest;
 import io.camunda.operate.store.DecisionStore;
-import io.camunda.operate.tenant.TenantAwareElasticsearchClient;
 import java.io.IOException;
 import java.util.Optional;
 import org.elasticsearch.action.search.SearchRequest;
@@ -46,10 +45,8 @@ public class ElasticsearchDecisionStore implements DecisionStore {
 
   @Autowired private RestHighLevelClient esClient;
 
-  @Autowired private TenantAwareElasticsearchClient tenantAwareClient;
-
   @Override
-  public Optional<Long> getDistinctCountFor(String fieldName) {
+  public Optional<Long> getDistinctCountFor(final String fieldName) {
     final String indexAlias = decisionIndex.getAlias();
     LOGGER.debug("Called distinct count for field {} in index alias {}.", fieldName, indexAlias);
     final SearchRequest searchRequest =
@@ -67,7 +64,7 @@ public class ElasticsearchDecisionStore implements DecisionStore {
       final Cardinality distinctFieldCounts =
           searchResponse.getAggregations().get(DISTINCT_FIELD_COUNTS);
       return Optional.of(distinctFieldCounts.getValue());
-    } catch (Exception e) {
+    } catch (final Exception e) {
       LOGGER.error(
           String.format(
               "Error in distinct count for field %s in index alias %s.", fieldName, indexAlias),
@@ -82,7 +79,8 @@ public class ElasticsearchDecisionStore implements DecisionStore {
   }
 
   @Override
-  public long deleteDocuments(String indexName, String idField, String id) throws IOException {
+  public long deleteDocuments(final String indexName, final String idField, final String id)
+      throws IOException {
     final DeleteByQueryRequest query =
         new DeleteByQueryRequest(indexName).setQuery(QueryBuilders.termsQuery(idField, id));
     final BulkByScrollResponse response = esClient.deleteByQuery(query, RequestOptions.DEFAULT);

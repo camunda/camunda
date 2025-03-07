@@ -11,24 +11,24 @@ import io.camunda.application.StandaloneSchemaManager.SchemaManagerConfiguration
 import io.camunda.application.commons.sources.DefaultObjectMapperConfiguration;
 import io.camunda.application.listeners.ApplicationErrorListener;
 import io.camunda.operate.property.OperateProperties;
-import io.camunda.operate.webapp.security.auth.OperateUserDetailsService;
+import io.camunda.operate.webapp.backup.BackupService;
 import io.camunda.tasklist.property.TasklistProperties;
-import io.camunda.zeebe.broker.exporter.context.ExporterConfiguration;
-import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
-import io.camunda.zeebe.exporter.ElasticsearchExporterConfiguration;
+import io.camunda.tasklist.webapp.es.backup.BackupManager;
+import io.camunda.tasklist.webapp.management.dto.BackupStateDto;
+import io.camunda.tasklist.webapp.management.dto.TakeBackupRequestDto;
+import java.util.Arrays;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.WebApplicationType;
-import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.ConfigurationPropertiesScan;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.FullyQualifiedAnnotationBeanNameGenerator;
 
 /**
- * Create or update Schemas for ElasticSearch by running this standalone application.
+ * Backup indices for ElasticSearch by running this standalone application.
  *
  * <p>Example properties:
  *
@@ -73,17 +73,16 @@ import org.springframework.context.annotation.FullyQualifiedAnnotationBeanNameGe
  * All of those properties can also be handed over via environment variables, e.g.
  * `CAMUNDA_OPERATE_ELASTICSEARCH_INDEXPREFIX`
  */
-public class StandaloneSchemaManager implements CommandLineRunner {
+public class StandaloneBackupManager implements CommandLineRunner {
 
-  private static final Logger LOG = LoggerFactory.getLogger(StandaloneSchemaManager.class);
-  private final BrokerBasedProperties brokerProperties;
-  private final OperateUserDetailsService operateUserDetailsService;
+  private static final Logger LOG = LoggerFactory.getLogger(StandaloneBackupManager.class);
+  private final BackupManager tasklistBackupManager;
+  private final BackupService operateBackupManager;
 
-  public StandaloneSchemaManager(
-      final BrokerBasedProperties brokerProperties,
-      final OperateUserDetailsService operateUserDetailsService) {
-    this.brokerProperties = brokerProperties;
-    this.operateUserDetailsService = operateUserDetailsService;
+  public StandaloneBackupManager(
+      final BackupManager tasklistBackupManager, final BackupService operateBackupManager) {
+    this.tasklistBackupManager = tasklistBackupManager;
+    this.operateBackupManager = operateBackupManager;
   }
 
   public static void main(final String[] args) throws Exception {
@@ -105,11 +104,12 @@ public class StandaloneSchemaManager implements CommandLineRunner {
         .web(WebApplicationType.NONE)
         .logStartupInfo(true)
         .sources(
-            SchemaManagerConfiguration.class,
-            StandaloneSchemaManager.class,
+            BackupManagerConfiguration.class,
+            StandaloneBackupManager.class,
             io.camunda.tasklist.JacksonConfig.class,
             io.camunda.operate.JacksonConfig.class)
         .addCommandLineProperties(true)
+        //        .properties(defaultActiveProfiles)
         .listeners(new ApplicationErrorListener())
         .run(args);
 
@@ -120,40 +120,101 @@ public class StandaloneSchemaManager implements CommandLineRunner {
 
   @Override
   public void run(final String... args) throws Exception {
-    try {
-      final var elasticsearchConfig =
-          new ExporterConfiguration(
-                  "elasticsearch", brokerProperties.getExporters().get("elasticsearch").getArgs())
-              .instantiate(ElasticsearchExporterConfiguration.class);
+    if (args.length != 1) {
+      throw new IllegalArgumentException(
+          String.format(
+              "Expected one argument, the backup ID, but got: [%s]", Arrays.asList(args)));
+    }
 
-      new io.camunda.zeebe.exporter.SchemaManager(elasticsearchConfig).createSchema();
-      operateUserDetailsService.initializeUsers();
+    final long backupId;
+    try {
+      backupId = Long.parseLong(args[0]);
+    } catch (final NumberFormatException nfe) {
+      throw new IllegalArgumentException(
+          String.format("Expected as argument the backup ID as long, but got %s", args[0]));
+    }
+
+    try {
+      // Operate
+      final var operateTakeBackupRequestDto =
+          new io.camunda.operate.webapp.management.dto.TakeBackupRequestDto();
+      operateTakeBackupRequestDto.setBackupId(backupId);
+      final var operateBackupResponse =
+          operateBackupManager.takeBackup(operateTakeBackupRequestDto);
+
+      LOG.info(
+          "Triggered ES snapshots for Operate indices: {}",
+          operateBackupResponse.getScheduledSnapshots());
+
+      // TASKLIST
+      final var tasklistTakeBackupRequestDto = new TakeBackupRequestDto();
+      tasklistTakeBackupRequestDto.setBackupId(backupId);
+      final var tasklistBackupResponse =
+          tasklistBackupManager.takeBackup(tasklistTakeBackupRequestDto);
+
+      LOG.info(
+          "Triggered ES snapshots for Tasklist indices: {}",
+          tasklistBackupResponse.getScheduledSnapshots());
+
+      LOG.info("Will observe snapshot creation...");
+      boolean snapshotObservation = true;
+      do {
+        // we need to sleep here already otherwise the API fails, as it can't
+        // handle empty responses...
+        Thread.sleep(5 * 1_000);
+        final var operateBackup = operateBackupManager.getBackupState(backupId);
+        final var operateBackupState = operateBackup.getState();
+        final var tasklistBackup = tasklistBackupManager.getBackupState(backupId);
+        final var tasklistBackupState = tasklistBackup.getState();
+
+        LOG.info("Snapshot observation:");
+        LOG.info(
+            "Operate indices snapshot is {}. Details: [{}]", operateBackupState, operateBackup);
+        LOG.info(
+            "Tasklist indices snapshot is {}. Details: [{}]", tasklistBackupState, tasklistBackup);
+
+        if (tasklistBackupState != BackupStateDto.IN_PROGRESS
+            && operateBackupState
+                != io.camunda.operate.webapp.management.dto.BackupStateDto.IN_PROGRESS) {
+          snapshotObservation = false;
+        }
+      } while (snapshotObservation);
+
     } catch (final Exception e) {
-      LOG.error("Failed to create/update schemas", e);
+      LOG.error("Expected to trigger ES snapshots for backupId {}, but failed", backupId, e);
       throw e;
     }
 
-    LOG.info("... finished creating/updating Elasticsearch schema for Camunda");
+    LOG.info("... triggered Elasticsearch snapshot based on Camunda's backup procedure");
   }
 
   @SpringBootConfiguration
   @EnableConfigurationProperties(BrokerBasedProperties.class)
   @ConfigurationPropertiesScan
   @ComponentScan(
+      // LEARNING - basePackageClasses - defining a class causes to scan the whole package with *
+      // doing
+      // a traversal to include all childs
       basePackageClasses = {
-        OperateUserDetailsService.class,
-        io.camunda.tasklist.schema.SchemaStartup.class,
-        io.camunda.operate.schema.SchemaStartup.class,
+        io.camunda.tasklist.schema.indices.IndexDescriptor.class,
+        io.camunda.tasklist.schema.templates.TemplateDescriptor.class,
+        io.camunda.operate.schema.indices.IndexDescriptor.class,
+        io.camunda.operate.schema.templates.TemplateDescriptor.class,
+        // Backup services from Operate / Tasklist - to be used to create backups
+        io.camunda.operate.webapp.backup.BackupService.class,
+        io.camunda.operate.webapp.elasticsearch.backup.ElasticsearchBackupRepository.class,
+        io.camunda.tasklist.webapp.es.backup.BackupManager.class,
+        // Containing the properties/configurations for Operate/Tasklist
         OperateProperties.class,
         TasklistProperties.class,
-        io.camunda.tasklist.es.RetryElasticsearchClient.class,
-        io.camunda.operate.store.elasticsearch.RetryElasticsearchClient.class,
-        DefaultObjectMapperConfiguration.class,
+        io.camunda.operate.conditions.DatabaseInfo.class,
+        // To set up the right clients, that have to be used by other components
+        io.camunda.operate.connect.ElasticsearchConnector
+            .class, // we need this to find the right clients for Operate
         io.camunda.tasklist.connect.ElasticsearchConnector.class,
+        // Object mapper used by other components
+        DefaultObjectMapperConfiguration.class,
       },
       nameGenerator = FullyQualifiedAnnotationBeanNameGenerator.class)
-  public static class SchemaManagerConfiguration {
-    @ConfigurationProperties("zeebe.broker")
-    public static final class BrokerBasedProperties extends BrokerCfg {}
-  }
+  public static class BackupManagerConfiguration {}
 }
