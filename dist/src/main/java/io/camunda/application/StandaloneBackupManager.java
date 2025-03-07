@@ -12,7 +12,6 @@ import io.camunda.application.commons.sources.DefaultObjectMapperConfiguration;
 import io.camunda.application.listeners.ApplicationErrorListener;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.webapp.backup.BackupService;
-import io.camunda.tasklist.connect.ElasticsearchConnector;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.webapp.es.backup.BackupManager;
 import io.camunda.tasklist.webapp.management.dto.BackupStateDto;
@@ -212,7 +211,7 @@ public class StandaloneBackupManager implements CommandLineRunner {
         // To set up the right clients, that have to be used by other components
         io.camunda.operate.connect.ElasticsearchConnector
             .class, // we need this to find the right clients for Operate
-        ElasticsearchConnector.class,
+        io.camunda.tasklist.connect.ElasticsearchConnector.class,
         // Object mapper used by other components
         DefaultObjectMapperConfiguration.class,
       },
