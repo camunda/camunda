@@ -13,7 +13,7 @@
 
   <groupId>io.camunda</groupId>
   <artifactId>zeebe-bom</artifactId>
-  <version>8.3.20-SNAPSHOT</version>
+  <version>8.3.22-SNAPSHOT</version>
   <packaging>pom</packaging>
 
   <name>Zeebe BOM</name>
