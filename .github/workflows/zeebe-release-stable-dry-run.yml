@@ -1,11 +1,15 @@
+---
+# NOTE: This workflow is not just for Zeebe, but also for 8.6+ monorepo release!
 name: Zeebe Release Dry Run from stable branches
+
 on:
-  workflow_dispatch: { }
+  workflow_dispatch: {}
   schedule:
     # Runs at 02:00 every week day; see this link for more: https://crontab.guru/#0_2_*_*_1-5
     - cron: '0 2 * * 1-5'
 
 jobs:
+  # Camunda Platform release
   dry-run-release-87:
     name: "Release from stable/8.7"
     uses: camunda/camunda/.github/workflows/camunda-platform-release.yml@stable/8.7
@@ -30,6 +34,8 @@ jobs:
       nextDevelopmentVersion: 0.0.0-SNAPSHOT
       isLatest: true
       dryRun: true
+
+  # Zeebe release
   dry-run-release-85:
     name: "Release from stable/8.5"
     uses: camunda/camunda/.github/workflows/zeebe-release.yml@stable/8.5
@@ -66,16 +72,66 @@ jobs:
       nextDevelopmentVersion: 0.0.0-SNAPSHOT
       isLatest: true
       dryRun: true
-  notify:
-    name: Send slack notification
+
+  notify-camunda:
+    name: Send Slack notification for 8.6+
     runs-on: ubuntu-latest
-    needs: [ dry-run-release-83, dry-run-release-84, dry-run-release-85, dry-run-release-86 ]
-    if: ${{ always() }}
+    needs: [dry-run-release-86, dry-run-release-87]
+    if: always()
+    timeout-minutes: 5
+    permissions: {}  # GITHUB_TOKEN unused in this job
+    steps:
+      - name: Import Secrets
+        id: secrets
+        uses: hashicorp/vault-action@7709c609789c5e27b757a85817483caadbb5939a # v3.3.0
+        with:
+          url: ${{ secrets.VAULT_ADDR }}
+          method: approle
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          exportEnv: false # we rely on step outputs, no need for environment variables
+          secrets: |
+            secret/data/products/camunda/ci/github-actions SLACK_TOPMONOREPORELEASE_WEBHOOK_URL;
+
+      - name: Send failure Slack notification
+        uses: slackapi/slack-github-action@485a9d42d3a73031f12ec201c457e2162c45d02d # v2.0.0
+        if: ${{ always() && (needs.dry-run-release-86.result != 'success' || needs.dry-run-release-87.result != 'success') && github.event_name == 'schedule' }}
+        with:
+          webhook: ${{ steps.secrets.outputs.SLACK_TOPMONOREPORELEASE_WEBHOOK_URL }}
+          webhook-type: incoming-webhook
+          # For posting a rich message using Block Kit
+          payload: |
+            {
+              "blocks": [
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": ":alarm: *Release Dry Run* on `stable/*` failed!\n"
+                  }
+                },
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "Please check this <https://github.com/camunda/camunda/actions/runs/${{ github.run_id }}|GHA workflow run>."
+                  }
+                }
+              ]
+            }
+
+  notify-zeebe:
+    name: Send Slack notification for Zeebe up to 8.5
+    runs-on: ubuntu-latest
+    needs: [dry-run-release-83, dry-run-release-84, dry-run-release-85]
+    if: always()
+    timeout-minutes: 5
+    permissions: {}  # GITHUB_TOKEN unused in this job
     steps:
       - id: slack-notify-failure
         name: Send failure slack notification
-        uses: slackapi/slack-github-action@v2.0.0
-        if: ${{ always() && (needs.dry-run-release-83.result != 'success' || needs.dry-run-release-84.result != 'success' || needs.dry-run-release-85.result != 'success' || needs.dry-run-release-86.result != 'success') }}
+        uses: slackapi/slack-github-action@485a9d42d3a73031f12ec201c457e2162c45d02d # v2.0.0
+        if: ${{ always() && (needs.dry-run-release-83.result != 'success' || needs.dry-run-release-84.result != 'success' || needs.dry-run-release-85.result != 'success') }}
         with:
           webhook: ${{ secrets.SLACK_WEBHOOK_URL }}
           webhook-type: incoming-webhook
@@ -101,8 +157,8 @@ jobs:
             }
       - id: slack-notify-success
         name: Send success slack notification
-        uses: slackapi/slack-github-action@v2.0.0
-        if: ${{ always() && needs.dry-run-release-83.result == 'success' && needs.dry-run-release-84.result == 'success' && needs.dry-run-release-85.result == 'success' && needs.dry-run-release-86.result == 'success' }}
+        uses: slackapi/slack-github-action@485a9d42d3a73031f12ec201c457e2162c45d02d # v2.0.0
+        if: ${{ always() && needs.dry-run-release-83.result == 'success' && needs.dry-run-release-84.result == 'success' && needs.dry-run-release-85.result == 'success' }}
         with:
           webhook: ${{ secrets.SLACK_WEBHOOK_URL }}
           webhook-type: incoming-webhook
