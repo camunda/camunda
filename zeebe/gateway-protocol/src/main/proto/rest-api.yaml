@@ -583,8 +583,7 @@ paths:
           required: true
           description: The unique identifier of the mapping rule.
           schema:
-            type: integer
-            format: int64
+            type: string
       responses:
         "202":
           description: The mapping rule was successfully assigned to the tenant.
@@ -619,8 +618,7 @@ paths:
           required: true
           description: The unique identifier of the mapping rule.
           schema:
-            type: integer
-            format: int64
+            type: string
       responses:
         "202":
           description: The mapping rule was successfully removed from the tenant.
@@ -656,8 +654,7 @@ paths:
           required: true
           description: The unique identifier of the group.
           schema:
-            type: integer
-            format: int64
+            type: string
       responses:
         "202":
           description: The group was successfully assigned to the tenant.
@@ -692,8 +689,7 @@ paths:
           required: true
           description: The unique identifier of the group.
           schema:
-            type: integer
-            format: int64
+            type: string
       responses:
         "202":
           description: The group was successfully removed from the tenant.
@@ -2024,8 +2020,7 @@ paths:
           required: true
           description: The key of the authorization to delete.
           schema:
-            type: integer
-            format: int64
+            type: string
       requestBody:
         content:
           application/json:
@@ -2057,8 +2052,7 @@ paths:
           required: true
           description: The key of the authorization to delete.
           schema:
-            type: integer
-            format: int64
+            type: string
       responses:
         "204":
           description: The authorization was deleted successfully.
@@ -2435,8 +2429,7 @@ paths:
           required: true
           description: The user key.
           schema:
-            type: integer
-            format: int64
+            type: string
       responses:
         "202":
           description: The user was assigned successfully to the group.
@@ -6599,8 +6592,7 @@ components:
           type: string
           description: The ID of the process definition that created the document.
         processInstanceKey:
-          type: integer
-          format: int64
+          type: string
           description: The key of the process instance that created the document.
         customProperties:
           type: object
