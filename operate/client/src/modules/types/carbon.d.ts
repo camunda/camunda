@@ -244,6 +244,17 @@ declare module '@carbon/react' {
     className?: string;
   }>;
 
+  export const Heading: React.ForwardRefExoticComponent<
+    Omit<
+      React.DetailedHTMLProps<
+        React.HTMLAttributes<HTMLHeadingElement>,
+        HTMLHeadingElement
+      >,
+      'ref'
+    > &
+      React.RefAttributes<HTMLHeadingElement>
+  >;
+
   export * from 'carbon-components-react';
 }
 
@@ -302,4 +313,5 @@ declare module '@carbon/react/icons' {
   export const MigrateAlt: Icon;
   export const Move: Icon;
   export const Copy: Icon;
+  export const Launch: Icon;
 }

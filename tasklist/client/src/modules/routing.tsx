@@ -13,6 +13,7 @@ import {useParams} from 'react-router-dom';
 const pages = {
   initial: '/',
   login: '/login',
+  forbidden: '/forbidden',
   taskDetails(id: string = ':id') {
     return `/${id}`;
   },

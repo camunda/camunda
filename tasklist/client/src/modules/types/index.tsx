@@ -9,7 +9,7 @@
 type CurrentUser = {
   userId: string;
   displayName: string | null;
-
+  authorizedApplications?: Array<string>;
   roles: string[] | null;
   salesPlanType: string | null;
   c8Links: {
