@@ -7,16 +7,17 @@
  */
 package io.camunda.zeebe.engine.processing.batchoperation;
 
+import static io.camunda.search.query.SearchQueryBuilders.processInstanceSearchQuery;
+
 import com.google.common.collect.Lists;
 import io.camunda.search.entities.ProcessInstanceEntity;
 import io.camunda.search.filter.ProcessInstanceFilter;
 import io.camunda.search.page.SearchQueryPageBuilders;
-import static io.camunda.search.query.SearchQueryBuilders.processInstanceSearchQuery;
 import io.camunda.service.ProcessInstanceServices;
 import io.camunda.service.search.core.SearchQueryService;
 import io.camunda.zeebe.engine.state.batchoperation.PersistedBatchOperation;
 import io.camunda.zeebe.engine.state.immutable.BatchOperationState;
-import io.camunda.zeebe.engine.state.immutable.ProcessingState;
+import io.camunda.zeebe.engine.state.immutable.ScheduledTaskState;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationExecutionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationSubbatchRecord;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationIntent;
@@ -30,6 +31,7 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.function.Supplier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -49,11 +51,11 @@ public class BatchOperationExecutionScheduler implements StreamProcessorLifecycl
   private final Set<Long> batchOperationKeysProcessed = new HashSet<>();
 
   public BatchOperationExecutionScheduler(
-      final ProcessingState processingState,
+      final Supplier<ScheduledTaskState> scheduledTaskStateFactory,
       final Set<SearchQueryService> queryServices,
       final KeyGenerator keyGenerator,
       final Duration pollingInterval) {
-    batchOperationState = processingState.getBatchOperationState();
+    batchOperationState = scheduledTaskStateFactory.get().getBatchOperationState();
     this.keyGenerator = keyGenerator;
     this.queryServices = queryServices;
     this.pollingInterval = pollingInterval;
@@ -97,51 +99,53 @@ public class BatchOperationExecutionScheduler implements StreamProcessorLifecycl
     final var keys = queryAllKeys(batchOperation);
 
     Lists.partition(new ArrayList<>(keys), BATCH_SIZE)
-        .forEach(
-            partition -> appendSubbatch(batchOperation, taskResultBuilder, partition));
+        .forEach(partition -> appendSubbatch(batchOperation, taskResultBuilder, partition));
 
     appendExecution(batchOperation, taskResultBuilder);
   }
 
-  private void appendSubbatch(final PersistedBatchOperation batchOperation,
-      final TaskResultBuilder taskResultBuilder, final List<Long> keys) {
+  private void appendSubbatch(
+      final PersistedBatchOperation batchOperation,
+      final TaskResultBuilder taskResultBuilder,
+      final List<Long> keys) {
     final var subbatchKey = keyGenerator.nextKey();
     final var command = new BatchOperationSubbatchRecord();
     command.setBatchOperationKey(batchOperation.getKey());
     command.setKeys(keys);
     command.setSubbatchKey(subbatchKey);
 
-    LOG.debug("Appending batch operation {} subbatch with key {}", batchOperation.getKey(),
-        subbatchKey);
-    taskResultBuilder.appendCommandRecord(subbatchKey,
-        BatchOperationIntent.CREATE_SUBBATCH,
-        command, batchOperation.getKey());
+    LOG.debug(
+        "Appending batch operation {} subbatch with key {}", batchOperation.getKey(), subbatchKey);
+    taskResultBuilder.appendCommandRecord(
+        subbatchKey, BatchOperationIntent.CREATE_SUBBATCH, command, batchOperation.getKey());
   }
 
-  private void appendExecution(final PersistedBatchOperation batchOperation,
-      final TaskResultBuilder taskResultBuilder) {
+  private void appendExecution(
+      final PersistedBatchOperation batchOperation, final TaskResultBuilder taskResultBuilder) {
     final var command = new BatchOperationExecutionRecord();
     command.setBatchOperationKey(batchOperation.getKey());
     command.setBatchOperationType(batchOperation.getBatchOperationType());
     command.setOffset(0);
 
     LOG.debug("Appending batch operation execution {}", batchOperation.getKey());
-    taskResultBuilder.appendCommandRecord(batchOperation.getKey(), BatchOperationIntent.EXECUTE,
-        command, batchOperation.getKey());
+    taskResultBuilder.appendCommandRecord(
+        batchOperation.getKey(), BatchOperationIntent.EXECUTE, command, batchOperation.getKey());
   }
 
   private Set<Long> queryAllKeys(final PersistedBatchOperation batchOperation) {
     return switch (batchOperation.getBatchOperationType()) {
       case PROCESS_CANCELLATION -> queryAllProcessInstanceKeys(batchOperation);
-      default -> throw new IllegalArgumentException(
-          "Unexpected batch operation type: " + batchOperation.getBatchOperationType());
+      default ->
+          throw new IllegalArgumentException(
+              "Unexpected batch operation type: " + batchOperation.getBatchOperationType());
     };
   }
 
   private Set<Long> queryAllProcessInstanceKeys(final PersistedBatchOperation batchOperation) {
-    final var filter = batchOperation.getFilter(ProcessInstanceFilter.class).toBuilder()
-        .partitionIds(List.of(processingContext.getPartitionId()))
-        .build();
+    final var filter =
+        batchOperation.getFilter(ProcessInstanceFilter.class).toBuilder()
+            .partitionIds(List.of(processingContext.getPartitionId()))
+            .build();
 
     final var itemKeys = new HashSet<Long>();
 
@@ -149,16 +153,11 @@ public class BatchOperationExecutionScheduler implements StreamProcessorLifecycl
     final int batchSize = 400000;
     while (true) {
 
-      final var page = SearchQueryPageBuilders.page()
-          .size(batchSize)
-          .searchAfter(searchValues)
-          .build();
+      final var page =
+          SearchQueryPageBuilders.page().size(batchSize).searchAfter(searchValues).build();
       final var query =
           processInstanceSearchQuery(
-              q ->
-                  q.filter(filter)
-                      .page(page)
-                      .resultConfig(r -> r.onlyKey(true)));
+              q -> q.filter(filter).page(page).resultConfig(r -> r.onlyKey(true)));
 
       final var result = processInstanceServices.search(query);
       itemKeys.addAll(
