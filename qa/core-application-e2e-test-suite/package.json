@@ -1,0 +1,42 @@
+{
+  "name": "playwright-automation",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "test": "playwright test",
+    "test:local": "node --env-file=.env ./runTest.js",
+    "lint": "tsc && eslint .",
+    "lint:fix": "eslint . --fix"
+  },
+  "devDependencies": {
+    "@inquirer/prompts": "^7.3.2",
+    "@playwright/test": "^1.51.0",
+    "@types/axios": "^0.14.4",
+    "@types/node": "^22.13.9",
+    "@typescript-eslint/eslint-plugin": "8.26.0",
+    "@typescript-eslint/parser": "8.26.0",
+    "eslint": "9.21.0",
+    "eslint-config-prettier": "^10.0.2",
+    "eslint-plugin-license-header": "0.8.0",
+    "eslint-plugin-playwright": "2.2.0",
+    "eslint-plugin-prettier": "5.2.3",
+    "husky": "^9.1.7",
+    "lint-staged": "^15.4.3",
+    "playwright-slack-report": "^1.1.89",
+    "prettier": "3.5.3",
+    "typescript": "5.8.2",
+    "valibot": "0.42.1",
+    "zeebe-node": "^8.3.2"
+  },
+  "lint-staged": {
+    "*": [
+      "prettier --write"
+    ]
+  },
+  "dependencies": {
+    "@axe-core/playwright": "^4.10.1",
+    "axios": "^1.8.1",
+    "dotenv": "^16.4.7",
+    "mailslurp-client": "^15.21.0"
+  }
+}
