@@ -33,6 +33,8 @@ import io.camunda.zeebe.util.Either.Left;
 import io.camunda.zeebe.util.Either.Right;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.net.MalformedURLException;
 import java.net.URI;
 import java.security.DigestInputStream;
@@ -508,10 +510,18 @@ public class GcpDocumentStoreTest {
                     List.of("str1", "str2"),
                     "Map",
                     Map.of("key1", "val1", "key2", "val2"))));
-
     when(storage.get(BUCKET_NAME, documentId)).thenReturn(null);
+    when(storage.createFrom(any(), (InputStream) any()))
+        .then(
+            invocation -> {
+              try (final var stream = invocation.getArgument(1, InputStream.class)) {
+                stream.transferTo(OutputStream.nullOutputStream());
+              }
+              return null;
+            });
 
-    final var blobCaptor = ArgumentCaptor.forClass(BlobInfo.class);
+    final var creationBlobCaptor = ArgumentCaptor.forClass(BlobInfo.class);
+    final var updateBlobCaptor = ArgumentCaptor.forClass(BlobInfo.class);
 
     // when
     final var documentReferenceResponse =
@@ -528,23 +538,43 @@ public class GcpDocumentStoreTest {
                 .metadata()
                 .processInstanceKey())
         .isEqualTo(123L);
-    verify(storage).createFrom(blobCaptor.capture(), (DigestInputStream) any());
+    verify(storage).createFrom(creationBlobCaptor.capture(), (DigestInputStream) any());
+    verify(storage).update(updateBlobCaptor.capture());
+    verifyNoMoreInteractions(storage);
 
-    final var blobMetadata = blobCaptor.getValue().getMetadata();
-    assertThat(blobMetadata).hasSize(7);
-    assertThat(blobMetadata)
+    final var creationBlobMetadata = creationBlobCaptor.getValue().getMetadata();
+    assertThat(creationBlobMetadata).hasSize(7);
+    assertThat(creationBlobMetadata)
         .containsAllEntriesOf(
             Map.of(
                 "String", "\"StringValue\"",
                 "Int", "1",
                 "List", "[\"str1\",\"str2\"]",
-                "contentHash", "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+                "contentHash", "",
                 "camunda.processDefinitionId", "Def ID",
                 "camunda.processInstanceKey", "123"));
 
     final var deserialisedMap =
-        mapper.readValue(blobMetadata.get("Map"), new TypeReference<Map<String, Object>>() {});
+        mapper.readValue(
+            creationBlobMetadata.get("Map"), new TypeReference<Map<String, Object>>() {});
     assertThat(deserialisedMap).isEqualTo(Map.of("key1", "val1", "key2", "val2"));
+
+    final var updateBlobMetadata = updateBlobCaptor.getValue().getMetadata();
+    assertThat(updateBlobMetadata).hasSize(7);
+    assertThat(updateBlobMetadata)
+        .containsAllEntriesOf(
+            Map.of(
+                "String", "\"StringValue\"",
+                "Int", "1",
+                "List", "[\"str1\",\"str2\"]",
+                "contentHash", "ed7002b439e9ac845f22357d822bac1444730fbdb6016d3ec9432297b9ec9f73",
+                "camunda.processDefinitionId", "Def ID",
+                "camunda.processInstanceKey", "123"));
+
+    final var deserialisedMap2 =
+        mapper.readValue(
+            creationBlobMetadata.get("Map"), new TypeReference<Map<String, Object>>() {});
+    assertThat(deserialisedMap2).isEqualTo(Map.of("key1", "val1", "key2", "val2"));
   }
 
   @Test
