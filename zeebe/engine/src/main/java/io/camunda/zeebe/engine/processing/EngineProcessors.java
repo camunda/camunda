@@ -315,6 +315,7 @@ public final class EngineProcessors {
         keyGenerator,
         typedRecordProcessors,
         processingState,
+        scheduledTaskStateFactory,
         writers,
         commandDistributionBehavior,
         searchQueryServices,
