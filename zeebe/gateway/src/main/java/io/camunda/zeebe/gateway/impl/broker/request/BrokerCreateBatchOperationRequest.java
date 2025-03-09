@@ -7,16 +7,12 @@
  */
 package io.camunda.zeebe.gateway.impl.broker.request;
 
+import io.camunda.search.filter.FilterBase;
 import io.camunda.zeebe.broker.client.api.dto.BrokerExecuteCommand;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationCreationRecord;
-import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationIntent;
-import io.camunda.zeebe.protocol.record.value.BatchOperationCreationRecordValue;
 import io.camunda.zeebe.protocol.record.value.BatchOperationType;
-import io.camunda.zeebe.protocol.record.value.ImmutableBatchOperationCreationRecordValue;
-import java.util.List;
-import java.util.Set;
 import org.agrona.DirectBuffer;
 
 public class BrokerCreateBatchOperationRequest
@@ -28,13 +24,9 @@ public class BrokerCreateBatchOperationRequest
     super(ValueType.BATCH_OPERATION, BatchOperationIntent.CREATE);
   }
 
-  public BrokerCreateBatchOperationRequest setKeys(final Set<Long> keys) {
-    this.requestDto.setKeys(keys);
-    return this;
-  }
-
-  public BrokerCreateBatchOperationRequest setBatchOperationType(final BatchOperationType batchOperationType) {
-    this.requestDto.setBatchOperationType(batchOperationType);
+  public BrokerCreateBatchOperationRequest setBatchOperationType(
+      final BatchOperationType batchOperationType) {
+    requestDto.setBatchOperationType(batchOperationType);
     return this;
   }
 
@@ -50,4 +42,8 @@ public class BrokerCreateBatchOperationRequest
     return responseDto;
   }
 
+  public BrokerCreateBatchOperationRequest setFilter(final FilterBase filter) {
+    requestDto.setFilter(filter);
+    return this;
+  }
 }

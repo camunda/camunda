@@ -13,6 +13,7 @@ import io.atomix.primitive.partition.PartitionMetadata;
 import io.atomix.primitive.partition.impl.DefaultPartitionManagementService;
 import io.atomix.raft.partition.RaftPartition;
 import io.camunda.security.configuration.SecurityConfiguration;
+import io.camunda.service.search.core.SearchQueryService;
 import io.camunda.zeebe.broker.PartitionListener;
 import io.camunda.zeebe.broker.PartitionRaftListener;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
@@ -93,7 +94,8 @@ public final class PartitionManagerImpl
       final ClusterConfigurationService clusterConfigurationService,
       final MeterRegistry meterRegistry,
       final BrokerClient brokerClient,
-      final SecurityConfiguration securityConfig) {
+      final SecurityConfiguration securityConfig,
+      final Set<SearchQueryService> searchQueryServices) {
     this.brokerCfg = brokerCfg;
     this.concurrencyControl = concurrencyControl;
     this.actorSchedulingService = actorSchedulingService;
@@ -124,7 +126,8 @@ public final class PartitionManagerImpl
             partitionRaftListeners,
             topologyManager,
             featureFlags,
-            securityConfig);
+            securityConfig,
+            searchQueryServices);
     managementService =
         new DefaultPartitionManagementService(
             clusterServices.getMembershipService(), clusterServices.getCommunicationService());

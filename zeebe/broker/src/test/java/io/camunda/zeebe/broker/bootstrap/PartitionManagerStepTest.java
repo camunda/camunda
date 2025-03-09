@@ -98,7 +98,8 @@ class PartitionManagerStepTest {
               TEST_SHUTDOWN_TIMEOUT,
               new SecurityConfiguration(),
               mock(UserServices.class),
-              mock(PasswordEncoder.class));
+              mock(PasswordEncoder.class),
+              null);
       testBrokerStartupContext.setConcurrencyControl(CONCURRENCY_CONTROL);
       testBrokerStartupContext.setAdminApiService(mock(AdminApiRequestHandler.class));
       testBrokerStartupContext.setBrokerAdminService(mock(BrokerAdminServiceImpl.class));
@@ -199,7 +200,8 @@ class PartitionManagerStepTest {
               TEST_SHUTDOWN_TIMEOUT,
               new SecurityConfiguration(),
               mock(UserServices.class),
-              mock(PasswordEncoder.class));
+              mock(PasswordEncoder.class),
+              null);
 
       testBrokerStartupContext.setPartitionManager(mockPartitionManager);
       final ClusterConfigurationService mockClusterTopology =

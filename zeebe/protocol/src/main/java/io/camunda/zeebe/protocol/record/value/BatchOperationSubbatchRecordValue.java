@@ -13,12 +13,25 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.camunda.client.api.search.response;
+package io.camunda.zeebe.protocol.record.value;
 
-public enum BatchOperationState {
-  ACTIVE,
-  PAUSED,
-  FAILED,
-  COMPLETED,
-  CANCELED
+import io.camunda.zeebe.protocol.record.ImmutableProtocol;
+import io.camunda.zeebe.protocol.record.RecordValue;
+import java.util.List;
+import org.immutables.value.Value;
+
+@Value.Immutable
+@ImmutableProtocol(builder = ImmutableBatchOperationSubbatchRecordValue.Builder.class)
+public interface BatchOperationSubbatchRecordValue
+    extends BatchOperationRelated, RecordValue {
+
+  /**
+   * @return subset of keys for the batch operation which where processed
+   */
+  List<Long> getKeys();
+
+  /**
+   * @return the key of this subbatch
+   */
+  Long getSubbatchKey();
 }

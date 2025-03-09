@@ -13,12 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.camunda.client.api.search.response;
+package io.camunda.client.api.fetch;
 
-public enum BatchOperationState {
-  ACTIVE,
-  PAUSED,
-  FAILED,
-  COMPLETED,
-  CANCELED
-}
+import io.camunda.client.api.command.FinalCommandStep;
+import io.camunda.client.api.search.response.BatchOperation;
+import io.camunda.client.api.search.response.BatchOperationItems;
+
+public interface BatchOperationItemsGetRequest extends FinalCommandStep<BatchOperationItems> {}

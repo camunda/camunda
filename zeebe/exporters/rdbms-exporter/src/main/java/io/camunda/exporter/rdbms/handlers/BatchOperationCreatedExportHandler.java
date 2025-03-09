@@ -4,7 +4,6 @@ import io.camunda.db.rdbms.write.domain.BatchOperationDbModel;
 import io.camunda.db.rdbms.write.service.BatchOperationWriter;
 import io.camunda.exporter.rdbms.RdbmsExportHandler;
 import io.camunda.search.entities.BatchOperationEntity.BatchOperationState;
-import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationIntent;
@@ -14,18 +13,20 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Exports a batch operation creation record to the database.
- * This is only done if the batch was also created on this partition!
+ * Exports a batch operation creation record to the database. This is only done if the batch was
+ * also created on this partition!
  */
-public class BatchOperationCreatedExportHandler implements RdbmsExportHandler<BatchOperationCreationRecordValue> {
+public class BatchOperationCreatedExportHandler
+    implements RdbmsExportHandler<BatchOperationCreationRecordValue> {
 
-  private static final Logger LOGGER = LoggerFactory.getLogger(BatchOperationCreatedExportHandler.class);
+  private static final Logger LOGGER =
+      LoggerFactory.getLogger(BatchOperationCreatedExportHandler.class);
 
   private final BatchOperationWriter batchOperationWriter;
   private final long partitionId;
 
-  public BatchOperationCreatedExportHandler(final BatchOperationWriter batchOperationWriter,
-                                            final long partitionId) {
+  public BatchOperationCreatedExportHandler(
+      final BatchOperationWriter batchOperationWriter, final long partitionId) {
     this.batchOperationWriter = batchOperationWriter;
     this.partitionId = partitionId;
   }
@@ -33,13 +34,12 @@ public class BatchOperationCreatedExportHandler implements RdbmsExportHandler<Ba
   @Override
   public boolean canExport(final Record<BatchOperationCreationRecordValue> record) {
     return record.getValueType() == ValueType.BATCH_OPERATION
-        && record.getIntent().equals(BatchOperationIntent.CREATED)
-        && Protocol.decodePartitionId(record.getKey()) == (int)partitionId; // Just do it for the original partition
+        && record.getIntent().equals(BatchOperationIntent.CREATED);
   }
 
   @Override
   public void export(final Record<BatchOperationCreationRecordValue> record) {
-    batchOperationWriter.create(map(record));
+    batchOperationWriter.createIfNotAlreadyExists(map(record));
   }
 
   private BatchOperationDbModel map(final Record<BatchOperationCreationRecordValue> record) {
@@ -50,7 +50,8 @@ public class BatchOperationCreatedExportHandler implements RdbmsExportHandler<Ba
         .operationType(value.getBatchOperationType().name())
         .startDate(DateUtil.toOffsetDateTime(record.getTimestamp()))
         .endDate(null)
-        .operationsTotalCount(value.getKeys().size())
+        // FIXME no more keys list in the creation record, that needs to rely on something else
+        .operationsTotalCount(0)
         .operationsFailedCount(0)
         .operationsCompletedCount(0)
         .build();

@@ -88,6 +88,12 @@
       AND TENANT_ID IN
       <foreach collection="filter.tenantIds" item="value" open="(" separator=", " close=")">#{value}</foreach>
     </if>
+    <if test="filter.partitionIds != null and !filter.partitionIds.isEmpty()">
+      AND PARTITION_ID IN
+      <foreach collection="filter.partitionIds" item="value" open="(" separator="," close=")">
+        #{value}
+      </foreach>
+    </if>
 
     <!-- date filters -->
     <if test="filter.creationTime != null and !filter.creationTime.after != null">

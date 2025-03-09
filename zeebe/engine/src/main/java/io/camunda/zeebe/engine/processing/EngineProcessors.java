@@ -9,6 +9,7 @@ package io.camunda.zeebe.engine.processing;
 
 import static io.camunda.zeebe.protocol.record.intent.DeploymentIntent.CREATE;
 
+import io.camunda.service.search.core.SearchQueryService;
 import io.camunda.zeebe.dmn.DecisionEngineFactory;
 import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.metrics.JobProcessingMetrics;
@@ -74,12 +75,12 @@ import io.camunda.zeebe.stream.api.InterPartitionCommandSender;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import io.camunda.zeebe.util.FeatureFlags;
 import java.time.InstantSource;
+import java.util.Set;
 import java.util.function.Supplier;
 
 public final class EngineProcessors {
 
-  private EngineProcessors() {
-  }
+  private EngineProcessors() {}
 
   public static TypedRecordProcessors createEngineProcessors(
       final TypedRecordProcessorContext typedRecordProcessorContext,
@@ -87,7 +88,8 @@ public final class EngineProcessors {
       final SubscriptionCommandSender subscriptionCommandSender,
       final InterPartitionCommandSender interPartitionCommandSender,
       final FeatureFlags featureFlags,
-      final JobStreamer jobStreamer) {
+      final JobStreamer jobStreamer,
+      final Set<SearchQueryService> searchQueryServices) {
 
     final var processingState = typedRecordProcessorContext.getProcessingState();
     final var keyGenerator = processingState.getKeyGenerator();
@@ -313,8 +315,10 @@ public final class EngineProcessors {
         keyGenerator,
         typedRecordProcessors,
         processingState,
+        scheduledTaskStateFactory,
         writers,
         commandDistributionBehavior,
+        searchQueryServices,
         partitionId);
 
     return typedRecordProcessors;
