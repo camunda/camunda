@@ -13,6 +13,7 @@ import io.camunda.zeebe.engine.state.mutable.MutableMappingState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.util.ProcessingStateExtension;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.MappingRecord;
+import io.camunda.zeebe.test.util.Strings;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -174,13 +175,18 @@ public class MappingStateTest {
     final long key = 1L;
     final String claimName = "foo";
     final String claimValue = "bar";
+    final String mappingId = Strings.newRandomValidIdentityId();
     final var mapping =
-        new MappingRecord().setMappingKey(key).setClaimName(claimName).setClaimValue(claimValue);
+        new MappingRecord()
+            .setId(mappingId)
+            .setMappingKey(key)
+            .setClaimName(claimName)
+            .setClaimValue(claimValue);
     mappingState.create(mapping);
     final var tenantId = "tenant";
 
     // when
-    mappingState.addTenant(key, tenantId);
+    mappingState.addTenant(mappingId, tenantId);
 
     // then
     final var persistedMapping = mappingState.get(key).get();
@@ -193,11 +199,16 @@ public class MappingStateTest {
     final long key = 1L;
     final String claimName = "foo";
     final String claimValue = "bar";
+    final String mappingId = Strings.newRandomValidIdentityId();
     final var mapping =
-        new MappingRecord().setMappingKey(key).setClaimName(claimName).setClaimValue(claimValue);
+        new MappingRecord()
+            .setId(mappingId)
+            .setMappingKey(key)
+            .setClaimName(claimName)
+            .setClaimValue(claimValue);
     mappingState.create(mapping);
     final var tenantId = "tenant";
-    mappingState.addTenant(key, tenantId);
+    mappingState.addTenant(mappingId, tenantId);
 
     // when
     mappingState.removeTenant(key, tenantId);

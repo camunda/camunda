@@ -15,6 +15,7 @@ import static io.camunda.zeebe.protocol.record.value.EntityType.USER;
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.value.UserRecordValue;
+import io.camunda.zeebe.test.util.Strings;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.util.UUID;
 import org.assertj.core.api.Assertions;
@@ -33,7 +34,7 @@ public class AddEntityTenantTest {
   public void shouldAddMappingToTenant() {
     // given
     final var entityType = MAPPING;
-    final var entityKey = createMapping();
+    final var entityId = createMapping();
     final var tenantId = UUID.randomUUID().toString();
     final var tenantKey =
         engine
@@ -50,7 +51,8 @@ public class AddEntityTenantTest {
         engine
             .tenant()
             .addEntity(tenantId)
-            .withEntityKey(entityKey)
+            // keys
+            .withEntityId(entityId)
             .withEntityType(entityType)
             .add()
             .getValue();
@@ -58,10 +60,10 @@ public class AddEntityTenantTest {
     // then assert that the entity was added correctly
     Assertions.assertThat(updatedTenant)
         .describedAs(
-            "Entity of type %s with key %s should be correctly added to tenant with key %s",
-            entityType, entityKey, tenantKey)
+            "Entity of type %s with id %s should be correctly added to tenant with id %s",
+            entityType, entityId, tenantKey)
         .isNotNull()
-        .hasFieldOrPropertyWithValue("entityKey", entityKey)
+        .hasFieldOrPropertyWithValue("entityId", entityId)
         .hasFieldOrPropertyWithValue("tenantKey", tenantKey)
         .hasFieldOrPropertyWithValue("tenantId", tenantId)
         .hasFieldOrPropertyWithValue("entityType", entityType);
@@ -128,7 +130,9 @@ public class AddEntityTenantTest {
         engine
             .tenant()
             .addEntity(tenantId)
-            .withEntityKey(entityKey)
+            // TODO remove the String parsing once Groups are migrated to work with ids instead of
+            // keys
+            .withEntityId(String.valueOf(entityKey))
             .withEntityType(entityType)
             .add()
             .getValue();
@@ -139,7 +143,6 @@ public class AddEntityTenantTest {
             "Entity of type %s with key %s should be correctly added to tenant with key %s",
             entityType, entityKey, tenantKey)
         .isNotNull()
-        .hasFieldOrPropertyWithValue("entityKey", entityKey)
         .hasFieldOrPropertyWithValue("tenantKey", tenantKey)
         .hasFieldOrPropertyWithValue("tenantId", tenantId)
         .hasFieldOrPropertyWithValue("entityType", entityType);
@@ -225,13 +228,14 @@ public class AddEntityTenantTest {
     return engine.group().newGroup("groupName").create().getValue().getGroupKey();
   }
 
-  private long createMapping() {
+  private String createMapping() {
     return engine
         .mapping()
         .newMapping("mappingName")
         .withClaimValue("claimValue")
+        .withId(Strings.newRandomValidIdentityId())
         .create()
         .getValue()
-        .getMappingKey();
+        .getId();
   }
 }
