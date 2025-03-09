@@ -510,7 +510,7 @@ public final class ProcessInstanceMigrationPreconditions {
    * @param elementInstance element instance to do the check
    * @param processInstanceKey process instance key to be logged
    */
-  public static void requireSameUserTaskImplementation(
+  public static void requireSupportedUserTaskConversion(
       final DeployedProcess targetProcessDefinition,
       final String targetElementId,
       final ElementInstance elementInstance,
@@ -540,7 +540,8 @@ public final class ProcessInstanceMigrationPreconditions {
             ? ZEEBE_USER_TASK_IMPLEMENTATION
             : JOB_WORKER_IMPLEMENTATION;
 
-    if (!targetUserTaskType.equals(sourceUserTaskType)) {
+    if (!(sourceUserTaskType.equals(JOB_WORKER_IMPLEMENTATION)
+        && targetUserTaskType.equals(ZEEBE_USER_TASK_IMPLEMENTATION))) {
       final String reason =
           String.format(
               ERROR_USER_TASK_IMPLEMENTATION_CHANGED,
