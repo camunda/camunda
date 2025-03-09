@@ -13,12 +13,8 @@ public final class IdentifierPatterns {
 
   public static final int MAX_LENGTH = 256;
 
-  /** 1 or more alphanumeric characters, '@', '.', or '_'. */
-  public static final String USERNAME_REGEX = "[a-zA-Z0-9@._]+";
+  /** 1 or more alphanumeric characters, '_', '@', '.', or '-'. */
+  public static final String ID_REGEX = "^[a-zA-Z0-9_@.-]+$";
 
-  /** 1 or more alphanumeric characters. */
-  public static final String ID_REGEX = "[a-zA-Z0-9]+";
-
-  public static final Pattern USERNAME_PATTERN = Pattern.compile(USERNAME_REGEX);
   public static final Pattern ID_PATTERN = Pattern.compile(ID_REGEX);
 }
