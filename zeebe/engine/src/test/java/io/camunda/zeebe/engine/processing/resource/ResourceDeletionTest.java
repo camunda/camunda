@@ -26,6 +26,7 @@ import io.camunda.zeebe.protocol.record.intent.MessageStartEventSubscriptionInte
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessIntent;
 import io.camunda.zeebe.protocol.record.intent.ResourceDeletionIntent;
+import io.camunda.zeebe.protocol.record.intent.ResourceIntent;
 import io.camunda.zeebe.protocol.record.intent.SignalSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.TimerIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
@@ -35,6 +36,7 @@ import io.camunda.zeebe.protocol.record.value.deployment.DecisionRecordValue;
 import io.camunda.zeebe.protocol.record.value.deployment.DecisionRequirementsMetadataValue;
 import io.camunda.zeebe.protocol.record.value.deployment.Form;
 import io.camunda.zeebe.protocol.record.value.deployment.ProcessMetadataValue;
+import io.camunda.zeebe.protocol.record.value.deployment.Resource;
 import io.camunda.zeebe.test.util.BrokerClassRuleHelper;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import java.io.IOException;
@@ -49,6 +51,7 @@ public class ResourceDeletionTest {
   private static final String DRG_MULTIPLE_DECISIONS = "/dmn/drg-force-user.dmn";
   private static final String RESULT_VARIABLE = "result";
   private static final String FORM = "/form/test-form-1-with-version-tag-v1.form";
+  private static final String RESOURCE = "/resource/test-rpa-1.rpa";
 
   @Rule public final EngineRule engine = EngineRule.singlePartition();
   @Rule public final BrokerClassRuleHelper helper = new BrokerClassRuleHelper();
@@ -668,6 +671,19 @@ public class ResourceDeletionTest {
     verifyResourceIsDeleted(formKey);
   }
 
+  @Test
+  public void shouldWriteDeletedEventsForResource() {
+    // given
+    final long resourceKey = deployResource(RESOURCE);
+
+    // when
+    engine.resourceDeletion().withResourceKey(resourceKey).delete();
+
+    // then
+    verifyResourceIsDeleted2(resourceKey);
+    verifyResourceIsDeleted(resourceKey);
+  }
+
   private long deployDrg(final String drgResource) {
     return engine
         .deployment()
@@ -1043,6 +1059,17 @@ public class ResourceDeletionTest {
         .getFormKey();
   }
 
+  private long deployResource(final String resource) {
+    return engine
+        .deployment()
+        .withJsonResource(readResource(resource), resource)
+        .deploy()
+        .getValue()
+        .getResourceMetadata()
+        .getFirst()
+        .getResourceKey();
+  }
+
   private void verifyFormIsDeleted(final long formKey) {
     final var formCreatedRecord =
         RecordingExporter.formRecords()
@@ -1076,5 +1103,41 @@ public class ResourceDeletionTest {
             formCreatedRecord.getResourceName(),
             formCreatedRecord.getTenantId(),
             formCreatedRecord.getDeploymentKey());
+  }
+
+  // TODO name
+  private void verifyResourceIsDeleted2(final long resourceKey) {
+    final var resourceCreatedRecord =
+        RecordingExporter.resourceRecords()
+            .withResourceKey(resourceKey)
+            .withIntent(ResourceIntent.CREATED)
+            .getFirst()
+            .getValue();
+
+    final var resourceDeletedRecord =
+        RecordingExporter.resourceRecords()
+            .withResourceKey(resourceKey)
+            .withIntent(ResourceIntent.DELETED)
+            .getFirst()
+            .getValue();
+
+    assertThat(resourceDeletedRecord)
+        .describedAs("Expect deleted resource to match the created resource")
+        .extracting(
+            Resource::getResourceId,
+            Resource::getResourceKey,
+            Resource::getVersion,
+            Resource::getVersionTag,
+            Resource::getResourceName,
+            Resource::getTenantId,
+            Resource::getDeploymentKey)
+        .containsOnly(
+            resourceCreatedRecord.getResourceId(),
+            resourceCreatedRecord.getResourceKey(),
+            resourceCreatedRecord.getVersion(),
+            resourceCreatedRecord.getVersionTag(),
+            resourceCreatedRecord.getResourceName(),
+            resourceCreatedRecord.getTenantId(),
+            resourceCreatedRecord.getDeploymentKey());
   }
 }
