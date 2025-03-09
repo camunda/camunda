@@ -239,9 +239,14 @@ public class CamundaServicesConfiguration {
   public AuthorizationServices authorizationServices(
       final BrokerClient brokerClient,
       final SecurityContextProvider securityContextProvider,
-      final AuthorizationSearchClient authorizationSearchClient) {
+      final AuthorizationSearchClient authorizationSearchClient,
+      final SecurityConfiguration securityConfiguration) {
     return new AuthorizationServices(
-        brokerClient, securityContextProvider, authorizationSearchClient, null);
+        brokerClient,
+        securityContextProvider,
+        authorizationSearchClient,
+        null,
+        securityConfiguration);
   }
 
   @Bean
