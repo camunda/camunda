@@ -211,7 +211,7 @@ public final class ResponseMapper {
         status = HttpStatus.METHOD_NOT_ALLOWED;
       }
       default -> {
-        detail = null;
+        detail = "An error occurred: " + e.getClass().getName();
         status = HttpStatus.INTERNAL_SERVER_ERROR;
       }
     }
