@@ -13,6 +13,8 @@ import static io.camunda.webapps.schema.descriptors.operate.template.JobTemplate
 import static io.camunda.webapps.schema.descriptors.operate.template.JobTemplate.ERROR_MESSAGE;
 import static io.camunda.webapps.schema.descriptors.operate.template.JobTemplate.FLOW_NODE_ID;
 import static io.camunda.webapps.schema.descriptors.operate.template.JobTemplate.JOB_DEADLINE;
+import static io.camunda.webapps.schema.descriptors.operate.template.JobTemplate.JOB_DENIED;
+import static io.camunda.webapps.schema.descriptors.operate.template.JobTemplate.JOB_DENIED_REASON;
 import static io.camunda.webapps.schema.descriptors.operate.template.JobTemplate.JOB_FAILED_WITH_RETRIES_LEFT;
 import static io.camunda.webapps.schema.descriptors.operate.template.JobTemplate.JOB_STATE;
 import static io.camunda.webapps.schema.descriptors.operate.template.JobTemplate.JOB_WORKER;
@@ -30,6 +32,7 @@ import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.value.ImmutableJobRecordValue;
+import io.camunda.zeebe.protocol.record.value.ImmutableJobResultValue;
 import io.camunda.zeebe.protocol.record.value.JobKind;
 import io.camunda.zeebe.protocol.record.value.JobListenerEventType;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
@@ -150,6 +153,8 @@ final class JobHandlerTest {
     final long deadline = Instant.now().toEpochMilli();
     final JobKind jobKind = JobKind.BPMN_ELEMENT;
     final JobListenerEventType jobListenerEventType = JobListenerEventType.END;
+    final Boolean jobDenied = true;
+    final String jobDeniedReason = "reason to deny";
     final var recordValue =
         ImmutableJobRecordValue.builder()
             .withProcessInstanceKey(processInstanceKey)
@@ -167,6 +172,11 @@ final class JobHandlerTest {
             .withJobListenerEventType(jobListenerEventType)
             .withDeadline(deadline)
             .withErrorCode(errorCode)
+            .withResult(
+                ImmutableJobResultValue.builder()
+                    .withDenied(jobDenied)
+                    .withDeniedReason(jobDeniedReason)
+                    .build())
             .build();
     final Record<JobRecordValue> record =
         factory.generateRecord(
@@ -206,6 +216,8 @@ final class JobHandlerTest {
         .isEqualTo(DateUtil.toOffsetDateTime(Instant.ofEpochMilli(record.getTimestamp())));
     assertThat(entity.getDeadline())
         .isEqualTo(DateUtil.toOffsetDateTime(Instant.ofEpochMilli(deadline)));
+    assertThat(entity.isJobDenied()).isEqualTo(jobDenied);
+    assertThat(entity.getJobDeniedReason()).isEqualTo(jobDeniedReason);
   }
 
   @Test
@@ -286,6 +298,8 @@ final class JobHandlerTest {
     final String bpmnProcessId = "bpmnProcessId";
     final long processDefinitionKey = 555L;
     final OffsetDateTime endTime = OffsetDateTime.now();
+    final Boolean jobDenied = true;
+    final String jobDeniedReason = "reason to deny";
 
     final Map<String, String> customHeaders = Map.of("key", "val");
     final JobEntity jobEntity =
@@ -300,7 +314,9 @@ final class JobHandlerTest {
             .setCustomHeaders(customHeaders)
             .setDeadline(deadline)
             .setProcessDefinitionKey(processDefinitionKey)
-            .setBpmnProcessId(bpmnProcessId);
+            .setBpmnProcessId(bpmnProcessId)
+            .setJobDenied(jobDenied)
+            .setJobDeniedReason(jobDeniedReason);
 
     final Map<String, Object> expectedUpdateFields = new LinkedHashMap<>();
     expectedUpdateFields.put(JOB_WORKER, jobEntity.getWorker());
@@ -313,6 +329,8 @@ final class JobHandlerTest {
     expectedUpdateFields.put(JOB_DEADLINE, jobEntity.getDeadline());
     expectedUpdateFields.put(PROCESS_DEFINITION_KEY, jobEntity.getProcessDefinitionKey());
     expectedUpdateFields.put(BPMN_PROCESS_ID, jobEntity.getBpmnProcessId());
+    expectedUpdateFields.put(JOB_DENIED, jobDenied);
+    expectedUpdateFields.put(JOB_DENIED_REASON, jobDeniedReason);
 
     final BatchRequest mockRequest = Mockito.mock(BatchRequest.class);
 
@@ -339,6 +357,8 @@ final class JobHandlerTest {
     final String bpmnProcessId = "bpmnProcessId";
     final long processDefinitionKey = 555L;
     final OffsetDateTime endTime = OffsetDateTime.now();
+    final Boolean jobDenied = true;
+    final String jobDeniedReason = "reason to deny";
 
     final Map<String, String> customHeaders = Map.of("key", "val");
     final JobEntity jobEntity =
@@ -355,7 +375,9 @@ final class JobHandlerTest {
             .setDeadline(deadline)
             .setProcessDefinitionKey(processDefinitionKey)
             .setBpmnProcessId(bpmnProcessId)
-            .setJobFailedWithRetriesLeft(true);
+            .setJobFailedWithRetriesLeft(true)
+            .setJobDenied(jobDenied)
+            .setJobDeniedReason(jobDeniedReason);
 
     final Map<String, Object> expectedUpdateFields = new LinkedHashMap<>();
     expectedUpdateFields.put(FLOW_NODE_ID, jobEntity.getFlowNodeId());
@@ -370,6 +392,8 @@ final class JobHandlerTest {
     expectedUpdateFields.put(JOB_DEADLINE, jobEntity.getDeadline());
     expectedUpdateFields.put(PROCESS_DEFINITION_KEY, jobEntity.getProcessDefinitionKey());
     expectedUpdateFields.put(BPMN_PROCESS_ID, jobEntity.getBpmnProcessId());
+    expectedUpdateFields.put(JOB_DENIED, jobDenied);
+    expectedUpdateFields.put(JOB_DENIED_REASON, jobDeniedReason);
 
     final BatchRequest mockRequest = Mockito.mock(BatchRequest.class);
 
