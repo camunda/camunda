@@ -596,7 +596,7 @@
               <mainClass>io.camunda.application.StandaloneSchemaManager</mainClass>
             </program>
             <program>
-              <id>backup</id>
+              <id>backup-webapps</id>
               <mainClass>io.camunda.application.StandaloneBackupManager</mainClass>
             </program>
             <program>
