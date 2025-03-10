@@ -20,6 +20,7 @@ on:
       benchmark-load:
         description: 'Specifies which benchmark components to deploy. `starter`, `timer` and `publisher` can be assigned with the rate at which they publish. Allows arbitrary helm arguments, like --set starter.rate=100'
         required: false
+<<<<<<< HEAD
       publish:
         description: 'Where to publish the results, can be "slack" or "comment"'
         default: ""
@@ -30,6 +31,8 @@ on:
         type: boolean
         required: false
         default: true
+=======
+>>>>>>> 6b618e7f (ci: remove broken benchmark measurement support)
       stable-vms:
         description: 'Deploy to non-spot VMs'
         type: boolean
@@ -157,6 +160,7 @@ jobs:
       - name: Build Starter Image
         run: ./mvnw -pl benchmarks/project jib:build -P starter -D image="gcr.io/zeebe-io/starter:${{ steps.image-tag.outputs.image-tag }}"
       - name: Build Worker Image
+<<<<<<< HEAD
         run: ./mvnw -pl benchmarks/project jib:build -P worker -D image="gcr.io/zeebe-io/worker:${{ steps.image-tag.outputs.image-tag }}"
   deploy-benchmark-measurement:
     name: Measure
@@ -177,6 +181,10 @@ jobs:
         --set camunda-platform.zeebe-gateway.image.repository=gcr.io/zeebe-io/zeebe
         --set camunda-platform.zeebe-gateway.image.tag=${{ needs.build-zeebe-image.outputs.image-tag }}
         ${{ inputs.benchmark-load }}
+=======
+        run: ./mvnw -pl zeebe/benchmarks/project jib:build -P worker -D image="gcr.io/zeebe-io/worker:${{ needs.calculate-image-tag.outputs.image-tag }}"
+
+>>>>>>> 6b618e7f (ci: remove broken benchmark measurement support)
   deploy-benchmark-cluster:
     name: Deploy
     needs:
