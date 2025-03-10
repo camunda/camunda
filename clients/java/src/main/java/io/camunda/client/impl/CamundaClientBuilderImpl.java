@@ -81,8 +81,8 @@ public final class CamundaClientBuilderImpl
 
   public static final String DEFAULT_GATEWAY_ADDRESS = "0.0.0.0:26500";
   public static final URI DEFAULT_GRPC_ADDRESS =
-      getURIFromString("https://" + DEFAULT_GATEWAY_ADDRESS);
-  public static final URI DEFAULT_REST_ADDRESS = getURIFromString("https://0.0.0.0:8080");
+      getURIFromString("http://" + DEFAULT_GATEWAY_ADDRESS);
+  public static final URI DEFAULT_REST_ADDRESS = getURIFromString("http://0.0.0.0:8080");
   public static final String DEFAULT_JOB_WORKER_NAME_VAR = "default";
   private static final String TENANT_ID_LIST_SEPARATOR = ",";
   private static final boolean DEFAULT_PREFER_REST_OVER_GRPC = false;
@@ -114,7 +114,7 @@ public final class CamundaClientBuilderImpl
   private int maxMessageSize = 4 * ONE_MB;
   private int maxMetadataSize = 16 * ONE_KB;
   private boolean streamEnabled = false;
-  private boolean grpcAddressUsed = false;
+  private boolean grpcAddressUsed = true;
   private ScheduledExecutorService jobWorkerExecutor;
   private boolean ownsJobWorkerExecutor;
   private boolean useDefaultRetryPolicy;
@@ -403,6 +403,7 @@ public final class CamundaClientBuilderImpl
   @Override
   public CamundaClientBuilder gatewayAddress(final String gatewayAddress) {
     this.gatewayAddress = gatewayAddress;
+    grpcAddressUsed = false;
     return this;
   }
 
@@ -417,7 +418,6 @@ public final class CamundaClientBuilderImpl
   public CamundaClientBuilder grpcAddress(final URI grpcAddress) {
     checkIfUriIsAbsolute(grpcAddress, "grpcAddress");
     this.grpcAddress = grpcAddress;
-    grpcAddressUsed = true;
     return this;
   }
 
