@@ -12,6 +12,7 @@ import io.camunda.operate.webapp.backup.BackupService;
 import io.camunda.tasklist.webapp.es.backup.BackupManager;
 import io.camunda.tasklist.webapp.management.dto.BackupStateDto;
 import io.camunda.tasklist.webapp.management.dto.TakeBackupRequestDto;
+import java.util.Arrays;
 import java.util.EnumSet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -83,7 +84,7 @@ public class StandaloneBackupManager implements CommandLineRunner {
     MainSupport.putSystemPropertyIfAbsent(
         "spring.banner.location", "classpath:/assets/camunda_banner.txt");
 
-    LOG.info("Creating/updating Elasticsearch schema for Camunda ...");
+    LOG.info("Creating a backup for Operate and Tasklist elasticsearch indices ...");
 
     MainSupport.createDefaultApplicationBuilder()
         .web(WebApplicationType.NONE)
@@ -105,7 +106,7 @@ public class StandaloneBackupManager implements CommandLineRunner {
   public void run(final String... args) throws Exception {
     if (args.length != 1) {
       throw new IllegalArgumentException(
-          String.format("Expected one argument, the backup ID, but got %d", args.length));
+          String.format("Expected one argument, the backup ID, but got: %s", Arrays.asList(args)));
     }
 
     final long backupId;
@@ -172,12 +173,12 @@ public class StandaloneBackupManager implements CommandLineRunner {
           failureReason.append(
               " Tasklist indices backup failure: %s.".formatted(tasklistBackup.getFailureReason()));
         }
-        LOG.error("Backup with id:[{}] failed.{}", backupId, failureReason);
-        throw new IllegalStateException("Backup with id:[%d] failed".formatted(backupId));
+        throw new IllegalStateException(
+            "Backup with id:[%d] failed.%s".formatted(backupId, failureReason));
       }
     }
 
-    LOG.info("Backup with id:[{}}] is completed!", backupId);
+    LOG.info("Backup with id:[{}] is completed!", backupId);
   }
 
   private boolean isCompletedBackup(
