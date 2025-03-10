@@ -17,6 +17,7 @@ package io.camunda.zeebe.client.impl.command;
 
 import static io.camunda.zeebe.client.impl.command.ArgumentUtil.ensureNotNull;
 
+import io.camunda.client.impl.util.ParseUtil;
 import io.camunda.client.protocol.rest.DocumentCreationBatchResponse;
 import io.camunda.zeebe.client.ZeebeClientConfiguration;
 import io.camunda.zeebe.client.api.JsonMapper;
@@ -91,7 +92,7 @@ public class CreateDocumentBatchCommandImpl implements CreateDocumentBatchComman
           document.getMetadata().setProcessDefinitionId(processDefinitionId);
         }
         if (processInstanceKey != null) {
-          document.getMetadata().setProcessInstanceKey(processInstanceKey);
+          document.getMetadata().setProcessInstanceKey(ParseUtil.keyToString(processInstanceKey));
         }
         final String metadataString = jsonMapper.toJson(document.getMetadata());
         final MultipartPart part =
