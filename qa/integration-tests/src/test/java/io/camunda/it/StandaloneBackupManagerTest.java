@@ -108,9 +108,9 @@ final class StandaloneBackupManagerTest {
               "zeebe.broker.exporters.elasticsearch.args.authentication.username", ADMIN_USER)
           .withProperty(
               "zeebe.broker.exporters.elasticsearch.args.authentication.password", ADMIN_PASSWORD)
+          .withProperty("camunda.operate.elasticsearch.healthCheckEnabled", "false")
           .withProperty("camunda.operate.elasticsearch.username", ADMIN_USER)
           .withProperty("camunda.operate.elasticsearch.password", ADMIN_PASSWORD)
-          .withProperty("camunda.operate.elasticsearch.healthCheckEnabled", "false")
           .withProperty("camunda.operate.archiver.ilmEnabled", "true")
           .withProperty("camunda.tasklist.database", "elasticsearch")
           .withProperty("camunda.tasklist.elasticsearch.username", ADMIN_USER)
@@ -395,6 +395,10 @@ final class StandaloneBackupManagerTest {
                     .isFalse());
   }
 
+  /**
+   * As documented in
+   * https://docs.camunda.io/docs/self-managed/operational-guides/backup-restore/backup-and-restore/#restore
+   */
   private void restoreBackup(final List<String> snapshots) {
     snapshots.stream()
         .forEach(
