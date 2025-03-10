@@ -2643,6 +2643,51 @@ paths:
         "500":
           $ref: "#/components/responses/InternalServerError"
   /mapping-rules/{mappingId}:
+    put:
+      tags:
+        - Mapping rule
+      operationId: updateMappingRule
+      summary: Update mapping rule
+      description: |
+        Update a mapping rule
+      parameters:
+        - name: mappingId
+          in: path
+          required: true
+          description: The id of the mapping rule to delete.
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MappingRuleUpdateRequest"
+      responses:
+        "200":
+          description: The mapping rule was updated successfully.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MappingRuleUpdateResult"
+        "400":
+          $ref: "#/components/responses/InvalidData"
+        "403":
+          description: |
+            The request to update a mapping rule was denied.
+            More details are provided in the response body.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "404":
+          description: The request to update a mapping rule was denied.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+  /mapping-rules/{mappingKey}:
     delete:
       tags:
         - Mapping rule
@@ -2654,7 +2699,7 @@ paths:
         This API is in a Work-in-Progress state and will undergo potential breaking changes until
         its release with an upcoming minor release.
       parameters:
-        - name: mappingId
+        - name: mappingKey
           in: path
           required: true
           description: The key of the mapping rule to delete.
@@ -5818,8 +5863,7 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/GroupResult"
-
-    MappingRuleCreateRequest:
+    MappingRuleCreateUpdateRequest:
       type: object
       properties:
         claimName:
@@ -5831,15 +5875,25 @@ components:
         name:
           type: string
           description: The name of the mapping.
-        id:
-          type: string
-          description: The unique external id of the mapping.
       required:
         - claimName
         - claimValue
         - name
+    MappingRuleCreateRequest:
+      type: object
+      allOf:
+        - $ref: "#/components/schemas/MappingRuleCreateUpdateRequest"
+      properties:
+        id:
+          type: string
+          description: The unique external id of the mapping.
+      required:
         - id
-    MappingRuleCreateResult:
+    MappingRuleUpdateRequest:
+      type: object
+      allOf:
+        - $ref: "#/components/schemas/MappingRuleCreateUpdateRequest"
+    MappingRuleCreateUpdateResult:
       type: object
       properties:
         claimName:
@@ -5857,6 +5911,14 @@ components:
         mappingKey:
           description: The key of the created mapping rule.
           type: string
+    MappingRuleCreateResult:
+      type: object
+      allOf:
+        - $ref: "#/components/schemas/MappingRuleCreateUpdateResult"
+    MappingRuleUpdateResult:
+      type: object
+      allOf:
+        - $ref: "#/components/schemas/MappingRuleCreateUpdateResult"
     MappingSearchQueryResult:
       type: object
       allOf:

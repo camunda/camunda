@@ -88,6 +88,7 @@ import io.camunda.zeebe.gateway.protocol.rest.JobErrorRequest;
 import io.camunda.zeebe.gateway.protocol.rest.JobFailRequest;
 import io.camunda.zeebe.gateway.protocol.rest.JobUpdateRequest;
 import io.camunda.zeebe.gateway.protocol.rest.MappingRuleCreateRequest;
+import io.camunda.zeebe.gateway.protocol.rest.MappingRuleUpdateRequest;
 import io.camunda.zeebe.gateway.protocol.rest.MessageCorrelationRequest;
 import io.camunda.zeebe.gateway.protocol.rest.MessagePublicationRequest;
 import io.camunda.zeebe.gateway.protocol.rest.PermissionTypeEnum;
@@ -470,6 +471,15 @@ public class RequestMapper {
                 request.getClaimValue(),
                 request.getName(),
                 request.getId()));
+  }
+
+  public static Either<ProblemDetail, MappingDTO> toMappingDTO(
+      final String mappingId, final MappingRuleUpdateRequest request) {
+    return getResult(
+        validateMappingRequest(request),
+        () ->
+            new MappingDTO(
+                request.getClaimName(), request.getClaimValue(), request.getName(), mappingId));
   }
 
   public static <BrokerResponseT> CompletableFuture<ResponseEntity<Object>> executeServiceMethod(

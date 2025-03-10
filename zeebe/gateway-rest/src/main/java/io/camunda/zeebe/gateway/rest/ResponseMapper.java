@@ -47,6 +47,7 @@ import io.camunda.zeebe.gateway.protocol.rest.EvaluatedDecisionResult;
 import io.camunda.zeebe.gateway.protocol.rest.GroupCreateResult;
 import io.camunda.zeebe.gateway.protocol.rest.GroupUpdateResult;
 import io.camunda.zeebe.gateway.protocol.rest.MappingRuleCreateResult;
+import io.camunda.zeebe.gateway.protocol.rest.MappingRuleUpdateResult;
 import io.camunda.zeebe.gateway.protocol.rest.MatchedDecisionRuleItem;
 import io.camunda.zeebe.gateway.protocol.rest.MessageCorrelationResult;
 import io.camunda.zeebe.gateway.protocol.rest.MessagePublicationResult;
@@ -564,8 +565,20 @@ public final class ResponseMapper {
             .mappingKey(KeyUtil.keyToString(record.getMappingKey()))
             .claimName(record.getClaimName())
             .claimValue(record.getClaimValue())
+            .id(record.getId())
             .name(record.getName());
     return new ResponseEntity<>(response, HttpStatus.CREATED);
+  }
+
+  public static ResponseEntity<Object> toMappingUpdateResponse(final MappingRecord record) {
+    final var response =
+        new MappingRuleUpdateResult()
+            .mappingKey(KeyUtil.keyToString(record.getMappingKey()))
+            .claimName(record.getClaimName())
+            .claimValue(record.getClaimValue())
+            .id(record.getId())
+            .name(record.getName());
+    return new ResponseEntity<>(response, HttpStatus.OK);
   }
 
   public static ResponseEntity<Object> toEvaluateDecisionResponse(

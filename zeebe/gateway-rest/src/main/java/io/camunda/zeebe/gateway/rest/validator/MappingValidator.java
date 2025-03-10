@@ -16,10 +16,27 @@ import static io.camunda.zeebe.gateway.rest.validator.IdentifierPatterns.MAX_LEN
 import static io.camunda.zeebe.gateway.rest.validator.RequestValidator.validate;
 
 import io.camunda.zeebe.gateway.protocol.rest.MappingRuleCreateRequest;
+import io.camunda.zeebe.gateway.protocol.rest.MappingRuleUpdateRequest;
 import java.util.Optional;
 import org.springframework.http.ProblemDetail;
 
 public class MappingValidator {
+
+  public static Optional<ProblemDetail> validateMappingRequest(
+      final MappingRuleUpdateRequest request) {
+    return validate(
+        violations -> {
+          if (request.getClaimName() == null || request.getClaimName().isBlank()) {
+            violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("claimName"));
+          }
+          if (request.getClaimValue() == null || request.getClaimValue().isBlank()) {
+            violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("claimValue"));
+          }
+          if (request.getName() == null || request.getName().isBlank()) {
+            violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("name"));
+          }
+        });
+  }
 
   public static Optional<ProblemDetail> validateMappingRequest(
       final MappingRuleCreateRequest request) {
