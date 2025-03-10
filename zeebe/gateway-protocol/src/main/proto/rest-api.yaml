@@ -3660,8 +3660,12 @@ components:
           type: string
           description: Name of the variable.
         value:
-          type: string
+          allOf:
+            - $ref: "#/components/schemas/StringFilterProperty"
           description: The value of the variable.
+      required:
+        - name
+        - value
     VariableUserTaskFilterRequest:
       description: The user task variable search filters.
       type: object
@@ -4246,7 +4250,11 @@ components:
           type: string
         value:
           description: The value of the variable.
-          type: string
+          allOf:
+            - $ref: "#/components/schemas/StringFilterProperty"
+      required:
+        - name
+        - value
     ProcessInstanceSearchQueryResult:
       description: Process instance search response.
       type: object
