@@ -48,7 +48,7 @@
     "eslint": "eslint src/ e2e-playwright/ --max-warnings=0",
     "lint": "yarn ts-check && yarn eslint",
     "fix:prettier": "prettier --write \"**/*.ts\"",
-    "test:e2e": "cross-env IS_E2E=true PORT=8081 ZEEBE_GATEWAY_ADDRESS=localhost:26503 ZEEBE_REST_GATEWAY_ADDRESS=http://localhost:8080 yarn playwright e2e-playwright/tests",
+    "test:e2e": "cross-env IS_E2E=true PORT=8081 ZEEBE_GATEWAY_ADDRESS=localhost:26503 ZEEBE_REST_GATEWAY_ADDRESS=http://localhost:8081 yarn playwright e2e-playwright/tests",
     "test:a11y": "cross-env IS_A11Y=true yarn playwright e2e-playwright/a11y",
     "generate-screenshots": "cross-env IS_SCREENSHOT_GENERATOR=true yarn playwright e2e-playwright/docs-screenshots",
     "test:e2e:ci": "cross-env IS_E2E=true PORT=8080 yarn playwright e2e-playwright/tests",
