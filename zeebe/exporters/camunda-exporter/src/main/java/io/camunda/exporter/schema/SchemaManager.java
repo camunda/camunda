@@ -23,6 +23,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.agrona.LangUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -130,9 +131,7 @@ public class SchemaManager {
       return;
     }
 
-    final var existingIndexNames =
-        Collections.synchronizedSet(
-            searchEngineClient.getMappings(allIndexNames(), MappingSource.INDEX).keySet());
+    final var existingIndexNames = Collections.synchronizedSet(existingIndexNames());
 
     LOG.info(
         "Found '{}' existing indices. Create missing index templates based on '{}' descriptors.",
@@ -164,8 +163,6 @@ public class SchemaManager {
       return;
     }
 
-    final var existingIndexNames = existingIndexNames();
-
     final var existingTemplateNames =
         Collections.synchronizedSet(
             searchEngineClient
@@ -176,7 +173,7 @@ public class SchemaManager {
         "Found '{}' existing index templates. Create missing index templates based on '{}' descriptors.",
         existingTemplateNames.size(),
         indexTemplateDescriptors.size());
-    final var futures =
+    final var indexTemplateCreationFutures =
         indexTemplateDescriptors.stream()
             .filter(descriptor -> !existingTemplateNames.contains(descriptor.getTemplateName()))
             .map(
@@ -197,13 +194,29 @@ public class SchemaManager {
                           searchEngineClient.createIndex(
                               descriptor, getIndexSettingsFromConfig(descriptor.getIndexName()));
                         },
-                        virtualThreadExecutor))
-            .toArray(CompletableFuture[]::new);
+                        virtualThreadExecutor));
 
-    // We need to wait for the completion, to make sure all indices and templates have been created
-    // successfully
+    final var matchingIndexCreationFutures =
+        indexTemplateDescriptors.stream()
+            .map(
+                descriptor ->
+                    CompletableFuture.runAsync(
+                        () -> {
+                          LOG.info(
+                              "Creating index '{}', for template '{}'",
+                              descriptor.getFullQualifiedName(),
+                              descriptor.getTemplateName());
+                          searchEngineClient.createIndex(
+                              descriptor, getIndexSettingsFromConfig(descriptor.getIndexName()));
+                        },
+                        virtualThreadExecutor));
+
+    // We need to wait for the completion, to make sure all indices and templates have been
+    // created successfully
     // Doing this in parallel is still speeding up the bootstrap time
-    joinOnFutures(futures);
+    joinOnFutures(
+        Stream.concat(indexTemplateCreationFutures, matchingIndexCreationFutures)
+            .toArray(CompletableFuture[]::new));
   }
 
   /**
