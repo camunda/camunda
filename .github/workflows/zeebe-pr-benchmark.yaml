@@ -20,7 +20,11 @@ jobs:
       cluster: zeebe-cluster
       cluster-region: europe-west1-b
       ref: ${{ github.event.pull_request.head.ref }}
+<<<<<<< HEAD
       publish: "comment"
+=======
+
+>>>>>>> 6b618e7f (ci: remove broken benchmark measurement support)
   delete-benchmark:
     name: Benchmark Cleanup
     if: >
