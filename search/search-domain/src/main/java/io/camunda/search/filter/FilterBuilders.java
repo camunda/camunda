@@ -176,6 +176,15 @@ public final class FilterBuilders {
     return fn.apply(incident()).build();
   }
 
+  public static BatchOperationFilter.Builder batchOperation() {
+    return new BatchOperationFilter.Builder();
+  }
+
+  public static BatchOperationFilter batchOperation(
+      final Function<BatchOperationFilter.Builder, ObjectBuilder<BatchOperationFilter>> fn) {
+    return fn.apply(batchOperation()).build();
+  }
+
   public static FormFilter.Builder form() {
     return new FormFilter.Builder();
   }

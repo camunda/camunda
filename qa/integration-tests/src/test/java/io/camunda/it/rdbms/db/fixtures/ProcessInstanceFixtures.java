@@ -17,7 +17,8 @@ import java.util.function.Function;
 
 public final class ProcessInstanceFixtures extends CommonFixtures {
 
-  private ProcessInstanceFixtures() {}
+  private ProcessInstanceFixtures() {
+  }
 
   public static ProcessInstanceDbModel createRandomized(
       final Function<ProcessInstanceDbModelBuilder, ProcessInstanceDbModelBuilder>
@@ -33,7 +34,8 @@ public final class ProcessInstanceFixtures extends CommonFixtures {
             .startDate(NOW.plus(RANDOM.nextInt(), ChronoUnit.MILLIS))
             .endDate(NOW.plus(RANDOM.nextInt(), ChronoUnit.MILLIS))
             .version(RANDOM.nextInt(10000))
-            .tenantId("tenant-" + RANDOM.nextInt(10000));
+            .tenantId("tenant-" + RANDOM.nextInt(10000))
+            .partitionId(RANDOM.nextInt(100));
 
     return builderFunction.apply(builder).build();
   }

@@ -380,6 +380,7 @@ public class ClusteringRule extends ExternalResource {
             meterRegistry,
             new SecurityConfiguration(),
             null,
+            null,
             null);
 
     final Broker broker =

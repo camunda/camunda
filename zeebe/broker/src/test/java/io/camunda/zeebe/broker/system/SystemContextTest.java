@@ -370,7 +370,8 @@ final class SystemContextTest {
         mock(BrokerClient.class),
         new SecurityConfiguration(),
         mock(UserServices.class),
-        mock(PasswordEncoder.class));
+        mock(PasswordEncoder.class),
+        null);
   }
 
   @Test
