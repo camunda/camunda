@@ -1,0 +1,204 @@
+### Create Tenant
+# @name create-tenant
+POST {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/tenants
+Authorization: Basic {{BASIC_AUTH_TOKEN}}
+Content-Type: application/json
+Accept: application/json
+
+{
+  "tenantId": "testTenant1",
+  "name": "TestTenant1",
+  "description": "A test tenant."
+}
+
+> {%
+  client.test("Tenant creation should be successful", function () {
+    client.assert(response.status === 201, "Response status is not 201");
+    client.global.set("TENANT_ID", response.body.tenantId);
+  });
+%}
+
+### Get Tenant
+# @name get-tenant
+< {%
+  import {wait} from "js/wait";
+  wait(2);
+%}
+GET {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/tenants/{{TENANT_ID}}
+Authorization: Basic {{BASIC_AUTH_TOKEN}}
+Accept: application/json
+
+> {%
+  client.test("Tenant retrieval should be successful", function () {
+    client.assert(response.status === 200, "Response status is not 200");
+  });
+%}
+
+### Update Tenant
+# @name update-tenant
+< {%
+  import {wait} from "js/wait";
+  wait(2);
+%}
+PUT {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/tenants/{{TENANT_ID}}
+Authorization: Basic {{BASIC_AUTH_TOKEN}}
+Content-Type: application/json
+Accept: application/json
+
+{
+  "name": "TestTenant1",
+  "description": "Updated tenant description."
+}
+
+> {%
+  client.test("Tenant update should be successful", function () {
+    client.assert(response.status === 200, "Response status is not 200");
+    client.assert(response.body.description === "Updated tenant description.", "Description was not updated correctly.");
+  });
+%}
+
+### Assign User to Tenant
+# @name assign-user-to-tenant
+PUT {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/tenants/{{TENANT_ID}}/users/{{USERNAME}}
+Authorization: Basic {{BASIC_AUTH_TOKEN}}
+Accept: application/json
+
+> {%
+  client.test("User assignment should be successful", function () {
+    client.assert(response.status === 204, "Response status is not 204");
+  });
+%}
+
+### Search Users for Tenant
+# @name search-users-for-tenant
+POST {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/tenants/{{TENANT_ID}}/users/search
+Authorization: Basic {{BASIC_AUTH_TOKEN}}
+Content-Type: application/json
+Accept: application/json
+
+{
+  "query": "{{USERNAME}}"
+}
+
+> {%
+  client.test("User search should be successful", function () {
+    client.assert(response.status === 200, "Response status is not 200");
+    client.assert(response.body.items[0].username === "demo", "Username was not found");
+  });
+%}
+
+### Remove User from Tenant
+# @name remove-user-from-tenant
+DELETE {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/tenants/{{TENANT_ID}}/users/{{USERNAME}}
+Authorization: Basic {{BASIC_AUTH_TOKEN}}
+Accept: application/json
+
+> {%
+  client.test("User removal should be successful", function () {
+    client.assert(response.status === 204, "Response status is not 204");
+  });
+%}
+
+###Uncomment when available
+
+#### Assign Mapping Rule to Tenant
+## @name assign-mapping-rule
+#PUT {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/tenants/{{TENANT_ID}}/mapping-rules/{{MAPPING_KEY}}
+#Authorization: Basic {{BASIC_AUTH_TOKEN}}
+#Accept: application/json
+#
+#> {%
+#  client.test("Mapping rule assignment should be successful", function () {
+#    client.assert(response.status === 204, "Response status is not 204");
+#  });
+#%}
+#
+#### Remove Mapping Rule from Tenant
+## @name remove-mapping-rule
+#DELETE {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/tenants/{{TENANT_ID}}/mapping-rules/{{MAPPING_KEY}}
+#Authorization: Basic {{BASIC_AUTH_TOKEN}}
+#Accept: application/json
+#
+#> {%
+#  client.test("Mapping rule removal should be successful", function () {
+#    client.assert(response.status === 204, "Response status is not 204");
+#  });
+#%}
+
+#### Create Group
+## @name create-group
+#POST {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/groups
+#Authorization: Basic {{BASIC_AUTH_TOKEN}}
+#Content-Type: application/json
+#Accept: application/json
+#
+#{
+#  "name": "ApiTestGroup"
+#}
+#
+#> {%
+#  client.test("Group creation should be successful", function () {
+#    client.assert(response.status === 201, "Response status is not 201");
+#    client.global.set("GROUP_KEY", response.body.groupKey);
+#  });
+#%}
+
+#### Assign Group to Tenant
+## @name assign-group-to-tenant
+#PUT {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/tenants/{{TENANT_ID}}/groups/{{GROUP_KEY}}
+#Authorization: Basic {{BASIC_AUTH_TOKEN}}
+#Accept: application/json
+#
+#> {%
+#  client.test("Group assignment should be successful", function () {
+#    client.assert(response.status === 204, "Response status is not 204");
+#  });
+#%}
+
+#### Remove Group from Tenant
+## @name remove-group-from-tenant
+#DELETE {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/tenants/{{TENANT_ID}}/groups/{{GROUP_KEY}}
+#Authorization: Basic {{BASIC_AUTH_TOKEN}}
+#Accept: application/json
+#
+#> {%
+#  client.test("Group removal should be successful", function () {
+#    client.assert(response.status === 204, "Response status is not 204");
+#  });
+#%}
+
+### Search Tenants
+# @name search-tenants
+POST {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/tenants/search
+Authorization: Basic {{BASIC_AUTH_TOKEN}}
+Content-Type: application/json
+Accept: application/json
+
+{
+  "filter": {
+    "tenantId": "testTenant1"
+  }
+}
+
+> {%
+  client.test("Tenant search should be successful", function () {
+    client.assert(response.status === 200, "Response status is not 200");
+    client.assert(response.body.items[0].tenantId === "testTenant1", "Tenant was not found");
+  });
+%}
+
+### Delete Tenant
+# @name delete-tenant
+< {%
+  import {wait} from "js/wait";
+  wait(3);
+%}
+DELETE {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/tenants/{{TENANT_ID}}
+Authorization: Basic {{BASIC_AUTH_TOKEN}}
+Accept: application/json
+
+> {%
+  client.test("Tenant deletion should be successful", function () {
+    client.assert(response.status === 204, "Response status is not 204");
+  });
+%}
