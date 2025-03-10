@@ -78,4 +78,19 @@ public class GetBackupStateResponseDto {
         && Objects.equals(failureReason, that.failureReason)
         && Objects.equals(details, that.details);
   }
+
+  @Override
+  public String toString() {
+    return "GetBackupStateResponseDto{"
+        + "backupId="
+        + backupId
+        + ", state="
+        + state
+        + ", failureReason='"
+        + failureReason
+        + '\''
+        + ", details="
+        + details
+        + '}';
+  }
 }
