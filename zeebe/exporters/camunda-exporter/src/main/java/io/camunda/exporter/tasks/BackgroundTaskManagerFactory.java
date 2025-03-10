@@ -99,7 +99,7 @@ public final class BackgroundTaskManagerFactory {
 
     tasks.add(buildIncidentMarkerTask());
 
-    if (config.getArchiver().isRolloverEnabled()) {
+    if (config.getHistory().isRolloverEnabled()) {
       threadCount = 2;
       tasks.add(buildProcessInstanceArchiverJob());
       if (partitionId == START_PARTITION_ID) {
@@ -173,9 +173,9 @@ public final class BackgroundTaskManagerFactory {
   private ReschedulingTask buildReschedulingArchiverTask(final BackgroundTask task) {
     return new ReschedulingTask(
         task,
-        config.getArchiver().getRolloverBatchSize(),
-        config.getArchiver().getDelayBetweenRuns(),
-        config.getArchiver().getMaxDelayBetweenRuns(),
+        config.getHistory().getRolloverBatchSize(),
+        config.getHistory().getDelayBetweenRuns(),
+        config.getHistory().getMaxDelayBetweenRuns(),
         executor,
         logger);
   }
@@ -206,8 +206,8 @@ public final class BackgroundTaskManagerFactory {
         final var connector = new ElasticsearchConnector(config.getConnect());
         yield new ElasticsearchArchiverRepository(
             partitionId,
-            config.getArchiver(),
-            config.getArchiver().getRetention(),
+            config.getHistory(),
+            config.getHistory().getRetention(),
             config.getConnect().getIndexPrefix(),
             listViewTemplate.getFullQualifiedName(),
             batchOperationTemplate.getFullQualifiedName(),
@@ -220,8 +220,8 @@ public final class BackgroundTaskManagerFactory {
         final var connector = new OpensearchConnector(config.getConnect());
         yield new OpenSearchArchiverRepository(
             partitionId,
-            config.getArchiver(),
-            config.getArchiver().getRetention(),
+            config.getHistory(),
+            config.getHistory().getRetention(),
             config.getConnect().getIndexPrefix(),
             listViewTemplate.getFullQualifiedName(),
             batchOperationTemplate.getFullQualifiedName(),

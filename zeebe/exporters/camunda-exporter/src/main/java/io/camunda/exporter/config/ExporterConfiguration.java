@@ -16,7 +16,7 @@ public class ExporterConfiguration {
   private ConnectConfiguration connect = new ConnectConfiguration();
   private IndexSettings index = new IndexSettings();
   private BulkConfiguration bulk = new BulkConfiguration();
-  private ArchiverConfiguration archiver = new ArchiverConfiguration();
+  private HistoryConfiguration history = new HistoryConfiguration();
   private CacheConfiguration processCache = new CacheConfiguration();
   private CacheConfiguration formCache = new CacheConfiguration();
   private PostExportConfiguration postExport = new PostExportConfiguration();
@@ -87,12 +87,12 @@ public class ExporterConfiguration {
     this.notifier = notifier;
   }
 
-  public ArchiverConfiguration getArchiver() {
-    return archiver;
+  public HistoryConfiguration getHistory() {
+    return history;
   }
 
-  public void setArchiver(final ArchiverConfiguration archiver) {
-    this.archiver = archiver;
+  public void setHistory(final HistoryConfiguration history) {
+    this.history = history;
   }
 
   @Override
@@ -105,7 +105,7 @@ public class ExporterConfiguration {
         + ", bulk="
         + bulk
         + ", archiver="
-        + archiver
+        + history
         + ", createSchema="
         + createSchema
         + ", processCache="
@@ -290,7 +290,7 @@ public class ExporterConfiguration {
     }
   }
 
-  public static class ArchiverConfiguration {
+  public static class HistoryConfiguration {
     private boolean rolloverEnabled = true;
     private String elsRolloverDateFormat = "date";
     private String rolloverInterval = "1d";
