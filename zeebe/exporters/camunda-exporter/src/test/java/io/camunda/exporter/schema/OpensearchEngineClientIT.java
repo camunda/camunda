@@ -7,6 +7,7 @@
  */
 package io.camunda.exporter.schema;
 
+import static io.camunda.exporter.utils.SearchDBExtension.ENGINE_CLIENT_TEST_MARKERS;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatNoException;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -26,7 +27,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Stream;
-import org.apache.commons.lang3.RandomStringUtils;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
@@ -42,8 +42,6 @@ import org.opensearch.client.opensearch.generic.Requests;
 public class OpensearchEngineClientIT {
 
   @RegisterExtension private static final SearchDBExtension SEARCH_DB = SearchDBExtension.create();
-
-  private static final String TEST_CONTEXT_MARKER = RandomStringUtils.insecure().nextNumeric(10);
 
   private static OpenSearchClient openSearchClient;
   private static OpensearchEngineClient opensearchEngineClient;
@@ -61,9 +59,9 @@ public class OpensearchEngineClientIT {
     // given
     final var descriptor =
         SchemaTestUtil.mockIndex(
-            "qualified_name-" + TEST_CONTEXT_MARKER,
-            "alias-" + TEST_CONTEXT_MARKER,
-            "index_name-" + TEST_CONTEXT_MARKER,
+            "qualified_name-" + ENGINE_CLIENT_TEST_MARKERS,
+            "alias-" + ENGINE_CLIENT_TEST_MARKERS,
+            "index_name-" + ENGINE_CLIENT_TEST_MARKERS,
             "/mappings.json");
 
     // when
@@ -74,12 +72,12 @@ public class OpensearchEngineClientIT {
     final var index =
         openSearchClient
             .indices()
-            .get(req -> req.index("qualified_name-" + TEST_CONTEXT_MARKER))
-            .get("qualified_name-" + TEST_CONTEXT_MARKER);
+            .get(req -> req.index("qualified_name-" + ENGINE_CLIENT_TEST_MARKERS))
+            .get("qualified_name-" + ENGINE_CLIENT_TEST_MARKERS);
 
     SchemaTestUtil.validateMappings(index.mappings(), "/mappings.json");
 
-    assertThat(index.aliases().keySet()).isEqualTo(Set.of("alias-" + TEST_CONTEXT_MARKER));
+    assertThat(index.aliases().keySet()).isEqualTo(Set.of("alias-" + ENGINE_CLIENT_TEST_MARKERS));
     assertThat(index.settings().index().numberOfReplicas())
         .isEqualTo(indexSettings.getNumberOfReplicas().toString());
     assertThat(index.settings().index().numberOfShards())
@@ -187,9 +185,9 @@ public class OpensearchEngineClientIT {
     // given
     final var index =
         SchemaTestUtil.mockIndex(
-            "index_qualified_name_" + TEST_CONTEXT_MARKER,
-            "alias_" + TEST_CONTEXT_MARKER,
-            "index_name_" + TEST_CONTEXT_MARKER,
+            "index_qualified_name_" + ENGINE_CLIENT_TEST_MARKERS,
+            "alias_" + ENGINE_CLIENT_TEST_MARKERS,
+            "index_name_" + ENGINE_CLIENT_TEST_MARKERS,
             "/mappings-complex-property.json");
 
     opensearchEngineClient.createIndex(index, new IndexSettings());
@@ -197,14 +195,14 @@ public class OpensearchEngineClientIT {
     // when
     final var mappings =
         opensearchEngineClient.getMappings(
-            "index_qualified_name_" + TEST_CONTEXT_MARKER, MappingSource.INDEX);
+            "index_qualified_name_" + ENGINE_CLIENT_TEST_MARKERS, MappingSource.INDEX);
 
     // then
     assertThat(mappings.size()).isEqualTo(1);
-    assertThat(mappings.get("index_qualified_name_" + TEST_CONTEXT_MARKER).dynamic())
+    assertThat(mappings.get("index_qualified_name_" + ENGINE_CLIENT_TEST_MARKERS).dynamic())
         .isEqualTo("strict");
 
-    assertThat(mappings.get("index_qualified_name_" + TEST_CONTEXT_MARKER).properties())
+    assertThat(mappings.get("index_qualified_name_" + ENGINE_CLIENT_TEST_MARKERS).properties())
         .containsExactlyInAnyOrder(
             new IndexMappingProperty.Builder()
                 .name("hello")
@@ -222,11 +220,11 @@ public class OpensearchEngineClientIT {
     // given
     final var template =
         SchemaTestUtil.mockIndexTemplate(
-            "index_name_" + TEST_CONTEXT_MARKER,
-            "index_pattern_" + TEST_CONTEXT_MARKER + ".*",
-            "alias_" + TEST_CONTEXT_MARKER,
+            "index_name_" + ENGINE_CLIENT_TEST_MARKERS,
+            "index_pattern_" + ENGINE_CLIENT_TEST_MARKERS + ".*",
+            "alias_" + ENGINE_CLIENT_TEST_MARKERS,
             List.of(),
-            "template_name_" + TEST_CONTEXT_MARKER,
+            "template_name_" + ENGINE_CLIENT_TEST_MARKERS,
             "/mappings-complex-property.json");
 
     opensearchEngineClient.createIndexTemplate(template, new IndexSettings(), true);
@@ -234,11 +232,11 @@ public class OpensearchEngineClientIT {
     // when
     final var templateMappings =
         opensearchEngineClient.getMappings(
-            "template_name_" + TEST_CONTEXT_MARKER, MappingSource.INDEX_TEMPLATE);
+            "template_name_" + ENGINE_CLIENT_TEST_MARKERS, MappingSource.INDEX_TEMPLATE);
 
     // then
     assertThat(templateMappings.size()).isEqualTo(1);
-    assertThat(templateMappings.get("template_name_" + TEST_CONTEXT_MARKER).properties())
+    assertThat(templateMappings.get("template_name_" + ENGINE_CLIENT_TEST_MARKERS).properties())
         .containsExactlyInAnyOrder(
             new IndexMappingProperty.Builder()
                 .name("hello")

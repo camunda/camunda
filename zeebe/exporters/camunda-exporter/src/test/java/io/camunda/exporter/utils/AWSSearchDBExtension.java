@@ -74,4 +74,16 @@ public class AWSSearchDBExtension extends SearchDBExtension {
   public String osUrl() {
     return osUrl;
   }
+
+  @Override
+  public void afterAll(final ExtensionContext context) throws Exception {
+    osClient.indices().delete(req -> req.index(IDX_FORM_PREFIX + "*"));
+    osClient.indices().delete(req -> req.index(CUSTOM_PREFIX + "*"));
+    osClient.indices().delete(req -> req.index(IDX_PROCESS_PREFIX + "*"));
+    osClient.indices().delete(req -> req.index(ZEEBE_IDX_PREFIX + "*"));
+    osClient.indices().delete(req -> req.index(ARCHIVER_IDX_PREFIX + "*"));
+    osClient.indices().delete(req -> req.index(BATCH_IDX_PREFIX + "*"));
+    osClient.indices().delete(req -> req.index(INCIDENT_IDX_PREFIX + "*"));
+    osClient.indices().delete(req -> req.index("*" + ENGINE_CLIENT_TEST_MARKERS + "*"));
+  }
 }

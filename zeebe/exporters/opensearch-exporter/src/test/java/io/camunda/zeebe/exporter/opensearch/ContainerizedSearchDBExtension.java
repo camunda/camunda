@@ -103,4 +103,7 @@ public class ContainerizedSearchDBExtension extends SearchDBExtension {
   public OpensearchClient client() {
     return client;
   }
+
+  @Override
+  public void afterAll(final ExtensionContext context) throws Exception {}
 }

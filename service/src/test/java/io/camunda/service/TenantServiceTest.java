@@ -15,7 +15,7 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.search.clients.TenantSearchClient;
 import io.camunda.search.entities.TenantEntity;
-import io.camunda.search.exception.NotFoundException;
+import io.camunda.search.exception.CamundaSearchException;
 import io.camunda.search.filter.TenantFilter;
 import io.camunda.search.query.SearchQueryBuilders;
 import io.camunda.search.query.SearchQueryResult;
@@ -113,8 +113,10 @@ public class TenantServiceTest {
     // when / then
 
     assertThatCode(() -> services.getById("non-existent-tenant-id"))
-        .isInstanceOf(NotFoundException.class)
-        .hasMessageMatching("Tenant matching TenantQuery\\[.*] not found");
+        .isInstanceOf(CamundaSearchException.class)
+        .hasMessageMatching("Tenant matching TenantQuery\\[.*] not found")
+        .extracting(e -> ((CamundaSearchException) e).getReason())
+        .isEqualTo(CamundaSearchException.Reason.NOT_FOUND);
   }
 
   @Test
@@ -193,10 +195,10 @@ public class TenantServiceTest {
   public void shouldAddEntityToTenant(final EntityType entityType) {
     // given
     final var tenantId = "tenantId";
-    final var entityKey = 42;
+    final var entityId = "entityId";
 
     // when
-    services.addMember(tenantId, entityType, entityKey);
+    services.addMember(tenantId, entityType, entityId);
 
     // then
     final BrokerTenantEntityRequest request = stubbedBrokerClient.getSingleBrokerRequest();
@@ -204,7 +206,7 @@ public class TenantServiceTest {
     assertThat(request.getValueType()).isEqualTo(ValueType.TENANT);
     final TenantRecord brokerRequestValue = request.getRequestWriter();
     assertThat(brokerRequestValue.getTenantId()).isEqualTo(tenantId);
-    assertThat(brokerRequestValue.getEntityKey()).isEqualTo(entityKey);
+    assertThat(brokerRequestValue.getEntityId()).isEqualTo(entityId);
     assertThat(brokerRequestValue.getEntityType()).isEqualTo(entityType);
   }
 
@@ -215,10 +217,10 @@ public class TenantServiceTest {
   public void shouldRemoveEntityFromTenant(final EntityType entityType) {
     // given
     final var tenantId = "tenantId";
-    final var entityKey = 42;
+    final var entityId = "entityId";
 
     // when
-    services.removeMember(tenantId, entityType, entityKey);
+    services.removeMember(tenantId, entityType, entityId);
 
     // then
     final BrokerTenantEntityRequest request = stubbedBrokerClient.getSingleBrokerRequest();
@@ -226,7 +228,7 @@ public class TenantServiceTest {
     assertThat(request.getValueType()).isEqualTo(ValueType.TENANT);
     final TenantRecord brokerRequestValue = request.getRequestWriter();
     assertThat(brokerRequestValue.getTenantId()).isEqualTo(tenantId);
-    assertThat(brokerRequestValue.getEntityKey()).isEqualTo(entityKey);
+    assertThat(brokerRequestValue.getEntityId()).isEqualTo(entityId);
     assertThat(brokerRequestValue.getEntityType()).isEqualTo(entityType);
   }
 }

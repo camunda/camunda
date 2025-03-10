@@ -11,9 +11,9 @@ import static io.camunda.zeebe.gateway.rest.validator.ErrorMessages.ERROR_MESSAG
 import static io.camunda.zeebe.gateway.rest.validator.ErrorMessages.ERROR_MESSAGE_ILLEGAL_CHARACTER;
 import static io.camunda.zeebe.gateway.rest.validator.ErrorMessages.ERROR_MESSAGE_INVALID_EMAIL;
 import static io.camunda.zeebe.gateway.rest.validator.ErrorMessages.ERROR_MESSAGE_TOO_MANY_CHARACTERS;
+import static io.camunda.zeebe.gateway.rest.validator.IdentifierPatterns.ID_PATTERN;
+import static io.camunda.zeebe.gateway.rest.validator.IdentifierPatterns.ID_REGEX;
 import static io.camunda.zeebe.gateway.rest.validator.IdentifierPatterns.MAX_LENGTH;
-import static io.camunda.zeebe.gateway.rest.validator.IdentifierPatterns.USERNAME_PATTERN;
-import static io.camunda.zeebe.gateway.rest.validator.IdentifierPatterns.USERNAME_REGEX;
 import static io.camunda.zeebe.gateway.rest.validator.RequestValidator.validate;
 
 import io.camunda.zeebe.gateway.protocol.rest.UserRequest;
@@ -50,8 +50,8 @@ public final class UserValidator {
       violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("username"));
     } else if (username.length() > MAX_LENGTH) {
       violations.add(ERROR_MESSAGE_TOO_MANY_CHARACTERS.formatted("username", MAX_LENGTH));
-    } else if (!USERNAME_PATTERN.matcher(username).matches()) {
-      violations.add(ERROR_MESSAGE_ILLEGAL_CHARACTER.formatted("username", USERNAME_REGEX));
+    } else if (!ID_PATTERN.matcher(username).matches()) {
+      violations.add(ERROR_MESSAGE_ILLEGAL_CHARACTER.formatted("username", ID_REGEX));
     }
   }
 

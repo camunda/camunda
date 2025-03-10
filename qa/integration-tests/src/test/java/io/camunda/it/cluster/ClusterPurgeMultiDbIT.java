@@ -7,6 +7,7 @@
  */
 package io.camunda.it.cluster;
 
+import static io.camunda.qa.util.multidb.CamundaMultiDBExtension.TIMEOUT_DATA_AVAILABILITY;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.client.CamundaClient;
@@ -287,16 +288,19 @@ public class ClusterPurgeMultiDbIT {
 
   private void assertThatChangesAreApplied(final PlannedOperationsResponse planChangeResponse) {
     Awaitility.await("until cluster purge completes")
+        .atMost(TIMEOUT_DATA_AVAILABILITY)
         .untilAsserted(
             () ->
                 Assertions.assertThatNoException()
                     .isThrownBy(() -> APPLICATION.healthActuator().ready()));
     Awaitility.await("until cluster is ready")
+        .atMost(TIMEOUT_DATA_AVAILABILITY)
         .untilAsserted(
             () ->
                 TopologyAssert.assertThat(client.newTopologyRequest().send().join())
                     .isComplete(1, 1, 1));
     Awaitility.await("until cluster is healthy")
+        .atMost(TIMEOUT_DATA_AVAILABILITY)
         .untilAsserted(
             () -> TopologyAssert.assertThat(client.newTopologyRequest().send().join()).isHealthy());
 

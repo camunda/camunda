@@ -172,8 +172,8 @@ public class CamundaMultiDBExtension
   public static final String DEFAULT_OS_URL = "http://localhost:9200";
   public static final String DEFAULT_OS_ADMIN_USER = "admin";
   public static final String DEFAULT_OS_ADMIN_PW = "yourStrongPassword123!";
-  public static final Duration TIMEOUT_DATABASE_EXPORTER_READINESS = Duration.ofMinutes(1);
-  public static final Duration TIMEOUT_DATABASE_READINESS = Duration.ofMinutes(1);
+  public static final Duration TIMEOUT_DATABASE_EXPORTER_READINESS = Duration.ofMinutes(3);
+  public static final Duration TIMEOUT_DATABASE_READINESS = Duration.ofMinutes(3);
   private static final Logger LOGGER = LoggerFactory.getLogger(CamundaMultiDBExtension.class);
   private final DatabaseType databaseType;
   private final List<AutoCloseable> closeables = new ArrayList<>();

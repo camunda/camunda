@@ -5,13 +5,13 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.search.exception;
 
-public class SearchQueryExecutionException extends CamundaSearchException {
+import {ProcessInstancesStatisticsDto} from 'modules/api/v2/processInstances/fetchProcessInstancesStatistics';
+import {mockPostRequest} from '../../mockRequest';
 
-  private static final long serialVersionUID = 1L;
+const mockFetchProcessInstancesStatistics = () =>
+  mockPostRequest<ProcessInstancesStatisticsDto[]>(
+    '/v2/process-instances/statistics',
+  );
 
-  public SearchQueryExecutionException(final String message, final Throwable cause) {
-    super(message, cause);
-  }
-}
+export {mockFetchProcessInstancesStatistics};

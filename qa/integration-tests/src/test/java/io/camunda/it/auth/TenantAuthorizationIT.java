@@ -45,6 +45,7 @@ import org.springframework.http.HttpStatus;
 
 @Tag("multi-db-test")
 @DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "rdbms")
+@DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "AWS_OS")
 class TenantAuthorizationIT {
 
   public static final ObjectMapper OBJECT_MAPPER =

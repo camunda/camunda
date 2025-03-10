@@ -37,6 +37,7 @@ import org.junit.jupiter.api.function.Executable;
 
 @Tag("multi-db-test")
 @DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "rdbms")
+@DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "AWS_OS")
 class DecisionAuthorizationIT {
 
   static final TestStandaloneBroker BROKER =

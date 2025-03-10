@@ -7,6 +7,7 @@
  */
 package io.camunda.exporter.tasks.incident;
 
+import static io.camunda.exporter.utils.SearchDBExtension.INCIDENT_IDX_PREFIX;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.exporter.adapters.ClientAdapter;
@@ -91,7 +92,7 @@ abstract class IncidentUpdateRepositoryIT {
 
   protected IncidentUpdateRepositoryIT(final String databaseUrl, final boolean isElastic) {
     final var config = new ExporterConfiguration();
-    final var indexPrefix = UUID.randomUUID().toString();
+    final var indexPrefix = INCIDENT_IDX_PREFIX + UUID.randomUUID();
     config.getConnect().setIndexPrefix(indexPrefix);
     config.getConnect().setUrl(databaseUrl);
     config.getConnect().setType(isElastic ? "elasticsearch" : "opensearch");

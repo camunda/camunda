@@ -14,7 +14,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.camunda.search.entities.DecisionRequirementsEntity;
-import io.camunda.search.exception.NotFoundException;
+import io.camunda.search.exception.CamundaSearchException;
 import io.camunda.search.filter.DecisionRequirementsFilter;
 import io.camunda.search.query.DecisionRequirementsQuery;
 import io.camunda.search.query.SearchQueryResult;
@@ -100,10 +100,11 @@ public class DecisionRequirementsQueryControllerTest extends RestControllerTest 
 
     when(decisionRequirementsServices.getByKey(INVALID_DECISION_REQUIREMENTS_KEY))
         .thenThrow(
-            new NotFoundException(
+            new CamundaSearchException(
                 "Decision requirements with key "
                     + INVALID_DECISION_REQUIREMENTS_KEY
-                    + " not found"));
+                    + " not found",
+                CamundaSearchException.Reason.NOT_FOUND));
   }
 
   @Test
@@ -439,7 +440,9 @@ public class DecisionRequirementsQueryControllerTest extends RestControllerTest 
     // given
     final Long decisionRequirementsKey = 1L;
     when(decisionRequirementsServices.getDecisionRequirementsXml(decisionRequirementsKey))
-        .thenThrow(new NotFoundException("Decision with key 1 was not found."));
+        .thenThrow(
+            new CamundaSearchException(
+                "Decision with key 1 was not found.", CamundaSearchException.Reason.NOT_FOUND));
 
     // when/then
     final var expectedResponse =

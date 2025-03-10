@@ -216,6 +216,15 @@ final class TestClient implements CloseableSilently {
     }
   }
 
+  void deleteIndicesByPattern(final String pattern) {
+    try {
+      final var request = new Request("DELETE", pattern + "?expand_wildcards=all");
+      restClient.performRequest(request);
+    } catch (final IOException e) {
+      throw new UncheckedIOException(e);
+    }
+  }
+
   record IndexTemplatesDto(@JsonProperty("index_templates") List<IndexTemplateWrapper> wrappers) {
     record IndexTemplateWrapper(String name, @JsonProperty("index_template") Template template) {}
   }

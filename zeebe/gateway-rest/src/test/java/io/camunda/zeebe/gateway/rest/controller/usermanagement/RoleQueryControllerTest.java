@@ -13,7 +13,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.camunda.search.entities.RoleEntity;
-import io.camunda.search.exception.NotFoundException;
+import io.camunda.search.exception.CamundaSearchException;
 import io.camunda.search.page.SearchQueryPage;
 import io.camunda.search.query.RoleQuery;
 import io.camunda.search.query.SearchQueryResult;
@@ -58,7 +58,7 @@ public class RoleQueryControllerTest extends RestControllerTest {
             """
             {
               "name": "Role Name",
-              "key": "100"
+              "roleKey": "100"
             }""");
 
     // then
@@ -70,7 +70,9 @@ public class RoleQueryControllerTest extends RestControllerTest {
     // given
     final var roleKey = 100L;
     final var path = "%s/%s".formatted(ROLE_BASE_URL, roleKey);
-    when(roleServices.getRole(roleKey)).thenThrow(new NotFoundException("role not found"));
+    when(roleServices.getRole(roleKey))
+        .thenThrow(
+            new CamundaSearchException("role not found", CamundaSearchException.Reason.NOT_FOUND));
 
     // when
     webClient
@@ -130,15 +132,15 @@ public class RoleQueryControllerTest extends RestControllerTest {
           {
              "items": [
                {
-                 "key": "100",
+                 "roleKey": "100",
                  "name": "Role 1"
                },
                {
-                 "key": "200",
+                 "roleKey": "200",
                  "name": "Role 2"
                },
                {
-                 "key": "300",
+                 "roleKey": "300",
                  "name": "Role 12"
                }
              ],

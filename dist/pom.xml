@@ -848,7 +848,6 @@
             <dependency>org.springframework.boot:spring-boot-starter-web</dependency>
             <dependency>org.openapitools:jackson-databind-nullable</dependency>
             <dependency>jakarta.servlet:jakarta.servlet-api</dependency>
-            <dependency>jakarta.annotation:jakarta.annotation-api</dependency>
 
             <!-- Needed for configuring the Identity SDK by providing an IdentityConfiguration bean -->
             <dependency>io.camunda:identity-spring-boot-autoconfigure</dependency>

@@ -31,6 +31,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 @Tag("multi-db-test")
 @DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "rdbms")
+@DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "AWS_OS")
 public class BasicAuthenticationIT {
 
   public static final String PATH_V2_AUTHENTICATION_ME = "v2/authentication/me";

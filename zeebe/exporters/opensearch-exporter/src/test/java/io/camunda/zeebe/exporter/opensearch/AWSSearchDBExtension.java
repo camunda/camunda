@@ -14,6 +14,8 @@ import org.junit.jupiter.api.extension.ExtensionContext;
 
 public class AWSSearchDBExtension extends SearchDBExtension {
 
+  private static final String PREFIX_AWS_OS_TESTS = "exportertests";
+
   private final String awsSearchDbUrl;
 
   private ProtocolFactory recordFactory;
@@ -39,7 +41,7 @@ public class AWSSearchDBExtension extends SearchDBExtension {
     bulkRequest = new BulkIndexRequest();
 
     // as all tests use the same endpoint, we need a per-test unique prefix
-    config.index.prefix = UUID.randomUUID() + "-test-record";
+    config.index.prefix = PREFIX_AWS_OS_TESTS + UUID.randomUUID() + "-test-record";
     config.url = awsSearchDbUrl;
     testClient = new TestClient(config, indexRouter);
     client =
@@ -96,4 +98,7 @@ public class AWSSearchDBExtension extends SearchDBExtension {
   public OpensearchClient client() {
     return client;
   }
+
+  @Override
+  public void afterAll(final ExtensionContext context) throws Exception {}
 }

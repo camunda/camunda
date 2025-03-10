@@ -17,7 +17,7 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.search.entities.AdHocSubprocessActivityEntity;
 import io.camunda.search.entities.AdHocSubprocessActivityEntity.ActivityType;
-import io.camunda.search.exception.NotFoundException;
+import io.camunda.search.exception.CamundaSearchException;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.auth.Authentication;
 import io.camunda.service.AdHocSubprocessActivityServices;
@@ -177,8 +177,9 @@ class AdHocSubprocessActivityControllerTest extends RestControllerTest {
     void shouldMapServiceExceptionToErrorResponse() {
       when(adHocSubprocessActivityServices.search(any()))
           .thenThrow(
-              new NotFoundException(
-                  "Failed to find Ad-Hoc Subprocess with ID 'TestAdHocSubprocess'"));
+              new CamundaSearchException(
+                  "Failed to find Ad-Hoc Subprocess with ID 'TestAdHocSubprocess'",
+                  CamundaSearchException.Reason.NOT_FOUND));
 
       webClient
           .post()

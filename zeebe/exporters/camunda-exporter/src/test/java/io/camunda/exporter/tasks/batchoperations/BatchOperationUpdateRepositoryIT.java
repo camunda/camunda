@@ -7,6 +7,7 @@
  */
 package io.camunda.exporter.tasks.batchoperations;
 
+import static io.camunda.exporter.utils.SearchDBExtension.*;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import co.elastic.clients.elasticsearch.ElasticsearchAsyncClient;
@@ -45,7 +46,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 abstract class BatchOperationUpdateRepositoryIT {
-  @RegisterExtension protected static SearchDBExtension searchDB = SearchDBExtension.create();
+  @RegisterExtension protected static SearchDBExtension searchDB = create();
   private static final Logger LOGGER =
       LoggerFactory.getLogger(BatchOperationUpdateRepositoryIT.class);
   private static final Duration REQUEST_TIMEOUT = Duration.ofSeconds(5);
@@ -57,7 +58,7 @@ abstract class BatchOperationUpdateRepositoryIT {
 
   public BatchOperationUpdateRepositoryIT(final String databaseUrl, final boolean isElastic) {
     config = new ExporterConfiguration();
-    final var indexPrefix = UUID.randomUUID().toString();
+    final var indexPrefix = BATCH_IDX_PREFIX + UUID.randomUUID();
     config.getConnect().setIndexPrefix(indexPrefix);
     config.getConnect().setUrl(databaseUrl);
     config.getConnect().setType(isElastic ? "elasticsearch" : "opensearch");

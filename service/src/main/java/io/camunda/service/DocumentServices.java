@@ -89,8 +89,14 @@ public class DocumentServices extends ApiServices<DocumentServices> {
                           request.documentId, request.contentInputStream, request.metadata);
                   return getDocumentStore(request.storeId)
                       .thenCompose(
-                          storeRecord -> storeRecord.instance().createDocument(storeRequest))
-                      .thenApply(result -> transformResponse(request, result))
+                          storeRecord ->
+                              storeRecord
+                                  .instance()
+                                  .createDocument(storeRequest)
+                                  .thenApply(
+                                      result ->
+                                          transformResponse(
+                                              request, result, storeRecord.storeId())))
                       .thenAccept(results::add);
                 })
             .toList();
@@ -178,17 +184,15 @@ public class DocumentServices extends ApiServices<DocumentServices> {
 
   private Either<DocumentErrorResponse, DocumentReferenceResponse> transformResponse(
       final DocumentCreateRequest request,
-      final Either<DocumentError, DocumentReference> rawResult) {
+      final Either<DocumentError, DocumentReference> rawResult,
+      final String storeId) {
     if (rawResult.isLeft()) {
       return Either.left(new DocumentErrorResponse(request, rawResult.getLeft()));
     }
     final var reference = rawResult.get();
     return Either.right(
         new DocumentReferenceResponse(
-            reference.documentId(),
-            request.storeId,
-            reference.contentHash(),
-            reference.metadata()));
+            reference.documentId(), storeId, reference.contentHash(), reference.metadata()));
   }
 
   private void logIfUnknownError(final DocumentError error) {

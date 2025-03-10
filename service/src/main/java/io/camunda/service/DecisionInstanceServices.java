@@ -13,7 +13,6 @@ import static java.util.Optional.ofNullable;
 import io.camunda.search.clients.DecisionInstanceSearchClient;
 import io.camunda.search.entities.DecisionInstanceEntity;
 import io.camunda.search.exception.CamundaSearchException;
-import io.camunda.search.exception.NotFoundException;
 import io.camunda.search.query.DecisionInstanceQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.result.DecisionInstanceQueryResultConfig;
@@ -74,8 +73,8 @@ public final class DecisionInstanceServices
    *
    * @param decisionInstanceId the ID of the decision instance
    * @return the Decision Instance
-   * @throws NotFoundException if the decision instance with the given ID does not exist
-   * @throws CamundaSearchException if the decision instance with the given ID exists more than once
+   * @throws CamundaSearchException unless the decision instance with the given ID exists exactly
+   *     once
    */
   public DecisionInstanceEntity getById(final String decisionInstanceId) {
     final var result =

@@ -54,17 +54,22 @@ env-sso-up:
 
 .PHONY: env-identity-up
 env-identity-up:
-	@docker compose -f ./operate/config/docker-compose.identity.yml up -d identity elasticsearch zeebe \
-	&& mvn install -DskipTests=true -Dskip.fe.build=true -DskipChecks -DskipQaBuild \
-	&& CAMUNDA_IDENTITY_ISSUER=http://localhost:18080/auth/realms/camunda-platform \
-	   CAMUNDA_IDENTITY_ISSUER_BACKEND_URL=http://localhost:18080/auth/realms/camunda-platform \
-       CAMUNDA_IDENTITY_CLIENT_ID=operate \
-       CAMUNDA_IDENTITY_CLIENT_SECRET=the-cake-is-alive \
-       CAMUNDA_IDENTITY_AUDIENCE=operate-api \
-       CAMUNDA_OPERATE_PERSISTENT_SESSIONS_ENABLED=false \
-       SERVER_SERVLET_CONTEXT_PATH=/operate \
-       SERVER_PORT=8081 \
-	   mvn clean install -DskipTests -DskipChecks -f ../dist/pom.xml exec:java -Dexec.mainClass="io.camunda.application.StandaloneOperate" -Dspring.profiles.active=dev,dev-data,identity-auth
+	docker compose -f docker-compose.yml up -d elasticsearch \
+    && mvn install -DskipTests=true -Dskip.fe.build=false -DskipChecks -DskipQaBuild \
+	&& CAMUNDA_OPERATE_IMPORTERENABLED=false \
+	ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_CLASSNAME=io.camunda.exporter.CamundaExporter \
+	ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_BULK_SIZE=1 \
+	ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_BULK_DELAY=1 \
+	ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_CONNECT_TYPE=elasticsearch \
+	ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_CONNECT_URL=http://localhost:9200 \
+	ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_INDEX_SHOULDWAITFORIMPORTERS=false \
+	CAMUNDA_SECURITY_AUTHENTICATION_METHOD=BASIC \
+	CAMUNDA_SECURITY_AUTHENTICATION_UNPROTECTEDAPI=false \
+	CAMUNDA_SECURITY_AUTHORIZATIONS_ENABLED=true \
+	mvn clean install -DskipTests -DskipChecks -f ../dist/pom.xml exec:java \
+	  -Dexec.mainClass="io.camunda.application.StandaloneCamunda" \
+	  -Dspring.profiles.active=operate,broker,dev,dev-data,consolidated-auth,identity
+
 
 .PHONY: env-down
 env-down:
@@ -94,6 +99,7 @@ start-e2e:
 	ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_INDEX_SHOULDWAITFORIMPORTERS=false \
 	ZEEBE_BROKER_BACKPRESSURE_ENABLED=false \
 	ZEEBE_BROKER_GATEWAY_NETWORK_PORT=26503 \
+	CAMUNDA_DATABASE_INDEX_PREFIX=e2eoperate \
 	CAMUNDA_OPERATE_ZEEBE_GATEWAYADDRESS=localhost:26503 \
 	CAMUNDA_OPERATE_ZEEBEELASTICSEARCH_PREFIX=e2e \
 	CAMUNDA_OPERATE_ELASTICSEARCH_INDEXPREFIX=e2eoperate \

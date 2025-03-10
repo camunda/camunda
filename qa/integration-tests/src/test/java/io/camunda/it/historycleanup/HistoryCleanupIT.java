@@ -14,6 +14,7 @@ import static io.camunda.it.client.QueryTest.waitForProcessInstancesToStart;
 import static io.camunda.it.client.QueryTest.waitForProcessesToBeDeployed;
 import static io.camunda.it.client.QueryTest.waitUntilProcessInstanceIsEnded;
 import static io.camunda.it.client.QueryTest.waitUntilProcessInstanceIsGone;
+import static io.camunda.qa.util.multidb.CamundaMultiDBExtension.TIMEOUT_DATA_AVAILABILITY;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.client.CamundaClient;
@@ -24,8 +25,10 @@ import java.time.Duration;
 import java.util.Objects;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 
 @HistoryMultiDbTest
+@DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "AWS_OS")
 public class HistoryCleanupIT {
 
   static final String RESOURCE_NAME = "process/process_with_assigned_user_task.bpmn";
@@ -43,7 +46,7 @@ public class HistoryCleanupIT {
 
     // when we complete the user task
     Awaitility.await("until a task is available for completion")
-        .atMost(Duration.ofMinutes(1))
+        .atMost(TIMEOUT_DATA_AVAILABILITY)
         .ignoreExceptions() // Ignore exceptions and continue retrying
         .until(
             () -> camundaClient.newUserTaskQuery().send().join().items().getFirst(),

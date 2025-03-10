@@ -16,7 +16,7 @@ import static org.mockito.Mockito.when;
 import io.camunda.search.entities.FlowNodeInstanceEntity;
 import io.camunda.search.entities.FlowNodeInstanceEntity.FlowNodeState;
 import io.camunda.search.entities.FlowNodeInstanceEntity.FlowNodeType;
-import io.camunda.search.exception.NotFoundException;
+import io.camunda.search.exception.CamundaSearchException;
 import io.camunda.search.filter.FlowNodeInstanceFilter;
 import io.camunda.search.query.FlowNodeInstanceQuery;
 import io.camunda.search.query.SearchQueryResult;
@@ -334,7 +334,8 @@ public class FlowNodeInstanceQueryControllerTest extends RestControllerTest {
 
   @Test
   void shouldThrowNotFoundIfKeyNotExistsForGetFlowNodeInstanceByKey() {
-    when(flowNodeInstanceServices.getByKey(any(Long.class))).thenThrow(new NotFoundException(""));
+    when(flowNodeInstanceServices.getByKey(any(Long.class)))
+        .thenThrow(new CamundaSearchException("", CamundaSearchException.Reason.NOT_FOUND));
     // when / then
     webClient
         .get()

@@ -5,11 +5,22 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.search.exception;
 
-public class NotFoundException extends CamundaSearchException {
+import {QueryClient} from '@tanstack/react-query';
 
-  public NotFoundException(final String message) {
-    super(message);
-  }
+function getMockQueryClient() {
+  return new QueryClient({
+    defaultOptions: {
+      queries: {
+        retry: false,
+        gcTime: Infinity,
+      },
+      mutations: {
+        retry: false,
+        gcTime: Infinity,
+      },
+    },
+  });
 }
+
+export {getMockQueryClient};
