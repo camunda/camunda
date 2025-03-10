@@ -5,7 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.operate.property;
+package io.camunda.config.operate;
 
 public class SslProperties {
 
@@ -17,7 +17,7 @@ public class SslProperties {
     return certificatePath;
   }
 
-  public void setCertificatePath(String certificatePath) {
+  public void setCertificatePath(final String certificatePath) {
     this.certificatePath = certificatePath;
   }
 
@@ -25,7 +25,7 @@ public class SslProperties {
     return verifyHostname;
   }
 
-  public void setVerifyHostname(boolean verifyHostname) {
+  public void setVerifyHostname(final boolean verifyHostname) {
     this.verifyHostname = verifyHostname;
   }
 
@@ -33,7 +33,7 @@ public class SslProperties {
     return selfSigned;
   }
 
-  public void setSelfSigned(boolean selfSigned) {
+  public void setSelfSigned(final boolean selfSigned) {
     this.selfSigned = selfSigned;
   }
 }

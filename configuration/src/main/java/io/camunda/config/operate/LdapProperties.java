@@ -5,7 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.operate.property;
+package io.camunda.config.operate;
 
 public class LdapProperties {
 
@@ -33,7 +33,7 @@ public class LdapProperties {
     return baseDn;
   }
 
-  public void setBaseDn(String baseDn) {
+  public void setBaseDn(final String baseDn) {
     this.baseDn = baseDn;
   }
 
@@ -41,7 +41,7 @@ public class LdapProperties {
     return userSearchBase == null ? "" : userSearchBase;
   }
 
-  public void setUserSearchBase(String userSearchBase) {
+  public void setUserSearchBase(final String userSearchBase) {
     this.userSearchBase = userSearchBase;
   }
 
@@ -49,7 +49,7 @@ public class LdapProperties {
     return managerDn;
   }
 
-  public void setManagerDn(String managerDn) {
+  public void setManagerDn(final String managerDn) {
     this.managerDn = managerDn;
   }
 
@@ -57,7 +57,7 @@ public class LdapProperties {
     return managerPassword;
   }
 
-  public void setManagerPassword(String managerPassword) {
+  public void setManagerPassword(final String managerPassword) {
     this.managerPassword = managerPassword;
   }
 
@@ -65,7 +65,7 @@ public class LdapProperties {
     return userSearchFilter;
   }
 
-  public void setUserSearchFilter(String userSearchFilter) {
+  public void setUserSearchFilter(final String userSearchFilter) {
     this.userSearchFilter = userSearchFilter;
   }
 
@@ -73,7 +73,7 @@ public class LdapProperties {
     return url;
   }
 
-  public void setUrl(String url) {
+  public void setUrl(final String url) {
     this.url = url;
   }
 
@@ -81,7 +81,7 @@ public class LdapProperties {
     return userDnPatterns == null ? "" : userDnPatterns;
   }
 
-  public void setUserDnPatterns(String userDnPatterns) {
+  public void setUserDnPatterns(final String userDnPatterns) {
     this.userDnPatterns = userDnPatterns;
   }
 
@@ -89,7 +89,7 @@ public class LdapProperties {
     return domain;
   }
 
-  public void setDomain(String domain) {
+  public void setDomain(final String domain) {
     this.domain = domain;
   }
 

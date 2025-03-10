@@ -103,6 +103,12 @@
               <artifactId>maven-dependency-analyzer</artifactId>
               <version>${plugin.version.dependency-analyzer}</version>
             </dependency>
+
+            <dependency>
+              <groupId>io.camunda</groupId>
+              <artifactId>configuration-module</artifactId>
+              <version>8.8.0-SNAPSHOT</version>
+            </dependency>
           </dependencies>
 
           <executions>
