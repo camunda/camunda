@@ -66,7 +66,7 @@
   ],
   "devDependencies": {
     "@axe-core/playwright": "4.10.1",
-    "@eslint/js": "9.21.0",
+    "@eslint/js": "9.22.0",
     "@playwright/test": "1.49.1",
     "@tanstack/react-query-devtools": "5.67.1",
     "@testing-library/dom": "10.4.0",
@@ -90,7 +90,7 @@
     "browserslist": "4.24.4",
     "browserslist-to-esbuild": "2.1.1",
     "diagram-js": "15.2.4",
-    "eslint": "9.21.0",
+    "eslint": "9.22.0",
     "eslint-config-prettier": "10.1.1",
     "eslint-plugin-license-header": "0.8.0",
     "eslint-plugin-prettier": "5.2.3",
