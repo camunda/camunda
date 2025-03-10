@@ -104,7 +104,7 @@ public class ExporterConfiguration {
         + index
         + ", bulk="
         + bulk
-        + ", archiver="
+        + ", history="
         + history
         + ", createSchema="
         + createSchema
