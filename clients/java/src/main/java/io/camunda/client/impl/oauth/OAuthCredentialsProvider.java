@@ -139,7 +139,7 @@ public final class OAuthCredentialsProvider implements CredentialsProvider {
     payload.put("audience", builder.getAudience());
     payload.put("grant_type", "client_credentials");
     final String scope = builder.getScope();
-    if (scope != null) {
+    if (scope != null && !scope.isEmpty()) {
       payload.put("scope", scope);
     }
 
