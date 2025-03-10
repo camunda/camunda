@@ -26,6 +26,7 @@ import io.camunda.zeebe.protocol.record.intent.MessageStartEventSubscriptionInte
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessIntent;
 import io.camunda.zeebe.protocol.record.intent.ResourceDeletionIntent;
+import io.camunda.zeebe.protocol.record.intent.ResourceIntent;
 import io.camunda.zeebe.protocol.record.intent.SignalSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.TimerIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
@@ -35,6 +36,7 @@ import io.camunda.zeebe.protocol.record.value.deployment.DecisionRecordValue;
 import io.camunda.zeebe.protocol.record.value.deployment.DecisionRequirementsMetadataValue;
 import io.camunda.zeebe.protocol.record.value.deployment.Form;
 import io.camunda.zeebe.protocol.record.value.deployment.ProcessMetadataValue;
+import io.camunda.zeebe.protocol.record.value.deployment.Resource;
 import io.camunda.zeebe.test.util.BrokerClassRuleHelper;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import java.io.IOException;
@@ -49,6 +51,7 @@ public class ResourceDeletionTest {
   private static final String DRG_MULTIPLE_DECISIONS = "/dmn/drg-force-user.dmn";
   private static final String RESULT_VARIABLE = "result";
   private static final String FORM = "/form/test-form-1-with-version-tag-v1.form";
+  private static final String RESOURCE = "/resource/test-rpa-1.rpa";
 
   @Rule public final EngineRule engine = EngineRule.singlePartition();
   @Rule public final BrokerClassRuleHelper helper = new BrokerClassRuleHelper();
@@ -64,7 +67,7 @@ public class ResourceDeletionTest {
     // then
     verifyDecisionIdWithVersionIsDeleted(drgKey, "jedi_or_sith", 1);
     verifyDecisionRequirementsIsDeleted(drgKey);
-    verifyResourceIsDeleted(drgKey);
+    verifyResourceDeletionRecords(drgKey);
   }
 
   @Test
@@ -79,7 +82,7 @@ public class ResourceDeletionTest {
     verifyDecisionIdWithVersionIsDeleted(drgKey, "jedi_or_sith", 1);
     verifyDecisionIdWithVersionIsDeleted(drgKey, "force_user", 1);
     verifyDecisionRequirementsIsDeleted(drgKey);
-    verifyResourceIsDeleted(drgKey);
+    verifyResourceDeletionRecords(drgKey);
   }
 
   @Test
@@ -233,7 +236,7 @@ public class ResourceDeletionTest {
 
     // then
     verifyProcessIdWithVersionIsDeleted(processId, 1);
-    verifyResourceIsDeleted(processDefinitionKey);
+    verifyResourceDeletionRecords(processDefinitionKey);
   }
 
   @Test
@@ -264,7 +267,7 @@ public class ResourceDeletionTest {
 
     // then
     verifyProcessIdWithVersionIsDeleted(processId, 1);
-    verifyResourceIsDeleted(processDefinitionKey);
+    verifyResourceDeletionRecords(processDefinitionKey);
   }
 
   @Test
@@ -280,7 +283,7 @@ public class ResourceDeletionTest {
 
     // then
     verifyProcessIdWithVersionIsDeleted(processId, 2);
-    verifyResourceIsDeleted(secondProcessDefinitionKey);
+    verifyResourceDeletionRecords(secondProcessDefinitionKey);
     verifyInstanceOfProcessWithIdAndVersionIsCompleted(processId, 1, processInstanceKey);
   }
 
@@ -297,7 +300,7 @@ public class ResourceDeletionTest {
 
     // then
     verifyProcessIdWithVersionIsDeleted(processId, 1);
-    verifyResourceIsDeleted(firstProcessDefinitionKey);
+    verifyResourceDeletionRecords(firstProcessDefinitionKey);
     verifyInstanceOfProcessWithIdAndVersionIsCompleted(processId, 2, processInstanceKey);
   }
 
@@ -313,7 +316,7 @@ public class ResourceDeletionTest {
     // then
     verifyTimerIsCancelled(processDefinitionKey);
     verifyProcessIdWithVersionIsDeleted(processId, 1);
-    verifyResourceIsDeleted(processDefinitionKey);
+    verifyResourceDeletionRecords(processDefinitionKey);
   }
 
   @Test
@@ -345,7 +348,7 @@ public class ResourceDeletionTest {
     // then
     verifyTimersAreCancelled(processDefinitionKey, 2);
     verifyProcessIdWithVersionIsDeleted(processId, 1);
-    verifyResourceIsDeleted(processDefinitionKey);
+    verifyResourceDeletionRecords(processDefinitionKey);
   }
 
   @Test
@@ -360,7 +363,7 @@ public class ResourceDeletionTest {
 
     // then
     verifyProcessIdWithVersionIsDeleted(processId, 1);
-    verifyResourceIsDeleted(firstProcessDefinitionKey);
+    verifyResourceDeletionRecords(firstProcessDefinitionKey);
     verifyNoTimersAreCancelled();
   }
 
@@ -379,7 +382,7 @@ public class ResourceDeletionTest {
     // The timer is created once on the first deployment, and a second time after the deletion
     verifyTimerIsCreated(versionOneProcessDefinitionKey, 2);
     verifyProcessIdWithVersionIsDeleted(processId, 2);
-    verifyResourceIsDeleted(versionTwoProcessDefinitionKey);
+    verifyResourceDeletionRecords(versionTwoProcessDefinitionKey);
   }
 
   @Test
@@ -415,7 +418,7 @@ public class ResourceDeletionTest {
     // The timer is created twice on the first deployment, and a two more times after the deletion
     verifyTimerIsCreated(versionOneProcessDefinitionKey, 4);
     verifyProcessIdWithVersionIsDeleted(processId, 2);
-    verifyResourceIsDeleted(versionTwoProcessDefinitionKey);
+    verifyResourceDeletionRecords(versionTwoProcessDefinitionKey);
   }
 
   @Test
@@ -430,7 +433,7 @@ public class ResourceDeletionTest {
     // then
     verifyMessageStartEventSubscriptionIsDeleted(processDefinitionKey);
     verifyProcessIdWithVersionIsDeleted(processId, 1);
-    verifyResourceIsDeleted(processDefinitionKey);
+    verifyResourceDeletionRecords(processDefinitionKey);
   }
 
   @Test
@@ -462,7 +465,7 @@ public class ResourceDeletionTest {
     // then
     verifyMessageStartEventSubscriptionIsDeleted(processDefinitionKey, 2);
     verifyProcessIdWithVersionIsDeleted(processId, 1);
-    verifyResourceIsDeleted(processDefinitionKey);
+    verifyResourceDeletionRecords(processDefinitionKey);
   }
 
   @Test
@@ -477,7 +480,7 @@ public class ResourceDeletionTest {
 
     // then
     verifyProcessIdWithVersionIsDeleted(processId, 1);
-    verifyResourceIsDeleted(firstProcessDefinitionKey);
+    verifyResourceDeletionRecords(firstProcessDefinitionKey);
     verifyNoMessageStartEventSubscriptionsAreDeleted();
   }
 
@@ -496,7 +499,7 @@ public class ResourceDeletionTest {
     // The subscription is created once on the first deployment and a second time after the deletion
     verifyMessageStartEventSubscriptionIsCreated(versionOneProcessDefinitionKey, 2);
     verifyProcessIdWithVersionIsDeleted(processId, 2);
-    verifyResourceIsDeleted(versionTwoProcessDefinitionKey);
+    verifyResourceDeletionRecords(versionTwoProcessDefinitionKey);
   }
 
   @Test
@@ -533,7 +536,7 @@ public class ResourceDeletionTest {
     // deletion
     verifyMessageStartEventSubscriptionIsCreated(versionOneProcessDefinitionKey, 4);
     verifyProcessIdWithVersionIsDeleted(processId, 2);
-    verifyResourceIsDeleted(versionTwoProcessDefinitionKey);
+    verifyResourceDeletionRecords(versionTwoProcessDefinitionKey);
   }
 
   @Test
@@ -548,7 +551,7 @@ public class ResourceDeletionTest {
     // then
     verifySignalStartEventSubscriptionIsDeleted(processDefinitionKey);
     verifyProcessIdWithVersionIsDeleted(processId, 1);
-    verifyResourceIsDeleted(processDefinitionKey);
+    verifyResourceDeletionRecords(processDefinitionKey);
   }
 
   @Test
@@ -580,7 +583,7 @@ public class ResourceDeletionTest {
     // then
     verifySignalStartEventSubscriptionIsDeleted(processDefinitionKey, 2);
     verifyProcessIdWithVersionIsDeleted(processId, 1);
-    verifyResourceIsDeleted(processDefinitionKey);
+    verifyResourceDeletionRecords(processDefinitionKey);
   }
 
   @Test
@@ -595,7 +598,7 @@ public class ResourceDeletionTest {
 
     // then
     verifyProcessIdWithVersionIsDeleted(processId, 1);
-    verifyResourceIsDeleted(firstProcessDefinitionKey);
+    verifyResourceDeletionRecords(firstProcessDefinitionKey);
     verifyNoSignalStartEventSubscriptionsAreDeleted();
   }
 
@@ -614,7 +617,7 @@ public class ResourceDeletionTest {
     // The subscription is created once on the first deployment and a second time after the deletion
     verifySignalStartEventSubscriptionIsCreated(versionOneProcessDefinitionKey, 2);
     verifyProcessIdWithVersionIsDeleted(processId, 2);
-    verifyResourceIsDeleted(versionTwoProcessDefinitionKey);
+    verifyResourceDeletionRecords(versionTwoProcessDefinitionKey);
   }
 
   @Test
@@ -651,7 +654,7 @@ public class ResourceDeletionTest {
     // deletion
     verifySignalStartEventSubscriptionIsCreated(versionOneProcessDefinitionKey, 4);
     verifyProcessIdWithVersionIsDeleted(processId, 2);
-    verifyResourceIsDeleted(versionTwoProcessDefinitionKey);
+    verifyResourceDeletionRecords(versionTwoProcessDefinitionKey);
   }
 
   @Test
@@ -664,7 +667,20 @@ public class ResourceDeletionTest {
 
     // then
     verifyFormIsDeleted(formKey);
-    verifyResourceIsDeleted(formKey);
+    verifyResourceDeletionRecords(formKey);
+  }
+
+  @Test
+  public void shouldWriteDeletedEventsForResource() {
+    // given
+    final long resourceKey = deployResource(RESOURCE);
+
+    // when
+    engine.resourceDeletion().withResourceKey(resourceKey).delete();
+
+    // then
+    verifyResourceIsDeleted(resourceKey);
+    verifyResourceDeletionRecords(resourceKey);
   }
 
   private long deployDrg(final String drgResource) {
@@ -765,7 +781,7 @@ public class ResourceDeletionTest {
     }
   }
 
-  private void verifyResourceIsDeleted(final long key) {
+  private void verifyResourceDeletionRecords(final long key) {
     assertThat(
             RecordingExporter.resourceDeletionRecords()
                 .limit(r -> r.getIntent().equals(ResourceDeletionIntent.DELETED)))
@@ -1042,6 +1058,17 @@ public class ResourceDeletionTest {
         .getFormKey();
   }
 
+  private long deployResource(final String resource) {
+    return engine
+        .deployment()
+        .withJsonResource(readResource(resource), resource)
+        .deploy()
+        .getValue()
+        .getResourceMetadata()
+        .getFirst()
+        .getResourceKey();
+  }
+
   private void verifyFormIsDeleted(final long formKey) {
     final var formCreatedRecord =
         RecordingExporter.formRecords()
@@ -1075,5 +1102,44 @@ public class ResourceDeletionTest {
             formCreatedRecord.getResourceName(),
             formCreatedRecord.getTenantId(),
             formCreatedRecord.getDeploymentKey());
+  }
+
+  private void verifyResourceIsDeleted(final long resourceKey) {
+    final var resourceCreatedRecord =
+        RecordingExporter.resourceRecords()
+            .withResourceKey(resourceKey)
+            .withIntent(ResourceIntent.CREATED)
+            .getFirst()
+            .getValue();
+
+    final var resourceDeletedRecord =
+        RecordingExporter.resourceRecords()
+            .withResourceKey(resourceKey)
+            .withIntent(ResourceIntent.DELETED)
+            .getFirst()
+            .getValue();
+
+    assertThat(resourceDeletedRecord)
+        .describedAs("Expect deleted resource to match the created resource")
+        .extracting(
+            Resource::getResourceId,
+            Resource::getResourceKey,
+            Resource::getTenantId,
+            Resource::getResourceName,
+            Resource::getResourceProp,
+            Resource::getChecksum,
+            Resource::getVersion,
+            Resource::getVersionTag,
+            Resource::getDeploymentKey)
+        .containsOnly(
+            resourceCreatedRecord.getResourceId(),
+            resourceCreatedRecord.getResourceKey(),
+            resourceCreatedRecord.getTenantId(),
+            resourceCreatedRecord.getResourceName(),
+            resourceCreatedRecord.getResourceProp(),
+            resourceCreatedRecord.getChecksum(),
+            resourceCreatedRecord.getVersion(),
+            resourceCreatedRecord.getVersionTag(),
+            resourceCreatedRecord.getDeploymentKey());
   }
 }
