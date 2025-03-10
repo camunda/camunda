@@ -697,10 +697,9 @@ public class MultiTenancyOverIdentityIT {
       assertThat(result)
           .failsWithin(Duration.ofSeconds(10))
           .withThrowableThat()
-          .withMessageContaining("PERMISSION_DENIED")
+          .withMessageContaining("UNAUTHORIZED")
           .withMessageContaining(
-              "Expected to handle gRPC request ActivateJobs with tenant identifier 'tenant-a'")
-          .withMessageContaining("but tenant is not authorized to perform this request");
+              "Expected to activate job batch for tenants '[tenantA]', but user is not authorized. Authorized tenants are '[<default>, tenantB]'");
     }
   }
 
@@ -868,7 +867,7 @@ public class MultiTenancyOverIdentityIT {
           .withThrowableThat()
           .withMessageContaining("NOT_FOUND")
           .withMessageContaining(
-              "Command 'UPDATE_TIMEOUT' rejected with code 'NOT_FOUND': Expected to update job with key '%d', but no such job was found"
+              "Command 'UPDATE' rejected with code 'NOT_FOUND': Expected to update job with key '2251799813685327', but no such job was found"
                   .formatted(activatedJob.getKey()));
     }
   }
@@ -913,7 +912,7 @@ public class MultiTenancyOverIdentityIT {
           .withThrowableThat()
           .withMessageContaining("NOT_FOUND")
           .withMessageContaining(
-              "Command 'COMPLETE' rejected with code 'NOT_FOUND': Expected to update retries for job with key '%d', but no such job was found"
+              "Command 'COMPLETE' rejected with code 'NOT_FOUND': Expected to complete job with key '2251799813685288', but no such job was found"
                   .formatted(activatedJob.getKey()));
     }
   }
@@ -1090,7 +1089,8 @@ public class MultiTenancyOverIdentityIT {
           .withThrowableThat()
           .withMessageContaining("NOT_FOUND")
           .withMessageContaining(
-              "Expected to modify process instance but no process instance found with key");
+              "Expected to modify a process instance with key '%d', but no such process instance was found"
+                  .formatted(processInstanceKey));
     }
   }
 
@@ -1222,7 +1222,7 @@ public class MultiTenancyOverIdentityIT {
           .withMessageContaining("NOT_FOUND")
           .withMessageContaining(
               String.format(
-                  "Expected to migrate process instance but no process instance found with key '%s'",
+                  "Expected to migrate a process instance with key '%d', but no such process instance was found",
                   processInstanceKey));
     }
   }
@@ -1274,7 +1274,7 @@ public class MultiTenancyOverIdentityIT {
   }
 
   @Test
-  void shouldDenyEvaluateDecisionForCustomTenant() {
+  void shouldNotFindEvaluateDecisionForCustomTenant() {
     try (final var client = createCamundaClient(USER_TENANT_A)) {
       // given
       client
@@ -1296,10 +1296,9 @@ public class MultiTenancyOverIdentityIT {
       assertThat(response)
           .failsWithin(Duration.ofSeconds(10))
           .withThrowableThat()
-          .withMessageContaining("PERMISSION_DENIED")
+          .withMessageContaining("NOT_FOUND")
           .withMessageContaining(
-              "Expected to handle gRPC request EvaluateDecision with tenant identifier 'tenant-b'")
-          .withMessageContaining("but tenant is not authorized to perform this request");
+              "Expected to evaluate decision 'jedi_or_sith', but no decision found for id 'jedi_or_sith'");
     }
   }
 
@@ -1532,6 +1531,7 @@ public class MultiTenancyOverIdentityIT {
         .credentialsProvider(
             new BasicAuthCredentialsProviderBuilder().username(user).password(user).build())
         .defaultRequestTimeout(Duration.ofSeconds(10))
+        .preferRestOverGrpc(true)
         .build();
   }
 
