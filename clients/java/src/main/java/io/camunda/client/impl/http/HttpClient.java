@@ -200,6 +200,24 @@ public final class HttpClient implements AutoCloseable {
         result);
   }
 
+  public <HttpT, RespT> void put(
+      final String path,
+      final String body,
+      final RequestConfig requestConfig,
+      final Class<HttpT> responseType,
+      final JsonResponseTransformer<HttpT, RespT> transformer,
+      final HttpCamundaFuture<RespT> result) {
+    sendRequest(
+        Method.PUT,
+        path,
+        Collections.emptyMap(),
+        body,
+        requestConfig,
+        responseType,
+        transformer,
+        result);
+  }
+
   public <RespT> void patch(
       final String path,
       final String body,

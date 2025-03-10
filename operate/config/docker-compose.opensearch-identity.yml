@@ -3,7 +3,7 @@ version: "3.6"
 
 services:
   opensearch:
-    image: opensearchproject/opensearch:2.18.0
+    image: opensearchproject/opensearch:2.19.1
     depends_on:
       - opensearch-init
     container_name: opensearch
@@ -34,7 +34,7 @@ services:
 
   postgres:
     container_name: postgres
-    image: postgres:17.2-alpine
+    image: postgres:17.4-alpine
     ports:
       - "5432:5432"
     environment:
@@ -68,7 +68,7 @@ services:
     depends_on:
       - keycloak
     container_name: identity
-    image: camunda/identity:8.6.8
+    image: camunda/identity:8.6.9
     ports:
       - "8080:8080"
     volumes:
@@ -111,7 +111,7 @@ services:
       start_period: 30s
   zeebe:
     container_name: zeebe
-    image: camunda/zeebe:8.6.10
+    image: camunda/zeebe:8.6.11
     environment:
       - "JAVA_TOOL_OPTIONS=-Xms512m -Xmx512m"
       - ZEEBE_HOST=${ZEEBE_HOST:-}

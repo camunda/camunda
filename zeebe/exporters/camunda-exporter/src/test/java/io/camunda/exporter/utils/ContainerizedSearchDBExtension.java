@@ -134,4 +134,7 @@ public class ContainerizedSearchDBExtension extends SearchDBExtension {
   public String osUrl() {
     return opensearchContainer.getHttpHostAddress();
   }
+
+  @Override
+  public void afterAll(final ExtensionContext context) throws Exception {}
 }

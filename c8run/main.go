@@ -4,7 +4,9 @@ import (
 	"flag"
 	"fmt"
 	"github.com/camunda/camunda/c8run/internal/health"
+	"github.com/camunda/camunda/c8run/internal/overrides"
 	"github.com/camunda/camunda/c8run/internal/packages"
+	"github.com/camunda/camunda/c8run/internal/types"
 	"github.com/camunda/camunda/c8run/internal/unix"
 	"github.com/camunda/camunda/c8run/internal/windows"
 	"github.com/joho/godotenv"
@@ -16,7 +18,7 @@ import (
 	"strings"
 )
 
-func stopProcess(c8 C8Run, pidfile string) error {
+func stopProcess(c8 types.C8Run, pidfile string) error {
 	if _, err := os.Stat(pidfile); err == nil {
 		commandPidText, _ := os.ReadFile(pidfile)
 		commandPidStripped := strings.TrimSpace(string(commandPidText))
@@ -37,7 +39,7 @@ func stopProcess(c8 C8Run, pidfile string) error {
 	return nil
 }
 
-func getC8RunPlatform() C8Run {
+func getC8RunPlatform() types.C8Run {
 	if runtime.GOOS == "windows" {
 		return &windows.WindowsC8Run{}
 	} else if runtime.GOOS == "linux" || runtime.GOOS == "darwin" {
@@ -46,44 +48,17 @@ func getC8RunPlatform() C8Run {
 	panic("Unsupported operating system")
 }
 
-func adjustJavaOpts(javaOpts string, settings C8RunSettings) string {
-	protocol := "http"
-	if settings.HasKeyStore() {
-		javaOpts = javaOpts + " -Dserver.ssl.keystore=file:" + settings.keystore + " -Dserver.ssl.enabled=true" + " -Dserver.ssl.key-password=" + settings.keystorePassword
-		protocol = "https"
-	}
-	if settings.port != 8080 {
-		javaOpts = javaOpts + " -Dserver.port=" + strconv.Itoa(settings.port)
-	}
-	if settings.username != "" || settings.password != "" {
-		javaOpts = javaOpts + " -Dzeebe.broker.exporters.camundaExporter.args.createSchema=true"
-		javaOpts = javaOpts + " -Dzeebe.broker.exporters.camundaExporter.className=io.camunda.exporter.CamundaExporter"
-		javaOpts = javaOpts + " -Dcamunda.security.initialization.users[0].name=Demo"
-		javaOpts = javaOpts + " -Dcamunda.security.initialization.users[0].email=demo@demo.com"
-	}
-	if settings.username != "" {
-		javaOpts = javaOpts + " -Dcamunda.security.initialization.users[0].username=" + settings.username
-	}
-	if settings.password != "" {
-		javaOpts = javaOpts + " -Dcamunda.security.initialization.users[0].password=" + settings.password
-	}
-	javaOpts = javaOpts + " -Dspring.profiles.active=operate,tasklist,broker,identity,consolidated-auth"
-	os.Setenv("CAMUNDA_OPERATE_ZEEBE_RESTADDRESS", protocol+"://localhost:"+strconv.Itoa(settings.port))
-	fmt.Println("Java opts: " + javaOpts)
-	return javaOpts
-}
-
-func validateKeystore(settings C8RunSettings, parentDir string) error {
-	if settings.keystore == "" {
+func validateKeystore(settings types.C8RunSettings, parentDir string) error {
+	if settings.Keystore == "" {
 		return nil
 	}
 
-	if settings.keystorePassword == "" {
+	if settings.KeystorePassword == "" {
 		return fmt.Errorf("you must provide a password with --keystorePassword to unlock your keystore")
 	}
 
-	if !strings.HasPrefix(settings.keystore, "/") {
-		settings.keystore = filepath.Join(parentDir, settings.keystore)
+	if !strings.HasPrefix(settings.Keystore, "/") {
+		settings.Keystore = filepath.Join(parentDir, settings.Keystore)
 	}
 
 	return nil
@@ -122,34 +97,6 @@ func usage(exitcode int) {
 	os.Exit(exitcode)
 }
 
-func setEnvVars(javaHome string) error {
-	envVars := map[string]string{
-		"CAMUNDA_OPERATE_CSRFPREVENTIONENABLED":                  "false",
-		"CAMUNDA_OPERATE_IMPORTER_READERBACKOFF":                 "1000",
-		"CAMUNDA_REST_QUERY_ENABLED":                             "true",
-		"CAMUNDA_TASKLIST_CSRFPREVENTIONENABLED":                 "false",
-		"ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_BULK_DELAY":   "1",
-		"ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_BULK_SIZE":    "1",
-		"ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_INDEX_PREFIX": "zeebe-record",
-		"ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_URL":          "http://localhost:9200",
-		"ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_CLASSNAME":         "io.camunda.zeebe.exporter.ElasticsearchExporter",
-		"ES_JAVA_HOME": javaHome,
-		"ES_JAVA_OPTS": "-Xms1g -Xmx1g",
-	}
-
-	for key, value := range envVars {
-		currentValue := os.Getenv(key)
-		if currentValue != "" {
-			continue
-		}
-		if err := os.Setenv(key, value); err != nil {
-			return fmt.Errorf("failed to set environment variable %s: %w", key, err)
-		}
-	}
-
-	return nil
-}
-
 func getBaseCommand() (string, error) {
 	if len(os.Args) == 1 {
 		usage(1)
@@ -173,8 +120,8 @@ func getBaseCommand() (string, error) {
 	return "", nil
 }
 
-func handleDockerCommand(settings C8RunSettings, baseCommand string, composeExtractedFolder string) error {
-	if !settings.docker {
+func handleDockerCommand(settings types.C8RunSettings, baseCommand string, composeExtractedFolder string) error {
+	if !settings.Docker {
 		return nil
 	}
 
@@ -196,8 +143,8 @@ func handleDockerCommand(settings C8RunSettings, baseCommand string, composeExtr
 	return nil // This line will never be reached, but it's required to satisfy the function signature
 }
 
-func getBaseCommandSettings(baseCommand string) (C8RunSettings, error) {
-	var settings C8RunSettings
+func getBaseCommandSettings(baseCommand string) (types.C8RunSettings, error) {
+	var settings types.C8RunSettings
 
 	startFlagSet := createStartFlagSet(&settings)
 	stopFlagSet := createStopFlagSet(&settings)
@@ -218,25 +165,25 @@ func getBaseCommandSettings(baseCommand string) (C8RunSettings, error) {
 	return settings, nil
 }
 
-func createStartFlagSet(settings *C8RunSettings) *flag.FlagSet {
+func createStartFlagSet(settings *types.C8RunSettings) *flag.FlagSet {
 	startFlagSet := flag.NewFlagSet("start", flag.ExitOnError)
-	startFlagSet.StringVar(&settings.config, "config", "", "Applies the specified configuration file.")
-	startFlagSet.BoolVar(&settings.detached, "detached", false, "Starts Camunda Run as a detached process")
-	startFlagSet.IntVar(&settings.port, "port", 8080, "Port to run Camunda on")
-	startFlagSet.StringVar(&settings.keystore, "keystore", "", "Provide a JKS filepath to enable TLS")
-	startFlagSet.StringVar(&settings.keystorePassword, "keystorePassword", "", "Provide a password to unlock your JKS keystore")
-	startFlagSet.StringVar(&settings.logLevel, "log-level", "", "Adjust the log level of Camunda")
-	startFlagSet.BoolVar(&settings.disableElasticsearch, "disable-elasticsearch", false, "Do not start or stop Elasticsearch (still requires Elasticsearch to be running outside of c8run)")
-	startFlagSet.BoolVar(&settings.docker, "docker", false, "Run Camunda from docker-compose.")
-	startFlagSet.StringVar(&settings.username, "username", "demo", "Change the first users username (default: demo)")
-	startFlagSet.StringVar(&settings.password, "password", "demo", "Change the first users password (default: demo)")
+	startFlagSet.StringVar(&settings.Config, "config", "", "Applies the specified configuration file.")
+	startFlagSet.BoolVar(&settings.Detached, "detached", false, "Starts Camunda Run as a detached process")
+	startFlagSet.IntVar(&settings.Port, "port", 8080, "Port to run Camunda on")
+	startFlagSet.StringVar(&settings.Keystore, "keystore", "", "Provide a JKS filepath to enable TLS")
+	startFlagSet.StringVar(&settings.KeystorePassword, "keystorePassword", "", "Provide a password to unlock your JKS keystore")
+	startFlagSet.StringVar(&settings.LogLevel, "log-level", "", "Adjust the log level of Camunda")
+	startFlagSet.BoolVar(&settings.DisableElasticsearch, "disable-elasticsearch", false, "Do not start or stop Elasticsearch (still requires Elasticsearch to be running outside of c8run)")
+	startFlagSet.BoolVar(&settings.Docker, "docker", false, "Run Camunda from docker-compose.")
+	startFlagSet.StringVar(&settings.Username, "username", "demo", "Change the first users username (default: demo)")
+	startFlagSet.StringVar(&settings.Password, "password", "demo", "Change the first users password (default: demo)")
 	return startFlagSet
 }
 
-func createStopFlagSet(settings *C8RunSettings) *flag.FlagSet {
+func createStopFlagSet(settings *types.C8RunSettings) *flag.FlagSet {
 	stopFlagSet := flag.NewFlagSet("stop", flag.ExitOnError)
-	stopFlagSet.BoolVar(&settings.disableElasticsearch, "disable-elasticsearch", false, "Do not stop Elasticsearch")
-	stopFlagSet.BoolVar(&settings.docker, "docker", false, "Stop docker-compose distribution of camunda.")
+	stopFlagSet.BoolVar(&settings.DisableElasticsearch, "disable-elasticsearch", false, "Do not stop Elasticsearch")
+	stopFlagSet.BoolVar(&settings.Docker, "docker", false, "Stop docker-compose distribution of camunda.")
 	return stopFlagSet
 }
 
@@ -273,8 +220,8 @@ func main() {
 		os.Exit(1)
 	}
 
-	if settings.logLevel != "" {
-		os.Setenv("ZEEBE_LOG_LEVEL", settings.logLevel)
+	if settings.LogLevel != "" {
+		os.Setenv("ZEEBE_LOG_LEVEL", settings.LogLevel)
 	}
 
 	err = validateKeystore(settings, parentDir)
@@ -330,7 +277,7 @@ func main() {
 		javaBinary = path
 	}
 
-	err = setEnvVars(javaHome)
+	err = overrides.SetEnvVars(javaHome)
 	if err != nil {
 		fmt.Println("Failed to set envVars:", err)
 	}
@@ -367,7 +314,7 @@ func main() {
 
 }
 
-func startCommand(c8 C8Run, settings C8RunSettings, processInfo processes, parentDir, javaBinary string, expectedJavaVersion int) {
+func startCommand(c8 types.C8Run, settings types.C8RunSettings, processInfo processes, parentDir, javaBinary string, expectedJavaVersion int) {
 	javaVersion := os.Getenv("JAVA_VERSION")
 	if javaVersion == "" {
 		javaVersionCmd := c8.VersionCmd(javaBinary)
@@ -409,11 +356,9 @@ func startCommand(c8 C8Run, settings C8RunSettings, processInfo processes, paren
 	if javaOpts != "" {
 		fmt.Print("JAVA_OPTS: " + javaOpts + "\n")
 	}
-	javaOpts = adjustJavaOpts(javaOpts, settings)
+	javaOpts = overrides.AdjustJavaOpts(javaOpts, settings)
 
-	os.Setenv("ES_JAVA_OPTS", "-Xms1g -Xmx1g")
-
-	if !settings.disableElasticsearch {
+	if !settings.DisableElasticsearch {
 		fmt.Print("Starting Elasticsearch " + processInfo.elasticsearch.version + "...\n")
 		fmt.Print("(Hint: you can find the log output in the 'elasticsearch.log' file in the 'log' folder of your distribution.)\n")
 
@@ -428,8 +373,8 @@ func startCommand(c8 C8Run, settings C8RunSettings, processInfo processes, paren
 	startApplication(connectorsCmd, processInfo.connectors.pid, connectorsLogPath)
 
 	var extraArgs string
-	if settings.config != "" {
-		path := filepath.Join(parentDir, settings.config)
+	if settings.Config != "" {
+		path := filepath.Join(parentDir, settings.Config)
 		var slash string
 		if runtime.GOOS == "linux" || runtime.GOOS == "darwin" {
 			slash = "/"
@@ -443,9 +388,9 @@ func startCommand(c8 C8Run, settings C8RunSettings, processInfo processes, paren
 			os.Exit(1)
 		}
 		if configStat.IsDir() {
-			extraArgs = "--spring.config.additional-location=file:" + filepath.Join(parentDir, settings.config) + slash
+			extraArgs = "--spring.config.additional-location=file:" + filepath.Join(parentDir, settings.Config) + slash
 		} else {
-			extraArgs = "--spring.config.additional-location=file:" + filepath.Join(parentDir, settings.config)
+			extraArgs = "--spring.config.additional-location=file:" + filepath.Join(parentDir, settings.Config)
 		}
 	}
 
@@ -471,8 +416,8 @@ type process struct {
 	pid     string
 }
 
-func stopCommand(c8 C8Run, settings C8RunSettings, processes processes) {
-	if !settings.disableElasticsearch {
+func stopCommand(c8 types.C8Run, settings types.C8RunSettings, processes processes) {
+	if !settings.DisableElasticsearch {
 		err := stopProcess(c8, processes.elasticsearch.pid)
 		if err != nil {
 			fmt.Printf("%+v", err)

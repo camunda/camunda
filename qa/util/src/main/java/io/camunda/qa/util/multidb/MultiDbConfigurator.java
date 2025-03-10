@@ -31,6 +31,11 @@ public class MultiDbConfigurator {
 
   public void configureElasticsearchSupport(
       final String elasticsearchUrl, final String indexPrefix) {
+    configureElasticsearchSupport(elasticsearchUrl, indexPrefix, false);
+  }
+
+  public void configureElasticsearchSupport(
+      final String elasticsearchUrl, final String indexPrefix, final boolean retentionEnabled) {
     this.indexPrefix = indexPrefix;
     final Map<String, Object> elasticsearchProperties = new HashMap<>();
 
@@ -71,6 +76,20 @@ public class MultiDbConfigurator {
                       io.camunda.search.connect.configuration.DatabaseType.ELASTICSEARCH),
                   "index",
                   Map.of("prefix", indexPrefix),
+                  "archiver",
+                  Map.of(
+                      "waitPeriodBeforeArchiving",
+                      retentionEnabled ? "1s" : "1h", // find completed instances almost directly
+                      "retention",
+                      Map.of(
+                          "enabled",
+                          Boolean.toString(retentionEnabled),
+                          "policyName",
+                          indexPrefix + "-ilm",
+                          "minimumAge",
+                          // 0s causes ILM to move data asap - it is normally the default
+                          // https://www.elastic.co/guide/en/elasticsearch/reference/current/ilm-index-lifecycle.html#ilm-phase-transitions
+                          "0s")),
                   "bulk",
                   Map.of("size", 1)));
         });
@@ -92,6 +111,15 @@ public class MultiDbConfigurator {
       final String indexPrefix,
       final String userName,
       final String userPassword) {
+    configureOpenSearchSupport(opensearchUrl, indexPrefix, userName, userPassword, false);
+  }
+
+  public void configureOpenSearchSupport(
+      final String opensearchUrl,
+      final String indexPrefix,
+      final String userName,
+      final String userPassword,
+      final boolean retentionEnabled) {
     this.indexPrefix = indexPrefix;
 
     final Map<String, Object> opensearchProperties = new HashMap<>();
@@ -144,6 +172,20 @@ public class MultiDbConfigurator {
                       userPassword),
                   "index",
                   Map.of("prefix", indexPrefix),
+                  "archiver",
+                  Map.of(
+                      "waitPeriodBeforeArchiving",
+                      retentionEnabled ? "1s" : "1h", // find completed instances almost directly
+                      "retention",
+                      Map.of(
+                          "enabled",
+                          Boolean.toString(retentionEnabled),
+                          "policyName",
+                          indexPrefix + "-ilm",
+                          "minimumAge",
+                          // 0s causes ILM to move data asap - it is normally the default
+                          // https://www.elastic.co/guide/en/elasticsearch/reference/current/ilm-index-lifecycle.html#ilm-phase-transitions
+                          "0s")),
                   "bulk",
                   Map.of("size", 1)));
         });

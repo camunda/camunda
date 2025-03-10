@@ -203,6 +203,7 @@ public class PrefixMigrationIT {
 
     // Wait for documents to be written to indices
     Awaitility.await("document should be written")
+        .atMost(Duration.ofSeconds(30))
         .untilAsserted(
             () -> {
               final long processInstanceKey = processInstanceEvent.getProcessInstanceKey();

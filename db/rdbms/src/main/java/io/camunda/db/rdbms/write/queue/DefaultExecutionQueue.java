@@ -96,6 +96,8 @@ public class DefaultExecutionQueue implements ExecutionQueue {
             partitionId);
         return 0;
       }
+
+      LOG.trace("[RDBMS ExecutionQueue, Partition {}] flushing queue", partitionId);
       try (final var ignored = metrics.measureFlushDuration()) {
         final int numFlushedElements = doFLush();
         metrics.stopFlushLatencyMeasurement();

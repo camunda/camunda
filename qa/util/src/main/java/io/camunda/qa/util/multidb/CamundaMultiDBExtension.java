@@ -7,11 +7,12 @@
  */
 package io.camunda.qa.util.multidb;
 
+import static org.assertj.core.api.Fail.fail;
+
 import io.camunda.client.CamundaClient;
 import io.camunda.qa.util.auth.Authenticated;
 import io.camunda.qa.util.auth.User;
 import io.camunda.qa.util.auth.UserDefinition;
-import io.camunda.qa.util.cluster.TestSimpleCamundaApplication;
 import io.camunda.webapps.schema.descriptors.IndexDescriptors;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneApplication;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
@@ -47,9 +48,8 @@ import org.testcontainers.elasticsearch.ElasticsearchContainer;
  * <p>Per default, for example if no property is set, local environment is expected. In a local
  * environment case the extension will bootstrap a database via test containers.
  *
- * <p>For simplicity tests can be annotated with {@link MultiDbTest}, and all the magic happens inside
- * the extension. It will fallback to {@link TestSimpleCamundaApplication}, to bootstrap a single
- * camunda application, configure it accordingly to the detected database.
+ * <p>For simplicity tests can be annotated with {@link MultiDbTest} or {@link HistoryMultiDbTest}, and all the magic happens inside
+ * the extension. It will fallback to {@link TestStandaloneBroker}, to bootstrap the broker (reducing the scope), configure it accordingly to the detected database.
  *
  * <pre>{@code
  * @MultiDbTest
@@ -67,6 +67,28 @@ import org.testcontainers.elasticsearch.ElasticsearchContainer;
  *
  *     // then
  *     assertThat(topology.getClusterSize()).isEqualTo(1);
+ *   }
+ * }</pre>
+ *
+ * If we need to test history clean up, e.g. process instances or task related data are cleaned up.
+ * We can use the {@link HistoryMultiDbTest}, that will communicate to enable the retention.
+ *
+ * <pre>{@code
+ * @HistoryMultiDbTest
+ * final class MyHistoryMultiDbTest {
+ *
+ *   private CamundaClient client;
+ *
+ *   @Test
+ *   void shouldMakeUseOfClient() {
+ *     // given
+ *     // ... set up
+ *
+ *     // when
+ *     // client complete task - PI completion
+ *
+ *     // then
+ *     // assert data is cleaned up
  *   }
  * }</pre>
  *
@@ -145,13 +167,13 @@ public class CamundaMultiDBExtension
   public static final Duration TIMEOUT_DATA_AVAILABILITY =
       Optional.ofNullable(System.getProperty(PROP_TEST_INTEGRATION_OPENSEARCH_AWS_TIMEOUT))
           .map(val -> Duration.ofSeconds(Long.parseLong(val)))
-          .orElse(Duration.ofSeconds(30));
+          .orElse(Duration.ofMinutes(2));
   public static final String DEFAULT_ES_URL = "http://localhost:9200";
   public static final String DEFAULT_OS_URL = "http://localhost:9200";
   public static final String DEFAULT_OS_ADMIN_USER = "admin";
   public static final String DEFAULT_OS_ADMIN_PW = "yourStrongPassword123!";
-  public static final Duration TIMEOUT_DATABASE_EXPORTER_READINESS = Duration.ofMinutes(1);
-  public static final Duration TIMEOUT_DATABASE_READINESS = Duration.ofMinutes(1);
+  public static final Duration TIMEOUT_DATABASE_EXPORTER_READINESS = Duration.ofMinutes(3);
+  public static final Duration TIMEOUT_DATABASE_READINESS = Duration.ofMinutes(3);
   private static final Logger LOGGER = LoggerFactory.getLogger(CamundaMultiDBExtension.class);
   private final DatabaseType databaseType;
   private final List<AutoCloseable> closeables = new ArrayList<>();
@@ -183,25 +205,32 @@ public class CamundaMultiDBExtension
   public void beforeAll(final ExtensionContext context) {
     LOGGER.info("Starting up Camunda instance, with {}", databaseType);
     final Class<?> testClass = context.getRequiredTestClass();
+    final var isHistoryRelatedTest = testClass.getAnnotation(HistoryMultiDbTest.class) != null;
     testPrefix = testClass.getSimpleName().toLowerCase();
 
     switch (databaseType) {
       case LOCAL -> {
         final ElasticsearchContainer elasticsearchContainer = setupElasticsearch();
         final String elasticSearchUrl = "http://" + elasticsearchContainer.getHttpHostAddress();
-        multiDbConfigurator.configureElasticsearchSupport(elasticSearchUrl, testPrefix);
+        multiDbConfigurator.configureElasticsearchSupport(
+            elasticSearchUrl, testPrefix, isHistoryRelatedTest);
         final var expectedDescriptors = new IndexDescriptors(testPrefix, true).all();
         setupHelper = new ElasticOpenSearchSetupHelper(elasticSearchUrl, expectedDescriptors);
       }
       case ES -> {
-        multiDbConfigurator.configureElasticsearchSupport(DEFAULT_ES_URL, testPrefix);
+        multiDbConfigurator.configureElasticsearchSupport(
+            DEFAULT_ES_URL, testPrefix, isHistoryRelatedTest);
         final var expectedDescriptors = new IndexDescriptors(testPrefix, true).all();
         setupHelper = new ElasticOpenSearchSetupHelper(DEFAULT_ES_URL, expectedDescriptors);
       }
       case OS -> {
         multiDbConfigurator.configureOpenSearchSupport(
-            DEFAULT_OS_URL, testPrefix, DEFAULT_OS_ADMIN_USER, DEFAULT_OS_ADMIN_PW);
-        final var expectedDescriptors = new IndexDescriptors(testPrefix, true).all();
+            DEFAULT_OS_URL,
+            testPrefix,
+            DEFAULT_OS_ADMIN_USER,
+            DEFAULT_OS_ADMIN_PW,
+            isHistoryRelatedTest);
+        final var expectedDescriptors = new IndexDescriptors(testPrefix, false).all();
         setupHelper = new ElasticOpenSearchSetupHelper(DEFAULT_OS_URL, expectedDescriptors);
       }
       case RDBMS -> multiDbConfigurator.configureRDBMSSupport();
@@ -213,6 +242,7 @@ public class CamundaMultiDBExtension
       }
       default -> throw new RuntimeException("Unknown exporter type");
     }
+
     // we need to close the test application before cleaning up
     closeables.add(() -> setupHelper.cleanup(testPrefix));
     closeables.add(setupHelper);
@@ -233,7 +263,7 @@ public class CamundaMultiDBExtension
     // we support only static fields for now - to make sure test setups are build in a way
     // such they are reusable and tests methods are not relying on order, etc.
     // We want to run tests in a efficient manner, and reduce setup time
-    injectFields(testClass, null, ModifierSupport::isStatic);
+    injectStaticClientField(testClass);
     final List<User> users = findUsers(testClass, null, ModifierSupport::isStatic);
     if (!users.isEmpty()) {
       authenticatedClientFactory.withUsers(users);
@@ -242,7 +272,12 @@ public class CamundaMultiDBExtension
 
   private ElasticsearchContainer setupElasticsearch() {
     final ElasticsearchContainer elasticsearchContainer =
-        TestSearchContainers.createDefeaultElasticsearchContainer();
+        TestSearchContainers.createDefeaultElasticsearchContainer()
+            // We need to configure ILM to run more often, to make sure data is cleaned up earlier
+            // Useful for tests where we verify history clean up
+            // Default is 10m
+            // https://www.elastic.co/guide/en/elasticsearch/reference/current/ilm-settings.html
+            .withEnv("indices.lifecycle.poll_interval", "1s");
     elasticsearchContainer.start();
     closeables.add(elasticsearchContainer);
     return elasticsearchContainer;
@@ -269,14 +304,16 @@ public class CamundaMultiDBExtension
     return users;
   }
 
-  private void injectFields(
-      final Class<?> testClass, final Object testInstance, Predicate<Field> predicate) {
-    predicate = predicate.and(field -> field.getType() == CamundaClient.class);
+  private void injectStaticClientField(final Class<?> testClass) {
     for (final Field field : testClass.getDeclaredFields()) {
       try {
-        if (predicate.test(field)) {
-          field.setAccessible(true);
-          field.set(testInstance, createCamundaClient(field.getAnnotation(Authenticated.class)));
+        if (field.getType() == CamundaClient.class) {
+          if (ModifierSupport.isStatic(field)) {
+            field.setAccessible(true);
+            field.set(null, createCamundaClient(field.getAnnotation(Authenticated.class)));
+          } else {
+            fail("Camunda Client field couldn't be injected. Make sure it is static.");
+          }
         }
       } catch (final Exception ex) {
         throw new RuntimeException(ex);

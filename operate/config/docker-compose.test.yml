@@ -2,7 +2,7 @@ version: "3.6"
 #this docker-compose will start Elastic, Zeebe (with external data folder, which allows to update Zeebe), Operate and Tasklist
 services:
   elasticsearch:
-    image: docker.elastic.co/elasticsearch/elasticsearch:8.17.2
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.17.3
     container_name: elasticsearch
     environment:
       - discovery.type=single-node
@@ -23,7 +23,7 @@ services:
       - ./els-snapshots:/usr/local/els-snapshots
   zeebe:
     container_name: zeebe
-    image: camunda/zeebe:8.6.10
+    image: camunda/zeebe:8.6.11
     environment:
       - "JAVA_TOOL_OPTIONS=-Xms512m -Xmx512m"
       - ZEEBE_HOST=${ZEEBE_HOST:-}
@@ -37,7 +37,7 @@ services:
       - 8000:8000
     restart: always
   operate:
-    image: camunda/operate:8.6.10
+    image: camunda/operate:8.6.11
     container_name: operate
     environment:
       - SERVER_PORT=8081
@@ -54,7 +54,7 @@ services:
       - elasticsearch
       - zeebe
   tasklist:
-    image: camunda/tasklist:8.6.10
+    image: camunda/tasklist:8.6.11
     container_name: tasklist
     environment:
       - SERVER_PORT=8082

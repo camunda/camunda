@@ -5,7 +5,7 @@ services:
 
   postgres:
     container_name: postgres
-    image: postgres:17.2-alpine
+    image: postgres:17.4-alpine
     ports:
       - "5432:5432"
     environment:
@@ -16,7 +16,7 @@ services:
       - zeebe_network
 
   elasticsearch:
-    image: docker.elastic.co/elasticsearch/elasticsearch:8.17.2
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.17.3
     container_name: elasticsearch
     environment:
       - discovery.type=single-node
@@ -39,7 +39,7 @@ services:
       - ./els-snapshots:/usr/local/els-snapshots
 
   opensearch:
-    image: opensearchproject/opensearch:2.18.0
+    image: opensearchproject/opensearch:2.19.1
     container_name: opensearch
     environment:
       - cluster.name=opensearch-cluster
@@ -62,7 +62,7 @@ services:
       - zeebe_network
 
   kibana:
-    image: docker.elastic.co/kibana/kibana:8.17.2
+    image: docker.elastic.co/kibana/kibana:8.17.3
     ports:
       - 5601:5601
     environment:
