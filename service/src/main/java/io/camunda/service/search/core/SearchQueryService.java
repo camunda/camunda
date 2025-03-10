@@ -8,7 +8,7 @@
 package io.camunda.service.search.core;
 
 import io.camunda.search.exception.CamundaSearchException;
-import io.camunda.search.exception.NotFoundException;
+import io.camunda.search.exception.ErrorMessages;
 import io.camunda.search.query.SearchQueryBase;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.auth.Authentication;
@@ -33,10 +33,14 @@ public abstract class SearchQueryService<T extends ApiServices<T>, Q extends Sea
       final Object key,
       final String entityTypeLabel) {
     if (searchQueryResult.total() < 1) {
-      throw new NotFoundException(String.format("%s with key %s not found", entityTypeLabel, key));
+      throw new CamundaSearchException(
+          ErrorMessages.ERROR_NOT_FOUND_ENTITY_BY_KEY.formatted(entityTypeLabel, key),
+          CamundaSearchException.Reason.NOT_FOUND);
     } else if (searchQueryResult.total() > 1) {
       throw new CamundaSearchException(
-          String.format("Found %s with key %s more than once", entityTypeLabel, key));
+          ErrorMessages.ERROR_NOT_UNIQUE_ENTITY.formatted(entityTypeLabel, key),
+          CamundaSearchException.Reason.NOT_UNIQUE);
+
     } else {
       return searchQueryResult.items().stream().findFirst().orElseThrow();
     }

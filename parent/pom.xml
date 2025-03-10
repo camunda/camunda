@@ -52,7 +52,7 @@
     <version.zstd-jni>1.5.7-1</version.zstd-jni>
     <version.commons-text>1.13.0</version.commons-text>
     <version.cron-utils>9.2.1</version.cron-utils>
-    <version.docker-java-api>3.4.1</version.docker-java-api>
+    <version.docker-java-api>3.4.2</version.docker-java-api>
     <version.elasticsearch>8.13.4</version.elasticsearch>
     <version.error-prone>2.36.0</version.error-prone>
     <version.grpc>1.71.0</version.grpc>
@@ -126,10 +126,10 @@
     <version.easy-random>5.0.0</version.easy-random>
     <version.jcip>1.0</version.jcip>
     <version.jnr-posix>3.1.20</version.jnr-posix>
-    <version.zpt>8.6.10</version.zpt>
+    <version.zpt>8.6.11</version.zpt>
     <version.feign>13.5</version.feign>
     <version.google-sdk>26.56.0</version.google-sdk>
-    <version.azure-sdk>1.2.31</version.azure-sdk>
+    <version.azure-sdk>1.2.32</version.azure-sdk>
     <version.awssdk>2.29.50</version.awssdk>
     <version.toxiproxy>2.1.7</version.toxiproxy>
     <version.validation-api>3.1.1</version.validation-api>

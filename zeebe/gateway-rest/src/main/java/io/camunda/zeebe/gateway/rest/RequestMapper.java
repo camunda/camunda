@@ -23,6 +23,7 @@ import static io.camunda.zeebe.gateway.rest.validator.MappingValidator.validateM
 import static io.camunda.zeebe.gateway.rest.validator.MessageRequestValidator.validateMessageCorrelationRequest;
 import static io.camunda.zeebe.gateway.rest.validator.MessageRequestValidator.validateMessagePublicationRequest;
 import static io.camunda.zeebe.gateway.rest.validator.MultiTenancyValidator.validateTenantId;
+import static io.camunda.zeebe.gateway.rest.validator.MultiTenancyValidator.validateTenantIds;
 import static io.camunda.zeebe.gateway.rest.validator.ProcessInstanceRequestValidator.validateCancelProcessInstanceRequest;
 import static io.camunda.zeebe.gateway.rest.validator.ProcessInstanceRequestValidator.validateCreateProcessInstanceRequest;
 import static io.camunda.zeebe.gateway.rest.validator.ProcessInstanceRequestValidator.validateMigrateProcessInstanceRequest;
@@ -208,15 +209,25 @@ public class RequestMapper {
   }
 
   public static Either<ProblemDetail, ActivateJobsRequest> toJobsActivationRequest(
-      final JobActivationRequest activationRequest) {
+      final JobActivationRequest activationRequest, final boolean multiTenancyEnabled) {
 
-    return getResult(
-        validateJobActivationRequest(activationRequest),
-        () ->
+    final Either<ProblemDetail, List<String>> validationResponse =
+        validateTenantIds(
+                getStringListOrEmpty(activationRequest, JobActivationRequest::getTenantIds),
+                multiTenancyEnabled,
+                "Activate Jobs")
+            .flatMap(
+                tenantIds ->
+                    validateJobActivationRequest(activationRequest)
+                        .map(Either::<ProblemDetail, List<String>>left)
+                        .orElseGet(() -> Either.right(tenantIds)));
+
+    return validationResponse.map(
+        tenantIds ->
             new ActivateJobsRequest(
                 activationRequest.getType(),
                 activationRequest.getMaxJobsToActivate(),
-                getStringListOrEmpty(activationRequest, JobActivationRequest::getTenantIds),
+                tenantIds,
                 activationRequest.getTimeout(),
                 getStringOrEmpty(activationRequest, JobActivationRequest::getWorker),
                 getStringListOrEmpty(activationRequest, JobActivationRequest::getFetchVariable),
