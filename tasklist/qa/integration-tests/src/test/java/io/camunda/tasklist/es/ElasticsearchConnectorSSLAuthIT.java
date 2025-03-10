@@ -11,6 +11,7 @@ import static io.camunda.webapps.schema.SupportedVersions.SUPPORTED_ELASTICSEARC
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
+import io.camunda.tasklist.connect.ElasticsearchConnector;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.qa.util.TestUtil;
 import io.camunda.tasklist.util.TasklistIntegrationTest;

@@ -383,11 +383,6 @@
 
     <dependency>
       <groupId>org.springframework.boot</groupId>
-      <artifactId>spring-boot</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-autoconfigure</artifactId>
     </dependency>
 
@@ -510,6 +505,11 @@
     <dependency>
       <groupId>org.springframework</groupId>
       <artifactId>spring-webmvc</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot</artifactId>
     </dependency>
 
     <dependency>
@@ -757,6 +757,10 @@
             <program>
               <id>schema</id>
               <mainClass>io.camunda.application.StandaloneSchemaManager</mainClass>
+            </program>
+            <program>
+              <id>backup-webapps</id>
+              <mainClass>io.camunda.application.StandaloneBackupManager</mainClass>
             </program>
             <program>
               <id>tasklist</id>
