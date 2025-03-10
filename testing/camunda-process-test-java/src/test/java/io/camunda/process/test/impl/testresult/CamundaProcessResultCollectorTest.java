@@ -113,14 +113,14 @@ public class CamundaProcessResultCollectorTest {
     when(camundaDataSource.findProcessInstances())
         .thenReturn(Arrays.asList(PROCESS_INSTANCE_1, PROCESS_INSTANCE_2));
 
-    when(camundaDataSource.getVariablesByProcessInstanceKey(
+    when(camundaDataSource.findVariablesByProcessInstanceKey(
             PROCESS_INSTANCE_1.getProcessInstanceKey()))
         .thenReturn(
             Arrays.asList(
                 VariableBuilder.newVariable("var-1", "1").build(),
                 VariableBuilder.newVariable("var-2", "2").build()));
 
-    when(camundaDataSource.getVariablesByProcessInstanceKey(
+    when(camundaDataSource.findVariablesByProcessInstanceKey(
             PROCESS_INSTANCE_2.getProcessInstanceKey()))
         .thenReturn(Collections.singletonList(VariableBuilder.newVariable("var-3", "3").build()));
 
@@ -160,11 +160,11 @@ public class CamundaProcessResultCollectorTest {
             .setIncidentKey(11L)
             .build();
 
-    when(camundaDataSource.getFlowNodeInstancesByProcessInstanceKey(
+    when(camundaDataSource.findFlowNodeInstancesByProcessInstanceKey(
             PROCESS_INSTANCE_1.getProcessInstanceKey()))
         .thenReturn(Arrays.asList(flowNodeInstance1, flowNodeInstance2));
 
-    when(camundaDataSource.getIncidentsByProcessInstanceKey(
+    when(camundaDataSource.findIncidentsByProcessInstanceKey(
             PROCESS_INSTANCE_1.getProcessInstanceKey()))
         .thenReturn(
             Arrays.asList(
@@ -190,11 +190,11 @@ public class CamundaProcessResultCollectorTest {
             .setIncident(false)
             .build();
 
-    when(camundaDataSource.getFlowNodeInstancesByProcessInstanceKey(
+    when(camundaDataSource.findFlowNodeInstancesByProcessInstanceKey(
             PROCESS_INSTANCE_2.getProcessInstanceKey()))
         .thenReturn(Arrays.asList(flowNodeInstance3, flowNodeInstance4));
 
-    when(camundaDataSource.getIncidentsByProcessInstanceKey(
+    when(camundaDataSource.findIncidentsByProcessInstanceKey(
             PROCESS_INSTANCE_2.getProcessInstanceKey()))
         .thenReturn(
             Collections.singletonList(
@@ -229,7 +229,7 @@ public class CamundaProcessResultCollectorTest {
     when(camundaDataSource.findProcessInstances())
         .thenReturn(Arrays.asList(PROCESS_INSTANCE_1, PROCESS_INSTANCE_2));
 
-    when(camundaDataSource.getFlowNodeInstancesByProcessInstanceKey(
+    when(camundaDataSource.findFlowNodeInstancesByProcessInstanceKey(
             PROCESS_INSTANCE_1.getProcessInstanceKey()))
         .thenReturn(
             Arrays.asList(
@@ -240,7 +240,7 @@ public class CamundaProcessResultCollectorTest {
                         "B", PROCESS_INSTANCE_1.getProcessInstanceKey())
                     .build()));
 
-    when(camundaDataSource.getFlowNodeInstancesByProcessInstanceKey(
+    when(camundaDataSource.findFlowNodeInstancesByProcessInstanceKey(
             PROCESS_INSTANCE_2.getProcessInstanceKey()))
         .thenReturn(
             Arrays.asList(
