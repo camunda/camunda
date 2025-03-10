@@ -9,7 +9,6 @@ package io.camunda.qa.util.multidb;
 
 import io.camunda.exporter.CamundaExporter;
 import io.camunda.search.connect.configuration.DatabaseType;
-import io.camunda.zeebe.exporter.ElasticsearchExporter;
 import io.camunda.zeebe.exporter.opensearch.OpensearchExporter;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneApplication;
 import java.util.HashMap;
@@ -92,17 +91,6 @@ public class MultiDbConfigurator {
                           "0s")),
                   "bulk",
                   Map.of("size", 1)));
-        });
-
-    testApplication.withExporter(
-        "ElasticsearchExporter",
-        cfg -> {
-          cfg.setClassName(ElasticsearchExporter.class.getName());
-          cfg.setArgs(
-              Map.of(
-                  "url", elasticsearchUrl,
-                  "index", Map.of("prefix", zeebeIndexPrefix()),
-                  "bulk", Map.of("size", 1)));
         });
   }
 
@@ -188,22 +176,6 @@ public class MultiDbConfigurator {
                           "0s")),
                   "bulk",
                   Map.of("size", 1)));
-        });
-
-    testApplication.withExporter(
-        "OpensearchExporter",
-        cfg -> {
-          cfg.setClassName(OpensearchExporter.class.getName());
-          cfg.setArgs(
-              Map.of(
-                  "url",
-                  opensearchUrl,
-                  "index",
-                  Map.of("prefix", zeebeIndexPrefix()),
-                  "bulk",
-                  Map.of("size", 1),
-                  "authentication",
-                  Map.of("username", userName, "password", userPassword)));
         });
   }
 
