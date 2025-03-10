@@ -92,9 +92,9 @@ public class RangeQueryTransformerTest {
 
     // then
     assertThat(result).isNotNull();
-    assertThat(result.lt().to(Long.class)).isEqualTo(123456789L);
-    assertThat(result.gt().to(Long.class)).isEqualTo(1234L);
-    assertThat(result.gte().to(Long.class)).isEqualTo(123456L);
-    assertThat(result.lte().to(Long.class)).isEqualTo(12345L);
+    assertThat(result.untyped().lt().to(Long.class)).isEqualTo(123456789L);
+    assertThat(result.untyped().gt().to(Long.class)).isEqualTo(1234L);
+    assertThat(result.untyped().gte().to(Long.class)).isEqualTo(123456L);
+    assertThat(result.untyped().lte().to(Long.class)).isEqualTo(12345L);
   }
 }
