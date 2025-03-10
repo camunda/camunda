@@ -194,6 +194,11 @@
       <artifactId>operate-common</artifactId>
       <scope>test</scope>
     </dependency>
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>tasklist-webapp</artifactId>
+      <scope>test</scope>
+    </dependency>
   </dependencies>
 
   <build>

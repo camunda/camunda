@@ -1,0 +1,17 @@
+camunda:
+  operate:
+    backup:
+      repositoryName: "els-test"
+    elasticsearch:
+      # Example assuming an existing user called 'camunda-admin' who has 'superuser' privileges
+      username: camunda-admin
+      password: camunda123
+      healthCheckEnabled: false
+  tasklist:
+    backup:
+      repositoryName: "els-test"
+    elasticsearch:
+      # Example assuming an existing user called 'camunda-admin' who has 'superuser' privileges
+      username: camunda-admin
+      password: camunda123
+      healthCheckEnabled: false
