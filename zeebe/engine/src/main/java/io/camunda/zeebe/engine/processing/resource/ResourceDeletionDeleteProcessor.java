@@ -32,6 +32,7 @@ import io.camunda.zeebe.engine.state.deployment.DeployedDrg;
 import io.camunda.zeebe.engine.state.deployment.DeployedProcess;
 import io.camunda.zeebe.engine.state.deployment.PersistedDecision;
 import io.camunda.zeebe.engine.state.deployment.PersistedForm;
+import io.camunda.zeebe.engine.state.deployment.PersistedResource;
 import io.camunda.zeebe.engine.state.distribution.DistributionQueue;
 import io.camunda.zeebe.engine.state.immutable.BannedInstanceState;
 import io.camunda.zeebe.engine.state.immutable.DecisionState;
@@ -39,6 +40,7 @@ import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
 import io.camunda.zeebe.engine.state.immutable.FormState;
 import io.camunda.zeebe.engine.state.immutable.ProcessState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
+import io.camunda.zeebe.engine.state.immutable.ResourceState;
 import io.camunda.zeebe.engine.state.immutable.TenantState;
 import io.camunda.zeebe.engine.state.immutable.TimerInstanceState;
 import io.camunda.zeebe.model.bpmn.util.time.Timer;
@@ -46,6 +48,7 @@ import io.camunda.zeebe.protocol.impl.record.value.deployment.DecisionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DecisionRequirementsRecord;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.FormRecord;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.ProcessRecord;
+import io.camunda.zeebe.protocol.impl.record.value.deployment.ResourceRecord;
 import io.camunda.zeebe.protocol.impl.record.value.resource.ResourceDeletionRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.DecisionIntent;
@@ -53,12 +56,14 @@ import io.camunda.zeebe.protocol.record.intent.DecisionRequirementsIntent;
 import io.camunda.zeebe.protocol.record.intent.FormIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessIntent;
 import io.camunda.zeebe.protocol.record.intent.ResourceDeletionIntent;
+import io.camunda.zeebe.protocol.record.intent.ResourceIntent;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import io.camunda.zeebe.util.Either;
+import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
@@ -81,6 +86,7 @@ public class ResourceDeletionDeleteProcessor
   private final AuthorizationCheckBehavior authCheckBehavior;
   private final StartEventSubscriptionManager startEventSubscriptionManager;
   private final FormState formState;
+  private final ResourceState resourceState;
   private final TenantState tenantState;
 
   public ResourceDeletionDeleteProcessor(
@@ -106,6 +112,7 @@ public class ResourceDeletionDeleteProcessor
     startEventSubscriptionManager =
         new StartEventSubscriptionManager(processingState, keyGenerator, stateWriter);
     formState = processingState.getFormState();
+    resourceState = processingState.getResourceState();
     tenantState = processingState.getTenantState();
   }
 
@@ -220,6 +227,13 @@ public class ResourceDeletionDeleteProcessor
           bufferAsString(form.getFormId()));
       setTenantId(command, tenantId);
       deleteForm(form);
+      return true;
+    }
+
+    final var resourceOptional = resourceState.findResourceByKey(value.getResourceKey(), tenantId);
+    if (resourceOptional.isPresent()) {
+      setTenantId(command, tenantId);
+      deleteResource(resourceOptional.get());
       return true;
     }
 
@@ -367,6 +381,21 @@ public class ResourceDeletionDeleteProcessor
             .setDeploymentKey(persistedForm.getDeploymentKey());
 
     stateWriter.appendFollowUpEvent(keyGenerator.nextKey(), FormIntent.DELETED, form);
+  }
+
+  private void deleteResource(final PersistedResource persistedResource) {
+    final var resource =
+        new ResourceRecord()
+            .setResourceId(persistedResource.getResourceId())
+            .setResourceKey(persistedResource.getResourceKey())
+            .setTenantId(persistedResource.getTenantId())
+            .setResourceName(persistedResource.getResourceName())
+            .setResource(BufferUtil.wrapString(persistedResource.getResource()))
+            .setChecksum(persistedResource.getChecksum())
+            .setVersion(persistedResource.getVersion())
+            .setVersionTag(persistedResource.getVersionTag())
+            .setDeploymentKey(persistedResource.getDeploymentKey());
+    stateWriter.appendFollowUpEvent(keyGenerator.nextKey(), ResourceIntent.DELETED, resource);
   }
 
   private AuthorizedTenants getAuthorizedTenants(
