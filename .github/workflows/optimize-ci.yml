@@ -99,22 +99,23 @@ jobs:
           ELASTIC_JVM_MEMORY: 1
           ELASTIC_HTTP_PORT: ${{ steps.pom-info.outputs.x_new_database_port }}
 
-      # Build optimize dependencies
       - name: Build optimize dependencies
         uses: ./.github/actions/run-maven
         with:
-          parameters: -pl optimize/backend -am install -Dquickly -P skipFrontendBuild,runAssembly -T 1
+          parameters: -f optimize/pom.xml -pl backend -am install -T1
 
       - name: Install
         uses: ./.github/actions/run-maven
         with:
-          parameters: -f optimize/pom.xml install -Dskip.fe.build -Dskip.docker -DskipTests -PrunAssembly -T 1
+          parameters: -f optimize/pom.xml install -Dskip.fe.build -Dskip.docker -DskipTests -PrunAssembly -T1
+
       - name: Verify optimize/qa/schema-integrity-tests
         uses: ./.github/actions/run-maven
         with:
           parameters: verify -Dskip.docker -Dskip.fe.build -f optimize/qa/schema-integrity-tests -Pes-schema-integrity-tests
         env:
           CAMUNDA_OPTIMIZE_DATABASE: elasticsearch
+
       - name: Upload Test Results
         if: always()
         uses: ./.github/actions/collect-test-artifacts
@@ -172,7 +173,7 @@ jobs:
       - name: Install optimize dependencies
         uses: ./.github/actions/run-maven
         with:
-          parameters: -pl optimize/upgrade -am install -Dquickly -DskipFrontendBuild -PrunAssembly -T1
+          parameters: -f optimize/pom.xml -pl upgrade -am install -DskipFrontendBuild -PrunAssembly -T1
 
       - name: Install
         uses: ./.github/actions/run-maven
@@ -262,7 +263,7 @@ jobs:
             -Dit.test.includedGroups=${{ matrix.includedGroups }}
             -Dskip.docker -Dskip.fe.build -P${{ matrix.profiles }}
             -Dfailsafe.rerunFailingTestsCount=2
-            -Ddatabase.type=elasticsearch -pl optimize/backend -am
+            -Ddatabase.type=elasticsearch -f optimize/pom.xml -pl backend -am
 
       - name: Upload Test Results
         if: always()
@@ -341,7 +342,7 @@ jobs:
             -Dit.test.includedGroups=${{ matrix.includedGroups }}
             -Dskip.docker -Dskip.fe.build -P${{ matrix.profiles }}
             -Dfailsafe.rerunFailingTestsCount=2
-            -Ddatabase.type=opensearch -pl optimize/backend -am
+            -Ddatabase.type=opensearch -f optimize/pom.xml -pl backend -am
 
       - name: Upload Test Results
         if: always()
@@ -397,16 +398,16 @@ jobs:
       - name: Install optimize dependencies
         uses: ./.github/actions/run-maven
         with:
-          parameters: -pl optimize/upgrade -am install -Dquickly -DskipFrontendBuild -PrunAssembly -T1
+          parameters: -f optimize/pom.xml -pl upgrade -am install -Dquickly -DskipFrontendBuild -PrunAssembly -T1
 
       - name: Install
         uses: ./.github/actions/run-maven
         with:
-          parameters: install -Dskip.fe.build -Dskip.docker -DskipTests -pl optimize/upgrade -am
+          parameters: install -Dskip.fe.build -Dskip.docker -DskipTests -f optimize/pom.xml -pl upgrade -am
       - name: Verify upgrade tests
         uses: ./.github/actions/run-maven
         with:
-          parameters: verify -U -Dskip.docker -pl optimize/upgrade -Ddatabase.type=${{ matrix.database }}
+          parameters: verify -U -Dskip.docker -f optimize/pom.xml -pl upgrade -Ddatabase.type=${{ matrix.database }}
         env:
           CAMUNDA_OPTIMIZE_DATABASE: ${{ matrix.database }}
       - name: Upload Test Results
