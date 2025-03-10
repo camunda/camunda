@@ -17,26 +17,8 @@ jobs:
         uses: actions/checkout@v4
         with:
           ref: ${{ github.event.pull_request.head.sha }}
-          fetch-depth: ${{ github.event.pull_request.commits }}
-          filter: blob:none
-
-      - name: Fetch commits up to the merge-base
-        run: |
-          depth=100
-          while [ -z "$(git merge-base origin/${{ github.event.pull_request.base.ref }} ${{ github.event.pull_request.head.sha }})" ]; do
-            echo "Current number of commits on log:"
-            git log origin/${{ github.event.pull_request.base.ref }} --oneline | wc -l
-
-            echo "Fetching $depth commits"
-            git fetch --depth=${depth} --filter=blob:none origin ${{ github.event.pull_request.base.ref }}
-            if [ $depth -gt 2000000 ]; then
-              echo "Too many commits between PR and base branch. Ignoring this check."
-              exit 0
-            fi
-            depth=$((depth * 4))
-
-            echo "Checking git merge-base origin/${{ github.event.pull_request.base.ref }} ${{ github.event.pull_request.head.sha }} again: $(git merge-base origin/${{ github.event.pull_request.base.ref }} ${{ github.event.pull_request.head.sha }})"
-          done
+          fetch-depth: 0
+          filter: tree:0
 
       - name: Check for invalid merge commits
         run: |
