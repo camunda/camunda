@@ -49,6 +49,10 @@ public class CollectionService {
   private final CollectionReader collectionReader;
   private final AbstractIdentityService identityService;
 
+  public List<CollectionDefinitionDto> getAllCollections() {
+    return collectionReader.getAllCollections();
+  }
+
   public IdResponseDto createNewCollectionAndReturnId(
       final String userId,
       final PartialCollectionDefinitionRequestDto partialCollectionDefinitionDto) {
