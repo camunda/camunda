@@ -72,7 +72,11 @@ jobs:
       cluster: zeebe-cluster
       cluster-region: europe-west1-b
       ref: ${{ needs.benchmark-data.outputs.full-ref }}
+<<<<<<< HEAD
       measure: false
+=======
+      operate-tag: ${{ needs.benchmark-data.outputs.operate }}
+>>>>>>> 6b618e7f (ci: remove broken benchmark measurement support)
       benchmark-load: >
         --set starter.rate=5
         --set worker.replicas=1
@@ -98,7 +102,6 @@ jobs:
       cluster: zeebe-cluster
       cluster-region: europe-west1-b
       ref: ${{ needs.benchmark-data.outputs.full-ref }}
-      measure: false
       benchmark-load: >
         --set starter.rate=1
         --set worker.replicas=1
