@@ -19,6 +19,7 @@ import io.camunda.document.api.DocumentError.DocumentNotFound;
 import io.camunda.document.api.DocumentError.InvalidInput;
 import io.camunda.document.api.DocumentError.UnknownDocumentError;
 import java.io.ByteArrayInputStream;
+import java.io.OutputStream;
 import java.net.MalformedURLException;
 import java.net.URI;
 import java.time.Duration;
@@ -38,6 +39,8 @@ import software.amazon.awssdk.core.ResponseInputStream;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.http.HttpStatusCode;
 import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.model.CopyObjectRequest;
+import software.amazon.awssdk.services.s3.model.CopyObjectResponse;
 import software.amazon.awssdk.services.s3.model.GetObjectRequest;
 import software.amazon.awssdk.services.s3.model.GetObjectResponse;
 import software.amazon.awssdk.services.s3.model.HeadBucketRequest;
@@ -77,7 +80,7 @@ class AwsDocumentStoreTest {
   void createDocumentShouldSucceed() {
     // given
     final var documentId = "test-document-id";
-    final var content = "test-content".getBytes();
+    final var content = "test-content-random-bits\n.".getBytes();
     final var inputStream = new ByteArrayInputStream(content);
 
     final var metadata =
@@ -90,13 +93,24 @@ class AwsDocumentStoreTest {
             null,
             Collections.emptyMap());
 
-    final var request = new DocumentCreationRequest(documentId, inputStream, metadata);
-
     when(s3Client.headObject(any(HeadObjectRequest.class)))
         .thenThrow(S3Exception.builder().statusCode(HttpStatusCode.NOT_FOUND).build());
+
     final var mockPutResponse = mock(PutObjectResponse.class);
     when(s3Client.putObject(any(PutObjectRequest.class), any(RequestBody.class)))
+        .then(
+            invocation -> {
+              final var requestBody = (RequestBody) invocation.getArguments()[1];
+              try (final var stream = requestBody.contentStreamProvider().newStream()) {
+                stream.transferTo(OutputStream.nullOutputStream());
+              }
+              return null;
+            })
         .thenReturn(mockPutResponse);
+    when(s3Client.copyObject(any(CopyObjectRequest.class)))
+        .thenReturn(mock(CopyObjectResponse.class));
+
+    final var request = new DocumentCreationRequest(documentId, inputStream, metadata);
 
     // when
     final var result = documentStore.createDocument(request).join();
@@ -104,7 +118,23 @@ class AwsDocumentStoreTest {
     // then
     assertTrue(result.isRight());
     assertEquals(documentId, result.get().documentId());
-    verify(s3Client).putObject(any(PutObjectRequest.class), any(RequestBody.class));
+
+    final var putRequestCaptor = ArgumentCaptor.forClass(PutObjectRequest.class);
+    verify(s3Client).putObject(putRequestCaptor.capture(), any(RequestBody.class));
+    final var putRequest = putRequestCaptor.getValue();
+    assertThat(putRequest.key()).isEqualTo(BUCKET_PATH + documentId);
+    assertThat(putRequest.bucket()).isEqualTo(BUCKET_NAME);
+    assertThat(putRequest.metadata().get("content-hash")).isEqualTo("");
+
+    final var copyRequestCaptor = ArgumentCaptor.forClass(CopyObjectRequest.class);
+    verify(s3Client).copyObject(copyRequestCaptor.capture());
+    final var copyRequest = copyRequestCaptor.getValue();
+    assertThat(copyRequest.sourceKey()).isEqualTo(BUCKET_PATH + documentId);
+    assertThat(copyRequest.destinationKey()).isEqualTo(BUCKET_PATH + documentId);
+    assertThat(copyRequest.sourceBucket()).isEqualTo(BUCKET_NAME);
+    assertThat(copyRequest.destinationBucket()).isEqualTo(BUCKET_NAME);
+    assertThat(copyRequest.metadata().get("content-hash"))
+        .isEqualTo("3635e7279b883d6bfd13cfe4d8815cc01b70c678afc8d278c0a4c1b0afbb87a8");
   }
 
   @Test
