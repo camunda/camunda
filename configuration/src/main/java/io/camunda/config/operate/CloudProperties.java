@@ -5,7 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.operate.property;
+package io.camunda.config.operate;
 
 public class CloudProperties {
 
@@ -27,7 +27,7 @@ public class CloudProperties {
     return permissionUrl;
   }
 
-  public void setPermissionUrl(String permissionUrl) {
+  public void setPermissionUrl(final String permissionUrl) {
     this.permissionUrl = permissionUrl;
   }
 
@@ -35,7 +35,7 @@ public class CloudProperties {
     return permissionAudience;
   }
 
-  public void setPermissionAudience(String permissionAudience) {
+  public void setPermissionAudience(final String permissionAudience) {
     this.permissionAudience = permissionAudience;
   }
 

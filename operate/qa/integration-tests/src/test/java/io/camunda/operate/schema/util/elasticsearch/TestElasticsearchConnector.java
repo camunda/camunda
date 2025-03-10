@@ -12,7 +12,6 @@ import io.camunda.operate.connect.ElasticsearchConnector;
 import io.camunda.operate.property.ElasticsearchProperties;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.schema.util.ObservableConnector;
-import io.camunda.operate.schema.util.ObservableConnector.OperateTestHttpRequest;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;

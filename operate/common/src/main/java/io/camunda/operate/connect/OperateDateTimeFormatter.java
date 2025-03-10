@@ -7,8 +7,8 @@
  */
 package io.camunda.operate.connect;
 
+import io.camunda.config.operate.OperateProperties;
 import io.camunda.operate.conditions.DatabaseInfo;
-import io.camunda.operate.property.OperateProperties;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
 import org.apache.commons.lang3.StringUtils;

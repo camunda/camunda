@@ -5,11 +5,11 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.operate.property;
+package io.camunda.config.operate;
 
 import java.util.Map;
 
-public class OperateOpensearchProperties extends OpensearchProperties {
+public class OperateElasticsearchProperties extends ElasticsearchProperties {
 
   public static final String DEFAULT_INDEX_PREFIX = "";
   private static final int DEFAULT_NUMBER_OF_SHARDS = 1;

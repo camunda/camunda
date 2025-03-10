@@ -299,6 +299,11 @@
       <artifactId>junit-jupiter-api</artifactId>
       <scope>test</scope>
     </dependency>
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>configuration-module</artifactId>
+      <version>8.8.0-SNAPSHOT</version>
+    </dependency>
 
   </dependencies>
 

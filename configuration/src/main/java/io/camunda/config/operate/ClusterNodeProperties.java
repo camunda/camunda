@@ -5,7 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.operate.property;
+package io.camunda.config.operate;
 
 public class ClusterNodeProperties {
 
@@ -21,7 +21,7 @@ public class ClusterNodeProperties {
     return partitionIds;
   }
 
-  public void setPartitionIds(Integer[] partitionIds) {
+  public void setPartitionIds(final Integer[] partitionIds) {
     this.partitionIds = partitionIds;
   }
 
@@ -29,7 +29,7 @@ public class ClusterNodeProperties {
     return nodeCount;
   }
 
-  public void setNodeCount(Integer nodeCount) {
+  public void setNodeCount(final Integer nodeCount) {
     this.nodeCount = nodeCount;
   }
 
@@ -37,7 +37,7 @@ public class ClusterNodeProperties {
     return currentNodeId;
   }
 
-  public void setCurrentNodeId(Integer currentNodeId) {
+  public void setCurrentNodeId(final Integer currentNodeId) {
     this.currentNodeId = currentNodeId;
   }
 }
