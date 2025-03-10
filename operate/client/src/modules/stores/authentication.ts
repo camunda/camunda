@@ -30,6 +30,7 @@ type State = {
   roles: ReadonlyArray<string> | null;
   c8Links: MeDto['c8Links'];
   tenants: MeDto['tenants'];
+  authorizedApplications: MeDto['authorizedApplications'];
 };
 
 const DEFAULT_STATE: State = {
@@ -41,6 +42,7 @@ const DEFAULT_STATE: State = {
   roles: [],
   c8Links: {},
   tenants: null,
+  authorizedApplications: ['*'],
 };
 
 class Authentication {
@@ -162,6 +164,7 @@ class Authentication {
     roles,
     c8Links,
     tenants,
+    authorizedApplications,
   }: MeDto) => {
     storeStateLocally({
       wasReloaded: false,
@@ -175,6 +178,7 @@ class Authentication {
     this.state.roles = roles ?? [];
     this.state.c8Links = c8Links;
     this.state.tenants = tenants;
+    this.state.authorizedApplications = authorizedApplications;
   };
 
   handleLogout = async () => {
@@ -206,13 +210,23 @@ class Authentication {
       {},
     );
   }
+
   resetUser = () => {
     this.state.displayName = DEFAULT_STATE.displayName;
     this.state.canLogout = DEFAULT_STATE.canLogout;
+    this.state.authorizedApplications = DEFAULT_STATE.authorizedApplications;
   };
 
   reset = () => {
     this.state = {...DEFAULT_STATE};
+  };
+
+  isForbidden = () => {
+    return (
+      !!this.state.authorizedApplications &&
+      !this.state.authorizedApplications.includes('operate') &&
+      !this.state.authorizedApplications.includes('*')
+    );
   };
 }
 

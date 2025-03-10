@@ -5,28 +5,30 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
+import { styles } from "@carbon/elements";
+import styled from "styled-components";
+import { Stack } from "@carbon/react";
 
-@use '@carbon/type';
-
-.container {
+const Grid = styled.div`
   display: grid;
   align-content: center;
   padding: var(--cds-spacing-11);
-  margin-block: calc(var(--cds-spacing-07) + var(--cds-spacing-09))
-    var(--cds-spacing-09);
+  margin-block: var(--cds-spacing-07) var(--cds-spacing-09);
   margin-inline: var(--cds-spacing-06);
   background-color: var(--cds-layer);
   height: calc(100vh - var(--cds-spacing-07) - 2 * var(--cds-spacing-09));
-}
+`;
 
-.content {
+const Content = styled(Stack)`
   max-width: 376px;
-}
+`;
 
-.title {
-  @include type.type-style('heading-03');
-}
+const Title = styled.h3`
+  ${styles.heading03};
+`;
 
-.description {
-  @include type.type-style('body-01');
-}
+const Description = styled.div`
+  ${styles.body01}
+`;
+
+export { Grid, Title, Content, Description };

@@ -7,11 +7,12 @@ import { getAuthentication } from "src/utility/api/authentication";
 import { ArrowRight } from "@carbon/react/icons";
 import { logout } from "src/utility/auth";
 
-const AppHeader = () => {
+const AppHeader = ({ hideNavLinks = false }) => {
   const routes = useGlobalRoutes();
   const navigate = useNavigate();
   const { data: license } = useApi(checkLicense);
   const { data: camundaUser } = useApi(getAuthentication);
+
   return (
     <C3Navigation
       app={{
@@ -26,12 +27,14 @@ const AppHeader = () => {
         elements: [],
       }}
       navbar={{
-        elements: routes.map((route) => ({
-          ...route,
-          routeProps: {
-            onClick: () => navigate(route.key),
-          },
-        })),
+        elements: hideNavLinks
+          ? []
+          : routes.map((route) => ({
+              ...route,
+              routeProps: {
+                onClick: () => navigate(route.key),
+              },
+            })),
         licenseTag: getLicenseTag(license),
       }}
       userSideBar={{
