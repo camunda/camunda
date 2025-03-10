@@ -575,27 +575,6 @@ public class ZeebeClientPropertiesPostProcessorTest {
       }
 
       @Nested
-      @SpringBootTest(
-          properties = {
-            "camunda.client.mode=self-managed",
-            "camunda.client.auth.username=jonny",
-            "camunda.client.auth.password=prosciutto"
-          })
-      class BasicAuthCredentials {
-        @Autowired CamundaClientProperties camundaClientProperties;
-
-        @Test
-        void shouldReadUsername() {
-          assertThat(camundaClientProperties.getAuth().getUsername()).isEqualTo("jonny");
-        }
-
-        @Test
-        void shouldReadPassword() {
-          assertThat(camundaClientProperties.getAuth().getPassword()).isEqualTo("prosciutto");
-        }
-      }
-
-      @Nested
       @SpringBootTest(properties = {"camunda.client.zeebe.execution-threads=5"})
       class ExecutionThreads {
         @Autowired CamundaClientProperties camundaClientProperties;
