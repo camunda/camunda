@@ -39,17 +39,18 @@ public class TenantEntityAddedApplier implements TypedEventApplier<TenantIntent,
       }
       case MAPPING -> {
         tenantState.addEntity(tenant);
-        mappingState.addTenant(tenant.getEntityKey(), tenant.getTenantId());
+        mappingState.addTenant(tenant.getEntityId(), tenant.getTenantId());
       }
       case GROUP -> {
         tenantState.addEntity(tenant);
-        groupState.addTenant(tenant.getEntityKey(), tenant.getTenantId());
+        // TODO remove the Long parsing once Groups are migrated to work with ids instead of keys
+        groupState.addTenant(Long.parseLong(tenant.getEntityId()), tenant.getTenantId());
       }
       default ->
           throw new IllegalStateException(
               String.format(
-                  "Expected to add entity '%d' to tenant '%s', but entities of type '%s' cannot be added to tenants",
-                  tenant.getEntityKey(), tenant.getTenantId(), tenant.getEntityType()));
+                  "Expected to add entity '%s' to tenant '%s', but entities of type '%s' cannot be added to tenants",
+                  tenant.getEntityId(), tenant.getTenantId(), tenant.getEntityType()));
     }
   }
 }
