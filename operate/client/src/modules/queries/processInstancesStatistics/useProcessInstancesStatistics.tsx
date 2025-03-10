@@ -26,7 +26,7 @@ function useProcessInstancesStatistics(
         return response;
       }
 
-      throw error ?? new Error('Failed to fetch process instances statistics');
+      throw error;
     },
   });
 }
