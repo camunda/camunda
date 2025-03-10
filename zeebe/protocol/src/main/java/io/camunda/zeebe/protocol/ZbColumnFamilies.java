@@ -231,7 +231,9 @@ public enum ZbColumnFamilies implements EnumValue {
 
   USERNAME_BY_USER_KEY(119),
   CLAIM_BY_ID(120),
-  AUTHORIZATION_KEYS_BY_OWNER(121);
+  AUTHORIZATION_KEYS_BY_OWNER(121),
+
+  BATCH_OPERATION(122);
 
   private final int value;
 

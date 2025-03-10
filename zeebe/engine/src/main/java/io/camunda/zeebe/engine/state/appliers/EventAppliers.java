@@ -21,6 +21,7 @@ import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.intent.AuthorizationIntent;
+import io.camunda.zeebe.protocol.record.intent.BatchOperationIntent;
 import io.camunda.zeebe.protocol.record.intent.ClockIntent;
 import io.camunda.zeebe.protocol.record.intent.CommandDistributionIntent;
 import io.camunda.zeebe.protocol.record.intent.CompensationSubscriptionIntent;
@@ -77,7 +78,8 @@ import java.util.Objects;
 public final class EventAppliers implements EventApplier {
 
   public static final TypedEventApplier<Intent, RecordValue> NOOP_EVENT_APPLIER =
-      (key, value) -> {};
+      (key, value) -> {
+      };
 
   private final Map<Intent, Map<Integer, TypedEventApplier>> mapping = new HashMap<>();
 
@@ -132,6 +134,7 @@ public final class EventAppliers implements EventApplier {
     registerTenantAppliers(state);
     registerMappingAppliers(state);
     registerIdentitySetupAppliers();
+    registerBatchOperationAppliers(state);
 
     return this;
   }
@@ -552,6 +555,23 @@ public final class EventAppliers implements EventApplier {
 
   private void registerIdentitySetupAppliers() {
     register(IdentitySetupIntent.INITIALIZED, NOOP_EVENT_APPLIER);
+  }
+
+  private void registerBatchOperationAppliers(final MutableProcessingState state) {
+    register(BatchOperationIntent.CREATED,
+        new BatchOperationCreatedApplier(state.getBatchOperationState()));
+    register(BatchOperationIntent.EXECUTING,
+        new BatchOperationExecutingApplier(state.getBatchOperationState()));
+    register(BatchOperationIntent.EXECUTED,
+        new BatchOperationExecutedApplier(state.getBatchOperationState()));
+    register(BatchOperationIntent.PAUSED,
+        new BatchOperationPausedApplier(state.getBatchOperationState()));
+    register(BatchOperationIntent.RESUMED,
+        new BatchOperationResumedApplier(state.getBatchOperationState()));
+    register(BatchOperationIntent.CANCELED,
+        new BatchOperationCanceledApplier(state.getBatchOperationState()));
+    register(BatchOperationIntent.COMPLETED,
+        new BatchOperationCompletedApplier(state.getBatchOperationState()));
   }
 
   private <I extends Intent> void register(final I intent, final TypedEventApplier<I, ?> applier) {
