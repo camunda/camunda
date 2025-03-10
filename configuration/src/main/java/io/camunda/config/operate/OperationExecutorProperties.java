@@ -5,7 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.operate.property;
+package io.camunda.config.operate;
 
 import java.util.UUID;
 
@@ -46,7 +46,7 @@ public class OperationExecutorProperties {
     return batchSize;
   }
 
-  public void setBatchSize(int batchSize) {
+  public void setBatchSize(final int batchSize) {
     this.batchSize = batchSize;
   }
 
@@ -54,7 +54,7 @@ public class OperationExecutorProperties {
     return deletionBatchSize;
   }
 
-  public void setDeletionBatchSize(int deletionBatchSize) {
+  public void setDeletionBatchSize(final int deletionBatchSize) {
     this.deletionBatchSize = deletionBatchSize;
   }
 
@@ -62,7 +62,7 @@ public class OperationExecutorProperties {
     return workerId;
   }
 
-  public void setWorkerId(String workerId) {
+  public void setWorkerId(final String workerId) {
     this.workerId = workerId;
   }
 
@@ -70,7 +70,7 @@ public class OperationExecutorProperties {
     return lockTimeout;
   }
 
-  public void setLockTimeout(long lockTimeout) {
+  public void setLockTimeout(final long lockTimeout) {
     this.lockTimeout = lockTimeout;
   }
 
@@ -78,7 +78,7 @@ public class OperationExecutorProperties {
     return executorEnabled;
   }
 
-  public void setExecutorEnabled(boolean executorEnabled) {
+  public void setExecutorEnabled(final boolean executorEnabled) {
     this.executorEnabled = executorEnabled;
   }
 
@@ -86,7 +86,7 @@ public class OperationExecutorProperties {
     return threadsCount;
   }
 
-  public void setThreadsCount(int threadsCount) {
+  public void setThreadsCount(final int threadsCount) {
     this.threadsCount = threadsCount;
   }
 
@@ -94,7 +94,7 @@ public class OperationExecutorProperties {
     return queueSize;
   }
 
-  public void setQueueSize(int queueSize) {
+  public void setQueueSize(final int queueSize) {
     this.queueSize = queueSize;
   }
 }

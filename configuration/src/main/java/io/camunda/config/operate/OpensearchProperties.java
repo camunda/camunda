@@ -5,7 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.operate.property;
+package io.camunda.config.operate;
 
 import static io.camunda.operate.util.ConversionUtils.stringIsEmpty;
 
@@ -17,12 +17,12 @@ import java.util.List;
 import java.util.function.Function;
 import org.springframework.boot.context.properties.NestedConfigurationProperty;
 
-public class ElasticsearchProperties {
-  public static final String ELS_DATE_FORMAT_DEFAULT = "date_time";
+public class OpensearchProperties {
+  public static final String OS_DATE_FORMAT_DEFAULT = "date_time";
 
   public static final int BULK_REQUEST_MAX_SIZE_IN_BYTES_DEFAULT = 1024 * 1024 * 90; // 90 MB
 
-  private String clusterName = "elasticsearch";
+  private String clusterName = "opensearch";
 
   @Deprecated private String host = "localhost";
 
@@ -30,7 +30,7 @@ public class ElasticsearchProperties {
 
   private String dateFormat = OperateDateTimeFormatter.DATE_FORMAT_DEFAULT;
 
-  private String elsDateFormat = ELS_DATE_FORMAT_DEFAULT;
+  private String osDateFormat = OS_DATE_FORMAT_DEFAULT;
 
   private int batchSize = 200;
 
@@ -39,7 +39,7 @@ public class ElasticsearchProperties {
 
   private boolean createSchema = true;
 
-  /** Indicates whether operate does a proper health check for ES clusters. */
+  /** Indicates whether operate does a proper health check for ES/OS clusters. */
   private boolean healthCheckEnabled = true;
 
   private String url;
@@ -47,6 +47,8 @@ public class ElasticsearchProperties {
   private String password;
 
   private int bulkRequestMaxSizeInBytes = BULK_REQUEST_MAX_SIZE_IN_BYTES_DEFAULT;
+
+  private boolean awsEnabled = false;
 
   @NestedConfigurationProperty private SslProperties ssl;
 
@@ -99,12 +101,12 @@ public class ElasticsearchProperties {
     this.dateFormat = dateFormat;
   }
 
-  public String getElsDateFormat() {
-    return elsDateFormat;
+  public String getOsDateFormat() {
+    return osDateFormat;
   }
 
-  public void setElsDateFormat(final String elsDateFormat) {
-    this.elsDateFormat = elsDateFormat;
+  public void setOsDateFormat(final String osDateFormat) {
+    this.osDateFormat = osDateFormat;
   }
 
   public int getBatchSize() {
@@ -172,6 +174,15 @@ public class ElasticsearchProperties {
 
   public void setConnectTimeout(final Integer connectTimeout) {
     this.connectTimeout = connectTimeout;
+  }
+
+  public boolean isAwsEnabled() {
+    return awsEnabled;
+  }
+
+  public OpensearchProperties setAwsEnabled(final boolean awsEnabled) {
+    this.awsEnabled = awsEnabled;
+    return this;
   }
 
   public SslProperties getSsl() {

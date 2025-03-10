@@ -5,7 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.operate.property;
+package io.camunda.config.operate;
 
 public class ZeebeOpensearchProperties extends OpensearchProperties {
 
@@ -13,15 +13,15 @@ public class ZeebeOpensearchProperties extends OpensearchProperties {
   private String prefix = ZEEBE_INDEX_PREFIX_DEFAULT;
 
   public ZeebeOpensearchProperties() {
-    this.setDateFormat("yyyy-MM-dd"); // hard-coded, as not configurable on Zeebe side
-    this.setOsDateFormat("date"); // hard-coded, as not configurable on Zeebe side
+    setDateFormat("yyyy-MM-dd"); // hard-coded, as not configurable on Zeebe side
+    setOsDateFormat("date"); // hard-coded, as not configurable on Zeebe side
   }
 
   public String getPrefix() {
     return prefix;
   }
 
-  public void setPrefix(String prefix) {
+  public void setPrefix(final String prefix) {
     this.prefix = prefix;
   }
 }
