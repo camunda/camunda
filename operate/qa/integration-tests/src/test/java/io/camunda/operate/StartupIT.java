@@ -23,11 +23,13 @@ import org.springframework.boot.test.web.client.TestRestTemplate;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.test.annotation.IfProfileValue;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.output.Slf4jLogConsumer;
 
 @RunWith(SpringRunner.class)
+@IfProfileValue(name = "spring.profiles.active", value = "docker-test")
 public class StartupIT {
 
   public static final String VERSION = "current-test";
