@@ -37,7 +37,11 @@ const List: FC = () => {
   const showDetails = ({ groupKey }: Group) => navigate(`${groupKey}`);
 
   const pageHeader = (
-    <PageHeader title="Groups" linkText="groups" linkUrl="/concepts/groups/" />
+    <PageHeader
+      title={t("Groups")}
+      linkText="groups"
+      linkUrl="/concepts/groups/"
+    />
   );
 
   if (success && !groupSearchResults?.items.length) {
@@ -45,17 +49,15 @@ const List: FC = () => {
       <Page>
         {pageHeader}
         <C3EmptyState
-          heading={t("You don’t have any groups yet")}
-          description={t(
-            "Roles, permissions, and authorizations can be applied to a group, and any users added to the group will inherit them. Utilizing groups can enhance the efficiency of managing users over time.",
-          )}
+          heading={t("noGroupsYet")}
+          description={t("groupsDescription")}
           button={{
-            label: t("Create a group"),
+            label: t("createGroup"),
             onClick: addGroup,
           }}
           link={{
             href: documentationHref("/concepts/access-control/groups", ""),
-            label: t("Learn more about groups"),
+            label: t("learnMoreAboutGroups"),
           }}
         />
         {addModal}
@@ -69,12 +71,12 @@ const List: FC = () => {
         data={groupSearchResults == null ? [] : groupSearchResults.items}
         headers={[{ header: t("name"), key: "name" }]}
         sortProperty="name"
-        addEntityLabel={t("Create group")}
+        addEntityLabel={t("createGroup")}
         onAddEntity={addGroup}
         menuItems={[
-          { label: t("Edit"), icon: Edit, onClick: updateGroup },
+          { label: t("edit"), icon: Edit, onClick: updateGroup },
           {
-            label: t("Delete"),
+            label: t("delete"),
             icon: TrashCan,
             isDangerous: true,
             onClick: deleteGroup,
@@ -85,8 +87,8 @@ const List: FC = () => {
       />
       {!loading && !success && (
         <TranslatedErrorInlineNotification
-          title="The list of groups could not be loaded."
-          actionButton={{ label: "Retry", onClick: reload }}
+          title={t("listGroupsLoadError")}
+          actionButton={{ label: t("retry"), onClick: reload }}
         />
       )}
 

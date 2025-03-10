@@ -34,41 +34,41 @@ const EditModal: FC<UseEntityModalProps<User>> = ({
   return (
     <FormModal
       open={open}
-      headline={t("Edit user")}
+      headline={t("editUser")}
       onClose={onClose}
       onSubmit={handleSubmit}
       loading={loading}
-      loadingDescription={t("Updating user")}
-      confirmLabel={t("Update user")}
+      loadingDescription={t("updatingUser")}
+      confirmLabel={t("updateUser")}
     >
       <TextField
-        label={t("Username")}
+        label={t("username")}
         value={user.username}
-        placeholder={t("Enter username")}
+        placeholder={t("enterUsername")}
         readOnly
       />
       <TextField
-        label={t("Name")}
+        label={t("name")}
         value={user.name}
-        placeholder={t("Enter name")}
+        placeholder={t("enterName")}
         onChange={(name) => setUser({ ...user, name })}
         autoFocus
       />
       <TextField
-        label={t("Email")}
+        label={t("email")}
         value={user.email}
-        placeholder={t("Enter email address")}
+        placeholder={t("enterEmailAddress")}
         onChange={(email) => setUser({ ...user, email })}
         onBlur={() => setEmailValid(isValidEmail(user.email))}
-        errors={!emailValid ? [t("Please enter a valid email")] : []}
+        errors={!emailValid ? [t("validEmail")] : []}
       />
       <TextField
-        label={t("New Password")}
+        label={t("newPassword")}
         value={user.password}
-        placeholder={t("Enter new password")}
+        placeholder={t("enterNewPassword")}
         onChange={(password) => setUser({ ...user, password })}
         type="password"
-        helperText={t("Leave empty to keep current password")}
+        helperText={t("keepCurrentPassword")}
       />
     </FormModal>
   );
