@@ -38,7 +38,18 @@ public class ExecutableProcess extends ExecutableFlowElementContainer {
     return flowElements.get(wrapString(id));
   }
 
-  /** convenience function for transformation */
+  /**
+   * Retrieve the executable element by its id and expected type.
+   *
+   * <p>To retrieve the multi-instance activity element itself, the {@link
+   * ExecutableMultiInstanceBody} class type should be passed as the expected type.
+   *
+   * <p>To retrieve the inner element of a multi-instance activity, the expected type should be the
+   * element type of the inner activity.
+   *
+   * @param id the id of the element
+   * @param expectedType the expected type of the element
+   */
   public <T extends ExecutableFlowElement> T getElementById(
       final String id, final Class<T> expectedType) {
     return getElementById(wrapString(id), expectedType);
