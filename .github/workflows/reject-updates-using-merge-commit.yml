@@ -18,7 +18,7 @@ jobs:
         with:
           ref: ${{ github.event.pull_request.head.sha }}
           fetch-depth: ${{ github.event.pull_request.commits }}
-          # todo: make this blobless
+          filter: blob:none
 
       - name: Fetch commits up to the merge-base
         run: |
