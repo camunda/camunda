@@ -7,7 +7,6 @@
  */
 package io.camunda.operate.store.elasticsearch;
 
-import static io.camunda.operate.schema.indices.ImportPositionIndex.META_CONCURRENCY_MODE;
 import static io.camunda.operate.util.ElasticsearchUtil.joinWithAnd;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 
@@ -16,7 +15,6 @@ import io.camunda.operate.Metrics;
 import io.camunda.operate.conditions.ElasticsearchCondition;
 import io.camunda.operate.entities.meta.ImportPositionEntity;
 import io.camunda.operate.property.OperateProperties;
-import io.camunda.operate.schema.IndexMapping;
 import io.camunda.operate.schema.indices.ImportPositionIndex;
 import io.camunda.operate.store.ImportStore;
 import io.camunda.operate.util.Either;
@@ -25,7 +23,6 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.Callable;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.search.SearchRequest;
@@ -63,8 +60,8 @@ public class ElasticsearchImportStore implements ImportStore {
   @Autowired private OperateProperties operateProperties;
 
   @Override
-  public ImportPositionEntity getImportPositionByAliasAndPartitionId(String alias, int partitionId)
-      throws IOException {
+  public ImportPositionEntity getImportPositionByAliasAndPartitionId(
+      final String alias, final int partitionId) throws IOException {
     final QueryBuilder queryBuilder =
         joinWithAnd(
             termQuery(ImportPositionIndex.ALIAS_NAME, alias),
@@ -96,7 +93,8 @@ public class ElasticsearchImportStore implements ImportStore {
 
   @Override
   public Either<Throwable, Boolean> updateImportPositions(
-      List<ImportPositionEntity> positions, List<ImportPositionEntity> postImportPositions) {
+      final List<ImportPositionEntity> positions,
+      final List<ImportPositionEntity> postImportPositions) {
     var preparedBulkRequest = prepareBulkRequest(positions);
 
     if (preparedBulkRequest.isLeft()) {
@@ -127,26 +125,6 @@ public class ElasticsearchImportStore implements ImportStore {
     } catch (final Throwable e) {
       LOGGER.error("Error occurred while persisting latest loaded position", e);
       return Either.left(e);
-    }
-  }
-
-  @Override
-  public void setConcurrencyMode(final boolean concurrencyMode) {
-    retryElasticsearchClient.updateMetaField(
-        importPositionType, META_CONCURRENCY_MODE, concurrencyMode);
-  }
-
-  @Override
-  public boolean getConcurrencyMode() {
-    final String indexName = importPositionType.getFullQualifiedName();
-    final Map<String, IndexMapping> indexMappings =
-        retryElasticsearchClient.getIndexMappings(indexName);
-    if (indexMappings.get(indexName).getMetaProperties() == null) {
-      return false;
-    } else {
-      final Object concurrencyMode =
-          indexMappings.get(indexName).getMetaProperties().get(META_CONCURRENCY_MODE);
-      return concurrencyMode == null ? false : (boolean) concurrencyMode;
     }
   }
 
