@@ -13,12 +13,11 @@
   <name>Tasklist QA Migration Tests Parent</name>
 
   <modules>
-    <module>test-fixture-810</module>
-    <module>test-fixture-820</module>
     <module>test-fixture-830</module>
     <module>test-fixture-840</module>
     <module>test-fixture-850</module>
     <module>test-fixture-860</module>
+    <module>test-fixture-870</module>
     <module>migration-test</module>
   </modules>
 
