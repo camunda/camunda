@@ -8,6 +8,8 @@
 package io.camunda.zeebe.engine.processing.resource;
 
 import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior;
+import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior.AuthorizationRequest;
+import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior.ForbiddenException;
 import io.camunda.zeebe.engine.processing.identity.AuthorizedTenants;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
@@ -21,6 +23,8 @@ import io.camunda.zeebe.engine.state.immutable.TenantState;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.ResourceRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.ResourceIntent;
+import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
+import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.util.buffer.BufferUtil;
@@ -54,6 +58,7 @@ public class ResourceFetchProcessor implements TypedRecordProcessor<ResourceReco
     findResource(command, resourceKey)
         .ifPresentOrElse(
             resource -> {
+              checkAuthorization(command, BufferUtil.bufferAsString(resource.getResourceId()));
               final var record = asResourceRecord(resource);
               stateWriter.appendFollowUpEvent(resourceKey, ResourceIntent.FETCHED, record);
               responseWriter.writeEventOnCommand(
@@ -67,13 +72,13 @@ public class ResourceFetchProcessor implements TypedRecordProcessor<ResourceReco
   @Override
   public ProcessingError tryHandleError(
       final TypedRecord<ResourceRecord> command, final Throwable error) {
-    if (error instanceof final NoSuchResourceException exception) {
-      rejectionWriter.appendRejection(command, RejectionType.NOT_FOUND, exception.getMessage());
-      responseWriter.writeRejectionOnCommand(
-          command, RejectionType.NOT_FOUND, exception.getMessage());
-      return ProcessingError.EXPECTED_ERROR;
-    }
-    return ProcessingError.UNEXPECTED_ERROR;
+    return switch (error) {
+      case final NoSuchResourceException exception ->
+          rejectCommand(command, RejectionType.NOT_FOUND, exception.getMessage());
+      case final ForbiddenException exception ->
+          rejectCommand(command, exception.getRejectionType(), exception.getMessage());
+      default -> ProcessingError.UNEXPECTED_ERROR;
+    };
   }
 
   private static ResourceRecord asResourceRecord(final PersistedResource resource) {
@@ -127,6 +132,25 @@ public class ResourceFetchProcessor implements TypedRecordProcessor<ResourceReco
           return true;
         });
     return Optional.ofNullable(resource.get());
+  }
+
+  private void checkAuthorization(
+      final TypedRecord<ResourceRecord> command, final String resourceId) {
+    final var authRequest =
+        new AuthorizationRequest(command, AuthorizationResourceType.RESOURCE, PermissionType.READ)
+            .addResourceId(resourceId);
+    if (authorizationCheckBehavior.isAuthorized(authRequest).isLeft()) {
+      throw new ForbiddenException(authRequest);
+    }
+  }
+
+  private ProcessingError rejectCommand(
+      final TypedRecord<ResourceRecord> command,
+      final RejectionType rejectionType,
+      final String reason) {
+    rejectionWriter.appendRejection(command, rejectionType, reason);
+    responseWriter.writeRejectionOnCommand(command, rejectionType, reason);
+    return ProcessingError.EXPECTED_ERROR;
   }
 
   private static final class NoSuchResourceException extends IllegalStateException {

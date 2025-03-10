@@ -23,6 +23,7 @@ public enum AuthorizationResourceType {
   SYSTEM(PermissionType.READ, PermissionType.UPDATE),
   TENANT(PermissionType.CREATE, PermissionType.READ, PermissionType.UPDATE, PermissionType.DELETE),
   RESOURCE(
+      PermissionType.READ,
       PermissionType.CREATE,
       PermissionType.DELETE_FORM,
       PermissionType.DELETE_PROCESS,
