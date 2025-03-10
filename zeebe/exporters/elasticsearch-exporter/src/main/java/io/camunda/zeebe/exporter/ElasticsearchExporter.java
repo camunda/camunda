@@ -297,6 +297,9 @@ public class ElasticsearchExporter implements Exporter {
       if (index.processMessageSubscription) {
         createValueIndexTemplate(ValueType.PROCESS_MESSAGE_SUBSCRIPTION, version);
       }
+      if (index.adHocSubProcessActivityActivation) {
+        createValueIndexTemplate(ValueType.AD_HOC_SUB_PROCESS_ACTIVITY_ACTIVATION, version);
+      }
       if (index.decisionRequirements) {
         createValueIndexTemplate(ValueType.DECISION_REQUIREMENTS, version);
       }
