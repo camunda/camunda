@@ -63,4 +63,8 @@ const fetchProcessInstancesStatistics = async (
 };
 
 export {fetchProcessInstancesStatistics};
-export type {ProcessInstancesStatisticsDto, ProcessInstancesStatisticsRequest};
+export type {
+  ProcessInstancesStatisticsDto,
+  ProcessInstancesStatisticsRequest,
+  ProcessInstanceState,
+};
