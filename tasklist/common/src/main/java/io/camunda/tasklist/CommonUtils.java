@@ -18,7 +18,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
-import io.camunda.tasklist.es.ElasticsearchConnector;
+import io.camunda.tasklist.connect.ElasticsearchConnector;
 import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
@@ -56,11 +56,11 @@ public final class CommonUtils {
         .build();
   }
 
-  public static JsonObject getJsonObjectFromEntity(Object o) {
+  public static JsonObject getJsonObjectFromEntity(final Object o) {
     return Json.createObjectBuilder(OBJECT_MAPPER.convertValue(o, HashMap.class)).build();
   }
 
-  public static JsonObjectBuilder getJsonObjectBuilderForEntity(Object o) {
+  public static JsonObjectBuilder getJsonObjectBuilderForEntity(final Object o) {
     return Json.createObjectBuilder(OBJECT_MAPPER.convertValue(o, HashMap.class));
   }
 }

@@ -24,7 +24,7 @@ public class GetBackupStateResponseDetailDto {
     return snapshotName;
   }
 
-  public GetBackupStateResponseDetailDto setSnapshotName(String snapshotName) {
+  public GetBackupStateResponseDetailDto setSnapshotName(final String snapshotName) {
     this.snapshotName = snapshotName;
     return this;
   }
@@ -33,7 +33,7 @@ public class GetBackupStateResponseDetailDto {
     return state;
   }
 
-  public GetBackupStateResponseDetailDto setState(String state) {
+  public GetBackupStateResponseDetailDto setState(final String state) {
     this.state = state;
     return this;
   }
@@ -42,7 +42,7 @@ public class GetBackupStateResponseDetailDto {
     return startTime;
   }
 
-  public GetBackupStateResponseDetailDto setStartTime(OffsetDateTime startTime) {
+  public GetBackupStateResponseDetailDto setStartTime(final OffsetDateTime startTime) {
     this.startTime = startTime;
     return this;
   }
@@ -51,13 +51,20 @@ public class GetBackupStateResponseDetailDto {
     return failures;
   }
 
-  public GetBackupStateResponseDetailDto setFailures(String[] failures) {
+  public GetBackupStateResponseDetailDto setFailures(final String[] failures) {
     this.failures = failures;
     return this;
   }
 
   @Override
-  public boolean equals(Object o) {
+  public int hashCode() {
+    int result = Objects.hash(snapshotName, state, startTime);
+    result = 31 * result + Arrays.hashCode(failures);
+    return result;
+  }
+
+  @Override
+  public boolean equals(final Object o) {
     if (this == o) {
       return true;
     }
@@ -72,9 +79,18 @@ public class GetBackupStateResponseDetailDto {
   }
 
   @Override
-  public int hashCode() {
-    int result = Objects.hash(snapshotName, state, startTime);
-    result = 31 * result + Arrays.hashCode(failures);
-    return result;
+  public String toString() {
+    return "GetBackupStateResponseDetailDto{"
+        + "snapshotName='"
+        + snapshotName
+        + '\''
+        + ", state='"
+        + state
+        + '\''
+        + ", startTime="
+        + startTime
+        + ", failures="
+        + Arrays.toString(failures)
+        + '}';
   }
 }
