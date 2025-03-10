@@ -22,11 +22,14 @@ jobs:
 
       - name: Check for invalid merge commits
         run: |
+          base="origin/${{ github.event.pull_request.base.ref }}"
+          head=${{ github.event.pull_request.head.sha }}
+
           # Find the common ancestor between the base and the head
-          common_ancestor=$(git merge-base origin/${{ github.event.pull_request.base.ref }} ${{ github.event.pull_request.head.sha }})
+          common_ancestor=$(git merge-base $base $head)
 
           # Get the list of merge commits in the pull request
-          merge_commits=$(git rev-list --merges $common_ancestor..${{ github.event.pull_request.head.sha }})
+          merge_commits=$(git rev-list --merges $common_ancestor..$head)
 
           # Check each merge commit
           for merge_commit in $merge_commits; do
@@ -35,7 +38,7 @@ jobs:
 
             # Check if any parent commit exists in the base branch
             for parent in $parents; do
-              if git merge-base --is-ancestor $parent origin/${{ github.event.pull_request.base.ref }}; then
+              if git merge-base --is-ancestor $parent $base; then
                 echo "Updating your pull request using a merge commit is allowed. Please update your pull request by rebasing your branch on the base branch."
                 exit 1
               fi
