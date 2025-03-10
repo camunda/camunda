@@ -195,7 +195,7 @@
   "report": {
     "label": "Bericht",
     "label-plural": "Berichte",
-    "textTile": "Text Kachel",
+    "textTile": "Textkachel",
     "externalUrl": "Externe URL",
     "create": "Bericht Erstellen",
     "createNew": "Neuen Bericht Erstellen",
