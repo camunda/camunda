@@ -95,18 +95,14 @@ public final class BackgroundTaskManagerFactory {
 
   private List<Runnable> buildTasks() {
     final List<Runnable> tasks = new ArrayList<>();
-    int threadCount = 1;
+    int threadCount = 2;
 
     tasks.add(buildIncidentMarkerTask());
-
-    if (config.getHistory().isRolloverEnabled()) {
-      threadCount = 2;
-      tasks.add(buildProcessInstanceArchiverJob());
-      if (partitionId == START_PARTITION_ID) {
-        threadCount = 3;
-        tasks.add(buildBatchOperationArchiverJob());
-        tasks.add(new ApplyRolloverPeriodJob(archiverRepository, metrics, logger));
-      }
+    tasks.add(buildProcessInstanceArchiverJob());
+    if (partitionId == START_PARTITION_ID) {
+      threadCount = 3;
+      tasks.add(buildBatchOperationArchiverJob());
+      tasks.add(new ApplyRolloverPeriodJob(archiverRepository, metrics, logger));
     }
     if (partitionId == START_PARTITION_ID) {
       tasks.add(buildBatchOperationUpdateTask());

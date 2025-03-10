@@ -291,7 +291,6 @@ public class ExporterConfiguration {
   }
 
   public static class HistoryConfiguration {
-    private boolean rolloverEnabled = true;
     private String elsRolloverDateFormat = "date";
     private String rolloverInterval = "1d";
     private int rolloverBatchSize = 100;
@@ -299,14 +298,6 @@ public class ExporterConfiguration {
     private int delayBetweenRuns = 2000;
     private int maxDelayBetweenRuns = 60000;
     private RetentionConfiguration retention = new RetentionConfiguration();
-
-    public boolean isRolloverEnabled() {
-      return rolloverEnabled;
-    }
-
-    public void setRolloverEnabled(final boolean rolloverEnabled) {
-      this.rolloverEnabled = rolloverEnabled;
-    }
 
     public String getElsRolloverDateFormat() {
       return elsRolloverDateFormat;
@@ -371,8 +362,6 @@ public class ExporterConfiguration {
     @Override
     public String toString() {
       return "ArchiverConfiguration{"
-          + "rolloverEnabled="
-          + rolloverEnabled
           + ", elsRolloverDateFormat='"
           + elsRolloverDateFormat
           + '\''

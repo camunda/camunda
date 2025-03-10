@@ -909,7 +909,6 @@
         #     variableSizeThreshold: 8191
         #
         #   history:
-        #     enabled: true
         #     elsRolloverDateFormat: "date"
         #     rolloverInterval: "1d"
         #     rolloverBatchSize: 100

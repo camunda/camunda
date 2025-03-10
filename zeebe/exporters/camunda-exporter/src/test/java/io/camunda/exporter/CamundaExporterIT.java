@@ -622,7 +622,6 @@ final class CamundaExporterIT {
       config.getConnect().setType(ConnectionTypes.OPENSEARCH.getType());
     }
 
-    config.getHistory().setRolloverEnabled(false);
     return config;
   }
 
