@@ -71,7 +71,16 @@ public class WebSecurityConfig {
           // deprecated Tasklist v1 Public Endpoints
           "/v1/external/process/**");
   private static final Set<String> WEBAPP_PATHS =
-      Set.of("/login", "/logout", "/identity/**", "/operate/**", "/tasklist/**");
+      Set.of(
+          "/sso-callback/**",
+          "/login/**",
+          "/logout",
+          "/oauth2/authorization/**",
+          "/identity/**",
+          "/operate/**",
+          "/tasklist/**",
+          "/favicon.ico",
+          "/");
   private static final Set<String> UNPROTECTED_PATHS =
       Set.of(
           // endpoint for failure forwarding
@@ -304,7 +313,14 @@ public class WebSecurityConfig {
                                   .findByRegistrationId(OidcClientRegistration.REGISTRATION_ID)
                                   .getProviderDetails()
                                   .getJwkSetUri())))
-          .oauth2Login(oauthLoginConfigurer -> {})
+          .oauth2Login(
+              oauthLoginConfigurer -> {
+                oauthLoginConfigurer
+                    .clientRegistrationRepository(clientRegistrationRepository)
+                    .redirectionEndpoint(
+                        redirectionEndpointConfig ->
+                            redirectionEndpointConfig.baseUri("/sso-callback"));
+              })
           .oidcLogout(httpSecurityOidcLogoutConfigurer -> {})
           .logout(
               (logout) ->
