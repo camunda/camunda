@@ -22,6 +22,7 @@ import io.camunda.exporter.ExporterMetadata;
 import io.camunda.exporter.cache.ExporterEntityCacheProvider;
 import io.camunda.exporter.config.ConnectionTypes;
 import io.camunda.exporter.config.ExporterConfiguration;
+import io.camunda.exporter.config.ExporterConfiguration.IndexSettings;
 import io.camunda.exporter.schema.elasticsearch.ElasticsearchEngineClient;
 import io.camunda.exporter.schema.opensearch.OpensearchEngineClient;
 import io.camunda.exporter.utils.CamundaExporterITInvocationProvider;
@@ -40,6 +41,7 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import org.awaitility.Awaitility;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.TestTemplate;
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
@@ -73,8 +75,7 @@ public class SchemaManagerIT {
         SchemaTestUtil.mockIndex(
             CONFIG_PREFIX + "-qualified_name", "alias", "index_name", "/mappings.json");
 
-    when(indexTemplate.getFullQualifiedName())
-        .thenReturn(CONFIG_PREFIX + "-template-index-qualified-name");
+    when(indexTemplate.getFullQualifiedName()).thenReturn(CONFIG_PREFIX + "-qualified_name");
   }
 
   private SearchEngineClient searchEngineClientFromConfig(final ExporterConfiguration config) {
@@ -585,6 +586,39 @@ public class SchemaManagerIT {
 
     assertThat(updatedTemplate.at(replicaSettingPath).asInt()).isEqualTo(5);
     assertThat(updatedTemplate.at(shardsSettingPath).asInt()).isEqualTo(5);
+  }
+
+  @TestTemplate
+  void shouldCreateCorrespondingIndexIfIndexTemplateAlreadyExists(
+      final ExporterConfiguration config, final SearchClientAdapter searchClientAdapter)
+      throws IOException {
+    // given
+    final var searchEngineClient = searchEngineClientFromConfig(config);
+
+    searchEngineClient.createIndexTemplate(indexTemplate, new IndexSettings(), true);
+
+    searchClientAdapter.refresh();
+
+    // when
+    final var schemaManager =
+        new SchemaManager(
+            searchEngineClientFromConfig(config),
+            Set.of(),
+            Set.of(indexTemplate),
+            config,
+            objectMapper);
+
+    schemaManager.startup();
+
+    // then
+    Awaitility.await()
+        .untilAsserted(
+            () ->
+                assertThatNoException()
+                    .isThrownBy(
+                        () ->
+                            searchClientAdapter.getIndexAsNode(
+                                indexTemplate.getFullQualifiedName())));
   }
 
   @RegressionTestTemplate("https://github.com/camunda/camunda/issues/26056")
