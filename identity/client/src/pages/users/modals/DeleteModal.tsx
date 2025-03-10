@@ -1,3 +1,10 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
 import { FC } from "react";
 import { useApiCall } from "src/utility/api";
 import useTranslate from "src/utility/localization";
@@ -26,7 +33,7 @@ const DeleteModal: FC<UseEntityModalProps<User>> = ({
     if (success) {
       enqueueNotification({
         kind: "success",
-        title: t("User has been deleted."),
+        title: t("userDeleted"),
       });
       onSuccess();
     }
@@ -35,17 +42,18 @@ const DeleteModal: FC<UseEntityModalProps<User>> = ({
   return (
     <Modal
       open={open}
-      headline={t("Delete user")}
+      headline={t("deleteUser")}
       onSubmit={handleSubmit}
       loading={loading}
-      loadingDescription={t("Deleting user...")}
+      loadingDescription={t("deletingUser")}
       onClose={onClose}
       confirmLabel={t("Delete user")}
     >
       <p>
-        <Translate>Are you sure you want to delete the user</Translate>{" "}
-        <strong>{username}</strong>?{" "}
-        <Translate>This action cannot be undone.</Translate>
+        <Translate i18nKey="confirmDeleteUser" values={{ username }}>
+          Are you sure you want to delete the user <strong>{username}</strong>?
+        </Translate>{" "}
+        {t("actionCannotBeUndone")}
       </p>
     </Modal>
   );
