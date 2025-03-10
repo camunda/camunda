@@ -1332,12 +1332,12 @@ paths:
       operationId: getProcessDefinitionStatistics
       summary: Get process definition statistics
       description: |
-        Get process definition statistics based on given criteria.
+        Get statistics about flow nodes in currently running process instances by process definition key and search filter.
       parameters:
         - name: processDefinitionKey
           in: path
           required: true
-          description: The process key.
+          description: The assigned key of the process definition, which acts as a unique identifier for this process definition.
           schema:
             type: string
       requestBody:
@@ -4363,7 +4363,7 @@ components:
           allOf:
             - $ref: "#/components/schemas/BaseProcessInstanceFilter"
     ProcessDefinitionFlowNodeStatisticsResult:
-      description: Process definition flow nodes statistics response.
+      description: Process definition flow node statistics response.
       type: object
       properties:
         flowNodeId:
