@@ -39,7 +39,11 @@ jobs:
             # Check if any parent commit exists in the base branch
             for parent in $parents; do
               if git merge-base --is-ancestor $parent $base; then
-                echo "Updating your pull request using a merge commit is allowed. Please update your pull request by rebasing your branch on the base branch."
+                echo "Updating your pull request using a merge commit is allowed."
+                echo "Please update your pull request by rebasing your branch on the base branch."
+                echo "> [!WARNING]" >> $GITHUB_STEP_SUMMARY
+                echo "> Updating your pull request using a merge commit is allowed." >> $GITHUB_STEP_SUMMARY
+                echo "> Please update your pull request by rebasing your branch on the base branch." >> $GITHUB_STEP_SUMMARY
                 exit 1
               fi
             done
