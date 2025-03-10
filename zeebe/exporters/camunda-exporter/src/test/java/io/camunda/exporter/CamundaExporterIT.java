@@ -32,6 +32,7 @@ import io.camunda.exporter.adapters.ClientAdapter;
 import io.camunda.exporter.cache.ExporterEntityCacheProvider;
 import io.camunda.exporter.config.ConnectionTypes;
 import io.camunda.exporter.config.ExporterConfiguration;
+import io.camunda.exporter.config.ExporterConfiguration.RetentionConfiguration;
 import io.camunda.exporter.exceptions.PersistenceException;
 import io.camunda.exporter.handlers.ExportHandler;
 import io.camunda.exporter.schema.MappingSource;
@@ -67,6 +68,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -147,20 +149,56 @@ final class CamundaExporterIT {
     p2Exporter.configure(p2Context);
 
     // when
-    new Thread(
+    final var future =
+        CompletableFuture.runAsync(
             () -> {
               final var p1ExporterController = new ExporterTestController();
               p1Exporter.open(p1ExporterController);
-            })
-        .start();
+            });
 
     // then
     assertThatNoException()
         .isThrownBy(
             () -> {
               final var p2ExporterController = new ExporterTestController();
-              p1Exporter.open(p2ExporterController);
+              p2Exporter.open(p2ExporterController);
             });
+    assertThat(future).isNotCompletedExceptionally();
+    assertThat(future).isCompleted();
+  }
+
+  @TestTemplate
+  void shouldOpenDifferentPartitionsWithRetention(
+      final ExporterConfiguration config, final SearchClientAdapter ignored) {
+    // given
+    final RetentionConfiguration retention = config.getArchiver().getRetention();
+    retention.setEnabled(true);
+    retention.setPolicyName("shouldOpenDifferentPartitionsWithRetention");
+    final var p1Exporter = new CamundaExporter();
+    final var p1Context = getContextFromConfig(config, 1);
+    p1Exporter.configure(p1Context);
+
+    final var p2Exporter = new CamundaExporter();
+    final var p2Context = getContextFromConfig(config, 2);
+    p2Exporter.configure(p2Context);
+
+    // when
+    final var future =
+        CompletableFuture.runAsync(
+            () -> {
+              final var p1ExporterController = new ExporterTestController();
+              p1Exporter.open(p1ExporterController);
+            });
+
+    // then
+    assertThatNoException()
+        .isThrownBy(
+            () -> {
+              final var p2ExporterController = new ExporterTestController();
+              p2Exporter.open(p2ExporterController);
+            });
+    assertThat(future).isNotCompletedExceptionally();
+    assertThat(future).isCompleted();
   }
 
   @TestTemplate
