@@ -21,10 +21,6 @@ import org.springframework.boot.context.properties.DeprecatedConfigurationProper
 
 public class AuthProperties {
 
-  // simple
-  private String username;
-  private String password;
-
   // self-managed and saas
   private String clientId;
   private String clientSecret;
@@ -79,22 +75,6 @@ public class AuthProperties {
     this.issuer = issuer;
   }
 
-  public String getUsername() {
-    return username;
-  }
-
-  public void setUsername(final String username) {
-    this.username = username;
-  }
-
-  public String getPassword() {
-    return password;
-  }
-
-  public void setPassword(final String password) {
-    this.password = password;
-  }
-
   public String getClientId() {
     return clientId;
   }
@@ -114,13 +94,7 @@ public class AuthProperties {
   @Override
   public String toString() {
     return "AuthProperties{"
-        + "username='"
-        + username
-        + '\''
-        + ", password='"
-        + (password != null ? "***" : null)
-        + '\''
-        + ", clientId='"
+        + "clientId='"
         + (clientId != null ? "***" : null)
         + '\''
         + ", clientSecret='"
