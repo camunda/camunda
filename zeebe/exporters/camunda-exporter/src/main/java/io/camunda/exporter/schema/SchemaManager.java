@@ -11,6 +11,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.exporter.config.ExporterConfiguration;
 import io.camunda.exporter.config.ExporterConfiguration.IndexSettings;
 import io.camunda.exporter.config.ExporterConfiguration.RetentionConfiguration;
+import io.camunda.exporter.exceptions.ElasticsearchExporterException;
+import io.camunda.exporter.exceptions.OpensearchExporterException;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
 import java.util.Collection;
@@ -92,10 +94,7 @@ public class SchemaManager {
             .getMappings(config.getIndex().getPrefix() + "*", MappingSource.INDEX_TEMPLATE)
             .keySet();
 
-    final var existingIndexNames =
-        allIndexNames().isBlank()
-            ? Set.of()
-            : searchEngineClient.getMappings(allIndexNames(), MappingSource.INDEX).keySet();
+    final var existingIndexNames = existingIndexNames();
 
     indexTemplateDescriptors.stream()
         .filter(desc -> existingTemplateNames.contains(desc.getTemplateName()))
@@ -133,9 +132,7 @@ public class SchemaManager {
       return;
     }
 
-    final var existingIndexNames =
-        Collections.synchronizedSet(
-            searchEngineClient.getMappings(allIndexNames(), MappingSource.INDEX).keySet());
+    final var existingIndexNames = Collections.synchronizedSet(existingIndexNames());
 
     LOG.info(
         "Found '{}' existing indices. Create missing index templates based on '{}' descriptors.",
@@ -179,32 +176,45 @@ public class SchemaManager {
         indexTemplateDescriptors.size());
     final var futures =
         indexTemplateDescriptors.stream()
-            .filter(descriptor -> !existingTemplateNames.contains(descriptor.getTemplateName()))
             .map(
                 descriptor ->
                     // run creation of indices async as virtual thread
                     CompletableFuture.runAsync(
-                        () -> {
-                          LOG.info(
-                              "Create missing index template '{}'", descriptor.getTemplateName());
-                          searchEngineClient.createIndexTemplate(
-                              descriptor,
-                              getIndexSettingsFromConfig(descriptor.getIndexName()),
-                              true);
-                          LOG.info(
-                              "Create missing index '{}', for template '{}'",
-                              descriptor.getFullQualifiedName(),
-                              descriptor.getTemplateName());
-                          searchEngineClient.createIndex(
-                              descriptor, getIndexSettingsFromConfig(descriptor.getIndexName()));
-                        },
-                        virtualThreadExecutor))
+                        () -> createIndexTemplate(descriptor), virtualThreadExecutor))
             .toArray(CompletableFuture[]::new);
 
     // We need to wait for the completion, to make sure all indices and templates have been created
     // successfully
     // Doing this in parallel is still speeding up the bootstrap time
     joinOnFutures(futures);
+  }
+
+  /**
+   * Create an index template and it's matching index.
+   *
+   * @param descriptor a description of the index template to create
+   */
+  private void createIndexTemplate(final IndexTemplateDescriptor descriptor) {
+    try {
+      searchEngineClient.createIndexTemplate(
+          descriptor, getIndexSettingsFromConfig(descriptor.getIndexName()), true);
+      LOG.info(
+          "Index template '{}', has been created / already exists", descriptor.getTemplateName());
+
+      searchEngineClient.createIndex(
+          descriptor, getIndexSettingsFromConfig(descriptor.getIndexName()));
+
+      LOG.info(
+          "Index '{}', for template '{}' has been created / already exists",
+          descriptor.getFullQualifiedName(),
+          descriptor.getTemplateName());
+
+    } catch (final ElasticsearchExporterException | OpensearchExporterException e) {
+      final var errMsg =
+          String.format("Index template '%s' could not be created", descriptor.getTemplateName());
+      LOG.error(errMsg, e);
+      throw new IllegalStateException(errMsg, e);
+    }
   }
 
   /**
@@ -325,6 +335,12 @@ public class SchemaManager {
         indexTemplateDescriptors.stream()
             .map(IndexDescriptor.class::cast)
             .collect(Collectors.toSet()));
+  }
+
+  private Set<String> existingIndexNames() {
+    return allIndexNames().isBlank()
+        ? Set.of()
+        : searchEngineClient.getMappings(allIndexNames(), MappingSource.INDEX).keySet();
   }
 
   private String allIndexNames() {
