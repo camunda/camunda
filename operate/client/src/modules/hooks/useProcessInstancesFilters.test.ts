@@ -11,17 +11,29 @@ import {useFilters} from 'modules/hooks/useFilters';
 import {ProcessInstanceFilters} from 'modules/utils/filter/shared';
 import {ProcessInstancesStatisticsRequest} from 'modules/api/v2/processInstances/fetchProcessInstancesStatistics';
 import {useProcessInstanceFilters} from './useProcessInstancesFilters';
+import {processesStore} from 'modules/stores/processes/processes.list';
 
 jest.mock('modules/hooks/useFilters');
+jest.mock('modules/stores/processes/processes.list');
 
 describe('useProcessInstanceFilters', () => {
+  beforeEach(() => {
+    (processesStore as any).versionsByProcessAndTenant = {
+      '{process1}-{tenant1}': [
+        {id: 'processId1', version: 1},
+        {id: 'processId2', version: 1},
+      ],
+    };
+  });
+
   it('should map filters to request correctly', () => {
     const mockFilters: ProcessInstanceFilters = {
       startDateAfter: '2023-01-01',
       startDateBefore: '2023-01-31',
       endDateAfter: '2023-02-01',
       endDateBefore: '2023-02-28',
-      process: 'process1,process2',
+      process: 'process1',
+      version: '1',
       ids: 'id1,id2',
       active: true,
       incidents: true,
@@ -31,6 +43,8 @@ describe('useProcessInstanceFilters', () => {
       tenant: 'tenant1',
       retriesLeft: true,
       operationId: 'operation1',
+      flowNodeId: 'flowNode1',
+      errorMessage: 'some error message',
     };
 
     (useFilters as jest.Mock).mockReturnValue({
@@ -47,7 +61,7 @@ describe('useProcessInstanceFilters', () => {
         $lt: '2023-02-28',
       },
       processDefinitionKey: {
-        $in: ['process1', 'process2'],
+        $in: ['processId1', 'processId2'],
       },
       processInstanceKey: {
         $in: ['id1', 'id2'],
@@ -59,6 +73,8 @@ describe('useProcessInstanceFilters', () => {
       tenantId: 'tenant1',
       hasRetriesLeft: true,
       batchOperationKey: 'operation1',
+      flowNodeId: 'flowNode1',
+      errorMessage: 'some error message',
     };
 
     const {result} = renderHook(() => useProcessInstanceFilters());
@@ -95,6 +111,35 @@ describe('useProcessInstanceFilters', () => {
       state: {
         $in: ['RUNNING'],
       },
+    };
+
+    const {result} = renderHook(() => useProcessInstanceFilters());
+    expect(result.current).toEqual(expectedRequest);
+  });
+
+  it('should handle process with version "all"', () => {
+    const mockFilters: ProcessInstanceFilters = {
+      process: 'process1',
+      version: 'all',
+      tenant: 'tenant1',
+    };
+
+    (useFilters as jest.Mock).mockReturnValue({
+      getFilters: () => mockFilters,
+    });
+
+    (processesStore as any).versionsByProcessAndTenant = {
+      '{process1}-{tenant1}': [
+        {id: 'processId1', version: 1},
+        {id: 'processId2', version: 2},
+      ],
+    };
+
+    const expectedRequest: ProcessInstancesStatisticsRequest = {
+      processDefinitionKey: {
+        $in: ['processId1', 'processId2'],
+      },
+      tenantId: 'tenant1',
     };
 
     const {result} = renderHook(() => useProcessInstanceFilters());

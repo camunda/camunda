@@ -12,6 +12,7 @@ import {
   ProcessInstanceState,
 } from 'modules/api/v2/processInstances/fetchProcessInstancesStatistics';
 import {useFilters} from 'modules/hooks/useFilters';
+import {getProcessIds} from 'modules/utils/filter';
 
 function mapFiltersToRequest(
   filters: ProcessInstanceFilters,
@@ -22,6 +23,7 @@ function mapFiltersToRequest(
     endDateAfter,
     endDateBefore,
     process,
+    version,
     ids,
     active,
     incidents,
@@ -52,10 +54,18 @@ function mapFiltersToRequest(
     };
   }
 
-  if (process) {
-    request.processDefinitionKey = {
-      $in: process.split(','),
-    };
+  if (process && version) {
+    const processIds = getProcessIds({
+      process,
+      processVersion: version,
+      tenant,
+    });
+
+    if (processIds.length > 0) {
+      request.processDefinitionKey = {
+        $in: processIds,
+      };
+    }
   }
 
   if (ids) {
