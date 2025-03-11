@@ -247,6 +247,20 @@ public class ProcessInstanceFilterImpl
   }
 
   @Override
+  public ProcessInstanceFilter errorMessage(final String errorMessage) {
+    errorMessage(b -> b.eq(errorMessage));
+    return this;
+  }
+
+  @Override
+  public ProcessInstanceFilter errorMessage(final Consumer<StringProperty> fn) {
+    final StringProperty property = new StringPropertyImpl();
+    fn.accept(property);
+    filter.errorMessage(property.build());
+    return this;
+  }
+
+  @Override
   protected io.camunda.client.protocol.rest.ProcessInstanceFilter getSearchRequestProperty() {
     return filter;
   }
