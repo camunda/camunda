@@ -23,6 +23,7 @@ import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperation
 import io.camunda.zeebe.protocol.record.intent.BatchOperationIntent;
 import io.camunda.zeebe.stream.api.ReadonlyStreamProcessorContext;
 import io.camunda.zeebe.stream.api.StreamProcessorLifecycleAware;
+import io.camunda.zeebe.stream.api.scheduling.ProcessingScheduleService.Pool;
 import io.camunda.zeebe.stream.api.scheduling.TaskResult;
 import io.camunda.zeebe.stream.api.scheduling.TaskResultBuilder;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
@@ -65,17 +66,21 @@ public class BatchOperationExecutionScheduler implements StreamProcessorLifecycl
   @Override
   public void onRecovered(final ReadonlyStreamProcessorContext context) {
     processingContext = context;
-    processingContext.getScheduleService().runDelayedAsync(pollingInterval, this::execute);
+    processingContext
+        .getScheduleService()
+        .runDelayedAsync(pollingInterval, this::execute, Pool.BACKGROUND);
   }
 
   @Override
   public void onResumed() {
-    processingContext.getScheduleService().runDelayedAsync(pollingInterval, this::execute);
+    processingContext
+        .getScheduleService()
+        .runDelayedAsync(pollingInterval, this::execute, Pool.BACKGROUND);
   }
 
   private TaskResult execute(final TaskResultBuilder taskResultBuilder) {
     try {
-      LOG.trace("Looking for pending batch operations to execute (scheduled)");
+      LOG.info("Looking for pending batch operations to execute (scheduled)");
       final var boKeys = new HashSet<Long>();
       batchOperationState.foreachPendingBatchOperation(
           bo -> {
@@ -90,7 +95,9 @@ public class BatchOperationExecutionScheduler implements StreamProcessorLifecycl
       batchOperationKeysProcessed.addAll(boKeys);
       return taskResultBuilder.build();
     } finally {
-      processingContext.getScheduleService().runDelayedAsync(pollingInterval, this::execute);
+      processingContext
+          .getScheduleService()
+          .runDelayedAsync(pollingInterval, this::execute, Pool.BACKGROUND);
     }
   }
 

@@ -113,7 +113,9 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
   private final List<RecordProcessor> recordProcessors = new ArrayList<>();
   private ProcessingScheduleServiceImpl processorActorService;
   private ProcessingScheduleServiceImpl asyncScheduleService;
+  private ProcessingScheduleServiceImpl backgroundTaskScheduleService;
   private AsyncProcessingScheduleServiceActor asyncActor;
+  private AsyncProcessingScheduleServiceActor backgroundTaskActor;
 
   protected StreamProcessor(final StreamProcessorBuilder processorBuilder) {
     actorSchedulingService = processorBuilder.getActorSchedulingService();
@@ -185,12 +187,28 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
               streamProcessorContext.getClock(),
               streamProcessorContext.getScheduledTaskCheckInterval(),
               scheduledTaskMetrics);
-      asyncActor = new AsyncProcessingScheduleServiceActor(asyncScheduleService, partitionId);
+      asyncActor =
+          new AsyncProcessingScheduleServiceActor(
+              asyncScheduleService, partitionId, "RTAsyncProcessingScheduleActor");
+      backgroundTaskScheduleService =
+          new ProcessingScheduleServiceImpl(
+              streamProcessorContext::getStreamProcessorPhase, // this is volatile
+              streamProcessorContext.getAbortCondition(),
+              logStream::newLogStreamWriter,
+              scheduledCommandCache,
+              streamProcessorContext.getClock(),
+              streamProcessorContext.getScheduledTaskCheckInterval(),
+              scheduledTaskMetrics);
+      backgroundTaskActor =
+          new AsyncProcessingScheduleServiceActor(
+              backgroundTaskScheduleService, partitionId, "BTAsyncProcessingScheduleActor");
       final var extendedProcessingScheduleService =
           new ExtendedProcessingScheduleServiceImpl(
               processorActorService,
               asyncScheduleService,
+              backgroundTaskScheduleService,
               asyncActor.getActorControl(),
+              backgroundTaskActor.getActorControl(),
               streamProcessorContext.enableAsyncScheduledTasks());
       streamProcessorContext.scheduleService(extendedProcessingScheduleService);
 
@@ -400,7 +418,8 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
         0,
         new Step[] {
           () -> processorActorService.open(actor),
-          () -> actorSchedulingService.submitActor(asyncActor)
+          () -> actorSchedulingService.submitActor(asyncActor),
+          () -> actorSchedulingService.submitActor(backgroundTaskActor)
         },
         () -> startProcessing(lastProcessingPositions));
   }
@@ -408,6 +427,7 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
   private void onFailure(final Throwable throwable) {
     LOG.error("Actor {} failed in phase {}.", actorName, actor.getLifecyclePhase(), throwable);
 
+    final var backgroundTaskActorCloseFuture = backgroundTaskActor.closeAsync();
     final var asyncActorCloseFuture = asyncActor.closeAsync();
     asyncActorCloseFuture.onComplete(
         (v, t) -> {
@@ -591,9 +611,11 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
     private final int partitionId;
 
     public AsyncProcessingScheduleServiceActor(
-        final ProcessingScheduleServiceImpl scheduleService, final int partitionId) {
+        final ProcessingScheduleServiceImpl scheduleService,
+        final int partitionId,
+        final String name) {
       this.scheduleService = scheduleService;
-      asyncScheduleActorName = buildActorName("AsyncProcessingScheduleActor", partitionId);
+      asyncScheduleActorName = buildActorName(name, partitionId);
       this.partitionId = partitionId;
     }
 
@@ -644,6 +666,7 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
   }
 
   private interface Step {
+
     ActorFuture<Void> run();
   }
 

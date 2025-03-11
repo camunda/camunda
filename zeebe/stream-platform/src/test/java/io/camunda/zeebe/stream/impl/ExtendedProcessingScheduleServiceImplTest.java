@@ -19,6 +19,7 @@ import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
 final class ExtendedProcessingScheduleServiceImplTest {
+
   @Test
   void shouldNotScheduleAsyncIfDisabled() {
     // given
@@ -26,7 +27,8 @@ final class ExtendedProcessingScheduleServiceImplTest {
     final var async = mock(SimpleProcessingScheduleService.class);
     final var concurrencyControl = mock(ConcurrencyControl.class);
     final var schedulingService =
-        new ExtendedProcessingScheduleServiceImpl(sync, async, concurrencyControl, false);
+        new ExtendedProcessingScheduleServiceImpl(
+            sync, async, null, concurrencyControl, null, false);
 
     // when
     schedulingService.runDelayed(Duration.ZERO, () -> {});
@@ -53,7 +55,8 @@ final class ExtendedProcessingScheduleServiceImplTest {
         .run(Mockito.any());
 
     final var schedulingService =
-        new ExtendedProcessingScheduleServiceImpl(sync, async, concurrencyControl, true);
+        new ExtendedProcessingScheduleServiceImpl(
+            sync, async, null, concurrencyControl, null, true);
 
     // when
     schedulingService.runDelayed(Duration.ZERO, () -> {});

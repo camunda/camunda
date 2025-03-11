@@ -44,6 +44,7 @@ import io.camunda.zeebe.stream.api.RecordProcessor;
 import io.camunda.zeebe.stream.api.RecordProcessorContext;
 import io.camunda.zeebe.stream.api.records.ExceededBatchRecordSizeException;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
+import io.camunda.zeebe.stream.api.scheduling.ProcessingScheduleService.Pool;
 import io.camunda.zeebe.stream.impl.records.RecordBatchEntry;
 import io.camunda.zeebe.stream.impl.state.DbKeyGenerator;
 import io.camunda.zeebe.stream.util.RecordToWrite;
@@ -496,7 +497,8 @@ public final class StreamProcessorTest {
                       (taskResultBuilder) -> {
                         asyncServiceLatch.countDown();
                         return taskResultBuilder.build();
-                      });
+                      },
+                      Pool.REALTIME);
 
               return invocationOnMock.callRealMethod();
             })
@@ -532,7 +534,8 @@ public final class StreamProcessorTest {
                           throw new RuntimeException(e);
                         }
                         return taskResultBuilder.build();
-                      });
+                      },
+                      Pool.REALTIME);
 
               return invocationOnMock.callRealMethod();
             })
@@ -576,7 +579,8 @@ public final class StreamProcessorTest {
                       (taskResultBuilder) -> {
                         asyncServiceLatch.countDown();
                         return taskResultBuilder.build();
-                      });
+                      },
+                      Pool.REALTIME);
 
               return invocationOnMock.callRealMethod();
             })

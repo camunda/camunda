@@ -19,6 +19,7 @@ import io.camunda.zeebe.protocol.record.intent.IdentitySetupIntent;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.stream.api.ReadonlyStreamProcessorContext;
 import io.camunda.zeebe.stream.api.StreamProcessorLifecycleAware;
+import io.camunda.zeebe.stream.api.scheduling.ProcessingScheduleService.Pool;
 import io.camunda.zeebe.stream.api.scheduling.Task;
 import io.camunda.zeebe.stream.api.scheduling.TaskResult;
 import io.camunda.zeebe.stream.api.scheduling.TaskResultBuilder;
@@ -28,6 +29,7 @@ import org.springframework.security.crypto.factory.PasswordEncoderFactories;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 public final class IdentitySetupInitializer implements StreamProcessorLifecycleAware, Task {
+
   public static final String DEFAULT_ROLE_NAME = "Admin";
   public static final String DEFAULT_TENANT_ID = TenantOwned.DEFAULT_TENANT_IDENTIFIER;
   public static final String DEFAULT_TENANT_NAME = "Default";
@@ -62,7 +64,7 @@ public final class IdentitySetupInitializer implements StreamProcessorLifecycleA
 
     // We use a timestamp of 0L to ensure this is runs immediately once the stream processor is
     // started,
-    context.getScheduleService().runAtAsync(0L, this);
+    context.getScheduleService().runAtAsync(0L, this, Pool.REALTIME);
   }
 
   @Override
