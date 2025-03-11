@@ -64,6 +64,10 @@ final class StandaloneBackupManagerTest {
   public static final String ADMIN_PASSWORD = "admin123";
   public static final String ADMIN_ROLE = "superuser";
 
+  public static final String BACKUP_USER = "camunda-backup";
+  public static final String BACKUP_PASSWORD = "backup123";
+  public static final String BACKUP_ROLE = "snapshot_user";
+
   public static final String APP_USER = "camunda-app";
   public static final String APP_PASSWORD = "app123";
   public static final String APP_ROLE = "camunda_app_role";
@@ -92,14 +96,12 @@ final class StandaloneBackupManagerTest {
   @TestZeebe(autoStart = false)
   final TestStandaloneBackupManager backupManager =
       new TestStandaloneBackupManager()
-          .withProperty("camunda.operate.elasticsearch.username", ADMIN_USER)
-          .withProperty("camunda.operate.elasticsearch.password", ADMIN_PASSWORD)
+          .withProperty("camunda.operate.elasticsearch.username", BACKUP_USER)
+          .withProperty("camunda.operate.elasticsearch.password", BACKUP_PASSWORD)
           .withProperty("camunda.operate.elasticsearch.healthCheckEnabled", "false")
           .withProperty("camunda.operate.backup.repositoryName", "els-test")
-          .withProperty("camunda.tasklist.elasticsearch.username", ADMIN_USER)
-          .withProperty("camunda.tasklist.database", "elasticsearch")
-          .withProperty("camunda.tasklist.elasticsearch.username", ADMIN_USER)
-          .withProperty("camunda.tasklist.elasticsearch.password", ADMIN_PASSWORD)
+          .withProperty("camunda.tasklist.elasticsearch.username", BACKUP_USER)
+          .withProperty("camunda.tasklist.elasticsearch.password", BACKUP_PASSWORD)
           .withProperty("camunda.tasklist.elasticsearch.healthCheckEnabled", "false")
           .withProperty("camunda.tasklist.backup.repositoryName", "els-test");
 
@@ -205,8 +207,10 @@ final class StandaloneBackupManagerTest {
     // setup ES users
     es.execInContainer("elasticsearch-users", "useradd", APP_USER, "-p", APP_PASSWORD);
     es.execInContainer("elasticsearch-users", "useradd", ADMIN_USER, "-p", ADMIN_PASSWORD);
+    es.execInContainer("elasticsearch-users", "useradd", BACKUP_USER, "-p", BACKUP_PASSWORD);
     es.execInContainer("elasticsearch-users", "roles", ADMIN_USER, "-a", ADMIN_ROLE);
     es.execInContainer("elasticsearch-users", "roles", APP_USER, "-a", APP_ROLE);
+    es.execInContainer("elasticsearch-users", "roles", BACKUP_USER, "-a", BACKUP_ROLE);
     // Connect to ES
     schemaManager.withProperty(
         "zeebe.broker.exporters.elasticsearch.args.url", "http://" + es.getHttpHostAddress());
