@@ -60,6 +60,7 @@ public class MigrationITExtension
           put(DatabaseType.OPENSEARCH, false);
         }
       };
+  private Map<String, String> initialEnvOverrides = new HashMap<>();
 
   @Override
   public void afterAll(final ExtensionContext context) {
@@ -130,7 +131,7 @@ public class MigrationITExtension
               final String indexPrefix = context.getTestMethod().get().getName().toLowerCase();
               INDEX_PREFIXES.put(db, indexPrefix);
               final CamundaMigrator migrator = new CamundaMigrator(NETWORKS.get(db), indexPrefix);
-              migrator.initialize(db, DATABASE_EXTERNAL_URLS.get(db));
+              migrator.initialize(db, DATABASE_EXTERNAL_URLS.get(db), initialEnvOverrides);
               final var expectedDescriptors =
                   new IndexDescriptors(indexPrefix, db.equals(DatabaseType.ELASTICSEARCH)).all();
               DATABASE_CHECKS.put(
@@ -141,13 +142,18 @@ public class MigrationITExtension
             });
   }
 
-  public void upgrade(final DatabaseType databaseType) {
+  public MigrationITExtension withInitialEnvOverrides(final Map<String, String> envOverrides) {
+    initialEnvOverrides = envOverrides;
+    return this;
+  }
+
+  public void upgrade(final DatabaseType databaseType, final Map<String, String> envOverrides) {
     final String indexPrefix = INDEX_PREFIXES.get(databaseType);
     if (HAS_87_DATA.get(databaseType)) {
       awaitImportersFlushed(databaseType, indexPrefix);
     }
 
-    MIGRATORS.get(databaseType).update(databaseType);
+    MIGRATORS.get(databaseType).update(databaseType, envOverrides);
 
     awaitExporterReadiness(databaseType, indexPrefix);
 
