@@ -238,16 +238,16 @@ final class StandaloneBackupManagerTest {
     // Assert that the data is created in Elasticsearch
     final long userTaskKey =
         assertThatDataIsPresent(processInstanceKey, isRunningProcessInstance());
-    // Soft pause the exporters in Zeebe
-    ExportingActuator.of(camunda).softPause();
 
     // WHEN
     // Start the backup process with a specific backup ID
     backupManager.withBackupId(BACKUP_ID).start();
-    // Take a Zeebe backup via the API call
-    BackupActuator.of(camunda).take(BACKUP_ID);
+    // Soft pause the exporters in Zeebe
+    ExportingActuator.of(camunda).softPause();
     // manually backup zeebe indices
     backupZeebeIndices();
+    // Take a Zeebe backup via the API call
+    BackupActuator.of(camunda).take(BACKUP_ID);
     // Wait for snapshots to be completed
     final List<String> snapshots = new ArrayList<>();
     snapshots.addAll(waitForSnapshotsToBeCompleted(OPERATE_SNAPSHOT_NAME_PREFIX, 6));
@@ -261,7 +261,8 @@ final class StandaloneBackupManagerTest {
     // Assert that the state is updated: process instance is completed
     assertThatDataIsPresent(processInstanceKey, isRunningProcessInstance().negate());
 
-    // Stop the Camunda application
+    // Stop the Camunda application, this should delete the broker working directory as it is
+    // temporary
     camunda.stop();
     // Delete indices to simulate a fresh start
     deleteIndices();
