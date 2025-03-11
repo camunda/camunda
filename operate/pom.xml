@@ -101,7 +101,7 @@
     <version.hdr-histogram>2.1.12</version.hdr-histogram>
     <version.joda-time>2.12.7</version.joda-time>
     <version.jakarta.json>2.0.1</version.jakarta.json>
-    <version.swagger-annotations>2.2.28</version.swagger-annotations>
+    <version.swagger-annotations>2.2.29</version.swagger-annotations>
     <version.commons-logging>1.3.5</version.commons-logging>
     <version.commons-collections4>4.4</version.commons-collections4>
 
