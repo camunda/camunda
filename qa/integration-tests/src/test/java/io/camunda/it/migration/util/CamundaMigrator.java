@@ -59,10 +59,6 @@ public class CamundaMigrator extends ApiCallable {
     zeebeDataPath = Path.of(System.getProperty("user.dir") + "/zeebe-data" + volume.getName());
   }
 
-  public CamundaMigrator initialize(final DatabaseType databaseType, final String databaseUrl) {
-    return initialize(databaseType, databaseUrl, new HashMap<>());
-  }
-
   public CamundaMigrator initialize(
       final DatabaseType databaseType,
       final String databaseUrl,
@@ -113,10 +109,6 @@ public class CamundaMigrator extends ApiCallable {
     }
 
     return this;
-  }
-
-  public CamundaMigrator update(final DatabaseType databaseType) {
-    return update(databaseType, new HashMap<>());
   }
 
   public CamundaMigrator update(
