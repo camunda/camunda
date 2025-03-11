@@ -15,6 +15,7 @@
  */
 package io.camunda.process.test.api.assertions;
 
+import io.camunda.client.api.search.filter.ProcessInstanceFilter;
 import io.camunda.client.api.search.response.ProcessInstance;
 
 /** A selector for process instances. */
@@ -38,4 +39,12 @@ public interface ProcessInstanceSelector {
   default String describe() {
     return toString();
   }
+
+  /**
+   * Applies the given filter to limit the search of process instances that match the selector.
+   * Default: no filtering.
+   *
+   * @param filter the filter used to limit the process instance search
+   */
+  default void applyFilter(final ProcessInstanceFilter filter) {}
 }

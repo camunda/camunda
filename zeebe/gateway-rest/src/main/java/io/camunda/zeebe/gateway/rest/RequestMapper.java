@@ -663,7 +663,7 @@ public class RequestMapper {
         expiresAt,
         file.getSize(),
         metadata.getProcessDefinitionId(),
-        metadata.getProcessInstanceKey(),
+        KeyUtil.keyToLong(metadata.getProcessInstanceKey()),
         metadata.getCustomProperties());
   }
 

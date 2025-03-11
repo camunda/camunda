@@ -74,7 +74,7 @@ public class SchemaManager {
     updateSchemaMappings(newIndexTemplateProperties);
     updateSchemaSettings();
 
-    final RetentionConfiguration retention = config.getArchiver().getRetention();
+    final RetentionConfiguration retention = config.getHistory().getRetention();
     if (retention.isEnabled()) {
       LOG.info(
           "Retention is enabled. Create ILM policy [name: '{}', retention: '{}']",

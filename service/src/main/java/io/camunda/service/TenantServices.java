@@ -91,10 +91,11 @@ public class TenantServices extends SearchQueryService<TenantServices, TenantQue
    */
   public CompletableFuture<TenantRecord> addMember(
       final String tenantId, final EntityType entityType, final long entityKey) {
+    final var entityId = String.valueOf(entityKey);
     return sendBrokerRequest(
         BrokerTenantEntityRequest.createAddRequest()
             .setTenantId(tenantId)
-            .setEntity(entityType, entityKey));
+            .setEntity(entityType, entityId));
   }
 
   public CompletableFuture<TenantRecord> addMember(
@@ -111,10 +112,11 @@ public class TenantServices extends SearchQueryService<TenantServices, TenantQue
    */
   public CompletableFuture<TenantRecord> removeMember(
       final String tenantId, final EntityType entityType, final long entityKey) {
+    final var entityId = String.valueOf(entityKey);
     return sendBrokerRequest(
         BrokerTenantEntityRequest.createRemoveRequest()
             .setTenantId(tenantId)
-            .setEntity(entityType, entityKey));
+            .setEntity(entityType, entityId));
   }
 
   public CompletableFuture<TenantRecord> removeMember(
