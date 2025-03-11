@@ -42,46 +42,6 @@
     </dependency>
 
     <dependency>
-      <groupId>io.camunda</groupId>
-      <artifactId>zeebe-workflow-engine</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>io.camunda</groupId>
-      <artifactId>zeebe-scheduler</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>io.camunda</groupId>
-      <artifactId>zeebe-util</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>io.camunda</groupId>
-      <artifactId>zeebe-logstreams</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>io.camunda</groupId>
-      <artifactId>zeebe-protocol-jackson</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>io.camunda</groupId>
-      <artifactId>zeebe-db</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>io.camunda</groupId>
-      <artifactId>zeebe-stream-platform</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>io.camunda</groupId>
-      <artifactId>zeebe-protocol-impl</artifactId>
-    </dependency>
-
-    <dependency>
       <groupId>org.springframework</groupId>
       <artifactId>spring-context</artifactId>
     </dependency>
@@ -232,14 +192,6 @@
         <artifactId>maven-dependency-plugin</artifactId>
         <configuration>
           <usedDependencies>
-            <dependency>io.camunda:zeebe-workflow-engine</dependency>
-            <dependency>io.camunda:zeebe-scheduler</dependency>
-            <dependency>io.camunda:zeebe-util</dependency>
-            <dependency>io.camunda:zeebe-logstreams</dependency>
-            <dependency>io.camunda:zeebe-db</dependency>
-            <dependency>io.camunda:zeebe-stream-platform</dependency>
-            <dependency>io.camunda:zeebe-protocol-impl</dependency>
-            <dependency>io.camunda:zeebe-protocol-jackson</dependency>
             <dependency>org.springframework.boot:spring-boot-configuration-processor</dependency>
           </usedDependencies>
         </configuration>
