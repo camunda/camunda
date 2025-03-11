@@ -114,8 +114,7 @@
     <!-- This is the default profile used for the DB selection in tests -->
     <database.type>elasticsearch</database.type>
 
-    <quickly>false</quickly>
-    <skipTests>${quickly}</skipTests>
+    <skipTests>${skipTests}</skipTests>
     <skip.docker>${skipTests}</skip.docker>
     <skip.unit.tests>${skipTests}</skip.unit.tests>
     <skip.docker>false</skip.docker>
@@ -124,11 +123,6 @@
     <maven.compiler.target>21</maven.compiler.target>
     <maven.compiler.source>21</maven.compiler.source>
     <spring-boot.version>3.4.3</spring-boot.version>
-
-    <it.test.excludedGroups></it.test.excludedGroups>
-    <it.test.includedGroups></it.test.includedGroups>
-    <test.forkCount></test.forkCount>
-    <version.tomcat>10.1.34</version.tomcat>
   </properties>
 
   <dependencyManagement>
