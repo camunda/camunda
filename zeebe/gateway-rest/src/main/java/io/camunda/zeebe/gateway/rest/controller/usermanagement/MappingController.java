@@ -56,14 +56,14 @@ public class MappingController {
         ResponseMapper::toMappingCreateResponse);
   }
 
-  @CamundaDeleteMapping(path = "/{mappingKey}")
+  @CamundaDeleteMapping(path = "/{mappingId}")
   public CompletableFuture<ResponseEntity<Object>> deleteMapping(
-      @PathVariable final long mappingKey) {
+      @PathVariable final String mappingId) {
     return RequestMapper.executeServiceMethodWithNoContentResult(
         () ->
             mappingServices
                 .withAuthentication(RequestMapper.getAuthentication())
-                .deleteMapping(mappingKey));
+                .deleteMapping(mappingId));
   }
 
   @CamundaGetMapping(path = "/{mappingKey}")
