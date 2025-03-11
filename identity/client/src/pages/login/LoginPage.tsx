@@ -46,7 +46,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSuccess }) => {
         labelText={t("username")}
         invalid={false}
         invalidText={undefined}
-        placeholder={t("enterUsername")}
+        placeholder={t("username")}
       />
       <PasswordInput
         id="password"
@@ -66,7 +66,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSuccess }) => {
         labelText={t("password")}
         invalid={false}
         invalidText={undefined}
-        placeholder={t("loginPasswordFieldPlaceholder")}
+        placeholder={t("password")}
       />
       <Button onClick={submit}>{t("login")}</Button>
     </div>
