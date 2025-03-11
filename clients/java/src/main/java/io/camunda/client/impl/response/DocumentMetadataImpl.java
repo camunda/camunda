@@ -16,6 +16,7 @@
 package io.camunda.client.impl.response;
 
 import io.camunda.client.api.response.DocumentMetadata;
+import io.camunda.client.impl.util.ParseUtil;
 import java.time.OffsetDateTime;
 import java.util.Map;
 
@@ -63,7 +64,7 @@ public class DocumentMetadataImpl implements DocumentMetadata {
 
   @Override
   public Long getProcessInstanceKey() {
-    return response.getProcessInstanceKey();
+    return ParseUtil.parseLongOrNull(response.getProcessInstanceKey());
   }
 
   @Override

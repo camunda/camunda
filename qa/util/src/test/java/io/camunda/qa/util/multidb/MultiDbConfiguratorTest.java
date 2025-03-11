@@ -92,7 +92,7 @@ public class MultiDbConfiguratorTest {
                 "type",
                 io.camunda.search.connect.configuration.DatabaseType.ELASTICSEARCH));
 
-    assertThat(exporterArgs.get("archiver"))
+    assertThat(exporterArgs.get("history"))
         .isEqualTo(
             Map.of(
                 "waitPeriodBeforeArchiving",
@@ -127,7 +127,7 @@ public class MultiDbConfiguratorTest {
     assertThat(camundaExporter).isNotNull();
 
     final Map<String, Object> exporterArgs = camundaExporter.getArgs();
-    assertThat(exporterArgs.get("archiver"))
+    assertThat(exporterArgs.get("history"))
         .isEqualTo(
             Map.of(
                 "waitPeriodBeforeArchiving",
@@ -163,7 +163,7 @@ public class MultiDbConfiguratorTest {
     assertThat(camundaExporter).isNotNull();
 
     final Map<String, Object> exporterArgs = camundaExporter.getArgs();
-    assertThat(exporterArgs.get("archiver"))
+    assertThat(exporterArgs.get("history"))
         .isEqualTo(
             Map.of(
                 "waitPeriodBeforeArchiving",
@@ -256,7 +256,7 @@ public class MultiDbConfiguratorTest {
                 "password",
                 EXPECTED_PW));
 
-    assertThat(exporterArgs.get("archiver"))
+    assertThat(exporterArgs.get("history"))
         .isEqualTo(
             Map.of(
                 "waitPeriodBeforeArchiving",

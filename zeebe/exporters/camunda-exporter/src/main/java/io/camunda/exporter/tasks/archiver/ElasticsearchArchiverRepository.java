@@ -31,7 +31,7 @@ import co.elastic.clients.elasticsearch.core.search.Hit;
 import co.elastic.clients.elasticsearch.indices.GetIndexRequest;
 import co.elastic.clients.elasticsearch.indices.PutIndicesSettingsRequest;
 import co.elastic.clients.json.JsonData;
-import io.camunda.exporter.config.ExporterConfiguration.ArchiverConfiguration;
+import io.camunda.exporter.config.ExporterConfiguration.HistoryConfiguration;
 import io.camunda.exporter.config.ExporterConfiguration.RetentionConfiguration;
 import io.camunda.exporter.metrics.CamundaExporterMetrics;
 import io.camunda.exporter.tasks.util.ElasticsearchRepository;
@@ -60,7 +60,7 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
       Slices.of(slices -> slices.computed(SlicesCalculation.Auto));
 
   private final int partitionId;
-  private final ArchiverConfiguration config;
+  private final HistoryConfiguration config;
   private final RetentionConfiguration retention;
   private final String indexPrefix;
   private final String processInstanceIndex;
@@ -71,7 +71,7 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
 
   public ElasticsearchArchiverRepository(
       final int partitionId,
-      final ArchiverConfiguration config,
+      final HistoryConfiguration config,
       final RetentionConfiguration retention,
       final String indexPrefix,
       final String processInstanceIndex,

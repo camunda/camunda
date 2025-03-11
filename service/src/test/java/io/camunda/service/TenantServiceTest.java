@@ -195,10 +195,10 @@ public class TenantServiceTest {
   public void shouldAddEntityToTenant(final EntityType entityType) {
     // given
     final var tenantId = "tenantId";
-    final var entityKey = 42;
+    final var entityId = "entityId";
 
     // when
-    services.addMember(tenantId, entityType, entityKey);
+    services.addMember(tenantId, entityType, entityId);
 
     // then
     final BrokerTenantEntityRequest request = stubbedBrokerClient.getSingleBrokerRequest();
@@ -206,7 +206,7 @@ public class TenantServiceTest {
     assertThat(request.getValueType()).isEqualTo(ValueType.TENANT);
     final TenantRecord brokerRequestValue = request.getRequestWriter();
     assertThat(brokerRequestValue.getTenantId()).isEqualTo(tenantId);
-    assertThat(brokerRequestValue.getEntityKey()).isEqualTo(entityKey);
+    assertThat(brokerRequestValue.getEntityId()).isEqualTo(entityId);
     assertThat(brokerRequestValue.getEntityType()).isEqualTo(entityType);
   }
 
@@ -217,10 +217,10 @@ public class TenantServiceTest {
   public void shouldRemoveEntityFromTenant(final EntityType entityType) {
     // given
     final var tenantId = "tenantId";
-    final var entityKey = 42;
+    final var entityId = "entityId";
 
     // when
-    services.removeMember(tenantId, entityType, entityKey);
+    services.removeMember(tenantId, entityType, entityId);
 
     // then
     final BrokerTenantEntityRequest request = stubbedBrokerClient.getSingleBrokerRequest();
@@ -228,7 +228,7 @@ public class TenantServiceTest {
     assertThat(request.getValueType()).isEqualTo(ValueType.TENANT);
     final TenantRecord brokerRequestValue = request.getRequestWriter();
     assertThat(brokerRequestValue.getTenantId()).isEqualTo(tenantId);
-    assertThat(brokerRequestValue.getEntityKey()).isEqualTo(entityKey);
+    assertThat(brokerRequestValue.getEntityId()).isEqualTo(entityId);
     assertThat(brokerRequestValue.getEntityType()).isEqualTo(entityType);
   }
 }

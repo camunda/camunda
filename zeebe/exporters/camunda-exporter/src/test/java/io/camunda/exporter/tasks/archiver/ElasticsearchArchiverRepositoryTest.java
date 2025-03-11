@@ -12,7 +12,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import co.elastic.clients.elasticsearch.ElasticsearchAsyncClient;
 import co.elastic.clients.json.SimpleJsonpMapper;
 import co.elastic.clients.transport.rest_client.RestClientTransport;
-import io.camunda.exporter.config.ExporterConfiguration.ArchiverConfiguration;
+import io.camunda.exporter.config.ExporterConfiguration.HistoryConfiguration;
 import io.camunda.exporter.config.ExporterConfiguration.RetentionConfiguration;
 import io.camunda.exporter.metrics.CamundaExporterMetrics;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
@@ -65,7 +65,7 @@ final class ElasticsearchArchiverRepositoryTest {
 
     return new ElasticsearchArchiverRepository(
         1,
-        new ArchiverConfiguration(),
+        new HistoryConfiguration(),
         retention,
         "testPrefix",
         "instance",

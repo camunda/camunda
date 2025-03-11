@@ -76,7 +76,7 @@ public class MultiDbConfigurator {
                       io.camunda.search.connect.configuration.DatabaseType.ELASTICSEARCH),
                   "index",
                   Map.of("prefix", indexPrefix),
-                  "archiver",
+                  "history",
                   Map.of(
                       "waitPeriodBeforeArchiving",
                       retentionEnabled ? "1s" : "1h", // find completed instances almost directly
@@ -172,7 +172,7 @@ public class MultiDbConfigurator {
                       userPassword),
                   "index",
                   Map.of("prefix", indexPrefix),
-                  "archiver",
+                  "history",
                   Map.of(
                       "waitPeriodBeforeArchiving",
                       retentionEnabled ? "1s" : "1h", // find completed instances almost directly

@@ -15,6 +15,7 @@
  */
 package io.camunda.zeebe.client.impl.command;
 
+import io.camunda.client.impl.util.ParseUtil;
 import io.camunda.client.protocol.rest.DocumentReference;
 import io.camunda.zeebe.client.ZeebeClientConfiguration;
 import io.camunda.zeebe.client.api.JsonMapper;
@@ -175,7 +176,7 @@ public class CreateDocumentCommandImpl extends DocumentBuilder
 
   @Override
   public CreateDocumentCommandStep2 processInstanceKey(final long processInstanceKey) {
-    super.getMetadata().setProcessInstanceKey(processInstanceKey);
+    super.getMetadata().setProcessInstanceKey(ParseUtil.keyToString(processInstanceKey));
     return this;
   }
 }

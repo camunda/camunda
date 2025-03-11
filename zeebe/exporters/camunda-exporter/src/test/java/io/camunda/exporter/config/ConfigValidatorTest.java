@@ -58,7 +58,7 @@ public class ConfigValidatorTest {
   @ValueSource(strings = {"1", "-1", "1ms"})
   void shouldNotAllowInvalidMinimumAge(final String invalidMinAge) {
     // given
-    config.getArchiver().getRetention().setMinimumAge(invalidMinAge);
+    config.getHistory().getRetention().setMinimumAge(invalidMinAge);
 
     // when - then
     assertThatCode(() -> ConfigValidator.validate(config))
@@ -82,7 +82,7 @@ public class ConfigValidatorTest {
     // Rollover interval must match pattern '%d{timeunit}', where timeunit is one of 'd', 'h',
     // 'm', 's'. A valid rollover interval should be for example "1d" or
     // "1h". Zero or negative time units are not allowed.
-    config.getArchiver().setRolloverInterval("1day");
+    config.getHistory().setRolloverInterval("1day");
 
     // when - then
     assertThatCode(() -> ConfigValidator.validate(config))
@@ -96,7 +96,7 @@ public class ConfigValidatorTest {
     // given
     // waitPeriodBeforeArchiving must match pattern '%d{timeunit}', where timeunit is one of 'd',
     // 'h', 'm', 's'.
-    config.getArchiver().setWaitPeriodBeforeArchiving("20minutes");
+    config.getHistory().setWaitPeriodBeforeArchiving("20minutes");
 
     // when - then
     assertThatCode(() -> ConfigValidator.validate(config))
@@ -108,7 +108,7 @@ public class ConfigValidatorTest {
   @Test
   void shouldForbidRolloverBatchSizeToBeLessThanOne() {
     // given
-    config.getArchiver().setRolloverBatchSize(0);
+    config.getHistory().setRolloverBatchSize(0);
 
     // when - then
     assertThatCode(() -> ConfigValidator.validate(config))
@@ -120,7 +120,7 @@ public class ConfigValidatorTest {
   @Test
   void shouldForbidDelayBetweenRunsToBeLessThanOne() {
     // given
-    config.getArchiver().setDelayBetweenRuns(0);
+    config.getHistory().setDelayBetweenRuns(0);
 
     // when - then
     assertThatCode(() -> ConfigValidator.validate(config))

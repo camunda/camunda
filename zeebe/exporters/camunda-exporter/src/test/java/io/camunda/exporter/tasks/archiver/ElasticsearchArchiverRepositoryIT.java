@@ -19,7 +19,7 @@ import co.elastic.clients.elasticsearch.indices.IndexSettingsLifecycle;
 import co.elastic.clients.json.JsonData;
 import co.elastic.clients.json.jackson.JacksonJsonpMapper;
 import co.elastic.clients.transport.rest_client.RestClientTransport;
-import io.camunda.exporter.config.ExporterConfiguration.ArchiverConfiguration;
+import io.camunda.exporter.config.ExporterConfiguration.HistoryConfiguration;
 import io.camunda.exporter.config.ExporterConfiguration.RetentionConfiguration;
 import io.camunda.exporter.metrics.CamundaExporterMetrics;
 import io.camunda.exporter.utils.SearchDBExtension;
@@ -63,7 +63,7 @@ final class ElasticsearchArchiverRepositoryIT {
 
   @AutoClose private final RestClientTransport transport = createRestClient();
   private final SimpleMeterRegistry meterRegistry = new SimpleMeterRegistry();
-  private final ArchiverConfiguration config = new ArchiverConfiguration();
+  private final HistoryConfiguration config = new HistoryConfiguration();
   private final RetentionConfiguration retention = new RetentionConfiguration();
   private String indexPrefix = "testPrefix";
   private final String processInstanceIndex = "process-instance-" + UUID.randomUUID();
