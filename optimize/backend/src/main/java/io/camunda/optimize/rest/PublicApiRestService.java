@@ -73,8 +73,7 @@ public class PublicApiRestService {
   public static final String COLLECTION_SUB_PATH = "/collection";
   public static final String COLLECTION_BY_ID_PATH = COLLECTION_SUB_PATH + "/{collectionId}";
   public static final String COLLECTION_CREATE_SUB_PATH = COLLECTION_SUB_PATH + "/create";
-  public static final String COLLECTION_SCOPE_SUB_PATH =
-      COLLECTION_SUB_PATH + "/{id}/scope";
+  public static final String COLLECTION_SCOPE_SUB_PATH = COLLECTION_SUB_PATH + "/{id}/scope";
   public static final String REPORT_SUB_PATH = "/report";
   public static final String DASHBOARD_SUB_PATH = "/dashboard";
   public static final String LABELS_SUB_PATH = "/variables/labels";
