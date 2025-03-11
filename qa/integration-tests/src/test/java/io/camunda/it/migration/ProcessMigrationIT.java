@@ -22,6 +22,7 @@ import io.camunda.webapps.schema.entities.operate.ProcessEntity;
 import java.net.URI;
 import java.net.http.HttpResponse;
 import java.time.Duration;
+import java.util.HashMap;
 import java.util.Optional;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.TestInstance;
@@ -60,7 +61,7 @@ public class ProcessMigrationIT {
     PROVIDER.has87Data(databaseType);
 
     // when
-    migrator.update(databaseType);
+    PROVIDER.upgrade(databaseType, new HashMap<>());
 
     // then
     Awaitility.await("Form data should be present on process definition")
@@ -96,7 +97,7 @@ public class ProcessMigrationIT {
     PROVIDER.has87Data(databaseType);
 
     // when
-    migrator.update(databaseType);
+    PROVIDER.upgrade(databaseType, new HashMap<>());
 
     // then
     Awaitility.await("Form data should be present on process definition")
