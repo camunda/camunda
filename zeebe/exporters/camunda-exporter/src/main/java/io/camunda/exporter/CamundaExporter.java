@@ -72,7 +72,7 @@ public class CamundaExporter implements Exporter {
   private BackgroundTaskManager taskManager;
   private ExporterMetadata metadata;
   private boolean exporterCanFlush = false;
-  private boolean zeebeIndicesExist = false;
+  private boolean zeebeIndicesVersion87Exist = false;
   private SearchEngineClient searchEngineClient;
   private int partitionId;
 
@@ -331,16 +331,16 @@ public class CamundaExporter implements Exporter {
                   d -> d instanceof ImportPositionIndex || d instanceof TasklistImportPositionIndex)
               .toList();
 
-      if (!zeebeIndicesExist) {
-        zeebeIndicesExist =
+      if (!zeebeIndicesVersion87Exist) {
+        zeebeIndicesVersion87Exist =
             !searchEngineClient
                 .getMappings(
-                    configuration.getIndex().getZeebeIndexPrefix() + "*", MappingSource.INDEX)
+                    configuration.getIndex().getZeebeIndexPrefix() + "*8.7*", MappingSource.INDEX)
                 .isEmpty();
       }
 
       exporterCanFlush =
-          !zeebeIndicesExist
+          !zeebeIndicesVersion87Exist
               || searchEngineClient.importersCompleted(partitionId, importPositionIndices);
     } catch (final Exception e) {
       LOG.warn("Unexpected exception occurred checking importers completed, will retry later.", e);
