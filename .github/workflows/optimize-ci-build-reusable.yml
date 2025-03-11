@@ -102,7 +102,7 @@ jobs:
           DOCKER_BUILD_RECORD_UPLOAD: false
         with:
           context: .
-          file: optimize-internal-test.Dockerfile
+          file: optimize.Dockerfile
           provenance: false
           build-args: |
             VERSION=${{ steps.pom-info.outputs.project_version }}
