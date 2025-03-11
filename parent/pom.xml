@@ -136,7 +136,7 @@
     <version.jackson-databind-nullable>0.2.6</version.jackson-databind-nullable>
     <version.findbugs.jsr305>3.0.2</version.findbugs.jsr305>
     <version.jackson-annotations>2.18.3</version.jackson-annotations>
-    <version.swagger-annotations>2.2.28</version.swagger-annotations>
+    <version.swagger-annotations>2.2.29</version.swagger-annotations>
     <version.checker-qual>3.49.1</version.checker-qual>
     <version.java-jwt>4.5.0</version.java-jwt>
     <version.reactive-streams>1.0.4</version.reactive-streams>
