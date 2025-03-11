@@ -23,7 +23,7 @@ import {processXmlStore} from 'modules/stores/processXml/processXml.list';
 import {batchModificationStore} from 'modules/stores/batchModification';
 import {isMoveModificationTarget} from 'modules/bpmn-js/utils/isMoveModificationTarget';
 import {ModificationBadgeOverlay} from 'App/ProcessInstance/TopPanel/ModificationBadgeOverlay';
-import {BatchModificationNotification} from '../BatchModificationNotification';
+import {BatchModificationNotification} from '../BatchModificationNotification/v2';
 import {DiagramHeader} from '../DiagramHeader';
 import {useProcessInstancesOverlayData} from 'modules/queries/processInstancesStatistics/useOverlayData';
 import {useBatchModificationOverlayData} from 'modules/queries/processInstancesStatistics/useBatchModificationOverlayData';

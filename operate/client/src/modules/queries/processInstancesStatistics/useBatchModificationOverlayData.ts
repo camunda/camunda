@@ -13,6 +13,7 @@ import {
 import {MODIFICATIONS} from 'modules/bpmn-js/badgePositions';
 import {useProcessInstancesStatistics} from './useProcessInstancesStatistics';
 import {OverlayData} from 'modules/bpmn-js/BpmnJS';
+import {getInstancesCount} from './useInstancesCount';
 
 function batchModificationOverlayParser(params: {
   sourceFlowNodeId?: string;
@@ -28,27 +29,17 @@ function batchModificationOverlayParser(params: {
       return [];
     }
 
-    function getInstancesCount(flowNodeId?: string) {
-      const flowNodeStatistics = data.find(
-        (statistics) => statistics.flowNodeId === flowNodeId,
-      );
-
-      if (flowNodeStatistics === undefined) {
-        return 0;
-      }
-
-      return flowNodeStatistics.active + flowNodeStatistics.incidents;
-    }
-
     return [
       {
-        payload: {cancelledTokenCount: getInstancesCount(sourceFlowNodeId)},
+        payload: {
+          cancelledTokenCount: getInstancesCount(data, sourceFlowNodeId),
+        },
         type: 'batchModificationsBadge',
         flowNodeId: sourceFlowNodeId,
         position: MODIFICATIONS,
       },
       {
-        payload: {newTokenCount: getInstancesCount(sourceFlowNodeId)},
+        payload: {newTokenCount: getInstancesCount(data, sourceFlowNodeId)},
         type: 'batchModificationsBadge',
         flowNodeId: targetFlowNodeId,
         position: MODIFICATIONS,
