@@ -236,7 +236,6 @@ public class MigrationITExtension
             TestSearchContainers.createDefeaultElasticsearchContainer()
                 .withNetwork(network)
                 .withNetworkAliases("elasticsearch");
-        elasticsearchContainer.setPortBindings(List.of("9200:9200"));
         elasticsearchContainer.start();
         DB_CLOSABLES.add(elasticsearchContainer);
         DATABASE_EXTERNAL_URLS.put(db, "http://" + elasticsearchContainer.getHttpHostAddress());
@@ -246,7 +245,6 @@ public class MigrationITExtension
             TestSearchContainers.createDefaultOpensearchContainer()
                 .withNetwork(network)
                 .withNetworkAliases("opensearch");
-        opensearchContainer.setPortBindings(List.of("9210:9200"));
         opensearchContainer.start();
         DATABASE_EXTERNAL_URLS.put(db, opensearchContainer.getHttpHostAddress());
         DB_CLOSABLES.add(opensearchContainer);
