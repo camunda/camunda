@@ -223,6 +223,67 @@ public class ResourceDeletionAuthorizationTest {
                 .formatted(formId));
   }
 
+  @Test
+  public void shouldBeAuthorizedToDeleteResourceWithDefaultUser() {
+    // given
+    final var resourceKey = deployResource();
+
+    // when
+    engine.resourceDeletion().withResourceKey(resourceKey).delete(DEFAULT_USER.getUsername());
+
+    // then
+    assertThat(
+            RecordingExporter.resourceDeletionRecords(ResourceDeletionIntent.DELETED)
+                .withResourceKey(resourceKey)
+                .exists())
+        .isTrue();
+  }
+
+  @Test
+  public void shouldBeAuthorizedToDeleteResourceWithPermissions() {
+    // given
+    final var resourceId = "Rpa_0w7r08e";
+    final var resourceKey = deployResource();
+    final var user = createUser();
+    addPermissionsToUser(
+        user, AuthorizationResourceType.RESOURCE, PermissionType.DELETE_RESOURCE, resourceId);
+
+    // when
+    engine.resourceDeletion().withResourceKey(resourceKey).delete(user.getUsername());
+
+    // then
+    assertThat(
+            RecordingExporter.resourceDeletionRecords(ResourceDeletionIntent.DELETED)
+                .withResourceKey(resourceKey)
+                .exists())
+        .isTrue();
+  }
+
+  @Test
+  public void shouldBeUnauthorizedToDeleteResourceWithoutPermissions() {
+    // given
+    final var resourceId = "Rpa_0w7r08e";
+    final var resourceKey = deployResource();
+    final var user = createUser();
+
+    // when
+    engine
+        .resourceDeletion()
+        .withResourceKey(resourceKey)
+        .expectRejection()
+        .delete(user.getUsername());
+
+    // then
+    Assertions.assertThat(
+            RecordingExporter.resourceDeletionRecords(ResourceDeletionIntent.DELETE)
+                .onlyCommandRejections()
+                .getFirst())
+        .hasRejectionType(RejectionType.FORBIDDEN)
+        .hasRejectionReason(
+            "Insufficient permissions to perform operation 'DELETE_RESOURCE' on resource 'RESOURCE', required resource identifiers are one of '[*, %s]'"
+                .formatted(resourceId));
+  }
+
   private UserRecordValue createUser() {
     return engine
         .user()
@@ -282,5 +343,16 @@ public class ResourceDeletionAuthorizationTest {
         .getFormMetadata()
         .getFirst()
         .getFormKey();
+  }
+
+  private long deployResource() {
+    return engine
+        .deployment()
+        .withJsonClasspathResource("/resource/test-rpa-1.rpa")
+        .deploy(DEFAULT_USER.getUsername())
+        .getValue()
+        .getResourceMetadata()
+        .getFirst()
+        .getResourceKey();
   }
 }
