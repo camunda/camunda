@@ -107,8 +107,8 @@ container:
     # secure HTTPS connections.
     https: ${CAMUNDA_OPTIMIZE_CONTAINER_PORTS_HTTPS:8091}
     # A port number that will be used by Optimize's Actuator management server
-    # always defaults to 9600
-    actuator: ${MANAGEMENT_SERVER_PORT:9600}
+    # always defaults to 8092
+    actuator: ${MANAGEMENT_SERVER_PORT:8092}
   # HTTPS requires an SSL Certificate. When you generate an SSL Certificate,
   # you are creating a keystore file and a keystore password for use when the
   # browser interface connects

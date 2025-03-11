@@ -95,18 +95,14 @@ public final class BackgroundTaskManagerFactory {
 
   private List<Runnable> buildTasks() {
     final List<Runnable> tasks = new ArrayList<>();
-    int threadCount = 1;
+    int threadCount = 2;
 
     tasks.add(buildIncidentMarkerTask());
-
-    if (config.getArchiver().isRolloverEnabled()) {
-      threadCount = 2;
-      tasks.add(buildProcessInstanceArchiverJob());
-      if (partitionId == START_PARTITION_ID) {
-        threadCount = 3;
-        tasks.add(buildBatchOperationArchiverJob());
-        tasks.add(new ApplyRolloverPeriodJob(archiverRepository, metrics, logger));
-      }
+    tasks.add(buildProcessInstanceArchiverJob());
+    if (partitionId == START_PARTITION_ID) {
+      threadCount = 3;
+      tasks.add(buildBatchOperationArchiverJob());
+      tasks.add(new ApplyRolloverPeriodJob(archiverRepository, metrics, logger));
     }
     if (partitionId == START_PARTITION_ID) {
       tasks.add(buildBatchOperationUpdateTask());
@@ -173,9 +169,9 @@ public final class BackgroundTaskManagerFactory {
   private ReschedulingTask buildReschedulingArchiverTask(final BackgroundTask task) {
     return new ReschedulingTask(
         task,
-        config.getArchiver().getRolloverBatchSize(),
-        config.getArchiver().getDelayBetweenRuns(),
-        config.getArchiver().getMaxDelayBetweenRuns(),
+        config.getHistory().getRolloverBatchSize(),
+        config.getHistory().getDelayBetweenRuns(),
+        config.getHistory().getMaxDelayBetweenRuns(),
         executor,
         logger);
   }
@@ -206,8 +202,8 @@ public final class BackgroundTaskManagerFactory {
         final var connector = new ElasticsearchConnector(config.getConnect());
         yield new ElasticsearchArchiverRepository(
             partitionId,
-            config.getArchiver(),
-            config.getArchiver().getRetention(),
+            config.getHistory(),
+            config.getHistory().getRetention(),
             config.getConnect().getIndexPrefix(),
             listViewTemplate.getFullQualifiedName(),
             batchOperationTemplate.getFullQualifiedName(),
@@ -220,8 +216,8 @@ public final class BackgroundTaskManagerFactory {
         final var connector = new OpensearchConnector(config.getConnect());
         yield new OpenSearchArchiverRepository(
             partitionId,
-            config.getArchiver(),
-            config.getArchiver().getRetention(),
+            config.getHistory(),
+            config.getHistory().getRetention(),
             config.getConnect().getIndexPrefix(),
             listViewTemplate.getFullQualifiedName(),
             batchOperationTemplate.getFullQualifiedName(),

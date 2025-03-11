@@ -20,11 +20,14 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.model.bpmn.instance.AdHocSubProcess;
+import io.camunda.zeebe.model.bpmn.instance.CompletionCondition;
 import io.camunda.zeebe.model.bpmn.instance.ExtensionElements;
 import io.camunda.zeebe.model.bpmn.instance.FlowElement;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeAdHoc;
 import org.camunda.bpm.model.xml.instance.ModelElementInstance;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 class AdHocSubProcessBuilderTest {
 
@@ -80,5 +83,76 @@ class AdHocSubProcessBuilderTest {
         .hasSize(1)
         .extracting(ZeebeAdHoc::getActiveElementsCollection)
         .contains("=[\"A\"]");
+  }
+
+  @Test
+  void shouldSetCompletionCondition() {
+    // given
+    final BpmnModelInstance process =
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .adHocSubProcess(
+                "ad-hoc",
+                adHocSubProcess -> {
+                  adHocSubProcess.completionCondition("true");
+                  adHocSubProcess.task("A");
+                })
+            .endEvent()
+            .done();
+
+    // when/then
+    final ModelElementInstance adHocSubProcess = process.getModelElementById("ad-hoc");
+    assertThat(adHocSubProcess).isInstanceOf(AdHocSubProcess.class);
+
+    assertThat(((AdHocSubProcess) adHocSubProcess).getCompletionCondition())
+        .isNotNull()
+        .isInstanceOf(CompletionCondition.class)
+        .extracting(CompletionCondition::getTextContent)
+        .isEqualTo("=true");
+  }
+
+  @ParameterizedTest
+  @ValueSource(booleans = {true, false})
+  void shouldSetCancelRemainingInstances(final boolean cancelRemainingInstances) {
+    // given
+    final BpmnModelInstance process =
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .adHocSubProcess(
+                "ad-hoc",
+                adHocSubProcess -> {
+                  adHocSubProcess.cancelRemainingInstances(cancelRemainingInstances);
+                  adHocSubProcess.task("A");
+                })
+            .endEvent()
+            .done();
+
+    // when/then
+    final ModelElementInstance adHocSubProcess = process.getModelElementById("ad-hoc");
+
+    assertThat(adHocSubProcess).isInstanceOf(AdHocSubProcess.class);
+    assertThat(((AdHocSubProcess) adHocSubProcess).isCancelRemainingInstances())
+        .isEqualTo(cancelRemainingInstances);
+  }
+
+  @Test
+  void cancelRemainingInstancesShouldDefaultToTrue() {
+    // given
+    final BpmnModelInstance process =
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .adHocSubProcess(
+                "ad-hoc",
+                adHocSubProcess -> {
+                  adHocSubProcess.task("A");
+                })
+            .endEvent()
+            .done();
+
+    // when/then
+    final ModelElementInstance adHocSubProcess = process.getModelElementById("ad-hoc");
+
+    assertThat(adHocSubProcess).isInstanceOf(AdHocSubProcess.class);
+    assertThat(((AdHocSubProcess) adHocSubProcess).isCancelRemainingInstances()).isTrue();
   }
 }
