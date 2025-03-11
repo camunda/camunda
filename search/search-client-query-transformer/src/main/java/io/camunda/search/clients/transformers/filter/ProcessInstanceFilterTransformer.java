@@ -9,8 +9,10 @@ package io.camunda.search.clients.transformers.filter;
 
 import static io.camunda.search.clients.query.SearchQueryBuilders.*;
 import static io.camunda.webapps.schema.descriptors.IndexDescriptor.TENANT_ID;
+import static io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate.ACTIVITIES_JOIN_RELATION;
 import static io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate.BPMN_PROCESS_ID;
 import static io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate.END_DATE;
+import static io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate.ERROR_MSG;
 import static io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate.INCIDENT;
 import static io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate.JOIN_RELATION;
 import static io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate.KEY;
@@ -25,6 +27,7 @@ import static io.camunda.webapps.schema.descriptors.operate.template.ListViewTem
 import static io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate.STATE;
 import static java.util.Optional.ofNullable;
 
+import io.camunda.search.clients.query.SearchMatchQuery.SearchMatchQueryOperator;
 import io.camunda.search.clients.query.SearchQuery;
 import io.camunda.search.clients.transformers.ServiceTransformers;
 import io.camunda.search.filter.ProcessInstanceFilter;
@@ -76,6 +79,13 @@ public final class ProcessInstanceFilterTransformer
     ofNullable(stringOperations(STATE, filter.stateOperations())).ifPresent(queries::addAll);
     ofNullable(getIncidentQuery(filter.hasIncident())).ifPresent(queries::add);
     ofNullable(stringOperations(TENANT_ID, filter.tenantIdOperations())).ifPresent(queries::addAll);
+    ofNullable(
+            stringMatchHasChildOperations(
+                ERROR_MSG,
+                filter.errorMessageOperations(),
+                ACTIVITIES_JOIN_RELATION,
+                SearchMatchQueryOperator.AND))
+        .ifPresent(queries::addAll);
 
     if (filter.variableFilters() != null && !filter.variableFilters().isEmpty()) {
       final var processVariableQuery = getProcessVariablesQuery(filter.variableFilters());

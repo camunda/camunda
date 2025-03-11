@@ -30,7 +30,8 @@ public record ProcessInstanceFilter(
     List<Operation<String>> stateOperations,
     Boolean hasIncident,
     List<Operation<String>> tenantIdOperations,
-    List<VariableValueFilter> variableFilters)
+    List<VariableValueFilter> variableFilters,
+    List<Operation<String>> errorMessageOperations)
     implements FilterBase {
 
   public static final class Builder implements ObjectBuilder<ProcessInstanceFilter> {
@@ -49,6 +50,7 @@ public record ProcessInstanceFilter(
     private Boolean hasIncident;
     private List<Operation<String>> tenantIdOperations;
     private List<VariableValueFilter> variableFilters;
+    private List<Operation<String>> errorMessageOperations;
 
     public Builder processInstanceKeyOperations(final List<Operation<Long>> operations) {
       processInstanceKeyOperations = addValuesToList(processInstanceKeyOperations, operations);
@@ -238,6 +240,21 @@ public record ProcessInstanceFilter(
       return this;
     }
 
+    public Builder errorMessages(final String value, final String... values) {
+      return errorMessageOperations(FilterUtil.mapDefaultToOperation(value, values));
+    }
+
+    @SafeVarargs
+    public final Builder errorMessageOperations(
+        final Operation<String> operation, final Operation<String>... operations) {
+      return errorMessageOperations(collectValues(operation, operations));
+    }
+
+    public Builder errorMessageOperations(final List<Operation<String>> operations) {
+      errorMessageOperations = addValuesToList(errorMessageOperations, operations);
+      return this;
+    }
+
     @Override
     public ProcessInstanceFilter build() {
       return new ProcessInstanceFilter(
@@ -255,7 +272,8 @@ public record ProcessInstanceFilter(
           Objects.requireNonNullElse(stateOperations, Collections.emptyList()),
           hasIncident,
           Objects.requireNonNullElse(tenantIdOperations, Collections.emptyList()),
-          Objects.requireNonNullElse(variableFilters, Collections.emptyList()));
+          Objects.requireNonNullElse(variableFilters, Collections.emptyList()),
+          Objects.requireNonNullElse(errorMessageOperations, Collections.emptyList()));
     }
   }
 }
