@@ -6,26 +6,27 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {useGenericQuery} from 'modules/queries/useGenericQuery';
+import {genericQueryOptions} from 'modules/queries/genericQuery';
 import {
   fetchProcessInstancesStatistics,
   ProcessInstancesStatisticsDto,
   ProcessInstancesStatisticsRequest,
 } from 'modules/api/v2/processInstances/fetchProcessInstancesStatistics';
 import {useProcessInstanceFilters} from 'modules/hooks/useProcessInstancesFilters';
+import {usePrefetchQuery} from '@tanstack/react-query';
 
 function getQueryKey(payload: ProcessInstancesStatisticsRequest) {
   return ['processInstancesStatistics', ...Object.values(payload)];
 }
 
-function useProcessInstancesStatistics<ParsedDataT>(
+function useProcessInstancesStatisticsOptions<ParsedDataT>(
   payload: ProcessInstancesStatisticsRequest,
   parser: (data: ProcessInstancesStatisticsDto[]) => ParsedDataT,
   enabled?: boolean,
 ) {
   const filters = useProcessInstanceFilters();
 
-  return useGenericQuery<ProcessInstancesStatisticsDto[], ParsedDataT>(
+  return genericQueryOptions<ProcessInstancesStatisticsDto[], ParsedDataT>(
     getQueryKey(payload),
     () =>
       fetchProcessInstancesStatistics({
@@ -40,4 +41,16 @@ function useProcessInstancesStatistics<ParsedDataT>(
   );
 }
 
-export {useProcessInstancesStatistics};
+function usePrefetchProcessInstancesStatistics(
+  payload: ProcessInstancesStatisticsRequest,
+  enabled?: boolean,
+) {
+  return usePrefetchQuery(
+    useProcessInstancesStatisticsOptions(payload, (data) => data, enabled),
+  );
+}
+
+export {
+  usePrefetchProcessInstancesStatistics,
+  useProcessInstancesStatisticsOptions,
+};
