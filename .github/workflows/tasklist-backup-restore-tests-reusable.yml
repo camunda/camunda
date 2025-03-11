@@ -1,11 +1,19 @@
-# This is a reusable workflow for running 'Backup and Restore' tests.
+# This is a workflow for 'Tasklist Backup and Restore' tests (supported only for 8.7 and lower versions).
 name: Tasklist Backup and restore tests (reusable)
 
 on:
-  workflow_call:
+  workflow_dispatch:
     inputs:
       database:
-        description: "Database name ('elasticsearch' or 'opensearch')"
+        description: "Database type"
+        required: true
+        type: choice
+        options:
+          - elasticsearch
+          - opensearch
+      branch:
+        description: 'Specifies the branch, for which the tests should be executed. Note that the workflow is supported only for 8.7 and lower versions'
+        default: 'stable/8.7'
         required: true
         type: string
 
@@ -20,8 +28,9 @@ jobs:
     timeout-minutes: 20
     steps:
       # Setup: checkout
-      - name: Checkout repository
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.branch }}
 
       # Setup: import secrets from vault
       - name: Import Secrets
