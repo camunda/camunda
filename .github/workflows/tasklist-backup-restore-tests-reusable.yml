@@ -45,7 +45,6 @@ jobs:
           secrets: |
             secret/data/github.com/organizations/camunda NEXUS_USR;
             secret/data/github.com/organizations/camunda NEXUS_PSW;
-            secret/data/products/tasklist/ci/tasklist TASKLIST_CI_ALERT_WEBHOOK_URL;
 
       # Setup: configure Java, Maven, settings.xml
       - name: Setup Java ${{ env.JAVA_VERSION }}
@@ -87,17 +86,3 @@ jobs:
       - name: Run backup and restore tests
         run: |
           ./mvnw -B -pl tasklist/qa/backup-restore-tests -DskipChecks -DtasklistDatabase=${{ inputs.database }} -P-skipTests verify
-
-      # Notify: send Slack notification on tests failure
-      - name: Send Slack notification on failure
-        if: failure()
-        uses: slackapi/slack-github-action@v2.0.0
-        with:
-          webhook: ${{ steps.secrets.outputs.TASKLIST_CI_ALERT_WEBHOOK_URL }}
-          webhook-type: incoming-webhook
-          payload: |
-            {
-              "workflow_name": "Backup and restore tests",
-              "github_run_url": "https://github.com/camunda/camunda/actions/runs/${{ github.run_id }}",
-              "branch": "${{ github.head_ref || github.ref_name }}"
-            }
