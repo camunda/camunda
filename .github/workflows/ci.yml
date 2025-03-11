@@ -682,7 +682,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          node-version: "22"
       - uses: camunda/infra-global-github-actions/setup-yarn-cache@main
         with:
           directory: identity/client
