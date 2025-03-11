@@ -38,7 +38,7 @@
     <version.agrona>1.23.1</version.agrona>
     <version.assertj>3.27.3</version.assertj>
     <version.awaitility>4.3.0</version.awaitility>
-    <version.bouncycastle>1.79</version.bouncycastle>
+    <version.bouncycastle>1.80</version.bouncycastle>
     <version.camunda>7.22.0</version.camunda>
     <version.camunda-license-check>2.10.0</version.camunda-license-check>
     <version.checkstyle>10.21.4</version.checkstyle>
