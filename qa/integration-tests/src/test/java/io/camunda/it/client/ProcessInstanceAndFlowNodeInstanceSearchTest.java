@@ -30,6 +30,8 @@ import io.camunda.client.impl.search.filter.builder.StringPropertyImpl;
 import io.camunda.client.protocol.rest.ProcessInstanceStateEnum;
 import io.camunda.client.protocol.rest.ProcessInstanceVariableFilterRequest;
 import io.camunda.qa.util.multidb.MultiDbTest;
+import io.camunda.search.filter.FilterBuilders;
+import io.camunda.search.filter.Operation;
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
@@ -1198,5 +1200,29 @@ public class ProcessInstanceAndFlowNodeInstanceSearchTest {
     assertThat(resultSearchFrom.items().size()).isEqualTo(2);
     assertThat(resultSearchFrom.items().stream().findFirst().get().getFlowNodeInstanceKey())
         .isEqualTo(thirdKey);
+  }
+
+  @Test
+  void shouldQueryProcessInstancesByErrorMessageEqual() {
+    // given: we expect that the incident process instance has this error message.
+    final String expectedError =
+        "Expected at least one condition to evaluate to true, or to have a default flow";
+    // using the builder helper, set errorMessage filter with equality operator
+    final var filter =
+        FilterBuilders.processInstance(
+            f -> f.errorMessageOperations(List.of(Operation.eq(expectedError))));
+
+    // when: query process instances by errorMessage equal
+    final var result =
+        camundaClient
+            .newProcessInstanceQuery()
+            .filter(f -> f.errorMessage(b -> b.eq(expectedError)))
+            .send()
+            .join();
+
+    // then: we expect to find only the incident process instance (assumed to have this error
+    // message)
+    assertThat(result.items().size()).isEqualTo(1);
+    assertThat(result.items().getFirst().getProcessDefinitionId()).isEqualTo("incident_process_v1");
   }
 }
