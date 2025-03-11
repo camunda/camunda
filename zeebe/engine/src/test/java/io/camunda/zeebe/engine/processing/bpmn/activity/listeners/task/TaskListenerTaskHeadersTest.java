@@ -60,12 +60,10 @@ public class TaskListenerTaskHeadersTest {
       final ZeebeTaskListenerEventType eventType, final Consumer<UserTaskClient> userTaskAction) {
     final BpmnModelInstance processWithZeebeUserTask =
         helper.createProcessWithZeebeUserTask(
-            taskBuilder -> {
-              taskBuilder
-                  .zeebeTaskHeader("key", "value")
-                  .zeebeTaskListener(l -> l.eventType(eventType).type(listenerType));
-              return taskBuilder;
-            });
+            taskBuilder ->
+                taskBuilder
+                    .zeebeTaskHeader("key", "value")
+                    .zeebeTaskListener(l -> l.eventType(eventType).type(listenerType)));
 
     // given
     final long processInstanceKey = helper.createProcessInstance(processWithZeebeUserTask);
