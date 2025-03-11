@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import { FC, PointerEvent, ReactNode } from "react";
+import { FC, MouseEvent, ReactNode } from "react";
 import styled from "styled-components";
 import { Breadcrumb, BreadcrumbItem, Content, Stack } from "@carbon/react";
 import {
@@ -80,7 +80,7 @@ type BreadcrumbsProps = {
 
 export const Breadcrumbs: FC<BreadcrumbsProps> = ({ items }) => {
   const navigate = useNavigate();
-  const onClick = (href: string) => (e: PointerEvent) => {
+  const onClick = (href: string) => (e: MouseEvent<HTMLLIElement>) => {
     navigate(href);
     e.preventDefault();
     e.stopPropagation();
