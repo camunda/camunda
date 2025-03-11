@@ -99,7 +99,9 @@ const AssignGroupsModal: FC<
       overflowVisible
     >
       <p>
-        <Translate>Search and assign group to tenant</Translate>
+        <Translate i18nKey="searchAndAssignGroupToTenant">
+          Search and assign group to tenant
+        </Translate>
       </p>
       {selectedGroups.length > 0 && (
         <SelectedGroups>
@@ -116,17 +118,14 @@ const AssignGroupsModal: FC<
           ))}
         </SelectedGroups>
       )}
-
       <DropdownSearch
         autoFocus
         items={unassignedGroups}
         itemTitle={({ groupKey }) => groupKey}
         itemSubTitle={({ name }) => name}
         placeholder={t("searchByGroupId")}
-        onChange={() => null}
         onSelect={onSelectGroup}
       />
-
       {!loading && error && (
         <TranslatedErrorInlineNotification
           title={t("groupsCouldNotLoad")}

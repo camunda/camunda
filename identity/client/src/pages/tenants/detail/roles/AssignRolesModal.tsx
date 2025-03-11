@@ -114,17 +114,14 @@ const AssignRolesModal: FC<
           ))}
         </SelectedRoles>
       )}
-
       <DropdownSearch
         autoFocus
         items={unassignedRoles}
         itemTitle={({ key }) => String(key)}
         itemSubTitle={({ name }) => name}
         placeholder={t("searchByRoleId")}
-        onChange={() => null}
         onSelect={onSelectRole}
       />
-
       {!loading && error && (
         <TranslatedErrorInlineNotification
           title={t("rolesCouldNotLoad")}

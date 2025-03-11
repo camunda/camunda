@@ -99,7 +99,9 @@ const AssignMappingsModal: FC<
       overflowVisible
     >
       <p>
-        <Translate>Search and assign mapping to tenant</Translate>
+        <Translate i18nKey="searchAndAssignMappingToTenant">
+          Search and assign mapping to tenant
+        </Translate>
       </p>
       {selectedMappings.length > 0 && (
         <SelectedMappings>
@@ -116,17 +118,14 @@ const AssignMappingsModal: FC<
           ))}
         </SelectedMappings>
       )}
-
       <DropdownSearch
         autoFocus
         items={unassignedMappings}
         itemTitle={({ id }) => id}
         itemSubTitle={({ name }) => name}
         placeholder={t("searchByMappingId")}
-        onChange={() => null}
         onSelect={onSelectMapping}
       />
-
       {!loading && error && (
         <TranslatedErrorInlineNotification
           title={t("mappingsCouldNotLoad")}

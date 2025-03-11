@@ -62,8 +62,13 @@ const DeleteModal: FC<RemoveTenantRoleModalProps> = ({
       confirmLabel={t("removeRole")}
     >
       <p>
-        <Translate>Are you sure you want to remove</Translate>{" "}
-        <strong>{role.key}</strong> from this tenant?
+        <Translate
+          i18nKey="removeRoleFromTenant"
+          values={{ roleKey: role.key }}
+        >
+          Are you sure you want to remove <strong>{role.key}</strong> from this
+          tenant?
+        </Translate>
       </p>
     </Modal>
   );

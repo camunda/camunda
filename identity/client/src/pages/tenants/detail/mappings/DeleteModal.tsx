@@ -62,8 +62,13 @@ const DeleteModal: FC<RemoveTenantMappingModalProps> = ({
       confirmLabel={t("removeMapping")}
     >
       <p>
-        <Translate>Are you sure you want to remove</Translate>{" "}
-        <strong>{mapping.id}</strong> from this tenant?
+        <Translate
+          i18nKey="removeMappingFromTenant"
+          values={{ mappingId: mapping.id }}
+        >
+          Are you sure you want to remove <strong>{mapping.id}</strong> from
+          this tenant?
+        </Translate>
       </p>
     </Modal>
   );

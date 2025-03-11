@@ -62,8 +62,13 @@ const DeleteModal: FC<RemoveTenantGroupModalProps> = ({
       confirmLabel={t("removeGroup")}
     >
       <p>
-        <Translate>Are you sure you want to remove</Translate>{" "}
-        <strong>{group.groupKey}</strong> from this tenant?
+        <Translate
+          i18nKey="removeGroupFromTenant"
+          values={{ groupKey: group.groupKey }}
+        >
+          Are you sure you want to remove <strong>{group.groupKey}</strong> from
+          this tenant?
+        </Translate>
       </p>
     </Modal>
   );
