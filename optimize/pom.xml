@@ -114,7 +114,6 @@
     <!-- This is the default profile used for the DB selection in tests -->
     <database.type>elasticsearch</database.type>
 
-    <skipTests>${skipTests}</skipTests>
     <skip.docker>${skipTests}</skip.docker>
     <skip.unit.tests>${skipTests}</skip.unit.tests>
     <skip.docker>false</skip.docker>

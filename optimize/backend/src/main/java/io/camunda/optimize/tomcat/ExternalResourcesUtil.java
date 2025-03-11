@@ -61,10 +61,11 @@ public class ExternalResourcesUtil extends HttpServlet {
   public static boolean shouldServeStaticResource(final HttpServletRequest request) {
     String requestURI = request.getRequestURI();
     requestURI = stripContextPath(requestURI, request);
-    final boolean result = requestURI != null
-        && requestURI.startsWith("/external")
-        && !requestURI.startsWith("/external/api")
-        && "GET".equals(request.getMethod());
+    final boolean result =
+        requestURI != null
+            && requestURI.startsWith("/external")
+            && !requestURI.startsWith("/external/api")
+            && "GET".equals(request.getMethod());
     return result;
   }
 
