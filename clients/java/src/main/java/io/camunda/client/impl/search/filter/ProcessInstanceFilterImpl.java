@@ -223,6 +223,9 @@ public class ProcessInstanceFilterImpl
   @Override
   public ProcessInstanceFilter variables(
       final List<ProcessInstanceVariableFilterRequest> variableValueFilters) {
+    if (variableValueFilters != null) {
+      variableValueFilters.forEach(v -> variableValueNullCheck(v.getValue()));
+    }
     filter.setVariables(variableValueFilters);
     return this;
   }
@@ -234,6 +237,7 @@ public class ProcessInstanceFilterImpl
           variableValueFilters.entrySet().stream()
               .map(
                   entry -> {
+                    variableValueNullCheck(entry.getValue());
                     final ProcessInstanceVariableFilterRequest request =
                         new ProcessInstanceVariableFilterRequest();
                     request.setName(entry.getKey());
@@ -265,5 +269,11 @@ public class ProcessInstanceFilterImpl
   @Override
   protected io.camunda.client.protocol.rest.ProcessInstanceFilter getSearchRequestProperty() {
     return filter;
+  }
+
+  static void variableValueNullCheck(Object value) {
+    if (value == null) {
+      throw new IllegalArgumentException("Variable value cannot be null");
+    }
   }
 }

@@ -26,6 +26,8 @@ import io.camunda.client.protocol.rest.*;
 import io.camunda.client.util.ClientRestTest;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
 import org.junit.jupiter.api.Test;
 
 public final class SearchUserTaskTest extends ClientRestTest {
@@ -168,6 +170,8 @@ public final class SearchUserTaskTest extends ClientRestTest {
   @Test
   void shouldSearchUserTaskByProcessInstanceVariable() {
     // when
+    final Map<String, Object> map = new HashMap<>();
+    map.put("test", "test");
     final UserTaskVariableFilterRequest userTaskVariableFilterRequest =
         new UserTaskVariableFilterRequest()
             .name("test")
@@ -176,7 +180,7 @@ public final class SearchUserTaskTest extends ClientRestTest {
 
     listFilter.add(userTaskVariableFilterRequest);
 
-    client.newUserTaskQuery().filter(f -> f.processInstanceVariables(listFilter)).send().join();
+    client.newUserTaskQuery().filter(f -> f.processInstanceVariables(map)).send().join();
 
     // then
     final UserTaskSearchQuery request = gatewayService.getLastRequest(UserTaskSearchQuery.class);

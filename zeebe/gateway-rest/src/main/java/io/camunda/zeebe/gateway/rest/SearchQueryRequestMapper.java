@@ -9,9 +9,7 @@ package io.camunda.zeebe.gateway.rest;
 
 import static io.camunda.zeebe.gateway.rest.RequestMapper.getResult;
 import static io.camunda.zeebe.gateway.rest.util.AdvancedSearchFilterUtil.mapToOperations;
-import static io.camunda.zeebe.gateway.rest.validator.ErrorMessages.ERROR_SEARCH_BEFORE_AND_AFTER;
-import static io.camunda.zeebe.gateway.rest.validator.ErrorMessages.ERROR_SORT_FIELD_MUST_NOT_BE_NULL;
-import static io.camunda.zeebe.gateway.rest.validator.ErrorMessages.ERROR_UNKNOWN_SORT_BY;
+import static io.camunda.zeebe.gateway.rest.validator.ErrorMessages.*;
 import static io.camunda.zeebe.gateway.rest.validator.RequestValidator.validate;
 import static io.camunda.zeebe.gateway.rest.validator.RequestValidator.validateDate;
 import static java.util.Optional.ofNullable;
@@ -73,6 +71,7 @@ import io.camunda.search.sort.UserTaskSort;
 import io.camunda.search.sort.VariableSort;
 import io.camunda.util.ObjectBuilder;
 import io.camunda.zeebe.gateway.protocol.rest.*;
+import io.camunda.zeebe.gateway.rest.util.GenericVariable;
 import io.camunda.zeebe.gateway.rest.util.KeyUtil;
 import io.camunda.zeebe.gateway.rest.util.ProcessInstanceStateConverter;
 import io.camunda.zeebe.gateway.rest.validator.RequestValidator;
@@ -81,12 +80,12 @@ import jakarta.validation.constraints.NotNull;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.function.BiFunction;
 import java.util.function.Supplier;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.http.ProblemDetail;
+import org.springframework.util.CollectionUtils;
 
 public final class SearchQueryRequestMapper {
 
@@ -137,13 +136,21 @@ public final class SearchQueryRequestMapper {
           new ProcessDefinitionStatisticsFilter.Builder(processDefinitionKey).build());
     }
     final var filter = toBaseProcessInstanceFilter(processDefinitionKey, request.getFilter());
-    return Either.right(filter);
+
+    if (filter.isLeft()) {
+      final var problem = RequestValidator.createProblemDetail(filter.getLeft());
+      if (problem.isPresent()) {
+        return Either.left(problem.get());
+      }
+    }
+    return Either.right(filter.get());
   }
 
-  private static ProcessDefinitionStatisticsFilter toBaseProcessInstanceFilter(
-      final long processDefinitionKey, final BaseProcessInstanceFilter filter) {
+  private static Either<List<String>, ProcessDefinitionStatisticsFilter>
+      toBaseProcessInstanceFilter(
+          final long processDefinitionKey, final BaseProcessInstanceFilter filter) {
     final var builder = FilterBuilders.processDefinitionStatisticsFilter(processDefinitionKey);
-
+    final List<String> validationErrors = new ArrayList<>();
     if (filter != null) {
       ofNullable(filter.getProcessInstanceKey())
           .map(mapToOperations(Long.class))
@@ -167,12 +174,19 @@ public final class SearchQueryRequestMapper {
       ofNullable(filter.getTenantId())
           .map(mapToOperations(String.class))
           .ifPresent(builder::tenantIdOperations);
-      ofNullable(filter.getVariables())
-          .filter(variables -> !variables.isEmpty())
-          .ifPresent(vars -> builder.variables(toVariableValueFiltersForProcessInstance(vars)));
+      if (!CollectionUtils.isEmpty(filter.getVariables())) {
+        final Either<List<String>, List<VariableValueFilter>> either =
+            toVariableValueFiltersForProcessInstance(filter.getVariables());
+        if (either.isLeft()) {
+          validationErrors.addAll(either.getLeft());
+        } else {
+          builder.variables(either.get());
+        }
+      }
     }
-
-    return builder.build();
+    return validationErrors.isEmpty()
+        ? Either.right(builder.build())
+        : Either.left(validationErrors);
   }
 
   public static Either<ProblemDetail, ProcessInstanceQuery> toProcessInstanceQuery(
@@ -201,7 +215,7 @@ public final class SearchQueryRequestMapper {
             SearchQuerySortRequestMapper.fromRoleSearchQuerySortRequest(request.getSort()),
             SortOptionBuilders::role,
             SearchQueryRequestMapper::applyRoleSortField);
-    return buildSearchQuery(null, sort, page, SearchQueryBuilders::roleSearchQuery);
+    return buildSearchQuery(sort, page, SearchQueryBuilders::roleSearchQuery);
   }
 
   public static Either<ProblemDetail, GroupQuery> toGroupQuery(
@@ -215,7 +229,7 @@ public final class SearchQueryRequestMapper {
             SearchQuerySortRequestMapper.fromGroupSearchQuerySortRequest(request.getSort()),
             SortOptionBuilders::group,
             SearchQueryRequestMapper::applyGroupSortField);
-    return buildSearchQuery(null, sort, page, SearchQueryBuilders::groupSearchQuery);
+    return buildSearchQuery(sort, page, SearchQueryBuilders::groupSearchQuery);
   }
 
   public static Either<ProblemDetail, TenantQuery> toTenantQuery(
@@ -526,10 +540,10 @@ public final class SearchQueryRequestMapper {
     return StringUtils.isEmpty(text) ? null : OffsetDateTime.parse(text);
   }
 
-  private static ProcessInstanceFilter toProcessInstanceFilter(
+  private static Either<List<String>, ProcessInstanceFilter> toProcessInstanceFilter(
       final io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceFilter filter) {
     final var builder = FilterBuilders.processInstance();
-
+    final List<String> validationErrors = new ArrayList<>();
     if (filter != null) {
       ofNullable(filter.getProcessInstanceKey())
           .map(mapToOperations(Long.class))
@@ -568,15 +582,19 @@ public final class SearchQueryRequestMapper {
       ofNullable(filter.getTenantId())
           .map(mapToOperations(String.class))
           .ifPresent(builder::tenantIdOperations);
-      ofNullable(filter.getVariables())
-          .filter(variables -> !variables.isEmpty())
-          .ifPresent(vars -> builder.variables(toVariableValueFiltersForProcessInstance(vars)));
-      ofNullable(filter.getBatchOperationId())
-          .map(mapToOperations(String.class))
-          .ifPresent(builder::batchOperationIdOperations);
+      if (!CollectionUtils.isEmpty(filter.getVariables())) {
+        final Either<List<String>, List<VariableValueFilter>> either =
+            toVariableValueFiltersForProcessInstance(filter.getVariables());
+        if (either.isLeft()) {
+          validationErrors.addAll(either.getLeft());
+        } else {
+          builder.variables(either.get());
+        }
+      }
     }
-
-    return builder.build();
+    return validationErrors.isEmpty()
+        ? Either.right(builder.build())
+        : Either.left(validationErrors);
   }
 
   private static TenantFilter toTenantFilter(final TenantFilterRequest filter) {
@@ -670,68 +688,76 @@ public final class SearchQueryRequestMapper {
     return builder.build();
   }
 
-  private static UserTaskFilter toUserTaskFilter(
+  private static Either<List<String>, UserTaskFilter> toUserTaskFilter(
       final io.camunda.zeebe.gateway.protocol.rest.UserTaskFilter filter) {
     final var builder = FilterBuilders.userTask();
+    final List<String> validationErrors = new ArrayList<>();
+    if (filter != null) {
+      Optional.ofNullable(filter.getUserTaskKey())
+          .map(KeyUtil::keyToLong)
+          .ifPresent(builder::userTaskKeys);
+      Optional.ofNullable(filter.getState())
+          .map(s -> String.valueOf(UserTaskState.valueOf(s.getValue())))
+          .ifPresent(builder::states);
+      Optional.ofNullable(filter.getProcessDefinitionId()).ifPresent(builder::bpmnProcessIds);
+      Optional.ofNullable(filter.getElementId()).ifPresent(builder::elementIds);
+      Optional.ofNullable(filter.getAssignee())
+          .map(mapToOperations(String.class))
+          .ifPresent(builder::assigneeOperations);
+      Optional.ofNullable(filter.getPriority())
+          .map(mapToOperations(Integer.class))
+          .ifPresent(builder::priorityOperations);
+      Optional.ofNullable(filter.getCandidateGroup())
+          .map(mapToOperations(String.class))
+          .ifPresent(builder::candidateGroupOperations);
+      Optional.ofNullable(filter.getCandidateUser())
+          .map(mapToOperations(String.class))
+          .ifPresent(builder::candidateUserOperations);
+      Optional.ofNullable(filter.getProcessDefinitionKey())
+          .map(KeyUtil::keyToLong)
+          .ifPresent(builder::processDefinitionKeys);
+      Optional.ofNullable(filter.getProcessInstanceKey())
+          .map(KeyUtil::keyToLong)
+          .ifPresent(builder::processInstanceKeys);
+      Optional.ofNullable(filter.getTenantId()).ifPresent(builder::tenantIds);
+      Optional.ofNullable(filter.getElementInstanceKey())
+          .map(KeyUtil::keyToLong)
+          .ifPresent(builder::elementInstanceKeys);
+      if (!CollectionUtils.isEmpty(filter.getProcessInstanceVariables())) {
+        final Either<List<String>, List<VariableValueFilter>> either =
+            toVariableValueFiltersForUserTask(filter.getProcessInstanceVariables());
+        if (either.isLeft()) {
+          validationErrors.addAll(either.getLeft());
+        } else {
+          builder.processInstanceVariables(either.get());
+        }
+      }
+      if (!CollectionUtils.isEmpty(filter.getLocalVariables())) {
+        final Either<List<String>, List<VariableValueFilter>> either =
+            toVariableValueFiltersForUserTask(filter.getLocalVariables());
+        if (either.isLeft()) {
+          validationErrors.addAll(either.getLeft());
+        } else {
+          builder.localVariables(either.get());
+        }
+      }
+      Optional.ofNullable(filter.getCreationDate())
+          .map(mapToOperations(OffsetDateTime.class))
+          .ifPresent(builder::creationDateOperations);
+      Optional.ofNullable(filter.getCompletionDate())
+          .map(mapToOperations(OffsetDateTime.class))
+          .ifPresent(builder::completionDateOperations);
+      Optional.ofNullable(filter.getDueDate())
+          .map(mapToOperations(OffsetDateTime.class))
+          .ifPresent(builder::dueDateOperations);
+      Optional.ofNullable(filter.getFollowUpDate())
+          .map(mapToOperations(OffsetDateTime.class))
+          .ifPresent(builder::followUpDateOperations);
+    }
 
-    Optional.ofNullable(filter)
-        .ifPresent(
-            f -> {
-              Optional.ofNullable(f.getUserTaskKey())
-                  .map(KeyUtil::keyToLong)
-                  .ifPresent(builder::userTaskKeys);
-              Optional.ofNullable(f.getState())
-                  .map(s -> String.valueOf(UserTaskState.valueOf(s.getValue())))
-                  .ifPresent(builder::states);
-              Optional.ofNullable(f.getProcessDefinitionId()).ifPresent(builder::bpmnProcessIds);
-              Optional.ofNullable(f.getElementId()).ifPresent(builder::elementIds);
-              Optional.ofNullable(f.getAssignee())
-                  .map(mapToOperations(String.class))
-                  .ifPresent(builder::assigneeOperations);
-              Optional.ofNullable(f.getPriority())
-                  .map(mapToOperations(Integer.class))
-                  .ifPresent(builder::priorityOperations);
-              Optional.ofNullable(f.getCandidateGroup())
-                  .map(mapToOperations(String.class))
-                  .ifPresent(builder::candidateGroupOperations);
-              Optional.ofNullable(f.getCandidateUser())
-                  .map(mapToOperations(String.class))
-                  .ifPresent(builder::candidateUserOperations);
-              Optional.ofNullable(f.getProcessDefinitionKey())
-                  .map(KeyUtil::keyToLong)
-                  .ifPresent(builder::processDefinitionKeys);
-              Optional.ofNullable(f.getProcessInstanceKey())
-                  .map(KeyUtil::keyToLong)
-                  .ifPresent(builder::processInstanceKeys);
-              Optional.ofNullable(f.getTenantId()).ifPresent(builder::tenantIds);
-              Optional.ofNullable(f.getElementInstanceKey())
-                  .map(KeyUtil::keyToLong)
-                  .ifPresent(builder::elementInstanceKeys);
-              Optional.ofNullable(f.getProcessInstanceVariables())
-                  .filter(variables -> !variables.isEmpty())
-                  .ifPresent(
-                      vars ->
-                          builder.processInstanceVariables(
-                              toVariableValueFiltersForUserTask(vars)));
-              Optional.ofNullable(f.getLocalVariables())
-                  .filter(variables -> !variables.isEmpty())
-                  .ifPresent(
-                      vars -> builder.localVariables(toVariableValueFiltersForUserTask(vars)));
-              Optional.ofNullable(f.getCreationDate())
-                  .map(mapToOperations(OffsetDateTime.class))
-                  .ifPresent(builder::creationDateOperations);
-              Optional.ofNullable(f.getCompletionDate())
-                  .map(mapToOperations(OffsetDateTime.class))
-                  .ifPresent(builder::completionDateOperations);
-              Optional.ofNullable(f.getDueDate())
-                  .map(mapToOperations(OffsetDateTime.class))
-                  .ifPresent(builder::dueDateOperations);
-              Optional.ofNullable(f.getFollowUpDate())
-                  .map(mapToOperations(OffsetDateTime.class))
-                  .ifPresent(builder::followUpDateOperations);
-            });
-
-    return builder.build();
+    return validationErrors.isEmpty()
+        ? Either.right(builder.build())
+        : Either.left(validationErrors);
   }
 
   private static UserFilter toUserFilter(final UserFilterRequest filter) {
@@ -1050,45 +1076,61 @@ public final class SearchQueryRequestMapper {
     return validationErrors;
   }
 
-  private static List<VariableValueFilter> toVariableValueFiltersForUserTask(
+  private static Either<List<String>, List<VariableValueFilter>> toVariableValueFiltersForUserTask(
       final List<UserTaskVariableFilterRequest> filters) {
-    if (filters != null && !filters.isEmpty()) {
-      final List<VariableValueFilter> variableValueFilters = new ArrayList<>();
-      filters.forEach(
-          filter ->
-              variableValueFilters.addAll(
-                  toVariableValueFilters(filter.getName(), filter.getValue())));
-      return variableValueFilters;
+    if (CollectionUtils.isEmpty(filters)) {
+      return Either.right(null);
     }
-    return null;
+
+    final List<GenericVariable<StringFilterProperty>> genericVariables = new ArrayList<>();
+    filters.forEach(
+        filter -> genericVariables.add(new GenericVariable<>(filter.getName(), filter.getValue())));
+    return toVariableValueFilters(genericVariables);
   }
 
-  private static List<VariableValueFilter> toVariableValueFiltersForProcessInstance(
-      final List<ProcessInstanceVariableFilterRequest> filters) {
-    if (filters != null && !filters.isEmpty()) {
-      final List<VariableValueFilter> variableValueFilters = new ArrayList<>();
-      filters.forEach(
-          filter ->
-              variableValueFilters.addAll(
-                  toVariableValueFilters(filter.getName(), filter.getValue())));
-      return variableValueFilters;
+  private static Either<List<String>, List<VariableValueFilter>>
+      toVariableValueFiltersForProcessInstance(
+          final List<ProcessInstanceVariableFilterRequest> filters) {
+    if (CollectionUtils.isEmpty(filters)) {
+      return Either.right(null);
     }
-    return null;
+
+    final List<GenericVariable<StringFilterProperty>> genericVariables = new ArrayList<>();
+    filters.forEach(
+        filter -> genericVariables.add(new GenericVariable<>(filter.getName(), filter.getValue())));
+    return toVariableValueFilters(genericVariables);
+  }
+
+  private static Either<List<String>, List<VariableValueFilter>> toVariableValueFilters(
+      final List<GenericVariable<StringFilterProperty>> genericVariables) {
+    final List<String> validationErrors = new ArrayList<>();
+    final List<VariableValueFilter> variableValueFilters = new ArrayList<>();
+    genericVariables.forEach(
+        filter -> {
+          if (filter.name() == null) {
+            validationErrors.add(ERROR_MESSAGE_NULL_VARIABLE_NAME);
+          }
+          if (filter.value() == null) {
+            validationErrors.add(ERROR_MESSAGE_NULL_VARIABLE_VALUE);
+          }
+          if (validationErrors.isEmpty()) {
+            variableValueFilters.addAll(toVariableValueFilters(filter.name(), filter.value()));
+          }
+        });
+    if (validationErrors.isEmpty()) {
+      return Either.right(variableValueFilters);
+    } else {
+      return Either.left(validationErrors);
+    }
   }
 
   private static List<VariableValueFilter> toVariableValueFilters(
-      String name, StringFilterProperty value) {
-    Objects.requireNonNull(value);
-    final List<VariableValueFilter> variableValueFilters = new ArrayList<>();
+      final String name, final StringFilterProperty value) {
     final List<Operation<String>> operations = mapToOperations(String.class).apply(value);
-    for (Operation<String> operation : operations) {
-      final UntypedOperation untypedOperation = UntypedOperation.of(operation);
-      final VariableValueFilter variableValueFilter =
-          new VariableValueFilter.Builder().name(name).valueOperation(untypedOperation).build();
-      variableValueFilters.add(variableValueFilter);
-    }
-
-    return variableValueFilters;
+    return new VariableValueFilter.Builder()
+        .name(name)
+        .valueTypedOperations(operations)
+        .buildList();
   }
 
   private static Either<List<String>, SearchQueryPage> toSearchQueryPage(
@@ -1140,11 +1182,39 @@ public final class SearchQueryRequestMapper {
           F extends FilterBase,
           S extends SortOption>
       Either<ProblemDetail, T> buildSearchQuery(
+          final Either<List<String>, S> sorting,
+          final Either<List<String>, SearchQueryPage> page,
+          final Supplier<B> queryBuilderSupplier) {
+    return buildSearchQuery(Either.right(null), sorting, page, queryBuilderSupplier);
+  }
+
+  private static <
+          T,
+          B extends TypedSearchQueryBuilder<T, B, F, S>,
+          F extends FilterBase,
+          S extends SortOption>
+      Either<ProblemDetail, T> buildSearchQuery(
           final F filter,
           final Either<List<String>, S> sorting,
           final Either<List<String>, SearchQueryPage> page,
           final Supplier<B> queryBuilderSupplier) {
+    return buildSearchQuery(Either.right(filter), sorting, page, queryBuilderSupplier);
+  }
+
+  private static <
+          T,
+          B extends TypedSearchQueryBuilder<T, B, F, S>,
+          F extends FilterBase,
+          S extends SortOption>
+      Either<ProblemDetail, T> buildSearchQuery(
+          final Either<List<String>, F> filter,
+          final Either<List<String>, S> sorting,
+          final Either<List<String>, SearchQueryPage> page,
+          final Supplier<B> queryBuilderSupplier) {
     final List<String> validationErrors = new ArrayList<>();
+    if (filter.isLeft()) {
+      validationErrors.addAll(filter.getLeft());
+    }
     if (sorting.isLeft()) {
       validationErrors.addAll(sorting.getLeft());
     }
@@ -1155,7 +1225,12 @@ public final class SearchQueryRequestMapper {
     return getResult(
         RequestValidator.createProblemDetail(validationErrors),
         () ->
-            queryBuilderSupplier.get().page(page.get()).filter(filter).sort(sorting.get()).build());
+            queryBuilderSupplier
+                .get()
+                .page(page.get())
+                .filter(filter.get())
+                .sort(sorting.get())
+                .build());
   }
 
   private static void applySortOrder(
