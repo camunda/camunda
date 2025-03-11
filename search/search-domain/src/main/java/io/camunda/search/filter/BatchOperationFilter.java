@@ -60,8 +60,8 @@ public record BatchOperationFilter(
     public BatchOperationFilter build() {
       return new BatchOperationFilter(
           Objects.requireNonNullElse(batchOperationKeys, Collections.emptyList()),
-          Objects.requireNonNullElse(states, Collections.emptyList()),
-          Objects.requireNonNullElse(operationTypes, Collections.emptyList())
+          Objects.requireNonNullElse(operationTypes, Collections.emptyList()),
+          Objects.requireNonNullElse(states, Collections.emptyList())
       );
     }
   }
