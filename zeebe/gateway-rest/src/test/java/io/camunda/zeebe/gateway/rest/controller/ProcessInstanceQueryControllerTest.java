@@ -502,7 +502,10 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
         streamBuilder,
         "endDate",
         ops -> new ProcessInstanceFilter.Builder().endDateOperations(ops).build());
-
+    stringOperationTestCases(
+        streamBuilder,
+        "errorMessage",
+        ops -> new ProcessInstanceFilter.Builder().errorMessageOperations(ops).build());
     return streamBuilder.build();
   }
 

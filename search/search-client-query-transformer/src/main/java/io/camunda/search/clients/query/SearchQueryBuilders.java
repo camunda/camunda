@@ -428,6 +428,44 @@ public final class SearchQueryBuilders {
     }
   }
 
+  public static <C extends List<Operation<String>>> List<SearchQuery> stringMatchHasChildOperations(
+      final String field,
+      final C operations,
+      final String childType,
+      final SearchMatchQueryOperator matchQueryOperator) {
+    if (operations == null || operations.isEmpty()) {
+      return null;
+    } else {
+      final var searchQueries = new ArrayList<SearchQuery>();
+      operations.forEach(
+          op -> {
+            searchQueries.add(
+                switch (op.operator()) {
+                  case EQUALS ->
+                      hasChildQuery(childType, match(field, op.value(), matchQueryOperator));
+                  case NOT_EQUALS ->
+                      mustNot(
+                          hasChildQuery(childType, match(field, op.value(), matchQueryOperator)));
+                  case EXISTS -> hasChildQuery(childType, exists(field));
+                  case NOT_EXISTS -> mustNot(hasChildQuery(childType, exists(field)));
+                  case IN ->
+                      hasChildQuery(
+                          childType,
+                          or(
+                              op.values().stream()
+                                  .map(value -> match(field, value, matchQueryOperator))
+                                  .collect(Collectors.toList())));
+                  case LIKE ->
+                      hasChildQuery(
+                          childType,
+                          wildcardQuery(field, Objects.requireNonNull(op.value()).toLowerCase()));
+                  default -> throw unexpectedOperation("String", op.operator());
+                });
+          });
+      return searchQueries;
+    }
+  }
+
   private static String formatDate(final OffsetDateTime dateTime) {
     return DATE_TIME_FORMATTER.format(dateTime);
   }
