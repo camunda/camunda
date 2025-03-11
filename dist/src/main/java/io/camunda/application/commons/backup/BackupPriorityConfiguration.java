@@ -12,7 +12,6 @@ import static io.camunda.application.commons.backup.ConfigValidation.skipEmptyOp
 
 import io.camunda.application.commons.conditions.WebappEnabledCondition;
 import io.camunda.operate.conditions.DatabaseInfo;
-import io.camunda.operate.conditions.DatabaseType;
 import io.camunda.config.operate.OperateProperties;
 import io.camunda.optimize.service.db.es.schema.ElasticSearchSchemaManager;
 import io.camunda.optimize.service.db.es.schema.index.index.PositionBasedImportIndexES;
