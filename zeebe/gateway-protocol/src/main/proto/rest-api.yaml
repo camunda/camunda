@@ -2529,7 +2529,7 @@ paths:
                 $ref: "#/components/schemas/ProblemDetail"
         "500":
           $ref: "#/components/responses/InternalServerError"
-  /mapping-rules/{mappingKey}:
+  /mapping-rules/{id}:
     delete:
       tags:
         - Mapping rule
@@ -2537,7 +2537,7 @@ paths:
       summary: Delete a mapping rule
       description: Deletes the mapping rule with the given key.
       parameters:
-        - name: mappingKey
+        - name: id
           in: path
           required: true
           description: The key of the mapping rule to delete.

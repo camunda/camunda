@@ -282,24 +282,24 @@ public class MappingControllerTest extends RestControllerTest {
   @Test
   void deleteMappingShouldReturnNoContent() {
     // given
-    final long mappingKey = 100L;
+    final String mappingId = "id";
 
-    final var mappingRecord = new MappingRecord().setMappingKey(mappingKey);
+    final var mappingRecord = new MappingRecord().setId(mappingId);
 
-    when(mappingServices.deleteMapping(mappingKey))
+    when(mappingServices.deleteMapping(mappingId))
         .thenReturn(CompletableFuture.completedFuture(mappingRecord));
 
     // when
     webClient
         .delete()
-        .uri("%s/%s".formatted(MAPPING_RULES_PATH, mappingKey))
+        .uri("%s/%s".formatted(MAPPING_RULES_PATH, mappingId))
         .accept(MediaType.APPLICATION_JSON)
         .exchange()
         .expectStatus()
         .isNoContent();
 
     // then
-    verify(mappingServices, times(1)).deleteMapping(mappingKey);
+    verify(mappingServices, times(1)).deleteMapping(mappingId);
   }
 
   private MappingDTO validCreateMappingRequest() {
