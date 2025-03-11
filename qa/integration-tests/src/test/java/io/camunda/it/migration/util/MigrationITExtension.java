@@ -19,6 +19,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Supplier;
 import java.util.stream.Stream;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.extension.AfterAllCallback;
@@ -82,10 +83,18 @@ public class MigrationITExtension
 
     final DatabaseType db = DatabaseType.valueOf(context.getDisplayName());
     try {
-      MIGRATORS.get(db).close();
-      MIGRATORS.get(db).cleanup();
+      final CamundaMigrator migrator = MIGRATORS.get(db);
+      if (migrator != null) {
+        migrator.close();
+        migrator.cleanup();
+      }
+      final MigrationDatabaseChecks checks = DATABASE_CHECKS.get(db);
+      if (checks != null) {
+        checks.cleanup(indexPrefix);
+        checks.close();
+      }
     } catch (final Exception e) {
-      throw new RuntimeException(e);
+      throw new RuntimeException("Error during cleanup for database: " + db, e);
     }
     DATABASE_CHECKS.get(db).cleanup(indexPrefix);
     DATABASE_CHECKS.get(db).close();
@@ -171,6 +180,13 @@ public class MigrationITExtension
   private TestTemplateInvocationContext invocationContext(final DatabaseType databaseType) {
     return new TestTemplateInvocationContext() {
 
+      private final Map<Class<?>, Supplier<Object>> parameterResolvers =
+          Map.of(
+              DatabaseType.class, () -> databaseType,
+              CamundaMigrator.class, () -> MIGRATORS.get(databaseType),
+              CamundaClient.class, () -> MIGRATORS.get(databaseType).getCamundaClient(),
+              DocumentBasedSearchClient.class, () -> MIGRATORS.get(databaseType).getSearchClient());
+
       @Override
       public String getDisplayName(final int invocationIndex) {
         return databaseType.name();
@@ -196,20 +212,9 @@ public class MigrationITExtension
               public Object resolveParameter(
                   final ParameterContext parameterContext, final ExtensionContext extensionContext)
                   throws ParameterResolutionException {
-                if (parameterContext.getParameter().getType().equals(CamundaClient.class)) {
-                  return MIGRATORS.get(databaseType).getCamundaClient();
-                } else if (parameterContext
-                    .getParameter()
-                    .getType()
-                    .equals(CamundaMigrator.class)) {
-                  return MIGRATORS.get(databaseType);
-                } else if (parameterContext.getParameter().getType().equals(DatabaseType.class)) {
-                  return databaseType;
-                } else if (parameterContext
-                    .getParameter()
-                    .getType()
-                    .equals(DocumentBasedSearchClient.class)) {
-                  return MIGRATORS.get(databaseType).getSearchClient();
+                final Class<?> requestedClass = parameterContext.getParameter().getType();
+                if (parameterResolvers.containsKey(requestedClass)) {
+                  return parameterResolvers.get(requestedClass).get();
                 }
                 throw new ParameterResolutionException("Unsupported parameter type");
               }
