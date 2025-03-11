@@ -10,12 +10,23 @@ package io.camunda.zeebe.engine.processing.bpmn.activity.listeners.task;
 import static io.camunda.zeebe.engine.processing.job.JobCompleteProcessor.TL_JOB_COMPLETION_WITH_VARS_NOT_SUPPORTED_MESSAGE;
 import static java.util.Map.entry;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.groups.Tuple.tuple;
 
 import io.camunda.zeebe.engine.util.EngineRule;
+import io.camunda.zeebe.protocol.Protocol;
+import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
 import io.camunda.zeebe.protocol.record.Assertions;
+import io.camunda.zeebe.protocol.record.Record;
+import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RejectionType;
+import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
+import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
+import io.camunda.zeebe.protocol.record.intent.VariableDocumentIntent;
+import io.camunda.zeebe.protocol.record.intent.VariableIntent;
+import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import org.junit.Before;
@@ -236,5 +247,133 @@ public class TaskListenerVariablesTest {
     // complete the listener job without variables to have a completed process
     // and prevent flakiness in other tests
     ENGINE.job().ofInstance(processInstanceKey).withType(listenerType).complete();
+  }
+
+  /* VariableDocument update tests */
+  @Test
+  public void shouldRejectVariableUpdateWhenUserTaskIsNotInCreatedState() {
+    // given: a process instance with a user task having an assignee and task listeners
+    final long processInstanceKey =
+        helper.createProcessInstance(
+            helper.createProcessWithZeebeUserTask(
+                t ->
+                    t.zeebeAssignee("initial_assignee")
+                        .zeebeTaskListener(l -> l.assigning().type(listenerType + "_assigning"))
+                        .zeebeTaskListener(l -> l.updating().type(listenerType + "_updating"))));
+
+    // since the user task has an initial assignee, the assignment transition is triggered
+    final var assigningUserTaskRecord =
+        RecordingExporter.userTaskRecords(UserTaskIntent.ASSIGNING)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst();
+
+    // when: attempting to update variables while the user task is in the 'ASSIGNING' state
+    final var variableUpdateRejection =
+        ENGINE
+            .variables()
+            .ofScope(assigningUserTaskRecord.getValue().getElementInstanceKey())
+            .withDocument(Map.of("employeeId", "E12345"))
+            .expectRejection()
+            .update();
+
+    // then
+    Assertions.assertThat(variableUpdateRejection)
+        .describedAs(
+            "Expect rejection when trying to update variables for a user task that is currently in the 'ASSIGNING' state")
+        .hasRecordType(RecordType.COMMAND_REJECTION)
+        .hasValueType(ValueType.VARIABLE_DOCUMENT)
+        .hasRejectionReason(
+            "Expected to trigger update transition for user task with key '%d', but it is in state 'ASSIGNING'"
+                .formatted(assigningUserTaskRecord.getKey()));
+  }
+
+  @Test
+  public void
+      shouldUpdateVariablesAndPassUserTaskUpdateTransitionWhenUserTaskHasNoUpdatingListeners() {
+    // given: a process instance with a camunda user task
+    final long processInstanceKey =
+        helper.createProcessInstanceWithVariables(
+            helper.createProcessWithZeebeUserTask(t -> t), Map.of("approvalStatus", "PENDING"));
+
+    final var createdUserTaskRecord =
+        RecordingExporter.userTaskRecords(UserTaskIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst();
+
+    // when: updating task-scoped variables
+    final var variableUpdateRecord =
+        ENGINE
+            .variables()
+            .ofScope(createdUserTaskRecord.getValue().getElementInstanceKey())
+            .withDocument(Map.of("approvalStatus", "SUBMITTED"))
+            .update();
+
+    // then: variable update should be successful and trigger the user task update transition
+    Assertions.assertThat(variableUpdateRecord)
+        .describedAs("Expect variables to be successfully updated for a user task")
+        .hasRecordType(RecordType.EVENT)
+        .hasIntent(VariableDocumentIntent.UPDATED)
+        .hasValueType(ValueType.VARIABLE_DOCUMENT);
+
+    Assertions.assertThat(
+            RecordingExporter.variableRecords(VariableIntent.CREATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .withScopeKey(createdUserTaskRecord.getValue().getElementInstanceKey())
+                .getFirst()
+                .getValue())
+        .describedAs("Expect the variable to be created at the local scope of user task element")
+        .hasName("approvalStatus")
+        .hasValue("\"SUBMITTED\"");
+
+    assertThat(
+            RecordingExporter.userTaskRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .limit(r -> r.getIntent() == UserTaskIntent.UPDATED))
+        .extracting(Record::getIntent, r -> r.getValue().getChangedAttributes())
+        .describedAs(
+            "Expect the user task to pass the update transition with variables as a changed attribute")
+        .containsSequence(
+            tuple(UserTaskIntent.UPDATING, List.of(UserTaskRecord.VARIABLES)),
+            tuple(UserTaskIntent.UPDATED, List.of(UserTaskRecord.VARIABLES)));
+  }
+
+  @Test
+  public void
+      shouldActivateUpdatingListenerJobWithCorrectChangedAttributesHeaderAndVariablesOnTaskVariableUpdate() {
+    // given: a process instance with a Camunda user task wit `updating` listener
+    final long processInstanceKey =
+        helper.createProcessInstanceWithVariables(
+            helper.createProcessWithZeebeUserTask(
+                t -> t.zeebeTaskListener(l -> l.updating().type(listenerType + "_updating"))),
+            Map.of("approvalStatus", "PENDING", "employeeId", "E12345"));
+
+    final var userTaskElementInstanceKey = helper.getUserTaskElementInstanceKey(processInstanceKey);
+
+    // when: updating task-scoped variables
+    ENGINE
+        .variables()
+        .ofScope(userTaskElementInstanceKey)
+        .withDocument(Map.of("approvalStatus", "APPROVED"))
+        .expectPartialUpdate()
+        .update();
+
+    // then: expect a job to be activated for the first `updating` listener
+    helper.assertActivatedJob(
+        processInstanceKey,
+        listenerType + "_updating",
+        job -> {
+          assertThat(job.getCustomHeaders())
+              .describedAs("Expect job custom headers to indicate that `variables` were changed")
+              .contains(
+                  org.assertj.core.api.Assertions.entry(
+                      Protocol.USER_TASK_CHANGED_ATTRIBUTES_HEADER_NAME, "[\"variables\"]"));
+
+          assertThat(job.getVariables())
+              .describedAs(
+                  "Expect job variables to include the updated 'approvalStatus' and retain 'employeeId'")
+              .containsExactly(
+                  org.assertj.core.api.Assertions.entry("approvalStatus", "APPROVED"),
+                  org.assertj.core.api.Assertions.entry("employeeId", "E12345"));
+        });
   }
 }

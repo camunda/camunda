@@ -236,4 +236,12 @@ public class TaskListenerTestHelper {
         .describedAs("Expected to have User Task record with '%s' intent", intent)
         .hasValueSatisfying(consumer);
   }
+
+  long getUserTaskElementInstanceKey(final long processInstanceKey) {
+    return RecordingExporter.userTaskRecords(UserTaskIntent.CREATED)
+        .withProcessInstanceKey(processInstanceKey)
+        .getFirst()
+        .getValue()
+        .getElementInstanceKey();
+  }
 }
