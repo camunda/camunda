@@ -7,27 +7,30 @@
  */
 package io.camunda.it.migration;
 
-import static io.camunda.it.migration.util.PrefixMigrationHelper.GATEWAY_GRPC_PORT;
-import static io.camunda.it.migration.util.PrefixMigrationHelper.MANAGEMENT_PORT;
-import static io.camunda.it.migration.util.PrefixMigrationHelper.NETWORK;
-import static io.camunda.it.migration.util.PrefixMigrationHelper.NEW_PREFIX;
-import static io.camunda.it.migration.util.PrefixMigrationHelper.OLD_OPERATE_PREFIX;
-import static io.camunda.it.migration.util.PrefixMigrationHelper.OLD_TASKLIST_PREFIX;
-import static io.camunda.it.migration.util.PrefixMigrationHelper.OPENSEARCH_ALIAS;
-import static io.camunda.it.migration.util.PrefixMigrationHelper.SERVER_PORT;
-import static io.camunda.it.migration.util.PrefixMigrationHelper.createCamundaClient;
+import static io.camunda.it.migration.util.PrefixMigrationITUtils.GATEWAY_GRPC_PORT;
+import static io.camunda.it.migration.util.PrefixMigrationITUtils.MANAGEMENT_PORT;
+import static io.camunda.it.migration.util.PrefixMigrationITUtils.NETWORK;
+import static io.camunda.it.migration.util.PrefixMigrationITUtils.NEW_PREFIX;
+import static io.camunda.it.migration.util.PrefixMigrationITUtils.OLD_OPERATE_PREFIX;
+import static io.camunda.it.migration.util.PrefixMigrationITUtils.OLD_TASKLIST_PREFIX;
+import static io.camunda.it.migration.util.PrefixMigrationITUtils.OPENSEARCH_ALIAS;
+import static io.camunda.it.migration.util.PrefixMigrationITUtils.SERVER_PORT;
+import static io.camunda.it.migration.util.PrefixMigrationITUtils.createCamundaClient;
+import static io.camunda.it.migration.util.PrefixMigrationITUtils.requestProcessInstanceFromV1;
+import static io.camunda.it.migration.util.PrefixMigrationITUtils.startLatestCamunda;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.application.commons.migration.PrefixMigrationHelper;
-import io.camunda.client.CamundaClient;
-import io.camunda.it.utils.MultiDbConfigurator;
+import io.camunda.client.api.response.ProcessInstanceEvent;
 import io.camunda.operate.property.OperateProperties;
-import io.camunda.qa.util.cluster.TestSimpleCamundaApplication;
 import io.camunda.search.connect.configuration.ConnectConfiguration;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.zeebe.test.util.testcontainers.TestSearchContainers;
 import java.io.IOException;
+import java.net.http.HttpResponse;
 import java.time.Duration;
 import org.assertj.core.api.Assertions;
+import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Test;
 import org.opensearch.testcontainers.OpensearchContainer;
 import org.testcontainers.containers.GenericContainer;
@@ -105,9 +108,29 @@ public class PrefixMigrationOSIT {
             .addResourceFromClasspath("process/incident_process_v1.bpmn")
             .send()
             .join();
+    final long processDefinitionKey = event.getProcesses().getFirst().getProcessDefinitionKey();
+    final ProcessInstanceEvent processInstanceEvent =
+        camunda87Client
+            .newCreateInstanceCommand()
+            .processDefinitionKey(processDefinitionKey)
+            .send()
+            .join();
 
     // Wait for documents to be written to indices
-    Thread.sleep(10000);
+    Awaitility.await("document should be written")
+        .atMost(Duration.ofSeconds(30))
+        .untilAsserted(
+            () -> {
+              final long processInstanceKey = processInstanceEvent.getProcessInstanceKey();
+              final HttpResponse<String> processInstanceResponse =
+                  requestProcessInstanceFromV1(
+                      String.format("http://localhost:%d/", camunda87.getMappedPort(SERVER_PORT)),
+                      processInstanceKey);
+
+              assertThat(processInstanceResponse.statusCode()).isEqualTo(200);
+              assertThat(processInstanceResponse.body())
+                  .contains(Long.toString(processInstanceKey));
+            });
 
     camunda87.stop();
 
@@ -115,27 +138,12 @@ public class PrefixMigrationOSIT {
     prefixMigration();
 
     // then
-    try (final var currentCamundaClient = startLatestCamunda()) {
+    try (final var currentCamundaClient =
+        startLatestCamunda(osContainer.getHttpHostAddress(), NEW_PREFIX, false)) {
       final var processDefinitions = currentCamundaClient.newProcessDefinitionQuery().send().join();
       Assertions.assertThat(processDefinitions.items().size()).isEqualTo(1);
       Assertions.assertThat(processDefinitions.items().getFirst().getProcessDefinitionKey())
           .isEqualTo(event.getProcesses().getFirst().getProcessDefinitionKey());
     }
-  }
-
-  private CamundaClient startLatestCamunda() {
-    final TestSimpleCamundaApplication testSimpleCamundaApplication =
-        new TestSimpleCamundaApplication();
-    final MultiDbConfigurator multiDbConfigurator =
-        new MultiDbConfigurator(testSimpleCamundaApplication);
-    multiDbConfigurator.configureOpenSearchSupport(
-        osContainer.getHttpHostAddress(), NEW_PREFIX, "admin", "admin");
-    testSimpleCamundaApplication.withProperty("camunda.tasklist.zeebeOpensearch.prefix", null);
-    testSimpleCamundaApplication.withProperty("camunda.operate.zeebeOpensearch.prefix", null);
-    testSimpleCamundaApplication.start();
-    testSimpleCamundaApplication.awaitCompleteTopology();
-
-    final var currentCamundaClient = testSimpleCamundaApplication.newClientBuilder().build();
-    return currentCamundaClient;
   }
 }
