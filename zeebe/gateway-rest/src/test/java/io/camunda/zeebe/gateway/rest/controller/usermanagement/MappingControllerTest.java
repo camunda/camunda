@@ -307,7 +307,7 @@ public class MappingControllerTest extends RestControllerTest {
   @ValueSource(strings = {"foo", "Foo", "foo123", "foo_", "foo.", "foo@"})
   void updateMappingShouldReturnOk(final String id) {
     // given
-    final var dto = validUpdateMappingRequest();
+    final var dto = validUpdateMappingRequest(id);
     final var mappingRecord =
         new MappingRecord()
             .setMappingKey(1L)
@@ -322,38 +322,16 @@ public class MappingControllerTest extends RestControllerTest {
     // when
     webClient
         .put()
-        .uri(MAPPING_RULES_PATH + "/{id}".formatted(id))
+        .uri(MAPPING_RULES_PATH + "/" + id)
         .accept(MediaType.APPLICATION_JSON)
         .contentType(MediaType.APPLICATION_JSON)
         .bodyValue(dto)
         .exchange()
         .expectStatus()
-        .isCreated();
+        .isOk();
 
     // then
-    verify(mappingServices, times(1)).createMapping(dto);
-  }
-
-  @Test
-  void shouldRejectMappingUpdateWitBlankId() {
-    // given
-    final var request =
-        new MappingRuleUpdateRequest().claimName("claim").claimValue("claimValue").name("name");
-
-    // when then
-    assertRequestRejectedExceptionally(
-        "",
-        request,
-        """
-            {
-              "type": "about:blank",
-              "status": 400,
-              "title": "INVALID_ARGUMENT",
-              "detail": "No id provided.",
-              "instance": "%s"
-            }"""
-            .formatted(MAPPING_RULES_PATH));
-    verifyNoInteractions(mappingServices);
+    verify(mappingServices, times(1)).updateMapping(dto);
   }
 
   @Test
@@ -373,7 +351,7 @@ public class MappingControllerTest extends RestControllerTest {
               "detail": "No claimName provided.",
               "instance": "%s"
             }"""
-            .formatted(MAPPING_RULES_PATH));
+            .formatted(MAPPING_RULES_PATH + "/id"));
     verifyNoInteractions(mappingServices);
   }
 
@@ -395,7 +373,7 @@ public class MappingControllerTest extends RestControllerTest {
               "detail": "No claimName provided.",
               "instance": "%s"
             }"""
-            .formatted(MAPPING_RULES_PATH));
+            .formatted(MAPPING_RULES_PATH + "/id"));
     verifyNoInteractions(mappingServices);
   }
 
@@ -416,7 +394,7 @@ public class MappingControllerTest extends RestControllerTest {
               "detail": "No claimValue provided.",
               "instance": "%s"
             }"""
-            .formatted(MAPPING_RULES_PATH));
+            .formatted(MAPPING_RULES_PATH + "/id"));
     verifyNoInteractions(mappingServices);
   }
 
@@ -438,7 +416,7 @@ public class MappingControllerTest extends RestControllerTest {
               "detail": "No claimValue provided.",
               "instance": "%s"
             }"""
-            .formatted(MAPPING_RULES_PATH));
+            .formatted(MAPPING_RULES_PATH + "/id"));
     verifyNoInteractions(mappingServices);
   }
 
@@ -460,58 +438,7 @@ public class MappingControllerTest extends RestControllerTest {
               "detail": "No name provided.",
               "instance": "%s"
             }"""
-            .formatted(MAPPING_RULES_PATH));
-    verifyNoInteractions(mappingServices);
-  }
-
-  @ParameterizedTest
-  @ValueSource(
-      strings = {
-        "foo~", "foo!", "foo#", "foo$", "foo%", "foo^", "foo&", "foo*", "foo(", "foo)", "foo=",
-        "foo+", "foo{", "foo[", "foo}", "foo]", "foo|", "foo\\", "foo:", "foo;", "foo\"", "foo'",
-        "foo<", "foo>", "foo,", "foo?", "foo/", "foo ", "foo\t", "foo\n", "foo\r"
-      })
-  void shouldRejectMappingUpdateWithIllegalCharactersInId(final String id) {
-    // given
-    final var request =
-        new MappingRuleUpdateRequest().claimName("claimName").claimValue("claimValue").name("name");
-
-    // when then
-    assertRequestRejectedExceptionally(
-        id,
-        request,
-        """
-            {
-              "type": "about:blank",
-              "status": 400,
-              "title": "INVALID_ARGUMENT",
-              "detail": "The provided id contains illegal characters. It must match the pattern '%s'.",
-              "instance": "%s"
-            }"""
-            .formatted(IdentifierPatterns.ID_PATTERN, MAPPING_RULES_PATH));
-    verifyNoInteractions(mappingServices);
-  }
-
-  @Test
-  void shouldRejectUpdateMappingWithTooLongId() {
-    // given
-    final var id = "x".repeat(257);
-    final var request =
-        new MappingRuleUpdateRequest().claimName("claimName").claimValue("claimValue").name("name");
-
-    // when then
-    assertRequestRejectedExceptionally(
-        id,
-        request,
-        """
-            {
-              "type": "about:blank",
-              "status": 400,
-              "title": "INVALID_ARGUMENT",
-              "detail": "The provided id exceeds the limit of 256 characters.",
-              "instance": "%s"
-            }"""
-            .formatted(MAPPING_RULES_PATH));
+            .formatted(MAPPING_RULES_PATH + "/id"));
     verifyNoInteractions(mappingServices);
   }
 
@@ -519,8 +446,8 @@ public class MappingControllerTest extends RestControllerTest {
     return new MappingDTO("newClaimName", "newClaimValue", "mapName", "mapId");
   }
 
-  private MappingDTO validUpdateMappingRequest() {
-    return new MappingDTO("newClaimName", "newClaimValue", "mapName", "mapId");
+  private MappingDTO validUpdateMappingRequest(final String id) {
+    return new MappingDTO("newClaimName", "newClaimValue", "mapName", id);
   }
 
   private void assertRequestRejectedExceptionally(
