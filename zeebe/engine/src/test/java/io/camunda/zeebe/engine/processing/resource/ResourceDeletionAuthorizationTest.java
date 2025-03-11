@@ -85,7 +85,7 @@ public class ResourceDeletionAuthorizationTest {
   }
 
   @Test
-  public void shouldBeUnAuthorizedToDeleteProcessDefinitionWithPermissions() {
+  public void shouldBeUnauthorizedToDeleteProcessDefinitionWithoutPermissions() {
     // given
     final var processId = Strings.newRandomValidBpmnId();
     final var processDefinitionKey = deployProcessDefinition(processId);
@@ -146,7 +146,7 @@ public class ResourceDeletionAuthorizationTest {
   }
 
   @Test
-  public void shouldBeUnAuthorizedToDeleteDrdWithPermissions() {
+  public void shouldBeUnauthorizedToDeleteDrdWithoutPermissions() {
     // given
     final var drdId = "force_users";
     final var drdKey = deployDrd();
@@ -203,7 +203,7 @@ public class ResourceDeletionAuthorizationTest {
   }
 
   @Test
-  public void shouldBeUnAuthorizedToDeleteFormWithPermissions() {
+  public void shouldBeUnauthorizedToDeleteFormWithoutPermissions() {
     // given
     final var formId = "Form_0w7r08e";
     final var formKey = deployForm();
