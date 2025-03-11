@@ -21,7 +21,7 @@
   </organization>
 
   <modules>
-    <!-- client should be built before distro -->
+    <!-- client should be built before optimize-distro and before backend -->
     <module>client</module>
     <module>util</module>
     <module>backend</module>
@@ -93,7 +93,6 @@
     <opensearch.test.version>2.10.0</opensearch.test.version>
     <!-- the opensearch version of the previous Optimize version -->
     <previous.optimize.opensearch.version>2.9.0</previous.optimize.opensearch.version>
-    <awssdk.version>2.29.32</awssdk.version>
     <jsonpath.version>2.9.0</jsonpath.version>
     <apache.http5-client.version>5.4</apache.http5-client.version>
     <quartz.version>2.5.0</quartz.version>
@@ -115,8 +114,6 @@
     <!-- This is the default profile used for the DB selection in tests -->
     <database.type>elasticsearch</database.type>
 
-    <quickly>false</quickly>
-    <skipTests>${quickly}</skipTests>
     <skip.docker>${skipTests}</skip.docker>
     <skip.unit.tests>${skipTests}</skip.unit.tests>
     <skip.docker>false</skip.docker>
