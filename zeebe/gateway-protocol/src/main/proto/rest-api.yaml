@@ -2616,7 +2616,6 @@ paths:
                 $ref: "#/components/schemas/ProblemDetail"
         "500":
           $ref: "#/components/responses/InternalServerError"
-  /mapping-rules/{mappingKey}:
     delete:
       tags:
         - Mapping rule
@@ -2628,7 +2627,7 @@ paths:
         This API is in a Work-in-Progress state and will undergo potential breaking changes till
         its release with an upcoming minor release.
       parameters:
-        - name: mappingKey
+        - name: id
           in: path
           required: true
           description: The key of the mapping rule to delete.
