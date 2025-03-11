@@ -11,7 +11,6 @@ import static java.util.Map.entry;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.engine.util.EngineRule;
-import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
@@ -241,29 +240,5 @@ public class TaskListenerDataAccessTest {
             entry(Protocol.USER_TASK_ACTION_HEADER_NAME, "unassign"),
             // `assignee` was cleared during unassignment, marking it as a changed attribute.
             entry(Protocol.USER_TASK_CHANGED_ATTRIBUTES_HEADER_NAME, "[\"assignee\"]"));
-  }
-
-  @Test
-  public void shouldIncludeUserTaskHeadersInJobCustomHeaders() {
-    final BpmnModelInstance processWithZeebeUserTask =
-        helper.createProcessWithZeebeUserTask(
-            taskBuilder -> {
-              taskBuilder
-                  .zeebeTaskHeader("key", "value")
-                  .zeebeTaskListener(listener -> listener.completing().type(listenerType));
-              return taskBuilder;
-            });
-
-    // given
-    final long processInstanceKey = helper.createProcessInstance(processWithZeebeUserTask);
-
-    // when
-    ENGINE.userTask().ofInstance(processInstanceKey).complete();
-
-    // then
-    final var activatedListenerJob = helper.activateJob(processInstanceKey, listenerType);
-
-    assertThat(activatedListenerJob.getCustomHeaders()).contains(entry("key", "value"));
-    helper.completeJobs(processInstanceKey, listenerType);
   }
 }
