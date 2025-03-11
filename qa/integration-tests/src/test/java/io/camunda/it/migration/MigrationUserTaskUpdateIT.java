@@ -32,6 +32,7 @@ import java.net.URI;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.Duration;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicLong;
@@ -157,7 +158,7 @@ public class MigrationUserTaskUpdateIT {
           deployAndStartUserTaskProcess(databaseType, AbstractUserTaskBuilder::zeebeUserTask);
       final var taskKey = waitForTaskToBeImportedReturningId(migrator, piKey);
       PROVIDER.has87Data(databaseType);
-      PROVIDER.upgrade(databaseType);
+      PROVIDER.upgrade(databaseType, new HashMap<>());
       final var res =
           migrator
               .getTasklistClient()
@@ -177,7 +178,7 @@ public class MigrationUserTaskUpdateIT {
       final var taskKey = waitForTaskToBeImportedReturningId(migrator, piKey);
 
       PROVIDER.has87Data(databaseType);
-      PROVIDER.upgrade(databaseType);
+      PROVIDER.upgrade(databaseType, new HashMap<>());
 
       PROVIDER
           .getCamundaClient(databaseType)
@@ -193,7 +194,7 @@ public class MigrationUserTaskUpdateIT {
     void shouldAssign88ZeebeTaskV1(final DatabaseType databaseType, final CamundaMigrator migrator)
         throws IOException {
 
-      PROVIDER.upgrade(databaseType);
+      PROVIDER.upgrade(databaseType, new HashMap<>());
 
       final var piKey =
           deployAndStartUserTaskProcess(databaseType, AbstractUserTaskBuilder::zeebeUserTask);
@@ -213,7 +214,7 @@ public class MigrationUserTaskUpdateIT {
     void shouldAssign88ZeebeTaskV2(final DatabaseType databaseType, final CamundaMigrator migrator)
         throws IOException {
 
-      PROVIDER.upgrade(databaseType);
+      PROVIDER.upgrade(databaseType, new HashMap<>());
 
       final var piKey =
           deployAndStartUserTaskProcess(databaseType, AbstractUserTaskBuilder::zeebeUserTask);
@@ -236,7 +237,7 @@ public class MigrationUserTaskUpdateIT {
       final var piKey = deployAndStartUserTaskProcess(databaseType, t -> t);
       final var taskKey = waitForTaskToBeImportedReturningId(migrator, piKey);
       PROVIDER.has87Data(databaseType);
-      PROVIDER.upgrade(databaseType);
+      PROVIDER.upgrade(databaseType, new HashMap<>());
 
       final var res =
           migrator
@@ -252,7 +253,7 @@ public class MigrationUserTaskUpdateIT {
     void shouldAssign88JobWorkerV1(
         final DatabaseType databaseType, final CamundaMigrator migrator) {
 
-      PROVIDER.upgrade(databaseType);
+      PROVIDER.upgrade(databaseType, new HashMap<>());
 
       final var piKey = deployAndStartUserTaskProcess(databaseType, t -> t);
       final var taskKey = waitFor88TaskToBeImportedReturningId(migrator, piKey);
@@ -299,7 +300,7 @@ public class MigrationUserTaskUpdateIT {
       final var taskKey = waitForTaskToBeImportedReturningId(migrator, piKey);
 
       PROVIDER.has87Data(databaseType);
-      PROVIDER.upgrade(databaseType);
+      PROVIDER.upgrade(databaseType, new HashMap<>());
 
       final var res =
           migrator.getTasklistClient().withAuthentication("demo", "demo").unassignUserTask(taskKey);
@@ -317,7 +318,7 @@ public class MigrationUserTaskUpdateIT {
       final var taskKey = waitForTaskToBeImportedReturningId(migrator, piKey);
 
       PROVIDER.has87Data(databaseType);
-      PROVIDER.upgrade(databaseType);
+      PROVIDER.upgrade(databaseType, new HashMap<>());
 
       PROVIDER.getCamundaClient(databaseType).newUserTaskUnassignCommand(taskKey).send().join();
 
@@ -328,7 +329,7 @@ public class MigrationUserTaskUpdateIT {
     void shouldUnassign88ZeebeTaskV1(
         final DatabaseType databaseType, final CamundaMigrator migrator) {
 
-      PROVIDER.upgrade(databaseType);
+      PROVIDER.upgrade(databaseType, new HashMap<>());
 
       final var piKey =
           deployAndStartUserTaskProcess(databaseType, t -> t.zeebeUserTask().zeebeAssignee("test"));
@@ -345,7 +346,7 @@ public class MigrationUserTaskUpdateIT {
     void shouldUnassign88ZeebeTaskV2(
         final DatabaseType databaseType, final CamundaMigrator migrator) {
 
-      PROVIDER.upgrade(databaseType);
+      PROVIDER.upgrade(databaseType, new HashMap<>());
 
       final var piKey =
           deployAndStartUserTaskProcess(databaseType, t -> t.zeebeUserTask().zeebeAssignee("test"));
@@ -364,7 +365,7 @@ public class MigrationUserTaskUpdateIT {
       final var taskKey = waitForTaskToBeImportedReturningId(migrator, piKey);
 
       PROVIDER.has87Data(databaseType);
-      PROVIDER.upgrade(databaseType);
+      PROVIDER.upgrade(databaseType, new HashMap<>());
 
       final var res =
           migrator.getTasklistClient().withAuthentication("demo", "demo").unassignUserTask(taskKey);
@@ -377,7 +378,7 @@ public class MigrationUserTaskUpdateIT {
     void shouldUnAssign88JobWorkerV1(
         final DatabaseType databaseType, final CamundaMigrator migrator) {
 
-      PROVIDER.upgrade(databaseType);
+      PROVIDER.upgrade(databaseType, new HashMap<>());
 
       final var piKey = deployAndStartUserTaskProcess(databaseType, t -> t.zeebeAssignee("test"));
       final var taskKey = waitFor88TaskToBeImportedReturningId(migrator, piKey);
@@ -421,7 +422,7 @@ public class MigrationUserTaskUpdateIT {
       final var taskKey = waitForTaskToBeImportedReturningId(migrator, piKey);
 
       PROVIDER.has87Data(databaseType);
-      PROVIDER.upgrade(databaseType);
+      PROVIDER.upgrade(databaseType, new HashMap<>());
 
       final var res =
           migrator.getTasklistClient().withAuthentication("demo", "demo").completeUserTask(taskKey);
@@ -439,7 +440,7 @@ public class MigrationUserTaskUpdateIT {
       final var taskKey = waitForTaskToBeImportedReturningId(migrator, piKey);
 
       PROVIDER.has87Data(databaseType);
-      PROVIDER.upgrade(databaseType);
+      PROVIDER.upgrade(databaseType, new HashMap<>());
 
       final var res =
           PROVIDER.getCamundaClient(databaseType).newUserTaskCompleteCommand(taskKey).send().join();
@@ -451,7 +452,7 @@ public class MigrationUserTaskUpdateIT {
     void shouldComplete88ZeebeTaskV1(
         final DatabaseType databaseType, final CamundaMigrator migrator) {
 
-      PROVIDER.upgrade(databaseType);
+      PROVIDER.upgrade(databaseType, new HashMap<>());
 
       final var piKey =
           deployAndStartUserTaskProcess(databaseType, t -> t.zeebeUserTask().zeebeAssignee("demo"));
@@ -468,7 +469,7 @@ public class MigrationUserTaskUpdateIT {
     void shouldComplete88ZeebeTaskV2(
         final DatabaseType databaseType, final CamundaMigrator migrator) {
 
-      PROVIDER.upgrade(databaseType);
+      PROVIDER.upgrade(databaseType, new HashMap<>());
 
       final var piKey =
           deployAndStartUserTaskProcess(databaseType, t -> t.zeebeUserTask().zeebeAssignee("demo"));
@@ -487,7 +488,7 @@ public class MigrationUserTaskUpdateIT {
       final var taskKey = waitForTaskToBeImportedReturningId(migrator, piKey);
 
       PROVIDER.has87Data(databaseType);
-      PROVIDER.upgrade(databaseType);
+      PROVIDER.upgrade(databaseType, new HashMap<>());
 
       final var res =
           migrator.getTasklistClient().withAuthentication("demo", "demo").completeUserTask(taskKey);
@@ -500,7 +501,7 @@ public class MigrationUserTaskUpdateIT {
     void shouldComplete88JobWorkerV1(
         final DatabaseType databaseType, final CamundaMigrator migrator) {
 
-      PROVIDER.upgrade(databaseType);
+      PROVIDER.upgrade(databaseType, new HashMap<>());
 
       final var piKey = deployAndStartUserTaskProcess(databaseType, t -> t.zeebeAssignee("demo"));
       final var taskKey = waitFor88TaskToBeImportedReturningId(migrator, piKey);
