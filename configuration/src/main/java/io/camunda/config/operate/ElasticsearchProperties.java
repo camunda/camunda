@@ -7,9 +7,6 @@
  */
 package io.camunda.config.operate;
 
-import static io.camunda.operate.util.ConversionUtils.stringIsEmpty;
-
-import io.camunda.operate.connect.OperateDateTimeFormatter;
 import io.camunda.search.connect.plugin.PluginConfiguration;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -28,7 +25,7 @@ public class ElasticsearchProperties {
 
   @Deprecated private int port = 9200;
 
-  private String dateFormat = OperateDateTimeFormatter.DATE_FORMAT_DEFAULT;
+  private String dateFormat = "yyyy-MM-dd'T'HH:mm:ss.SSSZZ";
 
   private String elsDateFormat = ELS_DATE_FORMAT_DEFAULT;
 
@@ -48,7 +45,8 @@ public class ElasticsearchProperties {
 
   private int bulkRequestMaxSizeInBytes = BULK_REQUEST_MAX_SIZE_IN_BYTES_DEFAULT;
 
-  @NestedConfigurationProperty private SslProperties ssl;
+  @NestedConfigurationProperty
+  private SslProperties ssl;
 
   private List<PluginConfiguration> interceptorPlugins;
 
@@ -81,7 +79,7 @@ public class ElasticsearchProperties {
   }
 
   private <T> T getFromURIorDefault(final Function<URI, T> valueFromURI, final T defaultValue) {
-    if (!stringIsEmpty(url)) {
+    if (url != null && !url.isEmpty()) {
       try {
         return valueFromURI.apply(new URI(url));
       } catch (final URISyntaxException e) {
@@ -148,7 +146,7 @@ public class ElasticsearchProperties {
   }
 
   public String getUrl() {
-    if (stringIsEmpty(url)) {
+    if (url != null && !url.isEmpty()) {
       return String.format("http://%s:%d", getHost(), getPort());
     }
     return url;

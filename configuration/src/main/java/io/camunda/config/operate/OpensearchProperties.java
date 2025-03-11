@@ -7,9 +7,6 @@
  */
 package io.camunda.config.operate;
 
-import static io.camunda.operate.util.ConversionUtils.stringIsEmpty;
-
-import io.camunda.operate.connect.OperateDateTimeFormatter;
 import io.camunda.search.connect.plugin.PluginConfiguration;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -28,7 +25,7 @@ public class OpensearchProperties {
 
   @Deprecated private int port = 9200;
 
-  private String dateFormat = OperateDateTimeFormatter.DATE_FORMAT_DEFAULT;
+  private String dateFormat ="yyyy-MM-dd'T'HH:mm:ss.SSSZZ";
 
   private String osDateFormat = OS_DATE_FORMAT_DEFAULT;
 
@@ -83,7 +80,7 @@ public class OpensearchProperties {
   }
 
   private <T> T getFromURIorDefault(final Function<URI, T> valueFromURI, final T defaultValue) {
-    if (!stringIsEmpty(url)) {
+    if (url != null && !url.isEmpty()) {
       try {
         return valueFromURI.apply(new URI(url));
       } catch (final URISyntaxException e) {
@@ -150,7 +147,7 @@ public class OpensearchProperties {
   }
 
   public String getUrl() {
-    if (stringIsEmpty(url)) {
+    if (url != null && !url.isEmpty()) {
       return String.format("http://%s:%d", getHost(), getPort());
     }
     return url;

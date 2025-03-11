@@ -7,8 +7,7 @@
  */
 package io.camunda.config.operate;
 
-import io.camunda.operate.conditions.DatabaseInfo;
-import io.camunda.operate.conditions.DatabaseType;
+import io.camunda.search.connect.configuration.DatabaseType;
 import java.util.List;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.context.properties.ConfigurationProperties;
@@ -339,15 +338,19 @@ public class OperateProperties {
     this.rfc3339ApiDateFormat = rfc3339ApiDateFormat;
   }
 
+
+  // TODO will consolidate this type of properties so that it's DB independent
   public String getIndexPrefix(final DatabaseType databaseType) {
     return switch (databaseType) {
-      case Elasticsearch -> getElasticsearch() == null ? null : getElasticsearch().getIndexPrefix();
-      case Opensearch -> getOpensearch() == null ? null : getOpensearch().getIndexPrefix();
+      case DatabaseType.ELASTICSEARCH -> getElasticsearch() == null ? null : getElasticsearch().getIndexPrefix();
+      case DatabaseType.OPENSEARCH -> getOpensearch() == null ? null : getOpensearch().getIndexPrefix();
       default -> null;
     };
   }
 
   public String getIndexPrefix() {
-    return getIndexPrefix(DatabaseInfo.getCurrent());
+
+    // TODO just defaulting ES for PoC
+    return getIndexPrefix(DatabaseType.ELASTICSEARCH);
   }
 }
