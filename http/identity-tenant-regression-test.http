@@ -22,7 +22,7 @@ Accept: application/json
 # @name get-tenant
 < {%
   import {wait} from "js/wait";
-  wait(2);
+  wait(3);
 %}
 GET {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/tenants/{{TENANT_ID}}
 Authorization: Basic {{BASIC_AUTH_TOKEN}}
@@ -71,13 +71,19 @@ Accept: application/json
 
 ### Search Users for Tenant
 # @name search-users-for-tenant
+< {%
+  import {wait} from "js/wait";
+  wait(2);
+%}
 POST {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/tenants/{{TENANT_ID}}/users/search
 Authorization: Basic {{BASIC_AUTH_TOKEN}}
 Content-Type: application/json
 Accept: application/json
 
 {
-  "query": "{{USERNAME}}"
+  "filter": {
+    "username": "{{USERNAME}}"
+  }
 }
 
 > {%
@@ -89,6 +95,10 @@ Accept: application/json
 
 ### Remove User from Tenant
 # @name remove-user-from-tenant
+< {%
+  import {wait} from "js/wait";
+  wait(2);
+%}
 DELETE {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/tenants/{{TENANT_ID}}/users/{{USERNAME}}
 Authorization: Basic {{BASIC_AUTH_TOKEN}}
 Accept: application/json
