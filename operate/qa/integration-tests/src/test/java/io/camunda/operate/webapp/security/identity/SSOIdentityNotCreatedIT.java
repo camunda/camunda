@@ -9,7 +9,7 @@ package io.camunda.operate.webapp.security.identity;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import io.camunda.operate.property.OperateProperties;
+import io.camunda.config.operate.OperateProperties;
 import io.camunda.operate.webapp.security.SecurityContextWrapper;
 import org.junit.Test;
 import org.junit.runner.RunWith;

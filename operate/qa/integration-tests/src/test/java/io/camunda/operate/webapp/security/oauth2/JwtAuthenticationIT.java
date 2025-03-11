@@ -12,7 +12,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 import static org.springframework.http.MediaType.APPLICATION_JSON;
 
-import io.camunda.operate.property.OperateProperties;
+import io.camunda.config.operate.OperateProperties;
 import io.camunda.operate.qa.util.DependencyInjectionTestExecutionListener;
 import io.camunda.operate.util.TestApplication;
 import java.util.List;

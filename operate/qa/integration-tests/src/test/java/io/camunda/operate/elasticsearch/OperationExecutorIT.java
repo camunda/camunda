@@ -13,7 +13,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 
 import io.camunda.operate.exceptions.PersistenceException;
-import io.camunda.operate.property.OperateProperties;
+import io.camunda.config.operate.OperateProperties;
 import io.camunda.operate.util.CollectionUtil;
 import io.camunda.operate.util.DateUtil;
 import io.camunda.operate.util.OperateAbstractIT;

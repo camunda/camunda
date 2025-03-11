@@ -7,7 +7,7 @@
  */
 package io.camunda.operate.management;
 
-import io.camunda.operate.property.OperateProperties;
+import io.camunda.config.operate.OperateProperties;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.actuate.health.Health;

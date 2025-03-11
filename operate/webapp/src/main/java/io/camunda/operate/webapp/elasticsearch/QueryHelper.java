@@ -23,7 +23,7 @@ import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
 import static org.elasticsearch.join.query.JoinQueryBuilders.hasChildQuery;
 
 import io.camunda.operate.conditions.ElasticsearchCondition;
-import io.camunda.operate.property.OperateProperties;
+import io.camunda.config.operate.OperateProperties;
 import io.camunda.operate.store.IncidentStore;
 import io.camunda.operate.util.CollectionUtil;
 import io.camunda.operate.util.ElasticsearchUtil;

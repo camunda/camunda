@@ -24,7 +24,7 @@ import io.camunda.identity.sdk.authentication.Authentication;
 import io.camunda.identity.sdk.impl.rest.exception.RestException;
 import io.camunda.identity.sdk.tenants.Tenants;
 import io.camunda.identity.sdk.tenants.dto.Tenant;
-import io.camunda.operate.property.OperateProperties;
+import io.camunda.config.operate.OperateProperties;
 import io.camunda.operate.util.SpringContextHolder;
 import io.camunda.operate.util.apps.nobeans.TestApplicationWithNoBeans;
 import io.camunda.operate.webapp.security.tenant.OperateTenant;

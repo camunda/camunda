@@ -9,8 +9,8 @@ package io.camunda.operate.schema.util.elasticsearch;
 
 import io.camunda.operate.conditions.ElasticsearchCondition;
 import io.camunda.operate.connect.ElasticsearchConnector;
-import io.camunda.operate.property.ElasticsearchProperties;
-import io.camunda.operate.property.OperateProperties;
+import io.camunda.config.operate.ElasticsearchProperties;
+import io.camunda.config.operate.OperateProperties;
 import io.camunda.operate.schema.util.ObservableConnector;
 import java.io.IOException;
 import java.util.ArrayList;

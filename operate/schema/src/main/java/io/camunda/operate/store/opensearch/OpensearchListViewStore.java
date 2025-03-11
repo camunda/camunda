@@ -14,7 +14,7 @@ import static io.camunda.operate.util.CollectionUtil.toSafeListOfStrings;
 import static io.camunda.operate.util.ExceptionHelper.withIOException;
 
 import io.camunda.operate.conditions.OpensearchCondition;
-import io.camunda.operate.property.OperateProperties;
+import io.camunda.config.operate.OperateProperties;
 import io.camunda.operate.store.ListViewStore;
 import io.camunda.operate.store.NotFoundException;
 import io.camunda.operate.store.opensearch.client.sync.RichOpenSearchClient;
@@ -40,7 +40,7 @@ public class OpensearchListViewStore implements ListViewStore {
   @Autowired private OperateProperties operateProperties;
 
   @Override
-  public Map<Long, String> getListViewIndicesForProcessInstances(List<Long> processInstanceIds)
+  public Map<Long, String> getListViewIndicesForProcessInstances(final List<Long> processInstanceIds)
       throws IOException {
     final var searchRequestBuilder =
         searchRequestBuilder(listViewTemplate, RequestDSL.QueryType.ALL)
@@ -68,7 +68,7 @@ public class OpensearchListViewStore implements ListViewStore {
   }
 
   @Override
-  public String findProcessInstanceTreePathFor(long processInstanceKey) {
+  public String findProcessInstanceTreePathFor(final long processInstanceKey) {
     record Result(String treePath) {}
     final RequestDSL.QueryType queryType =
         operateProperties.getImporter().isReadArchivedParents()
@@ -89,7 +89,7 @@ public class OpensearchListViewStore implements ListViewStore {
   }
 
   @Override
-  public List<Long> getProcessInstanceKeysWithEmptyProcessVersionFor(Long processDefinitionKey) {
+  public List<Long> getProcessInstanceKeysWithEmptyProcessVersionFor(final Long processDefinitionKey) {
     final var searchRequestBuilder =
         searchRequestBuilder(listViewTemplate.getAlias())
             .query(

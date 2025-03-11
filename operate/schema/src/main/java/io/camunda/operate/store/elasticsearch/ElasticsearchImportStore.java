@@ -13,7 +13,7 @@ import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.operate.Metrics;
 import io.camunda.operate.conditions.ElasticsearchCondition;
-import io.camunda.operate.property.OperateProperties;
+import io.camunda.config.operate.OperateProperties;
 import io.camunda.operate.store.ImportStore;
 import io.camunda.operate.util.Either;
 import io.camunda.operate.util.ElasticsearchUtil;

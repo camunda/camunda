@@ -10,8 +10,8 @@ package io.camunda.operate.webapp.security.ldap;
 import static io.camunda.operate.OperateProfileService.LDAP_AUTH_PROFILE;
 
 import io.camunda.operate.OperateProfileService;
-import io.camunda.operate.property.LdapProperties;
-import io.camunda.operate.property.OperateProperties;
+import io.camunda.config.operate.LdapProperties;
+import io.camunda.config.operate.OperateProperties;
 import io.camunda.operate.webapp.security.BaseWebConfigurer;
 import io.camunda.operate.webapp.security.oauth2.OAuth2WebConfigurer;
 import jakarta.servlet.http.HttpServletRequest;

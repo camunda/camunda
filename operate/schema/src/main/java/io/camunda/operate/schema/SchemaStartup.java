@@ -8,7 +8,7 @@
 package io.camunda.operate.schema;
 
 import io.camunda.operate.conditions.DatabaseInfo;
-import io.camunda.operate.property.OperateProperties;
+import io.camunda.config.operate.OperateProperties;
 import jakarta.annotation.PostConstruct;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

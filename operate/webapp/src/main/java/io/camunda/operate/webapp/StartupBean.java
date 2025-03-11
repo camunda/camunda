@@ -10,7 +10,7 @@ package io.camunda.operate.webapp;
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import io.camunda.operate.conditions.DatabaseInfo;
 import io.camunda.operate.connect.ElasticsearchConnector;
-import io.camunda.operate.property.OperateProperties;
+import io.camunda.config.operate.OperateProperties;
 import io.camunda.operate.webapp.security.auth.OperateUserDetailsService;
 import io.camunda.operate.webapp.zeebe.operation.OperationExecutor;
 import jakarta.annotation.PostConstruct;

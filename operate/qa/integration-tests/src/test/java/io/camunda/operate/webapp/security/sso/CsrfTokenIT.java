@@ -26,7 +26,7 @@ import com.auth0.AuthorizeUrl;
 import com.auth0.Tokens;
 import io.camunda.application.commons.security.CamundaSecurityConfiguration.CamundaSecurityProperties;
 import io.camunda.operate.OperateProfileService;
-import io.camunda.operate.property.OperateProperties;
+import io.camunda.config.operate.OperateProperties;
 import io.camunda.operate.util.SpringContextHolder;
 import io.camunda.operate.util.apps.nobeans.TestApplicationWithNoBeans;
 import io.camunda.operate.webapp.api.v1.dao.ProcessDefinitionDao;

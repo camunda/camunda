@@ -13,7 +13,7 @@ import io.camunda.authentication.entity.CamundaUser;
 import io.camunda.operate.OperateProfileService;
 import io.camunda.operate.conditions.DatabaseInfo;
 import io.camunda.operate.entities.UserEntity;
-import io.camunda.operate.property.OperateProperties;
+import io.camunda.config.operate.OperateProperties;
 import io.camunda.operate.store.UserStore;
 import io.camunda.operate.webapp.rest.exception.NotFoundException;
 import java.util.List;

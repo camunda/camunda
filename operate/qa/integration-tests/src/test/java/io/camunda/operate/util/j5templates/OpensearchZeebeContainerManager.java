@@ -8,7 +8,7 @@
 package io.camunda.operate.util.j5templates;
 
 import io.camunda.operate.conditions.OpensearchCondition;
-import io.camunda.operate.property.OperateProperties;
+import io.camunda.config.operate.OperateProperties;
 import io.camunda.operate.qa.util.TestContainerUtil;
 import io.camunda.operate.store.opensearch.client.sync.ZeebeRichOpenSearchClient;
 import io.camunda.operate.util.IndexPrefixHolder;

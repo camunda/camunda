@@ -10,7 +10,7 @@ package io.camunda.operate.webapp.zeebe.operation;
 import static io.camunda.operate.util.ThreadUtil.*;
 
 import io.camunda.operate.exceptions.PersistenceException;
-import io.camunda.operate.property.OperateProperties;
+import io.camunda.config.operate.OperateProperties;
 import io.camunda.operate.util.BackoffIdleStrategy;
 import io.camunda.operate.webapp.writer.BatchOperationWriter;
 import io.camunda.webapps.schema.entities.operation.OperationEntity;
