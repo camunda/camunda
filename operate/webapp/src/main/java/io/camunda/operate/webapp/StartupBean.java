@@ -50,7 +50,7 @@ public class StartupBean {
   public void initApplication() {
     if (operateUserDetailsService != null) {
       LOGGER.info(
-          "INIT: Create users in {} if not exists ...", DatabaseInfo.getCurrent().getCode());
+          "INIT: Create users in {} if not exists ...", DatabaseInfo.getCurrent().name());
       operateUserDetailsService.initializeUsers();
     }
 

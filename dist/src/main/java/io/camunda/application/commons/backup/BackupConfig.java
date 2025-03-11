@@ -10,6 +10,7 @@ package io.camunda.application.commons.backup;
 import static io.camunda.application.commons.backup.ConfigValidation.*;
 
 import io.camunda.application.commons.conditions.WebappEnabledCondition;
+import io.camunda.config.operate.BackupProperties;
 import io.camunda.config.operate.OperateProperties;
 import io.camunda.optimize.service.metadata.Version;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
@@ -108,7 +109,7 @@ public class BackupConfig {
 
   public static BackupRepositoryProps props(
       final String operateVersion,
-      final io.camunda.operate.property.BackupProperties operateProperties) {
+      final BackupProperties operateProperties) {
     return new BackupRepositoryPropsRecord(
         operateVersion,
         operateProperties.getRepositoryName(),

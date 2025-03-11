@@ -220,7 +220,7 @@ public class BackupPriorityConfiguration {
             Map.of(
                 "operate",
                 Optional.ofNullable(operateProperties)
-                    .map(ignored -> DatabaseInfo.isCurrent(DatabaseType.Elasticsearch)),
+                    .map(ignored -> DatabaseInfo.isElasticsearch()),
                 "tasklist",
                 Optional.ofNullable(tasklistProperties)
                     .map(prop -> prop.getDatabase().equals(TasklistProperties.ELASTIC_SEARCH)),

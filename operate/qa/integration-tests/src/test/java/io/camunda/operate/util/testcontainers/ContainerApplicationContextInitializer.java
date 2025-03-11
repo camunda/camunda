@@ -8,17 +8,18 @@
 package io.camunda.operate.util.testcontainers;
 
 import io.camunda.operate.conditions.DatabaseInfo;
+import io.camunda.search.connect.configuration.DatabaseType;
 import org.springframework.context.ApplicationContextInitializer;
 import org.springframework.context.ConfigurableApplicationContext;
 
 public class ContainerApplicationContextInitializer
     implements ApplicationContextInitializer<ConfigurableApplicationContext> {
   @Override
-  public void initialize(ConfigurableApplicationContext applicationContext) {
+  public void initialize(final ConfigurableApplicationContext applicationContext) {
     switch (DatabaseInfo.getCurrent()) {
-      case Elasticsearch ->
+      case DatabaseType.ELASTICSEARCH ->
           new ElasticsearchContainerApplicationContextInitializer().initialize(applicationContext);
-      case Opensearch ->
+      case DatabaseType.OPENSEARCH ->
           new OpensearchContainerApplicationContextInitializer().initialize(applicationContext);
       default ->
           throw new IllegalArgumentException("Unsupported database " + DatabaseInfo.getCurrent());

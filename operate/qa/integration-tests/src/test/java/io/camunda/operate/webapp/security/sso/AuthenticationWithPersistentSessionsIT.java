@@ -8,7 +8,7 @@
 package io.camunda.operate.webapp.security.sso;
 
 import static io.camunda.operate.OperateProfileService.SSO_AUTH_PROFILE;
-import static io.camunda.operate.property.Auth0Properties.DEFAULT_ORGANIZATIONS_KEY;
+import static io.camunda.config.operate.Auth0Properties.DEFAULT_ORGANIZATIONS_KEY;
 import static io.camunda.operate.util.CollectionUtil.asMap;
 import static io.camunda.operate.webapp.security.OperateURIs.LOGIN_RESOURCE;
 import static io.camunda.operate.webapp.security.OperateURIs.LOGOUT_RESOURCE;

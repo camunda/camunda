@@ -87,7 +87,7 @@ public class OperateUserDetailsService implements UserDetailsService {
       final String displayName,
       final String password,
       final List<String> roles) {
-    LOGGER.info("Create user in {} for userId {}", DatabaseInfo.getCurrent().getCode(), userId);
+    LOGGER.info("Create user in {} for userId {}", DatabaseInfo.getCurrent().name(), userId);
     final String passwordEncoded = getPasswordEncoder().encode(password);
     final UserEntity userEntity =
         new UserEntity()
