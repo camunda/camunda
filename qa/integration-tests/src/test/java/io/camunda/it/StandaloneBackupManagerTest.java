@@ -24,10 +24,17 @@ import io.camunda.search.clients.query.SearchQueryBuilders;
 import io.camunda.search.connect.configuration.ConnectConfiguration;
 import io.camunda.search.connect.es.ElasticsearchConnector;
 import io.camunda.tasklist.entities.TaskEntity;
+import io.camunda.zeebe.backup.s3.S3BackupConfig.Builder;
+import io.camunda.zeebe.backup.s3.S3BackupStore;
 import io.camunda.zeebe.broker.system.configuration.ExporterCfg;
+import io.camunda.zeebe.broker.system.configuration.backup.BackupStoreCfg.BackupStoreType;
 import io.camunda.zeebe.model.bpmn.Bpmn;
+import io.camunda.zeebe.qa.util.actuator.BackupActuator;
+import io.camunda.zeebe.qa.util.actuator.ExportingActuator;
+import io.camunda.zeebe.qa.util.cluster.TestRestoreApp;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
+import io.camunda.zeebe.qa.util.testcontainers.MinioContainer;
 import io.camunda.zeebe.test.util.asserts.EitherAssert;
 import java.io.IOException;
 import java.net.http.HttpResponse;
@@ -37,6 +44,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Predicate;
+import org.apache.commons.lang3.RandomStringUtils;
 import org.awaitility.Awaitility;
 import org.elasticsearch.client.RestClient;
 import org.junit.jupiter.api.BeforeEach;
@@ -117,6 +125,9 @@ final class StandaloneBackupManagerTest {
           .withProperty("camunda.tasklist.elasticsearch.password", ADMIN_PASSWORD)
           .withProperty("camunda.tasklist.elasticsearch.healthCheckEnabled", "false")
           .withProperty("camunda.tasklist.archiver.ilmEnabled", "true");
+
+  // s3 container for storing Zeebe backups
+  @Container private final MinioContainer s3 = new MinioContainer();
 
   @Container
   private final ElasticsearchContainer es =
@@ -209,6 +220,8 @@ final class StandaloneBackupManagerTest {
         "camunda.tasklist.elasticsearch.url", "http://" + es.getHttpHostAddress());
 
     adminElasticsearchClient = createAdminElasticsearchClient("http://" + es.getHttpHostAddress());
+
+    configureBackupStoreForZeebe(camunda);
   }
 
   @Test
@@ -225,18 +238,24 @@ final class StandaloneBackupManagerTest {
     // Assert that the data is created in Elasticsearch
     final long userTaskKey =
         assertThatDataIsPresent(processInstanceKey, isRunningProcessInstance());
+    // Soft pause the exporters in Zeebe
+    ExportingActuator.of(camunda).softPause();
 
     // WHEN
     // Start the backup process with a specific backup ID
     backupManager.withBackupId(BACKUP_ID).start();
+    // Take a Zeebe backup via the API call
+    BackupActuator.of(camunda).take(BACKUP_ID);
     // manually backup zeebe indices
     backupZeebeIndices();
-
-    final List<String> snapshots = new ArrayList<>();
     // Wait for snapshots to be completed
+    final List<String> snapshots = new ArrayList<>();
     snapshots.addAll(waitForSnapshotsToBeCompleted(OPERATE_SNAPSHOT_NAME_PREFIX, 6));
     snapshots.addAll(waitForSnapshotsToBeCompleted(TASKLIST_SNAPSHOT_NAME_PREFIX, 6));
     snapshots.addAll(waitForSnapshotsToBeCompleted(ZEEBE_SNAPSHOT_NAME, 1));
+
+    // Resume the exporters
+    ExportingActuator.of(camunda).resume();
     // Update the current state by completing the user task and the process instance
     completeUserTask(userTaskKey);
     // Assert that the state is updated: process instance is completed
@@ -248,6 +267,8 @@ final class StandaloneBackupManagerTest {
     deleteIndices();
     // Restore the backup to recover deleted data
     restoreBackup(snapshots);
+    // Restore Zeebe data via the restore application
+    restoreZeebeBackup();
     // Restart Camunda after restoration
     camunda.start();
 
@@ -442,6 +463,43 @@ final class StandaloneBackupManagerTest {
     connectConfiguration.setUsername(ADMIN_USER);
     connectConfiguration.setPassword(ADMIN_PASSWORD);
     return new ElasticsearchConnector(connectConfiguration).createClient();
+  }
+
+  private void restoreZeebeBackup() {
+    try (final var restoreApp =
+        new TestRestoreApp(camunda.brokerConfig()).withBackupId(BACKUP_ID)) {
+      restoreApp.start();
+    }
+  }
+
+  private void configureBackupStoreForZeebe(final TestStandaloneCamunda broker) {
+    final var bucketName = RandomStringUtils.randomAlphabetic(10).toLowerCase();
+    // Create bucket before for storing backups
+    final var s3ClientConfig =
+        new Builder()
+            .withBucketName(bucketName)
+            .withEndpoint(s3.externalEndpoint())
+            .withRegion(s3.region())
+            .withCredentials(s3.accessKey(), s3.secretKey())
+            .withApiCallTimeout(Duration.ofSeconds(15))
+            .forcePathStyleAccess(true)
+            .build();
+    try (final var s3Client = S3BackupStore.buildClient(s3ClientConfig)) {
+      s3Client.createBucket(builder -> builder.bucket(bucketName).build()).join();
+    }
+    broker.withBrokerConfig(
+        cfg -> {
+          final var backup = cfg.getData().getBackup();
+          final var s3 = backup.getS3();
+
+          backup.setStore(BackupStoreType.S3);
+          s3.setBucketName(bucketName);
+          s3.setEndpoint(this.s3.externalEndpoint());
+          s3.setRegion(this.s3.region());
+          s3.setAccessKey(this.s3.accessKey());
+          s3.setSecretKey(this.s3.secretKey());
+          s3.setForcePathStyleAccess(true);
+        });
   }
 
   private static Predicate<ProcessInstance> isRunningProcessInstance() {
