@@ -28,7 +28,7 @@ public interface ProcessingScheduleService extends SimpleProcessingScheduleServi
    * @param delay The delay to wait initially and between each run
    * @param task The task to execute at the fixed rate
    */
-  void runAtFixedRateAsync(final Duration delay, final Task task, final Pool pool);
+  void runAtFixedRateAsync(final Duration delay, final Task task);
 
   /**
    * Schedule a task to execute with a specific delay. After that delay, the task is executed.
@@ -43,7 +43,7 @@ public interface ProcessingScheduleService extends SimpleProcessingScheduleServi
    * @implNote If the delay is short, cancellation via {@link ScheduledTask} may happen after
    *     execution and have no effect.
    */
-  ScheduledTask runDelayedAsync(final Duration delay, final Task task, final Pool pool);
+  ScheduledTask runDelayedAsync(final Duration delay, final Task task);
 
   /**
    * Schedule a task to execute at or after a specific timestamp. The task is executed after the
@@ -60,10 +60,5 @@ public interface ProcessingScheduleService extends SimpleProcessingScheduleServi
    * @implNote If the delay is short, cancellation via {@link ScheduledTask} may happen after
    *     execution and have no effect.
    */
-  ScheduledTask runAtAsync(final long timestamp, final Task task, final Pool pool);
-
-  enum Pool {
-    REALTIME,
-    BACKGROUND
-  }
+  ScheduledTask runAtAsync(final long timestamp, final Task task);
 }

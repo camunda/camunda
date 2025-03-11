@@ -7,11 +7,14 @@
  */
 package io.camunda.zeebe.stream.api;
 
+import io.camunda.zeebe.stream.api.scheduling.BackgroundTaskScheduleService;
 import io.camunda.zeebe.stream.api.scheduling.ProcessingScheduleService;
 
 public interface ReadonlyStreamProcessorContext {
 
   ProcessingScheduleService getScheduleService();
+
+  BackgroundTaskScheduleService getBackgroundService();
 
   /**
    * Returns the partition ID

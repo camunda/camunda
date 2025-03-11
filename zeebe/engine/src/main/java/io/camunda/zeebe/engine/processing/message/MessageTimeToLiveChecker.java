@@ -12,7 +12,6 @@ import io.camunda.zeebe.engine.state.immutable.MessageState.Index;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageBatchRecord;
 import io.camunda.zeebe.protocol.record.intent.MessageBatchIntent;
 import io.camunda.zeebe.stream.api.scheduling.ProcessingScheduleService;
-import io.camunda.zeebe.stream.api.scheduling.ProcessingScheduleService.Pool;
 import io.camunda.zeebe.stream.api.scheduling.Task;
 import io.camunda.zeebe.stream.api.scheduling.TaskResult;
 import io.camunda.zeebe.stream.api.scheduling.TaskResultBuilder;
@@ -114,7 +113,7 @@ public final class MessageTimeToLiveChecker implements Task {
   private void reschedule(final Duration idleInterval) {
     final var timestamp = clock.millis() + idleInterval.toMillis();
     if (enableMessageTtlCheckerAsync) {
-      scheduleService.runAtAsync(timestamp, this, Pool.REALTIME);
+      scheduleService.runAtAsync(timestamp, this);
     } else {
       scheduleService.runAt(timestamp, this);
     }

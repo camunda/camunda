@@ -206,11 +206,13 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
           new ExtendedProcessingScheduleServiceImpl(
               processorActorService,
               asyncScheduleService,
-              backgroundTaskScheduleService,
               asyncActor.getActorControl(),
-              backgroundTaskActor.getActorControl(),
               streamProcessorContext.enableAsyncScheduledTasks());
       streamProcessorContext.scheduleService(extendedProcessingScheduleService);
+      final BackgroundTaskScheduleServiceImpl backgroundService =
+          new BackgroundTaskScheduleServiceImpl(
+              backgroundTaskScheduleService, backgroundTaskActor.getActorControl());
+      streamProcessorContext.backgroundService(backgroundService);
 
       initRecordProcessors();
 
@@ -277,7 +279,13 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
   @Override
   public ActorFuture<Void> closeAsync() {
     if (isOpened.getAndSet(false)) {
-      actor.run(() -> asyncActor.closeAsync().onComplete((v, t) -> actor.close()));
+      actor.run(
+          () ->
+              asyncActor
+                  .closeAsync()
+                  .onComplete(
+                      (v1, t1) ->
+                          backgroundTaskActor.closeAsync().onComplete((v2, t2) -> actor.close())));
     }
 
     return closeFuture;
@@ -305,6 +313,7 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
   private void tearDown() {
     processorActorService.close();
     asyncScheduleService.close();
+    backgroundTaskScheduleService.close();
     streamProcessorContext.getLogStreamReader().close();
     logStream.removeRecordAvailableListener(this);
     replayStateMachine.close();
@@ -427,19 +436,23 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
   private void onFailure(final Throwable throwable) {
     LOG.error("Actor {} failed in phase {}.", actorName, actor.getLifecyclePhase(), throwable);
 
-    final var backgroundTaskActorCloseFuture = backgroundTaskActor.closeAsync();
     final var asyncActorCloseFuture = asyncActor.closeAsync();
     asyncActorCloseFuture.onComplete(
-        (v, t) -> {
-          actor.fail(throwable);
-          if (!openFuture.isDone()) {
-            openFuture.completeExceptionally(throwable);
-          }
+        (v1, t1) ->
+            backgroundTaskActor
+                .closeAsync()
+                .onComplete(
+                    (v2, t2) -> {
+                      actor.fail(throwable);
+                      if (!openFuture.isDone()) {
+                        openFuture.completeExceptionally(throwable);
+                      }
 
-          final var report =
-              HealthReport.dead(this).withIssue(throwable, ActorClock.current().instant());
-          failureListeners.forEach(l -> l.onUnrecoverableFailure(report));
-        });
+                      final var report =
+                          HealthReport.dead(this)
+                              .withIssue(throwable, ActorClock.current().instant());
+                      failureListeners.forEach(l -> l.onUnrecoverableFailure(report));
+                    }));
   }
 
   public boolean isOpened() {
@@ -666,7 +679,6 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
   }
 
   private interface Step {
-
     ActorFuture<Void> run();
   }
 
