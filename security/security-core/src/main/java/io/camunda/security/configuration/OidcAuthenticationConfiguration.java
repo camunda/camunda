@@ -20,7 +20,7 @@ public class OidcAuthenticationConfiguration {
   private List<String> scope = Arrays.asList("openid", "profile");
   private String jwkSetUri;
   private String authorizationUri;
-  private Set<String> audience;
+  private Set<String> audiences;
 
   public String getIssuerUri() {
     return issuerUri;
@@ -86,11 +86,11 @@ public class OidcAuthenticationConfiguration {
     this.authorizationUri = authorizationUri;
   }
 
-  public Set<String> getAudience() {
-    return audience;
+  public Set<String> getAudiences() {
+    return audiences;
   }
 
-  public void setAudience(final Set<String> audience) {
-    this.audience = audience;
+  public void setAudiences(final Set<String> audiences) {
+    this.audiences = audiences;
   }
 }

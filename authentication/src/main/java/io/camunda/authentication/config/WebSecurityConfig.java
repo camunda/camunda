@@ -293,9 +293,9 @@ public class WebSecurityConfig {
               .getProviderDetails()
               .getJwkSetUri();
 
-      final var validAudiences = securityConfiguration.getAuthentication().getOidc().getAudience();
       final var decoder = NimbusJwtDecoder.withJwkSetUri(jwkSetUri).build();
 
+      final var validAudiences = securityConfiguration.getAuthentication().getOidc().getAudiences();
       if (validAudiences != null) {
         decoder.setJwtValidator(
             JwtValidators.createDefaultWithValidators(new AudienceValidator(validAudiences)));
