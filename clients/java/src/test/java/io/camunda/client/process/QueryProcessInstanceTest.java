@@ -84,7 +84,8 @@ public class QueryProcessInstanceTest extends ClientRestTest {
                     .state(ACTIVE)
                     .hasIncident(true)
                     .tenantId("tenant")
-                    .variables(variables))
+                    .variables(variables)
+                    .batchOperationId("batch-operation-id"))
         .send()
         .join();
     // then
@@ -106,6 +107,7 @@ public class QueryProcessInstanceTest extends ClientRestTest {
     assertThat(filter.getHasIncident()).isEqualTo(true);
     assertThat(filter.getTenantId().get$Eq()).isEqualTo("tenant");
     assertThat(filter.getVariables()).isEqualTo(variables);
+    assertThat(filter.getBatchOperationId().get$Eq()).isEqualTo("batch-operation-id");
   }
 
   @Test
