@@ -29,8 +29,6 @@ import io.camunda.client.api.search.response.ProcessInstance;
 import io.camunda.client.protocol.rest.ProcessInstanceStateEnum;
 import io.camunda.client.protocol.rest.ProcessInstanceVariableFilterRequest;
 import io.camunda.qa.util.multidb.MultiDbTest;
-import io.camunda.search.filter.FilterBuilders;
-import io.camunda.search.filter.Operation;
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
@@ -47,9 +45,10 @@ import org.junit.jupiter.api.Test;
 @MultiDbTest
 public class ProcessInstanceAndFlowNodeInstanceQueryTest {
 
+  public static final String EXPECTED_ERROR =
+      "Expected result of the expression 'retriesA' to be 'NUMBER', but was 'STRING'.";
   static final List<Process> DEPLOYED_PROCESSES = new ArrayList<>();
   static final List<ProcessInstanceEvent> PROCESS_INSTANCES = new ArrayList<>();
-
   private static FlowNodeInstance flowNodeInstance;
   private static FlowNodeInstance flowNodeInstanceWithIncident;
   private static CamundaClient camundaClient;
@@ -1076,25 +1075,137 @@ public class ProcessInstanceAndFlowNodeInstanceQueryTest {
 
   @Test
   void shouldQueryProcessInstancesByErrorMessageEqual() {
-    // given: we expect that the incident process instance has this error message.
-    final String expectedError =
-        "Expected at least one condition to evaluate to true, or to have a default flow";
-    // using the builder helper, set errorMessage filter with equality operator
-    final var filter =
-        FilterBuilders.processInstance(
-            f -> f.errorMessageOperations(List.of(Operation.eq(expectedError))));
+    // given: we expect that the incident process instance has an error message.
+    // when: query process instances by errorMessage not equal
 
     // when: query process instances by errorMessage equal
     final var result =
         camundaClient
             .newProcessInstanceQuery()
-            .filter(f -> f.errorMessage(b -> b.eq(expectedError)))
+            .filter(b -> b.errorMessage(f -> f.eq(EXPECTED_ERROR)))
             .send()
             .join();
 
-    // then: we expect to find only the incident process instance (assumed to have this error
-    // message)
+    // then: we expect to find all the process instance without the error.
     assertThat(result.items().size()).isEqualTo(1);
     assertThat(result.items().getFirst().getProcessDefinitionId()).isEqualTo("incident_process_v1");
+  }
+
+  @Test
+  void shouldQueryProcessInstancesByErrorMessageNotEqual() {
+    // given: we expect that the incident process instance has an error message.
+    // when: query process instances by errorMessage not equal
+    final var result =
+        camundaClient
+            .newProcessInstanceQuery()
+            .filter(b -> b.errorMessage(f -> f.neq(EXPECTED_ERROR)))
+            .send()
+            .join();
+
+    // then: we expect to find all the process instance without the error.
+    assertThat(result.items().size()).isEqualTo(5);
+    assertThat(result.items())
+        .extracting("processDefinitionId")
+        .doesNotContain("incident_process_v1");
+  }
+
+  @Test
+  void shouldQueryProcessInstancesByErrorMessageExists() {
+    // given: we expect that the incident process instance has an error message.
+    // when: query process instances by errorMessage exists
+    final var result =
+        camundaClient
+            .newProcessInstanceQuery()
+            .filter(b -> b.errorMessage(f -> f.exists(true)))
+            .send()
+            .join();
+
+    // then: we expect to find only the process instance with the error.
+    assertThat(result.items().size()).isEqualTo(1);
+    assertThat(result.items()).extracting("processDefinitionId").contains("incident_process_v1");
+  }
+
+  @Test
+  void shouldQueryProcessInstancesByErrorMessageNotExists() {
+    // given: we expect that the incident process instance has an error message.
+    // when: query process instances by errorMessage not exists
+    final var result =
+        camundaClient
+            .newProcessInstanceQuery()
+            .filter(b -> b.errorMessage(f -> f.exists(false)))
+            .send()
+            .join();
+
+    // then: we expect to find all the process instances without error message
+    assertThat(result.items().size()).isEqualTo(5);
+    assertThat(result.items())
+        .extracting("processDefinitionId")
+        .doesNotContain("incident_process_v1");
+  }
+
+  @Test
+  void shouldQueryProcessInstancesByErrorMessageIn() {
+    // given: we expect that the incident process instance has an error message.
+    // when: query process instances by errorMessage in
+    final var result =
+        camundaClient
+            .newProcessInstanceQuery()
+            .filter(b -> b.errorMessage(f -> f.in(EXPECTED_ERROR, "foo")))
+            .send()
+            .join();
+
+    // then: we expect to find only the process instance with the error.
+    assertThat(result.items().size()).isEqualTo(1);
+    assertThat(result.items()).extracting("processDefinitionId").contains("incident_process_v1");
+  }
+
+  @Test
+  void shouldQueryProcessInstancesByErrorMessageNotIn() {
+    // given: we expect that the incident process instance has an error message.
+    // when: query process instances by errorMessage not in
+    final var result =
+        camundaClient
+            .newProcessInstanceQuery()
+            .filter(b -> b.errorMessage(f -> f.in("foo", "bar")))
+            .send()
+            .join();
+
+    // then: we expect to find no process instances.
+    assertThat(result.items().size()).isEqualTo(0);
+  }
+
+  @Test
+  void shouldQueryProcessInstancesByErrorMessageExistsLike() {
+    // given: we expect that the incident process instance has this error message.
+    final String expectedError = "Expect*";
+
+    // when: query process instances by errorMessage like
+    final var result =
+        camundaClient
+            .newProcessInstanceQuery()
+            .filter(b -> b.errorMessage(f -> f.like(expectedError)))
+            .send()
+            .join();
+
+    // then: we expect to find only the incident process instance
+    assertThat(result.items().size()).isEqualTo(1);
+    assertThat(result.items()).extracting("processDefinitionId").contains("incident_process_v1");
+  }
+
+  @Test
+  void shouldQueryProcessInstancesByErrorMessageLikeAndIn() {
+    // given: we expect that the incident process instance has this error message.
+    final String expectedError = "Expect*";
+
+    // when: query process instances by errorMessage like and in
+    final var result =
+        camundaClient
+            .newProcessInstanceQuery()
+            .filter(b -> b.errorMessage(f -> f.like(expectedError).in("foo", "bar")))
+            .send()
+            .join();
+
+    // then: we expect to find no process instances.
+    assertThat(result.items().size()).isEqualTo(0);
   }
 }
