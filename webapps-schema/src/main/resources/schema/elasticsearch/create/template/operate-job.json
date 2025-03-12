@@ -71,10 +71,10 @@
       "position" : {
         "type": "long"
       },
-      "jobDenied" : {
+      "denied" : {
         "type" : "boolean"
       },
-      "jobDeniedReason": {
+      "deniedReason": {
         "type": "keyword"
       }
     }

@@ -40,8 +40,8 @@ public class JobEntity extends OperateZeebeEntity<JobEntity> {
 
   private Long position;
 
-  private Boolean jobDenied;
-  private String jobDeniedReason;
+  private Boolean denied;
+  private String deniedReason;
 
   public Long getProcessInstanceKey() {
     return processInstanceKey;
@@ -214,21 +214,21 @@ public class JobEntity extends OperateZeebeEntity<JobEntity> {
     return this;
   }
 
-  public Boolean isJobDenied() {
-    return jobDenied;
+  public Boolean isDenied() {
+    return denied;
   }
 
-  public JobEntity setJobDenied(final Boolean jobDenied) {
-    this.jobDenied = jobDenied;
+  public JobEntity setDenied(final Boolean denied) {
+    this.denied = denied;
     return this;
   }
 
-  public String getJobDeniedReason() {
-    return jobDeniedReason;
+  public String getDeniedReason() {
+    return deniedReason;
   }
 
-  public JobEntity setJobDeniedReason(final String jobDeniedReason) {
-    this.jobDeniedReason = jobDeniedReason;
+  public JobEntity setDeniedReason(final String deniedReason) {
+    this.deniedReason = deniedReason;
     return this;
   }
 
@@ -255,8 +255,8 @@ public class JobEntity extends OperateZeebeEntity<JobEntity> {
         jobKind,
         listenerEventType,
         position,
-        jobDenied,
-        jobDeniedReason);
+        denied,
+        deniedReason);
   }
 
   @Override
@@ -290,8 +290,8 @@ public class JobEntity extends OperateZeebeEntity<JobEntity> {
         && Objects.equals(jobKind, jobEntity.jobKind)
         && Objects.equals(listenerEventType, jobEntity.listenerEventType)
         && Objects.equals(position, jobEntity.position)
-        && Objects.equals(jobDenied, jobEntity.jobDenied)
-        && Objects.equals(jobDeniedReason, jobEntity.jobDeniedReason);
+        && Objects.equals(denied, jobEntity.denied)
+        && Objects.equals(deniedReason, jobEntity.deniedReason);
   }
 
   @Override
@@ -346,9 +346,9 @@ public class JobEntity extends OperateZeebeEntity<JobEntity> {
         + ", position="
         + position
         + ", jobDenied="
-        + jobDenied
+        + denied
         + ", jobDeniedReason="
-        + jobDeniedReason
+        + deniedReason
         + "} "
         + super.toString();
   }
