@@ -69,9 +69,9 @@ public interface ProcessingScheduleService extends SimpleProcessingScheduleServi
    *
    * @param delay The delay to wait initially and between each run
    * @param task The task to execute at the fixed rate
-   * @param poolName The name of the pool to execute the task on
+   * @param pool The pool to execute the task on
    */
-  void runAtFixedRateOnPool(Duration delay, Task task, String poolName);
+  void runAtFixedRateOnPool(Duration delay, Task task, AsyncSchedulePool pool);
 
   /**
    * Same as @{@link #runDelayed(Duration, Task)}, but the task is executed on a specific pool
@@ -79,18 +79,18 @@ public interface ProcessingScheduleService extends SimpleProcessingScheduleServi
    *
    * @param delay The delay to wait before executing the task
    * @param task The task to execute after the delay
-   * @param poolName The name of the pool to execute the task on
+   * @param pool The pool to execute the task on
    */
-  ScheduledTask runDelayedOnPool(Duration delay, Task task, String poolName);
+  ScheduledTask runDelayedOnPool(Duration delay, Task task, AsyncSchedulePool pool);
 
   /**
    * Same as @{@link #runAt(long, Task)}, but the task is executed on a specific pool (actor).
    *
    * @param timestamp Unix epoch timestamp in milliseconds
    * @param task The task to execute at or after the timestamp
-   * @param poolName The name of the pool to execute the task on
+   * @param pool The pool to execute the task on
    */
-  ScheduledTask runAtOnPool(long timestamp, Task task, String poolName);
+  ScheduledTask runAtOnPool(long timestamp, Task task, AsyncSchedulePool pool);
 
   ActorFuture<Void> open();
 

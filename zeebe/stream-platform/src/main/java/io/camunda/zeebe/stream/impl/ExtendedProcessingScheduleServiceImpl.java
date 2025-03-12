@@ -7,11 +7,14 @@
  */
 package io.camunda.zeebe.stream.impl;
 
+import static io.camunda.zeebe.stream.api.scheduling.AsyncSchedulePool.ASYNC_PROCESSING;
+
 import io.camunda.zeebe.logstreams.log.LogStreamWriter;
 import io.camunda.zeebe.scheduler.ActorControl;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
+import io.camunda.zeebe.stream.api.scheduling.AsyncSchedulePool;
 import io.camunda.zeebe.stream.api.scheduling.ProcessingScheduleService;
 import io.camunda.zeebe.stream.api.scheduling.ScheduledCommandCache.StageableScheduledCommandCache;
 import io.camunda.zeebe.stream.api.scheduling.Task;
@@ -27,7 +30,6 @@ import java.util.function.Supplier;
 
 public class ExtendedProcessingScheduleServiceImpl implements ProcessingScheduleService {
 
-  public static final String ASYNC_POOL = "AsyncProcessingScheduleActor";
   private final ActorSchedulingService actorSchedulingService;
   private final ActorControl streamProcessorActorControl;
   private final ProcessingScheduleServiceImpl processorActorService;
@@ -39,8 +41,8 @@ public class ExtendedProcessingScheduleServiceImpl implements ProcessingSchedule
   private final boolean alwaysAsync;
   private final int partitionId;
 
-  private final HashMap<String, AsyncProcessingScheduleServiceActor> asyncActors;
-  private final HashMap<String, ProcessingScheduleServiceImpl> asyncActorServices;
+  private final HashMap<AsyncSchedulePool, AsyncProcessingScheduleServiceActor> asyncActors;
+  private final HashMap<AsyncSchedulePool, ProcessingScheduleServiceImpl> asyncActorServices;
   private final Supplier<Phase> streamProcessorPhaseSupplier;
   private final BooleanSupplier abortCondition;
   private final Supplier<LogStreamWriter> writerSupplier;
@@ -82,7 +84,7 @@ public class ExtendedProcessingScheduleServiceImpl implements ProcessingSchedule
             clock,
             interval,
             metrics);
-    asyncActor = createAsyncActor(ASYNC_POOL);
+    asyncActor = createAsyncActor(ASYNC_PROCESSING);
   }
 
   @VisibleForTesting
@@ -107,30 +109,31 @@ public class ExtendedProcessingScheduleServiceImpl implements ProcessingSchedule
     asyncActor = null;
 
     asyncActors = new LinkedHashMap<>();
-    asyncActors.put(ASYNC_POOL, asyncConcurrencyControl);
+    asyncActors.put(ASYNC_PROCESSING, asyncConcurrencyControl);
     asyncActorServices = new LinkedHashMap<>();
-    asyncActorServices.put(ASYNC_POOL, async);
+    asyncActorServices.put(ASYNC_PROCESSING, async);
   }
 
   @Override
   public void runAtFixedRateAsync(final Duration delay, final Task task) {
-    runAtFixedRateOnPool(delay, task, ASYNC_POOL);
+    runAtFixedRateOnPool(delay, task, ASYNC_PROCESSING);
   }
 
   @Override
   public ScheduledTask runDelayedAsync(final Duration delay, final Task task) {
-    return runDelayedOnPool(delay, task, ASYNC_POOL);
+    return runDelayedOnPool(delay, task, ASYNC_PROCESSING);
   }
 
   @Override
   public ScheduledTask runAtAsync(final long timestamp, final Task task) {
-    return runAtOnPool(timestamp, task, ASYNC_POOL);
+    return runAtOnPool(timestamp, task, ASYNC_PROCESSING);
   }
 
   @Override
-  public void runAtFixedRateOnPool(final Duration delay, final Task task, final String poolName) {
-    final var actor = asyncActors.computeIfAbsent(poolName, this::createAndSubmitAsyncActor);
-    final var actorService = asyncActorServices.get(poolName);
+  public void runAtFixedRateOnPool(
+      final Duration delay, final Task task, final AsyncSchedulePool pool) {
+    final var actor = asyncActors.computeIfAbsent(pool, this::createAndSubmitAsyncActor);
+    final var actorService = asyncActorServices.get(pool);
     actor.run(
         () -> {
           // we must run in different actor in order to schedule task
@@ -140,9 +143,9 @@ public class ExtendedProcessingScheduleServiceImpl implements ProcessingSchedule
 
   @Override
   public ScheduledTask runDelayedOnPool(
-      final Duration delay, final Task task, final String poolName) {
-    final var actor = asyncActors.computeIfAbsent(poolName, this::createAndSubmitAsyncActor);
-    final var actorService = asyncActorServices.get(poolName);
+      final Duration delay, final Task task, final AsyncSchedulePool pool) {
+    final var actor = asyncActors.computeIfAbsent(pool, this::createAndSubmitAsyncActor);
+    final var actorService = asyncActorServices.get(pool);
 
     final var futureScheduledTask = actor.<ScheduledTask>createFuture();
     actor.run(
@@ -151,13 +154,14 @@ public class ExtendedProcessingScheduleServiceImpl implements ProcessingSchedule
           final var scheduledTask = actorService.runDelayed(delay, task);
           futureScheduledTask.complete(scheduledTask);
         });
-    return new AsyncScheduledTask(futureScheduledTask, poolName);
+    return new AsyncScheduledTask(futureScheduledTask, pool);
   }
 
   @Override
-  public ScheduledTask runAtOnPool(final long timestamp, final Task task, final String poolName) {
-    final var actor = asyncActors.computeIfAbsent(poolName, this::createAndSubmitAsyncActor);
-    final var actorService = asyncActorServices.get(poolName);
+  public ScheduledTask runAtOnPool(
+      final long timestamp, final Task task, final AsyncSchedulePool pool) {
+    final var actor = asyncActors.computeIfAbsent(pool, this::createAndSubmitAsyncActor);
+    final var actorService = asyncActorServices.get(pool.getName());
     final var futureScheduledTask = actor.<ScheduledTask>createFuture();
     actor.run(
         () -> {
@@ -165,7 +169,7 @@ public class ExtendedProcessingScheduleServiceImpl implements ProcessingSchedule
           final var scheduledTask = actorService.runAt(timestamp, task);
           futureScheduledTask.complete(scheduledTask);
         });
-    return new AsyncScheduledTask(futureScheduledTask, poolName);
+    return new AsyncScheduledTask(futureScheduledTask, pool);
   }
 
   @Override
@@ -194,8 +198,9 @@ public class ExtendedProcessingScheduleServiceImpl implements ProcessingSchedule
   @Override
   public ScheduledTask runDelayed(final Duration delay, final Runnable task) {
     if (alwaysAsync) {
-      final var actor = asyncActors.computeIfAbsent(ASYNC_POOL, this::createAndSubmitAsyncActor);
-      final var actorService = asyncActorServices.get(ASYNC_POOL);
+      final var actor =
+          asyncActors.computeIfAbsent(ASYNC_PROCESSING, this::createAndSubmitAsyncActor);
+      final var actorService = asyncActorServices.get(ASYNC_PROCESSING);
       final var futureScheduledTask = actor.<ScheduledTask>createFuture();
       actor.run(
           () -> {
@@ -203,7 +208,7 @@ public class ExtendedProcessingScheduleServiceImpl implements ProcessingSchedule
             final var scheduledTask = actorService.runDelayed(delay, task);
             futureScheduledTask.complete(scheduledTask);
           });
-      return new AsyncScheduledTask(futureScheduledTask, ASYNC_POOL);
+      return new AsyncScheduledTask(futureScheduledTask, ASYNC_PROCESSING);
     } else {
       return processorActorService.runDelayed(delay, task);
     }
@@ -230,8 +235,9 @@ public class ExtendedProcessingScheduleServiceImpl implements ProcessingSchedule
   @Override
   public ScheduledTask runAt(final long timestamp, final Runnable task) {
     if (alwaysAsync) {
-      final var actor = asyncActors.computeIfAbsent(ASYNC_POOL, this::createAndSubmitAsyncActor);
-      final var actorService = asyncActorServices.get(ASYNC_POOL);
+      final var actor =
+          asyncActors.computeIfAbsent(ASYNC_PROCESSING, this::createAndSubmitAsyncActor);
+      final var actorService = asyncActorServices.get(ASYNC_PROCESSING);
       final var futureScheduledTask = actor.<ScheduledTask>createFuture();
       actor.run(
           () -> {
@@ -239,7 +245,7 @@ public class ExtendedProcessingScheduleServiceImpl implements ProcessingSchedule
             final var scheduledTask = actorService.runAt(timestamp, task);
             futureScheduledTask.complete(scheduledTask);
           });
-      return new AsyncScheduledTask(futureScheduledTask, ASYNC_POOL);
+      return new AsyncScheduledTask(futureScheduledTask, ASYNC_PROCESSING);
     } else {
       return processorActorService.runAt(timestamp, task);
     }
@@ -254,14 +260,15 @@ public class ExtendedProcessingScheduleServiceImpl implements ProcessingSchedule
     }
   }
 
-  private AsyncProcessingScheduleServiceActor createAndSubmitAsyncActor(final String poolName) {
-    final var actor = createAsyncActor(poolName);
+  private AsyncProcessingScheduleServiceActor createAndSubmitAsyncActor(
+      final AsyncSchedulePool pool) {
+    final var actor = createAsyncActor(pool);
 
-    actorSchedulingService.submitActor(actor).join();
+    actorSchedulingService.submitActor(actor, pool.getSchedulingHints()).join();
     return actor;
   }
 
-  private AsyncProcessingScheduleServiceActor createAsyncActor(final String poolName) {
+  private AsyncProcessingScheduleServiceActor createAsyncActor(final AsyncSchedulePool pool) {
     final var actorService =
         new ProcessingScheduleServiceImpl(
             streamProcessorPhaseSupplier, // this is volatile
@@ -271,10 +278,11 @@ public class ExtendedProcessingScheduleServiceImpl implements ProcessingSchedule
             clock,
             interval,
             metrics);
-    final var actor = new AsyncProcessingScheduleServiceActor(poolName, actorService, partitionId);
+    final var actor =
+        new AsyncProcessingScheduleServiceActor(pool.getName(), actorService, partitionId);
 
-    asyncActorServices.put(poolName, actorService);
-    asyncActors.put(poolName, actor);
+    asyncActorServices.put(pool, actorService);
+    asyncActors.put(pool, actor);
     return actor;
   }
 
@@ -311,12 +319,12 @@ public class ExtendedProcessingScheduleServiceImpl implements ProcessingSchedule
   private final class AsyncScheduledTask implements ScheduledTask {
 
     private final ActorFuture<ScheduledTask> futureScheduledTask;
-    private final String poolName;
+    private final AsyncSchedulePool pool;
 
     public AsyncScheduledTask(
-        final ActorFuture<ScheduledTask> futureScheduledTask, final String poolName) {
+        final ActorFuture<ScheduledTask> futureScheduledTask, final AsyncSchedulePool pool) {
       this.futureScheduledTask = futureScheduledTask;
-      this.poolName = poolName;
+      this.pool = pool;
     }
 
     /**
@@ -325,7 +333,7 @@ public class ExtendedProcessingScheduleServiceImpl implements ProcessingSchedule
      */
     @Override
     public void cancel() {
-      final var actor = asyncActors.get(poolName);
+      final var actor = asyncActors.get(pool);
       if (actor == null) {
         return;
       }
