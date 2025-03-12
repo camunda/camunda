@@ -166,6 +166,19 @@
         )
       </foreach>
     </if>
+
+    <!-- Error message filters -->
+    <if test="filter.errorMessageOperations != null and !filter.errorMessageOperations.isEmpty()">
+      AND EXISTS (
+      SELECT 1
+      FROM INCIDENT i
+      WHERE i.PROCESS_INSTANCE_KEY = pi.PROCESS_INSTANCE_KEY
+      <foreach collection="filter.errorMessageOperations" item="operation">
+        AND i.ERROR_MESSAGE
+        <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+      </foreach>
+      )
+    </if>
   </sql>
 
   <resultMap id="searchResultMap" type="io.camunda.search.entities.ProcessInstanceEntity">
