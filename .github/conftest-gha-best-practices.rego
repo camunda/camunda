@@ -44,6 +44,16 @@ deny[msg] {
         [concat(", ", get_jobs_with_setupnodecaching(input.jobs))])
 }
 
+deny[msg] {
+    # This rule prevents usage of forbidden "self-hosted" label in a "runs-on"
+    # clause as described by Infra team: https://confluence.camunda.com/x/_IlZBw
+
+    count(get_jobs_with_selfhostedlabel(input.jobs)) > 0
+
+    msg := sprintf("There are GitHub Actions jobs using forbidden 'self-hosted' label in 'runs-on' clause! Affected job IDs: %s",
+        [concat(", ", get_jobs_with_selfhostedlabel(input.jobs))])
+}
+
 warn[msg] {
     # This rule warns in situations where no "secrets: inherit" is passed on
     # calling other workflows as this is usually an oversight that prevents
@@ -67,6 +77,31 @@ get_jobs_with_setupnodecaching(jobInput) = jobs_with_setupnodecaching {
             step["with"].cache == "yarn"
         }
         count(setupnodecaching_steps) > 0
+    }
+}
+
+get_jobs_with_selfhostedlabel(jobInput) = jobs_with_selfhostedlabel1 | jobs_with_selfhostedlabel2 {
+    # expression to check for jobs using "runs-on: self-hosted" notation (without array)
+    jobs_with_selfhostedlabel1 := { job_id |
+        job := jobInput[job_id]
+
+        # not enforced on jobs that invoke other reusable workflows (instead enforced there)
+        not job.uses
+
+        job["runs-on"] == "self-hosted"
+    }
+    # expression to check for jobs using "runs-on: [self-hosted, ...]" notation (array)
+    jobs_with_selfhostedlabel2 := { job_id |
+        job := jobInput[job_id]
+
+        # not enforced on jobs that invoke other reusable workflows (instead enforced there)
+        not job.uses
+
+        selfhosted_labels := { label |
+            label := job["runs-on"][_]
+            label == "self-hosted"
+        }
+        count(selfhosted_labels) > 0
     }
 }
 
