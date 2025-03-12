@@ -170,3 +170,22 @@ it('should invoke onAdd when selecting an identity even if it is not in loaded i
 
   expect(spy).toHaveBeenCalledWith({id: 'testUserID'});
 });
+
+it('should display all info in the item string to ensure correct filtering', () => {
+  const items = [
+    {id: '1', label: 'John Doe', subText: 'john@example.com'},
+    {id: '2', label: '', subText: 'jane@example.com'},
+    {id: '3', label: '', subText: ''},
+  ];
+
+  const node = shallow(<MultiUserInput {...props} />);
+
+  expect(node.find(FilterableMultiSelect).prop('itemToString')?.(items[0])).toBe(
+    'John Doejohn@example.com1'
+  );
+  expect(node.find(FilterableMultiSelect).prop('itemToString')?.(items[1])).toBe(
+    'jane@example.com2'
+  );
+  expect(node.find(FilterableMultiSelect).prop('itemToString')?.(items[2])).toBe('3');
+  expect(node.find(FilterableMultiSelect).prop('itemToString')?.(null)).toBe('');
+});

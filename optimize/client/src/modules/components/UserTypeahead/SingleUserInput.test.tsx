@@ -102,3 +102,18 @@ it('should not call onAdd when loading is true', () => {
   node.find(ComboBox).prop('onChange')({selectedItem});
   expect(props.onAdd).not.toHaveBeenCalled();
 });
+
+it('should return the correct string representation of an item', () => {
+  const items = [
+    {id: '1', label: 'John Doe', subText: 'john@example.com'},
+    {id: '2', label: '', subText: 'jane@example.com'},
+    {id: '3', label: '', subText: ''},
+  ];
+
+  const node = shallow(<SingleUserInput {...props} />);
+
+  expect(node.find(ComboBox).prop('itemToString')?.(items[0])).toBe('John Doe');
+  expect(node.find(ComboBox).prop('itemToString')?.(items[1])).toBe('jane@example.com');
+  expect(node.find(ComboBox).prop('itemToString')?.(items[2])).toBe('3');
+  expect(node.find(ComboBox).prop('itemToString')?.(null)).toBe('');
+});
