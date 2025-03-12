@@ -12,12 +12,12 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.camunda.client.CamundaClient;
 import io.camunda.it.migration.util.CamundaMigrator;
 import io.camunda.it.migration.util.MigrationITExtension;
 import io.camunda.search.clients.core.SearchQueryHit;
 import io.camunda.search.clients.core.SearchQueryRequest;
 import io.camunda.search.clients.query.SearchQueryBuilders;
-import io.camunda.search.connect.configuration.DatabaseType;
 import io.camunda.tasklist.webapp.api.rest.v1.entities.TaskSearchRequest;
 import io.camunda.tasklist.webapp.api.rest.v1.entities.TaskSearchResponse;
 import io.camunda.webapps.schema.descriptors.tasklist.template.TaskTemplate;
@@ -38,15 +38,13 @@ import java.util.Optional;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.UnaryOperator;
 import org.awaitility.Awaitility;
-import org.junit.jupiter.api.MethodOrderer.OrderAnnotation;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.TestInstance.Lifecycle;
-import org.junit.jupiter.api.TestMethodOrder;
 import org.junit.jupiter.api.TestTemplate;
+import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-@TestMethodOrder(OrderAnnotation.class)
 @TestInstance(Lifecycle.PER_CLASS)
 public class MigrationUserTaskUpdateIT {
 
@@ -55,7 +53,7 @@ public class MigrationUserTaskUpdateIT {
   private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
   private long deployAndStartUserTaskProcess(
-      final DatabaseType databaseType, final UnaryOperator<UserTaskBuilder> builder) {
+      final CamundaClient client, final UnaryOperator<UserTaskBuilder> builder) {
     final var process =
         Bpmn.createExecutableProcess("task-process")
             .startEvent()
@@ -64,15 +62,9 @@ public class MigrationUserTaskUpdateIT {
             .endEvent()
             .done();
 
-    PROVIDER
-        .getCamundaClient(databaseType)
-        .newDeployResourceCommand()
-        .addProcessModel(process, "task-process.bpmn")
-        .send()
-        .join();
+    client.newDeployResourceCommand().addProcessModel(process, "task-process.bpmn").send().join();
 
-    return PROVIDER
-        .getCamundaClient(databaseType)
+    return client
         .newCreateInstanceCommand()
         .bpmnProcessId("task-process")
         .latestVersion()
@@ -152,13 +144,15 @@ public class MigrationUserTaskUpdateIT {
   class AssignUserTaskTests {
 
     @TestTemplate
-    void shouldAssign87ZeebeTaskV1(final DatabaseType databaseType, final CamundaMigrator migrator)
+    void shouldAssign87ZeebeTaskV1(final ExtensionContext context, final CamundaMigrator migrator)
         throws IOException {
+
       final var piKey =
-          deployAndStartUserTaskProcess(databaseType, AbstractUserTaskBuilder::zeebeUserTask);
+          deployAndStartUserTaskProcess(
+              PROVIDER.getCamundaClient(context), AbstractUserTaskBuilder::zeebeUserTask);
       final var taskKey = waitForTaskToBeImportedReturningId(migrator, piKey);
-      PROVIDER.has87Data(databaseType);
-      PROVIDER.upgrade(databaseType, new HashMap<>());
+      PROVIDER.has87Data(context);
+      PROVIDER.upgrade(context, new HashMap<>());
       final var res =
           migrator
               .getTasklistClient()
@@ -166,38 +160,34 @@ public class MigrationUserTaskUpdateIT {
               .assignUserTask(taskKey, "demo");
       assertThat(res.statusCode()).isEqualTo(200);
 
-      shouldBeAssigned(databaseType, taskKey);
+      shouldBeAssigned(migrator.getCamundaClient(), taskKey);
     }
 
     @TestTemplate
-    void shouldAssign87ZeebeTaskV2(final DatabaseType databaseType, final CamundaMigrator migrator)
+    void shouldAssign87ZeebeTaskV2(final ExtensionContext context, final CamundaMigrator migrator)
         throws IOException {
 
       final var piKey =
-          deployAndStartUserTaskProcess(databaseType, AbstractUserTaskBuilder::zeebeUserTask);
+          deployAndStartUserTaskProcess(
+              migrator.getCamundaClient(), AbstractUserTaskBuilder::zeebeUserTask);
       final var taskKey = waitForTaskToBeImportedReturningId(migrator, piKey);
 
-      PROVIDER.has87Data(databaseType);
-      PROVIDER.upgrade(databaseType, new HashMap<>());
+      PROVIDER.has87Data(context);
+      PROVIDER.upgrade(context, new HashMap<>());
 
-      PROVIDER
-          .getCamundaClient(databaseType)
-          .newUserTaskAssignCommand(taskKey)
-          .assignee("demo")
-          .send()
-          .join();
+      migrator.getCamundaClient().newUserTaskAssignCommand(taskKey).assignee("demo").send().join();
 
-      shouldBeAssigned(databaseType, taskKey);
+      shouldBeAssigned(migrator.getCamundaClient(), taskKey);
     }
 
     @TestTemplate
-    void shouldAssign88ZeebeTaskV1(final DatabaseType databaseType, final CamundaMigrator migrator)
-        throws IOException {
+    void shouldAssign88ZeebeTaskV1(final ExtensionContext context, final CamundaMigrator migrator) {
 
-      PROVIDER.upgrade(databaseType, new HashMap<>());
+      PROVIDER.upgrade(context, new HashMap<>());
 
       final var piKey =
-          deployAndStartUserTaskProcess(databaseType, AbstractUserTaskBuilder::zeebeUserTask);
+          deployAndStartUserTaskProcess(
+              migrator.getCamundaClient(), AbstractUserTaskBuilder::zeebeUserTask);
       final var taskKey = waitFor88TaskToBeImportedReturningId(migrator, piKey);
 
       final var res =
@@ -207,37 +197,32 @@ public class MigrationUserTaskUpdateIT {
               .assignUserTask(taskKey, "demo");
       assertThat(res.statusCode()).isEqualTo(200);
 
-      shouldBeAssigned(databaseType, taskKey);
+      shouldBeAssigned(migrator.getCamundaClient(), taskKey);
     }
 
     @TestTemplate
-    void shouldAssign88ZeebeTaskV2(final DatabaseType databaseType, final CamundaMigrator migrator)
-        throws IOException {
+    void shouldAssign88ZeebeTaskV2(final ExtensionContext context, final CamundaMigrator migrator) {
 
-      PROVIDER.upgrade(databaseType, new HashMap<>());
+      PROVIDER.upgrade(context, new HashMap<>());
 
       final var piKey =
-          deployAndStartUserTaskProcess(databaseType, AbstractUserTaskBuilder::zeebeUserTask);
+          deployAndStartUserTaskProcess(
+              migrator.getCamundaClient(), AbstractUserTaskBuilder::zeebeUserTask);
       final var taskKey = waitFor88TaskToBeImportedReturningId(migrator, piKey);
 
-      PROVIDER
-          .getCamundaClient(databaseType)
-          .newUserTaskAssignCommand(taskKey)
-          .assignee("demo")
-          .send()
-          .join();
+      migrator.getCamundaClient().newUserTaskAssignCommand(taskKey).assignee("demo").send().join();
 
-      shouldBeAssigned(databaseType, taskKey);
+      shouldBeAssigned(migrator.getCamundaClient(), taskKey);
     }
 
     @TestTemplate
-    void shouldAssign87JobWorkerV1(final DatabaseType databaseType, final CamundaMigrator migrator)
+    void shouldAssign87JobWorkerV1(final ExtensionContext context, final CamundaMigrator migrator)
         throws IOException {
 
-      final var piKey = deployAndStartUserTaskProcess(databaseType, t -> t);
+      final var piKey = deployAndStartUserTaskProcess(migrator.getCamundaClient(), t -> t);
       final var taskKey = waitForTaskToBeImportedReturningId(migrator, piKey);
-      PROVIDER.has87Data(databaseType);
-      PROVIDER.upgrade(databaseType, new HashMap<>());
+      PROVIDER.has87Data(context);
+      PROVIDER.upgrade(context, new HashMap<>());
 
       final var res =
           migrator
@@ -246,16 +231,14 @@ public class MigrationUserTaskUpdateIT {
               .assignUserTask(taskKey, "demo");
       assertThat(res.statusCode()).isEqualTo(200);
 
-      shouldBeAssigned(databaseType, taskKey);
+      shouldBeAssigned(migrator.getCamundaClient(), taskKey);
     }
 
     @TestTemplate
-    void shouldAssign88JobWorkerV1(
-        final DatabaseType databaseType, final CamundaMigrator migrator) {
+    void shouldAssign88JobWorkerV1(final ExtensionContext context, final CamundaMigrator migrator) {
 
-      PROVIDER.upgrade(databaseType, new HashMap<>());
-
-      final var piKey = deployAndStartUserTaskProcess(databaseType, t -> t);
+      PROVIDER.upgrade(context, new HashMap<>());
+      final var piKey = deployAndStartUserTaskProcess(migrator.getCamundaClient(), t -> t);
       final var taskKey = waitFor88TaskToBeImportedReturningId(migrator, piKey);
 
       final var res =
@@ -265,18 +248,17 @@ public class MigrationUserTaskUpdateIT {
               .assignUserTask(taskKey, "demo");
       assertThat(res.statusCode()).isEqualTo(200);
 
-      shouldBeAssigned(databaseType, taskKey);
+      shouldBeAssigned(migrator.getCamundaClient(), taskKey);
     }
 
-    private void shouldBeAssigned(final DatabaseType databaseType, final long userTaskKey) {
+    private void shouldBeAssigned(final CamundaClient client, final long userTaskKey) {
       Awaitility.await("User Task should be assigned")
           .atMost(Duration.ofSeconds(15))
           .pollInterval(Duration.ofSeconds(1))
           .untilAsserted(
               () -> {
                 final var tasks =
-                    PROVIDER
-                        .getCamundaClient(databaseType)
+                    client
                         .newUserTaskQuery()
                         .filter(f -> f.userTaskKey(userTaskKey))
                         .send()
@@ -292,113 +274,118 @@ public class MigrationUserTaskUpdateIT {
   @Nested
   class UnassignUserTaskTests {
     @TestTemplate
-    void shouldUnassign87ZeebeTaskV1(
-        final DatabaseType databaseType, final CamundaMigrator migrator) throws IOException {
+    void shouldUnassign87ZeebeTaskV1(final ExtensionContext context, final CamundaMigrator migrator)
+        throws IOException {
 
       final var piKey =
-          deployAndStartUserTaskProcess(databaseType, t -> t.zeebeUserTask().zeebeAssignee("test"));
+          deployAndStartUserTaskProcess(
+              migrator.getCamundaClient(), t -> t.zeebeUserTask().zeebeAssignee("test"));
       final var taskKey = waitForTaskToBeImportedReturningId(migrator, piKey);
 
-      PROVIDER.has87Data(databaseType);
-      PROVIDER.upgrade(databaseType, new HashMap<>());
+      PROVIDER.has87Data(context);
+      PROVIDER.upgrade(context, new HashMap<>());
 
       final var res =
           migrator.getTasklistClient().withAuthentication("demo", "demo").unassignUserTask(taskKey);
       assertThat(res.statusCode()).isEqualTo(200);
 
-      shouldBeUnassigned(databaseType, taskKey);
+      shouldBeUnassigned(migrator.getCamundaClient(), taskKey);
     }
 
     @TestTemplate
-    void shouldUnassign87ZeebeTaskV2(
-        final DatabaseType databaseType, final CamundaMigrator migrator) throws IOException {
+    void shouldUnassign87ZeebeTaskV2(final ExtensionContext context, final CamundaMigrator migrator)
+        throws IOException {
 
       final var piKey =
-          deployAndStartUserTaskProcess(databaseType, t -> t.zeebeUserTask().zeebeAssignee("test"));
+          deployAndStartUserTaskProcess(
+              migrator.getCamundaClient(), t -> t.zeebeUserTask().zeebeAssignee("test"));
       final var taskKey = waitForTaskToBeImportedReturningId(migrator, piKey);
 
-      PROVIDER.has87Data(databaseType);
-      PROVIDER.upgrade(databaseType, new HashMap<>());
+      PROVIDER.has87Data(context);
+      PROVIDER.upgrade(context, new HashMap<>());
 
-      PROVIDER.getCamundaClient(databaseType).newUserTaskUnassignCommand(taskKey).send().join();
+      PROVIDER.getCamundaClient(context).newUserTaskUnassignCommand(taskKey).send().join();
 
-      shouldBeUnassigned(databaseType, taskKey);
+      shouldBeUnassigned(migrator.getCamundaClient(), taskKey);
     }
 
     @TestTemplate
     void shouldUnassign88ZeebeTaskV1(
-        final DatabaseType databaseType, final CamundaMigrator migrator) {
+        final ExtensionContext context, final CamundaMigrator migrator) {
 
-      PROVIDER.upgrade(databaseType, new HashMap<>());
+      PROVIDER.upgrade(context, new HashMap<>());
 
       final var piKey =
-          deployAndStartUserTaskProcess(databaseType, t -> t.zeebeUserTask().zeebeAssignee("test"));
+          deployAndStartUserTaskProcess(
+              migrator.getCamundaClient(), t -> t.zeebeUserTask().zeebeAssignee("test"));
       final var taskKey = waitFor88TaskToBeImportedReturningId(migrator, piKey);
 
       final var res =
           migrator.getTasklistClient().withAuthentication("demo", "demo").unassignUserTask(taskKey);
       assertThat(res.statusCode()).isEqualTo(200);
 
-      shouldBeUnassigned(databaseType, taskKey);
+      shouldBeUnassigned(migrator.getCamundaClient(), taskKey);
     }
 
     @TestTemplate
     void shouldUnassign88ZeebeTaskV2(
-        final DatabaseType databaseType, final CamundaMigrator migrator) {
+        final ExtensionContext context, final CamundaMigrator migrator) {
 
-      PROVIDER.upgrade(databaseType, new HashMap<>());
+      PROVIDER.upgrade(context, new HashMap<>());
 
       final var piKey =
-          deployAndStartUserTaskProcess(databaseType, t -> t.zeebeUserTask().zeebeAssignee("test"));
+          deployAndStartUserTaskProcess(
+              migrator.getCamundaClient(), t -> t.zeebeUserTask().zeebeAssignee("test"));
       final var taskKey = waitFor88TaskToBeImportedReturningId(migrator, piKey);
 
-      PROVIDER.getCamundaClient(databaseType).newUserTaskUnassignCommand(taskKey).send().join();
+      PROVIDER.getCamundaClient(context).newUserTaskUnassignCommand(taskKey).send().join();
 
-      shouldBeUnassigned(databaseType, taskKey);
+      shouldBeUnassigned(migrator.getCamundaClient(), taskKey);
     }
 
     @TestTemplate
-    void shouldUnAssign87JobWorkerV1(
-        final DatabaseType databaseType, final CamundaMigrator migrator) throws IOException {
+    void shouldUnAssign87JobWorkerV1(final ExtensionContext context, final CamundaMigrator migrator)
+        throws IOException {
 
-      final var piKey = deployAndStartUserTaskProcess(databaseType, t -> t.zeebeAssignee("test"));
+      final var piKey =
+          deployAndStartUserTaskProcess(migrator.getCamundaClient(), t -> t.zeebeAssignee("test"));
       final var taskKey = waitForTaskToBeImportedReturningId(migrator, piKey);
 
-      PROVIDER.has87Data(databaseType);
-      PROVIDER.upgrade(databaseType, new HashMap<>());
+      PROVIDER.has87Data(context);
+      PROVIDER.upgrade(context, new HashMap<>());
 
       final var res =
           migrator.getTasklistClient().withAuthentication("demo", "demo").unassignUserTask(taskKey);
       assertThat(res.statusCode()).isEqualTo(200);
 
-      shouldBeUnassigned(databaseType, taskKey);
+      shouldBeUnassigned(migrator.getCamundaClient(), taskKey);
     }
 
     @TestTemplate
     void shouldUnAssign88JobWorkerV1(
-        final DatabaseType databaseType, final CamundaMigrator migrator) {
+        final ExtensionContext context, final CamundaMigrator migrator) {
 
-      PROVIDER.upgrade(databaseType, new HashMap<>());
+      PROVIDER.upgrade(context, new HashMap<>());
 
-      final var piKey = deployAndStartUserTaskProcess(databaseType, t -> t.zeebeAssignee("test"));
+      final var piKey =
+          deployAndStartUserTaskProcess(migrator.getCamundaClient(), t -> t.zeebeAssignee("test"));
       final var taskKey = waitFor88TaskToBeImportedReturningId(migrator, piKey);
 
       final var res =
           migrator.getTasklistClient().withAuthentication("demo", "demo").unassignUserTask(taskKey);
       assertThat(res.statusCode()).isEqualTo(200);
 
-      shouldBeUnassigned(databaseType, taskKey);
+      shouldBeUnassigned(migrator.getCamundaClient(), taskKey);
     }
 
-    private void shouldBeUnassigned(final DatabaseType databaseType, final long taskKey) {
+    private void shouldBeUnassigned(final CamundaClient client, final long taskKey) {
       Awaitility.await("User Task should be unassigned")
           .atMost(Duration.ofSeconds(15))
           .pollInterval(Duration.ofSeconds(1))
           .untilAsserted(
               () -> {
                 final var tasks =
-                    PROVIDER
-                        .getCamundaClient(databaseType)
+                    client
                         .newUserTaskQuery()
                         .filter(f -> f.userTaskKey(taskKey))
                         .send()
@@ -414,114 +401,120 @@ public class MigrationUserTaskUpdateIT {
   @Nested
   class CompleteUserTaskTests {
     @TestTemplate
-    void shouldComplete87ZeebeTaskV1(
-        final DatabaseType databaseType, final CamundaMigrator migrator) throws IOException {
+    void shouldComplete87ZeebeTaskV1(final ExtensionContext context, final CamundaMigrator migrator)
+        throws IOException {
 
       final var piKey =
-          deployAndStartUserTaskProcess(databaseType, t -> t.zeebeUserTask().zeebeAssignee("demo"));
+          deployAndStartUserTaskProcess(
+              migrator.getCamundaClient(), t -> t.zeebeUserTask().zeebeAssignee("demo"));
+
       final var taskKey = waitForTaskToBeImportedReturningId(migrator, piKey);
 
-      PROVIDER.has87Data(databaseType);
-      PROVIDER.upgrade(databaseType, new HashMap<>());
+      PROVIDER.has87Data(context);
+      PROVIDER.upgrade(context, new HashMap<>());
 
       final var res =
           migrator.getTasklistClient().withAuthentication("demo", "demo").completeUserTask(taskKey);
       assertThat(res.statusCode()).isEqualTo(200);
 
-      shouldBeCompleted(databaseType, taskKey);
+      shouldBeCompleted(migrator.getCamundaClient(), taskKey);
     }
 
     @TestTemplate
-    void shouldComplete87ZeebeTaskV2(
-        final DatabaseType databaseType, final CamundaMigrator migrator) throws IOException {
+    void shouldComplete87ZeebeTaskV2(final ExtensionContext context, final CamundaMigrator migrator)
+        throws IOException {
 
       final var piKey =
-          deployAndStartUserTaskProcess(databaseType, t -> t.zeebeUserTask().zeebeAssignee("demo"));
+          deployAndStartUserTaskProcess(
+              migrator.getCamundaClient(), t -> t.zeebeUserTask().zeebeAssignee("demo"));
       final var taskKey = waitForTaskToBeImportedReturningId(migrator, piKey);
 
-      PROVIDER.has87Data(databaseType);
-      PROVIDER.upgrade(databaseType, new HashMap<>());
+      PROVIDER.has87Data(context);
+      PROVIDER.upgrade(context, new HashMap<>());
 
       final var res =
-          PROVIDER.getCamundaClient(databaseType).newUserTaskCompleteCommand(taskKey).send().join();
+          PROVIDER.getCamundaClient(context).newUserTaskCompleteCommand(taskKey).send().join();
 
-      shouldBeCompleted(databaseType, taskKey);
+      shouldBeCompleted(migrator.getCamundaClient(), taskKey);
     }
 
     @TestTemplate
     void shouldComplete88ZeebeTaskV1(
-        final DatabaseType databaseType, final CamundaMigrator migrator) {
+        final ExtensionContext context, final CamundaMigrator migrator) {
 
-      PROVIDER.upgrade(databaseType, new HashMap<>());
+      PROVIDER.upgrade(context, new HashMap<>());
 
       final var piKey =
-          deployAndStartUserTaskProcess(databaseType, t -> t.zeebeUserTask().zeebeAssignee("demo"));
+          deployAndStartUserTaskProcess(
+              migrator.getCamundaClient(), t -> t.zeebeUserTask().zeebeAssignee("demo"));
       final var taskKey = waitFor88TaskToBeImportedReturningId(migrator, piKey);
 
       final var res =
           migrator.getTasklistClient().withAuthentication("demo", "demo").completeUserTask(taskKey);
       assertThat(res.statusCode()).isEqualTo(200);
 
-      shouldBeCompleted(databaseType, taskKey);
+      shouldBeCompleted(migrator.getCamundaClient(), taskKey);
     }
 
     @TestTemplate
     void shouldComplete88ZeebeTaskV2(
-        final DatabaseType databaseType, final CamundaMigrator migrator) {
+        final ExtensionContext context, final CamundaMigrator migrator) {
 
-      PROVIDER.upgrade(databaseType, new HashMap<>());
+      PROVIDER.upgrade(context, new HashMap<>());
 
       final var piKey =
-          deployAndStartUserTaskProcess(databaseType, t -> t.zeebeUserTask().zeebeAssignee("demo"));
+          deployAndStartUserTaskProcess(
+              migrator.getCamundaClient(), t -> t.zeebeUserTask().zeebeAssignee("demo"));
       final var taskKey = waitFor88TaskToBeImportedReturningId(migrator, piKey);
 
-      PROVIDER.getCamundaClient(databaseType).newUserTaskCompleteCommand(taskKey).send().join();
+      PROVIDER.getCamundaClient(context).newUserTaskCompleteCommand(taskKey).send().join();
 
-      shouldBeCompleted(databaseType, taskKey);
+      shouldBeCompleted(migrator.getCamundaClient(), taskKey);
     }
 
     @TestTemplate
-    void shouldComplete87JobWorkerV1(
-        final DatabaseType databaseType, final CamundaMigrator migrator) throws IOException {
+    void shouldComplete87JobWorkerV1(final ExtensionContext context, final CamundaMigrator migrator)
+        throws IOException {
 
-      final var piKey = deployAndStartUserTaskProcess(databaseType, t -> t.zeebeAssignee("demo"));
+      final var piKey =
+          deployAndStartUserTaskProcess(migrator.getCamundaClient(), t -> t.zeebeAssignee("demo"));
       final var taskKey = waitForTaskToBeImportedReturningId(migrator, piKey);
 
-      PROVIDER.has87Data(databaseType);
-      PROVIDER.upgrade(databaseType, new HashMap<>());
+      PROVIDER.has87Data(context);
+      PROVIDER.upgrade(context, new HashMap<>());
 
       final var res =
           migrator.getTasklistClient().withAuthentication("demo", "demo").completeUserTask(taskKey);
       assertThat(res.statusCode()).isEqualTo(200);
 
-      shouldBeCompleted(databaseType, taskKey);
+      shouldBeCompleted(migrator.getCamundaClient(), taskKey);
     }
 
     @TestTemplate
     void shouldComplete88JobWorkerV1(
-        final DatabaseType databaseType, final CamundaMigrator migrator) {
+        final ExtensionContext context, final CamundaMigrator migrator) {
 
-      PROVIDER.upgrade(databaseType, new HashMap<>());
+      PROVIDER.upgrade(context, new HashMap<>());
 
-      final var piKey = deployAndStartUserTaskProcess(databaseType, t -> t.zeebeAssignee("demo"));
+      final var piKey =
+          deployAndStartUserTaskProcess(migrator.getCamundaClient(), t -> t.zeebeAssignee("demo"));
       final var taskKey = waitFor88TaskToBeImportedReturningId(migrator, piKey);
 
       final var res =
           migrator.getTasklistClient().withAuthentication("demo", "demo").completeUserTask(taskKey);
       assertThat(res.statusCode()).isEqualTo(200);
 
-      shouldBeCompleted(databaseType, taskKey);
+      shouldBeCompleted(migrator.getCamundaClient(), taskKey);
     }
 
-    private void shouldBeCompleted(final DatabaseType databaseType, final long taskKey) {
+    private void shouldBeCompleted(final CamundaClient client, final long taskKey) {
       Awaitility.await("User Task should be completed")
           .atMost(Duration.ofSeconds(15))
           .pollInterval(Duration.ofSeconds(1))
           .untilAsserted(
               () -> {
                 final var tasks =
-                    PROVIDER
-                        .getCamundaClient(databaseType)
+                    client
                         .newUserTaskQuery()
                         .filter(f -> f.userTaskKey(taskKey))
                         .send()
