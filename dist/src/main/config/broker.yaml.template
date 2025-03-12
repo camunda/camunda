@@ -1257,6 +1257,18 @@
           # This setting can also be overridden using the environment variable ZEEBE_BROKER_EXPERIMENTAL_ENGINE_AUTHORIZATIONS_ENABLEAUTHORIZATION
           # enableAuthorization: false
 
+        # Allows to configure the maximum depth of child process instances that can be created.
+        # The root process instance is considered depth `1`, and each called instance is considered
+        # to be one level deeper. If a call activity attempts to create a child process instance
+        # that would exceed the configured max depth, an incident is raised at the call activity.
+        # Note that the depth is only tracked for process instances created since 8.3.22, 8.4.18,
+        # 8.5.17, 8.6.12, and 8.7. Any child process instances created before 8.7 (or any of these
+        # patches) will have a depth of 1 rather than the correct depth. For existing child process
+        # instances, the limit is thus applied only from the current child instance onwards.
+        # This setting can also be overridden using the environment variable
+        # ZEEBE_BROKER_EXPERIMENTAL_ENGINE_MAXPROCESSDEPTH
+        # maxProcessDepth: 1000
+
       # Allows to configure feature flags. These are used to test new features in dev and int environments prior
       # to rolling them out to production
       # features:
