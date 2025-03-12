@@ -15,6 +15,7 @@ import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutablePro
 import io.camunda.zeebe.engine.processing.deployment.model.transformation.ModelElementTransformer;
 import io.camunda.zeebe.engine.processing.deployment.model.transformation.TransformContext;
 import io.camunda.zeebe.model.bpmn.instance.AdHocSubProcess;
+import io.camunda.zeebe.model.bpmn.instance.CompletionCondition;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeAdHoc;
 import java.util.Collection;
 import java.util.Optional;
@@ -34,6 +35,14 @@ public final class AdHocSubProcessTransformer implements ModelElementTransformer
 
     final var expressionLanguage = context.getExpressionLanguage();
     setActiveElementsCollection(executableAdHocSubProcess, element, expressionLanguage);
+
+    Optional.ofNullable(element.getCompletionCondition())
+        .map(CompletionCondition::getTextContent)
+        .filter(e -> !e.isBlank())
+        .map(context.getExpressionLanguage()::parseExpression)
+        .ifPresent(executableAdHocSubProcess::setCompletionCondition);
+
+    executableAdHocSubProcess.setCancelRemainingInstances(element.isCancelRemainingInstances());
 
     final Collection<AbstractFlowElement> childElements =
         executableAdHocSubProcess.getChildElements();

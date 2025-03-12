@@ -583,8 +583,7 @@ paths:
           required: true
           description: The unique identifier of the mapping rule.
           schema:
-            type: integer
-            format: int64
+            type: string
       responses:
         "202":
           description: The mapping rule was successfully assigned to the tenant.
@@ -619,8 +618,7 @@ paths:
           required: true
           description: The unique identifier of the mapping rule.
           schema:
-            type: integer
-            format: int64
+            type: string
       responses:
         "202":
           description: The mapping rule was successfully removed from the tenant.
@@ -656,8 +654,7 @@ paths:
           required: true
           description: The unique identifier of the group.
           schema:
-            type: integer
-            format: int64
+            type: string
       responses:
         "202":
           description: The group was successfully assigned to the tenant.
@@ -692,8 +689,7 @@ paths:
           required: true
           description: The unique identifier of the group.
           schema:
-            type: integer
-            format: int64
+            type: string
       responses:
         "202":
           description: The group was successfully removed from the tenant.
@@ -1326,6 +1322,45 @@ paths:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+  /process-definitions/{processDefinitionKey}/statistics/flownode-instances:
+    post:
+      tags:
+        - Process definition
+      operationId: getProcessDefinitionStatistics
+      summary: Get process definition statistics
+      description: |
+        Get statistics about flow nodes in currently running process instances by process definition key and search filter.
+      parameters:
+        - name: processDefinitionKey
+          in: path
+          required: true
+          description: The assigned key of the process definition, which acts as a unique identifier for this process definition.
+          schema:
+            type: string
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProcessDefinitionFlowNodeStatisticsQuery"
+      responses:
+        "200":
+          description: The process definition statistics result.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ProcessDefinitionFlowNodeStatisticsResult"
+        "400":
+          $ref: "#/components/responses/InvalidData"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
         "500":
           $ref: "#/components/responses/InternalServerError"
 
@@ -2024,8 +2059,7 @@ paths:
           required: true
           description: The key of the authorization to delete.
           schema:
-            type: integer
-            format: int64
+            type: string
       requestBody:
         content:
           application/json:
@@ -2057,8 +2091,7 @@ paths:
           required: true
           description: The key of the authorization to delete.
           schema:
-            type: integer
-            format: int64
+            type: string
       responses:
         "204":
           description: The authorization was deleted successfully.
@@ -2435,8 +2468,7 @@ paths:
           required: true
           description: The user key.
           schema:
-            type: integer
-            format: int64
+            type: string
       responses:
         "202":
           description: The user was assigned successfully to the group.
@@ -4184,26 +4216,10 @@ components:
           title: Exact match
           description: Matches the value exactly.
         - $ref: "#/components/schemas/AdvancedDateTimeFilter"
-    ProcessInstanceFilter:
-      description: Process instance search filter.
+    BaseProcessInstanceFilter:
+      description: Base process instance search filter.
       type: object
       properties:
-        processDefinitionId:
-          description: The process definition ID.
-          allOf:
-            - $ref: "#/components/schemas/StringFilterProperty"
-        processDefinitionName:
-          description: The process definition name.
-          allOf:
-            - $ref: "#/components/schemas/StringFilterProperty"
-        processDefinitionVersion:
-          description: The process definition version.
-          allOf:
-            - $ref: "#/components/schemas/IntegerFilterProperty"
-        processDefinitionVersionTag:
-          description: The process definition version tag.
-          allOf:
-            - $ref: "#/components/schemas/StringFilterProperty"
         startDate:
           description: The start date.
           allOf:
@@ -4232,16 +4248,38 @@ components:
           description: The key of this process instance.
           allOf:
             - $ref: "#/components/schemas/BasicStringFilterProperty"
-        processDefinitionKey:
-          description: The process definition key.
-          allOf:
-            - $ref: "#/components/schemas/BasicStringFilterProperty"
         parentProcessInstanceKey:
           description: The parent process instance key.
           allOf:
             - $ref: "#/components/schemas/BasicStringFilterProperty"
         parentFlowNodeInstanceKey:
           description: The parent flow node instance key.
+          allOf:
+            - $ref: "#/components/schemas/BasicStringFilterProperty"
+    ProcessInstanceFilter:
+      description: Process instance search filter.
+      type: object
+      allOf:
+        - $ref: "#/components/schemas/BaseProcessInstanceFilter"
+      properties:
+        processDefinitionId:
+          description: The process definition ID.
+          allOf:
+            - $ref: "#/components/schemas/StringFilterProperty"
+        processDefinitionName:
+          description: The process definition name.
+          allOf:
+            - $ref: "#/components/schemas/StringFilterProperty"
+        processDefinitionVersion:
+          description: The process definition version.
+          allOf:
+            - $ref: "#/components/schemas/IntegerFilterProperty"
+        processDefinitionVersionTag:
+          description: The process definition version tag.
+          allOf:
+            - $ref: "#/components/schemas/StringFilterProperty"
+        processDefinitionKey:
+          description: The process definition key.
           allOf:
             - $ref: "#/components/schemas/BasicStringFilterProperty"
     ProcessInstanceVariableFilterRequest:
@@ -4316,6 +4354,37 @@ components:
         - ACTIVE
         - COMPLETED
         - TERMINATED
+    ProcessDefinitionFlowNodeStatisticsQuery:
+      description: Process definition flow node statistics request.
+      type: object
+      properties:
+        filter:
+          description: The process instance search filters.
+          allOf:
+            - $ref: "#/components/schemas/BaseProcessInstanceFilter"
+    ProcessDefinitionFlowNodeStatisticsResult:
+      description: Process definition flow node statistics response.
+      type: object
+      properties:
+        flowNodeId:
+          description: The flow node ID for which the results are aggregated.
+          type: string
+        active:
+          description: The total number of active instances of the flow node.
+          type: integer
+          format: int64
+        canceled:
+          description: The total number of canceled instances of the flow node.
+          type: integer
+          format: int64
+        incidents:
+          description: The total number of incidents for the flow node.
+          type: integer
+          format: int64
+        completed:
+          description: The total number of completed instances of the flow node.
+          type: integer
+          format: int64
     CancelProcessInstanceRequest:
       type: object
       nullable: true
@@ -6599,8 +6668,7 @@ components:
           type: string
           description: The ID of the process definition that created the document.
         processInstanceKey:
-          type: integer
-          format: int64
+          type: string
           description: The key of the process instance that created the document.
         customProperties:
           type: object
