@@ -18,7 +18,7 @@ import io.camunda.optimize.service.db.schema.DefaultIndexMappingCreator;
 import io.camunda.webapps.schema.descriptors.backup.Prio1Backup;
 
 public abstract class TimestampBasedImportIndex<TBuilder>
-    extends DefaultIndexMappingCreator<TBuilder> implements Prio1Backup {
+    extends DefaultIndexMappingCreator<TBuilder> {
 
   public static final int VERSION = 5;
 
