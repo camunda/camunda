@@ -16,7 +16,6 @@ import co.elastic.clients.elasticsearch._types.mapping.TypeMapping;
 import co.elastic.clients.elasticsearch.core.search.Hit;
 import co.elastic.clients.elasticsearch.ilm.Phase;
 import co.elastic.clients.elasticsearch.indices.IndexSettingsLifecycle;
-import co.elastic.clients.json.JsonData;
 import co.elastic.clients.json.jackson.JacksonJsonpMapper;
 import co.elastic.clients.transport.rest_client.RestClientTransport;
 import io.camunda.exporter.config.ExporterConfiguration.HistoryConfiguration;
@@ -361,8 +360,7 @@ final class ElasticsearchArchiverRepositoryIT {
   private void putLifecyclePolicy() throws IOException {
     final var ilmClient = testClient.ilm();
     final var phase =
-        Phase.of(
-            d -> d.minAge(t -> t.time("30d")).actions(JsonData.of(Map.of("delete", Map.of()))));
+        Phase.of(d -> d.minAge(t -> t.time("30d")).actions(a -> a.delete(del -> del)));
     ilmClient.putLifecycle(
         l -> l.name(retention.getPolicyName()).policy(p -> p.phases(h -> h.delete(phase))));
   }

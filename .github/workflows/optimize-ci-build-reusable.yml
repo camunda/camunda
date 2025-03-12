@@ -55,7 +55,7 @@ jobs:
       # Setup: read java version from pom
       - name: "Read Java / Version Info"
         id: pom-info
-        uses: YunaBraska/java-info-action@f6dd4b5fde2227fe5e8d808e3c4bba5d8c43c06c # 2.1.40
+        uses: YunaBraska/java-info-action@9cade115244a047aa71a76efa88d15f84c07607c # 2.1.41
         with:
           work-dir: ./optimize
 
@@ -102,7 +102,7 @@ jobs:
           DOCKER_BUILD_RECORD_UPLOAD: false
         with:
           context: .
-          file: optimize-internal-test.Dockerfile
+          file: optimize.Dockerfile
           provenance: false
           build-args: |
             VERSION=${{ steps.pom-info.outputs.project_version }}
