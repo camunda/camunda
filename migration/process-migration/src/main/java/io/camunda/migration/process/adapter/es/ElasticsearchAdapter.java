@@ -89,13 +89,10 @@ public class ElasticsearchAdapter implements Adapter {
                 q ->
                     q.range(
                         m ->
-                            m.number(
+                            m.term(
                                 n ->
                                     n.field(PROCESS_DEFINITION_KEY)
-                                        .gt(
-                                            lastMigratedEntity == null
-                                                ? null
-                                                : Double.valueOf(lastMigratedEntity)))))
+                                        .gt(lastMigratedEntity == null ? "" : lastMigratedEntity))))
             .build();
     final SearchResponse<ProcessEntity> searchResponse;
     try {
