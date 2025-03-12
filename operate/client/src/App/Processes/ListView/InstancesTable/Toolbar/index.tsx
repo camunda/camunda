@@ -14,10 +14,12 @@ import useOperationApply from '../useOperationApply';
 import {panelStatesStore} from 'modules/stores/panelStates';
 import {RetryFailed, Error} from '@carbon/react/icons';
 import {processInstancesSelectionStore} from 'modules/stores/processInstancesSelection';
+import {MigrateAction as MigrateActionV2} from './MigrateAction/v2';
 import {MigrateAction} from './MigrateAction';
 import {MoveAction} from './MoveAction';
 import {batchModificationStore} from 'modules/stores/batchModification';
 import {observer} from 'mobx-react';
+import {IS_PROCESS_INSTANCE_STATISTICS_V2_ENABLED} from 'modules/feature-flags';
 
 type Props = {
   selectedInstancesCount: number;
@@ -90,7 +92,11 @@ const Toolbar: React.FC<Props> = observer(({selectedInstancesCount}) => {
           }}
         >
           <MoveAction />
-          <MigrateAction />
+          {IS_PROCESS_INSTANCE_STATISTICS_V2_ENABLED ? (
+            <MigrateActionV2 />
+          ) : (
+            <MigrateAction />
+          )}
           <TableBatchAction
             renderIcon={Error}
             onClick={() => setModalMode('CANCEL_PROCESS_INSTANCE')}
