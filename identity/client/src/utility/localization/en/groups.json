@@ -14,5 +14,8 @@
   "groupHasBeenDeleted": "Group has been deleted.",
   "deleteGroup": "Delete group",
   "deletingGroup": "Deleting group",
-  "deleteGroupConfirmation": "Are you sure you want to delete <strong>{{groupKey}}</strong>? This action cannot be undone."
+  "deleteGroupConfirmation": "Are you sure you want to delete <strong>{{groupKey}}</strong>? This action cannot be undone.",
+  "editGroup": "Edit group",
+  "updatingGroup": "Updating group",
+  "description": "Description"
 }
