@@ -102,10 +102,13 @@ public class JobHandler implements ExportHandler<JobEntity, JobRecordValue> {
         .setEndTime(DateUtil.toOffsetDateTime(Instant.ofEpochMilli(record.getTimestamp())))
         .setCustomHeaders(recordValue.getCustomHeaders())
         .setJobKind(recordValue.getJobKind().name())
-        .setFlowNodeId(recordValue.getElementId())
-        .setJobDenied(recordValue.getResult() == null ? null : recordValue.getResult().isDenied())
-        .setJobDeniedReason(
-            recordValue.getResult() == null ? null : recordValue.getResult().getDeniedReason());
+        .setFlowNodeId(recordValue.getElementId());
+
+    if (record.getIntent() == JobIntent.COMPLETED) {
+      entity
+          .setDenied(recordValue.getResult().isDenied())
+          .setDeniedReason(recordValue.getResult().getDeniedReason());
+    }
 
     if (recordValue.getJobListenerEventType() != null) {
       entity.setListenerEventType(recordValue.getJobListenerEventType().name());
@@ -132,11 +135,11 @@ public class JobHandler implements ExportHandler<JobEntity, JobRecordValue> {
     if (jobEntity.getFlowNodeId() != null) {
       updateFields.put(FLOW_NODE_ID, jobEntity.getFlowNodeId());
     }
-    if (jobEntity.getJobDeniedReason() != null) {
-      updateFields.put(JOB_DENIED_REASON, jobEntity.getJobDeniedReason());
+    if (jobEntity.getDeniedReason() != null) {
+      updateFields.put(JOB_DENIED_REASON, jobEntity.getDeniedReason());
     }
-    if (jobEntity.isJobDenied() != null) {
-      updateFields.put(JOB_DENIED, jobEntity.isJobDenied());
+    if (jobEntity.isDenied() != null) {
+      updateFields.put(JOB_DENIED, jobEntity.isDenied());
     }
     updateFields.put(JOB_WORKER, jobEntity.getWorker());
     updateFields.put(JOB_STATE, jobEntity.getState());
