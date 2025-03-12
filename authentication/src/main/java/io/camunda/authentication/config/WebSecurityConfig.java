@@ -282,13 +282,23 @@ public class WebSecurityConfig {
     }
 
     @Bean
-    public JwtDecoder jwtDecoder(final SecurityConfiguration securityConfiguration) {
-      final var oidc = securityConfiguration.getAuthentication().getOidc();
-      final var decoder = NimbusJwtDecoder.withJwkSetUri(oidc.getJwkSetUri()).build();
+    public JwtDecoder jwtDecoder(
+        final SecurityConfiguration securityConfiguration,
+        final ClientRegistrationRepository clientRegistrationRepository) {
+      // Do not rely on the configured uri, the client registration can automatically discover it
+      // based on the issuer uri.
+      final var jwkSetUri =
+          clientRegistrationRepository
+              .findByRegistrationId(OidcClientRegistration.REGISTRATION_ID)
+              .getProviderDetails()
+              .getJwkSetUri();
 
-      if (oidc.getAudience() != null) {
+      final var validAudiences = securityConfiguration.getAuthentication().getOidc().getAudience();
+      final var decoder = NimbusJwtDecoder.withJwkSetUri(jwkSetUri).build();
+
+      if (validAudiences != null) {
         decoder.setJwtValidator(
-            JwtValidators.createDefaultWithValidators(new AudienceValidator(oidc.getAudience())));
+            JwtValidators.createDefaultWithValidators(new AudienceValidator(validAudiences)));
       }
 
       return decoder;
