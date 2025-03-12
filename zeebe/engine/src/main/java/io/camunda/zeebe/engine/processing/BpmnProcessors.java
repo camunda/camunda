@@ -39,6 +39,7 @@ import io.camunda.zeebe.engine.state.message.TransientPendingSubscriptionState;
 import io.camunda.zeebe.engine.state.mutable.MutableElementInstanceState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessMessageSubscriptionState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
+import io.camunda.zeebe.engine.state.mutable.MutableUserTaskState;
 import io.camunda.zeebe.engine.state.routing.RoutingInfo;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.record.ValueType;
@@ -104,6 +105,7 @@ public final class BpmnProcessors {
         processingState,
         keyGenerator,
         writers,
+        processingState.getUserTaskState(),
         authCheckBehavior);
     addProcessInstanceCreationStreamProcessors(
         typedRecordProcessors,
@@ -220,12 +222,18 @@ public final class BpmnProcessors {
       final ProcessingState processingState,
       final KeyGenerator keyGenerator,
       final Writers writers,
+      final MutableUserTaskState userTaskState,
       final AuthorizationCheckBehavior authCheckBehavior) {
     typedRecordProcessors.onCommand(
         ValueType.VARIABLE_DOCUMENT,
         VariableDocumentIntent.UPDATE,
         new VariableDocumentUpdateProcessor(
-            processingState, keyGenerator, bpmnBehaviors, writers, authCheckBehavior));
+            processingState,
+            keyGenerator,
+            bpmnBehaviors,
+            writers,
+            userTaskState,
+            authCheckBehavior));
   }
 
   private static void addProcessInstanceCreationStreamProcessors(
