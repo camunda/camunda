@@ -9,6 +9,7 @@ package io.camunda.security.configuration;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.Set;
 
 public class OidcAuthenticationConfiguration {
   private String issuerUri;
@@ -19,6 +20,7 @@ public class OidcAuthenticationConfiguration {
   private List<String> scope = Arrays.asList("openid", "profile");
   private String jwkSetUri;
   private String authorizationUri;
+  private Set<String> audience;
 
   public String getIssuerUri() {
     return issuerUri;
@@ -82,5 +84,13 @@ public class OidcAuthenticationConfiguration {
 
   public void setAuthorizationUri(final String authorizationUri) {
     this.authorizationUri = authorizationUri;
+  }
+
+  public Set<String> getAudience() {
+    return audience;
+  }
+
+  public void setAudience(final Set<String> audience) {
+    this.audience = audience;
   }
 }
