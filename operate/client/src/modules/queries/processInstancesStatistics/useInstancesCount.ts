@@ -7,7 +7,8 @@
  */
 
 import {ProcessInstancesStatisticsDto} from 'modules/api/v2/processInstances/fetchProcessInstancesStatistics';
-import {useProcessInstancesStatistics} from './useProcessInstancesStatistics';
+import {useProcessInstancesStatisticsOptions} from './useProcessInstancesStatistics';
+import {useQuery} from '@tanstack/react-query';
 
 function getInstancesCount(
   data: ProcessInstancesStatisticsDto[],
@@ -33,10 +34,12 @@ function instancesCountParser(
 }
 
 function useInstancesCount(flowNodeId: string) {
-  return useProcessInstancesStatistics<number>(
-    {flowNodeId: flowNodeId},
-    instancesCountParser(flowNodeId),
-    flowNodeId !== '',
+  return useQuery(
+    useProcessInstancesStatisticsOptions<number>(
+      {flowNodeId: flowNodeId},
+      instancesCountParser(flowNodeId),
+      flowNodeId !== '',
+    ),
   );
 }
 
