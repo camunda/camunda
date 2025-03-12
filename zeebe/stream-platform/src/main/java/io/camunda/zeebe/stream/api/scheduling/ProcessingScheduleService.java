@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.stream.api.scheduling;
 
+import io.camunda.zeebe.scheduler.future.ActorFuture;
 import java.time.Duration;
 
 public interface ProcessingScheduleService extends SimpleProcessingScheduleService {
@@ -61,4 +62,10 @@ public interface ProcessingScheduleService extends SimpleProcessingScheduleServi
    *     execution and have no effect.
    */
   ScheduledTask runAtAsync(final long timestamp, final Task task);
+
+  ActorFuture<Void> open();
+
+  ActorFuture<Void> closeActorsAsync();
+
+  void closeSchedulers();
 }
