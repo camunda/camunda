@@ -21,19 +21,21 @@ const EditModal: FC<UseEntityModalProps<Group>> = ({
   onClose,
   onSuccess,
 }) => {
-  const { t } = useTranslate();
+  const { t } = useTranslate("groups");
   const { enqueueNotification } = useNotifications();
 
   const [callUpdateGroup, { error, loading }] = useApiCall(updateGroup, {
     suppressErrorNotification: true,
   });
 
-  const [name, setName] = useState(group.name);
+  const [groupName, setGroupName] = useState(group.name);
+  const [groupId, setGroupId] = useState(group.groupKey);
+  const [description, setDescription] = useState(group.description);
 
   const handleSubmit = async () => {
     const { success } = await callUpdateGroup({
       groupKey: group.groupKey,
-      name: name.trim(),
+      name: groupName.trim(),
     });
 
     if (success) {
@@ -49,19 +51,33 @@ const EditModal: FC<UseEntityModalProps<Group>> = ({
     <FormModal
       size="sm"
       open={open}
-      headline={t("Rename group")}
+      headline={t("editGroup")}
       onSubmit={handleSubmit}
       onClose={onClose}
       loading={loading}
-      loadingDescription={t("Updating group")}
-      confirmLabel={t("Edit")}
+      loadingDescription={t("updatingGroup")}
+      confirmLabel={t("editGroup")}
     >
       <TextField
-        label={t("Name")}
-        value={name}
-        placeholder={t("My group")}
-        onChange={setName}
+        label={t("groupId")}
+        value={groupId}
+        placeholder={t("groupId")}
+        onChange={setGroupId}
         autoFocus
+      />
+      <TextField
+        label={t("groupName")}
+        value={groupName}
+        placeholder={t("groupName")}
+        onChange={setGroupName}
+      />
+      <TextField
+        label={t("description")}
+        value={description || ""}
+        placeholder={t("description")}
+        onChange={setDescription}
+        cols={2}
+        enableCounter
       />
       {error && (
         <InlineNotification
