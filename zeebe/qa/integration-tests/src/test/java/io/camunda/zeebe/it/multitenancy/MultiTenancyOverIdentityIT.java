@@ -1341,16 +1341,18 @@ public class MultiTenancyOverIdentityIT {
           .tenantId(TENANT_A)
           .send()
           .join();
+    }
 
-      // when
+    // when
+    try (final var client = createCamundaClient(USER_TENANT_B)) {
       final Future<BroadcastSignalResponse> result =
-          client.newBroadcastSignalCommand().signalName(signalName).tenantId(TENANT_B).send();
+          client.newBroadcastSignalCommand().signalName(signalName).tenantId(TENANT_A).send();
 
       // then
       assertThat(result)
           .failsWithin(Duration.ofSeconds(10))
           .withThrowableThat()
-          .withMessageContaining("PERMISSION_DENIED")
+          .withMessageContaining("NOT_FOUND")
           .withMessageContaining(
               "Expected to handle gRPC request BroadcastSignal with tenant identifier 'tenant-b'")
           .withMessageContaining("but tenant is not authorized to perform this request");
