@@ -34,13 +34,13 @@ public class UserTaskUpdateDeniedApplierTest {
   private MutableUserTaskState userTaskState;
 
   /** For setting up the state before testing the applier. */
-  private TestSetup testSetup;
+  private AppliersTestSetupHelper testSetup;
 
   @BeforeEach
   public void setup() {
     userTaskUpdateDeniedApplier = new UserTaskUpdateDeniedApplier(processingState);
     userTaskState = processingState.getUserTaskState();
-    testSetup = new TestSetup(processingState);
+    testSetup = new AppliersTestSetupHelper(processingState);
   }
 
   @Test
@@ -110,29 +110,5 @@ public class UserTaskUpdateDeniedApplierTest {
     assertThat(userTaskState.getLifecycleState(userTaskKey))
         .describedAs("Expect lifecycle state to be reverted to 'CREATED' after denial")
         .isEqualTo(LifecycleState.CREATED);
-  }
-
-  private static final class TestSetup {
-
-    private final EventAppliers eventAppliers;
-
-    TestSetup(final MutableProcessingState processingState) {
-      eventAppliers = new EventAppliers();
-      eventAppliers.registerEventAppliers(processingState);
-    }
-
-    /**
-     * Applies the event of the given intent to the state.
-     *
-     * @param userTaskKey the key of the user task
-     * @param intent the intent of the event to apply
-     * @param userTaskRecord data of the event to apply
-     * @implNote applies the event using the latest version of the record.
-     */
-    private void applyEventToState(
-        final long userTaskKey, final UserTaskIntent intent, final UserTaskRecord userTaskRecord) {
-      final int latestVersion = eventAppliers.getLatestVersion(intent);
-      eventAppliers.applyState(userTaskKey, intent, userTaskRecord, latestVersion);
-    }
   }
 }
