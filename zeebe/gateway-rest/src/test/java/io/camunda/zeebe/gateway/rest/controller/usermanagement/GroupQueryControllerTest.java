@@ -14,7 +14,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.camunda.search.entities.GroupEntity;
-import io.camunda.search.exception.NotFoundException;
+import io.camunda.search.exception.CamundaSearchException;
 import io.camunda.search.page.SearchQueryPage;
 import io.camunda.search.query.GroupQuery;
 import io.camunda.search.query.SearchQueryResult;
@@ -108,7 +108,9 @@ public class GroupQueryControllerTest extends RestControllerTest {
     // given
     final var groupKey = 100L;
     final var path = "%s/%s".formatted(GROUP_BASE_URL, groupKey);
-    when(groupServices.getGroup(groupKey)).thenThrow(new NotFoundException("group not found"));
+    when(groupServices.getGroup(groupKey))
+        .thenThrow(
+            new CamundaSearchException("group not found", CamundaSearchException.Reason.NOT_FOUND));
 
     // when
     webClient

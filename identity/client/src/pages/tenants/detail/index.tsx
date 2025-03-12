@@ -4,7 +4,7 @@
 import { FC } from "react";
 import { useNavigate, useParams } from "react-router";
 import { OverflowMenu, OverflowMenuItem, Section, Stack } from "@carbon/react";
-import { spacing02 } from "@carbon/elements";
+import { spacing01, spacing03 } from "@carbon/elements";
 import useTranslate from "src/utility/localization";
 import { useApi } from "src/utility/api/hooks";
 import NotFound from "src/pages/not-found";
@@ -15,22 +15,25 @@ import Tabs from "src/components/tabs";
 import { DetailPageHeaderFallback } from "src/components/fallbacks";
 import Flex from "src/components/layout/Flex";
 import { useEntityModal } from "src/components/modal";
-import EditModal from "src/pages/tenants/modals/EditModal";
 import DeleteModal from "src/pages/tenants/modals/DeleteModal";
+import { Description } from "src/pages/tenants/detail/components";
 import Members from "src/pages/tenants/detail/members";
+import Groups from "src/pages/tenants/detail/groups";
+import Roles from "src/pages/tenants/detail/roles";
+import Mappings from "src/pages/tenants/detail/mappings";
+import {
+  IS_TENANT_GROUPS_SUPPORTED,
+  IS_TENANT_ROLES_SUPPORTED,
+  IS_TENANT_MAPPINGS_SUPPORTED,
+} from "src/feature-flags";
 
 const Details: FC = () => {
-  const { t } = useTranslate();
+  const { t } = useTranslate("tenants");
   const { id = "", tab = "details" } = useParams<{ id: string; tab: string }>();
   const navigate = useNavigate();
-  const {
-    data: tenantSearchResults,
-    loading,
-    reload,
-  } = useApi(getTenantDetails, {
+  const { data: tenantSearchResults, loading } = useApi(getTenantDetails, {
     tenantId: id,
   });
-  const [editTenant, editTenantModal] = useEntityModal(EditModal, reload);
   const [deleteTenant, deleteTenantModal] = useEntityModal(DeleteModal, () =>
     navigate("..", { replace: true }),
   );
@@ -43,31 +46,34 @@ const Details: FC = () => {
   return (
     <StackPage>
       <>
-        <Stack gap={spacing02}>
-          <Breadcrumbs items={[{ href: "/tenants", title: t("Tenants") }]} />
+        <Stack gap={spacing03}>
+          <Breadcrumbs items={[{ href: "/tenants", title: t("tenants") }]} />
           {loading && !tenant ? (
             <DetailPageHeaderFallback hasOverflowMenu={false} />
           ) : (
             <Flex>
               {tenant && (
-                <>
-                  {" "}
-                  <PageHeadline>{tenant.name}</PageHeadline>
-                  <OverflowMenu ariaLabel={t("Open users context menu")}>
-                    <OverflowMenuItem
-                      itemText={t("Update")}
-                      onClick={() => {
-                        editTenant(tenant);
-                      }}
-                    />
-                    <OverflowMenuItem
-                      itemText={t("Delete")}
-                      onClick={() => {
-                        deleteTenant(tenant);
-                      }}
-                    />
-                  </OverflowMenu>
-                </>
+                <Stack gap={spacing03}>
+                  <Stack orientation="horizontal" gap={spacing01}>
+                    <PageHeadline>{tenant.name}</PageHeadline>
+                    <OverflowMenu ariaLabel={t("openUsersContextMenu")}>
+                      <OverflowMenuItem
+                        itemText={t("delete")}
+                        onClick={() => {
+                          deleteTenant(tenant);
+                        }}
+                      />
+                    </OverflowMenu>
+                  </Stack>
+                  <p>
+                    {t("tenantId")}: {tenant.tenantId}
+                  </p>
+                  {tenant?.description && (
+                    <Description>
+                      {t("description")}: {tenant.description}
+                    </Description>
+                  )}
+                </Stack>
               )}
             </Flex>
           )}
@@ -78,9 +84,36 @@ const Details: FC = () => {
               tabs={[
                 {
                   key: "users",
-                  label: t("Users"),
+                  label: t("users"),
                   content: <Members tenantId={tenant.tenantId} />,
                 },
+                ...(IS_TENANT_GROUPS_SUPPORTED
+                  ? [
+                      {
+                        key: "groups",
+                        label: t("groups"),
+                        content: <Groups tenantId={tenant.tenantId} />,
+                      },
+                    ]
+                  : []),
+                ...(IS_TENANT_ROLES_SUPPORTED
+                  ? [
+                      {
+                        key: "roles",
+                        label: t("roles"),
+                        content: <Roles tenantId={tenant.tenantId} />,
+                      },
+                    ]
+                  : []),
+                ...(IS_TENANT_MAPPINGS_SUPPORTED
+                  ? [
+                      {
+                        key: "mappings",
+                        label: t("mappings"),
+                        content: <Mappings tenantId={tenant.tenantId} />,
+                      },
+                    ]
+                  : []),
               ]}
               selectedTabKey={tab}
               path={`../${id}`}
@@ -88,7 +121,6 @@ const Details: FC = () => {
           </Section>
         )}
       </>
-      {editTenantModal}
       {deleteTenantModal}
     </StackPage>
   );

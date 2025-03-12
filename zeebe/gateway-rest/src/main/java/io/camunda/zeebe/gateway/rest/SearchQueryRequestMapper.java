@@ -35,6 +35,7 @@ import io.camunda.search.filter.FlowNodeInstanceFilter;
 import io.camunda.search.filter.IncidentFilter;
 import io.camunda.search.filter.MappingFilter;
 import io.camunda.search.filter.ProcessDefinitionFilter;
+import io.camunda.search.filter.ProcessDefinitionStatisticsFilter;
 import io.camunda.search.filter.ProcessInstanceFilter;
 import io.camunda.search.filter.TenantFilter;
 import io.camunda.search.filter.UntypedOperation;
@@ -134,6 +135,52 @@ public final class SearchQueryRequestMapper {
             SearchQueryRequestMapper::applyProcessDefinitionSortField);
     final var filter = toProcessDefinitionFilter(request.getFilter());
     return buildSearchQuery(filter, sort, page, SearchQueryBuilders::processDefinitionSearchQuery);
+  }
+
+  public static Either<ProblemDetail, ProcessDefinitionStatisticsFilter>
+      toProcessDefinitionStatisticsQuery(
+          final long processDefinitionKey, final ProcessDefinitionFlowNodeStatisticsQuery request) {
+    if (request == null) {
+      return Either.right(
+          new ProcessDefinitionStatisticsFilter.Builder(processDefinitionKey).build());
+    }
+    final var filter = toBaseProcessInstanceFilter(processDefinitionKey, request.getFilter());
+    return Either.right(filter);
+  }
+
+  private static ProcessDefinitionStatisticsFilter toBaseProcessInstanceFilter(
+      final long processDefinitionKey, final BaseProcessInstanceFilter filter) {
+    final var builder = FilterBuilders.processDefinitionStatisticsFilter(processDefinitionKey);
+
+    if (filter != null) {
+      ofNullable(filter.getProcessInstanceKey())
+          .map(mapToOperations(Long.class))
+          .ifPresent(builder::processInstanceKeyOperations);
+      ofNullable(filter.getParentProcessInstanceKey())
+          .map(mapToOperations(Long.class))
+          .ifPresent(builder::parentProcessInstanceKeyOperations);
+      ofNullable(filter.getParentFlowNodeInstanceKey())
+          .map(mapToOperations(Long.class))
+          .ifPresent(builder::parentFlowNodeInstanceKeyOperations);
+      ofNullable(filter.getStartDate())
+          .map(mapToOperations(OffsetDateTime.class))
+          .ifPresent(builder::startDateOperations);
+      ofNullable(filter.getEndDate())
+          .map(mapToOperations(OffsetDateTime.class))
+          .ifPresent(builder::endDateOperations);
+      ofNullable(filter.getState())
+          .map(mapToOperations(String.class, new ProcessInstanceStateConverter()))
+          .ifPresent(builder::stateOperations);
+      ofNullable(filter.getHasIncident()).ifPresent(builder::hasIncident);
+      ofNullable(filter.getTenantId())
+          .map(mapToOperations(String.class))
+          .ifPresent(builder::tenantIdOperations);
+      ofNullable(filter.getVariables())
+          .filter(variables -> !variables.isEmpty())
+          .ifPresent(vars -> builder.variables(toVariableValueFiltersForProcessInstance(vars)));
+    }
+
+    return builder.build();
   }
 
   public static Either<ProblemDetail, ProcessInstanceQuery> toProcessInstanceQuery(

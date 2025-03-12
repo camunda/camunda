@@ -104,16 +104,19 @@ function startBackend() {
       'self-managed': selfManagedEnv,
     };
 
-    backendProcess = spawnWithArgs(`dist/target/camunda-zeebe/bin/optimize`, {
-      cwd: _resolve(__dirname, '..', '..', '..'),
-      shell: true,
-      env: {
-        ...process.env,
-        ...commonEnv,
-        ...engineEnv[mode],
-        CLASSPATH_PREFIX: 'optimize/client/demo-data',
-      },
-    });
+    backendProcess = spawnWithArgs(
+      `mvn -f optimize/backend/pom.xml exec:java -Dexec.mainClass=io.camunda.optimize.Main`,
+      {
+        cwd: _resolve(__dirname, '..', '..', '..'),
+        shell: true,
+        env: {
+          ...process.env,
+          ...commonEnv,
+          ...engineEnv[mode],
+          CLASSPATH_PREFIX: 'optimize/client/demo-data'
+        },
+      }
+    );
 
     backendProcess.stdout.on('data', (data) => server.addLog(data, 'backend'));
     backendProcess.stderr.on('data', (data) => server.addLog(data, 'backend', true));
@@ -127,7 +130,7 @@ function startBackend() {
     });
 
     // wait for the optimize endpoint to be up before resolving the promise
-    serverCheck('http://localhost:8080/api/readyz', resolve);
+    serverCheck('http://localhost:8090/api/readyz', resolve);
   });
 }
 
@@ -157,7 +160,7 @@ async function setupEnvironment() {
 function buildBackend() {
   return new Promise((resolve, reject) => {
     buildBackendProcess = spawnWithArgs(
-      'mvn clean install -DskipTests -Dskip.docker -Dskip.fe.build -pl dist -am -T1C',
+      'mvn -f optimize/pom.xml clean install -T1C -DskipTests -Dskip.docker -pl backend -am',
       {
         cwd: _resolve(__dirname, '..', '..', '..'),
         shell: true,

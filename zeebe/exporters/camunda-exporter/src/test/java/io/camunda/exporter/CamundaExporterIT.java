@@ -11,6 +11,7 @@ import static io.camunda.exporter.config.ConnectionTypes.ELASTICSEARCH;
 import static io.camunda.exporter.schema.SchemaTestUtil.mappingsMatch;
 import static io.camunda.exporter.utils.SearchDBExtension.CUSTOM_PREFIX;
 import static io.camunda.exporter.utils.SearchDBExtension.TEST_INTEGRATION_OPENSEARCH_AWS_URL;
+import static io.camunda.exporter.utils.SearchDBExtension.ZEEBE_IDX_PREFIX;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatNoException;
@@ -66,7 +67,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -348,7 +348,8 @@ final class CamundaExporterIT {
   void shouldCreateHarmonizedSchemaEagerlyOnOpen(
       final ExporterConfiguration config, final SearchClientAdapter ignored) {
     // given
-    final var newPrefix = "idx" + RandomStringUtils.insecure().nextAlphabetic(9).toLowerCase();
+    final var newPrefix =
+        CUSTOM_PREFIX + RandomStringUtils.insecure().nextAlphabetic(9).toLowerCase();
     config.getIndex().setPrefix(newPrefix);
     final CamundaExporter camundaExporter = new CamundaExporter();
     camundaExporter.configure(getContextFromConfig(config));
@@ -621,7 +622,6 @@ final class CamundaExporterIT {
       config.getConnect().setType(ConnectionTypes.OPENSEARCH.getType());
     }
 
-    config.getArchiver().setRolloverEnabled(false);
     return config;
   }
 
@@ -684,7 +684,7 @@ final class CamundaExporterIT {
         final ExporterConfiguration config, final SearchClientAdapter clientAdapter)
         throws IOException {
       // given
-      config.getIndex().setZeebeIndexPrefix(UUID.randomUUID().toString());
+      config.getIndex().setZeebeIndexPrefix(ZEEBE_IDX_PREFIX);
       createSchemas(config, clientAdapter);
       indexImportPositionEntity("decision", false, clientAdapter);
       clientAdapter.refresh();

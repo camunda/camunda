@@ -38,7 +38,7 @@
     <version.agrona>1.23.1</version.agrona>
     <version.assertj>3.27.3</version.assertj>
     <version.awaitility>4.3.0</version.awaitility>
-    <version.bouncycastle>1.79</version.bouncycastle>
+    <version.bouncycastle>1.80</version.bouncycastle>
     <version.camunda>7.22.0</version.camunda>
     <version.camunda-license-check>2.10.0</version.camunda-license-check>
     <version.checkstyle>10.21.4</version.checkstyle>
@@ -52,8 +52,8 @@
     <version.zstd-jni>1.5.7-1</version.zstd-jni>
     <version.commons-text>1.13.0</version.commons-text>
     <version.cron-utils>9.2.1</version.cron-utils>
-    <version.docker-java-api>3.4.1</version.docker-java-api>
-    <version.elasticsearch>8.13.4</version.elasticsearch>
+    <version.docker-java-api>3.4.2</version.docker-java-api>
+    <version.elasticsearch>8.16.4</version.elasticsearch>
     <version.error-prone>2.36.0</version.error-prone>
     <version.grpc>1.71.0</version.grpc>
     <version.gson>2.12.1</version.gson>
@@ -81,8 +81,8 @@
     <version.opensearch.testcontainers>2.1.2</version.opensearch.testcontainers>
     <version.prometheus>0.16.0</version.prometheus>
     <version.protobuf>4.30.0</version.protobuf>
-    <version.protobuf-common>2.53.0</version.protobuf-common>
-    <version.micrometer>1.14.4</version.micrometer>
+    <version.protobuf-common>2.54.0</version.protobuf-common>
+    <version.micrometer>1.14.5</version.micrometer>
     <version.rocksdbjni>9.4.0</version.rocksdbjni>
     <version.sbe>1.34.1</version.sbe>
     <version.scala>2.13.16</version.scala>
@@ -112,7 +112,7 @@
     <version.jmock>2.13.1</version.jmock>
     <version.jmh>1.37</version.jmh>
     <version.json-smart>2.5.2</version.json-smart>
-    <version.byte-buddy>1.15.11</version.byte-buddy>
+    <version.byte-buddy>1.17.2</version.byte-buddy>
     <version.revapi>0.28.1</version.revapi>
     <version.resilience4j>2.3.0</version.resilience4j>
     <version.immutables>2.10.1</version.immutables>
@@ -122,21 +122,21 @@
     <version.osgi>6.0.0</version.osgi>
     <version.findbugs-annotations>3.0.1u2</version.findbugs-annotations>
     <version.spotbugs>4.9.2</version.spotbugs>
-    <version.archunit>1.3.0</version.archunit>
+    <version.archunit>1.4.0</version.archunit>
     <version.easy-random>5.0.0</version.easy-random>
     <version.jcip>1.0</version.jcip>
     <version.jnr-posix>3.1.20</version.jnr-posix>
-    <version.zpt>8.6.10</version.zpt>
+    <version.zpt>8.6.11</version.zpt>
     <version.feign>13.5</version.feign>
     <version.google-sdk>26.56.0</version.google-sdk>
-    <version.azure-sdk>1.2.31</version.azure-sdk>
+    <version.azure-sdk>1.2.32</version.azure-sdk>
     <version.awssdk>2.29.50</version.awssdk>
     <version.toxiproxy>2.1.7</version.toxiproxy>
     <version.validation-api>3.1.1</version.validation-api>
     <version.jackson-databind-nullable>0.2.6</version.jackson-databind-nullable>
     <version.findbugs.jsr305>3.0.2</version.findbugs.jsr305>
     <version.jackson-annotations>2.18.3</version.jackson-annotations>
-    <version.swagger-annotations>2.2.28</version.swagger-annotations>
+    <version.swagger-annotations>2.2.29</version.swagger-annotations>
     <version.checker-qual>3.49.1</version.checker-qual>
     <version.java-jwt>4.5.0</version.java-jwt>
     <version.reactive-streams>1.0.4</version.reactive-streams>
@@ -151,7 +151,7 @@
     <version.liquibase>4.31.1</version.liquibase>
     <version.sqlformatter>2.0.5</version.sqlformatter>
     <version.caffeine>3.2.0</version.caffeine>
-    <version.commons-collections>3.2.2</version.commons-collections>
+    <version.commons-collections>20040616</version.commons-collections>
 
     <version.commons-io>2.18.0</version.commons-io>
     <version.thymeleaf>3.1.3.RELEASE</version.thymeleaf>

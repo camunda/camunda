@@ -27,6 +27,7 @@ import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
 import io.camunda.client.impl.response.DocumentReferenceResponseImpl;
 import io.camunda.client.impl.util.DocumentBuilder;
+import io.camunda.client.impl.util.ParseUtil;
 import io.camunda.client.protocol.rest.DocumentReference;
 import java.io.InputStream;
 import java.time.Duration;
@@ -177,7 +178,7 @@ public class CreateDocumentCommandImpl extends DocumentBuilder
 
   @Override
   public CreateDocumentCommandStep2 processInstanceKey(final long processInstanceKey) {
-    super.getMetadata().setProcessInstanceKey(processInstanceKey);
+    super.getMetadata().setProcessInstanceKey(ParseUtil.keyToString(processInstanceKey));
     return this;
   }
 }

@@ -16,7 +16,7 @@ public class ExporterConfiguration {
   private ConnectConfiguration connect = new ConnectConfiguration();
   private IndexSettings index = new IndexSettings();
   private BulkConfiguration bulk = new BulkConfiguration();
-  private ArchiverConfiguration archiver = new ArchiverConfiguration();
+  private HistoryConfiguration history = new HistoryConfiguration();
   private CacheConfiguration processCache = new CacheConfiguration();
   private CacheConfiguration formCache = new CacheConfiguration();
   private PostExportConfiguration postExport = new PostExportConfiguration();
@@ -87,12 +87,12 @@ public class ExporterConfiguration {
     this.notifier = notifier;
   }
 
-  public ArchiverConfiguration getArchiver() {
-    return archiver;
+  public HistoryConfiguration getHistory() {
+    return history;
   }
 
-  public void setArchiver(final ArchiverConfiguration archiver) {
-    this.archiver = archiver;
+  public void setHistory(final HistoryConfiguration history) {
+    this.history = history;
   }
 
   @Override
@@ -104,8 +104,8 @@ public class ExporterConfiguration {
         + index
         + ", bulk="
         + bulk
-        + ", archiver="
-        + archiver
+        + ", history="
+        + history
         + ", createSchema="
         + createSchema
         + ", processCache="
@@ -290,8 +290,7 @@ public class ExporterConfiguration {
     }
   }
 
-  public static class ArchiverConfiguration {
-    private boolean rolloverEnabled = true;
+  public static class HistoryConfiguration {
     private String elsRolloverDateFormat = "date";
     private String rolloverInterval = "1d";
     private int rolloverBatchSize = 100;
@@ -299,14 +298,6 @@ public class ExporterConfiguration {
     private int delayBetweenRuns = 2000;
     private int maxDelayBetweenRuns = 60000;
     private RetentionConfiguration retention = new RetentionConfiguration();
-
-    public boolean isRolloverEnabled() {
-      return rolloverEnabled;
-    }
-
-    public void setRolloverEnabled(final boolean rolloverEnabled) {
-      this.rolloverEnabled = rolloverEnabled;
-    }
 
     public String getElsRolloverDateFormat() {
       return elsRolloverDateFormat;
@@ -371,8 +362,6 @@ public class ExporterConfiguration {
     @Override
     public String toString() {
       return "ArchiverConfiguration{"
-          + "rolloverEnabled="
-          + rolloverEnabled
           + ", elsRolloverDateFormat='"
           + elsRolloverDateFormat
           + '\''

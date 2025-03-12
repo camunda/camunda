@@ -13,10 +13,10 @@ import {
   spacing04,
   spacing06,
   spacing07,
+  spacing08,
   styles,
   textSecondary,
 } from "@carbon/elements";
-import { cssSize } from "src/utility/style";
 import { useNavigate } from "react-router";
 import { DocumentationLink } from "src/components/documentation";
 import useTranslate from "src/utility/localization";
@@ -30,7 +30,7 @@ const PageSubTitle = styled.div`
   font-size: ${styles.bodyCompact01.fontSize};
   font-weight: ${styles.bodyCompact01.fontWeight};
   letter-spacing: ${styles.bodyCompact01.letterSpacing};
-  letter-height: ${styles.bodyCompact01.lineHeight};
+  line-height: ${styles.bodyCompact01.lineHeight};
   color: ${textSecondary};
 `;
 
@@ -40,6 +40,7 @@ const StackWithMargin = styled(Stack)`
 
 const Page = styled(Content)`
   height: 100%;
+  padding: ${spacing08};
 `;
 
 type PageHeaderProps = {
@@ -70,10 +71,6 @@ export const PageHeader: FC<PageHeaderProps> = ({
   );
 };
 
-const StyledBreadcrumb = styled(Breadcrumb)`
-  margin-left: ${cssSize(2)};
-`;
-
 type BreadcrumbsProps = {
   items: {
     href: string;
@@ -90,13 +87,13 @@ export const Breadcrumbs: FC<BreadcrumbsProps> = ({ items }) => {
   };
 
   return (
-    <StyledBreadcrumb>
+    <Breadcrumb>
       {items.map(({ href, title }) => (
         <BreadcrumbItem href={href} onClick={onClick(href)} key={href}>
           {title}
         </BreadcrumbItem>
       ))}
-    </StyledBreadcrumb>
+    </Breadcrumb>
   );
 };
 
