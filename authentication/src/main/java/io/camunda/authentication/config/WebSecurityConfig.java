@@ -71,7 +71,15 @@ public class WebSecurityConfig {
           // deprecated Tasklist v1 Public Endpoints
           "/v1/external/process/**");
   private static final Set<String> WEBAPP_PATHS =
-      Set.of("/login", "/logout", "/identity/**", "/operate/**", "/tasklist/**");
+      Set.of(
+          "/login/**",
+          "/logout",
+          "/identity/**",
+          "/operate/**",
+          "/tasklist/**",
+          "/",
+          "/sso-callback/**",
+          "/oauth2/authorization/**");
   private static final Set<String> UNPROTECTED_PATHS =
       Set.of(
           // endpoint for failure forwarding
@@ -83,7 +91,8 @@ public class WebSecurityConfig {
           "/health",
           "/startup",
           // deprecated Tasklist v1 Public Endpoints
-          "/new/**");
+          "/new/**",
+          "/favicon.ico");
 
   @Bean
   @ConditionalOnMissingBean(MethodSecurityExpressionHandler.class)
@@ -304,7 +313,14 @@ public class WebSecurityConfig {
                                   .findByRegistrationId(OidcClientRegistration.REGISTRATION_ID)
                                   .getProviderDetails()
                                   .getJwkSetUri())))
-          .oauth2Login(oauthLoginConfigurer -> {})
+          .oauth2Login(
+              oauthLoginConfigurer -> {
+                oauthLoginConfigurer
+                    .clientRegistrationRepository(clientRegistrationRepository)
+                    .redirectionEndpoint(
+                        redirectionEndpointConfig ->
+                            redirectionEndpointConfig.baseUri("/sso-callback"));
+              })
           .oidcLogout(httpSecurityOidcLogoutConfigurer -> {})
           .logout(
               (logout) ->

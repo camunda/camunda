@@ -7,6 +7,7 @@
  */
 package io.camunda.authentication.entity;
 
+import java.io.Serializable;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
@@ -15,7 +16,7 @@ import org.springframework.security.oauth2.core.oidc.OidcIdToken;
 import org.springframework.security.oauth2.core.oidc.OidcUserInfo;
 import org.springframework.security.oauth2.core.oidc.user.OidcUser;
 
-public class CamundaOidcUser implements OidcUser, CamundaPrincipal {
+public class CamundaOidcUser implements OidcUser, CamundaPrincipal, Serializable {
   private final OidcUser user;
   private final AuthenticationContext authentication;
   private final Set<Long> mappingKeys;
