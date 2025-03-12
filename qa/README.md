@@ -8,42 +8,42 @@ This ensures we consistently write such tests and cover all necessary supported 
 ## When to write acceptance tests
 
 1. You should write acceptance tests when implementing a feature and validating the user flow
-    1. This comes after writing unit tests and integration tests, for more details please see our [testing guide](../docs/testing.md).
-    2. Integration tests might live in a different submodule, where two or more dependencies are tested together
-    3. Unit tests live in a module, related to the code of the unit
+   1. This comes after writing unit tests and integration tests, for more details please see our [testing guide](../docs/testing.md).
+   2. Integration tests might live in a different submodule, where two or more dependencies are tested together
+   3. Unit tests live in a module, related to the code of the unit
 2. As a regression test, when fixing a bug that impacted the user flow/behavior.
 
 ## How to write acceptance tests
 
 ### For simple cases:
 
-  * Make use of the `@MultiDbTest` annotation (if possible).
-  * By default, it will use the `TestStandaloneBroker` class to reduce the scope to a minimum.
-  * The `@MutliDbTest` annotation will ensure that your test is tagged as a test that should be executed against multiple secondary storage, such as Elasticsearch (ES), OpenSearch (OS), RDBMS, etc.
-  * The `@MutliDbTest` annotation will mark your test class with `@ExtendsWith` using the `CamundaMultiDBExtension`.
-  * The execution against different secondary storage is done on our CI.yml GitHub workflow, where separate jobs exist. A specific test property is set for the database type, allowing the extension to configure the test application correctly (specific Exporter, etc.).
+* Make use of the `@MultiDbTest` annotation (if possible).
+* By default, it will use the `TestStandaloneBroker` class to reduce the scope to a minimum.
+* The `@MutliDbTest` annotation will ensure that your test is tagged as a test that should be executed against multiple secondary storage, such as Elasticsearch (ES), OpenSearch (OS), RDBMS, etc.
+* The `@MutliDbTest` annotation will mark your test class with `@ExtendsWith` using the `CamundaMultiDBExtension`.
+* The execution against different secondary storage is done on our CI.yml GitHub workflow, where separate jobs exist. A specific test property is set for the database type, allowing the extension to configure the test application correctly (specific Exporter, etc.).
 
-###  For advanced cases:
+### For advanced cases:
 
-  * Advanced cases might apply when you want to run the complete platform or need to configure the broker test application.
-  * To run the complete platform, you can use `TestSimpleCamundaApplication`, which bundles all components together.
-  * With that, you can use `@RegisterExtension` and `CamundaMultiDBExtension` directly.
-  * This might also be necessary for more sophisticated broker configurations, such as testing different or specific authentications.
+* Advanced cases might apply when you want to run the complete platform or need to configure the broker test application.
+* To run the complete platform, you can use `TestSimpleCamundaApplication`, which bundles all components together.
+* With that, you can use `@RegisterExtension` and `CamundaMultiDBExtension` directly.
+* This might also be necessary for more sophisticated broker configurations, such as testing different or specific authentications.
 
 ### For special cases:
 
- * It might make sense that you completely derail from the common standard of writing an acceptance test and not use the multi database extension at all
- * This can be cases where you need direct access to the secondary storage, need to play with the application lifecycle, can't support all secondary storages, etc.
-     * Best examples are backup and restore or migration tests.
+* It might make sense that you completely derail from the common standard of writing an acceptance test and not use the multi database extension at all
+* This can be cases where you need direct access to the secondary storage, need to play with the application lifecycle, can't support all secondary storages, etc.
+  * Best examples are backup and restore or migration tests.
 
 > [!Important]
 >
 > :dragon: Be aware of the consequences when derail from the standard
 >
 > 1. You need to make sure that you cover all supported secondary storages for that feature
-> 1. The test infrastructure will likely be more complex, and might be even duplicated
-> 1. The test execution might be impacted and slower, as other tests, because you need to take care of starting dependencies on your own
-> 1. The test will not be consistent with other tests, causing additional cognitive load for an engineer to understand the test
+> 2. The test infrastructure will likely be more complex, and might be even duplicated
+> 3. The test execution might be impacted and slower, as other tests, because you need to take care of starting dependencies on your own
+> 4. The test will not be consistent with other tests, causing additional cognitive load for an engineer to understand the test
 
 ### Examples:
 
