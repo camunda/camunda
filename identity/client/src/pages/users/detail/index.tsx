@@ -23,7 +23,7 @@ import EditModal from "src/pages/users/modals/EditModal";
 import DeleteModal from "src/pages/users/modals/DeleteModal";
 
 const Details: FC = () => {
-  const { t } = useTranslate();
+  const { t } = useTranslate("users");
   const { id = "", tab = "details" } = useParams<{ id: string; tab: string }>();
   const navigate = useNavigate();
   const {
@@ -50,15 +50,15 @@ const Details: FC = () => {
             {user && (
               <>
                 <PageHeadline>{user.username}</PageHeadline>
-                <OverflowMenu ariaLabel={t("Open users context menu")}>
+                <OverflowMenu ariaLabel={t("openContextMenu")}>
                   <OverflowMenuItem
-                    itemText={t("Update")}
+                    itemText={t("update")}
                     onClick={() => {
                       editUser(user);
                     }}
                   />
                   <OverflowMenuItem
-                    itemText={t("Delete")}
+                    itemText={t("delete")}
                     onClick={() => {
                       deleteUser(user);
                     }}
@@ -73,7 +73,7 @@ const Details: FC = () => {
             tabs={[
               {
                 key: "details",
-                label: t("User details"),
+                label: t("userDetails"),
                 content: user && <UserDetails user={user} loading={loading} />,
               },
             ]}

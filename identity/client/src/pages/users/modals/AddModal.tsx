@@ -15,7 +15,7 @@ import { createUser } from "src/utility/api/users";
 import { isValidEmail } from "./isValidEmail";
 
 const AddModal: FC<UseModalProps> = ({ open, onClose, onSuccess }) => {
-  const { t } = useTranslate();
+  const { t } = useTranslate("users");
   const [apiCall, { loading, error }] = useApiCall(createUser, {
     suppressErrorNotification: true,
   });

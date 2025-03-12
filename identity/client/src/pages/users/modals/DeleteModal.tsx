@@ -21,7 +21,7 @@ const DeleteModal: FC<UseEntityModalProps<User>> = ({
   onSuccess,
   entity: { username },
 }) => {
-  const { t, Translate } = useTranslate();
+  const { t, Translate } = useTranslate("users");
   const { enqueueNotification } = useNotifications();
   const [apiCall, { loading }] = useApiCall(deleteUser);
 
@@ -47,7 +47,7 @@ const DeleteModal: FC<UseEntityModalProps<User>> = ({
       loading={loading}
       loadingDescription={t("deletingUser")}
       onClose={onClose}
-      confirmLabel={t("Delete user")}
+      confirmLabel={t("deleteUser")}
     >
       <p>
         <Translate i18nKey="confirmDeleteUser" values={{ username }}>

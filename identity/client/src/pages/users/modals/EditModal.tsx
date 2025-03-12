@@ -19,7 +19,7 @@ const EditModal: FC<UseEntityModalProps<User>> = ({
   onSuccess,
   entity,
 }) => {
-  const { t } = useTranslate();
+  const { t } = useTranslate("users");
   const [callUpdateUser, { loading }] = useApiCall(updateUser);
   const [user, setUser] = useState<User>(entity);
   const [emailValid, setEmailValid] = useState(true);

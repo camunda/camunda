@@ -25,7 +25,7 @@ import EditModal from "src/pages/users/modals/EditModal";
 import DeleteModal from "src/pages/users/modals/DeleteModal";
 
 const List: FC = () => {
-  const { t } = useTranslate();
+  const { t } = useTranslate("users");
   const navigate = useNavigate();
   const {
     data: userSearchResults,
