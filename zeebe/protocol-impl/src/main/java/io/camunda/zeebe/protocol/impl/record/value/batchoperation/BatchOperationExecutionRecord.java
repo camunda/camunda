@@ -13,7 +13,6 @@ import io.camunda.zeebe.msgpack.property.IntegerProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.value.LongValue;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
-import io.camunda.zeebe.protocol.record.value.BatchOperationCreationRecordValue;
 import io.camunda.zeebe.protocol.record.value.BatchOperationExecutionRecordValue;
 import io.camunda.zeebe.protocol.record.value.BatchOperationType;
 import java.util.Set;
@@ -27,10 +26,8 @@ public final class BatchOperationExecutionRecord extends UnifiedRecordValue
   public static final String PROP_KEY_LIST = "keys";
   public static final String PROP_BATCH_OPERATION_TYPE = "batchOperationType";
 
-  private final LongProperty batchOperationKeyProp =
-      new LongProperty(PROP_BATCH_OPERATION_KEY);
-  private final IntegerProperty offsetProp =
-      new IntegerProperty(PROP_OFFSET, 0);
+  private final LongProperty batchOperationKeyProp = new LongProperty(PROP_BATCH_OPERATION_KEY);
+  private final IntegerProperty offsetProp = new IntegerProperty(PROP_OFFSET, 0);
   private final ArrayProperty<LongValue> keysProp =
       new ArrayProperty<>(PROP_KEY_LIST, LongValue::new);
   private final EnumProperty<BatchOperationType> batchOperationTypeProp =
@@ -50,9 +47,10 @@ public final class BatchOperationExecutionRecord extends UnifiedRecordValue
     return batchOperationKeyProp.getValue();
   }
 
-  public void setBatchOperationKey(Long batchOperationKey) {
+  public BatchOperationExecutionRecord setBatchOperationKey(final Long batchOperationKey) {
     batchOperationKeyProp.reset();
     batchOperationKeyProp.setValue(batchOperationKey);
+    return this;
   }
 
   @Override
@@ -60,16 +58,15 @@ public final class BatchOperationExecutionRecord extends UnifiedRecordValue
     return offsetProp.getValue();
   }
 
-  public void setOffset(Integer offset) {
+  public BatchOperationExecutionRecord setOffset(final Integer offset) {
     offsetProp.reset();
     offsetProp.setValue(offset);
+    return this;
   }
 
   @Override
   public Set<Long> getKeys() {
-    return keysProp.stream()
-        .map(LongValue::getValue)
-        .collect(Collectors.toSet());
+    return keysProp.stream().map(LongValue::getValue).collect(Collectors.toSet());
   }
 
   public BatchOperationExecutionRecord setKeys(final Set<Long> keys) {
@@ -83,14 +80,15 @@ public final class BatchOperationExecutionRecord extends UnifiedRecordValue
     return batchOperationTypeProp.getValue();
   }
 
-  public BatchOperationExecutionRecord setBatchOperationType(final BatchOperationType batchOperationType) {
+  public BatchOperationExecutionRecord setBatchOperationType(
+      final BatchOperationType batchOperationType) {
     batchOperationTypeProp.setValue(batchOperationType);
     return this;
   }
 
-  public void wrap(final BatchOperationExecutionRecord record) {
+  public BatchOperationExecutionRecord wrap(final BatchOperationExecutionRecord record) {
     setKeys(record.getKeys());
     setBatchOperationType(record.getBatchOperationType());
+    return this;
   }
-
 }

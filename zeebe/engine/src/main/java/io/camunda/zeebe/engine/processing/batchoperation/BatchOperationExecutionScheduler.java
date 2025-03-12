@@ -45,7 +45,6 @@ public class BatchOperationExecutionScheduler implements StreamProcessorLifecycl
   private final BatchOperationState batchOperationState;
   private ReadonlyStreamProcessorContext processingContext;
   private final Set<SearchQueryService> queryServices;
-  private final ProcessInstanceServices processInstanceServices;
 
   // todo this does not cover a full pod failure
   private final Set<Long> batchOperationKeysProcessed = new HashSet<>();
@@ -59,7 +58,6 @@ public class BatchOperationExecutionScheduler implements StreamProcessorLifecycl
     this.keyGenerator = keyGenerator;
     this.queryServices = queryServices;
     this.pollingInterval = pollingInterval;
-    processInstanceServices = getQueryService(ProcessInstanceServices.class);
   }
 
   @Override
@@ -159,7 +157,8 @@ public class BatchOperationExecutionScheduler implements StreamProcessorLifecycl
           processInstanceSearchQuery(
               q -> q.filter(filter).page(page).resultConfig(r -> r.onlyKey(true)));
 
-      final var result = processInstanceServices.search(query);
+      final var service = getQueryService(ProcessInstanceServices.class);
+      final var result = service.search(query);
       itemKeys.addAll(
           result.items().stream().map(ProcessInstanceEntity::processInstanceKey).toList());
       searchValues = result.lastSortValues();
