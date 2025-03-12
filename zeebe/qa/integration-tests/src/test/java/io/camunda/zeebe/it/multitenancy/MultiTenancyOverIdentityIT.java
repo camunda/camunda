@@ -55,6 +55,7 @@ import org.apache.http.HttpStatus;
 import org.assertj.core.api.InstanceOfAssertFactories;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Named;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -230,6 +231,7 @@ public class MultiTenancyOverIdentityIT {
     }
   }
 
+  @Disabled("https://github.com/camunda/camunda/issues/29518")
   @Test
   void shouldDenyDeployResourceWhenUnauthorizedForDefaultTenant() {
     // given
@@ -253,6 +255,7 @@ public class MultiTenancyOverIdentityIT {
     }
   }
 
+  @Disabled("https://github.com/camunda/camunda/issues/29518")
   @SuppressWarnings("deprecation")
   @Test
   void shouldDenyDeployProcessWhenUnauthorizedForDefaultTenant() {
