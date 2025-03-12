@@ -34,8 +34,8 @@ public class TenantEntityRemovedApplier implements TypedEventApplier<TenantInten
       default ->
           throw new UnsupportedOperationException(
               String.format(
-                  "Expected to remove entity with key %d and type %s from tenant %s, but type %s is not supported.",
-                  tenant.getEntityKey(),
+                  "Expected to remove entity with id %s and type %s from tenant %s, but type %s is not supported.",
+                  tenant.getEntityId(),
                   tenant.getEntityType(),
                   tenant.getTenantId(),
                   tenant.getEntityType()));

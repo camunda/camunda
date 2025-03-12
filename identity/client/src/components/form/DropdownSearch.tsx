@@ -10,7 +10,7 @@ type DropdownSearchProps<Item> = {
   itemTitle: (item: Item) => string;
   itemSubTitle?: (item: Item) => string;
   placeholder: string;
-  onChange: (search: string) => unknown;
+  onChange?: (search: string) => unknown;
   onSelect: (item: Item) => unknown;
   autoFocus?: boolean;
 };
@@ -33,7 +33,7 @@ const MenuItemWrapper = styled.div<{ $isSelected: boolean }>`
 
 const DropdownSearch = <Item,>({
   placeholder,
-  onChange,
+  onChange = () => null,
   items,
   itemTitle,
   itemSubTitle,

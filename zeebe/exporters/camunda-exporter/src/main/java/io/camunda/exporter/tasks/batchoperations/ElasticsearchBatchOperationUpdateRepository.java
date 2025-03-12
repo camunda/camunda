@@ -53,7 +53,6 @@ public class ElasticsearchBatchOperationUpdateRepository extends ElasticsearchRe
       final String batchOperationIndex,
       final String operationIndex,
       final Logger logger) {
-
     super(client, executor, logger);
     this.batchOperationIndex = batchOperationIndex;
     this.operationIndex = operationIndex;
@@ -157,15 +156,13 @@ public class ElasticsearchBatchOperationUpdateRepository extends ElasticsearchRe
         params.entrySet().stream()
             .collect(Collectors.toMap(Map.Entry::getKey, e -> JsonData.of(e.getValue())));
     return new Script.Builder()
-        .inline(
-            s ->
-                s.source(
-                        "if (ctx._source.operationsTotalCount <= params.operationsFinishedCount) { "
-                            + "   ctx._source.endDate = params.endDate; "
-                            + "} "
-                            + "ctx._source.operationsFinishedCount = params.operationsFinishedCount;")
-                    .lang("painless")
-                    .params(parameters))
+        .source(
+            "if (ctx._source.operationsTotalCount <= params.operationsFinishedCount) { "
+                + "   ctx._source.endDate = params.endDate; "
+                + "} "
+                + "ctx._source.operationsFinishedCount = params.operationsFinishedCount;")
+        .lang("painless")
+        .params(parameters)
         .build();
   }
 }

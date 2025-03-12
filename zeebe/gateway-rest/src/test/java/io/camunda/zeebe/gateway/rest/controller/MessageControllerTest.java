@@ -262,13 +262,13 @@ public class MessageControllerTest extends RestControllerTest {
         .expectBody()
         .json(
             """
-                {
-                  "type": "about:blank",
-                  "status": 400,
-                  "title": "INVALID_ARGUMENT",
-                  "detail": "Expected to handle request Correlate Message with tenant identifier 'null', but no tenant identifier was provided.",
-                  "instance": "%s"
-                }"""
+            {
+              "type": "about:blank",
+              "status": 400,
+              "title": "INVALID_ARGUMENT",
+              "detail": "Expected to handle request Correlate Message with tenant identifiers [], but no tenant identifier was provided.",
+              "instance": "%s"
+            }"""
                 .formatted(CORRELATION_ENDPOINT));
     verifyNoInteractions(messageServices);
   }
@@ -370,13 +370,13 @@ public class MessageControllerTest extends RestControllerTest {
         .expectBody()
         .json(
             """
-                {
-                  "type": "about:blank",
-                  "status": 400,
-                  "title": "INVALID_ARGUMENT",
-                  "detail": "Expected to handle request Correlate Message with tenant identifier '<invalid>', but tenant identifier contains illegal characters.",
-                  "instance": "%s"
-                }"""
+            {
+              "type": "about:blank",
+              "status": 400,
+              "title": "INVALID_ARGUMENT",
+              "detail": "Expected to handle request Correlate Message with tenant identifier '<invalid>', but tenant identifier contains illegal characters.",
+              "instance": "%s"
+            }"""
                 .formatted(CORRELATION_ENDPOINT));
     verifyNoInteractions(messageServices);
   }

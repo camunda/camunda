@@ -36,15 +36,9 @@ public class CCSMRequestAdjustmentFilter implements Filter {
     final HttpServletResponse httpResponse = (HttpServletResponse) response;
 
     String requestURI = httpRequest.getRequestURI();
-    final String originalRequestURI = requestURI;
+    requestURI = ExternalResourcesUtil.stripContextPath(requestURI, httpRequest);
 
-    /* strip contextPath */
-    final String contextPath = httpRequest.getContextPath();
-    if (!contextPath.isEmpty() && requestURI.startsWith(contextPath)) {
-      requestURI = requestURI.substring(contextPath.length());
-    }
-
-    /* transform /external/api -> /api/external (Optimize only) */
+    /* transform /external/api -> /api/external */
     if (requestURI.startsWith("/external/api/")) {
       final String rewrittenURI = requestURI.replaceFirst("/external/api/", "/api/external/");
       final RequestDispatcher dispatcher = request.getRequestDispatcher(rewrittenURI);
@@ -52,9 +46,10 @@ public class CCSMRequestAdjustmentFilter implements Filter {
       return;
     }
 
-    /* serve static external resource (Optimize only) */
+    /* serve static external resource */
     if (ExternalResourcesUtil.shouldServeStaticResource(httpRequest)) {
       ExternalResourcesUtil.serveStaticResource(httpRequest, httpResponse, servletContext);
+      return;
     }
 
     chain.doFilter(request, response);

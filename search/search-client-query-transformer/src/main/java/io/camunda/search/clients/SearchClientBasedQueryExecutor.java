@@ -17,7 +17,6 @@ import io.camunda.search.clients.transformers.ServiceTransformer;
 import io.camunda.search.clients.transformers.ServiceTransformers;
 import io.camunda.search.clients.transformers.query.SearchQueryResultTransformer;
 import io.camunda.search.clients.transformers.query.TypedSearchQueryTransformer;
-import io.camunda.search.exception.SearchQueryExecutionException;
 import io.camunda.search.filter.FilterBase;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.query.TypedSearchQuery;
@@ -114,9 +113,5 @@ public final class SearchClientBasedQueryExecutor {
 
   private <T, R> ServiceTransformer<T, R> getDocumentTransformer(final Class<R> documentClass) {
     return transformers.getTransformer(documentClass);
-  }
-
-  private SearchQueryExecutionException rethrowRuntimeException(final Exception e) {
-    return new SearchQueryExecutionException("Failed to execute search query", e);
   }
 }

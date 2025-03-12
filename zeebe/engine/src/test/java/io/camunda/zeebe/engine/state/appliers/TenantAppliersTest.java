@@ -75,28 +75,21 @@ public class TenantAppliersTest {
   @Test
   void shouldAddEntityToTenantWithTypeMapping() {
     // given
-    final Long entityKey = 1L;
+    final var mappingId = "mappingId";
     mappingState.create(
-        new MappingRecord()
-            .setMappingKey(entityKey)
-            .setClaimName("claimName")
-            .setClaimValue("claimValue"));
+        new MappingRecord().setId(mappingId).setClaimName("claimName").setClaimValue("claimValue"));
     final String tenantId = "tenantId";
     final long tenantKey = 11L;
     final var tenantRecord = new TenantRecord().setTenantId(tenantId).setTenantKey(tenantKey);
     tenantState.createTenant(tenantRecord);
-    tenantRecord
-        .setEntityKey(entityKey)
-        .setEntityId(entityKey.toString())
-        .setEntityType(EntityType.MAPPING);
+    tenantRecord.setEntityId(mappingId).setEntityType(EntityType.MAPPING);
 
     // when
     tenantEntityAddedApplier.applyState(tenantKey, tenantRecord);
 
     // then
-    assertThat(tenantState.getEntityType(tenantId, entityKey.toString()).get())
-        .isEqualTo(EntityType.MAPPING);
-    final var persistedMapping = mappingState.get(entityKey).get();
+    assertThat(tenantState.getEntityType(tenantId, mappingId).get()).isEqualTo(EntityType.MAPPING);
+    final var persistedMapping = mappingState.get(mappingId).get();
     assertThat(persistedMapping.getTenantIdsList()).containsExactly(tenantId);
   }
 
@@ -162,31 +155,27 @@ public class TenantAppliersTest {
       "Disabled while mappings are not supported: https://github.com/camunda/camunda/issues/26981")
   void shouldRemoveEntityFromTenantWithTypeMapping() {
     // given
-    final Long entityKey = 1L;
+    final var mappingId = "mappingId";
     mappingState.create(
-        new MappingRecord()
-            .setMappingKey(entityKey)
-            .setClaimName("claimName")
-            .setClaimValue("claimValue"));
+        new MappingRecord().setId(mappingId).setClaimName("claimName").setClaimValue("claimValue"));
     final String tenantId = "tenantId";
     final long tenantKey = 11L;
     final var tenantRecord = new TenantRecord().setTenantId(tenantId).setTenantKey(tenantKey);
     tenantState.createTenant(tenantRecord);
-    tenantRecord.setEntityKey(entityKey).setEntityType(EntityType.MAPPING);
+    tenantRecord.setEntityId(mappingId).setEntityType(EntityType.MAPPING);
     tenantEntityAddedApplier.applyState(tenantKey, tenantRecord);
 
     // Ensure the mapping is associated with the tenant before removal
-    assertThat(tenantState.getEntityType(tenantId, entityKey.toString()).get())
-        .isEqualTo(EntityType.MAPPING);
-    final var persistedMapping = mappingState.get(entityKey).get();
+    assertThat(tenantState.getEntityType(tenantId, mappingId).get()).isEqualTo(EntityType.MAPPING);
+    final var persistedMapping = mappingState.get(mappingId).get();
     assertThat(persistedMapping.getTenantIdsList()).containsExactly(tenantId);
 
     // when
     tenantEntityRemovedApplier.applyState(tenantKey, tenantRecord);
 
     // then
-    assertThat(tenantState.getEntityType(tenantId, entityKey.toString())).isEmpty();
-    final var updatedMapping = mappingState.get(entityKey).get();
+    assertThat(tenantState.getEntityType(tenantId, mappingId)).isEmpty();
+    final var updatedMapping = mappingState.get(mappingId).get();
     assertThat(updatedMapping.getTenantIdsList()).isEmpty();
   }
 

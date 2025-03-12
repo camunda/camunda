@@ -14,7 +14,7 @@ import static org.mockito.Mockito.when;
 import io.camunda.search.entities.IncidentEntity;
 import io.camunda.search.entities.IncidentEntity.ErrorType;
 import io.camunda.search.entities.IncidentEntity.IncidentState;
-import io.camunda.search.exception.NotFoundException;
+import io.camunda.search.exception.CamundaSearchException;
 import io.camunda.search.filter.DateValueFilter;
 import io.camunda.search.filter.IncidentFilter;
 import io.camunda.search.query.IncidentQuery;
@@ -294,7 +294,8 @@ public class IncidentQueryControllerTest extends RestControllerTest {
 
   @Test
   void shouldThrowNotFoundIfKeyNotExistsForGetIncidentByKey() {
-    when(incidentServices.getByKey(any(Long.class))).thenThrow(new NotFoundException(""));
+    when(incidentServices.getByKey(any(Long.class)))
+        .thenThrow(new CamundaSearchException("", CamundaSearchException.Reason.NOT_FOUND));
     // when / then
     webClient
         .get()

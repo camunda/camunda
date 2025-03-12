@@ -7,8 +7,8 @@ services:
       - elasticsearch
       - identity
     ports:
-      - "8080:8080"
-      - "9600:9600"
+      - "8090:8090"
+      - "8092:8092"
     environment:
       - SPRING_PROFILES_ACTIVE=ccsm
       - CAMUNDA_OPTIMIZE_IDENTITY_ISSUER_URL=http://localhost:18080/auth/realms/camunda-platform
@@ -39,8 +39,8 @@ services:
     depends_on:
       - identity
     ports:
-      - "8080:8080"
-      - "9600:9600"
+      - "8090:8090"
+      - "8092:8092"
     environment:
       - SPRING_PROFILES_ACTIVE=ccsm
       - CAMUNDA_OPTIMIZE_DATABASE=opensearch
@@ -96,7 +96,7 @@ services:
       KEYCLOAK_URL: http://keycloak:8080/auth
       IDENTITY_AUTH_PROVIDER_BACKEND_URL: http://keycloak:8080/auth/realms/camunda-platform
       KEYCLOAK_INIT_OPTIMIZE_SECRET: XALaRPl5qwTEItdwCMiPS62nVpKs7dL7
-      KEYCLOAK_INIT_OPTIMIZE_ROOT_URL: http://localhost:8080
+      KEYCLOAK_INIT_OPTIMIZE_ROOT_URL: http://localhost:8090
       KEYCLOAK_USERS_0_USERNAME: "demo"
       KEYCLOAK_USERS_0_PASSWORD: "demo"
       KEYCLOAK_USERS_0_FIRST_NAME: "demo"
