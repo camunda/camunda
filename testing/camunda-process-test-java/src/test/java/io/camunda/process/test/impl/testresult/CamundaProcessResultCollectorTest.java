@@ -17,6 +17,7 @@ package io.camunda.process.test.impl.testresult;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.groups.Tuple.tuple;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.when;
 
@@ -98,8 +99,8 @@ public class CamundaProcessResultCollectorTest {
     // then
     assertThat(result.getProcessInstanceTestResults())
         .hasSize(2)
-        .extracting(
-            ProcessInstanceResult::getProcessInstanceKey, ProcessInstanceResult::getProcessId)
+        .extracting(ProcessInstanceResult::getProcessInstance)
+        .extracting(ProcessInstance::getProcessInstanceKey, ProcessInstance::getProcessDefinitionId)
         .contains(tuple(1L, "process-a"), tuple(2L, "process-b"));
 
     assertThat(result.getProcessInstanceTestResults())
@@ -113,14 +114,14 @@ public class CamundaProcessResultCollectorTest {
     when(camundaDataSource.findProcessInstances())
         .thenReturn(Arrays.asList(PROCESS_INSTANCE_1, PROCESS_INSTANCE_2));
 
-    when(camundaDataSource.getVariablesByProcessInstanceKey(
+    when(camundaDataSource.findVariablesByProcessInstanceKey(
             PROCESS_INSTANCE_1.getProcessInstanceKey()))
         .thenReturn(
             Arrays.asList(
                 VariableBuilder.newVariable("var-1", "1").build(),
                 VariableBuilder.newVariable("var-2", "2").build()));
 
-    when(camundaDataSource.getVariablesByProcessInstanceKey(
+    when(camundaDataSource.findVariablesByProcessInstanceKey(
             PROCESS_INSTANCE_2.getProcessInstanceKey()))
         .thenReturn(Collections.singletonList(VariableBuilder.newVariable("var-3", "3").build()));
 
@@ -160,23 +161,6 @@ public class CamundaProcessResultCollectorTest {
             .setIncidentKey(11L)
             .build();
 
-    when(camundaDataSource.getFlowNodeInstancesByProcessInstanceKey(
-            PROCESS_INSTANCE_1.getProcessInstanceKey()))
-        .thenReturn(Arrays.asList(flowNodeInstance1, flowNodeInstance2));
-
-    when(camundaDataSource.getIncidentsByProcessInstanceKey(
-            PROCESS_INSTANCE_1.getProcessInstanceKey()))
-        .thenReturn(
-            Arrays.asList(
-                IncidentBuilder.newActiveIncident(
-                        IncidentErrorType.JOB_NO_RETRIES, "No retries left.")
-                    .setFlowNodeId("A")
-                    .build(),
-                IncidentBuilder.newActiveIncident(
-                        IncidentErrorType.EXTRACT_VALUE_ERROR, "Failed to evaluate expression.")
-                    .setFlowNodeId("B")
-                    .build()));
-
     final FlowNodeInstance flowNodeInstance3 =
         FlowNodeInstanceBuilder.newActiveFlowNodeInstance(
                 "C", PROCESS_INSTANCE_2.getProcessInstanceKey())
@@ -190,12 +174,21 @@ public class CamundaProcessResultCollectorTest {
             .setIncident(false)
             .build();
 
-    when(camundaDataSource.getFlowNodeInstancesByProcessInstanceKey(
-            PROCESS_INSTANCE_2.getProcessInstanceKey()))
+    when(camundaDataSource.findFlowNodeInstances(any()))
+        .thenReturn(Arrays.asList(flowNodeInstance1, flowNodeInstance2))
         .thenReturn(Arrays.asList(flowNodeInstance3, flowNodeInstance4));
 
-    when(camundaDataSource.getIncidentsByProcessInstanceKey(
-            PROCESS_INSTANCE_2.getProcessInstanceKey()))
+    when(camundaDataSource.findIncidents(any()))
+        .thenReturn(
+            Arrays.asList(
+                IncidentBuilder.newActiveIncident(
+                        IncidentErrorType.JOB_NO_RETRIES, "No retries left.")
+                    .setFlowNodeId("A")
+                    .build(),
+                IncidentBuilder.newActiveIncident(
+                        IncidentErrorType.EXTRACT_VALUE_ERROR, "Failed to evaluate expression.")
+                    .setFlowNodeId("B")
+                    .build()))
         .thenReturn(
             Collections.singletonList(
                 IncidentBuilder.newActiveIncident(
@@ -229,8 +222,7 @@ public class CamundaProcessResultCollectorTest {
     when(camundaDataSource.findProcessInstances())
         .thenReturn(Arrays.asList(PROCESS_INSTANCE_1, PROCESS_INSTANCE_2));
 
-    when(camundaDataSource.getFlowNodeInstancesByProcessInstanceKey(
-            PROCESS_INSTANCE_1.getProcessInstanceKey()))
+    when(camundaDataSource.findFlowNodeInstances(any()))
         .thenReturn(
             Arrays.asList(
                 FlowNodeInstanceBuilder.newActiveFlowNodeInstance(
@@ -238,16 +230,13 @@ public class CamundaProcessResultCollectorTest {
                     .build(),
                 FlowNodeInstanceBuilder.newActiveFlowNodeInstance(
                         "B", PROCESS_INSTANCE_1.getProcessInstanceKey())
-                    .build()));
-
-    when(camundaDataSource.getFlowNodeInstancesByProcessInstanceKey(
-            PROCESS_INSTANCE_2.getProcessInstanceKey()))
+                    .build()))
         .thenReturn(
             Arrays.asList(
                 FlowNodeInstanceBuilder.newActiveFlowNodeInstance(
                         "C", PROCESS_INSTANCE_2.getProcessInstanceKey())
                     .build(),
-                FlowNodeInstanceBuilder.newCompletedFlowNodeInstance(
+                FlowNodeInstanceBuilder.newActiveFlowNodeInstance(
                         "D", PROCESS_INSTANCE_2.getProcessInstanceKey())
                     .build()));
 
@@ -263,8 +252,8 @@ public class CamundaProcessResultCollectorTest {
         .contains(tuple("A", "element_A"), tuple("B", "element_B"));
 
     assertThat(result.getProcessInstanceTestResults().get(1).getActiveFlowNodeInstances())
-        .hasSize(1)
+        .hasSize(2)
         .extracting(FlowNodeInstance::getFlowNodeId, FlowNodeInstance::getFlowNodeName)
-        .contains(tuple("C", "element_C"));
+        .contains(tuple("C", "element_C"), tuple("D", "element_D"));
   }
 }

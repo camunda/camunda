@@ -12,7 +12,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.amazonaws.regions.DefaultAwsRegionProviderChain;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.camunda.exporter.config.ExporterConfiguration.ArchiverConfiguration;
+import io.camunda.exporter.config.ExporterConfiguration.HistoryConfiguration;
 import io.camunda.exporter.config.ExporterConfiguration.RetentionConfiguration;
 import io.camunda.exporter.metrics.CamundaExporterMetrics;
 import io.camunda.exporter.schema.opensearch.OpensearchEngineClient;
@@ -75,7 +75,7 @@ final class OpenSearchArchiverRepositoryIT {
   private static final ObjectMapper MAPPER = TestObjectMapper.objectMapper();
   @AutoClose private final RestClientTransport transport = createRestClient();
   private final SimpleMeterRegistry meterRegistry = new SimpleMeterRegistry();
-  private final ArchiverConfiguration config = new ArchiverConfiguration();
+  private final HistoryConfiguration config = new HistoryConfiguration();
   private final ConnectConfiguration connectConfiguration = new ConnectConfiguration();
   private final RetentionConfiguration retention = new RetentionConfiguration();
   private final String processInstanceIndex =

@@ -908,8 +908,7 @@
         #     numberOfReplicas: 0
         #     variableSizeThreshold: 8191
         #
-        #   archiver:
-        #     enabled: true
+        #   history:
         #     elsRolloverDateFormat: "date"
         #     rolloverInterval: "1d"
         #     rolloverBatchSize: 100

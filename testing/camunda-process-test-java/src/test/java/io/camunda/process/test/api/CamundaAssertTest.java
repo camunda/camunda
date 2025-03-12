@@ -16,6 +16,7 @@
 package io.camunda.process.test.api;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -52,7 +53,7 @@ public class CamundaAssertTest {
     final long processInstanceKey = 100L;
     when(processInstanceEvent.getProcessInstanceKey()).thenReturn(processInstanceKey);
 
-    when(camundaDataSource.findProcessInstances())
+    when(camundaDataSource.findProcessInstances(any()))
         .thenReturn(
             Collections.singletonList(
                 ProcessInstanceBuilder.newActiveProcessInstance(processInstanceKey).build()));
@@ -62,6 +63,6 @@ public class CamundaAssertTest {
     CamundaAssert.assertThat(processInstanceEvent).isActive();
 
     // then
-    verify(camundaDataSource).findProcessInstances();
+    verify(camundaDataSource).findProcessInstances(any());
   }
 }

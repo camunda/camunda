@@ -84,7 +84,7 @@ jobs:
       - name: Build optimize dependencies
         uses: ./.github/actions/run-maven
         with:
-          parameters: -pl optimize/backend -am install -Dquickly -P skipFrontendBuild,runAssembly -T 1
+          parameters: -f optimize/pom.xml -pl backend -am install -T1
 
       #########################################################################
       # Build Optimize
