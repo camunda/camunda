@@ -1283,7 +1283,7 @@ public final class StreamProcessorTest {
         ValueType.PROCESS_INSTANCE,
         RejectionType.NULL_VAL,
         "",
-        -1,
+        123, // Provide a fake request id to ensure the response is not ignored
         -1);
     when(defaultMockedRecordProcessor.process(any(), any())).thenReturn(resultBuilder.build());
     streamPlatform.startStreamProcessor();
