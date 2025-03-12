@@ -72,3 +72,4 @@ For testing with C8 SM, ensure you have an active SM instance. To set this up:
    ```bash
    DATABASE=elasticsearch docker compose up -d tasklist operate
    ```
+
