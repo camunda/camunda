@@ -42,7 +42,7 @@
     <module>migration</module>
 
     <!-- TODO: Remove optimize once the backup system is reverted -->
-    <module>optimize/util/optimize-commons</module>
+    <module>optimize</module>
   </modules>
 
   <scm>
