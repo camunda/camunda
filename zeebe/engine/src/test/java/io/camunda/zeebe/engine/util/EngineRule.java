@@ -11,6 +11,7 @@ import static io.camunda.zeebe.test.util.record.RecordingExporter.jobRecords;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.security.configuration.SecurityConfiguration;
+import io.camunda.service.search.core.SearchQueryService;
 import io.camunda.zeebe.db.DbKey;
 import io.camunda.zeebe.db.DbValue;
 import io.camunda.zeebe.engine.EngineConfiguration;
@@ -22,6 +23,7 @@ import io.camunda.zeebe.engine.state.ProcessingDbState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.util.TestInterPartitionCommandSender.CommandInterceptor;
 import io.camunda.zeebe.engine.util.client.AuthorizationClient;
+import io.camunda.zeebe.engine.util.client.BatchOperationClient;
 import io.camunda.zeebe.engine.util.client.ClockClient;
 import io.camunda.zeebe.engine.util.client.DecisionEvaluationClient;
 import io.camunda.zeebe.engine.util.client.DeploymentClient;
@@ -75,9 +77,11 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -104,6 +108,7 @@ public final class EngineRule extends ExternalResource {
 
   private long lastProcessedPosition = -1L;
   private JobStreamer jobStreamer = JobStreamer.noop();
+  private final Set<SearchQueryService> searchQueryServices = new HashSet<>();
 
   private final FeatureFlags featureFlags = FeatureFlags.createDefaultForTests();
   private ArrayList<TestInterPartitionCommandSender> interPartitionCommandSenders;
@@ -166,6 +171,11 @@ public final class EngineRule extends ExternalResource {
     return this;
   }
 
+  public EngineRule withSearchQueryService(final SearchQueryService searchQueryService) {
+    searchQueryServices.add(searchQueryService);
+    return this;
+  }
+
   public EngineRule withJobStreamer(final JobStreamer jobStreamer) {
     this.jobStreamer = jobStreamer;
     return this;
@@ -221,7 +231,7 @@ public final class EngineRule extends ExternalResource {
                         interPartitionCommandSender,
                         featureFlags,
                         jobStreamer,
-                        null)
+                        searchQueryServices)
                     .withListener(
                         new ProcessingExporterTransistor(
                             environmentRule.getLogStream(partitionId)));
@@ -411,6 +421,10 @@ public final class EngineRule extends ExternalResource {
 
   public GroupClient group() {
     return new GroupClient(environmentRule);
+  }
+
+  public BatchOperationClient batchOperation() {
+    return new BatchOperationClient(environmentRule);
   }
 
   public Record<JobRecordValue> createJob(final String type, final String processId) {

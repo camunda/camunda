@@ -11,9 +11,12 @@ import io.camunda.zeebe.engine.processing.ExcludeAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.DistributedTypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
+import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationCreationRecord;
+import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationIntent;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
@@ -30,6 +33,7 @@ public final class BatchOperationActivateProcessor
   private final KeyGenerator keyGenerator;
   private final CommandDistributionBehavior commandDistributionBehavior;
   private final StateWriter stateWriter;
+  private final TypedRejectionWriter rejectionWriter;
   private final TypedResponseWriter responseWriter;
 
   public BatchOperationActivateProcessor(
@@ -37,6 +41,7 @@ public final class BatchOperationActivateProcessor
       final KeyGenerator keyGenerator,
       final CommandDistributionBehavior commandDistributionBehavior) {
     stateWriter = writers.state();
+    rejectionWriter = writers.rejection();
     responseWriter = writers.response();
     this.keyGenerator = keyGenerator;
     this.commandDistributionBehavior = commandDistributionBehavior;
@@ -44,6 +49,13 @@ public final class BatchOperationActivateProcessor
 
   @Override
   public void processNewCommand(final TypedRecord<BatchOperationCreationRecord> command) {
+    if (MsgPackConverter.convertToJson(command.getValue().getFilterBuffer())
+        .equalsIgnoreCase("{}")) {
+      rejectionWriter.appendRejection(
+          command, RejectionType.INVALID_ARGUMENT, "Given filter is null");
+      return;
+    }
+
     final long key = keyGenerator.nextKey();
     final var recordValue = command.getValue();
     LOGGER.debug("Processing new command with key '{}': {}", key, recordValue);
@@ -53,13 +65,11 @@ public final class BatchOperationActivateProcessor
     recordWithKey.setBatchOperationKey(key);
 
     stateWriter.appendFollowUpEvent(key, BatchOperationIntent.CREATED, recordWithKey);
-    responseWriter.writeEventOnCommand(
-        key, BatchOperationIntent.CREATED, recordWithKey, command);
-    commandDistributionBehavior.withKey(key).unordered().distribute(
-        command.getValueType(),
-        command.getIntent(),
-        recordWithKey
-    );
+    responseWriter.writeEventOnCommand(key, BatchOperationIntent.CREATED, recordWithKey, command);
+    commandDistributionBehavior
+        .withKey(key)
+        .unordered()
+        .distribute(command.getValueType(), command.getIntent(), recordWithKey);
   }
 
   @Override

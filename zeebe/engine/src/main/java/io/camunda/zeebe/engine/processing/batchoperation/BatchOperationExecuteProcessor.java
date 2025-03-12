@@ -83,6 +83,8 @@ public final class BatchOperationExecuteProcessor
           entityKeys.forEach(entityKey -> cancelProcessInstance(entityKey, batchKey));
     }
 
+    appendBatchOperationExecutionExecutedEvent(command, Set.copyOf(entityKeys));
+
     final var newOffset = offset + entityKeys.size();
     LOGGER.debug(
         "Scheduling next batch for BatchOperation {} on partition {} with offset {}",
@@ -95,8 +97,6 @@ public final class BatchOperationExecuteProcessor
     followupCommand.setOffset(newOffset);
     commandWriter.appendFollowUpCommand(
         command.getKey(), BatchOperationIntent.EXECUTE, followupCommand, batchKey);
-
-    appendBatchOperationExecutionExecutedEvent(command, Set.copyOf(entityKeys));
   }
 
   private PersistedBatchOperation getBatchOperation(final long batchOperationKey) {
@@ -119,8 +119,8 @@ public final class BatchOperationExecuteProcessor
     batchExecute.setKeys(keys);
     batchExecute.setBatchOperationType(command.getValue().getBatchOperationType());
     batchExecute.setOffset(command.getValue().getOffset());
-    stateWriter.appendFollowUpEvent(command.getValue().getBatchOperationKey(),
-        BatchOperationIntent.EXECUTING, batchExecute);
+    stateWriter.appendFollowUpEvent(
+        command.getValue().getBatchOperationKey(), BatchOperationIntent.EXECUTING, batchExecute);
   }
 
   private void appendBatchOperationExecutionExecutedEvent(
