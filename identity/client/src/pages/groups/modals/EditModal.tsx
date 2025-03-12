@@ -41,7 +41,7 @@ const EditModal: FC<UseEntityModalProps<Group>> = ({
     if (success) {
       enqueueNotification({
         kind: "success",
-        title: t("Group has been updated."),
+        title: t("groupHasBeenUpdated"),
       });
       onSuccess();
     }
@@ -61,20 +61,20 @@ const EditModal: FC<UseEntityModalProps<Group>> = ({
       <TextField
         label={t("groupId")}
         value={groupId}
-        placeholder={t("groupId")}
+        placeholder={t("groupIdPlaceholder")}
         onChange={setGroupId}
         autoFocus
       />
       <TextField
         label={t("groupName")}
         value={groupName}
-        placeholder={t("groupName")}
+        placeholder={t("groupNamePlaceholder")}
         onChange={setGroupName}
       />
       <TextField
         label={t("description")}
         value={description || ""}
-        placeholder={t("description")}
+        placeholder={t("groupDescriptionPlaceholder")}
         onChange={setDescription}
         cols={2}
         enableCounter
