@@ -30,7 +30,8 @@ public record ProcessInstanceFilter(
     List<Operation<String>> stateOperations,
     Boolean hasIncident,
     List<Operation<String>> tenantIdOperations,
-    List<VariableValueFilter> variableFilters)
+    List<VariableValueFilter> variableFilters,
+    List<Operation<String>> batchOperationIdOperations)
     implements FilterBase {
 
   public static final class Builder implements ObjectBuilder<ProcessInstanceFilter> {
@@ -49,6 +50,7 @@ public record ProcessInstanceFilter(
     private Boolean hasIncident;
     private List<Operation<String>> tenantIdOperations;
     private List<VariableValueFilter> variableFilters;
+    private List<Operation<String>> batchOperationIdOperations;
 
     public Builder processInstanceKeyOperations(final List<Operation<Long>> operations) {
       processInstanceKeyOperations = addValuesToList(processInstanceKeyOperations, operations);
@@ -238,6 +240,21 @@ public record ProcessInstanceFilter(
       return this;
     }
 
+    public Builder batchOperationIdOperations(final List<Operation<String>> operations) {
+      batchOperationIdOperations = addValuesToList(batchOperationIdOperations, operations);
+      return this;
+    }
+
+    public Builder batchOperationIds(final String value, final String... values) {
+      return batchOperationIdOperations(FilterUtil.mapDefaultToOperation(value, values));
+    }
+
+    @SafeVarargs
+    public final Builder batchOperationIdOperations(
+        final Operation<String> operation, final Operation<String>... operations) {
+      return batchOperationIdOperations(collectValues(operation, operations));
+    }
+
     @Override
     public ProcessInstanceFilter build() {
       return new ProcessInstanceFilter(
@@ -255,7 +272,8 @@ public record ProcessInstanceFilter(
           Objects.requireNonNullElse(stateOperations, Collections.emptyList()),
           hasIncident,
           Objects.requireNonNullElse(tenantIdOperations, Collections.emptyList()),
-          Objects.requireNonNullElse(variableFilters, Collections.emptyList()));
+          Objects.requireNonNullElse(variableFilters, Collections.emptyList()),
+          Objects.requireNonNullElse(batchOperationIdOperations, Collections.emptyList()));
     }
   }
 }

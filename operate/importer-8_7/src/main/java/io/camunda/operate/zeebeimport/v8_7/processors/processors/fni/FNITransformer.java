@@ -40,7 +40,8 @@ public class FNITransformer {
           BpmnElementType.SUB_PROCESS,
           BpmnElementType.EVENT_SUB_PROCESS,
           BpmnElementType.MULTI_INSTANCE_BODY,
-          BpmnElementType.PROCESS);
+          BpmnElementType.PROCESS,
+          BpmnElementType.AD_HOC_SUB_PROCESS);
   private final TreePathCache treePathCache;
 
   public FNITransformer(final TreePathCache treePathCache) {

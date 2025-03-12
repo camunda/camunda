@@ -13,6 +13,7 @@ import static org.assertj.core.api.Assertions.tuple;
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
+import io.camunda.zeebe.model.bpmn.builder.AbstractBpmnModelElementBuilder;
 import io.camunda.zeebe.model.bpmn.builder.CallActivityBuilder;
 import io.camunda.zeebe.model.bpmn.builder.ServiceTaskBuilder;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeBindingType;
@@ -39,7 +40,17 @@ import org.junit.Test;
 
 public final class CallActivityTest {
 
-  @ClassRule public static final EngineRule ENGINE = EngineRule.singlePartition();
+  public static final int CUSTOM_CALL_ACTIVITY_DEPTH = 10;
+  public static final boolean ENABLE_STRAIGHT_THROUGH_PROCESSING_LOOP_DETECTOR = false;
+
+  @ClassRule
+  public static final EngineRule ENGINE =
+      EngineRule.singlePartition()
+          .withEngineConfig(config -> config.setMaxProcessDepth(CUSTOM_CALL_ACTIVITY_DEPTH))
+          .withFeatureFlags(
+              featureFlags ->
+                  featureFlags.setEnableStraightThroughProcessingLoopDetector(
+                      ENABLE_STRAIGHT_THROUGH_PROCESSING_LOOP_DETECTOR));
 
   private static final String PROCESS_ID_PARENT = "wf-parent";
   private static final String PROCESS_ID_CHILD = "wf-child";
@@ -397,6 +408,7 @@ public final class CallActivityTest {
     ENGINE
         .deployment()
         .withXmlResource("wf-parent.bpmn", parentProcess(c -> c.zeebeInputExpression("x", "y")))
+        .withXmlResource("wf-child.bpmn", childProcess(jobType, ServiceTaskBuilder::done))
         .deploy();
 
     // when
@@ -424,6 +436,7 @@ public final class CallActivityTest {
             "wf-parent.bpmn",
             parentProcess(
                 c -> c.zeebeInputExpression("x", "y").zeebePropagateAllParentVariables(true)))
+        .withXmlResource("wf-child.bpmn", childProcess(jobType, ServiceTaskBuilder::done))
         .deploy();
 
     // when
@@ -455,6 +468,7 @@ public final class CallActivityTest {
             "wf-parent.bpmn",
             parentProcess(
                 c -> c.zeebeInputExpression("x", "y").zeebePropagateAllParentVariables(false)))
+        .withXmlResource("wf-child.bpmn", childProcess(jobType, ServiceTaskBuilder::done))
         .deploy();
 
     // when
@@ -486,6 +500,7 @@ public final class CallActivityTest {
         .deployment()
         .withXmlResource(
             "wf-parent.bpmn", parentProcess(c -> c.zeebePropagateAllParentVariables(false)))
+        .withXmlResource("wf-child.bpmn", childProcess(jobType, ServiceTaskBuilder::done))
         .deploy();
 
     // when
@@ -583,6 +598,7 @@ public final class CallActivityTest {
         .withXmlResource(
             "wf-parent.bpmn",
             parentProcess(callActivity -> callActivity.zeebeProcessIdExpression("processId")))
+        .withXmlResource("wf-child.bpmn", childProcess(jobType, ServiceTaskBuilder::done))
         .deploy();
 
     // when
@@ -789,6 +805,7 @@ public final class CallActivityTest {
         .withXmlResource(
             "wf-parent.bpmn",
             parentProcess(callActivity -> callActivity.zeebeInputExpression("x", "y")))
+        .withXmlResource("wf-child.bpmn", childProcess(jobType, ServiceTaskBuilder::done))
         .deploy();
 
     final var processInstanceKey =
@@ -821,6 +838,8 @@ public final class CallActivityTest {
                 .startEvent()
                 .callActivity("call", c -> c.zeebeProcessId(PROCESS_ID_PARENT))
                 .done())
+        .withXmlResource("wf-parent.bpmn", parentProcess(AbstractBpmnModelElementBuilder::done))
+        .withXmlResource("wf-child.bpmn", childProcess(jobType, ServiceTaskBuilder::done))
         .deploy();
 
     final var rootInstanceKey = ENGINE.processInstance().ofBpmnProcessId("root").create();
@@ -855,6 +874,7 @@ public final class CallActivityTest {
         .withXmlResource(
             "wf-parent.bpmn",
             parentProcess(c -> c.zeebeInputExpression("assert(x, x != null)", "y")))
+        .withXmlResource("wf-child.bpmn", childProcess(jobType, ServiceTaskBuilder::done))
         .deploy();
 
     // when
@@ -886,7 +906,11 @@ public final class CallActivityTest {
     processBuilder.startEvent("timer-start").timerWithCycle("R/PT1H").endEvent();
     processBuilder.startEvent("message-start").message("start").endEvent();
 
-    ENGINE.deployment().withXmlResource("wf-child.bpmn", processBuilder.done()).deploy();
+    ENGINE
+        .deployment()
+        .withXmlResource("wf-parent.bpmn", parentProcess(AbstractBpmnModelElementBuilder::done))
+        .withXmlResource("wf-child.bpmn", processBuilder.done())
+        .deploy();
 
     // when
     final var processInstanceKey =
@@ -1191,6 +1215,58 @@ public final class CallActivityTest {
             parentInstance.getProcessDefinitionKey(),
             childInstance.getProcessDefinitionKey())
         .hasOnlyCallingElementPath(ca1Index, ca2Index);
+  }
+
+  @Test
+  public void shouldLimitDescendantDepth() {
+    // given
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess("Loop")
+                .startEvent()
+                .exclusiveGateway("failsafe")
+                .defaultFlow()
+                .callActivity(
+                    "go_deeper",
+                    b ->
+                        b.zeebeProcessId("Loop")
+                            .zeebeInputExpression("depth + 1", "depth")
+                            .zeebePropagateAllParentVariables(false))
+                .endEvent("done")
+                .moveToLastExclusiveGateway()
+                .conditionExpression("depth > %d".formatted(CUSTOM_CALL_ACTIVITY_DEPTH + 1))
+                .userTask("inspect_failure")
+                .endEvent("failed")
+                .done())
+        .deploy();
+
+    // when
+    ENGINE.processInstance().ofBpmnProcessId("Loop").withVariable("depth", 1).create();
+
+    // then
+    final var incident =
+        RecordingExporter.incidentRecords(IncidentIntent.CREATED)
+            .withElementId("go_deeper")
+            .getFirst()
+            .getValue();
+    Assertions.assertThat(incident)
+        .describedAs("Expect that incident is raised due to the depth limit")
+        .hasErrorMessage(
+            """
+            The call activity has reached the maximum depth of %d. This is likely due to a recursive call. \
+            Cancel the root process instance if this was unintentional. Otherwise, consider increasing the \
+            maximum depth, or use process instance modification to adjust the process instance."""
+                .formatted(CUSTOM_CALL_ACTIVITY_DEPTH));
+
+    Assertions.assertThat(
+            RecordingExporter.variableRecords(VariableIntent.CREATED)
+                .withName("depth")
+                .withScopeKey(incident.getElementInstanceKey())
+                .getFirst()
+                .getValue())
+        .describedAs("Expect that we cannot call the call activity with a depth greater than 10")
+        .hasValue("%d".formatted(CUSTOM_CALL_ACTIVITY_DEPTH + 1));
   }
 
   private void deployDefaultParentAndChildProcess() {
