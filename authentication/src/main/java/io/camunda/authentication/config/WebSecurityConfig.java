@@ -75,11 +75,9 @@ public class WebSecurityConfig {
           "/sso-callback/**",
           "/login/**",
           "/logout",
-          "/oauth2/authorization/**",
           "/identity/**",
           "/operate/**",
           "/tasklist/**",
-          "/favicon.ico",
           "/");
   private static final Set<String> UNPROTECTED_PATHS =
       Set.of(
@@ -92,7 +90,8 @@ public class WebSecurityConfig {
           "/health",
           "/startup",
           // deprecated Tasklist v1 Public Endpoints
-          "/new/**");
+          "/new/**",
+          "/favicon.ico");
 
   @Bean
   @ConditionalOnMissingBean(MethodSecurityExpressionHandler.class)
