@@ -25,7 +25,7 @@ import org.slf4j.LoggerFactory;
 
 public class OpensearchPrefixMigrationClient implements PrefixMigrationClient {
   private static final Logger LOG = LoggerFactory.getLogger(OpensearchPrefixMigrationClient.class);
-
+  private final static String dateRegexForIndices = "\\d{4}-\\d{2}-\\d{2}";
   private final OpenSearchClient client;
 
   public OpensearchPrefixMigrationClient(final OpenSearchClient client) {
@@ -68,7 +68,7 @@ public class OpensearchPrefixMigrationClient implements PrefixMigrationClient {
     try {
       return client.cat().indices(i -> i.index(prefix + "*")).valueBody().stream()
           .map(IndicesRecord::index)
-          .filter(index -> Pattern.matches(".*\\d{4}-\\d{2}-\\d{2}$", index))
+          .filter(index -> Pattern.matches(".*" + dateRegexForIndices + "$", index))
           .toList();
     } catch (final IOException e) {
       LOG.error("Failed to get all historic indices for prefix [{}]", prefix, e);
@@ -84,7 +84,7 @@ public class OpensearchPrefixMigrationClient implements PrefixMigrationClient {
   }
 
   private void cloneIndex(final String src, final String target) throws IOException {
-    final var targetAlias = target.substring(0, target.length() - 10) + "alias";
+    final var targetAlias = target.replaceAll(dateRegexForIndices, "alias");
     client
         .indices()
         .clone(
