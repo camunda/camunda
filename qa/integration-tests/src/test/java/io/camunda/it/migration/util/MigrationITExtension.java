@@ -19,7 +19,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.function.Supplier;
 import java.util.stream.Stream;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.extension.AfterAllCallback;
@@ -45,28 +44,25 @@ public class MigrationITExtension
 
   private static final String TASKLIST = "tasklist";
   private static final String OPERATE = "operate";
-  private static final Map<DatabaseType, CamundaMigrator> MIGRATORS = new HashMap<>();
-  private static final List<AutoCloseable> DB_CLOSABLES = new ArrayList<>();
-  private static final Map<DatabaseType, Network> NETWORKS = new HashMap<>();
-  private static final Set<DatabaseType> DATABASE_TYPES =
+  private static final String STORE_NAMESPACE = "MigrationITExtension";
+  private static final String INDEX_PREFIX = "INDEX_PREFIX";
+  private static final String DATABASE_TYPE = "DATABASE_TYPE";
+  private static final String HAS_87_DATA = "HAS_87_DATA";
+  private static final String MIGRATOR = "MIGRATOR";
+  private static final String DATABASE_TESTER = "DATABASE_CHECKS";
+
+  private final List<AutoCloseable> dbClosables = new ArrayList<>();
+  private final Map<DatabaseType, Network> networks = new HashMap<>();
+  private final Set<DatabaseType> databaseTypes =
       Set.of(/*DatabaseType.ELASTICSEARCH,*/ DatabaseType.OPENSEARCH);
-  private static final Map<DatabaseType, String> DATABASE_EXTERNAL_URLS = new HashMap<>();
-  private static final Map<DatabaseType, MigrationDatabaseChecks> DATABASE_CHECKS = new HashMap<>();
-  private static final Map<DatabaseType, String> INDEX_PREFIXES = new HashMap<>();
-  private static final Map<DatabaseType, Boolean> HAS_87_DATA =
-      new HashMap<>() {
-        {
-          put(DatabaseType.ELASTICSEARCH, false);
-          put(DatabaseType.OPENSEARCH, false);
-        }
-      };
+  private final Map<DatabaseType, String> databaseExternalUrls = new HashMap<>();
   private Map<String, String> initialEnvOverrides = new HashMap<>();
 
   @Override
   public void afterAll(final ExtensionContext context) {
     final var clazz = context.getTestClass().get();
     if (!isNestedClass(clazz)) {
-      DB_CLOSABLES.parallelStream()
+      dbClosables.parallelStream()
           .forEach(
               c -> {
                 try {
@@ -80,16 +76,16 @@ public class MigrationITExtension
 
   @Override
   public void afterEach(final ExtensionContext context) {
-    final String indexPrefix = context.getTestMethod().get().getName().toLowerCase();
-
-    final DatabaseType db = DatabaseType.valueOf(context.getDisplayName());
+    final String indexPrefix = getStore(context).get(INDEX_PREFIX, String.class);
+    final DatabaseType db = getStore(context).get(DATABASE_TYPE, DatabaseType.class);
     try {
-      final CamundaMigrator migrator = MIGRATORS.get(db);
+      final CamundaMigrator migrator = getStore(context).get(MIGRATOR, CamundaMigrator.class);
       if (migrator != null) {
         migrator.close();
         migrator.cleanup();
       }
-      final MigrationDatabaseChecks checks = DATABASE_CHECKS.get(db);
+      final MigrationDatabaseChecks checks =
+          getStore(context).get(DATABASE_TESTER, MigrationDatabaseChecks.class);
       if (checks != null) {
         checks.cleanup(indexPrefix);
         checks.close();
@@ -97,22 +93,18 @@ public class MigrationITExtension
     } catch (final Exception e) {
       throw new RuntimeException("Error during cleanup for database: " + db, e);
     }
-    DATABASE_CHECKS.get(db).cleanup(indexPrefix);
-    DATABASE_CHECKS.get(db).close();
-    INDEX_PREFIXES.remove(db);
-    HAS_87_DATA.put(db, false);
   }
 
   @Override
   public void beforeAll(final ExtensionContext context) throws Exception {
     final var clazz = context.getTestClass().get();
     if (!isNestedClass(clazz)) {
-      DATABASE_TYPES.parallelStream()
+      databaseTypes.parallelStream()
           .forEach(
               db -> {
                 final Network network = Network.newNetwork();
                 startDatabaseContainer(db, network);
-                NETWORKS.put(db, network);
+                networks.put(db, network);
               });
     }
   }
@@ -125,19 +117,20 @@ public class MigrationITExtension
   @Override
   public Stream<TestTemplateInvocationContext> provideTestTemplateInvocationContexts(
       final ExtensionContext context) {
-    return DATABASE_TYPES.stream()
+    return databaseTypes.stream()
         .flatMap(
             db -> {
               final String indexPrefix = context.getTestMethod().get().getName().toLowerCase();
-              INDEX_PREFIXES.put(db, indexPrefix);
-              final CamundaMigrator migrator = new CamundaMigrator(NETWORKS.get(db), indexPrefix);
-              migrator.initialize(db, DATABASE_EXTERNAL_URLS.get(db), initialEnvOverrides);
+              getStore(context).put(INDEX_PREFIX, indexPrefix);
+              getStore(context).put(DATABASE_TYPE, db);
+              final CamundaMigrator migrator = new CamundaMigrator(networks.get(db), indexPrefix);
+              migrator.initialize(db, databaseExternalUrls.get(db), initialEnvOverrides);
               final var expectedDescriptors =
                   new IndexDescriptors(indexPrefix, db.equals(DatabaseType.ELASTICSEARCH)).all();
-              DATABASE_CHECKS.put(
-                  db,
-                  new MigrationDatabaseChecks(DATABASE_EXTERNAL_URLS.get(db), expectedDescriptors));
-              MIGRATORS.put(db, migrator);
+              final MigrationDatabaseChecks checks =
+                  new MigrationDatabaseChecks(databaseExternalUrls.get(db), expectedDescriptors);
+              getStore(context).put(MIGRATOR, migrator);
+              getStore(context).put(DATABASE_TESTER, checks);
               return Stream.of(invocationContext(db));
             });
   }
@@ -147,51 +140,64 @@ public class MigrationITExtension
     return this;
   }
 
-  public void upgrade(final DatabaseType databaseType, final Map<String, String> envOverrides) {
-    final String indexPrefix = INDEX_PREFIXES.get(databaseType);
-    if (HAS_87_DATA.get(databaseType)) {
-      awaitImportersFlushed(databaseType, indexPrefix);
+  public void upgrade(final ExtensionContext context, final Map<String, String> envOverrides) {
+    final DatabaseType databaseType = getStore(context).get(DATABASE_TYPE, DatabaseType.class);
+    final String indexPrefix = getStore(context).get(INDEX_PREFIX, String.class);
+    final MigrationDatabaseChecks tester =
+        getStore(context).get(DATABASE_TESTER, MigrationDatabaseChecks.class);
+
+    if (getStore(context).getOrDefault(HAS_87_DATA, Boolean.class, false)) {
+      awaitImportersFlushed(tester, indexPrefix);
     }
 
-    MIGRATORS.get(databaseType).update(databaseType, envOverrides);
+    final CamundaMigrator migrator = getStore(context).get(MIGRATOR, CamundaMigrator.class);
+    migrator.update(databaseType, envOverrides);
 
-    awaitExporterReadiness(databaseType, indexPrefix);
+    awaitExporterReadiness(tester, indexPrefix);
 
     /* Ingest an 8.8 Record in order to trigger importers empty batch counting */
-    ingestRecordToTriggerImporters(databaseType);
+    ingestRecordToTriggerImporters(migrator.getCamundaClient());
 
-    awaitImportersFinished(databaseType, indexPrefix);
+    awaitImportersFinished(tester, indexPrefix);
   }
 
   private boolean isNestedClass(final Class<?> currentClass) {
     return !ModifierSupport.isStatic(currentClass) && currentClass.isMemberClass();
   }
 
-  public CamundaClient getCamundaClient(final DatabaseType databaseType) {
-    return MIGRATORS.get(databaseType).getCamundaClient();
+  public CamundaClient getCamundaClient(final ExtensionContext context) {
+    return getStore(context).get(MIGRATOR, CamundaMigrator.class).getCamundaClient();
   }
 
   /**
    * If the test case creates data on 8.7 version, it should be marked as such in order to wait for
    * the Tasklist & Operate import-position indices to be flushed
    */
-  public void has87Data(final DatabaseType databaseType) {
-    HAS_87_DATA.put(databaseType, true);
+  public void has87Data(final ExtensionContext context) {
+    getStore(context).put(HAS_87_DATA, true);
   }
 
-  public CamundaMigrator getMigrator(final DatabaseType databaseType) {
-    return MIGRATORS.get(databaseType);
+  public CamundaMigrator getMigrator(final ExtensionContext context) {
+    return getStore(context).get(MIGRATOR, CamundaMigrator.class);
   }
 
   private TestTemplateInvocationContext invocationContext(final DatabaseType databaseType) {
     return new TestTemplateInvocationContext() {
 
-      private final Map<Class<?>, Supplier<Object>> parameterResolvers =
-          Map.of(
-              DatabaseType.class, () -> databaseType,
-              CamundaMigrator.class, () -> MIGRATORS.get(databaseType),
-              CamundaClient.class, () -> MIGRATORS.get(databaseType).getCamundaClient(),
-              DocumentBasedSearchClient.class, () -> MIGRATORS.get(databaseType).getSearchClient());
+      private Object resolveParam(final Class<?> param, final ExtensionContext context) {
+        if (param.equals(DatabaseType.class)) {
+          return getStore(context).get(DATABASE_TYPE, DatabaseType.class);
+        } else if (param.equals(CamundaMigrator.class)) {
+          return getStore(context).get(MIGRATOR, CamundaMigrator.class);
+        } else if (param.equals(CamundaClient.class)) {
+          return getStore(context).get(MIGRATOR, CamundaMigrator.class).getCamundaClient();
+        } else if (param.equals(DocumentBasedSearchClient.class)) {
+          return getStore(context).get(MIGRATOR, CamundaMigrator.class).getSearchClient();
+        } else if (param.equals(ExtensionContext.class)) {
+          return context;
+        }
+        return null;
+      }
 
       @Override
       public String getDisplayName(final int invocationIndex) {
@@ -210,7 +216,8 @@ public class MigrationITExtension
                         DatabaseType.class,
                         CamundaClient.class,
                         CamundaMigrator.class,
-                        DocumentBasedSearchClient.class)
+                        DocumentBasedSearchClient.class,
+                        ExtensionContext.class)
                     .contains(parameterContext.getParameter().getType());
               }
 
@@ -219,8 +226,9 @@ public class MigrationITExtension
                   final ParameterContext parameterContext, final ExtensionContext extensionContext)
                   throws ParameterResolutionException {
                 final Class<?> requestedClass = parameterContext.getParameter().getType();
-                if (parameterResolvers.containsKey(requestedClass)) {
-                  return parameterResolvers.get(requestedClass).get();
+                final var paramSupplier = resolveParam(requestedClass, extensionContext);
+                if (paramSupplier != null) {
+                  return paramSupplier;
                 }
                 throw new ParameterResolutionException("Unsupported parameter type");
               }
@@ -237,8 +245,8 @@ public class MigrationITExtension
                 .withNetwork(network)
                 .withNetworkAliases("elasticsearch");
         elasticsearchContainer.start();
-        DB_CLOSABLES.add(elasticsearchContainer);
-        DATABASE_EXTERNAL_URLS.put(db, "http://" + elasticsearchContainer.getHttpHostAddress());
+        dbClosables.add(elasticsearchContainer);
+        databaseExternalUrls.put(db, "http://" + elasticsearchContainer.getHttpHostAddress());
         break;
       case OPENSEARCH:
         final OpensearchContainer opensearchContainer =
@@ -246,53 +254,53 @@ public class MigrationITExtension
                 .withNetwork(network)
                 .withNetworkAliases("opensearch");
         opensearchContainer.start();
-        DATABASE_EXTERNAL_URLS.put(db, opensearchContainer.getHttpHostAddress());
-        DB_CLOSABLES.add(opensearchContainer);
+        databaseExternalUrls.put(db, opensearchContainer.getHttpHostAddress());
+        dbClosables.add(opensearchContainer);
         break;
       default:
         throw new IllegalArgumentException("Unsupported database type: " + db);
     }
   }
 
-  private static void awaitExporterReadiness(
-      final DatabaseType databaseType, final String indexPrefix) {
+  private void awaitExporterReadiness(
+      final MigrationDatabaseChecks tester, final String indexPrefix) {
     Awaitility.await("Await database and exporter readiness")
         .timeout(Duration.of(1, ChronoUnit.MINUTES))
         .pollInterval(Duration.of(1, ChronoUnit.MILLIS))
-        .untilAsserted(() -> DATABASE_CHECKS.get(databaseType).validateSchemaCreation(indexPrefix));
+        .untilAsserted(() -> tester.validateSchemaCreation(indexPrefix));
   }
 
-  private static void awaitImportersFinished(
-      final DatabaseType databaseType, final String indexPrefix) {
+  private void awaitImportersFinished(
+      final MigrationDatabaseChecks tester, final String indexPrefix) {
     Awaitility.await("Await Importers finished")
         .timeout(Duration.of(1, ChronoUnit.MINUTES))
         .pollInterval(Duration.of(1, ChronoUnit.SECONDS))
         .until(
             () ->
-                DATABASE_CHECKS.get(databaseType).checkImportersFinished(indexPrefix, OPERATE)
-                    && DATABASE_CHECKS
-                        .get(databaseType)
-                        .checkImportersFinished(indexPrefix, TASKLIST));
+                tester.checkImportersFinished(indexPrefix, OPERATE)
+                    && tester.checkImportersFinished(indexPrefix, TASKLIST));
   }
 
-  private static void awaitImportersFlushed(
-      final DatabaseType databaseType, final String indexPrefix) {
+  private void awaitImportersFlushed(
+      final MigrationDatabaseChecks tester, final String indexPrefix) {
     Awaitility.await("Await Import Positions have been flushed")
         .timeout(Duration.of(1, ChronoUnit.MINUTES))
         .pollInterval(Duration.of(500, ChronoUnit.MILLIS))
         .until(
             () ->
-                DATABASE_CHECKS.get(databaseType).checkImportPositionsFlushed(indexPrefix, OPERATE)
-                    && DATABASE_CHECKS
-                        .get(databaseType)
-                        .checkImportPositionsFlushed(indexPrefix, TASKLIST));
+                tester.checkImportPositionsFlushed(indexPrefix, OPERATE)
+                    && tester.checkImportPositionsFlushed(indexPrefix, TASKLIST));
   }
 
-  private void ingestRecordToTriggerImporters(final DatabaseType databaseType) {
-    getCamundaClient(databaseType)
+  private void ingestRecordToTriggerImporters(final CamundaClient client) {
+    client
         .newDeployResourceCommand()
         .addResourceFromClasspath("process/error-end-event.bpmn")
         .send()
         .join();
+  }
+
+  private static ExtensionContext.Store getStore(final ExtensionContext context) {
+    return context.getStore(ExtensionContext.Namespace.create(STORE_NAMESPACE));
   }
 }
