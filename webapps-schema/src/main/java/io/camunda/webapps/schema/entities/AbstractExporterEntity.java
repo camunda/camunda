@@ -7,6 +7,7 @@
  */
 package io.camunda.webapps.schema.entities;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import java.util.Objects;
 
 /**
@@ -22,6 +23,12 @@ public abstract class AbstractExporterEntity<T extends AbstractExporterEntity<T>
 
   private String id;
 
+  @JsonInclude(JsonInclude.Include.NON_NULL)
+  private Long key;
+
+  @JsonInclude(JsonInclude.Include.NON_NULL)
+  private Integer partitionId;
+
   @Override
   public String getId() {
     return id;
@@ -33,20 +40,36 @@ public abstract class AbstractExporterEntity<T extends AbstractExporterEntity<T>
     return (T) this;
   }
 
+  public Long getKey() {
+    return key;
+  }
+
+  public T setKey(final Long key) {
+    this.key = key;
+    return (T) this;
+  }
+
+  public Integer getPartitionId() {
+    return partitionId;
+  }
+
+  public T setPartitionId(final Integer partitionId) {
+    this.partitionId = partitionId;
+    return (T) this;
+  }
+
   @Override
   public int hashCode() {
-    return Objects.hash(id);
+    return Objects.hash(id, key, partitionId);
   }
 
   @Override
   public boolean equals(final Object o) {
-    if (this == o) {
-      return true;
-    }
-    if (o == null || getClass() != o.getClass()) {
+    if (!(o instanceof final AbstractExporterEntity<?> that)) {
       return false;
     }
-    final AbstractExporterEntity<?> that = (AbstractExporterEntity<?>) o;
-    return Objects.equals(id, that.id);
+    return Objects.equals(id, that.id)
+        && Objects.equals(key, that.key)
+        && Objects.equals(partitionId, that.partitionId);
   }
 }

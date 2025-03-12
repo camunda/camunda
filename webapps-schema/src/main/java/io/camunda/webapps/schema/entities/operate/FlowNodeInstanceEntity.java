@@ -8,11 +8,14 @@
 package io.camunda.webapps.schema.entities.operate;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import io.camunda.webapps.schema.entities.AbstractExporterEntity;
+import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import java.time.OffsetDateTime;
 import java.util.Arrays;
 import java.util.Objects;
 
-public class FlowNodeInstanceEntity extends OperateZeebeEntity<FlowNodeInstanceEntity> {
+public class FlowNodeInstanceEntity extends AbstractExporterEntity<FlowNodeInstanceEntity>
+    implements TenantOwned {
 
   private String flowNodeId;
   private OffsetDateTime startDate;
@@ -32,7 +35,7 @@ public class FlowNodeInstanceEntity extends OperateZeebeEntity<FlowNodeInstanceE
   private int level;
   private Long position;
   private boolean incident;
-  private String tenantId = DEFAULT_TENANT_ID;
+  private String tenantId = DEFAULT_TENANT_IDENTIFIER;
   private Long scopeKey;
 
   @JsonIgnore private Object[] sortValues;
@@ -165,6 +168,7 @@ public class FlowNodeInstanceEntity extends OperateZeebeEntity<FlowNodeInstanceE
     return this;
   }
 
+  @Override
   public String getTenantId() {
     return tenantId;
   }

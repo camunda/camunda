@@ -8,14 +8,16 @@
 package io.camunda.webapps.schema.entities.operate.dmn;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import io.camunda.webapps.schema.entities.operate.OperateZeebeEntity;
+import io.camunda.webapps.schema.entities.AbstractExporterEntity;
+import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 
-public class DecisionInstanceEntity extends OperateZeebeEntity<DecisionInstanceEntity> {
+public class DecisionInstanceEntity extends AbstractExporterEntity<DecisionInstanceEntity>
+    implements TenantOwned {
 
   private Integer executionIndex;
   private DecisionInstanceState state;
@@ -43,7 +45,7 @@ public class DecisionInstanceEntity extends OperateZeebeEntity<DecisionInstanceE
   private String result;
   private List<DecisionInstanceInputEntity> evaluatedInputs = new ArrayList<>();
   private List<DecisionInstanceOutputEntity> evaluatedOutputs = new ArrayList<>();
-  private String tenantId = DEFAULT_TENANT_ID;
+  private String tenantId = DEFAULT_TENANT_IDENTIFIER;
 
   @JsonIgnore private Object[] sortValues;
 
@@ -273,6 +275,7 @@ public class DecisionInstanceEntity extends OperateZeebeEntity<DecisionInstanceE
     return this;
   }
 
+  @Override
   public String getTenantId() {
     return tenantId;
   }

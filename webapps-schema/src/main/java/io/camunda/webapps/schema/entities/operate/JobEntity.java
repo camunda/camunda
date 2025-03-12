@@ -7,11 +7,12 @@
  */
 package io.camunda.webapps.schema.entities.operate;
 
+import io.camunda.webapps.schema.entities.AbstractExporterEntity;
 import java.time.OffsetDateTime;
 import java.util.Map;
 import java.util.Objects;
 
-public class JobEntity extends OperateZeebeEntity<JobEntity> {
+public class JobEntity extends AbstractExporterEntity<JobEntity> {
 
   private Long processInstanceKey;
   private Long flowNodeInstanceId;

@@ -8,16 +8,18 @@
 package io.camunda.webapps.schema.entities.operate.listview;
 
 import io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate;
-import io.camunda.webapps.schema.entities.operate.OperateZeebeEntity;
+import io.camunda.webapps.schema.entities.AbstractExporterEntity;
+import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import java.util.Objects;
 
-public class VariableForListViewEntity extends OperateZeebeEntity<VariableForListViewEntity> {
+public class VariableForListViewEntity extends AbstractExporterEntity<VariableForListViewEntity>
+    implements TenantOwned {
 
   private Long processInstanceKey;
   private Long scopeKey;
   private String varName;
   private String varValue;
-  private String tenantId;
+  private String tenantId = DEFAULT_TENANT_IDENTIFIER;
   private Long position;
 
   private ListViewJoinRelation joinRelation =
@@ -63,6 +65,7 @@ public class VariableForListViewEntity extends OperateZeebeEntity<VariableForLis
     return this;
   }
 
+  @Override
   public String getTenantId() {
     return tenantId;
   }

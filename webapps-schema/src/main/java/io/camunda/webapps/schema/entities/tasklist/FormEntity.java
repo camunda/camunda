@@ -8,13 +8,16 @@
 package io.camunda.webapps.schema.entities.tasklist;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import io.camunda.webapps.schema.entities.AbstractExporterEntity;
+import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import java.util.Objects;
 
-public class FormEntity extends TasklistEntity<FormEntity> {
+public class FormEntity extends AbstractExporterEntity<FormEntity> implements TenantOwned {
 
   @JsonProperty("bpmnId")
   private String formId;
 
+  private String tenantId = DEFAULT_TENANT_IDENTIFIER;
   private String schema;
   private Long version;
   private Boolean isDeleted;
@@ -76,8 +79,18 @@ public class FormEntity extends TasklistEntity<FormEntity> {
   }
 
   @Override
+  public String getTenantId() {
+    return tenantId;
+  }
+
+  public FormEntity setTenantId(final String tenantId) {
+    this.tenantId = tenantId;
+    return this;
+  }
+
+  @Override
   public int hashCode() {
-    return Objects.hash(super.hashCode(), formId, schema, version, isDeleted);
+    return Objects.hash(super.hashCode(), formId, schema, version, isDeleted, tenantId);
   }
 
   @Override
@@ -95,7 +108,8 @@ public class FormEntity extends TasklistEntity<FormEntity> {
     return Objects.equals(formId, that.formId)
         && Objects.equals(schema, that.schema)
         && Objects.equals(version, that.version)
-        && Objects.equals(isDeleted, that.isDeleted);
+        && Objects.equals(isDeleted, that.isDeleted)
+        && Objects.equals(tenantId, that.tenantId);
   }
 
   @Override
@@ -111,6 +125,8 @@ public class FormEntity extends TasklistEntity<FormEntity> {
         + version
         + ", isDeleted="
         + isDeleted
+        + ", tenantId='"
+        + tenantId
         + '}';
   }
 }
