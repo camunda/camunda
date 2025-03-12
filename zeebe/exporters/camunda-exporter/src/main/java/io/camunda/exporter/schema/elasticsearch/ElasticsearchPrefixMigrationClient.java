@@ -27,7 +27,7 @@ public class ElasticsearchPrefixMigrationClient implements PrefixMigrationClient
   private static final Logger LOG =
       LoggerFactory.getLogger(ElasticsearchPrefixMigrationClient.class);
 
-  private static final String dateRegexForIndices = "\\d{4}-\\d{2}-\\d{2}";
+  private static final String DATE_REGEX_FOR_INDICES = "\\d{4}-\\d{2}-\\d{2}";
   private final ElasticsearchClient client;
 
   public ElasticsearchPrefixMigrationClient(final ElasticsearchClient client) {
@@ -70,7 +70,7 @@ public class ElasticsearchPrefixMigrationClient implements PrefixMigrationClient
     try {
       return client.cat().indices(i -> i.index(prefix + "*")).valueBody().stream()
           .map(IndicesRecord::index)
-          .filter(index -> Pattern.matches(".*" + dateRegexForIndices + "$", index))
+          .filter(index -> Pattern.matches(".*" + DATE_REGEX_FOR_INDICES + "$", index))
           .toList();
     } catch (final IOException e) {
       LOG.error("Failed to get all historic indices for prefix [{}]", prefix, e);
@@ -86,7 +86,7 @@ public class ElasticsearchPrefixMigrationClient implements PrefixMigrationClient
   }
 
   private void cloneIndex(final String src, final String target) throws IOException {
-    final var targetAlias = target.replaceAll(dateRegexForIndices, "alias");
+    final var targetAlias = target.replaceAll(DATE_REGEX_FOR_INDICES, "alias");
     client
         .indices()
         .clone(
