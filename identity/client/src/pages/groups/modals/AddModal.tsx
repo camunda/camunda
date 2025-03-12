@@ -14,17 +14,19 @@ import TextField from "src/components/form/TextField";
 import { createGroup } from "src/utility/api/groups";
 
 const AddModal: FC<UseModalProps> = ({ open, onClose, onSuccess }) => {
-  const { t } = useTranslate();
+  const { t } = useTranslate("groups");
 
   const [callAddGroup, { loading, error }] = useApiCall(createGroup, {
     suppressErrorNotification: true,
   });
 
-  const [name, setName] = useState("");
+  const [groupName, setGroupName] = useState("");
+  const [groupId, setGroupId] = useState("");
+  const [description, setDescription] = useState("");
 
   const handleSubmit = async () => {
     const { success } = await callAddGroup({
-      name: name.trim(),
+      name: groupName.trim(),
     });
 
     if (success) {
@@ -35,19 +37,33 @@ const AddModal: FC<UseModalProps> = ({ open, onClose, onSuccess }) => {
   return (
     <FormModal
       open={open}
-      headline={t("Create group")}
+      headline={t("createGroup")}
       onClose={onClose}
       onSubmit={handleSubmit}
       loading={loading}
-      loadingDescription={t("Adding group")}
-      confirmLabel={t("Create group")}
+      loadingDescription={t("creatingGroup")}
+      confirmLabel={t("createGroup")}
     >
       <TextField
-        label={t("Name")}
-        value={name}
-        placeholder={t("My group")}
-        onChange={setName}
+        label={t("groupId")}
+        value={groupId}
+        placeholder={t("groupIdPlaceholder")}
+        onChange={setGroupId}
         autoFocus
+      />
+      <TextField
+        label={t("groupName")}
+        value={groupName}
+        placeholder={t("groupNamePlaceholder")}
+        onChange={setGroupName}
+      />
+      <TextField
+        label={t("description")}
+        value={description || ""}
+        placeholder={t("groupDescriptionPlaceholder")}
+        onChange={setDescription}
+        cols={2}
+        enableCounter
       />
       {error && (
         <InlineNotification
