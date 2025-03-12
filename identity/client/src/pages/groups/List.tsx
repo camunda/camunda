@@ -66,14 +66,17 @@ const List: FC = () => {
       {pageHeader}
       <EntityList
         data={groupSearchResults == null ? [] : groupSearchResults.items}
-        headers={[{ header: t("name"), key: "name" }]}
+        headers={[
+          { header: t("groupId"), key: "groupKey" },
+          { header: t("groupName"), key: "name" },
+        ]}
         sortProperty="name"
-        addEntityLabel={t("Create group")}
+        addEntityLabel={t("createGroup")}
         onAddEntity={addGroup}
         menuItems={[
-          { label: t("Edit"), icon: Edit, onClick: updateGroup },
+          { label: t("edit"), icon: Edit, onClick: updateGroup },
           {
-            label: t("Delete"),
+            label: t("delete"),
             icon: TrashCan,
             isDangerous: true,
             onClick: deleteGroup,
@@ -81,15 +84,14 @@ const List: FC = () => {
         ]}
         onEntityClick={showDetails}
         loading={loading}
-        searchPlaceholder={t("Search by ID")}
+        searchPlaceholder={t("searchByGroupId")}
       />
       {!loading && !success && (
         <TranslatedErrorInlineNotification
-          title="The list of groups could not be loaded."
-          actionButton={{ label: "Retry", onClick: reload }}
+          title={t("groupsListCouldNotLoad")}
+          actionButton={{ label: t("retry"), onClick: reload }}
         />
       )}
-
       <>
         {addModal}
         {editModal}
