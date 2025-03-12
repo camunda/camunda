@@ -1,8 +1,14 @@
 {
+  "edit": "Edit",
+  "delete": "Delete",
   "groups": "Groups",
   "groupId": "Group ID",
+  "groupName": "Group name",
   "noGroupsCreated": "No groups created yet",
   "startByCreatingGroup": "Start by creating a new group to get started.",
+  "createGroup": "Create group",
   "createAGroup": "Create a group",
-  "learnMoreAboutGroups": "Learn more about groups"
+  "learnMoreAboutGroups": "Learn more about groups",
+  "searchByGroupId": "Search by Group ID",
+  "groupsListCouldNotLoad": "The list of groups could not be loaded."
 }
