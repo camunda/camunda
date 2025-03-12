@@ -29,8 +29,11 @@ Authorization: Basic {{BASIC_AUTH_TOKEN}}
 Accept: application/json
 
 > {%
+  let expectedTenantId = client.global.get("TENANT_ID");
+
   client.test("Tenant retrieval should be successful", function () {
     client.assert(response.status === 200, "Response status is not 200");
+    client.assert(response.body.tenantId === expectedTenantId, "TenantId was not found.");
   });
 %}
 
