@@ -36,10 +36,14 @@ public final class AuthorizationCheckBehavior {
 
   public static final String FORBIDDEN_ERROR_MESSAGE =
       "Insufficient permissions to perform operation '%s' on resource '%s'";
+  public static final String FORBIDDEN_FOR_TENANT_ERROR_MESSAGE =
+      FORBIDDEN_ERROR_MESSAGE + " for tenant '%s'";
   public static final String FORBIDDEN_ERROR_MESSAGE_WITH_RESOURCE =
       FORBIDDEN_ERROR_MESSAGE + ", required resource identifiers are one of '%s'";
   public static final String NOT_FOUND_ERROR_MESSAGE =
       "Expected to %s with key '%s', but no %s was found";
+  public static final String NOT_FOUND_FOR_TENANT_ERROR_MESSAGE =
+      "Expected to perform operation '%s' on resource '%s', but no resource was found for tenant '%s'";
   public static final String WILDCARD_PERMISSION = "*";
   private static final String UNAUTHORIZED_ERROR_MESSAGE =
       "Unauthorized to perform operation '%s' on resource '%s'";
@@ -115,8 +119,9 @@ public final class AuthorizationCheckBehavior {
 
     if (securityConfig.getMultiTenancy().isEnabled()) {
       if (!isUserAuthorizedForTenant(request, userOptional.get())) {
-        return Either.left(
-            new Rejection(RejectionType.NOT_FOUND, request.getForbiddenErrorMessage()));
+        final var rejectionType =
+            request.isNewResource() ? RejectionType.UNAUTHORIZED : RejectionType.NOT_FOUND;
+        return Either.left(new Rejection(rejectionType, request.getTenantErrorMessage()));
       }
     }
 
@@ -409,18 +414,29 @@ public final class AuthorizationCheckBehavior {
     private final PermissionType permissionType;
     private final Set<String> resourceIds;
     private final String tenantId;
+    private final boolean isNewResource;
 
     public AuthorizationRequest(
         final TypedRecord<?> command,
         final AuthorizationResourceType resourceType,
         final PermissionType permissionType,
-        final String tenantId) {
+        final String tenantId,
+        final boolean isNewResource) {
       this.command = command;
       this.resourceType = resourceType;
       this.permissionType = permissionType;
       resourceIds = new HashSet<>();
       resourceIds.add(WILDCARD_PERMISSION);
       this.tenantId = tenantId;
+      this.isNewResource = isNewResource;
+    }
+
+    public AuthorizationRequest(
+        final TypedRecord<?> command,
+        final AuthorizationResourceType resourceType,
+        final PermissionType permissionType,
+        final String tenantId) {
+      this(command, resourceType, permissionType, tenantId, false);
     }
 
     public AuthorizationRequest(
@@ -440,6 +456,10 @@ public final class AuthorizationCheckBehavior {
 
     public PermissionType getPermissionType() {
       return permissionType;
+    }
+
+    public boolean isNewResource() {
+      return isNewResource;
     }
 
     public AuthorizationRequest addResourceId(final String resourceId) {
@@ -462,6 +482,12 @@ public final class AuthorizationCheckBehavior {
           ? FORBIDDEN_ERROR_MESSAGE.formatted(permissionType, resourceType)
           : FORBIDDEN_ERROR_MESSAGE_WITH_RESOURCE.formatted(
               permissionType, resourceType, resourceIds.stream().sorted().toList());
+    }
+
+    public String getTenantErrorMessage() {
+      final var errorMsg =
+          isNewResource ? FORBIDDEN_FOR_TENANT_ERROR_MESSAGE : NOT_FOUND_FOR_TENANT_ERROR_MESSAGE;
+      return errorMsg.formatted(permissionType, resourceType, tenantId);
     }
   }
 

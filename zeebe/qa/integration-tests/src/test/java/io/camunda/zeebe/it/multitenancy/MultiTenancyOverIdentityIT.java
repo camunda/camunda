@@ -223,10 +223,10 @@ public class MultiTenancyOverIdentityIT {
       assertThat(result)
           .failsWithin(Duration.ofSeconds(10))
           .withThrowableThat()
-          .withMessageContaining("PERMISSION_DENIED")
+          .withMessageContaining("UNAUTHORIZED")
           .withMessageContaining(
-              "Expected to handle gRPC request DeployResource with tenant identifier 'tenant-b'")
-          .withMessageContaining("but tenant is not authorized to perform this request");
+              "Insufficient permissions to perform operation 'CREATE' on resource 'RESOURCE' for tenant '%s'"
+                  .formatted(TENANT_B));
     }
   }
 
@@ -622,10 +622,10 @@ public class MultiTenancyOverIdentityIT {
       assertThat(result)
           .failsWithin(Duration.ofSeconds(10))
           .withThrowableThat()
-          .withMessageContaining("PERMISSION_DENIED")
+          .withMessageContaining("NOT_FOUND")
           .withMessageContaining(
-              "Expected to handle gRPC request PublishMessage with tenant identifier 'tenant-b'")
-          .withMessageContaining("but tenant is not authorized to perform this request");
+              "Expected to perform operation 'CREATE' on resource 'MESSAGE', but no resource was found for tenant '%s'"
+                  .formatted(TENANT_B));
     }
   }
 
