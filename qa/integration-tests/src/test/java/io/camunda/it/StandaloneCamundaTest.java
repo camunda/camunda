@@ -19,17 +19,19 @@ import java.time.Duration;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 @Tag("multi-db-test")
+@DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "rdbms")
 public class StandaloneCamundaTest {
 
-  private static final TestSimpleCamundaApplication testStandaloneCamunda =
+  private static final TestSimpleCamundaApplication CAMUNDA_APPLICATION =
       new TestSimpleCamundaApplication().withUnauthenticatedAccess();
 
   @RegisterExtension
   private static final CamundaMultiDBExtension EXTENSION =
-      new CamundaMultiDBExtension(testStandaloneCamunda);
+      new CamundaMultiDBExtension(CAMUNDA_APPLICATION);
 
   private static CamundaClient camundaClient;
 
@@ -60,7 +62,7 @@ public class StandaloneCamundaTest {
             .join();
 
     // then
-    final var operateClient = testStandaloneCamunda.newOperateClient();
+    final var operateClient = CAMUNDA_APPLICATION.newOperateClient();
     Awaitility.await("should receive data from ES")
         .timeout(Duration.ofMinutes(1))
         .untilAsserted(
