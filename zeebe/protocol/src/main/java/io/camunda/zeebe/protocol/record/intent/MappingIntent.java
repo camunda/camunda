@@ -18,8 +18,10 @@ package io.camunda.zeebe.protocol.record.intent;
 public enum MappingIntent implements Intent {
   CREATE(0),
   CREATED(1),
-  DELETE(2),
-  DELETED(3);
+  UPDATE(2),
+  UPDATED(3),
+  DELETE(4),
+  DELETED(5);
 
   private final short value;
 
@@ -36,6 +38,7 @@ public enum MappingIntent implements Intent {
   public boolean isEvent() {
     switch (this) {
       case CREATED:
+      case UPDATED:
       case DELETED:
         return true;
       default:
@@ -50,8 +53,12 @@ public enum MappingIntent implements Intent {
       case 1:
         return CREATED;
       case 2:
-        return DELETE;
+        return UPDATE;
       case 3:
+        return UPDATED;
+      case 4:
+        return DELETE;
+      case 5:
         return DELETED;
       default:
         return Intent.UNKNOWN;
