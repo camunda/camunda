@@ -10,5 +10,9 @@
   "createAGroup": "Create a group",
   "learnMoreAboutGroups": "Learn more about groups",
   "searchByGroupId": "Search by Group ID",
-  "groupsListCouldNotLoad": "The list of groups could not be loaded."
+  "groupsListCouldNotLoad": "The list of groups could not be loaded.",
+  "groupHasBeenDeleted": "Group has been deleted.",
+  "deleteGroup": "Delete group",
+  "deletingGroup": "Deleting group",
+  "deleteGroupConfirmation": "Are you sure you want to delete <strong>{{groupKey}}</strong>? This action cannot be undone."
 }
