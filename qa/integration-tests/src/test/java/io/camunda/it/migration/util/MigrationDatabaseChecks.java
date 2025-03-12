@@ -53,8 +53,6 @@ public class MigrationDatabaseChecks extends ElasticOpenSearchSetupHelper {
       throws IOException, InterruptedException {
     final String targetUrl =
         String.format("%s/%s-%s-import-position*/_search", endpoint, indexPrefix, component);
-
-    final HttpResponse<String> response;
     LOGGER.info("Checking if all importers are marked as completed for {}", component);
     final HttpRequest request =
         HttpRequest.newBuilder()
@@ -63,19 +61,16 @@ public class MigrationDatabaseChecks extends ElasticOpenSearchSetupHelper {
             .POST(HttpRequest.BodyPublishers.ofString(IMPORTERS_FINISHED_QUERY))
             .build();
 
-    response = httpClient.send(request, BodyHandlers.ofString());
+    final HttpResponse<String> response = httpClient.send(request, BodyHandlers.ofString());
 
-    if (response.statusCode() == 200) {
-      final JsonNode jsonResponse = OBJECT_MAPPER.readTree(response.body());
-
-      final int totalDocs =
-          jsonResponse.path("aggregations").path("total_docs").path("value").asInt();
-      final int trueDocs =
-          jsonResponse.path("aggregations").path("completed_docs").path("doc_count").asInt();
-
-      return totalDocs == trueDocs;
+    if (response.statusCode() != 200) {
+      return false;
     }
-    return false;
+    final JsonNode jsonResponse = OBJECT_MAPPER.readTree(response.body());
+    final int totalDocs = jsonResponse.at("/aggregations/total_docs/value").asInt();
+    final int trueDocs = jsonResponse.at("/aggregations/completed_docs/doc_count").asInt();
+
+    return totalDocs == trueDocs;
   }
 
   public boolean checkImportPositionsFlushed(final String indexPrefix, final String component)
@@ -92,11 +87,11 @@ public class MigrationDatabaseChecks extends ElasticOpenSearchSetupHelper {
     LOGGER.info("Checking if import positions have been flushed for {}", component);
     final var response = httpClient.send(request, BodyHandlers.ofString());
 
-    if (response.statusCode() == 200) {
-      final JsonNode jsonResponse = OBJECT_MAPPER.readTree(response.body());
-      final int totalDocs = jsonResponse.path("hits").path("total").path("value").asInt();
-      return totalDocs > 0;
+    if (response.statusCode() != 200) {
+      return false;
     }
-    return false;
+    final JsonNode jsonResponse = OBJECT_MAPPER.readTree(response.body());
+    final int totalDocs = jsonResponse.at("/hits/total/value").asInt();
+    return totalDocs > 0;
   }
 }
