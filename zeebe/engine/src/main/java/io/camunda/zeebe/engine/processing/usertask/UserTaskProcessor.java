@@ -27,11 +27,12 @@ import io.camunda.zeebe.engine.state.immutable.ProcessState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.state.immutable.UserTaskState.LifecycleState;
 import io.camunda.zeebe.engine.state.instance.ElementInstance;
-import io.camunda.zeebe.engine.state.instance.UserTaskRecordRequestMetadata;
+import io.camunda.zeebe.engine.state.instance.UserTaskTransitionTriggerRequestMetadata;
 import io.camunda.zeebe.engine.state.mutable.MutableUserTaskState;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskListenerEventType;
 import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
+import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
@@ -212,8 +213,9 @@ public class UserTaskProcessor implements TypedRecordProcessor<UserTaskRecord> {
     }
 
     final var metadata =
-        new UserTaskRecordRequestMetadata()
+        new UserTaskTransitionTriggerRequestMetadata()
             .setIntent((UserTaskIntent) command.getIntent())
+            .setTriggerType(ValueType.USER_TASK)
             .setRequestId(command.getRequestId())
             .setRequestStreamId(command.getRequestStreamId());
     userTaskState.storeRecordRequestMetadata(command.getValue().getUserTaskKey(), metadata);

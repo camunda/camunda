@@ -19,13 +19,15 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
 import io.camunda.zeebe.engine.state.immutable.ProcessState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
-import io.camunda.zeebe.engine.state.immutable.UserTaskState;
 import io.camunda.zeebe.engine.state.immutable.UserTaskState.LifecycleState;
 import io.camunda.zeebe.engine.state.instance.ElementInstance;
+import io.camunda.zeebe.engine.state.instance.UserTaskTransitionTriggerRequestMetadata;
+import io.camunda.zeebe.engine.state.mutable.MutableUserTaskState;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskListenerEventType;
 import io.camunda.zeebe.msgpack.spec.MsgpackReaderException;
 import io.camunda.zeebe.protocol.impl.record.value.variable.VariableDocumentRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
+import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import io.camunda.zeebe.protocol.record.intent.VariableDocumentIntent;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
@@ -46,7 +48,7 @@ public final class VariableDocumentUpdateProcessor
       "Expected to trigger update transition for user task with key '%d', but it is in state '%s'";
 
   private final ElementInstanceState elementInstanceState;
-  private final UserTaskState userTaskState;
+  private final MutableUserTaskState userTaskState;
   private final ProcessState processState;
   private final KeyGenerator keyGenerator;
   private final VariableBehavior variableBehavior;
@@ -59,9 +61,10 @@ public final class VariableDocumentUpdateProcessor
       final KeyGenerator keyGenerator,
       final BpmnBehaviors bpmnBehaviors,
       final Writers writers,
+      final MutableUserTaskState userTaskState,
       final AuthorizationCheckBehavior authCheckBehavior) {
     this.elementInstanceState = processingState.getElementInstanceState();
-    this.userTaskState = processingState.getUserTaskState();
+    this.userTaskState = userTaskState;
     this.processState = processingState.getProcessState();
     this.keyGenerator = keyGenerator;
     this.variableBehavior = bpmnBehaviors.variableBehavior();
@@ -116,15 +119,6 @@ public final class VariableDocumentUpdateProcessor
         return;
       }
 
-      // TODO:
-      //  - If `updating` listeners are defined at the user task:
-      //    - Create a new task listener job for the first `updating` listener.
-      //    - Track request metadata for later usage when finalizing the update.
-      //  - If `updating` listeners are not defined at the user task:
-      //    - Immediately finalize the update:
-      //      - Merge variables into the local scope.
-      //      - Append and respond with `VariableDocument.UPDATED` event.
-      //      - Append `UserTask.UPDATED` event.
       final long key = keyGenerator.nextKey();
       writers.state().appendFollowUpEvent(key, VariableDocumentIntent.UPDATING, value);
 
@@ -140,6 +134,8 @@ public final class VariableDocumentUpdateProcessor
               ExecutableUserTask.class);
 
       if (userTaskElement.hasTaskListeners(ZeebeTaskListenerEventType.updating)) {
+        storeRecordRequestMetadata(userTaskKey, record);
+
         final var listener =
             userTaskElement.getTaskListeners(ZeebeTaskListenerEventType.updating).getFirst();
         jobBehavior.createNewTaskListenerJob(
@@ -210,5 +206,20 @@ public final class VariableDocumentUpdateProcessor
     final var context = new BpmnElementContextImpl();
     context.init(elementInstance.getKey(), elementInstance.getValue(), elementInstance.getState());
     return context;
+  }
+
+  void storeRecordRequestMetadata(
+      final long userTaskKey, final TypedRecord<VariableDocumentRecord> command) {
+    if (!command.hasRequestMetadata()) {
+      return;
+    }
+
+    final var metadata =
+        new UserTaskTransitionTriggerRequestMetadata()
+            .setIntent((UserTaskIntent) command.getIntent())
+            .setTriggerType(ValueType.VARIABLE_DOCUMENT)
+            .setRequestId(command.getRequestId())
+            .setRequestStreamId(command.getRequestStreamId());
+    userTaskState.storeRecordRequestMetadata(userTaskKey, metadata);
   }
 }
