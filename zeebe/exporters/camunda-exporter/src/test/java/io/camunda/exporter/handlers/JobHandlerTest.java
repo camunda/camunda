@@ -380,8 +380,8 @@ final class JobHandlerTest {
     final String bpmnProcessId = "bpmnProcessId";
     final long processDefinitionKey = 555L;
     final OffsetDateTime endTime = OffsetDateTime.now();
-    final Boolean jobDenied = true;
-    final String jobDeniedReason = "reason to deny";
+    final Boolean denied = true;
+    final String deniedReason = "reason to deny";
 
     final Map<String, String> customHeaders = Map.of("key", "val");
     final JobEntity jobEntity =
@@ -397,8 +397,8 @@ final class JobHandlerTest {
             .setDeadline(deadline)
             .setProcessDefinitionKey(processDefinitionKey)
             .setBpmnProcessId(bpmnProcessId)
-            .setDenied(jobDenied)
-            .setDeniedReason(jobDeniedReason);
+            .setDenied(denied)
+            .setDeniedReason(deniedReason);
 
     final Map<String, Object> expectedUpdateFields = new LinkedHashMap<>();
     expectedUpdateFields.put(JOB_WORKER, jobEntity.getWorker());
@@ -411,8 +411,8 @@ final class JobHandlerTest {
     expectedUpdateFields.put(JOB_DEADLINE, jobEntity.getDeadline());
     expectedUpdateFields.put(PROCESS_DEFINITION_KEY, jobEntity.getProcessDefinitionKey());
     expectedUpdateFields.put(BPMN_PROCESS_ID, jobEntity.getBpmnProcessId());
-    expectedUpdateFields.put(JOB_DENIED, jobDenied);
-    expectedUpdateFields.put(JOB_DENIED_REASON, jobDeniedReason);
+    expectedUpdateFields.put(JOB_DENIED, denied);
+    expectedUpdateFields.put(JOB_DENIED_REASON, deniedReason);
 
     final BatchRequest mockRequest = Mockito.mock(BatchRequest.class);
 
@@ -439,8 +439,8 @@ final class JobHandlerTest {
     final String bpmnProcessId = "bpmnProcessId";
     final long processDefinitionKey = 555L;
     final OffsetDateTime endTime = OffsetDateTime.now();
-    final Boolean jobDenied = true;
-    final String jobDeniedReason = "reason to deny";
+    final Boolean denied = true;
+    final String deniedReason = "reason to deny";
 
     final Map<String, String> customHeaders = Map.of("key", "val");
     final JobEntity jobEntity =
@@ -458,8 +458,8 @@ final class JobHandlerTest {
             .setProcessDefinitionKey(processDefinitionKey)
             .setBpmnProcessId(bpmnProcessId)
             .setJobFailedWithRetriesLeft(true)
-            .setDenied(jobDenied)
-            .setDeniedReason(jobDeniedReason);
+            .setDenied(denied)
+            .setDeniedReason(deniedReason);
 
     final Map<String, Object> expectedUpdateFields = new LinkedHashMap<>();
     expectedUpdateFields.put(FLOW_NODE_ID, jobEntity.getFlowNodeId());
@@ -474,8 +474,8 @@ final class JobHandlerTest {
     expectedUpdateFields.put(JOB_DEADLINE, jobEntity.getDeadline());
     expectedUpdateFields.put(PROCESS_DEFINITION_KEY, jobEntity.getProcessDefinitionKey());
     expectedUpdateFields.put(BPMN_PROCESS_ID, jobEntity.getBpmnProcessId());
-    expectedUpdateFields.put(JOB_DENIED, jobDenied);
-    expectedUpdateFields.put(JOB_DENIED_REASON, jobDeniedReason);
+    expectedUpdateFields.put(JOB_DENIED, denied);
+    expectedUpdateFields.put(JOB_DENIED_REASON, deniedReason);
 
     final BatchRequest mockRequest = Mockito.mock(BatchRequest.class);
 
