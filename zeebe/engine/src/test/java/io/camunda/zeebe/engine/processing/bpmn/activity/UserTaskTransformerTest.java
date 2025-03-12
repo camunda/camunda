@@ -24,6 +24,7 @@ import io.camunda.zeebe.model.bpmn.builder.UserTaskBuilder;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskListenerEventType;
 import java.time.InstantSource;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.DisplayName;
@@ -311,6 +312,26 @@ class UserTaskTransformerTest {
                 assertThat(listener.getEventType()).isEqualTo(expected.eventType);
                 assertThat(type(listener)).isEqualTo(expected.type);
                 assertThat(retries(listener)).isEqualTo(expected.retries);
+              });
+    }
+
+    @Test
+    void shouldTransformWithTaskHeaders() {
+      final var userTask =
+          transformZeebeUserTask(
+              processWithUserTask(
+                  b ->
+                      b.zeebeTaskHeader("key", "value")
+                          .zeebeTaskListener(l -> l.canceling().type("myType"))
+                          .zeebeUserTask()));
+
+      assertThat(userTask.getTaskListeners())
+          .hasSize(1)
+          .first()
+          .satisfies(
+              listener -> {
+                assertThat(listener.getJobWorkerProperties().getTaskHeaders())
+                    .isEqualTo(Map.of("key", "value"));
               });
     }
 
