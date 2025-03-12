@@ -9,11 +9,10 @@ import {Camunda8} from '@camunda8/sdk';
 import {JSONDoc} from '@camunda8/sdk/dist/zeebe/types';
 
 const c8 = new Camunda8({
-  CAMUNDA_AUTH_STRATEGY: 'BASIC',
-  CAMUNDA_BASIC_AUTH_USERNAME: 'demo',
-  CAMUNDA_BASIC_AUTH_PASSWORD: 'demo',
-  CAMUNDA_OAUTH_DISABLED: true,
-  ZEEBE_REST_ADDRESS: 'http://localhost:8089',
+  CAMUNDA_AUTH_STRATEGY: process.env.CAMUNDA_AUTH_STRATEGY,
+  CAMUNDA_BASIC_AUTH_USERNAME: process.env.CAMUNDA_BASIC_AUTH_USERNAME,
+  CAMUNDA_BASIC_AUTH_PASSWORD: process.env.CAMUNDA_BASIC_AUTH_PASSWORD,
+  ZEEBE_REST_ADDRESS: process.env.ZEEBE_REST_ADDRESS,
 });
 const zeebe = c8.getCamundaRestClient();
 const deploy = async (processFilePaths: string[]) => {
