@@ -37,6 +37,7 @@ const MigrateAction: React.FC = observer(() => {
   } = processInstancesSelectionStore;
 
   const isVersionSelected = version !== undefined && version !== 'all';
+
   const hasXmlError = processXmlStore.state.status === 'error';
 
   const isDisabled =
