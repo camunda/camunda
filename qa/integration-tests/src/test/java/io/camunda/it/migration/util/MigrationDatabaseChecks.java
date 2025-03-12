@@ -30,7 +30,7 @@ public class MigrationDatabaseChecks extends ElasticOpenSearchSetupHelper {
               "aggs": {
                 "total_docs": {
                   "value_count": {
-                    "field": "_id"
+                    "field": "id"
                   }
                 },
                 "completed_docs": {
