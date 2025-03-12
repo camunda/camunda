@@ -64,6 +64,20 @@ public class PartitionReassignRequestTransformer implements ConfigurationChangeR
     return generatePartitionDistributionOperations(clusterConfiguration, members);
   }
 
+  public Either<Exception, List<ClusterConfigurationChangeOperation>> newOperations(
+      final ClusterConfiguration clusterConfiguration,
+      final Set<PartitionMetadata> newPartitionDistribution) {
+    if (members.isEmpty()) {
+      return Either.left(
+          new InvalidRequest(
+              new IllegalArgumentException(
+                  "Cannot reassign partitions if no brokers are provided")));
+    }
+
+    return newGeneratePartitionDistributionOperations(
+        clusterConfiguration, members, newPartitionDistribution);
+  }
+
   private int getReplicationFactor(final ClusterConfiguration clusterConfiguration) {
     return newReplicationFactor.orElse(clusterConfiguration.minReplicationFactor());
   }
@@ -118,6 +132,57 @@ public class PartitionReassignRequestTransformer implements ConfigurationChangeR
     // Can bootstrap partitions only in the sorted order
     final var sortedPartitionMetadata =
         newDistribution.stream().sorted(Comparator.comparingInt(p -> p.id().id())).toList();
+    for (final PartitionMetadata newMetadata : sortedPartitionMetadata) {
+      oldDistribution.stream()
+          .filter(old -> old.id().id().equals(newMetadata.id().id()))
+          .findFirst()
+          .ifPresentOrElse(
+              oldMetadata -> operations.addAll(movePartition(oldMetadata, newMetadata)),
+              () -> operations.addAll(addPartition(newMetadata)));
+    }
+
+    return Either.right(operations);
+  }
+
+  private Either<Exception, List<ClusterConfigurationChangeOperation>>
+      newGeneratePartitionDistributionOperations(
+          final ClusterConfiguration currentConfiguration,
+          final Set<MemberId> brokers,
+          final Set<PartitionMetadata> newPartitionDistribution) {
+    final List<ClusterConfigurationChangeOperation> operations = new ArrayList<>();
+
+    final var oldDistribution =
+        ConfigurationUtil.getPartitionDistributionFrom(currentConfiguration, "temp");
+
+    final int partitionCount = getPartitionCount(currentConfiguration);
+    if (partitionCount < currentConfiguration.partitionCount()) {
+      return Either.left(
+          new InvalidRequest(
+              String.format(
+                  "New partition count [%d] must be greater than or equal to the current partition count [%d]",
+                  partitionCount, currentConfiguration.partitionCount())));
+    }
+
+    final int replicationFactor = getReplicationFactor(currentConfiguration);
+    if (replicationFactor <= 0) {
+      return Either.left(
+          new InvalidRequest(
+              String.format("Replication factor [%d] must be greater than 0", replicationFactor)));
+    }
+
+    if (brokers.size() < replicationFactor) {
+      return Either.left(
+          new InvalidRequest(
+              String.format(
+                  "Number of brokers [%d] is less than the replication factor [%d]",
+                  brokers.size(), replicationFactor)));
+    }
+
+    // Can bootstrap partitions only in the sorted order
+    final var sortedPartitionMetadata =
+        newPartitionDistribution.stream()
+            .sorted(Comparator.comparingInt(p -> p.id().id()))
+            .toList();
     for (final PartitionMetadata newMetadata : sortedPartitionMetadata) {
       oldDistribution.stream()
           .filter(old -> old.id().id().equals(newMetadata.id().id()))
