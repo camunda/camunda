@@ -1354,8 +1354,8 @@ public class MultiTenancyOverIdentityIT {
           .withThrowableThat()
           .withMessageContaining("NOT_FOUND")
           .withMessageContaining(
-              "Expected to handle gRPC request BroadcastSignal with tenant identifier 'tenant-b'")
-          .withMessageContaining("but tenant is not authorized to perform this request");
+              "Expected to broadcast signal with name '%s', but no such signal was found"
+                  .formatted(signalName));
     }
   }
 
