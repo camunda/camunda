@@ -10,8 +10,10 @@ import {useEffect, useRef, useState} from 'react';
 import {SplitDirection} from '@devbookhq/splitter';
 import {ResizablePanel} from 'modules/components/ResizablePanel';
 import {DiagramContainer} from './styled';
+import {SourceDiagram as SourceDiagramV2} from './v2/SourceDiagram';
 import {SourceDiagram} from './SourceDiagram';
 import {TargetDiagram} from './TargetDiagram';
+import {IS_PROCESS_INSTANCE_STATISTICS_V2_ENABLED} from 'modules/feature-flags';
 
 const Diagrams: React.FC = () => {
   const containerRef = useRef<HTMLDivElement | null>(null);
@@ -31,7 +33,11 @@ const Diagrams: React.FC = () => {
         direction={SplitDirection.Horizontal}
         minWidths={[panelMinWidth, panelMinWidth]}
       >
-        <SourceDiagram />
+        {IS_PROCESS_INSTANCE_STATISTICS_V2_ENABLED ? (
+          <SourceDiagramV2 />
+        ) : (
+          <SourceDiagram />
+        )}
         <TargetDiagram />
       </ResizablePanel>
     </DiagramContainer>

@@ -63,7 +63,6 @@ const ListView: React.FC = observer(() => {
     document.title = PAGE_TITLE.INSTANCES;
 
     return () => {
-      processInstancesSelectionStore.reset();
       processInstancesStore.reset();
       processesStore.reset();
     };
