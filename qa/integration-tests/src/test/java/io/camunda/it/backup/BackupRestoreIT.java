@@ -122,10 +122,9 @@ public class BackupRestoreIT {
             dbUrl = "http://" + container.getHttpHostAddress();
 
             // configure the app
-            configurator.configureElasticsearchSupport(dbUrl, INDEX_PREFIX);
+            configurator.configureElasticsearchSupportIncludingOldExporter(dbUrl, INDEX_PREFIX);
             yield container;
           }
-
           case OPENSEARCH -> {
             final var container =
                 TestSearchContainers.createDefaultOpensearchContainer()
@@ -134,7 +133,8 @@ public class BackupRestoreIT {
                     .withEnv("path.repo", "~/");
             container.start();
             dbUrl = container.getHttpHostAddress();
-            configurator.configureOpenSearchSupport(dbUrl, INDEX_PREFIX, "admin", "admin");
+            configurator.configureOpenSearchSupportIncludingOldExporter(
+                dbUrl, INDEX_PREFIX, "admin", "admin");
             yield container;
           }
 

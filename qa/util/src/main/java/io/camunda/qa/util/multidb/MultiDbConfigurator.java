@@ -9,6 +9,7 @@ package io.camunda.qa.util.multidb;
 
 import io.camunda.exporter.CamundaExporter;
 import io.camunda.search.connect.configuration.DatabaseType;
+import io.camunda.zeebe.exporter.ElasticsearchExporter;
 import io.camunda.zeebe.exporter.opensearch.OpensearchExporter;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneApplication;
 import java.util.HashMap;
@@ -26,6 +27,22 @@ public class MultiDbConfigurator {
 
   public MultiDbConfigurator(final TestStandaloneApplication<?> testApplication) {
     this.testApplication = testApplication;
+  }
+
+  public void configureElasticsearchSupportIncludingOldExporter(
+      final String elasticsearchUrl, final String indexPrefix) {
+    configureElasticsearchSupport(elasticsearchUrl, indexPrefix);
+
+    testApplication.withExporter(
+        "ElasticsearchExporter",
+        cfg -> {
+          cfg.setClassName(ElasticsearchExporter.class.getName());
+          cfg.setArgs(
+              Map.of(
+                  "url", elasticsearchUrl,
+                  "index", Map.of("prefix", zeebeIndexPrefix()),
+                  "bulk", Map.of("size", 1)));
+        });
   }
 
   public void configureElasticsearchSupport(
@@ -72,6 +89,30 @@ public class MultiDbConfigurator {
                   Map.of("prefix", indexPrefix),
                   "bulk",
                   Map.of("size", 1)));
+        });
+  }
+
+  public void configureOpenSearchSupportIncludingOldExporter(
+      final String opensearchUrl,
+      final String indexPrefix,
+      final String userName,
+      final String userPassword) {
+    configureOpenSearchSupport(opensearchUrl, indexPrefix, userName, userPassword);
+
+    testApplication.withExporter(
+        "OpensearchExporter",
+        cfg -> {
+          cfg.setClassName(OpensearchExporter.class.getName());
+          cfg.setArgs(
+              Map.of(
+                  "url",
+                  opensearchUrl,
+                  "index",
+                  Map.of("prefix", zeebeIndexPrefix()),
+                  "bulk",
+                  Map.of("size", 1),
+                  "authentication",
+                  Map.of("username", userName, "password", userPassword)));
         });
   }
 
