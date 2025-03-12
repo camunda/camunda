@@ -11,7 +11,6 @@ import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import java.time.Duration;
 import org.junit.jupiter.api.Test;
@@ -23,7 +22,7 @@ final class ExtendedProcessingScheduleServiceImplTest {
     // given
     final var sync = mock(ProcessingScheduleServiceImpl.class);
     final var async = mock(ProcessingScheduleServiceImpl.class);
-    final var concurrencyControl = mock(ConcurrencyControl.class);
+    final var concurrencyControl = mock(AsyncProcessingScheduleServiceActor.class);
     final var schedulingService =
         new ExtendedProcessingScheduleServiceImpl(sync, async, concurrencyControl, false);
 
@@ -40,7 +39,7 @@ final class ExtendedProcessingScheduleServiceImplTest {
     // given
     final var sync = mock(ProcessingScheduleServiceImpl.class);
     final var async = mock(ProcessingScheduleServiceImpl.class);
-    final var concurrencyControl = mock(ConcurrencyControl.class);
+    final var concurrencyControl = mock(AsyncProcessingScheduleServiceActor.class);
     when(concurrencyControl.createFuture()).thenReturn(new CompletableActorFuture<>());
     doAnswer(
             invocation -> {
