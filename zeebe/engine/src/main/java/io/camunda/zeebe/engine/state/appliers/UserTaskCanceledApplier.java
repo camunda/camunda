@@ -24,6 +24,8 @@ public final class UserTaskCanceledApplier
 
   @Override
   public void applyState(final long key, final UserTaskRecord value) {
+    userTaskState.deleteIntermediateState(key);
+    userTaskState.deleteRecordRequestMetadata(key);
     userTaskState.delete(key);
   }
 }
