@@ -54,7 +54,7 @@ public class MigrationITExtension
   private final List<AutoCloseable> dbClosables = new ArrayList<>();
   private final Map<DatabaseType, Network> networks = new HashMap<>();
   private final Set<DatabaseType> databaseTypes =
-      Set.of(/*DatabaseType.ELASTICSEARCH,*/ DatabaseType.OPENSEARCH);
+      Set.of(DatabaseType.ELASTICSEARCH, DatabaseType.OPENSEARCH);
   private final Map<DatabaseType, String> databaseExternalUrls = new HashMap<>();
   private Map<String, String> initialEnvOverrides = new HashMap<>();
 
