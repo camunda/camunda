@@ -72,13 +72,14 @@ public class WebSecurityConfig {
           "/v1/external/process/**");
   private static final Set<String> WEBAPP_PATHS =
       Set.of(
-          "/sso-callback/**",
           "/login/**",
           "/logout",
           "/identity/**",
           "/operate/**",
           "/tasklist/**",
-          "/");
+          "/",
+          "/sso-callback/**",
+          "/oauth2/authorization/**");
   private static final Set<String> UNPROTECTED_PATHS =
       Set.of(
           // endpoint for failure forwarding
