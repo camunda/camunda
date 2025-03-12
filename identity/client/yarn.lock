@@ -321,18 +321,18 @@ __metadata:
   linkType: hard
 
 "@carbon/elements@npm:^11.57.0":
-  version: 11.62.0
-  resolution: "@carbon/elements@npm:11.62.0"
+  version: 11.63.0
+  resolution: "@carbon/elements@npm:11.63.0"
   dependencies:
     "@carbon/colors": "npm:^11.30.0"
     "@carbon/grid": "npm:^11.32.0"
-    "@carbon/icons": "npm:^11.56.0"
+    "@carbon/icons": "npm:^11.57.0"
     "@carbon/layout": "npm:^11.30.0"
     "@carbon/motion": "npm:^11.25.0"
-    "@carbon/themes": "npm:^11.47.0"
+    "@carbon/themes": "npm:^11.48.0"
     "@carbon/type": "npm:^11.36.0"
     "@ibm/telemetry-js": "npm:^1.5.0"
-  checksum: 10c0/b4a8302dd1f27a6411fe423a2897dfcd8ad758517a6edadefb94b5cbe5f4341724e573d8c6bc66060ee9b062039d1a969772dd02578685316be0c5830cc38fbf
+  checksum: 10c0/8d8fcd80855ee8119c227bdded5eef3eacb560bdcaa696b0ea6dacc87cad67daa6b75a15c220a7f7290f1eeb261607e2cb3dd4f6b26b1e91da956c4d35212f72
   languageName: node
   linkType: hard
 
@@ -387,12 +387,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@carbon/icons@npm:^11.56.0":
-  version: 11.56.0
-  resolution: "@carbon/icons@npm:11.56.0"
+"@carbon/icons@npm:^11.57.0":
+  version: 11.57.0
+  resolution: "@carbon/icons@npm:11.57.0"
   dependencies:
     "@ibm/telemetry-js": "npm:^1.5.0"
-  checksum: 10c0/84e6087c6d17389c89a4db83d3584a5e9b03d0e6ce21721507caa6bcc13c331c6ab7957ce0691892ade68f9aa4194509ce1368dce7ba340c5dac7e7617f6fe17
+  checksum: 10c0/ca343643a2cdc7c399e426b735fbaa92df4d01d89646eb8a92fec9365d7e30bc74655c984affde3dcab204c0007c793215357979d33b46d4c96a60befdf181e1
   languageName: node
   linkType: hard
 
@@ -506,16 +506,16 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@carbon/themes@npm:^11.47.0":
-  version: 11.47.0
-  resolution: "@carbon/themes@npm:11.47.0"
+"@carbon/themes@npm:^11.48.0":
+  version: 11.48.0
+  resolution: "@carbon/themes@npm:11.48.0"
   dependencies:
     "@carbon/colors": "npm:^11.30.0"
     "@carbon/layout": "npm:^11.30.0"
     "@carbon/type": "npm:^11.36.0"
     "@ibm/telemetry-js": "npm:^1.5.0"
     color: "npm:^4.0.0"
-  checksum: 10c0/7f5dfb7594c346003b9eec278a4c5a8e81f90d54f5a7753483c41e9074ced5161202de061c4cfa52dd075f1830f939706e68add7563a338f1afdbf0a2080baf4
+  checksum: 10c0/9d92f5c30fdb420063dbeddce615cd649570e88efdf79a38e30731e2de508b15417ae56dc61f03b74c49380d73103ec0f93cde6a1215801149ff3b9b8adcb4e2
   languageName: node
   linkType: hard
 
