@@ -2744,12 +2744,12 @@ paths:
       description: |
         Upload a document to the Camunda 8 cluster.
 
-        Note that this is currently supported for document stores of type: AWS, GCP, in-memory, local
+        Note that this is currently supported for document stores of type: AWS, GCP, in-memory (non-production), local (non-production)
       parameters:
         - name: storeId
           in: query
           required: false
-          description: The ID of the document store to upload the document to.
+          description: The ID of the document store to upload the documents to. Currently, only a single document store is supported per cluster. However, this attribute is included to allow for potential future support of multiple document stores.
           schema:
             type: string
         - name: documentId
@@ -2804,12 +2804,12 @@ paths:
         each of which contains the file name of the document that failed to upload and the reason for the failure.
         The client can choose to retry the whole batch or individual documents based on the response.
 
-        Note that this is currently supported for document stores of type: AWS, GCP, in-memory, local
+        Note that this is currently supported for document stores of type: AWS, GCP, in-memory (non-production), local (non-production)
       parameters:
         - name: storeId
           in: query
           required: false
-          description: The ID of the document store to upload the documents to.
+          description: The ID of the document store to upload the documents to. Currently, only a single document store is supported per cluster. However, this attribute is included to allow for potential future support of multiple document stores.
           schema:
             type: string
       requestBody:
@@ -2863,7 +2863,7 @@ paths:
       description: |
         Download a document from the Camunda 8 cluster.
 
-        Note that this is currently supported for document stores of type: AWS, GCP, in-memory, local
+        Note that this is currently supported for document stores of type: AWS, GCP, in-memory (non-production), local (non-production)
       parameters:
         - name: documentId
           in: path
@@ -2885,8 +2885,7 @@ paths:
           description: >
             The hash of the document content that was computed by the document store during upload.
             The hash is part of the document reference that is returned when uploading a document.
-            This header is required when hash verification is enabled for the document store.
-            If hash verification is enabled and the client fails to provide the correct hash, the request will be rejected.
+            If the client fails to provide the correct hash, the request will be rejected.
       responses:
         "200":
           description: The document was downloaded successfully.
@@ -2913,7 +2912,7 @@ paths:
       description: |
         Delete a document from the Camunda 8 cluster.
 
-        Note that this is currently supported for document stores of type: AWS, GCP, in-memory, local
+        Note that this is currently supported for document stores of type: AWS, GCP, in-memory (non-production), local (non-production)
       parameters:
         - name: documentId
           in: path
@@ -2971,8 +2970,7 @@ paths:
           description: >
             The hash of the document content that was computed by the document store during upload.
             The hash is part of the document reference that is returned when uploading a document.
-            This header is required when hash verification is enabled for the document store.
-            If hash verification is enabled and the client fails to provide the correct hash, the request will be rejected.
+            If the client fails to provide the correct hash, the request will be rejected.
       requestBody:
         required: false
         content:
