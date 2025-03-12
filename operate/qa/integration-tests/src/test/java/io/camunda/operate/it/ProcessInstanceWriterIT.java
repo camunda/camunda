@@ -7,7 +7,6 @@
  */
 package io.camunda.operate.it;
 
-import static io.camunda.webapps.schema.entities.AbstractExporterEntity.DEFAULT_TENANT_ID;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
@@ -27,6 +26,7 @@ import io.camunda.webapps.schema.entities.operate.VariableEntity;
 import io.camunda.webapps.schema.entities.operate.listview.ListViewJoinRelation;
 import io.camunda.webapps.schema.entities.operate.listview.ProcessInstanceForListViewEntity;
 import io.camunda.webapps.schema.entities.operate.listview.ProcessInstanceState;
+import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import java.io.IOException;
 import java.time.OffsetDateTime;
 import java.util.List;
@@ -58,7 +58,7 @@ public class ProcessInstanceWriterIT extends OperateSearchAbstractIT {
             .setStartDate(OffsetDateTime.now())
             .setEndDate(OffsetDateTime.now())
             .setTreePath("PI_4503599627370497")
-            .setTenantId(DEFAULT_TENANT_ID)
+            .setTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER)
             .setJoinRelation(new ListViewJoinRelation("processInstance"));
     testSearchRepository.createOrUpdateDocumentFromObject(
         listViewTemplate.getFullQualifiedName(), processInstance.getId(), processInstance);
@@ -101,7 +101,7 @@ public class ProcessInstanceWriterIT extends OperateSearchAbstractIT {
             .setStartDate(OffsetDateTime.now())
             .setEndDate(OffsetDateTime.now())
             .setTreePath("PI_4503599627370497")
-            .setTenantId(DEFAULT_TENANT_ID)
+            .setTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER)
             .setJoinRelation(new ListViewJoinRelation("processInstance"));
     testSearchRepository.createOrUpdateDocumentFromObject(
         listViewTemplate.getFullQualifiedName(), processInstance.getId(), processInstance);
@@ -143,7 +143,7 @@ public class ProcessInstanceWriterIT extends OperateSearchAbstractIT {
             .setStartDate(OffsetDateTime.now())
             .setEndDate(OffsetDateTime.now())
             .setTreePath("PI_4503599627370497")
-            .setTenantId(DEFAULT_TENANT_ID)
+            .setTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER)
             .setJoinRelation(new ListViewJoinRelation("processInstance"));
     testSearchRepository.createOrUpdateDocumentFromObject(
         listViewTemplate.getFullQualifiedName(), processInstance.getId(), processInstance);

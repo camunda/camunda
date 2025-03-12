@@ -9,8 +9,8 @@ package io.camunda.operate.store.elasticsearch.dao;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.operate.conditions.ElasticsearchCondition;
-import io.camunda.operate.entities.MetricEntity;
 import io.camunda.webapps.schema.descriptors.operate.index.MetricIndex;
+import io.camunda.webapps.schema.entities.MetricEntity;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;

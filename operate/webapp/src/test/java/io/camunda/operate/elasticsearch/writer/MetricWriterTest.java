@@ -10,12 +10,12 @@ package io.camunda.operate.elasticsearch.writer;
 import static io.camunda.operate.store.MetricsStore.*;
 import static org.mockito.Mockito.*;
 
-import io.camunda.operate.entities.MetricEntity;
 import io.camunda.operate.exceptions.PersistenceException;
 import io.camunda.operate.store.BatchRequest;
 import io.camunda.operate.store.MetricsStore;
 import io.camunda.operate.store.elasticsearch.ElasticsearchMetricsStore;
 import io.camunda.webapps.schema.descriptors.operate.index.MetricIndex;
+import io.camunda.webapps.schema.entities.MetricEntity;
 import java.time.OffsetDateTime;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;

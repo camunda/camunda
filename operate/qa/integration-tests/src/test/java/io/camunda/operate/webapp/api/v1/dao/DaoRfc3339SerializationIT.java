@@ -7,7 +7,6 @@
  */
 package io.camunda.operate.webapp.api.v1.dao;
 
-import static io.camunda.webapps.schema.entities.AbstractExporterEntity.DEFAULT_TENANT_ID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -40,6 +39,7 @@ import io.camunda.webapps.schema.entities.operate.dmn.DecisionType;
 import io.camunda.webapps.schema.entities.operate.listview.ListViewJoinRelation;
 import io.camunda.webapps.schema.entities.operate.listview.ProcessInstanceForListViewEntity;
 import io.camunda.webapps.schema.entities.operate.listview.ProcessInstanceState;
+import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -114,7 +114,7 @@ public class DaoRfc3339SerializationIT extends OperateSearchAbstractIT {
             .setDecisionVersion(1)
             .setDecisionType(DecisionType.DECISION_TABLE)
             .setResult("\"day-to-day expense\"")
-            .setTenantId(DEFAULT_TENANT_ID));
+            .setTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER));
 
     testSearchRepository.createOrUpdateDocumentFromObject(
         decisionInstanceIndex.getFullQualifiedName(),
@@ -131,7 +131,7 @@ public class DaoRfc3339SerializationIT extends OperateSearchAbstractIT {
             .setDecisionVersion(1)
             .setDecisionType(DecisionType.DECISION_TABLE)
             .setResult("\"day-to-day expense\"")
-            .setTenantId(DEFAULT_TENANT_ID));
+            .setTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER));
 
     testSearchRepository.createOrUpdateDocumentFromObject(
         flowNodeInstanceIndex.getFullQualifiedName(),
@@ -145,7 +145,7 @@ public class DaoRfc3339SerializationIT extends OperateSearchAbstractIT {
             .setType(FlowNodeType.START_EVENT)
             .setState(FlowNodeState.COMPLETED)
             .setIncident(false)
-            .setTenantId(DEFAULT_TENANT_ID));
+            .setTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER));
 
     testSearchRepository.createOrUpdateDocumentFromObject(
         flowNodeInstanceIndex.getFullQualifiedName(),
@@ -160,7 +160,7 @@ public class DaoRfc3339SerializationIT extends OperateSearchAbstractIT {
             .setIncidentKey(2251799813685264L)
             .setState(FlowNodeState.ACTIVE)
             .setIncident(true)
-            .setTenantId(DEFAULT_TENANT_ID));
+            .setTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER));
 
     testSearchRepository.createOrUpdateDocumentFromObject(
         incidentIndex.getFullQualifiedName(),
@@ -171,7 +171,7 @@ public class DaoRfc3339SerializationIT extends OperateSearchAbstractIT {
             .setErrorType(ErrorType.JOB_NO_RETRIES)
             .setState(IncidentState.ACTIVE)
             .setErrorMessage("Some error")
-            .setTenantId(DEFAULT_TENANT_ID)
+            .setTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER)
             .setCreationTime(dateTimeFormatter.parseGeneralDateTime(firstIncidentCreationTime))
             .setJobKey(2251799813685260L));
 
@@ -184,7 +184,7 @@ public class DaoRfc3339SerializationIT extends OperateSearchAbstractIT {
             .setErrorType(ErrorType.JOB_NO_RETRIES)
             .setState(IncidentState.ACTIVE)
             .setErrorMessage("Another error")
-            .setTenantId(DEFAULT_TENANT_ID)
+            .setTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER)
             .setCreationTime(dateTimeFormatter.parseGeneralDateTime(secondIncidentCreationTime))
             .setJobKey(3251799813685260L));
 
@@ -202,7 +202,7 @@ public class DaoRfc3339SerializationIT extends OperateSearchAbstractIT {
             .setState(ProcessInstanceState.ACTIVE)
             .setTreePath("PI_2251799813685251")
             .setIncident(true)
-            .setTenantId(DEFAULT_TENANT_ID)
+            .setTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER)
             .setProcessInstanceKey(2251799813685251L)
             .setJoinRelation(new ListViewJoinRelation("processInstance"));
 
@@ -223,7 +223,7 @@ public class DaoRfc3339SerializationIT extends OperateSearchAbstractIT {
             .setState(ProcessInstanceState.ACTIVE)
             .setTreePath("PI_2251799813685252")
             .setIncident(true)
-            .setTenantId(DEFAULT_TENANT_ID)
+            .setTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER)
             .setProcessInstanceKey(2251799813685252L)
             .setJoinRelation(new ListViewJoinRelation("processInstance"));
 
