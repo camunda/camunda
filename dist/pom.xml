@@ -699,23 +699,12 @@
     </dependency>
 
     <!-- optimize -->
+    <!-- TODO: Remove Optimize dependencies once the backup system is reverted -->
 
     <dependency>
       <groupId>io.camunda.optimize</groupId>
       <artifactId>optimize-commons</artifactId>
-      <version>${project.version}</version>
-    </dependency>
-
-    <dependency>
-      <groupId>io.camunda.optimize</groupId>
-      <artifactId>optimize-backend</artifactId>
-      <version>${project.version}</version>
-    </dependency>
-
-    <dependency>
-      <groupId>io.camunda.optimize</groupId>
-      <artifactId>optimize-webjar</artifactId>
-      <version>${project.version}</version>
+      <version>8.8.0-SNAPSHOT</version>
     </dependency>
 
     <dependency>
@@ -760,10 +749,6 @@
             <program>
               <id>operate</id>
               <mainClass>io.camunda.application.StandaloneOperate</mainClass>
-            </program>
-            <program>
-              <id>optimize</id>
-              <mainClass>io.camunda.application.StandaloneOptimize</mainClass>
             </program>
             <program>
               <id>migrate</id>
@@ -873,7 +858,6 @@
             <dep>io.camunda.migration:identity-migration</dep>
             <dep>io.camunda.migration:process-migration</dep>
             <dep>io.camunda.optimize:optimize-backend</dep>
-            <dep>io.camunda.optimize:optimize-webjar</dep>
           </ignoredUnusedDeclaredDependencies>
         </configuration>
       </plugin>

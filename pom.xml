@@ -40,6 +40,9 @@
     <module>document</module>
     <module>security</module>
     <module>migration</module>
+
+    <!-- TODO: Remove optimize once the backup system is reverted -->
+    <module>optimize/util/optimize-commons</module>
   </modules>
 
   <scm>
