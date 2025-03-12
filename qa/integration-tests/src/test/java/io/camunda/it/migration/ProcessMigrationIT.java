@@ -16,7 +16,6 @@ import io.camunda.operate.webapp.api.v1.entities.ProcessDefinition;
 import io.camunda.search.clients.core.SearchQueryHit;
 import io.camunda.search.clients.core.SearchQueryRequest;
 import io.camunda.search.clients.query.SearchQueryBuilders;
-import io.camunda.search.connect.configuration.DatabaseType;
 import io.camunda.webapps.schema.descriptors.operate.index.ProcessIndex;
 import io.camunda.webapps.schema.entities.operate.ProcessEntity;
 import java.net.URI;
@@ -28,6 +27,7 @@ import org.awaitility.Awaitility;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.TestInstance.Lifecycle;
 import org.junit.jupiter.api.TestTemplate;
+import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 @TestInstance(Lifecycle.PER_CLASS)
@@ -37,7 +37,7 @@ public class ProcessMigrationIT {
 
   @TestTemplate
   void shouldMigrateProcessDefinition(
-      final DatabaseType databaseType, final CamundaMigrator migrator) {
+      final ExtensionContext context, final CamundaMigrator migrator) {
 
     // given
     migrator
@@ -58,10 +58,10 @@ public class ProcessMigrationIT {
             .getProcessDefinitionKey();
 
     awaitProcessDefinitionCreated(processDefinitionKey, migrator);
-    PROVIDER.has87Data(databaseType);
+    PROVIDER.has87Data(context);
 
     // when
-    PROVIDER.upgrade(databaseType, new HashMap<>());
+    PROVIDER.upgrade(context, new HashMap<>());
 
     // then
     Awaitility.await("Form data should be present on process definition")
@@ -79,7 +79,7 @@ public class ProcessMigrationIT {
 
   @TestTemplate
   void shouldMigrateProcessDefinitionWithEmbeddedForm(
-      final DatabaseType databaseType, final CamundaMigrator migrator) {
+      final ExtensionContext context, final CamundaMigrator migrator) {
 
     // given
     final var processDefinitionKey =
@@ -94,10 +94,10 @@ public class ProcessMigrationIT {
             .getProcessDefinitionKey();
 
     awaitProcessDefinitionCreated(processDefinitionKey, migrator);
-    PROVIDER.has87Data(databaseType);
+    PROVIDER.has87Data(context);
 
     // when
-    PROVIDER.upgrade(databaseType, new HashMap<>());
+    PROVIDER.upgrade(context, new HashMap<>());
 
     // then
     Awaitility.await("Form data should be present on process definition")
