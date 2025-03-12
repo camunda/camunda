@@ -11,12 +11,14 @@ import {observer} from 'mobx-react';
 import {batchModificationStore} from 'modules/stores/batchModification';
 import {processInstancesSelectionStore} from 'modules/stores/processInstancesSelection';
 import {ModalStateManager} from 'modules/components/ModalStateManager';
+import {BatchModificationSummaryModal as BatchModificationSummaryModalV2} from './BatchModificationSummaryModal/v2';
 import {BatchModificationSummaryModal} from './BatchModificationSummaryModal';
 import {Stack} from './styled';
 import {tracking} from 'modules/tracking';
 import {useCallbackPrompt} from 'modules/hooks/useCallbackPrompt';
 import {Location, Transition} from 'history';
 import {useState} from 'react';
+import {IS_PROCESS_INSTANCE_STATISTICS_V2_ENABLED} from 'modules/feature-flags';
 
 /**
  * This callback function is provided to useCallbackPrompt.
@@ -83,9 +85,13 @@ const BatchModificationFooter: React.FC = observer(() => {
             </Button>
           )}
         >
-          {({open, setOpen}) => (
-            <BatchModificationSummaryModal open={open} setOpen={setOpen} />
-          )}
+          {({open, setOpen}) =>
+            IS_PROCESS_INSTANCE_STATISTICS_V2_ENABLED ? (
+              <BatchModificationSummaryModalV2 open={open} setOpen={setOpen} />
+            ) : (
+              <BatchModificationSummaryModal open={open} setOpen={setOpen} />
+            )
+          }
         </ModalStateManager>
       </Stack>
       {(isNavigationInterrupted || isModalVisible) && (
