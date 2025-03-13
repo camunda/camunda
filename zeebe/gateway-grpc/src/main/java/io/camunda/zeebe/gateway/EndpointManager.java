@@ -21,7 +21,7 @@ import io.camunda.zeebe.gateway.impl.broker.RequestRetryHandler;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerActivateJobsRequest;
 import io.camunda.zeebe.gateway.impl.job.ActivateJobsHandler;
 import io.camunda.zeebe.gateway.impl.stream.StreamJobsHandler;
-import io.camunda.zeebe.gateway.interceptors.impl.AuthenticationInterceptor;
+import io.camunda.zeebe.gateway.interceptors.impl.AuthenticationHandler;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivatedJob;
@@ -493,13 +493,13 @@ public final class EndpointManager {
 
     // retrieve the user claims from the context and add them to the authorization if present
     final Map<String, Object> userClaims =
-        Context.current().call(AuthenticationInterceptor.USER_CLAIMS::get);
+        Context.current().call(AuthenticationHandler.Oidc.USER_CLAIMS::get);
     if (userClaims != null) {
       userClaims.forEach((key, value) -> ClaimTransformer.applyUserClaim(claims, key, value));
     }
 
     // retrieve the username from the context and add it to the authorization if present
-    final String username = Context.current().call(AuthenticationInterceptor.USERNAME::get);
+    final String username = Context.current().call(AuthenticationHandler.BasicAuth.USERNAME::get);
     if (username != null) {
       claims.put(Authorization.AUTHORIZED_USERNAME, username);
     }
