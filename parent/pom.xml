@@ -178,7 +178,6 @@
     <version.jwks-rsa>0.22.1</version.jwks-rsa>
     <version.guava.annotations>r03</version.guava.annotations>
     <version.nimbus-jose-jwt>9.41.2</version.nimbus-jose-jwt>
-    <version.nimbus-sdk>11.23.1</version.nimbus-sdk>
     <version.keycloak>26.0.6</version.keycloak>
     <version.keycloak-client>26.0.4</version.keycloak-client>
     <version.jna>5.15.0</version.jna>
@@ -955,12 +954,6 @@
       </dependency>
 
       <dependency>
-        <groupId>com.nimbusds</groupId>
-        <artifactId>oauth2-oidc-sdk</artifactId>
-        <version>${version.nimbus-sdk}</version>
-      </dependency>
-
-      <dependency>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot</artifactId>
         <version>${version.spring-boot}</version>
@@ -1082,16 +1075,6 @@
         <scope>import</scope>
       </dependency>
 
-      <!--
-           This should be the last dependency management import of type POM and scope IMPORT; if
-           you put any below, and there is some overlap in the library versions, then Spring's will
-           win every time.
-
-           Typically, if we want to add a POM/IMPORT for a specific library (e.g. Netty), then we
-           want to version. If we do want Spring's version to win, then we should just rely on that
-           instead and do not need to specify a version ourselves.
-      -->
-
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
         <artifactId>jetty-bom</artifactId>
@@ -1099,6 +1082,16 @@
         <type>pom</type>
         <scope>import</scope>
       </dependency>
+
+      <!--
+          This should be the last dependency management import of type POM and scope IMPORT; if
+          you put any below, and there is some overlap in the library versions, then Spring's will
+          win every time.
+
+          Typically, if we want to add a POM/IMPORT for a specific library (e.g. Netty), then we
+          want to version. If we do want Spring's version to win, then we should just rely on that
+          instead and do not need to specify a version ourselves.
+     -->
 
       <dependency>
         <!-- Import dependency management from Spring Boot -->
