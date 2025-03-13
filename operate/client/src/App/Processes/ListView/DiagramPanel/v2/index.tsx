@@ -102,29 +102,13 @@ const DiagramPanel: React.FC = observer(() => {
       `calc(${width}px - ${COLLAPSABLE_PANEL_MIN_WIDTH})`;
   });
 
-  const {
-    data: overlayData,
-    error: overlayError,
-    isLoading: overlayLoading,
-  } = useProcessInstancesOverlayData(
-    {
-      processInstanceKey: {
-        $in: [processId as string],
-      },
-    },
+  const {data: overlayData} = useProcessInstancesOverlayData(
+    {},
     processId !== undefined,
   );
 
-  const {
-    data: batchOverlayData,
-    error: batchOverlayError,
-    isLoading: batchOverlayLoading,
-  } = useBatchModificationOverlayData(
-    {
-      processInstanceKey: {
-        $in: [processId as string],
-      },
-    },
+  const {data: batchOverlayData} = useBatchModificationOverlayData(
+    {},
     {
       sourceFlowNodeId: flowNodeId,
       targetFlowNodeId: selectedTargetFlowNodeId ?? undefined,
@@ -133,8 +117,6 @@ const DiagramPanel: React.FC = observer(() => {
   );
 
   const isDiagramLoading =
-    overlayLoading ||
-    batchOverlayLoading ||
     processXmlStore.state.status === 'fetching' ||
     !processesStore.isInitialLoadComplete ||
     (processesStore.state.status === 'fetching' &&
@@ -144,11 +126,7 @@ const DiagramPanel: React.FC = observer(() => {
     if (isDiagramLoading) {
       return 'loading';
     }
-    if (
-      processXmlStore.state.status === 'error' ||
-      overlayError ||
-      batchOverlayError
-    ) {
+    if (processXmlStore.state.status === 'error') {
       return 'error';
     }
     if (!isVersionSelected) {

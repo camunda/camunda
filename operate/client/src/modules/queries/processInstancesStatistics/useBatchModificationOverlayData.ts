@@ -66,6 +66,7 @@ function useBatchModificationOverlayData(
     payload,
     batchModificationOverlayParser(params),
     enabled,
+    `source:${params.sourceFlowNodeId}-target:${params.targetFlowNodeId}`,
   );
 }
 

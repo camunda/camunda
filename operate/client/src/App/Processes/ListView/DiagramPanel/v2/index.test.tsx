@@ -235,25 +235,6 @@ describe('DiagramPanel', () => {
     consoleErrorMock.mockRestore();
   });
 
-  it('should render diagram when statistics endpoint fails', async () => {
-    const queryString = '?process=bigVarProcess&version=1';
-
-    locationSpy.mockImplementation(() => ({
-      ...originalWindow.location,
-      search: queryString,
-    }));
-
-    mockFetchProcessInstancesStatistics().withServerError();
-    mockFetchProcessXML().withSuccess('');
-
-    render(<DiagramPanel />, {
-      wrapper: getWrapper(`${Paths.processes()}${queryString}`),
-    });
-
-    expect(await screen.findByTestId('diagram')).toBeInTheDocument();
-    expect(screen.queryByTestId(/^state-overlay/)).not.toBeInTheDocument();
-  });
-
   it('should render statistics', async () => {
     const queryString = '?process=bigVarProcess&version=1';
 
@@ -290,7 +271,7 @@ describe('DiagramPanel', () => {
     expect(await screen.findByText(notificationText)).toBeInTheDocument();
   });
 
-  it('should handle error from useProcessInstancesOverlayData hook', async () => {
+  it('should still render diagram when useProcessInstancesOverlayData fails', async () => {
     const queryString = '?process=bigVarProcess&version=1';
 
     locationSpy.mockImplementation(() => ({
@@ -305,12 +286,11 @@ describe('DiagramPanel', () => {
       wrapper: getWrapper(`${Paths.processes()}${queryString}`),
     });
 
-    expect(
-      await screen.findByText('Data could not be fetched'),
-    ).toBeInTheDocument();
+    expect(await screen.findByTestId('diagram')).toBeInTheDocument();
+    expect(screen.queryByTestId(/^state-overlay/)).not.toBeInTheDocument();
   });
 
-  it('should handle error from useBatchModificationOverlayData hook', async () => {
+  it('should still render diagram when useBatchModificationOverlayData fails', async () => {
     const queryString = '?process=bigVarProcess&version=1';
 
     locationSpy.mockImplementation(() => ({
@@ -326,8 +306,7 @@ describe('DiagramPanel', () => {
       wrapper: getWrapper(`${Paths.processes()}${queryString}`),
     });
 
-    expect(
-      await screen.findByText('Data could not be fetched'),
-    ).toBeInTheDocument();
+    expect(await screen.findByTestId('diagram')).toBeInTheDocument();
+    expect(screen.queryByTestId(/^state-overlay/)).not.toBeInTheDocument();
   });
 });

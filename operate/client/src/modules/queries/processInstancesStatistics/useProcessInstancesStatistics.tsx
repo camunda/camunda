@@ -14,19 +14,23 @@ import {
 } from 'modules/api/v2/processInstances/fetchProcessInstancesStatistics';
 import {useProcessInstanceFilters} from 'modules/hooks/useProcessInstancesFilters';
 
-function getQueryKey(payload: ProcessInstancesStatisticsRequest) {
-  return ['processInstancesStatistics', ...Object.values(payload)];
+function getQueryKey(
+  payload: ProcessInstancesStatisticsRequest,
+  identifier?: string,
+) {
+  return ['processInstancesStatistics', identifier, ...Object.values(payload)];
 }
 
 function useProcessInstancesStatistics<ParsedDataT>(
   payload: ProcessInstancesStatisticsRequest,
   parser: (data: ProcessInstancesStatisticsDto[]) => ParsedDataT,
   enabled?: boolean,
+  identifier?: string,
 ) {
   const filters = useProcessInstanceFilters();
 
   return useGenericQuery<ProcessInstancesStatisticsDto[], ParsedDataT>(
-    getQueryKey(payload),
+    getQueryKey(payload, identifier),
     () =>
       fetchProcessInstancesStatistics({
         ...payload,
@@ -34,7 +38,13 @@ function useProcessInstancesStatistics<ParsedDataT>(
       }),
     parser,
     {
-      queryKey: getQueryKey(payload),
+      queryKey: getQueryKey(
+        {
+          ...payload,
+          ...filters,
+        },
+        identifier,
+      ),
       enabled,
     },
   );
