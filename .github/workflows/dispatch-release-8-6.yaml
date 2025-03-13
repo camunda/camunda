@@ -18,63 +18,89 @@ jobs:
       isLatest: ${{ github.event.client_payload.isLatest }}
       dryRun: ${{ github.event.client_payload.dryRun }}
       releaseBranch: ${{ github.event.client_payload.releaseBranch }}
+
   notify-on-success:
-    name: Send slack notification on success
+    name: Send Slack notification on success
     runs-on: ubuntu-latest
-    needs: [ run-release ]
-    if: ${{ success() }}
+    needs: [run-release]
+    if: success()
+    timeout-minutes: 5
+    permissions: {}  # GITHUB_TOKEN unused in this job
     steps:
-      - id: slack-notify
-        name: Send slack notification
-        uses: slackapi/slack-github-action@v2.0.0
+      - name: Import Secrets
+        id: secrets
+        uses: hashicorp/vault-action@7709c609789c5e27b757a85817483caadbb5939a # v3.3.0
         with:
-          webhook: ${{ secrets.SLACK_WEBHOOK_URL }}
+          url: ${{ secrets.VAULT_ADDR }}
+          method: approle
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          exportEnv: false # we rely on step outputs, no need for environment variables
+          secrets: |
+            secret/data/products/camunda/ci/github-actions SLACK_TOPMONOREPORELEASE_WEBHOOK_URL;
+
+      - name: Send failure Slack notification
+        uses: slackapi/slack-github-action@485a9d42d3a73031f12ec201c457e2162c45d02d # v2.0.0
+        with:
+          webhook: ${{ steps.secrets.outputs.SLACK_TOPMONOREPORELEASE_WEBHOOK_URL }}
           webhook-type: incoming-webhook
           # For posting a rich message using Block Kit
           payload: |
             {
-              "text": ":success: Release job for ${{ github.event.client_payload.releaseVersion }} succeeded! :success:\n",
               "blocks": [
                 {
                   "type": "section",
                   "text": {
                     "type": "mrkdwn",
-                    "text": ":success: Release job for ${{ github.event.client_payload.releaseVersion }} succeeded! :success:\n"
+                    "text": ":success: *Release job for ${{ github.event.client_payload.releaseVersion }}* succeeded!\n"
                   }
                 }
               ]
             }
+
   notify-if-failed:
-    name: Send slack notification on failure
+    name: Send Slack notification on failure
     runs-on: ubuntu-latest
-    needs: [ run-release ]
+    needs: [run-release]
     # if it's a dry run => no slack notification (remove noise in slack due to manual testing)
     # else => send slack notification as an actual release failed
     if: ${{ failure() && github.event.client_payload.dryRun == false }}
+    timeout-minutes: 5
+    permissions: {}  # GITHUB_TOKEN unused in this job
     steps:
-      - id: slack-notify
-        name: Send slack notification
-        uses: slackapi/slack-github-action@v2.0.0
+      - name: Import Secrets
+        id: secrets
+        uses: hashicorp/vault-action@7709c609789c5e27b757a85817483caadbb5939a # v3.3.0
         with:
-          webhook: ${{ secrets.SLACK_WEBHOOK_URL }}
+          url: ${{ secrets.VAULT_ADDR }}
+          method: approle
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          exportEnv: false # we rely on step outputs, no need for environment variables
+          secrets: |
+            secret/data/products/camunda/ci/github-actions SLACK_TOPMONOREPORELEASE_WEBHOOK_URL;
+
+      - name: Send failure Slack notification
+        uses: slackapi/slack-github-action@485a9d42d3a73031f12ec201c457e2162c45d02d # v2.0.0
+        with:
+          webhook: ${{ steps.secrets.outputs.SLACK_TOPMONOREPORELEASE_WEBHOOK_URL }}
           webhook-type: incoming-webhook
           # For posting a rich message using Block Kit
           payload: |
             {
-              "text": ":alarm: Release job for ${{ github.event.client_payload.releaseVersion }} failed! :alarm:\n",
-             	"blocks": [
+              "blocks": [
                 {
                   "type": "section",
                   "text": {
                     "type": "mrkdwn",
-                    "text": ":alarm: Release job for ${{ github.event.client_payload.releaseVersion }} failed! :alarm:\n"
+                    "text": ":alarm: *Release job for ${{ github.event.client_payload.releaseVersion }}* failed!\n"
                   }
                 },
                 {
                   "type": "section",
                   "text": {
                     "type": "mrkdwn",
-                    "text": "Please check the related workflow execution: https://github.com/camunda/camunda/actions/runs/${{ github.run_id }}"
+                    "text": "Please check this <https://github.com/camunda/camunda/actions/runs/${{ github.run_id }}|GHA workflow run>."
                   }
                 }
               ]

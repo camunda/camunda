@@ -16,21 +16,21 @@ type UserDetailsProps = {
 };
 
 const UserDetails: FC<UserDetailsProps> = ({ user, loading }) => {
-  const { t } = useTranslate();
+  const { t } = useTranslate("users");
 
   return (
     <EntityDetail
-      label={t("User details")}
+      label={t("userDetails")}
       data={[
         {
-          label: t("Name"),
+          label: t("name"),
           value: user.name,
         },
         {
-          label: t("Username"),
+          label: t("username"),
           value: user.username,
         },
-        { label: t("Email"), value: user.email || "-" },
+        { label: t("email"), value: user.email || "-" },
       ]}
       loading={loading}
     />

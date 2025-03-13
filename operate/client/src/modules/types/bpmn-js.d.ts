@@ -48,6 +48,7 @@ declare module 'bpmn-js/lib/NavigatedViewer' {
     | 'ExclusiveGateway'
     | 'InclusiveGateway'
     | 'SubProcess'
+    | 'AdHocSubProcess'
     | 'ServiceTask'
     | 'UserTask'
     | 'BusinessRuleTask'

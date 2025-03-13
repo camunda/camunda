@@ -40,6 +40,9 @@ public class JobEntity extends OperateZeebeEntity<JobEntity> {
 
   private Long position;
 
+  private Boolean denied;
+  private String deniedReason;
+
   public Long getProcessInstanceKey() {
     return processInstanceKey;
   }
@@ -211,6 +214,24 @@ public class JobEntity extends OperateZeebeEntity<JobEntity> {
     return this;
   }
 
+  public Boolean isDenied() {
+    return denied;
+  }
+
+  public JobEntity setDenied(final Boolean denied) {
+    this.denied = denied;
+    return this;
+  }
+
+  public String getDeniedReason() {
+    return deniedReason;
+  }
+
+  public JobEntity setDeniedReason(final String deniedReason) {
+    this.deniedReason = deniedReason;
+    return this;
+  }
+
   @Override
   public int hashCode() {
     return Objects.hash(
@@ -233,7 +254,9 @@ public class JobEntity extends OperateZeebeEntity<JobEntity> {
         jobFailedWithRetriesLeft,
         jobKind,
         listenerEventType,
-        position);
+        position,
+        denied,
+        deniedReason);
   }
 
   @Override
@@ -266,7 +289,9 @@ public class JobEntity extends OperateZeebeEntity<JobEntity> {
         && Objects.equals(customHeaders, jobEntity.customHeaders)
         && Objects.equals(jobKind, jobEntity.jobKind)
         && Objects.equals(listenerEventType, jobEntity.listenerEventType)
-        && Objects.equals(position, jobEntity.position);
+        && Objects.equals(position, jobEntity.position)
+        && Objects.equals(denied, jobEntity.denied)
+        && Objects.equals(deniedReason, jobEntity.deniedReason);
   }
 
   @Override
@@ -320,6 +345,10 @@ public class JobEntity extends OperateZeebeEntity<JobEntity> {
         + '\''
         + ", position="
         + position
+        + ", jobDenied="
+        + denied
+        + ", jobDeniedReason="
+        + deniedReason
         + "} "
         + super.toString();
   }

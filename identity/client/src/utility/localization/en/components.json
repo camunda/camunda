@@ -13,9 +13,21 @@
   "entityNotFound": "The requested entity has not been found",
   "errorOccurred": "An error occurred",
   "tryAgainLater": "Please try again later",
-  "moreInfo": "For more information, see documentation on <1>{{linkText}}</1>",
+  "moreInfo": "For more information, see documentation on <2>{{linkText}}</2>",
+  "username": "Username",
+  "password": "Password",
+  "enterUsername": "Enter your username",
+  "hidePassword": "Hide password",
+  "showPassword": "Show password",
+  "loginPasswordFieldPlaceholder": "Enter your password",
+  "login": "Login",
+  "identity": "Identity",
+  "licenseInfo": "Non-Production License. If you would like information on production usage, please refer to our <2>terms & conditions page</2> or <2>contact sales</2>.",
   "loading": "Loading",
   "close": "Close",
   "cancel": "Cancel",
-  "delete": "Delete"
+  "delete": "Delete",
+  "update": "Update",
+  "edit": "Edit",
+  "retry": "Retry"
 }

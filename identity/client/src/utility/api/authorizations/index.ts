@@ -5,17 +5,9 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-import { EntityData } from "src/components/entityList/EntityList";
-import {
-  ApiDefinition,
-  apiDelete,
-  apiPatch,
-  apiPost,
-  pathBuilder,
-} from "src/utility/api/request";
+import { ApiDefinition, apiDelete, apiPost } from "src/utility/api/request";
 import { SearchResponse } from "src/utility/api";
 
-const path = pathBuilder("/authorizations");
 export const AUTHORIZATIONS_ENDPOINT = "/authorizations";
 
 export enum PermissionType {
@@ -76,34 +68,10 @@ export type Authorization = {
   permissionTypes: readonly PermissionTypes[];
 };
 
-type PermissionOnResources = {
-  permissionType: PermissionType;
-  resourceIds: string[];
-};
-
-export type UserAuthorization = EntityData & {
-  ownerKey: number;
-  ownerType: string;
-  resourceType: string;
-  permissions: readonly PermissionOnResources[];
-};
-
 export enum PatchAuthorizationAction {
   ADD = "ADD",
   REMOVE = "REMOVE",
 }
-
-export type PatchAuthorizationParams = {
-  ownerKey: number;
-  action: PatchAuthorizationAction;
-  resourceType: string;
-  permissions: readonly PermissionOnResources[];
-};
-
-export const patchAuthorizations: ApiDefinition<
-  undefined,
-  PatchAuthorizationParams
-> = (params) => apiPatch(path(params.ownerKey), params);
 
 export type searchAuthorizationsParams = {
   filter: {
