@@ -32,7 +32,6 @@ import java.util.UUID;
 import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.keycloak.representations.idm.ClientRepresentation;
@@ -43,7 +42,6 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 
 @Testcontainers
 @ZeebeIntegration
-@Disabled("https://github.com/camunda/camunda/issues/26799")
 public class OidcAuthOverRestIT {
 
   private static final String DEFAULT_USER_ID = UUID.randomUUID().toString();
@@ -64,6 +62,7 @@ public class OidcAuthOverRestIT {
   @TestZeebe(awaitCompleteTopology = false)
   private final TestStandaloneBroker broker =
       new TestStandaloneBroker()
+          .withAuthenticatedAccess()
           .withAuthenticationMethod(AuthenticationMethod.OIDC)
           .withSecurityConfig(
               c -> {
@@ -123,8 +122,10 @@ public class OidcAuthOverRestIT {
   @BeforeEach
   void beforeEach(@TempDir final Path tempDir) {
     defaultMappingClient =
-        broker
-            .newClientBuilder()
+        CamundaClient.newClientBuilder()
+            .grpcAddress(broker.grpcAddress())
+            .restAddress(broker.restAddress())
+            .usePlaintext()
             .preferRestOverGrpc(true)
             .defaultRequestTimeout(Duration.ofSeconds(15))
             .credentialsProvider(
@@ -142,8 +143,10 @@ public class OidcAuthOverRestIT {
             .build();
 
     restrictedClient =
-        broker
-            .newClientBuilder()
+        CamundaClient.newClientBuilder()
+            .grpcAddress(broker.grpcAddress())
+            .restAddress(broker.restAddress())
+            .usePlaintext()
             .preferRestOverGrpc(true)
             .defaultRequestTimeout(Duration.ofSeconds(15))
             .credentialsProvider(
@@ -188,6 +191,7 @@ public class OidcAuthOverRestIT {
     final var claimValue = UUID.randomUUID().toString();
     defaultMappingClient
         .newCreateMappingCommand()
+        .id(UUID.randomUUID().toString())
         .claimName(claimName)
         .claimValue(claimValue)
         .name(claimValue)
@@ -215,17 +219,17 @@ public class OidcAuthOverRestIT {
   void shouldBeAuthorizedWithMappingThatIsGrantedPermissions() {
     // given
     final var processId = Strings.newRandomValidBpmnId();
-    final var mapping =
-        defaultMappingClient
-            .newCreateMappingCommand()
-            .claimName(USER_ID_CLAIM_NAME)
-            .claimValue(RESTRICTED_USER_ID)
-            .name(RESTRICTED_USER_ID)
-            .send()
-            .join();
+    defaultMappingClient
+        .newCreateMappingCommand()
+        .id(RESTRICTED_USER_ID)
+        .claimName(USER_ID_CLAIM_NAME)
+        .claimValue(RESTRICTED_USER_ID)
+        .name(RESTRICTED_USER_ID)
+        .send()
+        .join();
     defaultMappingClient
         .newCreateAuthorizationCommand()
-        .ownerId(String.valueOf(mapping.getMappingKey()))
+        .ownerId(RESTRICTED_USER_ID)
         .ownerType(OwnerTypeEnum.MAPPING)
         .resourceId("*")
         .resourceType(ResourceTypeEnum.RESOURCE)
