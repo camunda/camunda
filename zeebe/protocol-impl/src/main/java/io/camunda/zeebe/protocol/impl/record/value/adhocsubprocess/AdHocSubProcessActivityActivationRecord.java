@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.protocol.impl.record.value.adhocsubprocess;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.camunda.zeebe.msgpack.property.ArrayProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
 import io.camunda.zeebe.msgpack.value.ValueArray;
@@ -52,10 +53,12 @@ public final class AdHocSubProcessActivityActivationRecord extends UnifiedRecord
   }
 
   /**
-   * This function exists only to make setting up the test for the `JsonSerializableToJsonTest`.
+   * Returns the {@link ValueArray} of `elements` which then can have more elements added/removed.
+   * This is used in setting up test scenarios.
    *
    * @return a {@link ValueArray} of flow nodes that can easily be added to.
    */
+  @JsonIgnore
   public ValueArray<AdHocSubProcessActivityActivationElement> elements() {
     return elements;
   }
