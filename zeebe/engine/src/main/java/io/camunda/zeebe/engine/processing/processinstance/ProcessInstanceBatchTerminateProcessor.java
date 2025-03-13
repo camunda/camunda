@@ -45,16 +45,19 @@ public final class ProcessInstanceBatchTerminateProcessor
 
     final List<ElementInstance> children = getChildInstances(recordValue, 2);
 
-    if (children.isEmpty()) {
-      stateWriter.appendFollowUpEvent(
-          record.getKey(), ProcessInstanceBatchIntent.TERMINATED, recordValue);
-      return;
+    if (!children.isEmpty()) {
+      final ElementInstance childInstance = children.getFirst();
+      commandWriter.appendFollowUpCommand(
+          childInstance.getKey(),
+          ProcessInstanceIntent.TERMINATE_ELEMENT,
+          childInstance.getValue());
     }
-
-    terminateChildInstance(children.getFirst());
 
     if (children.size() > 1) {
       appendFollowupBatchCommand(children.getLast(), recordValue);
+    } else {
+      stateWriter.appendFollowUpEvent(
+          record.getKey(), ProcessInstanceBatchIntent.TERMINATED, recordValue);
     }
   }
 
@@ -82,14 +85,5 @@ public final class ProcessInstanceBatchTerminateProcessor
 
     commandWriter.appendFollowUpCommand(
         keyGenerator.nextKey(), ProcessInstanceBatchIntent.TERMINATE, nextBatchRecord);
-  }
-
-  private void terminateChildInstance(final ElementInstance childInstance) {
-    if (childInstance.canTerminate()) {
-      commandWriter.appendFollowUpCommand(
-          childInstance.getKey(),
-          ProcessInstanceIntent.TERMINATE_ELEMENT,
-          childInstance.getValue());
-    }
   }
 }
