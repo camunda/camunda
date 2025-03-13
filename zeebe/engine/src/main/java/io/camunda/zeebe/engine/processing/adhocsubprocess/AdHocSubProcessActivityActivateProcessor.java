@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.adhocsubprocess;
 
+import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableAdHocSubProcess;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior.AuthorizationRequest;
@@ -32,6 +33,7 @@ import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
+import io.camunda.zeebe.util.Either;
 import java.util.List;
 
 public class AdHocSubProcessActivityActivateProcessor
@@ -86,7 +88,18 @@ public class AdHocSubProcessActivityActivateProcessor
       return;
     }
 
-    authorize(command, adHocSubprocessElementInstance);
+    final var authResult = authorize(command, adHocSubprocessElementInstance);
+    if (authResult.isLeft()) {
+      final var rejection = authResult.getLeft();
+      final String errorMessage =
+          RejectionType.NOT_FOUND.equals(rejection.type())
+              ? ERROR_MSG_ADHOC_SUBPROCESS_NOT_FOUND.formatted(
+                  command.getValue().getAdHocSubProcessInstanceKey())
+              : rejection.reason();
+      writeRejectionError(command, rejection.type(), errorMessage);
+
+      return;
+    }
 
     if (hasDuplicateElements(command)) {
       writeRejectionError(
@@ -210,7 +223,7 @@ public class AdHocSubProcessActivityActivateProcessor
         != command.getValue().getElements().size();
   }
 
-  private void authorize(
+  private Either<Rejection, Void> authorize(
       final TypedRecord<AdHocSubProcessActivityActivationRecord> command,
       final ElementInstance adHocSubprocessElementInstance) {
     final var authRequest =
@@ -221,10 +234,7 @@ public class AdHocSubProcessActivityActivateProcessor
                 adHocSubprocessElementInstance.getValue().getTenantId())
             .addResourceId(adHocSubprocessElementInstance.getValue().getBpmnProcessId());
 
-    final var authResult = authCheckBehavior.isAuthorized(authRequest);
-    if (authResult.isLeft()) {
-      throw new ForbiddenException(authRequest);
-    }
+    return authCheckBehavior.isAuthorized(authRequest);
   }
 
   private static final class DuplicateElementsException extends IllegalArgumentException {
