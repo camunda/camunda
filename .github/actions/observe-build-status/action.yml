@@ -81,19 +81,20 @@ runs:
       # To support multi-line string in output we have to work with EOF delimiter
       # https://docs.github.com/en/actions/using-workflows/workflow-commands-for-github-actions#example-of-a-multiline-string
       run: |
-        {
-          echo 'result<<EOF'
-          find . -iname 'TEST-*-FLAKY.xml' | xargs -d '\n' --no-run-if-empty -n1 python3 .github/actions/observe-build-status/junit-flaky-to-jsonl.py
-          find . -iname 'TEST-*.xml' -exec grep -l '</failure>' {} + | grep -v 'FLAKY.xml' | xargs -d '\n' --no-run-if-empty -n1 python3 .github/actions/observe-build-status/junit-failure-to-jsonl.py
-          echo EOF
-        } >> $GITHUB_OUTPUT
+        echo AAAAA
+        find . -iname 'TEST-*.xml' -exec grep -l '</failure>' {} +
+        echo BBBBB
+        find . -iname 'TEST-*.xml' -exec grep -l '</failure>' {} + | grep -v 'FLAKY.xml'
+        echo CCCCC
+        find . -iname 'TEST-*.xml' -exec grep -l '</failure>' {} + | grep -v 'FLAKY.xml' | xargs -d '\n' --no-run-if-empty -n1 python3 .github/actions/observe-build-status/junit-failure-to-jsonl.py
+        echo DDDDD
 
-    - uses: camunda/infra-global-github-actions/submit-test-status@main
-      if: ${{ always() && inputs.detailed_junit_flaky_tests == 'true' && steps.secrets.outputs.gcloud_sa_key != '' }}
-      with:
-        test_event_record: "${{ steps.get-detailed-flaky-junit-tests.outputs.result }}"  # TODO: what is the size limit?
-        job_name_override: "${{ inputs.job_name }}"
-        gcp_credentials_json: "${{ steps.secrets.outputs.gcloud_sa_key }}"
+    #- uses: camunda/infra-global-github-actions/submit-test-status@main
+    #  if: ${{ always() && inputs.detailed_junit_flaky_tests == 'true' && steps.secrets.outputs.gcloud_sa_key != '' }}
+    #  with:
+    #    test_event_record: "${{ steps.get-detailed-flaky-junit-tests.outputs.result }}"  # TODO: what is the size limit?
+    #    job_name_override: "${{ inputs.job_name }}"
+    #    gcp_credentials_json: "${{ steps.secrets.outputs.gcloud_sa_key }}"
     ############################################################################
 
     - uses: camunda/infra-global-github-actions/submit-build-status@main
