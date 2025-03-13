@@ -302,6 +302,13 @@ public class WebSecurityConfig {
             JwtValidators.createDefaultWithValidators(new AudienceValidator(validAudiences)));
       }
 
+      final var expectedClaims =
+          securityConfiguration.getAuthentication().getOidc().getExpectedClaims();
+      if (expectedClaims != null) {
+        decoder.setJwtValidator(
+            JwtValidators.createDefaultWithValidators(new ClaimValidator(expectedClaims)));
+      }
+
       return decoder;
     }
 
