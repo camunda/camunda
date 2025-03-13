@@ -14,9 +14,11 @@ import io.camunda.zeebe.db.impl.DbCompositeKey;
 import io.camunda.zeebe.db.impl.DbLong;
 import io.camunda.zeebe.db.impl.DbString;
 import io.camunda.zeebe.engine.state.instance.ParentScopeKey;
+import io.camunda.zeebe.engine.state.instance.VariableDocumentRecordValue;
 import io.camunda.zeebe.engine.state.mutable.MutableVariableState;
 import io.camunda.zeebe.msgpack.spec.MsgPackWriter;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
+import io.camunda.zeebe.protocol.impl.record.value.variable.VariableDocumentRecord;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -49,6 +51,19 @@ public class DbVariableState implements MutableVariableState {
   private final DbLong scopeKey;
   private final DbString variableName;
 
+  // (scope key) => (variable document key)
+  private final DbLong variableDocumentKey;
+  private final ColumnFamily<DbLong, DbLong> variableDocumentKeyByScopeKeyColumnFamily;
+
+  // (variable document key) => (variable document record value)
+  // we need two separate wrapper to not interfere with get and put
+  // see https://github.com/zeebe-io/zeebe/issues/1914
+  private final VariableDocumentRecordValue variableDocumentRecordToRead =
+      new VariableDocumentRecordValue();
+  private final VariableDocumentRecordValue variableDocumentRecordToWrite =
+      new VariableDocumentRecordValue();
+  private final ColumnFamily<DbLong, VariableDocumentRecordValue> variableDocumentColumnFamily;
+
   private final VariableInstance newVariable = new VariableInstance();
   private final DirectBuffer variableNameView = new UnsafeBuffer(0, 0);
 
@@ -75,6 +90,21 @@ public class DbVariableState implements MutableVariableState {
             transactionContext,
             scopeKeyVariableNameKey,
             new VariableInstance());
+
+    variableDocumentKey = new DbLong();
+    variableDocumentKeyByScopeKeyColumnFamily =
+        zeebeDb.createColumnFamily(
+            ZbColumnFamilies.VARIABLE_DOCUMENT_KEY_BY_SCOPE_KEY,
+            transactionContext,
+            scopeKey,
+            variableDocumentKey);
+
+    variableDocumentColumnFamily =
+        zeebeDb.createColumnFamily(
+            ZbColumnFamilies.VARIABLE_DOCUMENTS,
+            transactionContext,
+            variableDocumentKey,
+            variableDocumentRecordToRead);
   }
 
   @Override
@@ -305,6 +335,16 @@ public class DbVariableState implements MutableVariableState {
 
     final ParentScopeKey parentScopeKey = childParentColumnFamily.get(childKey);
     return parentScopeKey != null ? parentScopeKey.get() : NO_PARENT;
+  }
+
+  @Override
+  public void storeVariableDocument(final long key, final VariableDocumentRecord value) {
+    variableDocumentKey.wrapLong(key);
+    scopeKey.wrapLong(value.getScopeKey());
+    variableDocumentKeyByScopeKeyColumnFamily.insert(scopeKey, variableDocumentKey);
+
+    variableDocumentRecordToWrite.setRecord(value);
+    variableDocumentColumnFamily.insert(variableDocumentKey, variableDocumentRecordToWrite);
   }
 
   private VariableInstance getVariableLocal(
