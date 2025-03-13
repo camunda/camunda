@@ -181,7 +181,7 @@
       <version>${version.guava}</version>
       <scope>provided</scope>
     </dependency>
-
+    r
     <dependency>
       <groupId>org.opensearch.client</groupId>
       <artifactId>opensearch-rest-client</artifactId>
