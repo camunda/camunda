@@ -258,7 +258,6 @@ public class ProcessInstanceFilterImpl
     return this;
   }
 
-  
   @Override
   public ProcessInstanceFilter errorMessage(final Consumer<StringProperty> fn) {
     final StringProperty property = new StringPropertyImpl();
@@ -272,7 +271,7 @@ public class ProcessInstanceFilterImpl
     batchOperationId(b -> b.eq(batchOperationId));
     return this;
   }
-  
+
   @Override
   public ProcessInstanceFilter batchOperationId(final Consumer<StringProperty> fn) {
     final StringProperty property = new StringPropertyImpl();
@@ -286,7 +285,7 @@ public class ProcessInstanceFilterImpl
     return filter;
   }
 
-  static void variableValueNullCheck(Object value) {
+  static void variableValueNullCheck(final Object value) {
     if (value == null) {
       throw new IllegalArgumentException("Variable value cannot be null");
     }
