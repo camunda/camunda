@@ -37,6 +37,15 @@ import java.util.List;
 public class AdHocSubProcessActivityActivateProcessor
     implements TypedRecordProcessor<AdHocSubProcessActivityActivationRecord> {
 
+  private static final String ERROR_MSG_ADHOC_SUBPROCESS_NOT_FOUND =
+      "Expected to activate activities for ad-hoc subprocess but no ad-hoc subprocess instance found with key '%s'.";
+  private static final String ERROR_MSG_DUPLICATE_ACTIVITIES =
+      "Expected to activate activities for ad-hoc subprocess '%s', but duplicate activities were given.";
+  private static final String ERROR_MSG_ADHOC_SUBPROCESS_IS_FINAL =
+      "Expected to activate activities for ad-hoc subprocess '%s', but it is either completed or terminated.";
+  private static final String ERROR_MSG_ADHOC_SUBPROCESS_IS_NOT_ACTIVE =
+      "Expected to activate activities for ad-hoc subprocess '%s', but it is not active.";
+
   private final StateWriter stateWriter;
   private final TypedResponseWriter responseWriter;
   private final TypedRejectionWriter rejectionWriter;
@@ -67,21 +76,49 @@ public class AdHocSubProcessActivityActivateProcessor
         elementInstanceState.getInstance(
             Long.parseLong(command.getValue().getAdHocSubProcessInstanceKey()));
     if (adHocSubprocessElementInstance == null) {
-      throw new AdHocSubProcessInstanceIsNullException(
-          command.getValue().getAdHocSubProcessInstanceKey());
+      writeRejectionError(
+          command,
+          RejectionType.INVALID_STATE,
+          String.format(
+              ERROR_MSG_ADHOC_SUBPROCESS_NOT_FOUND,
+              command.getValue().getAdHocSubProcessInstanceKey()));
+
+      return;
     }
 
     authorize(command, adHocSubprocessElementInstance);
-    validateDuplicateElements(command);
+
+    if (hasDuplicateElements(command)) {
+      writeRejectionError(
+          command,
+          RejectionType.INVALID_ARGUMENT,
+          String.format(
+              ERROR_MSG_DUPLICATE_ACTIVITIES, command.getValue().getAdHocSubProcessInstanceKey()));
+
+      return;
+    }
 
     final var adHocSubprocessElementId = adHocSubprocessElementInstance.getValue().getElementId();
     if (adHocSubprocessElementInstance.isInFinalState()) {
-      throw new AdHocSubProcessInFinalStateException(adHocSubprocessElementId);
+      writeRejectionError(
+          command,
+          RejectionType.INVALID_STATE,
+          String.format(
+              ERROR_MSG_ADHOC_SUBPROCESS_IS_FINAL,
+              command.getValue().getAdHocSubProcessInstanceKey()));
+
+      return;
     }
 
     if (!adHocSubprocessElementInstance.isActive()) {
-      throw new AdHocSubProcessInstanceNotActiveException(
-          command.getValue().getAdHocSubProcessInstanceKey());
+      final var errorMessage =
+          String.format(
+              ERROR_MSG_ADHOC_SUBPROCESS_IS_NOT_ACTIVE,
+              command.getValue().getAdHocSubProcessInstanceKey());
+      rejectionWriter.appendRejection(command, RejectionType.INVALID_STATE, errorMessage);
+      responseWriter.writeRejectionOnCommand(command, RejectionType.INVALID_STATE, errorMessage);
+
+      return;
     }
 
     final var adHocSubprocessDefinition =
@@ -141,15 +178,15 @@ public class AdHocSubProcessActivityActivateProcessor
       final TypedRecord<AdHocSubProcessActivityActivationRecord> command, final Throwable error) {
     return switch (error) {
       case final IllegalArgumentException e -> {
-        writeRejectionError(command, RejectionType.INVALID_ARGUMENT, e);
+        writeRejectionError(command, RejectionType.INVALID_ARGUMENT, e.getMessage());
         yield ProcessingError.EXPECTED_ERROR;
       }
       case final IllegalStateException e -> {
-        writeRejectionError(command, RejectionType.INVALID_STATE, e);
+        writeRejectionError(command, RejectionType.INVALID_STATE, e.getMessage());
         yield ProcessingError.EXPECTED_ERROR;
       }
       case final ForbiddenException e -> {
-        writeRejectionError(command, e.getRejectionType(), e);
+        writeRejectionError(command, e.getRejectionType(), e.getMessage());
         yield ProcessingError.EXPECTED_ERROR;
       }
       default -> ProcessingError.UNEXPECTED_ERROR;
@@ -159,25 +196,18 @@ public class AdHocSubProcessActivityActivateProcessor
   private void writeRejectionError(
       final TypedRecord<AdHocSubProcessActivityActivationRecord> command,
       final RejectionType rejectionType,
-      final Throwable error) {
-    rejectionWriter.appendRejection(command, rejectionType, error.getMessage());
-    responseWriter.writeRejectionOnCommand(command, rejectionType, error.getMessage());
+      final String errorMessage) {
+    rejectionWriter.appendRejection(command, rejectionType, errorMessage);
+    responseWriter.writeRejectionOnCommand(command, rejectionType, errorMessage);
   }
 
-  private void validateDuplicateElements(
+  private boolean hasDuplicateElements(
       final TypedRecord<AdHocSubProcessActivityActivationRecord> command) {
-    final var hasDuplicates =
-        command.getValue().getElements().stream()
-                .map(AdHocSubProcessActivityActivationElementValue::getElementId)
-                .distinct()
-                .count()
-            != command.getValue().getElements().size();
-    if (hasDuplicates) {
-      throw new DuplicateElementsException(
-          command.getValue().getElements().stream()
-              .map(AdHocSubProcessActivityActivationElementValue::getElementId)
-              .toList());
-    }
+    return command.getValue().getElements().stream()
+            .map(AdHocSubProcessActivityActivationElementValue::getElementId)
+            .distinct()
+            .count()
+        != command.getValue().getElements().size();
   }
 
   private void authorize(
