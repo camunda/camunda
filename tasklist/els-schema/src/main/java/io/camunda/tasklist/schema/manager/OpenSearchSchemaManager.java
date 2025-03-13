@@ -191,14 +191,9 @@ public class OpenSearchSchemaManager implements SchemaManager {
   public void updateSchema(final Map<IndexDescriptor, Set<IndexMappingProperty>> newFields) {
     for (final Map.Entry<IndexDescriptor, Set<IndexMappingProperty>> indexNewFields :
         newFields.entrySet()) {
-      if (indexNewFields.getKey() instanceof TemplateDescriptor) {
-        LOGGER.info(
-            "Update template: " + ((TemplateDescriptor) indexNewFields.getKey()).getTemplateName());
-        final TemplateDescriptor templateDescriptor = (TemplateDescriptor) indexNewFields.getKey();
-        final String json = readTemplateJson(templateDescriptor.getSchemaClasspathFilename());
-        final PutIndexTemplateRequest indexTemplateRequest =
-            prepareIndexTemplateRequest(templateDescriptor, json);
-        putIndexTemplate(indexTemplateRequest);
+      if (indexNewFields.getKey() instanceof final TemplateDescriptor templateDescriptor) {
+        LOGGER.info("Update template: {}", templateDescriptor.getTemplateName());
+        createTemplate(templateDescriptor, true);
       }
 
       final Map<String, Property> properties;
@@ -380,6 +375,11 @@ public class OpenSearchSchemaManager implements SchemaManager {
   }
 
   private void createTemplate(final TemplateDescriptor templateDescriptor) {
+    createTemplate(templateDescriptor, false);
+  }
+
+  private void createTemplate(
+      final TemplateDescriptor templateDescriptor, final boolean overwrite) {
     final IndexTemplateMapping template = getTemplateFrom(templateDescriptor);
 
     putIndexTemplate(
@@ -388,7 +388,8 @@ public class OpenSearchSchemaManager implements SchemaManager {
             .template(template)
             .name(templateDescriptor.getTemplateName())
             .composedOf(List.of(settingsTemplateName()))
-            .build());
+            .build(),
+        overwrite);
 
     // This is necessary, otherwise tasklist won't find indexes at startup
     final String indexName = templateDescriptor.getFullQualifiedName();
@@ -404,43 +405,22 @@ public class OpenSearchSchemaManager implements SchemaManager {
     }
   }
 
-  private void putIndexTemplate(final PutIndexTemplateRequest request) {
-    final boolean created = retryOpenSearchClient.createTemplate(request);
-    if (created) {
-      LOGGER.debug("Template [{}] was successfully created", request.name());
-    } else {
-      LOGGER.debug("Template [{}] was NOT created", request.name());
-    }
-  }
-
   private IndexTemplateMapping getTemplateFrom(final TemplateDescriptor templateDescriptor) {
-    final String templateFilename =
-        String.format(
-            "/schema/os/create/template/tasklist-%s.json", templateDescriptor.getIndexName());
+    final String templateFilename = templateDescriptor.getSchemaClasspathFilename();
 
-    final InputStream templateConfig =
-        OpenSearchSchemaManager.class.getResourceAsStream(templateFilename);
+    try (final InputStream templateConfig =
+        OpenSearchSchemaManager.class.getResourceAsStream(templateFilename)) {
 
-    final JsonpMapper mapper = openSearchClient._transport().jsonpMapper();
-    final JsonParser parser = mapper.jsonProvider().createParser(templateConfig);
+      final JsonpMapper mapper = openSearchClient._transport().jsonpMapper();
+      final JsonParser parser = mapper.jsonProvider().createParser(templateConfig);
 
-    return new IndexTemplateMapping.Builder()
-        .mappings(TypeMapping._DESERIALIZER.deserialize(parser, mapper))
-        .aliases(templateDescriptor.getAlias(), new Alias.Builder().build())
-        .build();
-  }
-
-  private InputStream readJSONFile(final String filename) {
-    final Map<String, Object> result;
-    try (final InputStream inputStream =
-        OpenSearchSchemaManager.class.getResourceAsStream(filename)) {
-      if (inputStream != null) {
-        return inputStream;
-      } else {
-        throw new TasklistRuntimeException("Failed to find " + filename + " in classpath ");
-      }
+      return new IndexTemplateMapping.Builder()
+          .mappings(TypeMapping._DESERIALIZER.deserialize(parser, mapper))
+          .aliases(templateDescriptor.getAlias(), new Alias.Builder().build())
+          .build();
     } catch (final IOException e) {
-      throw new TasklistRuntimeException("Failed to load file " + filename + " from classpath ", e);
+      throw new TasklistRuntimeException(
+          "Failed to load template file " + templateFilename + " from classpath", e);
     }
   }
 
