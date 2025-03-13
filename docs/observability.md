@@ -1,5 +1,7 @@
 # Observability
 
+[//]: # (You can find all assets on Miro here: https://miro.com/app/board/uXjVIReRqIk=/?share_link_id=495140883440)
+
 Observability is the property of a system's behavior to be understood at runtime. Good observability
 allows you to easily debug runtime issues, find and fix performance bottlenecks, and alert on
 misbehavior. Conversely, poor observability leads to a system which is hard to understand and thus
