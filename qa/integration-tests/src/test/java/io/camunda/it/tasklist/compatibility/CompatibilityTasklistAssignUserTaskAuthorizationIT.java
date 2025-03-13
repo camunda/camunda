@@ -12,27 +12,38 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.protocol.rest.PermissionTypeEnum;
 import io.camunda.client.protocol.rest.ResourceTypeEnum;
+import io.camunda.qa.util.auth.Authenticated;
+import io.camunda.qa.util.auth.Permissions;
+import io.camunda.qa.util.auth.User;
+import io.camunda.qa.util.auth.UserDefinition;
 import io.camunda.qa.util.cluster.TestRestTasklistClient;
-import io.camunda.qa.util.cluster.TestStandaloneCamunda;
-import io.camunda.search.clients.query.SearchQueryBuilders;
-import io.camunda.security.entity.AuthenticationMethod;
-import io.camunda.webapps.schema.descriptors.tasklist.template.TaskTemplate;
-import io.camunda.webapps.schema.entities.tasklist.TaskJoinRelationship.TaskJoinRelationshipType;
-import io.camunda.zeebe.it.util.AuthorizationsUtil;
-import io.camunda.zeebe.it.util.AuthorizationsUtil.Permissions;
-import io.camunda.zeebe.it.util.SearchClientsUtil;
-import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
-import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
+import io.camunda.qa.util.cluster.TestSimpleCamundaApplication;
+import io.camunda.qa.util.multidb.CamundaMultiDBExtension;
+import io.camunda.tasklist.webapp.api.rest.v1.entities.TaskSearchResponse;
+import java.net.http.HttpResponse;
 import java.time.Duration;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AutoClose;
-import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
-@ZeebeIntegration
+@Tag("multi-db-test")
+@DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "rdbms")
 public class CompatibilityTasklistAssignUserTaskAuthorizationIT {
+
+  private static final TestSimpleCamundaApplication STANDALONE_CAMUNDA =
+      new TestSimpleCamundaApplication()
+          .withAuthorizationsEnabled()
+          .withBasicAuth()
+          .withProperty("camunda.tasklist.zeebe.compatibility.enabled", true);
+
+  @RegisterExtension
+  static final CamundaMultiDBExtension EXTENSION = new CamundaMultiDBExtension(STANDALONE_CAMUNDA);
 
   private static final String PROCESS_ID = "foo";
   private static final String PROCESS_ID_WITH_JOB_BASED_USERTASK =
@@ -41,98 +52,96 @@ public class CompatibilityTasklistAssignUserTaskAuthorizationIT {
   private static final String ADMIN_USER_NAME = "foo";
   private static final String ADMIN_USER_PASSWORD = "foo";
 
-  private static final String TEST_USER_NAME = "bar";
+  private static final String TEST_USER_NAME_NO_PERMISSION = "noPermissionUser";
+  private static final String TEST_USER_NAME_WITH_PERMISSION = "withPermissionUser";
   private static final String TEST_USER_PASSWORD = "bar";
-  private static long testUserKey;
-
-  @AutoClose private static AuthorizationsUtil adminAuthClient;
-  @AutoClose private static CamundaClient adminCamundaClient;
   @AutoClose private static TestRestTasklistClient tasklistRestClient;
 
-  private long processInstanceKey;
-  private long processInstanceKeyWithJobBasedUserTask;
-  private long userTaskKey;
-  private long userTaskKeyWithJobBasedUserTask;
-
-  @TestZeebe
-  private TestStandaloneCamunda standaloneCamunda =
-      new TestStandaloneCamunda()
-          .withCamundaExporter()
-          .withAuthorizationsEnabled()
-          .withProperty("camunda.tasklist.zeebe.compatibility.enabled", true)
-          .withAuthenticationMethod(AuthenticationMethod.BASIC);
-
-  @BeforeEach
-  public void beforeAll() {
-    final var defaultUser = "demo";
-    final var searchClients =
-        SearchClientsUtil.createSearchClients(standaloneCamunda.getElasticSearchHostAddress());
-
-    // intermediate state, so that a user exists that has
-    // access to the storage to retrieve data
-    try (final var intermediateAuthClient =
-        AuthorizationsUtil.create(
-            standaloneCamunda, standaloneCamunda.getElasticSearchHostAddress())) {
-      intermediateAuthClient.awaitUserExistsInElasticsearch(defaultUser);
-      intermediateAuthClient.createUserWithPermissions(
+  @UserDefinition
+  private static final User ADMIN_USER =
+      new User(
           ADMIN_USER_NAME,
           ADMIN_USER_PASSWORD,
-          new Permissions(ResourceTypeEnum.RESOURCE, PermissionTypeEnum.CREATE, List.of("*")),
-          new Permissions(ResourceTypeEnum.AUTHORIZATION, PermissionTypeEnum.CREATE, List.of("*")),
-          new Permissions(
-              ResourceTypeEnum.PROCESS_DEFINITION,
-              PermissionTypeEnum.READ_PROCESS_DEFINITION,
-              List.of("*")),
-          new Permissions(
-              ResourceTypeEnum.PROCESS_DEFINITION, PermissionTypeEnum.READ_USER_TASK, List.of("*")),
-          new Permissions(
-              ResourceTypeEnum.PROCESS_DEFINITION,
-              PermissionTypeEnum.READ_PROCESS_INSTANCE,
-              List.of("*")),
-          new Permissions(
-              ResourceTypeEnum.PROCESS_DEFINITION,
-              PermissionTypeEnum.CREATE_PROCESS_INSTANCE,
-              List.of("*")),
-          new Permissions(ResourceTypeEnum.USER, PermissionTypeEnum.CREATE, List.of("*")),
-          new Permissions(ResourceTypeEnum.AUTHORIZATION, PermissionTypeEnum.UPDATE, List.of("*")));
-    }
+          List.of(
+              new Permissions(ResourceTypeEnum.RESOURCE, PermissionTypeEnum.CREATE, List.of("*")),
+              new Permissions(
+                  ResourceTypeEnum.AUTHORIZATION, PermissionTypeEnum.CREATE, List.of("*")),
+              new Permissions(
+                  ResourceTypeEnum.PROCESS_DEFINITION,
+                  PermissionTypeEnum.READ_PROCESS_DEFINITION,
+                  List.of("*")),
+              new Permissions(
+                  ResourceTypeEnum.PROCESS_DEFINITION,
+                  PermissionTypeEnum.READ_USER_TASK,
+                  List.of("*")),
+              new Permissions(
+                  ResourceTypeEnum.PROCESS_DEFINITION,
+                  PermissionTypeEnum.READ_PROCESS_INSTANCE,
+                  List.of("*")),
+              new Permissions(
+                  ResourceTypeEnum.PROCESS_DEFINITION,
+                  PermissionTypeEnum.CREATE_PROCESS_INSTANCE,
+                  List.of("*")),
+              new Permissions(ResourceTypeEnum.USER, PermissionTypeEnum.CREATE, List.of("*")),
+              new Permissions(
+                  ResourceTypeEnum.AUTHORIZATION, PermissionTypeEnum.UPDATE, List.of("*"))));
 
-    adminCamundaClient =
-        AuthorizationsUtil.createClient(standaloneCamunda, ADMIN_USER_NAME, ADMIN_USER_PASSWORD);
-    adminAuthClient = new AuthorizationsUtil(standaloneCamunda, adminCamundaClient, searchClients);
-    tasklistRestClient = standaloneCamunda.newTasklistClient();
+  @UserDefinition
+  private static final User TEST_USER_NO_PERMISSIONS =
+      new User(TEST_USER_NAME_NO_PERMISSION, TEST_USER_PASSWORD, List.of());
+
+  @UserDefinition
+  private static final User TEST_USER_WITH_PERMISSIONS =
+      new User(
+          TEST_USER_NAME_WITH_PERMISSION,
+          TEST_USER_PASSWORD,
+          List.of(
+              new Permissions(
+                  ResourceTypeEnum.PROCESS_DEFINITION,
+                  PermissionTypeEnum.UPDATE_USER_TASK,
+                  List.of(PROCESS_ID_WITH_JOB_BASED_USERTASK))));
+
+  private static long userTaskKey;
+  private static long userTaskKeyWithJobBasedUserTask;
+  private static long processInstanceKeyWithJobBasedUserTask;
+  private static long anotherUserTaskKeyWithJobBasedUserTask;
+
+  @BeforeAll
+  public static void beforeAll(@Authenticated(ADMIN_USER_NAME) final CamundaClient adminClient) {
+    tasklistRestClient = STANDALONE_CAMUNDA.newTasklistClient();
 
     // deploy a process as admin user
-    deployResource(adminCamundaClient, "process/process_public_start.bpmn");
-    waitForProcessToBeDeployed(PROCESS_ID);
-
+    deployResource(adminClient, "process/process_public_start.bpmn");
     // deploy process with a job based user task process
-    deployResource(adminCamundaClient, "process/process_job_based_user_task.bpmn");
-    waitForProcessToBeDeployed(PROCESS_ID_WITH_JOB_BASED_USERTASK);
+    deployResource(adminClient, "process/process_job_based_user_task.bpmn");
 
     // create a process instance
-    processInstanceKey = createProcessInstance(PROCESS_ID);
-    userTaskKey = awaitUserTaskBeingAvailable(processInstanceKey);
+    final var processInstanceKey = createProcessInstance(adminClient, PROCESS_ID);
+    userTaskKey = awaitUserTaskBeingAvailable(adminClient, processInstanceKey);
 
     // create a process instance with job based user task
     processInstanceKeyWithJobBasedUserTask =
-        createProcessInstance(PROCESS_ID_WITH_JOB_BASED_USERTASK);
+        createProcessInstance(adminClient, PROCESS_ID_WITH_JOB_BASED_USERTASK);
     userTaskKeyWithJobBasedUserTask =
         awaitJobBasedUserTaskBeingAvailable(processInstanceKeyWithJobBasedUserTask);
 
-    // create new (non-admin) user
-    testUserKey = adminAuthClient.createUser(TEST_USER_NAME, TEST_USER_PASSWORD);
+    // create a process instance with job based user task
+    final long anotherProcessInstanceKeyWithJobBasedUserTask =
+        createProcessInstance(adminClient, PROCESS_ID_WITH_JOB_BASED_USERTASK);
+    anotherUserTaskKeyWithJobBasedUserTask =
+        awaitJobBasedUserTaskBeingAvailable(anotherProcessInstanceKeyWithJobBasedUserTask);
   }
 
   @Test
-  public void shouldNotAssignUserTaskWithUnauthorizedUser() {
+  public void shouldNotAssignUserTaskWithUnauthorizedUser(
+      @Authenticated(TEST_USER_NAME_NO_PERMISSION) final CamundaClient noPermission) {
     // given (non-admin) user without any authorizations
 
     // when
     final var response =
         tasklistRestClient
-            .withAuthentication(TEST_USER_NAME, TEST_USER_PASSWORD)
-            .assignUserTask(userTaskKey, TEST_USER_NAME);
+            .withAuthentication(TEST_USER_NAME_NO_PERMISSION, TEST_USER_PASSWORD)
+            .assignUserTask(userTaskKey, TEST_USER_NAME_NO_PERMISSION);
 
     // then
     assertThat(response).isNotNull();
@@ -140,14 +149,15 @@ public class CompatibilityTasklistAssignUserTaskAuthorizationIT {
   }
 
   @Test
-  public void shouldNotAssignJobBasedUserTaskWithUnauthorizedUser() {
+  public void shouldNotAssignJobBasedUserTaskWithUnauthorizedUser(
+      @Authenticated(TEST_USER_NAME_NO_PERMISSION) final CamundaClient noPermission) {
     // given (non-admin) user without any authorizations
 
     // when
     final var response =
         tasklistRestClient
-            .withAuthentication(TEST_USER_NAME, TEST_USER_PASSWORD)
-            .assignUserTask(userTaskKeyWithJobBasedUserTask, TEST_USER_NAME);
+            .withAuthentication(TEST_USER_NAME_NO_PERMISSION, TEST_USER_PASSWORD)
+            .assignUserTask(anotherUserTaskKeyWithJobBasedUserTask, TEST_USER_NAME_NO_PERMISSION);
 
     // then
     assertThat(response).isNotNull();
@@ -155,49 +165,31 @@ public class CompatibilityTasklistAssignUserTaskAuthorizationIT {
   }
 
   @Test
-  public void shouldBeAuthorizedToAssignJobBasedUserTask() {
+  public void shouldBeAuthorizedToAssignJobBasedUserTask(
+      @Authenticated(ADMIN_USER_NAME) final CamundaClient adminClient,
+      @Authenticated(TEST_USER_NAME_WITH_PERMISSION) final CamundaClient withPermission) {
     // given
-    adminAuthClient.createPermissions(
-        TEST_USER_NAME,
-        new Permissions(
-            ResourceTypeEnum.PROCESS_DEFINITION,
-            PermissionTypeEnum.UPDATE_USER_TASK,
-            List.of(PROCESS_ID_WITH_JOB_BASED_USERTASK)));
 
     // when
     final var response =
         tasklistRestClient
-            .withAuthentication(TEST_USER_NAME, TEST_USER_PASSWORD)
-            .assignUserTask(userTaskKeyWithJobBasedUserTask, TEST_USER_NAME);
+            .withAuthentication(TEST_USER_NAME_WITH_PERMISSION, TEST_USER_PASSWORD)
+            .assignUserTask(userTaskKeyWithJobBasedUserTask, TEST_USER_NAME_WITH_PERMISSION);
 
     // then
     assertThat(response).isNotNull();
     assertThat(response.statusCode()).isEqualTo(200);
-    ensureJobBasedUserTaskAssigneeChanged(processInstanceKeyWithJobBasedUserTask, TEST_USER_NAME);
+    ensureJobBasedUserTaskAssigneeChanged(
+        processInstanceKeyWithJobBasedUserTask, TEST_USER_NAME_WITH_PERMISSION);
   }
 
-  private void deployResource(final CamundaClient camundaClient, final String resource) {
+  private static void deployResource(final CamundaClient camundaClient, final String resource) {
     camundaClient.newDeployResourceCommand().addResourceFromClasspath(resource).send().join();
   }
 
-  private void waitForProcessToBeDeployed(final String processDefinitionId) {
-    Awaitility.await("should deploy process %s and export".formatted(processDefinitionId))
-        .atMost(Duration.ofSeconds(15))
-        .ignoreExceptions() // Ignore exceptions and continue retrying
-        .untilAsserted(
-            () -> {
-              final var result =
-                  adminCamundaClient
-                      .newProcessDefinitionQuery()
-                      .filter(f -> f.processDefinitionId(processDefinitionId))
-                      .send()
-                      .join();
-              assertThat(result.items().size()).isEqualTo(1);
-            });
-  }
-
-  public static long createProcessInstance(final String processDefinitionId) {
-    return adminCamundaClient
+  public static long createProcessInstance(
+      final CamundaClient camundaClient, final String processDefinitionId) {
+    return camundaClient
         .newCreateInstanceCommand()
         .bpmnProcessId(processDefinitionId)
         .latestVersion()
@@ -206,7 +198,8 @@ public class CompatibilityTasklistAssignUserTaskAuthorizationIT {
         .getProcessInstanceKey();
   }
 
-  public static long awaitUserTaskBeingAvailable(final long processInstanceKey) {
+  public static long awaitUserTaskBeingAvailable(
+      final CamundaClient camundaClient, final long processInstanceKey) {
     final AtomicLong userTaskKey = new AtomicLong();
     Awaitility.await("should create an user task")
         .atMost(Duration.ofSeconds(60))
@@ -214,7 +207,7 @@ public class CompatibilityTasklistAssignUserTaskAuthorizationIT {
         .untilAsserted(
             () -> {
               final var result =
-                  adminCamundaClient
+                  camundaClient
                       .newUserTaskQuery()
                       .filter(f -> f.processInstanceKey(processInstanceKey))
                       .send()
@@ -226,41 +219,46 @@ public class CompatibilityTasklistAssignUserTaskAuthorizationIT {
   }
 
   public static long awaitJobBasedUserTaskBeingAvailable(final long processInstanceKey) {
-    final AtomicLong userTaskKey = new AtomicLong();
-    final var processInstanceQuery =
-        SearchQueryBuilders.and(
-            SearchQueryBuilders.term(TaskTemplate.PROCESS_INSTANCE_ID, processInstanceKey),
-            SearchQueryBuilders.term(
-                TaskTemplate.JOIN_FIELD_NAME, TaskJoinRelationshipType.TASK.getType()));
-    Awaitility.await("should create a job-based user task")
-        .atMost(Duration.ofSeconds(60))
-        .ignoreExceptions() // Ignore exceptions and continue retrying
-        .untilAsserted(
-            () -> {
-              final var result = tasklistRestClient.searchJobBasedUserTasks(processInstanceQuery);
-              assertThat(result.hits()).hasSize(1);
-              userTaskKey.set(result.hits().getFirst().source().getKey());
-            });
-    return userTaskKey.get();
+    final var task =
+        Awaitility.await("should create a job-based user task")
+            .atMost(Duration.ofSeconds(60))
+            .ignoreExceptions() // Ignore exceptions and continue retrying
+            .until(
+                () -> {
+                  final HttpResponse<String> response =
+                      tasklistRestClient
+                          .withAuthentication(ADMIN_USER_NAME, ADMIN_USER_PASSWORD)
+                          .searchTasks(processInstanceKey);
+
+                  assertThat(response).isNotNull();
+                  assertThat(response.statusCode()).isEqualTo(200);
+
+                  return TestRestTasklistClient.OBJECT_MAPPER.readValue(
+                      response.body(), TaskSearchResponse[].class);
+                },
+                (result) -> result.length == 1);
+    return Long.parseLong(task[0].getId());
   }
 
   public static void ensureJobBasedUserTaskAssigneeChanged(
       final long processInstanceKey, final String newAssignee) {
-    final var processInstanceQuery =
-        SearchQueryBuilders.and(
-            SearchQueryBuilders.term(TaskTemplate.PROCESS_INSTANCE_ID, processInstanceKey),
-            SearchQueryBuilders.term(
-                TaskTemplate.JOIN_FIELD_NAME, TaskJoinRelationshipType.TASK.getType()));
-    final var assigneeQuery = SearchQueryBuilders.term(TaskTemplate.ASSIGNEE, newAssignee);
-    final var finalQuery = SearchQueryBuilders.and(processInstanceQuery, assigneeQuery);
-
-    Awaitility.await("should create an user task")
+    Awaitility.await("should create a job-based user task")
         .atMost(Duration.ofSeconds(60))
         .ignoreExceptions() // Ignore exceptions and continue retrying
-        .untilAsserted(
+        .until(
             () -> {
-              final var result = tasklistRestClient.searchJobBasedUserTasks(finalQuery);
-              assertThat(result.totalHits()).isGreaterThanOrEqualTo(1L);
-            });
+              final HttpResponse<String> response =
+                  tasklistRestClient
+                      .withAuthentication(ADMIN_USER_NAME, ADMIN_USER_PASSWORD)
+                      .searchTasks(processInstanceKey);
+
+              assertThat(response).isNotNull();
+              assertThat(response.statusCode()).isEqualTo(200);
+
+              return TestRestTasklistClient.OBJECT_MAPPER.readValue(
+                  response.body(), TaskSearchResponse[].class);
+            },
+            (result) ->
+                result.length == 1 && result[0].getAssignee().equalsIgnoreCase(newAssignee));
   }
 }
