@@ -38,7 +38,7 @@ public sealed interface AuthenticationHandler {
     public static final Context.Key<Map<String, Object>> USER_CLAIMS =
         Context.key("io.camunda.zeebe:user_claim");
 
-    private static final String BEARER_PREFIX = "Bearer ";
+    public static final String BEARER_PREFIX = "Bearer ";
     private final JwtDecoder jwtDecoder;
 
     public Oidc(final JwtDecoder jwtDecoder) {
