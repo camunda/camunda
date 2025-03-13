@@ -1,0 +1,17 @@
+{
+  "compilerOptions": {
+    "target": "ES2020",
+    "module": "commonjs",
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+    "strict": true,
+    "skipLibCheck": true,
+    "baseUrl": "./",
+    "noEmit": true,
+    "paths": {
+      "@fixtures": ["fixtures.ts"],
+      "@setup": ["./test-setup.ts"],
+      "@pages/*": ["pages/*"]
+    }
+  }
+}
