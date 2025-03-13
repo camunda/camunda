@@ -17,7 +17,9 @@ package io.camunda.zeebe.protocol.record.intent;
 
 public enum ProcessInstanceBatchIntent implements ProcessInstanceRelatedIntent {
   TERMINATE(0),
-  ACTIVATE(1);
+  ACTIVATE(1),
+  TERMINATED(2),
+  ACTIVATED(3);
 
   private final short value;
   private final boolean shouldBanInstance;
@@ -37,6 +39,10 @@ public enum ProcessInstanceBatchIntent implements ProcessInstanceRelatedIntent {
         return TERMINATE;
       case 1:
         return ACTIVATE;
+      case 2:
+        return TERMINATED;
+      case 3:
+        return ACTIVATED;
       default:
         return UNKNOWN;
     }
@@ -49,7 +55,13 @@ public enum ProcessInstanceBatchIntent implements ProcessInstanceRelatedIntent {
 
   @Override
   public boolean isEvent() {
-    return false;
+    switch (this) {
+      case TERMINATED:
+      case ACTIVATED:
+        return true;
+      default:
+        return false;
+    }
   }
 
   @Override

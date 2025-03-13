@@ -855,7 +855,7 @@ public final class AdHocSubProcessTest {
             tuple(BpmnElementType.PROCESS, ProcessInstanceIntent.ELEMENT_COMPLETED));
 
     final List<Long> adHocSubProcessKeys =
-        RecordingExporter.processInstanceRecords()
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
             .withProcessInstanceKey(processInstanceKey)
             .withElementType(BpmnElementType.AD_HOC_SUB_PROCESS)
             .limit(3)
