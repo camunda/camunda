@@ -12,6 +12,7 @@ import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
+import io.camunda.zeebe.engine.processing.variable.VariableBehavior;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.state.immutable.UserTaskState;
 import io.camunda.zeebe.engine.state.immutable.UserTaskState.LifecycleState;
@@ -29,14 +30,17 @@ public final class UserTaskUpdateProcessor implements UserTaskCommandProcessor {
   private final StateWriter stateWriter;
   private final UserTaskState userTaskState;
   private final TypedResponseWriter responseWriter;
+  private final VariableBehavior variableBehavior;
   private final UserTaskCommandPreconditionChecker preconditionChecker;
 
   public UserTaskUpdateProcessor(
       final ProcessingState state,
       final Writers writers,
+      final VariableBehavior variableBehavior,
       final AuthorizationCheckBehavior authCheckBehavior) {
     stateWriter = writers.state();
     userTaskState = state.getUserTaskState();
+    this.variableBehavior = variableBehavior;
     responseWriter = writers.response();
     preconditionChecker =
         new UserTaskCommandPreconditionChecker(
@@ -64,6 +68,17 @@ public final class UserTaskUpdateProcessor implements UserTaskCommandProcessor {
   public void onFinalizeCommand(
       final TypedRecord<UserTaskRecord> command, final UserTaskRecord userTaskRecord) {
     final long userTaskKey = command.getKey();
+
+    final long userTaskElementInstanceKey = userTaskRecord.getElementInstanceKey();
+    if (userTaskRecord.getChangedAttributes().contains(UserTaskRecord.VARIABLES)) {
+      variableBehavior.mergeLocalDocument(
+          userTaskRecord.getElementInstanceKey(),
+          userTaskRecord.getProcessDefinitionKey(),
+          userTaskRecord.getProcessInstanceKey(),
+          userTaskRecord.getBpmnProcessIdBuffer(),
+          userTaskRecord.getTenantId(),
+          command.getValue().getVariablesBuffer());
+    }
 
     if (command.hasRequestMetadata()) {
       stateWriter.appendFollowUpEvent(userTaskKey, UserTaskIntent.UPDATED, userTaskRecord);
