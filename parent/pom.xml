@@ -178,6 +178,7 @@
     <version.jwks-rsa>0.22.1</version.jwks-rsa>
     <version.guava.annotations>r03</version.guava.annotations>
     <version.nimbus-jose-jwt>9.41.2</version.nimbus-jose-jwt>
+    <version.nimbus-sdk>11.23.1</version.nimbus-sdk>
     <version.keycloak>26.0.6</version.keycloak>
     <version.keycloak-client>26.0.4</version.keycloak-client>
     <version.jna>5.15.0</version.jna>
@@ -931,15 +932,12 @@
         <type>pom</type>
         <scope>import</scope>
       </dependency>
-<<<<<<< HEAD
-=======
 
       <dependency>
         <groupId>com.nimbusds</groupId>
         <artifactId>oauth2-oidc-sdk</artifactId>
         <version>${version.nimbus-sdk}</version>
       </dependency>
->>>>>>> 9f505bf7 (deps: move POM/IMPORT before Spring to allow us to specify desired versions)
 
       <dependency>
         <groupId>org.springframework.boot</groupId>
@@ -1280,31 +1278,12 @@
       </dependency>
 
       <dependency>
-<<<<<<< HEAD
-        <groupId>io.netty</groupId>
-        <artifactId>netty-bom</artifactId>
-        <version>${version.netty}</version>
-        <type>pom</type>
-        <scope>import</scope>
-      </dependency>
-
-      <dependency>
         <groupId>io.projectreactor.netty</groupId>
         <artifactId>reactor-netty-http</artifactId>
         <version>${version.reactor-netty}</version>
       </dependency>
 
       <dependency>
-        <groupId>io.micrometer</groupId>
-        <artifactId>micrometer-bom</artifactId>
-        <version>${version.micrometer}</version>
-        <type>pom</type>
-        <scope>import</scope>
-      </dependency>
-
-      <dependency>
-=======
->>>>>>> 9f505bf7 (deps: move POM/IMPORT before Spring to allow us to specify desired versions)
         <groupId>org.elasticsearch.client</groupId>
         <artifactId>elasticsearch-rest-client</artifactId>
         <version>${version.elasticsearch}</version>
