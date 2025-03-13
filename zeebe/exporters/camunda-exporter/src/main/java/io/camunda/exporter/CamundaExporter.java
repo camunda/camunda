@@ -335,7 +335,7 @@ public class CamundaExporter implements Exporter {
         zeebeIndicesVersion87Exist =
             !searchEngineClient
                 .getMappings(
-                    configuration.getIndex().getZeebeIndexPrefix() + "*8.7*", MappingSource.INDEX)
+                    configuration.getIndex().getZeebeIndexPrefix() + "*8.7.*_", MappingSource.INDEX)
                 .isEmpty();
       }
 
