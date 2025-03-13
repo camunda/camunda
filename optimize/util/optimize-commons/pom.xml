@@ -322,7 +322,6 @@
     </dependency>
   </dependencies>
 
-  <!-- this fixes some artifacts download when building from within the single application -->
   <repositories>
     <repository>
       <id>central</id>

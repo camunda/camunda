@@ -685,6 +685,14 @@
     </dependency>
   </dependencies>
 
+  <repositories>
+    <repository>
+      <id>central</id>
+      <name>Maven Central</name>
+      <url>https://repo1.maven.org/maven2/</url>
+    </repository>
+  </repositories>
+
   <build>
     <finalName>optimize-backend-${project.version}</finalName>
     <resources>
