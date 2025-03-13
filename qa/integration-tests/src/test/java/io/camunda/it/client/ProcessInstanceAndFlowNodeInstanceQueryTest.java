@@ -1172,7 +1172,7 @@ public class ProcessInstanceAndFlowNodeInstanceQueryTest {
             .join();
 
     // then: we expect to find all the process instance without the error.
-    assertThat(result.items().size()).isEqualTo(5);
+    assertThat(result.items().size()).isEqualTo(6);
     assertThat(result.items())
         .extracting("processDefinitionId")
         .doesNotContain("incident_process_v1");
@@ -1206,7 +1206,7 @@ public class ProcessInstanceAndFlowNodeInstanceQueryTest {
             .join();
 
     // then: we expect to find all the process instances without error message
-    assertThat(result.items().size()).isEqualTo(5);
+    assertThat(result.items().size()).isEqualTo(6);
     assertThat(result.items())
         .extracting("processDefinitionId")
         .doesNotContain("incident_process_v1");
