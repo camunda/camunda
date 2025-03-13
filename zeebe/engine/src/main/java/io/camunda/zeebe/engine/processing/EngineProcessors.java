@@ -168,7 +168,8 @@ public final class EngineProcessors {
             routingInfo,
             clock,
             transientProcessMessageSubscriptionState,
-            processEngineMetrics);
+            processEngineMetrics,
+            config);
 
     addDecisionProcessors(typedRecordProcessors, decisionBehavior, writers, processingState);
 
@@ -265,7 +266,8 @@ public final class EngineProcessors {
       final RoutingInfo routingInfo,
       final InstantSource clock,
       final TransientPendingSubscriptionState transientProcessMessageSubscriptionState,
-      final ProcessEngineMetrics processEngineMetrics) {
+      final ProcessEngineMetrics processEngineMetrics,
+      final EngineConfiguration config) {
     return BpmnProcessors.addBpmnStreamProcessor(
         processingState,
         scheduledTaskState,
@@ -279,7 +281,8 @@ public final class EngineProcessors {
         routingInfo,
         clock,
         transientProcessMessageSubscriptionState,
-        processEngineMetrics);
+        processEngineMetrics,
+        config);
   }
 
   private static void addDeploymentRelatedProcessorAndServices(
