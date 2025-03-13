@@ -10,6 +10,7 @@ package io.camunda.tasklist.os;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
+import static org.opensearch.client.opensearch._types.mapping.Property.Kind.Keyword;
 
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.qa.util.TestUtil;
@@ -17,46 +18,51 @@ import io.camunda.tasklist.schema.IndexMapping;
 import io.camunda.tasklist.schema.IndexMapping.IndexMappingProperty;
 import io.camunda.tasklist.schema.IndexSchemaValidator;
 import io.camunda.tasklist.schema.indices.IndexDescriptor;
-import io.camunda.tasklist.schema.manager.SchemaManager;
+import io.camunda.tasklist.schema.manager.OpenSearchSchemaManager;
 import io.camunda.tasklist.util.NoSqlHelper;
+import io.camunda.tasklist.util.OpenSearchTestExtension;
 import io.camunda.tasklist.util.TasklistZeebeIntegrationTest;
+import io.camunda.tasklist.util.TestApplication;
+import io.camunda.tasklist.util.TestIndexDescriptor;
+import io.camunda.tasklist.util.TestTemplateDescriptor;
+import io.camunda.tasklist.util.apps.schema.TestIndexDescriptorConfiguration;
+import io.camunda.tasklist.util.apps.schema.TestTemplateDescriptorConfiguration;
 import java.io.IOException;
-import java.lang.reflect.Field;
-import java.nio.file.Files;
-import java.nio.file.Paths;
-import java.nio.file.StandardOpenOption;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.opensearch.client.opensearch._types.mapping.Property;
+import org.opensearch.client.opensearch._types.mapping.TypeMapping;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.test.annotation.DirtiesContext;
+import org.springframework.boot.test.context.SpringBootTest;
 
-/**
- * ApplicationContext associated with this test gets dirty {@link
- * #replaceIndexDescriptorsInValidator(Set)} and should therefore be closed and removed from the
- * context cache.
- */
-@DirtiesContext
+@SpringBootTest(
+    classes = {
+      TestApplication.class,
+      TestIndexDescriptorConfiguration.class,
+      TestTemplateDescriptorConfiguration.class
+    },
+    properties = {
+      TasklistProperties.PREFIX + ".importer.startLoadingDataOnStartup = false",
+      TasklistProperties.PREFIX + ".archiver.rolloverEnabled = false",
+      TasklistProperties.PREFIX + "importer.jobType = testJobType",
+      "camunda.webapps.enabled = true",
+      "camunda.webapps.default-app = tasklist",
+    },
+    webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 public class OpenSearchSchemaManagementIT extends TasklistZeebeIntegrationTest {
 
-  private static final String ORIGINAL_SCHEMA_PATH =
-      "/tasklist-test-opensearch-schema-manager.json";
-  private static final String INDEX_NAME = "test";
   @Autowired private TasklistProperties tasklistProperties;
   @Autowired private List<IndexDescriptor> indexDescriptors;
   @Autowired private RetryOpenSearchClient retryOpenSearchClient;
   @Autowired private IndexSchemaValidator indexSchemaValidator;
   @Autowired private NoSqlHelper noSqlHelper;
-  @Autowired private SchemaManager schemaManager;
-
-  private final IndexDescriptor testIndex = createIndexDescriptor();
-
-  private final String originalSchemaContent = readSchemaContent();
-
-  public OpenSearchSchemaManagementIT() throws Exception {}
+  @Autowired private OpenSearchSchemaManager schemaManager;
+  @Autowired private TestIndexDescriptor testIndexDescriptor;
+  @Autowired private TestTemplateDescriptor testTemplateDescriptor;
 
   @BeforeAll
   public static void beforeClass() {
@@ -129,16 +135,9 @@ public class OpenSearchSchemaManagementIT extends TasklistZeebeIntegrationTest {
 
   @Test
   public void shouldAddFieldToIndex() throws Exception {
-    replaceIndexDescriptorsInValidator(Collections.singleton(testIndex));
-    schemaManager.createIndex(testIndex);
-
-    // Update file with new field
-    final var originalSchemaContent = readSchemaContent();
-
-    updateSchemaContent(
-        originalSchemaContent.replace(
-            "\"properties\": {", "\"properties\": {\n    \"prop2\": { \"type\": \"keyword\" },"));
-
+    // given
+    testIndexDescriptor.setSchemaClasspathFilename(
+        TestIndexDescriptorConfiguration.getSchemaFilePath("tasklist-test-after.json"));
     final Map<IndexDescriptor, Set<IndexMappingProperty>> indexDiff =
         indexSchemaValidator.validateIndexMappings();
 
@@ -146,10 +145,8 @@ public class OpenSearchSchemaManagementIT extends TasklistZeebeIntegrationTest {
     schemaManager.updateSchema(indexDiff);
 
     // then
-    final String indexName = testIndex.getFullQualifiedName();
+    final String indexName = testIndexDescriptor.getFullQualifiedName();
     final Map<String, IndexMapping> indexMappings = schemaManager.getIndexMappings(indexName);
-
-    restoreOriginalSchemaContent();
 
     assertThat(indexMappings)
         .containsExactly(
@@ -171,61 +168,51 @@ public class OpenSearchSchemaManagementIT extends TasklistZeebeIntegrationTest {
                                 .setTypeDefinition(Map.of("type", "keyword"))))));
   }
 
-  private IndexDescriptor createIndexDescriptor() {
-    return new IndexDescriptor() {
-      @Override
-      public String getIndexName() {
-        return INDEX_NAME;
-      }
+  @Test
+  public void shouldAddFieldToIndexTemplate() throws Exception {
+    // given
+    testTemplateDescriptor.setSchemaClasspathFilename(
+        TestTemplateDescriptorConfiguration.getSchemaFilePath("tasklist-test-template-after.json"));
+    final Map<IndexDescriptor, Set<IndexMappingProperty>> indexDiff =
+        indexSchemaValidator.validateIndexMappings();
 
-      @Override
-      public String getFullQualifiedName() {
-        return getFullIndexName();
-      }
+    // when
+    schemaManager.updateSchema(indexDiff);
 
-      @Override
-      public String getSchemaClasspathFilename() {
-        return ORIGINAL_SCHEMA_PATH;
-      }
+    final String indexName = testTemplateDescriptor.getFullQualifiedName();
+    final Map<String, IndexMapping> indexMappings = schemaManager.getIndexMappings(indexName);
 
-      @Override
-      public String getAllVersionsIndexNameRegexPattern() {
-        return getFullIndexName() + "*";
-      }
-    };
-  }
+    // then
+    assertThat(indexMappings)
+        .containsExactly(
+            entry(
+                indexName,
+                new IndexMapping()
+                    .setIndexName(indexName)
+                    .setDynamic("strict")
+                    .setProperties(
+                        Set.of(
+                            new IndexMappingProperty()
+                                .setName("prop0")
+                                .setTypeDefinition(Map.of("type", "keyword")),
+                            new IndexMappingProperty()
+                                .setName("prop1")
+                                .setTypeDefinition(Map.of("type", "keyword")),
+                            new IndexMappingProperty()
+                                .setName("prop2")
+                                .setTypeDefinition(Map.of("type", "keyword"))))));
 
-  private String getFullIndexName() {
-    return schemaManager.getIndexPrefix() + "-" + INDEX_NAME;
-  }
-
-  private void updateSchemaContent(final String content) throws Exception {
-    Files.write(
-        Paths.get(getClass().getResource(ORIGINAL_SCHEMA_PATH).toURI()),
-        content.getBytes(),
-        StandardOpenOption.TRUNCATE_EXISTING);
-  }
-
-  private String readSchemaContent() throws Exception {
-    return new String(
-        Files.readAllBytes(Paths.get(getClass().getResource(ORIGINAL_SCHEMA_PATH).toURI())));
-  }
-
-  private void restoreOriginalSchemaContent() {
-    try {
-      Files.write(
-          Paths.get(getClass().getResource(ORIGINAL_SCHEMA_PATH).toURI()),
-          originalSchemaContent.getBytes(),
-          StandardOpenOption.TRUNCATE_EXISTING);
-    } catch (final Exception e) {
-      e.printStackTrace();
-    }
-  }
-
-  private void replaceIndexDescriptorsInValidator(final Set<IndexDescriptor> newIndexDescriptors)
-      throws NoSuchFieldException, IllegalAccessException {
-    final Field field = indexSchemaValidator.getClass().getDeclaredField("indexDescriptors");
-    field.setAccessible(true);
-    field.set(indexSchemaValidator, newIndexDescriptors);
+    final TypeMapping indexTemplateMapping =
+        OpenSearchTestExtension.class
+            .cast(databaseTestExtension)
+            .getIndexTemplateMapping(testTemplateDescriptor.getTemplateName());
+    assertThat(indexTemplateMapping.dynamic().jsonValue()).isEqualTo("strict");
+    assertThat(indexTemplateMapping.properties().keySet())
+        .containsExactlyInAnyOrder("prop0", "prop1", "prop2");
+    assertThat(
+            indexTemplateMapping.properties().values().stream()
+                .map(Property::_kind)
+                .collect(Collectors.toSet()))
+        .containsOnly(Keyword);
   }
 }
