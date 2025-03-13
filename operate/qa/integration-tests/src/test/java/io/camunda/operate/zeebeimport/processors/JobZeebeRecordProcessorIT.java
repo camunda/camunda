@@ -117,8 +117,7 @@ public class JobZeebeRecordProcessorIT extends OperateSearchAbstractIT {
     underTest.processJobRecords(
         zeebeRecords.stream()
             .collect(Collectors.groupingBy(obj -> obj.getValue().getElementInstanceKey())),
-        batchRequest,
-        false);
+        batchRequest);
     batchRequest.execute();
     searchContainerManager.refreshIndices(jobTemplate.getFullQualifiedName());
   }

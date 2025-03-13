@@ -1,0 +1,25 @@
+{
+  "cookies": [
+    {
+      "name": "TASKLIST-SESSION",
+      "value": "75D45E1A0E07239ACACE77C5AB8010B7",
+      "domain": "localhost",
+      "path": "/",
+      "expires": -1,
+      "httpOnly": true,
+      "secure": false,
+      "sameSite": "Lax"
+    },
+    {
+      "name": "OPERATE-SESSION",
+      "value": "6B972932AC1A32AA6CABDF8AE489F4E6",
+      "domain": "localhost",
+      "path": "/",
+      "expires": -1,
+      "httpOnly": true,
+      "secure": false,
+      "sameSite": "Lax"
+    }
+  ],
+  "origins": []
+}

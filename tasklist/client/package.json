@@ -83,7 +83,7 @@
     "@typescript-eslint/parser": "8.22.0",
     "@vitejs/plugin-react": "4.3.4",
     "@vitest/coverage-istanbul": "2.1.9",
-    "@vitest/eslint-plugin": "1.1.36",
+    "@vitest/eslint-plugin": "1.1.37",
     "@vitest/ui": "2.1.9",
     "@vzeta/rollup-plugin-sbom": "2.0.0",
     "axe-core": "4.10.3",
