@@ -11,10 +11,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.groups.Tuple.tuple;
 
 import io.camunda.zeebe.engine.util.EngineRule;
-import io.camunda.zeebe.engine.util.RecordToWrite;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
-import io.camunda.zeebe.protocol.impl.record.value.adhocsubprocess.AdHocSubProcessActivityActivationRecord;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.AdHocSubProcessActivityActivationIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
@@ -69,15 +67,11 @@ public class ActivateAdHocSubProcessActivityTest {
   @Test
   public void
       givenRunningAdhocSubProcessInstanceWhenActivatingExistingElementThenTheElementIsActivated() {
-    final var adHocSubProcessActivityActivationRecord =
-        new AdHocSubProcessActivityActivationRecord()
-            .setAdHocSubProcessInstanceKey(String.valueOf(adHocSubProcessInstanceKey));
-    adHocSubProcessActivityActivationRecord.elements().add().setElementId("A");
-
-    ENGINE.writeRecords(
-        RecordToWrite.command()
-            .adHocSubProcessActivityActivation(adHocSubProcessActivityActivationRecord)
-            .key(adHocSubProcessInstanceKey));
+    ENGINE
+        .adHocSubProcessActivity()
+        .withAdHocSubProcessInstanceKey(String.valueOf(adHocSubProcessInstanceKey))
+        .withElementIds("A")
+        .activate();
 
     assertThat(
             RecordingExporter.processInstanceRecords()
@@ -96,15 +90,11 @@ public class ActivateAdHocSubProcessActivityTest {
   @Test
   public void
       givenRunningAdhocSubProcessInstanceWhenSuccessfullyActivatingAElementThenSubsequentActivatedEventIsSent() {
-    final var adHocSubProcessActivityActivationRecord =
-        new AdHocSubProcessActivityActivationRecord()
-            .setAdHocSubProcessInstanceKey(String.valueOf(adHocSubProcessInstanceKey));
-    adHocSubProcessActivityActivationRecord.elements().add().setElementId("A");
-
-    ENGINE.writeRecords(
-        RecordToWrite.command()
-            .adHocSubProcessActivityActivation(adHocSubProcessActivityActivationRecord)
-            .key(adHocSubProcessInstanceKey));
+    ENGINE
+        .adHocSubProcessActivity()
+        .withAdHocSubProcessInstanceKey(String.valueOf(adHocSubProcessInstanceKey))
+        .withElementIds("A")
+        .activate();
 
     assertThat(
             RecordingExporter.adHocSubProcessActivityActivationRecords()
@@ -117,16 +107,12 @@ public class ActivateAdHocSubProcessActivityTest {
   @Test
   public void
       givenRunningAdhocSubProcessInstanceWhenActivatingMoreThanOneElementThenAllGivenElementsAreActivated() {
-    final var adHocSubProcessActivityActivationRecord =
-        new AdHocSubProcessActivityActivationRecord()
-            .setAdHocSubProcessInstanceKey(String.valueOf(adHocSubProcessInstanceKey));
-    adHocSubProcessActivityActivationRecord.elements().add().setElementId("A");
-    adHocSubProcessActivityActivationRecord.elements().add().setElementId("B");
-
-    ENGINE.writeRecords(
-        RecordToWrite.command()
-            .adHocSubProcessActivityActivation(adHocSubProcessActivityActivationRecord)
-            .key(adHocSubProcessInstanceKey));
+    ENGINE
+        .adHocSubProcessActivity()
+        .withAdHocSubProcessInstanceKey(String.valueOf(adHocSubProcessInstanceKey))
+        .withElementIds("A")
+        .withElementIds("B")
+        .activate();
 
     assertThat(
             RecordingExporter.processInstanceRecords()
@@ -144,15 +130,12 @@ public class ActivateAdHocSubProcessActivityTest {
   @Test
   public void
       givenRunningAdhocSubProcessInstanceWhenActivatingElementThatDoesNotExistThenTheActivationIsRejected() {
-    final var adHocSubProcessActivityActivationRecord =
-        new AdHocSubProcessActivityActivationRecord()
-            .setAdHocSubProcessInstanceKey(String.valueOf(adHocSubProcessInstanceKey));
-    adHocSubProcessActivityActivationRecord.elements().add().setElementId("does-not-exist");
-
-    ENGINE.writeRecords(
-        RecordToWrite.command()
-            .adHocSubProcessActivityActivation(adHocSubProcessActivityActivationRecord)
-            .key(adHocSubProcessInstanceKey));
+    ENGINE
+        .adHocSubProcessActivity()
+        .withAdHocSubProcessInstanceKey(String.valueOf(adHocSubProcessInstanceKey))
+        .withElementIds("does-not-exist")
+        .expectRejection()
+        .activate();
 
     assertThat(
             RecordingExporter.adHocSubProcessActivityActivationRecords()
@@ -167,20 +150,18 @@ public class ActivateAdHocSubProcessActivityTest {
   @Test
   public void
       givenAdhocSubProcessInATerminalStateWhenActivatingElementsThenTheActivationIsRejected() {
-    final var adHocSubProcessActivityActivationRecord =
-        new AdHocSubProcessActivityActivationRecord()
-            .setAdHocSubProcessInstanceKey(String.valueOf(adHocSubProcessInstanceKey));
-    adHocSubProcessActivityActivationRecord.elements().add().setElementId("A");
+    ENGINE
+        .adHocSubProcessActivity()
+        .withAdHocSubProcessInstanceKey(String.valueOf(adHocSubProcessInstanceKey))
+        .withElementIds("A")
+        .activate();
 
-    ENGINE.writeRecords(
-        RecordToWrite.command()
-            .adHocSubProcessActivityActivation(adHocSubProcessActivityActivationRecord)
-            .key(adHocSubProcessInstanceKey));
-
-    ENGINE.writeRecords(
-        RecordToWrite.command()
-            .adHocSubProcessActivityActivation(adHocSubProcessActivityActivationRecord)
-            .key(adHocSubProcessInstanceKey));
+    ENGINE
+        .adHocSubProcessActivity()
+        .withAdHocSubProcessInstanceKey(String.valueOf(adHocSubProcessInstanceKey))
+        .withElementIds("A")
+        .expectRejection()
+        .activate();
 
     assertThat(
             RecordingExporter.adHocSubProcessActivityActivationRecords()
@@ -195,16 +176,13 @@ public class ActivateAdHocSubProcessActivityTest {
   @Test
   public void
       givenRunningAdhocSubProcessWhenAttemptingToActivateDuplicateElementsThenTheActivationIsRejected() {
-    final var adHocSubProcessActivityActivationRecord =
-        new AdHocSubProcessActivityActivationRecord()
-            .setAdHocSubProcessInstanceKey(String.valueOf(adHocSubProcessInstanceKey));
-    adHocSubProcessActivityActivationRecord.elements().add().setElementId("A");
-    adHocSubProcessActivityActivationRecord.elements().add().setElementId("A");
-
-    ENGINE.writeRecords(
-        RecordToWrite.command()
-            .adHocSubProcessActivityActivation(adHocSubProcessActivityActivationRecord)
-            .key(adHocSubProcessInstanceKey));
+    ENGINE
+        .adHocSubProcessActivity()
+        .withAdHocSubProcessInstanceKey(String.valueOf(adHocSubProcessInstanceKey))
+        .withElementIds("A")
+        .withElementIds("A")
+        .expectRejection()
+        .activate();
 
     assertThat(
             RecordingExporter.adHocSubProcessActivityActivationRecords()
