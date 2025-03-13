@@ -67,7 +67,7 @@ public final class ConfigValidator {
               numberOfReplicas));
     }
 
-    final String minimumAge = configuration.getArchiver().getRetention().getMinimumAge();
+    final String minimumAge = configuration.getHistory().getRetention().getMinimumAge();
     if (minimumAge != null && !CHECKER_MIN_AGE.test(minimumAge)) {
       throw new ExporterException(
           String.format(
@@ -75,7 +75,7 @@ public final class ConfigValidator {
               minimumAge, PATTERN_MIN_AGE_FORMAT));
     }
 
-    final String rolloverInterval = configuration.getArchiver().getRolloverInterval();
+    final String rolloverInterval = configuration.getHistory().getRolloverInterval();
     if (rolloverInterval != null && !CHECK_DATE_INTERVAL.test(rolloverInterval)) {
       throw new ExporterException(
           String.format(
@@ -84,7 +84,7 @@ public final class ConfigValidator {
     }
 
     final String waitPeriodBeforeArchiving =
-        configuration.getArchiver().getWaitPeriodBeforeArchiving();
+        configuration.getHistory().getWaitPeriodBeforeArchiving();
     if (waitPeriodBeforeArchiving != null && !CHECK_DATE_INTERVAL.test(waitPeriodBeforeArchiving)) {
       throw new ExporterException(
           String.format(
@@ -92,14 +92,14 @@ public final class ConfigValidator {
               waitPeriodBeforeArchiving, PATTERN_DATE_INTERVAL_FORMAT));
     }
 
-    final int rolloverBatchSize = configuration.getArchiver().getRolloverBatchSize();
+    final int rolloverBatchSize = configuration.getHistory().getRolloverBatchSize();
     if (rolloverBatchSize < 1) {
       throw new ExporterException(
           "CamundaExporter archiver.rolloverBatchSize must be >= 1. Current value: "
               + rolloverBatchSize);
     }
 
-    final int delayBetweenRuns = configuration.getArchiver().getDelayBetweenRuns();
+    final int delayBetweenRuns = configuration.getHistory().getDelayBetweenRuns();
     if (delayBetweenRuns < 1) {
       throw new ExporterException(
           "CamundaExporter archiver.delayBetweenRuns must be >= 1. Current value: "

@@ -13,6 +13,7 @@ import static org.mockito.Mockito.when;
 import io.camunda.authentication.entity.AuthenticationContext;
 import io.camunda.authentication.entity.CamundaOidcUser;
 import io.camunda.search.entities.MappingEntity;
+import io.camunda.search.entities.RoleEntity;
 import io.camunda.service.AuthorizationServices;
 import io.camunda.service.GroupServices;
 import io.camunda.service.MappingServices;
@@ -72,6 +73,11 @@ public class CamundaOidcUserServiceTest {
                 new MappingEntity(5L, "role", "R1", "role-r1"),
                 new MappingEntity(7L, "group", "G1", "group-g1")));
 
+    final var roleR1 = new RoleEntity(8L, "Role R1");
+    when(roleServices.getRolesByMemberKeys(Set.of(5L, 7L))).thenReturn(List.of(roleR1));
+    when(authorizationServices.getAuthorizedApplications(Set.of("5", "7", "8")))
+        .thenReturn(List.of("*"));
+
     // when
     final OidcUser oidcUser = camundaOidcUserService.loadUser(createOidcUserRequest(claims));
 
@@ -82,10 +88,10 @@ public class CamundaOidcUserServiceTest {
     assertThat(camundaUser.getEmail()).isEqualTo("foo@camunda.test");
     assertThat(camundaUser.getMappingKeys()).isEqualTo(Set.of(5L, 7L));
     final AuthenticationContext authenticationContext = camundaUser.getAuthenticationContext();
-    assertThat(authenticationContext.roles()).isEmpty();
+    assertThat(authenticationContext.roles()).containsAll(Set.of(roleR1));
     assertThat(authenticationContext.groups()).isEmpty();
     assertThat(authenticationContext.tenants()).isEmpty();
-    assertThat(authenticationContext.authorizedApplications()).isEmpty();
+    assertThat(authenticationContext.authorizedApplications()).containsAll(Set.of("*"));
   }
 
   private static OidcUserRequest createOidcUserRequest(final Map<String, Object> claims) {

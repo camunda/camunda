@@ -312,7 +312,8 @@ public final class BpmnJobBehavior {
                     listenerJobProperties,
                     JobKind.TASK_LISTENER,
                     fromTaskListenerEventType(listener.getEventType()),
-                    extractUserTaskHeaders(taskRecordValue, changedAttributes)))
+                    extractUserTaskHeaders(
+                        taskRecordValue, changedAttributes, listener.getJobWorkerProperties())))
         .ifLeft(failure -> incidentBehavior.createIncident(failure, context));
   }
 
@@ -475,8 +476,11 @@ public final class BpmnJobBehavior {
   }
 
   private Map<String, String> extractUserTaskHeaders(
-      final UserTaskRecord userTaskRecord, final List<String> changedAttributes) {
-    final var headers = new HashMap<String, String>();
+      final UserTaskRecord userTaskRecord,
+      final List<String> changedAttributes,
+      final JobWorkerProperties jobWorkerProperties) {
+    final var taskHeaders = jobWorkerProperties.getTaskHeaders();
+    final var headers = new HashMap<>(taskHeaders);
 
     if (StringUtils.isNotEmpty(userTaskRecord.getAction())) {
       headers.put(Protocol.USER_TASK_ACTION_HEADER_NAME, userTaskRecord.getAction());

@@ -111,4 +111,10 @@ public interface ProcessInstanceFilter extends SearchRequestFilter {
 
   /** Filter by variables map */
   ProcessInstanceFilter variables(final Map<String, Object> variableValueFilters);
+
+  /** Filter by batchOperationId */
+  ProcessInstanceFilter batchOperationId(final String batchOperationId);
+
+  /** Filter by batchOperationId using {@link StringProperty} */
+  ProcessInstanceFilter batchOperationId(final Consumer<StringProperty> fn);
 }

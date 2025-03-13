@@ -228,7 +228,9 @@ public class ProcessInstanceAssertj
   }
 
   private Optional<ProcessInstance> findProcessInstance() {
-    return dataSource.findProcessInstances().stream().filter(actual::test).findFirst();
+    return dataSource.findProcessInstances(actual::applyFilter).stream()
+        .filter(actual::test)
+        .findFirst();
   }
 
   private void awaitProcessInstance() {

@@ -9,27 +9,35 @@ package io.camunda.it;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.client.CamundaClient;
 import io.camunda.qa.util.cluster.TestRestOperateClient.ProcessInstanceResult;
-import io.camunda.qa.util.cluster.TestStandaloneCamunda;
+import io.camunda.qa.util.cluster.TestSimpleCamundaApplication;
+import io.camunda.qa.util.multidb.CamundaMultiDBExtension;
 import io.camunda.zeebe.model.bpmn.Bpmn;
-import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
-import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
 import io.camunda.zeebe.util.Either;
 import java.time.Duration;
 import org.awaitility.Awaitility;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
-@ZeebeIntegration
+@Tag("multi-db-test")
+@DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "rdbms")
 public class StandaloneCamundaTest {
 
-  @TestZeebe
-  final TestStandaloneCamunda testStandaloneCamunda =
-      new TestStandaloneCamunda().withUnauthenticatedAccess();
+  private static final TestSimpleCamundaApplication CAMUNDA_APPLICATION =
+      new TestSimpleCamundaApplication().withUnauthenticatedAccess();
+
+  @RegisterExtension
+  private static final CamundaMultiDBExtension EXTENSION =
+      new CamundaMultiDBExtension(CAMUNDA_APPLICATION);
+
+  private static CamundaClient camundaClient;
 
   @Test
   public void shouldCreateAndRetrieveInstance() {
     // given
-    final var camundaClient = testStandaloneCamunda.newClientBuilder().build();
 
     // when
     camundaClient
@@ -54,7 +62,7 @@ public class StandaloneCamundaTest {
             .join();
 
     // then
-    final var operateClient = testStandaloneCamunda.newOperateClient();
+    final var operateClient = CAMUNDA_APPLICATION.newOperateClient();
     Awaitility.await("should receive data from ES")
         .timeout(Duration.ofMinutes(1))
         .untilAsserted(

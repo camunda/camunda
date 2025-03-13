@@ -8,6 +8,11 @@ on:
         description: 'Branch to deploy an image for'
         required: true
         type: string
+      camunda-image-only:
+        description: 'Whether to build the camunda/camunda image only'
+        required: false
+        default: false
+        type: boolean
 
 defaults:
   run:
@@ -21,7 +26,7 @@ env:
 jobs:
   deploy-camunda-docker-saas:
     name: Deploy Camunda Docker image
-    runs-on: ubuntu-latest
+    runs-on: gcp-perf-core-8-default
     timeout-minutes: 20
     permissions:
       contents: 'read'
@@ -62,10 +67,17 @@ jobs:
           echo "image-tag=$version-$branch" >> $GITHUB_OUTPUT
         env:
           BRANCH: ${{ inputs.branch }}
-      - uses: ./.github/actions/build-zeebe
+      - name: Maven Build
+        shell: bash
         id: build-camunda
+        run: |
+          ./mvnw -B -T1C -DskipTests -DskipChecks -Dflatten.skip=true -Dskip.fe.build=false package
+          export ARTIFACT=$(./mvnw -pl dist/ help:evaluate -Dexpression=project.build.finalName -q -DforceStdout)
+          echo "distball=dist/target/${ARTIFACT}.tar.gz" >> $GITHUB_OUTPUT
+          echo "distzip=dist/target/${ARTIFACT}.zip" >> $GITHUB_OUTPUT
       - uses: ./.github/actions/build-platform-docker
         id: build-push-camunda-docker
+        name: Build & Push zeebe-io/camunda
         with:
           repository: europe-docker.pkg.dev/camunda-saas-registry/zeebe-io/camunda
           version: ${{ steps.image-tag.outputs.image-tag }}
@@ -75,6 +87,8 @@ jobs:
           push: true
       - uses: ./.github/actions/build-platform-docker
         id: build-push-zeebe-docker
+        name: Build & Push zeebe-io/zeebe
+        if: ${{ inputs.camunda-image-only == 'false' }}
         with:
           repository: europe-docker.pkg.dev/camunda-saas-registry/zeebe-io/zeebe
           version: ${{ steps.image-tag.outputs.image-tag }}
@@ -84,6 +98,8 @@ jobs:
           push: true
       - uses: ./.github/actions/build-platform-docker
         id: build-push-operate-docker
+        name: Build & Push zeebe-io/operate
+        if: ${{ inputs.camunda-image-only == 'false' }}
         with:
           repository: europe-docker.pkg.dev/camunda-saas-registry/zeebe-io/operate
           version: ${{ steps.image-tag.outputs.image-tag }}
@@ -93,6 +109,8 @@ jobs:
           push: true
       - uses: ./.github/actions/build-platform-docker
         id: build-push-tasklist-docker
+        name: Build & Push zeebe-io/tasklist
+        if: ${{ inputs.camunda-image-only == 'false' }}
         with:
           repository: europe-docker.pkg.dev/camunda-saas-registry/zeebe-io/tasklist
           version: ${{ steps.image-tag.outputs.image-tag }}
@@ -102,6 +120,8 @@ jobs:
           push: true
       - uses: ./.github/actions/build-platform-docker
         id: build-push-optimize-docker
+        name: Build & Push zeebe-io/optimize
+        if: ${{ inputs.camunda-image-only == 'false' }}
         with:
           repository: europe-docker.pkg.dev/camunda-saas-registry/zeebe-io/optimize
           version: ${{ steps.image-tag.outputs.image-tag }}

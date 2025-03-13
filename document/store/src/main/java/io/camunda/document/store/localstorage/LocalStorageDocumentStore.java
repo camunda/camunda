@@ -20,8 +20,7 @@ import io.camunda.document.api.DocumentLink;
 import io.camunda.document.api.DocumentMetadataModel;
 import io.camunda.document.api.DocumentReference;
 import io.camunda.document.api.DocumentStore;
-import io.camunda.document.store.DocumentHashProcessor;
-import io.camunda.document.store.DocumentHashProcessor.HashResult;
+import io.camunda.document.store.InputStreamHashCalculator;
 import io.camunda.zeebe.util.Either;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -128,18 +127,21 @@ public class LocalStorageDocumentStore implements DocumentStore {
       return Either.left(new DocumentAlreadyExists(documentId));
     }
 
-    final HashResult hashResult = DocumentHashProcessor.hash(request.contentInputStream());
-
-    try (final InputStream stream = hashResult.inputStream();
-        final InputStream metadataStream =
-            new ByteArrayInputStream(mapper.writeValueAsBytes(request.metadata()))) {
-      fileHandler.createFile(stream, documentFilePath);
-      fileHandler.createFile(metadataStream, documentMetaDataFilePath);
-    } catch (final IOException e) {
+    try {
+      final var contentHash =
+          InputStreamHashCalculator.streamAndCalculateHash(
+              request.contentInputStream(),
+              stream -> {
+                try (final InputStream metadataStream =
+                    new ByteArrayInputStream(mapper.writeValueAsBytes(request.metadata()))) {
+                  fileHandler.createFile(stream, documentFilePath);
+                  fileHandler.createFile(metadataStream, documentMetaDataFilePath);
+                }
+              });
+      return Either.right(new DocumentReference(documentId, contentHash, request.metadata()));
+    } catch (final Exception e) {
       return Either.left(new UnknownDocumentError(e));
     }
-    return Either.right(
-        new DocumentReference(documentId, hashResult.contentHash(), request.metadata()));
   }
 
   private Either<DocumentError, DocumentContent> getDocumentInternal(final String documentId) {
@@ -184,12 +186,14 @@ public class LocalStorageDocumentStore implements DocumentStore {
       return Either.left(new DocumentNotFound(documentId));
     }
 
-    try (final InputStream inputStream = fileHandler.getInputStream(documentPath)) {
-      final var result = DocumentHashProcessor.hash(inputStream);
-      if (!result.contentHash().equals(contentHash)) {
+    try {
+      final var calculatedHash =
+          InputStreamHashCalculator.streamAndCalculateHash(
+              fileHandler.getInputStream(documentPath));
+      if (!calculatedHash.equals(contentHash)) {
         return Either.left(new DocumentHashMismatch(documentId, contentHash));
       }
-    } catch (final IOException e) {
+    } catch (final Exception e) {
       return Either.left(new UnknownDocumentError(e));
     }
     return Either.right(null);

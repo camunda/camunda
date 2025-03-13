@@ -19,7 +19,7 @@ import io.camunda.search.entities.FormEntity;
 import io.camunda.search.entities.UserTaskEntity;
 import io.camunda.search.entities.UserTaskEntity.UserTaskState;
 import io.camunda.search.entities.VariableEntity;
-import io.camunda.search.exception.NotFoundException;
+import io.camunda.search.exception.CamundaSearchException;
 import io.camunda.search.filter.Operation;
 import io.camunda.search.filter.UserTaskFilter;
 import io.camunda.search.query.SearchQueryResult;
@@ -234,8 +234,9 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
     // Mock the behavior for an invalid userTaskKey to throw NotFoundException
     when(userTaskServices.getByKey(INVALID_USER_TASK_KEY))
         .thenThrow(
-            new NotFoundException(
-                String.format("User Task with key %d not found", INVALID_USER_TASK_KEY)));
+            new CamundaSearchException(
+                String.format("User Task with key %d not found", INVALID_USER_TASK_KEY),
+                CamundaSearchException.Reason.NOT_FOUND));
     when(processCache.getUserTaskName(any())).thenReturn("name");
     final var processCacheItem = mock(ProcessCacheItem.class);
     when(processCacheItem.getFlowNodeName(any())).thenReturn("name");
@@ -564,7 +565,9 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
   @Test
   public void shouldReturn404ForFormInvalidUserTaskKey() {
     when(userTaskServices.getUserTaskForm(INVALID_USER_TASK_KEY))
-        .thenThrow(new NotFoundException("User Task with key 999 not found"));
+        .thenThrow(
+            new CamundaSearchException(
+                "User Task with key 999 not found", CamundaSearchException.Reason.NOT_FOUND));
     webClient
         .get()
         .uri("/v2/user-tasks/{userTaskKey}/form", INVALID_USER_TASK_KEY)

@@ -14,7 +14,7 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.search.entities.ProcessInstanceEntity;
 import io.camunda.search.entities.ProcessInstanceEntity.ProcessInstanceState;
-import io.camunda.search.exception.NotFoundException;
+import io.camunda.search.exception.CamundaSearchException;
 import io.camunda.search.filter.Operation;
 import io.camunda.search.filter.ProcessInstanceFilter;
 import io.camunda.search.query.ProcessInstanceQuery;
@@ -414,8 +414,9 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
     final var invalidProcesInstanceKey = 100L;
     when(processInstanceServices.getByKey(invalidProcesInstanceKey))
         .thenThrow(
-            new NotFoundException(
-                String.format("Process Instance with key %d not found", invalidProcesInstanceKey)));
+            new CamundaSearchException(
+                String.format("Process Instance with key %d not found", invalidProcesInstanceKey),
+                CamundaSearchException.Reason.NOT_FOUND));
     // when / then
     webClient
         .get()

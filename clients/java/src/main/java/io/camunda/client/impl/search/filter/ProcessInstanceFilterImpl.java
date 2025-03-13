@@ -247,6 +247,20 @@ public class ProcessInstanceFilterImpl
   }
 
   @Override
+  public ProcessInstanceFilter batchOperationId(final String batchOperationId) {
+    batchOperationId(b -> b.eq(batchOperationId));
+    return this;
+  }
+
+  @Override
+  public ProcessInstanceFilter batchOperationId(final Consumer<StringProperty> fn) {
+    final StringProperty property = new StringPropertyImpl();
+    fn.accept(property);
+    filter.setBatchOperationId(property.build());
+    return this;
+  }
+
+  @Override
   protected io.camunda.client.protocol.rest.ProcessInstanceFilter getSearchRequestProperty() {
     return filter;
   }

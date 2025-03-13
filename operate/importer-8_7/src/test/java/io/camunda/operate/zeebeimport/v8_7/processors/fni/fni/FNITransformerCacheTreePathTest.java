@@ -45,7 +45,13 @@ public class FNITransformerCacheTreePathTest {
   @ParameterizedTest
   @EnumSource(
       value = BpmnElementType.class,
-      names = {"SUB_PROCESS", "PROCESS", "EVENT_SUB_PROCESS", "MULTI_INSTANCE_BODY"},
+      names = {
+        "SUB_PROCESS",
+        "PROCESS",
+        "EVENT_SUB_PROCESS",
+        "MULTI_INSTANCE_BODY",
+        "AD_HOC_SUB_PROCESS"
+      },
       mode = Mode.INCLUDE)
   void shouldCacheContainerFNI(final BpmnElementType elementType) {
     // given
@@ -63,7 +69,13 @@ public class FNITransformerCacheTreePathTest {
   @ParameterizedTest
   @EnumSource(
       value = BpmnElementType.class,
-      names = {"SUB_PROCESS", "PROCESS", "EVENT_SUB_PROCESS", "MULTI_INSTANCE_BODY"},
+      names = {
+        "SUB_PROCESS",
+        "PROCESS",
+        "EVENT_SUB_PROCESS",
+        "MULTI_INSTANCE_BODY",
+        "AD_HOC_SUB_PROCESS"
+      },
       mode = Mode.EXCLUDE)
   void shouldNotCacheNonContainerFNI(final BpmnElementType elementType) {
     // given

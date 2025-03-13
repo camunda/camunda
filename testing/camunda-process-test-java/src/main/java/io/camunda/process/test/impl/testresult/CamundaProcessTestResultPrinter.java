@@ -17,6 +17,7 @@ package io.camunda.process.test.impl.testresult;
 
 import io.camunda.client.api.search.response.FlowNodeInstance;
 import io.camunda.client.api.search.response.Incident;
+import io.camunda.client.api.search.response.ProcessInstance;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -56,10 +57,14 @@ public class CamundaProcessTestResultPrinter {
   }
 
   private static String formatProcessInstance(final ProcessInstanceResult result) {
+    final ProcessInstance processInstance = result.getProcessInstance();
+
     final String formattedProcessInstance =
         String.format(
-            "Process instance: %d [process-id: '%s']",
-            result.getProcessInstanceKey(), result.getProcessId());
+            "Process instance: %d [process-id: '%s', state: %s]",
+            processInstance.getProcessInstanceKey(),
+            processInstance.getProcessDefinitionId(),
+            processInstance.getState().name().toLowerCase());
 
     return formattedProcessInstance
         + "\n\n"

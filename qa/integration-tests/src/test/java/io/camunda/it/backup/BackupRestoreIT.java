@@ -60,6 +60,18 @@ import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
+/**
+ * This test is on purpose no {@link io.camunda.qa.util.multidb.MultiDbTest}, as we have special
+ * requirements on ES and OS, and need direct access.
+ *
+ * <ul>
+ *   <li>We need to configure ES/OS to allow local repositories.
+ *   <li>We need to create snapshot repositories with specific ES/OS clients.
+ *   <li>We need to create snapshots of the Zeebe exporter indices
+ * </ul>
+ *
+ * Furthermore, this test will not apply to RDBMS.
+ */
 @Testcontainers
 @ZeebeIntegration
 public class BackupRestoreIT {

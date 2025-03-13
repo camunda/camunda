@@ -10,6 +10,29 @@ import {logger} from 'modules/logger';
 import {authenticationStore} from 'modules/stores/authentication';
 import {mergePathname} from './mergePathname';
 
+type RequestError =
+  | {
+      variant: 'network-error';
+      response: null;
+      networkError: unknown;
+    }
+  | {
+      variant: 'failed-response';
+      response: Response;
+      networkError: null;
+    };
+
+type RequestResult<T> = Promise<
+  | {
+      response: T;
+      error: null;
+    }
+  | {
+      response: null;
+      error: RequestError;
+    }
+>;
+
 type RequestParams = {
   url: string;
   method?: RequestInit['method'];
@@ -17,6 +40,43 @@ type RequestParams = {
   body?: string | unknown;
   signal?: RequestInit['signal'];
 };
+
+async function requestWithThrow<T>({
+  url,
+  method,
+  body,
+  headers,
+  signal,
+}: RequestParams): RequestResult<T> {
+  try {
+    const response = await request({url, method, body, headers, signal});
+
+    if (response.ok) {
+      return {
+        response: (await response.json()) as T,
+        error: null,
+      };
+    }
+
+    return {
+      response: null,
+      error: {
+        response,
+        networkError: null,
+        variant: 'failed-response',
+      },
+    };
+  } catch (error) {
+    return {
+      response: null,
+      error: {
+        response: null,
+        networkError: error,
+        variant: 'network-error',
+      },
+    };
+  }
+}
 
 async function request({url, method, body, headers, signal}: RequestParams) {
   const csrfToken = sessionStorage.getItem('X-CSRF-TOKEN');
@@ -119,4 +179,5 @@ async function requestAndParse<T>(
   }
 }
 
-export {request, requestAndParse};
+export {request, requestAndParse, requestWithThrow};
+export type {RequestError, RequestResult};

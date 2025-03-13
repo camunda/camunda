@@ -17,7 +17,7 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.search.clients.MappingSearchClient;
 import io.camunda.search.entities.MappingEntity;
-import io.camunda.search.exception.NotFoundException;
+import io.camunda.search.exception.CamundaSearchException;
 import io.camunda.search.filter.MappingFilter;
 import io.camunda.search.filter.MappingFilter.Claim;
 import io.camunda.search.query.MappingQuery;
@@ -138,7 +138,8 @@ public class MappingServicesTest {
     when(client.searchMappings(any())).thenReturn(new SearchQueryResult(0, List.of(), null, null));
 
     // when / then
-    assertThrows(NotFoundException.class, () -> services.getMapping(1L));
+    final var exception = assertThrows(CamundaSearchException.class, () -> services.getMapping(1L));
+    assertThat(exception.getReason()).isEqualTo(CamundaSearchException.Reason.NOT_FOUND);
   }
 
   @Test

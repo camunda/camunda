@@ -17,6 +17,9 @@ package io.camunda.process.test.impl.assertions;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.search.SearchRequestPage;
+import io.camunda.client.api.search.filter.FlownodeInstanceFilter;
+import io.camunda.client.api.search.filter.IncidentFilter;
+import io.camunda.client.api.search.filter.ProcessInstanceFilter;
 import io.camunda.client.api.search.response.FlowNodeInstance;
 import io.camunda.client.api.search.response.Incident;
 import io.camunda.client.api.search.response.ProcessInstance;
@@ -34,11 +37,16 @@ public class CamundaDataSource {
     this.client = client;
   }
 
-  public List<FlowNodeInstance> getFlowNodeInstancesByProcessInstanceKey(
+  public List<FlowNodeInstance> findFlowNodeInstancesByProcessInstanceKey(
       final long processInstanceKey) {
+    return findFlowNodeInstances(filter -> filter.processInstanceKey(processInstanceKey));
+  }
+
+  public List<FlowNodeInstance> findFlowNodeInstances(
+      final Consumer<FlownodeInstanceFilter> filter) {
     return client
         .newFlownodeInstanceQuery()
-        .filter(filter -> filter.processInstanceKey(processInstanceKey))
+        .filter(filter)
         .sort(sort -> sort.startDate().asc())
         .page(DEFAULT_PAGE_REQUEST)
         .send()
@@ -46,7 +54,7 @@ public class CamundaDataSource {
         .items();
   }
 
-  public List<Variable> getVariablesByProcessInstanceKey(final long processInstanceKey) {
+  public List<Variable> findVariablesByProcessInstanceKey(final long processInstanceKey) {
     return client
         .newVariableQuery()
         .filter(filter -> filter.processInstanceKey(processInstanceKey))
@@ -57,8 +65,13 @@ public class CamundaDataSource {
   }
 
   public List<ProcessInstance> findProcessInstances() {
+    return findProcessInstances(filter -> {});
+  }
+
+  public List<ProcessInstance> findProcessInstances(final Consumer<ProcessInstanceFilter> filter) {
     return client
         .newProcessInstanceQuery()
+        .filter(filter)
         .sort(sort -> sort.startDate().asc())
         .page(DEFAULT_PAGE_REQUEST)
         .send()
@@ -66,10 +79,10 @@ public class CamundaDataSource {
         .items();
   }
 
-  public List<Incident> getIncidentsByProcessInstanceKey(final long processInstanceKey) {
+  public List<Incident> findIncidents(final Consumer<IncidentFilter> filter) {
     return client
         .newIncidentQuery()
-        .filter(filter -> filter.processInstanceKey(processInstanceKey))
+        .filter(filter)
         .sort(sort -> sort.creationTime().asc())
         .page(DEFAULT_PAGE_REQUEST)
         .send()

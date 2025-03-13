@@ -62,8 +62,7 @@ public class CamundaProcessTestResultCollector {
 
     final long processInstanceKey = processInstance.getProcessInstanceKey();
 
-    result.setProcessInstanceKey(processInstanceKey);
-    result.setProcessId(processInstance.getProcessDefinitionId());
+    result.setProcessInstance(processInstance);
     result.setVariables(collectVariables(processInstanceKey));
     result.setOpenIncidents(collectOpenIncidents(processInstanceKey));
     result.setActiveFlowNodeInstances(collectActiveFlowNodeInstances(processInstanceKey));
@@ -72,20 +71,18 @@ public class CamundaProcessTestResultCollector {
   }
 
   private Map<String, String> collectVariables(final long processInstanceKey) {
-    return dataSource.getVariablesByProcessInstanceKey(processInstanceKey).stream()
+    return dataSource.findVariablesByProcessInstanceKey(processInstanceKey).stream()
         .collect(Collectors.toMap(Variable::getName, Variable::getValue));
   }
 
   private List<Incident> collectOpenIncidents(final long processInstanceKey) {
-    return dataSource.getIncidentsByProcessInstanceKey(processInstanceKey).stream()
-        .filter(incident -> incident.getState().equals(IncidentState.ACTIVE))
-        .collect(Collectors.toList());
+    return dataSource.findIncidents(
+        filter -> filter.processInstanceKey(processInstanceKey).state(IncidentState.ACTIVE));
   }
 
   private List<FlowNodeInstance> collectActiveFlowNodeInstances(final long processInstanceKey) {
-    return dataSource.getFlowNodeInstancesByProcessInstanceKey(processInstanceKey).stream()
-        .filter(
-            flowNodeInstance -> flowNodeInstance.getState().equals(FlowNodeInstanceState.ACTIVE))
-        .collect(Collectors.toList());
+    return dataSource.findFlowNodeInstances(
+        filter ->
+            filter.processInstanceKey(processInstanceKey).state(FlowNodeInstanceState.ACTIVE));
   }
 }

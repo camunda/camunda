@@ -512,6 +512,7 @@ function getSortParams(search?: string): {
 }
 
 export {
+  getProcessIds,
   getProcessInstanceFilters,
   parseIds,
   parseFilterTime,

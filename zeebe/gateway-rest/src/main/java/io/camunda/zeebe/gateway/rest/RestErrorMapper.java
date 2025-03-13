@@ -15,7 +15,6 @@ import io.camunda.document.api.DocumentError.InvalidInput;
 import io.camunda.document.api.DocumentError.OperationNotSupported;
 import io.camunda.document.api.DocumentError.StoreDoesNotExist;
 import io.camunda.search.exception.CamundaSearchException;
-import io.camunda.search.exception.NotFoundException;
 import io.camunda.service.DocumentServices.DocumentException;
 import io.camunda.service.exception.CamundaBrokerException;
 import io.camunda.service.exception.ForbiddenException;
@@ -28,7 +27,6 @@ import io.camunda.zeebe.broker.client.api.RequestRetriesExhaustedException;
 import io.camunda.zeebe.broker.client.api.dto.BrokerError;
 import io.camunda.zeebe.broker.client.api.dto.BrokerRejection;
 import io.camunda.zeebe.msgpack.spec.MsgpackException;
-import io.camunda.zeebe.protocol.record.RejectionType;
 import io.netty.channel.ConnectTimeoutException;
 import jakarta.validation.constraints.NotNull;
 import java.net.ConnectException;
@@ -92,18 +90,11 @@ public class RestErrorMapper {
       return null;
     }
     return switch (error) {
-      case final NotFoundException nfe:
-        REST_GATEWAY_LOGGER.trace(
-            "Expected to handle REST request, but resource was not found", nfe);
-        yield createProblemDetail(
-            HttpStatus.NOT_FOUND, nfe.getMessage(), RejectionType.NOT_FOUND.name());
       case final ForbiddenException fe:
         REST_GATEWAY_LOGGER.trace("Expected to handle REST request, but was forbidden", fe);
         yield createProblemDetail(HttpStatus.FORBIDDEN, fe.getMessage(), fe.getClass().getName());
       case final CamundaSearchException cse:
-        REST_GATEWAY_LOGGER.debug(
-            "Expected to handle REST request, but search request failed", cse);
-        yield cse.getCause() != null ? mapErrorToProblem(cse.getCause(), rejectionMapper) : null;
+        yield mapCamundaSearchExceptionToProblem(cse);
       case final CamundaBrokerException cse:
         REST_GATEWAY_LOGGER.debug(
             "Expected to handle REST request, but broker request failed", cse);
@@ -326,5 +317,51 @@ public class RestErrorMapper {
   public static ResponseEntity<Object> mapDocumentHandlingExceptionToResponse(
       final DocumentException e) {
     return mapProblemToResponse(mapDocumentHandlingExceptionToProblem(e));
+  }
+
+  public static ProblemDetail mapCamundaSearchExceptionToProblem(CamundaSearchException cse) {
+    final CamundaSearchException.Reason reason = cse.getReason();
+    final String title = reason.name();
+    final String errorMessage = cse.getMessage();
+    final String logPrefix = "Expected to handle REST request, but: {}";
+    switch (reason) {
+      case NOT_FOUND:
+        {
+          REST_GATEWAY_LOGGER.debug(logPrefix, errorMessage);
+          return createProblemDetail(HttpStatus.NOT_FOUND, errorMessage, title);
+        }
+      case NOT_UNIQUE:
+        {
+          REST_GATEWAY_LOGGER.debug(logPrefix, errorMessage);
+          return createProblemDetail(HttpStatus.CONFLICT, errorMessage, title);
+        }
+      case CONNECTION_FAILED:
+        {
+          final String detail =
+              errorMessage + ". The search client could not connect to the search server.";
+          REST_GATEWAY_LOGGER.debug(logPrefix, detail);
+          return createProblemDetail(HttpStatus.SERVICE_UNAVAILABLE, detail, title);
+        }
+      case SEARCH_SERVER_FAILED:
+        {
+          final String detail =
+              errorMessage + ". The search server was unable to process the request.";
+          REST_GATEWAY_LOGGER.debug(logPrefix, detail);
+          return createProblemDetail(HttpStatus.INTERNAL_SERVER_ERROR, detail, title);
+        }
+      case SEARCH_CLIENT_FAILED:
+        {
+          final String detail =
+              errorMessage + ". The search client was unable to process the request.";
+          REST_GATEWAY_LOGGER.debug(logPrefix, detail);
+          return createProblemDetail(HttpStatus.INTERNAL_SERVER_ERROR, detail, title);
+        }
+      default:
+        {
+          REST_GATEWAY_LOGGER.debug(logPrefix, errorMessage);
+          return createProblemDetail(
+              HttpStatus.INTERNAL_SERVER_ERROR, errorMessage, "INTERNAL_ERROR");
+        }
+    }
   }
 }

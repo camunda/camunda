@@ -98,9 +98,6 @@ public class CredentialsProviderConfiguration {
   private void maybeConfigureIdentityProviderSSLConfig(
       final OAuthCredentialsProviderBuilder builder,
       final CamundaClientProperties camundaClientProperties) {
-    if (camundaClientProperties.getAuth() == null) {
-      return;
-    }
     if (camundaClientProperties.getAuth().getKeystorePath() != null) {
       final Path keyStore = Paths.get(camundaClientProperties.getAuth().getKeystorePath());
       if (Files.exists(keyStore)) {

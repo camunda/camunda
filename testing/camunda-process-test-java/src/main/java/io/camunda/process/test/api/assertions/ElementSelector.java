@@ -15,6 +15,7 @@
  */
 package io.camunda.process.test.api.assertions;
 
+import io.camunda.client.api.search.filter.FlownodeInstanceFilter;
 import io.camunda.client.api.search.response.FlowNodeInstance;
 
 /** A selector for BPMN elements. */
@@ -38,4 +39,12 @@ public interface ElementSelector {
   default String describe() {
     return toString();
   }
+
+  /**
+   * Applies the given filter to limit the search of element instances that match the selector.
+   * Default: no filtering.
+   *
+   * @param filter the filter used to limit the element instance search
+   */
+  default void applyFilter(final FlownodeInstanceFilter filter) {}
 }

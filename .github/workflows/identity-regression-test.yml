@@ -35,7 +35,9 @@ jobs:
       fail-fast: false
       matrix:
         env: [ 'local' ]
-        case: [ 'identity-regression-test.http' ]
+        case:
+          - 'identity-regression-test.http'
+          - 'identity-tenant-regression-test.http'
 
     runs-on: ubuntu-latest
     environment: '${{ matrix.env }}-http-tests'

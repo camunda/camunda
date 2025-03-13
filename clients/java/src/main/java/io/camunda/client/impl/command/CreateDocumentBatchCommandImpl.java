@@ -27,6 +27,7 @@ import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
 import io.camunda.client.impl.response.DocumentReferenceBatchResponseImpl;
 import io.camunda.client.impl.util.DocumentBuilder;
+import io.camunda.client.impl.util.ParseUtil;
 import io.camunda.client.protocol.rest.DocumentCreationBatchResponse;
 import java.io.InputStream;
 import java.time.Duration;
@@ -91,7 +92,7 @@ public class CreateDocumentBatchCommandImpl implements CreateDocumentBatchComman
           document.getMetadata().setProcessDefinitionId(processDefinitionId);
         }
         if (processInstanceKey != null) {
-          document.getMetadata().setProcessInstanceKey(processInstanceKey);
+          document.getMetadata().setProcessInstanceKey(ParseUtil.keyToString(processInstanceKey));
         }
         final String metadataString = jsonMapper.toJson(document.getMetadata());
         final MultipartPart part =

@@ -123,6 +123,7 @@ public class MappingAppliersTest {
     final var mappingRecord =
         new MappingRecord()
             .setMappingKey(mappingKey)
+            .setId(mappingId)
             .setClaimName(claimName)
             .setClaimValue(claimValue)
             .setName(claimName);
@@ -140,12 +141,12 @@ public class MappingAppliersTest {
     // create tenant
     final long tenantKey = 3L;
     final var tenantId = "tenant";
-    mappingState.addTenant(mappingKey, tenantId);
+    mappingState.addTenant(mappingId, tenantId);
     final var tenant =
         new TenantRecord()
             .setTenantId(tenantId)
             .setTenantKey(tenantKey)
-            .setEntityKey(mappingKey)
+            .setEntityId(mappingId)
             .setEntityType(EntityType.MAPPING);
     tenantState.createTenant(tenant);
     tenantState.addEntity(tenant);

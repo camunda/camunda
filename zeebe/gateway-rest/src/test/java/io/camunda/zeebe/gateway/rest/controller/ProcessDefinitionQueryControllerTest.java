@@ -14,7 +14,9 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.search.entities.FormEntity;
 import io.camunda.search.entities.ProcessDefinitionEntity;
-import io.camunda.search.exception.NotFoundException;
+import io.camunda.search.entities.ProcessDefinitionFlowNodeStatisticsEntity;
+import io.camunda.search.exception.CamundaSearchException;
+import io.camunda.search.filter.ProcessDefinitionStatisticsFilter;
 import io.camunda.search.query.ProcessDefinitionQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.query.SearchQueryResult.Builder;
@@ -152,7 +154,10 @@ public class ProcessDefinitionQueryControllerTest extends RestControllerTest {
   public void shouldReturn404ForInvalidProcessDefinitionKey() {
     // given
     when(processDefinitionServices.getByKey(17L))
-        .thenThrow(new NotFoundException("Process definition with key 17 not found"));
+        .thenThrow(
+            new CamundaSearchException(
+                "Process definition with key 17 not found",
+                CamundaSearchException.Reason.NOT_FOUND));
     // when / then
     webClient
         .get()
@@ -238,6 +243,54 @@ public class ProcessDefinitionQueryControllerTest extends RestControllerTest {
   }
 
   @Test
+  public void shouldGetFlowNodeStatistics() {
+    // given
+    final long processDefinitionKey = 1L;
+    final var stats =
+        List.of(new ProcessDefinitionFlowNodeStatisticsEntity("node1", 1L, 1L, 1L, 1L));
+    when(processDefinitionServices.flowNodeStatistics(any())).thenReturn(stats);
+    final var request =
+        """
+            {
+              "filter": {
+                "hasIncident": true
+              }
+            }""";
+    final var response =
+        """
+            [
+              {
+                "flowNodeId": "node1",
+                "active": 1,
+                "canceled": 1,
+                "incidents": 1,
+                "completed": 1
+              }
+            ]""";
+
+    // when / then
+    webClient
+        .post()
+        .uri(PROCESS_DEFINITION_URL + "1/statistics/flownode-instances")
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isOk()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_JSON)
+        .expectBody()
+        .json(response);
+
+    verify(processDefinitionServices)
+        .flowNodeStatistics(
+            new ProcessDefinitionStatisticsFilter.Builder(processDefinitionKey)
+                .hasIncident(true)
+                .build());
+  }
+
+  @Test
   public void shouldGetProcessDefinitionXml() {
     // given
     when(processDefinitionServices.getProcessDefinitionXml(23L)).thenReturn(Optional.of("<xml/>"));
@@ -297,7 +350,10 @@ public class ProcessDefinitionQueryControllerTest extends RestControllerTest {
   @Test
   public void shouldReturn404ForFormInvaliProcessKey() throws Exception {
     when(processDefinitionServices.getByKey(999L))
-        .thenThrow(new NotFoundException("Process definition with key 999 not found"));
+        .thenThrow(
+            new CamundaSearchException(
+                "Process definition with key 999 not found",
+                CamundaSearchException.Reason.NOT_FOUND));
     webClient
         .get()
         .uri(PROCESS_DEFINITION_URL + "999/form")

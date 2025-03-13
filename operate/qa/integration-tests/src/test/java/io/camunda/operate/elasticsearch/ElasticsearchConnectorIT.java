@@ -15,6 +15,7 @@ import io.camunda.operate.connect.ElasticsearchConnector;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.util.TestPlugin;
 import io.camunda.search.connect.plugin.PluginConfiguration;
+import io.camunda.webapps.schema.SupportedVersions;
 import io.camunda.zeebe.util.FileUtil;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -23,7 +24,6 @@ import java.nio.file.Path;
 import net.bytebuddy.ByteBuddy;
 import org.elasticsearch.action.admin.cluster.health.ClusterHealthRequest;
 import org.elasticsearch.client.RequestOptions;
-import org.elasticsearch.client.RestClient;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -48,7 +48,7 @@ public class ElasticsearchConnectorIT {
   static ElasticsearchContainer elasticsearch =
       new ElasticsearchContainer(
               DockerImageName.parse("docker.elastic.co/elasticsearch/elasticsearch")
-                  .withTag(RestClient.class.getPackage().getImplementationVersion()))
+                  .withTag(SupportedVersions.SUPPORTED_ELASTICSEARCH_VERSION))
           .withEnv("xpack.security.enabled", "false")
           .withEnv("xpack.security.http.ssl.enabled", "false");
 

@@ -18,6 +18,7 @@ import io.camunda.service.MappingServices;
 import io.camunda.service.MappingServices.MappingDTO;
 import io.camunda.zeebe.gateway.protocol.rest.MappingRuleCreateRequest;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
+import io.camunda.zeebe.gateway.rest.validator.IdentifierPatterns;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.MappingRecord;
 import java.util.concurrent.CompletableFuture;
 import org.junit.jupiter.api.BeforeEach;
@@ -41,7 +42,7 @@ public class MappingControllerTest extends RestControllerTest {
   }
 
   @ParameterizedTest
-  @ValueSource(strings = {"foo", "Foo", "foo123"})
+  @ValueSource(strings = {"foo", "Foo", "foo123", "foo_", "foo.", "foo@"})
   void createMappingShouldReturnCreated(final String id) {
     // given
     final var dto = validCreateMappingRequest();
@@ -226,8 +227,7 @@ public class MappingControllerTest extends RestControllerTest {
       strings = {
         "foo~", "foo!", "foo#", "foo$", "foo%", "foo^", "foo&", "foo*", "foo(", "foo)", "foo=",
         "foo+", "foo{", "foo[", "foo}", "foo]", "foo|", "foo\\", "foo:", "foo;", "foo\"", "foo'",
-        "foo<", "foo>", "foo,", "foo?", "foo/", "foo ", "foo@", "foo_", "foo.", "foo\t", "foo\n",
-        "foo\r",
+        "foo<", "foo>", "foo,", "foo?", "foo/", "foo ", "foo\t", "foo\n", "foo\r"
       })
   void shouldRejectMappingCreationWithIllegalCharactersInId(final String id) {
     // given
@@ -246,10 +246,10 @@ public class MappingControllerTest extends RestControllerTest {
               "type": "about:blank",
               "status": 400,
               "title": "INVALID_ARGUMENT",
-              "detail": "The provided id contains illegal characters. It must match the pattern '[a-zA-Z0-9]+'.",
+              "detail": "The provided id contains illegal characters. It must match the pattern '%s'.",
               "instance": "%s"
             }"""
-            .formatted(MAPPING_RULES_PATH));
+            .formatted(IdentifierPatterns.ID_PATTERN, MAPPING_RULES_PATH));
     verifyNoInteractions(mappingServices);
   }
 

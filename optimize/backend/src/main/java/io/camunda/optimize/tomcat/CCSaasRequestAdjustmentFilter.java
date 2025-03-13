@@ -48,6 +48,13 @@ public class CCSaasRequestAdjustmentFilter implements Filter {
       return;
     }
 
+    /* serve static external resource (Optimize only) */
+    if (ExternalResourcesUtil.shouldServeStaticResource(httpRequest, clusterId)) {
+      ExternalResourcesUtil.serveStaticResource(
+          httpRequest, httpResponse, servletContext, clusterId);
+      return;
+    }
+
     /* Strip cluster ID subpath */
     if (!clusterId.isEmpty() && requestURI.startsWith(clusterIdPath())) {
       requestURI = requestURI.substring(clusterIdPath().length());
@@ -58,12 +65,6 @@ public class CCSaasRequestAdjustmentFilter implements Filter {
     if (requestURI.startsWith("/external/api/")) {
       requestURI = requestURI.replaceFirst("/external/api/", "/api/external/");
       shallForward = true;
-    }
-
-    /* serve static external resource (Optimize only) */
-    if (ExternalResourcesUtil.shouldServeStaticResource(httpRequest)) {
-      ExternalResourcesUtil.serveStaticResource(httpRequest, httpResponse, servletContext);
-      shallForward = false;
     }
 
     if (shallForward) {

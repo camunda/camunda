@@ -50,9 +50,13 @@ const DeleteTenantModal: FC<UseEntityModalProps<DeleteTenantParams>> = ({
       confirmLabel={t("deleteTenant")}
     >
       <p>
-        <Translate>Are you sure you want to delete</Translate>{" "}
-        <strong>{tenantId}</strong>?{" "}
-        <Translate>This action cannot be undone.</Translate>
+        <Translate
+          i18nKey="deleteTenantConfirmation"
+          values={{ tenantId: tenantId }}
+        >
+          Are you sure you want to delete <strong>{tenantId}</strong>? This
+          action cannot be undone.
+        </Translate>
       </p>
     </Modal>
   );
