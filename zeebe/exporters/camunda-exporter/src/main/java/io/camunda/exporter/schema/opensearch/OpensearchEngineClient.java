@@ -214,11 +214,18 @@ public class OpensearchEngineClient implements SearchEngineClient {
                 policyName, deletionMinAge, response.getBody().get().bodyAsString()));
       }
 
-    } catch (final IOException | OpenSearchException e) {
+    } catch (final IOException | OpenSearchException exception) {
+      final String exceptionMessage = exception.getMessage();
+      if (exceptionMessage.contains("already exists")) {
+        LOG.warn(
+            "Expected to create ISM policy with name '{}', but failed with: '{}'.",
+            policyName,
+            exceptionMessage);
+        return;
+      }
       final var errMsg =
           String.format("Failed to create index state management policy [%s]", policyName);
-      LOG.error(errMsg, e);
-      throw new OpensearchExporterException(errMsg, e);
+      throw new OpensearchExporterException(errMsg, exception);
     }
   }
 

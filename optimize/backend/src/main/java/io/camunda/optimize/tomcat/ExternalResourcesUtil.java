@@ -41,31 +41,40 @@ public class ExternalResourcesUtil extends HttpServlet {
   public static void serveStaticResource(
       final HttpServletRequest request,
       final HttpServletResponse response,
-      final ServletContext servletContext)
+      final ServletContext servletContext,
+      final String clusterId)
       throws ServletException, IOException {
     String filename = request.getRequestURI().replaceFirst("/external", ""); // e.g., /someFile.txt
     filename = stripContextPath(filename, request);
+    filename = stripClusterIdPath(filename, clusterId);
 
-    if ("/".equals(filename)) {
+    if ("/".equals(filename) || filename.isEmpty()) {
       filename = INDEX_FILE;
     }
 
     /* serve file */
-    final InputStream fileStream = servletContext.getResourceAsStream(filename);
-    final String mimeType = getMimeType(filename);
-    response.setContentType(mimeType != null ? mimeType : DEFAULT_MIME_TYPE);
-    StreamUtils.copy(fileStream, response.getOutputStream());
-    response.flushBuffer();
+    try {
+      final InputStream fileStream = servletContext.getResourceAsStream(filename);
+      final String mimeType = getMimeType(filename);
+      response.setContentType(mimeType != null ? mimeType : DEFAULT_MIME_TYPE);
+      StreamUtils.copy(fileStream, response.getOutputStream());
+      response.flushBuffer();
+    } catch (Exception exception) {
+      throw new IOException("Cannot stream external resource: " + filename, exception);
+    }
   }
 
-  public static boolean shouldServeStaticResource(final HttpServletRequest request) {
+  public static boolean shouldServeStaticResource(
+      final HttpServletRequest request, final String clusterId) {
     String requestURI = request.getRequestURI();
     requestURI = stripContextPath(requestURI, request);
+    requestURI = stripClusterIdPath(requestURI, clusterId);
     final boolean result =
         requestURI != null
             && requestURI.startsWith("/external")
             && !requestURI.startsWith("/external/api")
             && "GET".equals(request.getMethod());
+
     return result;
   }
 
@@ -93,5 +102,30 @@ public class ExternalResourcesUtil extends HttpServlet {
       newName = filename.substring(contextPath.length());
     }
     return newName;
+  }
+
+  private static String stripClusterIdPath(final String filename, final String clusterId) {
+    if (clusterId == null || clusterId.isEmpty()) {
+      return filename;
+    }
+
+    final String clusterPath = "/" + clusterId;
+    String newName = filename;
+    if (filename.startsWith(clusterPath)) {
+      newName = filename.substring(clusterPath.length());
+    }
+    return newName;
+  }
+
+  public static void serveStaticResource(
+      final HttpServletRequest request,
+      final HttpServletResponse response,
+      final ServletContext servletContext)
+      throws ServletException, IOException {
+    serveStaticResource(request, response, servletContext, null);
+  }
+
+  public static boolean shouldServeStaticResource(final HttpServletRequest request) {
+    return shouldServeStaticResource(request, null);
   }
 }

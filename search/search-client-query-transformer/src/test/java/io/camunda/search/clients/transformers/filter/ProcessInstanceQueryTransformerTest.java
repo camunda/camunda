@@ -342,6 +342,74 @@ public final class ProcessInstanceQueryTransformerTest extends AbstractTransform
         ((SearchBoolQuery) queryVariant).must().get(1).queryOption(), "tenantId", "tenant");
   }
 
+   @Test
+  public void shouldQueryByErrorMessage() {
+    // given
+    final String expectedError = "expected error";
+    final ProcessInstanceFilter filter =
+        FilterBuilders.processInstance(
+            f -> f.errorMessageOperations(List.of(Operation.eq(expectedError))));
+
+    // when: transform the filter into a SearchQuery
+    final var searchRequest = transformQuery(filter);
+
+    // then: the overall query should be a SearchBoolQuery with two must clauses.
+    final var queryVariant = searchRequest.queryOption();
+    assertThat(queryVariant).isInstanceOf(SearchBoolQuery.class);
+    final SearchBoolQuery boolQuery = (SearchBoolQuery) queryVariant;
+
+    // Expect two must clauses: one for joinRelation and one for errorMessage.
+    assertThat(boolQuery.must()).hasSize(2);
+
+    // First must clause: joinRelation term query.
+    assertIsSearchTermQuery(
+        boolQuery.must().get(0).queryOption(), "joinRelation", "processInstance");
+
+    // Second must clause: should be a has_child query for errorMessage.
+    assertThat(boolQuery.must().get(1).queryOption())
+        .isInstanceOf(SearchHasChildQuery.class)
+        .satisfies(
+            queryOption -> {
+              // Cast the queryOption to SearchHasChildQuery
+              final SearchHasChildQuery hasChildQuery = (SearchHasChildQuery) queryOption;
+              assertThat(hasChildQuery.type()).isEqualTo("activity");
+              // Assert that the inner query is a match query on "errorMessage" with our
+              // expected value.
+              assertThat(hasChildQuery.query().queryOption())
+                  .isInstanceOfSatisfying(
+                      SearchMatchQuery.class,
+                      (searchMatchQuery) -> {
+                        assertThat(searchMatchQuery.field()).isEqualTo("errorMessage");
+                        assertThat(searchMatchQuery.query()).isEqualTo(expectedError);
+                      });
+            });
+  }
+
+  @Test
+  public void shouldQueryByBatchOperationId() {
+    // given
+    final var processInstanceFilter =
+        FilterBuilders.processInstance(
+            f -> f.batchOperationIds("ab1db89e-4822-4330-90b5-b98346f8f83a"));
+
+    // when
+    final var searchRequest = transformQuery(processInstanceFilter);
+
+    // then
+    final var queryVariant = searchRequest.queryOption();
+    assertThat(queryVariant).isInstanceOf(SearchBoolQuery.class);
+    assertThat(((SearchBoolQuery) queryVariant).must()).hasSize(2);
+
+    assertIsSearchTermQuery(
+        ((SearchBoolQuery) queryVariant).must().get(0).queryOption(),
+        "joinRelation",
+        "processInstance");
+    assertIsSearchTermQuery(
+        ((SearchBoolQuery) queryVariant).must().get(1).queryOption(),
+        "batchOperationIds",
+        "ab1db89e-4822-4330-90b5-b98346f8f83a");
+  }
+
   @Test
   public void shouldQueryByErrorMessage() {
     // given

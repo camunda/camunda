@@ -3,7 +3,6 @@ import { Form, Stack, Loading } from "@carbon/react";
 import { spacing06, colors } from "@carbon/elements";
 import styled from "styled-components";
 import Modal, { ModalProps } from "./Modal";
-import useTranslate from "../../utility/localization";
 
 // carbon element z-indexes can only be imported using scss modules
 import styles from "./FormModal.module.scss";
@@ -43,31 +42,6 @@ const FormModal: FC<ModalProps> = ({ children, onSubmit, ...modalProps }) => {
         <HiddenSubmitButton type="submit" />
       </Form>
     </Modal>
-  );
-};
-
-export const AddFormModal: FC<Omit<ModalProps, "confirmLabel" | "buttons">> = ({
-  children,
-  ...modalProps
-}) => {
-  const { t } = useTranslate("components");
-
-  return (
-    <FormModal {...modalProps} confirmLabel={t("Add")}>
-      {children}
-    </FormModal>
-  );
-};
-
-export const EditFormModal: FC<
-  Omit<ModalProps, "confirmLabel" | "buttons">
-> = ({ children, ...modalProps }) => {
-  const { t } = useTranslate("components");
-
-  return (
-    <FormModal {...modalProps} confirmLabel={t("Edit")}>
-      {children}
-    </FormModal>
   );
 };
 

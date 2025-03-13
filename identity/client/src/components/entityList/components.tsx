@@ -7,25 +7,7 @@
 
 import styled from "styled-components";
 import { TableContainer } from "@carbon/react";
-import { layer01, productiveHeading01, spacing04 } from "@carbon/elements";
-
-export const NoDataContainer = styled.div`
-  padding: ${spacing04};
-  background: ${layer01};
-`;
-
-export const NoDataHeader = styled.p`
-  margin: ${spacing04};
-  text-align: center;
-  font-size: ${productiveHeading01.fontSize};
-  font-weight: ${productiveHeading01.fontWeight};
-`;
-
-export const NoDataBody = styled.p`
-  text-align: center;
-  margin: 0 auto 1em;
-  max-width: 840px;
-`;
+import { spacing04 } from "@carbon/elements";
 
 export const DocumentationDescription = styled.p`
   margin-top: ${spacing04};

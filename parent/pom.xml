@@ -53,7 +53,7 @@
     <version.commons-text>1.13.0</version.commons-text>
     <version.cron-utils>9.2.1</version.cron-utils>
     <version.docker-java-api>3.4.2</version.docker-java-api>
-    <version.elasticsearch>8.13.4</version.elasticsearch>
+    <version.elasticsearch>8.16.4</version.elasticsearch>
     <version.error-prone>2.36.0</version.error-prone>
     <version.grpc>1.71.0</version.grpc>
     <version.gson>2.12.1</version.gson>
@@ -62,7 +62,7 @@
     <version.httpasyncclient>4.1.5</version.httpasyncclient>
     <version.httpclient>4.5.14</version.httpclient>
     <version.httpclient5>5.4.2</version.httpclient5>
-    <version.httpcore5>5.3.3</version.httpcore5>
+    <version.httpcore5>5.3.2</version.httpcore5>
     <version.httpcomponents>4.4.16</version.httpcomponents>
     <version.identity>8.6.9</version.identity>
     <version.surefire>3.5.2</version.surefire>
