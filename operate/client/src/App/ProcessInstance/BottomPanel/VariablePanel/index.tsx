@@ -27,19 +27,19 @@ const VariablePanel = observer(function VariablePanel() {
     flowNodeSelectionStore.state.selection?.flowNodeInstanceId;
 
   const {
-    fetchListeners,
-    state,
     listenersFailureCount,
-    hasFlowNodeListeners,
+    state,
+    fetchListeners,
     reset,
+    setListenerTabVisibility,
   } = processInstanceListenersStore;
-  const {listeners, listenerTypeFilter} = state;
+  const {listenerTypeFilter} = state;
 
   const shouldUseFlowNodeId = !flowNodeInstanceId && flowNodeId;
 
   useEffect(() => {
     reset();
-  }, [flowNodeId, reset]);
+  }, [flowNodeId, flowNodeInstanceId, reset]);
 
   useEffect(() => {
     variablesStore.init(processInstanceId);
@@ -87,6 +87,7 @@ const VariablePanel = observer(function VariablePanel() {
           content: <VariablesContent />,
           removePadding: true,
           onClick: () => {
+            setListenerTabVisibility(false);
             variablesStore.startPolling(processInstanceId);
             variablesStore.refreshVariables(processInstanceId);
           },
@@ -98,32 +99,37 @@ const VariablePanel = observer(function VariablePanel() {
                 id: 'input-mappings',
                 label: 'Input Mappings',
                 content: <InputOutputMappings type="Input" />,
-                onClick: variablesStore.stopPolling,
+                onClick: () => {
+                  setListenerTabVisibility(false);
+                  return variablesStore.stopPolling;
+                },
               },
               {
                 id: 'output-mappings',
                 label: 'Output Mappings',
                 content: <InputOutputMappings type="Output" />,
-                onClick: variablesStore.stopPolling,
+                onClick: () => {
+                  setListenerTabVisibility(false);
+                  return variablesStore.stopPolling;
+                },
               },
             ]),
-        ...(hasFlowNodeListeners
-          ? [
-              {
-                id: 'listeners',
-                testId: 'listeners-tab-button',
-                ...(listenersFailureCount && {
-                  labelIcon: <WarningFilled />,
-                }),
-                label: 'Listeners',
-                content: <Listeners listeners={listeners} />,
-                removePadding: true,
-                onClick: variablesStore.stopPolling,
-              },
-            ]
-          : []),
+        {
+          id: 'listeners',
+          testId: 'listeners-tab-button',
+          ...(listenersFailureCount && {
+            labelIcon: <WarningFilled />,
+          }),
+          label: 'Listeners',
+          content: <Listeners />,
+          removePadding: true,
+          onClick: () => {
+            setListenerTabVisibility(true);
+            return variablesStore.stopPolling;
+          },
+        },
       ]}
-      key={`tabview-has-listeners-${hasFlowNodeListeners}`}
+      key={`tabview-${flowNodeId}-${flowNodeInstanceId}`}
     />
   );
 });
