@@ -1,3 +1,10 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
 import { FC, useState } from "react";
 import { InlineNotification } from "@carbon/react";
 import TextField from "src/components/form/TextField";
@@ -8,7 +15,7 @@ import { createUser } from "src/utility/api/users";
 import { isValidEmail } from "./isValidEmail";
 
 const AddModal: FC<UseModalProps> = ({ open, onClose, onSuccess }) => {
-  const { t } = useTranslate();
+  const { t } = useTranslate("users");
   const [apiCall, { loading, error }] = useApiCall(createUser, {
     suppressErrorNotification: true,
   });
@@ -38,40 +45,40 @@ const AddModal: FC<UseModalProps> = ({ open, onClose, onSuccess }) => {
   return (
     <FormModal
       open={open}
-      headline={t("Create user")}
+      headline={t("createUser")}
       onClose={onClose}
       onSubmit={handleSubmit}
       loading={loading}
       submitDisabled={!name || !email || !username || !password}
-      loadingDescription={t("Creating user...")}
-      confirmLabel={t("Create user")}
+      loadingDescription={t("creatingUser")}
+      confirmLabel={t("createUser")}
     >
       <TextField
-        label={t("Username")}
+        label={t("username")}
         value={username}
-        placeholder={t("Enter username or user ID")}
+        placeholder={t("enterUsernameOrUserId")}
         onChange={setUsername}
         autoFocus
       />
       <TextField
-        label={t("Name")}
+        label={t("name")}
         value={name}
-        placeholder={t("Enter name")}
+        placeholder={t("enterName")}
         onChange={setName}
       />
       <TextField
-        label={t("Email")}
+        label={t("email")}
         value={email}
-        placeholder={t("Enter email address")}
+        placeholder={t("enterEmailAddress")}
         onChange={setEmail}
         type="email"
         onBlur={validateEmail}
-        errors={!emailValid ? [t("Please enter a valid email")] : []}
+        errors={!emailValid ? [t("pleaseEnterValidEmail")] : []}
       />
       <TextField
-        label={t("Password")}
+        label={t("password")}
         value={password}
-        placeholder={t("Password")}
+        placeholder={t("password")}
         onChange={setPassword}
         type="password"
       />

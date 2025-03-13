@@ -25,6 +25,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSuccess }) => {
   const { t } = useTranslate();
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+
   const submit = useCallback(() => {
     login(username, password).then((success) => {
       if (success) {
@@ -32,6 +33,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSuccess }) => {
       }
     });
   }, [onSuccess, username, password]);
+
   return (
     <div className="LoginForm">
       <TextInput
@@ -41,10 +43,10 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSuccess }) => {
         onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
           setUsername(e.target.value)
         }
-        labelText={t("Username")}
+        labelText={t("username")}
         invalid={false}
         invalidText={undefined}
-        placeholder={t("")}
+        placeholder={t("enterUsername")}
       />
       <PasswordInput
         id="password"
@@ -54,19 +56,19 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSuccess }) => {
         }
         value={password}
         type="password"
-        hidePasswordLabel={t("Hide password")}
-        showPasswordLabel={t("Show password")}
+        hidePasswordLabel={t("hidePassword")}
+        showPasswordLabel={t("showPassword")}
         onKeyDown={(e: React.KeyboardEvent) => {
           if (e.key === "Enter") {
             submit();
           }
         }}
-        labelText={t("Password")}
+        labelText={t("password")}
         invalid={false}
         invalidText={undefined}
         placeholder={t("loginPasswordFieldPlaceholder")}
       />
-      <Button onClick={submit}>Login</Button>
+      <Button onClick={submit}>{t("login")}</Button>
     </div>
   );
 };
@@ -81,6 +83,7 @@ function getRedirectUrl(queryString: string) {
 }
 
 export const LoginPage: React.FC = () => {
+  const { t, Translate } = useTranslate();
   const location = useLocation();
   const license = useLicense();
   const redirectUrl = getRedirectUrl(location.search);
@@ -88,30 +91,33 @@ export const LoginPage: React.FC = () => {
     window.location.href = redirectUrl ?? "/identity/users";
   }, [redirectUrl]);
   const hasProductionLicense = license?.isCommercial;
+
   return (
     <Page className="LoginPage">
       <div className="content">
         <div className="header">
           <img src={camundaLogo} alt="Camunda" />
-          <h1>Identity</h1>
+          <h1>{t("identity")}</h1>
         </div>
         <LoginForm onSuccess={onSuccess} />
         {!hasProductionLicense && (
           <div className="license-info">
-            Non-Production License. If you would like information on production
-            usage, please refer to our{" "}
-            <Link
-              href="https://legal.camunda.com/#self-managed-non-production-terms"
-              target="_blank"
-              inline
-            >
-              terms & conditions page
-            </Link>{" "}
-            or{" "}
-            <Link href="https://camunda.com/contact/" target="_blank" inline>
-              contact sales
-            </Link>
-            .
+            <Translate i18nKey="licenseInfo">
+              Non-Production License. If you would like information on
+              production usage, please refer to our{" "}
+              <Link
+                href="https://legal.camunda.com/#self-managed-non-production-terms"
+                target="_blank"
+                inline
+              >
+                terms & conditions page
+              </Link>{" "}
+              or{" "}
+              <Link href="https://camunda.com/contact/" target="_blank" inline>
+                contact sales
+              </Link>
+              .
+            </Translate>
           </div>
         )}
       </div>
