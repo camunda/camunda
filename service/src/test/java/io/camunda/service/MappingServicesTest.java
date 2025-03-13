@@ -163,7 +163,7 @@ public class MappingServicesTest {
     // then
     verify(mockBrokerClient).sendRequest(mappingDeleteRequestArgumentCaptor.capture());
     final var request = mappingDeleteRequestArgumentCaptor.getValue();
-    assertThat(request.getRequestWriter().getMappingKey()).isEqualTo(1234L);
+    assertThat(request.getRequestWriter().getId()).isEqualTo("id");
   }
 
   @Test
