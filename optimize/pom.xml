@@ -263,6 +263,9 @@
     </repository>
 
     <repository>
+      <releases>
+        <enabled>true</enabled>
+      </releases>
       <id>central</id>
       <name>Maven Central</name>
       <url>https://repo1.maven.org/maven2/</url>

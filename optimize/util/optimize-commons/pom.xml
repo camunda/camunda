@@ -322,15 +322,6 @@
     </dependency>
   </dependencies>
 
-  <!-- this fixes some artifacts download when building from within the single application -->
-  <repositories>
-    <repository>
-      <id>central</id>
-      <name>Maven Central</name>
-      <url>https://repo1.maven.org/maven2/</url>
-    </repository>
-  </repositories>
-
   <build>
     <plugins>
       <plugin>
