@@ -15,11 +15,13 @@ import io.camunda.zeebe.stream.api.scheduling.ScheduledCommandCache.StageableSch
 import io.camunda.zeebe.stream.impl.AsyncUtil.Step;
 import io.camunda.zeebe.stream.impl.StreamProcessor.Phase;
 import io.camunda.zeebe.stream.impl.metrics.ScheduledTaskMetrics;
+import io.camunda.zeebe.util.collection.Tuple;
 import java.time.Duration;
 import java.time.InstantSource;
 import java.util.Arrays;
-import java.util.HashMap;
+import java.util.Collections;
 import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.function.BooleanSupplier;
 import java.util.function.Supplier;
 
@@ -34,8 +36,8 @@ public class AsyncScheduleServiceContext {
   private final ScheduledTaskMetrics metrics;
   private final int partitionId;
 
-  private final HashMap<AsyncSchedulePool, AsyncProcessingScheduleServiceActor> asyncActors;
-  private final HashMap<AsyncSchedulePool, ProcessingScheduleServiceImpl> asyncActorServices;
+  private final Map<AsyncSchedulePool, AsyncProcessingScheduleServiceActor> asyncActors;
+  private final Map<AsyncSchedulePool, ProcessingScheduleServiceImpl> asyncActorServices;
 
   public AsyncScheduleServiceContext(
       final ActorSchedulingService actorSchedulingService,
@@ -57,10 +59,9 @@ public class AsyncScheduleServiceContext {
     this.metrics = metrics;
     this.partitionId = partitionId;
 
-    asyncActors = new LinkedHashMap<>();
-    asyncActorServices = new LinkedHashMap<>();
-
-    createAllAsyncPools();
+    final var allAsyncPools = createAllAsyncPools();
+    asyncActors = Collections.unmodifiableMap(allAsyncPools.getLeft());
+    asyncActorServices = Collections.unmodifiableMap(allAsyncPools.getRight());
   }
 
   public ProcessingScheduleServiceImpl createActorService() {
@@ -82,14 +83,13 @@ public class AsyncScheduleServiceContext {
     return asyncActorServices.get(pool);
   }
 
-  public AsyncProcessingScheduleServiceActor createAsyncActor(final AsyncSchedulePool pool) {
+  public Tuple<AsyncProcessingScheduleServiceActor, ProcessingScheduleServiceImpl> createAsyncActor(
+      final AsyncSchedulePool pool) {
     final var actorService = createActorService();
     final var actor =
         new AsyncProcessingScheduleServiceActor(pool.getName(), actorService, partitionId);
 
-    asyncActorServices.put(pool, actorService);
-    asyncActors.put(pool, actor);
-    return actor;
+    return new Tuple<>(actor, actorService);
   }
 
   public ActorFuture<Void> closeActorsAsync() {
@@ -115,7 +115,21 @@ public class AsyncScheduleServiceContext {
     return actorSchedulingService.submitActor(actor, pool.getSchedulingHints());
   }
 
-  private void createAllAsyncPools() {
-    Arrays.stream(AsyncSchedulePool.values()).forEach(this::createAsyncActor);
+  private Tuple<
+          Map<AsyncSchedulePool, AsyncProcessingScheduleServiceActor>,
+          Map<AsyncSchedulePool, ProcessingScheduleServiceImpl>>
+      createAllAsyncPools() {
+    final Map<AsyncSchedulePool, AsyncProcessingScheduleServiceActor> asyncActors =
+        new LinkedHashMap<>();
+    final Map<AsyncSchedulePool, ProcessingScheduleServiceImpl> asyncActorServices =
+        new LinkedHashMap<>();
+    Arrays.stream(AsyncSchedulePool.values())
+        .forEach(
+            pool -> {
+              final var tuple = createAsyncActor(pool);
+              asyncActors.put(pool, tuple.getLeft());
+              asyncActorServices.put(pool, tuple.getRight());
+            });
+    return new Tuple<>(asyncActors, asyncActorServices);
   }
 }
