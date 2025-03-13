@@ -73,4 +73,14 @@ public interface MutableVariableState extends VariableState {
    * @param value the variable document record containing the updated variables within a given scope
    */
   void storeVariableDocument(long key, VariableDocumentRecord value);
+
+  /**
+   * Removes the variable document record from the state, associated with the provided key.
+   *
+   * <p>This method is expected to be called directly ONLY from an {@link
+   * io.camunda.zeebe.engine.state.EventApplier} or from tests.
+   *
+   * @param key the unique key identifying the variable document
+   */
+  void removeVariableDocument(long key);
 }
