@@ -15,20 +15,9 @@
  */
 package io.camunda.zeebe.protocol.record.intent;
 
-import java.util.HashMap;
-import java.util.Map;
-
 public enum AdHocSubProcessActivityActivationIntent implements Intent {
   ACTIVATE(0),
   ACTIVATED(1);
-
-  private static final Map<Short, Intent> LOOKUP = new HashMap<>();
-
-  static {
-    for (final AdHocSubProcessActivityActivationIntent value : values()) {
-      LOOKUP.put(value.getIntent(), value);
-    }
-  }
 
   private final short value;
 
@@ -56,6 +45,13 @@ public enum AdHocSubProcessActivityActivationIntent implements Intent {
   }
 
   public static Intent from(final short value) {
-    return LOOKUP.getOrDefault(value, Intent.UNKNOWN);
+    switch (value) {
+      case 0:
+        return ACTIVATE;
+      case 1:
+        return ACTIVATED;
+      default:
+        return Intent.UNKNOWN;
+    }
   }
 }
