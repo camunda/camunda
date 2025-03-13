@@ -23,7 +23,9 @@ import io.camunda.zeebe.protocol.record.value.BatchOperationType;
 import io.camunda.zeebe.test.util.BrokerClassRuleHelper;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.LongStream;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -75,9 +77,11 @@ public final class CreateBatchOperationTest {
   @Test
   public void shouldScheduleSingleProcessInstanceCancel() {
     // given
-    final var pi = mockProcessInstanceEntity(1);
+    final var numberOfPi = 21;
+    final var processInstances =
+        mockProcessInstanceEntities(LongStream.rangeClosed(1, numberOfPi).boxed().toList());
     Mockito.when(processInstanceService.search(Mockito.any(ProcessInstanceQuery.class)))
-        .thenReturn(new SearchQueryResult<>(1, List.of(pi), null, null));
+        .thenReturn(new SearchQueryResult<>(1, processInstances, null, null));
 
     // when
     final long batchOperationKey =
@@ -103,16 +107,21 @@ public final class CreateBatchOperationTest {
             BatchOperationIntent.EXECUTED,
             BatchOperationIntent.EXECUTE,
             BatchOperationIntent.COMPLETED);
+
     assertThat(
             RecordingExporter.processInstanceRecords(ProcessInstanceIntent.CANCEL)
-                .withProcessInstanceKey(1))
+                .filter(r -> r.getRejectionType() != RejectionType.NULL_VAL))
         .extracting(Record::getIntent)
-        .containsSequence(ProcessInstanceIntent.CANCEL);
+        .hasSize(numberOfPi);
   }
 
-  private ProcessInstanceEntity mockProcessInstanceEntity(final long key) {
-    final var processInstanceEntity = Mockito.mock(ProcessInstanceEntity.class);
-    Mockito.when(processInstanceEntity.processInstanceKey()).thenReturn(key);
-    return processInstanceEntity;
+  private List<ProcessInstanceEntity> mockProcessInstanceEntities(final List<Long> keys) {
+    final List<ProcessInstanceEntity> result = new ArrayList<>();
+    for (final long key : keys) {
+      final var processInstanceEntity = Mockito.mock(ProcessInstanceEntity.class);
+      Mockito.when(processInstanceEntity.processInstanceKey()).thenReturn(key);
+      result.add(processInstanceEntity);
+    }
+    return result;
   }
 }

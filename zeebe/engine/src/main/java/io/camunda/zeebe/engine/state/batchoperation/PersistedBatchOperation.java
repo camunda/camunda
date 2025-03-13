@@ -19,6 +19,7 @@ import io.camunda.zeebe.msgpack.value.LongValue;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationIntent;
 import io.camunda.zeebe.protocol.record.value.BatchOperationType;
+import java.util.Comparator;
 import java.util.List;
 import org.agrona.DirectBuffer;
 
@@ -34,8 +35,8 @@ public class PersistedBatchOperation extends UnpackedObject implements DbValue {
       new EnumProperty<>("status", BatchOperationState.class);
   private final IntegerProperty offsetProp = new IntegerProperty("offset", 0);
   private final DocumentProperty filterProp = new DocumentProperty("filter");
-  private final ArrayProperty<LongValue> keysProp = new ArrayProperty<LongValue>("keys",
-      LongValue::new);
+  private final ArrayProperty<LongValue> chunkKeysProp =
+      new ArrayProperty<LongValue>("chunkKeys", LongValue::new);
 
   public PersistedBatchOperation() {
     super(7);
@@ -45,8 +46,7 @@ public class PersistedBatchOperation extends UnpackedObject implements DbValue {
         .declareProperty(statusProp)
         .declareProperty(offsetProp)
         .declareProperty(filterProp)
-        .declareProperty(keysProp);
-
+        .declareProperty(chunkKeysProp);
   }
 
   public boolean canCancel() {
@@ -120,24 +120,45 @@ public class PersistedBatchOperation extends UnpackedObject implements DbValue {
   }
 
   public List<Long> getKeys() {
-    return keysProp.stream().map(LongValue::getValue).toList();
+    return chunkKeysProp.stream().map(LongValue::getValue).toList();
   }
 
-  public PersistedBatchOperation appendKeys(final List<Long> keys) {
-    keys.forEach(key -> keysProp.add().setValue(key));
+  public long nextChunkKey() {
+    final var nextKey = getMaxChunkKey() + 1;
+    chunkKeysProp.add().setValue(nextKey);
+
+    return nextKey;
+  }
+
+  public PersistedBatchOperation removeChunkKey(final Long chunkKey) {
+    final var newKeys =
+        chunkKeysProp.stream().map(LongValue::getValue).filter(k -> !k.equals(chunkKey)).toList();
+
+    chunkKeysProp.reset();
+
+    for (final var key : newKeys) {
+      chunkKeysProp.add().setValue(key);
+    }
+
     return this;
-  }
-
-  public List<Long> getNextKeys(final int offset, final int maxBatchSize) {
-    return keysProp.stream()
-        .skip(offset)
-        .limit(maxBatchSize)
-        .map(LongValue::getValue)
-        .toList();
   }
 
   public DirectBuffer getFilterBuffer() {
     return filterProp.getValue();
+  }
+
+  public long getMinChunkKey() {
+    return chunkKeysProp.stream()
+        .min(Comparator.comparing(LongValue::getValue))
+        .map(LongValue::getValue)
+        .orElse(-1L);
+  }
+
+  public long getMaxChunkKey() {
+    return chunkKeysProp.stream()
+        .max(Comparator.comparing(LongValue::getValue))
+        .map(LongValue::getValue)
+        .orElse(-1L);
   }
 
   public enum BatchOperationState {

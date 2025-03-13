@@ -24,8 +24,7 @@ public final class BatchOperationCreationRecord extends UnifiedRecordValue
   public static final String PROP_BATCH_OPERATION_KEY = "batchOperationKey";
   public static final String PROP_BATCH_OPERATION_TYPE = "batchOperationType";
 
-  private final LongProperty batchOperationKeyProp =
-      new LongProperty(PROP_BATCH_OPERATION_KEY, -1);
+  private final LongProperty batchOperationKeyProp = new LongProperty(PROP_BATCH_OPERATION_KEY, -1);
   private final EnumProperty<BatchOperationType> batchOperationTypeProp =
       new EnumProperty<>(
           PROP_BATCH_OPERATION_TYPE, BatchOperationType.class, BatchOperationType.UNSPECIFIED);
@@ -34,7 +33,8 @@ public final class BatchOperationCreationRecord extends UnifiedRecordValue
   public BatchOperationCreationRecord() {
     super(3);
     declareProperty(batchOperationKeyProp)
-        .declareProperty(batchOperationTypeProp).declareProperty(filterProp);
+        .declareProperty(batchOperationTypeProp)
+        .declareProperty(filterProp);
   }
 
   @Override
@@ -42,9 +42,10 @@ public final class BatchOperationCreationRecord extends UnifiedRecordValue
     return batchOperationKeyProp.getValue();
   }
 
-  public void setBatchOperationKey(final Long batchOperationKey) {
+  public BatchOperationCreationRecord setBatchOperationKey(final Long batchOperationKey) {
     batchOperationKeyProp.reset();
     batchOperationKeyProp.setValue(batchOperationKey);
+    return this;
   }
 
   @Override

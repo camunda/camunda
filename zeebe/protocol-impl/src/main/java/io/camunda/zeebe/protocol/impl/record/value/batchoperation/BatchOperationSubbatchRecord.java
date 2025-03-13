@@ -22,10 +22,8 @@ public final class BatchOperationSubbatchRecord extends UnifiedRecordValue
   public static final String PROP_SUBBATCH_KEY = "subbatch";
   public static final String PROP_KEY_LIST = "keys";
 
-  private final LongProperty batchOperationKeyProp =
-      new LongProperty(PROP_BATCH_OPERATION_KEY);
-  private final LongProperty subbatchKeyProp =
-      new LongProperty(PROP_SUBBATCH_KEY);
+  private final LongProperty batchOperationKeyProp = new LongProperty(PROP_BATCH_OPERATION_KEY);
+  private final LongProperty subbatchKeyProp = new LongProperty(PROP_SUBBATCH_KEY);
   private final ArrayProperty<LongValue> keysProp =
       new ArrayProperty<>(PROP_KEY_LIST, LongValue::new);
 
@@ -41,16 +39,15 @@ public final class BatchOperationSubbatchRecord extends UnifiedRecordValue
     return batchOperationKeyProp.getValue();
   }
 
-  public void setBatchOperationKey(final Long batchOperationKey) {
+  public BatchOperationSubbatchRecord setBatchOperationKey(final Long batchOperationKey) {
     batchOperationKeyProp.reset();
     batchOperationKeyProp.setValue(batchOperationKey);
+    return this;
   }
 
   @Override
   public List<Long> getKeys() {
-    return keysProp.stream()
-        .map(LongValue::getValue)
-        .collect(Collectors.toList());
+    return keysProp.stream().map(LongValue::getValue).collect(Collectors.toList());
   }
 
   public BatchOperationSubbatchRecord setKeys(final List<Long> keys) {
@@ -64,8 +61,7 @@ public final class BatchOperationSubbatchRecord extends UnifiedRecordValue
     return subbatchKeyProp.getValue();
   }
 
-  public BatchOperationSubbatchRecord setSubbatchKey(
-      final Long key) {
+  public BatchOperationSubbatchRecord setSubbatchKey(final Long key) {
     subbatchKeyProp.setValue(key);
     return this;
   }
@@ -75,5 +71,4 @@ public final class BatchOperationSubbatchRecord extends UnifiedRecordValue
     setKeys(record.getKeys());
     setSubbatchKey(record.getSubbatchKey());
   }
-
 }
