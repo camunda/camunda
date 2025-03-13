@@ -952,15 +952,12 @@
         <type>pom</type>
         <scope>import</scope>
       </dependency>
-<<<<<<< HEAD
-=======
 
       <dependency>
         <groupId>com.nimbusds</groupId>
         <artifactId>oauth2-oidc-sdk</artifactId>
         <version>${version.nimbus-sdk}</version>
       </dependency>
->>>>>>> 9f505bf7 (deps: move POM/IMPORT before Spring to allow us to specify desired versions)
 
       <dependency>
         <groupId>org.springframework.boot</groupId>
@@ -1301,31 +1298,12 @@
       </dependency>
 
       <dependency>
-<<<<<<< HEAD
-        <groupId>io.netty</groupId>
-        <artifactId>netty-bom</artifactId>
-        <version>${version.netty}</version>
-        <type>pom</type>
-        <scope>import</scope>
-      </dependency>
-
-      <dependency>
         <groupId>io.projectreactor.netty</groupId>
         <artifactId>reactor-netty-http</artifactId>
         <version>${version.reactor-netty}</version>
       </dependency>
 
       <dependency>
-        <groupId>io.micrometer</groupId>
-        <artifactId>micrometer-bom</artifactId>
-        <version>${version.micrometer}</version>
-        <type>pom</type>
-        <scope>import</scope>
-      </dependency>
-
-      <dependency>
-=======
->>>>>>> 9f505bf7 (deps: move POM/IMPORT before Spring to allow us to specify desired versions)
         <groupId>org.elasticsearch.client</groupId>
         <artifactId>elasticsearch-rest-client</artifactId>
         <version>${version.elasticsearch}</version>
