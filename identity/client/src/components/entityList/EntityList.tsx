@@ -1,17 +1,16 @@
-import {
-  ChangeEvent,
-  Component,
-  FC,
-  ReactNode,
-  useMemo,
-  useState,
-} from "react";
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+import { FC, ReactNode, useMemo, useState } from "react";
 import {
   Button,
   DataTable,
   DataTableSkeleton,
   Link,
-  MultiSelect,
   OverflowMenu,
   OverflowMenuItem,
   Table,
@@ -32,16 +31,12 @@ import {
 import useDebounce from "react-debounced";
 import styled from "styled-components";
 import { ButtonKind } from "@carbon/react/lib/components/Button/Button";
-import { Add } from "@carbon/react/icons";
+import { Add, CarbonIconType } from "@carbon/react/icons";
 import { DocumentationLink } from "src/components/documentation";
 import LateLoading from "src/components/layout/LateLoading";
 import Flex from "src/components/layout/Flex";
 import useTranslate from "src/utility/localization";
 import { StyledTableContainer } from "./components";
-
-const ToolbarMultiSelect = styled(MultiSelect)`
-  grid-gap: 0;
-`;
 
 const StyledTableCell = styled(TableCell)<{ $isClickable?: boolean }>`
   cursor: ${({ $isClickable }) => ($isClickable ? "pointer" : "auto")};
@@ -51,10 +46,10 @@ const TooltipTrigger = styled.button`
   all: unset;
 `;
 
-type HandleExpand = (event: unknown, shouldExpand: boolean) => void;
-
-export type EntityData = { [p: string]: string | object | boolean | number } & {
-  id?: string | never;
+export type EntityData = {
+  [key: string]: string | object | boolean | number;
+} & {
+  id?: string;
 };
 
 type HeaderData<D extends EntityData> = {
@@ -66,23 +61,8 @@ export type DataTableHeader<D extends EntityData> = {
   key: Extract<keyof HeaderData<D>, string | ReactNode>;
 };
 
-type FilterOption = { id: string; label: string };
-
-type DataTableFilter<D> = {
-  title: string;
-  options: FilterOption[];
-  callback: (entry: D, selectedFilters: FilterOption[]) => boolean;
-};
-
-type DataTableCustomRenderProps<D extends EntityData> = {
-  rows: { id: string; cells: { id: string; value: string }[] }[];
-  headers: DataTableHeader<D>[];
-  getHeaderProps: ({ header }: { header: DataTableHeader<D> }) => {
-    [key: string]: never;
-  };
-  getToolbarProps: () => { [key: string]: never };
-  getTableProps: () => { [key: string]: never };
-  onInputChange: (e: unknown) => unknown;
+export type EntityListHeader<D extends EntityData> = DataTableHeader<D> & {
+  key: Extract<keyof HeaderData<D>, string>;
 };
 
 type TextMenuItem<D> = {
@@ -93,29 +73,15 @@ type TextMenuItem<D> = {
 };
 
 type MenuItem<D> = TextMenuItem<D> & {
-  icon?: Component;
+  icon?: CarbonIconType;
 };
 
-type DefaultEntityListProps = {
-  title?: string;
-  isInsideModal?: false;
-};
-
-type ModalEntityListProps = {
-  title?: string;
-  isInsideModal: true;
-};
-
-type EntityListProps<D extends EntityData> = (
-  | DefaultEntityListProps
-  | ModalEntityListProps
-) & {
+type EntityListProps<D extends EntityData> = {
   description?: ReactNode | string;
   documentationPath?: string;
   searchPlaceholder?: string;
   data: D[] | null | undefined;
   headers: DataTableHeader<D>[];
-  filter?: DataTableFilter<D>;
   addEntityLabel?: string | null;
   addEntityDisabled?: boolean;
   onAddEntity?: () => void;
@@ -126,6 +92,8 @@ type EntityListProps<D extends EntityData> = (
     | [TextMenuItem<D>, TextMenuItem<D>, TextMenuItem<D>];
   sortProperty?: keyof D;
   loading?: boolean;
+  isInsideModal?: boolean;
+  title?: ReactNode;
   batchSelection?: {
     onSelect: (selected: D) => unknown;
     onUnselect: (selected: D) => unknown;
@@ -145,7 +113,6 @@ const EntityList = <D extends EntityData>({
   description,
   documentationPath,
   headers,
-  filter,
   data,
   addEntityLabel,
   addEntityDisabled,
@@ -164,49 +131,34 @@ const EntityList = <D extends EntityData>({
 
   const hasMenu = menuItems && menuItems.length > 0;
 
-  const [selectedFilterItems, setSelectedFilterItems] = useState<
-    DataTableFilter<D>["options"]
-  >([]);
+  const [index, tableData] = useMemo(() => {
+    const entityIndex: { [id: string]: D } = {};
+    const entityTableData: (D & { id: string })[] = [];
 
-  const [index, tableData] = useMemo(
-    () => {
-      const entityIndex: { [id: string]: D } = {};
-      const entityTableData: (D & { id: string })[] = [];
+    data?.forEach((dataset) => {
+      const id = dataset.id || (Date.now() + Math.random()).toString();
+      entityIndex[id] = dataset;
+      entityTableData.push({ ...dataset, id });
+    });
 
-      data?.forEach((dataset) => {
-        const id = dataset.id || (Date.now() + Math.random()).toString();
-        entityIndex[id] = dataset;
-        entityTableData.push({ ...dataset, id });
-      });
+    const sortedEntityTableData =
+      entityTableData.length > 0
+        ? entityTableData.sort((a, b) => {
+            const propertyName =
+              sortProperty || Object.keys(entityTableData[0])[0];
 
-      const filteredData =
-        filter && selectedFilterItems.length > 0
-          ? entityTableData.filter((entry) =>
-              filter.callback(entry, selectedFilterItems),
-            )
-          : entityTableData;
+            if (a[propertyName] < b[propertyName]) {
+              return -1;
+            }
+            if (a[propertyName] > b[propertyName]) {
+              return 1;
+            }
+            return 0;
+          })
+        : entityTableData;
 
-      const sortedEntityTableData =
-        filteredData.length > 0
-          ? filteredData.sort((a, b) => {
-              const propertyName =
-                sortProperty || Object.keys(entityTableData[0])[0];
-
-              if (a[propertyName] < b[propertyName]) {
-                return -1;
-              }
-              if (a[propertyName] > b[propertyName]) {
-                return 1;
-              }
-              return 0;
-            })
-          : filteredData;
-
-      return [entityIndex, sortedEntityTableData];
-    },
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [sortProperty, data, selectedFilterItems],
-  );
+    return [entityIndex, sortedEntityTableData];
+  }, [sortProperty, data]);
 
   const paginatedData = useMemo(() => {
     const startIndex = (page - 1) * pageSize;
@@ -258,7 +210,7 @@ const EntityList = <D extends EntityData>({
         getToolbarProps,
         getTableProps,
         onInputChange,
-      }: DataTableCustomRenderProps<D>) => (
+      }) => (
         <StyledTableContainer {...tableContainerProps}>
           {loading && data !== null && <LateLoading />}
           {loading && data === null ? (
@@ -275,40 +227,23 @@ const EntityList = <D extends EntityData>({
                   <TableToolbarSearch
                     placeholder={searchPlaceholder}
                     persistent
-                    onChange={(e: ChangeEvent<HTMLInputElement>) => {
-                      debounce(() => {
-                        onInputChange(e);
-                      });
+                    onChange={(e) => {
+                      if (e) {
+                        debounce(() => {
+                          onInputChange(e);
+                        });
+                      }
                     }}
-                    onFocus={(event: unknown, handleExpand: HandleExpand) => {
+                    onFocus={(event, handleExpand) => {
                       handleExpand(event, true);
                     }}
-                    onBlur={(
-                      event: { target: { value: unknown } },
-                      handleExpand: HandleExpand,
-                    ) => {
+                    onBlur={(event, handleExpand) => {
                       const { value } = event.target;
                       if (!value) {
                         handleExpand(event, false);
                       }
                     }}
                   />
-                  {filter && (
-                    <ToolbarMultiSelect
-                      type="inline"
-                      size="lg"
-                      multiselect
-                      label={filter.title}
-                      id={`${filter.title} filter`}
-                      items={filter.options}
-                      selectedItem={selectedFilterItems}
-                      onChange={({
-                        selectedItems,
-                      }: {
-                        selectedItems: DataTableFilter<D>["options"];
-                      }) => setSelectedFilterItems(selectedItems)}
-                    />
-                  )}
                   {addEntityLabel && (
                     <Button
                       renderIcon={Add}
@@ -325,7 +260,6 @@ const EntityList = <D extends EntityData>({
                   <TableRow>
                     {batchSelection && (
                       <TableSelectAll
-                        ariaLabel=""
                         id="select-all"
                         name="select-all"
                         checked={selectedLength === data?.length}

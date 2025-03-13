@@ -7,11 +7,10 @@
  */
 
 import '@testing-library/jest-dom/vitest';
-import {nodeMockServer} from 'modules/mockServer/nodeMockServer';
-import {configure} from 'modules/testing-library';
-import {DEFAULT_MOCK_CLIENT_CONFIG} from 'modules/mocks/window';
-import {reactQueryClient} from 'modules/react-query/reactQueryClient';
-import en from 'modules/internationalization/locales/en.json';
+import {nodeMockServer} from 'common/testing/nodeMockServer';
+import {configure} from 'common/testing/testing-library';
+import {reactQueryClient} from 'common/react-query/reactQueryClient';
+import en from 'common/i18n/locales/en.json';
 import i18n, {t} from 'i18next';
 
 function initTestI18next() {
@@ -74,11 +73,6 @@ beforeAll(() => {
     },
   }));
 
-  Object.defineProperty(window, 'clientConfig', {
-    writable: true,
-    value: DEFAULT_MOCK_CLIENT_CONFIG,
-  });
-
   Object.defineProperty(window, 'localStorage', {
     value: (function () {
       let store: Record<string, unknown> = {};
@@ -113,7 +107,7 @@ beforeAll(() => {
 
 afterEach(() => {
   reactQueryClient.clear();
-  window.clientConfig = DEFAULT_MOCK_CLIENT_CONFIG;
+
   nodeMockServer.resetHandlers();
 });
 

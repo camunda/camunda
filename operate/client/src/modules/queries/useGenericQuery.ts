@@ -9,19 +9,18 @@
 import {useQuery, UseQueryOptions, UseQueryResult} from '@tanstack/react-query';
 import {RequestError, RequestResult} from 'modules/request';
 
-function useGenericQuery<RawDataT, ParsedDataT>(
+function useGenericQuery<T, TSelect = T>(
   queryKey: unknown[],
-  fetchFunction: () => RequestResult<RawDataT>,
-  parser: (data: RawDataT) => ParsedDataT,
-  options?: UseQueryOptions<ParsedDataT, RequestError>,
-): UseQueryResult<ParsedDataT, RequestError> {
-  return useQuery<ParsedDataT, RequestError>({
+  fetchFunction: () => RequestResult<T>,
+  options?: UseQueryOptions<T, RequestError, TSelect>,
+): UseQueryResult<TSelect, RequestError> {
+  return useQuery<T, RequestError, TSelect>({
     queryKey,
     queryFn: async () => {
       const {response, error} = await fetchFunction();
 
       if (response !== null) {
-        return parser(response);
+        return response;
       }
 
       throw error;

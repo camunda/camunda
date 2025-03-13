@@ -1,3 +1,10 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
 import { FC, FormEvent } from "react";
 import { Form, Stack, Loading } from "@carbon/react";
 import { spacing06, colors } from "@carbon/elements";
@@ -5,7 +12,7 @@ import styled from "styled-components";
 import Modal, { ModalProps } from "./Modal";
 
 // carbon element z-indexes can only be imported using scss modules
-import styles from "./FormModal.module.scss";
+import styles from "./styles.module.scss";
 
 const HiddenSubmitButton = styled.input`
   display: none;

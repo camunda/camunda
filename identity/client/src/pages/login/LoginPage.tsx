@@ -14,7 +14,7 @@ import "./LoginPage.scss";
 import { login } from "src/utility/auth";
 import { useLocation } from "react-router-dom";
 import { getCopyrightNoticeText } from "src/utility/copyright.ts";
-import camundaLogo from "src/assets/images/camunda.svg";
+import CamundaLogo from "src/assets/images/camunda.svg";
 import { useLicense } from "src/utility/license.ts";
 
 interface LoginFormProps {
@@ -96,7 +96,7 @@ export const LoginPage: React.FC = () => {
     <Page className="LoginPage">
       <div className="content">
         <div className="header">
-          <img src={camundaLogo} alt="Camunda" />
+          <CamundaLogo />
           <h1>{t("identity")}</h1>
         </div>
         <LoginForm onSuccess={onSuccess} />
