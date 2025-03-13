@@ -288,7 +288,7 @@ services:
     container_name: operate-${DATABASE}
     image: camunda/operate:8.7.0-SNAPSHOT
     ports:
-      - 8088:8080
+      - 8088:8081
     environment:
       - SERVER_PORT=8081
       - SPRING_PROFILES_ACTIVE=dev,dev-data,auth
