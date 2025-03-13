@@ -303,8 +303,7 @@ public final class DbElementInstanceState implements MutableElementInstanceState
   public void forEachChild(
       final long parentKey,
       final long startAtKey,
-      final BiFunction<Long, ElementInstance, Boolean> visitor
-      ) {
+      final BiFunction<Long, ElementInstance, Boolean> visitor) {
     forEachChild(parentKey, startAtKey, visitor, (elementInstance) -> true);
   }
 
