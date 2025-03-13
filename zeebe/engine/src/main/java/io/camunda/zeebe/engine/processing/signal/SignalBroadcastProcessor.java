@@ -173,14 +173,21 @@ public class SignalBroadcastProcessor implements DistributedTypedRecordProcessor
   @Override
   public ProcessingError tryHandleError(
       final TypedRecord<SignalRecord> command, final Throwable error) {
-    if (error instanceof final ForbiddenException exception) {
-      rejectionWriter.appendRejection(
-          command, exception.getRejectionType(), exception.getMessage());
-      responseWriter.writeRejectionOnCommand(
-          command, exception.getRejectionType(), exception.getMessage());
-      return ProcessingError.EXPECTED_ERROR;
-    }
 
-    return ProcessingError.UNEXPECTED_ERROR;
+    switch (error) {
+      case final NotFoundException exception:
+        rejectionWriter.appendRejection(command, RejectionType.NOT_FOUND, exception.getMessage());
+        responseWriter.writeRejectionOnCommand(
+            command, RejectionType.NOT_FOUND, exception.getMessage());
+        return ProcessingError.EXPECTED_ERROR;
+      case final ForbiddenException exception:
+        rejectionWriter.appendRejection(
+            command, exception.getRejectionType(), exception.getMessage());
+        responseWriter.writeRejectionOnCommand(
+            command, exception.getRejectionType(), exception.getMessage());
+        return ProcessingError.EXPECTED_ERROR;
+      default:
+        return ProcessingError.UNEXPECTED_ERROR;
+    }
   }
 }
