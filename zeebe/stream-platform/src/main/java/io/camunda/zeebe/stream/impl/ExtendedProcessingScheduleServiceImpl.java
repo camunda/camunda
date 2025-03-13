@@ -12,17 +12,18 @@ import static io.camunda.zeebe.stream.api.scheduling.AsyncSchedulePool.ASYNC_PRO
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.stream.api.scheduling.AsyncSchedulePool;
 import io.camunda.zeebe.stream.api.scheduling.ProcessingScheduleService;
+import io.camunda.zeebe.stream.api.scheduling.SimpleProcessingScheduleService;
 import io.camunda.zeebe.stream.api.scheduling.Task;
 import java.time.Duration;
 
 public class ExtendedProcessingScheduleServiceImpl implements ProcessingScheduleService {
   private final AsyncScheduleServiceContext context;
-  private final ProcessingScheduleServiceImpl processorActorService;
+  private final SimpleProcessingScheduleService processorActorService;
   private final boolean alwaysAsync;
 
   public ExtendedProcessingScheduleServiceImpl(
       final AsyncScheduleServiceContext asyncScheduleServiceContext,
-      final ProcessingScheduleServiceImpl processorActorService,
+      final SimpleProcessingScheduleService processorActorService,
       final boolean alwaysAsync) {
     context = asyncScheduleServiceContext;
     this.processorActorService = processorActorService;

@@ -13,6 +13,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
+import io.camunda.zeebe.stream.api.scheduling.SimpleProcessingScheduleService;
 import java.time.Duration;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
@@ -22,7 +23,7 @@ final class ExtendedProcessingScheduleServiceImplTest {
   void shouldNotScheduleAsyncIfDisabled() {
     // given
     final var context = mock(AsyncScheduleServiceContext.class);
-    final var sync = mock(ProcessingScheduleServiceImpl.class);
+    final var sync = mock(SimpleProcessingScheduleService.class);
 
     final var schedulingService = new ExtendedProcessingScheduleServiceImpl(context, sync, false);
 
@@ -37,8 +38,8 @@ final class ExtendedProcessingScheduleServiceImplTest {
   @Test
   void shouldAlwaysScheduleAsyncIfEnabled() {
     // given
-    final var sync = mock(ProcessingScheduleServiceImpl.class);
-    final var async = mock(ProcessingScheduleServiceImpl.class);
+    final var sync = mock(SimpleProcessingScheduleService.class);
+    final var async = mock(SimpleProcessingScheduleService.class);
     final var asyncControl = mock(AsyncProcessingScheduleServiceActor.class);
     when(asyncControl.createFuture()).thenReturn(new CompletableActorFuture<>());
     doAnswer(

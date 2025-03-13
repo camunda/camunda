@@ -12,6 +12,7 @@ import io.camunda.zeebe.scheduler.ActorSchedulingService;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.stream.api.scheduling.AsyncSchedulePool;
 import io.camunda.zeebe.stream.api.scheduling.ScheduledCommandCache.StageableScheduledCommandCache;
+import io.camunda.zeebe.stream.api.scheduling.SimpleProcessingScheduleService;
 import io.camunda.zeebe.stream.impl.AsyncUtil.Step;
 import io.camunda.zeebe.stream.impl.StreamProcessor.Phase;
 import io.camunda.zeebe.stream.impl.metrics.ScheduledTaskMetrics;
@@ -79,7 +80,7 @@ public class AsyncScheduleServiceContext {
     return asyncActors.get(pool);
   }
 
-  public ProcessingScheduleServiceImpl getAsyncActorService(final AsyncSchedulePool pool) {
+  public SimpleProcessingScheduleService getAsyncActorService(final AsyncSchedulePool pool) {
     return asyncActorServices.get(pool);
   }
 
