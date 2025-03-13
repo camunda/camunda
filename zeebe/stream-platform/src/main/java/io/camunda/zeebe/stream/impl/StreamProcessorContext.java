@@ -17,6 +17,7 @@ import io.camunda.zeebe.stream.api.EventFilter;
 import io.camunda.zeebe.stream.api.InterPartitionCommandSender;
 import io.camunda.zeebe.stream.api.ReadonlyStreamProcessorContext;
 import io.camunda.zeebe.stream.api.StreamClock.ControllableStreamClock;
+import io.camunda.zeebe.stream.api.scheduling.BackgroundTaskScheduleService;
 import io.camunda.zeebe.stream.api.scheduling.ProcessingScheduleService;
 import io.camunda.zeebe.stream.api.state.KeyGeneratorControls;
 import io.camunda.zeebe.stream.api.state.MutableLastProcessedPositionState;
@@ -42,6 +43,7 @@ public final class StreamProcessorContext implements ReadonlyStreamProcessorCont
 
   private StreamProcessorMode streamProcessorMode = StreamProcessorMode.PROCESSING;
   private ProcessingScheduleService processingScheduleService;
+  private BackgroundTaskScheduleService backgroundTaskScheduleService;
   private MutableLastProcessedPositionState lastProcessedPositionState;
 
   private LogStreamWriter logStreamWriter;
@@ -74,6 +76,11 @@ public final class StreamProcessorContext implements ReadonlyStreamProcessorCont
   }
 
   @Override
+  public BackgroundTaskScheduleService getBackgroundService() {
+    return backgroundTaskScheduleService;
+  }
+
+  @Override
   public int getPartitionId() {
     return getLogStream().getPartitionId();
   }
@@ -86,6 +93,11 @@ public final class StreamProcessorContext implements ReadonlyStreamProcessorCont
   @Override
   public ControllableStreamClock getClock() {
     return clock;
+  }
+
+  public StreamProcessorContext backgroundService(final BackgroundTaskScheduleService backgroundService) {
+    backgroundTaskScheduleService = backgroundService;
+    return this;
   }
 
   public StreamProcessorContext clock(final ControllableStreamClock clock) {

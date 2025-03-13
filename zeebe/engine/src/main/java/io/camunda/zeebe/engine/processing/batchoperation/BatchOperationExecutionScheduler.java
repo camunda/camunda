@@ -63,17 +63,17 @@ public class BatchOperationExecutionScheduler implements StreamProcessorLifecycl
   @Override
   public void onRecovered(final ReadonlyStreamProcessorContext context) {
     processingContext = context;
-    processingContext.getScheduleService().runDelayedAsync(pollingInterval, this::execute);
+    processingContext.getBackgroundService().runDelayed(pollingInterval, this::execute);
   }
 
   @Override
   public void onResumed() {
-    processingContext.getScheduleService().runDelayedAsync(pollingInterval, this::execute);
+    processingContext.getBackgroundService().runDelayed(pollingInterval, this::execute);
   }
 
   private TaskResult execute(final TaskResultBuilder taskResultBuilder) {
     try {
-      LOG.trace("Looking for pending batch operations to execute (scheduled)");
+      LOG.info("Looking for pending batch operations to execute (scheduled)");
       final var boKeys = new HashSet<Long>();
       batchOperationState.foreachPendingBatchOperation(
           bo -> {
@@ -88,7 +88,7 @@ public class BatchOperationExecutionScheduler implements StreamProcessorLifecycl
       batchOperationKeysProcessed.addAll(boKeys);
       return taskResultBuilder.build();
     } finally {
-      processingContext.getScheduleService().runDelayedAsync(pollingInterval, this::execute);
+      processingContext.getBackgroundService().runDelayed(pollingInterval, this::execute);
     }
   }
 

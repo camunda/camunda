@@ -180,6 +180,7 @@ public final class DueDateChecker implements StreamProcessorLifecycleAware {
   }
 
   interface NextExecution {
+
     void cancel();
 
     /** Sentinel value to signal that nothing is scheduled. */

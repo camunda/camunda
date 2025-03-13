@@ -19,6 +19,7 @@ import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
 final class ExtendedProcessingScheduleServiceImplTest {
+
   @Test
   void shouldNotScheduleAsyncIfDisabled() {
     // given

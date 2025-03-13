@@ -18,23 +18,23 @@ public class ExtendedProcessingScheduleServiceImpl implements ProcessingSchedule
 
   private final SimpleProcessingScheduleService processorActorService;
   private final SimpleProcessingScheduleService asyncActorService;
-  private final ConcurrencyControl concurrencyControl;
+  private final ConcurrencyControl asyncConcurrencyControl;
   private final boolean alwaysAsync;
 
   public ExtendedProcessingScheduleServiceImpl(
       final SimpleProcessingScheduleService processorActorService,
       final SimpleProcessingScheduleService asyncActorService,
-      final ConcurrencyControl concurrencyControl,
+      final ConcurrencyControl asyncConcurrencyControl,
       final boolean alwaysAsync) {
     this.processorActorService = processorActorService;
     this.asyncActorService = asyncActorService;
-    this.concurrencyControl = concurrencyControl;
+    this.asyncConcurrencyControl = asyncConcurrencyControl;
     this.alwaysAsync = alwaysAsync;
   }
 
   @Override
   public void runAtFixedRateAsync(final Duration delay, final Task task) {
-    concurrencyControl.run(
+    asyncConcurrencyControl.run(
         () -> {
           // we must run in different actor in order to schedule task
           asyncActorService.runAtFixedRate(delay, task);
@@ -43,8 +43,8 @@ public class ExtendedProcessingScheduleServiceImpl implements ProcessingSchedule
 
   @Override
   public ScheduledTask runDelayedAsync(final Duration delay, final Task task) {
-    final var futureScheduledTask = concurrencyControl.<ScheduledTask>createFuture();
-    concurrencyControl.run(
+    final var futureScheduledTask = asyncConcurrencyControl.<ScheduledTask>createFuture();
+    asyncConcurrencyControl.run(
         () -> {
           // we must run in different actor in order to schedule task
           final var scheduledTask = asyncActorService.runDelayed(delay, task);
@@ -55,8 +55,8 @@ public class ExtendedProcessingScheduleServiceImpl implements ProcessingSchedule
 
   @Override
   public ScheduledTask runAtAsync(final long timestamp, final Task task) {
-    final var futureScheduledTask = concurrencyControl.<ScheduledTask>createFuture();
-    concurrencyControl.run(
+    final var futureScheduledTask = asyncConcurrencyControl.<ScheduledTask>createFuture();
+    asyncConcurrencyControl.run(
         () -> {
           // we must run in different actor in order to schedule task
           final var scheduledTask = asyncActorService.runAt(timestamp, task);
@@ -68,8 +68,8 @@ public class ExtendedProcessingScheduleServiceImpl implements ProcessingSchedule
   @Override
   public ScheduledTask runDelayed(final Duration delay, final Runnable task) {
     if (alwaysAsync) {
-      final var futureScheduledTask = concurrencyControl.<ScheduledTask>createFuture();
-      concurrencyControl.run(
+      final var futureScheduledTask = asyncConcurrencyControl.<ScheduledTask>createFuture();
+      asyncConcurrencyControl.run(
           () -> {
             // we must run in different actor in order to schedule task
             final var scheduledTask = asyncActorService.runDelayed(delay, task);
@@ -102,8 +102,8 @@ public class ExtendedProcessingScheduleServiceImpl implements ProcessingSchedule
   @Override
   public ScheduledTask runAt(final long timestamp, final Runnable task) {
     if (alwaysAsync) {
-      final var futureScheduledTask = concurrencyControl.<ScheduledTask>createFuture();
-      concurrencyControl.run(
+      final var futureScheduledTask = asyncConcurrencyControl.<ScheduledTask>createFuture();
+      asyncConcurrencyControl.run(
           () -> {
             // we must run in different actor in order to schedule task
             final var scheduledTask = asyncActorService.runAt(timestamp, task);
@@ -142,9 +142,9 @@ public class ExtendedProcessingScheduleServiceImpl implements ProcessingSchedule
      */
     @Override
     public void cancel() {
-      concurrencyControl.run(
+      asyncConcurrencyControl.run(
           () ->
-              concurrencyControl.runOnCompletion(
+              asyncConcurrencyControl.runOnCompletion(
                   futureScheduledTask,
                   (scheduledTask, throwable) -> {
                     if (scheduledTask != null) {
