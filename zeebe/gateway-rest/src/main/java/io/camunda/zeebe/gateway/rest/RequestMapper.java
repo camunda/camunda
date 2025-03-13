@@ -8,13 +8,14 @@
 package io.camunda.zeebe.gateway.rest;
 
 import static io.camunda.zeebe.gateway.rest.util.KeyUtil.tryParseLong;
+import static io.camunda.zeebe.gateway.rest.validator.AdHocSubprocessActivityRequestValidator.validateAdHocSubprocessActivationRequest;
+import static io.camunda.zeebe.gateway.rest.validator.AdHocSubprocessActivityRequestValidator.validateAdHocSubprocessSearchActivitiesRequest;
 import static io.camunda.zeebe.gateway.rest.validator.AuthorizationRequestValidator.validateAuthorizationRequest;
 import static io.camunda.zeebe.gateway.rest.validator.ClockValidator.validateClockPinRequest;
 import static io.camunda.zeebe.gateway.rest.validator.DocumentValidator.validateDocumentLinkParams;
 import static io.camunda.zeebe.gateway.rest.validator.DocumentValidator.validateDocumentMetadata;
 import static io.camunda.zeebe.gateway.rest.validator.ElementRequestValidator.validateVariableRequest;
 import static io.camunda.zeebe.gateway.rest.validator.ErrorMessages.ERROR_MESSAGE_EMPTY_ATTRIBUTE;
-import static io.camunda.zeebe.gateway.rest.validator.ErrorMessages.ERROR_MESSAGE_INVALID_ATTRIBUTE_VALUE;
 import static io.camunda.zeebe.gateway.rest.validator.EvaluateDecisionRequestValidator.validateEvaluateDecisionRequest;
 import static io.camunda.zeebe.gateway.rest.validator.JobRequestValidator.validateJobActivationRequest;
 import static io.camunda.zeebe.gateway.rest.validator.JobRequestValidator.validateJobErrorRequest;
@@ -29,7 +30,6 @@ import static io.camunda.zeebe.gateway.rest.validator.ProcessInstanceRequestVali
 import static io.camunda.zeebe.gateway.rest.validator.ProcessInstanceRequestValidator.validateMigrateProcessInstanceRequest;
 import static io.camunda.zeebe.gateway.rest.validator.ProcessInstanceRequestValidator.validateModifyProcessInstanceRequest;
 import static io.camunda.zeebe.gateway.rest.validator.RequestValidator.createProblemDetail;
-import static io.camunda.zeebe.gateway.rest.validator.RequestValidator.validate;
 import static io.camunda.zeebe.gateway.rest.validator.ResourceRequestValidator.validateResourceDeletion;
 import static io.camunda.zeebe.gateway.rest.validator.SignalRequestValidator.validateSignalBroadcastRequest;
 import static io.camunda.zeebe.gateway.rest.validator.UserTaskRequestValidator.validateAssignmentRequest;
@@ -47,6 +47,8 @@ import io.camunda.search.filter.AdHocSubprocessActivityFilter;
 import io.camunda.search.query.AdHocSubprocessActivityQuery;
 import io.camunda.security.auth.Authentication;
 import io.camunda.security.auth.Authentication.Builder;
+import io.camunda.service.AdHocSubprocessActivityServices.AdHocSubprocessActivateActivitiesRequest;
+import io.camunda.service.AdHocSubprocessActivityServices.AdHocSubprocessActivateActivitiesRequest.AdHocSubprocessActivateActivityReference;
 import io.camunda.service.AuthorizationServices.CreateAuthorizationRequest;
 import io.camunda.service.AuthorizationServices.UpdateAuthorizationRequest;
 import io.camunda.service.DocumentServices.DocumentCreateRequest;
@@ -67,6 +69,7 @@ import io.camunda.service.TenantServices.TenantDTO;
 import io.camunda.service.UserServices.UserDTO;
 import io.camunda.zeebe.auth.Authorization;
 import io.camunda.zeebe.auth.ClaimTransformer;
+import io.camunda.zeebe.gateway.protocol.rest.AdHocSubprocessActivateActivitiesInstruction;
 import io.camunda.zeebe.gateway.protocol.rest.AdHocSubprocessActivitySearchQuery;
 import io.camunda.zeebe.gateway.protocol.rest.AuthorizationRequest;
 import io.camunda.zeebe.gateway.protocol.rest.CancelProcessInstanceRequest;
@@ -134,7 +137,6 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import org.agrona.concurrent.UnsafeBuffer;
-import org.apache.commons.lang3.StringUtils;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
@@ -812,31 +814,34 @@ public class RequestMapper {
           createProblemDetail(List.of(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("filter"))).get());
     }
 
-    final var processDefinitionKey = tryParseLong(filter.getProcessDefinitionKey());
+    final var processDefinitionKey = tryParseLong(filter.getProcessDefinitionKey()).orElse(null);
 
     return getResult(
-        validate(
-            violations -> {
-              if (processDefinitionKey.isEmpty() || processDefinitionKey.get() <= 0) {
-                violations.add(
-                    ERROR_MESSAGE_INVALID_ATTRIBUTE_VALUE.formatted(
-                        "filter.processDefinitionKey",
-                        filter.getProcessDefinitionKey(),
-                        "a non-negative numeric value"));
-              }
-
-              if (StringUtils.isBlank(filter.getAdHocSubprocessId())) {
-                violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("filter.adHocSubprocessId"));
-              }
-            }),
+        validateAdHocSubprocessSearchActivitiesRequest(filter, processDefinitionKey),
         () ->
             AdHocSubprocessActivityQuery.builder()
                 .filter(
                     AdHocSubprocessActivityFilter.builder()
-                        .processDefinitionKey(processDefinitionKey.get())
+                        .processDefinitionKey(processDefinitionKey)
                         .adHocSubprocessId(filter.getAdHocSubprocessId())
                         .build())
                 .build());
+  }
+
+  public static Either<ProblemDetail, AdHocSubprocessActivateActivitiesRequest>
+      toAdHocSubprocessActivateActivitiesRequest(
+          final String adHocSubprocessInstanceKey,
+          final AdHocSubprocessActivateActivitiesInstruction request) {
+    return getResult(
+        validateAdHocSubprocessActivationRequest(request),
+        () ->
+            new AdHocSubprocessActivateActivitiesRequest(
+                adHocSubprocessInstanceKey,
+                request.getElements().stream()
+                    .map(
+                        element ->
+                            new AdHocSubprocessActivateActivityReference(element.getElementId()))
+                    .toList()));
   }
 
   private static List<ProcessInstanceModificationActivateInstruction>

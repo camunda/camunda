@@ -15,14 +15,19 @@ import io.camunda.search.exception.ErrorMessages;
 import io.camunda.search.query.AdHocSubprocessActivityQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.auth.Authentication;
+import io.camunda.service.AdHocSubprocessActivityServices.AdHocSubprocessActivateActivitiesRequest.AdHocSubprocessActivateActivityReference;
 import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
+import io.camunda.zeebe.gateway.impl.broker.request.BrokerActivateAdHocSubprocessActivityRequest;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.model.bpmn.instance.AdHocSubProcess;
 import io.camunda.zeebe.model.bpmn.instance.FlowNode;
+import io.camunda.zeebe.protocol.impl.record.value.adhocsubprocess.AdHocSubProcessActivityActivationRecord;
 import java.io.ByteArrayInputStream;
 import java.nio.charset.StandardCharsets;
+import java.util.List;
+import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 import org.camunda.bpm.model.xml.instance.ModelElementInstance;
 
@@ -105,5 +110,23 @@ public class AdHocSubprocessActivityServices extends ApiServices<AdHocSubprocess
     }
 
     return documentation;
+  }
+
+  public CompletableFuture<AdHocSubProcessActivityActivationRecord> activateActivities(
+      final AdHocSubprocessActivateActivitiesRequest request) {
+    final var brokerRequest =
+        new BrokerActivateAdHocSubprocessActivityRequest()
+            .setAdHocSubProcessInstanceKey(request.adHocSubprocessInstanceKey());
+
+    request.elements().stream()
+        .map(AdHocSubprocessActivateActivityReference::elementId)
+        .forEach(brokerRequest::addElement);
+
+    return sendBrokerRequest(brokerRequest);
+  }
+
+  public record AdHocSubprocessActivateActivitiesRequest(
+      String adHocSubprocessInstanceKey, List<AdHocSubprocessActivateActivityReference> elements) {
+    public record AdHocSubprocessActivateActivityReference(String elementId) {}
   }
 }
