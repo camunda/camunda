@@ -104,9 +104,6 @@ public class ProcessEntity extends OperateZeebeEntity<ProcessEntity> {
         + ", bpmnProcessId='"
         + bpmnProcessId
         + '\''
-        + ", bpmnXml='"
-        + bpmnXml
-        + '\''
         + ", resourceName='"
         + resourceName
         + '\''
