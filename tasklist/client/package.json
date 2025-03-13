@@ -20,7 +20,7 @@
     "event-source-polyfill": "1.0.31",
     "final-form": "4.20.10",
     "final-form-arrays": "3.1.0",
-    "i18next": "24.2.2",
+    "i18next": "24.2.3",
     "i18next-browser-languagedetector": "8.0.4",
     "lodash": "4.17.21",
     "mixpanel-browser": "2.59.0",
