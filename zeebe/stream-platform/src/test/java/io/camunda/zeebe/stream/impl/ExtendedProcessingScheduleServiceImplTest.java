@@ -7,10 +7,12 @@
  */
 package io.camunda.zeebe.stream.impl;
 
+import static io.camunda.zeebe.stream.api.scheduling.AsyncSchedulePool.ASYNC_PROCESSING;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import io.camunda.zeebe.scheduler.ActorControl;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import java.time.Duration;
 import org.junit.jupiter.api.Test;
@@ -20,11 +22,13 @@ final class ExtendedProcessingScheduleServiceImplTest {
   @Test
   void shouldNotScheduleAsyncIfDisabled() {
     // given
+    final var context = mock(AsyncScheduleServiceContext.class);
+    final var syncControl = mock(ActorControl.class);
     final var sync = mock(ProcessingScheduleServiceImpl.class);
-    final var async = mock(ProcessingScheduleServiceImpl.class);
-    final var concurrencyControl = mock(AsyncProcessingScheduleServiceActor.class);
+    when(context.createActorService()).thenReturn(sync);
+
     final var schedulingService =
-        new ExtendedProcessingScheduleServiceImpl(sync, async, concurrencyControl, false);
+        new ExtendedProcessingScheduleServiceImpl(context, syncControl, false);
 
     // when
     schedulingService.runDelayed(Duration.ZERO, () -> {});
@@ -37,21 +41,25 @@ final class ExtendedProcessingScheduleServiceImplTest {
   @Test
   void shouldAlwaysScheduleAsyncIfEnabled() {
     // given
-    final var sync = mock(ProcessingScheduleServiceImpl.class);
+    final var syncControl = mock(ActorControl.class);
     final var async = mock(ProcessingScheduleServiceImpl.class);
-    final var concurrencyControl = mock(AsyncProcessingScheduleServiceActor.class);
-    when(concurrencyControl.createFuture()).thenReturn(new CompletableActorFuture<>());
+    final var asyncControl = mock(AsyncProcessingScheduleServiceActor.class);
+    when(asyncControl.createFuture()).thenReturn(new CompletableActorFuture<>());
     doAnswer(
             invocation -> {
               final var runnable = (Runnable) invocation.getArgument(0);
               runnable.run();
               return null;
             })
-        .when(concurrencyControl)
+        .when(asyncControl)
         .run(Mockito.any());
 
+    final var context = mock(AsyncScheduleServiceContext.class);
+    when(context.getOrCreateAsyncActor(ASYNC_PROCESSING)).thenReturn(asyncControl);
+    when(context.getAsyncActorService(ASYNC_PROCESSING)).thenReturn(async);
+
     final var schedulingService =
-        new ExtendedProcessingScheduleServiceImpl(sync, async, concurrencyControl, true);
+        new ExtendedProcessingScheduleServiceImpl(context, syncControl, true);
 
     // when
     schedulingService.runDelayed(Duration.ZERO, () -> {});

@@ -13,7 +13,7 @@ import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import java.util.Map;
 
-final class AsyncProcessingScheduleServiceActor extends Actor {
+public final class AsyncProcessingScheduleServiceActor extends Actor {
 
   private final ProcessingScheduleServiceImpl scheduleService;
   private CompletableActorFuture<Void> closeFuture = CompletableActorFuture.completed(null);
