@@ -495,8 +495,8 @@ jobs:
             name: "Root Integration Tests"
             maven-modules: "'qa/integration-tests'"
             maven-build-threads: 2
-            maven-test-fork-count: 6
-            runs-on: gcp-perf-core-8-default
+            maven-test-fork-count: 10
+            runs-on: gcp-perf-core-16-default
           - group: modules
             name: "Zeebe Module Integration Tests"
             maven-modules: "'!qa/integration-tests,!qa/update-tests' -f zeebe"
