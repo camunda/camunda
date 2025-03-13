@@ -31,6 +31,7 @@ import org.assertj.core.api.MapAssert;
 import org.assertj.core.api.StringAssert;
 import org.junit.jupiter.api.Test;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.oauth2.jwt.JwtDecoder;
 
 public class AuthenticationInterceptorTest {
 
@@ -39,7 +40,8 @@ public class AuthenticationInterceptorTest {
     // when
     final CloseStatusCapturingServerCall closeStatusCapturingServerCall =
         new CloseStatusCapturingServerCall();
-    new AuthenticationInterceptor(mock(UserServices.class), mock(PasswordEncoder.class))
+    new AuthenticationInterceptor(
+            mock(UserServices.class), mock(PasswordEncoder.class), mock(JwtDecoder.class))
         .interceptCall(closeStatusCapturingServerCall, new Metadata(), failingNextHandler());
 
     // then
@@ -67,7 +69,7 @@ public class AuthenticationInterceptorTest {
         .thenReturn(new SearchQueryResult<>(1, List.of(createUserEntity()), null, null));
     final var passwordEncoder = mock(PasswordEncoder.class);
     when(passwordEncoder.matches(anyString(), anyString())).thenReturn(true);
-    new AuthenticationInterceptor(userServices, passwordEncoder)
+    new AuthenticationInterceptor(userServices, passwordEncoder, mock(JwtDecoder.class))
         .interceptCall(
             closeStatusCapturingServerCall,
             metadata,
@@ -91,7 +93,7 @@ public class AuthenticationInterceptorTest {
     final var userServices = mock(UserServices.class);
     when(userServices.search(any()))
         .thenReturn(new SearchQueryResult<>(1, List.of(createUserEntity()), null, null));
-    new AuthenticationInterceptor(userServices, mock(PasswordEncoder.class))
+    new AuthenticationInterceptor(userServices, mock(PasswordEncoder.class), mock(JwtDecoder.class))
         .interceptCall(
             closeStatusCapturingServerCall,
             metadata,
@@ -113,7 +115,7 @@ public class AuthenticationInterceptorTest {
     metadata.put(Key.of("Authorization", Metadata.ASCII_STRING_MARSHALLER), "Basic ZGVtbzpkZW1v");
     final var userServices = mock(UserServices.class);
     when(userServices.search(any())).thenReturn(new SearchQueryResult<>(0, List.of(), null, null));
-    new AuthenticationInterceptor(userServices, mock(PasswordEncoder.class))
+    new AuthenticationInterceptor(userServices, mock(PasswordEncoder.class), mock(JwtDecoder.class))
         .interceptCall(closeStatusCapturingServerCall, metadata, failingNextHandler());
 
     // then
@@ -138,7 +140,7 @@ public class AuthenticationInterceptorTest {
         .thenReturn(new SearchQueryResult<>(1, List.of(createUserEntity()), null, null));
     final var passwordEncoder = mock(PasswordEncoder.class);
     when(passwordEncoder.matches(anyString(), anyString())).thenReturn(false);
-    new AuthenticationInterceptor(userServices, passwordEncoder)
+    new AuthenticationInterceptor(userServices, passwordEncoder, mock(JwtDecoder.class))
         .interceptCall(closeStatusCapturingServerCall, metadata, failingNextHandler());
 
     // then
@@ -156,7 +158,8 @@ public class AuthenticationInterceptorTest {
     // when
     final CloseStatusCapturingServerCall closeStatusCapturingServerCall =
         new CloseStatusCapturingServerCall();
-    new AuthenticationInterceptor(mock(UserServices.class), mock(PasswordEncoder.class))
+    new AuthenticationInterceptor(
+            mock(UserServices.class), mock(PasswordEncoder.class), mock(JwtDecoder.class))
         .interceptCall(
             closeStatusCapturingServerCall,
             createAuthHeader(),
@@ -177,7 +180,8 @@ public class AuthenticationInterceptorTest {
         new CloseStatusCapturingServerCall();
 
     // when
-    new AuthenticationInterceptor(mock(UserServices.class), mock(PasswordEncoder.class))
+    new AuthenticationInterceptor(
+            mock(UserServices.class), mock(PasswordEncoder.class), mock(JwtDecoder.class))
         .interceptCall(
             closeStatusCapturingServerCall,
             metadata,

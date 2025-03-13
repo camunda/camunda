@@ -40,6 +40,7 @@ import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.oauth2.jwt.JwtDecoder;
 
 final class SecurityTest {
   private SelfSignedCertificate certificate;
@@ -201,6 +202,7 @@ final class SecurityTest {
         jobStreamClient.streamer(),
         mock(UserServices.class),
         mock(PasswordEncoder.class),
-        meterRegistry);
+        meterRegistry,
+        mock(JwtDecoder.class));
   }
 }

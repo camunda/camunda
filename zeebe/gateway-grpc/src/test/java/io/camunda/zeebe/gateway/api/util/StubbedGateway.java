@@ -62,6 +62,7 @@ import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.awaitility.Awaitility;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.oauth2.jwt.JwtDecoder;
 
 public final class StubbedGateway {
 
@@ -75,6 +76,7 @@ public final class StubbedGateway {
   private Server server;
   private final UserServices services;
   private final PasswordEncoder passwordEncoder;
+  private final JwtDecoder jwtDecoder;
 
   public StubbedGateway(
       final ActorScheduler actorScheduler,
@@ -89,6 +91,7 @@ public final class StubbedGateway {
     this.securityConfiguration = securityConfiguration;
     services = mock(UserServices.class);
     passwordEncoder = mock(PasswordEncoder.class);
+    jwtDecoder = mock(JwtDecoder.class);
   }
 
   public void start() throws IOException {
@@ -105,7 +108,8 @@ public final class StubbedGateway {
         InProcessServerBuilder.forName(SERVER_NAME)
             .addService(
                 ServerInterceptors.intercept(
-                    gatewayGrpcService, new AuthenticationInterceptor(services, passwordEncoder)));
+                    gatewayGrpcService,
+                    new AuthenticationInterceptor(services, passwordEncoder, jwtDecoder)));
     server = serverBuilder.build();
     server.start();
   }

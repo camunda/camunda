@@ -29,6 +29,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.FilterType;
 import org.springframework.context.annotation.Profile;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.oauth2.jwt.JwtDecoder;
 
 /**
  * Entry point for the gateway modules by using the {@link io.camunda.application.Profile#GATEWAY}
@@ -60,6 +61,7 @@ public class GatewayModuleConfiguration implements CloseableSilently {
   private final JobStreamClient jobStreamClient;
   private final UserServices userServices;
   private final PasswordEncoder passwordEncoder;
+  private final JwtDecoder jwtDecoder;
   private final MeterRegistry meterRegistry;
 
   private Gateway gateway;
@@ -75,6 +77,7 @@ public class GatewayModuleConfiguration implements CloseableSilently {
       final JobStreamClient jobStreamClient,
       @Autowired(required = false) final UserServices userServices,
       final PasswordEncoder passwordEncoder,
+      final JwtDecoder jwtDecoder,
       final MeterRegistry meterRegistry) {
     this.configuration = configuration;
     this.securityConfiguration = securityConfiguration;
@@ -85,6 +88,7 @@ public class GatewayModuleConfiguration implements CloseableSilently {
     this.jobStreamClient = jobStreamClient;
     this.userServices = userServices;
     this.passwordEncoder = passwordEncoder;
+    this.jwtDecoder = jwtDecoder;
     this.meterRegistry = meterRegistry;
   }
 
@@ -112,6 +116,7 @@ public class GatewayModuleConfiguration implements CloseableSilently {
             jobStreamClient.streamer(),
             userServices,
             passwordEncoder,
+            jwtDecoder,
             meterRegistry);
     springGatewayBridge.registerGatewayStatusSupplier(gateway::getStatus);
     springGatewayBridge.registerClusterStateSupplier(
