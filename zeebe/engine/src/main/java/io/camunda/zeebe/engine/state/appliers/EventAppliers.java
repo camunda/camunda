@@ -186,7 +186,9 @@ public final class EventAppliers implements EventApplier {
     register(VariableIntent.CREATED, variableApplier);
     register(VariableIntent.UPDATED, variableApplier);
     register(VariableIntent.MIGRATED, new VariableMigratedApplier());
-    register(VariableDocumentIntent.UPDATING, NOOP_EVENT_APPLIER);
+    register(
+        VariableDocumentIntent.UPDATING,
+        new VariableDocumentUpdatingApplier(state.getVariableState()));
     register(VariableDocumentIntent.UPDATED, NOOP_EVENT_APPLIER);
   }
 
