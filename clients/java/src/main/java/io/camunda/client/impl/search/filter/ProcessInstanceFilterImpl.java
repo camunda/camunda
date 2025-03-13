@@ -223,6 +223,9 @@ public class ProcessInstanceFilterImpl
   @Override
   public ProcessInstanceFilter variables(
       final List<ProcessInstanceVariableFilterRequest> variableValueFilters) {
+    if (variableValueFilters != null) {
+      variableValueFilters.forEach(v -> variableValueNullCheck(v.getValue()));
+    }
     filter.setVariables(variableValueFilters);
     return this;
   }
@@ -234,10 +237,13 @@ public class ProcessInstanceFilterImpl
           variableValueFilters.entrySet().stream()
               .map(
                   entry -> {
+                    variableValueNullCheck(entry.getValue());
                     final ProcessInstanceVariableFilterRequest request =
                         new ProcessInstanceVariableFilterRequest();
                     request.setName(entry.getKey());
-                    request.setValue(entry.getValue().toString());
+                    final StringProperty property = new StringPropertyImpl();
+                    property.eq(entry.getValue().toString());
+                    request.setValue(property.build());
                     return request;
                   })
               .collect(Collectors.toList());
@@ -251,7 +257,7 @@ public class ProcessInstanceFilterImpl
     errorMessage(b -> b.eq(errorMessage));
     return this;
   }
-
+  
   @Override
   public ProcessInstanceFilter errorMessage(final Consumer<StringProperty> fn) {
     final StringProperty property = new StringPropertyImpl();
@@ -261,7 +267,27 @@ public class ProcessInstanceFilterImpl
   }
 
   @Override
+  public ProcessInstanceFilter batchOperationId(final String batchOperationId) {
+    batchOperationId(b -> b.eq(batchOperationId));
+    return this;
+  }
+  
+  @Override
+  public ProcessInstanceFilter batchOperationId(final Consumer<StringProperty> fn) {
+    final StringProperty property = new StringPropertyImpl();
+    fn.accept(property);
+    filter.setBatchOperationId(property.build());
+    return this;
+  }
+
+  @Override
   protected io.camunda.client.protocol.rest.ProcessInstanceFilter getSearchRequestProperty() {
     return filter;
+  }
+
+  static void variableValueNullCheck(Object value) {
+    if (value == null) {
+      throw new IllegalArgumentException("Variable value cannot be null");
+    }
   }
 }

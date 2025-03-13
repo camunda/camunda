@@ -117,4 +117,10 @@ public interface ProcessInstanceFilter extends SearchRequestFilter {
 
   /** Filter by error message using {@link StringProperty} consumer */
   ProcessInstanceFilter errorMessage(final Consumer<StringProperty> fn);
+
+  /** Filter by batchOperationId */
+  ProcessInstanceFilter batchOperationId(final String batchOperationId);
+
+  /** Filter by batchOperationId using {@link StringProperty} */
+  ProcessInstanceFilter batchOperationId(final Consumer<StringProperty> fn);
 }

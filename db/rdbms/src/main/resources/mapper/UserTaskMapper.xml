@@ -279,7 +279,7 @@
     <if test="filter.localVariableFilters != null and !filter.localVariableFilters.isEmpty()">
       AND EXISTS (Select * from ${prefix}VARIABLE v where v.SCOPE_KEY = ut.ELEMENT_INSTANCE_KEY
       AND (
-      <foreach collection="filter.localVariableFilters" item="variableValueFilter" separator=" OR ">
+      <foreach collection="filter.localVariableFilters" item="variableValueFilter" separator=" AND ">
         ( v.VAR_NAME = #{variableValueFilter.name}
         <if
           test="variableValueFilter.valueOperations != null and !variableValueFilter.valueOperations.isEmpty()">

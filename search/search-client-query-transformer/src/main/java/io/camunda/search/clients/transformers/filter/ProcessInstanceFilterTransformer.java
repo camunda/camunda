@@ -10,6 +10,7 @@ package io.camunda.search.clients.transformers.filter;
 import static io.camunda.search.clients.query.SearchQueryBuilders.*;
 import static io.camunda.webapps.schema.descriptors.IndexDescriptor.TENANT_ID;
 import static io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate.ACTIVITIES_JOIN_RELATION;
+import static io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate.BATCH_OPERATION_IDS;
 import static io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate.BPMN_PROCESS_ID;
 import static io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate.END_DATE;
 import static io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate.ERROR_MSG;
@@ -92,6 +93,9 @@ public final class ProcessInstanceFilterTransformer
       queries.add(processVariableQuery);
     }
 
+    ofNullable(stringOperations(BATCH_OPERATION_IDS, filter.batchOperationIdOperations()))
+        .ifPresent(queries::addAll);
+
     return and(queries);
   }
 
@@ -116,7 +120,7 @@ public final class ProcessInstanceFilterTransformer
               .map(v -> variableTransformer.toSearchQuery(v, "varName", "varValue"))
               .map((q) -> hasChildQuery("variable", q))
               .collect(Collectors.toList());
-      return or(queries);
+      return and(queries);
     }
     return null;
   }

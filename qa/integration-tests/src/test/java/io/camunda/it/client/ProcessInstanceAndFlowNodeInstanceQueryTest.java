@@ -26,17 +26,14 @@ import io.camunda.client.api.response.Process;
 import io.camunda.client.api.response.ProcessInstanceEvent;
 import io.camunda.client.api.search.response.FlowNodeInstance;
 import io.camunda.client.api.search.response.ProcessInstance;
+import io.camunda.client.impl.search.filter.builder.StringPropertyImpl;
 import io.camunda.client.protocol.rest.ProcessInstanceStateEnum;
 import io.camunda.client.protocol.rest.ProcessInstanceVariableFilterRequest;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
+import java.util.stream.Collectors;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -73,15 +70,18 @@ public class ProcessInstanceAndFlowNodeInstanceQueryTest {
     waitForProcessesToBeDeployed(camundaClient, DEPLOYED_PROCESSES.size());
 
     PROCESS_INSTANCES.add(
-        startProcessInstance(camundaClient, "service_tasks_v1", "{\"xyz\":\"bar\"}"));
+        startProcessInstance(camundaClient, "service_tasks_v1", "{\"xyz\":\"foo\"}"));
+    PROCESS_INSTANCES.add(
+        startProcessInstance(
+            camundaClient, "service_tasks_v1", "{\"xyz\": \"bar\",\"abc\": \"mnp\"}"));
     PROCESS_INSTANCES.add(
         startProcessInstance(camundaClient, "service_tasks_v2", "{\"path\":222}"));
     PROCESS_INSTANCES.add(startProcessInstance(camundaClient, "manual_process"));
     PROCESS_INSTANCES.add(startProcessInstance(camundaClient, "incident_process_v1"));
     PROCESS_INSTANCES.add(startProcessInstance(camundaClient, "parent_process_v1"));
 
-    waitForProcessInstancesToStart(camundaClient, 6);
-    waitForFlowNodeInstances(camundaClient, 20);
+    waitForProcessInstancesToStart(camundaClient, 7);
+    waitForFlowNodeInstances(camundaClient, 22);
     waitUntilFlowNodeInstanceHasIncidents(camundaClient, 1);
     waitUntilProcessInstanceHasIncidents(camundaClient, 1);
     // store flow node instances for querying
@@ -237,7 +237,7 @@ public class ProcessInstanceAndFlowNodeInstanceQueryTest {
             .join();
 
     // then
-    assertThat(result.items().size()).isEqualTo(1);
+    assertThat(result.items().size()).isEqualTo(2);
     assertThat(result.items().getFirst().getProcessInstanceKey()).isEqualTo(processInstanceKey);
   }
 
@@ -245,12 +245,11 @@ public class ProcessInstanceAndFlowNodeInstanceQueryTest {
   void shouldQueryProcessInstancesByProcessDefinitionIdFilterIn() {
     // given
     final String bpmnProcessId = "service_tasks_v1";
-    final long processInstanceKey =
+    final Set<Long> processInstanceKeys =
         PROCESS_INSTANCES.stream()
             .filter(p -> Objects.equals(bpmnProcessId, p.getBpmnProcessId()))
-            .findFirst()
-            .orElseThrow()
-            .getProcessInstanceKey();
+            .map(ProcessInstanceEvent::getProcessInstanceKey)
+            .collect(Collectors.toSet());
 
     // when
     final var result =
@@ -261,8 +260,10 @@ public class ProcessInstanceAndFlowNodeInstanceQueryTest {
             .join();
 
     // then
-    assertThat(result.items()).hasSize(1);
-    assertThat(result.items()).extracting("processInstanceKey").containsExactly(processInstanceKey);
+    assertThat(result.items()).hasSize(2);
+    assertThat(result.items())
+        .extracting("processInstanceKey")
+        .containsExactlyInAnyOrderElementsOf(processInstanceKeys);
   }
 
   @Test
@@ -284,7 +285,7 @@ public class ProcessInstanceAndFlowNodeInstanceQueryTest {
             .join();
 
     // then
-    assertThat(result.items()).hasSize(2);
+    assertThat(result.items()).hasSize(3);
     assertThat(result.items())
         .extracting("processInstanceKey")
         .containsExactlyInAnyOrder(processInstanceKeys.toArray());
@@ -400,7 +401,7 @@ public class ProcessInstanceAndFlowNodeInstanceQueryTest {
             .join();
 
     // then
-    assertThat(result.items().size()).isEqualTo(1);
+    assertThat(result.items().size()).isEqualTo(2);
     assertThat(result.items().getFirst().getProcessInstanceKey()).isEqualTo(processInstanceKey);
   }
 
@@ -411,9 +412,10 @@ public class ProcessInstanceAndFlowNodeInstanceQueryTest {
         camundaClient.newProcessInstanceQuery().filter(f -> f.state(ACTIVE)).send().join();
 
     // then
-    assertThat(result.items().size()).isEqualTo(3);
+    assertThat(result.items().size()).isEqualTo(4);
     assertThat(result.items().stream().map(ProcessInstance::getProcessDefinitionId).toList())
-        .containsExactlyInAnyOrder("service_tasks_v1", "service_tasks_v2", "incident_process_v1");
+        .containsExactlyInAnyOrder(
+            "service_tasks_v1", "service_tasks_v1", "service_tasks_v2", "incident_process_v1");
   }
 
   @Test
@@ -427,9 +429,10 @@ public class ProcessInstanceAndFlowNodeInstanceQueryTest {
             .join();
 
     // then
-    assertThat(result.items().size()).isEqualTo(3);
+    assertThat(result.items().size()).isEqualTo(4);
     assertThat(result.items().stream().map(ProcessInstance::getProcessDefinitionId).toList())
-        .containsExactlyInAnyOrder("service_tasks_v1", "service_tasks_v2", "incident_process_v1");
+        .containsExactlyInAnyOrder(
+            "service_tasks_v1", "service_tasks_v1", "service_tasks_v2", "incident_process_v1");
   }
 
   @Test
@@ -524,7 +527,7 @@ public class ProcessInstanceAndFlowNodeInstanceQueryTest {
             .join();
 
     // then
-    assertThat(result.items().size()).isEqualTo(6);
+    assertThat(result.items().size()).isEqualTo(7);
     assertThat(result.items().stream().map(ProcessInstance::getProcessDefinitionId).toList())
         .containsExactlyElementsOf(expectedBpmnProcessIds);
   }
@@ -534,7 +537,10 @@ public class ProcessInstanceAndFlowNodeInstanceQueryTest {
     // given
     final List<String> expectedBpmnProcessIds = List.of("service_tasks_v1");
     final List<ProcessInstanceVariableFilterRequest> variables =
-        List.of(new ProcessInstanceVariableFilterRequest().name("xyz").value("\"bar\""));
+        List.of(
+            new ProcessInstanceVariableFilterRequest()
+                .name("xyz")
+                .value(new StringPropertyImpl().eq("\"bar\"").build()));
 
     // when
     final var result =
@@ -568,18 +574,81 @@ public class ProcessInstanceAndFlowNodeInstanceQueryTest {
   @Test
   void shouldQueryProcessInstancesByVariableMulti() {
     // given
-    final List<String> expectedBpmnProcessIds = List.of("service_tasks_v1", "service_tasks_v2");
+    final List<String> expectedBpmnProcessIds = List.of("service_tasks_v1");
     final List<ProcessInstanceVariableFilterRequest> variables =
         List.of(
-            new ProcessInstanceVariableFilterRequest().name("xyz").value("\"bar\""),
-            new ProcessInstanceVariableFilterRequest().name("path").value("222"));
+            new ProcessInstanceVariableFilterRequest()
+                .name("xyz")
+                .value(new StringPropertyImpl().like("\"ba*\"").build()),
+            new ProcessInstanceVariableFilterRequest()
+                .name("abc")
+                .value(new StringPropertyImpl().in("\"mnp\"").build()));
 
     // when
     final var result =
         camundaClient.newProcessInstanceQuery().filter(f -> f.variables(variables)).send().join();
 
     // then
+    assertThat(result.items().size()).isEqualTo(1);
+    assertThat(result.items().stream().map(ProcessInstance::getProcessDefinitionId).toList())
+        .containsExactlyInAnyOrderElementsOf(expectedBpmnProcessIds);
+  }
+
+  @Test
+  void shouldQueryProcessInstancesByVariableAllVariablesMustMatch() {
+    // given
+    final List<String> expectedBpmnProcessIds = List.of("service_tasks_v1");
+    final List<ProcessInstanceVariableFilterRequest> variables =
+        List.of(
+            new ProcessInstanceVariableFilterRequest()
+                .name("xyz")
+                .value(new StringPropertyImpl().eq("\"bar\"").build()),
+            new ProcessInstanceVariableFilterRequest()
+                .name("abc")
+                .value(new StringPropertyImpl().in("\"foo\"").build()));
+
+    // when
+    final var result =
+        camundaClient.newProcessInstanceQuery().filter(f -> f.variables(variables)).send().join();
+
+    // then
+    assertThat(result.items()).isEmpty();
+  }
+
+  @Test
+  void shouldQueryProcessInstancesByVariableAdvancedFilterIn() {
+    // given
+    final List<String> expectedBpmnProcessIds = List.of("service_tasks_v1", "service_tasks_v1");
+    final List<ProcessInstanceVariableFilterRequest> variables =
+        List.of(
+            new ProcessInstanceVariableFilterRequest()
+                .name("xyz")
+                .value(new StringPropertyImpl().in("\"foo\"", "\"bar\"").build()));
+    // when
+    final var result =
+        camundaClient.newProcessInstanceQuery().filter(f -> f.variables(variables)).send().join();
+
+    // then
     assertThat(result.items().size()).isEqualTo(2);
+    assertThat(result.items().stream().map(ProcessInstance::getProcessDefinitionId).toList())
+        .containsExactlyInAnyOrderElementsOf(expectedBpmnProcessIds);
+  }
+
+  @Test
+  void shouldQueryProcessInstancesByVariableAdvancedFilterLike() {
+    // given
+    final List<String> expectedBpmnProcessIds = List.of("service_tasks_v1");
+    final List<ProcessInstanceVariableFilterRequest> variables =
+        List.of(
+            new ProcessInstanceVariableFilterRequest()
+                .name("xyz")
+                .value(new StringPropertyImpl().like("\"fo*\"").build()));
+    // when
+    final var result =
+        camundaClient.newProcessInstanceQuery().filter(f -> f.variables(variables)).send().join();
+
+    // then
+    assertThat(result.items().size()).isEqualTo(1);
     assertThat(result.items().stream().map(ProcessInstance::getProcessDefinitionId).toList())
         .containsExactlyInAnyOrderElementsOf(expectedBpmnProcessIds);
   }
@@ -695,7 +764,7 @@ public class ProcessInstanceAndFlowNodeInstanceQueryTest {
             .send()
             .join();
 
-    assertThat(resultAfter.items().size()).isEqualTo(5);
+    assertThat(resultAfter.items().size()).isEqualTo(6);
     final var keyAfter = resultAfter.items().getFirst().getProcessInstanceKey();
     // apply searchBefore
     final var resultBefore =
@@ -721,7 +790,7 @@ public class ProcessInstanceAndFlowNodeInstanceQueryTest {
             .send()
             .join();
 
-    assertThat(resultAfter.items().size()).isEqualTo(19);
+    assertThat(resultAfter.items().size()).isEqualTo(21);
     final var keyAfter = resultAfter.items().getFirst().getFlowNodeInstanceKey();
     // apply searchBefore
     final var resultBefore =
@@ -951,7 +1020,7 @@ public class ProcessInstanceAndFlowNodeInstanceQueryTest {
         camundaClient.newFlownodeInstanceQuery().filter(f -> f.state(state)).send().join();
 
     // then
-    assertThat(result.items().size()).isEqualTo(17);
+    assertThat(result.items().size()).isEqualTo(18);
     assertThat(result.items().getFirst().getState()).isEqualTo(state);
   }
 
@@ -1028,7 +1097,7 @@ public class ProcessInstanceAndFlowNodeInstanceQueryTest {
         camundaClient.newFlownodeInstanceQuery().filter(f -> f.tenantId(tenantId)).send().join();
 
     // then
-    assertThat(result.page().totalItems()).isEqualTo(20);
+    assertThat(result.page().totalItems()).isEqualTo(22);
     assertThat(result.items()).allMatch(f -> f.getTenantId().equals(tenantId));
   }
 
@@ -1045,7 +1114,7 @@ public class ProcessInstanceAndFlowNodeInstanceQueryTest {
             .send()
             .join();
 
-    assertThat(resultAfter.items().size()).isEqualTo(19);
+    assertThat(resultAfter.items().size()).isEqualTo(21);
     final var keyAfter = resultAfter.items().getFirst().getFlowNodeInstanceKey();
     // apply searchBefore
     final var resultBefore =

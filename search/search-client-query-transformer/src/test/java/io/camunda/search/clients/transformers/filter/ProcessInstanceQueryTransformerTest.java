@@ -342,7 +342,7 @@ public final class ProcessInstanceQueryTransformerTest extends AbstractTransform
         ((SearchBoolQuery) queryVariant).must().get(1).queryOption(), "tenantId", "tenant");
   }
 
-  @Test
+   @Test
   public void shouldQueryByErrorMessage() {
     // given
     final String expectedError = "expected error";
@@ -383,6 +383,31 @@ public final class ProcessInstanceQueryTransformerTest extends AbstractTransform
                         assertThat(searchMatchQuery.query()).isEqualTo(expectedError);
                       });
             });
+  }
+
+  @Test
+  public void shouldQueryByBatchOperationId() {
+    // given
+    final var processInstanceFilter =
+        FilterBuilders.processInstance(
+            f -> f.batchOperationIds("ab1db89e-4822-4330-90b5-b98346f8f83a"));
+
+    // when
+    final var searchRequest = transformQuery(processInstanceFilter);
+
+    // then
+    final var queryVariant = searchRequest.queryOption();
+    assertThat(queryVariant).isInstanceOf(SearchBoolQuery.class);
+    assertThat(((SearchBoolQuery) queryVariant).must()).hasSize(2);
+
+    assertIsSearchTermQuery(
+        ((SearchBoolQuery) queryVariant).must().get(0).queryOption(),
+        "joinRelation",
+        "processInstance");
+    assertIsSearchTermQuery(
+        ((SearchBoolQuery) queryVariant).must().get(1).queryOption(),
+        "batchOperationIds",
+        "ab1db89e-4822-4330-90b5-b98346f8f83a");
   }
 
   @Test
