@@ -66,8 +66,6 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ForkJoinPool;
-import java.util.concurrent.ForkJoinPool.ForkJoinWorkerThreadFactory;
-import java.util.concurrent.ForkJoinWorkerThread;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
@@ -407,14 +405,5 @@ public final class Gateway implements CloseableSilently {
   private static StatusException grpcStatusException(final int code, final String msg) {
     return StatusProto.toStatusException(
         com.google.rpc.Status.newBuilder().setCode(code).setMessage(msg).build());
-  }
-
-  private static final class NamedForkJoinPoolThreadFactory implements ForkJoinWorkerThreadFactory {
-    @Override
-    public ForkJoinWorkerThread newThread(final ForkJoinPool pool) {
-      final var worker = ForkJoinPool.defaultForkJoinWorkerThreadFactory.newThread(pool);
-      worker.setName("grpc-executor-" + worker.getPoolIndex());
-      return worker;
-    }
   }
 }
