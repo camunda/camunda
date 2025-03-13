@@ -347,6 +347,19 @@ public class DbVariableState implements MutableVariableState {
     variableDocumentColumnFamily.insert(variableDocumentKey, variableDocumentRecordToWrite);
   }
 
+  @Override
+  public void removeVariableDocument(final long key) {
+    variableDocumentKey.wrapLong(key);
+
+    final var variableDocumentRecordValue = variableDocumentColumnFamily.get(variableDocumentKey);
+    if (variableDocumentRecordValue != null) {
+      scopeKey.wrapLong(variableDocumentRecordValue.getRecord().getScopeKey());
+
+      variableDocumentColumnFamily.deleteIfExists(variableDocumentKey);
+      variableDocumentKeyByScopeKeyColumnFamily.deleteIfExists(scopeKey);
+    }
+  }
+
   private VariableInstance getVariableLocal(
       final long scopeKey, final DirectBuffer name, final int nameOffset, final int nameLength) {
     this.scopeKey.wrapLong(scopeKey);
