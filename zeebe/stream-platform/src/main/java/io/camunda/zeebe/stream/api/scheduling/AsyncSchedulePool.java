@@ -10,8 +10,7 @@ package io.camunda.zeebe.stream.api.scheduling;
 import io.camunda.zeebe.scheduler.SchedulingHints;
 
 public enum AsyncSchedulePool {
-  ASYNC_PROCESSING("AsyncProcessingScheduleActor", SchedulingHints.ioBound()),
-  ;
+  ASYNC_PROCESSING("AsyncProcessingScheduleActor", SchedulingHints.ioBound());
   private final String name;
   private final SchedulingHints schedulingHints;
 

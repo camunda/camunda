@@ -9,33 +9,24 @@ package io.camunda.zeebe.stream.impl;
 
 import static io.camunda.zeebe.stream.api.scheduling.AsyncSchedulePool.ASYNC_PROCESSING;
 
-import io.camunda.zeebe.scheduler.ActorControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.stream.api.scheduling.AsyncSchedulePool;
 import io.camunda.zeebe.stream.api.scheduling.ProcessingScheduleService;
 import io.camunda.zeebe.stream.api.scheduling.Task;
-import io.camunda.zeebe.stream.impl.AsyncUtil.Step;
 import java.time.Duration;
 
 public class ExtendedProcessingScheduleServiceImpl implements ProcessingScheduleService {
-
   private final AsyncScheduleServiceContext context;
-  private final ActorControl streamProcessorActorControl;
   private final ProcessingScheduleServiceImpl processorActorService;
-
   private final boolean alwaysAsync;
-
-  private final AsyncProcessingScheduleServiceActor asyncActor;
 
   public ExtendedProcessingScheduleServiceImpl(
       final AsyncScheduleServiceContext asyncScheduleServiceContext,
-      final ActorControl streamProcessorActorControl,
+      final ProcessingScheduleServiceImpl processorActorService,
       final boolean alwaysAsync) {
     context = asyncScheduleServiceContext;
-    this.streamProcessorActorControl = streamProcessorActorControl;
+    this.processorActorService = processorActorService;
     this.alwaysAsync = alwaysAsync;
-    processorActorService = context.createActorService();
-    asyncActor = context.createAsyncActor(ASYNC_PROCESSING);
   }
 
   @Override
@@ -94,27 +85,6 @@ public class ExtendedProcessingScheduleServiceImpl implements ProcessingSchedule
           futureScheduledTask.complete(scheduledTask);
         });
     return new AsyncScheduledTask(futureScheduledTask, pool);
-  }
-
-  @Override
-  public ActorFuture<Void> open() {
-    return AsyncUtil.chainSteps(
-        0,
-        new Step[] {
-          () -> processorActorService.open(streamProcessorActorControl),
-          () -> context.submitActor(asyncActor)
-        });
-  }
-
-  @Override
-  public ActorFuture<Void> closeActorsAsync() {
-    return context.closeActorsAsync();
-  }
-
-  @Override
-  public void closeSchedulers() {
-    processorActorService.close();
-    context.closeActorServices();
   }
 
   @Override

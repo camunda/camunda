@@ -12,7 +12,6 @@ import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import io.camunda.zeebe.scheduler.ActorControl;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import java.time.Duration;
 import org.junit.jupiter.api.Test;
@@ -23,12 +22,9 @@ final class ExtendedProcessingScheduleServiceImplTest {
   void shouldNotScheduleAsyncIfDisabled() {
     // given
     final var context = mock(AsyncScheduleServiceContext.class);
-    final var syncControl = mock(ActorControl.class);
     final var sync = mock(ProcessingScheduleServiceImpl.class);
-    when(context.createActorService()).thenReturn(sync);
 
-    final var schedulingService =
-        new ExtendedProcessingScheduleServiceImpl(context, syncControl, false);
+    final var schedulingService = new ExtendedProcessingScheduleServiceImpl(context, sync, false);
 
     // when
     schedulingService.runDelayed(Duration.ZERO, () -> {});
@@ -41,7 +37,7 @@ final class ExtendedProcessingScheduleServiceImplTest {
   @Test
   void shouldAlwaysScheduleAsyncIfEnabled() {
     // given
-    final var syncControl = mock(ActorControl.class);
+    final var sync = mock(ProcessingScheduleServiceImpl.class);
     final var async = mock(ProcessingScheduleServiceImpl.class);
     final var asyncControl = mock(AsyncProcessingScheduleServiceActor.class);
     when(asyncControl.createFuture()).thenReturn(new CompletableActorFuture<>());
@@ -58,8 +54,7 @@ final class ExtendedProcessingScheduleServiceImplTest {
     when(context.getOrCreateAsyncActor(ASYNC_PROCESSING)).thenReturn(asyncControl);
     when(context.getAsyncActorService(ASYNC_PROCESSING)).thenReturn(async);
 
-    final var schedulingService =
-        new ExtendedProcessingScheduleServiceImpl(context, syncControl, true);
+    final var schedulingService = new ExtendedProcessingScheduleServiceImpl(context, sync, true);
 
     // when
     schedulingService.runDelayed(Duration.ZERO, () -> {});

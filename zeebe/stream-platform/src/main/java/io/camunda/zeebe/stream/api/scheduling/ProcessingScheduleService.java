@@ -7,7 +7,6 @@
  */
 package io.camunda.zeebe.stream.api.scheduling;
 
-import io.camunda.zeebe.scheduler.future.ActorFuture;
 import java.time.Duration;
 
 public interface ProcessingScheduleService extends SimpleProcessingScheduleService {
@@ -91,10 +90,4 @@ public interface ProcessingScheduleService extends SimpleProcessingScheduleServi
    * @param pool The pool to execute the task on
    */
   ScheduledTask runAtOnPool(long timestamp, Task task, AsyncSchedulePool pool);
-
-  ActorFuture<Void> open();
-
-  ActorFuture<Void> closeActorsAsync();
-
-  void closeSchedulers();
 }

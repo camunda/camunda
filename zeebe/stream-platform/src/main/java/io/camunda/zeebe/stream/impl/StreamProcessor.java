@@ -22,7 +22,6 @@ import io.camunda.zeebe.stream.api.RecordProcessor;
 import io.camunda.zeebe.stream.api.StreamClock;
 import io.camunda.zeebe.stream.api.StreamClock.ControllableStreamClock.Modification;
 import io.camunda.zeebe.stream.api.StreamProcessorLifecycleAware;
-import io.camunda.zeebe.stream.api.scheduling.ProcessingScheduleService;
 import io.camunda.zeebe.stream.api.scheduling.ScheduledCommandCache.StageableScheduledCommandCache;
 import io.camunda.zeebe.stream.impl.AsyncUtil.Step;
 import io.camunda.zeebe.stream.impl.metrics.ScheduledTaskMetrics;
@@ -112,7 +111,8 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
   private ActorFuture<LastProcessingPositions> replayCompletedFuture;
 
   private final List<RecordProcessor> recordProcessors = new ArrayList<>();
-  private ProcessingScheduleService processingScheduleService;
+  private AsyncScheduleServiceContext asyncScheduleServiceContext;
+  private ProcessingScheduleServiceImpl processorActorService;
 
   protected StreamProcessor(final StreamProcessorBuilder processorBuilder) {
     actorSchedulingService = processorBuilder.getActorSchedulingService();
@@ -167,7 +167,7 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
       final var scheduledTaskMetrics =
           ScheduledTaskMetrics.of(streamProcessorContext.getMeterRegistry());
 
-      final AsyncScheduleServiceContext asyncScheduleServiceContext =
+      asyncScheduleServiceContext =
           new AsyncScheduleServiceContext(
               actorSchedulingService,
               streamProcessorContext::getStreamProcessorPhase,
@@ -178,10 +178,12 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
               streamProcessorContext.getScheduledTaskCheckInterval(),
               scheduledTaskMetrics,
               partitionId);
-      processingScheduleService =
+      processorActorService = asyncScheduleServiceContext.createActorService();
+
+      final var processingScheduleService =
           new ExtendedProcessingScheduleServiceImpl(
               asyncScheduleServiceContext,
-              actor,
+              processorActorService,
               streamProcessorContext.enableAsyncScheduledTasks());
       streamProcessorContext.scheduleService(processingScheduleService);
 
@@ -251,7 +253,7 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
   public ActorFuture<Void> closeAsync() {
     if (isOpened.getAndSet(false)) {
       actor.run(
-          () -> processingScheduleService.closeActorsAsync().onComplete((v, t) -> actor.close()));
+          () -> asyncScheduleServiceContext.closeActorsAsync().onComplete((v, t) -> actor.close()));
     }
 
     return closeFuture;
@@ -277,7 +279,8 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
   }
 
   private void tearDown() {
-    processingScheduleService.closeSchedulers();
+    processorActorService.close();
+    asyncScheduleServiceContext.closeActorServices();
     streamProcessorContext.getLogStreamReader().close();
     logStream.removeRecordAvailableListener(this);
     replayStateMachine.close();
@@ -371,7 +374,7 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
 
     AsyncUtil.chainSteps(
         0,
-        new Step[] {() -> processingScheduleService.open()},
+        new Step[] {() -> processorActorService.open(actor)},
         () -> startProcessing(lastProcessingPositions),
         this::onFailure);
   }
@@ -379,7 +382,7 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
   private void onFailure(final Throwable throwable) {
     LOG.error("Actor {} failed in phase {}.", actorName, actor.getLifecyclePhase(), throwable);
 
-    final var asyncActorCloseFuture = processingScheduleService.closeActorsAsync();
+    final var asyncActorCloseFuture = asyncScheduleServiceContext.closeActorsAsync();
     asyncActorCloseFuture.onComplete(
         (v, t) -> {
           actor.fail(throwable);
