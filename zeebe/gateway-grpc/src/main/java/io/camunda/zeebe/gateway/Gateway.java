@@ -73,6 +73,7 @@ import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.oauth2.jwt.JwtDecoder;
 
 public final class Gateway implements CloseableSilently {
 
@@ -96,6 +97,7 @@ public final class Gateway implements CloseableSilently {
   private final BrokerClient brokerClient;
   private final UserServices userServices;
   private final PasswordEncoder passwordEncoder;
+  private final JwtDecoder jwtDecoder;
   private final MeterRegistry meterRegistry;
 
   public Gateway(
@@ -106,7 +108,8 @@ public final class Gateway implements CloseableSilently {
       final ClientStreamer<JobActivationProperties> jobStreamer,
       final UserServices userServices,
       final PasswordEncoder passwordEncoder,
-      final MeterRegistry meterRegistry) {
+      final MeterRegistry meterRegistry,
+      final JwtDecoder jwtDecoder) {
     this(
         DEFAULT_SHUTDOWN_TIMEOUT,
         gatewayCfg,
@@ -116,6 +119,7 @@ public final class Gateway implements CloseableSilently {
         jobStreamer,
         userServices,
         passwordEncoder,
+        jwtDecoder,
         meterRegistry);
   }
 
@@ -128,6 +132,7 @@ public final class Gateway implements CloseableSilently {
       final ClientStreamer<JobActivationProperties> jobStreamer,
       final UserServices userServices,
       final PasswordEncoder passwordEncoder,
+      final JwtDecoder jwtDecoder,
       final MeterRegistry meterRegistry) {
     shutdownTimeout = shutdownDuration;
     this.gatewayCfg = gatewayCfg;
@@ -137,6 +142,7 @@ public final class Gateway implements CloseableSilently {
     this.jobStreamer = jobStreamer;
     this.userServices = userServices;
     this.passwordEncoder = passwordEncoder;
+    this.jwtDecoder = jwtDecoder;
     this.meterRegistry = meterRegistry;
 
     healthManager = new GatewayHealthManagerImpl();
@@ -397,7 +403,7 @@ public final class Gateway implements CloseableSilently {
     interceptors.add(new ContextInjectingInterceptor(queryApi));
 
     if (securityConfiguration.isApiProtected()) {
-      interceptors.add(new AuthenticationInterceptor(userServices, passwordEncoder));
+      interceptors.add(new AuthenticationInterceptor(userServices, passwordEncoder, jwtDecoder));
     }
     return ServerInterceptors.intercept(service, interceptors);
   }

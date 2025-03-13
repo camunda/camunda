@@ -21,6 +21,7 @@ import io.micrometer.core.instrument.MeterRegistry;
 import java.time.Duration;
 import org.agrona.CloseHelper;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.oauth2.jwt.JwtDecoder;
 
 public final class EmbeddedGatewayService implements AutoCloseable {
   private final Gateway gateway;
@@ -38,6 +39,7 @@ public final class EmbeddedGatewayService implements AutoCloseable {
       final BrokerClient brokerClient,
       final UserServices userServices,
       final PasswordEncoder passwordEncoder,
+      final JwtDecoder jwtDecoder,
       final MeterRegistry meterRegistry) {
     this.concurrencyControl = concurrencyControl;
     this.brokerClient = brokerClient;
@@ -52,6 +54,7 @@ public final class EmbeddedGatewayService implements AutoCloseable {
             jobStreamClient.streamer(),
             userServices,
             passwordEncoder,
+            jwtDecoder,
             meterRegistry);
   }
 

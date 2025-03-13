@@ -230,6 +230,7 @@ final class StandaloneGatewaySecurityTest {
         jobStreamClient,
         null,
         null,
+        null,
         new SimpleMeterRegistry());
   }
 }

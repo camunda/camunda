@@ -10,7 +10,6 @@ package io.camunda.zeebe.gateway.interceptors.impl;
 import io.camunda.search.entities.UserEntity;
 import io.camunda.search.query.SearchQueryBuilders;
 import io.camunda.service.UserServices;
-import io.camunda.zeebe.auth.JwtDecoder;
 import io.grpc.Context;
 import io.grpc.Contexts;
 import io.grpc.Metadata;
@@ -27,6 +26,7 @@ import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.oauth2.jwt.JwtDecoder;
 
 public class AuthenticationInterceptor implements ServerInterceptor {
 
@@ -39,11 +39,15 @@ public class AuthenticationInterceptor implements ServerInterceptor {
 
   private final UserServices userServices;
   private final PasswordEncoder passwordEncoder;
+  private final JwtDecoder jwtDecoder;
 
   public AuthenticationInterceptor(
-      final UserServices userServices, final PasswordEncoder passwordEncoder) {
+      final UserServices userServices,
+      final PasswordEncoder passwordEncoder,
+      final JwtDecoder jwtDecoder) {
     this.userServices = userServices;
     this.passwordEncoder = passwordEncoder;
+    this.jwtDecoder = jwtDecoder;
   }
 
   @Override
@@ -147,17 +151,11 @@ public class AuthenticationInterceptor implements ServerInterceptor {
       final MethodDescriptor<ReqT, RespT> methodDescriptor,
       final String authorization) {
     final String token = authorization.replaceFirst("^Bearer ", "");
-
-    // TODO verify the token, do we really want to delete the identity SDK ? It's not easy to verify
-    // a token
-
     try {
       // get user claims and set them in the context
-      final JwtDecoder jwtDecoder = new JwtDecoder(token);
-      final var claims = jwtDecoder.decode().getClaims();
+      final var claims = jwtDecoder.decode(token).getClaims();
       final var context = Context.current().withValue(USER_CLAIMS, claims);
       return Contexts.interceptCall(context, call, headers, next);
-
     } catch (final RuntimeException e) {
       LOGGER.debug(
           "Denying call {} as the token is not valid. Error message: {}",

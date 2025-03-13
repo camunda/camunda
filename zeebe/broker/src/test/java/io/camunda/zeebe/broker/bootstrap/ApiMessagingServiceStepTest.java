@@ -37,6 +37,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.oauth2.jwt.JwtDecoder;
 
 class ApiMessagingServiceStepTest {
 
@@ -75,7 +76,8 @@ class ApiMessagingServiceStepTest {
             TEST_SHUTDOWN_TIMEOUT,
             new SecurityConfiguration(),
             mock(UserServices.class),
-            mock(PasswordEncoder.class));
+            mock(PasswordEncoder.class),
+            mock(JwtDecoder.class));
     testBrokerStartupContext.setConcurrencyControl(CONCURRENCY_CONTROL);
   }
 

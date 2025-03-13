@@ -43,6 +43,7 @@ import java.util.List;
 import java.util.Objects;
 import org.agrona.concurrent.SnowflakeIdGenerator;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.oauth2.jwt.JwtDecoder;
 
 public final class BrokerStartupContextImpl implements BrokerStartupContext {
 
@@ -62,6 +63,7 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
   private final SecurityConfiguration securityConfiguration;
   private final UserServices userServices;
   private final PasswordEncoder passwordEncoder;
+  private final JwtDecoder jwtDecoder;
 
   private ConcurrencyControl concurrencyControl;
   private DiskSpaceUsageMonitor diskSpaceUsageMonitor;
@@ -91,7 +93,8 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
       final MeterRegistry meterRegistry,
       final SecurityConfiguration securityConfiguration,
       final UserServices userServices,
-      final PasswordEncoder passwordEncoder) {
+      final PasswordEncoder passwordEncoder,
+      final JwtDecoder jwtDecoder) {
 
     this.brokerInfo = requireNonNull(brokerInfo);
     this.configuration = requireNonNull(configuration);
@@ -107,6 +110,7 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
     this.securityConfiguration = requireNonNull(securityConfiguration);
     this.userServices = userServices;
     this.passwordEncoder = passwordEncoder;
+    this.jwtDecoder = jwtDecoder;
     partitionListeners.addAll(additionalPartitionListeners);
   }
 
@@ -124,7 +128,8 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
       final Duration shutdownTimeout,
       final SecurityConfiguration securityConfiguration,
       final UserServices userServices,
-      final PasswordEncoder passwordEncoder) {
+      final PasswordEncoder passwordEncoder,
+      final JwtDecoder jwtDecoder) {
 
     this(
         brokerInfo,
@@ -141,7 +146,8 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
         new SimpleMeterRegistry(),
         securityConfiguration,
         userServices,
-        passwordEncoder);
+        passwordEncoder,
+        jwtDecoder);
   }
 
   @Override
@@ -367,5 +373,10 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
   @Override
   public PasswordEncoder getPasswordEncoder() {
     return passwordEncoder;
+  }
+
+  @Override
+  public JwtDecoder getJwtDecoder() {
+    return jwtDecoder;
   }
 }
