@@ -21,6 +21,7 @@ import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperation
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationExecutionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationSubbatchRecord;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationIntent;
+import java.util.List;
 import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -31,11 +32,12 @@ public class DbBatchOperationState implements MutableBatchOperationState {
   private final Logger LOGGER = LoggerFactory.getLogger(DbBatchOperationState.class);
   private final DbLong batchKey = new DbLong();
   private final DbForeignKey<DbLong> fkBatchKey;
-  private final DbLong entityKey;
-  private final DbCompositeKey<DbForeignKey<DbLong>, DbLong> fkBatchKeyAndEntityKey;
+  private final DbLong chunkKey;
+  private final DbCompositeKey<DbForeignKey<DbLong>, DbLong> fkBatchKeyAndChunkKey;
 
   private final ColumnFamily<DbLong, PersistedBatchOperation> batchOperationColumnFamily;
-  private final ColumnFamily<DbCompositeKey<DbForeignKey<DbLong>, DbLong>, DbNil>
+  private final ColumnFamily<
+          DbCompositeKey<DbForeignKey<DbLong>, DbLong>, PersistedBatchOperationChunk>
       batchOperationEntitiesColumnFamily;
   private final ColumnFamily<DbLong, DbNil> pendingBatchOperationColumnFamily;
 
@@ -48,14 +50,14 @@ public class DbBatchOperationState implements MutableBatchOperationState {
             batchKey,
             new PersistedBatchOperation());
     fkBatchKey = new DbForeignKey<>(batchKey, ZbColumnFamilies.BATCH_OPERATION);
-    entityKey = new DbLong();
-    fkBatchKeyAndEntityKey = new DbCompositeKey<>(fkBatchKey, entityKey);
+    chunkKey = new DbLong();
+    fkBatchKeyAndChunkKey = new DbCompositeKey<>(fkBatchKey, chunkKey);
     batchOperationEntitiesColumnFamily =
         zeebeDb.createColumnFamily(
             ZbColumnFamilies.ENTITY_BY_BATCH_OPERATION,
             transactionContext,
-            fkBatchKeyAndEntityKey,
-            DbNil.INSTANCE);
+            fkBatchKeyAndChunkKey,
+            new PersistedBatchOperationChunk());
     pendingBatchOperationColumnFamily =
         zeebeDb.createColumnFamily(
             ZbColumnFamilies.PENDING_BATCH_OPERATION, transactionContext, batchKey, DbNil.INSTANCE);
@@ -77,54 +79,78 @@ public class DbBatchOperationState implements MutableBatchOperationState {
     pendingBatchOperationColumnFamily.upsert(this.batchKey, DbNil.INSTANCE);
   }
 
-  // TODO not needed anymore?
   @Override
-  public void updateOffset(final long batchKey, final BatchOperationExecutionRecord record) {
+  public void removeFromPending(final long batchKey, final BatchOperationExecutionRecord record) {
     this.batchKey.wrapLong(record.getBatchOperationKey());
-    final var batch = batchOperationColumnFamily.get(this.batchKey);
-    if (batch == null) {
-      LOGGER.warn("Batch operation with key {} not found for updating",
-          record.getBatchOperationKey());
-      return;
-    }
-    batch.setOffset(record.getOffset());
-    batchOperationColumnFamily.update(this.batchKey, batch);
     pendingBatchOperationColumnFamily.deleteIfExists(this.batchKey);
   }
 
   @Override
   public void appendKeys(final long batchKey, final BatchOperationSubbatchRecord record) {
-    LOGGER.trace("Appending keys {} to batch operation with key {}",
+    LOGGER.debug(
+        "Appending {} keys to batch operation with key {}",
         record.getKeys().size(),
         record.getBatchOperationKey());
     final var batch = batchOperationColumnFamily.get(this.batchKey);
-    if (batch == null) {
-      LOGGER.warn("Batch operation with key {} not found for appending entity keys",
-          record.getBatchOperationKey());
-      return;
+
+    PersistedBatchOperationChunk chunk = null;
+    for (final long key : record.getKeys()) {
+      final var currentChunkKey = batch.getMinChunkKey();
+      if (currentChunkKey == -1) {
+        chunk = createNewChunk(batch);
+        LOGGER.debug(
+            "Creating new chunk with key {} for batch operation with key {}",
+            chunk.getKey(),
+            record.getBatchOperationKey());
+      } else if (chunk == null) {
+        LOGGER.debug(
+            "Loading chunk with key {} for batch operation with key {}",
+            currentChunkKey,
+            record.getBatchOperationKey());
+        chunk = batchOperationEntitiesColumnFamily.get(fkBatchKeyAndChunkKey);
+        chunkKey.wrapLong(chunk.getKey());
+      }
+      if (chunk.getKeys().size() >= 15) {
+        LOGGER.debug(
+            "Chunk with key {} is full, inserting it and creating new chunk for batch operation with key {}",
+            chunk.getKey(),
+            record.getBatchOperationKey());
+        batchOperationEntitiesColumnFamily.update(fkBatchKeyAndChunkKey, chunk);
+        chunk = createNewChunk(batch);
+      }
+      chunk.appendKey(key);
+    }
+    if (chunk != null) {
+      batchOperationEntitiesColumnFamily.update(fkBatchKeyAndChunkKey, chunk);
     }
 
-    for (long key : record.getKeys()) {
-      entityKey.wrapLong(key);
-      batchOperationEntitiesColumnFamily.insert(fkBatchKeyAndEntityKey, DbNil.INSTANCE);
-    }
+    batchOperationColumnFamily.update(this.batchKey, batch);
   }
 
   @Override
   public void removeKeys(final long batchKey, final BatchOperationExecutionRecord record) {
-    LOGGER.trace("Removing keys {} from batch operation with key {}",
+    LOGGER.trace(
+        "Removing keys {} from batch operation with key {}",
         record.getKeys().size(),
         record.getBatchOperationKey());
     final var batch = batchOperationColumnFamily.get(this.batchKey);
     if (batch == null) {
-      LOGGER.warn("Batch operation with key {} not found for removing entity keys",
+      LOGGER.warn(
+          "Batch operation with key {} not found for removing entity keys",
           record.getBatchOperationKey());
       return;
     }
 
-    for (long key : record.getKeys()) {
-      entityKey.wrapLong(key);
-      batchOperationEntitiesColumnFamily.deleteIfExists(fkBatchKeyAndEntityKey);
+    chunkKey.wrapLong(batch.getMinChunkKey());
+    final var chunk = batchOperationEntitiesColumnFamily.get(fkBatchKeyAndChunkKey);
+    chunk.removeKeys(record.getKeys());
+
+    if (chunk.getKeys().isEmpty()) {
+      batchOperationEntitiesColumnFamily.deleteExisting(fkBatchKeyAndChunkKey);
+      batch.removeChunkKey(chunk.getKey());
+      batchOperationColumnFamily.update(this.batchKey, batch);
+    } else {
+      batchOperationEntitiesColumnFamily.update(fkBatchKeyAndChunkKey, chunk);
     }
   }
 
@@ -133,12 +159,12 @@ public class DbBatchOperationState implements MutableBatchOperationState {
     this.batchKey.wrapLong(record.getBatchOperationKey());
     final var batch = batchOperationColumnFamily.get(this.batchKey);
     if (batch == null) {
-      LOGGER.warn("Batch operation with key {} not found for pausing",
-          record.getBatchOperationKey());
+      LOGGER.warn(
+          "Batch operation with key {} not found for pausing", record.getBatchOperationKey());
       return;
     }
     batch.setStatus(BatchOperationState.PAUSED);
-    batchOperationColumnFamily.insert(this.batchKey, batch);
+    batchOperationColumnFamily.update(this.batchKey, batch);
   }
 
   @Override
@@ -146,12 +172,12 @@ public class DbBatchOperationState implements MutableBatchOperationState {
     this.batchKey.wrapLong(record.getBatchOperationKey());
     final var batch = batchOperationColumnFamily.get(this.batchKey);
     if (batch == null) {
-      LOGGER.warn("Batch operation with key {} not found for resuming",
-          record.getBatchOperationKey());
+      LOGGER.warn(
+          "Batch operation with key {} not found for resuming", record.getBatchOperationKey());
       return;
     }
     batch.setStatus(BatchOperationState.ACTIVATED);
-    batchOperationColumnFamily.insert(this.batchKey, batch);
+    batchOperationColumnFamily.update(this.batchKey, batch);
   }
 
   @Override
@@ -166,6 +192,19 @@ public class DbBatchOperationState implements MutableBatchOperationState {
 
     this.batchKey.wrapLong(record.getBatchOperationKey());
     batchOperationColumnFamily.deleteExisting(this.batchKey);
+  }
+
+  private PersistedBatchOperationChunk createNewChunk(final PersistedBatchOperation batch) {
+    final long currentChunkKey;
+    final PersistedBatchOperationChunk batchChunk;
+    currentChunkKey = batch.nextChunkKey();
+    batchChunk = new PersistedBatchOperationChunk();
+    batchChunk.setKey(currentChunkKey).setBatchOperationKey(batch.getKey());
+    chunkKey.wrapLong(batchChunk.getKey());
+
+    batchOperationEntitiesColumnFamily.insert(fkBatchKeyAndChunkKey, batchChunk);
+
+    return batchChunk;
   }
 
   @Override
@@ -187,13 +226,18 @@ public class DbBatchOperationState implements MutableBatchOperationState {
   }
 
   @Override
-  public java.util.List<Long> getNextEntityKeys(final long batchOperationKey, final int batchSize) {
-    final var keys = new java.util.ArrayList<Long>();
-    this.batchKey.wrapLong(batchOperationKey);
-    batchOperationEntitiesColumnFamily.whileEqualPrefix(batchKey, (key, nil) -> {
-      keys.add(key.second().getValue());
-      return keys.size() < batchSize;
-    });
-    return keys;
+  public List<Long> getNextEntityKeys(final long batchOperationKey, final int batchSize) {
+    batchKey.wrapLong(batchOperationKey);
+    final var batch = batchOperationColumnFamily.get(batchKey);
+
+    if (batch.getMinChunkKey() == -1) {
+      return List.of();
+    }
+
+    chunkKey.wrapLong(batch.getMinChunkKey());
+    final var chunk = batchOperationEntitiesColumnFamily.get(fkBatchKeyAndChunkKey);
+    final var chunkKeys = chunk.getKeys();
+
+    return chunkKeys.stream().limit(batchSize).toList();
   }
 }
