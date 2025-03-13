@@ -8,6 +8,7 @@
 package io.camunda.zeebe.engine.processing.adhocsubprocess;
 
 import io.camunda.zeebe.engine.processing.Rejection;
+import io.camunda.zeebe.engine.processing.common.ElementTreePathBuilder;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableAdHocSubProcess;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior.AuthorizationRequest;
@@ -161,19 +162,33 @@ public class AdHocSubProcessActivityActivateProcessor
     for (final var elementValue : command.getValue().getElements()) {
       final var elementToActivate =
           adHocSubprocessDefinition.getElementById(elementValue.getElementId());
-      final var elementProcessInstanceRecord = new ProcessInstanceRecord();
-      elementProcessInstanceRecord.wrap(adHocSubprocessElementInstance.getValue());
-      elementProcessInstanceRecord
+      final var elementInstanceRecord = new ProcessInstanceRecord();
+      elementInstanceRecord.wrap(adHocSubprocessElementInstance.getValue());
+      elementInstanceRecord
           .setFlowScopeKey(adHocSubprocessElementInstance.getKey())
           .setElementId(elementToActivate.getId())
           .setBpmnElementType(elementToActivate.getElementType())
           .setBpmnEventType(elementToActivate.getEventType());
 
+      // recalculating the tree path for element to be activated
       final long elementToActivateInstanceKey = keyGenerator.nextKey();
+      final var elementTreePath =
+          new ElementTreePathBuilder()
+              .withElementInstanceProvider(elementInstanceState::getInstance)
+              .withCallActivityIndexProvider(processState::getFlowElement)
+              .withElementInstanceKey(elementToActivateInstanceKey)
+              .withFlowScopeKey(adHocSubprocessElementInstance.getKey())
+              .withRecordValue(elementInstanceRecord)
+              .build();
+      elementInstanceRecord
+          .setElementInstancePath(elementTreePath.elementInstancePath())
+          .setProcessDefinitionPath(elementTreePath.processDefinitionPath())
+          .setCallingElementPath(elementTreePath.callingElementPath());
+
       commandWriter.appendFollowUpCommand(
           elementToActivateInstanceKey,
           ProcessInstanceIntent.ACTIVATE_ELEMENT,
-          elementProcessInstanceRecord);
+          elementInstanceRecord);
     }
 
     stateWriter.appendFollowUpEvent(
