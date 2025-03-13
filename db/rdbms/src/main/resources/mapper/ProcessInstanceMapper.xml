@@ -150,7 +150,7 @@
     <!-- Variable filters -->
     <if test="filter.variableFilters != null and !filter.variableFilters.isEmpty()">
       <foreach collection="filter.variableFilters" item="variableFilter"
-        open="AND (" separator=" OR " close=")">
+        open="AND (" separator=" AND " close=")">
         EXISTS (
         SELECT 1
         FROM ${prefix}VARIABLE v
