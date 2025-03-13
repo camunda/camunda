@@ -249,6 +249,7 @@ public class ProcessInstanceFilterImpl
     return this;
   }
 
+
   @Override
   public ProcessInstanceFilter batchOperationId(final Consumer<StringProperty> fn) {
     final StringProperty property = new StringPropertyImpl();
