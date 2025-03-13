@@ -77,7 +77,7 @@ public class GatewayModuleConfiguration implements CloseableSilently {
       final JobStreamClient jobStreamClient,
       @Autowired(required = false) final UserServices userServices,
       final PasswordEncoder passwordEncoder,
-      final JwtDecoder jwtDecoder,
+      @Autowired(required = false) final JwtDecoder jwtDecoder,
       final MeterRegistry meterRegistry) {
     this.configuration = configuration;
     this.securityConfiguration = securityConfiguration;
