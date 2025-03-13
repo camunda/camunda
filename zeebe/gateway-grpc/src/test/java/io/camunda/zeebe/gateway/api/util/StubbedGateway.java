@@ -7,13 +7,10 @@
  */
 package io.camunda.zeebe.gateway.api.util;
 
-import static org.mockito.Mockito.mock;
-
 import com.auth0.jwt.JWT;
 import com.auth0.jwt.algorithms.Algorithm;
 import io.camunda.security.configuration.MultiTenancyConfiguration;
 import io.camunda.security.configuration.SecurityConfiguration;
-import io.camunda.service.UserServices;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.gateway.EndpointManager;
 import io.camunda.zeebe.gateway.Gateway;
@@ -24,7 +21,6 @@ import io.camunda.zeebe.gateway.impl.job.ActivateJobsHandler;
 import io.camunda.zeebe.gateway.impl.job.LongPollingActivateJobsHandler;
 import io.camunda.zeebe.gateway.impl.job.RoundRobinActivateJobsHandler;
 import io.camunda.zeebe.gateway.impl.stream.StreamJobsHandler;
-import io.camunda.zeebe.gateway.interceptors.impl.AuthenticationInterceptor;
 import io.camunda.zeebe.gateway.metrics.LongPollingMetrics;
 import io.camunda.zeebe.gateway.protocol.GatewayGrpc;
 import io.camunda.zeebe.gateway.protocol.GatewayGrpc.GatewayBlockingStub;
@@ -46,7 +42,6 @@ import io.grpc.ManagedChannel;
 import io.grpc.Metadata;
 import io.grpc.Metadata.Key;
 import io.grpc.Server;
-import io.grpc.ServerInterceptors;
 import io.grpc.inprocess.InProcessChannelBuilder;
 import io.grpc.inprocess.InProcessServerBuilder;
 import java.io.IOException;
@@ -61,8 +56,6 @@ import java.util.function.Consumer;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.awaitility.Awaitility;
-import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.security.oauth2.jwt.JwtDecoder;
 
 public final class StubbedGateway {
 
@@ -74,9 +67,6 @@ public final class StubbedGateway {
   private final GatewayCfg config;
   private final SecurityConfiguration securityConfiguration;
   private Server server;
-  private final UserServices services;
-  private final PasswordEncoder passwordEncoder;
-  private final JwtDecoder jwtDecoder;
 
   public StubbedGateway(
       final ActorScheduler actorScheduler,
@@ -89,9 +79,6 @@ public final class StubbedGateway {
     this.jobStreamer = jobStreamer;
     this.config = config;
     this.securityConfiguration = securityConfiguration;
-    services = mock(UserServices.class);
-    passwordEncoder = mock(PasswordEncoder.class);
-    jwtDecoder = mock(JwtDecoder.class);
   }
 
   public void start() throws IOException {
@@ -105,11 +92,7 @@ public final class StubbedGateway {
         new EndpointManager(brokerClient, activateJobsHandler, clientStreamAdapter, multiTenancy);
     final GatewayGrpcService gatewayGrpcService = new GatewayGrpcService(endpointManager);
     final InProcessServerBuilder serverBuilder =
-        InProcessServerBuilder.forName(SERVER_NAME)
-            .addService(
-                ServerInterceptors.intercept(
-                    gatewayGrpcService,
-                    new AuthenticationInterceptor(services, passwordEncoder, jwtDecoder)));
+        InProcessServerBuilder.forName(SERVER_NAME).addService(gatewayGrpcService);
     server = serverBuilder.build();
     server.start();
   }

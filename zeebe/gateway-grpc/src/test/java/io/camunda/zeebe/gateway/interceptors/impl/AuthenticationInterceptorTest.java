@@ -18,6 +18,8 @@ import com.auth0.jwt.algorithms.Algorithm;
 import io.camunda.search.entities.UserEntity;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.service.UserServices;
+import io.camunda.zeebe.gateway.interceptors.impl.AuthenticationHandler.BasicAuth;
+import io.camunda.zeebe.gateway.interceptors.impl.AuthenticationHandler.Oidc;
 import io.grpc.Context;
 import io.grpc.Metadata;
 import io.grpc.Metadata.Key;
@@ -26,6 +28,7 @@ import io.grpc.ServerCallHandler;
 import io.grpc.Status;
 import java.util.Date;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 import org.assertj.core.api.MapAssert;
 import org.assertj.core.api.StringAssert;
@@ -40,8 +43,7 @@ public class AuthenticationInterceptorTest {
     // when
     final CloseStatusCapturingServerCall closeStatusCapturingServerCall =
         new CloseStatusCapturingServerCall();
-    new AuthenticationInterceptor(
-            mock(UserServices.class), mock(PasswordEncoder.class), mock(JwtDecoder.class))
+    new AuthenticationInterceptor(null)
         .interceptCall(closeStatusCapturingServerCall, new Metadata(), failingNextHandler());
 
     // then
@@ -69,7 +71,7 @@ public class AuthenticationInterceptorTest {
         .thenReturn(new SearchQueryResult<>(1, List.of(createUserEntity()), null, null));
     final var passwordEncoder = mock(PasswordEncoder.class);
     when(passwordEncoder.matches(anyString(), anyString())).thenReturn(true);
-    new AuthenticationInterceptor(userServices, passwordEncoder, mock(JwtDecoder.class))
+    new AuthenticationInterceptor(new BasicAuth(userServices, passwordEncoder))
         .interceptCall(
             closeStatusCapturingServerCall,
             metadata,
@@ -93,7 +95,7 @@ public class AuthenticationInterceptorTest {
     final var userServices = mock(UserServices.class);
     when(userServices.search(any()))
         .thenReturn(new SearchQueryResult<>(1, List.of(createUserEntity()), null, null));
-    new AuthenticationInterceptor(userServices, mock(PasswordEncoder.class), mock(JwtDecoder.class))
+    new AuthenticationInterceptor(new BasicAuth(userServices, mock(PasswordEncoder.class)))
         .interceptCall(
             closeStatusCapturingServerCall,
             metadata,
@@ -115,7 +117,7 @@ public class AuthenticationInterceptorTest {
     metadata.put(Key.of("Authorization", Metadata.ASCII_STRING_MARSHALLER), "Basic ZGVtbzpkZW1v");
     final var userServices = mock(UserServices.class);
     when(userServices.search(any())).thenReturn(new SearchQueryResult<>(0, List.of(), null, null));
-    new AuthenticationInterceptor(userServices, mock(PasswordEncoder.class), mock(JwtDecoder.class))
+    new AuthenticationInterceptor(new BasicAuth(userServices, mock(PasswordEncoder.class)))
         .interceptCall(closeStatusCapturingServerCall, metadata, failingNextHandler());
 
     // then
@@ -140,7 +142,7 @@ public class AuthenticationInterceptorTest {
         .thenReturn(new SearchQueryResult<>(1, List.of(createUserEntity()), null, null));
     final var passwordEncoder = mock(PasswordEncoder.class);
     when(passwordEncoder.matches(anyString(), anyString())).thenReturn(false);
-    new AuthenticationInterceptor(userServices, passwordEncoder, mock(JwtDecoder.class))
+    new AuthenticationInterceptor(new BasicAuth(userServices, mock(PasswordEncoder.class)))
         .interceptCall(closeStatusCapturingServerCall, metadata, failingNextHandler());
 
     // then
@@ -158,8 +160,21 @@ public class AuthenticationInterceptorTest {
     // when
     final CloseStatusCapturingServerCall closeStatusCapturingServerCall =
         new CloseStatusCapturingServerCall();
-    new AuthenticationInterceptor(
-            mock(UserServices.class), mock(PasswordEncoder.class), mock(JwtDecoder.class))
+
+    // Create a mock JWT with claims
+    final var jwt = mock(org.springframework.security.oauth2.jwt.Jwt.class);
+    final Map<String, Object> claims =
+        Map.of(
+            "role", "admin",
+            "foo", "bar",
+            "baz", "qux");
+    when(jwt.getClaims()).thenReturn(claims);
+
+    // Configure the JwtDecoder to return our mock JWT
+    final var jwtDecoder = mock(JwtDecoder.class);
+    when(jwtDecoder.decode(anyString())).thenReturn(jwt);
+
+    new AuthenticationInterceptor(new Oidc(jwtDecoder))
         .interceptCall(
             closeStatusCapturingServerCall,
             createAuthHeader(),
@@ -179,9 +194,21 @@ public class AuthenticationInterceptorTest {
     final CloseStatusCapturingServerCall closeStatusCapturingServerCall =
         new CloseStatusCapturingServerCall();
 
+    // Create a mock JWT with claims
+    final var jwt = mock(org.springframework.security.oauth2.jwt.Jwt.class);
+    final Map<String, Object> claims =
+        Map.of(
+            "role", "admin",
+            "foo", "bar",
+            "baz", "qux");
+    when(jwt.getClaims()).thenReturn(claims);
+
+    // Configure the JwtDecoder to return our mock JWT
+    final var jwtDecoder = mock(JwtDecoder.class);
+    when(jwtDecoder.decode(anyString())).thenReturn(jwt);
+
     // when
-    new AuthenticationInterceptor(
-            mock(UserServices.class), mock(PasswordEncoder.class), mock(JwtDecoder.class))
+    new AuthenticationInterceptor(new Oidc(jwtDecoder))
         .interceptCall(
             closeStatusCapturingServerCall,
             metadata,
@@ -195,7 +222,8 @@ public class AuthenticationInterceptorTest {
 
   private Metadata createAuthHeader() {
     final Metadata metadata = new Metadata();
-    metadata.put(Key.of("Authorization", Metadata.ASCII_STRING_MARSHALLER), generateToken());
+    metadata.put(
+        Key.of("Authorization", Metadata.ASCII_STRING_MARSHALLER), "Bearer " + generateToken());
     return metadata;
   }
 
@@ -215,7 +243,7 @@ public class AuthenticationInterceptorTest {
 
   private static MapAssert<String, Object> assertUserClaims() {
     try {
-      return assertThat(Context.current().call(() -> AuthenticationInterceptor.USER_CLAIMS.get()));
+      return assertThat(Context.current().call(() -> Oidc.USER_CLAIMS.get()));
     } catch (final Exception e) {
       throw new RuntimeException("Unable to retrieve user claims from context", e);
     }
@@ -223,8 +251,7 @@ public class AuthenticationInterceptorTest {
 
   private static StringAssert assertUserKey() {
     try {
-      return (StringAssert)
-          assertThat(Context.current().call(() -> AuthenticationInterceptor.USERNAME.get()));
+      return (StringAssert) assertThat(Context.current().call(() -> BasicAuth.USERNAME.get()));
     } catch (final Exception e) {
       throw new RuntimeException("Unable to retrieve user key from context", e);
     }
