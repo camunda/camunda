@@ -13,7 +13,7 @@ import {
 import {MODIFICATIONS} from 'modules/bpmn-js/badgePositions';
 import {useProcessInstancesStatistics} from './useProcessInstancesStatistics';
 import {OverlayData} from 'modules/bpmn-js/BpmnJS';
-import {getInstancesCount} from './useInstancesCount';
+import {getInstancesCount} from 'modules/utils/statistics/processInstances';
 
 function batchModificationOverlayParser(params: {
   sourceFlowNodeId?: string;

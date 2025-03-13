@@ -20,9 +20,7 @@ type Props = {
 
 const BatchModificationNotification: React.FC<Props> = observer(
   ({sourceFlowNodeId, targetFlowNodeId, onUndoClick}) => {
-    const {data: instancesCount = 0} = useInstancesCount(
-      sourceFlowNodeId || '',
-    );
+    const {data: instancesCount = 0} = useInstancesCount(sourceFlowNodeId);
 
     const sourceFlowNodeName = sourceFlowNodeId
       ? processXmlStore.getFlowNodeName(sourceFlowNodeId)
