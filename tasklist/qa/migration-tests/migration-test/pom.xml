@@ -57,6 +57,12 @@
 
     <dependency>
       <groupId>io.camunda</groupId>
+      <artifactId>tasklist-qa-migration-tests-test-fixture-870</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
       <artifactId>tasklist-els-schema</artifactId>
       <scope>test</scope>
     </dependency>
@@ -195,6 +201,7 @@
             <dependency>io.camunda:tasklist-qa-migration-tests-test-fixture-840</dependency>
             <dependency>io.camunda:tasklist-qa-migration-tests-test-fixture-850</dependency>
             <dependency>io.camunda:tasklist-qa-migration-tests-test-fixture-860</dependency>
+            <dependency>io.camunda:tasklist-qa-migration-tests-test-fixture-870</dependency>
           </usedDependencies>
           <ignoredUsedUndeclaredDependencies>
             <dependency>jakarta.annotation:jakarta.annotation-api</dependency>
