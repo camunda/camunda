@@ -17,6 +17,7 @@ import io.camunda.zeebe.stream.impl.StreamProcessor.Phase;
 import io.camunda.zeebe.stream.impl.metrics.ScheduledTaskMetrics;
 import java.time.Duration;
 import java.time.InstantSource;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.function.BooleanSupplier;
@@ -58,6 +59,8 @@ public class AsyncScheduleServiceContext {
 
     asyncActors = new LinkedHashMap<>();
     asyncActorServices = new LinkedHashMap<>();
+
+    createAllAsyncPools();
   }
 
   public ProcessingScheduleServiceImpl createActorService() {
@@ -71,16 +74,8 @@ public class AsyncScheduleServiceContext {
         metrics);
   }
 
-  public AsyncProcessingScheduleServiceActor getOrCreateAsyncActor(final AsyncSchedulePool pool) {
-    return geAsyncActor(pool, true);
-  }
-
-  public AsyncProcessingScheduleServiceActor geAsyncActor(
-      final AsyncSchedulePool pool, final boolean create) {
-    if (!create) {
-      return asyncActors.get(pool);
-    }
-    return asyncActors.computeIfAbsent(pool, this::createAndSubmitAsyncActor);
+  public AsyncProcessingScheduleServiceActor geAsyncActor(final AsyncSchedulePool pool) {
+    return asyncActors.get(pool);
   }
 
   public ProcessingScheduleServiceImpl getAsyncActorService(final AsyncSchedulePool pool) {
@@ -97,10 +92,6 @@ public class AsyncScheduleServiceContext {
     return actor;
   }
 
-  public ActorFuture<Void> submitActor(final AsyncProcessingScheduleServiceActor actor) {
-    return actorSchedulingService.submitActor(actor);
-  }
-
   public ActorFuture<Void> closeActorsAsync() {
     final Step[] array =
         asyncActors.values().stream().map(a -> (Step) a::closeAsync).toArray(Step[]::new);
@@ -111,16 +102,20 @@ public class AsyncScheduleServiceContext {
     asyncActorServices.values().forEach(ProcessingScheduleServiceImpl::close);
   }
 
-  private AsyncProcessingScheduleServiceActor createAndSubmitAsyncActor(
-      final AsyncSchedulePool pool) {
-    final var actor = createAsyncActor(pool);
-
-    submitActor(pool, actor).join();
-    return actor;
+  public ActorFuture<Void> submitActors() {
+    final Step[] submitActorSteps =
+        asyncActors.entrySet().stream()
+            .map((e) -> (Step) () -> submitActor(e.getKey(), e.getValue()))
+            .toArray(Step[]::new);
+    return AsyncUtil.chainSteps(0, submitActorSteps);
   }
 
   private ActorFuture<Void> submitActor(
       final AsyncSchedulePool pool, final AsyncProcessingScheduleServiceActor actor) {
     return actorSchedulingService.submitActor(actor, pool.getSchedulingHints());
+  }
+
+  private void createAllAsyncPools() {
+    Arrays.stream(AsyncSchedulePool.values()).forEach(this::createAsyncActor);
   }
 }

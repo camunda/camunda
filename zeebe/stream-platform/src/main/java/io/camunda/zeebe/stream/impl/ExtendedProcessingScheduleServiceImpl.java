@@ -47,7 +47,7 @@ public class ExtendedProcessingScheduleServiceImpl implements ProcessingSchedule
   @Override
   public void runAtFixedRateOnPool(
       final Duration delay, final Task task, final AsyncSchedulePool pool) {
-    final var actor = context.getOrCreateAsyncActor(pool);
+    final var actor = context.geAsyncActor(pool);
     final var actorService = context.getAsyncActorService(pool);
     actor.run(
         () -> {
@@ -59,7 +59,7 @@ public class ExtendedProcessingScheduleServiceImpl implements ProcessingSchedule
   @Override
   public ScheduledTask runDelayedOnPool(
       final Duration delay, final Task task, final AsyncSchedulePool pool) {
-    final var actor = context.getOrCreateAsyncActor(pool);
+    final var actor = context.geAsyncActor(pool);
     final var actorService = context.getAsyncActorService(pool);
 
     final var futureScheduledTask = actor.<ScheduledTask>createFuture();
@@ -75,7 +75,7 @@ public class ExtendedProcessingScheduleServiceImpl implements ProcessingSchedule
   @Override
   public ScheduledTask runAtOnPool(
       final long timestamp, final Task task, final AsyncSchedulePool pool) {
-    final var actor = context.getOrCreateAsyncActor(pool);
+    final var actor = context.geAsyncActor(pool);
     final var actorService = context.getAsyncActorService(pool);
     final var futureScheduledTask = actor.<ScheduledTask>createFuture();
     actor.run(
@@ -90,7 +90,7 @@ public class ExtendedProcessingScheduleServiceImpl implements ProcessingSchedule
   @Override
   public ScheduledTask runDelayed(final Duration delay, final Runnable task) {
     if (alwaysAsync) {
-      final var actor = context.getOrCreateAsyncActor(ASYNC_PROCESSING);
+      final var actor = context.geAsyncActor(ASYNC_PROCESSING);
       final var actorService = context.getAsyncActorService(ASYNC_PROCESSING);
       final var futureScheduledTask = actor.<ScheduledTask>createFuture();
       actor.run(
@@ -126,7 +126,7 @@ public class ExtendedProcessingScheduleServiceImpl implements ProcessingSchedule
   @Override
   public ScheduledTask runAt(final long timestamp, final Runnable task) {
     if (alwaysAsync) {
-      final var actor = context.getOrCreateAsyncActor(ASYNC_PROCESSING);
+      final var actor = context.geAsyncActor(ASYNC_PROCESSING);
       final var actorService = context.getAsyncActorService(ASYNC_PROCESSING);
       final var futureScheduledTask = actor.<ScheduledTask>createFuture();
       actor.run(
@@ -171,7 +171,7 @@ public class ExtendedProcessingScheduleServiceImpl implements ProcessingSchedule
      */
     @Override
     public void cancel() {
-      final var actor = context.geAsyncActor(pool, false);
+      final var actor = context.geAsyncActor(pool);
       if (actor == null) {
         return;
       }

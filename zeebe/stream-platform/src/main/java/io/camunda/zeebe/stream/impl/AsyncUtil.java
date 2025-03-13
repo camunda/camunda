@@ -14,7 +14,7 @@ import java.util.function.Consumer;
 public class AsyncUtil {
   public static ActorFuture<Void> chainSteps(final int index, final Step[] steps) {
     if (index >= steps.length) {
-      return new CompletableActorFuture<>();
+      return CompletableActorFuture.completed(null);
     }
 
     final Step step = steps[index];

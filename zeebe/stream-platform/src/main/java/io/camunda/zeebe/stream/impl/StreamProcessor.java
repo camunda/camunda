@@ -374,7 +374,9 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
 
     AsyncUtil.chainSteps(
         0,
-        new Step[] {() -> processorActorService.open(actor)},
+        new Step[] {
+          () -> processorActorService.open(actor), () -> asyncScheduleServiceContext.submitActors()
+        },
         () -> startProcessing(lastProcessingPositions),
         this::onFailure);
   }
