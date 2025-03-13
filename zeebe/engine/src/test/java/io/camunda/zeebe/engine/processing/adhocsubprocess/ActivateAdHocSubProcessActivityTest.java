@@ -89,7 +89,7 @@ public class ActivateAdHocSubProcessActivityTest {
 
   @Test
   public void
-      givenRunningAdhocSubProcessInstanceWhenSuccessfullyActivatingAElementThenSubsequentActivatedEventIsSent() {
+      givenRunningAdhocSubProcessInstanceWhenElementIsSuccessfullyActivatedThenActivatedEventIsWrittenToLog() {
     ENGINE
         .adHocSubProcessActivity()
         .withAdHocSubProcessInstanceKey(String.valueOf(adHocSubProcessInstanceKey))
