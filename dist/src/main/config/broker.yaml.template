@@ -871,6 +871,7 @@
         #     userTask: true
         #     variable: true
         #     variableDocument: true
+        #     adHocSubProcessActivityActivation: true
 
       # Camunda Exporter ----------
       # An example configuration for the camunda exporter:
