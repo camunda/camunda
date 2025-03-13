@@ -143,6 +143,9 @@ public class UserTaskFilterImpl
   @Override
   public UserTaskFilter processInstanceVariables(
       final List<UserTaskVariableFilterRequest> variableValueFilters) {
+    if (variableValueFilters != null) {
+      variableValueFilters.forEach(v -> variableValueNullCheck(v.getValue()));
+    }
     filter.setProcessInstanceVariables(variableValueFilters);
     return this;
   }
@@ -154,10 +157,13 @@ public class UserTaskFilterImpl
           variableValueFilters.entrySet().stream()
               .map(
                   entry -> {
+                    variableValueNullCheck(entry.getValue());
                     final UserTaskVariableFilterRequest request =
                         new UserTaskVariableFilterRequest();
                     request.setName(entry.getKey());
-                    request.setValue(entry.getValue().toString());
+                    final StringProperty property = new StringPropertyImpl();
+                    property.eq(entry.getValue().toString());
+                    request.setValue(property.build());
                     return request;
                   })
               .collect(Collectors.toList());
@@ -169,6 +175,9 @@ public class UserTaskFilterImpl
   @Override
   public UserTaskFilter localVariables(
       final List<UserTaskVariableFilterRequest> variableValueFilters) {
+    if (variableValueFilters != null) {
+      variableValueFilters.forEach(v -> variableValueNullCheck(v.getValue()));
+    }
     filter.setLocalVariables(variableValueFilters);
     return this;
   }
@@ -180,10 +189,13 @@ public class UserTaskFilterImpl
           variableValueFilters.entrySet().stream()
               .map(
                   entry -> {
+                    variableValueNullCheck(entry.getValue());
                     final UserTaskVariableFilterRequest request =
                         new UserTaskVariableFilterRequest();
                     request.setName(entry.getKey());
-                    request.setValue(entry.getValue().toString());
+                    final StringProperty property = new StringPropertyImpl();
+                    property.eq(entry.getValue().toString());
+                    request.setValue(property.build());
                     return request;
                   })
               .collect(Collectors.toList());
@@ -258,5 +270,11 @@ public class UserTaskFilterImpl
   @Override
   protected io.camunda.client.protocol.rest.UserTaskFilter getSearchRequestProperty() {
     return filter;
+  }
+
+  static void variableValueNullCheck(Object value) {
+    if (value == null) {
+      throw new IllegalArgumentException("Variable value cannot be null");
+    }
   }
 }

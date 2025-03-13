@@ -85,6 +85,6 @@ public final class CollaborationDeploymentTest {
 
   private static Function<DeploymentClient, Record<DeploymentRecordValue>> deploy(
       final String resource) {
-    return deploymentClient -> deploymentClient.withXmlClasspathResource(resource).deploy();
+    return deploymentClient -> deploymentClient.withXmlClasspathResource(resource).deploy("test");
   }
 }

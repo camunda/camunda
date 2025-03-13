@@ -110,7 +110,7 @@ public final class ProcessInstanceFilterTransformer
               .map(v -> variableTransformer.toSearchQuery(v, "varName", "varValue"))
               .map((q) -> hasChildQuery("variable", q))
               .collect(Collectors.toList());
-      return or(queries);
+      return and(queries);
     }
     return null;
   }

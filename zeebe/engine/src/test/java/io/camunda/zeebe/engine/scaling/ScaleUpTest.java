@@ -47,6 +47,7 @@ public class ScaleUpTest {
     final var command =
         RecordToWrite.command()
             .scale(ScaleIntent.SCALE_UP, new ScaleRecord().setDesiredPartitionCount(3));
+    command.recordMetadata().requestId(123);
 
     // when
     engine.writeRecords(command);

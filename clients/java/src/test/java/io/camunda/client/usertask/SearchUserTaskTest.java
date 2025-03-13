@@ -21,10 +21,13 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.github.tomakehurst.wiremock.http.RequestMethod;
 import com.github.tomakehurst.wiremock.verification.LoggedRequest;
 import io.camunda.client.api.search.response.UserTaskState;
+import io.camunda.client.impl.search.filter.builder.StringPropertyImpl;
 import io.camunda.client.protocol.rest.*;
 import io.camunda.client.util.ClientRestTest;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
 import org.junit.jupiter.api.Test;
 
 public final class SearchUserTaskTest extends ClientRestTest {
@@ -167,13 +170,17 @@ public final class SearchUserTaskTest extends ClientRestTest {
   @Test
   void shouldSearchUserTaskByProcessInstanceVariable() {
     // when
+    final Map<String, Object> map = new HashMap<>();
+    map.put("test", "test");
     final UserTaskVariableFilterRequest userTaskVariableFilterRequest =
-        new UserTaskVariableFilterRequest().name("test").value("test");
+        new UserTaskVariableFilterRequest()
+            .name("test")
+            .value(new StringPropertyImpl().eq("test").build());
     final ArrayList<UserTaskVariableFilterRequest> listFilter = new ArrayList<>();
 
     listFilter.add(userTaskVariableFilterRequest);
 
-    client.newUserTaskQuery().filter(f -> f.processInstanceVariables(listFilter)).send().join();
+    client.newUserTaskQuery().filter(f -> f.processInstanceVariables(map)).send().join();
 
     // then
     final UserTaskSearchQuery request = gatewayService.getLastRequest(UserTaskSearchQuery.class);
@@ -184,7 +191,9 @@ public final class SearchUserTaskTest extends ClientRestTest {
   void shouldSearchUserTaskByLocalVariable() {
     // when
     final UserTaskVariableFilterRequest userTaskVariableFilterRequest =
-        new UserTaskVariableFilterRequest().name("test").value("test");
+        new UserTaskVariableFilterRequest()
+            .name("test")
+            .value(new StringPropertyImpl().eq("test").build());
     final ArrayList<UserTaskVariableFilterRequest> listFilter = new ArrayList<>();
 
     listFilter.add(userTaskVariableFilterRequest);

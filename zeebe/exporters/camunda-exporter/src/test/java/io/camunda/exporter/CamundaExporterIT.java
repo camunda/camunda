@@ -728,6 +728,41 @@ final class CamundaExporterIT {
     }
 
     @TestTemplate
+    void shouldMarkImportersAsCompletedEvenIfVersion88ZeebeIndicesExist(
+        final ExporterConfiguration config, final SearchClientAdapter clientAdapter)
+        throws IOException {
+      final String zeebeIndexPrefix = CUSTOM_PREFIX + "-zeebe-record";
+      config.getIndex().setZeebeIndexPrefix(zeebeIndexPrefix);
+      createSchemas(config, clientAdapter);
+      clientAdapter.index("1", zeebeIndexPrefix + "-decision_8.8.0", Map.of("key", "12345"));
+
+      // adds a not complete position index document so exporter sees importing as not yet completed
+      indexImportPositionEntity("decision", false, clientAdapter);
+      clientAdapter.refresh();
+
+      final var context = spy(getContextFromConfig(config));
+      doReturn(partitionId).when(context).getPartitionId();
+      camundaExporter.configure(context);
+      camundaExporter.open(controller);
+
+      controller.runScheduledTasks(Duration.ofMinutes(1));
+
+      // when
+      final var record =
+          factory.generateRecord(
+              ValueType.USER,
+              r -> r.withBrokerVersion("8.8.0").withTimestamp(System.currentTimeMillis()),
+              UserIntent.CREATED);
+
+      camundaExporter.export(record);
+
+      // then
+      assertThat(controller.getPosition()).isEqualTo(record.getPosition());
+      verify(controller, times(1))
+          .updateLastExportedRecordPosition(eq(record.getPosition()), any());
+    }
+
+    @TestTemplate
     void shouldFlushIfImporterNotCompletedButNoZeebeIndices(
         final ExporterConfiguration config, final SearchClientAdapter clientAdapter)
         throws IOException {
@@ -773,14 +808,14 @@ final class CamundaExporterIT {
     }
 
     @TestTemplate
-    void shouldNotFlushIfImportersAreNotCompletedAndThereAreZeebeIndices(
+    void shouldNotFlushIf87IndicesExistToBeImported(
         final ExporterConfiguration config, final SearchClientAdapter clientAdapter)
         throws IOException {
       // given
       final String zeebeIndexPrefix = CUSTOM_PREFIX + "-zeebe-record";
       config.getIndex().setZeebeIndexPrefix(zeebeIndexPrefix);
       createSchemas(config, clientAdapter);
-      clientAdapter.index("1", zeebeIndexPrefix + "-decision", Map.of("key", "12345"));
+      clientAdapter.index("1", zeebeIndexPrefix + "-decision_8.7.0_", Map.of("key", "12345"));
 
       // adds a not complete position index document so exporter sees importing as not yet completed
       indexImportPositionEntity("decision", false, clientAdapter);
@@ -925,7 +960,7 @@ final class CamundaExporterIT {
       config.getIndex().setZeebeIndexPrefix(zeebeIndexPrefix);
 
       // Simulate existing zeebe index so it will not skip the wait for importers
-      clientAdapter.index("1", zeebeIndexPrefix + "-decision", Map.of("key", "12345"));
+      clientAdapter.index("1", zeebeIndexPrefix + "-decision_8.7.0_", Map.of("key", "12345"));
 
       // if schemas are never created then import position indices do not exist and all checks about
       // whether the importers are completed will return false.

@@ -16,7 +16,6 @@
   <modules>
     <module>util</module>
     <module>integration-tests</module>
-    <module>backup-restore-tests</module>
   </modules>
 
   <properties>

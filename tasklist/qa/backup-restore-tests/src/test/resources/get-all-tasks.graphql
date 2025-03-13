@@ -1,7 +1,0 @@
-{tasks(query:{}) {
-    id
-    taskState
-    name
-    taskDefinitionId
-}
-}
