@@ -75,7 +75,7 @@ public class BrokerModuleConfiguration implements CloseableSilently {
       // The UserServices class is not available if you want to start-up the Standalone Broker
       @Autowired(required = false) final UserServices userServices,
       final PasswordEncoder passwordEncoder,
-      final JwtDecoder jwtDecoder) {
+      @Autowired(required = false) final JwtDecoder jwtDecoder) {
     this.configuration = configuration;
     this.identityConfiguration = identityConfiguration;
     this.springBrokerBridge = springBrokerBridge;
