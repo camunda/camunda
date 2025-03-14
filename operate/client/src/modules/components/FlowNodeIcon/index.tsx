@@ -34,6 +34,7 @@ import {ReactComponent as FlowNodeTaskService} from 'modules/components/Icon/flo
 import {ReactComponent as FlowNodeTaskReceive} from 'modules/components/Icon/flow-node-task-receive.svg';
 import {ReactComponent as FlowNodeTaskSend} from 'modules/components/Icon/flow-node-task-send.svg';
 import {ReactComponent as FlowNodeTaskSubProcess} from 'modules/components/Icon/flow-node-subprocess-embedded.svg';
+import {ReactComponent as FlowNodeTaskSubProcessAdhoc} from 'modules/components/Icon/flow-node-subprocess-adhoc.svg';
 import {ReactComponent as FlowNodeTaskMulti} from 'modules/components/Icon/flow-node-multi-instance-parallel.svg';
 import {ReactComponent as FlowNodeTaskParallel} from 'modules/components/Icon/flow-node-multi-instance-sequential.svg';
 import {ReactComponent as FlowNodeCallActivity} from 'modules/components/Icon/flow-node-call-activity.svg';
@@ -267,6 +268,8 @@ const getSVGComponent = (
       return isEventSubProcess({businessObject})
         ? FlowNodeEventSubprocess
         : FlowNodeTaskSubProcess;
+    case 'bpmn:AdHocSubProcess':
+      return FlowNodeTaskSubProcessAdhoc;
   }
 
   return FlowNodeTask;
