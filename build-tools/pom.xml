@@ -7,7 +7,7 @@
     <!-- We can't reference zeebe parent as parent otherwise we will have a circle dependency -->
     <groupId>io.camunda</groupId>
     <artifactId>zeebe-bom</artifactId>
-    <version>8.6.13-SNAPSHOT</version>
+    <version>8.6.12</version>
     <relativePath>../bom/pom.xml</relativePath>
   </parent>
   <artifactId>zeebe-build-tools</artifactId>
