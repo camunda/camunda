@@ -16,6 +16,7 @@
 package io.camunda.spring.client.jobhandling;
 
 import io.camunda.client.CamundaClient;
+import io.camunda.client.api.worker.BackoffSupplier;
 import io.camunda.client.api.worker.JobHandler;
 import io.camunda.client.api.worker.JobWorker;
 import io.camunda.client.api.worker.JobWorkerBuilderStep1;
@@ -39,6 +40,7 @@ public class JobWorkerManager {
   private final MetricsRecorder metricsRecorder;
   private final ParameterResolverStrategy parameterResolverStrategy;
   private final ResultProcessorStrategy resultProcessorStrategy;
+  private final BackoffSupplier backoffSupplier;
 
   private List<JobWorker> openedWorkers = new ArrayList<>();
   private final List<JobWorkerValue> workerValues = new ArrayList<>();
@@ -47,11 +49,13 @@ public class JobWorkerManager {
       final CommandExceptionHandlingStrategy commandExceptionHandlingStrategy,
       final MetricsRecorder metricsRecorder,
       final ParameterResolverStrategy parameterResolverStrategy,
-      final ResultProcessorStrategy resultProcessorStrategy) {
+      final ResultProcessorStrategy resultProcessorStrategy,
+      final BackoffSupplier backoffSupplier) {
     this.commandExceptionHandlingStrategy = commandExceptionHandlingStrategy;
     this.metricsRecorder = metricsRecorder;
     this.parameterResolverStrategy = parameterResolverStrategy;
     this.resultProcessorStrategy = resultProcessorStrategy;
+    this.backoffSupplier = backoffSupplier;
   }
 
   public JobWorker openWorker(final CamundaClient client, final JobWorkerValue jobWorkerValue) {
@@ -75,6 +79,7 @@ public class JobWorkerManager {
             .jobType(jobWorkerValue.getType())
             .handler(handler)
             .name(jobWorkerValue.getName())
+            .backoffSupplier(backoffSupplier)
             .metrics(new CamundaClientMetricsBridge(metricsRecorder, jobWorkerValue.getType()));
 
     if (jobWorkerValue.getMaxJobsActive() != null && jobWorkerValue.getMaxJobsActive() > 0) {

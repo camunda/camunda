@@ -90,15 +90,18 @@ public class CamundaClientAllAutoConfiguration {
       final CommandExceptionHandlingStrategy commandExceptionHandlingStrategy,
       final MetricsRecorder metricsRecorder,
       final ParameterResolverStrategy parameterResolverStrategy,
-      final ResultProcessorStrategy resultProcessorStrategy) {
+      final ResultProcessorStrategy resultProcessorStrategy,
+      final BackoffSupplier backoffSupplier) {
     return new JobWorkerManager(
         commandExceptionHandlingStrategy,
         metricsRecorder,
         parameterResolverStrategy,
-        resultProcessorStrategy);
+        resultProcessorStrategy,
+        backoffSupplier);
   }
 
   @Bean
+  @ConditionalOnMissingBean
   public BackoffSupplier backoffSupplier() {
     return new ExponentialBackoffBuilderImpl()
         .maxDelay(1000L)
