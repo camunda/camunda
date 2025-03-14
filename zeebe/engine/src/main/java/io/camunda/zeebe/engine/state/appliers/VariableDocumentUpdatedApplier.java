@@ -23,6 +23,6 @@ public class VariableDocumentUpdatedApplier
 
   @Override
   public void applyState(final long key, final VariableDocumentRecord value) {
-    variableState.removeVariableDocumentState(key);
+    variableState.removeVariableDocumentState(value.getScopeKey());
   }
 }

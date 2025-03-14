@@ -51,16 +51,13 @@ public class DbVariableState implements MutableVariableState {
   private final DbLong scopeKey;
   private final DbString variableName;
 
-  // (scope key) => (variable document key)
-  private final DbLong variableDocumentKey;
-  private final ColumnFamily<DbLong, DbLong> variableDocumentKeyByScopeKeyColumnFamily;
-
-  // (variable document key) => (variable document state)
+  // (scope key) => (variable document state)
   // we need two separate wrapper to not interfere with get and put
   // see https://github.com/zeebe-io/zeebe/issues/1914
   private final VariableDocumentState variableDocumentStateToRead = new VariableDocumentState();
   private final VariableDocumentState variableDocumentStateToWrite = new VariableDocumentState();
-  private final ColumnFamily<DbLong, VariableDocumentState> variableDocumentStateColumnFamily;
+  private final ColumnFamily<DbLong, VariableDocumentState>
+      variableDocumentStateByScopeKeyColumnFamily;
 
   private final VariableInstance newVariable = new VariableInstance();
   private final DirectBuffer variableNameView = new UnsafeBuffer(0, 0);
@@ -89,19 +86,11 @@ public class DbVariableState implements MutableVariableState {
             scopeKeyVariableNameKey,
             new VariableInstance());
 
-    variableDocumentKey = new DbLong();
-    variableDocumentKeyByScopeKeyColumnFamily =
+    variableDocumentStateByScopeKeyColumnFamily =
         zeebeDb.createColumnFamily(
-            ZbColumnFamilies.VARIABLE_DOCUMENT_KEY_BY_SCOPE_KEY,
+            ZbColumnFamilies.VARIABLE_DOCUMENT_STATE_BY_SCOPE_KEY,
             transactionContext,
             scopeKey,
-            variableDocumentKey);
-
-    variableDocumentStateColumnFamily =
-        zeebeDb.createColumnFamily(
-            ZbColumnFamilies.VARIABLE_DOCUMENT_STATES,
-            transactionContext,
-            variableDocumentKey,
             variableDocumentStateToRead);
   }
 
@@ -337,39 +326,21 @@ public class DbVariableState implements MutableVariableState {
 
   @Override
   public void storeVariableDocumentState(final long key, final VariableDocumentRecord record) {
-    variableDocumentKey.wrapLong(key);
     scopeKey.wrapLong(record.getScopeKey());
-    variableDocumentKeyByScopeKeyColumnFamily.insert(scopeKey, variableDocumentKey);
-
     variableDocumentStateToWrite.setKey(key).setRecord(record);
-    variableDocumentStateColumnFamily.insert(variableDocumentKey, variableDocumentStateToWrite);
+    variableDocumentStateByScopeKeyColumnFamily.insert(scopeKey, variableDocumentStateToWrite);
   }
 
   @Override
-  public void removeVariableDocumentState(final long variableDocumentKey) {
-    this.variableDocumentKey.wrapLong(variableDocumentKey);
-
-    final var variableDocumentRecordValue =
-        variableDocumentStateColumnFamily.get(this.variableDocumentKey);
-    if (variableDocumentRecordValue != null) {
-      scopeKey.wrapLong(variableDocumentRecordValue.getRecord().getScopeKey());
-
-      variableDocumentStateColumnFamily.deleteIfExists(this.variableDocumentKey);
-      variableDocumentKeyByScopeKeyColumnFamily.deleteIfExists(scopeKey);
-    }
+  public void removeVariableDocumentState(final long scopeKey) {
+    this.scopeKey.wrapLong(scopeKey);
+    variableDocumentStateByScopeKeyColumnFamily.deleteIfExists(this.scopeKey);
   }
 
   @Override
   public VariableDocumentState getVariableDocumentState(final long scopeKey) {
     this.scopeKey.wrapLong(scopeKey);
-    final var variableDocumentKeyValue =
-        variableDocumentKeyByScopeKeyColumnFamily.get(this.scopeKey);
-    if (variableDocumentKeyValue != null) {
-      variableDocumentKey.wrapLong(variableDocumentKeyValue.getValue());
-      return variableDocumentStateColumnFamily.get(variableDocumentKey);
-    }
-
-    return null;
+    return variableDocumentStateByScopeKeyColumnFamily.get(this.scopeKey);
   }
 
   private VariableInstance getVariableLocal(
