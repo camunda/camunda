@@ -12,14 +12,17 @@ import io.camunda.search.clients.DocumentBasedSearchClient;
 import io.camunda.search.connect.configuration.DatabaseType;
 import io.camunda.webapps.schema.descriptors.IndexDescriptors;
 import io.camunda.zeebe.test.util.testcontainers.TestSearchContainers;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.time.Duration;
-import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Stream;
+import org.agrona.CloseHelper;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.extension.AfterAllCallback;
 import org.junit.jupiter.api.extension.AfterEachCallback;
@@ -50,27 +53,20 @@ public class MigrationITExtension
   private static final String HAS_87_DATA = "HAS_87_DATA";
   private static final String MIGRATOR = "MIGRATOR";
   private static final String DATABASE_TESTER = "DATABASE_CHECKS";
-
   private final List<AutoCloseable> dbClosables = new ArrayList<>();
   private final Map<DatabaseType, Network> networks = new HashMap<>();
   private final Set<DatabaseType> databaseTypes =
       Set.of(DatabaseType.ELASTICSEARCH, DatabaseType.OPENSEARCH);
   private final Map<DatabaseType, String> databaseExternalUrls = new HashMap<>();
   private Map<String, String> initialEnvOverrides = new HashMap<>();
+  private Path tempDir;
 
   @Override
-  public void afterAll(final ExtensionContext context) {
+  public void afterAll(final ExtensionContext context) throws IOException {
     final var clazz = context.getTestClass().get();
     if (!isNestedClass(clazz)) {
-      dbClosables.parallelStream()
-          .forEach(
-              c -> {
-                try {
-                  c.close();
-                } catch (final Exception e) {
-                  throw new RuntimeException(e);
-                }
-              });
+      CloseHelper.quietCloseAll(dbClosables);
+      Files.deleteIfExists(tempDir);
     }
   }
 
@@ -99,6 +95,7 @@ public class MigrationITExtension
   public void beforeAll(final ExtensionContext context) throws Exception {
     final var clazz = context.getTestClass().get();
     if (!isNestedClass(clazz)) {
+      tempDir = Files.createTempDirectory("migration-it");
       databaseTypes.parallelStream()
           .forEach(
               db -> {
@@ -123,7 +120,8 @@ public class MigrationITExtension
               final String indexPrefix = context.getTestMethod().get().getName().toLowerCase();
               getStore(context).put(INDEX_PREFIX, indexPrefix);
               getStore(context).put(DATABASE_TYPE, db);
-              final CamundaMigrator migrator = new CamundaMigrator(networks.get(db), indexPrefix);
+              final CamundaMigrator migrator =
+                  new CamundaMigrator(networks.get(db), indexPrefix, tempDir);
               migrator.initialize(db, databaseExternalUrls.get(db), initialEnvOverrides);
               final var expectedDescriptors =
                   new IndexDescriptors(indexPrefix, db.equals(DatabaseType.ELASTICSEARCH)).all();
@@ -265,16 +263,16 @@ public class MigrationITExtension
   private void awaitExporterReadiness(
       final MigrationDatabaseChecks tester, final String indexPrefix) {
     Awaitility.await("Await database and exporter readiness")
-        .timeout(Duration.of(1, ChronoUnit.MINUTES))
-        .pollInterval(Duration.of(1, ChronoUnit.MILLIS))
+        .timeout(Duration.ofMinutes(1))
+        .pollInterval(Duration.ofMillis(500))
         .untilAsserted(() -> tester.validateSchemaCreation(indexPrefix));
   }
 
   private void awaitImportersFinished(
       final MigrationDatabaseChecks tester, final String indexPrefix) {
     Awaitility.await("Await Importers finished")
-        .timeout(Duration.of(1, ChronoUnit.MINUTES))
-        .pollInterval(Duration.of(1, ChronoUnit.SECONDS))
+        .timeout(Duration.ofMinutes(1))
+        .pollInterval(Duration.ofSeconds(1))
         .until(
             () ->
                 tester.checkImportersFinished(indexPrefix, OPERATE)
@@ -284,8 +282,8 @@ public class MigrationITExtension
   private void awaitImportersFlushed(
       final MigrationDatabaseChecks tester, final String indexPrefix) {
     Awaitility.await("Await Import Positions have been flushed")
-        .timeout(Duration.of(1, ChronoUnit.MINUTES))
-        .pollInterval(Duration.of(500, ChronoUnit.MILLIS))
+        .timeout(Duration.ofMinutes(1))
+        .pollInterval(Duration.ofMillis(500))
         .until(
             () ->
                 tester.checkImportPositionsFlushed(indexPrefix, OPERATE)
