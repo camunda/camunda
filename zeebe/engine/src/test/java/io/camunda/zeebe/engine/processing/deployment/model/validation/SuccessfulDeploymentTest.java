@@ -108,11 +108,11 @@ public final class SuccessfulDeploymentTest {
 
   private static Function<DeploymentClient, Record<DeploymentRecordValue>> deploy(
       final String resource) {
-    return deploymentClient -> deploymentClient.withXmlClasspathResource(resource).deploy("test");
+    return deploymentClient -> deploymentClient.withXmlClasspathResource(resource).deploy();
   }
 
   private static Function<DeploymentClient, Record<DeploymentRecordValue>> deploy(
       final BpmnModelInstance process) {
-    return deploymentClient -> deploymentClient.withXmlResource(process).deploy("test");
+    return deploymentClient -> deploymentClient.withXmlResource(process).deploy();
   }
 }
