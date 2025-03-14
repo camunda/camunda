@@ -71,8 +71,8 @@ public final class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeCl
       "ZEEBE_CLIENT_WORKER_STREAM_ENABLED";
   public static final String DEFAULT_GATEWAY_ADDRESS = "0.0.0.0:26500";
   public static final URI DEFAULT_GRPC_ADDRESS =
-      getURIFromString("https://" + DEFAULT_GATEWAY_ADDRESS);
-  public static final URI DEFAULT_REST_ADDRESS = getURIFromString("https://0.0.0.0:8080");
+      getURIFromString("http://" + DEFAULT_GATEWAY_ADDRESS);
+  public static final URI DEFAULT_REST_ADDRESS = getURIFromString("http://0.0.0.0:8080");
   public static final String REST_ADDRESS_VAR = "ZEEBE_REST_ADDRESS";
   public static final String GRPC_ADDRESS_VAR = "ZEEBE_GRPC_ADDRESS";
   public static final String PREFER_REST_VAR = "ZEEBE_PREFER_REST";
@@ -111,7 +111,7 @@ public final class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeCl
   private int maxMessageSize = 4 * ONE_MB;
   private int maxMetadataSize = 16 * ONE_KB;
   private boolean streamEnabled = false;
-  private boolean grpcAddressUsed = false;
+  private boolean grpcAddressUsed = true;
   private ScheduledExecutorService jobWorkerExecutor;
   private boolean ownsJobWorkerExecutor;
   private boolean useDefaultRetryPolicy;
@@ -365,6 +365,7 @@ public final class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeCl
   @Override
   public ZeebeClientBuilder gatewayAddress(final String gatewayAddress) {
     this.gatewayAddress = gatewayAddress;
+    grpcAddressUsed = false;
     return this;
   }
 
@@ -401,7 +402,6 @@ public final class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeCl
       throw new IllegalArgumentException("grpcAddress must be an absolute URI");
     }
     this.grpcAddress = grpcAddress;
-    grpcAddressUsed = true;
     return this;
   }
 
