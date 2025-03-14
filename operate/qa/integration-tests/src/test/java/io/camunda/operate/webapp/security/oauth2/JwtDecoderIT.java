@@ -17,6 +17,7 @@ import com.github.tomakehurst.wiremock.junit5.WireMockRuntimeInfo;
 import com.github.tomakehurst.wiremock.junit5.WireMockTest;
 import com.github.tomakehurst.wiremock.matching.RequestPatternBuilder;
 import com.nimbusds.jose.JOSEException;
+import com.nimbusds.jose.JOSEObjectType;
 import com.nimbusds.jose.JWSAlgorithm;
 import com.nimbusds.jose.jwk.Curve;
 import com.nimbusds.jose.jwk.ECKey;
@@ -176,6 +177,51 @@ public class JwtDecoderIT {
     // given
     final ECKey ecJWK = getEcJWK(JWSAlgorithm.ES512, Curve.P_521);
     final String ecSerializedJwt = signAndSerialize(ecJWK, JWSAlgorithm.ES512);
+    final String publicKey = ecJWK.toPublicJWK().toJSONString();
+    System.out.println("publicKey=" + publicKey);
+
+    final String authServerResponseBody = "{\"keys\":[" + publicKey + "]}";
+    System.out.println("authServerResponse=" + authServerResponseBody);
+
+    wireMockInfo
+        .getWireMock()
+        .register(
+            WireMock.get(WireMock.urlMatching(".*/protocol/openid-connect/certs"))
+                .willReturn(WireMock.jsonResponse(authServerResponseBody, HttpStatus.OK.value())));
+
+    // when - then
+    assertDoesNotThrow(() -> decoder.decode(ecSerializedJwt));
+    wireMockInfo.getWireMock().verifyThat(1, RequestPatternBuilder.allRequests());
+  }
+
+  @Test
+  public void testDecodeRsJwtWithNoTypeHeader() throws JOSEException {
+    // given
+    final RSAKey rsaJWK = getRsaJWK(JWSAlgorithm.RS256);
+    final String serializedJwt =
+        signAndSerialize(rsaJWK, JWSAlgorithm.RS256, (JOSEObjectType) null);
+    final String publicKey = rsaJWK.toPublicJWK().toJSONString();
+
+    // remove alg field from mocked server response and assert it was removed to cover this use case
+    final String authServerResponseBody = "{\"keys\":[" + publicKey + "]}";
+    System.out.println("authServerResponse=" + authServerResponseBody);
+
+    wireMockInfo
+        .getWireMock()
+        .register(
+            WireMock.get(WireMock.urlMatching(".*/protocol/openid-connect/certs"))
+                .willReturn(WireMock.jsonResponse(authServerResponseBody, HttpStatus.OK.value())));
+
+    // when - then
+    assertDoesNotThrow(() -> decoder.decode(serializedJwt));
+    wireMockInfo.getWireMock().verifyThat(1, RequestPatternBuilder.allRequests());
+  }
+
+  @Test
+  public void testDecodeEsJwtWithNoTypeHeader() throws JOSEException {
+    // given
+    final ECKey ecJWK = getEcJWK(JWSAlgorithm.ES256, Curve.P_256);
+    final String ecSerializedJwt = signAndSerialize(ecJWK, JWSAlgorithm.ES256, null);
     final String publicKey = ecJWK.toPublicJWK().toJSONString();
     System.out.println("publicKey=" + publicKey);
 
