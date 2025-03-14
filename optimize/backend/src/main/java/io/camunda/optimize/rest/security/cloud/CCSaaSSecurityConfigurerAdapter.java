@@ -56,13 +56,13 @@ import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.oauth2.client.OAuth2AuthorizedClientService;
 import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
 import org.springframework.security.oauth2.client.web.OAuth2AuthorizationRequestRedirectFilter;
-import org.springframework.security.oauth2.core.DelegatingOAuth2TokenValidator;
 import org.springframework.security.oauth2.core.OAuth2AccessToken;
 import org.springframework.security.oauth2.core.OAuth2TokenValidator;
 import org.springframework.security.oauth2.core.oidc.OidcUserInfo;
 import org.springframework.security.oauth2.core.oidc.user.DefaultOidcUser;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
+import org.springframework.security.oauth2.jwt.JwtValidators;
 import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
@@ -194,6 +194,7 @@ public class CCSaaSSecurityConfigurerAdapter extends AbstractSecurityConfigurerA
         configurationService, new AuthorizationRequestCookieValueMapper());
   }
 
+  @SuppressWarnings("unchecked")
   private JwtDecoder jwtDecoder() {
     final NimbusJwtDecoder jwtDecoder =
         NimbusJwtDecoder.withJwkSetUri(
@@ -206,14 +207,16 @@ public class CCSaaSSecurityConfigurerAdapter extends AbstractSecurityConfigurerA
                 .getCloudAuthConfiguration()
                 .getUserAccessTokenAudience()
                 .orElse(""));
-    final OAuth2TokenValidator<Jwt> clusterIdValidator = new ScopeValidator("profile");
-    final OAuth2TokenValidator<Jwt> audienceAndClusterIdValidation =
-        new DelegatingOAuth2TokenValidator<>(audienceValidator, clusterIdValidator);
-    jwtDecoder.setJwtValidator(audienceAndClusterIdValidation);
+    final OAuth2TokenValidator<Jwt> profileValidator = new ScopeValidator("profile");
+    // The default validator already contains validation for timestamp and X509 thumbprint
+    final OAuth2TokenValidator<Jwt> combinedValidatorWithDefaults =
+        JwtValidators.createDefaultWithValidators(audienceValidator, profileValidator);
+    jwtDecoder.setJwtValidator(combinedValidatorWithDefaults);
     return jwtDecoder;
   }
 
   @Override
+  @SuppressWarnings("unchecked")
   protected JwtDecoder publicApiJwtDecoder() {
     final NimbusJwtDecoder jwtDecoder =
         NimbusJwtDecoder.withJwkSetUri(
@@ -224,9 +227,10 @@ public class CCSaaSSecurityConfigurerAdapter extends AbstractSecurityConfigurerA
     final OAuth2TokenValidator<Jwt> clusterIdValidator =
         new CustomClaimValidator(
             CAMUNDA_CLUSTER_ID_CLAIM_NAME, getAuth0Configuration().getClusterId());
-    final OAuth2TokenValidator<Jwt> audienceAndClusterIdValidation =
-        new DelegatingOAuth2TokenValidator<>(audienceValidator, clusterIdValidator);
-    jwtDecoder.setJwtValidator(audienceAndClusterIdValidation);
+    // The default validator already contains validation for timestamp and X509 thumbprint
+    final OAuth2TokenValidator<Jwt> combinedValidatorWithDefaults =
+        JwtValidators.createDefaultWithValidators(audienceValidator, clusterIdValidator);
+    jwtDecoder.setJwtValidator(combinedValidatorWithDefaults);
     return jwtDecoder;
   }
 
