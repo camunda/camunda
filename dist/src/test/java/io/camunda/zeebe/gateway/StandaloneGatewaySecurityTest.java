@@ -222,13 +222,13 @@ final class StandaloneGatewaySecurityTest {
 
     return new GatewayModuleConfiguration(
         gatewayConfig,
-        null, // identity is disabled by default
         new SecurityConfiguration(),
         new SpringGatewayBridge(),
         actorScheduler,
         atomixCluster,
         brokerClient,
         jobStreamClient,
+        null,
         null,
         null,
         new SimpleMeterRegistry());

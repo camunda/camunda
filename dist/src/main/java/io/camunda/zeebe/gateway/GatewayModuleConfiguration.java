@@ -9,7 +9,6 @@ package io.camunda.zeebe.gateway;
 
 import io.atomix.cluster.AtomixCluster;
 import io.camunda.application.commons.configuration.GatewayBasedConfiguration;
-import io.camunda.identity.sdk.IdentityConfiguration;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.service.UserServices;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
@@ -30,11 +29,11 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.FilterType;
 import org.springframework.context.annotation.Profile;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.oauth2.jwt.JwtDecoder;
 
 /**
- * Entry point for the gateway modules by using the the {@link
- * io.camunda.application.Profile#GATEWAY} profile, so that the appropriate gateway application
- * properties are applied.
+ * Entry point for the gateway modules by using the {@link io.camunda.application.Profile#GATEWAY}
+ * profile, so that the appropriate gateway application properties are applied.
  */
 @Configuration(proxyBeanMethods = false)
 @ComponentScan(
@@ -54,7 +53,6 @@ public class GatewayModuleConfiguration implements CloseableSilently {
   private static final Logger LOGGER = Loggers.GATEWAY_LOGGER;
 
   private final GatewayBasedConfiguration configuration;
-  private final IdentityConfiguration identityConfiguration;
   private final SecurityConfiguration securityConfiguration;
   private final SpringGatewayBridge springGatewayBridge;
   private final ActorScheduler actorScheduler;
@@ -63,6 +61,7 @@ public class GatewayModuleConfiguration implements CloseableSilently {
   private final JobStreamClient jobStreamClient;
   private final UserServices userServices;
   private final PasswordEncoder passwordEncoder;
+  private final JwtDecoder jwtDecoder;
   private final MeterRegistry meterRegistry;
 
   private Gateway gateway;
@@ -70,7 +69,6 @@ public class GatewayModuleConfiguration implements CloseableSilently {
   @Autowired
   public GatewayModuleConfiguration(
       final GatewayBasedConfiguration configuration,
-      final IdentityConfiguration identityConfiguration,
       final SecurityConfiguration securityConfiguration,
       final SpringGatewayBridge springGatewayBridge,
       final ActorScheduler actorScheduler,
@@ -79,9 +77,9 @@ public class GatewayModuleConfiguration implements CloseableSilently {
       final JobStreamClient jobStreamClient,
       @Autowired(required = false) final UserServices userServices,
       final PasswordEncoder passwordEncoder,
+      @Autowired(required = false) final JwtDecoder jwtDecoder,
       final MeterRegistry meterRegistry) {
     this.configuration = configuration;
-    this.identityConfiguration = identityConfiguration;
     this.securityConfiguration = securityConfiguration;
     this.springGatewayBridge = springGatewayBridge;
     this.actorScheduler = actorScheduler;
@@ -90,6 +88,7 @@ public class GatewayModuleConfiguration implements CloseableSilently {
     this.jobStreamClient = jobStreamClient;
     this.userServices = userServices;
     this.passwordEncoder = passwordEncoder;
+    this.jwtDecoder = jwtDecoder;
     this.meterRegistry = meterRegistry;
   }
 
@@ -117,6 +116,7 @@ public class GatewayModuleConfiguration implements CloseableSilently {
             jobStreamClient.streamer(),
             userServices,
             passwordEncoder,
+            jwtDecoder,
             meterRegistry);
     springGatewayBridge.registerGatewayStatusSupplier(gateway::getStatus);
     springGatewayBridge.registerClusterStateSupplier(

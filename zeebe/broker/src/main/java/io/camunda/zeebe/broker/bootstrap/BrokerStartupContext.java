@@ -36,6 +36,7 @@ import java.time.Duration;
 import java.util.List;
 import org.agrona.concurrent.SnowflakeIdGenerator;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.oauth2.jwt.JwtDecoder;
 
 /**
  * Context that is utilized during broker startup and shutdown process. It contains dependencies
@@ -129,4 +130,6 @@ public interface BrokerStartupContext {
   UserServices getUserServices();
 
   PasswordEncoder getPasswordEncoder();
+
+  JwtDecoder getJwtDecoder();
 }

@@ -48,6 +48,7 @@ class EmbeddedGatewayServiceStep extends AbstractBrokerStartupStep {
             brokerClient,
             userService,
             passwordEncoder,
+            brokerStartupContext.getJwtDecoder(),
             brokerStartupContext.getMeterRegistry());
 
     final var embeddedGatewayServiceFuture = embeddedGatewayService.start();

@@ -48,6 +48,7 @@ import java.util.Map.Entry;
 import java.util.Set;
 import org.slf4j.Logger;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.oauth2.jwt.JwtDecoder;
 
 public final class SystemContext {
 
@@ -70,6 +71,7 @@ public final class SystemContext {
   private final SecurityConfiguration securityConfiguration;
   private final UserServices userServices;
   private final PasswordEncoder passwordEncoder;
+  private final JwtDecoder jwtDecoder;
 
   public SystemContext(
       final Duration shutdownTimeout,
@@ -81,7 +83,8 @@ public final class SystemContext {
       final MeterRegistry meterRegistry,
       final SecurityConfiguration securityConfiguration,
       final UserServices userServices,
-      final PasswordEncoder passwordEncoder) {
+      final PasswordEncoder passwordEncoder,
+      final JwtDecoder jwtDecoder) {
     this.shutdownTimeout = shutdownTimeout;
     this.brokerCfg = brokerCfg;
     this.identityConfiguration = identityConfiguration;
@@ -92,6 +95,7 @@ public final class SystemContext {
     this.securityConfiguration = securityConfiguration;
     this.userServices = userServices;
     this.passwordEncoder = passwordEncoder;
+    this.jwtDecoder = jwtDecoder;
     initSystemContext();
   }
 
@@ -103,7 +107,8 @@ public final class SystemContext {
       final BrokerClient brokerClient,
       final SecurityConfiguration securityConfiguration,
       final UserServices userServices,
-      final PasswordEncoder passwordEncoder) {
+      final PasswordEncoder passwordEncoder,
+      final JwtDecoder jwtDecoder) {
     this(
         DEFAULT_SHUTDOWN_TIMEOUT,
         brokerCfg,
@@ -114,7 +119,8 @@ public final class SystemContext {
         new SimpleMeterRegistry(),
         securityConfiguration,
         userServices,
-        passwordEncoder);
+        passwordEncoder,
+        jwtDecoder);
   }
 
   private void initSystemContext() {
@@ -367,5 +373,9 @@ public final class SystemContext {
 
   public PasswordEncoder getPasswordEncoder() {
     return passwordEncoder;
+  }
+
+  public JwtDecoder getJwtDecoder() {
+    return jwtDecoder;
   }
 }

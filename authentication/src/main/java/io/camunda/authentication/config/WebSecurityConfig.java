@@ -307,16 +307,13 @@ public class WebSecurityConfig {
 
     @Bean
     @Order(ORDER_WEBAPP_API)
-    public SecurityFilterChain oidcHttpSecurity(
+    public SecurityFilterChain oidcApiSecurity(
         final HttpSecurity httpSecurity,
         final AuthFailureHandler authFailureHandler,
-        final ClientRegistrationRepository clientRegistrationRepository,
-        final WebApplicationAuthorizationCheckFilter webApplicationAuthorizationCheckFilter,
         final JwtDecoder jwtDecoder)
         throws Exception {
       return httpSecurity
           .securityMatcher(API_PATHS.toArray(new String[0]))
-          .securityMatcher(WEBAPP_PATHS.toArray(new String[0]))
           .authorizeHttpRequests(
               (authorizeHttpRequests) ->
                   authorizeHttpRequests
@@ -324,6 +321,32 @@ public class WebSecurityConfig {
                       .permitAll()
                       .anyRequest()
                       .authenticated())
+          .headers(WebSecurityConfig::setupStrictTransportSecurity)
+          .exceptionHandling(
+              (exceptionHandling) -> exceptionHandling.accessDeniedHandler(authFailureHandler))
+          .csrf(AbstractHttpConfigurer::disable)
+          .cors(AbstractHttpConfigurer::disable)
+          .formLogin(AbstractHttpConfigurer::disable)
+          .anonymous(AbstractHttpConfigurer::disable)
+          .oauth2ResourceServer(
+              oauth2 -> oauth2.jwt(jwtConfigurer -> jwtConfigurer.decoder(jwtDecoder)))
+          .oauth2Login(AbstractHttpConfigurer::disable)
+          .oidcLogout(AbstractHttpConfigurer::disable)
+          .logout(AbstractHttpConfigurer::disable)
+          .build();
+    }
+
+    @Bean
+    @Order(ORDER_WEBAPP_API)
+    public SecurityFilterChain oidcWebappSecurity(
+        final HttpSecurity httpSecurity,
+        final AuthFailureHandler authFailureHandler,
+        final ClientRegistrationRepository clientRegistrationRepository,
+        final WebApplicationAuthorizationCheckFilter webApplicationAuthorizationCheckFilter,
+        final JwtDecoder jwtDecoder)
+        throws Exception {
+      return httpSecurity
+          .securityMatcher(WEBAPP_PATHS.toArray(new String[0]))
           .headers(WebSecurityConfig::setupStrictTransportSecurity)
           .exceptionHandling(
               (exceptionHandling) -> exceptionHandling.accessDeniedHandler(authFailureHandler))

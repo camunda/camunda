@@ -37,6 +37,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.oauth2.jwt.JwtDecoder;
 
 public final class SimpleBrokerStartTest {
 
@@ -71,7 +72,8 @@ public final class SimpleBrokerStartTest {
                       mock(BrokerClient.class),
                       new SecurityConfiguration(),
                       mock(UserServices.class),
-                      mock(PasswordEncoder.class));
+                      mock(PasswordEncoder.class),
+                      mock(JwtDecoder.class));
               new Broker(systemContext, TEST_SPRING_BROKER_BRIDGE, emptyList());
             });
 
@@ -99,7 +101,8 @@ public final class SimpleBrokerStartTest {
             brokerClient,
             new SecurityConfiguration(),
             mock(UserServices.class),
-            mock(PasswordEncoder.class));
+            mock(PasswordEncoder.class),
+            mock(JwtDecoder.class));
 
     final var leaderLatch = new CountDownLatch(1);
     final var listener =

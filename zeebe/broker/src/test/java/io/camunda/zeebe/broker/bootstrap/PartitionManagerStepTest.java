@@ -47,6 +47,7 @@ import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.oauth2.jwt.JwtDecoder;
 
 class PartitionManagerStepTest {
   public static final Duration TEST_SHUTDOWN_TIMEOUT = Duration.ofSeconds(10);
@@ -98,7 +99,8 @@ class PartitionManagerStepTest {
               TEST_SHUTDOWN_TIMEOUT,
               new SecurityConfiguration(),
               mock(UserServices.class),
-              mock(PasswordEncoder.class));
+              mock(PasswordEncoder.class),
+              mock(JwtDecoder.class));
       testBrokerStartupContext.setConcurrencyControl(CONCURRENCY_CONTROL);
       testBrokerStartupContext.setAdminApiService(mock(AdminApiRequestHandler.class));
       testBrokerStartupContext.setBrokerAdminService(mock(BrokerAdminServiceImpl.class));
@@ -199,7 +201,8 @@ class PartitionManagerStepTest {
               TEST_SHUTDOWN_TIMEOUT,
               new SecurityConfiguration(),
               mock(UserServices.class),
-              mock(PasswordEncoder.class));
+              mock(PasswordEncoder.class),
+              mock(JwtDecoder.class));
 
       testBrokerStartupContext.setPartitionManager(mockPartitionManager);
       final ClusterConfigurationService mockClusterTopology =

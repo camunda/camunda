@@ -50,6 +50,7 @@ import org.junit.jupiter.api.parallel.ExecutionMode;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.oauth2.jwt.JwtDecoder;
 
 @Execution(ExecutionMode.CONCURRENT)
 class UnavailableBrokersTest {
@@ -108,7 +109,8 @@ class UnavailableBrokersTest {
             jobStreamClient.streamer(),
             mock(UserServices.class),
             mock(PasswordEncoder.class),
-            REGISTRY);
+            REGISTRY,
+            mock(JwtDecoder.class));
     gateway.start().join();
 
     final String gatewayAddress = NetUtil.toSocketAddressString(networkCfg.toSocketAddress());
