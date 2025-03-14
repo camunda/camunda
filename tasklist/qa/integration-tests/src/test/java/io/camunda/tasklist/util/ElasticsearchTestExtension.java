@@ -12,11 +12,14 @@ import static io.camunda.tasklist.util.ThreadUtil.sleepFor;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.beans.factory.config.BeanDefinition.SCOPE_PROTOTYPE;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.tasklist.property.TasklistElasticsearchProperties;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.qa.util.TestUtil;
+import io.camunda.tasklist.schema.IndexMapping;
+import io.camunda.tasklist.schema.IndexMapping.IndexMappingProperty;
 import io.camunda.tasklist.schema.manager.SchemaManager;
 import io.camunda.tasklist.zeebe.ImportValueType;
 import io.camunda.tasklist.zeebeimport.RecordsReader;
@@ -24,7 +27,10 @@ import io.camunda.tasklist.zeebeimport.RecordsReaderHolder;
 import io.camunda.tasklist.zeebeimport.ZeebeImporter;
 import java.io.IOException;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -36,6 +42,7 @@ import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.Response;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.client.indices.CreateIndexRequest;
+import org.elasticsearch.client.indices.GetComposableIndexTemplateRequest;
 import org.elasticsearch.client.indices.GetIndexRequest;
 import org.elasticsearch.client.indices.GetIndexResponse;
 import org.elasticsearch.index.query.QueryBuilders;
@@ -350,5 +357,35 @@ public class ElasticsearchTestExtension
       LOGGER.error("Couldn't retrieve json object from elasticsearch. Return Optional.Empty.", e);
       return Optional.empty();
     }
+  }
+
+  public IndexMapping getIndexTemplateMapping(final String templateName) throws IOException {
+    final String indexTemplateMapping =
+        esClient
+            .indices()
+            .getIndexTemplate(
+                new GetComposableIndexTemplateRequest(templateName), RequestOptions.DEFAULT)
+            .getIndexTemplates()
+            .get(templateName)
+            .template()
+            .mappings()
+            .toString();
+    final Map<String, Object> mappingMetadata =
+        objectMapper.readValue(
+            indexTemplateMapping, new TypeReference<HashMap<String, Object>>() {});
+    return new IndexMapping()
+        .setDynamic((String) mappingMetadata.get("dynamic"))
+        .setProperties(
+            ((Map<String, Object>) mappingMetadata.get("properties"))
+                .entrySet().stream()
+                    .map(p -> createIndexMappingProperty(p))
+                    .collect(Collectors.toSet()));
+  }
+
+  private static IndexMappingProperty createIndexMappingProperty(
+      final Entry<String, Object> propertiesMapEntry) {
+    return new IndexMappingProperty()
+        .setName(propertiesMapEntry.getKey())
+        .setTypeDefinition(propertiesMapEntry.getValue());
   }
 }
