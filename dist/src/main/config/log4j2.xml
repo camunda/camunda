@@ -34,9 +34,9 @@
 
   <Loggers>
     <Logger name="io.camunda" level="${env:CAMUNDA_LOG_LEVEL:-INFO}" />
-    <Logger name="io.camunda.zeebe" level="${env:ZEEBE_LOG_LEVEL:-${env:CAMUNDA_LOG_LEVEL-INFO}}" />
-    <Logger name="io.atomix" level="${env:ATOMIX_LOG_LEVEL:-${env:CAMUNDA_LOG_LEVEL-INFO}}" />
-    <Logger name="io.camunda.optimize" level="${env:OPTIMIZE_LOG_LEVEL:-${env:CAMUNDA_LOG_LEVEL-INFO}}" />
+    <Logger name="io.camunda.zeebe" level="${env:ZEEBE_LOG_LEVEL:-${env:CAMUNDA_LOG_LEVEL:-INFO}}" />
+    <Logger name="io.atomix" level="${env:ATOMIX_LOG_LEVEL:-${env:CAMUNDA_LOG_LEVEL:-INFO}}" />
+    <Logger name="io.camunda.optimize" level="${env:OPTIMIZE_LOG_LEVEL:-${env:CAMUNDA_LOG_LEVEL:-INFO}}" />
     <Logger name="org.elasticsearch" level="${env:ES_LOG_LEVEL:-WARN}" />
     <Logger name="org.springframework" level="INFO" />
 
