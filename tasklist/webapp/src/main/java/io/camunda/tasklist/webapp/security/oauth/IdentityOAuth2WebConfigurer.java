@@ -19,7 +19,6 @@ import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Profile;
 import org.springframework.core.env.Environment;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -43,11 +42,20 @@ public class IdentityOAuth2WebConfigurer {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(IdentityOAuth2WebConfigurer.class);
 
-  @Autowired private Environment env;
+  private final Environment env;
 
-  @Autowired private IdentityConfiguration identityConfiguration;
+  private final IdentityConfiguration identityConfiguration;
 
-  @Autowired private IdentityJwt2AuthenticationTokenConverter jwtConverter;
+  private final IdentityJwt2AuthenticationTokenConverter jwtConverter;
+
+  public IdentityOAuth2WebConfigurer(
+      final Environment env,
+      final IdentityConfiguration identityConfiguration,
+      final IdentityJwt2AuthenticationTokenConverter jwtConverter) {
+    this.env = env;
+    this.identityConfiguration = identityConfiguration;
+    this.jwtConverter = jwtConverter;
+  }
 
   public void configure(final HttpSecurity http) throws Exception {
     if (isJWTEnabled()) {
@@ -73,7 +81,8 @@ public class IdentityOAuth2WebConfigurer {
         .jwtProcessorCustomizer(
             processor ->
                 processor.setJWSTypeVerifier(
-                    new DefaultJOSEObjectTypeVerifier<>(JWT, new JOSEObjectType("at+jwt"))))
+                    new DefaultJOSEObjectTypeVerifier<>(
+                        JWT, new JOSEObjectType("at+jwt")))) // TODO add null
         .build();
   }
 
