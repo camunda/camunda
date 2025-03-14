@@ -72,7 +72,7 @@ public interface MutableVariableState extends VariableState {
    * @param key the unique key identifying the variable document
    * @param value the variable document record containing the updated variables within a given scope
    */
-  void storeVariableDocument(long key, VariableDocumentRecord value);
+  void storeVariableDocumentState(long key, VariableDocumentRecord value);
 
   /**
    * Removes the variable document record from the state, associated with the provided key.
@@ -82,5 +82,5 @@ public interface MutableVariableState extends VariableState {
    *
    * @param key the unique key identifying the variable document
    */
-  void removeVariableDocument(long key);
+  void removeVariableDocumentState(long key);
 }

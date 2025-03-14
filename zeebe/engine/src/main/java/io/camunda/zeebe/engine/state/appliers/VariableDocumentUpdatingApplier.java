@@ -23,6 +23,6 @@ public class VariableDocumentUpdatingApplier
 
   @Override
   public void applyState(final long key, final VariableDocumentRecord value) {
-    variableState.storeVariableDocument(key, value);
+    variableState.storeVariableDocumentState(key, value);
   }
 }
