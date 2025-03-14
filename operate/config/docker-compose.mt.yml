@@ -23,7 +23,7 @@ services:
       - ./els-snapshots:/usr/local/els-snapshots
   postgres:
     container_name: postgres
-    image: postgres:17.2-alpine
+    image: postgres:17.4-alpine
     ports:
       - "5432:5432"
     environment:
@@ -34,7 +34,7 @@ services:
     depends_on:
       - postgres
     container_name: keycloak
-    image: bitnami/keycloak:26.1.3
+    image: bitnami/keycloak:26.1.4
     volumes:
       - keycloak-theme:/opt/bitnami/keycloak/themes/identity
     ports:
@@ -101,7 +101,7 @@ services:
       start_period: 30s
   zeebe:
     container_name: zeebe
-    image: camunda/zeebe:8.6.10
+    image: camunda/zeebe:8.6.11
     environment:
       - "JAVA_TOOL_OPTIONS=-Xms512m -Xmx512m"
       - ZEEBE_HOST=${ZEEBE_HOST:-}
@@ -123,7 +123,7 @@ services:
       - 9600:9600
     restart: always
   operate:
-    image: camunda/operate:8.6.10
+    image: camunda/operate:8.6.11
     container_name: operate
     environment:
       - SERVER_PORT=8081

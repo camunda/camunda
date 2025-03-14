@@ -362,6 +362,7 @@ public final class BpmnModelConstants {
   public static final String BPMN_ATTRIBUTE_CAPACITY = "capacity";
   public static final String BPMN_ATTRIBUTE_IS_UNLIMITED = "isUnlimited";
   public static final String BPMN_ATTRIBUTE_CATEGORY_VALUE_REF = "categoryValueRef";
+  public static final String BPMN_ATTRIBUTE_CANCEL_REMAINING_INSTANCES = "cancelRemainingInstances";
 
   /** DC */
   public static final String DC_ATTRIBUTE_NAME = "name";

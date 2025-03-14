@@ -15,7 +15,7 @@ import static org.mockito.Mockito.when;
 import io.camunda.search.entities.AdHocSubprocessActivityEntity;
 import io.camunda.search.entities.AdHocSubprocessActivityEntity.ActivityType;
 import io.camunda.search.entities.ProcessDefinitionEntity;
-import io.camunda.search.exception.NotFoundException;
+import io.camunda.search.exception.CamundaSearchException;
 import io.camunda.search.filter.AdHocSubprocessActivityFilter;
 import io.camunda.search.filter.AdHocSubprocessActivityFilter.Builder;
 import io.camunda.search.query.AdHocSubprocessActivityQuery;
@@ -112,8 +112,10 @@ class AdHocSubprocessActivityServicesTest {
               () ->
                   adHocSubprocessActivityServices.search(
                       defaultSearchQuery(filter -> filter.adHocSubprocessId("nonExistingId"))))
-          .isInstanceOf(NotFoundException.class)
-          .hasMessage("Failed to find Ad-Hoc Subprocess with ID 'nonExistingId'");
+          .isInstanceOf(CamundaSearchException.class)
+          .hasMessage("Failed to find Ad-Hoc Subprocess with ID 'nonExistingId'")
+          .extracting(e -> ((CamundaSearchException) e).getReason())
+          .isEqualTo(CamundaSearchException.Reason.NOT_FOUND);
     }
 
     @Test
@@ -122,8 +124,10 @@ class AdHocSubprocessActivityServicesTest {
               () ->
                   adHocSubprocessActivityServices.search(
                       defaultSearchQuery(filter -> filter.adHocSubprocessId("StartEvent_1"))))
-          .isInstanceOf(NotFoundException.class)
-          .hasMessage("Failed to find Ad-Hoc Subprocess with ID 'StartEvent_1'");
+          .isInstanceOf(CamundaSearchException.class)
+          .hasMessage("Failed to find Ad-Hoc Subprocess with ID 'StartEvent_1'")
+          .extracting(e -> ((CamundaSearchException) e).getReason())
+          .isEqualTo(CamundaSearchException.Reason.NOT_FOUND);
     }
 
     private AdHocSubprocessActivityQuery defaultSearchQuery() {

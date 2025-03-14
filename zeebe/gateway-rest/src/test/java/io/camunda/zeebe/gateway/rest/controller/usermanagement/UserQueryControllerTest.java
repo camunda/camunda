@@ -40,7 +40,7 @@ public class UserQueryControllerTest extends RestControllerTest {
       """
           {
               "items": [
-                 { "key": "1",
+                 { "userKey": "1",
                    "username": "username1",
                    "name": "name1",
                    "email": "email1"

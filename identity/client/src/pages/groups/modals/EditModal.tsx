@@ -8,7 +8,7 @@
 
 import { FC, useState } from "react";
 import { InlineNotification } from "@carbon/react";
-import { EditFormModal, UseEntityModalProps } from "src/components/modal";
+import { FormModal, UseEntityModalProps } from "src/components/modal";
 import useTranslate from "src/utility/localization";
 import { useApiCall } from "src/utility/api/hooks";
 import { useNotifications } from "src/components/notifications";
@@ -46,7 +46,7 @@ const EditModal: FC<UseEntityModalProps<Group>> = ({
   };
 
   return (
-    <EditFormModal
+    <FormModal
       size="sm"
       open={open}
       headline={t("Rename group")}
@@ -54,6 +54,7 @@ const EditModal: FC<UseEntityModalProps<Group>> = ({
       onClose={onClose}
       loading={loading}
       loadingDescription={t("Updating group")}
+      confirmLabel={t("Edit")}
     >
       <TextField
         label={t("Name")}
@@ -71,7 +72,7 @@ const EditModal: FC<UseEntityModalProps<Group>> = ({
           subtitle={error.detail}
         />
       )}
-    </EditFormModal>
+    </FormModal>
   );
 };
 

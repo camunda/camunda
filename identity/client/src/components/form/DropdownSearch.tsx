@@ -1,4 +1,11 @@
-import React, { ChangeEvent, useEffect, useState } from "react";
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+import React, { useEffect, useState } from "react";
 import { Search } from "@carbon/react";
 import ListBox from "@carbon/react/lib/components/ListBox";
 import useDebounce from "react-debounced";
@@ -10,7 +17,7 @@ type DropdownSearchProps<Item> = {
   itemTitle: (item: Item) => string;
   itemSubTitle?: (item: Item) => string;
   placeholder: string;
-  onChange: (search: string) => unknown;
+  onChange?: (search: string) => unknown;
   onSelect: (item: Item) => unknown;
   autoFocus?: boolean;
 };
@@ -30,10 +37,9 @@ const MenuItemWrapper = styled.div<{ $isSelected: boolean }>`
         : ""};
   }
 `;
-
 const DropdownSearch = <Item,>({
   placeholder,
-  onChange,
+  onChange = () => null,
   items,
   itemTitle,
   itemSubTitle,
@@ -44,7 +50,7 @@ const DropdownSearch = <Item,>({
   const [search, setSearch] = useState("");
   const [selectedResult, setSelectedResult] = useState<number>(-1);
 
-  const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
+  const handleChange = (e: { target: HTMLInputElement; type: "change" }) => {
     const { value } = e.target;
     setSearch(value);
     debounce(() => onChange(value));

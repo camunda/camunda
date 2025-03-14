@@ -583,8 +583,7 @@ paths:
           required: true
           description: The unique identifier of the mapping rule.
           schema:
-            type: integer
-            format: int64
+            type: string
       responses:
         "202":
           description: The mapping rule was successfully assigned to the tenant.
@@ -619,8 +618,7 @@ paths:
           required: true
           description: The unique identifier of the mapping rule.
           schema:
-            type: integer
-            format: int64
+            type: string
       responses:
         "202":
           description: The mapping rule was successfully removed from the tenant.
@@ -656,8 +654,7 @@ paths:
           required: true
           description: The unique identifier of the group.
           schema:
-            type: integer
-            format: int64
+            type: string
       responses:
         "202":
           description: The group was successfully assigned to the tenant.
@@ -692,8 +689,7 @@ paths:
           required: true
           description: The unique identifier of the group.
           schema:
-            type: integer
-            format: int64
+            type: string
       responses:
         "202":
           description: The group was successfully removed from the tenant.
@@ -1326,6 +1322,45 @@ paths:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+  /process-definitions/{processDefinitionKey}/statistics/flownode-instances:
+    post:
+      tags:
+        - Process definition
+      operationId: getProcessDefinitionStatistics
+      summary: Get process definition statistics
+      description: |
+        Get statistics about flow nodes in currently running process instances by process definition key and search filter.
+      parameters:
+        - name: processDefinitionKey
+          in: path
+          required: true
+          description: The assigned key of the process definition, which acts as a unique identifier for this process definition.
+          schema:
+            type: string
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProcessDefinitionFlowNodeStatisticsQuery"
+      responses:
+        "200":
+          description: The process definition statistics result.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ProcessDefinitionFlowNodeStatisticsResult"
+        "400":
+          $ref: "#/components/responses/InvalidData"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
         "500":
           $ref: "#/components/responses/InternalServerError"
 
@@ -2024,8 +2059,7 @@ paths:
           required: true
           description: The key of the authorization to delete.
           schema:
-            type: integer
-            format: int64
+            type: string
       requestBody:
         content:
           application/json:
@@ -2057,8 +2091,7 @@ paths:
           required: true
           description: The key of the authorization to delete.
           schema:
-            type: integer
-            format: int64
+            type: string
       responses:
         "204":
           description: The authorization was deleted successfully.
@@ -2107,9 +2140,12 @@ paths:
       tags:
         - Role
       operationId: createRole
-      summary: Create role
+      summary: Create role (Work-in-Progress)
       description: |
         Create a new role.
+
+        This API is in a Work-in-Progress state and will undergo potential breaking changes till
+        its release with an upcoming minor release.
       requestBody:
         content:
           application/json:
@@ -2136,9 +2172,12 @@ paths:
       tags:
         - Role
       operationId: getRole
-      summary: Get role
+      summary: Get role (Work-in-Progress)
       description: |
         Get a role by its key.
+
+        This API is in a Work-in-Progress state and will undergo potential breaking changes till
+        its release with an upcoming minor release.
       parameters:
         - name: roleKey
           in: path
@@ -2169,8 +2208,12 @@ paths:
       tags:
         - Role
       operationId: updateRole
-      summary: Update role
-      description: Update a role with the given key.
+      summary: Update role (Work-in-Progress)
+      description: |
+        Update a role with the given key.
+
+        This API is in a Work-in-Progress state and will undergo potential breaking changes till
+        its release with an upcoming minor release.
       parameters:
         - name: roleKey
           in: path
@@ -2203,8 +2246,12 @@ paths:
       tags:
         - Role
       operationId: deleteRole
-      summary: Delete role
-      description: Deletes the role with the given key.
+      summary: Delete role (Work-in-Progress)
+      description: |
+        Deletes the role with the given key.
+
+        This API is in a Work-in-Progress state and will undergo potential breaking changes till
+        its release with an upcoming minor release.
       parameters:
         - name: roleKey
           in: path
@@ -2230,9 +2277,12 @@ paths:
       tags:
         - Role
       operationId: searchRoles
-      summary: Query roles
+      summary: Query roles (Work-in-Progress)
       description: |
         Search for roles based on given criteria.
+
+        This API is in a Work-in-Progress state and will undergo potential breaking changes till
+        its release with an upcoming minor release.
       requestBody:
         required: false
         content:
@@ -2264,7 +2314,12 @@ paths:
       tags:
         - Group
       operationId: createGroup
-      summary: Create group
+      summary: Create group (Work-in-Progress)
+      description: |
+        Create a new group.
+
+        This API is in a Work-in-Progress state and will undergo potential breaking changes till
+        its release with an upcoming minor release.
       requestBody:
         content:
           application/json:
@@ -2290,9 +2345,12 @@ paths:
       tags:
         - Group
       operationId: getGroup
-      summary: Get group
+      summary: Get group (Work-in-Progress)
       description: |
         Get a group by its key.
+
+        This API is in a Work-in-Progress state and will undergo potential breaking changes till
+        its release with an upcoming minor release.
       parameters:
         - name: groupKey
           in: path
@@ -2323,8 +2381,12 @@ paths:
       tags:
         - Group
       operationId: updateGroup
-      summary: Update group
-      description: Update a group with the given key.
+      summary: Update group (Work-in-Progress)
+      description: |
+        Update a group with the given key.
+
+        This API is in a Work-in-Progress state and will undergo potential breaking changes till
+        its release with an upcoming minor release.
       parameters:
         - name: groupKey
           in: path
@@ -2357,8 +2419,12 @@ paths:
       tags:
         - Group
       operationId: deleteGroup
-      summary: Delete group
-      description: Deletes the group with the given key.
+      summary: Delete group (Work-in-Progress)
+      description: |
+        Deletes the group with the given key.
+
+        This API is in a Work-in-Progress state and will undergo potential breaking changes till
+        its release with an upcoming minor release.
       parameters:
         - name: groupKey
           in: path
@@ -2384,9 +2450,12 @@ paths:
       tags:
         - Group
       operationId: addUserToGroup
-      summary: Assign a user to a group
+      summary: Assign a user to a group (Work-in-Progress)
       description: |
         Assigns a user to a group.
+
+        This API is in a Work-in-Progress state and will undergo potential breaking changes till
+        its release with an upcoming minor release.
       parameters:
         - name: groupKey
           in: path
@@ -2399,8 +2468,7 @@ paths:
           required: true
           description: The user key.
           schema:
-            type: integer
-            format: int64
+            type: string
       responses:
         "202":
           description: The user was assigned successfully to the group.
@@ -2426,9 +2494,12 @@ paths:
       tags:
         - Group
       operationId: unassignUserFromGroup
-      summary: Unassign a user from a group
+      summary: Unassign a user from a group (Work-in-Progress)
       description: |
         Unassigns a user from a group.
+
+        This API is in a Work-in-Progress state and will undergo potential breaking changes till
+        its release with an upcoming minor release.
       parameters:
         - name: groupKey
           in: path
@@ -2462,9 +2533,12 @@ paths:
       tags:
         - Group
       operationId: searchGroups
-      summary: Query groups
+      summary: Query groups (Work-in-Progress)
       description: |
         Search for groups based on given criteria.
+
+        This API is in a Work-in-Progress state and will undergo potential breaking changes till
+        its release with an upcoming minor release.
       requestBody:
         required: false
         content:
@@ -2534,8 +2608,12 @@ paths:
       tags:
         - Mapping rule
       operationId: deleteMappingRule
-      summary: Delete a mapping rule
-      description: Deletes the mapping rule with the given key.
+      summary: Delete a mapping rule (Work-in-Progress)
+      description: |
+        Deletes the mapping rule with the given key.
+
+        This API is in a Work-in-Progress state and will undergo potential breaking changes till
+        its release with an upcoming minor release.
       parameters:
         - name: mappingKey
           in: path
@@ -2562,9 +2640,12 @@ paths:
       tags:
         - Mapping rule
       operationId: findMappings
-      summary: Query mappings
+      summary: Query mappings (Work-in-Progress)
       description: |
         Search for mapping rules based on given criteria.
+
+        This API is in a Work-in-Progress state and will undergo potential breaking changes till
+        its release with an upcoming minor release.
       requestBody:
         content:
           application/json:
@@ -3618,8 +3699,12 @@ components:
           type: string
           description: Name of the variable.
         value:
-          type: string
+          allOf:
+            - $ref: "#/components/schemas/StringFilterProperty"
           description: The value of the variable.
+      required:
+        - name
+        - value
     VariableUserTaskFilterRequest:
       description: The user task variable search filters.
       type: object
@@ -4135,26 +4220,10 @@ components:
           title: Exact match
           description: Matches the value exactly.
         - $ref: "#/components/schemas/AdvancedDateTimeFilter"
-    ProcessInstanceFilter:
-      description: Process instance search filter.
+    BaseProcessInstanceFilter:
+      description: Base process instance search filter.
       type: object
       properties:
-        processDefinitionId:
-          description: The process definition ID.
-          allOf:
-            - $ref: "#/components/schemas/StringFilterProperty"
-        processDefinitionName:
-          description: The process definition name.
-          allOf:
-            - $ref: "#/components/schemas/StringFilterProperty"
-        processDefinitionVersion:
-          description: The process definition version.
-          allOf:
-            - $ref: "#/components/schemas/IntegerFilterProperty"
-        processDefinitionVersionTag:
-          description: The process definition version tag.
-          allOf:
-            - $ref: "#/components/schemas/StringFilterProperty"
         startDate:
           description: The start date.
           allOf:
@@ -4183,10 +4252,6 @@ components:
           description: The key of this process instance.
           allOf:
             - $ref: "#/components/schemas/BasicStringFilterProperty"
-        processDefinitionKey:
-          description: The process definition key.
-          allOf:
-            - $ref: "#/components/schemas/BasicStringFilterProperty"
         parentProcessInstanceKey:
           description: The parent process instance key.
           allOf:
@@ -4195,6 +4260,36 @@ components:
           description: The parent flow node instance key.
           allOf:
             - $ref: "#/components/schemas/BasicStringFilterProperty"
+    ProcessInstanceFilter:
+      description: Process instance search filter.
+      type: object
+      allOf:
+        - $ref: "#/components/schemas/BaseProcessInstanceFilter"
+      properties:
+        processDefinitionId:
+          description: The process definition ID.
+          allOf:
+            - $ref: "#/components/schemas/StringFilterProperty"
+        processDefinitionName:
+          description: The process definition name.
+          allOf:
+            - $ref: "#/components/schemas/StringFilterProperty"
+        processDefinitionVersion:
+          description: The process definition version.
+          allOf:
+            - $ref: "#/components/schemas/IntegerFilterProperty"
+        processDefinitionVersionTag:
+          description: The process definition version tag.
+          allOf:
+            - $ref: "#/components/schemas/StringFilterProperty"
+        processDefinitionKey:
+          description: The process definition key.
+          allOf:
+            - $ref: "#/components/schemas/BasicStringFilterProperty"
+        batchOperationId:
+          description: The batch operation ID.
+          allOf:
+            - $ref: "#/components/schemas/StringFilterProperty"
     ProcessInstanceVariableFilterRequest:
       description: Process instance variable filter.
       type: object
@@ -4204,7 +4299,11 @@ components:
           type: string
         value:
           description: The value of the variable.
-          type: string
+          allOf:
+            - $ref: "#/components/schemas/StringFilterProperty"
+      required:
+        - name
+        - value
     ProcessInstanceSearchQueryResult:
       description: Process instance search response.
       type: object
@@ -4267,6 +4366,37 @@ components:
         - ACTIVE
         - COMPLETED
         - TERMINATED
+    ProcessDefinitionFlowNodeStatisticsQuery:
+      description: Process definition flow node statistics request.
+      type: object
+      properties:
+        filter:
+          description: The process instance search filters.
+          allOf:
+            - $ref: "#/components/schemas/BaseProcessInstanceFilter"
+    ProcessDefinitionFlowNodeStatisticsResult:
+      description: Process definition flow node statistics response.
+      type: object
+      properties:
+        flowNodeId:
+          description: The flow node ID for which the results are aggregated.
+          type: string
+        active:
+          description: The total number of active instances of the flow node.
+          type: integer
+          format: int64
+        canceled:
+          description: The total number of canceled instances of the flow node.
+          type: integer
+          format: int64
+        incidents:
+          description: The total number of incidents for the flow node.
+          type: integer
+          format: int64
+        completed:
+          description: The total number of completed instances of the flow node.
+          type: integer
+          format: int64
     CancelProcessInstanceRequest:
       type: object
       nullable: true
@@ -5182,7 +5312,7 @@ components:
         email:
           description: The email of the user.
           type: "string"
-        key:
+        userKey:
           description: The key of the user.
           type: "string"
     UserSearchResult:
@@ -5242,7 +5372,7 @@ components:
         name:
           type: string
           description: The role name.
-        key:
+        roleKey:
           type: string
           description: The role key.
         assignedMemberKeys:
@@ -6550,8 +6680,7 @@ components:
           type: string
           description: The ID of the process definition that created the document.
         processInstanceKey:
-          type: integer
-          format: int64
+          type: string
           description: The key of the process instance that created the document.
         customProperties:
           type: object

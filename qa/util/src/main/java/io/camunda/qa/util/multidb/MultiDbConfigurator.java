@@ -20,7 +20,7 @@ import java.util.UUID;
  * Helper class to configure any {@link TestStandaloneApplication}, with specific secondary storage.
  */
 public class MultiDbConfigurator {
-  public static String zeebePrefix = "-zeebe-records";
+  public static String zeebePrefix = "zeebe-records";
 
   private final TestStandaloneApplication<?> testApplication;
   private String indexPrefix;
@@ -76,7 +76,7 @@ public class MultiDbConfigurator {
                       io.camunda.search.connect.configuration.DatabaseType.ELASTICSEARCH),
                   "index",
                   Map.of("prefix", indexPrefix),
-                  "archiver",
+                  "history",
                   Map.of(
                       "waitPeriodBeforeArchiving",
                       retentionEnabled ? "1s" : "1h", // find completed instances almost directly
@@ -172,7 +172,7 @@ public class MultiDbConfigurator {
                       userPassword),
                   "index",
                   Map.of("prefix", indexPrefix),
-                  "archiver",
+                  "history",
                   Map.of(
                       "waitPeriodBeforeArchiving",
                       retentionEnabled ? "1s" : "1h", // find completed instances almost directly
@@ -235,7 +235,9 @@ public class MultiDbConfigurator {
   }
 
   public String zeebeIndexPrefix() {
-    return indexPrefix != null ? indexPrefix + zeebePrefix : indexPrefix;
+    return indexPrefix != null && !indexPrefix.isBlank()
+        ? indexPrefix + "-" + zeebePrefix
+        : zeebePrefix;
   }
 
   public void configureAWSOpenSearchSupport(final String opensearchUrl, final String indexPrefix) {

@@ -11,7 +11,6 @@ import io.atomix.cluster.MemberId;
 import io.camunda.application.Profile;
 import io.camunda.application.commons.CommonsModuleConfiguration;
 import io.camunda.application.commons.configuration.BrokerBasedConfiguration.BrokerBasedProperties;
-import io.camunda.application.commons.configuration.WorkingDirectoryConfiguration.WorkingDirectory;
 import io.camunda.application.commons.security.CamundaSecurityConfiguration.CamundaSecurityProperties;
 import io.camunda.application.initializers.WebappsConfigurationInitializer;
 import io.camunda.authentication.config.AuthenticationProperties;
@@ -39,7 +38,6 @@ import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.socket.SocketUtil;
 import io.camunda.zeebe.test.util.testcontainers.TestSearchContainers;
 import java.net.URI;
-import java.nio.file.Path;
 import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
@@ -362,18 +360,6 @@ public final class TestStandaloneCamunda extends TestSpringApplication<TestStand
           exporterModifier.accept(cfg);
           brokerProperties.getExporters().put(id, cfg);
         });
-  }
-
-  /**
-   * Sets the broker's working directory, aka its data directory. If a path is given, the broker
-   * will not delete it on shutdown.
-   *
-   * @param directory path to the broker's root data directory
-   * @return itself for chaining
-   */
-  public TestStandaloneCamunda withWorkingDirectory(final Path directory) {
-    return withBean(
-        "workingDirectory", new WorkingDirectory(directory, false), WorkingDirectory.class);
   }
 
   public TestStandaloneCamunda withAuthorizationsEnabled() {

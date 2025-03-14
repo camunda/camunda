@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 import { FC } from "react";
-import { Edit, TrashCan } from "@carbon/react/icons";
+import { TrashCan } from "@carbon/react/icons";
 import { C3EmptyState } from "@camunda/camunda-composite-components";
 import useTranslate from "src/utility/localization";
 import { useApi } from "src/utility/api/hooks";
@@ -18,11 +18,10 @@ import { useNavigate } from "react-router";
 import { TranslatedErrorInlineNotification } from "src/components/notifications/InlineNotification";
 import useModal, { useEntityModal } from "src/components/modal/useModal";
 import AddModal from "src/pages/tenants/modals/AddModal";
-import EditModal from "src/pages/tenants/modals/EditModal";
 import DeleteModal from "src/pages/tenants/modals/DeleteModal";
 
 const List: FC = () => {
-  const { t } = useTranslate();
+  const { t } = useTranslate("tenants");
   const navigate = useNavigate();
   const {
     data: tenantSearchResults,
@@ -32,7 +31,6 @@ const List: FC = () => {
   } = useApi(searchTenant);
 
   const [addTenant, addTenantModal] = useModal(AddModal, reload);
-  const [editTenant, editTenantModal] = useEntityModal(EditModal, reload);
   const [deleteTenant, deleteTenantModal] = useEntityModal(DeleteModal, reload);
 
   const showDetails = ({ tenantId }: Tenant) => navigate(`${tenantId}`);
@@ -50,17 +48,15 @@ const List: FC = () => {
       <Page>
         {pageHeader}
         <C3EmptyState
-          heading={t("You don’t have any tenants yet")}
-          description={t(
-            "Create isolated environments with their own assigned users, groups, and applications.",
-          )}
+          heading={t("noTenants")}
+          description={t("createIsolatedEnvironments")}
           button={{
-            label: t("Create a tenant"),
+            label: t("createATenant"),
             onClick: addTenant,
           }}
           link={{
             href: documentationHref("/concepts/multi-tenancy/", ""),
-            label: t("Learn more about tenants"),
+            label: t("learnMoreAboutTenants"),
           }}
         />
         {addTenantModal}
@@ -74,27 +70,17 @@ const List: FC = () => {
       <EntityList
         data={tenantSearchResults == null ? [] : tenantSearchResults.items}
         headers={[
-          { header: t("Name"), key: "name" },
-          { header: t("Tenant ID"), key: "tenantId" },
+          { header: t("tenantId"), key: "tenantId" },
+          { header: t("name"), key: "name" },
         ]}
         sortProperty="name"
         onEntityClick={showDetails}
-        addEntityLabel={t("Create tenant")}
+        addEntityLabel={t("createTenant")}
         onAddEntity={addTenant}
         loading={loading}
         menuItems={[
           {
-            label: t("Rename"),
-            icon: Edit,
-            onClick: (tenant) =>
-              editTenant({
-                tenantId: tenant.tenantId,
-                name: tenant.name,
-                description: tenant.description,
-              }),
-          },
-          {
-            label: t("Delete"),
+            label: t("delete"),
             icon: TrashCan,
             isDangerous: true,
             onClick: (tenant) =>
@@ -108,12 +94,11 @@ const List: FC = () => {
       />
       {!loading && !success && (
         <TranslatedErrorInlineNotification
-          title={t("The list of tenants could not be loaded.")}
-          actionButton={{ label: t("Retry"), onClick: reload }}
+          title={t("tenantsListCouldNotLoad")}
+          actionButton={{ label: t("retry"), onClick: reload }}
         />
       )}
       {addTenantModal}
-      {editTenantModal}
       {deleteTenantModal}
     </Page>
   );

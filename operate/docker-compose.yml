@@ -59,7 +59,7 @@ services:
     command: [ "sysctl", "-w", "vm.max_map_count=262144" ]
 
   opensearch:
-    image: opensearchproject/opensearch:2.18.0
+    image: opensearchproject/opensearch:2.19.1
     container_name: opensearch
     depends_on:
       - opensearch-init
@@ -101,7 +101,7 @@ services:
       - 8000:8000
     restart: always
   operate-opensearch:
-    image: camunda/operate:8.6.10
+    image: camunda/operate:8.6.11
     container_name: operate-opensearch
     environment:
       - SERVER_PORT=8080

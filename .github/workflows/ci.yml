@@ -331,7 +331,7 @@ jobs:
       # Set up an OpenSearch service container
       # https://docs.github.com/en/actions/use-cases-and-examples/using-containerized-services/about-service-containers
       opensearch:
-        image: opensearchproject/opensearch:2.18.0
+        image: opensearchproject/opensearch:2.19.1
         # Exposing the ports allow to be accessible via http://localhost:9200 in the runner
         ports:
           - 9200:9200
@@ -600,7 +600,7 @@ jobs:
           - 5000:5000
     env:
       LOCAL_DOCKER_IMAGE: localhost:5000/camunda/camunda
-      TEST_ELASTICSEARCH_IMAGE: docker.elastic.co/elasticsearch/elasticsearch:8.14.1
+      TEST_ELASTICSEARCH_IMAGE: docker.elastic.co/elasticsearch/elasticsearch:8.16.4
     steps:
       - uses: actions/checkout@v4
       - uses: hadolint/hadolint-action@v3.1.0
@@ -682,7 +682,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          node-version: "22"
       - uses: camunda/infra-global-github-actions/setup-yarn-cache@main
         with:
           directory: identity/client
@@ -842,12 +842,12 @@ jobs:
       - name: Build optimize dependencies
         uses: ./.github/actions/run-maven
         with:
-          parameters: -pl optimize/backend -am install -Dquickly -PskipFrontendBuild
+          parameters: -f optimize/pom.xml -pl backend -am install -Dskip.docker -DskipTests -PskipFrontendBuild
           threads: .5C
       - name: Test
         uses: ./.github/actions/run-maven
         with:
-          parameters: -f optimize/pom.xml  test -PskipFrontendBuild -Dskip.docker
+          parameters: -f optimize/pom.xml test -PskipFrontendBuild -Dskip.docker
           threads: .5C
       - name: Upload Test Results
         if: always()
@@ -937,7 +937,8 @@ jobs:
           vacuum lint zeebe/gateway-protocol/src/main/proto/rest-api.yaml
           --ruleset zeebe/gateway-protocol/vacuum-ruleset.yaml
           --ignore-file zeebe/gateway-protocol/vacuum-ignores.yaml
-          --details --errors
+          --functions zeebe/gateway-protocol/vacuum-rules
+          --details --no-clip --errors
         shell: bash
       - name: Observe build status
         if: always()

@@ -70,6 +70,12 @@
       },
       "position" : {
         "type": "long"
+      },
+      "denied" : {
+        "type" : "boolean"
+      },
+      "deniedReason": {
+        "type": "keyword"
       }
     }
   }

@@ -9,7 +9,7 @@ package io.camunda.exporter.tasks.archiver;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.exporter.config.ExporterConfiguration.ArchiverConfiguration;
+import io.camunda.exporter.config.ExporterConfiguration.HistoryConfiguration;
 import io.camunda.exporter.config.ExporterConfiguration.RetentionConfiguration;
 import io.camunda.exporter.metrics.CamundaExporterMetrics;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
@@ -64,7 +64,7 @@ final class OpenSearchArchiverRepositoryTest {
 
     return new OpenSearchArchiverRepository(
         1,
-        new ArchiverConfiguration(),
+        new HistoryConfiguration(),
         retention,
         "testPrefix",
         "instance",

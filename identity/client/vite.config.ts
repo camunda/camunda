@@ -1,5 +1,13 @@
-import { defineConfig, UserConfig } from "vite";
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
 
+import { defineConfig, PluginOption, UserConfig } from "vite";
+import svgr from "vite-plugin-svgr";
 import react from "@vitejs/plugin-react";
 import license from "rollup-plugin-license";
 import path from "node:path";
@@ -9,11 +17,24 @@ const outDir = "dist";
 const contextPath = process.env.CONTEXT_PATH ?? "";
 const proxyPath = `^${contextPath}/(v2|login|logout).*`;
 
+const plugins: PluginOption[] = [
+  react(),
+  svgr({
+    svgrOptions: {
+      exportType: "default",
+      ref: true,
+      svgo: false,
+      titleProp: true,
+    },
+    include: "**/*.svg",
+  }),
+];
+
 // https://vitejs.dev/config/
 export default defineConfig(
   ({ mode }): UserConfig => ({
     base: "",
-    plugins: mode === "sbom" ? [react(), sbom()] : [react()],
+    plugins: mode === "sbom" ? [...plugins, sbom() as PluginOption] : plugins,
     resolve: {
       alias: {
         src: "/src",
@@ -29,7 +50,7 @@ export default defineConfig(
               `./${outDir}/assets/vendor.LICENSE.txt`,
             ),
           },
-        }),
+        }) as PluginOption,
       },
     },
     esbuild: {
