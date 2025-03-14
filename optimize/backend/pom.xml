@@ -426,6 +426,7 @@
       <groupId>org.wiremock</groupId>
       <artifactId>wiremock-standalone</artifactId>
       <scope>test</scope>
+      <version>3.12.1</version>
     </dependency>
 
     <dependency>
