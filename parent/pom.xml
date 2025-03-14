@@ -185,7 +185,7 @@
     <version.guava.annotations>r03</version.guava.annotations>
     <version.nimbus-jose-jwt>10.0.2</version.nimbus-jose-jwt>
     <version.nimbus-sdk>11.23.1</version.nimbus-sdk>
-    <version.keycloak>26.1.3</version.keycloak>
+    <version.keycloak>26.1.4</version.keycloak>
     <version.keycloak-client>26.0.4</version.keycloak-client>
     <version.jna>5.16.0</version.jna>
     <version.jopt-simple>5.0.4</version.jopt-simple>
