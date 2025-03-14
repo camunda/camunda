@@ -20,11 +20,14 @@ import io.camunda.tasklist.schema.IndexSchemaValidator;
 import io.camunda.tasklist.schema.indices.IndexDescriptor;
 import io.camunda.tasklist.schema.manager.SchemaManager;
 import io.camunda.tasklist.schema.templates.TemplateDescriptor;
+import io.camunda.tasklist.util.ElasticsearchTestExtension;
 import io.camunda.tasklist.util.NoSqlHelper;
 import io.camunda.tasklist.util.TasklistZeebeIntegrationTest;
 import io.camunda.tasklist.util.TestApplication;
 import io.camunda.tasklist.util.TestIndexDescriptor;
+import io.camunda.tasklist.util.TestTemplateDescriptor;
 import io.camunda.tasklist.util.apps.schema.TestIndexDescriptorConfiguration;
+import io.camunda.tasklist.util.apps.schema.TestTemplateDescriptorConfiguration;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
@@ -36,7 +39,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 
 @SpringBootTest(
-    classes = {TestApplication.class, TestIndexDescriptorConfiguration.class},
+    classes = {
+      TestApplication.class,
+      TestIndexDescriptorConfiguration.class,
+      TestTemplateDescriptorConfiguration.class
+    },
     properties = {
       TasklistProperties.PREFIX + ".importer.startLoadingDataOnStartup = false",
       TasklistProperties.PREFIX + ".archiver.rolloverEnabled = false",
@@ -55,6 +62,7 @@ public class ElasticSearchSchemaManagementIT extends TasklistZeebeIntegrationTes
   @Autowired private NoSqlHelper noSqlHelper;
   @Autowired private SchemaManager schemaManager;
   @Autowired private TestIndexDescriptor testIndexDescriptor;
+  @Autowired private TestTemplateDescriptor testTemplateDescriptor;
 
   @BeforeAll
   public static void beforeClass() {
@@ -157,5 +165,60 @@ public class ElasticSearchSchemaManagementIT extends TasklistZeebeIntegrationTes
                         .setTypeDefinition(Map.of("type", "keyword"))));
 
     assertThat(indexMappings).contains(entry(indexName, expectedIndexMapping));
+  }
+
+  @Test
+  public void shouldAddFieldToIndexTemplate() throws Exception {
+    // given
+    testTemplateDescriptor.setSchemaClasspathFilename(
+        TestTemplateDescriptorConfiguration.getSchemaFilePath("tasklist-test-template-after.json"));
+    final Map<IndexDescriptor, Set<IndexMappingProperty>> indexDiff =
+        indexSchemaValidator.validateIndexMappings();
+
+    // when
+    schemaManager.updateSchema(indexDiff);
+
+    final String indexName = testTemplateDescriptor.getFullQualifiedName();
+    final Map<String, IndexMapping> indexMappings = schemaManager.getIndexMappings(indexName);
+
+    // then
+    assertThat(indexMappings)
+        .containsExactly(
+            entry(
+                indexName,
+                new IndexMapping()
+                    .setIndexName(indexName)
+                    .setDynamic("strict")
+                    .setMetaProperties(Collections.emptyMap())
+                    .setProperties(
+                        Set.of(
+                            new IndexMappingProperty()
+                                .setName("prop0")
+                                .setTypeDefinition(Map.of("type", "keyword")),
+                            new IndexMappingProperty()
+                                .setName("prop1")
+                                .setTypeDefinition(Map.of("type", "keyword")),
+                            new IndexMappingProperty()
+                                .setName("prop2")
+                                .setTypeDefinition(Map.of("type", "keyword"))))));
+
+    final var indexTemplateMapping =
+        ((ElasticsearchTestExtension) databaseTestExtension)
+            .getIndexTemplateMapping(testTemplateDescriptor.getTemplateName());
+    assertThat(indexTemplateMapping)
+        .isEqualTo(
+            new IndexMapping()
+                .setDynamic("strict")
+                .setProperties(
+                    Set.of(
+                        new IndexMappingProperty()
+                            .setName("prop0")
+                            .setTypeDefinition(Map.of("type", "keyword")),
+                        new IndexMappingProperty()
+                            .setName("prop1")
+                            .setTypeDefinition(Map.of("type", "keyword")),
+                        new IndexMappingProperty()
+                            .setName("prop2")
+                            .setTypeDefinition(Map.of("type", "keyword")))));
   }
 }

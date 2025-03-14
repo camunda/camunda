@@ -203,9 +203,9 @@ public class OpenSearchSchemaManagementIT extends TasklistZeebeIntegrationTest {
                                 .setTypeDefinition(Map.of("type", "keyword"))))));
 
     final TypeMapping indexTemplateMapping =
-        OpenSearchTestExtension.class
-            .cast(databaseTestExtension)
+        ((OpenSearchTestExtension) databaseTestExtension)
             .getIndexTemplateMapping(testTemplateDescriptor.getTemplateName());
+    assertThat(indexTemplateMapping.dynamic()).isNotNull();
     assertThat(indexTemplateMapping.dynamic().jsonValue()).isEqualTo("strict");
     assertThat(indexTemplateMapping.properties().keySet())
         .containsExactlyInAnyOrder("prop0", "prop1", "prop2");
