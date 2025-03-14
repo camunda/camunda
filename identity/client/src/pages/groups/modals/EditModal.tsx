@@ -14,6 +14,7 @@ import { useApiCall } from "src/utility/api/hooks";
 import { useNotifications } from "src/components/notifications";
 import { Group, updateGroup } from "src/utility/api/groups";
 import TextField from "src/components/form/TextField";
+import { isValidGroupId } from "./isValidGroupId";
 
 const EditModal: FC<UseEntityModalProps<Group>> = ({
   entity: group,
@@ -31,6 +32,7 @@ const EditModal: FC<UseEntityModalProps<Group>> = ({
   const [groupName, setGroupName] = useState(group.name);
   const [groupId, setGroupId] = useState(group.groupKey);
   const [description, setDescription] = useState(group.description);
+  const [isGroupIdValid, setIsGroupIdValid] = useState(true);
 
   const handleSubmit = async () => {
     const { success } = await callUpdateGroup({
@@ -47,6 +49,10 @@ const EditModal: FC<UseEntityModalProps<Group>> = ({
     }
   };
 
+  const validateGroupId = (id: string) => {
+    setIsGroupIdValid(isValidGroupId(id));
+  };
+
   return (
     <FormModal
       size="sm"
@@ -57,12 +63,17 @@ const EditModal: FC<UseEntityModalProps<Group>> = ({
       loading={loading}
       loadingDescription={t("updatingGroup")}
       confirmLabel={t("editGroup")}
+      submitDisabled={!groupName || !groupId || !isGroupIdValid}
     >
       <TextField
         label={t("groupId")}
         value={groupId}
         placeholder={t("groupIdPlaceholder")}
-        onChange={setGroupId}
+        onChange={(value) => {
+          validateGroupId(value);
+          setGroupId(value);
+        }}
+        errors={!isGroupIdValid ? [t("pleaseEnterValidGroupId")] : []}
         autoFocus
       />
       <TextField

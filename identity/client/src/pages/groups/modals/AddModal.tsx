@@ -5,6 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
+
 import { FC, useState } from "react";
 import { InlineNotification } from "@carbon/react";
 import { FormModal, UseModalProps } from "src/components/modal";
@@ -12,6 +13,7 @@ import useTranslate from "src/utility/localization";
 import { useApiCall } from "src/utility/api/hooks";
 import TextField from "src/components/form/TextField";
 import { createGroup } from "src/utility/api/groups";
+import { isValidGroupId } from "./isValidGroupId";
 
 const AddModal: FC<UseModalProps> = ({ open, onClose, onSuccess }) => {
   const { t } = useTranslate("groups");
@@ -23,6 +25,7 @@ const AddModal: FC<UseModalProps> = ({ open, onClose, onSuccess }) => {
   const [groupName, setGroupName] = useState("");
   const [groupId, setGroupId] = useState("");
   const [description, setDescription] = useState("");
+  const [isGroupIdValid, setIsGroupIdValid] = useState(true);
 
   const handleSubmit = async () => {
     const { success } = await callAddGroup({
@@ -34,6 +37,10 @@ const AddModal: FC<UseModalProps> = ({ open, onClose, onSuccess }) => {
     }
   };
 
+  const validateGroupId = (id: string) => {
+    setIsGroupIdValid(isValidGroupId(id));
+  };
+
   return (
     <FormModal
       open={open}
@@ -43,12 +50,17 @@ const AddModal: FC<UseModalProps> = ({ open, onClose, onSuccess }) => {
       loading={loading}
       loadingDescription={t("creatingGroup")}
       confirmLabel={t("createGroup")}
+      submitDisabled={!groupName || !groupId || !isGroupIdValid}
     >
       <TextField
         label={t("groupId")}
         value={groupId}
         placeholder={t("groupIdPlaceholder")}
-        onChange={setGroupId}
+        onChange={(value) => {
+          validateGroupId(value);
+          setGroupId(value);
+        }}
+        errors={!isGroupIdValid ? [t("pleaseEnterValidGroupId")] : []}
         autoFocus
       />
       <TextField
