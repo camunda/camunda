@@ -23,6 +23,12 @@ import org.springframework.security.oauth2.jwt.Jwt;
  *
  * <p>The claims are treated as an any match, meaning that at least one of the configured claims
  * must be present in the token with the expected value.
+ *
+ * <p>For claims that are single values (e.g. "foo": "bar"), the validator will check if the value
+ * is equal to the expected value.
+ *
+ * <p>For claims that are arrays (e.g. "foo": ["one", "two", "three"]), the validator will check if
+ * the expected value is contained in the array.
  */
 public class ClaimValidator implements OAuth2TokenValidator<Jwt> {
   private static final Logger LOG = LoggerFactory.getLogger(ClaimValidator.class);
