@@ -17,11 +17,14 @@ import io.camunda.zeebe.protocol.record.value.VariableDocumentUpdateSemantic;
 import io.camunda.zeebe.test.util.MsgPackUtil;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import java.util.Map;
+import java.util.Random;
 import java.util.function.LongFunction;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
 public final class VariableClient {
+
+  private static final long DEFAULT_KEY = -1;
 
   private static final LongFunction<Record<VariableDocumentRecordValue>>
       SUCCESSFUL_EXPECTATION_SUPPLIER =
@@ -46,6 +49,9 @@ public final class VariableClient {
 
   private final VariableDocumentRecord variableDocumentRecord;
   private final CommandWriter writer;
+
+  private long requestId = new Random().nextLong();
+  private int requestStreamId = new Random().nextInt();
 
   private LongFunction<Record<VariableDocumentRecordValue>> expectation =
       SUCCESSFUL_EXPECTATION_SUPPLIER;
@@ -99,14 +105,25 @@ public final class VariableClient {
   public Record<VariableDocumentRecordValue> update() {
     final long position =
         writer.writeCommand(
-            VariableDocumentIntent.UPDATE, variableDocumentRecord, authorizedTenants);
+            DEFAULT_KEY,
+            requestStreamId,
+            requestId,
+            VariableDocumentIntent.UPDATE,
+            variableDocumentRecord,
+            authorizedTenants);
     return expectation.apply(position);
   }
 
   public Record<VariableDocumentRecordValue> update(final String username) {
     final long position =
         writer.writeCommand(
-            VariableDocumentIntent.UPDATE, username, variableDocumentRecord, authorizedTenants);
+            DEFAULT_KEY,
+            requestStreamId,
+            requestId,
+            VariableDocumentIntent.UPDATE,
+            username,
+            variableDocumentRecord,
+            authorizedTenants);
     return expectation.apply(position);
   }
 }
