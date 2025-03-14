@@ -133,6 +133,22 @@ public class CompatibilityTasklistAssignUserTaskAuthorizationIT {
   }
 
   @Test
+  public void shouldNotCreateInstanceWithUnauthorizedUser(
+      @Authenticated(TEST_USER_NAME_NO_PERMISSION) final CamundaClient noPermission) {
+    // given (non-admin) user without any authorizations
+
+    // when
+    final var response =
+        tasklistRestClient
+            .withAuthentication(TEST_USER_NAME_NO_PERMISSION, TEST_USER_PASSWORD)
+            .createProcessInstance(PROCESS_ID);
+
+    // then
+    assertThat(response).isNotNull();
+    assertThat(response.statusCode()).isEqualTo(403);
+  }
+
+  @Test
   public void shouldNotAssignUserTaskWithUnauthorizedUser(
       @Authenticated(TEST_USER_NAME_NO_PERMISSION) final CamundaClient noPermission) {
     // given (non-admin) user without any authorizations
