@@ -6,8 +6,7 @@
                    https://logging.apache.org/xml/ns/log4j-config-2.xsd" status="WARN" shutdownHook="disable">
   <Properties>
     <Property name="log.path" value="${sys:app.home}/logs" />
-    <Property name="log.pattern" value="%d{yyyy-MM-dd HH:mm:ss.SSS} [%X{actor-scheduler}] [%t] [%X{actor-name}] %-5level
-      %logger{36} - %msg%n" />
+    <Property name="log.pattern" value="%d{yyyy-MM-dd HH:mm:ss.SSS} [%X{actor-scheduler}] [%t] [%X{actor-name}] %-5level%n\t%logger{36} - %msg%n" />
     <Property name="log.stackdriver.serviceName" value="${env:ZEEBE_LOG_STACKDRIVER_SERVICENAME:-${env:OPERATE_LOG_STACKDRIVER_SERVICENAME:-${env:OPTIMIZE_LOG_STACKDRIVER_SERVICENAME:-${env:TASKLIST_LOG_STACKDRIVER_SERVICENAME:-}}}}"/>
     <Property name="log.stackdriver.serviceVersion" value="${env:ZEEBE_LOG_STACKDRIVER_SERVICEVERSION:-${env:OPERATE_LOG_STACKDRIVER_SERVICEVERSION:-${env:OPTIMIZE_LOG_STACKDRIVER_SERVICEVERSION:-${env:TASKLIST_LOG_STACKDRIVER_SERVICEVERSION:-}}}}"/>
   </Properties>
@@ -34,12 +33,12 @@
   </Appenders>
 
   <Loggers>
-    <Logger name="io.camunda.zeebe" level="${env:ZEEBE_LOG_LEVEL:-INFO}"/>
-    <Logger name="io.atomix" level="${env:ATOMIX_LOG_LEVEL:-INFO}"/>
-    <Logger name="io.camunda.operate" level="INFO" />
+    <Logger name="io.camunda" level="${env:CAMUNDA_LOG_LEVEL:-INFO}" />
+    <Logger name="io.camunda.zeebe" level="${env:ZEEBE_LOG_LEVEL:-INFO}" />
+    <Logger name="io.atomix" level="${env:ATOMIX_LOG_LEVEL:-INFO}" />
     <Logger name="io.camunda.optimize" level="${env:OPTIMIZE_LOG_LEVEL:-INFO}" />
-    <Logger name="io.camunda.tasklist" level="INFO" />
     <Logger name="org.elasticsearch" level="${env:ES_LOG_LEVEL:-WARN}" />
+    <Logger name="org.springframework" level="INFO" />
 
     <Root level="WARN">
       <AppenderRef ref="RollingFile"/>
@@ -47,9 +46,6 @@
       <!-- remove to disable console logging -->
       <AppenderRef ref="${env:ZEEBE_LOG_APPENDER:-${env:OPERATE_LOG_APPENDER:-${env:TASKLIST_LOG_APPENDER:-Console}}}"/>
     </Root>
-
-    <!-- disable noisy loggers -->
-    <Logger name="org.ehcache.core.EhcacheManager" level="WARN"/>
   </Loggers>
 
 </Configuration>
