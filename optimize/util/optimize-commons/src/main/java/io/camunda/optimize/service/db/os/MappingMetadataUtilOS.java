@@ -25,6 +25,10 @@ public class MappingMetadataUtilOS extends MappingMetadataUtil<Builder> {
 
   private static final Logger LOG = org.slf4j.LoggerFactory.getLogger(MappingMetadataUtilOS.class);
 
+  public MappingMetadataUtilOS(final OptimizeElasticsearchClient dbClient) {
+    super(dbClient);
+  }
+
   @Override
   protected DecisionInstanceIndexOS getDecisionInstanceIndex(final String key) {
     return new DecisionInstanceIndexOS(key);
