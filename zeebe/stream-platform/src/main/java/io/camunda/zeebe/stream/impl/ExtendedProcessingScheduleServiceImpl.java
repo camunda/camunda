@@ -7,10 +7,10 @@
  */
 package io.camunda.zeebe.stream.impl;
 
-import static io.camunda.zeebe.stream.api.scheduling.AsyncSchedulePool.ASYNC_PROCESSING;
+import static io.camunda.zeebe.stream.api.scheduling.AsyncTaskGroup.ASYNC_PROCESSING;
 
 import io.camunda.zeebe.scheduler.future.ActorFuture;
-import io.camunda.zeebe.stream.api.scheduling.AsyncSchedulePool;
+import io.camunda.zeebe.stream.api.scheduling.AsyncTaskGroup;
 import io.camunda.zeebe.stream.api.scheduling.ProcessingScheduleService;
 import io.camunda.zeebe.stream.api.scheduling.SimpleProcessingScheduleService;
 import io.camunda.zeebe.stream.api.scheduling.Task;
@@ -47,9 +47,9 @@ class ExtendedProcessingScheduleServiceImpl implements ProcessingScheduleService
 
   @Override
   public void runAtFixedRateAsync(
-      final Duration delay, final Task task, final AsyncSchedulePool pool) {
-    final var actor = context.geAsyncActor(pool);
-    final var actorService = context.getAsyncActorService(pool);
+      final Duration delay, final Task task, final AsyncTaskGroup taskGroup) {
+    final var actor = context.geAsyncActor(taskGroup);
+    final var actorService = context.getAsyncActorService(taskGroup);
     actor.run(
         () -> {
           // we must run in different actor in order to schedule task
@@ -59,9 +59,9 @@ class ExtendedProcessingScheduleServiceImpl implements ProcessingScheduleService
 
   @Override
   public ScheduledTask runDelayedAsync(
-      final Duration delay, final Task task, final AsyncSchedulePool pool) {
-    final var actor = context.geAsyncActor(pool);
-    final var actorService = context.getAsyncActorService(pool);
+      final Duration delay, final Task task, final AsyncTaskGroup taskGroup) {
+    final var actor = context.geAsyncActor(taskGroup);
+    final var actorService = context.getAsyncActorService(taskGroup);
 
     final var futureScheduledTask = actor.<ScheduledTask>createFuture();
     actor.run(
@@ -70,14 +70,14 @@ class ExtendedProcessingScheduleServiceImpl implements ProcessingScheduleService
           final var scheduledTask = actorService.runDelayed(delay, task);
           futureScheduledTask.complete(scheduledTask);
         });
-    return new AsyncScheduledTask(futureScheduledTask, pool);
+    return new AsyncScheduledTask(futureScheduledTask, taskGroup);
   }
 
   @Override
   public ScheduledTask runAtAsync(
-      final long timestamp, final Task task, final AsyncSchedulePool pool) {
-    final var actor = context.geAsyncActor(pool);
-    final var actorService = context.getAsyncActorService(pool);
+      final long timestamp, final Task task, final AsyncTaskGroup taskGroup) {
+    final var actor = context.geAsyncActor(taskGroup);
+    final var actorService = context.getAsyncActorService(taskGroup);
     final var futureScheduledTask = actor.<ScheduledTask>createFuture();
     actor.run(
         () -> {
@@ -85,7 +85,7 @@ class ExtendedProcessingScheduleServiceImpl implements ProcessingScheduleService
           final var scheduledTask = actorService.runAt(timestamp, task);
           futureScheduledTask.complete(scheduledTask);
         });
-    return new AsyncScheduledTask(futureScheduledTask, pool);
+    return new AsyncScheduledTask(futureScheduledTask, taskGroup);
   }
 
   @Override
@@ -158,12 +158,12 @@ class ExtendedProcessingScheduleServiceImpl implements ProcessingScheduleService
   private final class AsyncScheduledTask implements ScheduledTask {
 
     private final ActorFuture<ScheduledTask> futureScheduledTask;
-    private final AsyncSchedulePool pool;
+    private final AsyncTaskGroup taskGroup;
 
     public AsyncScheduledTask(
-        final ActorFuture<ScheduledTask> futureScheduledTask, final AsyncSchedulePool pool) {
+        final ActorFuture<ScheduledTask> futureScheduledTask, final AsyncTaskGroup taskGroup) {
       this.futureScheduledTask = futureScheduledTask;
-      this.pool = pool;
+      this.taskGroup = taskGroup;
     }
 
     /**
@@ -172,7 +172,7 @@ class ExtendedProcessingScheduleServiceImpl implements ProcessingScheduleService
      */
     @Override
     public void cancel() {
-      final var actor = context.geAsyncActor(pool);
+      final var actor = context.geAsyncActor(taskGroup);
       if (actor == null) {
         return;
       }

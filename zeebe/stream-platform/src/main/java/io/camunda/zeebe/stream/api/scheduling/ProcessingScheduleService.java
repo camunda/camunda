@@ -20,8 +20,9 @@ public interface ProcessingScheduleService extends SimpleProcessingScheduleServi
    * scheduled tasks and always execute scheduled tasks on the same thread, this method does not
    * guarantee this.
    *
-   * <p>Uses {@link AsyncSchedulePool#ASYNC_PROCESSING} as the pool to execute the task. If you wish
-   * to use a different pool, use {@link #runAtFixedRateAsync(Duration, Task, AsyncSchedulePool)}
+   * <p>Uses {@link AsyncTaskGroup#ASYNC_PROCESSING} as the default task group to execute the task.
+   * To use a different task group, use {@link #runAtFixedRateAsync(Duration, Task,
+   * AsyncTaskGroup)}.
    *
    * <p>Note that time-traveling in tests only affects the delay of the currently scheduled next
    * task and not any of the iterations after. This is because the next task is scheduled with the
@@ -41,8 +42,8 @@ public interface ProcessingScheduleService extends SimpleProcessingScheduleServi
    * scheduled tasks and always execute scheduled tasks on the same thread, this method does not
    * guarantee this.
    *
-   * <p>Uses {@link AsyncSchedulePool#ASYNC_PROCESSING} as the pool to execute the task. If you wish
-   * to use a different pool, use {@link #runDelayedAsync(Duration, Task, AsyncSchedulePool)}
+   * <p>Uses {@link AsyncTaskGroup#ASYNC_PROCESSING} as the default task group to execute the task.
+   * To use a different task group, use {@link #runDelayedAsync(Duration, Task, AsyncTaskGroup)}.
    *
    * @param delay The delay to wait before executing the task
    * @param task The task to execute after the delay
@@ -61,8 +62,8 @@ public interface ProcessingScheduleService extends SimpleProcessingScheduleServi
    * scheduled tasks and always execute scheduled tasks on the same thread, this method does not
    * guarantee this.
    *
-   * <p>Uses {@link AsyncSchedulePool#ASYNC_PROCESSING} as the pool to execute the task. If you wish
-   * to use a different pool, use {@link #runAtAsync(long, Task, AsyncSchedulePool)}
+   * <p>Uses {@link AsyncTaskGroup#ASYNC_PROCESSING} as the default task group to execute the task.
+   * To use a different task group, use {@link #runAtAsync(long, Task, AsyncTaskGroup)}.
    *
    * @param timestamp Unix epoch timestamp in milliseconds
    * @param task The task to execute at or after the timestamp
@@ -87,9 +88,9 @@ public interface ProcessingScheduleService extends SimpleProcessingScheduleServi
    *
    * @param delay The delay to wait initially and between each run
    * @param task The task to execute at the fixed rate
-   * @param pool The pool to execute the task on
+   * @param taskGroup The {@link AsyncTaskGroup} to execute the task on
    */
-  void runAtFixedRateAsync(Duration delay, Task task, AsyncSchedulePool pool);
+  void runAtFixedRateAsync(Duration delay, Task task, AsyncTaskGroup taskGroup);
 
   /**
    * Schedule a task to execute with a specific delay. After that delay, the task is executed.
@@ -101,11 +102,11 @@ public interface ProcessingScheduleService extends SimpleProcessingScheduleServi
    *
    * @param delay The delay to wait before executing the task
    * @param task The task to execute after the delay
-   * @param pool The pool to execute the task on
+   * @param taskGroup The {@link AsyncTaskGroup} to execute the task on
    * @implNote If the delay is short, cancellation via {@link ScheduledTask} may happen after
    *     execution and have no effect.
    */
-  ScheduledTask runDelayedAsync(Duration delay, Task task, AsyncSchedulePool pool);
+  ScheduledTask runDelayedAsync(Duration delay, Task task, AsyncTaskGroup taskGroup);
 
   /**
    * Schedule a task to execute at or after a specific timestamp. The task is executed after the
@@ -119,9 +120,9 @@ public interface ProcessingScheduleService extends SimpleProcessingScheduleServi
    *
    * @param timestamp Unix epoch timestamp in milliseconds
    * @param task The task to execute at or after the timestamp
-   * @param pool The pool to execute the task on
+   * @param taskGroup The {@link AsyncTaskGroup} to execute the task on
    * @implNote If the delay is short, cancellation via {@link ScheduledTask} may happen after
    *     execution and have no effect.
    */
-  ScheduledTask runAtAsync(long timestamp, Task task, AsyncSchedulePool pool);
+  ScheduledTask runAtAsync(long timestamp, Task task, AsyncTaskGroup taskGroup);
 }
