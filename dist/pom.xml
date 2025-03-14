@@ -5,7 +5,7 @@
   <parent>
     <groupId>io.camunda</groupId>
     <artifactId>zeebe-parent</artifactId>
-    <version>8.6.12-SNAPSHOT</version>
+    <version>8.6.12-rc1</version>
     <relativePath>../parent/pom.xml</relativePath>
   </parent>
 
@@ -623,7 +623,7 @@
               <goal>assemble</goal>
             </goals>
             <phase>package</phase>
-            <configuration></configuration>
+            <configuration />
           </execution>
         </executions>
       </plugin>
