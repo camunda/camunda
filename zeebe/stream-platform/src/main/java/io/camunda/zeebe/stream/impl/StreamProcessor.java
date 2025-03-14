@@ -167,18 +167,20 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
       final var scheduledTaskMetrics =
           ScheduledTaskMetrics.of(streamProcessorContext.getMeterRegistry());
 
-      asyncScheduleServiceContext =
-          new AsyncScheduleServiceContext(
-              actorSchedulingService,
+      final var actorServiceFactory =
+          new ProcessingScheduleServiceFactory(
               streamProcessorContext::getStreamProcessorPhase,
               streamProcessorContext.getAbortCondition(),
               logStream::newLogStreamWriter,
               scheduledCommandCache,
               streamProcessorContext.getClock(),
               streamProcessorContext.getScheduledTaskCheckInterval(),
-              scheduledTaskMetrics,
-              partitionId);
-      processorActorService = asyncScheduleServiceContext.createActorService();
+              scheduledTaskMetrics);
+
+      asyncScheduleServiceContext =
+          new AsyncScheduleServiceContext(actorSchedulingService, actorServiceFactory, partitionId);
+
+      processorActorService = actorServiceFactory.create();
 
       final var processingScheduleService =
           new ExtendedProcessingScheduleServiceImpl(

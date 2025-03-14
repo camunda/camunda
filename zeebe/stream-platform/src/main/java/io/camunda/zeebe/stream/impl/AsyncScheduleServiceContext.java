@@ -7,34 +7,20 @@
  */
 package io.camunda.zeebe.stream.impl;
 
-import io.camunda.zeebe.logstreams.log.LogStreamWriter;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.stream.api.scheduling.AsyncSchedulePool;
-import io.camunda.zeebe.stream.api.scheduling.ScheduledCommandCache.StageableScheduledCommandCache;
 import io.camunda.zeebe.stream.api.scheduling.SimpleProcessingScheduleService;
 import io.camunda.zeebe.stream.impl.AsyncUtil.Step;
-import io.camunda.zeebe.stream.impl.StreamProcessor.Phase;
-import io.camunda.zeebe.stream.impl.metrics.ScheduledTaskMetrics;
 import io.camunda.zeebe.util.collection.Tuple;
-import java.time.Duration;
-import java.time.InstantSource;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
-import java.util.function.BooleanSupplier;
-import java.util.function.Supplier;
 
 class AsyncScheduleServiceContext {
   private final ActorSchedulingService actorSchedulingService;
-  private final Supplier<Phase> streamProcessorPhaseSupplier;
-  private final BooleanSupplier abortCondition;
-  private final Supplier<LogStreamWriter> writerSupplier;
-  private final StageableScheduledCommandCache commandCache;
-  private final InstantSource clock;
-  private final Duration interval;
-  private final ScheduledTaskMetrics metrics;
+  private final ProcessingScheduleServiceFactory actorServiceFactory;
   private final int partitionId;
 
   private final Map<AsyncSchedulePool, AsyncProcessingScheduleServiceActor> asyncActors;
@@ -42,38 +28,16 @@ class AsyncScheduleServiceContext {
 
   public AsyncScheduleServiceContext(
       final ActorSchedulingService actorSchedulingService,
-      final Supplier<Phase> streamProcessorPhaseSupplier,
-      final BooleanSupplier abortCondition,
-      final Supplier<LogStreamWriter> writerSupplier,
-      final StageableScheduledCommandCache commandCache,
-      final InstantSource clock,
-      final Duration interval,
-      final ScheduledTaskMetrics metrics,
+      final ProcessingScheduleServiceFactory actorServiceFactory,
       final int partitionId) {
     this.actorSchedulingService = actorSchedulingService;
-    this.streamProcessorPhaseSupplier = streamProcessorPhaseSupplier;
-    this.abortCondition = abortCondition;
-    this.writerSupplier = writerSupplier;
-    this.commandCache = commandCache;
-    this.clock = clock;
-    this.interval = interval;
-    this.metrics = metrics;
+    this.actorServiceFactory = actorServiceFactory;
+
     this.partitionId = partitionId;
 
     final var allAsyncPools = createAllAsyncPools();
     asyncActors = Collections.unmodifiableMap(allAsyncPools.getLeft());
     asyncActorServices = Collections.unmodifiableMap(allAsyncPools.getRight());
-  }
-
-  public ProcessingScheduleServiceImpl createActorService() {
-    return new ProcessingScheduleServiceImpl(
-        streamProcessorPhaseSupplier, // this is volatile
-        abortCondition,
-        writerSupplier,
-        commandCache,
-        clock,
-        interval,
-        metrics);
   }
 
   public AsyncProcessingScheduleServiceActor geAsyncActor(final AsyncSchedulePool pool) {
@@ -86,7 +50,7 @@ class AsyncScheduleServiceContext {
 
   public Tuple<AsyncProcessingScheduleServiceActor, ProcessingScheduleServiceImpl> createAsyncActor(
       final AsyncSchedulePool pool) {
-    final var actorService = createActorService();
+    final var actorService = actorServiceFactory.create();
     final var actor =
         new AsyncProcessingScheduleServiceActor(pool.getName(), actorService, partitionId);
 
