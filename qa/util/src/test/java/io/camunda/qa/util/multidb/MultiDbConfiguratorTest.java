@@ -19,7 +19,7 @@ import org.junit.jupiter.api.Test;
 public class MultiDbConfiguratorTest {
 
   public static final String EXPECTED_PREFIX = "custom";
-  public static final String EXPECTED_ZEEBE_PREFIX = "custom" + zeebePrefix;
+  public static final String EXPECTED_ZEEBE_PREFIX = "custom-" + zeebePrefix;
   public static final String EXPECTED_URL = "localhost";
   public static final String EXPECTED_USER = "user";
   public static final String EXPECTED_PW = "pw";
