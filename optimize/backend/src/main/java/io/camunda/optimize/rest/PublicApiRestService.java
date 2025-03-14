@@ -11,8 +11,12 @@ import static io.camunda.optimize.rest.SharingRestService.SHARE_PATH;
 
 import co.elastic.clients.elasticsearch._types.ElasticsearchException;
 import io.camunda.optimize.dto.optimize.SettingsDto;
+import io.camunda.optimize.dto.optimize.UserDto;
 import io.camunda.optimize.dto.optimize.query.EntityIdResponseDto;
 import io.camunda.optimize.dto.optimize.query.IdResponseDto;
+import io.camunda.optimize.dto.optimize.query.collection.CollectionDefinitionDto;
+import io.camunda.optimize.dto.optimize.query.collection.CollectionScopeEntryDto;
+import io.camunda.optimize.dto.optimize.query.collection.PartialCollectionDefinitionRequestDto;
 import io.camunda.optimize.dto.optimize.query.variable.DefinitionVariableLabelsDto;
 import io.camunda.optimize.dto.optimize.rest.export.OptimizeEntityExportDto;
 import io.camunda.optimize.dto.optimize.rest.export.report.ReportDefinitionExportDto;
@@ -20,10 +24,14 @@ import io.camunda.optimize.dto.optimize.rest.pagination.PaginatedDataExportDto;
 import io.camunda.optimize.dto.optimize.rest.pagination.PaginationScrollableDto;
 import io.camunda.optimize.dto.optimize.rest.pagination.PaginationScrollableRequestDto;
 import io.camunda.optimize.service.SettingsService;
+import io.camunda.optimize.service.collection.CollectionScopeService;
+import io.camunda.optimize.service.collection.CollectionService;
 import io.camunda.optimize.service.dashboard.DashboardService;
 import io.camunda.optimize.service.entities.EntityExportService;
 import io.camunda.optimize.service.entities.EntityImportService;
+import io.camunda.optimize.service.exceptions.OptimizeUserOrGroupIdNotFoundException;
 import io.camunda.optimize.service.export.JsonReportResultExportService;
+import io.camunda.optimize.service.identity.AbstractIdentityService;
 import io.camunda.optimize.service.report.ReportService;
 import io.camunda.optimize.service.variable.ProcessVariableLabelService;
 import jakarta.validation.Valid;
@@ -33,6 +41,7 @@ import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.DELETE;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.POST;
+import jakarta.ws.rs.PUT;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.Produces;
@@ -45,6 +54,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
 import lombok.AllArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
@@ -60,6 +70,10 @@ public class PublicApiRestService {
 
   public static final String EXPORT_SUB_PATH = "/export";
   public static final String IMPORT_SUB_PATH = "/import";
+  public static final String COLLECTION_SUB_PATH = "/collection";
+  public static final String COLLECTION_BY_ID_PATH = COLLECTION_SUB_PATH + "/{collectionId}";
+  public static final String COLLECTION_CREATE_SUB_PATH = COLLECTION_SUB_PATH + "/create";
+  public static final String COLLECTION_SCOPE_SUB_PATH = COLLECTION_SUB_PATH + "/{id}/scope";
   public static final String REPORT_SUB_PATH = "/report";
   public static final String DASHBOARD_SUB_PATH = "/dashboard";
   public static final String LABELS_SUB_PATH = "/variables/labels";
@@ -81,6 +95,9 @@ public class PublicApiRestService {
   private final DashboardService dashboardService;
   private final ProcessVariableLabelService processVariableLabelService;
   private final SettingsService settingsService;
+  private final CollectionService collectionService;
+  private final CollectionScopeService collectionScopeService;
+  private final AbstractIdentityService identityService;
 
   @GET
   @Path(REPORT_SUB_PATH)
@@ -212,5 +229,53 @@ public class PublicApiRestService {
   public void disableShare() {
     SettingsDto settings = SettingsDto.builder().sharingEnabled(false).build();
     settingsService.setSettings(settings);
+  }
+
+  // Undocumented API used in consulting to programmatically list collections
+  @GET
+  @Path(COLLECTION_SUB_PATH)
+  @Produces(MediaType.APPLICATION_JSON)
+  @SneakyThrows
+  public List<IdResponseDto> getCollectionIds() {
+    return collectionService.getAllCollections().stream()
+        .map(collectionDef -> new IdResponseDto(collectionDef.getId()))
+        .collect(Collectors.toList());
+  }
+
+  // Undocumented API used in consulting to read a collection
+  @GET
+  @Path(COLLECTION_BY_ID_PATH)
+  @Produces(MediaType.APPLICATION_JSON)
+  @SneakyThrows
+  public CollectionDefinitionDto getCollection(
+      final @PathParam("collectionId") String collectionId) {
+    return collectionService.getCollectionDefinition(collectionId);
+  }
+
+  // Undocumented API used in consulting to programmatically set up/"import" collections
+  @POST
+  @Path(COLLECTION_CREATE_SUB_PATH)
+  public IdResponseDto createCollection(
+      final @RequestBody PartialCollectionDefinitionRequestDto
+              partialCollectionDefinitionCreationRequestDto) {
+    if (!identityService.doesIdentityExist(
+        new UserDto(partialCollectionDefinitionCreationRequestDto.getOwnerId()))) {
+      throw new OptimizeUserOrGroupIdNotFoundException(
+          "No Optimize user exists for the given ownerId.");
+    }
+
+    return collectionService.createNewCollectionAndReturnId(
+        partialCollectionDefinitionCreationRequestDto.getOwnerId(),
+        new PartialCollectionDefinitionRequestDto(
+            partialCollectionDefinitionCreationRequestDto.getName()));
+  }
+
+  // Undocumented API used in consulting to programmatically set up/"import" collections
+  @PUT
+  @Path(COLLECTION_SCOPE_SUB_PATH)
+  public void addScopeEntriesToCollection(
+      final @PathParam("id") String collectionId,
+      final @RequestBody List<CollectionScopeEntryDto> scopeEntries) {
+    collectionScopeService.addScopeEntriesToCollectionAsAService(collectionId, scopeEntries);
   }
 }
