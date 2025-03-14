@@ -359,6 +359,19 @@ public class DbVariableState implements MutableVariableState {
     }
   }
 
+  @Override
+  public VariableDocumentState getVariableDocumentState(final long scopeKey) {
+    this.scopeKey.wrapLong(scopeKey);
+    final var variableDocumentKeyValue =
+        variableDocumentKeyByScopeKeyColumnFamily.get(this.scopeKey);
+    if (variableDocumentKeyValue != null) {
+      variableDocumentKey.wrapLong(variableDocumentKeyValue.getValue());
+      return variableDocumentStateColumnFamily.get(variableDocumentKey);
+    }
+
+    return null;
+  }
+
   private VariableInstance getVariableLocal(
       final long scopeKey, final DirectBuffer name, final int nameOffset, final int nameLength) {
     this.scopeKey.wrapLong(scopeKey);
