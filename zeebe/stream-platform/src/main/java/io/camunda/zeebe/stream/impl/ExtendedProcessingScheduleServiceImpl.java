@@ -32,21 +32,21 @@ public class ExtendedProcessingScheduleServiceImpl implements ProcessingSchedule
 
   @Override
   public void runAtFixedRateAsync(final Duration delay, final Task task) {
-    runAtFixedRateOnPool(delay, task, ASYNC_PROCESSING);
+    runAtFixedRateAsync(delay, task, ASYNC_PROCESSING);
   }
 
   @Override
   public ScheduledTask runDelayedAsync(final Duration delay, final Task task) {
-    return runDelayedOnPool(delay, task, ASYNC_PROCESSING);
+    return runDelayedAsync(delay, task, ASYNC_PROCESSING);
   }
 
   @Override
   public ScheduledTask runAtAsync(final long timestamp, final Task task) {
-    return runAtOnPool(timestamp, task, ASYNC_PROCESSING);
+    return runAtAsync(timestamp, task, ASYNC_PROCESSING);
   }
 
   @Override
-  public void runAtFixedRateOnPool(
+  public void runAtFixedRateAsync(
       final Duration delay, final Task task, final AsyncSchedulePool pool) {
     final var actor = context.geAsyncActor(pool);
     final var actorService = context.getAsyncActorService(pool);
@@ -58,7 +58,7 @@ public class ExtendedProcessingScheduleServiceImpl implements ProcessingSchedule
   }
 
   @Override
-  public ScheduledTask runDelayedOnPool(
+  public ScheduledTask runDelayedAsync(
       final Duration delay, final Task task, final AsyncSchedulePool pool) {
     final var actor = context.geAsyncActor(pool);
     final var actorService = context.getAsyncActorService(pool);
@@ -74,7 +74,7 @@ public class ExtendedProcessingScheduleServiceImpl implements ProcessingSchedule
   }
 
   @Override
-  public ScheduledTask runAtOnPool(
+  public ScheduledTask runAtAsync(
       final long timestamp, final Task task, final AsyncSchedulePool pool) {
     final var actor = context.geAsyncActor(pool);
     final var actorService = context.getAsyncActorService(pool);
