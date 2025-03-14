@@ -126,12 +126,12 @@ public class AdHocSubProcessActivityActivateProcessor
     }
 
     if (!adHocSubprocessElementInstance.isActive()) {
-      final var errorMessage =
+      writeRejectionError(
+          command,
+          RejectionType.INVALID_STATE,
           String.format(
               ERROR_MSG_ADHOC_SUBPROCESS_IS_NOT_ACTIVE,
-              command.getValue().getAdHocSubProcessInstanceKey());
-      rejectionWriter.appendRejection(command, RejectionType.INVALID_STATE, errorMessage);
-      responseWriter.writeRejectionOnCommand(command, RejectionType.INVALID_STATE, errorMessage);
+              command.getValue().getAdHocSubProcessInstanceKey()));
 
       return;
     }
