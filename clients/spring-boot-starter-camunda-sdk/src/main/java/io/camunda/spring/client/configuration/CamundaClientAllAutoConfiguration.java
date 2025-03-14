@@ -20,7 +20,6 @@ import static java.util.Optional.ofNullable;
 
 import io.camunda.client.api.JsonMapper;
 import io.camunda.client.api.worker.BackoffSupplier;
-import io.camunda.client.impl.worker.ExponentialBackoffBuilderImpl;
 import io.camunda.spring.client.annotation.customizer.JobWorkerValueCustomizer;
 import io.camunda.spring.client.jobhandling.CamundaClientExecutorService;
 import io.camunda.spring.client.jobhandling.CommandExceptionHandlingStrategy;
@@ -103,12 +102,7 @@ public class CamundaClientAllAutoConfiguration {
   @Bean
   @ConditionalOnMissingBean
   public BackoffSupplier backoffSupplier() {
-    return new ExponentialBackoffBuilderImpl()
-        .maxDelay(1000L)
-        .minDelay(50L)
-        .backoffFactor(1.5)
-        .jitterFactor(0.2)
-        .build();
+    return BackoffSupplier.newBackoffBuilder().build();
   }
 
   @Bean("propertyBasedJobWorkerValueCustomizer")
