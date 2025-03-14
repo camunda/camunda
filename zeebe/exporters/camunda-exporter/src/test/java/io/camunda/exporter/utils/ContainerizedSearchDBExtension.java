@@ -24,6 +24,14 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testcontainers.elasticsearch.ElasticsearchContainer;
 
+/**
+ * {@code ContainerizedSearchDBExtension} is an extension that creates and manages a containerized
+ * test containers based OpenSearch instance, creates and configures respective client, and provides
+ * a client for interaction for usage in tests.
+ *
+ * <p>This extension will create both ElasticSearch and OpenSearch containers at the same time, so
+ * tests may be executed against both types of databases.
+ */
 public class ContainerizedSearchDBExtension extends SearchDBExtension {
 
   private static final Logger LOGGER =
