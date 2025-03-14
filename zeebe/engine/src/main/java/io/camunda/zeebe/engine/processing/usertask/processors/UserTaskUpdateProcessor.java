@@ -16,9 +16,12 @@ import io.camunda.zeebe.engine.processing.variable.VariableBehavior;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.state.immutable.UserTaskState;
 import io.camunda.zeebe.engine.state.immutable.UserTaskState.LifecycleState;
+import io.camunda.zeebe.engine.state.immutable.VariableState;
 import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
+import io.camunda.zeebe.protocol.impl.record.value.variable.VariableDocumentRecord;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
+import io.camunda.zeebe.protocol.record.intent.VariableDocumentIntent;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.util.Either;
 import java.util.List;
@@ -29,6 +32,7 @@ public final class UserTaskUpdateProcessor implements UserTaskCommandProcessor {
 
   private final StateWriter stateWriter;
   private final UserTaskState userTaskState;
+  private final VariableState variableState;
   private final TypedResponseWriter responseWriter;
   private final VariableBehavior variableBehavior;
   private final UserTaskCommandPreconditionChecker preconditionChecker;
@@ -40,6 +44,7 @@ public final class UserTaskUpdateProcessor implements UserTaskCommandProcessor {
       final AuthorizationCheckBehavior authCheckBehavior) {
     stateWriter = writers.state();
     userTaskState = state.getUserTaskState();
+    variableState = state.getVariableState();
     this.variableBehavior = variableBehavior;
     responseWriter = writers.response();
     preconditionChecker =
@@ -88,14 +93,41 @@ public final class UserTaskUpdateProcessor implements UserTaskCommandProcessor {
       final var recordRequestMetadata = userTaskState.findRecordRequestMetadata(userTaskKey);
       stateWriter.appendFollowUpEvent(userTaskKey, UserTaskIntent.UPDATED, userTaskRecord);
       recordRequestMetadata.ifPresent(
-          metadata ->
-              responseWriter.writeResponse(
-                  userTaskKey,
-                  UserTaskIntent.UPDATED,
-                  userTaskRecord,
-                  ValueType.USER_TASK,
-                  metadata.getRequestId(),
-                  metadata.getRequestStreamId()));
+          metadata -> {
+            switch (metadata.getTriggerType()) {
+              case USER_TASK ->
+                  responseWriter.writeResponse(
+                      userTaskKey,
+                      UserTaskIntent.UPDATED,
+                      userTaskRecord,
+                      ValueType.USER_TASK,
+                      metadata.getRequestId(),
+                      metadata.getRequestStreamId());
+              case VARIABLE_DOCUMENT -> {
+                final var variableDocumentState =
+                    variableState.getVariableDocumentState(userTaskRecord.getElementInstanceKey());
+                if (variableDocumentState != null) {
+                  final long variableDocumentKey = variableDocumentState.getKey();
+                  final VariableDocumentRecord variableDocumentRecord =
+                      variableDocumentState.getRecord();
+                  stateWriter.appendFollowUpEvent(
+                      variableDocumentKey, VariableDocumentIntent.UPDATED, variableDocumentRecord);
+
+                  responseWriter.writeResponse(
+                      variableDocumentKey,
+                      VariableDocumentIntent.UPDATED,
+                      variableDocumentRecord,
+                      ValueType.VARIABLE_DOCUMENT,
+                      metadata.getRequestId(),
+                      metadata.getRequestStreamId());
+                }
+              }
+              default ->
+                  throw new IllegalArgumentException(
+                      "Unexpected user task transition trigger type: '%s'"
+                          .formatted(metadata.getTriggerType()));
+            }
+          });
     }
   }
 }
