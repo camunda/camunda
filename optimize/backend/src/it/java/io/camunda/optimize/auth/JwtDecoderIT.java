@@ -5,7 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.optimize.test.it.extension;
+package io.camunda.optimize.auth;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
@@ -34,13 +34,10 @@ import io.camunda.optimize.rest.security.cloud.CCSaaSSecurityConfigurerAdapter;
 import java.util.Date;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
-import org.junit.jupiter.params.provider.ArgumentsProvider;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.http.HttpStatus;
-import org.springframework.mock.env.MockEnvironment;
 import org.springframework.security.oauth2.jwt.BadJwtException;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.oauth2.jwt.JwtValidationException;
@@ -49,10 +46,8 @@ import org.springframework.test.util.ReflectionTestUtils;
 @WireMockTest
 public class JwtDecoderIT extends AbstractCCSMIT {
 
-  private final MockEnvironment environment = new MockEnvironment();
   private final WireMockRuntimeInfo wireMockInfo;
   private final String authServerMockUrl;
-  private JwtDecoder decoder;
 
   public JwtDecoderIT(final WireMockRuntimeInfo wireMockInfo) {
     this.wireMockInfo = wireMockInfo;
@@ -91,12 +86,11 @@ public class JwtDecoderIT extends AbstractCCSMIT {
     final String serializedJwt = signAndSerialize(rsaJWK, JWSAlgorithm.RS256);
     final String publicKey = rsaJWK.toPublicJWK().toJSONString();
 
-    final JwtDecoder decoder = createDecoder(authServerMockUrl, methodName, type);
+    final JwtDecoder decoder = createDecoder(methodName, type);
 
     // remove alg field from mocked server response and assert it was removed to cover this use case
     final String withoutAlg = publicKey.replaceFirst("\"alg\":\".*\",", "");
     final String authServerResponseBody = "{\"keys\":[" + withoutAlg + "]}";
-    System.out.println("authServerResponse=" + authServerResponseBody);
     assertFalse(authServerResponseBody.contains("alg\":"));
     wireMockInfo
         .getWireMock()
@@ -117,10 +111,9 @@ public class JwtDecoderIT extends AbstractCCSMIT {
     final String serializedJwt = signAndSerialize(rsaJWK, JWSAlgorithm.RS256);
     final String publicKey = rsaJWK.toPublicJWK().toJSONString();
 
-    final JwtDecoder decoder = createDecoder(authServerMockUrl, methodName, type);
+    final JwtDecoder decoder = createDecoder(methodName, type);
 
     final String authServerResponseBody = "{\"keys\":[" + publicKey + "]}";
-    System.out.println("authServerResponse=" + authServerResponseBody);
 
     wireMockInfo
         .getWireMock()
@@ -142,10 +135,9 @@ public class JwtDecoderIT extends AbstractCCSMIT {
     final String serializedJwt =
         signAndSerialize(rsaJWK, JWSAlgorithm.RS256, getExpiredClaimsSet());
     final String publicKey = rsaJWK.toPublicJWK().toJSONString();
-    final JwtDecoder decoder = createDecoder(authServerMockUrl, methodName, type);
+    final JwtDecoder decoder = createDecoder(methodName, type);
 
     final String authServerResponseBody = "{\"keys\":[" + publicKey + "]}";
-    System.out.println("authServerResponse=" + authServerResponseBody);
 
     wireMockInfo
         .getWireMock()
@@ -169,10 +161,9 @@ public class JwtDecoderIT extends AbstractCCSMIT {
     final String serializedJwt = signAndSerialize(rsaJWK, JWSAlgorithm.RS256);
     final String publicKey = rsaJWK.toPublicJWK().toJSONString();
 
-    final JwtDecoder decoder = createDecoder(authServerMockUrl, methodName, type);
+    final JwtDecoder decoder = createDecoder(methodName, type);
 
     final String authServerResponseBody = "{\"keys\":[" + publicKey + "]}";
-    System.out.println("authServerResponse=" + authServerResponseBody);
 
     wireMockInfo
         .getWireMock()
@@ -213,9 +204,7 @@ public class JwtDecoderIT extends AbstractCCSMIT {
             claimsSet);
 
     rsaSignedJWT.sign(rsaSigner);
-    final String serializedJwt = rsaSignedJWT.serialize();
-    System.out.println("JWT serialized=" + serializedJwt);
-    return serializedJwt;
+    return rsaSignedJWT.serialize();
   }
 
   public static String signAndSerialize(final RSAKey rsaKey, final JWSAlgorithm alg)
@@ -244,12 +233,7 @@ public class JwtDecoderIT extends AbstractCCSMIT {
         .build();
   }
 
-  private String getAuthServerMockUrl() {
-    return authServerMockUrl;
-  }
-
-  private static JwtDecoder createDecoder(
-      final String authServerMockUrl, final String methodName, final String type) {
+  private static JwtDecoder createDecoder(final String methodName, final String type) {
     final AbstractSecurityConfigurerAdapter configurerAdapter;
     if ("SaaS".equalsIgnoreCase(type)) {
       configurerAdapter =
@@ -270,73 +254,5 @@ public class JwtDecoderIT extends AbstractCCSMIT {
         Arguments.of("SaaS", "publicApiJwtDecoder"),
         Arguments.of("CCSM", "publicApiJwtDecoder"),
         Arguments.of("SaaS", "publicApiJwtDecoder"));
-  }
-
-  public static class JwtDecoderArgumentsProvider implements ArgumentsProvider {
-    @Override
-    public Stream<? extends Arguments> provideArguments(final ExtensionContext context) {
-      final JwtDecoderIT testInstance = (JwtDecoderIT) context.getRequiredTestInstance();
-      final String authServerMockUrl = testInstance.getAuthServerMockUrl();
-      return Stream.of(
-          Arguments.of(createSaaSDecoder(authServerMockUrl)),
-          Arguments.of(createSaaSDecoderPublicApi(authServerMockUrl)),
-          Arguments.of(createCCSMDecoderPublicApi(authServerMockUrl)));
-    }
-
-    private static JwtDecoder createSaaSDecoder(final String authServerMockUrl) {
-      embeddedOptimizeExtension
-          .getConfigurationService()
-          .getOptimizeApiConfiguration()
-          .setJwtSetUri(authServerMockUrl + "/protocol/openid-connect/certs");
-      embeddedOptimizeExtension
-          .getConfigurationService()
-          .getAuthConfiguration()
-          .getCloudAuthConfiguration()
-          .setAudience("optimize");
-      embeddedOptimizeExtension
-          .getConfigurationService()
-          .getAuthConfiguration()
-          .getCloudAuthConfiguration()
-          .setClusterId("456");
-      final CCSaaSSecurityConfigurerAdapter saasWebConfigurer =
-          new CCSaaSSecurityConfigurerAdapter(
-              embeddedOptimizeExtension.getConfigurationService(), null, null, null, null, null);
-      return ReflectionTestUtils.invokeMethod(saasWebConfigurer, "jwtDecoder");
-    }
-
-    private static JwtDecoder createSaaSDecoderPublicApi(final String authServerMockUrl) {
-      embeddedOptimizeExtension
-          .getConfigurationService()
-          .getOptimizeApiConfiguration()
-          .setJwtSetUri(authServerMockUrl + "/protocol/openid-connect/certs");
-      embeddedOptimizeExtension
-          .getConfigurationService()
-          .getOptimizeApiConfiguration()
-          .setAudience("optimize");
-      embeddedOptimizeExtension
-          .getConfigurationService()
-          .getAuthConfiguration()
-          .getCloudAuthConfiguration()
-          .setClusterId("456");
-      final CCSaaSSecurityConfigurerAdapter saasWebConfigurer =
-          new CCSaaSSecurityConfigurerAdapter(
-              embeddedOptimizeExtension.getConfigurationService(), null, null, null, null, null);
-      return ReflectionTestUtils.invokeMethod(saasWebConfigurer, "publicApiJwtDecoder");
-    }
-
-    private static JwtDecoder createCCSMDecoderPublicApi(final String authServerMockUrl) {
-      embeddedOptimizeExtension
-          .getConfigurationService()
-          .getOptimizeApiConfiguration()
-          .setJwtSetUri(authServerMockUrl + "/protocol/openid-connect/certs");
-      embeddedOptimizeExtension
-          .getConfigurationService()
-          .getOptimizeApiConfiguration()
-          .setAudience("optimize");
-      final CCSMSecurityConfigurerAdapter ccsmWebConfigurer =
-          new CCSMSecurityConfigurerAdapter(
-              embeddedOptimizeExtension.getConfigurationService(), null, null, null, null);
-      return ReflectionTestUtils.invokeMethod(ccsmWebConfigurer, "publicApiJwtDecoder");
-    }
   }
 }
