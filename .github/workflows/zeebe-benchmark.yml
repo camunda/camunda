@@ -20,16 +20,6 @@ on:
       benchmark-load:
         description: 'Specifies which benchmark components to deploy. `starter`, `timer` and `publisher` can be assigned with the rate at which they publish. Allows arbitrary helm arguments, like --set starter.rate=100'
         required: false
-      publish:
-        description: 'Where to publish the results, can be "slack" or "comment"'
-        default: ""
-        type: string
-        required: false
-      measure:
-        description: 'Measure impact of network latency'
-        type: boolean
-        required: false
-        default: true
       stable-vms:
         description: 'Deploy to non-spot VMs'
         type: boolean
@@ -158,25 +148,6 @@ jobs:
         run: ./mvnw -pl benchmarks/project jib:build -P starter -D image="gcr.io/zeebe-io/starter:${{ steps.image-tag.outputs.image-tag }}"
       - name: Build Worker Image
         run: ./mvnw -pl benchmarks/project jib:build -P worker -D image="gcr.io/zeebe-io/worker:${{ steps.image-tag.outputs.image-tag }}"
-  deploy-benchmark-measurement:
-    name: Measure
-    needs:
-      - build-zeebe-image
-      - build-benchmark-images
-    uses: camunda/zeebe-performance-test/.github/workflows/measure.yaml@main
-    secrets: inherit
-    if: inputs.measure
-    with:
-      name: measurement-${{ github.run_id }}
-      chaos: network-latency-5
-      publish: ${{ inputs.publish }}
-      helm-arguments: >
-        --set global.image.tag=${{ needs.build-benchmark-images.outputs.image-tag }}
-        --set camunda-platform.zeebe.image.repository=gcr.io/zeebe-io/zeebe
-        --set camunda-platform.zeebe.image.tag=${{ needs.build-zeebe-image.outputs.image-tag }}
-        --set camunda-platform.zeebe-gateway.image.repository=gcr.io/zeebe-io/zeebe
-        --set camunda-platform.zeebe-gateway.image.tag=${{ needs.build-zeebe-image.outputs.image-tag }}
-        ${{ inputs.benchmark-load }}
   deploy-benchmark-cluster:
     name: Deploy
     needs:
