@@ -40,6 +40,15 @@ public final class ElementInstance extends UnpackedObject implements DbValue {
   private final IntegerProperty activeSequenceFlowsProp =
       new IntegerProperty("activeSequenceFlows", 0);
 
+  /**
+   * This value is added in 8.7, any child process instances created before 8.7 will have a depth of
+   * 0.
+   *
+   * @since 8.7
+   */
+  private final IntegerProperty calledProcessDepthProp =
+      new IntegerProperty("calledProcessDepth", -1);
+
   public ElementInstance() {
     super(11);
     declareProperty(parentKeyProp)
@@ -220,4 +229,62 @@ public final class ElementInstance extends UnpackedObject implements DbValue {
   public void resetActiveSequenceFlows() {
     activeSequenceFlowsProp.setValue(0);
   }
+<<<<<<< HEAD:engine/src/main/java/io/camunda/zeebe/engine/state/instance/ElementInstance.java
+=======
+
+  public long getUserTaskKey() {
+    return userTaskKeyProp.getValue();
+  }
+
+  public void setUserTaskKey(final long userTaskKey) {
+    userTaskKeyProp.setValue(userTaskKey);
+  }
+
+  public int getExecutionListenerIndex() {
+    return executionListenerIndexProp.getValue();
+  }
+
+  public void incrementExecutionListenerIndex() {
+    executionListenerIndexProp.increment();
+  }
+
+  public void resetExecutionListenerIndex() {
+    executionListenerIndexProp.reset();
+  }
+
+  public Integer getTaskListenerIndex(ZeebeTaskListenerEventType eventType) {
+    return taskListenerIndicesRecordProp.getValue().getTaskListenerIndex(eventType);
+  }
+
+  public void incrementTaskListenerIndex(ZeebeTaskListenerEventType eventType) {
+    taskListenerIndicesRecordProp.getValue().incrementTaskListenerIndex(eventType);
+  }
+
+  public void resetTaskListenerIndex(ZeebeTaskListenerEventType eventType) {
+    taskListenerIndicesRecordProp.getValue().resetTaskListenerIndex(eventType);
+  }
+
+  public void resetTaskListenerIndices() {
+    taskListenerIndicesRecordProp.getValue().reset();
+  }
+
+  /**
+   * Returns a list of currently active sequence flow ids. If the same sequence flow is active
+   * multiple times, it will appear in the list multiple times. I.e. this can be used to track
+   * virtual sequence flow instances. Virtual, because there are no sequence flow instances in
+   * Zeebe.
+   *
+   * <p>Warning, this method should not be used for process instances created before 8.6. It may
+   * provide incorrect information for such process instances.
+   *
+   * @since 8.6
+   */
+  public List<DirectBuffer> getActiveSequenceFlowIds() {
+    return activeSequenceFlowIdsProp.stream().map(StringValue::getValue).toList();
+  }
+
+  public int getCalledProcessDepth() {
+    return calledProcessDepthProp.getValue();
+  }
+>>>>>>> ed17ba8a (feat: check for depth):zeebe/engine/src/main/java/io/camunda/zeebe/engine/state/instance/ElementInstance.java
 }
