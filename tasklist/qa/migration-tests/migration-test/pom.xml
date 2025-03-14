@@ -21,18 +21,6 @@
 
     <dependency>
       <groupId>io.camunda</groupId>
-      <artifactId>tasklist-qa-migration-tests-test-fixture-810</artifactId>
-      <scope>test</scope>
-    </dependency>
-
-    <dependency>
-      <groupId>io.camunda</groupId>
-      <artifactId>tasklist-qa-migration-tests-test-fixture-820</artifactId>
-      <scope>test</scope>
-    </dependency>
-
-    <dependency>
-      <groupId>io.camunda</groupId>
       <artifactId>tasklist-qa-migration-tests-test-fixture-830</artifactId>
       <scope>test</scope>
     </dependency>
