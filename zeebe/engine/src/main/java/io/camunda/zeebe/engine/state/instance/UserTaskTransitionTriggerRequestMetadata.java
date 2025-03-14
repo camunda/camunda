@@ -12,9 +12,10 @@ import io.camunda.zeebe.msgpack.UnpackedObject;
 import io.camunda.zeebe.msgpack.property.EnumProperty;
 import io.camunda.zeebe.msgpack.property.IntegerProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
+import io.camunda.zeebe.msgpack.property.StringProperty;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
-import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
+import io.camunda.zeebe.util.buffer.BufferUtil;
 
 /**
  * Represents metadata for tracking the request that triggered a user task transition.
@@ -47,8 +48,7 @@ public class UserTaskTransitionTriggerRequestMetadata extends UnpackedObject imp
 
   private final EnumProperty<ValueType> triggerTypeProperty =
       new EnumProperty<>("triggerType", ValueType.class);
-  private final EnumProperty<UserTaskIntent> intentProperty =
-      new EnumProperty<>("intent", UserTaskIntent.class);
+  private final StringProperty intentProperty = new StringProperty("intent");
   private final LongProperty requestIdProperty = new LongProperty("requestId", -1);
   private final IntegerProperty requestStreamIdProperty =
       new IntegerProperty("requestStreamId", -1);
@@ -87,7 +87,8 @@ public class UserTaskTransitionTriggerRequestMetadata extends UnpackedObject imp
    * @return The user task intent (e.g., `ASSIGN`, `CLAIM`, `UPDATE`, `COMPLETE` etc.).
    */
   public Intent getIntent() {
-    return intentProperty.getValue();
+    return Intent.fromProtocolValue(
+        triggerTypeProperty.getValue(), BufferUtil.bufferAsString(intentProperty.getValue()));
   }
 
   /**
@@ -96,8 +97,8 @@ public class UserTaskTransitionTriggerRequestMetadata extends UnpackedObject imp
    * @param intent The intent of the original command.
    * @return this metadata instance.
    */
-  public UserTaskTransitionTriggerRequestMetadata setIntent(final UserTaskIntent intent) {
-    intentProperty.setValue(intent);
+  public UserTaskTransitionTriggerRequestMetadata setIntent(final Intent intent) {
+    intentProperty.setValue(intent.name());
     return this;
   }
 

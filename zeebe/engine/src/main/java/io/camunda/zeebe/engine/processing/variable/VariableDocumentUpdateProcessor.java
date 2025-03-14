@@ -216,7 +216,7 @@ public final class VariableDocumentUpdateProcessor
 
     final var metadata =
         new UserTaskTransitionTriggerRequestMetadata()
-            .setIntent((UserTaskIntent) command.getIntent())
+            .setIntent(command.getIntent())
             .setTriggerType(ValueType.VARIABLE_DOCUMENT)
             .setRequestId(command.getRequestId())
             .setRequestStreamId(command.getRequestStreamId());
