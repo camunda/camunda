@@ -11,7 +11,6 @@ import io.camunda.zeebe.scheduler.ActorSchedulingService;
 import io.camunda.zeebe.scheduler.AsyncClosable;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.stream.api.scheduling.AsyncTaskGroup;
-import io.camunda.zeebe.stream.api.scheduling.SimpleProcessingScheduleService;
 import io.camunda.zeebe.stream.impl.AsyncUtil.Step;
 import java.util.Arrays;
 import java.util.Collections;
@@ -25,7 +24,6 @@ class AsyncScheduleServiceContext implements AsyncClosable {
   private final int partitionId;
 
   private final Map<AsyncTaskGroup, AsyncProcessingScheduleServiceActor> asyncActors;
-  private final Map<AsyncTaskGroup, ProcessingScheduleServiceImpl> asyncActorServices;
 
   public AsyncScheduleServiceContext(
       final ActorSchedulingService actorSchedulingService,
@@ -36,17 +34,12 @@ class AsyncScheduleServiceContext implements AsyncClosable {
 
     this.partitionId = partitionId;
 
-    // create the async actor services and actors for all defined task groups
-    asyncActorServices = Collections.unmodifiableMap(createAsyncActorServices());
-    asyncActors = Collections.unmodifiableMap(createAsyncActors(asyncActorServices));
+    // create the async actors for all defined task groups
+    asyncActors = Collections.unmodifiableMap(createAsyncActors());
   }
 
   public AsyncProcessingScheduleServiceActor geAsyncActor(final AsyncTaskGroup taskGroup) {
     return asyncActors.get(taskGroup);
-  }
-
-  public SimpleProcessingScheduleService getAsyncActorService(final AsyncTaskGroup taskGroup) {
-    return asyncActorServices.get(taskGroup);
   }
 
   public ActorFuture<Void> submitActors() {
@@ -69,19 +62,13 @@ class AsyncScheduleServiceContext implements AsyncClosable {
     return actorSchedulingService.submitActor(actor, taskGroup.getSchedulingHints());
   }
 
-  private Map<AsyncTaskGroup, ProcessingScheduleServiceImpl> createAsyncActorServices() {
-    return Arrays.stream(AsyncTaskGroup.values())
-        .collect(Collectors.toMap(Function.identity(), ignored -> actorServiceFactory.create()));
-  }
-
-  private Map<AsyncTaskGroup, AsyncProcessingScheduleServiceActor> createAsyncActors(
-      final Map<AsyncTaskGroup, ProcessingScheduleServiceImpl> services) {
+  private Map<AsyncTaskGroup, AsyncProcessingScheduleServiceActor> createAsyncActors() {
     return Arrays.stream(AsyncTaskGroup.values())
         .collect(
             Collectors.toMap(
                 Function.identity(),
                 taskGroup ->
                     new AsyncProcessingScheduleServiceActor(
-                        taskGroup.getName(), services.get(taskGroup), partitionId)));
+                        taskGroup.getName(), actorServiceFactory.create(), partitionId)));
   }
 }

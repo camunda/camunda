@@ -49,7 +49,7 @@ class ExtendedProcessingScheduleServiceImpl implements ProcessingScheduleService
   public void runAtFixedRateAsync(
       final Duration delay, final Task task, final AsyncTaskGroup taskGroup) {
     final var actor = context.geAsyncActor(taskGroup);
-    final var actorService = context.getAsyncActorService(taskGroup);
+    final var actorService = actor.getScheduleService();
     actor.run(
         () -> {
           // we must run in different actor in order to schedule task
@@ -61,7 +61,7 @@ class ExtendedProcessingScheduleServiceImpl implements ProcessingScheduleService
   public ScheduledTask runDelayedAsync(
       final Duration delay, final Task task, final AsyncTaskGroup taskGroup) {
     final var actor = context.geAsyncActor(taskGroup);
-    final var actorService = context.getAsyncActorService(taskGroup);
+    final var actorService = actor.getScheduleService();
 
     final var futureScheduledTask = actor.<ScheduledTask>createFuture();
     actor.run(
@@ -77,7 +77,7 @@ class ExtendedProcessingScheduleServiceImpl implements ProcessingScheduleService
   public ScheduledTask runAtAsync(
       final long timestamp, final Task task, final AsyncTaskGroup taskGroup) {
     final var actor = context.geAsyncActor(taskGroup);
-    final var actorService = context.getAsyncActorService(taskGroup);
+    final var actorService = actor.getScheduleService();
     final var futureScheduledTask = actor.<ScheduledTask>createFuture();
     actor.run(
         () -> {
@@ -92,7 +92,7 @@ class ExtendedProcessingScheduleServiceImpl implements ProcessingScheduleService
   public ScheduledTask runDelayed(final Duration delay, final Runnable task) {
     if (alwaysAsync) {
       final var actor = context.geAsyncActor(ASYNC_PROCESSING);
-      final var actorService = context.getAsyncActorService(ASYNC_PROCESSING);
+      final var actorService = actor.getScheduleService();
       final var futureScheduledTask = actor.<ScheduledTask>createFuture();
       actor.run(
           () -> {
@@ -128,7 +128,7 @@ class ExtendedProcessingScheduleServiceImpl implements ProcessingScheduleService
   public ScheduledTask runAt(final long timestamp, final Runnable task) {
     if (alwaysAsync) {
       final var actor = context.geAsyncActor(ASYNC_PROCESSING);
-      final var actorService = context.getAsyncActorService(ASYNC_PROCESSING);
+      final var actorService = actor.getScheduleService();
       final var futureScheduledTask = actor.<ScheduledTask>createFuture();
       actor.run(
           () -> {

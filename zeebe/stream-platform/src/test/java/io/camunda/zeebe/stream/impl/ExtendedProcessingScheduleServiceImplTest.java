@@ -53,7 +53,7 @@ final class ExtendedProcessingScheduleServiceImplTest {
 
     final var context = mock(AsyncScheduleServiceContext.class);
     when(context.geAsyncActor(ASYNC_PROCESSING)).thenReturn(asyncControl);
-    when(context.getAsyncActorService(ASYNC_PROCESSING)).thenReturn(async);
+    when(asyncControl.getScheduleService()).thenReturn(async);
 
     final var schedulingService = new ExtendedProcessingScheduleServiceImpl(context, sync, true);
 
