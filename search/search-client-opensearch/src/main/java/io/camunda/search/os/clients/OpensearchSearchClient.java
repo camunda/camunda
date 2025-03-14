@@ -16,14 +16,10 @@ import io.camunda.search.clients.core.SearchIndexRequest;
 import io.camunda.search.clients.core.SearchQueryRequest;
 import io.camunda.search.clients.core.SearchQueryResponse;
 import io.camunda.search.clients.core.SearchWriteResponse;
-import io.camunda.search.clients.index.IndexAliasRequest;
-import io.camunda.search.clients.index.IndexAliasResponse;
 import io.camunda.search.clients.transformers.SearchTransfomer;
 import io.camunda.search.exception.CamundaSearchException;
 import io.camunda.search.exception.ErrorMessages;
 import io.camunda.search.os.transformers.OpensearchTransformers;
-import io.camunda.search.os.transformers.index.IndexAliasRequestTransformer;
-import io.camunda.search.os.transformers.index.IndexAliasResponseTransformer;
 import io.camunda.search.os.transformers.search.SearchDeleteRequestTransformer;
 import io.camunda.search.os.transformers.search.SearchGetRequestTransformer;
 import io.camunda.search.os.transformers.search.SearchGetResponseTransformer;
@@ -47,8 +43,6 @@ import org.opensearch.client.opensearch.core.ScrollResponse;
 import org.opensearch.client.opensearch.core.SearchRequest;
 import org.opensearch.client.opensearch.core.SearchResponse;
 import org.opensearch.client.opensearch.core.search.Hit;
-import org.opensearch.client.opensearch.indices.GetAliasRequest;
-import org.opensearch.client.opensearch.indices.GetAliasResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -131,20 +125,6 @@ public class OpensearchSearchClient implements DocumentBasedSearchClient, Docume
       LOGGER.error(ErrorMessages.ERROR_FAILED_GET_REQUEST, e);
       throw new CamundaSearchException(
           ErrorMessages.ERROR_FAILED_GET_REQUEST, e, searchExceptionToReason(e));
-    }
-  }
-
-  @Override
-  public IndexAliasResponse getAlias(final IndexAliasRequest request) {
-    try {
-      final var requestTransformer = getIndexAliasRequestTransformer();
-      final var elasticRequest = requestTransformer.apply(request);
-      final var response = client.indices().getAlias(elasticRequest);
-      return getIndexAliasResponseTransformer().apply(response);
-    } catch (final IOException | OpenSearchException e) {
-      LOGGER.error(ErrorMessages.ERROR_FAILED_GET_ALIAS_REQUEST, e);
-      throw new CamundaSearchException(
-          ErrorMessages.ERROR_FAILED_GET_ALIAS_REQUEST, e, searchExceptionToReason(e));
     }
   }
 
@@ -235,18 +215,6 @@ public class OpensearchSearchClient implements DocumentBasedSearchClient, Docume
     return (SearchWriteResponseTransformer) transformer;
   }
 
-  private IndexAliasRequestTransformer getIndexAliasRequestTransformer() {
-    final SearchTransfomer<IndexAliasRequest, GetAliasRequest> transformer =
-        transformers.getTransformer(IndexAliasRequest.class);
-    return (IndexAliasRequestTransformer) transformer;
-  }
-
-  private IndexAliasResponseTransformer getIndexAliasResponseTransformer() {
-    final SearchTransfomer<GetAliasResponse, IndexAliasResponse> transformer =
-        transformers.getTransformer(IndexAliasResponse.class);
-    return (IndexAliasResponseTransformer) transformer;
-  }
-
   @Override
   public void close() {
     if (client != null) {
@@ -258,7 +226,7 @@ public class OpensearchSearchClient implements DocumentBasedSearchClient, Docume
     }
   }
 
-  private static CamundaSearchException.Reason searchExceptionToReason(Exception e) {
+  private static CamundaSearchException.Reason searchExceptionToReason(final Exception e) {
     if (e instanceof ConnectException) {
       return CamundaSearchException.Reason.CONNECTION_FAILED;
     }

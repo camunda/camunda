@@ -8,7 +8,6 @@
 package io.camunda.webapps.backup;
 
 import io.camunda.webapps.backup.BackupException.*;
-import io.camunda.webapps.backup.BackupService.SnapshotRequest;
 import io.camunda.webapps.backup.repository.BackupRepositoryProps;
 import io.camunda.webapps.schema.descriptors.backup.BackupPriorities;
 import io.camunda.webapps.schema.descriptors.backup.SnapshotIndexCollection;
@@ -30,21 +29,17 @@ public class BackupServiceImpl implements BackupService {
   private final BackupPriorities backupPriorities;
   private final BackupRepositoryProps backupProps;
 
-  private final DynamicIndicesProvider dynamicIndicesProvider;
-
   private final BackupRepository repository;
 
   public BackupServiceImpl(
       final Executor threadPoolTaskExecutor,
       final BackupPriorities backupPriorities,
       final BackupRepositoryProps backupProps,
-      final BackupRepository repository,
-      final DynamicIndicesProvider dynamicIndicesProvider) {
+      final BackupRepository repository) {
     this.threadPoolTaskExecutor = threadPoolTaskExecutor;
     this.backupPriorities = backupPriorities;
     this.repository = repository;
     this.backupProps = backupProps;
-    this.dynamicIndicesProvider = dynamicIndicesProvider;
   }
 
   @Override
@@ -98,21 +93,16 @@ public class BackupServiceImpl implements BackupService {
     final List<String> snapshotNames = new ArrayList<>();
     final String version = getCurrentVersion();
     for (int index = 0; index < indexPatternsOrdered.size(); index++) {
-      SnapshotIndexCollection indexCollection = indexPatternsOrdered.get(index);
+      final SnapshotIndexCollection indexCollection = indexPatternsOrdered.get(index);
       final var partNum = index + 1;
       final Metadata metadata = new Metadata(request.getBackupId(), version, partNum, count);
       final String snapshotName = repository.snapshotNameProvider().getSnapshotName(metadata);
-      // Add all the dynamic indices in the last step
-      if (partNum == count) {
-        indexCollection =
-            indexCollection.addSkippableIndices(dynamicIndicesProvider.getAllDynamicIndices());
-      }
 
       final SnapshotRequest snapshotRequest =
           new SnapshotRequest(repositoryName, snapshotName, indexCollection, metadata);
 
       LOGGER.debug(
-          "Snapshot part {} contains indices {}", metadata.partNo(), indexCollection.allIndices());
+          "Snapshot part {} contains indices {}", metadata.partNo(), indexCollection.indices());
       requestsQueue.offer(snapshotRequest);
       LOGGER.debug("Snapshot scheduled: {}", snapshotName);
       snapshotNames.add(snapshotName);
@@ -138,21 +128,12 @@ public class BackupServiceImpl implements BackupService {
     final var list = new ArrayList<SnapshotIndexCollection>();
     final var missingIndicesList = new ArrayList<String>();
     for (final var indices : backupPriorities.indicesSplitBySnapshot().toList()) {
-      final var foundIndices = repository.checkAllIndicesExist(indices.allIndices());
-      final var missingNonRequiredIndices =
-          indices.skippableIndices().stream().filter(idx -> !foundIndices.contains(idx)).toList();
-      final var missingRequiredIndices =
-          indices.requiredIndices().stream().filter(idx -> !foundIndices.contains(idx)).toList();
-      if (!missingRequiredIndices.isEmpty()) {
-        missingIndicesList.addAll(missingRequiredIndices);
-        LOGGER.warn(
-            "Missing required indices:{}. All indices found are {}",
-            missingRequiredIndices,
-            foundIndices);
-      }
-      // skip this part if there is no index, but they are not required
-      if (!foundIndices.isEmpty()) {
-        list.add(indices.removeSkippableIndices(missingNonRequiredIndices));
+      final var foundIndices = repository.checkAllIndicesExist(indices.indices());
+      final var missingIndices =
+          indices.indices().stream().filter(idx -> !foundIndices.contains(idx)).toList();
+      if (!missingIndices.isEmpty()) {
+        missingIndicesList.addAll(missingIndices);
+        LOGGER.warn("Missing indices:{}. All indices found are {}", missingIndices, foundIndices);
       }
     }
     if (!missingIndicesList.isEmpty()) {

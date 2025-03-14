@@ -14,10 +14,8 @@ import io.camunda.optimize.service.db.es.schema.index.ProcessInstanceIndexES;
 import io.camunda.optimize.service.db.schema.IndexMappingCreator;
 import io.camunda.optimize.service.db.schema.MappingMetadataUtil;
 import io.camunda.optimize.service.util.configuration.condition.ElasticSearchCondition;
-import io.camunda.search.clients.DocumentBasedSearchClient;
 import java.util.Collection;
 import org.slf4j.Logger;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
@@ -26,15 +24,6 @@ import org.springframework.stereotype.Component;
 public class MappingMetadataUtilES extends MappingMetadataUtil<IndexSettings.Builder> {
 
   private static final Logger LOG = org.slf4j.LoggerFactory.getLogger(MappingMetadataUtilES.class);
-
-  public MappingMetadataUtilES(final DocumentBasedSearchClient client) {
-    super(client);
-  }
-
-  @Autowired
-  public MappingMetadataUtilES(final OptimizeElasticsearchClient elasticsearchClient) {
-    super(elasticsearchClient.documentBasedSearchClient());
-  }
 
   @Override
   protected DecisionInstanceIndexES getDecisionInstanceIndex(final String key) {

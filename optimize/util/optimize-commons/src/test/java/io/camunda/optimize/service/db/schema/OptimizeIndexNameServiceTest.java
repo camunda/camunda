@@ -7,7 +7,6 @@
  */
 package io.camunda.optimize.service.db.schema;
 
-import static io.camunda.optimize.service.db.DatabaseConstants.COMPONENT_NAME;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 
@@ -33,7 +32,7 @@ public class OptimizeIndexNameServiceTest {
   @ValueSource(strings = {"", "my-prefix", "dev-optimize-1"})
   public void shouldReturnIndexNameWithComponent(final String indexPrefix) {
     final var nameService = new OptimizeIndexNameService(indexPrefix);
-    assertThat(nameService.getIndexPrefix()).isEqualTo(withHyphen(indexPrefix) + COMPONENT_NAME);
+    assertThat(nameService.getIndexPrefix()).isEqualTo(withHyphen(indexPrefix));
   }
 
   @ParameterizedTest
