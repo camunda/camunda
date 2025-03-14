@@ -54,11 +54,12 @@ public class ClaimValidator implements OAuth2TokenValidator<Jwt> {
       }
     }
 
-    LOG.debug("Invalid token: expected claims not found in token");
+    LOG.debug(
+        "Invalid token: expected at least one claim from: {} to match the token", expectedClaims);
     return OAuth2TokenValidatorResult.failure(
         new OAuth2Error(
             OAuth2ErrorCodes.INVALID_TOKEN,
-            "Invalid token: expected claims not found in token",
+            "Invalid token claims: expected one of %s to match the token".formatted(expectedClaims),
             null));
   }
 }
