@@ -42,11 +42,11 @@ public class AdHocSubProcessActivityActivateProcessor
   private static final String ERROR_MSG_ADHOC_SUBPROCESS_NOT_FOUND =
       "Expected to activate activities for ad-hoc subprocess but no ad-hoc subprocess instance found with key '%s'.";
   private static final String ERROR_MSG_DUPLICATE_ACTIVITIES =
-      "Expected to activate activities for ad-hoc subprocess '%s', but duplicate activities were given.";
+      "Expected to activate activities for ad-hoc subprocess with key '%s', but duplicate activities were given.";
   private static final String ERROR_MSG_ADHOC_SUBPROCESS_IS_FINAL =
-      "Expected to activate activities for ad-hoc subprocess '%s', but it is either completed or terminated.";
+      "Expected to activate activities for ad-hoc subprocess with key '%s', but it has either been completed or terminated.";
   private static final String ERROR_MSG_ADHOC_SUBPROCESS_IS_NOT_ACTIVE =
-      "Expected to activate activities for ad-hoc subprocess '%s', but it is not active.";
+      "Expected to activate activities for ad-hoc subprocess with key '%s', but it is not active.";
   private static final String ERROR_MSG_ELEMENTS_NOT_FOUND =
       "Expected to activate activities for ad-hoc subprocess with key '%s', but the given elements %s do not exist.";
 
