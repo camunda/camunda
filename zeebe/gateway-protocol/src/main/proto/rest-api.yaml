@@ -2717,7 +2717,6 @@ paths:
                 $ref: "#/components/schemas/ProblemDetail"
         "500":
           $ref: "#/components/responses/InternalServerError"
-  /mapping-rules/{mappingId}:
     get:
       tags:
         - Mapping rule
