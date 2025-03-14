@@ -54,10 +54,5 @@ spawn('npm', args, {
 });
 
 function getBaseURL() {
-  return (
-    process.env.PLAYWRIGHT_BASE_URL ||
-    (IS_LOCAL
-      ? 'http://localhost:8080'
-      : 'https://integration-stage.example.com')
-  );
+  return process.env.PLAYWRIGHT_BASE_URL || 'http://localhost:8080';
 }

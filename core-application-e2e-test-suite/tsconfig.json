@@ -9,7 +9,7 @@
     "baseUrl": "./",
     "noEmit": true,
     "paths": {
-      "@fixtures/*": ["fixtures/*"],
+      "@fixtures/*": ["fixtures.ts"],
       "@setup": ["./test-setup.ts"],
       "@pages/*": ["pages/*"]
     }
