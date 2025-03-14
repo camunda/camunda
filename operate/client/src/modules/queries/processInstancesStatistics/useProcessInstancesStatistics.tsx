@@ -13,28 +13,33 @@ import {
   ProcessInstancesStatisticsRequest,
 } from 'modules/api/v2/processInstances/fetchProcessInstancesStatistics';
 import {useProcessInstanceFilters} from 'modules/hooks/useProcessInstancesFilters';
+import {UseQueryResult} from '@tanstack/react-query';
+import {RequestError} from 'modules/request';
 
 function getQueryKey(payload: ProcessInstancesStatisticsRequest) {
   return ['processInstancesStatistics', ...Object.values(payload)];
 }
 
-function useProcessInstancesStatistics<ParsedDataT>(
+function useProcessInstancesStatistics<T = ProcessInstancesStatisticsDto[]>(
   payload: ProcessInstancesStatisticsRequest,
-  parser: (data: ProcessInstancesStatisticsDto[]) => ParsedDataT,
+  select?: (data: ProcessInstancesStatisticsDto[]) => T,
   enabled?: boolean,
-) {
+): UseQueryResult<T, RequestError> {
   const filters = useProcessInstanceFilters();
 
-  return useGenericQuery<ProcessInstancesStatisticsDto[], ParsedDataT>(
+  return useGenericQuery<ProcessInstancesStatisticsDto[], T>(
     getQueryKey(payload),
     () =>
       fetchProcessInstancesStatistics({
         ...payload,
         ...filters,
       }),
-    parser,
     {
-      queryKey: getQueryKey(payload),
+      queryKey: getQueryKey({
+        ...payload,
+        ...filters,
+      }),
+      select,
       enabled,
     },
   );
