@@ -30,7 +30,6 @@ import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import io.camunda.optimize.service.util.configuration.DatabaseType;
 import io.camunda.optimize.service.util.configuration.OptimizeProfile;
 import java.time.OffsetDateTime;
-import java.util.Collections;
 import java.util.Optional;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeAll;
@@ -201,7 +200,6 @@ public class UIConfigurationServiceTest {
   }
 
   private void initializeMocks() {
-    when(configurationService.getConfiguredWebhooks()).thenReturn(Collections.emptyMap());
     when(identity.users()).thenReturn(identityUsers);
     when(identityUsers.isAvailable()).thenReturn(true);
     when(environment.getProperty(CAMUNDA_OPTIMIZE_DATABASE, ELASTICSEARCH_DATABASE_PROPERTY))
