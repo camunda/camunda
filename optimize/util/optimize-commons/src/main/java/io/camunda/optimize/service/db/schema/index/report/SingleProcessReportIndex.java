@@ -13,10 +13,8 @@ import co.elastic.clients.elasticsearch._types.mapping.DynamicMapping;
 import co.elastic.clients.elasticsearch._types.mapping.Property;
 import co.elastic.clients.elasticsearch._types.mapping.TypeMapping;
 import io.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
-import io.camunda.webapps.schema.descriptors.backup.Prio6Backup;
 
-public abstract class SingleProcessReportIndex<TBuilder> extends AbstractReportIndex<TBuilder>
-    implements Prio6Backup {
+public abstract class SingleProcessReportIndex<TBuilder> extends AbstractReportIndex<TBuilder> {
 
   public static final String MANAGEMENT_REPORT = ProcessReportDataDto.Fields.managementReport;
   public static final String INSTANT_PREVIEW_REPORT =

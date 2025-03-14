@@ -13,10 +13,8 @@ import co.elastic.clients.elasticsearch._types.mapping.DynamicMapping;
 import co.elastic.clients.elasticsearch._types.mapping.Property;
 import co.elastic.clients.elasticsearch._types.mapping.TypeMapping;
 import io.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
-import io.camunda.webapps.schema.descriptors.backup.Prio6Backup;
 
-public abstract class SingleDecisionReportIndex<TBuilder> extends AbstractReportIndex<TBuilder>
-    implements Prio6Backup {
+public abstract class SingleDecisionReportIndex<TBuilder> extends AbstractReportIndex<TBuilder> {
 
   public static final int VERSION = 10;
 

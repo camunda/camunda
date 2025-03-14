@@ -77,7 +77,6 @@ public final class DatabaseConstants {
   public static final String FREQUENCY_AGGREGATION = "_frequency";
   // Units
   public static final String GB_UNIT = "gb";
-  public static final String COMPONENT_NAME = "optimize";
 
   private DatabaseConstants() {}
 }

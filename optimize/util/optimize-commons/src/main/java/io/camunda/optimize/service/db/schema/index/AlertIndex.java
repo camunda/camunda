@@ -16,10 +16,8 @@ import io.camunda.optimize.dto.optimize.query.alert.AlertDefinitionDto;
 import io.camunda.optimize.dto.optimize.query.alert.AlertInterval;
 import io.camunda.optimize.service.db.DatabaseConstants;
 import io.camunda.optimize.service.db.schema.DefaultIndexMappingCreator;
-import io.camunda.webapps.schema.descriptors.backup.Prio6Backup;
 
-public abstract class AlertIndex<TBuilder> extends DefaultIndexMappingCreator<TBuilder>
-    implements Prio6Backup {
+public abstract class AlertIndex<TBuilder> extends DefaultIndexMappingCreator<TBuilder> {
 
   public static final int VERSION = 4;
 

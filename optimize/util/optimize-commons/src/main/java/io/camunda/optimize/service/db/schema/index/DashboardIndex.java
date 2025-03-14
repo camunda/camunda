@@ -18,10 +18,8 @@ import io.camunda.optimize.dto.optimize.query.dashboard.tile.DashboardReportTile
 import io.camunda.optimize.dto.optimize.query.dashboard.tile.DimensionDto;
 import io.camunda.optimize.dto.optimize.query.dashboard.tile.PositionDto;
 import io.camunda.optimize.service.db.schema.DefaultIndexMappingCreator;
-import io.camunda.webapps.schema.descriptors.backup.Prio6Backup;
 
-public abstract class DashboardIndex<TBuilder> extends DefaultIndexMappingCreator<TBuilder>
-    implements Prio6Backup {
+public abstract class DashboardIndex<TBuilder> extends DefaultIndexMappingCreator<TBuilder> {
 
   public static final int VERSION = 8;
 

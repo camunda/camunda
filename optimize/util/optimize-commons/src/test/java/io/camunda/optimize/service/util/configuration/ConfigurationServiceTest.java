@@ -317,13 +317,6 @@ public class ConfigurationServiceTest {
   }
 
   @Test
-  public void shouldHaveEmptyIndexPrefixDefault() {
-    final var config = createConfiguration(defaultConfigFile());
-    assertThat(config.getElasticSearchConfiguration().getIndexPrefix()).isEqualTo("");
-    assertThat(config.getOpenSearchConfiguration().getIndexPrefix()).isEqualTo("");
-  }
-
-  @Test
   public void resolvePropertiesFromSystemVariablesWinOverEnvironmentVariables() {
     // when
     final String[] locations = {defaultConfigFile(), "environment-variable-test-config.yaml"};

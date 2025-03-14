@@ -103,9 +103,7 @@ import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import io.camunda.optimize.service.util.configuration.DatabaseType;
 import io.camunda.optimize.upgrade.es.ElasticsearchClientBuilder;
-import io.camunda.search.clients.DocumentBasedSearchClient;
 import io.camunda.search.connect.plugin.PluginRepository;
-import io.camunda.search.es.clients.ElasticsearchSearchClient;
 import java.io.IOException;
 import java.io.StringReader;
 import java.io.StringWriter;
@@ -149,7 +147,6 @@ public class OptimizeElasticsearchClient extends DatabaseClient {
   private RestClient restClient;
   private final ObjectMapper objectMapper;
   private ElasticsearchClient esClient;
-  private final DocumentBasedSearchClient documentBasedSearchClient;
   private ElasticsearchAsyncClient elasticsearchAsyncClient;
   private TransportOptionsProvider transportOptionsProvider;
 
@@ -174,7 +171,6 @@ public class OptimizeElasticsearchClient extends DatabaseClient {
     this.transportOptionsProvider = transportOptionsProvider;
     elasticsearchAsyncClient =
         new ElasticsearchAsyncClient(esClient._transport(), esClient._transportOptions());
-    documentBasedSearchClient = new ElasticsearchSearchClient(esWithTransportOptions());
   }
 
   public final ElasticsearchClient esWithTransportOptions() {
@@ -543,11 +539,6 @@ public class OptimizeElasticsearchClient extends DatabaseClient {
     } catch (final IOException e) {
       throw new RuntimeException(e);
     }
-  }
-
-  @Override
-  public DocumentBasedSearchClient documentBasedSearchClient() {
-    return documentBasedSearchClient;
   }
 
   @Override

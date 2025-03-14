@@ -12,7 +12,6 @@ import static io.camunda.application.commons.backup.ConfigValidation.*;
 import io.camunda.application.commons.conditions.WebappEnabledCondition;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.optimize.service.metadata.Version;
-import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import io.camunda.optimize.service.util.configuration.db.DatabaseBackup;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.webapps.backup.repository.BackupRepositoryProps;
@@ -35,15 +34,12 @@ public class BackupConfig {
 
   final OperateProperties operateProperties;
   final TasklistProperties tasklistProperties;
-  private final ConfigurationService configurationService;
 
   public BackupConfig(
       @Autowired(required = false) final OperateProperties operateProperties,
-      @Autowired(required = false) final TasklistProperties tasklistProperties,
-      @Autowired(required = false) final ConfigurationService configurationService) {
+      @Autowired(required = false) final TasklistProperties tasklistProperties) {
     this.operateProperties = operateProperties;
     this.tasklistProperties = tasklistProperties;
-    this.configurationService = configurationService;
   }
 
   @Bean
@@ -52,31 +48,12 @@ public class BackupConfig {
         Optional.ofNullable(operateProperties).map(c -> props(c.getVersion(), c.getBackup()));
     final var tasklistBackup =
         Optional.ofNullable(tasklistProperties).map(c -> props(c.getVersion(), c.getBackup()));
-    final Optional<BackupRepositoryProps> optimizeBackup =
-        Optional.ofNullable(configurationService)
-            .flatMap(
-                configService -> {
-                  try {
-                    final var backupProps =
-                        switch (ConfigurationService.getDatabaseType(environment)) {
-                          case OPENSEARCH ->
-                              props(configurationService.getOpenSearchConfiguration().getBackup());
-                          case ELASTICSEARCH ->
-                              props(
-                                  configurationService.getElasticSearchConfiguration().getBackup());
-                        };
-                    return Optional.of(backupProps);
-                  } catch (final Exception ignored) {
-                    return Optional.empty();
-                  }
-                });
 
     // A LinkedHashMap has to be used because it keeps insertion order
     // the first entry of the map will be used if all entries are present
     final var propMap = new LinkedHashMap<String, Optional<BackupRepositoryProps>>();
     propMap.put("operate", operateBackup);
     propMap.put("tasklist", tasklistBackup);
-    propMap.put("optimize", optimizeBackup);
 
     final var props =
         allMatchHaving(

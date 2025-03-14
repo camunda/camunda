@@ -19,11 +19,9 @@ import io.camunda.optimize.dto.optimize.persistence.CandidateGroupOperationDto;
 import io.camunda.optimize.dto.optimize.persistence.incident.IncidentDto;
 import io.camunda.optimize.dto.optimize.query.process.FlowNodeInstanceDto;
 import io.camunda.optimize.dto.optimize.query.variable.SimpleProcessVariableDto;
-import io.camunda.webapps.schema.descriptors.backup.Prio6Backup;
 import java.util.Locale;
 
-public abstract class ProcessInstanceIndex<TBuilder> extends AbstractInstanceIndex<TBuilder>
-    implements Prio6Backup {
+public abstract class ProcessInstanceIndex<TBuilder> extends AbstractInstanceIndex<TBuilder> {
 
   public static final int VERSION = 8;
 

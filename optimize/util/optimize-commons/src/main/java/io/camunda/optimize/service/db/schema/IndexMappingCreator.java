@@ -9,17 +9,11 @@ package io.camunda.optimize.service.db.schema;
 
 import co.elastic.clients.elasticsearch._types.mapping.TypeMapping;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
-import io.camunda.webapps.schema.descriptors.backup.BackupPriority;
 import java.io.IOException;
 
-public interface IndexMappingCreator<TBuilder> extends BackupPriority {
+public interface IndexMappingCreator<TBuilder> {
 
   String getIndexName();
-
-  @Override
-  default String getFullQualifiedName() {
-    return getIndexName();
-  }
 
   default String getIndexNameInitialSuffix() {
     return "";

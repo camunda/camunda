@@ -11,10 +11,8 @@ import static io.camunda.optimize.service.db.DatabaseConstants.COMBINED_REPORT_I
 
 import co.elastic.clients.elasticsearch._types.mapping.Property;
 import co.elastic.clients.elasticsearch._types.mapping.TypeMapping;
-import io.camunda.webapps.schema.descriptors.backup.Prio6Backup;
 
-public abstract class CombinedReportIndex<TBuilder> extends AbstractReportIndex<TBuilder>
-    implements Prio6Backup {
+public abstract class CombinedReportIndex<TBuilder> extends AbstractReportIndex<TBuilder> {
 
   public static final int VERSION = 5;
 

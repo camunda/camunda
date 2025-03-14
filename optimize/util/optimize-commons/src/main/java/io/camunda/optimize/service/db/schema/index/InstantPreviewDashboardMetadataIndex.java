@@ -12,10 +12,9 @@ import static io.camunda.optimize.service.db.DatabaseConstants.INSTANT_DASHBOARD
 import co.elastic.clients.elasticsearch._types.mapping.TypeMapping;
 import io.camunda.optimize.dto.optimize.query.dashboard.InstantDashboardDataDto;
 import io.camunda.optimize.service.db.schema.DefaultIndexMappingCreator;
-import io.camunda.webapps.schema.descriptors.backup.Prio6Backup;
 
 public abstract class InstantPreviewDashboardMetadataIndex<TBuilder>
-    extends DefaultIndexMappingCreator<TBuilder> implements Prio6Backup {
+    extends DefaultIndexMappingCreator<TBuilder> {
 
   public static final int VERSION = 1;
 

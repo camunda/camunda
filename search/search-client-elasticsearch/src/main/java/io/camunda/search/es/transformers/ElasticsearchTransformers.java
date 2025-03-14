@@ -16,8 +16,6 @@ import io.camunda.search.clients.core.SearchQueryHit;
 import io.camunda.search.clients.core.SearchQueryRequest;
 import io.camunda.search.clients.core.SearchQueryResponse;
 import io.camunda.search.clients.core.SearchWriteResponse;
-import io.camunda.search.clients.index.IndexAliasRequest;
-import io.camunda.search.clients.index.IndexAliasResponse;
 import io.camunda.search.clients.query.SearchBoolQuery;
 import io.camunda.search.clients.query.SearchConstantScoreQuery;
 import io.camunda.search.clients.query.SearchExistsQuery;
@@ -38,8 +36,6 @@ import io.camunda.search.clients.source.SearchSourceFilter;
 import io.camunda.search.clients.transformers.SearchTransfomer;
 import io.camunda.search.clients.types.TypedValue;
 import io.camunda.search.es.transformers.aggregator.TermsAggregationTransformer;
-import io.camunda.search.es.transformers.index.IndexAliasRequestTransformer;
-import io.camunda.search.es.transformers.index.IndexAliasResponseTransformer;
 import io.camunda.search.es.transformers.query.BoolQueryTransformer;
 import io.camunda.search.es.transformers.query.ConstantScoreQueryTransformer;
 import io.camunda.search.es.transformers.query.ExistsQueryTransformer;
@@ -121,10 +117,6 @@ public final class ElasticsearchTransformers {
     mappers.put(SearchWildcardQuery.class, new WildcardQueryTransformer(mappers));
     mappers.put(SearchHasParentQuery.class, new HasParentQueryTransformer(mappers));
     mappers.put(SearchTermsAggregator.class, new TermsAggregationTransformer(mappers));
-
-    // index
-    mappers.put(IndexAliasResponse.class, new IndexAliasResponseTransformer(mappers));
-    mappers.put(IndexAliasRequest.class, new IndexAliasRequestTransformer(mappers));
 
     // sort
     mappers.put(SearchSortOptions.class, new SortOptionsTransformer(mappers));

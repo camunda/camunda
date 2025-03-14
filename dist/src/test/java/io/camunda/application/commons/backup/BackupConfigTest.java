@@ -7,25 +7,15 @@
  */
 package io.camunda.application.commons.backup;
 
-import static io.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.CAMUNDA_OPTIMIZE_DATABASE;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 import io.camunda.operate.property.OperateProperties;
-import io.camunda.optimize.service.util.configuration.ConfigurationService;
-import io.camunda.optimize.service.util.configuration.db.DatabaseBackup;
-import io.camunda.search.connect.configuration.DatabaseType;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.webapps.backup.repository.BackupRepositoryProps;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.Answers;
-import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.core.env.Environment;
 
@@ -34,9 +24,6 @@ public class BackupConfigTest {
 
   OperateProperties operateProperties;
   TasklistProperties tasklistProperties;
-
-  @Mock(answer = Answers.RETURNS_DEEP_STUBS)
-  ConfigurationService configurationService;
 
   @BeforeEach
   public void setup() {
@@ -65,13 +52,11 @@ public class BackupConfigTest {
     tasklistProperties.getBackup().setRepositoryName("repo-2");
     assertThatThrownBy(
             () ->
-                new BackupConfig(operateProperties, tasklistProperties, null)
-                    .backupRepositoryProps(null))
+                new BackupConfig(operateProperties, tasklistProperties).backupRepositoryProps(null))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining(BackupConfig.differentRepoNameFormat.formatted(""))
         .hasMessageContaining("operate=Optional[repo-1]")
-        .hasMessageContaining("tasklist=Optional[repo-2]")
-        .hasMessageContaining("optimize=Optional.empty");
+        .hasMessageContaining("tasklist=Optional[repo-2]");
   }
 
   @Test
@@ -79,17 +64,6 @@ public class BackupConfigTest {
     tasklistProperties.getBackup().setRepositoryName("repo-1");
     checkRepo(null, tasklistProperties);
     checkRepo(operateProperties, tasklistProperties);
-  }
-
-  @Test
-  public void shouldUseOptimizeIfOnlyAvailable() {
-    final var backup = new DatabaseBackup();
-    backup.setSnapshotRepositoryName("repo-1");
-    when(configurationService.getElasticSearchConfiguration().getBackup()).thenReturn(backup);
-    final var environment = mock(Environment.class);
-    when(environment.getProperty(eq(CAMUNDA_OPTIMIZE_DATABASE), (String) any()))
-        .thenReturn(DatabaseType.ELASTICSEARCH.toString());
-    checkRepo(null, null, environment);
   }
 
   private BackupRepositoryProps checkRepo(
@@ -101,8 +75,7 @@ public class BackupConfigTest {
       final OperateProperties operateProperties,
       final TasklistProperties tasklistProperties,
       final Environment environment) {
-    final var config =
-        new BackupConfig(operateProperties, tasklistProperties, configurationService);
+    final var config = new BackupConfig(operateProperties, tasklistProperties);
     final var props = config.backupRepositoryProps(environment);
     assertThat(props.repositoryName()).isEqualTo("repo-1");
     return props;
@@ -110,7 +83,7 @@ public class BackupConfigTest {
 
   @Test
   public void shouldReturnEmptyInstanceIfNoConfiguration() {
-    assertThat(new BackupConfig(null, null, null).backupRepositoryProps(null))
+    assertThat(new BackupConfig(null, null).backupRepositoryProps(null))
         .isEqualTo(BackupRepositoryProps.EMPTY);
   }
 }

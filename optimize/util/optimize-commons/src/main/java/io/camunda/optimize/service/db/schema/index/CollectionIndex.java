@@ -18,10 +18,8 @@ import io.camunda.optimize.dto.optimize.query.collection.CollectionDataDto;
 import io.camunda.optimize.dto.optimize.query.collection.CollectionRoleRequestDto;
 import io.camunda.optimize.dto.optimize.query.collection.CollectionScopeEntryDto;
 import io.camunda.optimize.service.db.schema.DefaultIndexMappingCreator;
-import io.camunda.webapps.schema.descriptors.backup.Prio6Backup;
 
-public abstract class CollectionIndex<TBuilder> extends DefaultIndexMappingCreator<TBuilder>
-    implements Prio6Backup {
+public abstract class CollectionIndex<TBuilder> extends DefaultIndexMappingCreator<TBuilder> {
 
   public static final int VERSION = 5;
 

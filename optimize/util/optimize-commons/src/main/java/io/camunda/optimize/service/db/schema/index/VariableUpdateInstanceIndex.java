@@ -14,10 +14,9 @@ import co.elastic.clients.elasticsearch._types.mapping.TypeMapping;
 import io.camunda.optimize.dto.optimize.query.variable.VariableUpdateInstanceDto;
 import io.camunda.optimize.service.db.DatabaseConstants;
 import io.camunda.optimize.service.db.schema.DefaultIndexMappingCreator;
-import io.camunda.webapps.schema.descriptors.backup.Prio6Backup;
 
 public abstract class VariableUpdateInstanceIndex<TBuilder>
-    extends DefaultIndexMappingCreator<TBuilder> implements Prio6Backup {
+    extends DefaultIndexMappingCreator<TBuilder> {
 
   public static final String INSTANCE_ID = VariableUpdateInstanceDto.Fields.instanceId;
   public static final String NAME = VariableUpdateInstanceDto.Fields.name;

@@ -15,7 +15,6 @@ import io.camunda.optimize.service.db.schema.ScriptData;
 import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import io.camunda.optimize.service.util.configuration.ConfigurationReloadable;
 import io.camunda.optimize.service.util.configuration.DatabaseType;
-import io.camunda.search.clients.DocumentBasedSearchClient;
 import java.io.IOException;
 import java.time.Duration;
 import java.util.Arrays;
@@ -70,8 +69,6 @@ public abstract class DatabaseClient implements ConfigurationReloadable {
   public abstract String getDatabaseVersion() throws IOException;
 
   public abstract void setDefaultRequestOptions();
-
-  public abstract DocumentBasedSearchClient documentBasedSearchClient();
 
   public abstract void update(
       final String indexName, final String entityId, final ScriptData script);

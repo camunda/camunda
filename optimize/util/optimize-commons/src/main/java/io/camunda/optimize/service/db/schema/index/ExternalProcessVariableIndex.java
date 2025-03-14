@@ -13,10 +13,9 @@ import co.elastic.clients.elasticsearch._types.mapping.TypeMapping;
 import io.camunda.optimize.dto.optimize.query.variable.ExternalProcessVariableDto;
 import io.camunda.optimize.service.db.DatabaseConstants;
 import io.camunda.optimize.service.db.schema.DefaultIndexMappingCreator;
-import io.camunda.webapps.schema.descriptors.backup.Prio6Backup;
 
 public abstract class ExternalProcessVariableIndex<TBuilder>
-    extends DefaultIndexMappingCreator<TBuilder> implements Prio6Backup {
+    extends DefaultIndexMappingCreator<TBuilder> {
 
   public static final String VARIABLE_ID = ExternalProcessVariableDto.Fields.variableId;
   public static final String VARIABLE_NAME = ExternalProcessVariableDto.Fields.variableName;
@@ -39,6 +38,11 @@ public abstract class ExternalProcessVariableIndex<TBuilder>
   }
 
   @Override
+  public int getVersion() {
+    return VERSION;
+  }
+
+  @Override
   public String getIndexNameInitialSuffix() {
     return DatabaseConstants.INDEX_SUFFIX_PRE_ROLLOVER;
   }
@@ -46,11 +50,6 @@ public abstract class ExternalProcessVariableIndex<TBuilder>
   @Override
   public boolean isCreateFromTemplate() {
     return true;
-  }
-
-  @Override
-  public int getVersion() {
-    return VERSION;
   }
 
   @Override

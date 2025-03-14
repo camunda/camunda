@@ -10,29 +10,26 @@ package io.camunda.optimize.service.db.schema;
 import static io.camunda.optimize.service.db.DatabaseConstants.DECISION_INSTANCE_INDEX_PREFIX;
 import static io.camunda.optimize.service.db.DatabaseConstants.PROCESS_INSTANCE_INDEX_PREFIX;
 
+import io.camunda.optimize.service.db.DatabaseClient;
 import io.camunda.optimize.service.db.schema.index.DecisionInstanceIndex;
 import io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex;
 import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
-import io.camunda.search.clients.DocumentBasedSearchClient;
-import io.camunda.search.clients.index.IndexAliasRequest;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
 import org.slf4j.Logger;
 
 public abstract class MappingMetadataUtil<BUILDER> {
 
   private static final Logger LOG = org.slf4j.LoggerFactory.getLogger(MappingMetadataUtil.class);
-  private final DocumentBasedSearchClient dbClient;
+  private final DatabaseClient dbClient;
 
-  public MappingMetadataUtil(final DocumentBasedSearchClient dbClient) {
+  public MappingMetadataUtil(final DatabaseClient dbClient) {
     Objects.requireNonNull(dbClient, "dbClient cannot be null");
     this.dbClient = dbClient;
   }
@@ -61,7 +58,7 @@ public abstract class MappingMetadataUtil<BUILDER> {
     final Map<String, Set<String>> aliases;
     final String fullIndexPrefix = configuredIndexPrefix + "-" + PROCESS_INSTANCE_INDEX_PREFIX;
     try {
-      aliases = getAliasesForIndexPattern(fullIndexPrefix + "*");
+      aliases = dbClient.getAliasesForIndexPattern(fullIndexPrefix + "*");
     } catch (final Exception e) {
       throw new OptimizeRuntimeException(
           "Failed retrieving aliases for dynamic index prefix " + fullIndexPrefix, e);
@@ -90,11 +87,7 @@ public abstract class MappingMetadataUtil<BUILDER> {
 
   private List<String> retrieveAllDynamicIndexKeysForPrefix(final String dynamicIndexPrefix) {
     try {
-      return dbClient
-          .getAlias(IndexAliasRequest.withName(List.of(dynamicIndexPrefix + "*")))
-          .indices()
-          .keySet()
-          .stream()
+      return dbClient.getAllIndicesForAlias(dynamicIndexPrefix + "*").stream()
           .map(
               fullAliasName ->
                   fullAliasName.substring(
@@ -104,15 +97,6 @@ public abstract class MappingMetadataUtil<BUILDER> {
       throw new OptimizeRuntimeException(
           "Failed retrieving aliases for dynamic index prefix " + dynamicIndexPrefix, e);
     }
-  }
-
-  private Map<String, Set<String>> getAliasesForIndexPattern(final String indexNamePattern) {
-    return dbClient
-        .getAlias(IndexAliasRequest.withIndex(List.of(indexNamePattern)))
-        .indices()
-        .entrySet()
-        .stream()
-        .collect(Collectors.toMap(Entry::getKey, entry -> entry.getValue().aliases().keySet()));
   }
 
   private <T> List<T> extractIndicesToClass(

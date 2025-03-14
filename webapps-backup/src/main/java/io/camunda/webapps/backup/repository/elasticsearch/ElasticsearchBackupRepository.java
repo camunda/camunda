@@ -57,7 +57,6 @@ import org.slf4j.LoggerFactory;
 public class ElasticsearchBackupRepository implements BackupRepository {
   public static final String SNAPSHOT_MISSING_EXCEPTION_TYPE = "snapshot_missing_exception";
   private static final String REPOSITORY_MISSING_EXCEPTION_TYPE = "repository_missing_exception";
-  private static final String INDEX_MISSING_EXCEPTION_TYPE = "index_not_found_exception";
   private static final Logger LOGGER = LoggerFactory.getLogger(ElasticsearchBackupRepository.class);
   private final ElasticsearchClient esClient;
   private final BackupRepositoryProps backupProps;
@@ -215,6 +214,9 @@ public class ElasticsearchBackupRepository implements BackupRepository {
         GetSnapshotRequest.of(
             b ->
                 b.repository(repositoryName)
+                    // TODO - check to see if
+                    // https://github.com/camunda/camunda/pull/26337/files#diff-b1c9f8bb329d4c7002aff15f3de0f99a39c2c91387f634099decff5c73500f53L250
+                    //  needs to be here in some form. ive deleted the .indices() call for now
                     .snapshot(snapshotNameProvider.snapshotNamePrefix() + "*")
                     // it looks like sorting as well as size/offset are not working, need to sort
                     // additionally before return
@@ -281,7 +283,7 @@ public class ElasticsearchBackupRepository implements BackupRepository {
             b ->
                 b.repository(snapshotRequest.repositoryName())
                     .snapshot(snapshotRequest.snapshotName())
-                    .indices(snapshotRequest.indices().allIndices())
+                    .indices(snapshotRequest.indices().indices())
                     // ignoreUnavailable = false - indices defined by their exact name MUST be
                     // present
                     // allowNoIndices = true - indices defined by wildcards, e.g. archived, MIGHT BE
