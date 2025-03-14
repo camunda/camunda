@@ -8,7 +8,6 @@
 package io.camunda.zeebe.stream.impl;
 
 import io.camunda.zeebe.scheduler.Actor;
-import io.camunda.zeebe.scheduler.ActorControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import java.util.Map;
@@ -68,9 +67,5 @@ public final class AsyncProcessingScheduleServiceActor extends Actor {
   @Override
   public void onActorFailed() {
     closeFuture.complete(null);
-  }
-
-  public ActorControl getActorControl() {
-    return actor;
   }
 }
