@@ -85,7 +85,7 @@ public class ResourceDeletionAuthorizationTest {
   }
 
   @Test
-  public void shouldBeUnAuthorizedToDeleteProcessDefinitionWithPermissions() {
+  public void shouldBeUnauthorizedToDeleteProcessDefinitionWithoutPermissions() {
     // given
     final var processId = Strings.newRandomValidBpmnId();
     final var processDefinitionKey = deployProcessDefinition(processId);
@@ -146,7 +146,7 @@ public class ResourceDeletionAuthorizationTest {
   }
 
   @Test
-  public void shouldBeUnAuthorizedToDeleteDrdWithPermissions() {
+  public void shouldBeUnauthorizedToDeleteDrdWithoutPermissions() {
     // given
     final var drdId = "force_users";
     final var drdKey = deployDrd();
@@ -203,7 +203,7 @@ public class ResourceDeletionAuthorizationTest {
   }
 
   @Test
-  public void shouldBeUnAuthorizedToDeleteFormWithPermissions() {
+  public void shouldBeUnauthorizedToDeleteFormWithoutPermissions() {
     // given
     final var formId = "Form_0w7r08e";
     final var formKey = deployForm();
@@ -221,6 +221,67 @@ public class ResourceDeletionAuthorizationTest {
         .hasRejectionReason(
             "Insufficient permissions to perform operation 'DELETE_FORM' on resource 'RESOURCE', required resource identifiers are one of '[*, %s]'"
                 .formatted(formId));
+  }
+
+  @Test
+  public void shouldBeAuthorizedToDeleteResourceWithDefaultUser() {
+    // given
+    final var resourceKey = deployResource();
+
+    // when
+    engine.resourceDeletion().withResourceKey(resourceKey).delete(DEFAULT_USER.getUsername());
+
+    // then
+    assertThat(
+            RecordingExporter.resourceDeletionRecords(ResourceDeletionIntent.DELETED)
+                .withResourceKey(resourceKey)
+                .exists())
+        .isTrue();
+  }
+
+  @Test
+  public void shouldBeAuthorizedToDeleteResourceWithPermissions() {
+    // given
+    final var resourceId = "Rpa_0w7r08e";
+    final var resourceKey = deployResource();
+    final var user = createUser();
+    addPermissionsToUser(
+        user, AuthorizationResourceType.RESOURCE, PermissionType.DELETE_RESOURCE, resourceId);
+
+    // when
+    engine.resourceDeletion().withResourceKey(resourceKey).delete(user.getUsername());
+
+    // then
+    assertThat(
+            RecordingExporter.resourceDeletionRecords(ResourceDeletionIntent.DELETED)
+                .withResourceKey(resourceKey)
+                .exists())
+        .isTrue();
+  }
+
+  @Test
+  public void shouldBeUnauthorizedToDeleteResourceWithoutPermissions() {
+    // given
+    final var resourceId = "Rpa_0w7r08e";
+    final var resourceKey = deployResource();
+    final var user = createUser();
+
+    // when
+    engine
+        .resourceDeletion()
+        .withResourceKey(resourceKey)
+        .expectRejection()
+        .delete(user.getUsername());
+
+    // then
+    Assertions.assertThat(
+            RecordingExporter.resourceDeletionRecords(ResourceDeletionIntent.DELETE)
+                .onlyCommandRejections()
+                .getFirst())
+        .hasRejectionType(RejectionType.FORBIDDEN)
+        .hasRejectionReason(
+            "Insufficient permissions to perform operation 'DELETE_RESOURCE' on resource 'RESOURCE', required resource identifiers are one of '[*, %s]'"
+                .formatted(resourceId));
   }
 
   private UserRecordValue createUser() {
@@ -282,5 +343,16 @@ public class ResourceDeletionAuthorizationTest {
         .getFormMetadata()
         .getFirst()
         .getFormKey();
+  }
+
+  private long deployResource() {
+    return engine
+        .deployment()
+        .withJsonClasspathResource("/resource/test-rpa-1.rpa")
+        .deploy(DEFAULT_USER.getUsername())
+        .getValue()
+        .getResourceMetadata()
+        .getFirst()
+        .getResourceKey();
   }
 }
