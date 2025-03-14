@@ -384,7 +384,7 @@ public class ZeebeClientConfigurationImpl implements ZeebeClientConfiguration {
   }
 
   private boolean composePlaintext() {
-    final String protocol = camundaClientProperties.getZeebe().getGrpcAddress().getScheme();
+    final String protocol = getGrpcAddress().getScheme();
     return switch (protocol) {
       case "http" -> true;
       case "https" -> false;
