@@ -14,6 +14,6 @@ public record MappingEntity(
     Long mappingKey, String claimName, String claimValue, String name, String id) {
   public MappingEntity(
       final Long mappingKey, final String claimName, final String claimValue, final String name) {
-    this(mappingKey, claimName, claimValue, name, "");
+    this(mappingKey, claimName, claimValue, name, null);
   }
 }
