@@ -4,7 +4,7 @@
   <parent>
     <groupId>io.camunda</groupId>
     <artifactId>operate-qa</artifactId>
-    <version>8.6.11</version>
+    <version>8.6.11111-SNAPSHOT</version>
   </parent>
   <artifactId>operate-qa-util</artifactId>
 
