@@ -2603,7 +2603,7 @@ paths:
                 $ref: "#/components/schemas/ProblemDetail"
         "500":
           $ref: "#/components/responses/InternalServerError"
-  /mapping-rules/{mappingKey}:
+  /mapping-rules/{mappingId}:
     delete:
       tags:
         - Mapping rule
@@ -2615,7 +2615,7 @@ paths:
         This API is in a Work-in-Progress state and will undergo potential breaking changes till
         its release with an upcoming minor release.
       parameters:
-        - name: mappingKey
+        - name: mappingId
           in: path
           required: true
           description: The key of the mapping rule to delete.
@@ -2623,6 +2623,36 @@ paths:
             type: string
       responses:
         "204":
+          description: The mapping rule was deleted successfully.
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          description: The mapping rule with the mappingKey was not found.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+    get:
+      tags:
+        - Mapping rule
+      operationId: getMappingRule
+      summary: Get a mapping rule (Work-in-Progress)
+      description: |
+        Gets the mapping rule with the given key.
+
+        This API is in a Work-in-Progress state and will undergo potential breaking changes till
+        its release with an upcoming minor release.
+      parameters:
+        - name: mappingId
+          in: path
+          required: true
+          description: The id of the mapping rule to get.
+          schema:
+            type: string
+      responses:
+        "200":
           description: The mapping rule was deleted successfully.
         "401":
           $ref: "#/components/responses/Unauthorized"
