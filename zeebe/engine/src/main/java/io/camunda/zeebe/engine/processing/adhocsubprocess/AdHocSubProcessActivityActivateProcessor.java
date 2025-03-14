@@ -12,7 +12,6 @@ import io.camunda.zeebe.engine.processing.common.ElementTreePathBuilder;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableAdHocSubProcess;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior.AuthorizationRequest;
-import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior.ForbiddenException;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
@@ -35,7 +34,6 @@ import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import io.camunda.zeebe.util.Either;
-import java.util.List;
 
 public class AdHocSubProcessActivityActivateProcessor
     implements TypedRecordProcessor<AdHocSubProcessActivityActivationRecord> {
@@ -223,10 +221,6 @@ public class AdHocSubProcessActivityActivateProcessor
         writeRejectionError(command, RejectionType.INVALID_STATE, e.getMessage());
         yield ProcessingError.EXPECTED_ERROR;
       }
-      case final ForbiddenException e -> {
-        writeRejectionError(command, e.getRejectionType(), e.getMessage());
-        yield ProcessingError.EXPECTED_ERROR;
-      }
       default -> ProcessingError.UNEXPECTED_ERROR;
     };
   }
@@ -260,39 +254,5 @@ public class AdHocSubProcessActivityActivateProcessor
             .addResourceId(adHocSubprocessElementInstance.getValue().getBpmnProcessId());
 
     return authCheckBehavior.isAuthorized(authRequest);
-  }
-
-  private static final class DuplicateElementsException extends IllegalArgumentException {
-    private static final String ERROR_MESSAGE = "Duplicate elements %s not allowed.";
-
-    private DuplicateElementsException(final List<String> elementIds) {
-      super(String.format(ERROR_MESSAGE, elementIds));
-    }
-  }
-
-  private static final class AdHocSubProcessInFinalStateException extends IllegalStateException {
-    private static final String ERROR_MESSAGE =
-        "Ad-hoc subprocess <%s> is already in a terminal state. Can't activate any activities.";
-
-    private AdHocSubProcessInFinalStateException(final String adHocSubprocessElementId) {
-      super(String.format(ERROR_MESSAGE, adHocSubprocessElementId));
-    }
-  }
-
-  private static final class AdHocSubProcessInstanceIsNullException extends IllegalStateException {
-    private static final String ERROR_MESSAGE = "Ad-hoc subprocess instance <%s> is null.";
-
-    private AdHocSubProcessInstanceIsNullException(final String adHocSubprocessInstanceKey) {
-      super(String.format(ERROR_MESSAGE, adHocSubprocessInstanceKey));
-    }
-  }
-
-  private static final class AdHocSubProcessInstanceNotActiveException
-      extends IllegalStateException {
-    private static final String ERROR_MESSAGE = "Ad-hoc subprocess instance <%s> is not active.";
-
-    private AdHocSubProcessInstanceNotActiveException(final String adHocSubprocessInstanceKey) {
-      super(String.format(ERROR_MESSAGE, adHocSubprocessInstanceKey));
-    }
   }
 }
