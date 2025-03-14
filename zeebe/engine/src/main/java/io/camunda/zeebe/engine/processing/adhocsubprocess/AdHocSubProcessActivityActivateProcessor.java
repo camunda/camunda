@@ -47,6 +47,8 @@ public class AdHocSubProcessActivityActivateProcessor
       "Expected to activate activities for ad-hoc subprocess '%s', but it is either completed or terminated.";
   private static final String ERROR_MSG_ADHOC_SUBPROCESS_IS_NOT_ACTIVE =
       "Expected to activate activities for ad-hoc subprocess '%s', but it is not active.";
+  private static final String ERROR_MSG_ELEMENTS_NOT_FOUND =
+      "Expected to activate activities for ad-hoc subprocess with key '%s', but the given elements %s do not exist.";
 
   private final StateWriter stateWriter;
   private final TypedResponseWriter responseWriter;
@@ -154,7 +156,15 @@ public class AdHocSubProcessActivityActivateProcessor
             .filter(elementId -> !adHocActivitiesById.containsKey(elementId))
             .toList();
     if (!elementsNotInAdHocSubProcess.isEmpty()) {
-      throw new ElementNotFoundException(adHocSubprocessElementId, elementsNotInAdHocSubProcess);
+      writeRejectionError(
+          command,
+          RejectionType.INVALID_STATE,
+          String.format(
+              ERROR_MSG_ELEMENTS_NOT_FOUND,
+              command.getValue().getAdHocSubProcessInstanceKey(),
+              elementsNotInAdHocSubProcess));
+
+      return;
     }
 
     // activate the elements
@@ -242,16 +252,6 @@ public class AdHocSubProcessActivityActivateProcessor
 
     private DuplicateElementsException(final List<String> elementIds) {
       super(String.format(ERROR_MESSAGE, elementIds));
-    }
-  }
-
-  private static final class ElementNotFoundException extends IllegalStateException {
-    private static final String ERROR_MESSAGE =
-        "Elements %s do not exist in ad-hoc subprocess <%s>";
-
-    private ElementNotFoundException(
-        final String adHocSubprocessId, final List<String> elementIds) {
-      super(String.format(ERROR_MESSAGE, elementIds, adHocSubprocessId));
     }
   }
 
