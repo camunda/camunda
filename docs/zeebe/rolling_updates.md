@@ -23,7 +23,7 @@ The first option is the classic solution to evolve network protocols.
 To make this possible, we recommend to always version protocols, for example by prefixing all messages with a single integer version.
 This makes it possible for old versions to detect newer protocol versions and for new versions to support both protocol versions at the same time.
 See `AbstractMessageDecoder` and its implementations for an (old) example.
-Details are documented in our [messaging](./messaging.md#protocol-format) docs.
+Details are documented in our [messaging](messaging.md#protocol-format) docs.
 
 The second option should be avoided if possible because it requires more effort.
 Switching to a new protocol requires a configuration change, this has a higher impact than the rolling update itself.
@@ -36,14 +36,14 @@ See `RollingUpdateAwareInitializerV83ToV84` for implementation details.
 
 ### Protocol
 
-The [Zeebe protocol](../protocol/src/main/resources/protocol.xml) defines both the network protocol between gateways and brokers as well as the on-disk serialization of records.
+The [Zeebe protocol](../../zeebe/protocol/src/main/resources/protocol.xml) defines both the network protocol between gateways and brokers as well as the on-disk serialization of records.
 The protocol is defined as [SBE](https://www.fixtrading.org/standards/sbe-online/), a binary encoding with limited support for backwards compatibility.
 We must be careful when extending or modifying the protocol to ensure that we do not break compatibility.
 Because SBE is a binary encoding with relatively little overhead, accidentally breaking compatibility can result in silent data corruption when data is read the wrong way.
 See https://github.com/camunda/camunda/issues/14957 for an example of such an issue.
 
 There is guidance on message versioning that explains some of the rules we have to follow to ensure compatibility: https://github.com/real-logic/simple-binary-encoding/wiki/Message-Versioning
-Additionally, we have automated tests that prevent changes until we [mark them as acceptable](../protocol/revapi.json).
+Additionally, we have automated tests that prevent changes until we [mark them as acceptable](../../zeebe/protocol/revapi.json).
 
 ### Processing
 
