@@ -96,7 +96,7 @@ public class IdentityOAuth2WebConfigurer {
         .jwtProcessorCustomizer(
             processor -> {
               processor.setJWSTypeVerifier(
-                  new DefaultJOSEObjectTypeVerifier<>(JWT, new JOSEObjectType("at+jwt")));
+                  new DefaultJOSEObjectTypeVerifier<>(JWT, new JOSEObjectType("at+jwt"), null));
             })
         .build();
   }

@@ -101,7 +101,7 @@ class IdentityOAuth2WebConfigurerTest {
 
     // Ensure that both jwt and at+jwt types are being verified
     assertThat(joseVerifier.getAllowedTypes())
-        .containsExactlyInAnyOrder(new JOSEObjectType("jwt"), new JOSEObjectType("at+jwt"));
+        .containsExactlyInAnyOrder(new JOSEObjectType("jwt"), new JOSEObjectType("at+jwt"), null);
   }
 
   @Test
