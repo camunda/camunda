@@ -13,6 +13,13 @@ import useTranslate from "src/utility/localization";
 import { FormModal, UseModalProps } from "src/components/modal";
 import { useNotifications } from "src/components/notifications";
 import { createMapping } from "src/utility/api/mappings";
+import {
+  CustomStack,
+  EqualSignContainer,
+  MappingRuleContainer,
+} from "./components";
+import { spacing05 } from "@carbon/elements";
+import { Stack } from "@carbon/react";
 
 const AddMappingModal: FC<UseModalProps> = ({ open, onClose, onSuccess }) => {
   const { t } = useTranslate("mappings");
@@ -62,6 +69,7 @@ const AddMappingModal: FC<UseModalProps> = ({ open, onClose, onSuccess }) => {
         placeholder={t("Enter mapping ID")}
         onChange={setMappingId}
         value={mappingId}
+        helperText={t("Enter a unique ID for this mapping")}
         autoFocus
       />
       <TextField
@@ -69,20 +77,31 @@ const AddMappingModal: FC<UseModalProps> = ({ open, onClose, onSuccess }) => {
         placeholder={t("Enter mapping name")}
         onChange={setMappingName}
         value={mappingName}
+        helperText={t("Enter a unique name for this mapping")}
         autoFocus
       />
-      <TextField
-        label={t("Claim Name")}
-        placeholder={t("Enter claim name")}
-        onChange={setClaimName}
-        value={claimName}
-      />
-      <TextField
-        label={t("Claim Value")}
-        placeholder={t("Enter claim value")}
-        onChange={setClaimValue}
-        value={claimValue}
-      />
+      <MappingRuleContainer>
+        <Stack gap={spacing05}>
+          <h3>Mapping Rule</h3>
+          <CustomStack orientation="horizontal">
+            <TextField
+              label={t("Claim Name")}
+              placeholder={t("Enter claim name")}
+              onChange={setClaimName}
+              value={claimName}
+              helperText={t("Enter a custom claim name")}
+            />
+            <EqualSignContainer>=</EqualSignContainer>
+            <TextField
+              label={t("Claim Value")}
+              placeholder={t("Enter claim value")}
+              onChange={setClaimValue}
+              value={claimValue}
+              helperText={t("Enter the value for the claim")}
+            />
+          </CustomStack>
+        </Stack>
+      </MappingRuleContainer>
       {error && (
         <InlineNotification
           kind="error"
