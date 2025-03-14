@@ -27,6 +27,7 @@ import {BatchModificationNotification} from '../BatchModificationNotification/v2
 import {DiagramHeader} from '../DiagramHeader';
 import {useProcessInstancesOverlayData} from 'modules/queries/processInstancesStatistics/useOverlayData';
 import {useBatchModificationOverlayData} from 'modules/queries/processInstancesStatistics/useBatchModificationOverlayData';
+import {processInstancesSelectionStore} from 'modules/stores/processInstancesSelection';
 
 const OVERLAY_TYPE_BATCH_MODIFICATIONS_BADGE = 'batchModificationsBadge';
 
@@ -60,6 +61,9 @@ const DiagramPanel: React.FC = observer(() => {
 
   const processDetails = processesStore.getSelectedProcessDetails();
   const {processName} = processDetails;
+
+  const selectedProcessInstanceIds =
+    processInstancesSelectionStore.selectedProcessInstanceIds;
 
   const statisticsOverlays = diagramOverlaysStore.state.overlays.filter(
     ({type}) => type.match(/^statistics/) !== null,
@@ -108,7 +112,11 @@ const DiagramPanel: React.FC = observer(() => {
   );
 
   const {data: batchOverlayData} = useBatchModificationOverlayData(
-    {},
+    {
+      processInstanceKey: {
+        $in: selectedProcessInstanceIds,
+      },
+    },
     {
       sourceFlowNodeId: flowNodeId,
       targetFlowNodeId: selectedTargetFlowNodeId ?? undefined,

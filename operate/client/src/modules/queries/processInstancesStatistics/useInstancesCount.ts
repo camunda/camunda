@@ -6,7 +6,10 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {ProcessInstancesStatisticsDto} from 'modules/api/v2/processInstances/fetchProcessInstancesStatistics';
+import {
+  ProcessInstancesStatisticsDto,
+  ProcessInstancesStatisticsRequest,
+} from 'modules/api/v2/processInstances/fetchProcessInstancesStatistics';
 import {useProcessInstancesStatistics} from './useProcessInstancesStatistics';
 import {getInstancesCount} from 'modules/utils/statistics/processInstances';
 
@@ -18,9 +21,12 @@ function instancesCountParser(
   };
 }
 
-function useInstancesCount(flowNodeId?: string) {
+function useInstancesCount(
+  payload: ProcessInstancesStatisticsRequest,
+  flowNodeId?: string,
+) {
   return useProcessInstancesStatistics<number>(
-    {flowNodeId: flowNodeId},
+    payload,
     instancesCountParser(flowNodeId),
     !!flowNodeId,
   );
