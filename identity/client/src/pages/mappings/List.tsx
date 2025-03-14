@@ -6,25 +6,20 @@
  * except in compliance with the Camunda License 1.0.
  */
 import { FC } from "react";
-import { Edit, TrashCan } from "@carbon/react/icons";
+import { Edit, TrashCan, Add } from "@carbon/react/icons";
+import { C3EmptyState } from "@camunda/camunda-composite-components";
 import useTranslate from "src/utility/localization";
 import { useApi } from "src/utility/api/hooks";
 import Page, { PageHeader } from "src/components/layout/Page";
-import EntityList, {
-  DocumentationDescription,
-} from "src/components/entityList";
-import {
-  documentationHref,
-  DocumentationLink,
-} from "src/components/documentation";
+import EntityList from "src/components/entityList";
+import { documentationHref } from "src/components/documentation";
 import { TranslatedErrorInlineNotification } from "src/components/notifications/InlineNotification";
 import useModal from "src/components/modal/useModal";
 import AddModal from "src/pages/mappings/modals/AddModal";
-import { C3EmptyState } from "@camunda/camunda-composite-components";
 import { searchMapping } from "src/utility/api/mappings";
 
 const List: FC = () => {
-  const { t, Translate } = useTranslate();
+  const { t } = useTranslate();
   const {
     data: mappingSearchResults,
     loading,
@@ -51,6 +46,7 @@ const List: FC = () => {
           button={{
             label: t("Create a mapping"),
             onClick: addMapping,
+            icon: Add,
           }}
           link={{
             href: documentationHref("/concepts/mapping/", ""),
@@ -68,9 +64,10 @@ const List: FC = () => {
       <EntityList
         data={mappingSearchResults == null ? [] : mappingSearchResults.items}
         headers={[
-          { header: t("Mapping Key"), key: "mappingKey" },
-          { header: t("Claim Name"), key: "claimName" },
-          { header: t("Claim Value"), key: "claimValue" },
+          { header: t("Mapping ID"), key: "mappingKey" },
+          { header: t("Mapping name"), key: "name" },
+          { header: t("Claim name"), key: "claimName" },
+          { header: t("Claim value"), key: "claimValue" },
         ]}
         sortProperty="claimName"
         addEntityLabel={t("Create mapping")}
@@ -90,12 +87,6 @@ const List: FC = () => {
           },
         ]}
       />
-      {success && (
-        <DocumentationDescription>
-          <Translate>Learn more about mapping in our</Translate>{" "}
-          <DocumentationLink path="/concepts/mapping/" />.
-        </DocumentationDescription>
-      )}
       {!loading && !success && (
         <TranslatedErrorInlineNotification
           title={t("The list of mappings could not be loaded.")}
