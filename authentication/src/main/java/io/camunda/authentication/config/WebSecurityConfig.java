@@ -23,6 +23,8 @@ import io.camunda.service.TenantServices;
 import io.camunda.service.UserServices;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -44,6 +46,8 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
 import org.springframework.security.oauth2.client.registration.InMemoryClientRegistrationRepository;
+import org.springframework.security.oauth2.core.OAuth2TokenValidator;
+import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.oauth2.jwt.JwtValidators;
 import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
@@ -295,18 +299,21 @@ public class WebSecurityConfig {
               .getJwkSetUri();
 
       final var decoder = NimbusJwtDecoder.withJwkSetUri(jwkSetUri).build();
+      final List<OAuth2TokenValidator<Jwt>> validators = new ArrayList<>();
 
       final var validAudiences = securityConfiguration.getAuthentication().getOidc().getAudiences();
       if (validAudiences != null) {
-        decoder.setJwtValidator(
-            JwtValidators.createDefaultWithValidators(new AudienceValidator(validAudiences)));
+        validators.add(new AudienceValidator(validAudiences));
       }
 
       final var expectedClaims =
           securityConfiguration.getAuthentication().getOidc().getExpectedClaims();
       if (expectedClaims != null) {
-        decoder.setJwtValidator(
-            JwtValidators.createDefaultWithValidators(new ClaimValidator(expectedClaims)));
+        validators.add(new ClaimValidator(expectedClaims));
+      }
+
+      if (!validators.isEmpty()) {
+        decoder.setJwtValidator(JwtValidators.createDefaultWithValidators(validators));
       }
 
       return decoder;
