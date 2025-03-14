@@ -108,10 +108,10 @@ public final class BpmnStreamProcessor implements TypedRecordProcessor<ProcessIn
               case ACTIVATE_ELEMENT -> stateTransitionBehavior.transitionToActivating(context);
               case COMPLETE_ELEMENT -> stateTransitionBehavior.transitionToCompleting(context);
               case TERMINATE_ELEMENT -> stateTransitionBehavior.transitionToTerminating(context);
-              // even though we don't know how to resolve this incident, we can still
-              // raise it so the user can use modification to recover. The incident resolution
-              // logic is smart enough to deal with this case. It will log an error due to
-              // IllegalStateException.
+                // even though we don't know how to resolve this incident, we can still
+                // raise it so the user can use modification to recover. The incident resolution
+                // logic is smart enough to deal with this case. It will log an error due to
+                // IllegalStateException.
               default -> context;
             };
         incidentBehavior.createIncident(
