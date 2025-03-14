@@ -10,20 +10,17 @@ package io.camunda.it.auth;
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 
 import io.camunda.client.CamundaClient;
-import io.camunda.qa.util.multidb.CamundaMultiDBExtension;
 import io.camunda.qa.util.multidb.MultiDbTest;
+import io.camunda.qa.util.multidb.MultiDbTestApplication;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.RegisterExtension;
 
 @MultiDbTest
 public class UnprotectedApiIT {
+  @MultiDbTestApplication
   private static final TestStandaloneBroker BROKER =
       // it's the default right now, setting explicitly still given this test's purpose
       new TestStandaloneBroker().withUnauthenticatedAccess();
-
-  @RegisterExtension
-  private static final CamundaMultiDBExtension EXTENSION = new CamundaMultiDBExtension(BROKER);
 
   private static CamundaClient camundaClient;
 

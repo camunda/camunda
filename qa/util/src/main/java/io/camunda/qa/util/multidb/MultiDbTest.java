@@ -45,6 +45,31 @@ import org.junit.jupiter.api.extension.ExtendWith;
  *     assertThat(topology.getClusterSize()).isEqualTo(1);
  *   }
  * }</pre>
+ *
+ * For more complex use cases a specific {@link io.camunda.zeebe.qa.util.cluster.TestStandaloneApplication} can be used and annotated with {@link MultiDbTestApplication}
+ *
+ * <pre>{@code
+ * @MultiDbTest
+ * final class MyMultiDbTest {
+ *
+ *   private CamundaClient client;
+ *
+ *   @MultiDbTestApplication
+ *   private static final TestSimpleCamundaApplication STANDALONE_CAMUNDA =
+ *       new TestSimpleCamundaApplication().withBasicAuth().withAuthorizationsEnabled();
+ *
+ *   @Test
+ *   void shouldMakeUseOfClient() {
+ *     // given
+ *     // ... set up
+ *
+ *     // when
+ *     topology = c.newTopologyRequest().send().join();
+ *
+ *     // then
+ *     assertThat(topology.getClusterSize()).isEqualTo(1);
+ *   }
+ * }</pre>
  */
 @Target({ElementType.TYPE})
 @Retention(RetentionPolicy.RUNTIME)
