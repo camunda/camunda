@@ -18,7 +18,6 @@ import io.camunda.zeebe.engine.state.immutable.UserTaskState;
 import io.camunda.zeebe.engine.state.immutable.UserTaskState.LifecycleState;
 import io.camunda.zeebe.engine.state.immutable.VariableState;
 import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
-import io.camunda.zeebe.protocol.impl.record.value.variable.VariableDocumentRecord;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import io.camunda.zeebe.protocol.record.intent.VariableDocumentIntent;
@@ -77,7 +76,7 @@ public final class UserTaskUpdateProcessor implements UserTaskCommandProcessor {
     final long userTaskElementInstanceKey = userTaskRecord.getElementInstanceKey();
     if (userTaskRecord.getChangedAttributes().contains(UserTaskRecord.VARIABLES)) {
       variableBehavior.mergeLocalDocument(
-          userTaskRecord.getElementInstanceKey(),
+          userTaskElementInstanceKey,
           userTaskRecord.getProcessDefinitionKey(),
           userTaskRecord.getProcessInstanceKey(),
           userTaskRecord.getBpmnProcessIdBuffer(),
@@ -103,25 +102,26 @@ public final class UserTaskUpdateProcessor implements UserTaskCommandProcessor {
                       ValueType.USER_TASK,
                       metadata.getRequestId(),
                       metadata.getRequestStreamId());
-              case VARIABLE_DOCUMENT -> {
-                final var variableDocumentState =
-                    variableState.getVariableDocumentState(userTaskRecord.getElementInstanceKey());
-                if (variableDocumentState != null) {
-                  final long variableDocumentKey = variableDocumentState.getKey();
-                  final VariableDocumentRecord variableDocumentRecord =
-                      variableDocumentState.getRecord();
-                  stateWriter.appendFollowUpEvent(
-                      variableDocumentKey, VariableDocumentIntent.UPDATED, variableDocumentRecord);
+              case VARIABLE_DOCUMENT ->
+                  variableState
+                      .findVariableDocumentState(userTaskElementInstanceKey)
+                      .ifPresent(
+                          variableDocumentState -> {
+                            final long variableDocumentKey = variableDocumentState.getKey();
+                            final var variableDocumentRecord = variableDocumentState.getRecord();
+                            stateWriter.appendFollowUpEvent(
+                                variableDocumentKey,
+                                VariableDocumentIntent.UPDATED,
+                                variableDocumentRecord);
 
-                  responseWriter.writeResponse(
-                      variableDocumentKey,
-                      VariableDocumentIntent.UPDATED,
-                      variableDocumentRecord,
-                      ValueType.VARIABLE_DOCUMENT,
-                      metadata.getRequestId(),
-                      metadata.getRequestStreamId());
-                }
-              }
+                            responseWriter.writeResponse(
+                                variableDocumentKey,
+                                VariableDocumentIntent.UPDATED,
+                                variableDocumentRecord,
+                                ValueType.VARIABLE_DOCUMENT,
+                                metadata.getRequestId(),
+                                metadata.getRequestStreamId());
+                          });
               default ->
                   throw new IllegalArgumentException(
                       "Unexpected user task transition trigger type: '%s'"

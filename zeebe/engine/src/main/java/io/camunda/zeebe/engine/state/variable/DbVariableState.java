@@ -23,6 +23,7 @@ import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 import java.util.function.BiConsumer;
 import java.util.function.BooleanSupplier;
 import java.util.function.Predicate;
@@ -338,9 +339,9 @@ public class DbVariableState implements MutableVariableState {
   }
 
   @Override
-  public VariableDocumentState getVariableDocumentState(final long scopeKey) {
+  public Optional<VariableDocumentState> findVariableDocumentState(final long scopeKey) {
     this.scopeKey.wrapLong(scopeKey);
-    return variableDocumentStateByScopeKeyColumnFamily.get(this.scopeKey);
+    return Optional.ofNullable(variableDocumentStateByScopeKeyColumnFamily.get(this.scopeKey));
   }
 
   private VariableInstance getVariableLocal(
