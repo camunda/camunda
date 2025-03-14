@@ -27,7 +27,9 @@ import {isMoveModificationTarget} from 'modules/bpmn-js/utils/isMoveModification
 import {ModificationBadgeOverlay} from 'App/ProcessInstance/TopPanel/ModificationBadgeOverlay';
 import {processStatisticsBatchModificationStore} from 'modules/stores/processStatistics/processStatistics.batchModification';
 import {BatchModificationNotification} from './BatchModificationNotification';
+import {BatchModificationNotification as BatchModificationNotificationV2} from './BatchModificationNotification/v2';
 import {DiagramHeader} from './DiagramHeader';
+import {IS_PROCESS_INSTANCE_STATISTICS_V2_ENABLED} from 'modules/feature-flags';
 
 const OVERLAY_TYPE_BATCH_MODIFICATIONS_BADGE = 'batchModificationsBadge';
 
@@ -231,13 +233,24 @@ const DiagramPanel: React.FC = observer(() => {
           </Diagram>
         )}
       </DiagramShell>
-      {batchModificationStore.state.isEnabled && (
-        <BatchModificationNotification
-          sourceFlowNodeId={flowNodeId}
-          targetFlowNodeId={selectedTargetFlowNodeId || undefined}
-          onUndoClick={() => batchModificationStore.selectTargetFlowNode(null)}
-        />
-      )}
+      {batchModificationStore.state.isEnabled &&
+        (IS_PROCESS_INSTANCE_STATISTICS_V2_ENABLED ? (
+          <BatchModificationNotificationV2
+            sourceFlowNodeId={flowNodeId}
+            targetFlowNodeId={selectedTargetFlowNodeId || undefined}
+            onUndoClick={() =>
+              batchModificationStore.selectTargetFlowNode(null)
+            }
+          />
+        ) : (
+          <BatchModificationNotification
+            sourceFlowNodeId={flowNodeId}
+            targetFlowNodeId={selectedTargetFlowNodeId || undefined}
+            onUndoClick={() =>
+              batchModificationStore.selectTargetFlowNode(null)
+            }
+          />
+        ))}
     </Section>
   );
 });
