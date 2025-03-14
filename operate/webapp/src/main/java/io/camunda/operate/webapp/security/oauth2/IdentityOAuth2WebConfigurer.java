@@ -23,6 +23,7 @@ import io.camunda.identity.sdk.IdentityConfiguration;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Profile;
@@ -86,12 +87,7 @@ public class IdentityOAuth2WebConfigurer {
     return NimbusJwtDecoder.withJwkSetUri(getJwkSetUriProperty())
         .jwsAlgorithms(
             algorithms -> {
-              algorithms.add(RS256);
-              algorithms.add(RS384);
-              algorithms.add(RS512);
-              algorithms.add(ES256);
-              algorithms.add(ES384);
-              algorithms.add(ES512);
+              algorithms.addAll(List.of(RS256, RS384, RS512, ES256, ES384, ES512));
             })
         .jwtProcessorCustomizer(
             processor -> {
