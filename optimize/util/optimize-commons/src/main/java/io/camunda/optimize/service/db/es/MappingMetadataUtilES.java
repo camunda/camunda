@@ -25,6 +25,10 @@ public class MappingMetadataUtilES extends MappingMetadataUtil<IndexSettings.Bui
 
   private static final Logger LOG = org.slf4j.LoggerFactory.getLogger(MappingMetadataUtilES.class);
 
+  public MappingMetadataUtilES(final OptimizeElasticsearchClient dbClient) {
+    super(dbClient);
+  }
+
   @Override
   protected DecisionInstanceIndexES getDecisionInstanceIndex(final String key) {
     return new DecisionInstanceIndexES(key);
