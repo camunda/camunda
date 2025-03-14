@@ -9,6 +9,7 @@ package io.camunda.zeebe.engine.processing;
 
 import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.metrics.ProcessEngineMetrics;
+import io.camunda.zeebe.engine.processing.adhocsubprocess.AdHocSubProcessActivityActivateProcessor;
 import io.camunda.zeebe.engine.processing.bpmn.BpmnStreamProcessor;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
@@ -42,6 +43,7 @@ import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.state.routing.RoutingInfo;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.intent.AdHocSubProcessActivityActivationIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceBatchIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceCreationIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
@@ -125,6 +127,8 @@ public final class BpmnProcessors {
         authCheckBehavior,
         keyGenerator);
     addProcessInstanceBatchStreamProcessors(typedRecordProcessors, processingState, writers);
+    addAdHocSubProcessActivityStreamProcessors(
+        typedRecordProcessors, processingState, writers, authCheckBehavior, keyGenerator);
 
     return bpmnStreamProcessor;
   }
@@ -322,5 +326,18 @@ public final class BpmnProcessors {
                 processingState.getKeyGenerator(),
                 processingState.getElementInstanceState(),
                 processingState.getProcessState()));
+  }
+
+  private static void addAdHocSubProcessActivityStreamProcessors(
+      final TypedRecordProcessors typedRecordProcessors,
+      final MutableProcessingState processingState,
+      final Writers writers,
+      final AuthorizationCheckBehavior authCheckBehavior,
+      final KeyGenerator keyGenerator) {
+    typedRecordProcessors.onCommand(
+        ValueType.AD_HOC_SUB_PROCESS_ACTIVITY_ACTIVATION,
+        AdHocSubProcessActivityActivationIntent.ACTIVATE,
+        new AdHocSubProcessActivityActivateProcessor(
+            writers, processingState, authCheckBehavior, keyGenerator));
   }
 }
