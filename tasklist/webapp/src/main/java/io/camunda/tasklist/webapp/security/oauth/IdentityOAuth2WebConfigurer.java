@@ -10,6 +10,12 @@ package io.camunda.tasklist.webapp.security.oauth;
 import static com.nimbusds.jose.JOSEObjectType.JWT;
 import static io.camunda.tasklist.webapp.security.BaseWebConfigurer.sendJSONErrorMessage;
 import static io.camunda.tasklist.webapp.security.TasklistProfileService.IDENTITY_AUTH_PROFILE;
+import static org.springframework.security.oauth2.jose.jws.SignatureAlgorithm.ES256;
+import static org.springframework.security.oauth2.jose.jws.SignatureAlgorithm.ES384;
+import static org.springframework.security.oauth2.jose.jws.SignatureAlgorithm.ES512;
+import static org.springframework.security.oauth2.jose.jws.SignatureAlgorithm.RS256;
+import static org.springframework.security.oauth2.jose.jws.SignatureAlgorithm.RS384;
+import static org.springframework.security.oauth2.jose.jws.SignatureAlgorithm.RS512;
 
 import com.nimbusds.jose.JOSEObjectType;
 import com.nimbusds.jose.proc.DefaultJOSEObjectTypeVerifier;
@@ -17,6 +23,7 @@ import io.camunda.identity.sdk.IdentityConfiguration;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Profile;
@@ -78,6 +85,10 @@ public class IdentityOAuth2WebConfigurer {
    */
   private JwtDecoder jwtDecoder() {
     return NimbusJwtDecoder.withJwkSetUri(getJwkSetUriProperty())
+        .jwsAlgorithms(
+            algorithms -> {
+              algorithms.addAll(List.of(RS256, RS384, RS512, ES256, ES384, ES512));
+            })
         .jwtProcessorCustomizer(
             processor -> {
               processor.setJWSTypeVerifier(
