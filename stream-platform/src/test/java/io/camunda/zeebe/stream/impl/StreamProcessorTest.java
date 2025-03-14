@@ -121,6 +121,30 @@ public final class StreamProcessorTest {
   }
 
   @Test
+  public void shouldNotRespondWithoutRequestId() {
+    // given
+    final var builder = new BufferedProcessingResultBuilder((recordLength, batchLength) -> true);
+
+    // when - responding with an invalid request id
+    final var result =
+        builder
+            .withResponse(
+                RecordType.COMMAND,
+                1L,
+                ProcessInstanceIntent.ACTIVATE_ELEMENT,
+                Records.processInstance(1),
+                ValueType.PROCESS_INSTANCE,
+                RejectionType.NULL_VAL,
+                "test",
+                -1,
+                1)
+            .build();
+
+    // then - there is no processing response
+    assertThat(result.getProcessingResponse()).isEmpty();
+  }
+
+  @Test
   public void shouldCallStreamProcessorLifecycleOnFail() {
     // given
     final var mockProcessorLifecycleAware = streamPlatform.getMockProcessorLifecycleAware();
@@ -1259,7 +1283,7 @@ public final class StreamProcessorTest {
         ValueType.PROCESS_INSTANCE,
         RejectionType.NULL_VAL,
         "",
-        -1,
+        123, // Provide a fake request id to ensure the response is not ignored
         -1);
     when(defaultMockedRecordProcessor.process(any(), any())).thenReturn(resultBuilder.build());
     streamPlatform.startStreamProcessor();
