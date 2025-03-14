@@ -20,7 +20,6 @@ import static java.util.Optional.ofNullable;
 
 import io.camunda.zeebe.client.api.JsonMapper;
 import io.camunda.zeebe.client.api.worker.BackoffSupplier;
-import io.camunda.zeebe.client.impl.worker.ExponentialBackoffBuilderImpl;
 import io.camunda.zeebe.spring.client.annotation.customizer.ZeebeWorkerValueCustomizer;
 import io.camunda.zeebe.spring.client.jobhandling.CommandExceptionHandlingStrategy;
 import io.camunda.zeebe.spring.client.jobhandling.DefaultCommandExceptionHandlingStrategy;
@@ -82,22 +81,20 @@ public class ZeebeClientAllAutoConfiguration {
       final CommandExceptionHandlingStrategy commandExceptionHandlingStrategy,
       final MetricsRecorder metricsRecorder,
       final ParameterResolverStrategy parameterResolverStrategy,
-      final ResultProcessorStrategy resultProcessorStrategy) {
+      final ResultProcessorStrategy resultProcessorStrategy,
+      final BackoffSupplier backoffSupplier) {
     return new JobWorkerManager(
         commandExceptionHandlingStrategy,
         metricsRecorder,
         parameterResolverStrategy,
-        resultProcessorStrategy);
+        resultProcessorStrategy,
+        backoffSupplier);
   }
 
   @Bean
+  @ConditionalOnMissingBean
   public BackoffSupplier backoffSupplier() {
-    return new ExponentialBackoffBuilderImpl()
-        .maxDelay(1000L)
-        .minDelay(50L)
-        .backoffFactor(1.5)
-        .jitterFactor(0.2)
-        .build();
+    return BackoffSupplier.newBackoffBuilder().build();
   }
 
   @Bean("propertyBasedZeebeWorkerValueCustomizer")

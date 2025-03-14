@@ -16,6 +16,7 @@
 package io.camunda.zeebe.spring.client.jobhandling;
 
 import io.camunda.zeebe.client.ZeebeClient;
+import io.camunda.zeebe.client.api.worker.BackoffSupplier;
 import io.camunda.zeebe.client.api.worker.JobHandler;
 import io.camunda.zeebe.client.api.worker.JobWorker;
 import io.camunda.zeebe.client.api.worker.JobWorkerBuilderStep1;
@@ -39,6 +40,7 @@ public class JobWorkerManager {
   private final MetricsRecorder metricsRecorder;
   private final ParameterResolverStrategy parameterResolverStrategy;
   private final ResultProcessorStrategy resultProcessorStrategy;
+  private final BackoffSupplier backoffSupplier;
 
   private List<JobWorker> openedWorkers = new ArrayList<>();
   private final List<ZeebeWorkerValue> workerValues = new ArrayList<>();
@@ -47,11 +49,13 @@ public class JobWorkerManager {
       final CommandExceptionHandlingStrategy commandExceptionHandlingStrategy,
       final MetricsRecorder metricsRecorder,
       final ParameterResolverStrategy parameterResolverStrategy,
-      final ResultProcessorStrategy resultProcessorStrategy) {
+      final ResultProcessorStrategy resultProcessorStrategy,
+      final BackoffSupplier backoffSupplier) {
     this.commandExceptionHandlingStrategy = commandExceptionHandlingStrategy;
     this.metricsRecorder = metricsRecorder;
     this.parameterResolverStrategy = parameterResolverStrategy;
     this.resultProcessorStrategy = resultProcessorStrategy;
+    this.backoffSupplier = backoffSupplier;
   }
 
   public JobWorker openWorker(final ZeebeClient client, final ZeebeWorkerValue zeebeWorkerValue) {
@@ -75,6 +79,7 @@ public class JobWorkerManager {
             .jobType(zeebeWorkerValue.getType())
             .handler(handler)
             .name(zeebeWorkerValue.getName())
+            .backoffSupplier(backoffSupplier)
             .metrics(new ZeebeClientMetricsBridge(metricsRecorder, zeebeWorkerValue.getType()));
 
     if (zeebeWorkerValue.getMaxJobsActive() != null && zeebeWorkerValue.getMaxJobsActive() > 0) {
