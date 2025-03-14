@@ -7,7 +7,6 @@
  */
 package io.camunda.optimize.service.db.os;
 
-import io.camunda.optimize.service.db.es.OptimizeElasticsearchClient;
 import io.camunda.optimize.service.db.os.schema.OpenSearchSchemaManager;
 import io.camunda.optimize.service.db.os.schema.index.DecisionInstanceIndexOS;
 import io.camunda.optimize.service.db.os.schema.index.ProcessInstanceIndexOS;
@@ -26,7 +25,7 @@ public class MappingMetadataUtilOS extends MappingMetadataUtil<Builder> {
 
   private static final Logger LOG = org.slf4j.LoggerFactory.getLogger(MappingMetadataUtilOS.class);
 
-  public MappingMetadataUtilOS(final OptimizeElasticsearchClient dbClient) {
+  public MappingMetadataUtilOS(final OptimizeOpenSearchClient dbClient) {
     super(dbClient);
   }
 
