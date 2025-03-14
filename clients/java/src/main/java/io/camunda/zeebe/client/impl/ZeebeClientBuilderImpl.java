@@ -83,7 +83,7 @@ public final class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeCl
   private Duration keepAlive = Duration.ofSeconds(45);
   private JsonMapper jsonMapper = new ZeebeObjectMapper();
   private String overrideAuthority;
-  private int maxMessageSize = 4 * ONE_MB;
+  private int maxMessageSize = 5 * ONE_MB;
   private int maxMetadataSize = 16 * ONE_KB;
   private boolean streamEnabled = false;
   private ScheduledExecutorService jobWorkerExecutor;
