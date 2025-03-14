@@ -18,6 +18,7 @@ package io.camunda.operate.webapp.security.oauth2;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.github.tomakehurst.wiremock.client.WireMock;
 import com.github.tomakehurst.wiremock.junit5.WireMockRuntimeInfo;
@@ -83,7 +84,7 @@ public class JwtDecoderIT {
     final String withoutAlg = publicKey.replaceFirst("\"alg\":\".*\",", "");
     final String authServerResponseBody = "{\"keys\":[" + withoutAlg + "]}";
     System.out.println("authServerResponse=" + authServerResponseBody);
-    assertFalse(authServerResponseBody.contains("alg:"));
+    assertFalse(authServerResponseBody.contains("alg\":"));
 
     wireMockInfo
         .getWireMock()
@@ -108,7 +109,7 @@ public class JwtDecoderIT {
     final String withoutAlg = publicKey.replaceFirst(",\"alg\":\".*\"", "");
     final String authServerResponseBody = "{\"keys\":[" + withoutAlg + "]}";
     System.out.println("authServerResponse=" + authServerResponseBody);
-    assertFalse(authServerResponseBody.contains("alg:"));
+    assertFalse(authServerResponseBody.contains("alg\":"));
 
     wireMockInfo
         .getWireMock()
@@ -130,7 +131,7 @@ public class JwtDecoderIT {
 
     final String authServerResponseBody = "{\"keys\":[" + publicKey + "]}";
     System.out.println("authServerResponse=" + authServerResponseBody);
-    assertFalse(authServerResponseBody.contains("alg:"));
+    assertTrue(authServerResponseBody.contains("alg\":"));
 
     wireMockInfo
         .getWireMock()
@@ -152,7 +153,6 @@ public class JwtDecoderIT {
 
     final String authServerResponseBody = "{\"keys\":[" + publicKey + "]}";
     System.out.println("authServerResponse=" + authServerResponseBody);
-    assertFalse(authServerResponseBody.contains("alg:"));
 
     wireMockInfo
         .getWireMock()
@@ -175,7 +175,6 @@ public class JwtDecoderIT {
 
     final String authServerResponseBody = "{\"keys\":[" + publicKey + "]}";
     System.out.println("authServerResponse=" + authServerResponseBody);
-    assertFalse(authServerResponseBody.contains("alg:"));
 
     wireMockInfo
         .getWireMock()
@@ -198,7 +197,6 @@ public class JwtDecoderIT {
 
     final String authServerResponseBody = "{\"keys\":[" + publicKey + "]}";
     System.out.println("authServerResponse=" + authServerResponseBody);
-    assertFalse(authServerResponseBody.contains("alg:"));
 
     wireMockInfo
         .getWireMock()
