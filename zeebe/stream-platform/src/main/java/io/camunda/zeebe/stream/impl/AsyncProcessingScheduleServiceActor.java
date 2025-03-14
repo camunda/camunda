@@ -22,9 +22,9 @@ final class AsyncProcessingScheduleServiceActor extends Actor {
 
   public AsyncProcessingScheduleServiceActor(
       final String name,
-      final ProcessingScheduleServiceImpl scheduleService,
+      final ProcessingScheduleServiceFactory scheduleServiceFactory,
       final int partitionId) {
-    this.scheduleService = scheduleService;
+    scheduleService = scheduleServiceFactory.create();
     asyncScheduleActorName = buildActorName(name, partitionId);
     this.partitionId = partitionId;
   }

@@ -69,6 +69,6 @@ class AsyncScheduleServiceContext implements AsyncClosable {
                 Function.identity(),
                 taskGroup ->
                     new AsyncProcessingScheduleServiceActor(
-                        taskGroup.getName(), actorServiceFactory.create(), partitionId)));
+                        taskGroup.getName(), actorServiceFactory, partitionId)));
   }
 }
