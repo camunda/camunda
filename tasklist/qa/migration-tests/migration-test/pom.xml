@@ -158,6 +158,18 @@
       <scope>test</scope>
     </dependency>
 
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>zeebe-bpmn-model</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>zeebe-client-java</artifactId>
+      <scope>test</scope>
+    </dependency>
+
   </dependencies>
 
   <build>
@@ -184,7 +196,6 @@
         <artifactId>maven-dependency-plugin</artifactId>
         <configuration>
           <usedDependencies>
-            <dependency>io.camunda:tasklist-qa-migration-tests-test-fixture-820</dependency>
             <dependency>io.camunda:tasklist-qa-migration-tests-test-fixture-830</dependency>
             <dependency>io.camunda:tasklist-qa-migration-tests-test-fixture-840</dependency>
             <dependency>io.camunda:tasklist-qa-migration-tests-test-fixture-850</dependency>
