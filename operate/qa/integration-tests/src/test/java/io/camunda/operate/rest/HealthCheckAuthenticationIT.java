@@ -18,7 +18,7 @@ import io.camunda.operate.connect.ElasticsearchConnector;
 import io.camunda.operate.connect.OpensearchConnector;
 import io.camunda.operate.connect.OperateDateTimeFormatter;
 import io.camunda.operate.management.IndicesHealthIndicator;
-import io.camunda.operate.property.OperateProperties;
+import io.camunda.config.operate.OperateProperties;
 import io.camunda.operate.rest.HealthCheckIT.AddManagementPropertiesInitializer;
 import io.camunda.operate.store.TaskStore;
 import io.camunda.operate.store.elasticsearch.ElasticsearchTaskStore;

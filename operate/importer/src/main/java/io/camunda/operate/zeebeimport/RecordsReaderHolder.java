@@ -9,7 +9,7 @@ package io.camunda.operate.zeebeimport;
 
 import static io.camunda.operate.zeebe.ImportValueType.IMPORT_VALUE_TYPES;
 
-import io.camunda.operate.property.OperateProperties;
+import io.camunda.config.operate.OperateProperties;
 import io.camunda.operate.util.CollectionUtil;
 import io.camunda.operate.zeebe.ImportValueType;
 import io.camunda.operate.zeebe.PartitionHolder;

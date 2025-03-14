@@ -20,7 +20,7 @@ import com.tngtech.archunit.core.domain.JavaClass;
 import com.tngtech.archunit.core.importer.ClassFileImporter;
 import io.camunda.application.commons.backup.BackupPriorityConfiguration.OptimizePrio1Delegate;
 import io.camunda.application.commons.backup.BackupPriorityConfiguration.OptimizePrio6Delegate;
-import io.camunda.operate.property.OperateProperties;
+import io.camunda.config.operate.OperateProperties;
 import io.camunda.optimize.service.db.schema.OptimizeIndexNameService;
 import io.camunda.search.connect.configuration.DatabaseType;
 import io.camunda.tasklist.property.TasklistProperties;

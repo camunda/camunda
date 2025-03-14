@@ -9,8 +9,8 @@ package io.camunda.operate.zeebe;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.CamundaClientBuilder;
-import io.camunda.operate.property.OperateProperties;
-import io.camunda.operate.property.ZeebeProperties;
+import io.camunda.config.operate.OperateProperties;
+import io.camunda.config.operate.ZeebeProperties;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;

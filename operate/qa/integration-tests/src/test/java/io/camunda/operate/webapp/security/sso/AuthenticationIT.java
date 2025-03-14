@@ -8,7 +8,7 @@
 package io.camunda.operate.webapp.security.sso;
 
 import static io.camunda.operate.OperateProfileService.SSO_AUTH_PROFILE;
-import static io.camunda.operate.property.Auth0Properties.DEFAULT_ORGANIZATIONS_KEY;
+import static io.camunda.config.operate.Auth0Properties.DEFAULT_ORGANIZATIONS_KEY;
 import static io.camunda.operate.util.CollectionUtil.asMap;
 import static io.camunda.operate.webapp.security.OperateURIs.LOGIN_RESOURCE;
 import static io.camunda.operate.webapp.security.OperateURIs.LOGOUT_RESOURCE;
@@ -30,7 +30,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.application.commons.security.CamundaSecurityConfiguration.CamundaSecurityProperties;
 import io.camunda.operate.OperateProfileService;
 import io.camunda.operate.management.IndicesCheck;
-import io.camunda.operate.property.OperateProperties;
+import io.camunda.config.operate.OperateProperties;
 import io.camunda.operate.util.SpringContextHolder;
 import io.camunda.operate.util.apps.nobeans.TestApplicationWithNoBeans;
 import io.camunda.operate.webapp.controllers.OperateIndexController;

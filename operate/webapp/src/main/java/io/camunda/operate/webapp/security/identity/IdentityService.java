@@ -13,7 +13,7 @@ import static io.camunda.operate.webapp.security.OperateURIs.IDENTITY_CALLBACK_U
 import io.camunda.identity.sdk.Identity;
 import io.camunda.identity.sdk.authentication.Tokens;
 import io.camunda.identity.sdk.authentication.dto.AuthCodeDto;
-import io.camunda.operate.property.OperateProperties;
+import io.camunda.config.operate.OperateProperties;
 import io.camunda.operate.webapp.security.SecurityContextWrapper;
 import jakarta.servlet.http.HttpServletRequest;
 import java.util.UUID;

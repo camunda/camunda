@@ -17,7 +17,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.http.MediaType.APPLICATION_FORM_URLENCODED;
 import static org.springframework.http.MediaType.APPLICATION_JSON;
 
-import io.camunda.operate.property.WebSecurityProperties;
+import io.camunda.config.operate.WebSecurityProperties;
 import io.camunda.operate.webapp.rest.dto.UserDto;
 import java.net.URI;
 import java.util.HashMap;

@@ -11,8 +11,8 @@ import static io.camunda.operate.store.opensearch.dsl.RequestDSL.getIndexRequest
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.operate.conditions.OpensearchCondition;
-import io.camunda.operate.property.OperateOpensearchProperties;
-import io.camunda.operate.property.OperateProperties;
+import io.camunda.config.operate.OperateOpensearchProperties;
+import io.camunda.config.operate.OperateProperties;
 import io.camunda.operate.schema.SchemaManager;
 import io.camunda.operate.schema.util.camunda.exporter.SchemaWithExporter;
 import io.camunda.operate.store.opensearch.client.sync.RichOpenSearchClient;

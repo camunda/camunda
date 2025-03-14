@@ -8,7 +8,7 @@
 package io.camunda.operate.management;
 
 import io.camunda.operate.Metrics;
-import io.camunda.operate.property.OperateProperties;
+import io.camunda.config.operate.OperateProperties;
 import io.camunda.operate.store.DecisionStore;
 import io.camunda.operate.store.ProcessStore;
 import io.camunda.webapps.schema.descriptors.operate.index.DecisionIndex;

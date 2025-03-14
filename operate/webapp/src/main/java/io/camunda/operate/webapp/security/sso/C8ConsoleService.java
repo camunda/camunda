@@ -7,7 +7,7 @@
  */
 package io.camunda.operate.webapp.security.sso;
 
-import io.camunda.operate.property.OperateProperties;
+import io.camunda.config.operate.OperateProperties;
 import io.camunda.operate.util.RetryOperation;
 import io.camunda.operate.webapp.security.sso.model.ClusterMetadata;
 import java.io.IOException;

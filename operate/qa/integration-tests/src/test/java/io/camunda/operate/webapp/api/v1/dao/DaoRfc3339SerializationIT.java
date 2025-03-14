@@ -15,7 +15,7 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.operate.cache.ProcessCache;
 import io.camunda.operate.connect.OperateDateTimeFormatter;
-import io.camunda.operate.property.OperateProperties;
+import io.camunda.config.operate.OperateProperties;
 import io.camunda.operate.util.TestApplication;
 import io.camunda.operate.util.j5templates.OperateSearchAbstractIT;
 import io.camunda.operate.webapp.api.v1.entities.DecisionInstance;

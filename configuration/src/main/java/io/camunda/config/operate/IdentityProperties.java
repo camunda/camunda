@@ -5,7 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.operate.property;
+package io.camunda.config.operate;
 
 public class IdentityProperties {
 
@@ -25,7 +25,7 @@ public class IdentityProperties {
     return baseUrl;
   }
 
-  public IdentityProperties setBaseUrl(String baseUrl) {
+  public IdentityProperties setBaseUrl(final String baseUrl) {
     this.baseUrl = baseUrl;
     return this;
   }
@@ -66,7 +66,7 @@ public class IdentityProperties {
     return redirectRootUrl;
   }
 
-  public void setRedirectRootUrl(String redirectRootUrl) {
+  public void setRedirectRootUrl(final String redirectRootUrl) {
     this.redirectRootUrl = redirectRootUrl;
   }
 
@@ -83,7 +83,7 @@ public class IdentityProperties {
   }
 
   public IdentityProperties setResourcePermissionsUpdatePeriod(
-      long resourcePermissionsUpdatePeriod) {
+      final long resourcePermissionsUpdatePeriod) {
     this.resourcePermissionsUpdatePeriod = resourcePermissionsUpdatePeriod;
     return this;
   }

@@ -8,7 +8,7 @@
 package io.camunda.operate.schema.indices;
 
 import io.camunda.operate.conditions.DatabaseInfo;
-import io.camunda.operate.property.OperateProperties;
+import io.camunda.config.operate.OperateProperties;
 import io.camunda.webapps.schema.descriptors.backup.Prio5Backup;
 import io.camunda.webapps.schema.descriptors.operate.OperateIndexDescriptor;
 import jakarta.annotation.PostConstruct;

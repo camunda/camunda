@@ -9,6 +9,8 @@ package io.camunda.operate.conditions;
 
 import static io.camunda.operate.conditions.DatabaseCondition.DATABASE_PROPERTY;
 
+import io.camunda.search.connect.configuration.DatabaseType;
+import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeansException;
@@ -20,7 +22,7 @@ import org.springframework.stereotype.Component;
 @Component("databaseInfo")
 public class DatabaseInfo implements ApplicationContextAware, DisposableBean {
 
-  static final DatabaseType DEFAULT_DATABASE = DatabaseType.Elasticsearch;
+  static final DatabaseType DEFAULT_DATABASE = DatabaseType.ELASTICSEARCH;
   private static final Logger LOGGER = LoggerFactory.getLogger(DatabaseInfo.class);
   private static ApplicationContext applicationContext;
   private static DatabaseType current;
@@ -35,7 +37,7 @@ public class DatabaseInfo implements ApplicationContextAware, DisposableBean {
         return DEFAULT_DATABASE;
       }
       final var code = applicationContext.getEnvironment().getProperty(DATABASE_PROPERTY);
-      current = DatabaseType.byCode(code).orElse(DEFAULT_DATABASE);
+      current = Optional.of(DatabaseType.valueOf(code)).orElse(DEFAULT_DATABASE);
     }
     return current;
   }
@@ -45,11 +47,11 @@ public class DatabaseInfo implements ApplicationContextAware, DisposableBean {
   }
 
   public static boolean isElasticsearch() {
-    return isCurrent(DatabaseType.Elasticsearch);
+    return isCurrent(DatabaseType.ELASTICSEARCH);
   }
 
   public static boolean isOpensearch() {
-    return isCurrent(DatabaseType.Opensearch);
+    return isCurrent(DatabaseType.OPENSEARCH);
   }
 
   // Helper methods that allow the component to be autowired and safely check the db type instead of

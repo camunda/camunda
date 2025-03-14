@@ -11,7 +11,7 @@ import static io.camunda.operate.OperateProfileService.LDAP_AUTH_PROFILE;
 import static io.camunda.operate.webapp.security.Permission.READ;
 import static io.camunda.operate.webapp.security.Permission.WRITE;
 
-import io.camunda.operate.property.OperateProperties;
+import io.camunda.config.operate.OperateProperties;
 import io.camunda.operate.webapp.rest.dto.UserDto;
 import io.camunda.operate.webapp.rest.exception.UserNotFoundException;
 import io.camunda.operate.webapp.security.AbstractUserService;

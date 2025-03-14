@@ -18,9 +18,9 @@ import static org.mockito.Mockito.verify;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.transport.rest_client.RestClientTransport;
-import io.camunda.operate.property.ElasticsearchProperties;
-import io.camunda.operate.property.OperateElasticsearchProperties;
-import io.camunda.operate.property.OperateProperties;
+import io.camunda.config.operate.ElasticsearchProperties;
+import io.camunda.config.operate.OperateElasticsearchProperties;
+import io.camunda.config.operate.OperateProperties;
 import io.camunda.plugin.search.header.CustomHeader;
 import io.camunda.plugin.search.header.DatabaseCustomHeaderSupplier;
 import io.camunda.search.connect.plugin.PluginConfiguration;

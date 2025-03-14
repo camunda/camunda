@@ -17,7 +17,7 @@ import static org.elasticsearch.search.aggregations.AggregationBuilders.terms;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.operate.conditions.ElasticsearchCondition;
 import io.camunda.operate.exceptions.OperateRuntimeException;
-import io.camunda.operate.property.OperateProperties;
+import io.camunda.config.operate.OperateProperties;
 import io.camunda.operate.store.IncidentStore;
 import io.camunda.operate.store.NotFoundException;
 import io.camunda.operate.tenant.TenantAwareElasticsearchClient;
@@ -199,7 +199,7 @@ public class ElasticsearchIncidentStore implements IncidentStore {
             return ElasticsearchUtil.scroll(
                 searchRequest, IncidentEntity.class, objectMapper, esClient);
           });
-    } catch (IOException e) {
+    } catch (final IOException e) {
       final String message =
           String.format("Exception occurred, while obtaining all incidents: %s", e.getMessage());
       LOGGER.error(message, e);

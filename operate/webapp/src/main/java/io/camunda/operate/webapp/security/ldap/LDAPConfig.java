@@ -9,7 +9,7 @@ package io.camunda.operate.webapp.security.ldap;
 
 import static io.camunda.operate.OperateProfileService.LDAP_AUTH_PROFILE;
 
-import io.camunda.operate.property.OperateProperties;
+import io.camunda.config.operate.OperateProperties;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;

@@ -15,7 +15,7 @@ import static io.camunda.operate.webapp.security.OperateURIs.ROOT;
 
 import com.auth0.AuthenticationController;
 import io.camunda.operate.OperateProfileService;
-import io.camunda.operate.property.OperateProperties;
+import io.camunda.config.operate.OperateProperties;
 import io.camunda.operate.webapp.security.BaseWebConfigurer;
 import io.camunda.operate.webapp.security.oauth2.OAuth2WebConfigurer;
 import org.springframework.context.annotation.Bean;

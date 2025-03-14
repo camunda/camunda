@@ -14,10 +14,10 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
+import io.camunda.config.operate.OperateElasticsearchProperties;
+import io.camunda.config.operate.OperateOpensearchProperties;
+import io.camunda.config.operate.OperateProperties;
 import io.camunda.operate.conditions.DatabaseInfo;
-import io.camunda.operate.property.OperateElasticsearchProperties;
-import io.camunda.operate.property.OperateOpensearchProperties;
-import io.camunda.operate.property.OperateProperties;
 import java.time.format.DateTimeParseException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;

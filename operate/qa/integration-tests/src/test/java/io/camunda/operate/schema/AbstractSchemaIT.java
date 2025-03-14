@@ -10,7 +10,7 @@ package io.camunda.operate.schema;
 import static org.junit.jupiter.api.Assertions.fail;
 
 import io.camunda.operate.conditions.DatabaseInfo;
-import io.camunda.operate.property.OperateProperties;
+import io.camunda.config.operate.OperateProperties;
 import io.camunda.operate.schema.util.SearchClientTestHelper;
 import io.camunda.operate.schema.util.elasticsearch.ElasticsearchClientTestHelper;
 import io.camunda.operate.schema.util.opensearch.OpenSearchClientTestHelper;

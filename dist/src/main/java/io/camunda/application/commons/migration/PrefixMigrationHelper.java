@@ -12,7 +12,7 @@ import io.camunda.exporter.schema.elasticsearch.ElasticsearchPrefixMigrationClie
 import io.camunda.exporter.schema.opensearch.OpensearchPrefixMigrationClient;
 import io.camunda.exporter.utils.CloneResult;
 import io.camunda.exporter.utils.ReindexResult;
-import io.camunda.operate.property.OperateProperties;
+import io.camunda.config.operate.OperateProperties;
 import io.camunda.search.connect.configuration.ConnectConfiguration;
 import io.camunda.search.connect.configuration.DatabaseType;
 import io.camunda.search.connect.es.ElasticsearchConnector;

@@ -37,7 +37,7 @@ import io.camunda.management.backups.Error;
 import io.camunda.management.backups.HistoryBackupDetail;
 import io.camunda.management.backups.HistoryBackupInfo;
 import io.camunda.management.backups.HistoryStateCode;
-import io.camunda.operate.property.OperateProperties;
+import io.camunda.config.operate.OperateProperties;
 import io.camunda.operate.util.TestApplication;
 import io.camunda.webapps.backup.Metadata;
 import io.camunda.webapps.backup.repository.WebappsSnapshotNameProvider;

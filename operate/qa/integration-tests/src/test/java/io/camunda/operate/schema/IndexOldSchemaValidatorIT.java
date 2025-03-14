@@ -18,7 +18,7 @@ import io.camunda.operate.conditions.DatabaseInfo;
 import io.camunda.operate.connect.OpensearchConnector;
 import io.camunda.operate.connect.OperateDateTimeFormatter;
 import io.camunda.operate.exceptions.OperateRuntimeException;
-import io.camunda.operate.property.OperateProperties;
+import io.camunda.config.operate.OperateProperties;
 import io.camunda.operate.qa.util.TestElasticsearchSchemaManager;
 import io.camunda.operate.qa.util.TestOpensearchSchemaManager;
 import io.camunda.operate.qa.util.TestSchemaManager;

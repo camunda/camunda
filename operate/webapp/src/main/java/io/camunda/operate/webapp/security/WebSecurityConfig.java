@@ -10,7 +10,7 @@ package io.camunda.operate.webapp.security;
 import static io.camunda.operate.OperateProfileService.AUTH_PROFILE;
 
 import io.camunda.operate.OperateProfileService;
-import io.camunda.operate.property.OperateProperties;
+import io.camunda.config.operate.OperateProperties;
 import io.camunda.operate.webapp.security.oauth2.OAuth2WebConfigurer;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;

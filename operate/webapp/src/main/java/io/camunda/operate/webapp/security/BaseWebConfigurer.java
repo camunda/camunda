@@ -15,8 +15,8 @@ import static org.springframework.http.HttpStatus.NO_CONTENT;
 import static org.springframework.http.HttpStatus.UNAUTHORIZED;
 
 import io.camunda.operate.OperateProfileService;
-import io.camunda.operate.property.OperateProperties;
-import io.camunda.operate.property.WebSecurityProperties;
+import io.camunda.config.operate.OperateProperties;
+import io.camunda.config.operate.WebSecurityProperties;
 import jakarta.json.Json;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;

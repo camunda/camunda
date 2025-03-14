@@ -37,7 +37,7 @@ import static org.elasticsearch.search.aggregations.AggregationBuilders.topHits;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.operate.conditions.ElasticsearchCondition;
 import io.camunda.operate.exceptions.OperateRuntimeException;
-import io.camunda.operate.property.OperateProperties;
+import io.camunda.config.operate.OperateProperties;
 import io.camunda.operate.store.NotFoundException;
 import io.camunda.operate.store.ProcessStore;
 import io.camunda.operate.tenant.TenantAwareElasticsearchClient;

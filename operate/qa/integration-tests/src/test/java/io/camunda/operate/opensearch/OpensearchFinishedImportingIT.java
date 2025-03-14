@@ -10,7 +10,7 @@ package io.camunda.operate.opensearch;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
 import io.camunda.operate.conditions.DatabaseCondition;
-import io.camunda.operate.property.OperateProperties;
+import io.camunda.config.operate.OperateProperties;
 import io.camunda.operate.schema.SchemaManager;
 import io.camunda.operate.store.opensearch.client.sync.RichOpenSearchClient;
 import io.camunda.operate.util.OperateZeebeAbstractIT;

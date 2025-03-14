@@ -9,7 +9,7 @@ package io.camunda.operate.util.j5templates;
 
 import static io.camunda.operate.util.ThreadUtil.sleepFor;
 
-import io.camunda.operate.property.OperateProperties;
+import io.camunda.config.operate.OperateProperties;
 import io.camunda.operate.schema.SchemaManager;
 import java.io.IOException;
 import org.slf4j.Logger;

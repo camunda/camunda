@@ -7,8 +7,8 @@
  */
 package io.camunda.operate.zeebe;
 
+import io.camunda.config.operate.OperateProperties;
 import io.camunda.operate.ApplicationShutdownService;
-import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.util.CollectionUtil;
 import io.camunda.operate.util.ThreadUtil;
 import io.camunda.webapps.zeebe.PartitionSupplier;

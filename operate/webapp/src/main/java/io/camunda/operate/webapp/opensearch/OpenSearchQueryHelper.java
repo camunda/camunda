@@ -22,7 +22,7 @@ import static io.camunda.operate.store.opensearch.dsl.QueryDSL.wildcardQuery;
 import static io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate.*;
 
 import io.camunda.operate.conditions.OpensearchCondition;
-import io.camunda.operate.property.OperateProperties;
+import io.camunda.config.operate.OperateProperties;
 import io.camunda.operate.store.IncidentStore;
 import io.camunda.operate.store.opensearch.dsl.QueryDSL;
 import io.camunda.operate.store.opensearch.dsl.RequestDSL;
@@ -227,7 +227,7 @@ public class OpenSearchQueryHelper {
     return null;
   }
 
-  private Query incidentErrorHashCodeQuery(ListViewQueryDto query) {
+  private Query incidentErrorHashCodeQuery(final ListViewQueryDto query) {
     final Integer incidentErrorHashCode = query.getIncidentErrorHashCode();
     if (incidentErrorHashCode == null) {
       return null;
@@ -244,7 +244,7 @@ public class OpenSearchQueryHelper {
     }
 
     final List<Query> shouldQueries = new ArrayList<>();
-    for (String error : errors) {
+    for (final String error : errors) {
       final Query matchPhraseQuery =
           new MatchPhraseQuery.Builder().field(ERROR_MSG).query(error).build().toQuery();
       shouldQueries.add(matchPhraseQuery);
