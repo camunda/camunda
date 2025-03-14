@@ -54,6 +54,11 @@ final class AsyncProcessingScheduleServiceActor extends Actor {
   }
 
   @Override
+  protected void onActorClosing() {
+    scheduleService.close();
+  }
+
+  @Override
   protected void onActorClosed() {
     closeFuture.complete(null);
   }
@@ -66,6 +71,7 @@ final class AsyncProcessingScheduleServiceActor extends Actor {
 
   @Override
   public void onActorFailed() {
+    scheduleService.close();
     closeFuture.complete(null);
   }
 }

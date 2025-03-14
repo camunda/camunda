@@ -49,10 +49,6 @@ class AsyncScheduleServiceContext implements AsyncClosable {
     return asyncActorServices.get(taskGroup);
   }
 
-  public void closeActorServices() {
-    asyncActorServices.values().forEach(ProcessingScheduleServiceImpl::close);
-  }
-
   public ActorFuture<Void> submitActors() {
     final Step[] submitActorSteps =
         asyncActors.entrySet().stream()
