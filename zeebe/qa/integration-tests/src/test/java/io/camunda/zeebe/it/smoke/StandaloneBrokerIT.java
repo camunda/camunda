@@ -32,7 +32,7 @@ final class StandaloneBrokerIT {
 
   @TestZeebe
   private final TestStandaloneBroker broker =
-      new TestStandaloneBroker().withUnauthenticatedAccess();
+      new TestStandaloneBroker().withUnauthenticatedAccess().withSchemaCreationDisabled();
 
   @AutoClose private CamundaClient client;
 

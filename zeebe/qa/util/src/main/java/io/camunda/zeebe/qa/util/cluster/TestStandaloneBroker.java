@@ -11,9 +11,9 @@ import io.atomix.cluster.MemberId;
 import io.camunda.application.Profile;
 import io.camunda.application.commons.CommonsModuleConfiguration;
 import io.camunda.application.commons.configuration.BrokerBasedConfiguration.BrokerBasedProperties;
-import io.camunda.application.commons.search.SearchClientDatabaseConfiguration.SearchClientProperties;
 import io.camunda.application.commons.security.CamundaSecurityConfiguration.CamundaSecurityProperties;
 import io.camunda.authentication.config.AuthenticationProperties;
+import io.camunda.search.connect.configuration.ConnectConfiguration;
 import io.camunda.security.configuration.ConfiguredUser;
 import io.camunda.security.configuration.InitializationConfiguration;
 import io.camunda.security.entity.AuthenticationMethod;
@@ -253,9 +253,9 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
           cfg.setClassName("io.camunda.exporter.CamundaExporter");
           cfg.setArgs(exporterConfigArgs);
         });
-    final var searchClient = new SearchClientProperties();
-    searchClient.setUrl(elasticSearchUrl);
-    withBean("camundaSearchClient", searchClient, SearchClientProperties.class);
+    final var connectConfiguration = new ConnectConfiguration();
+    connectConfiguration.setUrl(elasticSearchUrl);
+    withBean("searchConnectConfiguration", connectConfiguration, ConnectConfiguration.class);
     return this;
   }
 

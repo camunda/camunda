@@ -7,9 +7,10 @@
  */
 package io.camunda.application;
 
-import io.camunda.application.StandaloneSchemaManager.SchemaManagerConnectConfiguration;
 import io.camunda.application.commons.migration.PrefixMigrationHelper;
+import io.camunda.application.commons.search.SearchEngineDatabaseConfiguration;
 import io.camunda.operate.property.OperateProperties;
+import io.camunda.search.schema.configuration.SearchEngineConfiguration;
 import io.camunda.tasklist.property.TasklistProperties;
 import java.io.IOException;
 import org.springframework.boot.SpringApplication;
@@ -31,7 +32,7 @@ public class StandalonePrefixMigration {
             .web(WebApplicationType.NONE)
             .sources(
                 StandaloneSchemaManager.class,
-                SchemaManagerConnectConfiguration.class,
+                SearchEngineDatabaseConfiguration.class,
                 TasklistProperties.class,
                 OperateProperties.class)
             .addCommandLineProperties(true)
@@ -41,11 +42,11 @@ public class StandalonePrefixMigration {
 
     final var operateProperties = applicationContext.getBean(OperateProperties.class);
     final var tasklistProperties = applicationContext.getBean(TasklistProperties.class);
-    final SchemaManagerConnectConfiguration connectConfiguration =
-        applicationContext.getBean(SchemaManagerConnectConfiguration.class);
+    final var searchEngineConfiguration =
+        applicationContext.getBean(SearchEngineConfiguration.class);
 
     PrefixMigrationHelper.runPrefixMigration(
-        operateProperties, tasklistProperties, connectConfiguration);
+        operateProperties, tasklistProperties, searchEngineConfiguration);
 
     System.exit(0);
   }

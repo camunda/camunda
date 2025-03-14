@@ -31,14 +31,14 @@ import io.camunda.exporter.config.ConfigValidator;
 import io.camunda.exporter.config.ExporterConfiguration;
 import io.camunda.exporter.exceptions.PersistenceException;
 import io.camunda.exporter.metrics.CamundaExporterMetrics;
-import io.camunda.exporter.schema.MappingSource;
-import io.camunda.exporter.schema.SchemaManager;
-import io.camunda.exporter.schema.SearchEngineClient;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.exporter.store.ExporterBatchWriter;
 import io.camunda.exporter.tasks.BackgroundTaskManager;
 import io.camunda.exporter.tasks.BackgroundTaskManagerFactory;
+import io.camunda.search.schema.MappingSource;
+import io.camunda.search.schema.SearchEngineClient;
 import io.camunda.webapps.schema.descriptors.AbstractIndexDescriptor;
+import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.operate.index.ImportPositionIndex;
 import io.camunda.webapps.schema.descriptors.tasklist.index.TasklistImportPositionIndex;
 import io.camunda.zeebe.exporter.api.Exporter;
@@ -52,22 +52,19 @@ import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.util.SemanticVersion;
 import io.camunda.zeebe.util.VisibleForTesting;
 import java.time.Duration;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import org.agrona.CloseHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class CamundaExporter implements Exporter {
   private static final Logger LOG = LoggerFactory.getLogger(CamundaExporter.class);
-
+  private final ExporterResourceProvider provider;
   private Controller controller;
   private ExporterConfiguration configuration;
   private ClientAdapter clientAdapter;
   private ExporterBatchWriter writer;
   private long lastPosition = -1;
-  private final ExporterResourceProvider provider;
   private CamundaExporterMetrics metrics;
   private BackgroundTaskManager taskManager;
   private ExporterMetadata metadata;
@@ -98,7 +95,7 @@ public class CamundaExporter implements Exporter {
     ConfigValidator.validate(configuration);
     context.setFilter(new CamundaExporterRecordFilter());
     metrics = new CamundaExporterMetrics(context.getMeterRegistry());
-    clientAdapter = ClientAdapter.of(configuration);
+    clientAdapter = ClientAdapter.of(configuration.getConnect());
     if (metadata == null) {
       metadata = new ExporterMetadata(clientAdapter.objectMapper());
     }
@@ -127,9 +124,6 @@ public class CamundaExporter implements Exporter {
   public void open(final Controller controller) {
     this.controller = controller;
     searchEngineClient = clientAdapter.getSearchEngineClient();
-    final var schemaManager = createSchemaManager();
-
-    schemaManager.startup();
 
     writer = createBatchWriter();
 
@@ -216,13 +210,11 @@ public class CamundaExporter implements Exporter {
   @Override
   public void purge() {
     searchEngineClient = clientAdapter.getSearchEngineClient();
-    final var schemaManager = createSchemaManager();
-
     // Indices
-    final var emptiedIndices = schemaManager.truncateIndices();
+    final var emptiedIndices = truncateIndices();
 
     // Delete archived indices
-    schemaManager.deleteArchivedIndices();
+    deleteArchivedIndices();
 
     // At this point, several indices still have data, e.g.
     // deployment, tasklist-task, process, operate-event, operate-list-view,
@@ -235,18 +227,32 @@ public class CamundaExporter implements Exporter {
     // deleting all indices it manages (#26890).
     final var indexNames = String.join(",", prefixedNames("operate-*", "tasklist-*"));
     LOG.debug("Purging exporter indexes: {}", indexNames);
+
     searchEngineClient.getMappings(indexNames, MappingSource.INDEX).keySet().stream()
         .filter(index -> !emptiedIndices.contains(index))
         .forEach(searchEngineClient::truncateIndex);
   }
 
-  private SchemaManager createSchemaManager() {
-    return new SchemaManager(
-        searchEngineClient,
-        provider.getIndexDescriptors(),
-        provider.getIndexTemplateDescriptors(),
-        configuration,
-        clientAdapter.objectMapper());
+  private List<String> truncateIndices() {
+    final var indices =
+        provider.getIndexDescriptors().stream().map(IndexDescriptor::getFullQualifiedName).toList();
+    indices.forEach(searchEngineClient::truncateIndex);
+    return indices;
+  }
+
+  private void deleteArchivedIndices() {
+    final var liveIndices =
+        provider.getIndexDescriptors().stream().map(IndexDescriptor::getFullQualifiedName).toList();
+    final var archivedIndices =
+        liveIndices.stream()
+            .map(indexName -> indexName + "*")
+            .map(idxWildcard -> searchEngineClient.getMappings(idxWildcard, MappingSource.INDEX))
+            .map(Map::keySet)
+            .flatMap(Collection::stream)
+            .filter(index -> !liveIndices.contains(index))
+            .toList();
+    archivedIndices.forEach(searchEngineClient::deleteIndex);
+    LOG.debug("Deleted archived indices '{}'", archivedIndices);
   }
 
   @VisibleForTesting

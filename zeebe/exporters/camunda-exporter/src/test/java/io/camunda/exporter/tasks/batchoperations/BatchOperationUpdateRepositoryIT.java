@@ -46,10 +46,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 abstract class BatchOperationUpdateRepositoryIT {
+  @RegisterExtension protected static SearchDBExtension searchDB = create();
   private static final Logger LOGGER =
       LoggerFactory.getLogger(BatchOperationUpdateRepositoryIT.class);
   private static final Duration REQUEST_TIMEOUT = Duration.ofSeconds(5);
-  @RegisterExtension protected static SearchDBExtension searchDB = create();
   protected final BatchOperationTemplate batchOperationTemplate;
   protected final OperationTemplate operationTemplate;
   @AutoClose protected final ClientAdapter clientAdapter;

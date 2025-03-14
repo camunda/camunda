@@ -170,6 +170,10 @@ public abstract class TestSpringApplication<T extends TestSpringApplication<T>>
     return self();
   }
 
+  public T withSchemaCreationDisabled() {
+    return withProperty("camunda.database.create-schema", "false");
+  }
+
   public T withAdditionalInitializer(final ApplicationContextInitializer<?> initializer) {
     additionalInitializers.add(initializer);
     return self();

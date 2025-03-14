@@ -32,15 +32,15 @@ import io.camunda.exporter.adapters.ClientAdapter;
 import io.camunda.exporter.cache.ExporterEntityCacheProvider;
 import io.camunda.exporter.config.ConnectionTypes;
 import io.camunda.exporter.config.ExporterConfiguration;
-import io.camunda.exporter.config.ExporterConfiguration.RetentionConfiguration;
 import io.camunda.exporter.exceptions.PersistenceException;
 import io.camunda.exporter.handlers.ExportHandler;
-import io.camunda.exporter.schema.MappingSource;
 import io.camunda.exporter.schema.SchemaTestUtil;
 import io.camunda.exporter.utils.CamundaExporterITTemplateExtension;
 import io.camunda.exporter.utils.SearchClientAdapter;
 import io.camunda.exporter.utils.SearchDBExtension;
 import io.camunda.exporter.utils.TestObjectMapper;
+import io.camunda.search.schema.MappingSource;
+import io.camunda.search.schema.configuration.RetentionConfiguration;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
 import io.camunda.webapps.schema.descriptors.operate.index.ImportPositionIndex;
@@ -76,6 +76,7 @@ import org.apache.commons.lang3.RandomStringUtils;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.TestInstance.Lifecycle;
@@ -103,6 +104,12 @@ final class CamundaExporterIT {
   private final ProtocolFactory factory = new ProtocolFactory();
   private IndexDescriptor index;
   private IndexTemplateDescriptor indexTemplate;
+
+  private static Stream<Arguments> containerProvider() {
+    return Stream.of(
+        Arguments.of(TestSearchContainers.createDefeaultElasticsearchContainer()),
+        Arguments.of(TestSearchContainers.createDefaultOpensearchContainer()));
+  }
 
   @BeforeEach
   void beforeEach() {
@@ -327,6 +334,7 @@ final class CamundaExporterIT {
       named = SearchDBExtension.TEST_INTEGRATION_OPENSEARCH_AWS_URL,
       matches = "^(?=\\s*\\S).*$",
       disabledReason = "Ineligible test for AWS OS integration")
+  @Disabled("Schema manager is not handled by the exporter. To be moved to schema manager tests")
   void shouldHaveCorrectSchemaUpdatesWithMultipleExporters(
       final ExporterConfiguration config, final SearchClientAdapter clientAdapter)
       throws Exception {
@@ -393,6 +401,7 @@ final class CamundaExporterIT {
   }
 
   @TestTemplate
+  @Disabled("Schema manager is not handled by the exporter. To be moved to schema manager tests")
   void shouldCreateHarmonizedSchemaEagerlyOnOpen(
       final ExporterConfiguration config, final SearchClientAdapter ignored) {
     // given
@@ -402,7 +411,7 @@ final class CamundaExporterIT {
     final CamundaExporter camundaExporter = new CamundaExporter();
     camundaExporter.configure(getContextFromConfig(config));
 
-    final var adapter = ClientAdapter.of(config);
+    final var adapter = ClientAdapter.of(config.getConnect());
     final var mappingsBeforeOpen =
         adapter.getSearchEngineClient().getMappings(newPrefix + "*", MappingSource.INDEX);
     assertThat(mappingsBeforeOpen.keySet()).isEmpty();
@@ -646,12 +655,6 @@ final class CamundaExporterIT {
   private Record<?> generateRecordWithSupportedBrokerVersion(
       final ValueType valueType, final Intent intent) {
     return factory.generateRecord(valueType, r -> r.withBrokerVersion("8.8.0"), intent);
-  }
-
-  private static Stream<Arguments> containerProvider() {
-    return Stream.of(
-        Arguments.of(TestSearchContainers.createDefeaultElasticsearchContainer()),
-        Arguments.of(TestSearchContainers.createDefaultOpensearchContainer()));
   }
 
   private ExporterConfiguration getConnectConfigForContainer(final GenericContainer<?> container) {

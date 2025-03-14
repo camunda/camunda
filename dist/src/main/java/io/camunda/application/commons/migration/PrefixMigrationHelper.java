@@ -7,16 +7,17 @@
  */
 package io.camunda.application.commons.migration;
 
-import io.camunda.exporter.schema.PrefixMigrationClient;
-import io.camunda.exporter.schema.elasticsearch.ElasticsearchPrefixMigrationClient;
-import io.camunda.exporter.schema.opensearch.OpensearchPrefixMigrationClient;
-import io.camunda.exporter.utils.CloneResult;
-import io.camunda.exporter.utils.ReindexResult;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.search.connect.configuration.ConnectConfiguration;
 import io.camunda.search.connect.configuration.DatabaseType;
 import io.camunda.search.connect.es.ElasticsearchConnector;
 import io.camunda.search.connect.os.OpensearchConnector;
+import io.camunda.search.schema.PrefixMigrationClient;
+import io.camunda.search.schema.configuration.SearchEngineConfiguration;
+import io.camunda.search.schema.elasticsearch.ElasticsearchPrefixMigrationClient;
+import io.camunda.search.schema.opensearch.OpensearchPrefixMigrationClient;
+import io.camunda.search.schema.utils.CloneResult;
+import io.camunda.search.schema.utils.ReindexResult;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.webapps.schema.descriptors.AbstractIndexDescriptor;
 import io.camunda.webapps.schema.descriptors.IndexDescriptors;
@@ -84,15 +85,16 @@ public final class PrefixMigrationHelper {
   public static void runPrefixMigration(
       final OperateProperties operateProperties,
       final TasklistProperties tasklistProperties,
-      final ConnectConfiguration connectConfiguration)
+      final SearchEngineConfiguration searchEngineConfiguration)
       throws IOException {
-    final var isElasticsearch = connectConfiguration.getTypeEnum() == DatabaseType.ELASTICSEARCH;
+    final ConnectConfiguration connectConfiguration = searchEngineConfiguration.connect();
+    final var isElasticsearch = connectConfiguration.getTypeEnum().isElasticSearch();
 
     LOG.info("Creating/updating Elasticsearch schema for Camunda ...");
 
     final var clientAdapter = SchemaManagerHelper.createClientAdapter(connectConfiguration);
 
-    SchemaManagerHelper.createSchema(connectConfiguration, clientAdapter);
+    SchemaManagerHelper.createSchema(searchEngineConfiguration, clientAdapter);
 
     LOG.info("... finished creating/updating schema for Camunda");
 

@@ -17,6 +17,7 @@ import io.camunda.operate.property.OperateProperties;
 import io.camunda.qa.util.cluster.TestSimpleCamundaApplication;
 import io.camunda.qa.util.multidb.MultiDbConfigurator;
 import io.camunda.search.connect.configuration.ConnectConfiguration;
+import io.camunda.search.schema.configuration.SearchEngineConfiguration;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.zeebe.test.util.testcontainers.TestSearchContainers;
 import java.io.IOException;
@@ -111,7 +112,8 @@ public class PrefixMigrationIT {
     if (!newPrefix.isBlank()) {
       connect.setIndexPrefix(newPrefix);
     }
-    PrefixMigrationHelper.runPrefixMigration(operate, tasklist, connect);
+    PrefixMigrationHelper.runPrefixMigration(
+        operate, tasklist, SearchEngineConfiguration.of(b -> b.connect(connect)));
   }
 
   private CamundaClient createCamundaClient(final GenericContainer<?> container)

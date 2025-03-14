@@ -20,9 +20,9 @@ import io.camunda.exporter.cache.ExporterEntityCacheProvider;
 import io.camunda.exporter.cache.form.CachedFormEntity;
 import io.camunda.exporter.cache.process.CachedProcessEntity;
 import io.camunda.exporter.config.ExporterConfiguration;
-import io.camunda.exporter.schema.SearchEngineClient;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.exporter.utils.TestObjectMapper;
+import io.camunda.search.schema.SearchEngineClient;
 import io.camunda.webapps.schema.entities.tasklist.TaskEntity.TaskImplementation;
 import io.camunda.zeebe.exporter.test.ExporterTestConfiguration;
 import io.camunda.zeebe.exporter.test.ExporterTestContext;
@@ -57,7 +57,7 @@ final class CamundaExporterTest {
   void beforeEach() {
     stubbedClientAdapterInUse = new StubClientAdapter();
     mockedClientAdapterFactory
-        .when(() -> ClientAdapter.of(configuration))
+        .when(() -> ClientAdapter.of(configuration.getConnect()))
         .thenReturn(stubbedClientAdapterInUse);
   }
 
