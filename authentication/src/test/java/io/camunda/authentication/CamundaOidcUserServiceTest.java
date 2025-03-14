@@ -70,8 +70,8 @@ public class CamundaOidcUserServiceTest {
     when(mappingServices.getMatchingMappings(claims))
         .thenReturn(
             List.of(
-                new MappingEntity(5L, "role", "R1", "role-r1"),
-                new MappingEntity(7L, "group", "G1", "group-g1")));
+                new MappingEntity(5L, "role", "R1", "role-r1", "m1"),
+                new MappingEntity(7L, "group", "G1", "group-g1", "m2")));
 
     final var roleR1 = new RoleEntity(8L, "Role R1");
     when(roleServices.getRolesByMemberKeys(Set.of(5L, 7L))).thenReturn(List.of(roleR1));
