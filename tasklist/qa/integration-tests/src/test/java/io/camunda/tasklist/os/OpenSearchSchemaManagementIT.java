@@ -7,7 +7,6 @@
  */
 package io.camunda.tasklist.os;
 
-import static io.camunda.webapps.schema.descriptors.ComponentNames.TASK_LIST;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
@@ -204,9 +203,9 @@ public class OpenSearchSchemaManagementIT extends TasklistZeebeIntegrationTest {
                                 .setTypeDefinition(Map.of("type", "keyword"))))));
 
     final TypeMapping indexTemplateMapping =
-        OpenSearchTestExtension.class
-            .cast(databaseTestExtension)
+        ((OpenSearchTestExtension) databaseTestExtension)
             .getIndexTemplateMapping(testTemplateDescriptor.getTemplateName());
+    assertThat(indexTemplateMapping.dynamic()).isNotNull();
     assertThat(indexTemplateMapping.dynamic().jsonValue()).isEqualTo("strict");
     assertThat(indexTemplateMapping.properties().keySet())
         .containsExactlyInAnyOrder("prop0", "prop1", "prop2");
