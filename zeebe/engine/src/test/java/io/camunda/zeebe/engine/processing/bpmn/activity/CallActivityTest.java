@@ -812,7 +812,7 @@ public final class CallActivityTest {
     Assertions.assertThat(incident)
         .describedAs("Expect that incident is raised due to the depth limit")
         .hasErrorMessage(
-            """
+                """
             The call activity has reached the maximum depth of %d. This is likely due to a recursive call. \
             Cancel the root process instance if this was unintentional. Otherwise, consider increasing the \
             maximum depth, or use process instance modification to adjust the process instance."""
