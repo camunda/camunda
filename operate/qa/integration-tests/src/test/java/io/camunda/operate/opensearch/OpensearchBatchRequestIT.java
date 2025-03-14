@@ -21,6 +21,7 @@ import io.camunda.operate.util.OpensearchOperateAbstractIT;
 import io.camunda.operate.util.TestUtil;
 import io.camunda.webapps.schema.descriptors.operate.index.ProcessIndex;
 import io.camunda.webapps.schema.entities.operate.ProcessEntity;
+import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 import org.junit.After;
@@ -49,7 +50,7 @@ public class OpensearchBatchRequestIT extends OpensearchOperateAbstractIT {
   }
 
   @Before
-  public void setUp() {
+  public void setUp() throws IOException {
     schemaExporterHelper.createSchema();
   }
 

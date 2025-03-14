@@ -10,9 +10,9 @@ package io.camunda.exporter.utils;
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.exporter.config.ExporterConfiguration;
-import io.camunda.exporter.config.ExporterConfiguration.IndexSettings;
-import io.camunda.exporter.schema.opensearch.OpensearchEngineClient;
 import io.camunda.search.connect.os.OpensearchConnector;
+import io.camunda.search.schema.configuration.IndexConfiguration;
+import io.camunda.search.schema.opensearch.OpensearchEngineClient;
 import java.util.UUID;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.opensearch.client.opensearch.OpenSearchClient;
@@ -47,7 +47,7 @@ public class AWSSearchDBExtension extends SearchDBExtension {
   @Override
   public void beforeEach(final ExtensionContext context) throws Exception {
     new OpensearchEngineClient(osClient, objectMapper)
-        .createIndex(PROCESS_INDEX, new IndexSettings());
+        .createIndex(PROCESS_INDEX, new IndexConfiguration());
   }
 
   @Override

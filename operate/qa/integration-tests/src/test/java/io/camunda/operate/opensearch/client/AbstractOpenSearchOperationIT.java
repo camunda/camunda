@@ -14,6 +14,7 @@ import io.camunda.operate.schema.util.camunda.exporter.SchemaWithExporter;
 import io.camunda.operate.store.opensearch.client.sync.RichOpenSearchClient;
 import io.camunda.operate.util.OpensearchOperateAbstractIT;
 import io.camunda.operate.util.TestUtil;
+import java.io.IOException;
 import java.util.function.Function;
 import org.junit.After;
 import org.junit.Before;
@@ -34,7 +35,7 @@ public abstract class AbstractOpenSearchOperationIT extends OpensearchOperateAbs
   public static void beforeClass() {}
 
   @Before
-  public void setUp() {
+  public void setUp() throws IOException {
     final var indexPrefix = "test-opensearch-operation-" + TestUtil.createRandomString(5);
     operateProperties.getOpensearch().setIndexPrefix(indexPrefix);
     final var schemaExporterHelper = new SchemaWithExporter(indexPrefix, false);

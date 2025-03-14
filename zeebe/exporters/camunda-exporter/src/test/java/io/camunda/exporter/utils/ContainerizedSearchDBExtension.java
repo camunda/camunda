@@ -10,11 +10,11 @@ package io.camunda.exporter.utils;
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.exporter.config.ExporterConfiguration;
-import io.camunda.exporter.config.ExporterConfiguration.IndexSettings;
-import io.camunda.exporter.schema.elasticsearch.ElasticsearchEngineClient;
-import io.camunda.exporter.schema.opensearch.OpensearchEngineClient;
 import io.camunda.search.connect.es.ElasticsearchConnector;
 import io.camunda.search.connect.os.OpensearchConnector;
+import io.camunda.search.schema.configuration.IndexConfiguration;
+import io.camunda.search.schema.elasticsearch.ElasticsearchEngineClient;
+import io.camunda.search.schema.opensearch.OpensearchEngineClient;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.zeebe.test.util.testcontainers.TestSearchContainers;
 import org.junit.jupiter.api.extension.ExtensionContext;
@@ -70,7 +70,7 @@ public class ContainerizedSearchDBExtension extends SearchDBExtension {
   private void maybeCreateIndexEs(final IndexDescriptor descriptor) {
     try {
       new ElasticsearchEngineClient(elsClient, esObjectMapper)
-          .createIndex(descriptor, new IndexSettings());
+          .createIndex(descriptor, new IndexConfiguration());
     } catch (final Exception e) {
       LOGGER.warn("Failed to create index {}", descriptor.getIndexName(), e);
     }
@@ -79,7 +79,7 @@ public class ContainerizedSearchDBExtension extends SearchDBExtension {
   private void maybeCreateIndexOs(final IndexDescriptor descriptor) {
     try {
       new OpensearchEngineClient(osClient, osObjectMapper)
-          .createIndex(descriptor, new IndexSettings());
+          .createIndex(descriptor, new IndexConfiguration());
     } catch (final Exception e) {
       LOGGER.warn("Failed to create index {}", descriptor.getIndexName(), e);
     }

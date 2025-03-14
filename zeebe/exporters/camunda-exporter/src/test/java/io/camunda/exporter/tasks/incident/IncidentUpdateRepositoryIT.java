@@ -12,9 +12,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.exporter.adapters.ClientAdapter;
 import io.camunda.exporter.config.ExporterConfiguration;
-import io.camunda.exporter.config.ExporterConfiguration.IndexSettings;
 import io.camunda.exporter.exceptions.PersistenceException;
-import io.camunda.exporter.schema.SearchEngineClient;
 import io.camunda.exporter.tasks.incident.IncidentUpdateRepository.ActiveIncident;
 import io.camunda.exporter.tasks.incident.IncidentUpdateRepository.Document;
 import io.camunda.exporter.tasks.incident.IncidentUpdateRepository.DocumentUpdate;
@@ -23,6 +21,8 @@ import io.camunda.exporter.tasks.incident.IncidentUpdateRepository.IncidentDocum
 import io.camunda.exporter.tasks.incident.IncidentUpdateRepository.PendingIncidentUpdateBatch;
 import io.camunda.exporter.tasks.incident.IncidentUpdateRepository.ProcessInstanceDocument;
 import io.camunda.exporter.utils.SearchDBExtension;
+import io.camunda.search.schema.SearchEngineClient;
+import io.camunda.search.schema.configuration.IndexConfiguration;
 import io.camunda.webapps.operate.TreePath;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.operate.template.FlowNodeInstanceTemplate;
@@ -97,7 +97,7 @@ abstract class IncidentUpdateRepositoryIT {
     config.getConnect().setUrl(databaseUrl);
     config.getConnect().setType(isElastic ? "elasticsearch" : "opensearch");
 
-    clientAdapter = ClientAdapter.of(config);
+    clientAdapter = ClientAdapter.of(config.getConnect());
     engineClient = clientAdapter.getSearchEngineClient();
 
     postImporterQueueTemplate = new PostImporterQueueTemplate(indexPrefix, isElastic);
@@ -115,7 +115,8 @@ abstract class IncidentUpdateRepositoryIT {
             listViewTemplate,
             flowNodeInstanceTemplate,
             operationTemplate)
-        .forEach(template -> engineClient.createIndexTemplate(template, new IndexSettings(), true));
+        .forEach(
+            template -> engineClient.createIndexTemplate(template, new IndexConfiguration(), true));
   }
 
   private IncidentEntity newIncident(final long key) {
@@ -558,7 +559,7 @@ abstract class IncidentUpdateRepositoryIT {
               .appendFlowNode("task")
               .appendFlowNodeInstance(4)
               .toString();
-      engineClient.createIndex(listViewTemplate, new IndexSettings());
+      engineClient.createIndex(listViewTemplate, new IndexConfiguration());
 
       // when
       final var terms = repository.analyzeTreePath(treePath);
@@ -589,8 +590,8 @@ abstract class IncidentUpdateRepositoryIT {
               .appendFlowNode("task")
               .appendFlowNodeInstance(4)
               .toString();
-      engineClient.createIndex(listViewTemplate, new IndexSettings());
-      engineClient.createIndex(createDatedIndex(listViewTemplate), new IndexSettings());
+      engineClient.createIndex(listViewTemplate, new IndexConfiguration());
+      engineClient.createIndex(createDatedIndex(listViewTemplate), new IndexConfiguration());
 
       // when
       final var terms = repository.analyzeTreePath(treePath);

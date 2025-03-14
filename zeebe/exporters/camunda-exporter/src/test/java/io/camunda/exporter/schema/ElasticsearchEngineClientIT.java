@@ -16,9 +16,11 @@ import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.elasticsearch.core.BulkRequest;
 import co.elastic.clients.elasticsearch.core.UpdateRequest;
 import io.camunda.exporter.config.ExporterConfiguration;
-import io.camunda.exporter.config.ExporterConfiguration.IndexSettings;
-import io.camunda.exporter.schema.elasticsearch.ElasticsearchEngineClient;
 import io.camunda.search.connect.es.ElasticsearchConnector;
+import io.camunda.search.schema.IndexMappingProperty;
+import io.camunda.search.schema.MappingSource;
+import io.camunda.search.schema.configuration.IndexConfiguration;
+import io.camunda.search.schema.elasticsearch.ElasticsearchEngineClient;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.operate.index.ImportPositionIndex;
 import io.camunda.webapps.schema.entities.operate.ImportPositionEntity;
@@ -97,7 +99,7 @@ public class ElasticsearchEngineClientIT {
             "template_name",
             "/mappings.json");
 
-    final var settings = new IndexSettings();
+    final var settings = new IndexConfiguration();
     elsEngineClient.createIndexTemplate(indexTemplate, settings, true);
 
     // then
@@ -121,7 +123,7 @@ public class ElasticsearchEngineClientIT {
             "template_name",
             "/mappings.json");
 
-    final var settings = new IndexSettings();
+    final var settings = new IndexConfiguration();
     elsEngineClient.createIndexTemplate(indexTemplate, settings, true);
 
     // when, then
@@ -138,7 +140,7 @@ public class ElasticsearchEngineClientIT {
         SchemaTestUtil.mockIndex(qualifiedIndexName, "alias", "index_name", "/mappings.json");
 
     // when
-    elsEngineClient.createIndex(descriptor, new IndexSettings());
+    elsEngineClient.createIndex(descriptor, new IndexConfiguration());
 
     // then
     final var index =
@@ -153,7 +155,7 @@ public class ElasticsearchEngineClientIT {
         SchemaTestUtil.mockIndex(
             "index_qualified_name", "alias", "index_name", "/mappings-complex-property.json");
 
-    elsEngineClient.createIndex(index, new IndexSettings());
+    elsEngineClient.createIndex(index, new IndexConfiguration());
 
     final var mappings = elsEngineClient.getMappings("*", MappingSource.INDEX);
 
@@ -179,7 +181,7 @@ public class ElasticsearchEngineClientIT {
     final var index =
         SchemaTestUtil.mockIndex("index_qualified_name", "alias", "index_name", "/mappings.json");
 
-    elsEngineClient.createIndex(index, new IndexSettings());
+    elsEngineClient.createIndex(index, new IndexConfiguration());
 
     // when, tnen
     assertThatNoException()
@@ -200,7 +202,7 @@ public class ElasticsearchEngineClientIT {
             "template_name",
             "/mappings-complex-property.json");
 
-    elsEngineClient.createIndexTemplate(template, new IndexSettings(), true);
+    elsEngineClient.createIndexTemplate(template, new IndexConfiguration(), true);
 
     final var templateMappings =
         elsEngineClient.getMappings("template_name", MappingSource.INDEX_TEMPLATE);
@@ -230,7 +232,7 @@ public class ElasticsearchEngineClientIT {
             "template_name",
             "/mappings-and-settings.json");
 
-    elsEngineClient.createIndexTemplate(template, new IndexSettings(), true);
+    elsEngineClient.createIndexTemplate(template, new IndexConfiguration(), true);
 
     final var createdTemplate =
         elsClient.indices().getIndexTemplate(req -> req.name("template_name")).indexTemplates();
@@ -253,7 +255,7 @@ public class ElasticsearchEngineClientIT {
     final var index =
         SchemaTestUtil.mockIndex("index_name", "alias", "index_name", "/mappings.json");
 
-    elsEngineClient.createIndex(index, new IndexSettings());
+    elsEngineClient.createIndex(index, new IndexConfiguration());
 
     final Map<String, String> newSettings = Map.of("index.lifecycle.name", "test");
     elsEngineClient.putSettings(List.of(index), newSettings);
@@ -270,7 +272,7 @@ public class ElasticsearchEngineClientIT {
     final var index =
         SchemaTestUtil.mockIndex("index_name", "alias", "index_name", "/mappings.json");
 
-    final var settings = new IndexSettings();
+    final var settings = new IndexConfiguration();
     settings.setNumberOfReplicas(5);
     settings.setNumberOfShards(10);
     elsEngineClient.createIndex(index, settings);
@@ -302,7 +304,7 @@ public class ElasticsearchEngineClientIT {
         SchemaTestUtil.mockIndex(
             "index_qualified_name", "alias", "index_name", "/mappings-complex-property.json");
 
-    elsEngineClient.createIndex(index, new IndexSettings());
+    elsEngineClient.createIndex(index, new IndexConfiguration());
 
     final var mappings = elsEngineClient.getMappings("*", MappingSource.INDEX);
     assertThat(mappings.size()).isEqualTo(1);
@@ -326,7 +328,7 @@ public class ElasticsearchEngineClientIT {
       elsClient
           .indices()
           .delete(r -> r.index(importPositionIndex.getFullQualifiedName()).ignoreUnavailable(true));
-      elsEngineClient.createIndex(importPositionIndex, new IndexSettings());
+      elsEngineClient.createIndex(importPositionIndex, new IndexConfiguration());
     }
 
     @Test
