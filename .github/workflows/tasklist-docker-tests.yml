@@ -30,7 +30,7 @@ jobs:
       - id: build-backend
         uses: ./.github/actions/build-zeebe
         with:
-          maven-extra-args: -D skip.fe.build -D skipOptimize
+          maven-extra-args: -D skip.fe.build
       - uses: ./.github/actions/build-platform-docker
         with:
           repository: localhost:5000/camunda/tasklist

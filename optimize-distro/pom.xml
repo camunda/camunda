@@ -41,6 +41,14 @@
     </dependency>
   </dependencies>
 
+  <repositories>
+    <repository>
+      <id>central</id>
+      <name>Maven Central</name>
+      <url>https://repo1.maven.org/maven2/</url>
+    </repository>
+  </repositories>
+
   <build>
     <finalName>camunda-optimize-${project.version}</finalName>
     <plugins>
