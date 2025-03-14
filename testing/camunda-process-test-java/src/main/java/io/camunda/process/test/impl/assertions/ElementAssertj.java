@@ -299,19 +299,19 @@ public class ElementAssertj extends AbstractAssert<ElementAssertj, String> {
         dataSource.findFlowNodeInstances(
             flowNodeInstanceFilter(processInstanceKey, elementSelectors));
 
-    final List<ElementSelector> activatedFlowNodeInstances =
+    final List<ElementSelector> activatedElements =
         elementSelectors.stream()
             .filter(elementSelector -> flowNodeInstances.stream().anyMatch(elementSelector::test))
             .collect(Collectors.toList());
 
-    assertThat(activatedFlowNodeInstances)
+    assertThat(activatedElements)
         .withFailMessage(
             () ->
                 String.format(
                     "%s should have not activated elements %s but the following elements were activated:\n%s",
                     actual,
                     formatElementSelectors(elementSelectors),
-                    formatFlowNodeInstanceStates(activatedFlowNodeInstances, flowNodeInstances)))
+                    formatFlowNodeInstanceStates(activatedElements, flowNodeInstances)))
         .isEmpty();
   }
 
