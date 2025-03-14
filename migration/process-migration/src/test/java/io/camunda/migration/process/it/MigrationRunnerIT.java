@@ -176,7 +176,7 @@ public class MigrationRunnerIT extends AdapterTest {
             .ignoreExceptions()
             .until(
                 () -> readRecords(ProcessEntity.class, processIndex.getFullQualifiedName()),
-                res -> res.getFirst().getIsPublic() != null);
+                res -> res.stream().allMatch(entity -> entity.getIsPublic() != null));
 
     // Since the key field is marked as a keyword in ES/OS the sorting is done lexicographically
     assertProcessorStepContentIsStored("9");
