@@ -132,6 +132,7 @@ jobs:
             -D skipOptimize \
             -DskipTests \
             -Dskip.docker \
+            -X \
             -P-autoFormat \
             -DpreparationGoals="" \
             -Darguments=''
