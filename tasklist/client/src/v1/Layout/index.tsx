@@ -11,6 +11,7 @@
 import {Outlet} from 'react-router-dom';
 import {Header} from './Header';
 import {AuthenticationCheck} from 'common/auth/AuthenticationCheck';
+import {AuthorizationCheck} from 'common/auth/AuthorizationCheck';
 import {pages} from 'common/routing';
 import {OSNotifications} from 'v1/OSNotifications';
 import {C3Provider} from 'v1/C3Provider';
@@ -19,9 +20,11 @@ const Layout: React.FC = () => {
   return (
     <C3Provider>
       <AuthenticationCheck redirectPath={pages.login}>
-        <OSNotifications />
-        <Header />
-        <Outlet />
+        <AuthorizationCheck>
+          <OSNotifications />
+          <Header />
+          <Outlet />
+        </AuthorizationCheck>
       </AuthenticationCheck>
     </C3Provider>
   );

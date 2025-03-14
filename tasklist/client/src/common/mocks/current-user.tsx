@@ -94,9 +94,24 @@ const currentUserWithGroups: CurrentUser = {
   userKey: 2251799813685250,
 };
 
+const currentUnauthorizedUser: CurrentUser = {
+  userId: 'demo',
+  displayName: 'Demo User',
+  salesPlanType: null,
+  roles: [],
+  c8Links: [],
+  tenants: [],
+  groups: ['admin', 'customer-support', 'guest'],
+  canLogout: true,
+  authorizedApplications: ['operate'],
+  apiUser: false,
+  userKey: 2251799813685250,
+};
+
 export {
   currentUser,
   currentUserWithC8Links,
   currentUserWithTenants,
   currentUserWithGroups,
+  currentUnauthorizedUser,
 };

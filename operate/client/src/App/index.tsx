@@ -11,12 +11,14 @@ import {
   Route,
   Routes,
 } from 'react-router-dom';
+import loadable from '@loadable/component';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {Notifications} from 'modules/notifications';
 import {NetworkStatusWatcher} from './NetworkStatusWatcher';
 import {Paths} from 'modules/Routes';
 import {RedirectDeprecatedRoutes} from './RedirectDeprecatedRoutes';
 import {AuthenticationCheck} from './AuthenticationCheck';
+import {AuthorizationCheck} from './AuthorizationCheck';
 import {SessionWatcher} from './SessionWatcher';
 import {TrackPagination} from 'modules/tracking/TrackPagination';
 import {useEffect} from 'react';
@@ -24,8 +26,7 @@ import {tracking} from 'modules/tracking';
 import {currentTheme} from 'modules/stores/currentTheme';
 import {createBrowserHistory} from 'history';
 import {ThemeSwitcher} from 'modules/components/ThemeSwitcher';
-import loadable from '@loadable/component';
-import {Forbidden} from '../modules/components/Forbidden';
+import {ForbiddenPage} from 'modules/components/ForbiddenPage';
 import {ReactQueryProvider} from 'modules/react-query/ReactQueryProvider';
 
 const CarbonLogin = loadable(() => import('./Login/index'), {
@@ -85,12 +86,14 @@ const App: React.FC = () => {
           <TrackPagination />
           <Routes>
             <Route path={Paths.login()} element={<CarbonLogin />} />
-            <Route path={Paths.forbidden()} element={<Forbidden />} />
+            <Route path={Paths.forbidden()} element={<ForbiddenPage />} />
             <Route
               path={Paths.dashboard()}
               element={
                 <AuthenticationCheck redirectPath={Paths.login()}>
-                  <CarbonLayout />
+                  <AuthorizationCheck>
+                    <CarbonLayout />
+                  </AuthorizationCheck>
                 </AuthenticationCheck>
               }
             >

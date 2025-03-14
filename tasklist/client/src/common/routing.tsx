@@ -14,6 +14,7 @@ import {getClientConfig} from 'common/config/getClientConfig';
 const pages = {
   initial: '/',
   login: '/login',
+  forbidden: '/forbidden',
   taskDetails(id: string = ':id') {
     return `/${id}`;
   },

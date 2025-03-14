@@ -43,13 +43,13 @@ const Wrapper: React.FC = () => {
 
 const v1Routes = createRoutesFromElements(
   <Route path="/" element={<Wrapper />} ErrorBoundary={ErrorWithinLayout}>
-    <Route path="forbidden" element={<Forbidden />} />
     <Route path="login" lazy={() => import('common/auth/Login')} />
     <Route
       path="new/:bpmnProcessId"
       lazy={() => import('./v1/StartProcessFromForm')}
     />
     <Route path="/" lazy={() => import('./v1/Layout')}>
+      <Route path="forbidden" element={<Forbidden />} />
       <Route path="processes" ErrorBoundary={ErrorWithinLayout}>
         <Route index lazy={() => import('./v1/Processes')} />
         <Route
