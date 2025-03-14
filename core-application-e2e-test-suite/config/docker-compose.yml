@@ -1,0 +1,91 @@
+networks:
+  zeebe_network: {}
+
+services:
+  postgres:
+    container_name: postgres
+    image: postgres:16.4-alpine
+    ports:
+      - '5432:5432'
+    environment:
+      POSTGRES_DB: identity
+      POSTGRES_USER: identity
+      POSTGRES_PASSWORD: 't2L@!AqSMg8%I%NmHM'
+    networks:
+      - zeebe_network
+
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.15.3
+    container_name: elasticsearch
+    environment:
+      - discovery.type=single-node
+      - cluster.name=elasticsearch
+      - bootstrap.memory_lock=true
+      - xpack.security.enabled=false
+      - 'ES_JAVA_OPTS=-Xms1024m -Xmx1024m'
+      - path.repo=/usr/local/els-snapshots
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    ports:
+      - 9200:9200
+      - 9300:9300
+    networks:
+      - zeebe_network
+    restart: always
+    volumes:
+      - ./els-snapshots:/usr/local/els-snapshots
+
+  zeebe: &zeebe
+    container_name: zeebe-${DATABASE}
+    image: camunda/zeebe:8.6.11
+    environment:
+      - 'JAVA_TOOL_OPTIONS=-Xms512m -Xmx512m'
+      #- "JAVA_OPTS=-agentlib:jdwp=transport=dt_socket,address=8000,server=y,suspend=n"
+    ports:
+      - 26500:26500
+      - 9601:9600
+      - 8089:8080
+    depends_on:
+      - ${DATABASE}
+    networks:
+      - zeebe_network
+    env_file:
+      - envs/.env.database.${DATABASE}
+    restart: always
+
+  tasklist: &tasklist
+    container_name: tasklist-${DATABASE}
+    image: camunda/tasklist:8.6.11
+    ports:
+      - 8080:8080
+    environment:
+      - SPRING_PROFILES_ACTIVE=dev,auth
+    depends_on:
+      - ${DATABASE}
+      - zeebe
+    env_file:
+      - envs/.env.database.${DATABASE}
+    networks:
+      - zeebe_network
+    volumes:
+      - ./config/custom.css:/usr/local/tasklist/config/custom.css
+    restart: always
+
+  operate: &operate
+    container_name: operate-${DATABASE}
+    image: camunda/operate:8.6.11
+    ports:
+      - 8088:8081
+    environment:
+      - SERVER_PORT=8081
+      - SPRING_PROFILES_ACTIVE=dev,auth
+    depends_on:
+      - ${DATABASE}
+      - zeebe
+    env_file:
+      - envs/.env.database.${DATABASE}
+    networks:
+      - zeebe_network
+    restart: always

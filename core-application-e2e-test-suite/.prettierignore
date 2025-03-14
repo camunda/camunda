@@ -1,0 +1,10 @@
+node_modules/
+**/*.bpmn
+**/*.snap
+**/*.svg
+**/*.xml
+yarn.lock
+.eslintcache
+.env
+.prettierignore
+.eslintignore
