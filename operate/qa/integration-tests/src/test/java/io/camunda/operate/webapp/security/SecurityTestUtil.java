@@ -43,15 +43,17 @@ public class SecurityTestUtil {
   }
 
   public static String signAndSerialize(
-      final RSAKey rsaKey, final JWSAlgorithm alg, final JWTClaimsSet claimsSet)
+      final RSAKey rsaKey,
+      final JWSAlgorithm alg,
+      final JWTClaimsSet claimsSet,
+      final JOSEObjectType type)
       throws JOSEException {
     // Create RSA-signer with the private key
     final JWSSigner rsaSigner = new RSASSASigner(rsaKey);
 
     final SignedJWT rsaSignedJWT =
         new SignedJWT(
-            new JWSHeader.Builder(alg).type(JOSEObjectType.JWT).keyID(rsaKey.getKeyID()).build(),
-            claimsSet);
+            new JWSHeader.Builder(alg).type(type).keyID(rsaKey.getKeyID()).build(), claimsSet);
 
     rsaSignedJWT.sign(rsaSigner);
     final String serializedJwt = rsaSignedJWT.serialize();
@@ -59,25 +61,41 @@ public class SecurityTestUtil {
     return serializedJwt;
   }
 
+  public static String signAndSerialize(
+      final RSAKey rsaKey, final JWSAlgorithm alg, final JWTClaimsSet claimsSet)
+      throws JOSEException {
+    return signAndSerialize(rsaKey, alg, claimsSet, JOSEObjectType.JWT);
+  }
+
   public static String signAndSerialize(final RSAKey rsaKey, final JWSAlgorithm alg)
       throws JOSEException {
     return signAndSerialize(rsaKey, alg, getDefaultClaimsSet());
   }
 
-  public static String signAndSerialize(final ECKey ecKey, final JWSAlgorithm alg)
-      throws JOSEException {
+  public static String signAndSerialize(
+      final RSAKey rsaKey, final JWSAlgorithm alg, final JOSEObjectType type) throws JOSEException {
+    return signAndSerialize(rsaKey, alg, getDefaultClaimsSet(), type);
+  }
+
+  public static String signAndSerialize(
+      final ECKey ecKey, final JWSAlgorithm alg, final JOSEObjectType type) throws JOSEException {
     // Create EC-signer with the private key
     final ECDSASigner ecSigner = new ECDSASigner(ecKey);
 
     final SignedJWT ecSignedJWT =
         new SignedJWT(
-            new JWSHeader.Builder(alg).type(JOSEObjectType.JWT).keyID(ecKey.getKeyID()).build(),
+            new JWSHeader.Builder(alg).type(type).keyID(ecKey.getKeyID()).build(),
             getDefaultClaimsSet());
 
     ecSignedJWT.sign(ecSigner);
     final String ecSerializedJwt = ecSignedJWT.serialize();
     System.out.println("JWT serialized=" + ecSerializedJwt);
     return ecSerializedJwt;
+  }
+
+  public static String signAndSerialize(final ECKey ecKey, final JWSAlgorithm alg)
+      throws JOSEException {
+    return signAndSerialize(ecKey, alg, JOSEObjectType.JWT);
   }
 
   public static JWTClaimsSet getDefaultClaimsSet() {
