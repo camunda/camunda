@@ -8,6 +8,7 @@
 package io.camunda.zeebe.stream.impl;
 
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
+import io.camunda.zeebe.scheduler.AsyncClosable;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.stream.api.scheduling.AsyncSchedulePool;
 import io.camunda.zeebe.stream.api.scheduling.SimpleProcessingScheduleService;
@@ -18,7 +19,7 @@ import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-class AsyncScheduleServiceContext {
+class AsyncScheduleServiceContext implements AsyncClosable {
   private final ActorSchedulingService actorSchedulingService;
   private final ProcessingScheduleServiceFactory actorServiceFactory;
   private final int partitionId;
@@ -47,12 +48,6 @@ class AsyncScheduleServiceContext {
     return asyncActorServices.get(pool);
   }
 
-  public ActorFuture<Void> closeActorsAsync() {
-    final Step[] array =
-        asyncActors.values().stream().map(a -> (Step) a::closeAsync).toArray(Step[]::new);
-    return AsyncUtil.chainSteps(0, array);
-  }
-
   public void closeActorServices() {
     asyncActorServices.values().forEach(ProcessingScheduleServiceImpl::close);
   }
@@ -63,6 +58,13 @@ class AsyncScheduleServiceContext {
             .map((e) -> (Step) () -> submitActor(e.getKey(), e.getValue()))
             .toArray(Step[]::new);
     return AsyncUtil.chainSteps(0, submitActorSteps);
+  }
+
+  @Override
+  public ActorFuture<Void> closeAsync() {
+    final Step[] array =
+        asyncActors.values().stream().map(a -> (Step) a::closeAsync).toArray(Step[]::new);
+    return AsyncUtil.chainSteps(0, array);
   }
 
   private ActorFuture<Void> submitActor(

@@ -254,8 +254,7 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
   @Override
   public ActorFuture<Void> closeAsync() {
     if (isOpened.getAndSet(false)) {
-      actor.run(
-          () -> asyncScheduleServiceContext.closeActorsAsync().onComplete((v, t) -> actor.close()));
+      actor.run(() -> asyncScheduleServiceContext.closeAsync().onComplete((v, t) -> actor.close()));
     }
 
     return closeFuture;
@@ -386,7 +385,7 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
   private void onFailure(final Throwable throwable) {
     LOG.error("Actor {} failed in phase {}.", actorName, actor.getLifecyclePhase(), throwable);
 
-    final var asyncActorCloseFuture = asyncScheduleServiceContext.closeActorsAsync();
+    final var asyncActorCloseFuture = asyncScheduleServiceContext.closeAsync();
     asyncActorCloseFuture.onComplete(
         (v, t) -> {
           actor.fail(throwable);
