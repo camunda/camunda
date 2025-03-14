@@ -23,14 +23,12 @@ import com.github.tomakehurst.wiremock.verification.LoggedRequest;
 import io.camunda.client.api.search.response.ProcessInstanceState;
 import io.camunda.client.impl.search.SearchQuerySortRequest;
 import io.camunda.client.impl.search.SearchQuerySortRequestMapper;
+import io.camunda.client.impl.search.filter.builder.StringPropertyImpl;
 import io.camunda.client.protocol.rest.*;
 import io.camunda.client.util.ClientRestTest;
 import io.camunda.client.util.RestGatewayService;
 import java.time.OffsetDateTime;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 import org.junit.jupiter.api.Test;
 
 public class QueryProcessInstanceTest extends ClientRestTest {
@@ -63,10 +61,17 @@ public class QueryProcessInstanceTest extends ClientRestTest {
     // when
     final OffsetDateTime startDate = OffsetDateTime.now().minusDays(1);
     final OffsetDateTime endDate = OffsetDateTime.now();
+    final Map<String, Object> variablesMap = new LinkedHashMap<>();
+    variablesMap.put("n1", "v1");
+    variablesMap.put("n2", "v2");
     final List<ProcessInstanceVariableFilterRequest> variables =
         Arrays.asList(
-            new ProcessInstanceVariableFilterRequest().name("n1").value("v1"),
-            new ProcessInstanceVariableFilterRequest().name("n2").value("v2"));
+            new ProcessInstanceVariableFilterRequest()
+                .name("n1")
+                .value(new StringPropertyImpl().eq("v1").build()),
+            new ProcessInstanceVariableFilterRequest()
+                .name("n2")
+                .value(new StringPropertyImpl().eq("v2").build()));
     client
         .newProcessInstanceQuery()
         .filter(
@@ -84,8 +89,7 @@ public class QueryProcessInstanceTest extends ClientRestTest {
                     .state(ACTIVE)
                     .hasIncident(true)
                     .tenantId("tenant")
-                    .variables(variables)
-                    .batchOperationId("batch-operation-id"))
+                    .variables(variablesMap))
         .send()
         .join();
     // then
@@ -107,7 +111,6 @@ public class QueryProcessInstanceTest extends ClientRestTest {
     assertThat(filter.getHasIncident()).isEqualTo(true);
     assertThat(filter.getTenantId().get$Eq()).isEqualTo("tenant");
     assertThat(filter.getVariables()).isEqualTo(variables);
-    assertThat(filter.getBatchOperationId().get$Eq()).isEqualTo("batch-operation-id");
   }
 
   @Test
@@ -167,13 +170,20 @@ public class QueryProcessInstanceTest extends ClientRestTest {
   @Test
   void shouldSearchProcessInstanceByVariablesFilter() {
     // given
+    final Map<String, Object> variablesMap = new LinkedHashMap<>();
+    variablesMap.put("n1", "v1");
+    variablesMap.put("n2", "v2");
     final List<ProcessInstanceVariableFilterRequest> variables =
         Arrays.asList(
-            new ProcessInstanceVariableFilterRequest().name("n1").value("v1"),
-            new ProcessInstanceVariableFilterRequest().name("n2").value("v2"));
+            new ProcessInstanceVariableFilterRequest()
+                .name("n1")
+                .value(new StringPropertyImpl().eq("v1").build()),
+            new ProcessInstanceVariableFilterRequest()
+                .name("n2")
+                .value(new StringPropertyImpl().eq("v2").build()));
 
     // when
-    client.newProcessInstanceQuery().filter(f -> f.variables(variables)).send().join();
+    client.newProcessInstanceQuery().filter(f -> f.variables(variablesMap)).send().join();
 
     // then
     final ProcessInstanceSearchQuery request =

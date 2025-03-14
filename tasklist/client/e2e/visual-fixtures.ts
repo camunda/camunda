@@ -11,11 +11,11 @@ import {type Page} from '@playwright/test';
 
 const MOCK_TENANTS = [
   {
-    id: 'tenantA',
+    tenantId: 'tenantA',
     name: 'Tenant A',
   },
   {
-    id: 'tenantB',
+    tenantId: 'tenantB',
     name: 'Tenant B',
   },
 ];

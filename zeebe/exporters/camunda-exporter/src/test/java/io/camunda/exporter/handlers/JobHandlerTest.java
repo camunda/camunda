@@ -13,6 +13,8 @@ import static io.camunda.webapps.schema.descriptors.operate.template.JobTemplate
 import static io.camunda.webapps.schema.descriptors.operate.template.JobTemplate.ERROR_MESSAGE;
 import static io.camunda.webapps.schema.descriptors.operate.template.JobTemplate.FLOW_NODE_ID;
 import static io.camunda.webapps.schema.descriptors.operate.template.JobTemplate.JOB_DEADLINE;
+import static io.camunda.webapps.schema.descriptors.operate.template.JobTemplate.JOB_DENIED;
+import static io.camunda.webapps.schema.descriptors.operate.template.JobTemplate.JOB_DENIED_REASON;
 import static io.camunda.webapps.schema.descriptors.operate.template.JobTemplate.JOB_FAILED_WITH_RETRIES_LEFT;
 import static io.camunda.webapps.schema.descriptors.operate.template.JobTemplate.JOB_STATE;
 import static io.camunda.webapps.schema.descriptors.operate.template.JobTemplate.JOB_WORKER;
@@ -30,6 +32,7 @@ import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.value.ImmutableJobRecordValue;
+import io.camunda.zeebe.protocol.record.value.ImmutableJobResultValue;
 import io.camunda.zeebe.protocol.record.value.JobKind;
 import io.camunda.zeebe.protocol.record.value.JobListenerEventType;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
@@ -206,6 +209,97 @@ final class JobHandlerTest {
         .isEqualTo(DateUtil.toOffsetDateTime(Instant.ofEpochMilli(record.getTimestamp())));
     assertThat(entity.getDeadline())
         .isEqualTo(DateUtil.toOffsetDateTime(Instant.ofEpochMilli(deadline)));
+    // these values are only updated on JobIntent.COMPLETED
+    assertThat(entity.isDenied()).isEqualTo(null);
+    assertThat(entity.getDeniedReason()).isEqualTo(null);
+  }
+
+  @Test
+  void testUpdateEntityOnJobCompleted() {
+    // given
+    final long recordKey = 789;
+    final int partitionId = 10;
+    final int processInstanceKey = 123;
+    final long processDefinitionKey = 555L;
+    final int elementInstanceKey = 456;
+    final String elementId = "elementId";
+    final String bpmnProcessId = "bpmnProcessId";
+    final String tenantId = "tenantId";
+    final String jobType = "jobType";
+    final int retries = 3;
+    final String jobWorker = "jobWorker";
+    final String errorMessage = "someErrorMessage";
+    final String errorCode = "errorCode";
+    final long deadline = Instant.now().toEpochMilli();
+    final JobKind jobKind = JobKind.BPMN_ELEMENT;
+    final JobListenerEventType jobListenerEventType = JobListenerEventType.END;
+    final Boolean denied = true;
+    final String deniedReason = "reason to deny";
+
+    final var recordValue =
+        ImmutableJobRecordValue.builder()
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementInstanceKey(elementInstanceKey)
+            .withElementId(elementId)
+            .withBpmnProcessId(bpmnProcessId)
+            .withProcessDefinitionKey(processDefinitionKey)
+            .withType(jobType)
+            .withRetries(retries)
+            .withWorker(jobWorker)
+            .withCustomHeaders(Map.of("key", "val"))
+            .withTenantId(tenantId)
+            .withErrorMessage(errorMessage)
+            .withJobKind(jobKind)
+            .withJobListenerEventType(jobListenerEventType)
+            .withDeadline(deadline)
+            .withErrorCode(errorCode)
+            .withResult(
+                ImmutableJobResultValue.builder()
+                    .withDenied(denied)
+                    .withDeniedReason(deniedReason)
+                    .build())
+            .build();
+    final Record<JobRecordValue> record =
+        factory.generateRecord(
+            ValueType.JOB,
+            r ->
+                r.withIntent(JobIntent.COMPLETED)
+                    .withKey(recordKey)
+                    .withPartitionId(partitionId)
+                    .withValueType(ValueType.JOB)
+                    .withValue(recordValue));
+    final var entity = new JobEntity().setId(String.valueOf(recordKey));
+
+    // when
+    underTest.updateEntity(record, entity);
+
+    // then
+    assertThat(entity.getId()).isEqualTo(String.valueOf(recordKey));
+    assertThat(entity.getKey()).isEqualTo(recordKey);
+    assertThat(entity.getPartitionId()).isEqualTo(partitionId);
+    assertThat(entity.getProcessInstanceKey()).isEqualTo(processInstanceKey);
+    assertThat(entity.getProcessDefinitionKey()).isEqualTo(processDefinitionKey);
+    assertThat(entity.getBpmnProcessId()).isEqualTo(bpmnProcessId);
+    assertThat(entity.getFlowNodeInstanceId()).isEqualTo(elementInstanceKey);
+    assertThat(entity.getFlowNodeId()).isEqualTo(elementId);
+    assertThat(entity.getTenantId()).isEqualTo(tenantId);
+    assertThat(entity.getType()).isEqualTo(jobType);
+    assertThat(entity.getJobKind()).isEqualTo(jobKind.name());
+    assertThat(entity.getListenerEventType()).isEqualTo(jobListenerEventType.name());
+    assertThat(entity.getRetries()).isEqualTo(retries);
+    assertThat(entity.getWorker()).isEqualTo(jobWorker);
+    assertThat(entity.getCustomHeaders()).isEqualTo(Map.of("key", "val"));
+    assertThat(entity.getState()).isEqualTo("COMPLETED");
+    assertThat(entity.getErrorMessage()).isEqualTo(errorMessage);
+    assertThat(entity.getErrorCode()).isEqualTo(errorCode);
+    assertThat(entity.isJobFailedWithRetriesLeft()).isFalse();
+    assertThat(entity.getEndTime())
+        .isEqualTo(DateUtil.toOffsetDateTime(Instant.ofEpochMilli(record.getTimestamp())));
+    assertThat(entity.getDeadline())
+        .isEqualTo(DateUtil.toOffsetDateTime(Instant.ofEpochMilli(deadline)));
+    // these values are only updated on JobIntent.COMPLETED
+    assertThat(entity.isDenied()).isEqualTo(denied);
+    assertThat(entity.getDeniedReason()).isEqualTo(deniedReason);
   }
 
   @Test
@@ -286,6 +380,8 @@ final class JobHandlerTest {
     final String bpmnProcessId = "bpmnProcessId";
     final long processDefinitionKey = 555L;
     final OffsetDateTime endTime = OffsetDateTime.now();
+    final Boolean denied = true;
+    final String deniedReason = "reason to deny";
 
     final Map<String, String> customHeaders = Map.of("key", "val");
     final JobEntity jobEntity =
@@ -300,7 +396,9 @@ final class JobHandlerTest {
             .setCustomHeaders(customHeaders)
             .setDeadline(deadline)
             .setProcessDefinitionKey(processDefinitionKey)
-            .setBpmnProcessId(bpmnProcessId);
+            .setBpmnProcessId(bpmnProcessId)
+            .setDenied(denied)
+            .setDeniedReason(deniedReason);
 
     final Map<String, Object> expectedUpdateFields = new LinkedHashMap<>();
     expectedUpdateFields.put(JOB_WORKER, jobEntity.getWorker());
@@ -313,6 +411,8 @@ final class JobHandlerTest {
     expectedUpdateFields.put(JOB_DEADLINE, jobEntity.getDeadline());
     expectedUpdateFields.put(PROCESS_DEFINITION_KEY, jobEntity.getProcessDefinitionKey());
     expectedUpdateFields.put(BPMN_PROCESS_ID, jobEntity.getBpmnProcessId());
+    expectedUpdateFields.put(JOB_DENIED, denied);
+    expectedUpdateFields.put(JOB_DENIED_REASON, deniedReason);
 
     final BatchRequest mockRequest = Mockito.mock(BatchRequest.class);
 
@@ -339,6 +439,8 @@ final class JobHandlerTest {
     final String bpmnProcessId = "bpmnProcessId";
     final long processDefinitionKey = 555L;
     final OffsetDateTime endTime = OffsetDateTime.now();
+    final Boolean denied = true;
+    final String deniedReason = "reason to deny";
 
     final Map<String, String> customHeaders = Map.of("key", "val");
     final JobEntity jobEntity =
@@ -355,7 +457,9 @@ final class JobHandlerTest {
             .setDeadline(deadline)
             .setProcessDefinitionKey(processDefinitionKey)
             .setBpmnProcessId(bpmnProcessId)
-            .setJobFailedWithRetriesLeft(true);
+            .setJobFailedWithRetriesLeft(true)
+            .setDenied(denied)
+            .setDeniedReason(deniedReason);
 
     final Map<String, Object> expectedUpdateFields = new LinkedHashMap<>();
     expectedUpdateFields.put(FLOW_NODE_ID, jobEntity.getFlowNodeId());
@@ -370,6 +474,8 @@ final class JobHandlerTest {
     expectedUpdateFields.put(JOB_DEADLINE, jobEntity.getDeadline());
     expectedUpdateFields.put(PROCESS_DEFINITION_KEY, jobEntity.getProcessDefinitionKey());
     expectedUpdateFields.put(BPMN_PROCESS_ID, jobEntity.getBpmnProcessId());
+    expectedUpdateFields.put(JOB_DENIED, denied);
+    expectedUpdateFields.put(JOB_DENIED_REASON, deniedReason);
 
     final BatchRequest mockRequest = Mockito.mock(BatchRequest.class);
 
