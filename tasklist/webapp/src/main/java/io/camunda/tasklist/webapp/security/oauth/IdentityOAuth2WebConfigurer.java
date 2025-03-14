@@ -79,10 +79,10 @@ public class IdentityOAuth2WebConfigurer {
   private JwtDecoder jwtDecoder() {
     return NimbusJwtDecoder.withJwkSetUri(getJwkSetUriProperty())
         .jwtProcessorCustomizer(
-            processor ->
-                processor.setJWSTypeVerifier(
-                    new DefaultJOSEObjectTypeVerifier<>(
-                        JWT, new JOSEObjectType("at+jwt")))) // TODO add null
+            processor -> {
+              processor.setJWSTypeVerifier(
+                  new DefaultJOSEObjectTypeVerifier<>(JWT, new JOSEObjectType("at+jwt"), null));
+            })
         .build();
   }
 
