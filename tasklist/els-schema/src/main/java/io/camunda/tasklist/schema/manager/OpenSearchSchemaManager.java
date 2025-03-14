@@ -184,7 +184,7 @@ public class OpenSearchSchemaManager implements SchemaManager {
   public void updateSchema(final Map<IndexDescriptor, Set<IndexMappingProperty>> newFields) {
     for (final Map.Entry<IndexDescriptor, Set<IndexMappingProperty>> indexNewFields :
         newFields.entrySet()) {
-      if (indexNewFields.getKey() instanceof final TemplateDescriptor templateDescriptor) {
+      if (indexNewFields.getKey() instanceof final IndexTemplateDescriptor templateDescriptor) {
         LOGGER.info("Update template: {}", templateDescriptor.getTemplateName());
         createTemplate(templateDescriptor, true);
       }
@@ -307,16 +307,12 @@ public class OpenSearchSchemaManager implements SchemaManager {
     templateDescriptors.forEach(this::createTemplate);
   }
 
-<<<<<<< HEAD
   private void createTemplate(final IndexTemplateDescriptor templateDescriptor) {
-=======
-  private void createTemplate(final TemplateDescriptor templateDescriptor) {
     createTemplate(templateDescriptor, false);
   }
 
   private void createTemplate(
-      final TemplateDescriptor templateDescriptor, final boolean overwrite) {
->>>>>>> 77e0f2d6cba (fix: Tasklist Opensearch schema manager does not update index templates mappings)
+      final IndexTemplateDescriptor templateDescriptor, final boolean overwrite) {
     final IndexTemplateMapping template = getTemplateFrom(templateDescriptor);
 
     putIndexTemplate(
@@ -342,20 +338,7 @@ public class OpenSearchSchemaManager implements SchemaManager {
     }
   }
 
-<<<<<<< HEAD
-  private void putIndexTemplate(final PutIndexTemplateRequest request) {
-    final boolean created = retryOpenSearchClient.createTemplate(request);
-    if (created) {
-      LOGGER.debug("Template [{}] was successfully created", request.name());
-    } else {
-      LOGGER.debug("Template [{}] was NOT created", request.name());
-    }
-  }
-
   private IndexTemplateMapping getTemplateFrom(final IndexTemplateDescriptor templateDescriptor) {
-=======
-  private IndexTemplateMapping getTemplateFrom(final TemplateDescriptor templateDescriptor) {
->>>>>>> 77e0f2d6cba (fix: Tasklist Opensearch schema manager does not update index templates mappings)
     final String templateFilename = templateDescriptor.getSchemaClasspathFilename();
 
     try (final InputStream templateConfig =
@@ -363,22 +346,14 @@ public class OpenSearchSchemaManager implements SchemaManager {
 
       final JsonpMapper mapper = openSearchClient._transport().jsonpMapper();
       final JsonParser parser = mapper.jsonProvider().createParser(templateConfig);
-
-<<<<<<< HEAD
-    return new IndexTemplateMapping.Builder()
-        .mappings(IndexTemplateMapping._DESERIALIZER.deserialize(parser, mapper).mappings())
-        .aliases(templateDescriptor.getAlias(), new Alias.Builder().build())
-        .build();
-=======
       return new IndexTemplateMapping.Builder()
-          .mappings(TypeMapping._DESERIALIZER.deserialize(parser, mapper))
+          .mappings(IndexTemplateMapping._DESERIALIZER.deserialize(parser, mapper).mappings())
           .aliases(templateDescriptor.getAlias(), new Alias.Builder().build())
           .build();
     } catch (final IOException e) {
       throw new TasklistRuntimeException(
           "Failed to load template file " + templateFilename + " from classpath", e);
     }
->>>>>>> 77e0f2d6cba (fix: Tasklist Opensearch schema manager does not update index templates mappings)
   }
 
   private void createIndex(final CreateIndexRequest createIndexRequest, final String indexName) {
