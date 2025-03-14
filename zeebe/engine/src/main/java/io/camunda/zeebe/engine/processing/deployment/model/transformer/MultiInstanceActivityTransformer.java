@@ -9,6 +9,7 @@ package io.camunda.zeebe.engine.processing.deployment.model.transformer;
 
 import io.camunda.zeebe.el.Expression;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableActivity;
+import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableAdHocSubProcess;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableBoundaryEvent;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowElementContainer;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableLoopCharacteristics;
@@ -109,6 +110,7 @@ public final class MultiInstanceActivityTransformer implements ModelElementTrans
     attachEventsToMultiInstanceBody(innerActivity, multiInstanceBody);
     connectSequenceFlowsToMultiInstanceBody(innerActivity, multiInstanceBody);
     replaceCompensationHandlerWithMultiInstanceBody(process, innerActivity, multiInstanceBody);
+    replaceAdHocActivityWithMultiInstanceBody(process, innerActivity, multiInstanceBody);
 
     // replace the inner element with the body
     process.addFlowElement(multiInstanceBody);
@@ -153,5 +155,21 @@ public final class MultiInstanceActivityTransformer implements ModelElementTrans
         .map(ExecutableBoundaryEvent::getCompensation)
         .filter(compensation -> compensation.getCompensationHandler() == innerActivity)
         .forEach(compensation -> compensation.setCompensationHandler(multiInstanceBody));
+  }
+
+  private static void replaceAdHocActivityWithMultiInstanceBody(
+      final ExecutableProcess process,
+      final ExecutableActivity innerActivity,
+      final ExecutableMultiInstanceBody multiInstanceBody) {
+    // The ad-hoc activities are set by another transformer before. Replace the inner activity with
+    // the multi-instance body to activate the body instead.
+    process.getFlowElements().stream()
+        .filter(ExecutableAdHocSubProcess.class::isInstance)
+        .map(ExecutableAdHocSubProcess.class::cast)
+        .forEach(
+            adHocSubProcess ->
+                adHocSubProcess.getAdHocActivitiesById().values().stream()
+                    .filter(innerActivity::equals)
+                    .forEach(adHocActivity -> adHocSubProcess.addAdHocActivity(multiInstanceBody)));
   }
 }
