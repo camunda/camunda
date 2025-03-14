@@ -7,86 +7,81 @@
  */
 package io.camunda.it.operate;
 
+import static io.camunda.client.protocol.rest.PermissionTypeEnum.CREATE;
 import static io.camunda.client.protocol.rest.PermissionTypeEnum.READ_PROCESS_DEFINITION;
-import static io.camunda.client.protocol.rest.PermissionTypeEnum.READ_PROCESS_INSTANCE;
 import static io.camunda.client.protocol.rest.ResourceTypeEnum.PROCESS_DEFINITION;
+import static io.camunda.client.protocol.rest.ResourceTypeEnum.RESOURCE;
 import static io.camunda.it.client.QueryTest.deployResource;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.springframework.http.HttpStatus.FORBIDDEN;
-import static org.springframework.http.HttpStatus.OK;
+import static org.assertj.core.api.Assertions.assertThatException;
+import static org.assertj.core.api.Assertions.assertThatNoException;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.response.Process;
-import io.camunda.qa.util.cluster.TestRestOperateClient;
-import io.camunda.qa.util.cluster.TestStandaloneCamunda;
-import io.camunda.security.entity.AuthenticationMethod;
-import io.camunda.zeebe.it.util.AuthorizationsUtil;
-import io.camunda.zeebe.it.util.AuthorizationsUtil.Permissions;
-import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
+import io.camunda.qa.util.auth.Authenticated;
+import io.camunda.qa.util.auth.Permissions;
+import io.camunda.qa.util.auth.User;
+import io.camunda.qa.util.auth.UserDefinition;
+import io.camunda.qa.util.cluster.TestSimpleCamundaApplication;
+import io.camunda.qa.util.multidb.CamundaMultiDBExtension;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
-@ZeebeIntegration
+@Tag("multi-db-test")
+@DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "rdbms")
+@DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "AWS_OS")
 public class OperatePermissionsIT {
+
+  static final TestSimpleCamundaApplication STANDALONE_CAMUNDA =
+      new TestSimpleCamundaApplication().withAuthorizationsEnabled().withBasicAuth();
+
+  @RegisterExtension
+  static final CamundaMultiDBExtension EXTENSION = new CamundaMultiDBExtension(STANDALONE_CAMUNDA);
 
   private static final String SUPER_USER = "super";
   private static final String RESTRICTED_USER = "restricted";
   private static final String PROCESS_DEFINITION_ID_1 = "service_tasks_v1";
   private static final String PROCESS_DEFINITION_ID_2 = "incident_process_v1";
-
   private static final List<Process> DEPLOYED_PROCESSES = new ArrayList<>();
 
-  @ZeebeIntegration.TestZeebe(initMethod = "initTestStandaloneCamunda")
-  private static TestStandaloneCamunda testInstance;
+  @UserDefinition
+  private static final User superUser =
+      new User(
+          SUPER_USER,
+          "password",
+          List.of(
+              new Permissions(RESOURCE, CREATE, List.of("*")),
+              new Permissions(PROCESS_DEFINITION, READ_PROCESS_DEFINITION, List.of("*"))));
 
-  @AutoClose private static TestRestOperateClient superOperateClient;
-  @AutoClose private static TestRestOperateClient restrictedOperateClient;
-
-  @SuppressWarnings("unused")
-  static void initTestStandaloneCamunda() {
-    testInstance =
-        new TestStandaloneCamunda()
-            .withCamundaExporter()
-            .withAuthorizationsEnabled()
-            .withAuthenticationMethod(AuthenticationMethod.BASIC);
-  }
+  @UserDefinition
+  private static final User restrictedUser =
+      new User(
+          RESTRICTED_USER,
+          "password",
+          List.of(
+              new Permissions(
+                  PROCESS_DEFINITION, READ_PROCESS_DEFINITION, List.of(PROCESS_DEFINITION_ID_1))));
 
   @BeforeAll
-  public static void beforeAll() throws Exception {
-    final var authorizationsUtil =
-        AuthorizationsUtil.create(testInstance, testInstance.getElasticSearchHostAddress());
-    final var defaultClient = authorizationsUtil.getDefaultClient();
-    // create super user that can read all process definitions
-    final var superCamundaClient =
-        authorizationsUtil.createUserAndClient(
-            SUPER_USER,
-            "password",
-            new Permissions(PROCESS_DEFINITION, READ_PROCESS_DEFINITION, List.of("*")),
-            new Permissions(PROCESS_DEFINITION, READ_PROCESS_INSTANCE, List.of("*")));
-    superOperateClient = testInstance.newOperateClient(SUPER_USER, "password");
-    // create restricted user that can only read process definition 1
-    authorizationsUtil.createUserWithPermissions(
-        RESTRICTED_USER,
-        "password",
-        new Permissions(
-            PROCESS_DEFINITION, READ_PROCESS_INSTANCE, List.of(PROCESS_DEFINITION_ID_1)));
-    restrictedOperateClient = testInstance.newOperateClient(RESTRICTED_USER, "password");
-
+  public static void beforeAll(@Authenticated(SUPER_USER) final CamundaClient superUserClient)
+      throws Exception {
     final List<String> processes = List.of(PROCESS_DEFINITION_ID_1, PROCESS_DEFINITION_ID_2);
     processes.forEach(
         process ->
             DEPLOYED_PROCESSES.addAll(
-                deployResource(defaultClient, String.format("process/%s.bpmn", process))
+                deployResource(superUserClient, String.format("process/%s.bpmn", process))
                     .getProcesses()));
     assertThat(DEPLOYED_PROCESSES).hasSize(processes.size());
 
-    waitForProcessesToBeDeployed(superCamundaClient, DEPLOYED_PROCESSES.size());
+    waitForProcessesToBeDeployed(superUserClient, DEPLOYED_PROCESSES.size());
   }
 
   @AfterAll
@@ -95,36 +90,37 @@ public class OperatePermissionsIT {
   }
 
   @Test
-  public void shouldGetProcessByKeyOnlyForAuthorizedProcesses() {
+  public void shouldGetProcessByKeyOnlyForAuthorizedProcesses(
+      @Authenticated(SUPER_USER) final CamundaClient superClient,
+      @Authenticated(RESTRICTED_USER) final CamundaClient restrictedClient) {
     // super user can read all process definitions
     DEPLOYED_PROCESSES.stream()
         .map(Process::getProcessDefinitionKey)
         .forEach(
             key ->
-                assertThat(
-                        superOperateClient
-                            .internalGetProcessDefinitionByKey(key)
-                            .get()
-                            .statusCode())
-                    .isEqualTo(OK.value()));
+                assertThatNoException()
+                    .isThrownBy(
+                        () -> superClient.newProcessDefinitionGetRequest(key).send().join()));
 
     // restricted user can read process definition 1
-    assertThat(
-            restrictedOperateClient
-                .internalGetProcessDefinitionByKey(
-                    DEPLOYED_PROCESSES.get(0).getProcessDefinitionKey())
-                .get()
-                .statusCode())
-        .isEqualTo(OK.value());
+    assertThatNoException()
+        .isThrownBy(
+            () ->
+                restrictedClient
+                    .newProcessDefinitionGetRequest(
+                        DEPLOYED_PROCESSES.get(0).getProcessDefinitionKey())
+                    .send()
+                    .join());
 
     // restricted user cannot read process definition 2
-    assertThat(
-            restrictedOperateClient
-                .internalGetProcessDefinitionByKey(
-                    DEPLOYED_PROCESSES.get(1).getProcessDefinitionKey())
-                .get()
-                .statusCode())
-        .isEqualTo(FORBIDDEN.value());
+    assertThatException()
+        .isThrownBy(
+            () ->
+                restrictedClient
+                    .newProcessDefinitionGetRequest(
+                        DEPLOYED_PROCESSES.get(1).getProcessDefinitionKey())
+                    .send()
+                    .join());
   }
 
   private static void waitForProcessesToBeDeployed(
