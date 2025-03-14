@@ -16,7 +16,7 @@ import io.camunda.zeebe.stream.api.scheduling.SimpleProcessingScheduleService;
 import io.camunda.zeebe.stream.api.scheduling.Task;
 import java.time.Duration;
 
-public class ExtendedProcessingScheduleServiceImpl implements ProcessingScheduleService {
+class ExtendedProcessingScheduleServiceImpl implements ProcessingScheduleService {
   private final AsyncScheduleServiceContext context;
   private final SimpleProcessingScheduleService processorActorService;
   private final boolean alwaysAsync;

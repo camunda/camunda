@@ -26,7 +26,7 @@ import java.util.Map;
 import java.util.function.BooleanSupplier;
 import java.util.function.Supplier;
 
-public class AsyncScheduleServiceContext {
+class AsyncScheduleServiceContext {
   private final ActorSchedulingService actorSchedulingService;
   private final Supplier<Phase> streamProcessorPhaseSupplier;
   private final BooleanSupplier abortCondition;
