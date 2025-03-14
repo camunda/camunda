@@ -93,6 +93,9 @@ public class WebSecurityConfig {
           "/ready",
           "/health",
           "/startup",
+          // swagger-ui endpoint
+          "/swagger-ui/**",
+          "/v3/api-docs/**",
           // deprecated Tasklist v1 Public Endpoints
           "/new/**",
           "/favicon.ico");
