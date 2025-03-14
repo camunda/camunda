@@ -12,6 +12,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.db.DbKey;
 import io.camunda.zeebe.db.DbValue;
+import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.processing.EngineProcessors;
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
 import io.camunda.zeebe.engine.processing.streamprocessor.JobStreamer;
@@ -88,6 +89,7 @@ public final class EngineRule extends ExternalResource {
 
   private FeatureFlags featureFlags = FeatureFlags.createDefaultForTests();
   private ArrayList<TestInterPartitionCommandSender> interPartitionCommandSenders;
+  private Consumer<EngineConfiguration> engineConfigModifier = cfg -> {};
 
   private EngineRule(final int partitionCount) {
     this(partitionCount, null);
@@ -161,6 +163,11 @@ public final class EngineRule extends ExternalResource {
     return this;
   }
 
+  public EngineRule withEngineConfig(final Consumer<EngineConfiguration> modifier) {
+    engineConfigModifier = engineConfigModifier.andThen(modifier);
+    return this;
+  }
+
   private void startProcessors(final StreamProcessorMode mode, final boolean awaitOpening) {
     interPartitionCommandSenders = new ArrayList<>();
 
@@ -171,17 +178,19 @@ public final class EngineRule extends ExternalResource {
           interPartitionCommandSenders.add(interPartitionCommandSender);
           environmentRule.startTypedStreamProcessor(
               partitionId,
-              (recordProcessorContext) ->
-                  EngineProcessors.createEngineProcessors(
-                          recordProcessorContext,
-                          partitionCount,
-                          new SubscriptionCommandSender(partitionId, interPartitionCommandSender),
-                          interPartitionCommandSender,
-                          featureFlags,
-                          jobStreamer)
-                      .withListener(
-                          new ProcessingExporterTransistor(
-                              environmentRule.getLogStream(partitionId))),
+              (recordProcessorContext) -> {
+                engineConfigModifier.accept(recordProcessorContext.getConfig());
+                return EngineProcessors.createEngineProcessors(
+                        recordProcessorContext,
+                        partitionCount,
+                        new SubscriptionCommandSender(partitionId, interPartitionCommandSender),
+                        interPartitionCommandSender,
+                        featureFlags,
+                        jobStreamer)
+                    .withListener(
+                        new ProcessingExporterTransistor(
+                            environmentRule.getLogStream(partitionId)));
+              },
               Optional.of(
                   new StreamProcessorListener() {
                     @Override
