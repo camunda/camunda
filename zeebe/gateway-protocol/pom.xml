@@ -25,6 +25,7 @@
         <directory>src/main/proto</directory>
         <includes>
           <include>**/*.proto</include>
+          <include>**/*.yaml</include>
         </includes>
       </resource>
     </resources>
