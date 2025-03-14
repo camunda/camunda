@@ -18,7 +18,6 @@ package io.camunda.operate.zeebeimport.processors;
 
 import static io.camunda.operate.util.TestUtil.createVariable;
 import static io.camunda.operate.util.ZeebeRecordTestUtil.createZeebeRecordFromVariable;
-import static io.camunda.zeebe.protocol.record.intent.IncidentIntent.MIGRATED;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
 
@@ -30,6 +29,7 @@ import io.camunda.operate.util.j5templates.OperateSearchAbstractIT;
 import io.camunda.operate.zeebe.PartitionHolder;
 import io.camunda.operate.zeebeimport.ImportPositionHolder;
 import io.camunda.zeebe.protocol.record.Record;
+import io.camunda.zeebe.protocol.record.intent.VariableIntent;
 import io.camunda.zeebe.protocol.record.value.VariableRecordValue;
 import java.io.IOException;
 import java.util.List;
@@ -69,7 +69,7 @@ public class VariableZeebeRecordProcessorIT extends OperateSearchAbstractIT {
     final Record<VariableRecordValue> zeebeRecord =
         createZeebeRecordFromVariable(
             var,
-            b -> b.withPosition(newPosition).withIntent(MIGRATED),
+            b -> b.withPosition(newPosition).withIntent(VariableIntent.UPDATED),
             b -> b.withValue(newVarValue));
     importVariableZeebeRecord(zeebeRecord);
 
@@ -101,7 +101,7 @@ public class VariableZeebeRecordProcessorIT extends OperateSearchAbstractIT {
     final Record<VariableRecordValue> zeebeRecord =
         createZeebeRecordFromVariable(
             var,
-            b -> b.withPosition(newPosition).withIntent(MIGRATED),
+            b -> b.withPosition(newPosition).withIntent(VariableIntent.UPDATED),
             b -> b.withValue(newVarValue));
     importVariableZeebeRecord(zeebeRecord);
 
@@ -134,7 +134,7 @@ public class VariableZeebeRecordProcessorIT extends OperateSearchAbstractIT {
     final Record<VariableRecordValue> zeebeRecord =
         createZeebeRecordFromVariable(
             var,
-            b -> b.withPosition(newPosition).withIntent(MIGRATED),
+            b -> b.withPosition(newPosition).withIntent(VariableIntent.MIGRATED),
             b -> b.withValue(newVarValue));
     importVariableZeebeRecord(zeebeRecord);
 
@@ -149,6 +149,29 @@ public class VariableZeebeRecordProcessorIT extends OperateSearchAbstractIT {
     assertThat(updatedVar.getFullValue()).isEqualTo(var.getFullValue());
     assertThat(updatedVar.getIsPreview()).isEqualTo(var.getIsPreview());
     assertThat(updatedVar.getPosition()).isEqualTo(oldPosition);
+  }
+
+  @Test
+  public void shouldNotClearVariableValueDuringMigration()
+      throws PersistenceException, IOException {
+    // given
+    final VariableEntity var = createVariable(111L, 222L, "varName", "varValue");
+    testSearchRepository.createOrUpdateDocumentFromObject(
+        variableTemplate.getFullQualifiedName(), var.getId(), var);
+
+    // when
+    // importing MIGRATED Zeebe record
+    final Record<VariableRecordValue> zeebeRecord =
+        createZeebeRecordFromVariable(
+            var,
+            b -> b.withPosition(1L).withIntent(VariableIntent.MIGRATED),
+            b -> b.withValue(null));
+    importVariableZeebeRecord(zeebeRecord);
+
+    // then
+    // the variable value has not been set to null but is still the old value
+    final VariableEntity updatedVar = findVariableById(var.getId());
+    assertThat(updatedVar.getValue()).isEqualTo(var.getValue());
   }
 
   @NotNull
