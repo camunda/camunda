@@ -582,6 +582,9 @@ public final class SearchQueryRequestMapper {
       ofNullable(filter.getTenantId())
           .map(mapToOperations(String.class))
           .ifPresent(builder::tenantIdOperations);
+      ofNullable(filter.getErrorMessage())
+          .map(mapToOperations(String.class))
+          .ifPresent(builder::errorMessageOperations);
       if (!CollectionUtils.isEmpty(filter.getVariables())) {
         final Either<List<String>, List<VariableValueFilter>> either =
             toVariableValueFiltersForProcessInstance(filter.getVariables());

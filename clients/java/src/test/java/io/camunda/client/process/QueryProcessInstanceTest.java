@@ -89,6 +89,7 @@ public class QueryProcessInstanceTest extends ClientRestTest {
                     .state(ACTIVE)
                     .hasIncident(true)
                     .tenantId("tenant")
+                    .errorMessage("Error message")
                     .variables(variablesMap))
         .send()
         .join();
@@ -111,6 +112,7 @@ public class QueryProcessInstanceTest extends ClientRestTest {
     assertThat(filter.getHasIncident()).isEqualTo(true);
     assertThat(filter.getTenantId().get$Eq()).isEqualTo("tenant");
     assertThat(filter.getVariables()).isEqualTo(variables);
+    assertThat(filter.getErrorMessage().get$Eq()).isEqualTo("Error message");
   }
 
   @Test
