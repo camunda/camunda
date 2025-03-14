@@ -23,5 +23,9 @@
   "groupIdPlaceholder": "Enter group ID",
   "groupNamePlaceholder": "Enter group name",
   "groupDescriptionPlaceholder": "Enter a group description (Max 255 characters)",
-  "pleaseEnterValidGroupId": "Please enter a valid group ID (only alphanumeric characters and max 256 characters)"
+  "pleaseEnterValidGroupId": "Please enter a valid group ID (only alphanumeric characters and max 256 characters)",
+  "openGroupContextMenu": "Open group context menu",
+  "users": "Users",
+  "roles": "Roles",
+  "mappings": "Mappings"
 }

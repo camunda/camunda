@@ -71,8 +71,10 @@ const List: FC = () => {
           { header: t("groupName"), key: "name" },
         ]}
         sortProperty="name"
+        onEntityClick={showDetails}
         addEntityLabel={t("createGroup")}
         onAddEntity={addGroup}
+        loading={loading}
         menuItems={[
           { label: t("edit"), icon: Edit, onClick: updateGroup },
           {
@@ -82,8 +84,6 @@ const List: FC = () => {
             onClick: deleteGroup,
           },
         ]}
-        onEntityClick={showDetails}
-        loading={loading}
         searchPlaceholder={t("searchByGroupId")}
       />
       {!loading && !success && (
