@@ -34,9 +34,7 @@
     <module>clients/java</module>
     <module>clients/java-deprecated</module>
     <module>clients/spring-boot-starter-camunda-sdk</module>
-    <module>testing/camunda-process-test-java</module>
-    <module>testing/camunda-process-test-spring</module>
-    <module>testing/camunda-process-test-example</module>
+    <module>testing</module>
     <module>document</module>
     <module>security</module>
     <module>migration</module>
