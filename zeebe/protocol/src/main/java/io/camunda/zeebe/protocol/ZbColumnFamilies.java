@@ -235,7 +235,8 @@ public enum ZbColumnFamilies implements EnumValue {
   PENDING_BATCH_OPERATION(122),
 
   VARIABLE_DOCUMENT_KEY_BY_SCOPE_KEY(123),
-  VARIABLE_DOCUMENTS(124);
+  VARIABLE_DOCUMENT_STATES(124);
+
   private final int value;
 
   ZbColumnFamilies(final int value) {
