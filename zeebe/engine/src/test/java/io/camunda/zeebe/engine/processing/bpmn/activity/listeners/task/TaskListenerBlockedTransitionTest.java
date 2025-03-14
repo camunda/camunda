@@ -23,12 +23,14 @@ import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
+import io.camunda.zeebe.protocol.record.intent.VariableDocumentIntent;
 import io.camunda.zeebe.protocol.record.value.JobKind;
 import io.camunda.zeebe.protocol.record.value.JobListenerEventType;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.function.Consumer;
 import java.util.function.UnaryOperator;
@@ -277,6 +279,56 @@ public class TaskListenerBlockedTransitionTest {
                 .hasPriority(88) // updated
                 .hasAction("my_update_action")
                 .hasOnlyChangedAttributes(UserTaskRecord.CANDIDATE_USERS, UserTaskRecord.PRIORITY));
+  }
+
+  @Test
+  public void
+      shouldUpdateUserTaskAfterAllUpdatingTaskListenersAreExecutedTriggeredByVariableUpdate() {
+    // given
+    final long processInstanceKey =
+        helper.createProcessInstance(
+            helper.createUserTaskWithTaskListeners(
+                ZeebeTaskListenerEventType.updating,
+                listenerType,
+                listenerType + "_2",
+                listenerType + "_3"));
+    final var userTaskElementInstanceKey = helper.getUserTaskElementInstanceKey(processInstanceKey);
+
+    // when
+    ENGINE
+        .variables()
+        .ofScope(userTaskElementInstanceKey)
+        .withDocument(Map.of("approvalStatus", "APPROVED"))
+        .expectPartialUpdate()
+        .update();
+    helper.completeJobs(processInstanceKey, listenerType, listenerType + "_2", listenerType + "_3");
+
+    // then
+    helper.assertTaskListenerJobsCompletionSequence(
+        processInstanceKey,
+        JobListenerEventType.UPDATING,
+        listenerType,
+        listenerType + "_2",
+        listenerType + "_3");
+
+    assertThat(
+            RecordingExporter.records()
+                .filter(
+                    r ->
+                        Set.of(ValueType.USER_TASK, ValueType.VARIABLE_DOCUMENT)
+                            .contains(r.getValueType()))
+                .limit(r -> r.getIntent() == VariableDocumentIntent.UPDATED))
+        .extracting(Record::getValueType, Record::getIntent)
+        .describedAs("Verify the expected sequence of UserTask and VariableDocument intents")
+        .containsSequence(
+            tuple(ValueType.VARIABLE_DOCUMENT, VariableDocumentIntent.UPDATE),
+            tuple(ValueType.VARIABLE_DOCUMENT, VariableDocumentIntent.UPDATING),
+            tuple(ValueType.USER_TASK, UserTaskIntent.UPDATING),
+            tuple(ValueType.USER_TASK, UserTaskIntent.COMPLETE_TASK_LISTENER),
+            tuple(ValueType.USER_TASK, UserTaskIntent.COMPLETE_TASK_LISTENER),
+            tuple(ValueType.USER_TASK, UserTaskIntent.COMPLETE_TASK_LISTENER),
+            tuple(ValueType.USER_TASK, UserTaskIntent.UPDATED),
+            tuple(ValueType.VARIABLE_DOCUMENT, VariableDocumentIntent.UPDATED));
   }
 
   @Test
