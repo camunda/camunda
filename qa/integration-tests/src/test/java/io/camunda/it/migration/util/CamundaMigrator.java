@@ -24,22 +24,25 @@ import io.camunda.zeebe.it.util.SearchClientsUtil;
 import io.camunda.zeebe.qa.util.actuator.PartitionsActuator;
 import io.camunda.zeebe.qa.util.cluster.TestZeebePort;
 import io.camunda.zeebe.util.FileUtil;
+import io.camunda.zeebe.util.VersionUtil;
 import io.zeebe.containers.ZeebeContainer;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
+import org.agrona.CloseHelper;
 import org.testcontainers.containers.Network;
 import org.testcontainers.utility.DockerImageName;
 
 public class CamundaMigrator extends ApiCallable {
-  private static final String CAMUNDA_OLD_VERSION = "8.7.0-SNAPSHOT";
   private static final String OS_USER = "admin";
   private static final String OS_PASSWORD = "yourStrongPassword123!";
   private static final String URL = "http://%s:%d";
   private static final String RPC_URL = "http://%s:%d";
+  private static final String PREVIOUS_VERSION = VersionUtil.getPreviousVersion();
   private String databaseUrl;
   private final Network network;
   private final String indexPrefix;
@@ -52,22 +55,24 @@ public class CamundaMigrator extends ApiCallable {
   private TestRestOperateClient operateClient;
   private DocumentBasedSearchClient searchClients;
 
-  public CamundaMigrator(final Network network, final String indexPrefix) {
+  public CamundaMigrator(final Network network, final String indexPrefix, final Path tempDir) {
     this.network = network;
     this.indexPrefix = indexPrefix;
     volume = CamundaVolume.newCamundaVolume();
-    zeebeDataPath = Path.of(System.getProperty("user.dir") + "/zeebe-data" + volume.getName());
+    zeebeDataPath = tempDir.resolve(volume.getName());
   }
 
   public CamundaMigrator initialize(
       final DatabaseType databaseType,
       final String databaseUrl,
       final Map<String, String> envOverrides) {
-    final String image = "camunda/camunda:" + CAMUNDA_OLD_VERSION;
     this.databaseUrl = databaseUrl;
+    final DockerImageName image =
+        DockerImageName.parse("camunda/camunda").withTag(PREVIOUS_VERSION);
+
     camundaContainer =
-        new ZeebeContainer(DockerImageName.parse(image))
-            .withExposedPorts(26500, 9600, 8080)
+        new ZeebeContainer(image)
+            .withAdditionalExposedPort(8080)
             .withNetwork(network)
             .withNetworkAliases("camunda");
 
@@ -164,23 +169,8 @@ public class CamundaMigrator extends ApiCallable {
     return this;
   }
 
-  public void close() throws Exception {
-    if (camundaContainer != null) {
-      camundaContainer.stop();
-      camundaContainer = null;
-    }
-    if (broker != null) {
-      broker.stop();
-      broker = null;
-    }
-    if (tasklistClient != null) {
-      tasklistClient.close();
-      tasklistClient = null;
-    }
-    if (operateClient != null) {
-      operateClient.close();
-      operateClient = null;
-    }
+  public void close() {
+    CloseHelper.quietCloseAll(camundaContainer, broker, tasklistClient, operateClient);
   }
 
   public void cleanup() throws IOException {
@@ -283,7 +273,7 @@ public class CamundaMigrator extends ApiCallable {
     try {
       volume.extract(zeebeDataPath);
     } catch (final IOException e) {
-      throw new RuntimeException(e);
+      throw new UncheckedIOException(e);
     }
   }
 
