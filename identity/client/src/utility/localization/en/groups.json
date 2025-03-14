@@ -21,5 +21,6 @@
   "groupNamePlaceholder": "Enter group name",
   "groupDescriptionPlaceholder": "Enter a group description (Max 255 characters)",
   "pleaseEnterValidGroupId": "Please enter a valid group ID (only alphanumeric characters and max 256 characters)",
-  "groupIdHelperText": "The group ID must be unique and can not be modified"
+  "groupIdHelperText": "The group ID must be unique and can not be modified",
+  "openGroupContextMenu": "Open group context menu"
 }

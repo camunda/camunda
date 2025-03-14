@@ -9,7 +9,7 @@
 import { FC } from "react";
 import { useNavigate, useParams } from "react-router";
 import { OverflowMenu, OverflowMenuItem, Section, Stack } from "@carbon/react";
-import { spacing02 } from "@carbon/elements";
+import { spacing01, spacing02, spacing03 } from "@carbon/elements";
 import useTranslate from "src/utility/localization";
 import { useApi } from "src/utility/api/hooks";
 import NotFound from "src/pages/not-found";
@@ -23,12 +23,14 @@ import Members from "src/pages/groups/detail/members";
 import { useEntityModal } from "src/components/modal";
 import EditModal from "src/pages/groups/modals/EditModal";
 import DeleteModal from "src/pages/groups/modals/DeleteModal";
+import { Description } from "src/pages/groups/detail/components";
 
 const Details: FC = () => {
   const navigate = useNavigate();
-  const { t } = useTranslate();
-  const { id = "" } = useParams<{
+  const { t } = useTranslate("groups");
+  const { id = "", tab = "details" } = useParams<{
     id: string;
+    tab: string;
   }>();
 
   const {
@@ -36,7 +38,7 @@ const Details: FC = () => {
     loading,
     reload,
   } = useApi(getGroupDetails, { groupKey: id });
-  const [renameGroup, editModal] = useEntityModal(EditModal, reload);
+  const [editGroup, editModal] = useEntityModal(EditModal, reload);
   const [deleteGroup, deleteModal] = useEntityModal(DeleteModal, () =>
     navigate("..", { replace: true }),
   );
@@ -47,31 +49,40 @@ const Details: FC = () => {
     <StackPage>
       <>
         <Stack gap={spacing02}>
-          <Breadcrumbs items={[{ href: "/groups", title: t("Groups") }]} />
+          <Breadcrumbs items={[{ href: "/groups", title: t("groups") }]} />
           {loading && !group ? (
-            <DetailPageHeaderFallback />
+            <DetailPageHeaderFallback hasOverflowMenu={false} />
           ) : (
             <Flex>
               {group && (
-                <>
-                  <PageHeadline>{group.name}</PageHeadline>
-
-                  <OverflowMenu ariaLabel={t("Open group context menu")}>
-                    <OverflowMenuItem
-                      itemText={t("Rename")}
-                      onClick={() => {
-                        renameGroup(group);
-                      }}
-                    />
-                    <OverflowMenuItem
-                      itemText={t("Delete")}
-                      isDelete
-                      onClick={() => {
-                        deleteGroup(group);
-                      }}
-                    />
-                  </OverflowMenu>
-                </>
+                <Stack gap={spacing03}>
+                  <Stack orientation="horizontal" gap={spacing01}>
+                    <PageHeadline>{group.name}</PageHeadline>
+                    <OverflowMenu ariaLabel={t("openGroupContextMenu")}>
+                      <OverflowMenuItem
+                        itemText={t("edit")}
+                        onClick={() => {
+                          editGroup(group);
+                        }}
+                      />
+                      <OverflowMenuItem
+                        itemText={t("delete")}
+                        isDelete
+                        onClick={() => {
+                          deleteGroup(group);
+                        }}
+                      />
+                    </OverflowMenu>
+                  </Stack>
+                  <p>
+                    {t("groupId")}: {group.groupKey}
+                  </p>
+                  {group?.description && (
+                    <Description>
+                      {t("description")}: {group.description}
+                    </Description>
+                  )}
+                </Stack>
               )}
             </Flex>
           )}
@@ -81,18 +92,18 @@ const Details: FC = () => {
             <Tabs
               tabs={[
                 {
-                  key: "members",
-                  label: t("Members"),
+                  key: "users",
+                  label: t("users"),
                   content: <Members groupId={group?.groupKey} />,
                 },
               ]}
-              selectedTabKey="members"
+              selectedTabKey={tab}
               path={`../${id}`}
             />
           </Section>
         )}
-        <>{editModal}</>
-        <>{deleteModal}</>
+        {editModal}
+        {deleteModal}
       </>
     </StackPage>
   );
