@@ -35,8 +35,6 @@ import io.camunda.client.api.search.response.FlowNodeInstance;
 import io.camunda.client.api.search.response.ProcessInstance;
 import io.camunda.client.api.worker.JobWorker;
 import io.camunda.qa.util.multidb.MultiDbTest;
-import io.camunda.search.filter.FilterBuilders;
-import io.camunda.search.filter.Operation;
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
@@ -49,8 +47,9 @@ import org.junit.jupiter.api.Test;
 @MultiDbTest
 public class ProcessInstanceAndFlowNodeInstanceSearchTest {
 
-  public static final String EXPECTED_ERROR =
+  public static final String INCIDENT_ERROR_MESSAGE_V1 =
       "Expected result of the expression 'retriesA' to be 'NUMBER', but was 'STRING'.";
+  public static final int INCIDENT_ERROR_HASH_CODE_V2 = 17551445;
   static final List<Process> DEPLOYED_PROCESSES = new ArrayList<>();
   static final List<ProcessInstanceEvent> PROCESS_INSTANCES = new ArrayList<>();
   private static long processInstanceWithIncidentKey;
@@ -67,6 +66,7 @@ public class ProcessInstanceAndFlowNodeInstanceSearchTest {
             "service_tasks_v1.bpmn",
             "service_tasks_v2.bpmn",
             "incident_process_v1.bpmn",
+            "incident_process_v2.bpmn",
             "manual_process.bpmn",
             "parent_process_v1.bpmn",
             "child_process_v1.bpmn");
@@ -88,14 +88,15 @@ public class ProcessInstanceAndFlowNodeInstanceSearchTest {
     PROCESS_INSTANCES.add(startProcessInstance(camundaClient, "manual_process"));
     final ProcessInstanceEvent processInstanceWithIncident =
         startProcessInstance(camundaClient, "incident_process_v1");
+    PROCESS_INSTANCES.add(startProcessInstance(camundaClient, "incident_process_v2"));
     processInstanceWithIncidentKey = processInstanceWithIncident.getProcessInstanceKey();
     PROCESS_INSTANCES.add(processInstanceWithIncident);
     PROCESS_INSTANCES.add(startProcessInstance(camundaClient, "parent_process_v1"));
 
-    waitForProcessInstancesToStart(camundaClient, 7);
-    waitForFlowNodeInstances(camundaClient, 22);
-    waitUntilFlowNodeInstanceHasIncidents(camundaClient, 1);
-    waitUntilProcessInstanceHasIncidents(camundaClient, 1);
+    waitForProcessInstancesToStart(camundaClient, 8);
+    waitForFlowNodeInstances(camundaClient, 24);
+    waitUntilFlowNodeInstanceHasIncidents(camundaClient, 2);
+    waitUntilProcessInstanceHasIncidents(camundaClient, 2);
     // store flow node instances for querying
     allFlowNodeInstances =
         camundaClient
@@ -460,10 +461,14 @@ public class ProcessInstanceAndFlowNodeInstanceSearchTest {
         camundaClient.newProcessInstanceSearchRequest().filter(f -> f.state(ACTIVE)).send().join();
 
     // then
-    assertThat(result.items().size()).isEqualTo(4);
+    assertThat(result.items().size()).isEqualTo(5);
     assertThat(result.items().stream().map(ProcessInstance::getProcessDefinitionId).toList())
         .containsExactlyInAnyOrder(
-            "service_tasks_v1", "service_tasks_v1", "service_tasks_v2", "incident_process_v1");
+            "service_tasks_v1",
+            "service_tasks_v1",
+            "service_tasks_v2",
+            "incident_process_v1",
+            "incident_process_v2");
   }
 
   @Test
@@ -477,10 +482,14 @@ public class ProcessInstanceAndFlowNodeInstanceSearchTest {
             .join();
 
     // then
-    assertThat(result.items().size()).isEqualTo(4);
+    assertThat(result.items().size()).isEqualTo(5);
     assertThat(result.items().stream().map(ProcessInstance::getProcessDefinitionId).toList())
         .containsExactlyInAnyOrder(
-            "service_tasks_v1", "service_tasks_v1", "service_tasks_v2", "incident_process_v1");
+            "service_tasks_v1",
+            "service_tasks_v1",
+            "service_tasks_v2",
+            "incident_process_v1",
+            "incident_process_v2");
   }
 
   @Test
@@ -532,9 +541,9 @@ public class ProcessInstanceAndFlowNodeInstanceSearchTest {
             .join();
 
     // then
-    assertThat(result.items().size()).isEqualTo(1);
+    assertThat(result.items().size()).isEqualTo(2);
     assertThat(result.items().stream().map(ProcessInstance::getProcessDefinitionId).toList())
-        .containsExactlyInAnyOrder("incident_process_v1");
+        .containsExactlyInAnyOrder("incident_process_v1", "incident_process_v2");
   }
 
   @Test
@@ -579,7 +588,7 @@ public class ProcessInstanceAndFlowNodeInstanceSearchTest {
             .join();
 
     // then
-    assertThat(result.items().size()).isEqualTo(7);
+    assertThat(result.items().size()).isEqualTo(8);
     assertThat(result.items().stream().map(ProcessInstance::getProcessDefinitionId).toList())
         .containsExactlyElementsOf(expectedBpmnProcessIds);
   }
@@ -844,7 +853,7 @@ public class ProcessInstanceAndFlowNodeInstanceSearchTest {
             .send()
             .join();
 
-    assertThat(resultAfter.items().size()).isEqualTo(6);
+    assertThat(resultAfter.items().size()).isEqualTo(7);
     final var keyAfter = resultAfter.items().getFirst().getProcessInstanceKey();
     // apply searchBefore
     final var resultBefore =
@@ -871,7 +880,7 @@ public class ProcessInstanceAndFlowNodeInstanceSearchTest {
             .send()
             .join();
 
-    assertThat(resultAfter.items().size()).isEqualTo(21);
+    assertThat(resultAfter.items().size()).isEqualTo(23);
     final var keyAfter = resultAfter.items().getFirst().getFlowNodeInstanceKey();
     // apply searchBefore
     final var resultBefore =
@@ -1123,7 +1132,7 @@ public class ProcessInstanceAndFlowNodeInstanceSearchTest {
             .join();
 
     // then
-    assertThat(result.items().size()).isEqualTo(18);
+    assertThat(result.items().size()).isEqualTo(19);
     assertThat(result.items().getFirst().getState()).isEqualTo(state);
   }
 
@@ -1151,7 +1160,7 @@ public class ProcessInstanceAndFlowNodeInstanceSearchTest {
             .join();
 
     // then
-    assertThat(result.items().size()).isEqualTo(1);
+    assertThat(result.items().size()).isEqualTo(2);
     assertThat(result.items().getFirst().getIncident()).isEqualTo(hasIncident);
   }
 
@@ -1208,7 +1217,7 @@ public class ProcessInstanceAndFlowNodeInstanceSearchTest {
             .join();
 
     // then
-    assertThat(result.page().totalItems()).isEqualTo(22);
+    assertThat(result.page().totalItems()).isEqualTo(24);
     assertThat(result.items()).allMatch(f -> f.getTenantId().equals(tenantId));
   }
 
@@ -1226,7 +1235,7 @@ public class ProcessInstanceAndFlowNodeInstanceSearchTest {
             .send()
             .join();
 
-    assertThat(resultAfter.items().size()).isEqualTo(21);
+    assertThat(resultAfter.items().size()).isEqualTo(23);
     final var keyAfter = resultAfter.items().getFirst().getFlowNodeInstanceKey();
     // apply searchBefore
     final var resultBefore =
@@ -1264,7 +1273,7 @@ public class ProcessInstanceAndFlowNodeInstanceSearchTest {
     final var result =
         camundaClient
             .newProcessInstanceSearchRequest()
-            .filter(b -> b.errorMessage(f -> f.eq(EXPECTED_ERROR)))
+            .filter(b -> b.errorMessage(f -> f.eq(INCIDENT_ERROR_MESSAGE_V1)))
             .send()
             .join();
 
@@ -1279,7 +1288,7 @@ public class ProcessInstanceAndFlowNodeInstanceSearchTest {
     final var result =
         camundaClient
             .newProcessInstanceSearchRequest()
-            .filter(b -> b.errorMessage(f -> f.neq(EXPECTED_ERROR)))
+            .filter(b -> b.errorMessage(f -> f.neq(INCIDENT_ERROR_MESSAGE_V1)))
             .send()
             .join();
 
@@ -1322,7 +1331,7 @@ public class ProcessInstanceAndFlowNodeInstanceSearchTest {
     final var result =
         camundaClient
             .newProcessInstanceSearchRequest()
-            .filter(b -> b.errorMessage(f -> f.in(EXPECTED_ERROR, "foo")))
+            .filter(b -> b.errorMessage(f -> f.in(INCIDENT_ERROR_MESSAGE_V1, "foo")))
             .send()
             .join();
 
@@ -1463,5 +1472,23 @@ public class ProcessInstanceAndFlowNodeInstanceSearchTest {
 
     // then
     assertThat(result.items().size()).isEqualTo(1);
+  }
+
+  @Test
+  void shouldQueryProcessInstancesByIncidentErrorHashCode() {
+
+    final var partialErrorMessage = "Expected result of the expression";
+
+    final var result =
+        camundaClient
+            .newProcessInstanceSearchRequest()
+            .filter(
+                f ->
+                    f.incidentErrorHashCode(INCIDENT_ERROR_HASH_CODE_V2)
+                        .errorMessage(partialErrorMessage))
+            .send()
+            .join();
+    assertThat(result.items().size()).isEqualTo(1);
+    assertThat(result.items()).extracting("processDefinitionId").contains("incident_process_v2");
   }
 }
