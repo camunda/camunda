@@ -19,6 +19,7 @@ import io.camunda.search.entities.FlowNodeInstanceEntity;
 import io.camunda.search.entities.FormEntity;
 import io.camunda.search.entities.GroupEntity;
 import io.camunda.search.entities.IncidentEntity;
+import io.camunda.search.entities.IncidentEntity.IncidentState;
 import io.camunda.search.entities.MappingEntity;
 import io.camunda.search.entities.ProcessDefinitionEntity;
 import io.camunda.search.entities.ProcessInstanceEntity;
@@ -29,6 +30,9 @@ import io.camunda.search.entities.UsageMetricsEntity;
 import io.camunda.search.entities.UserEntity;
 import io.camunda.search.entities.UserTaskEntity;
 import io.camunda.search.entities.VariableEntity;
+import io.camunda.search.filter.FilterBuilders;
+import io.camunda.search.filter.Operation;
+import io.camunda.search.filter.ProcessInstanceFilter.Builder;
 import io.camunda.search.filter.UsageMetricsFilter;
 import io.camunda.search.query.AuthorizationQuery;
 import io.camunda.search.query.DecisionDefinitionQuery;
@@ -184,9 +188,54 @@ public class SearchClients
   @Override
   public SearchQueryResult<ProcessInstanceEntity> searchProcessInstances(
       final ProcessInstanceQuery filter) {
+    if (!filter.filter().incidentErrorHashCodes().isEmpty()) {
+      return searchProcessInstancesByIncidentErrorHash(filter);
+    }
+
     return getSearchExecutor()
         .search(
             filter,
+            io.camunda.webapps.schema.entities.operate.listview.ProcessInstanceForListViewEntity
+                .class);
+  }
+
+  private SearchQueryResult<ProcessInstanceEntity> searchProcessInstancesByIncidentErrorHash(
+      final ProcessInstanceQuery filter) {
+
+    final var originalFilter = filter.filter();
+
+    final var incidentFilter =
+        FilterBuilders.incident(
+            f ->
+                f.incidentErrorHashCodes(originalFilter.incidentErrorHashCodes())
+                    .states(IncidentState.ACTIVE));
+
+    final var incidentResult = searchIncidents(IncidentQuery.of(f -> f.filter(incidentFilter)));
+
+    final var errorMessageOperations =
+        incidentResult.items().stream()
+            .map(incident -> Operation.eq(incident.errorMessage()))
+            .toList();
+
+    final var updatedFilter =
+        FilterBuilders.processInstance(
+            f ->
+                Builder.from(originalFilter)
+                    .errorMessageOperations(errorMessageOperations)
+                    .endDateOperations(Operation.exists(false))
+                    .hasIncident(true));
+
+    final var updatedQuery =
+        ProcessInstanceQuery.of(
+            q ->
+                q.filter(updatedFilter)
+                    .sort(filter.sort())
+                    .page(filter.page())
+                    .resultConfig(filter.resultConfig()));
+
+    return getSearchExecutor()
+        .search(
+            updatedQuery,
             io.camunda.webapps.schema.entities.operate.listview.ProcessInstanceForListViewEntity
                 .class);
   }

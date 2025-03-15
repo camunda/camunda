@@ -594,6 +594,7 @@ public final class SearchQueryRequestMapper {
           builder.variables(either.get());
         }
       }
+      ofNullable(filter.getIncidentErrorHashCode()).ifPresent(builder::incidentErrorHashCodes);
     }
     return validationErrors.isEmpty()
         ? Either.right(builder.build())
