@@ -12,11 +12,13 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatNoException;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import io.camunda.exporter.config.ExporterConfiguration.IndexSettings;
 import io.camunda.exporter.exceptions.OpensearchExporterException;
-import io.camunda.exporter.schema.opensearch.OpensearchEngineClient;
 import io.camunda.exporter.utils.SearchDBExtension;
 import io.camunda.exporter.utils.TestObjectMapper;
+import io.camunda.search.schema.IndexMappingProperty;
+import io.camunda.search.schema.MappingSource;
+import io.camunda.search.schema.configuration.IndexConfiguration;
+import io.camunda.search.schema.opensearch.OpensearchEngineClient;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.operate.index.ImportPositionIndex;
 import io.camunda.webapps.schema.entities.operate.ImportPositionEntity;
@@ -65,7 +67,7 @@ public class OpensearchEngineClientIT {
             "/mappings.json");
 
     // when
-    final var indexSettings = new IndexSettings();
+    final var indexSettings = new IndexConfiguration();
     opensearchEngineClient.createIndex(descriptor, indexSettings);
 
     // then
@@ -97,7 +99,7 @@ public class OpensearchEngineClientIT {
             "/mappings-and-settings.json");
 
     // when
-    final var expectedIndexSettings = new IndexSettings();
+    final var expectedIndexSettings = new IndexConfiguration();
     opensearchEngineClient.createIndexTemplate(template, expectedIndexSettings, false);
 
     // then
@@ -142,7 +144,7 @@ public class OpensearchEngineClientIT {
             "template_name",
             "/mappings.json");
 
-    final var settings = new IndexSettings();
+    final var settings = new IndexConfiguration();
     opensearchEngineClient.createIndexTemplate(indexTemplate, settings, true);
 
     // when, then
@@ -157,7 +159,7 @@ public class OpensearchEngineClientIT {
     // given
     final var descriptor =
         SchemaTestUtil.mockIndex("qualified_name", "alias", "index_name", "/mappings.json");
-    opensearchEngineClient.createIndex(descriptor, new IndexSettings());
+    opensearchEngineClient.createIndex(descriptor, new IndexConfiguration());
 
     final Set<IndexMappingProperty> newProperties = new HashSet<>();
     newProperties.add(new IndexMappingProperty("email", Map.of("type", "keyword")));
@@ -190,7 +192,7 @@ public class OpensearchEngineClientIT {
             "index_name_" + ENGINE_CLIENT_TEST_MARKERS,
             "/mappings-complex-property.json");
 
-    opensearchEngineClient.createIndex(index, new IndexSettings());
+    opensearchEngineClient.createIndex(index, new IndexConfiguration());
 
     // when
     final var mappings =
@@ -227,7 +229,7 @@ public class OpensearchEngineClientIT {
             "template_name_" + ENGINE_CLIENT_TEST_MARKERS,
             "/mappings-complex-property.json");
 
-    opensearchEngineClient.createIndexTemplate(template, new IndexSettings(), true);
+    opensearchEngineClient.createIndexTemplate(template, new IndexConfiguration(), true);
 
     // when
     final var templateMappings =
@@ -255,7 +257,7 @@ public class OpensearchEngineClientIT {
     final var index =
         SchemaTestUtil.mockIndex("index_qualified_name", "alias", "index_name", "/mappings.json");
 
-    opensearchEngineClient.createIndex(index, new IndexSettings());
+    opensearchEngineClient.createIndex(index, new IndexConfiguration());
 
     // when, then
     assertThatNoException()
@@ -271,7 +273,7 @@ public class OpensearchEngineClientIT {
     final var index =
         SchemaTestUtil.mockIndex("index_name", "alias", "index_name", "/mappings.json");
 
-    opensearchEngineClient.createIndex(index, new IndexSettings());
+    opensearchEngineClient.createIndex(index, new IndexConfiguration());
 
     // when
     final Map<String, String> newSettings = Map.of("index.refresh_interval", "5s");
@@ -335,7 +337,7 @@ public class OpensearchEngineClientIT {
       openSearchClient
           .indices()
           .delete(r -> r.index(importPositionIndex.getFullQualifiedName()).ignoreUnavailable(true));
-      opensearchEngineClient.createIndex(importPositionIndex, new IndexSettings());
+      opensearchEngineClient.createIndex(importPositionIndex, new IndexConfiguration());
     }
 
     @Test

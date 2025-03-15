@@ -890,6 +890,12 @@
         <version>${project.version}</version>
       </dependency>
 
+      <dependency>
+        <groupId>io.camunda</groupId>
+        <artifactId>camunda-search-schema-manager</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+
       <!-- camunda java client -->
 
       <dependency>

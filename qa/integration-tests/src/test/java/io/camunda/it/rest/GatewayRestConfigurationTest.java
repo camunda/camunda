@@ -19,7 +19,8 @@ import org.springframework.boot.test.context.SpringBootTest;
     classes = {CommonsModuleConfiguration.class},
     properties = {
       "camunda.rest.process-cache.max-size=1000",
-      "camunda.rest.process-cache.expiration-idle-millis=360000"
+      "camunda.rest.process-cache.expiration-idle-millis=360000",
+      "camunda.database.create-schema=false",
     })
 public class GatewayRestConfigurationTest {
 

@@ -25,7 +25,7 @@ final class StandaloneGatewayIT {
 
   @TestZeebe(awaitReady = false, awaitCompleteTopology = false) // no brokers
   private final TestStandaloneGateway gateway =
-      new TestStandaloneGateway().withUnauthenticatedAccess();
+      new TestStandaloneGateway().withUnauthenticatedAccess().withSchemaCreationDisabled();
 
   @AutoClose private CamundaClient client;
 

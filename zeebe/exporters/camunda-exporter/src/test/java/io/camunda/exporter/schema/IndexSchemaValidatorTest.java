@@ -13,8 +13,11 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.camunda.exporter.exceptions.IndexSchemaValidationException;
 import io.camunda.exporter.utils.TestObjectMapper;
+import io.camunda.search.schema.IndexMapping;
+import io.camunda.search.schema.IndexMappingProperty;
+import io.camunda.search.schema.IndexSchemaValidator;
+import io.camunda.search.schema.exceptions.IndexSchemaValidationException;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.Map;

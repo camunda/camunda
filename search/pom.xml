@@ -16,6 +16,7 @@
 
   <modules>
     <module>search-client</module>
+    <module>search-schema-manager</module>
     <module>search-client-elasticsearch</module>
     <module>search-client-opensearch</module>
     <module>search-client-rdbms</module>

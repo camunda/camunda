@@ -10,6 +10,8 @@ package io.camunda.exporter.schema;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.exporter.utils.TestObjectMapper;
+import io.camunda.search.schema.IndexMapping;
+import io.camunda.search.schema.IndexMappingProperty;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
 

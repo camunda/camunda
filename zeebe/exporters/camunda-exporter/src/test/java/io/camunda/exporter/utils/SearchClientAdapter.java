@@ -12,7 +12,7 @@ import co.elastic.clients.elasticsearch.ilm.get_lifecycle.Lifecycle;
 import co.elastic.clients.elasticsearch.indices.get_index_template.IndexTemplateItem;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.camunda.exporter.SchemaResourceSerializer;
+import io.camunda.search.schema.SchemaResourceSerializer;
 import java.io.IOException;
 import java.util.Objects;
 import org.opensearch.client.json.jackson.JacksonJsonpGenerator;

@@ -8,10 +8,9 @@
 package io.camunda.application.commons.migration;
 
 import io.camunda.exporter.adapters.ClientAdapter;
-import io.camunda.exporter.config.ExporterConfiguration;
-import io.camunda.exporter.schema.SchemaManager;
 import io.camunda.search.connect.configuration.ConnectConfiguration;
-import io.camunda.search.connect.configuration.DatabaseType;
+import io.camunda.search.schema.SchemaManager;
+import io.camunda.search.schema.configuration.SearchEngineConfiguration;
 import io.camunda.webapps.schema.descriptors.IndexDescriptors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -22,35 +21,24 @@ public final class SchemaManagerHelper {
   private SchemaManagerHelper() {}
 
   public static void createSchema(
-      final ConnectConfiguration connectConfig, final ClientAdapter clientAdapter) {
-    final var config = createExporterConfig(connectConfig);
-    final var isElasticsearch = connectConfig.getTypeEnum() == DatabaseType.ELASTICSEARCH;
-
+      final SearchEngineConfiguration searchEngineConfiguration,
+      final ClientAdapter clientAdapter) {
+    final var isElasticsearch = searchEngineConfiguration.connect().getTypeEnum().isElasticSearch();
     final IndexDescriptors indexDescriptors =
-        new IndexDescriptors(connectConfig.getIndexPrefix(), isElasticsearch);
+        new IndexDescriptors(searchEngineConfiguration.connect().getIndexPrefix(), isElasticsearch);
 
     final SchemaManager schemaManager =
         new SchemaManager(
             clientAdapter.getSearchEngineClient(),
             indexDescriptors.indices(),
             indexDescriptors.templates(),
-            config,
+            searchEngineConfiguration,
             clientAdapter.objectMapper());
 
     schemaManager.startup();
   }
 
   public static ClientAdapter createClientAdapter(final ConnectConfiguration connectConfig) {
-    final var config = createExporterConfig(connectConfig);
-    return ClientAdapter.of(config);
-  }
-
-  private static ExporterConfiguration createExporterConfig(
-      final ConnectConfiguration connectConfig) {
-    final var config = new ExporterConfiguration();
-    config.setConnect(connectConfig);
-    config.getIndex().setPrefix(connectConfig.getIndexPrefix());
-
-    return config;
+    return ClientAdapter.of(connectConfig);
   }
 }

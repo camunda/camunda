@@ -29,7 +29,10 @@ class CompleteUserTaskTest {
 
   @TestZeebe
   private final TestStandaloneBroker zeebe =
-      new TestStandaloneBroker().withRecordingExporter(true).withUnauthenticatedAccess();
+      new TestStandaloneBroker()
+          .withRecordingExporter(true)
+          .withUnauthenticatedAccess()
+          .withSchemaCreationDisabled();
 
   @AutoClose private CamundaClient client;
 

@@ -8,9 +8,11 @@
 package io.camunda.application;
 
 import io.camunda.application.commons.migration.SchemaManagerHelper;
+import io.camunda.application.commons.search.SearchEngineDatabaseConfiguration;
 import io.camunda.application.listeners.ApplicationErrorListener;
-import io.camunda.exporter.schema.SchemaManager;
 import io.camunda.search.connect.configuration.ConnectConfiguration;
+import io.camunda.search.schema.SchemaManager;
+import io.camunda.search.schema.configuration.SearchEngineConfiguration;
 import java.io.IOException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -18,7 +20,6 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.WebApplicationType;
 import org.springframework.boot.builder.SpringApplicationBuilder;
-import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.ConfigurableApplicationContext;
 
@@ -48,8 +49,6 @@ public class StandaloneSchemaManager {
 
   private static final Logger LOG = LoggerFactory.getLogger(SchemaManager.class);
 
-  private static final boolean IS_ELASTICSEARCH = true;
-
   public static void main(final String[] args) throws IOException {
 
     // To ensure that debug logging performed using java.util.logging is routed into Log4j 2
@@ -68,7 +67,7 @@ public class StandaloneSchemaManager {
         new SpringApplicationBuilder()
             .web(WebApplicationType.NONE)
             .logStartupInfo(true)
-            .sources(StandaloneSchemaManager.class, SchemaManagerConnectConfiguration.class)
+            .sources(StandaloneSchemaManager.class, SearchEngineDatabaseConfiguration.class)
             .addCommandLineProperties(true)
             .listeners(new ApplicationErrorListener())
             .build(args);
@@ -76,10 +75,10 @@ public class StandaloneSchemaManager {
     final ConfigurableApplicationContext applicationContext =
         standaloneSchemaManagerApplication.run(args);
 
-    final SchemaManagerConnectConfiguration connectConfiguration =
-        applicationContext.getBean(SchemaManagerConnectConfiguration.class);
+    final var searchEngineConfiguration =
+        applicationContext.getBean(SearchEngineConfiguration.class);
 
-    if (!"elasticsearch".equalsIgnoreCase(connectConfiguration.getType())) {
+    if (!searchEngineConfiguration.connect().getTypeEnum().isElasticSearch()) {
       LOG.error(
           "Cannot creating schema for anything other than Elasticsearch with this script for now...");
       System.exit(1);
@@ -87,14 +86,11 @@ public class StandaloneSchemaManager {
 
     LOG.info("Creating/updating Elasticsearch schema for Camunda ...");
 
-    final var clientAdapter = SchemaManagerHelper.createClientAdapter(connectConfiguration);
-    SchemaManagerHelper.createSchema(connectConfiguration, clientAdapter);
+    final var clientAdapter =
+        SchemaManagerHelper.createClientAdapter(searchEngineConfiguration.connect());
+    SchemaManagerHelper.createSchema(searchEngineConfiguration, clientAdapter);
     LOG.info("... finished creating/updating schema for Camunda");
     clientAdapter.close();
     System.exit(0);
   }
-
-  /** Helper class to use Spring defaults to read properties for database connection */
-  @ConfigurationProperties("camunda.database")
-  public static final class SchemaManagerConnectConfiguration extends ConnectConfiguration {}
 }
