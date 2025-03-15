@@ -123,4 +123,7 @@ public interface ProcessInstanceFilter extends SearchRequestFilter {
 
   /** Filter by error message using {@link StringProperty} consumer */
   ProcessInstanceFilter errorMessage(final Consumer<StringProperty> fn);
+
+  /** Filter by incidentErrorHashCode */
+  ProcessInstanceFilter incidentErrorHashCode(final Integer incidentErrorHashCode);
 }
