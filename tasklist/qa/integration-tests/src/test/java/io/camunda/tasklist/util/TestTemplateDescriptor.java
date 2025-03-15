@@ -7,14 +7,19 @@
  */
 package io.camunda.tasklist.util;
 
-import io.camunda.tasklist.schema.templates.AbstractTemplateDescriptor;
+import io.camunda.webapps.schema.descriptors.tasklist.TasklistTemplateDescriptor;
 
-public class TestTemplateDescriptor extends AbstractTemplateDescriptor {
+public class TestTemplateDescriptor extends TasklistTemplateDescriptor {
 
   private final String indexName;
   private String schemaClasspathFilename;
 
-  public TestTemplateDescriptor(final String indexName, final String schemaClasspathFilename) {
+  public TestTemplateDescriptor(
+      final String indexName,
+      final String schemaClasspathFilename,
+      final String indexPrefix,
+      final boolean isElasticsearch) {
+    super(indexPrefix, isElasticsearch);
     this.indexName = indexName;
     this.schemaClasspathFilename = schemaClasspathFilename;
   }

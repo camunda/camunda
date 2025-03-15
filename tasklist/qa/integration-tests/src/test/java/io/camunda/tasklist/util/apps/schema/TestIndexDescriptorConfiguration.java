@@ -7,6 +7,7 @@
  */
 package io.camunda.tasklist.util.apps.schema;
 
+import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.qa.util.TestUtil;
 import io.camunda.tasklist.util.TestIndexDescriptor;
 import org.springframework.context.annotation.Bean;
@@ -18,8 +19,12 @@ public class TestIndexDescriptorConfiguration {
   public static final String INDEX_NAME = "test";
 
   @Bean
-  public TestIndexDescriptor testIndexDescriptor() {
-    return new TestIndexDescriptor(INDEX_NAME, getSchemaFilePath("tasklist-test-before.json"));
+  public TestIndexDescriptor testIndexDescriptor(final TasklistProperties tasklistProperties) {
+    return new TestIndexDescriptor(
+        INDEX_NAME,
+        getSchemaFilePath("tasklist-test-before.json"),
+        tasklistProperties.getIndexPrefix(),
+        TestUtil.isElasticSearch());
   }
 
   public static String getSchemaFilePath(final String filename) {
