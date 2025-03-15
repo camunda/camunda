@@ -47,11 +47,13 @@ jobs:
           ref: refs/heads/${{ github.head_ref }}
           fetch-depth: 0 # fetches all history for all branches and tags
 
-      - uses: ./.github/actions/setup-zeebe
+      - uses: ./.github/actions/setup-build
         with:
-          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
-          secret_vault_address: ${{ secrets.VAULT_ADDR }}
-          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          dockerhub: true
+          harbor: true
+          vault-address: ${{ secrets.VAULT_ADDR }}
+          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
 
       - uses: ./.github/actions/build-zeebe
         id: build-zeebe
