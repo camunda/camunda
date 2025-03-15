@@ -123,4 +123,7 @@ public interface ProcessInstanceFilter extends SearchRequestFilter {
 
   /** Filter by batchOperationId using {@link StringProperty} */
   ProcessInstanceFilter batchOperationId(final Consumer<StringProperty> fn);
+
+  /** Filter by incidentErrorHashCode */
+  ProcessInstanceFilter incidentErrorHashCode(final Integer incidentErrorHashCode);
 }

@@ -211,6 +211,11 @@ public class SearchClients
                     .states(IncidentState.ACTIVE));
 
     final var incidentResult = searchIncidents(IncidentQuery.of(f -> f.filter(incidentFilter)));
+    searchIncidents(IncidentQuery.of(f -> f.filter(incidentFilter)));
+
+    if (incidentResult.items().isEmpty()) {
+      return new SearchQueryResult.Builder<ProcessInstanceEntity>().build();
+    }
 
     final var errorMessageOperations =
         incidentResult.items().stream()
