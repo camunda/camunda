@@ -8,12 +8,15 @@
 package io.camunda.search.clients.transformers.filter;
 
 import static io.camunda.search.clients.query.SearchQueryBuilders.and;
+import static io.camunda.search.clients.query.SearchQueryBuilders.intTerms;
 import static io.camunda.search.clients.query.SearchQueryBuilders.longTerms;
+import static io.camunda.search.clients.query.SearchQueryBuilders.match;
 import static io.camunda.search.clients.query.SearchQueryBuilders.stringTerms;
 import static io.camunda.webapps.schema.descriptors.IndexDescriptor.TENANT_ID;
 import static io.camunda.webapps.schema.descriptors.template.IncidentTemplate.BPMN_PROCESS_ID;
 import static io.camunda.webapps.schema.descriptors.template.IncidentTemplate.CREATION_TIME;
 import static io.camunda.webapps.schema.descriptors.template.IncidentTemplate.ERROR_MSG;
+import static io.camunda.webapps.schema.descriptors.template.IncidentTemplate.ERROR_MSG_HASH;
 import static io.camunda.webapps.schema.descriptors.template.IncidentTemplate.ERROR_TYPE;
 import static io.camunda.webapps.schema.descriptors.template.IncidentTemplate.FLOW_NODE_ID;
 import static io.camunda.webapps.schema.descriptors.template.IncidentTemplate.FLOW_NODE_INSTANCE_KEY;
@@ -22,6 +25,7 @@ import static io.camunda.webapps.schema.descriptors.template.IncidentTemplate.KE
 import static io.camunda.webapps.schema.descriptors.template.IncidentTemplate.PROCESS_DEFINITION_KEY;
 import static io.camunda.webapps.schema.descriptors.template.IncidentTemplate.PROCESS_INSTANCE_KEY;
 
+import io.camunda.search.clients.query.SearchMatchQuery.SearchMatchQueryOperator;
 import io.camunda.search.clients.query.SearchQuery;
 import io.camunda.search.clients.transformers.ServiceTransformers;
 import io.camunda.search.clients.transformers.filter.DateValueFilterTransformer.DateFieldFilter;
@@ -57,6 +61,8 @@ public class IncidentFilterTransformer extends IndexFilterTransformer<IncidentFi
     final var stateQuery = getStateQuery(filter.states());
     final var jobKeyQuery = getJobKeyQuery(filter.jobKeys());
     final var tenantIdQuery = getTenantIdQuery(filter.tenantIds());
+    final var incidentErrorHashCodeQuery =
+        getIncidentErrorHashCodeQuery(filter.incidentErrorHashCodes());
 
     return and(
         keyQuery,
@@ -70,7 +76,8 @@ public class IncidentFilterTransformer extends IndexFilterTransformer<IncidentFi
         creationTimeQuery,
         stateQuery,
         jobKeyQuery,
-        tenantIdQuery);
+        tenantIdQuery,
+        incidentErrorHashCodeQuery);
   }
 
   private SearchQuery getTenantIdQuery(final List<String> tenantIds) {
@@ -119,10 +126,17 @@ public class IncidentFilterTransformer extends IndexFilterTransformer<IncidentFi
   }
 
   private SearchQuery getErrorMessageQuery(final List<String> errorMessages) {
-    return stringTerms(ERROR_MSG, errorMessages);
+    return and(
+        errorMessages.stream()
+            .map(e -> match(ERROR_MSG, e, SearchMatchQueryOperator.AND))
+            .toList());
   }
 
   private SearchQuery getKeyQuery(final List<Long> keys) {
     return longTerms(KEY, keys);
+  }
+
+  private SearchQuery getIncidentErrorHashCodeQuery(final List<Integer> incidentErrorHashCodes) {
+    return intTerms(ERROR_MSG_HASH, incidentErrorHashCodes);
   }
 }

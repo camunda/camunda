@@ -4725,8 +4725,10 @@ components:
         hasFlowNodeInstanceIncident:
           description:  Whether the flow node instance has an incident or not.
           type: boolean
-
-
+        incidentErrorHashCode:
+          description: The incident error hash code, associated with this process.
+          type: integer
+          format: int32
     ProcessInstanceVariableFilterRequest:
       description: Process instance variable filter.
       type: object

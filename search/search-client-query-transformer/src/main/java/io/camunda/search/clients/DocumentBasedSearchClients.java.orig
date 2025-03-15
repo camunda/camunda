@@ -9,7 +9,7 @@ package io.camunda.search.clients;
 
 import static io.camunda.zeebe.protocol.record.value.EntityType.USER;
 
-import io.camunda.search.aggregation.result.ProcessDefinitionFlowNodeStatisticsAggregationResult;
+import io.camunda.search.aggregation.ProcessDefinitionFlowNodeStatisticsAggregation;
 import io.camunda.search.clients.auth.DocumentAuthorizationQueryStrategy;
 import io.camunda.search.clients.transformers.ServiceTransformers;
 import io.camunda.search.entities.AuthorizationEntity;
@@ -36,8 +36,8 @@ import io.camunda.search.entities.UserTaskEntity;
 import io.camunda.search.entities.VariableEntity;
 import io.camunda.search.filter.FilterBuilders;
 import io.camunda.search.filter.Operation;
-import io.camunda.search.filter.ProcessDefinitionStatisticsFilter;
 import io.camunda.search.filter.ProcessInstanceFilter.Builder;
+import io.camunda.search.filter.ProcessDefinitionStatisticsFilter;
 import io.camunda.search.filter.UsageMetricsFilter;
 import io.camunda.search.query.AuthorizationQuery;
 import io.camunda.search.query.BatchOperationQuery;
@@ -179,17 +179,26 @@ public class DocumentBasedSearchClients implements SearchClientsProxy, Closeable
     return getSearchExecutor()
         .aggregate(
             new ProcessDefinitionFlowNodeStatisticsQuery(filter),
-            ProcessDefinitionFlowNodeStatisticsAggregationResult.class)
+            ProcessDefinitionFlowNodeStatisticsAggregation.class)
         .items();
   }
 
   @Override
   public SearchQueryResult<ProcessInstanceEntity> searchProcessInstances(
       final ProcessInstanceQuery filter) {
+<<<<<<< HEAD
+    return getSearchExecutor().search(filter, ProcessInstanceForListViewEntity.class);
+=======
     if (!filter.filter().incidentErrorHashCodes().isEmpty()) {
       return searchProcessInstancesByIncidentErrorHash(filter);
     }
-    return getSearchExecutor().search(filter, ProcessInstanceForListViewEntity.class);
+
+    return getSearchExecutor()
+        .search(
+            filter,
+            io.camunda.webapps.schema.entities.operate.listview.ProcessInstanceForListViewEntity
+                .class);
+>>>>>>> ff67c00cbe4 (feat: add filter to endpoint for ES and OS)
   }
 
   private SearchQueryResult<ProcessInstanceEntity> searchProcessInstancesByIncidentErrorHash(
@@ -226,7 +235,11 @@ public class DocumentBasedSearchClients implements SearchClientsProxy, Closeable
                     .page(filter.page())
                     .resultConfig(filter.resultConfig()));
 
-    return getSearchExecutor().search(filter, ProcessInstanceForListViewEntity.class);
+    return getSearchExecutor()
+        .search(
+            updatedQuery,
+            io.camunda.webapps.schema.entities.operate.listview.ProcessInstanceForListViewEntity
+                .class);
   }
 
   @Override
