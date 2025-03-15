@@ -26,6 +26,7 @@ import io.camunda.tasklist.util.TestIndexDescriptor;
 import io.camunda.tasklist.util.TestTemplateDescriptor;
 import io.camunda.tasklist.util.apps.schema.TestIndexDescriptorConfiguration;
 import io.camunda.tasklist.util.apps.schema.TestTemplateDescriptorConfiguration;
+import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
@@ -48,6 +49,7 @@ import org.springframework.boot.test.context.SpringBootTest;
       TasklistProperties.PREFIX + "importer.jobType = testJobType",
       "camunda.webapps.enabled = true",
       "camunda.webapps.default-app = tasklist",
+      TasklistProperties.PREFIX + ".zeebe.compatibility.enabled = true",
     },
     webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 public class ElasticSearchSchemaManagementIT extends TasklistZeebeIntegrationTest {

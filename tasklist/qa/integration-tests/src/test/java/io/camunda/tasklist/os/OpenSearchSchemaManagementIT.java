@@ -17,7 +17,6 @@ import io.camunda.tasklist.qa.util.TestUtil;
 import io.camunda.tasklist.schema.IndexMapping;
 import io.camunda.tasklist.schema.IndexMapping.IndexMappingProperty;
 import io.camunda.tasklist.schema.IndexSchemaValidator;
-import io.camunda.tasklist.schema.indices.IndexDescriptor;
 import io.camunda.tasklist.schema.manager.OpenSearchSchemaManager;
 import io.camunda.tasklist.util.NoSqlHelper;
 import io.camunda.tasklist.util.OpenSearchTestExtension;
@@ -27,6 +26,7 @@ import io.camunda.tasklist.util.TestIndexDescriptor;
 import io.camunda.tasklist.util.TestTemplateDescriptor;
 import io.camunda.tasklist.util.apps.schema.TestIndexDescriptorConfiguration;
 import io.camunda.tasklist.util.apps.schema.TestTemplateDescriptorConfiguration;
+import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
@@ -51,6 +51,7 @@ import org.springframework.boot.test.context.SpringBootTest;
       TasklistProperties.PREFIX + "importer.jobType = testJobType",
       "camunda.webapps.enabled = true",
       "camunda.webapps.default-app = tasklist",
+      TasklistProperties.PREFIX + ".zeebe.compatibility.enabled = true",
     },
     webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 public class OpenSearchSchemaManagementIT extends TasklistZeebeIntegrationTest {
