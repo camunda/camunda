@@ -38,7 +38,6 @@ import io.camunda.webapps.schema.descriptors.operate.template.SequenceFlowTempla
 import io.camunda.webapps.schema.descriptors.operate.template.VariableTemplate;
 import io.camunda.webapps.schema.descriptors.tasklist.index.FormIndex;
 import io.camunda.webapps.schema.descriptors.tasklist.template.TaskTemplate;
-import java.io.IOException;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
@@ -84,17 +83,8 @@ public final class PrefixMigrationHelper {
   public static void runPrefixMigration(
       final OperateProperties operateProperties,
       final TasklistProperties tasklistProperties,
-      final ConnectConfiguration connectConfiguration)
-      throws IOException {
+      final ConnectConfiguration connectConfiguration) {
     final var isElasticsearch = connectConfiguration.getTypeEnum() == DatabaseType.ELASTICSEARCH;
-
-    LOG.info("Creating/updating Elasticsearch schema for Camunda ...");
-
-    final var clientAdapter = SchemaManagerHelper.createClientAdapter(connectConfiguration);
-
-    SchemaManagerHelper.createSchema(connectConfiguration, clientAdapter);
-
-    LOG.info("... finished creating/updating schema for Camunda");
 
     LOG.info("Migrating runtime indices");
 
@@ -128,8 +118,6 @@ public final class PrefixMigrationHelper {
         executor);
 
     LOG.info("... finished migrating historic indices");
-
-    clientAdapter.close();
   }
 
   private static PrefixMigrationClient getPrefixMigrationClient(

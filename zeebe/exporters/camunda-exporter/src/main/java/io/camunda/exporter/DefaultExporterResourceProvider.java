@@ -98,6 +98,7 @@ import io.camunda.webapps.schema.descriptors.usermanagement.index.MappingIndex;
 import io.camunda.webapps.schema.descriptors.usermanagement.index.RoleIndex;
 import io.camunda.webapps.schema.descriptors.usermanagement.index.TenantIndex;
 import io.camunda.webapps.schema.descriptors.usermanagement.index.UserIndex;
+import io.camunda.zeebe.util.VisibleForTesting;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.net.http.HttpClient;
 import java.util.Collection;
@@ -287,6 +288,11 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
   @Override
   public Collection<IndexDescriptor> getIndexDescriptors() {
     return indexDescriptors.indices();
+  }
+
+  @VisibleForTesting
+  void setIndexDescriptors(final IndexDescriptors indexDescriptors) {
+    this.indexDescriptors = indexDescriptors;
   }
 
   @Override

@@ -568,11 +568,14 @@ public class TestContainerUtil {
         .withEnv(
             "ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_CONNECT_URL", getElasticURL(testContext))
         .withEnv("ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_BULK_DELAY", "1")
-        .withEnv("ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_BULK_SIZE", "1");
+        .withEnv("ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_BULK_SIZE", "1")
+        .withEnv("CAMUNDA_DATABASE_URL", getElasticURL(testContext));
     if (testContext.getZeebeIndexPrefix() != null) {
-      broker.withEnv(
-          "ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_INDEX_PREFIX",
-          testContext.getZeebeIndexPrefix());
+      broker
+          .withEnv(
+              "ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_INDEX_PREFIX",
+              testContext.getZeebeIndexPrefix())
+          .withEnv("CAMUNDA_DATABASE_INDEX_PREFIX", testContext.getZeebeIndexPrefix());
     }
   }
 

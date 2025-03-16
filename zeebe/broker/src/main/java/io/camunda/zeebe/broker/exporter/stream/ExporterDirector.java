@@ -522,7 +522,7 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
     for (final ExporterContainer container : containers) {
       container.initMetadata();
       final var openFuture =
-          new BackOffRetryStrategy(actor, Duration.ofSeconds(10))
+          new BackOffRetryStrategy(actor, Duration.ofSeconds(10), Duration.ofMillis(150))
               .runWithRetry(
                   () -> {
                     try {
