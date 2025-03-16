@@ -98,7 +98,7 @@ public class CamundaExporter implements Exporter {
     ConfigValidator.validate(configuration);
     context.setFilter(new CamundaExporterRecordFilter());
     metrics = new CamundaExporterMetrics(context.getMeterRegistry());
-    clientAdapter = ClientAdapter.of(configuration);
+    clientAdapter = ClientAdapter.of(configuration.getConnect());
     if (metadata == null) {
       metadata = new ExporterMetadata(clientAdapter.objectMapper());
     }
@@ -129,9 +129,11 @@ public class CamundaExporter implements Exporter {
     searchEngineClient = clientAdapter.getSearchEngineClient();
     final var schemaManager = createSchemaManager();
 
-    schemaManager.startup();
+    if (!schemaManager.isSchemaReadyForUse()) {
+      throw new IllegalStateException("Schema is not ready for use");
+    }
 
-    writer = createBatchWriter();
+    writer = createBatchWriter(); // move before schemaManager.isSchemaReadyForUse()?
 
     checkImportersCompletedAndReschedule();
     controller.readMetadata().ifPresent(metadata::deserialize);

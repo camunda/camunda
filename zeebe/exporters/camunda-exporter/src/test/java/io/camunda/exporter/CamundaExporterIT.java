@@ -8,10 +8,11 @@
 package io.camunda.exporter;
 
 import static io.camunda.exporter.config.ConnectionTypes.ELASTICSEARCH;
-import static io.camunda.exporter.schema.SchemaTestUtil.mappingsMatch;
+import static io.camunda.exporter.utils.CamundaExporterSchemaUtils.createSchemas;
 import static io.camunda.exporter.utils.SearchDBExtension.CUSTOM_PREFIX;
 import static io.camunda.exporter.utils.SearchDBExtension.TEST_INTEGRATION_OPENSEARCH_AWS_URL;
 import static io.camunda.exporter.utils.SearchDBExtension.ZEEBE_IDX_PREFIX;
+import static java.util.Collections.emptyList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatNoException;
@@ -19,7 +20,6 @@ import static org.assertj.core.api.Assertions.fail;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.CALLS_REAL_METHODS;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -28,21 +28,16 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import io.camunda.exporter.adapters.ClientAdapter;
 import io.camunda.exporter.cache.ExporterEntityCacheProvider;
 import io.camunda.exporter.config.ConnectionTypes;
 import io.camunda.exporter.config.ExporterConfiguration;
-import io.camunda.exporter.config.ExporterConfiguration.RetentionConfiguration;
 import io.camunda.exporter.exceptions.PersistenceException;
 import io.camunda.exporter.handlers.ExportHandler;
-import io.camunda.exporter.schema.MappingSource;
-import io.camunda.exporter.schema.SchemaTestUtil;
 import io.camunda.exporter.utils.CamundaExporterITTemplateExtension;
 import io.camunda.exporter.utils.SearchClientAdapter;
 import io.camunda.exporter.utils.SearchDBExtension;
 import io.camunda.exporter.utils.TestObjectMapper;
-import io.camunda.webapps.schema.descriptors.IndexDescriptor;
-import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
+import io.camunda.webapps.schema.descriptors.IndexDescriptors;
 import io.camunda.webapps.schema.descriptors.operate.index.ImportPositionIndex;
 import io.camunda.webapps.schema.entities.ExporterEntity;
 import io.camunda.webapps.schema.entities.operate.ImportPositionEntity;
@@ -63,7 +58,6 @@ import io.camunda.zeebe.test.util.testcontainers.TestSearchContainers;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.io.IOException;
 import java.time.Duration;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -72,7 +66,6 @@ import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import org.apache.commons.lang3.RandomStringUtils;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -101,30 +94,6 @@ final class CamundaExporterIT {
       new CamundaExporterITTemplateExtension(searchDB);
 
   private final ProtocolFactory factory = new ProtocolFactory();
-  private IndexDescriptor index;
-  private IndexTemplateDescriptor indexTemplate;
-
-  @BeforeEach
-  void beforeEach() {
-    indexTemplate =
-        SchemaTestUtil.mockIndexTemplate(
-            "index_name",
-            "test*",
-            "template_alias",
-            Collections.emptyList(),
-            CUSTOM_PREFIX + "-template_name",
-            "/mappings.json");
-
-    index =
-        SchemaTestUtil.mockIndex(
-            CUSTOM_PREFIX + "-qualified_name",
-            CUSTOM_PREFIX + "-alias",
-            CUSTOM_PREFIX + "-index_name",
-            "/mappings.json");
-
-    when(indexTemplate.getFullQualifiedName())
-        .thenReturn(CUSTOM_PREFIX + "-template_index_qualified_name");
-  }
 
   @AfterEach
   public void afterEach() throws IOException {
@@ -138,47 +107,9 @@ final class CamundaExporterIT {
 
   @TestTemplate
   void shouldOpenDifferentPartitions(
-      final ExporterConfiguration config, final SearchClientAdapter ignored) {
+      final ExporterConfiguration config, final SearchClientAdapter ignored) throws IOException {
     // given
-    final var p1Exporter = new CamundaExporter();
-    final var p1Context = getContextFromConfig(config, 1);
-    p1Exporter.configure(p1Context);
-
-    final var p2Exporter = new CamundaExporter();
-    final var p2Context = getContextFromConfig(config, 2);
-    p2Exporter.configure(p2Context);
-
-    // when
-    final var future =
-        CompletableFuture.runAsync(
-            () -> {
-              final var p1ExporterController = new ExporterTestController();
-              p1Exporter.open(p1ExporterController);
-            });
-
-    // then
-    assertThatNoException()
-        .isThrownBy(
-            () -> {
-              final var p2ExporterController = new ExporterTestController();
-              p2Exporter.open(p2ExporterController);
-            });
-    Awaitility.await("Partition one has been opened successfully")
-        .atMost(Duration.ofSeconds(30))
-        .untilAsserted(
-            () -> {
-              assertThat(future).isNotCompletedExceptionally();
-              assertThat(future).isCompleted();
-            });
-  }
-
-  @TestTemplate
-  void shouldOpenDifferentPartitionsWithRetention(
-      final ExporterConfiguration config, final SearchClientAdapter ignored) {
-    // given
-    final RetentionConfiguration retention = config.getHistory().getRetention();
-    retention.setEnabled(true);
-    retention.setPolicyName("shouldOpenDifferentPartitionsWithRetention");
+    createSchemas(config);
     final var p1Exporter = new CamundaExporter();
     final var p1Context = getContextFromConfig(config, 1);
     p1Exporter.configure(p1Context);
@@ -213,8 +144,9 @@ final class CamundaExporterIT {
 
   @TestTemplate
   void shouldUpdateExporterPositionAfterFlushing(
-      final ExporterConfiguration config, final SearchClientAdapter ignored) {
+      final ExporterConfiguration config, final SearchClientAdapter ignored) throws IOException {
     // given
+    createSchemas(config);
     final var exporter = new CamundaExporter();
 
     final var context = getContextFromConfig(config);
@@ -235,8 +167,9 @@ final class CamundaExporterIT {
 
   @TestTemplate
   void shouldExportRecordOnceBulkSizeReached(
-      final ExporterConfiguration config, final SearchClientAdapter ignored) {
+      final ExporterConfiguration config, final SearchClientAdapter ignored) throws IOException {
     // given
+    createSchemas(config);
     config.getBulk().setSize(2);
     final var exporter = new CamundaExporter();
 
@@ -265,9 +198,10 @@ final class CamundaExporterIT {
       matches = "^(?=\\s*\\S).*$",
       disabledReason = "Container tests not supported in CI")
   void shouldExportRecordIfElasticsearchIsNotInitiallyReachableButThenIsReachableLater(
-      final GenericContainer<?> container) {
+      final GenericContainer<?> container) throws IOException {
     // given
     final var config = getConnectConfigForContainer(container);
+    createSchemas(config);
     final var exporter = new CamundaExporter();
 
     final var context = getContextFromConfig(config);
@@ -303,8 +237,9 @@ final class CamundaExporterIT {
 
   @TestTemplate
   void shouldPeriodicallyFlushBasedOnConfiguration(
-      final ExporterConfiguration config, final SearchClientAdapter ignored) {
+      final ExporterConfiguration config, final SearchClientAdapter ignored) throws IOException {
     // given
+    createSchemas(config);
     final var duration = 2;
     config.getBulk().setDelay(duration);
 
@@ -323,136 +258,11 @@ final class CamundaExporterIT {
   }
 
   @TestTemplate
-  @DisabledIfSystemProperty(
-      named = SearchDBExtension.TEST_INTEGRATION_OPENSEARCH_AWS_URL,
-      matches = "^(?=\\s*\\S).*$",
-      disabledReason = "Ineligible test for AWS OS integration")
-  void shouldHaveCorrectSchemaUpdatesWithMultipleExporters(
-      final ExporterConfiguration config, final SearchClientAdapter clientAdapter)
-      throws Exception {
-    // given
-    final var exporter1 = createExporter(Set.of(index), Set.of(indexTemplate), config);
-    final var exporter2 = createExporter(Set.of(index), Set.of(indexTemplate), config);
-
-    when(index.getMappingsClasspathFilename()).thenReturn("/mappings-added-property.json");
-    when(indexTemplate.getMappingsClasspathFilename()).thenReturn("/mappings-added-property.json");
-
-    // when
-    exporter1.open(new ExporterTestController());
-    exporter2.open(new ExporterTestController());
-
-    // then
-    final var retrievedIndex = clientAdapter.getIndexAsNode(index.getFullQualifiedName());
-    final var retrievedIndexTemplate =
-        clientAdapter.getIndexTemplateAsNode(indexTemplate.getTemplateName());
-
-    assertThat(mappingsMatch(retrievedIndex.get("mappings"), "/mappings-added-property.json"))
-        .isTrue();
-    assertThat(
-            mappingsMatch(
-                retrievedIndexTemplate.at("/index_template/template/mappings"),
-                "/mappings-added-property.json"))
-        .isTrue();
-  }
-
-  @TestTemplate
-  @DisabledIfSystemProperty(
-      named = SearchDBExtension.TEST_INTEGRATION_OPENSEARCH_AWS_URL,
-      matches = "^(?=\\s*\\S).*$",
-      disabledReason = "Ineligible test for AWS OS integration")
-  void shouldNotErrorIfOldExporterRestartsWhileNewExporterHasAlreadyStarted(
-      final ExporterConfiguration config, final SearchClientAdapter clientAdapter)
-      throws Exception {
-    // given
-    final var updatedExporter = createExporter(Set.of(index), Set.of(indexTemplate), config);
-    final var oldExporter = createExporter(Set.of(index), Set.of(indexTemplate), config);
-
-    // when
-    when(index.getMappingsClasspathFilename()).thenReturn("/mappings-added-property.json");
-    when(indexTemplate.getMappingsClasspathFilename()).thenReturn("/mappings-added-property.json");
-
-    updatedExporter.open(new ExporterTestController());
-
-    when(index.getMappingsClasspathFilename()).thenReturn("/mappings.json");
-    when(indexTemplate.getMappingsClasspathFilename()).thenReturn("/mappings.json");
-
-    oldExporter.open(new ExporterTestController());
-
-    // then
-    final var retrievedIndex = clientAdapter.getIndexAsNode(index.getFullQualifiedName());
-    final var retrievedIndexTemplate =
-        clientAdapter.getIndexTemplateAsNode(indexTemplate.getTemplateName());
-
-    assertThat(mappingsMatch(retrievedIndex.get("mappings"), "/mappings-added-property.json"))
-        .isTrue();
-    assertThat(
-            mappingsMatch(
-                retrievedIndexTemplate.at("/index_template/template/mappings"),
-                "/mappings-added-property.json"))
-        .isTrue();
-  }
-
-  @TestTemplate
-  void shouldCreateHarmonizedSchemaEagerlyOnOpen(
-      final ExporterConfiguration config, final SearchClientAdapter ignored) {
-    // given
-    final var newPrefix =
-        CUSTOM_PREFIX + RandomStringUtils.insecure().nextAlphabetic(9).toLowerCase();
-    config.getIndex().setPrefix(newPrefix);
-    final CamundaExporter camundaExporter = new CamundaExporter();
-    camundaExporter.configure(getContextFromConfig(config));
-
-    final var adapter = ClientAdapter.of(config);
-    final var mappingsBeforeOpen =
-        adapter.getSearchEngineClient().getMappings(newPrefix + "*", MappingSource.INDEX);
-    assertThat(mappingsBeforeOpen.keySet()).isEmpty();
-
-    // when
-    camundaExporter.open(new ExporterTestController());
-
-    // then
-    final var mappingsAfterOpen =
-        adapter.getSearchEngineClient().getMappings(newPrefix + "*", MappingSource.INDEX);
-    assertThat(mappingsAfterOpen.keySet())
-        // we verify the names hard coded on purpose
-        // to make sure no index will be accidentally dropped, names are changed or added
-        .containsExactlyInAnyOrder(
-            newPrefix + "-camunda-authorization-8.8.0_",
-            newPrefix + "-camunda-group-8.8.0_",
-            newPrefix + "-camunda-mapping-8.8.0_",
-            newPrefix + "-camunda-role-8.8.0_",
-            newPrefix + "-camunda-tenant-8.8.0_",
-            newPrefix + "-camunda-user-8.8.0_",
-            newPrefix + "-camunda-web-session-8.8.0_",
-            newPrefix + "-operate-batch-operation-1.0.0_",
-            newPrefix + "-operate-decision-8.3.0_",
-            newPrefix + "-operate-decision-instance-8.3.0_",
-            newPrefix + "-operate-decision-requirements-8.3.0_",
-            newPrefix + "-operate-event-8.3.0_",
-            newPrefix + "-operate-flownode-instance-8.3.1_",
-            newPrefix + "-operate-import-position-8.3.0_",
-            newPrefix + "-operate-incident-8.3.1_",
-            newPrefix + "-operate-list-view-8.3.0_",
-            newPrefix + "-operate-metric-8.3.0_",
-            newPrefix + "-operate-message-8.5.0_",
-            newPrefix + "-operate-operation-8.4.1_",
-            newPrefix + "-operate-post-importer-queue-8.3.0_",
-            newPrefix + "-operate-process-8.3.0_",
-            newPrefix + "-operate-sequence-flow-8.3.0_",
-            newPrefix + "-operate-variable-8.3.0_",
-            newPrefix + "-operate-job-8.6.0_",
-            newPrefix + "-tasklist-draft-task-variable-8.3.0_",
-            newPrefix + "-tasklist-form-8.4.0_",
-            newPrefix + "-tasklist-metric-8.3.0_",
-            newPrefix + "-tasklist-task-8.5.0_",
-            newPrefix + "-tasklist-task-variable-8.3.0_",
-            newPrefix + "-tasklist-import-position-8.2.0_");
-  }
-
-  @TestTemplate
   void shouldExportRecord(
-      final ExporterConfiguration config, final SearchClientAdapter clientAdapter) {
+      final ExporterConfiguration config, final SearchClientAdapter clientAdapter)
+      throws IOException {
     // given
+    createSchemas(config);
     final var valueType = ValueType.VARIABLE;
     final Record record =
         generateRecordWithSupportedBrokerVersion(valueType, VariableIntent.CREATED);
@@ -507,8 +317,10 @@ final class CamundaExporterIT {
 
   @TestTemplate
   void shouldNotFailWhenUpdatingOperationWithNoDocument(
-      final ExporterConfiguration config, final SearchClientAdapter clientAdapter) {
+      final ExporterConfiguration config, final SearchClientAdapter clientAdapter)
+      throws IOException {
     // given
+    createSchemas(config);
     final ValueType valueType = ValueType.INCIDENT;
     final long notExistingOperationReference = 9876543210L;
     final Record record =
@@ -541,8 +353,10 @@ final class CamundaExporterIT {
 
   @TestTemplate
   void shouldThrowIfDateFormatIsInvalid(
-      final ExporterConfiguration config, final SearchClientAdapter clientAdapter) {
+      final ExporterConfiguration config, final SearchClientAdapter clientAdapter)
+      throws IOException {
     // given
+    createSchemas(config);
     final ValueType valueType = ValueType.INCIDENT;
     final long invalidTimestamp = 8109027450636607488L;
     final Record record =
@@ -580,6 +394,7 @@ final class CamundaExporterIT {
       final ExporterConfiguration config, final SearchClientAdapter clientAdapter)
       throws IOException {
     // given
+    createSchemas(config);
     final var recordPosition = 123456789L;
     final var record =
         factory.generateRecord(
@@ -683,36 +498,6 @@ final class CamundaExporterIT {
         .setPartitionId(partitionId);
   }
 
-  private CamundaExporter createExporter(
-      final Set<IndexDescriptor> indexDescriptors,
-      final Set<IndexTemplateDescriptor> templateDescriptors,
-      final ExporterConfiguration config) {
-    final var exporter =
-        new CamundaExporter(mockResourceProvider(indexDescriptors, templateDescriptors, config));
-    exporter.configure(getContextFromConfig(config));
-    exporter.open(new ExporterTestController());
-
-    return exporter;
-  }
-
-  private ExporterResourceProvider mockResourceProvider(
-      final Set<IndexDescriptor> indexDescriptors,
-      final Set<IndexTemplateDescriptor> templateDescriptors,
-      final ExporterConfiguration config) {
-    final var provider = mock(DefaultExporterResourceProvider.class, CALLS_REAL_METHODS);
-    provider.init(
-        config,
-        mock(ExporterEntityCacheProvider.class),
-        new SimpleMeterRegistry(),
-        new ExporterMetadata(TestObjectMapper.objectMapper()),
-        TestObjectMapper.objectMapper());
-
-    when(provider.getIndexDescriptors()).thenReturn(indexDescriptors);
-    when(provider.getIndexTemplateDescriptors()).thenReturn(templateDescriptors);
-
-    return provider;
-  }
-
   @Nested
   class ImportersCompletedTests {
     private final ExporterTestController controller = spy(new ExporterTestController());
@@ -733,7 +518,7 @@ final class CamundaExporterIT {
         throws IOException {
       final String zeebeIndexPrefix = CUSTOM_PREFIX + "-zeebe-record";
       config.getIndex().setZeebeIndexPrefix(zeebeIndexPrefix);
-      createSchemas(config, clientAdapter);
+      createSchemas(config);
       clientAdapter.index("1", zeebeIndexPrefix + "-decision_8.8.0", Map.of("key", "12345"));
 
       // adds a not complete position index document so exporter sees importing as not yet completed
@@ -768,7 +553,7 @@ final class CamundaExporterIT {
         throws IOException {
       // given
       config.getIndex().setZeebeIndexPrefix(ZEEBE_IDX_PREFIX);
-      createSchemas(config, clientAdapter);
+      createSchemas(config);
       indexImportPositionEntity("decision", false, clientAdapter);
       clientAdapter.refresh();
 
@@ -814,7 +599,7 @@ final class CamundaExporterIT {
       // given
       final String zeebeIndexPrefix = CUSTOM_PREFIX + "-zeebe-record";
       config.getIndex().setZeebeIndexPrefix(zeebeIndexPrefix);
-      createSchemas(config, clientAdapter);
+      createSchemas(config);
       clientAdapter.index("1", zeebeIndexPrefix + "-decision_8.7.0_", Map.of("key", "12345"));
 
       // adds a not complete position index document so exporter sees importing as not yet completed
@@ -861,6 +646,7 @@ final class CamundaExporterIT {
         final ExporterConfiguration config, final SearchClientAdapter clientAdapter)
         throws IOException {
       // given
+      createSchemas(config);
       final var context = spy(getContextFromConfig(config));
       doReturn(partitionId).when(context).getPartitionId();
       camundaExporter.configure(context);
@@ -900,7 +686,7 @@ final class CamundaExporterIT {
         final ExporterConfiguration config, final SearchClientAdapter clientAdapter)
         throws IOException {
       // given
-      createSchemas(config, clientAdapter);
+      createSchemas(config);
       // an incomplete position index document so exporter sees importing as not yet completed
       indexImportPositionEntity("decision", false, clientAdapter);
       clientAdapter.refresh();
@@ -964,9 +750,20 @@ final class CamundaExporterIT {
 
       // if schemas are never created then import position indices do not exist and all checks about
       // whether the importers are completed will return false.
-      config.setCreateSchema(false);
+      final var provider = new DefaultExporterResourceProvider();
+      final var indexDescriptors = mock(IndexDescriptors.class);
+      when(indexDescriptors.indices())
+          .thenReturn(List.of()) // for schemaManager.isSchemaReadyForUse()
+          .thenReturn( // for importPositionIndices that is passed for
+              // searchEngineClient.importersCompleted;
+              List.of(
+                  new ImportPositionIndex(
+                      CUSTOM_PREFIX, config.getConnect().getTypeEnum().isElasticSearch())));
+      when(indexDescriptors.templates()).thenReturn(emptyList());
+      final var camundaExporter = new CamundaExporter(provider);
       final var context = getContextFromConfig(config);
       camundaExporter.configure(context);
+      provider.setIndexDescriptors(indexDescriptors);
       camundaExporter.open(controller);
 
       clientAdapter.index(
@@ -1008,15 +805,6 @@ final class CamundaExporterIT {
               .setCompleted(completed);
 
       client.index(entity.getId(), importPositionIndexName, entity);
-    }
-
-    private void createSchemas(
-        final ExporterConfiguration config, final SearchClientAdapter adapter) throws IOException {
-      final var exporter = new CamundaExporter();
-      exporter.configure(getContextFromConfig(config));
-      exporter.open(new ExporterTestController());
-
-      adapter.refresh();
     }
   }
 }
