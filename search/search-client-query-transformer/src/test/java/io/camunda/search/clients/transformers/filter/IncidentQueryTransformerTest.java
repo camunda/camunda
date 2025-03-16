@@ -263,7 +263,7 @@ public final class IncidentQueryTransformerTest extends AbstractTransformerTest 
 
   @Test
   public void shouldQueryByIncidentErrorHashCode() {
-    final var filter = FilterBuilders.incident(f -> f.incidentErrorHashCodes(123456780));
+    final var filter = FilterBuilders.incident(f -> f.errorMessageHashes(123456780));
 
     // when
     final var searchRequest = transformQuery(filter);

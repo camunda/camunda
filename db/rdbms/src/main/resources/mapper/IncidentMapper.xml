@@ -27,6 +27,7 @@
     i.PROCESS_DEFINITION_ID,
     i.PROCESS_DEFINITION_KEY,
     i.ERROR_MESSAGE,
+    i.ERROR_MESSAGE_HASH,
     i.ERROR_TYPE,
     i.STATE,
     i.CREATION_DATE,
@@ -127,6 +128,7 @@
                           PROCESS_DEFINITION_ID,
                           PROCESS_DEFINITION_KEY,
                           ERROR_MESSAGE,
+                          ERROR_MESSAGE_HASH,
                           ERROR_TYPE,
                           STATE,
                           CREATION_DATE,
@@ -135,7 +137,7 @@
                                    PARTITION_ID,
                                    HISTORY_CLEANUP_DATE)
     VALUES (#{incidentKey}, #{flowNodeInstanceKey}, #{flowNodeId}, #{processInstanceKey},
-            #{processDefinitionId}, #{processDefinitionKey}, #{errorMessage}, #{errorType},
+            #{processDefinitionId}, #{processDefinitionKey}, #{errorMessage}, #{errorMessageHash}, #{errorType},
             #{state}, #{creationDate, jdbcType=TIMESTAMP}, #{jobKey}, #{tenantId}, #{partitionId},
             #{historyCleanupDate, jdbcType=TIMESTAMP})
   </insert>
@@ -152,6 +154,7 @@
         PROCESS_DEFINITION_ID  = #{processDefinitionId},
         PROCESS_DEFINITION_KEY = #{processDefinitionKey},
         ERROR_MESSAGE          = #{errorMessage},
+        ERROR_MESSAGE_HASH     = #{errorMessageHash},
         ERROR_TYPE             = #{errorType},
         STATE                  = #{state},
         CREATION_DATE          = #{creationDate, jdbcType=TIMESTAMP},
@@ -168,7 +171,8 @@
     flushCache="true">
     UPDATE ${prefix}INCIDENT i
     SET STATE         = #{state},
-        ERROR_MESSAGE = #{errorMessage}
+        ERROR_MESSAGE = #{errorMessage},
+        ERROR_MESSAGE_HASH = #{errorMessageHash}
     WHERE INCIDENT_KEY = #{incidentKey}
   </update>
 
