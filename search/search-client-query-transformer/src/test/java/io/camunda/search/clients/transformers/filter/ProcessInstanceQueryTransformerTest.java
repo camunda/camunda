@@ -411,9 +411,6 @@ public final class ProcessInstanceQueryTransformerTest extends AbstractTransform
   }
 
   @Test
-  public void shouldQueryByIncidentErrorHashCode() {}
-
-  @Test
   public void shouldCreateDefaultFilter() {
     // given
 

@@ -153,6 +153,7 @@ public class IncidentIT {
                                     .states(original.state())
                                     .errorTypes(original.errorType())
                                     .errorMessages(original.errorMessage())
+                                    .errorMessageHashes(original.errorMessageHash())
                                     .flowNodeInstanceKeys(original.flowNodeInstanceKey())
                                     .flowNodeIds(original.flowNodeId())
                                     .jobKeys(original.jobKey())

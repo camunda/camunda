@@ -585,6 +585,7 @@ public final class SearchQueryRequestMapper {
       ofNullable(filter.getErrorMessage())
           .map(mapToOperations(String.class))
           .ifPresent(builder::errorMessageOperations);
+      ofNullable(filter.getIncidentErrorHashCode()).ifPresent(builder::incidentErrorHashCodes);
       if (!CollectionUtils.isEmpty(filter.getVariables())) {
         final Either<List<String>, List<VariableValueFilter>> either =
             toVariableValueFiltersForProcessInstance(filter.getVariables());
@@ -594,7 +595,6 @@ public final class SearchQueryRequestMapper {
           builder.variables(either.get());
         }
       }
-      ofNullable(filter.getIncidentErrorHashCode()).ifPresent(builder::incidentErrorHashCodes);
     }
     return validationErrors.isEmpty()
         ? Either.right(builder.build())

@@ -1298,15 +1298,10 @@ public class ProcessInstanceAndFlowNodeInstanceQueryTest {
   @Test
   void shouldQueryProcessInstancesByIncidentErrorHashCode() {
 
-    final var partialErrorMessage = "Expected result of the expression";
-
     final var result =
         camundaClient
             .newProcessInstanceQuery()
-            .filter(
-                f ->
-                    f.incidentErrorHashCode(INCIDENT_ERROR_HASH_CODE_V2)
-                        .errorMessage(partialErrorMessage))
+            .filter(f -> f.incidentErrorHashCode(INCIDENT_ERROR_HASH_CODE_V2))
             .send()
             .join();
     assertThat(result.items().size()).isEqualTo(1);
