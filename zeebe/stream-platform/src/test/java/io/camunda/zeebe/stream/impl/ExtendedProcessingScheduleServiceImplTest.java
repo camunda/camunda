@@ -7,11 +7,11 @@
  */
 package io.camunda.zeebe.stream.impl;
 
+import static io.camunda.zeebe.stream.api.scheduling.AsyncTaskGroup.ASYNC_PROCESSING;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.stream.api.scheduling.SimpleProcessingScheduleService;
 import java.time.Duration;
@@ -22,11 +22,10 @@ final class ExtendedProcessingScheduleServiceImplTest {
   @Test
   void shouldNotScheduleAsyncIfDisabled() {
     // given
+    final var context = mock(AsyncScheduleServiceContext.class);
     final var sync = mock(SimpleProcessingScheduleService.class);
-    final var async = mock(SimpleProcessingScheduleService.class);
-    final var concurrencyControl = mock(ConcurrencyControl.class);
-    final var schedulingService =
-        new ExtendedProcessingScheduleServiceImpl(sync, async, concurrencyControl, false);
+
+    final var schedulingService = new ExtendedProcessingScheduleServiceImpl(context, sync, false);
 
     // when
     schedulingService.runDelayed(Duration.ZERO, () -> {});
@@ -41,19 +40,22 @@ final class ExtendedProcessingScheduleServiceImplTest {
     // given
     final var sync = mock(SimpleProcessingScheduleService.class);
     final var async = mock(SimpleProcessingScheduleService.class);
-    final var concurrencyControl = mock(ConcurrencyControl.class);
-    when(concurrencyControl.createFuture()).thenReturn(new CompletableActorFuture<>());
+    final var asyncControl = mock(AsyncProcessingScheduleServiceActor.class);
+    when(asyncControl.createFuture()).thenReturn(new CompletableActorFuture<>());
     doAnswer(
             invocation -> {
               final var runnable = (Runnable) invocation.getArgument(0);
               runnable.run();
               return null;
             })
-        .when(concurrencyControl)
+        .when(asyncControl)
         .run(Mockito.any());
 
-    final var schedulingService =
-        new ExtendedProcessingScheduleServiceImpl(sync, async, concurrencyControl, true);
+    final var context = mock(AsyncScheduleServiceContext.class);
+    when(context.geAsyncActor(ASYNC_PROCESSING)).thenReturn(asyncControl);
+    when(asyncControl.getScheduleService()).thenReturn(async);
+
+    final var schedulingService = new ExtendedProcessingScheduleServiceImpl(context, sync, true);
 
     // when
     schedulingService.runDelayed(Duration.ZERO, () -> {});

@@ -9,6 +9,7 @@ package io.camunda.webapps.backup.repository.elasticsearch;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.fail;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.atLeastOnce;
@@ -26,6 +27,7 @@ import co.elastic.clients.elasticsearch.snapshot.GetSnapshotRequest;
 import co.elastic.clients.elasticsearch.snapshot.GetSnapshotResponse;
 import co.elastic.clients.elasticsearch.snapshot.SnapshotInfo;
 import co.elastic.clients.json.JsonData;
+import io.camunda.webapps.backup.BackupException.ResourceNotFoundException;
 import io.camunda.webapps.backup.BackupService.SnapshotRequest;
 import io.camunda.webapps.backup.BackupStateDto;
 import io.camunda.webapps.backup.Metadata;
@@ -337,5 +339,21 @@ public class ElasticsearchBackupRepositoryTest {
     assertThat(result.size()).isEqualTo(0);
     verify(esClient.indices(), atLeastOnce())
         .get((GetIndexRequest) argThat(r -> ((GetIndexRequest) r).ignoreUnavailable()));
+  }
+
+  @Test
+  void shouldThrowBackupNotFoundOnEmptySnapshotResponse() throws IOException {
+    final var snapshotResponse = Mockito.mock(GetSnapshotResponse.class);
+
+    // Set up Snapshot response
+    when(snapshotResponse.snapshots()).thenReturn(List.of());
+    when(esClient.snapshot().get((GetSnapshotRequest) ArgumentMatchers.any()))
+        .thenReturn(snapshotResponse);
+
+    // Test
+    assertThrows(
+        ResourceNotFoundException.class,
+        () -> backupRepository.findSnapshots("repository-name", 5L),
+        "No backup with id [5] found.");
   }
 }

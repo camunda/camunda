@@ -1122,4 +1122,106 @@ public class ElementAssertTest {
       verify(camundaDataSource, times(2)).findFlowNodeInstances(any());
     }
   }
+
+  @Nested
+  class HasNotActivatedElements {
+
+    @Test
+    void shouldHasNotActivatedElements() {
+      // given
+      when(camundaDataSource.findFlowNodeInstances(any())).thenReturn(Collections.emptyList());
+
+      // when
+      when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
+
+      // then
+      CamundaAssert.assertThat(processInstanceEvent).hasNotActivatedElements("A", "B");
+    }
+
+    @Test
+    void shouldFailIfElementsAreActive() {
+      // given
+      final FlowNodeInstance flowNodeInstanceA = newActiveFlowNodeInstance("A");
+      final FlowNodeInstance flowNodeInstanceB = newActiveFlowNodeInstance("B");
+
+      when(camundaDataSource.findFlowNodeInstances(any()))
+          .thenReturn(Arrays.asList(flowNodeInstanceA, flowNodeInstanceB));
+
+      // when
+      when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
+
+      // then
+      Assertions.assertThatThrownBy(
+              () ->
+                  CamundaAssert.assertThat(processInstanceEvent)
+                      .hasNotActivatedElements("A", "B", "C"))
+          .hasMessage(
+              "Process instance [key: %d] should have not activated elements ['A', 'B', 'C'] but the following elements were activated:\n"
+                  + "\t- 'A': active\n"
+                  + "\t- 'B': active",
+              PROCESS_INSTANCE_KEY);
+    }
+
+    @Test
+    void shouldFailIfElementsAreCompleted() {
+      // given
+      final FlowNodeInstance flowNodeInstanceA = newCompletedFlowNodeInstance("A");
+      final FlowNodeInstance flowNodeInstanceB = newCompletedFlowNodeInstance("B");
+
+      when(camundaDataSource.findFlowNodeInstances(any()))
+          .thenReturn(Arrays.asList(flowNodeInstanceA, flowNodeInstanceB));
+
+      // when
+      when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
+
+      // then
+      Assertions.assertThatThrownBy(
+              () ->
+                  CamundaAssert.assertThat(processInstanceEvent)
+                      .hasNotActivatedElements("A", "B", "C"))
+          .hasMessage(
+              "Process instance [key: %d] should have not activated elements ['A', 'B', 'C'] but the following elements were activated:\n"
+                  + "\t- 'A': completed\n"
+                  + "\t- 'B': completed",
+              PROCESS_INSTANCE_KEY);
+    }
+
+    @Test
+    void shouldFailIfElementsAreTerminated() {
+      // given
+      final FlowNodeInstance flowNodeInstanceA = newTerminatedFlowNodeInstance("A");
+      final FlowNodeInstance flowNodeInstanceB = newTerminatedFlowNodeInstance("B");
+
+      when(camundaDataSource.findFlowNodeInstances(any()))
+          .thenReturn(Arrays.asList(flowNodeInstanceA, flowNodeInstanceB));
+
+      // when
+      when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
+
+      // then
+      Assertions.assertThatThrownBy(
+              () ->
+                  CamundaAssert.assertThat(processInstanceEvent)
+                      .hasNotActivatedElements("A", "B", "C"))
+          .hasMessage(
+              "Process instance [key: %d] should have not activated elements ['A', 'B', 'C'] but the following elements were activated:\n"
+                  + "\t- 'A': terminated\n"
+                  + "\t- 'B': terminated",
+              PROCESS_INSTANCE_KEY);
+    }
+
+    @Test
+    void shouldFailIfProcessInstanceNotFound() {
+      // given
+      when(camundaDataSource.findProcessInstances(any())).thenReturn(Collections.emptyList());
+
+      // when
+      when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
+
+      // then
+      Assertions.assertThatThrownBy(
+              () -> CamundaAssert.assertThat(processInstanceEvent).hasNotActivatedElements("A"))
+          .hasMessage("No process instance [key: %d] found.", PROCESS_INSTANCE_KEY);
+    }
+  }
 }

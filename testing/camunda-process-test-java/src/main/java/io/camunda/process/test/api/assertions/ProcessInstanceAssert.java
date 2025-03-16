@@ -202,6 +202,29 @@ public interface ProcessInstanceAssert {
   ProcessInstanceAssert hasTerminatedElement(ElementSelector elementSelector, int times);
 
   /**
+   * Verifies that the given BPMN elements are not activated (i.e. not entered). The verification
+   * fails if at least one element is active, completed, or terminated.
+   *
+   * <p>The assertion doesn't wait for the given activities.
+   *
+   * @param elementIds the BPMN element IDs
+   * @return the assertion object
+   */
+  ProcessInstanceAssert hasNotActivatedElements(String... elementIds);
+
+  /**
+   * Verifies that the given BPMN elements are not activated (i.e. not entered). The verification
+   * fails if at least one element is active, completed, or terminated.
+   *
+   * <p>The assertion doesn't wait for the given activities.
+   *
+   * @param elementSelectors the selectors for the BPMN elements
+   * @return the assertion object
+   * @see ElementSelectors
+   */
+  ProcessInstanceAssert hasNotActivatedElements(ElementSelector... elementSelectors);
+
+  /**
    * Verifies that the process instance has the given variables. The verification fails if at least
    * one variable doesn't exist.
    *

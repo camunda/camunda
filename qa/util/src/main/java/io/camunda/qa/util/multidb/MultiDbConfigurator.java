@@ -20,7 +20,7 @@ import java.util.UUID;
  * Helper class to configure any {@link TestStandaloneApplication}, with specific secondary storage.
  */
 public class MultiDbConfigurator {
-  public static String zeebePrefix = "-zeebe-records";
+  public static String zeebePrefix = "zeebe-records";
 
   private final TestStandaloneApplication<?> testApplication;
   private String indexPrefix;
@@ -235,7 +235,9 @@ public class MultiDbConfigurator {
   }
 
   public String zeebeIndexPrefix() {
-    return indexPrefix != null ? indexPrefix + zeebePrefix : indexPrefix;
+    return indexPrefix != null && !indexPrefix.isBlank()
+        ? indexPrefix + "-" + zeebePrefix
+        : zeebePrefix;
   }
 
   public void configureAWSOpenSearchSupport(final String opensearchUrl, final String indexPrefix) {

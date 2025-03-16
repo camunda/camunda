@@ -154,23 +154,6 @@ public class QueryTest {
             });
   }
 
-  public static void waitUntilProcessInstanceIsGone(
-      final CamundaClient camundaClient, final long processInstanceKey) {
-    Awaitility.await("should wait until process is ended")
-        .atMost(TIMEOUT_DATA_AVAILABILITY)
-        .ignoreExceptions() // Ignore exceptions and continue retrying
-        .untilAsserted(
-            () -> {
-              final var result =
-                  camundaClient
-                      .newProcessInstanceQuery()
-                      .filter(f -> f.processInstanceKey(processInstanceKey))
-                      .send()
-                      .join();
-              assertThat(result.page().totalItems()).isEqualTo(0);
-            });
-  }
-
   public static void waitUntilFlowNodeInstanceHasIncidents(
       final CamundaClient camundaClient, final int expectedIncidents) {
     Awaitility.await("should wait until flow node instance has incidents")

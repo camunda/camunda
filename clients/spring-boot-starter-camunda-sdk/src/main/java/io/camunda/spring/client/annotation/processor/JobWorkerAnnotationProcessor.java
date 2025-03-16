@@ -70,7 +70,7 @@ public class JobWorkerAnnotationProcessor extends AbstractCamundaAnnotationProce
         ReflectionUtils.USER_DECLARED_METHODS);
 
     LOGGER.info(
-        "Configuring {} Zeebe worker(s) of bean '{}': {}",
+        "Configuring {} Job worker(s) of bean '{}': {}",
         newJobWorkerValues.size(),
         beanInfo.getBeanName(),
         newJobWorkerValues);

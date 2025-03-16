@@ -7,7 +7,7 @@
  */
 import styled from "styled-components";
 import { FC, ReactNode } from "react";
-import failmunda from "src/assets/images/failmunda.svg";
+import Failmunda from "src/assets/images/failmunda.svg";
 import Flex from "src/components/layout/Flex";
 import { cssSize } from "src/utility/style.ts";
 import Page from "src/components/layout/Page";
@@ -27,7 +27,7 @@ type ErrorPageProps = {
 const ErrorPage: FC<ErrorPageProps> = ({ title, children }) => (
   <Page>
     <CenterWrapper>
-      <img src={failmunda} alt="Error" />
+      <Failmunda />
       <h1>{title}</h1>
       {children}
     </CenterWrapper>

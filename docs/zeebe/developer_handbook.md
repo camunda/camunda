@@ -5,12 +5,12 @@ This document contains instructions for developers who want to contribute to thi
 ## How to extend the Gateway Protocol?
 
 * The gateway protocol is based on GRPC
-* The single source of truth is the [`gateway.proto`](../gateway-protocol/src/main/proto/gateway.proto) [Protocol Buffers](https://developers.google.com/protocol-buffers) file
+* The single source of truth is the [`gateway.proto`](../../zeebe/gateway-protocol/src/main/proto/gateway.proto) [Protocol Buffers](https://developers.google.com/protocol-buffers) file
 * Source code is generated based on the information in that file
 * Make your changes in that file
 * Add comments to new fields/messages you added
 * Java sources for the protobuf classes will be generated automatically with each build
-* Go sources are generated on demand [Go Code Generation](../gateway-protocol-impl/README.md#go-code-generation).
+* Go sources are generated on demand [Go Code Generation](../../zeebe/gateway-protocol-impl/README.md#go-code-generation).
 * Remember to also update the GRPC API documentation https://docs.camunda.io/docs/apis-clients/grpc/
 
 ## How to create a new record?
@@ -22,7 +22,7 @@ Generally, you'll need to do the following things:
 4. [Extend the official exporter documentation](#extend-official-documentation).
 5. [Support the new `ValueType` in Zeebe Process Test (ZPT)](#extend-zeebe-process-test).
 6. [Ensure that the new `ValueType` is processed](#add-valuetype-to-supported-types).
-7. Add support for it to the [CompactRecordLogger](../test-util/src/main/java/io/camunda/zeebe/test/util/record/CompactRecordLogger.java).
+7. Add support for it to the [CompactRecordLogger](../../zeebe/test-util/src/main/java/io/camunda/zeebe/test/util/record/CompactRecordLogger.java).
 
 ### Expanding our protocol with a new RecordValue
 
@@ -30,16 +30,16 @@ The protocol consists of Java code and [SBE message definitions](../protocol/src
 
 Please have a look at [Message Versioning](https://github.com/real-logic/simple-binary-encoding/wiki/Message-Versioning) to learn about extending SBE messages.
 
-1. Add a new `<validValue>` to the `ValueType` enum in [`protocol.xml`](../protocol/src/main/resources/protocol.xml).
+1. Add a new `<validValue>` to the `ValueType` enum in [`protocol.xml`](../../zeebe/protocol/src/main/resources/protocol.xml).
 
-2. Create an enum implementing [`Intent`](../protocol/src/main/java/io/camunda/zeebe/protocol/record/intent/Intent.java) to reflect the possible commands and events:
+2. Create an enum implementing [`Intent`](../../zeebe/protocol/src/main/java/io/camunda/zeebe/protocol/record/intent/Intent.java) to reflect the possible commands and events:
 
 - It should also be added to the `INTENT_CLASSES` defined in Intent
 - Make sure to add the new intent as a case to `Intent.fromProtocolValue`
 
 3. Create an interface for the record value itself.
 
-- It should extend the [`RecordValue`](../protocol/src/main/java/io/camunda/zeebe/protocol/record/RecordValue.java) interface
+- It should extend the [`RecordValue`](../../zeebe/protocol/src/main/java/io/camunda/zeebe/protocol/record/RecordValue.java) interface
 - Add methods for each of the properties that you want to expose
 - If you need to create additional data types, then you can create new interfaces to represent these
 - Annotate the interfaces with:
@@ -50,7 +50,7 @@ Please have a look at [Message Versioning](https://github.com/real-logic/simple-
 
 4. Build the protocol: `mvn clean install -pl :zeebe-protocol` to generate the Immutable classes and to generate the new `ValueType` enum value.
 
-5. Add a mapping to [`ValueTypeMapping`](../protocol/src/main/java/io/camunda/zeebe/protocol/record/ValueTypeMapping.java) connecting the `ValueType`, `RecordValue` and `Intent` together.
+5. Add a mapping to [`ValueTypeMapping`](../../zeebe/protocol/src/main/java/io/camunda/zeebe/protocol/record/ValueTypeMapping.java) connecting the `ValueType`, `RecordValue` and `Intent` together.
 
 ### Implement a new RecordValue in protocol-impl
 
@@ -58,12 +58,12 @@ Please have a look at [Message Versioning](https://github.com/real-logic/simple-
 
 - Make sure to add annotations for properties (or getter methods) that shouldn't be serialized to JSON.
 
-2. Add new cases to [JsonSerializableToJsonTest](../protocol-impl/src/test/java/io/camunda/zeebe/protocol/impl/JsonSerializableToJsonTest.java):
+2. Add new cases to [JsonSerializableToJsonTest](../../zeebe/protocol-impl/src/test/java/io/camunda/zeebe/protocol/impl/JsonSerializableToJsonTest.java):
 
 - one case that provides a value for each property (as far nested as possible)
 - one case that has as few properties as possible (i.e. an empty record)
 
-3. Add the new `Record` to the broker's [CommandApiRequestReader](../broker/src/main/java/io/camunda/zeebe/broker/transport/commandapi/CommandApiRequestReader.java)'s `RECORDS_BY_TYPE` mapping.
+3. Add the new `Record` to the broker's [CommandApiRequestReader](../../zeebe/broker/src/main/java/io/camunda/zeebe/broker/transport/commandapi/CommandApiRequestReader.java)'s `RECORDS_BY_TYPE` mapping.
 
 ### Support a RecordValue in the Elasticsearch exporter
 
@@ -73,10 +73,10 @@ You'll always need to add support for new records in the ES exporter. Even if yo
 
 - Tip: start by copying an existing template and change the relevant properties.
 
-2. Add a call to `createValueIndexTemplate` for the `ValueType` in [ElasticsearchExporter](../exporters/elasticsearch-exporter/src/main/java/io/camunda/zeebe/exporter/ElasticsearchExporter.java).
-3. Allow the record to be filtered through the [configuration](../exporters/elasticsearch-exporter/src/main/java/io/camunda/zeebe/exporter/ElasticsearchExporterConfiguration.java).
+2. Add a call to `createValueIndexTemplate` for the `ValueType` in [ElasticsearchExporter](../../zeebe/exporters/elasticsearch-exporter/src/main/java/io/camunda/zeebe/exporter/ElasticsearchExporter.java).
+3. Allow the record to be filtered through the [configuration](../../zeebe/exporters/elasticsearch-exporter/src/main/java/io/camunda/zeebe/exporter/ElasticsearchExporterConfiguration.java).
 4. Document this new filter option in the dist folder's [broker config templates](../dist/src/main/config/).
-5. Add a mapping for the ValueType to the [TestSupport](../exporters/elasticsearch-exporter/src/test/java/io/camunda/zeebe/exporter/TestSupport.java).
+5. Add a mapping for the ValueType to the [TestSupport](../../zeebe/exporters/elasticsearch-exporter/src/test/java/io/camunda/zeebe/exporter/TestSupport.java).
 
 ### Support a RecordValue in the Opensearch exporter
 
@@ -87,10 +87,10 @@ our tests will fail if you don't provide this support. Note that in step 3 below
 
 - Tip: start by copying an existing template and change the relevant properties.
 
-2. Add a call to `createValueIndexTemplate` for the `ValueType` in [OpensearchExporter](../exporters/opensearch-exporter/src/main/java/io/camunda/zeebe/exporter/opensearch/OpensearchExporter.java).
-3. Allow the record to be filtered through the [configuration](../exporters/opensearch-exporter/src/main/java/io/camunda/zeebe/exporter/opensearch/OpensearchExporterConfiguration.java).
+2. Add a call to `createValueIndexTemplate` for the `ValueType` in [OpensearchExporter](../../zeebe/exporters/opensearch-exporter/src/main/java/io/camunda/zeebe/exporter/opensearch/OpensearchExporter.java).
+3. Allow the record to be filtered through the [configuration](../../zeebe/exporters/opensearch-exporter/src/main/java/io/camunda/zeebe/exporter/opensearch/OpensearchExporterConfiguration.java).
 4. Document this new filter option in the dist folder's [broker config templates](../dist/src/main/config/).
-5. Add a mapping for the ValueType to the [TestSupport](../exporters/opensearch-exporter/src/test/java/io/camunda/zeebe/exporter/opensearch/TestSupport.java).
+5. Add a mapping for the ValueType to the [TestSupport](../../zeebe/exporters/opensearch-exporter/src/test/java/io/camunda/zeebe/exporter/opensearch/TestSupport.java).
 
 ### Extend official documentation
 
@@ -130,7 +130,7 @@ You'll need to do 4 things:
 2. Adjust the implementation of this `RecordValue` in the `protocol-impl` module.
 
 - Including
-  the [JsonSerializableToJsonTest](../protocol-impl/src/test/java/io/camunda/zeebe/protocol/impl/JsonSerializableToJsonTest.java).
+  the [JsonSerializableToJsonTest](../../zeebe/protocol-impl/src/test/java/io/camunda/zeebe/protocol/impl/JsonSerializableToJsonTest.java).
 
 3. Adjust the template of this `RecordValue` in the Elasticsearch exporter.
 
@@ -140,7 +140,7 @@ You'll need to do 4 things:
   interface. If a property is not in the interface then it is not covered by the tests.
 
 4. (Optionally) Adjust
-   the [CompactRecordLogger](../test-util/src/main/java/io/camunda/zeebe/test/util/record/CompactRecordLogger.java)
+   the [CompactRecordLogger](../../zeebe/test-util/src/main/java/io/camunda/zeebe/test/util/record/CompactRecordLogger.java)
    of this `RecordValue`.
 
 ## How to do inter-partition communication?
@@ -197,4 +197,4 @@ or using the equivalent [platform property of docker-compose](https://docs.docke
 
 ## How to create a new REST endpoint
 
-Follow the [REST endpoint guide](../../docs/rest-controller.md). It will walk you through the required steps to consider.
+Follow the [REST endpoint guide](../rest-controller.md). It will walk you through the required steps to consider.

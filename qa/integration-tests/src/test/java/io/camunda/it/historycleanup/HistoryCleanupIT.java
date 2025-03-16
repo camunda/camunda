@@ -13,7 +13,6 @@ import static io.camunda.it.client.QueryTest.waitForFlowNodeInstances;
 import static io.camunda.it.client.QueryTest.waitForProcessInstancesToStart;
 import static io.camunda.it.client.QueryTest.waitForProcessesToBeDeployed;
 import static io.camunda.it.client.QueryTest.waitUntilProcessInstanceIsEnded;
-import static io.camunda.it.client.QueryTest.waitUntilProcessInstanceIsGone;
 import static io.camunda.qa.util.multidb.CamundaMultiDBExtension.TIMEOUT_DATA_AVAILABILITY;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -58,13 +57,20 @@ public class HistoryCleanupIT {
     waitUntilProcessInstanceIsEnded(camundaClient, processInstanceEvent.getProcessInstanceKey());
 
     // and soon it should be gone
-    waitUntilProcessInstanceIsGone(camundaClient, processInstanceEvent.getProcessInstanceKey());
-
-    Awaitility.await("should wait until tasks are deleted")
+    final long processInstanceKey = processInstanceEvent.getProcessInstanceKey();
+    Awaitility.await("should wait until process and tasks are deleted")
         .atMost(Duration.ofMinutes(5))
         .ignoreExceptions() // Ignore exceptions and continue retrying
         .untilAsserted(
             () -> {
+              final var result =
+                  camundaClient
+                      .newProcessInstanceQuery()
+                      .filter(f -> f.processInstanceKey(processInstanceKey))
+                      .send()
+                      .join();
+              assertThat(result.page().totalItems()).isEqualTo(0);
+
               final var taskAmount =
                   camundaClient
                       .newUserTaskQuery()

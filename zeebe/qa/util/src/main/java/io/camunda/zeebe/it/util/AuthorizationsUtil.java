@@ -163,18 +163,21 @@ public class AuthorizationsUtil implements CloseableSilently {
     final var resourceType = permissions.resourceType().getValue();
     final var permissionType = PermissionType.valueOf(permissions.permissionType().getValue());
     final var resourceIds = permissions.resourceIds();
+    // since the resourceIds filter uses an OR condition, we need to wait for the exported
+    // authorization to contain all resourceIds
+    for (final String resourceId : resourceIds) {
+      final var permissionQuery =
+          AuthorizationQuery.of(
+              b ->
+                  b.filter(
+                      f ->
+                          f.ownerIds(username)
+                              .resourceType(resourceType)
+                              .permissionTypes(permissionType)
+                              .resourceIds(resourceId)));
 
-    final var permissionQuery =
-        AuthorizationQuery.of(
-            b ->
-                b.filter(
-                    f ->
-                        f.ownerIds(username)
-                            .resourceType(resourceType)
-                            .permissionTypes(permissionType)
-                            .resourceIds(resourceIds)));
-
-    awaitEntityExistsInElasticsearch(() -> searchClients.searchAuthorizations(permissionQuery));
+      awaitEntityExistsInElasticsearch(() -> searchClients.searchAuthorizations(permissionQuery));
+    }
   }
 
   private void awaitEntityExistsInElasticsearch(
