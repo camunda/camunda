@@ -12,7 +12,6 @@ import io.atomix.cluster.messaging.MessagingException.NoRemoteHandler;
 import io.atomix.cluster.messaging.MessagingException.NoSuchMemberException;
 import io.atomix.raft.RaftError;
 import io.atomix.raft.RaftException.ProtocolException;
-import io.atomix.raft.RaftServer;
 import io.atomix.raft.RaftServer.Role;
 import io.atomix.raft.cluster.RaftMember;
 import io.atomix.raft.cluster.RaftMember.Type;
@@ -26,8 +25,6 @@ import io.atomix.raft.protocol.TransferRequest;
 import io.atomix.raft.storage.system.Configuration;
 import io.atomix.raft.utils.ForceConfigureQuorum;
 import io.atomix.utils.concurrent.ThreadContext;
-import io.atomix.utils.logging.ContextualLoggerFactory;
-import io.atomix.utils.logging.LoggerContext;
 import java.net.ConnectException;
 import java.time.Instant;
 import java.util.Collection;
@@ -42,20 +39,17 @@ import java.util.concurrent.TimeoutException;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public final class ReconfigurationHelper {
+  private static final Logger LOGGER = LoggerFactory.getLogger(ReconfigurationHelper.class);
 
   private final ThreadContext threadContext;
   private final RaftContext raftContext;
-  private final Logger logger;
 
   public ReconfigurationHelper(final RaftContext raftContext) {
     threadContext = raftContext.getThreadContext();
     this.raftContext = raftContext;
-    logger =
-        ContextualLoggerFactory.getLogger(
-            getClass(),
-            LoggerContext.builder(RaftServer.class).addValue(raftContext.getName()).build());
   }
 
   public CompletableFuture<Void> join(final Collection<MemberId> clusterMembers) {
@@ -116,22 +110,22 @@ public final class ReconfigurationHelper {
                     || cause instanceof NoRemoteHandler
                     || cause instanceof TimeoutException
                     || cause instanceof ConnectException) {
-                  logger.debug("Join request was not acknowledged, retrying", cause);
+                  LOGGER.debug("Join request was not acknowledged, retrying", cause);
                   threadContext.execute(() -> joinWithRetry(joining, assistingMembers, result));
                 } else {
-                  logger.error("Join request failed with an unexpected error, not retrying", error);
+                  LOGGER.error("Join request failed with an unexpected error, not retrying", error);
                   result.completeExceptionally(error);
                 }
               } else if (response.status() == Status.OK) {
-                logger.debug("Join request accepted");
+                LOGGER.debug("Join request accepted");
                 result.complete(null);
               } else if (response.error().type() == RaftError.Type.NO_LEADER
                   || response.error().type() == RaftError.Type.UNAVAILABLE) {
-                logger.debug("Join request failed, retrying", response.error().createException());
+                LOGGER.debug("Join request failed, retrying", response.error().createException());
                 threadContext.execute(() -> joinWithRetry(joining, assistingMembers, result));
               } else {
                 final var errorAsException = response.error().createException();
-                logger.error("Join request rejected, not retrying", errorAsException);
+                LOGGER.error("Join request rejected, not retrying", errorAsException);
                 result.completeExceptionally(errorAsException);
               }
             },
@@ -245,7 +239,7 @@ public final class ReconfigurationHelper {
         raftContext.transition(Role.FOLLOWER);
       }
 
-      logger.info(
+      LOGGER.info(
           "Current configuration is '{}'. Forcing configuration with members '{}'",
           currentConfiguration,
           newMembers);
@@ -318,7 +312,7 @@ public final class ReconfigurationHelper {
       final MemberId memberId,
       final ForceConfigureRequest request,
       final ForceConfigureQuorum quorum) {
-    logger.trace("Sending '{}' request to member '{}'", request, memberId);
+    LOGGER.trace("Sending '{}' request to member '{}'", request, memberId);
 
     raftContext
         .getProtocol()
@@ -326,14 +320,14 @@ public final class ReconfigurationHelper {
         .whenCompleteAsync(
             (response, error) -> {
               if (error != null) {
-                logger.warn(
+                LOGGER.warn(
                     "Failed to send force configure request to member '{}'", memberId, error);
                 quorum.fail(memberId);
               } else if (response.status() == Status.OK) {
-                logger.debug("Successfully sent force configure request to member '{}'", memberId);
+                LOGGER.debug("Successfully sent force configure request to member '{}'", memberId);
                 quorum.succeed(memberId);
               } else {
-                logger.warn(
+                LOGGER.warn(
                     "Failed to send force configure request to member '{}': {}",
                     memberId,
                     response.error());

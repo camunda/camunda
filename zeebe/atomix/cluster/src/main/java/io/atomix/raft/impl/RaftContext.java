@@ -28,7 +28,6 @@ import io.atomix.raft.RaftApplicationEntryCommittedPositionListener;
 import io.atomix.raft.RaftCommitListener;
 import io.atomix.raft.RaftException.CommitFailedException;
 import io.atomix.raft.RaftRoleChangeListener;
-import io.atomix.raft.RaftServer;
 import io.atomix.raft.RaftServer.Role;
 import io.atomix.raft.RaftThreadContextFactory;
 import io.atomix.raft.SnapshotReplicationListener;
@@ -72,8 +71,6 @@ import io.atomix.raft.storage.system.MetaStore;
 import io.atomix.raft.utils.StateUtil;
 import io.atomix.raft.zeebe.EntryValidator;
 import io.atomix.utils.concurrent.ThreadContext;
-import io.atomix.utils.logging.ContextualLoggerFactory;
-import io.atomix.utils.logging.LoggerContext;
 import io.camunda.zeebe.journal.CheckedJournalException.FlushException;
 import io.camunda.zeebe.snapshots.PersistedSnapshot;
 import io.camunda.zeebe.snapshots.ReceivableSnapshotStore;
@@ -97,6 +94,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
 
 /**
@@ -108,10 +106,14 @@ import org.slf4j.MDC;
  */
 public class RaftContext implements AutoCloseable, HealthMonitorable {
 
+  private static final Logger LOGGER = LoggerFactory.getLogger(RaftContext.class);
+
   /**
    * Configuration index returned when no configuration is available, i.e. configuration is null .
    */
   private static final long NO_CONFIGURATION_INDEX = -1L;
+
+  public static final String RAFT_ROLE_KEY = "raft-role";
 
   protected final String name;
   protected final ThreadContext threadContext;
@@ -119,7 +121,6 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
   protected final RaftClusterContext cluster;
   protected final RaftServerProtocol protocol;
   protected final RaftStorage storage;
-  private final Logger log;
   private final RaftElectionConfig electionConfig;
   private final Set<RaftRoleChangeListener> roleChangeListeners = new CopyOnWriteArraySet<>();
   private final Set<Consumer<State>> stateChangeListeners = new CopyOnWriteArraySet<>();
@@ -192,12 +193,9 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
 
     raftRoleMetrics = new RaftRoleMetrics(name, meterRegistry);
 
-    log =
-        ContextualLoggerFactory.getLogger(
-            getClass(), LoggerContext.builder(RaftServer.class).addValue(name).build());
     this.electionConfig = electionConfig;
     if (electionConfig.isPriorityElectionEnabled()) {
-      log.debug(
+      LOGGER.debug(
           "Priority election is enabled with target priority {} and node priority {}",
           electionConfig.getInitialTargetPriority(),
           electionConfig.getNodePriority());
@@ -240,16 +238,14 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
         raftLog.getFirstIndex(),
         raftLog.isEmpty(),
         raftLog::reset,
-        log);
+        LOGGER);
 
     logCompactor =
         new LogCompactor(
             threadContext,
             raftLog,
             partitionConfig.getPreferSnapshotReplicationThreshold(),
-            new RaftServiceMetrics(name, meterRegistry),
-            ContextualLoggerFactory.getLogger(
-                LogCompactor.class, LoggerContext.builder(getClass()).addValue(name).build()));
+            new RaftServiceMetrics(name, meterRegistry));
 
     snapshotChunkSize = partitionConfig.getSnapshotChunkSize();
 
@@ -268,7 +264,7 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
       setCommitIndex(meta.commitIndex());
     }
 
-    log.debug(
+    LOGGER.debug(
         "Server started with term={}, lastVotedFor={}, lastFlushedIndex={}, commitIndex={}",
         term,
         lastVotedFor,
@@ -299,7 +295,7 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
       final String localMemberId) {
     final var context =
         threadContextFactory.createContext(
-            namedThreads("%s-%s-%d".formatted(name, localMemberId, partitionId), log),
+            namedThreads("%s-%s-%d".formatted(name, localMemberId, partitionId), LOGGER),
             this::onUncaughtException);
     // in order to set the partition id once in the raft thread
     context.execute(
@@ -307,6 +303,7 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
           MDC.put("partitionId", String.valueOf(partitionId));
           MDC.put("actor-name", name + "-" + partitionId);
           MDC.put("actor-scheduler", "Broker-" + localMemberId);
+          MDC.put(RAFT_ROLE_KEY, Role.INACTIVE.name());
         });
     return context;
   }
@@ -316,12 +313,12 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
   }
 
   private void onUncaughtException(final Throwable error) {
-    log.error("An uncaught exception occurred, transition to inactive role", error);
+    LOGGER.error("An uncaught exception occurred, transition to inactive role", error);
     try {
       // to prevent further operations submitted to the threadcontext to execute
       transition(Role.INACTIVE);
     } catch (final Exception e) {
-      log.error("An error occurred when transitioning to inactive, closing the raft context", e);
+      LOGGER.error("An error occurred when transitioning to inactive, closing the raft context", e);
       close();
     }
 
@@ -338,7 +335,7 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
         failureListeners.forEach((l) -> l.onFailure(health));
       }
     } catch (final Exception e) {
-      log.error("Could not notify failure listeners", e);
+      LOGGER.error("Could not notify failure listeners", e);
     }
   }
 
@@ -415,7 +412,7 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
                     error -> {
                       final R response =
                           responseBuilder.get().withStatus(Status.ERROR).withError(error).build();
-                      log.trace("Sending {}", response);
+                      LOGGER.trace("Sending {}", response);
                       future.complete(response);
                     }));
 
@@ -558,8 +555,8 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
         try {
           raftLog.flush();
         } catch (final FlushException e) {
-          if (log.isWarnEnabled()) {
-            log.warn(
+          if (LOGGER.isWarnEnabled()) {
+            LOGGER.warn(
                 "Failed to flush commit at index %s, resetting journal to %s and stepping down"
                     .formatted(commitIndex, previousCommitIndex),
                 e);
@@ -707,7 +704,7 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
       return;
     }
 
-    log.info("Transitioning to {}", role);
+    LOGGER.info("Transitioning to {}", role);
 
     startTransition();
 
@@ -717,6 +714,8 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
     } catch (final InterruptedException | ExecutionException e) {
       throw new IllegalStateException("failed to close Raft state", e);
     }
+
+    MDC.put(RAFT_ROLE_KEY, role.name());
 
     // Force state transitions to occur synchronously in order to prevent race conditions.
     try {
@@ -774,7 +773,7 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
     try {
       roleChangeListeners.forEach(l -> l.onNewRole(role.role(), getTerm()));
     } catch (final Exception exception) {
-      log.error("Unexpected error on calling role change listeners.", exception);
+      LOGGER.error("Unexpected error on calling role change listeners.", exception);
     }
   }
 
@@ -859,14 +858,14 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
     try {
       raftLog.close();
     } catch (final Exception e) {
-      log.error("Failed to close raft log", e);
+      LOGGER.error("Failed to close raft log", e);
     }
 
     // Close the metastore.
     try {
       meta.close();
     } catch (final Exception e) {
-      log.error("Failed to close metastore", e);
+      LOGGER.error("Failed to close metastore", e);
     }
 
     // close thread contexts
@@ -930,7 +929,7 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
         return;
       }
       this.firstCommitIndex = firstCommitIndex;
-      log.info(
+      LOGGER.info(
           "Setting firstCommitIndex to {}. RaftServer is ready only after it has committed events up to this index",
           firstCommitIndex);
     }
@@ -985,9 +984,9 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
     meta.storeVote(lastVotedFor);
 
     if (candidate != null) {
-      log.debug("Voted for {}", candidate);
+      LOGGER.debug("Voted for {}", candidate);
     } else {
-      log.trace("Reset last voted for");
+      LOGGER.trace("Reset last voted for");
     }
   }
 
@@ -1141,7 +1140,7 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
       lastVotedFor = null;
       meta.storeTerm(this.term);
       meta.storeVote(lastVotedFor);
-      log.debug("Set term {}", term);
+      LOGGER.debug("Set term {}", term);
     }
   }
 
@@ -1181,12 +1180,12 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
         final DefaultRaftMember member = cluster.getMember(leader);
         if (member != null) {
           this.leader = leader;
-          log.info("Found leader {}", member.memberId());
+          LOGGER.info("Found leader {}", member.memberId());
           electionListeners.forEach(l -> l.accept(member));
         }
       }
 
-      log.trace("Set leader {}", this.leader);
+      LOGGER.trace("Set leader {}", this.leader);
     }
   }
 
@@ -1199,7 +1198,7 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
     // Get the latest snapshot from snapshot store because it might have been updated already before
     // this listener is executed
     currentSnapshot = persistedSnapshotStore.getLatestSnapshot().orElse(null);
-    log.trace("Set currentSnapshot to {}", currentSnapshot);
+    LOGGER.trace("Set currentSnapshot to {}", currentSnapshot);
     logCompactor.compactFromSnapshots(persistedSnapshotStore);
   }
 
@@ -1314,14 +1313,14 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
 
   /** Commit listener is active only until the server is ready */
   final class AwaitingReadyCommitListener implements RaftCommitListener {
-    private final Logger throttledLogger = new ThrottledLogger(log, Duration.ofSeconds(30));
+    private final Logger throttledLogger = new ThrottledLogger(LOGGER, Duration.ofSeconds(30));
 
     @Override
     public void onCommit(final long index) {
       // On start up, set the state to READY after the follower has caught up with the leader
       // https://github.com/zeebe-io/zeebe/issues/4877
       if (index >= firstCommitIndex) {
-        log.info("Commit index is {}. RaftServer is ready", index);
+        LOGGER.info("Commit index is {}. RaftServer is ready", index);
         updateState(State.READY);
         awaitingReadyCommitListener = null;
       } else {
