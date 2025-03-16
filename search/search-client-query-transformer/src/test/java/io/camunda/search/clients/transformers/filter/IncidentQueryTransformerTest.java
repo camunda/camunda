@@ -9,6 +9,7 @@ package io.camunda.search.clients.transformers.filter;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.search.clients.query.SearchMatchQuery;
 import io.camunda.search.clients.query.SearchRangeQuery;
 import io.camunda.search.clients.query.SearchTermQuery;
 import io.camunda.search.entities.IncidentEntity.ErrorType;
@@ -124,10 +125,10 @@ public final class IncidentQueryTransformerTest extends AbstractTransformerTest 
     final var queryVariant = searchRequest.queryOption();
     assertThat(queryVariant)
         .isInstanceOfSatisfying(
-            SearchTermQuery.class,
+            SearchMatchQuery.class,
             t -> {
               assertThat(t.field()).isEqualTo("errorMessage");
-              assertThat(t.value().stringValue()).isEqualTo("No retries left.");
+              assertThat(t.query()).isEqualTo("No retries left.");
             });
   }
 
@@ -239,6 +240,24 @@ public final class IncidentQueryTransformerTest extends AbstractTransformerTest 
             t -> {
               assertThat(t.field()).isEqualTo("tenantId");
               assertThat(t.value().stringValue()).isEqualTo("Homer");
+            });
+  }
+
+  @Test
+  public void shouldQueryByIncidentErrorHashCode() {
+    final var filter = FilterBuilders.incident(f -> f.incidentErrorHashCodes(123456780));
+
+    // when
+    final var searchRequest = transformQuery(filter);
+
+    // then
+    final var queryVariant = searchRequest.queryOption();
+    assertThat(queryVariant)
+        .isInstanceOfSatisfying(
+            SearchTermQuery.class,
+            t -> {
+              assertThat(t.field()).isEqualTo("errorMessageHash");
+              assertThat(t.value().intValue()).isEqualTo(123456780);
             });
   }
 }

@@ -4294,6 +4294,10 @@ components:
           description: The batch operation ID.
           allOf:
             - $ref: "#/components/schemas/StringFilterProperty"
+        incidentErrorHashCode:
+          description: The incident error hash code, associated with this process.
+          type: integer
+          format: int32
     ProcessInstanceVariableFilterRequest:
       description: Process instance variable filter.
       type: object
