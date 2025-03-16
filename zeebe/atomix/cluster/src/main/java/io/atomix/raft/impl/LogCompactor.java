@@ -14,8 +14,11 @@ import io.camunda.zeebe.snapshots.PersistedSnapshotStore;
 import io.camunda.zeebe.util.VisibleForTesting;
 import org.agrona.LangUtil;
 import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public final class LogCompactor {
+  private static final Logger LOGGER = LoggerFactory.getLogger(LogCompactor.class);
+
   private final ThreadContext threadContext;
   private final RaftLog log;
 
@@ -24,7 +27,6 @@ public final class LogCompactor {
   private final int replicationThreshold;
 
   // hard coupled state
-  private final Logger logger;
   private final RaftServiceMetrics metrics;
 
   // used when performing compaction; may be updated from a different thread
@@ -34,13 +36,11 @@ public final class LogCompactor {
       final ThreadContext threadContext,
       final RaftLog log,
       final int replicationThreshold,
-      final RaftServiceMetrics metrics,
-      final Logger logger) {
+      final RaftServiceMetrics metrics) {
     this.threadContext = threadContext;
     this.log = log;
     this.replicationThreshold = replicationThreshold;
     this.metrics = metrics;
-    this.logger = logger;
   }
 
   @VisibleForTesting
@@ -56,7 +56,7 @@ public final class LogCompactor {
    */
   @VisibleForTesting
   void setCompactableIndex(final long index) {
-    logger.trace("Updated compactable index to {}", index);
+    LOGGER.trace("Updated compactable index to {}", index);
     compactableIndex = index;
   }
 
@@ -98,10 +98,10 @@ public final class LogCompactor {
 
     try (final var ignored = metrics.compactionTime()) {
       final var compacted = log.deleteUntil(index);
-      logger.debug("Compacted log up to index {}", index);
+      LOGGER.debug("Compacted log up to index {}", index);
       return compacted;
     } catch (final Exception e) {
-      logger.error("Failed to compact up to index {}", index, e);
+      LOGGER.error("Failed to compact up to index {}", index, e);
       LangUtil.rethrowUnchecked(e);
       return false;
     }
@@ -109,13 +109,13 @@ public final class LogCompactor {
 
   private void onSnapshotCompactionBound(final Long index, final Throwable error) {
     if (error != null) {
-      logger.error(
+      LOGGER.error(
           "Expected to compact logs, but could not the compaction bound from the snapshot store",
           error);
       return;
     }
 
-    logger.debug("Scheduling log compaction up to index {}", index);
+    LOGGER.debug("Scheduling log compaction up to index {}", index);
     setCompactableIndex(index);
     compact();
   }

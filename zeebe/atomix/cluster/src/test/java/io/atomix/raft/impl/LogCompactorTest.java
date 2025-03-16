@@ -26,7 +26,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.Mockito;
-import org.slf4j.LoggerFactory;
 
 final class LogCompactorTest {
   private ThreadContext threadContext;
@@ -48,12 +47,7 @@ final class LogCompactorTest {
         .execute(Mockito.any());
 
     compactor =
-        new LogCompactor(
-            threadContext,
-            raftLog,
-            5,
-            new RaftServiceMetrics("1", meterRegistry),
-            LoggerFactory.getLogger(getClass()));
+        new LogCompactor(threadContext, raftLog, 5, new RaftServiceMetrics("1", meterRegistry));
   }
 
   @Test

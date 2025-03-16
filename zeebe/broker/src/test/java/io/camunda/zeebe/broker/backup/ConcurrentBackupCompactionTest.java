@@ -55,13 +55,10 @@ import org.junit.jupiter.api.io.TempDir;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.stubbing.Answer;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 @ExtendWith(MockitoExtension.class)
 public class ConcurrentBackupCompactionTest extends DynamicAutoCloseable {
 
-  private static final Logger LOG = LoggerFactory.getLogger(ConcurrentBackupCompactionTest.class);
   private static final String SNAPSHOT_FILE_NAME = "file1";
   @TempDir Path dataDirectory;
   @AutoClose MeterRegistry meterRegistry = new SimpleMeterRegistry();
@@ -102,7 +99,7 @@ public class ConcurrentBackupCompactionTest extends DynamicAutoCloseable {
                 .withMetaStore(mock(JournalMetaStore.class))
                 .withMaxSegmentSize(128)
                 .build());
-    logCompactor = new LogCompactor(threadContext, raftLog, 3, raftMetrics, LOG);
+    logCompactor = new LogCompactor(threadContext, raftLog, 3, raftMetrics);
 
     // raftLog just calls journal in the real implementation
     when(raftLog.deleteUntil(anyLong()))
