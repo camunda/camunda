@@ -7,10 +7,10 @@
  */
 package io.camunda.application.commons.migration;
 
+import io.camunda.application.commons.search.SearchEngineConfiguration;
 import io.camunda.exporter.adapters.ClientAdapter;
 import io.camunda.exporter.config.ExporterConfiguration;
 import io.camunda.exporter.schema.SchemaManager;
-import io.camunda.search.connect.configuration.ConnectConfiguration;
 import io.camunda.search.connect.configuration.DatabaseType;
 import io.camunda.webapps.schema.descriptors.IndexDescriptors;
 import org.slf4j.Logger;
@@ -22,12 +22,12 @@ public final class SchemaManagerHelper {
   private SchemaManagerHelper() {}
 
   public static void createSchema(
-      final ConnectConfiguration connectConfig, final ClientAdapter clientAdapter) {
-    final var config = createExporterConfig(connectConfig);
-    final var isElasticsearch = connectConfig.getTypeEnum() == DatabaseType.ELASTICSEARCH;
+      final SearchEngineConfiguration configuration, final ClientAdapter clientAdapter) {
+    final var config = createExporterConfig(configuration);
+    final var isElasticsearch = configuration.connect().getTypeEnum() == DatabaseType.ELASTICSEARCH;
 
     final IndexDescriptors indexDescriptors =
-        new IndexDescriptors(connectConfig.getIndexPrefix(), isElasticsearch);
+        new IndexDescriptors(configuration.index().getPrefix(), isElasticsearch);
 
     final SchemaManager schemaManager =
         new SchemaManager(
@@ -40,16 +40,13 @@ public final class SchemaManagerHelper {
     schemaManager.startup();
   }
 
-  public static ClientAdapter createClientAdapter(final ConnectConfiguration connectConfig) {
-    final var config = createExporterConfig(connectConfig);
-    return ClientAdapter.of(config);
-  }
-
   private static ExporterConfiguration createExporterConfig(
-      final ConnectConfiguration connectConfig) {
+      final SearchEngineConfiguration searchEngineConfiguration) {
     final var config = new ExporterConfiguration();
-    config.setConnect(connectConfig);
-    config.getIndex().setPrefix(connectConfig.getIndexPrefix());
+    config.setConnect(searchEngineConfiguration.connect());
+    config.setIndex(searchEngineConfiguration.index());
+    config.getIndex().setPrefix(searchEngineConfiguration.connect().getIndexPrefix()); // FIXME
+    config.getHistory().setRetention(searchEngineConfiguration.retention());
 
     return config;
   }

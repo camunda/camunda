@@ -97,7 +97,7 @@ abstract class IncidentUpdateRepositoryIT {
     config.getConnect().setUrl(databaseUrl);
     config.getConnect().setType(isElastic ? "elasticsearch" : "opensearch");
 
-    clientAdapter = ClientAdapter.of(config);
+    clientAdapter = ClientAdapter.of(config.getConnect());
     engineClient = clientAdapter.getSearchEngineClient();
 
     postImporterQueueTemplate = new PostImporterQueueTemplate(indexPrefix, isElastic);

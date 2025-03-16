@@ -117,7 +117,7 @@ public class ExporterConfiguration {
         + '}';
   }
 
-  public static final class IndexSettings {
+  public static class IndexSettings {
     public static final int DEFAULT_VARIABLE_SIZE_THRESHOLD = 8191;
     private String prefix = "";
     private String zeebeIndexPrefix = "zeebe-record";
@@ -218,7 +218,7 @@ public class ExporterConfiguration {
     }
   }
 
-  public static final class RetentionConfiguration {
+  public static class RetentionConfiguration {
     private boolean enabled = false;
     private String minimumAge = "30d";
     private String policyName;
