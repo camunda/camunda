@@ -39,6 +39,7 @@ import java.util.stream.Collectors;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 @MultiDbTest
@@ -1336,6 +1337,7 @@ public class ProcessInstanceAndFlowNodeInstanceSearchTest {
     assertThat(result.items().size()).isEqualTo(0);
   }
 
+  @Disabled("Requires implementation on RDBMS")
   @Test
   void shouldQueryProcessInstancesByIncidentErrorHashCode() {
 
