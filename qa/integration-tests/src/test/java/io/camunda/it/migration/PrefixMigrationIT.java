@@ -21,14 +21,22 @@ import static io.camunda.it.migration.util.PrefixMigrationITUtils.startLatestCam
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.application.commons.search.SearchEngineDatabaseConfiguration.SearchEngineConnectProperties;
+import io.camunda.client.CamundaClient;
+import io.camunda.client.CredentialsProvider;
 import io.camunda.client.api.response.ProcessInstanceEvent;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.zeebe.qa.util.cluster.TestPrefixMigrationApp;
 import io.camunda.zeebe.test.util.testcontainers.TestSearchContainers;
 import java.io.IOException;
+import java.net.CookieManager;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.Duration;
+import java.util.Base64;
+import java.util.Optional;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -102,6 +110,68 @@ public class PrefixMigrationIT {
     connect.setIndexPrefix(NEW_PREFIX);
     try (final var app = new TestPrefixMigrationApp(connect, tasklist, operate)) {
       app.start();
+    }
+  }
+
+  private CamundaClient createCamundaClient(final GenericContainer<?> container)
+      throws IOException {
+
+    return CamundaClient.newClientBuilder()
+        .grpcAddress(URI.create("http://localhost:" + container.getMappedPort(GATEWAY_GRPC_PORT)))
+        .restAddress(URI.create("http://localhost:" + container.getMappedPort(SERVER_PORT)))
+        .usePlaintext()
+        .credentialsProvider(
+            new CredentialsProvider() {
+              @Override
+              public void applyCredentials(final CredentialsApplier applier) {
+                applier.put(
+                    "Authorization",
+                    "Basic %s"
+                        .formatted(Base64.getEncoder().encodeToString("demo:demo".getBytes())));
+              }
+
+              @Override
+              public boolean shouldRetryRequest(final StatusCode statusCode) {
+                return false;
+              }
+            })
+        .build();
+  }
+
+  private HttpResponse<String> requestProcessInstanceFromV1(
+      final String endpoint, final long processInstanceKey) {
+
+    try (final HttpClient httpClient =
+        HttpClient.newBuilder().cookieHandler(new CookieManager()).build(); ) {
+      sendPOSTRequest(
+          httpClient,
+          String.format("%sapi/login?username=%s&password=%s", endpoint, "demo", "demo"),
+          null);
+
+      return sendPOSTRequest(
+          httpClient,
+          String.format("%sv1/process-instances/search", endpoint),
+          String.format(
+              "{\"filter\":{\"key\":%d},\"sort\":[{\"field\":\"endDate\",\"order\":\"ASC\"}],\"size\":20}",
+              processInstanceKey));
+    }
+  }
+
+  private HttpResponse<String> sendPOSTRequest(
+      final HttpClient httpClient, final String path, final String body) {
+    try {
+      final var requestBody = Optional.ofNullable(body).orElse("{}");
+      final var requestBuilder =
+          HttpRequest.newBuilder()
+              .uri(new URI(path))
+              .header("content-type", "application/json")
+              .method("POST", HttpRequest.BodyPublishers.ofString(requestBody));
+
+      final var request = requestBuilder.build();
+
+      return httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+    } catch (final Exception e) {
+      throw new RuntimeException("Failed to send request", e);
     }
   }
 
