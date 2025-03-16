@@ -12,7 +12,6 @@ import static io.camunda.util.CollectionUtil.collectValues;
 
 import io.camunda.search.entities.IncidentEntity.ErrorType;
 import io.camunda.search.entities.IncidentEntity.IncidentState;
-import io.camunda.search.filter.ProcessInstanceFilter.Builder;
 import io.camunda.util.ObjectBuilder;
 import java.util.Collections;
 import java.util.List;
@@ -31,7 +30,7 @@ public record IncidentFilter(
     List<IncidentState> states,
     List<Long> jobKeys,
     List<String> tenantIds,
-    List<Integer> incidentErrorHashCodes)
+    List<Integer> errorMessageHashes)
     implements FilterBase {
 
   public static final class Builder implements ObjectBuilder<IncidentFilter> {
@@ -48,7 +47,7 @@ public record IncidentFilter(
     private List<IncidentState> states;
     private List<Long> jobKeys;
     private List<String> tenantIds;
-    private List<Integer> incidentErrorHashCodes;
+    private List<Integer> errorMessageHashes;
 
     public Builder incidentKeys(final Long value, final Long... values) {
       return incidentKeys(collectValues(value, values));
@@ -154,12 +153,12 @@ public record IncidentFilter(
       return this;
     }
 
-    public Builder incidentErrorHashCodes(final Integer value, final Integer... values) {
-      return incidentErrorHashCodes(collectValues(value, values));
+    public Builder errorMessageHashes(final Integer value, final Integer... values) {
+      return errorMessageHashes(collectValues(value, values));
     }
 
-    public Builder incidentErrorHashCodes(final List<Integer> values) {
-      incidentErrorHashCodes = addValuesToList(incidentErrorHashCodes, values);
+    public Builder errorMessageHashes(final List<Integer> values) {
+      errorMessageHashes = addValuesToList(errorMessageHashes, values);
       return this;
     }
 
@@ -178,7 +177,7 @@ public record IncidentFilter(
           Objects.requireNonNullElse(states, Collections.emptyList()),
           Objects.requireNonNullElse(jobKeys, Collections.emptyList()),
           Objects.requireNonNullElse(tenantIds, Collections.emptyList()),
-          Objects.requireNonNullElse(incidentErrorHashCodes, Collections.emptyList()));
+          Objects.requireNonNullElse(errorMessageHashes, Collections.emptyList()));
     }
   }
 }

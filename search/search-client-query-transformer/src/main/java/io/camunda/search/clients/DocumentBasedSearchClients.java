@@ -200,26 +200,23 @@ public class DocumentBasedSearchClients implements SearchClientsProxy, Closeable
     final var incidentFilter =
         FilterBuilders.incident(
             f ->
-                f.incidentErrorHashCodes(originalFilter.incidentErrorHashCodes())
+                f.errorMessageHashes(originalFilter.incidentErrorHashCodes())
                     .states(IncidentState.ACTIVE));
 
     final var incidentResult = searchIncidents(IncidentQuery.of(f -> f.filter(incidentFilter)));
-    searchIncidents(IncidentQuery.of(f -> f.filter(incidentFilter)));
 
     if (incidentResult.items().isEmpty()) {
       return new SearchQueryResult.Builder<ProcessInstanceEntity>().build();
     }
 
-    final var errorMessageOperations =
-        incidentResult.items().stream()
-            .map(incident -> Operation.eq(incident.errorMessage()))
-            .toList();
+    final var processInstanceKeys =
+        incidentResult.items().stream().map(IncidentEntity::processInstanceKey).toList();
 
     final var updatedFilter =
         FilterBuilders.processInstance(
             f ->
                 Builder.from(originalFilter)
-                    .errorMessageOperations(errorMessageOperations)
+                    .processInstanceKeyOperations(Operation.in(processInstanceKeys))
                     .endDateOperations(Operation.exists(false))
                     .hasIncident(true));
 
