@@ -1,5 +1,5 @@
 name: "Sign & Notarize c8run"
-description: "Signs c8run with Developer ID App certificate and notarizes the resulting zip file."
+description: "Signs with Developer ID App certificate and notarizes the resulting zip file."
 
 # We define inputs for everything needed to sign and notarize:
 inputs:
@@ -49,13 +49,13 @@ runs:
     # STEP B: Make signing script executable
     - name: Make script executable
       shell: bash
-      run: chmod +x ./.github/actions/sign-and-notarize/sign_all_c8run.sh
+      run: chmod +x ./.github/actions/sign-and-notarize/sign_all_mach_o_and_jars.sh
 
     # STEP C: Sign c8run content (top-level + jar-embedded code, including .app)
     - name: Sign c8run
       shell: bash
       run: |
-        ./.github/actions/sign-and-notarize/sign_all_c8run.sh \
+        ./.github/actions/sign-and-notarize/sign_all_mach_o_and_jars.sh \
           "$INPUT_PATH" \
           "$INPUT_DEVELOPER_ID_CERT_NAME"
 
@@ -63,13 +63,13 @@ runs:
     - name: Create zip
       shell: bash
       run: |
-        ditto -c -k --keepParent "$INPUT_PATH" c8run_signed.zip
+        ditto -c -k --keepParent "$INPUT_PATH" mac_signed.zip
 
     # STEP E: Notarize the zip
     - name: Notarize .zip
       shell: bash
       run: |
-        xcrun notarytool submit c8run_signed.zip \
+        xcrun notarytool submit mac_signed.zip \
           --apple-id "$INPUT_APPLE_ID" \
           --password "$INPUT_APP_PASSWORD" \
           --team-id "$INPUT_TEAM_ID" \

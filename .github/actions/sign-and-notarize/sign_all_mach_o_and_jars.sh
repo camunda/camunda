@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# sign_all_c8run.sh
+# sign_all_mach_o_and_jars.sh
 #
 # 1) Recursively sign all top-level Mach-O in <TARGET_DIR>, including .app bundles
 #    with --deep at the .app root.
@@ -8,7 +8,7 @@
 #    then re-zip the jar.
 #
 # Usage:
-#   ./sign_all_c8run.sh <TARGET_DIR> "<Developer ID Application: CertName (TEAMID)>"
+#   ./sign_all_mach_o_and_jars.sh<TARGET_DIR> "<Developer ID Application: CertName (TEAMID)>"
 #
 # Requirements:
 #   - 'file', 'codesign', 'unzip', 'zip' installed
