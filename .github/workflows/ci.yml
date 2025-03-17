@@ -839,6 +839,8 @@ jobs:
         uses: ./.github/actions/run-maven
         with:
           parameters: -f build-tools/pom.xml install
+      - name: Build Single App If Changed
+        uses: ./.github/actions/build-singleapp-if-changed
       - name: Build optimize dependencies
         uses: ./.github/actions/run-maven
         with:

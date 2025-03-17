@@ -1,0 +1,37 @@
+name: Build Single App If Changed
+description: Checks if parent/pom.xml changed and builds single application if needed
+outputs:
+  parent_changed:
+    description: 'Whether parent/pom.xml changed'
+runs:
+  using: "composite"
+  steps:
+    - name: Check if parent/pom.xml changed
+      id: parent_check
+      shell: bash
+      run: |
+        echo "Base branch: main"
+        echo "PR branch: ${{ github.head_ref }}"
+        git fetch origin main
+        PARENT_CHANGED=$(git diff --name-only origin/main | grep 'parent/pom.xml' || true)
+        if [[ -n "$PARENT_CHANGED" ]]; then
+          echo "parent/pom.xml changed. Building single application."
+          echo "parent_changed=true" >> "$GITHUB_OUTPUT"
+        else
+          echo "parent/pom.xml did not change."
+          echo "parent_changed=false" >> "$GITHUB_OUTPUT"
+        fi
+
+    - name: Build zeebe-util
+      if: steps.parent_check.outputs.parent_changed == 'true'
+      uses: ./.github/actions/run-maven
+      with:
+        parameters: install -pl zeebe/util -am -DskipTests -Dskip.fe.build=true -Dquickly
+        threads: .5C
+
+    - name: Build Single Application
+      if: steps.parent_check.outputs.parent_changed == 'true'
+      uses: ./.github/actions/run-maven
+      with:
+        parameters: install -pl dist -am -DskipTests -Dskip.fe.build=true -Dquickly
+        threads: .5C

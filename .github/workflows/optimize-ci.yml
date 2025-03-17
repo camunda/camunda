@@ -99,6 +99,9 @@ jobs:
           ELASTIC_JVM_MEMORY: 1
           ELASTIC_HTTP_PORT: ${{ steps.pom-info.outputs.x_new_database_port }}
 
+      - name: Build Single App If Changed
+        uses: ./.github/actions/build-singleapp-if-changed
+
       - name: Build optimize dependencies
         uses: ./.github/actions/run-maven
         with:
@@ -252,6 +255,9 @@ jobs:
           ELASTIC_JVM_MEMORY: 16
           ELASTIC_HTTP_PORT: 9200
 
+      - name: Build Single App If Changed
+        uses: ./.github/actions/build-singleapp-if-changed
+
       - name: Verify integration
         uses: ./.github/actions/run-maven
         env:
@@ -330,6 +336,9 @@ jobs:
           OPENSEARCH_VERSION: ${{ env.OPENSEARCH_VERSION }}
           OPENSEARCH_JVM_MEMORY: 16
           OPENSEARCH_HTTP_PORT: 9200
+
+      - name: Build Single App If Changed
+        uses: ./.github/actions/build-singleapp-if-changed
 
       - name: Verify integration
         uses: ./.github/actions/run-maven
