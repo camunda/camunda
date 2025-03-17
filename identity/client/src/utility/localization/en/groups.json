@@ -52,5 +52,20 @@
   "roleId": "Role ID",
   "roleName": "Role name",
   "removeRoleConfirmation": "Are you sure you want to remove <strong>{{roleKey}}</strong> from this group?",
-  "searchAndAssignRoleToGroup": "Search and assign role to group"
+  "searchAndAssignRoleToGroup": "Search and assign role to group",
+  "assignMapping": "Assign mapping",
+  "assigningMapping": "Assigning mapping",
+  "searchByMappingId": "Search by mapping ID",
+  "mappingsCouldNotLoad": "Mappings could not be loaded.",
+  "groupMappingRemoved": "Group mapping has been removed.",
+  "removeMapping": "Remove mapping",
+  "removingMapping": "Removing mapping",
+  "unableToLoadMappings": "We were unable to load the mappings. Click \"Retry\" to try again.",
+  "assignMappingsToGroup": "Assign mappings to this Group",
+  "mappingId": "Mapping ID",
+  "mappingName": "Mapping name",
+  "claimName": "Claim name",
+  "claimValue": "Claim value",
+  "searchAndAssignMappingToGroup": "Search and assign mapping to group",
+  "removeMappingConfirmation": "Are you sure you want to remove <strong>{{mappingId}}</strong> from this group?"
 }

@@ -30,6 +30,7 @@ import {
 } from "src/feature-flags";
 import Members from "src/pages/groups/detail/members";
 import Roles from "src/pages/groups/detail/roles";
+import Mappings from "src/pages/groups/detail/mappings";
 
 const Details: FC = () => {
   const navigate = useNavigate();
@@ -123,7 +124,7 @@ const Details: FC = () => {
                         {
                           key: "mappings",
                           label: t("mappings"),
-                          content: <div>mappings</div>, //<Mappings groupId={group?.groupKey} />,
+                          content: <Mappings groupId={group?.groupKey} />,
                         },
                       ]
                     : []),
