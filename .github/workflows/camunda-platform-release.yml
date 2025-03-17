@@ -121,7 +121,7 @@ jobs:
           #   Additional arguments to pass to the Maven executions, separated by spaces.
           #   Per default it is not required, but the release plugin is configured in the camunda release plugin (and this property is used)
           #   This is the reason why we have to set it at least as empty string.
-          # 8
+          # 1
           ./mvnw release:prepare -B \
             -Dresume=false \
             -Dtag=${RELEASE_VERSION} \
@@ -129,12 +129,11 @@ jobs:
             -DdevelopmentVersion=${DEVELOPMENT_VERSION} \
             -DpushChanges=${PUSH_CHANGES} \
             -DremoteTagging=${PUSH_CHANGES} \
-            -DcompletionGoals="spotless:apply" \
             -D skipOptimize \
             -DskipTests \
             -Dskip.docker \
             -X \
-            -DwaitBeforeTagging=300 \
+            -DwaitBeforeTagging=0 \
             -P-autoFormat \
             -DpreparationGoals="" \
             -Darguments=''
