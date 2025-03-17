@@ -16,7 +16,9 @@ import {processInstanceMigrationStore} from 'modules/stores/processInstanceMigra
 import {useEffect} from 'react';
 import {processInstancesSelectionStore} from 'modules/stores/processInstancesSelection';
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
+import * as filterModule from 'modules/hooks/useProcessInstancesFilters';
 
+jest.mock('modules/hooks/useFilters');
 jest.mock('modules/hooks/useProcessInstancesFilters');
 jest.mock('modules/stores/processes/processes.migration', () => ({
   processesStore: {
@@ -67,6 +69,10 @@ const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
 };
 
 describe('Source Diagram', () => {
+  beforeEach(() => {
+    jest.spyOn(filterModule, 'useProcessInstanceFilters').mockReturnValue({});
+  });
+
   it('should render process name and version', async () => {
     mockFetchProcessDefinitionXml().withSuccess(mockProcessXML);
 

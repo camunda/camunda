@@ -102,10 +102,7 @@ const DiagramPanel: React.FC = observer(() => {
       `calc(${width}px - ${COLLAPSABLE_PANEL_MIN_WIDTH})`;
   });
 
-  const {data: overlayData} = useProcessInstancesOverlayData(
-    {},
-    processId !== undefined,
-  );
+  const {data: overlayData} = useProcessInstancesOverlayData({}, processId);
 
   const {data: batchOverlayData} = useBatchModificationOverlayData(
     {},
@@ -113,7 +110,8 @@ const DiagramPanel: React.FC = observer(() => {
       sourceFlowNodeId: flowNodeId,
       targetFlowNodeId: selectedTargetFlowNodeId ?? undefined,
     },
-    processId !== undefined && batchModificationStore.state.isEnabled,
+    processId,
+    batchModificationStore.state.isEnabled,
   );
 
   const isDiagramLoading =

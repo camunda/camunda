@@ -6,14 +6,22 @@
  * except in compliance with the Camunda License 1.0.
  */
 
+import {
+  GetProcessDefinitionStatisticsRequestBody,
+  GetProcessDefinitionStatisticsResponseBody,
+} from '@vzeta/camunda-api-zod-schemas/operate';
 import {RequestHandler, RestRequest, rest} from 'msw';
 
 const mockStatisticsV2 = [
   rest.post(
-    '/v2/process-instances/statistics',
-    async (req: RestRequest<any>, res, ctx) => {
-      return res(
-        ctx.json([
+    '/v2/process-definitions/:processDefinitionKey/statistics/flownode-instances',
+    async (
+      req: RestRequest<GetProcessDefinitionStatisticsRequestBody>,
+      res,
+      ctx,
+    ) => {
+      const mockResponse: GetProcessDefinitionStatisticsResponseBody = {
+        items: [
           {
             flowNodeId: 'Gateway_15jzrqe',
             active: 0,
@@ -49,8 +57,10 @@ const mockStatisticsV2 = [
             incidents: 0,
             completed: 0,
           },
-        ]),
-      );
+        ],
+      };
+
+      return res(ctx.json(mockResponse));
     },
   ),
 ];

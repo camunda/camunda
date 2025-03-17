@@ -16,10 +16,10 @@ import {processInstanceMigrationStore} from 'modules/stores/processInstanceMigra
 import {diagramOverlaysStore} from 'modules/stores/diagramOverlays';
 import {StateOverlay} from 'modules/components/StateOverlay';
 import {useProcessInstancesOverlayData} from 'modules/queries/processInstancesStatistics/useOverlayData';
-import {useProcessInstanceFilters} from 'modules/hooks/useProcessInstancesFilters';
 import {processInstancesSelectionStore} from 'modules/stores/processInstancesSelection';
 import {getProcessInstanceKey} from 'modules/utils/statistics/processInstances';
 import {useMigrationSourceXml} from 'modules/queries/processDefinitions/useMigrationSourceXml';
+import {useProcessId} from 'modules/hooks/useProcessId';
 
 const SourceDiagram: React.FC = observer(() => {
   const {processName, version} = processesStore.getSelectedProcessDetails();
@@ -27,6 +27,7 @@ const SourceDiagram: React.FC = observer(() => {
     selectedSourceFlowNodeIds,
     state: {sourceProcessDefinitionKey},
   } = processInstanceMigrationStore;
+  const processId = useProcessId();
 
   const statisticsOverlays = diagramOverlaysStore.state.overlays.filter(
     ({type}) => type.match(/^statistics/) !== null,
@@ -51,13 +52,13 @@ const SourceDiagram: React.FC = observer(() => {
     return 'content';
   };
 
-  const processInstanceFilters = useProcessInstanceFilters();
-
   const {data: overlayData} = useProcessInstancesOverlayData(
     {
-      ...processInstanceFilters,
-      processInstanceKey: getProcessInstanceKey(),
+      filter: {
+        processInstanceKey: getProcessInstanceKey(),
+      },
     },
+    processId,
     processInstancesSelectionStore.selectedProcessInstanceIds.length > 0,
   );
 

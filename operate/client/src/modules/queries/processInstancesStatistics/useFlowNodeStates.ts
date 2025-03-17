@@ -6,12 +6,13 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {
-  ProcessInstancesStatisticsDto,
-  ProcessInstancesStatisticsRequest,
-} from 'modules/api/v2/processInstances/fetchProcessInstancesStatistics';
 import {useProcessInstancesStatisticsOptions} from './useProcessInstancesStatistics';
 import {useQuery} from '@tanstack/react-query';
+import {
+  GetProcessDefinitionStatisticsRequestBody,
+  GetProcessDefinitionStatisticsResponseBody,
+  ProcessDefinitionStatistic,
+} from '@vzeta/camunda-api-zod-schemas/operate';
 
 type FlowNodeState =
   | 'active'
@@ -26,8 +27,10 @@ type FlowNodeData = {
   flowNodeState: FlowNodeState;
 };
 
-const flowNodeStatesParser = (data: ProcessInstancesStatisticsDto[]) => {
-  return data.flatMap((statistics) => {
+const flowNodeStatesParser = (
+  data: GetProcessDefinitionStatisticsResponseBody,
+) => {
+  return data.items.flatMap((statistics) => {
     const types: FlowNodeState[] = [
       'active',
       'incidents',
@@ -36,7 +39,7 @@ const flowNodeStatesParser = (data: ProcessInstancesStatisticsDto[]) => {
     ];
     return types.reduce<FlowNodeData[]>((states, flowNodeState) => {
       const count = Number(
-        statistics[flowNodeState as keyof ProcessInstancesStatisticsDto],
+        statistics[flowNodeState as keyof ProcessDefinitionStatistic],
       );
       if (count > 0) {
         return [
@@ -58,13 +61,15 @@ const flowNodeStatesParser = (data: ProcessInstancesStatisticsDto[]) => {
 };
 
 function useProcessInstancesFlowNodeStates(
-  payload: ProcessInstancesStatisticsRequest,
+  payload: GetProcessDefinitionStatisticsRequestBody,
+  processDefinitionKey?: string,
   enabled?: boolean,
 ) {
   return useQuery(
     useProcessInstancesStatisticsOptions<FlowNodeData[]>(
       payload,
       flowNodeStatesParser,
+      processDefinitionKey,
       enabled,
     ),
   );
