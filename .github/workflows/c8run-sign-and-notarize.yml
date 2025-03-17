@@ -43,11 +43,11 @@ jobs:
           C8RUN_CERT_P12_PASSWORD: ${{ secrets.C8RUN_CERT_P12_PASSWORD }}
 
       - name: Make script executable
-        run: chmod +x .github/scripts/sign_all_c8run.sh
+        run: chmod +x ./c8run/scripts/sign_all_c8run.sh
 
       - name: Sign c8run distribution
         run: |
-          ./.github/scripts/sign_all_c8run.sh "c8run" "$C8RUN_DEVELOPER_ID_APP"
+          ./c8run/scripts/sign_all_c8run.sh "c8run" "$C8RUN_DEVELOPER_ID_APP"
         env:
           C8RUN_DEVELOPER_ID_APP: "Developer ID Application: Camunda Services GmbH (3JVGD57JQZ)"
 
