@@ -9,7 +9,7 @@ import { FC } from "react";
 import { Link, Stack } from "@carbon/react";
 import { Launch } from "@carbon/react/icons";
 import useTranslate from "src/utility/localization";
-import { Description, Title, Grid, Content } from "./components.tsx";
+import { Description, Title, Grid, Content } from "./components";
 import forbiddenIcon from "src/assets/images/forbidden.svg";
 
 const ForbiddenPage: FC = () => {

@@ -12,9 +12,9 @@ import {useCurrentUser} from 'common/api/useCurrentUser.query';
 import {pages} from 'common/routing';
 import {isForbidden} from 'common/utils/isForbidden';
 
-interface Props {
+type Props = {
   children: React.ReactNode;
-}
+};
 
 const AuthorizationCheck: React.FC<Props> = observer(({children}) => {
   const location = useLocation();

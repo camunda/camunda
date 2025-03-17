@@ -6,23 +6,25 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {ReactNode} from 'react';
+import {MemoryRouter, Route, Routes} from 'react-router-dom';
 import {render, screen} from 'modules/testing-library';
 import {ForbiddenPage} from './index';
 
-jest.mock('App/AuthenticationCheck', () => ({
-  AuthenticationCheck: ({children}: {children: ReactNode}) => <>{children}</>,
-}));
-
-jest.mock('App/Layout/AppHeader', () => ({
-  AppHeader: () => <div data-testid="app-header">App Header</div>,
-}));
+const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
+  return (
+    <MemoryRouter>
+      <Routes>
+        <Route path="/" element={children} />
+      </Routes>
+    </MemoryRouter>
+  );
+};
 
 describe('Forbidden', () => {
   it('should render Forbidden component with correct text and link', async () => {
-    render(<ForbiddenPage />);
+    render(<ForbiddenPage />, {wrapper: Wrapper});
 
-    expect(screen.getByTestId('app-header')).toBeInTheDocument();
+    expect(screen.getByRole('banner')).toBeInTheDocument();
     expect(
       screen.getByText('You don’t have access to this component'),
     ).toBeInTheDocument();

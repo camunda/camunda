@@ -14,7 +14,7 @@ import ErrorBoundary from "src/components/global/ErrorBoundary";
 import { NotificationProvider } from "src/components/notifications";
 import { useApi } from "src/utility/api";
 import { getAuthentication } from "src/utility/api/authentication";
-import ForbiddenComponent from "src/pages/forbidden/ForbiddenPage.tsx";
+import ForbiddenComponent from "src/pages/forbidden/ForbiddenPage";
 
 const GlobalStyle = createGlobalStyle`
   body {

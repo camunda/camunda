@@ -16,7 +16,7 @@ const Grid = styled.div`
   align-content: center;
   padding: var(--cds-spacing-11);
   margin-block: var(--cds-spacing-07) var(--cds-spacing-09);
-  margin-inline: var(--cds-spacing-06);
+  margin-inline: var(--cds-spacing-08);
   background-color: var(--cds-layer);
   height: calc(100vh - var(--cds-spacing-07) - 2 * var(--cds-spacing-09));
 `;

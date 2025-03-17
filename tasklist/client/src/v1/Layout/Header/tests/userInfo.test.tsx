@@ -6,7 +6,11 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {render, screen, waitFor} from 'common/testing/testing-library';
+import {
+  render,
+  screen,
+  waitForElementToBeRemoved,
+} from 'common/testing/testing-library';
 import {nodeMockServer} from 'common/testing/nodeMockServer';
 import {authenticationStore} from 'common/auth/authentication';
 import {http, HttpResponse} from 'msw';
@@ -301,11 +305,9 @@ describe('User info', () => {
       wrapper: getWrapper(),
     });
 
-    await waitFor(() => {
-      expect(screen.queryByText('Tasks')).not.toBeInTheDocument();
-    });
-    await waitFor(() => {
-      expect(screen.queryByText('Processes')).not.toBeInTheDocument();
-    });
+    await waitForElementToBeRemoved(() => screen.queryAllByText('Tasks'));
+
+    expect(screen.queryByText('Tasks')).not.toBeInTheDocument();
+    expect(screen.queryByText('Processes')).not.toBeInTheDocument();
   });
 });

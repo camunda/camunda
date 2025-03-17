@@ -223,7 +223,7 @@ class Authentication {
 
   isForbidden = () => {
     return (
-      !!this.state.authorizedApplications &&
+      Array.isArray(this.state.authorizedApplications) &&
       !this.state.authorizedApplications.includes('operate') &&
       !this.state.authorizedApplications.includes('*')
     );

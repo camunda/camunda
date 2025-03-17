@@ -11,9 +11,9 @@ import {observer} from 'mobx-react-lite';
 import {authenticationStore} from 'modules/stores/authentication';
 import {Paths} from 'modules/Routes';
 
-interface Props {
+type Props = {
   children: React.ReactNode;
-}
+};
 
 const AuthorizationCheck: React.FC<Props> = observer(({children}) => {
   const location = useLocation();
