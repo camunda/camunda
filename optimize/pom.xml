@@ -72,9 +72,6 @@
     <dependencyAnalyzeFailOnWarning>false</dependencyAnalyzeFailOnWarning>
     <dependencyAnalyze.failOnWarning>${dependencyAnalyzeFailOnWarning}</dependencyAnalyze.failOnWarning>
 
-    <!-- OpenCsv-->
-    <opencsv.version>5.10</opencsv.version>
-
     <!-- DATABASE -->
     <!-- Elasticsearch-->
     <elasticsearch.client.version>8.13.0</elasticsearch.client.version>
