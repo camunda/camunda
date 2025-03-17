@@ -187,6 +187,35 @@ func createStopFlagSet(settings *types.C8RunSettings) *flag.FlagSet {
 	return stopFlagSet
 }
 
+func GetJavaVersion(javaBinary string) (string, error) {
+        javaVersionCmd := exec.Command(javaBinary, "JavaVersion")
+        var out strings.Builder
+        var stderr strings.Builder
+        javaVersionCmd.Stdout = &out
+        javaVersionCmd.Stderr = &stderr
+        err := javaVersionCmd.Run()
+        if err != nil {
+                return "", fmt.Errorf("failed to run java version command: %w", err)
+        }
+        javaVersionOutput := out.String()
+        return javaVersionOutput, nil
+}
+
+func GetJavaHome(javaBinary string) (string, error) {
+        javaHomeCmd := exec.Command(javaBinary, "JavaHome")
+        var out strings.Builder
+        var stderr strings.Builder
+        javaHomeCmd.Stdout = &out
+        javaHomeCmd.Stderr = &stderr
+        err := javaHomeCmd.Run()
+        if err != nil {
+                return "", fmt.Errorf("failed to run java version command: %w", err)
+        }
+        javaHomeOutput := out.String()
+        return javaHomeOutput, nil
+}
+
+
 func main() {
 	c8 := getC8RunPlatform()
 	baseDir, _ := os.Getwd()
@@ -238,12 +267,24 @@ func main() {
 
 	javaHome := os.Getenv("JAVA_HOME")
 	javaBinary := "java"
-	javaHomeAfterSymlink, err := filepath.EvalSymlinks(javaHome)
-	if err != nil {
-		fmt.Println("Failed to check if filepath is a symlink")
-		os.Exit(1)
-	}
-	javaHome = javaHomeAfterSymlink
+        var javaHomeAfterSymlink string
+        if javaHome != "" {
+                javaHomeAfterSymlink, err = filepath.EvalSymlinks(javaHome)
+                if err != nil {
+                        fmt.Println("JAVA_HOME is not a valid path, obtaining JAVA_HOME from java binary")
+                        javaHome = ""
+                } else {
+                        javaHome = javaHomeAfterSymlink
+                }
+        }
+        if javaHome == "" {
+                javaHome, err = GetJavaHome(javaBinary)
+                if err != nil {
+                        fmt.Println("Failed to get JAVA_HOME")
+                        os.Exit(1)
+                }
+        }
+
 	if javaHome != "" {
 		err = filepath.Walk(javaHome, func(path string, info os.FileInfo, err error) error {
 			_, filename := filepath.Split(path)
@@ -316,27 +357,13 @@ func main() {
 
 func startCommand(c8 types.C8Run, settings types.C8RunSettings, processInfo processes, parentDir, javaBinary string, expectedJavaVersion int) {
 	javaVersion := os.Getenv("JAVA_VERSION")
+        var err error
 	if javaVersion == "" {
-		javaVersionCmd := c8.VersionCmd(javaBinary)
-		var out strings.Builder
-		var stderr strings.Builder
-		javaVersionCmd.Stdout = &out
-		javaVersionCmd.Stderr = &stderr
-		err := javaVersionCmd.Run()
-		if err != nil {
-			fmt.Println(err)
-			os.Exit(1)
-		}
-		javaVersionOutput := out.String()
-		javaVersionOutputSplit := strings.Split(javaVersionOutput, " ")
-		if len(javaVersionOutputSplit) < 2 {
-			fmt.Println("Java needs to be installed. Please install JDK " + strconv.Itoa(expectedJavaVersion) + " or newer.")
-			fmt.Println("If java is already installed, try explicitly setting JAVA_HOME and JAVA_VERSION")
-			os.Exit(1)
-		}
-		output := javaVersionOutputSplit[1]
-		os.Setenv("JAVA_VERSION", output)
-		javaVersion = output
+                javaVersion, err = GetJavaVersion(javaBinary)
+                if err != nil {
+                        fmt.Println("Failed to get Java version")
+                        os.Exit(1)
+                }
 	}
 	fmt.Print("Java version is " + javaVersion + "\n")
 
@@ -397,7 +424,7 @@ func startCommand(c8 types.C8Run, settings types.C8RunSettings, processInfo proc
 	camundaCmd := c8.CamundaCmd(processInfo.camunda.version, parentDir, extraArgs, javaOpts)
 	camundaLogPath := filepath.Join(parentDir, "log", "camunda.log")
 	startApplication(camundaCmd, processInfo.camunda.pid, camundaLogPath)
-	err := health.QueryCamunda(c8, "Camunda", settings)
+	err = health.QueryCamunda(c8, "Camunda", settings)
 	if err != nil {
 		fmt.Printf("%+v", err)
 		os.Exit(1)

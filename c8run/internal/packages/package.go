@@ -12,9 +12,11 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"runtime"
 	"runtime/debug"
+        "strings"
 
 	"github.com/camunda/camunda/c8run/internal/archive"
 )
@@ -96,6 +98,8 @@ func getFilesToArchive(osType, elasticsearchVersion, connectorsFilePath, camunda
 		filepath.Join("c8run", "elasticsearch-"+elasticsearchVersion),
 		filepath.Join("c8run", "custom_connectors"),
 		filepath.Join("c8run", "endpoints.txt"),
+		filepath.Join("c8run", "JavaVersion.class"),
+		filepath.Join("c8run", "JavaHome.class"),
 		filepath.Join("c8run", "log"),
 		filepath.Join("c8run", "camunda-zeebe-"+camundaVersion),
 		filepath.Join("c8run", ".env"),
@@ -130,6 +134,26 @@ func createZipArchive(filesToArchive []string, outputPath string) error {
 	return nil
 }
 
+func BuildJavaScripts() error {
+        javaVersionCmd := exec.Command("javac", "JavaVersion.java")
+        var out strings.Builder
+        var stderr strings.Builder
+        javaVersionCmd.Stdout = &out
+        javaVersionCmd.Stderr = &stderr
+        err := javaVersionCmd.Run()
+        if err != nil {
+                return fmt.Errorf("failed to compile JavaVersion : %w", err)
+        }
+        javaHomeCmd := exec.Command("javac", "JavaHome.java")
+        javaHomeCmd.Stdout = &out
+        javaHomeCmd.Stderr = &stderr
+        err = javaHomeCmd.Run()
+        if err != nil {
+                return fmt.Errorf("failed to compile JavaHome : %w", err)
+        }
+        return nil
+}
+
 func New(camundaVersion, elasticsearchVersion, connectorsVersion, composeTag string) error {
 	var osType, architecture, pkgName, extractFunc, err = setOsSpecificValues()
 	if err != nil {
@@ -147,6 +171,13 @@ func New(camundaVersion, elasticsearchVersion, connectorsVersion, composeTag str
 	composeFilePath := composeTag + pkgName
 	composeExtractionPath := "camunda-platform-" + composeTag
 	authToken := os.Getenv("GH_TOKEN")
+
+
+        // build JavaVersion and JavaHome
+        err = BuildJavaScripts()
+        if err != nil {
+                return fmt.Errorf("failed to build JavaVersion: %w", err)
+        }
 
 	javaArtifactsToken, err := getJavaArtifactsToken()
 	if err != nil {
