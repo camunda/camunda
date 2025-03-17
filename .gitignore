@@ -63,6 +63,7 @@ c8run/log/*.log
 c8run/camunda-zeebe*
 c8run/elasticsearch*
 c8run/c8run
+c8run/*.class
 
 /camunda.mv.db
 /camunda.trace.db
