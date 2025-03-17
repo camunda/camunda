@@ -9,10 +9,7 @@ runs:
     - name: Check if parent/pom.xml changed
       id: parent_check
       shell: bash
-      env: PR_BRANCH: ${{ github.head_ref }}
       run: |
-        echo "Base branch: main"
-        echo "PR branch: $PR_BRANCH"
         git fetch origin main
         PARENT_CHANGED=$(git diff --name-only origin/main | grep 'parent/pom.xml' || true)
         if [[ -n "$PARENT_CHANGED" ]]; then
