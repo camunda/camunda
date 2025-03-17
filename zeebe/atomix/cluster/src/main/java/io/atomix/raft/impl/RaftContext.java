@@ -109,7 +109,7 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
    */
   private static final long NO_CONFIGURATION_INDEX = -1L;
 
-  public static final String RAFT_ROLE_KEY = "raft-role";
+  private static final String RAFT_ROLE_KEY = "raft-role";
 
   protected final String name;
   protected final ThreadContext threadContext;
