@@ -18,3 +18,6 @@ export const IS_GROUP_MAPPINGS_SUPPORTED = false;
 // Roles details page - Remove when endpoints are available - https://github.com/camunda/camunda/issues/26961
 export const IS_ROLES_USERS_SUPPORTED = false;
 export const IS_ROLES_MAPPINGS_SUPPORTED = false;
+
+// Mappings page
+export const IS_UPDATE_MAPPINGS_SUPPORTED = false;
