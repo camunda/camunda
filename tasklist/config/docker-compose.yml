@@ -206,7 +206,7 @@ services:
 
   tasklist: &tasklist
     container_name: tasklist-${DATABASE}
-    image: camunda/tasklist:8.6.11
+    image: camunda/tasklist:8.6.12
     ports:
       - 8080:8080
     environment:
@@ -370,7 +370,7 @@ services:
 
   tasklist-e2e:
     container_name: tasklist-e2e
-    image: camunda/tasklist:8.6.11
+    image: camunda/tasklist:8.6.12
     ports:
       - 8081:8080
     environment:
@@ -392,7 +392,7 @@ services:
 
   tasklist-sso:
     container_name: tasklist-sso
-    image: camunda/tasklist:8.6.11
+    image: camunda/tasklist:8.6.12
     ports:
       - 8080:8080
     environment:
