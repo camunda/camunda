@@ -126,6 +126,12 @@ tailor-made for Google Cloud's monitoring platform, Stackdriver (now called Goog
 Operations). The output format can be controlled at startup via environment variables; refer to the
 distribution's [log4j2.xml](../dist/src/main/config/log4j2.xml) for more.
 
+> [!Note]
+> If you want to read about how to use logs at runtime, check out the following links:
+> - [Camunda Docs: Log Levels](https://docs.camunda.io/docs/next/self-managed/operational-guides/monitoring/log-levels/)
+> - [Camunda Docs: Setting the log level](https://docs.camunda.io/docs/next/self-managed/zeebe-deployment/configuration/#logging)
+> - [Camunda Runbook](https://github.com/camunda/runbook)
+
 #### Logs: Usage
 
 `org.slf4j.Logger` instances are thread-safe, and it's encouraged to reuse them in order to group
