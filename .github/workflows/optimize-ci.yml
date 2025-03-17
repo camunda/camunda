@@ -99,26 +99,6 @@ jobs:
           ELASTIC_JVM_MEMORY: 1
           ELASTIC_HTTP_PORT: ${{ steps.pom-info.outputs.x_new_database_port }}
 
-      - name: Check if parent/pom.xml changed
-        id: parent_check
-        run: |
-          git fetch origin ${{ github.base_ref }}
-          PARENT_CHANGED=$(git diff --name-only origin/${{ github.base_ref }} | grep 'parent/pom.xml' || true)
-          if [[ -n "PARENT_CHANGED" ]]; then
-            echo "parent/pom.xml changed. Building single application."
-            echo "parent_changed=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "parent/pom.xml did not change."
-            echo "parent_changed=false" >> "$GITHUB_OUTPUT"
-          fi
-
-      - name: Build single application
-        if: steps.parent_check.outputs.file_changed == 'true'
-        uses: ./.github/actions/run-maven
-        with:
-          parameters: install -pl dist -am -DskipTests -Dskip.fe.build=true -Dquickly
-          threads: .5C
-
       - name: Build optimize dependencies
         uses: ./.github/actions/run-maven
         with:
@@ -190,24 +170,6 @@ jobs:
           OPENSEARCH_VERSION: ${{ steps.pom-info.outputs.x_opensearch_test_version }}
           OPENSEARCH_JVM_MEMORY: 1
           OPENSEARCH_HTTP_PORT: ${{ steps.pom-info.outputs.x_new_database_port }}
-      - name: Check if parent/pom.xml changed
-        id: parent_check
-        run: |
-          git fetch origin ${{ github.base_ref }}
-          PARENT_CHANGED=$(git diff --name-only origin/${{ github.base_ref }} | grep 'parent/pom.xml' || true)
-          if [[ -n "PARENT_CHANGED" ]]; then
-            echo "parent/pom.xml changed. Building single application."
-            echo "parent_changed=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "parent/pom.xml did not change."
-            echo "parent_changed=false" >> "$GITHUB_OUTPUT"
-          fi
-      - name: Build single application
-        if: steps.parent_check.outputs.file_changed == 'true'
-        uses: ./.github/actions/run-maven
-        with:
-          parameters: install -pl dist -am -DskipTests -Dskip.fe.build=true -Dquickly
-          threads: .5C
       - name: Install optimize dependencies
         uses: ./.github/actions/run-maven
         with:
@@ -290,26 +252,6 @@ jobs:
           ELASTIC_JVM_MEMORY: 16
           ELASTIC_HTTP_PORT: 9200
 
-      - name: Check if parent/pom.xml changed
-        id: parent_check
-        run: |
-          git fetch origin ${{ github.base_ref }}
-          PARENT_CHANGED=$(git diff --name-only origin/${{ github.base_ref }} | grep 'parent/pom.xml' || true)
-          if [[ -n "PARENT_CHANGED" ]]; then
-            echo "parent/pom.xml changed. Building single application."
-            echo "parent_changed=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "parent/pom.xml did not change."
-            echo "parent_changed=false" >> "$GITHUB_OUTPUT"
-          fi
-
-      - name: Build single application
-        if: steps.parent_check.outputs.file_changed == 'true'
-        uses: ./.github/actions/run-maven
-        with:
-          parameters: install -pl dist -am -DskipTests -Dskip.fe.build=true -Dquickly
-          threads: .5C
-
       - name: Verify integration
         uses: ./.github/actions/run-maven
         env:
@@ -388,26 +330,6 @@ jobs:
           OPENSEARCH_VERSION: ${{ env.OPENSEARCH_VERSION }}
           OPENSEARCH_JVM_MEMORY: 16
           OPENSEARCH_HTTP_PORT: 9200
-
-      - name: Check if parent/pom.xml changed
-        id: parent_check
-        run: |
-          git fetch origin ${{ github.base_ref }}
-          PARENT_CHANGED=$(git diff --name-only origin/${{ github.base_ref }} | grep 'parent/pom.xml' || true)
-          if [[ -n "PARENT_CHANGED" ]]; then
-            echo "parent/pom.xml changed. Building single application."
-            echo "parent_changed=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "parent/pom.xml did not change."
-            echo "parent_changed=false" >> "$GITHUB_OUTPUT"
-          fi
-
-      - name: Build single application
-        if: steps.parent_check.outputs.file_changed == 'true'
-        uses: ./.github/actions/run-maven
-        with:
-          parameters: install -pl dist -am -DskipTests -Dskip.fe.build=true -Dquickly
-          threads: .5C
 
       - name: Verify integration
         uses: ./.github/actions/run-maven
