@@ -27,8 +27,12 @@ const BatchModificationSummaryModal: React.FC<StateProps> = observer(
 
     const {applyBatchOperation} = useOperationApply();
     const processInstancesFilters = getProcessInstanceFilters(location.search);
-    const {flowNodeId: sourceFlowNodeId, process: bpmnProcessId} =
-      processInstancesFilters;
+    const {
+      flowNodeId: sourceFlowNodeId,
+      process: bpmnProcessId,
+      tenant,
+      version,
+    } = processInstancesFilters;
     const process = processesStore.getProcess({bpmnProcessId});
     const processName = process?.name ?? process?.bpmnProcessId ?? 'Process';
     const {selectedTargetFlowNodeId: targetFlowNodeId} =
@@ -39,7 +43,16 @@ const BatchModificationSummaryModal: React.FC<StateProps> = observer(
     const targetFlowNodeName = targetFlowNodeId
       ? processXmlStore.getFlowNodeName(targetFlowNodeId)
       : undefined;
-    const {data: instancesCount} = useInstancesCount({}, sourceFlowNodeId);
+    const processId = processesStore.getProcessId({
+      process: bpmnProcessId,
+      tenant,
+      version,
+    });
+    const {data: instancesCount} = useInstancesCount(
+      {},
+      processId,
+      sourceFlowNodeId,
+    );
     const isPrimaryButtonDisabled =
       sourceFlowNodeId === undefined || targetFlowNodeId === null;
     const headers = [

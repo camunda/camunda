@@ -6,12 +6,12 @@
  * except in compliance with the Camunda License 1.0.
  */
 
+import {ProcessDefinitionStatistic} from '@vzeta/camunda-api-zod-schemas/operate';
 import {getInstancesCount} from './processInstances';
-import {ProcessInstancesStatisticsDto} from 'modules/api/v2/processInstances/fetchProcessInstancesStatistics';
 
 describe('getInstancesCount', () => {
   it('should return the correct count of active and incident instances for a given flowNodeId', () => {
-    const data: ProcessInstancesStatisticsDto[] = [
+    const data: ProcessDefinitionStatistic[] = [
       {
         flowNodeId: 'node1',
         active: 5,
@@ -33,7 +33,7 @@ describe('getInstancesCount', () => {
   });
 
   it('should return 0 if the flowNodeId is not found in the data', () => {
-    const data: ProcessInstancesStatisticsDto[] = [
+    const data: ProcessDefinitionStatistic[] = [
       {
         flowNodeId: 'node1',
         active: 5,
@@ -47,7 +47,7 @@ describe('getInstancesCount', () => {
   });
 
   it('should return 0 if the data is empty', () => {
-    const data: ProcessInstancesStatisticsDto[] = [];
+    const data: ProcessDefinitionStatistic[] = [];
 
     expect(getInstancesCount(data, 'node1')).toBe(0);
   });

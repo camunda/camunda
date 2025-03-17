@@ -16,6 +16,11 @@ import {QueryClientProvider} from '@tanstack/react-query';
 import * as filterModule from 'modules/hooks/useProcessInstancesFilters';
 
 jest.mock('modules/hooks/useProcessInstancesFilters');
+jest.mock('modules/stores/processes/processes.list', () => ({
+  processesStore: {
+    getProcessId: () => '123',
+  },
+}));
 
 const notificationText1 =
   'Please select where you want to move the selected instances on the diagram.';
@@ -38,9 +43,19 @@ function getWrapper(initialPath: string = Paths.dashboard()) {
 }
 
 describe('BatchModificationNotification', () => {
+  const originalWindow = {...window};
+  const locationSpy = jest.spyOn(window, 'location', 'get');
+  const queryString = '?process=bigVarProcess&version=1';
+  locationSpy.mockImplementation(() => ({
+    ...originalWindow.location,
+    search: queryString,
+  }));
+
   beforeEach(() => {
     jest.spyOn(filterModule, 'useProcessInstanceFilters').mockReturnValue({});
-    mockFetchProcessInstancesStatistics().withSuccess([]);
+    mockFetchProcessInstancesStatistics().withSuccess({
+      items: [],
+    });
   });
 
   afterEach(() => {
@@ -48,7 +63,9 @@ describe('BatchModificationNotification', () => {
   });
 
   it('should initially render batch modification notification', async () => {
-    mockFetchProcessInstancesStatistics().withSuccess([]);
+    mockFetchProcessInstancesStatistics().withSuccess({
+      items: [],
+    });
     render(<BatchModificationNotification />, {
       wrapper: getWrapper(),
     });
@@ -57,15 +74,17 @@ describe('BatchModificationNotification', () => {
   });
 
   it('should render batch modification notification with instance count', async () => {
-    mockFetchProcessInstancesStatistics().withSuccess([
-      {
-        flowNodeId: 'userTask',
-        active: 4,
-        canceled: 0,
-        incidents: 0,
-        completed: 0,
-      },
-    ]);
+    mockFetchProcessInstancesStatistics().withSuccess({
+      items: [
+        {
+          flowNodeId: 'userTask',
+          active: 4,
+          canceled: 0,
+          incidents: 0,
+          completed: 0,
+        },
+      ],
+    });
 
     render(
       <BatchModificationNotification
@@ -84,15 +103,17 @@ describe('BatchModificationNotification', () => {
   it('should render Undo button if target is selected', async () => {
     const undoMock = jest.fn();
 
-    mockFetchProcessInstancesStatistics().withSuccess([
-      {
-        flowNodeId: 'userTask',
-        active: 4,
-        canceled: 0,
-        incidents: 0,
-        completed: 0,
-      },
-    ]);
+    mockFetchProcessInstancesStatistics().withSuccess({
+      items: [
+        {
+          flowNodeId: 'userTask',
+          active: 4,
+          canceled: 0,
+          incidents: 0,
+          completed: 0,
+        },
+      ],
+    });
 
     render(
       <BatchModificationNotification
@@ -116,15 +137,17 @@ describe('BatchModificationNotification', () => {
   });
 
   it('should not render Undo button if no target is selected', async () => {
-    mockFetchProcessInstancesStatistics().withSuccess([
-      {
-        flowNodeId: 'userTask',
-        active: 4,
-        canceled: 0,
-        incidents: 0,
-        completed: 0,
-      },
-    ]);
+    mockFetchProcessInstancesStatistics().withSuccess({
+      items: [
+        {
+          flowNodeId: 'userTask',
+          active: 4,
+          canceled: 0,
+          incidents: 0,
+          completed: 0,
+        },
+      ],
+    });
 
     render(<BatchModificationNotification sourceFlowNodeId="userTask" />, {
       wrapper: getWrapper(),

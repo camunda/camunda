@@ -6,66 +6,31 @@
  * except in compliance with the Camunda License 1.0.
  */
 
+import {
+  endpoints,
+  GetProcessDefinitionStatisticsRequestBody,
+  GetProcessDefinitionStatisticsResponseBody,
+} from '@vzeta/camunda-api-zod-schemas/operate';
 import {RequestResult, requestWithThrow} from 'modules/request';
 
-type ProcessInstancesStatisticsDto = {
-  flowNodeId: string;
-  active: number;
-  canceled: number;
-  incidents: number;
-  completed: number;
-};
-
 enum ProcessInstanceState {
-  RUNNING = 'RUNNING',
+  ACTIVE = 'ACTIVE',
   COMPLETED = 'COMPLETED',
-  CANCELED = 'CANCELED',
-  INCIDENT = 'INCIDENT',
+  TERMINATED = 'TERMINATED',
 }
 
-type ProcessInstancesStatisticsRequest = {
-  groupBy?: string;
-  startDate?: {
-    $lt?: string;
-    $gt?: string;
-  };
-  endDate?: {
-    $lt?: string;
-    $gt?: string;
-  };
-  processDefinitionKey?: {
-    $in: string[];
-  };
-  processInstanceKey?: {
-    $in?: string[];
-    $nin?: string[];
-  };
-  parentProcessInstanceKey?: string;
-  variables?: [
-    {
-      name: string;
-      value: string;
-    },
-  ];
-  tenantId?: string;
-  hasRetriesLeft?: boolean;
-  errorMessage?: string;
-  flowNodeId?: string;
-  state?: {
-    $in: ProcessInstanceState[];
-  };
-  batchOperationKey?: string;
-};
-
 const fetchProcessInstancesStatistics = async (
-  payload: ProcessInstancesStatisticsRequest,
-): RequestResult<ProcessInstancesStatisticsDto[]> => {
-  return requestWithThrow<ProcessInstancesStatisticsDto[]>({
-    url: '/v2/process-instances/statistics',
-    method: 'POST',
+  payload: GetProcessDefinitionStatisticsRequestBody,
+  processDefinitionKey: string,
+): RequestResult<GetProcessDefinitionStatisticsResponseBody> => {
+  return requestWithThrow<GetProcessDefinitionStatisticsResponseBody>({
+    url: endpoints.getProcessDefinitionStatistics.getUrl({
+      processDefinitionId: processDefinitionKey,
+      statisticName: 'flownode-instances',
+    }),
+    method: endpoints.getProcessDefinitionStatistics.method,
     body: payload,
   });
 };
 
 export {fetchProcessInstancesStatistics, ProcessInstanceState};
-export type {ProcessInstancesStatisticsDto, ProcessInstancesStatisticsRequest};

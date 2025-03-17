@@ -13,6 +13,7 @@ import {mockFetchProcessInstancesStatistics} from 'modules/mocks/api/v2/processI
 import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
 import * as filterModule from 'modules/hooks/useProcessInstancesFilters';
 
+jest.mock('modules/hooks/useFilters');
 jest.mock('modules/hooks/useProcessInstancesFilters');
 
 describe('useProcessInstancesFlowNodeStates', () => {
@@ -31,22 +32,24 @@ describe('useProcessInstancesFlowNodeStates', () => {
   });
 
   it('should fetch flow node states successfully', async () => {
-    const mockData = [
-      {
-        flowNodeId: 'task1',
-        active: 5,
-        canceled: 2,
-        incidents: 1,
-        completed: 3,
-      },
-      {
-        flowNodeId: 'task2',
-        active: 0,
-        canceled: 0,
-        incidents: 0,
-        completed: 4,
-      },
-    ];
+    const mockData = {
+      items: [
+        {
+          flowNodeId: 'task1',
+          active: 5,
+          canceled: 2,
+          incidents: 1,
+          completed: 3,
+        },
+        {
+          flowNodeId: 'task2',
+          active: 0,
+          canceled: 0,
+          incidents: 0,
+          completed: 4,
+        },
+      ],
+    };
 
     const expectedParsedData = [
       {flowNodeId: 'task1', count: 5, flowNodeState: 'active'},
@@ -58,9 +61,12 @@ describe('useProcessInstancesFlowNodeStates', () => {
 
     mockFetchProcessInstancesStatistics().withSuccess(mockData);
 
-    const {result} = renderHook(() => useProcessInstancesFlowNodeStates({}), {
-      wrapper,
-    });
+    const {result} = renderHook(
+      () => useProcessInstancesFlowNodeStates({}, 'processId'),
+      {
+        wrapper,
+      },
+    );
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
@@ -70,9 +76,12 @@ describe('useProcessInstancesFlowNodeStates', () => {
   it('should handle server error while fetching flow node states', async () => {
     mockFetchProcessInstancesStatistics().withServerError();
 
-    const {result} = renderHook(() => useProcessInstancesFlowNodeStates({}), {
-      wrapper,
-    });
+    const {result} = renderHook(
+      () => useProcessInstancesFlowNodeStates({}, 'processId'),
+      {
+        wrapper,
+      },
+    );
 
     await waitFor(() => expect(result.current.isError).toBe(true));
 
@@ -84,9 +93,12 @@ describe('useProcessInstancesFlowNodeStates', () => {
   it('should handle network error while fetching flow node states', async () => {
     mockFetchProcessInstancesStatistics().withNetworkError();
 
-    const {result} = renderHook(() => useProcessInstancesFlowNodeStates({}), {
-      wrapper,
-    });
+    const {result} = renderHook(
+      () => useProcessInstancesFlowNodeStates({}, 'processId'),
+      {
+        wrapper,
+      },
+    );
 
     await waitFor(() => expect(result.current.isError).toBe(true));
 
@@ -96,11 +108,16 @@ describe('useProcessInstancesFlowNodeStates', () => {
   });
 
   it('should handle empty data', async () => {
-    mockFetchProcessInstancesStatistics().withSuccess([]);
-
-    const {result} = renderHook(() => useProcessInstancesFlowNodeStates({}), {
-      wrapper,
+    mockFetchProcessInstancesStatistics().withSuccess({
+      items: [],
     });
+
+    const {result} = renderHook(
+      () => useProcessInstancesFlowNodeStates({}, 'processId'),
+      {
+        wrapper,
+      },
+    );
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
@@ -108,16 +125,19 @@ describe('useProcessInstancesFlowNodeStates', () => {
   });
 
   it('should handle loading state', async () => {
-    const {result} = renderHook(() => useProcessInstancesFlowNodeStates({}), {
-      wrapper,
-    });
+    const {result} = renderHook(
+      () => useProcessInstancesFlowNodeStates({}, 'processId'),
+      {
+        wrapper,
+      },
+    );
 
     expect(result.current.isLoading).toBe(true);
   });
 
   it('should not fetch data when enabled is false', async () => {
     const {result} = renderHook(
-      () => useProcessInstancesFlowNodeStates({}, false),
+      () => useProcessInstancesFlowNodeStates({}, 'processId', false),
       {
         wrapper,
       },
