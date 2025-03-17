@@ -2,9 +2,12 @@
 name: Statistics Daily
 
 on:
-  workflow_dispatch: {}
   schedule:
-    - cron: '0 8 * * 2-5'  # Tuesdays to Fridays
+    - cron: '0 8 * * 2-5'  # Tuesdays to Fridays, to keep it actionable
+  pull_request:
+    paths:
+      - '.github/workflows/statistics-daily.yml'
+  workflow_dispatch: {}
 
 jobs:
   flaky-tests:
@@ -16,7 +19,7 @@ jobs:
 
       - name: Import Secrets
         id: secrets
-        uses: hashicorp/vault-action@a1b77a09293a4366e48a5067a86692ac6e94fdc0 # v3.1.0
+        uses: hashicorp/vault-action@7709c609789c5e27b757a85817483caadbb5939a # v3.3.0
         with:
           url: ${{ secrets.VAULT_ADDR }}
           method: approle
@@ -24,7 +27,7 @@ jobs:
           secretId: ${{ secrets.VAULT_SECRET_ID }}
           exportEnv: false # we rely on step outputs, no need for environment variables
           secrets: |
-            secret/data/products/camunda/ci/github-actions SLACK_ZEEBECI_WEBHOOK_URL;
+            secret/data/products/camunda/ci/github-actions SLACK_TOPMONOREPOCI_WEBHOOK_URL;
             secret/data/products/zeebe/ci/ci-analytics gcloud_sa_key;
 
       - name: Login to Google Cloud
@@ -53,7 +56,8 @@ jobs:
             echo "MESSAGE<<EOF"
             echo "📈 ~$(echo "scale=1; 100 * $NUMBER_OF_FLAKYTESTS_JOBS / $NUMBER_OF_ALL_JOBS" | bc)% of jobs had flaky tests yesterday ($NUMBER_OF_FLAKYTESTS_JOBS from total of $NUMBER_OF_ALL_JOBS jobs)."
             echo ""
-            echo "🥇 Top 5 flakiest tests yesterday:"
+            echo ""
+            echo "🥇 *Top 5 flakiest tests yesterday:*"
             echo ""
             echo "$TOP5_FLAKYTESTS" | jq -c '.[]' | while read -r top_flakytest; do
               NUMBER_OF_FLAKES=$(echo "$top_flakytest" | jq -r '.number_of_flakes')
@@ -62,14 +66,21 @@ jobs:
               echo "• ${NUMBER_OF_FLAKES}x \`${TEST_CLASS_NAME##*.}.$TEST_NAME\`\n"
             done
             echo ""
-            echo "📊 Check out <https://dashboard.int.camunda.com/d/ae2j69npxh3b4f/flaky-tests-camunda-camunda-monorepo?orgId=1&from=now-1d%2Fd&to=now-1d%2Fd&timezone=browser&var-branch=main|Grafana for links and more details.>"
+            echo "📊 Check out <https://dashboard.int.camunda.com/d/ae2j69npxh3b4f/flaky-tests-camunda-camunda-monorepo?orgId=1&from=now-1d%2Fd&to=now-1d%2Fd&timezone=browser&var-branch=main|Grafana for links and more details>."
             echo "EOF"
           } >> $GITHUB_OUTPUT
 
+      - name: Debug notificatoin
+        if: github.event_name == 'pull_request'
+        shell: bash
+        run: |
+          echo '${{ steps.message.outputs.MESSAGE }}'
+
       - name: Send notification
+        if: github.event_name != 'pull_request'
         uses: slackapi/slack-github-action@485a9d42d3a73031f12ec201c457e2162c45d02d # v2.0.0
         with:
-          webhook: ${{ steps.secrets.outputs.SLACK_ZEEBECI_WEBHOOK_URL }}
+          webhook: ${{ steps.secrets.outputs.SLACK_TOPMONOREPOCI_WEBHOOK_URL }}
           webhook-type: webhook-trigger
           # For posting a rich message using Block Kit
           payload: |

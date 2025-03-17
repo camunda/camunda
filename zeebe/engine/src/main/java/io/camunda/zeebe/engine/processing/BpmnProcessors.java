@@ -81,7 +81,8 @@ public final class BpmnProcessors {
         writers, typedRecordProcessors, processingState, authCheckBehavior);
 
     final var bpmnStreamProcessor =
-        new BpmnStreamProcessor(bpmnBehaviors, processingState, writers, processEngineMetrics);
+        new BpmnStreamProcessor(
+            bpmnBehaviors, processingState, writers, processEngineMetrics, config);
     addBpmnStepProcessor(typedRecordProcessors, bpmnStreamProcessor);
 
     addMessageStreamProcessors(

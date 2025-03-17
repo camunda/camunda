@@ -398,7 +398,7 @@ paths:
                 $ref: "#/components/schemas/ProblemDetail"
         "500":
           $ref: "#/components/responses/InternalServerError"
-    patch:
+    put:
       tags:
         - Tenant
       operationId: updateTenant
@@ -519,8 +519,7 @@ paths:
           required: true
           description: The unique identifier of the user.
           schema:
-            type: integer
-            format: int64
+            type: string
       responses:
         "202":
           description: The user was successfully removed from the tenant.
@@ -541,7 +540,6 @@ paths:
     post:
       tags:
         - Tenant
-        - User
       operationId: searchUsersForTenant
       summary: Query users for tenant
       description: Retrieves a filtered and sorted list of users for a specified tenant.
@@ -565,14 +563,8 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/UserSearchResult"
-            application/vnd.camunda.api.keys.number+json:
-              schema:
-                $ref: "#/components/schemas/UserSearchResult"
-            application/vnd.camunda.api.keys.string+json:
-              schema:
-                $ref: "#/components/schemas/UserSearchResult"
 
-  /tenants/{tenantKey}/mapping-rules/{mappingKey}:
+  /tenants/{tenantId}/mapping-rules/{mappingKey}:
     put:
       tags:
         - Tenant
@@ -580,7 +572,7 @@ paths:
       summary: Assign a mapping rule to a tenant
       description: Assign a single mapping rule to a specified tenant.
       parameters:
-        - name: tenantKey
+        - name: tenantId
           in: path
           required: true
           description: The unique identifier of the tenant.
@@ -591,8 +583,7 @@ paths:
           required: true
           description: The unique identifier of the mapping rule.
           schema:
-            type: integer
-            format: int64
+            type: string
       responses:
         "202":
           description: The mapping rule was successfully assigned to the tenant.
@@ -616,7 +607,7 @@ paths:
       summary: Remove a mapping rule from a tenant
       description: Removes a single mapping rule from a specified tenant without deleting the rule.
       parameters:
-        - name: tenantKey
+        - name: tenantId
           in: path
           required: true
           description: The unique identifier of the tenant.
@@ -627,8 +618,7 @@ paths:
           required: true
           description: The unique identifier of the mapping rule.
           schema:
-            type: integer
-            format: int64
+            type: string
       responses:
         "202":
           description: The mapping rule was successfully removed from the tenant.
@@ -645,7 +635,7 @@ paths:
         "500":
           $ref: "#/components/responses/InternalServerError"
 
-  /tenants/{tenantKey}/groups/{groupKey}:
+  /tenants/{tenantId}/groups/{groupKey}:
     put:
       tags:
         - Tenant
@@ -653,7 +643,7 @@ paths:
       summary: Assign a group to a tenant
       description: Assign a single group to a specified tenant.
       parameters:
-        - name: tenantKey
+        - name: tenantId
           in: path
           required: true
           description: The unique identifier of the tenant.
@@ -664,8 +654,7 @@ paths:
           required: true
           description: The unique identifier of the group.
           schema:
-            type: integer
-            format: int64
+            type: string
       responses:
         "202":
           description: The group was successfully assigned to the tenant.
@@ -689,7 +678,7 @@ paths:
       summary: Remove a group from a tenant
       description: Removes a single group from a specified tenant without deleting the group.
       parameters:
-        - name: tenantKey
+        - name: tenantId
           in: path
           required: true
           description: The unique identifier of the tenant.
@@ -700,8 +689,7 @@ paths:
           required: true
           description: The unique identifier of the group.
           schema:
-            type: integer
-            format: int64
+            type: string
       responses:
         "202":
           description: The group was successfully removed from the tenant.
@@ -1294,7 +1282,7 @@ paths:
         "500":
           $ref: "#/components/responses/InternalServerError"
 
-  /process-definitions/{processDefinitionsKey}/form:
+  /process-definitions/{processDefinitionKey}/form:
     get:
       tags:
         - Process definition
@@ -1305,7 +1293,7 @@ paths:
 
         Note that this endpoint will only return linked forms. This endpoint does not support embedded forms.
       parameters:
-        - name: processDefinitionsKey
+        - name: processDefinitionKey
           in: path
           required: true
           description: The process key.
@@ -1334,6 +1322,45 @@ paths:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+  /process-definitions/{processDefinitionKey}/statistics/flownode-instances:
+    post:
+      tags:
+        - Process definition
+      operationId: getProcessDefinitionStatistics
+      summary: Get process definition statistics
+      description: |
+        Get statistics about flow nodes in currently running process instances by process definition key and search filter.
+      parameters:
+        - name: processDefinitionKey
+          in: path
+          required: true
+          description: The assigned key of the process definition, which acts as a unique identifier for this process definition.
+          schema:
+            type: string
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProcessDefinitionFlowNodeStatisticsQuery"
+      responses:
+        "200":
+          description: The process definition statistics result.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ProcessDefinitionFlowNodeStatisticsResult"
+        "400":
+          $ref: "#/components/responses/InvalidData"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
         "500":
           $ref: "#/components/responses/InternalServerError"
 
@@ -1604,7 +1631,7 @@ paths:
         "500":
           $ref: "#/components/responses/InternalServerError"
 
-  /flownode-instances/{flownodeInstanceKey}:
+  /flownode-instances/{flowNodeInstanceKey}:
     get:
       tags:
         - Flow node instance
@@ -1613,7 +1640,7 @@ paths:
       description: |
         Returns flow node instance as JSON.
       parameters:
-        - name: flownodeInstanceKey
+        - name: flowNodeInstanceKey
           in: path
           required: true
           description: The assigned key of the flow node instance, which acts as a unique identifier for this flow node instance.
@@ -2032,8 +2059,7 @@ paths:
           required: true
           description: The key of the authorization to delete.
           schema:
-            type: integer
-            format: int64
+            type: string
       requestBody:
         content:
           application/json:
@@ -2065,8 +2091,7 @@ paths:
           required: true
           description: The key of the authorization to delete.
           schema:
-            type: integer
-            format: int64
+            type: string
       responses:
         "204":
           description: The authorization was deleted successfully.
@@ -2115,9 +2140,12 @@ paths:
       tags:
         - Role
       operationId: createRole
-      summary: Create role
+      summary: Create role (Work-in-Progress)
       description: |
         Create a new role.
+
+        This API is in a Work-in-Progress state and will undergo potential breaking changes till
+        its release with an upcoming minor release.
       requestBody:
         content:
           application/json:
@@ -2144,9 +2172,12 @@ paths:
       tags:
         - Role
       operationId: getRole
-      summary: Get role
+      summary: Get role (Work-in-Progress)
       description: |
         Get a role by its key.
+
+        This API is in a Work-in-Progress state and will undergo potential breaking changes till
+        its release with an upcoming minor release.
       parameters:
         - name: roleKey
           in: path
@@ -2177,8 +2208,12 @@ paths:
       tags:
         - Role
       operationId: updateRole
-      summary: Update role
-      description: Update a role with the given key.
+      summary: Update role (Work-in-Progress)
+      description: |
+        Update a role with the given key.
+
+        This API is in a Work-in-Progress state and will undergo potential breaking changes till
+        its release with an upcoming minor release.
       parameters:
         - name: roleKey
           in: path
@@ -2211,8 +2246,12 @@ paths:
       tags:
         - Role
       operationId: deleteRole
-      summary: Delete role
-      description: Deletes the role with the given key.
+      summary: Delete role (Work-in-Progress)
+      description: |
+        Deletes the role with the given key.
+
+        This API is in a Work-in-Progress state and will undergo potential breaking changes till
+        its release with an upcoming minor release.
       parameters:
         - name: roleKey
           in: path
@@ -2238,9 +2277,12 @@ paths:
       tags:
         - Role
       operationId: searchRoles
-      summary: Query roles
+      summary: Query roles (Work-in-Progress)
       description: |
         Search for roles based on given criteria.
+
+        This API is in a Work-in-Progress state and will undergo potential breaking changes till
+        its release with an upcoming minor release.
       requestBody:
         required: false
         content:
@@ -2272,7 +2314,12 @@ paths:
       tags:
         - Group
       operationId: createGroup
-      summary: Create group
+      summary: Create group (Work-in-Progress)
+      description: |
+        Create a new group.
+
+        This API is in a Work-in-Progress state and will undergo potential breaking changes till
+        its release with an upcoming minor release.
       requestBody:
         content:
           application/json:
@@ -2298,9 +2345,12 @@ paths:
       tags:
         - Group
       operationId: getGroup
-      summary: Get group
+      summary: Get group (Work-in-Progress)
       description: |
         Get a group by its key.
+
+        This API is in a Work-in-Progress state and will undergo potential breaking changes till
+        its release with an upcoming minor release.
       parameters:
         - name: groupKey
           in: path
@@ -2331,8 +2381,12 @@ paths:
       tags:
         - Group
       operationId: updateGroup
-      summary: Update group
-      description: Update a group with the given key.
+      summary: Update group (Work-in-Progress)
+      description: |
+        Update a group with the given key.
+
+        This API is in a Work-in-Progress state and will undergo potential breaking changes till
+        its release with an upcoming minor release.
       parameters:
         - name: groupKey
           in: path
@@ -2365,8 +2419,12 @@ paths:
       tags:
         - Group
       operationId: deleteGroup
-      summary: Delete group
-      description: Deletes the group with the given key.
+      summary: Delete group (Work-in-Progress)
+      description: |
+        Deletes the group with the given key.
+
+        This API is in a Work-in-Progress state and will undergo potential breaking changes till
+        its release with an upcoming minor release.
       parameters:
         - name: groupKey
           in: path
@@ -2392,9 +2450,12 @@ paths:
       tags:
         - Group
       operationId: addUserToGroup
-      summary: Assign a user to a group
+      summary: Assign a user to a group (Work-in-Progress)
       description: |
         Assigns a user to a group.
+
+        This API is in a Work-in-Progress state and will undergo potential breaking changes till
+        its release with an upcoming minor release.
       parameters:
         - name: groupKey
           in: path
@@ -2407,8 +2468,7 @@ paths:
           required: true
           description: The user key.
           schema:
-            type: integer
-            format: int64
+            type: string
       responses:
         "202":
           description: The user was assigned successfully to the group.
@@ -2434,9 +2494,12 @@ paths:
       tags:
         - Group
       operationId: unassignUserFromGroup
-      summary: Unassign a user from a group
+      summary: Unassign a user from a group (Work-in-Progress)
       description: |
         Unassigns a user from a group.
+
+        This API is in a Work-in-Progress state and will undergo potential breaking changes till
+        its release with an upcoming minor release.
       parameters:
         - name: groupKey
           in: path
@@ -2470,9 +2533,12 @@ paths:
       tags:
         - Group
       operationId: searchGroups
-      summary: Query groups
+      summary: Query groups (Work-in-Progress)
       description: |
         Search for groups based on given criteria.
+
+        This API is in a Work-in-Progress state and will undergo potential breaking changes till
+        its release with an upcoming minor release.
       requestBody:
         required: false
         content:
@@ -2542,8 +2608,12 @@ paths:
       tags:
         - Mapping rule
       operationId: deleteMappingRule
-      summary: Delete a mapping rule
-      description: Deletes the mapping rule with the given key.
+      summary: Delete a mapping rule (Work-in-Progress)
+      description: |
+        Deletes the mapping rule with the given key.
+
+        This API is in a Work-in-Progress state and will undergo potential breaking changes till
+        its release with an upcoming minor release.
       parameters:
         - name: mappingKey
           in: path
@@ -2570,9 +2640,12 @@ paths:
       tags:
         - Mapping rule
       operationId: findMappings
-      summary: Query mappings
+      summary: Query mappings (Work-in-Progress)
       description: |
         Search for mapping rules based on given criteria.
+
+        This API is in a Work-in-Progress state and will undergo potential breaking changes till
+        its release with an upcoming minor release.
       requestBody:
         content:
           application/json:
@@ -2724,7 +2797,7 @@ paths:
 
         The caller must provide a file name for each document, which will be used in case of a multi-status response
         to identify which documents failed to upload. The file name can be provided in the `Content-Disposition` header
-        of the file part or in the `filename` field of the metadata part. If both are provided, the `filename` field
+        of the file part or in the `fileName` field of the metadata part. If both are provided, the `fileName` field
         takes precedence.
 
         In case of a multi-status response, the response body will contain a list of `DocumentBatchProblemDetail` objects,
@@ -3418,11 +3491,6 @@ components:
         tenantKey:
           type: string
           description: The unique system-generated internal tenant ID.
-        assignedMemberKeys:
-          type: array
-          description: The set of keys of members assigned to the tenant.
-          items:
-            type: string
     TenantSearchQuerySortRequest:
       type: object
       properties:
@@ -3631,8 +3699,12 @@ components:
           type: string
           description: Name of the variable.
         value:
-          type: string
+          allOf:
+            - $ref: "#/components/schemas/StringFilterProperty"
           description: The value of the variable.
+      required:
+        - name
+        - value
     VariableUserTaskFilterRequest:
       description: The user task variable search filters.
       type: object
@@ -4148,26 +4220,10 @@ components:
           title: Exact match
           description: Matches the value exactly.
         - $ref: "#/components/schemas/AdvancedDateTimeFilter"
-    ProcessInstanceFilter:
-      description: Process instance search filter.
+    BaseProcessInstanceFilter:
+      description: Base process instance search filter.
       type: object
       properties:
-        processDefinitionId:
-          description: The process definition ID.
-          allOf:
-            - $ref: "#/components/schemas/StringFilterProperty"
-        processDefinitionName:
-          description: The process definition name.
-          allOf:
-            - $ref: "#/components/schemas/StringFilterProperty"
-        processDefinitionVersion:
-          description: The process definition version.
-          allOf:
-            - $ref: "#/components/schemas/IntegerFilterProperty"
-        processDefinitionVersionTag:
-          description: The process definition version tag.
-          allOf:
-            - $ref: "#/components/schemas/StringFilterProperty"
         startDate:
           description: The start date.
           allOf:
@@ -4196,10 +4252,6 @@ components:
           description: The key of this process instance.
           allOf:
             - $ref: "#/components/schemas/BasicStringFilterProperty"
-        processDefinitionKey:
-          description: The process definition key.
-          allOf:
-            - $ref: "#/components/schemas/BasicStringFilterProperty"
         parentProcessInstanceKey:
           description: The parent process instance key.
           allOf:
@@ -4208,6 +4260,36 @@ components:
           description: The parent flow node instance key.
           allOf:
             - $ref: "#/components/schemas/BasicStringFilterProperty"
+    ProcessInstanceFilter:
+      description: Process instance search filter.
+      type: object
+      allOf:
+        - $ref: "#/components/schemas/BaseProcessInstanceFilter"
+      properties:
+        processDefinitionId:
+          description: The process definition ID.
+          allOf:
+            - $ref: "#/components/schemas/StringFilterProperty"
+        processDefinitionName:
+          description: The process definition name.
+          allOf:
+            - $ref: "#/components/schemas/StringFilterProperty"
+        processDefinitionVersion:
+          description: The process definition version.
+          allOf:
+            - $ref: "#/components/schemas/IntegerFilterProperty"
+        processDefinitionVersionTag:
+          description: The process definition version tag.
+          allOf:
+            - $ref: "#/components/schemas/StringFilterProperty"
+        processDefinitionKey:
+          description: The process definition key.
+          allOf:
+            - $ref: "#/components/schemas/BasicStringFilterProperty"
+        batchOperationId:
+          description: The batch operation ID.
+          allOf:
+            - $ref: "#/components/schemas/StringFilterProperty"
     ProcessInstanceVariableFilterRequest:
       description: Process instance variable filter.
       type: object
@@ -4217,7 +4299,11 @@ components:
           type: string
         value:
           description: The value of the variable.
-          type: string
+          allOf:
+            - $ref: "#/components/schemas/StringFilterProperty"
+      required:
+        - name
+        - value
     ProcessInstanceSearchQueryResult:
       description: Process instance search response.
       type: object
@@ -4280,6 +4366,37 @@ components:
         - ACTIVE
         - COMPLETED
         - TERMINATED
+    ProcessDefinitionFlowNodeStatisticsQuery:
+      description: Process definition flow node statistics request.
+      type: object
+      properties:
+        filter:
+          description: The process instance search filters.
+          allOf:
+            - $ref: "#/components/schemas/BaseProcessInstanceFilter"
+    ProcessDefinitionFlowNodeStatisticsResult:
+      description: Process definition flow node statistics response.
+      type: object
+      properties:
+        flowNodeId:
+          description: The flow node ID for which the results are aggregated.
+          type: string
+        active:
+          description: The total number of active instances of the flow node.
+          type: integer
+          format: int64
+        canceled:
+          description: The total number of canceled instances of the flow node.
+          type: integer
+          format: int64
+        incidents:
+          description: The total number of incidents for the flow node.
+          type: integer
+          format: int64
+        completed:
+          description: The total number of completed instances of the flow node.
+          type: integer
+          format: int64
     CancelProcessInstanceRequest:
       type: object
       nullable: true
@@ -5186,10 +5303,6 @@ components:
     UserResult:
       type: "object"
       properties:
-        id:
-          description: The ID of the user.
-          type: "integer"
-          format: "int64"
         username:
           description: The username of the user.
           type: "string"
@@ -5199,7 +5312,7 @@ components:
         email:
           description: The email of the user.
           type: "string"
-        key:
+        userKey:
           description: The key of the user.
           type: "string"
     UserSearchResult:
@@ -5259,7 +5372,7 @@ components:
         name:
           type: string
           description: The role name.
-        key:
+        roleKey:
           type: string
           description: The role key.
         assignedMemberKeys:
@@ -5413,7 +5526,7 @@ components:
         - claimValue
         - name
         - id
-    MappingRuleCreateResponseBase:
+    MappingRuleCreateResult:
       type: object
       properties:
         claimName:
@@ -5428,20 +5541,6 @@ components:
         id:
           type: string
           description: The unique external id of the mapping.
-    MappingRuleCreateResponse:
-      type: object
-      allOf:
-        - $ref: "#/components/schemas/MappingRuleCreateResponseBase"
-      properties:
-        mappingKey:
-          description: The key of the created mapping rule.
-          type: integer
-          format: int64
-    MappingRuleCreateResult:
-      type: object
-      allOf:
-        - $ref: "#/components/schemas/MappingRuleCreateResponseBase"
-      properties:
         mappingKey:
           description: The key of the created mapping rule.
           type: string
@@ -6537,7 +6636,7 @@ components:
     DocumentCreationFailureDetail:
       type: object
       properties:
-        filename:
+        fileName:
           type: string
           description: The name of the file.
         detail:
@@ -6581,8 +6680,7 @@ components:
           type: string
           description: The ID of the process definition that created the document.
         processInstanceKey:
-          type: integer
-          format: int64
+          type: string
           description: The key of the process instance that created the document.
         customProperties:
           type: object
@@ -6608,33 +6706,12 @@ components:
           format: date-time
           description: The date and time when the link expires.
 
-    DeploymentResponseBase:
-      description: Base properties for DeploymentResponse.
+    DeploymentResult:
       type: object
       properties:
         tenantId:
           description: The tenant ID associated with the deployment.
           type: string
-    DeploymentResponse:
-      deprecated: true
-      type: object
-      allOf:
-        - $ref: "#/components/schemas/DeploymentResponseBase"
-      properties:
-        deploymentKey:
-          type: integer
-          format: int64
-          description: The unique key identifying the deployment.
-        deployments:
-          description: Items deployed by the request.
-          type: array
-          items:
-            $ref: "#/components/schemas/DeploymentMetadata"
-    DeploymentResult:
-      type: object
-      allOf:
-        - $ref: "#/components/schemas/DeploymentResponseBase"
-      properties:
         deploymentKey:
           type: string
           description: The unique key identifying the deployment.
@@ -6656,21 +6733,8 @@ components:
           $ref: "#/components/schemas/DeploymentFormResult"
         resource:
           $ref: "#/components/schemas/DeploymentResourceResult"
-    DeploymentMetadata:
-      type: object
-      properties:
-        processDefinition:
-          $ref: "#/components/schemas/DeploymentProcess"
-        decisionDefinition:
-          $ref: "#/components/schemas/DeploymentDecision"
-        decisionRequirements:
-          $ref: "#/components/schemas/DeploymentDecisionRequirements"
-        form:
-          $ref: "#/components/schemas/DeploymentForm"
-        resource:
-          $ref: "#/components/schemas/DeploymentResource"
-    DeploymentProcessBase:
-      description: Base properties for DeploymentProcess.
+    DeploymentProcessResult:
+      description: A deployed process.
       type: object
       properties:
         processDefinitionId:
@@ -6688,27 +6752,11 @@ components:
         tenantId:
           type: string
           description: The tenant ID of the deployed process.
-    DeploymentProcess:
-      description: A deployed process.
-      type: object
-      allOf:
-        - $ref: "#/components/schemas/DeploymentProcessBase"
-      properties:
-        processDefinitionKey:
-          type: integer
-          format: int64
-          description: The assigned key, which acts as a unique identifier for this process.
-    DeploymentProcessResult:
-      description: A deployed process.
-      type: object
-      allOf:
-        - $ref: "#/components/schemas/DeploymentProcessBase"
-      properties:
         processDefinitionKey:
           type: string
           description: The assigned key, which acts as a unique identifier for this process.
-    DeploymentDecisionBase:
-      description: Base properties for DeploymentDecision.
+    DeploymentDecisionResult:
+      description: A deployed decision.
       type: object
       properties:
         decisionDefinitionId:
@@ -6730,28 +6778,6 @@ components:
           type: string
           description: |
             The dmn ID of the decision requirements graph that this decision is part of, as parsed during deployment.
-    DeploymentDecision:
-      description: A deployed decision.
-      type: object
-      allOf:
-        - $ref: "#/components/schemas/DeploymentDecisionBase"
-      properties:
-        decisionDefinitionKey:
-          type: integer
-          format: int64
-          description: |
-            The assigned decision key, which acts as a unique identifier for this decision.
-        decisionRequirementsKey:
-          type: integer
-          format: int64
-          description: |
-            The assigned key of the decision requirements graph that this decision is part of.
-    DeploymentDecisionResult:
-      description: A deployed decision.
-      type: object
-      allOf:
-        - $ref: "#/components/schemas/DeploymentDecisionBase"
-      properties:
         decisionDefinitionKey:
           type: string
           description: |
@@ -6760,8 +6786,8 @@ components:
           type: string
           description: |
             The assigned key of the decision requirements graph that this decision is part of.
-    DeploymentDecisionRequirementsBase:
-      description: Base properties for DeploymentDecisionRequirements.
+    DeploymentDecisionRequirementsResult:
+      description: Deployed decision requirements.
       type: object
       properties:
         decisionRequirementsId:
@@ -6781,29 +6807,12 @@ components:
         resourceName:
           type: string
           description: The resource name from which this decision requirements was parsed.
-    DeploymentDecisionRequirements:
-      description: Deployed decision requirements.
-      type: object
-      allOf:
-        - $ref: "#/components/schemas/DeploymentDecisionRequirementsBase"
-      properties:
-        decisionRequirementsKey:
-          type: integer
-          format: int64
-          description: |
-            The assigned decision requirements key, which acts as a unique identifier for this decision requirements.
-    DeploymentDecisionRequirementsResult:
-      description: Deployed decision requirements.
-      type: object
-      allOf:
-        - $ref: "#/components/schemas/DeploymentDecisionRequirementsBase"
-      properties:
         decisionRequirementsKey:
           type: string
           description: |
             The assigned decision requirements key, which acts as a unique identifier for this decision requirements.
-    DeploymentFormBase:
-      description: Base properties for DeploymentForm.
+    DeploymentFormResult:
+      description: A deployed form.
       type: object
       properties:
         formId:
@@ -6821,27 +6830,11 @@ components:
         tenantId:
           type: string
           description: The tenant ID of the deployed form.
-    DeploymentForm:
-      description: A deployed form.
-      type: object
-      allOf:
-        - $ref: "#/components/schemas/DeploymentFormBase"
-      properties:
-        formKey:
-          type: integer
-          format: int64
-          description: The assigned key, which acts as a unique identifier for this form.
-    DeploymentFormResult:
-      description: A deployed form.
-      type: object
-      allOf:
-        - $ref: "#/components/schemas/DeploymentFormBase"
-      properties:
         formKey:
           type: string
           description: The assigned key, which acts as a unique identifier for this form.
-    DeploymentResourceBase:
-      description: Base properties for DeploymentResource.
+    DeploymentResourceResult:
+      description: A deployed Resource.
       type: object
       properties:
         resourceId:
@@ -6859,22 +6852,6 @@ components:
         tenantId:
           type: string
           description: The tenant ID of the deployed form.
-    DeploymentResource:
-      description: A deployed Resource.
-      type: object
-      allOf:
-        - $ref: "#/components/schemas/DeploymentResourceBase"
-      properties:
-        resourceKey:
-          type: integer
-          format: int64
-          description: The assigned key, which acts as a unique identifier for this Resource.
-    DeploymentResourceResult:
-      description: A deployed Resource.
-      type: object
-      allOf:
-        - $ref: "#/components/schemas/DeploymentResourceBase"
-      properties:
         resourceKey:
           type: string
           description: The assigned key, which acts as a unique identifier for this Resource.
@@ -7209,3 +7186,4 @@ components:
       type: http
       scheme: bearer
       bearerFormat: JWT
+

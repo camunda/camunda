@@ -76,6 +76,11 @@ public final class IncidentUpdateTask implements BackgroundTask {
     }
   }
 
+  @Override
+  public String getCaption() {
+    return "Incident update task";
+  }
+
   private int processNextBatch() {
     final var data = new AdditionalData();
     final var batch = getPendingIncidentsBatch(data);

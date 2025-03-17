@@ -15,8 +15,7 @@ import io.camunda.client.api.command.DeployResourceCommandStep1;
 import io.camunda.client.api.response.DeploymentEvent;
 import io.camunda.client.api.search.filter.UserTaskFilter;
 import io.camunda.client.api.search.response.UserTask;
-import io.camunda.client.protocol.rest.UserTaskVariableFilterRequest;
-import io.camunda.it.utils.MultiDbTest;
+import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.model.bpmn.builder.AbstractUserTaskBuilder;
@@ -220,7 +219,7 @@ public class UserTaskIT {
                 "boolVariable",
                 true,
                 "bigVariable",
-                "a".repeat(8192)));
+                "a".repeat(8188)));
 
     waitForProcessTasks(client, processInstanceId);
 
@@ -228,10 +227,27 @@ public class UserTaskIT {
     var tasks =
         client
             .newUserTaskQuery()
-            .filter(
-                f ->
-                    f.processInstanceVariables(
-                        List.of(new UserTaskVariableFilterRequest().name("stringVariable"))))
+            .filter(f -> f.processInstanceVariables(Map.of("stringVariable", "\"value\"")))
+            .send()
+            .join()
+            .items();
+
+    assertThat(tasks).hasSize(1);
+
+    tasks =
+        client
+            .newUserTaskQuery()
+            .filter(f -> f.processInstanceVariables(Map.of("intVariable", "13")))
+            .send()
+            .join()
+            .items();
+
+    assertThat(tasks).hasSize(1);
+
+    tasks =
+        client
+            .newUserTaskQuery()
+            .filter(f -> f.processInstanceVariables(Map.of("boolVariable", "true")))
             .send()
             .join()
             .items();
@@ -244,7 +260,7 @@ public class UserTaskIT {
             .filter(
                 f ->
                     f.processInstanceVariables(
-                        List.of(new UserTaskVariableFilterRequest().name("intVariable"))))
+                        Map.of("bigVariable", "\"" + "a".repeat(8188) + "\"")))
             .send()
             .join()
             .items();
@@ -254,39 +270,7 @@ public class UserTaskIT {
     tasks =
         client
             .newUserTaskQuery()
-            .filter(
-                f ->
-                    f.processInstanceVariables(
-                        List.of(new UserTaskVariableFilterRequest().name("boolVariable"))))
-            .send()
-            .join()
-            .items();
-
-    assertThat(tasks).hasSize(1);
-
-    tasks =
-        client
-            .newUserTaskQuery()
-            .filter(
-                f ->
-                    f.processInstanceVariables(
-                        List.of(new UserTaskVariableFilterRequest().name("bigVariable"))))
-            .send()
-            .join()
-            .items();
-
-    assertThat(tasks).hasSize(1);
-
-    tasks =
-        client
-            .newUserTaskQuery()
-            .filter(
-                f ->
-                    f.processInstanceVariables(
-                        List.of(
-                            new UserTaskVariableFilterRequest()
-                                .name("stringVariable")
-                                .value("wrong-value"))))
+            .filter(f -> f.processInstanceVariables(Map.of("stringVariable", "wrong-value")))
             .send()
             .join()
             .items();

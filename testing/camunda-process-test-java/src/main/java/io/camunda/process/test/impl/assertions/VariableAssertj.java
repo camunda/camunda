@@ -21,8 +21,7 @@ import static org.assertj.core.api.Assertions.fail;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.camunda.process.test.impl.client.VariableDto;
-import java.io.IOException;
+import io.camunda.client.api.search.response.Variable;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -172,10 +171,9 @@ public class VariableAssertj extends AbstractAssert<VariableAssertj, String> {
     }
   }
 
-  private Map<String, String> getProcessInstanceVariables(final long processInstanceKey)
-      throws IOException {
-    return dataSource.getVariablesByProcessInstanceKey(processInstanceKey).stream()
-        .collect(Collectors.toMap(VariableDto::getName, VariableDto::getValue));
+  private Map<String, String> getProcessInstanceVariables(final long processInstanceKey) {
+    return dataSource.findVariablesByProcessInstanceKey(processInstanceKey).stream()
+        .collect(Collectors.toMap(Variable::getName, Variable::getValue));
   }
 
   private JsonNode readJson(final String value) {

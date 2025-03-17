@@ -15,7 +15,6 @@ import io.camunda.zeebe.engine.state.mutable.MutableTenantState;
 import io.camunda.zeebe.engine.state.mutable.MutableUserState;
 import io.camunda.zeebe.protocol.impl.record.value.tenant.TenantRecord;
 import io.camunda.zeebe.protocol.record.intent.TenantIntent;
-import io.camunda.zeebe.protocol.record.value.EntityType;
 
 public class TenantEntityAddedApplier implements TypedEventApplier<TenantIntent, TenantRecord> {
 
@@ -32,32 +31,26 @@ public class TenantEntityAddedApplier implements TypedEventApplier<TenantIntent,
   }
 
   @Override
-  public void applyState(final long key, final TenantRecord tenant) {
+  public void applyState(final long tenantKey, final TenantRecord tenant) {
     switch (tenant.getEntityType()) {
       case USER -> {
-        final var username = tenant.getEntityId();
-        final var userKey = userState.getUser(username).orElseThrow().getUserKey();
-        final var tenantKey = tenantState.getTenantKeyById(tenant.getTenantId()).orElseThrow();
-        tenantState.addEntity(
-            new TenantRecord()
-                .setTenantKey(tenantKey)
-                .setEntityType(EntityType.USER)
-                .setEntityKey(userKey));
-        userState.addTenantId(username, tenant.getTenantId());
+        tenantState.addEntity(tenant);
+        userState.addTenantId(tenant.getEntityId(), tenant.getTenantId());
       }
       case MAPPING -> {
         tenantState.addEntity(tenant);
-        mappingState.addTenant(tenant.getEntityKey(), tenant.getTenantId());
+        mappingState.addTenant(tenant.getEntityId(), tenant.getTenantId());
       }
       case GROUP -> {
         tenantState.addEntity(tenant);
-        groupState.addTenant(tenant.getEntityKey(), tenant.getTenantId());
+        // TODO remove the Long parsing once Groups are migrated to work with ids instead of keys
+        groupState.addTenant(Long.parseLong(tenant.getEntityId()), tenant.getTenantId());
       }
       default ->
           throw new IllegalStateException(
               String.format(
-                  "Expected to add entity '%d' to tenant '%s', but entities of type '%s' cannot be added to tenants",
-                  tenant.getEntityKey(), tenant.getTenantId(), tenant.getEntityType()));
+                  "Expected to add entity '%s' to tenant '%s', but entities of type '%s' cannot be added to tenants",
+                  tenant.getEntityId(), tenant.getTenantId(), tenant.getEntityType()));
     }
   }
 }

@@ -15,11 +15,14 @@ import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.model.bpmn.builder.AdHocSubProcessBuilder;
+import io.camunda.zeebe.protocol.impl.record.value.signal.SignalRecord;
 import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
+import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
+import io.camunda.zeebe.protocol.record.intent.SignalIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.BpmnEventType;
 import io.camunda.zeebe.protocol.record.value.DeploymentRecordValue;
@@ -30,7 +33,9 @@ import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.time.Duration;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Consumer;
+import java.util.function.Predicate;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
@@ -249,6 +254,268 @@ public final class AdHocSubProcessTest {
             tuple(AD_HOC_SUB_PROCESS_ELEMENT_ID, ProcessInstanceIntent.ELEMENT_ACTIVATED),
             tuple("A", ProcessInstanceIntent.ELEMENT_COMPLETED),
             tuple("C", ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple(AD_HOC_SUB_PROCESS_ELEMENT_ID, ProcessInstanceIntent.ELEMENT_COMPLETING),
+            tuple(AD_HOC_SUB_PROCESS_ELEMENT_ID, ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple(PROCESS_ID, ProcessInstanceIntent.ELEMENT_COMPLETED));
+  }
+
+  @Test
+  public void shouldCompleteAdHocSubProcessWhenCompletionConditionApplies() {
+    // given
+    final BpmnModelInstance process =
+        process(
+            adHocSubProcess -> {
+              adHocSubProcess.zeebeActiveElementsCollectionExpression("activateElements");
+              adHocSubProcess.completionCondition("condition");
+              adHocSubProcess.task("A");
+              adHocSubProcess.task("B");
+              adHocSubProcess.task("C");
+            });
+
+    ENGINE.deployment().withXmlResource(process).deploy();
+
+    // when
+    final long processInstanceKey =
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId(PROCESS_ID)
+            .withVariables(Map.of("activateElements", List.of("A", "C"), "condition", true))
+            .create();
+
+    // then
+    assertThat(
+            RecordingExporter.processInstanceRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .limitToProcessInstanceCompleted())
+        .extracting(r -> r.getValue().getElementId(), Record::getIntent)
+        .containsSubsequence(
+            tuple(AD_HOC_SUB_PROCESS_ELEMENT_ID, ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple("A", ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple("C", ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple(AD_HOC_SUB_PROCESS_ELEMENT_ID, ProcessInstanceIntent.ELEMENT_COMPLETING),
+            tuple(AD_HOC_SUB_PROCESS_ELEMENT_ID, ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple(PROCESS_ID, ProcessInstanceIntent.ELEMENT_COMPLETED));
+  }
+
+  @Test
+  public void shouldCompleteAdHocSubProcessWhenCompletionConditionAppliesAfterCompletingActivity() {
+    // given
+    final BpmnModelInstance process =
+        process(
+            adHocSubProcess -> {
+              adHocSubProcess.zeebeActiveElementsCollectionExpression("activateElements");
+              adHocSubProcess.completionCondition("condition");
+              adHocSubProcess.task("A");
+              adHocSubProcess.task("B");
+              adHocSubProcess.serviceTask("ServiceTask", b -> b.zeebeJobType("testType"));
+            });
+
+    ENGINE.deployment().withXmlResource(process).deploy();
+
+    // when
+    final long processInstanceKey =
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId(PROCESS_ID)
+            .withVariables(
+                Map.of("activateElements", List.of("A", "ServiceTask"), "condition", false))
+            .create();
+
+    // helps to stop at a specific point after the ad-hoc subprocess is activated
+    ENGINE.signal().withSignalName("signal").broadcast();
+
+    assertThat(
+            RecordingExporter.records()
+                .limit(signalBroadcasted("signal"))
+                .processInstanceRecords()
+                .withProcessInstanceKey(processInstanceKey))
+        .extracting(r -> r.getValue().getElementId(), Record::getIntent)
+        .describedAs(
+            "Expect task A to complete while service task is activated and prevents subprocess completion")
+        .containsSubsequence(
+            tuple(AD_HOC_SUB_PROCESS_ELEMENT_ID, ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple("A", ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple("ServiceTask", ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple("A", ProcessInstanceIntent.ELEMENT_COMPLETED))
+        .describedAs(
+            "Expect service task not to be terminated because completion condition does not apply")
+        .doesNotContain(
+            tuple("ServiceTask", ProcessInstanceIntent.TERMINATE_ELEMENT),
+            tuple(AD_HOC_SUB_PROCESS_ELEMENT_ID, ProcessInstanceIntent.ELEMENT_COMPLETED));
+
+    // complete service task + update condition variable
+    ENGINE
+        .job()
+        .ofInstance(processInstanceKey)
+        .withType("testType")
+        .withVariable("condition", true)
+        .complete();
+
+    // then
+    assertThat(
+            RecordingExporter.processInstanceRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .limitToProcessInstanceCompleted())
+        .extracting(r -> r.getValue().getElementId(), Record::getIntent)
+        .describedAs("Expect ad-hoc subprocess to complete after service task is completed")
+        .containsSubsequence(
+            tuple(AD_HOC_SUB_PROCESS_ELEMENT_ID, ProcessInstanceIntent.ELEMENT_COMPLETING),
+            tuple(AD_HOC_SUB_PROCESS_ELEMENT_ID, ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple(PROCESS_ID, ProcessInstanceIntent.ELEMENT_COMPLETED));
+  }
+
+  @Test
+  public void shouldNotCompleteAdHocSubProcessWhenCompletionConditionDoesNotApply() {
+    // given
+    final BpmnModelInstance process =
+        process(
+            adHocSubProcess -> {
+              adHocSubProcess.zeebeActiveElementsCollectionExpression("activateElements");
+              adHocSubProcess.completionCondition("condition");
+              adHocSubProcess.task("A");
+              adHocSubProcess.task("B");
+              adHocSubProcess.task("C");
+            });
+
+    ENGINE.deployment().withXmlResource(process).deploy();
+
+    // when
+    final long processInstanceKey =
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId(PROCESS_ID)
+            .withVariables(Map.of("activateElements", List.of("A", "C"), "condition", false))
+            .create();
+
+    // helps to stop at a specific point after the ad-hoc subprocess is activated
+    ENGINE.signal().withSignalName("signal").broadcast();
+
+    // then
+    assertThat(
+            RecordingExporter.records()
+                .limit(signalBroadcasted("signal"))
+                .processInstanceRecords()
+                .withProcessInstanceKey(processInstanceKey))
+        .extracting(r -> r.getValue().getElementId(), Record::getIntent)
+        .describedAs("Expect activated activities to be completed")
+        .containsSubsequence(
+            tuple(AD_HOC_SUB_PROCESS_ELEMENT_ID, ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple("A", ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple("C", ProcessInstanceIntent.ELEMENT_COMPLETED))
+        .describedAs("Expect ad-hoc subprocess to not complete when condition does not apply")
+        .doesNotContain(
+            tuple(AD_HOC_SUB_PROCESS_ELEMENT_ID, ProcessInstanceIntent.ELEMENT_COMPLETING),
+            tuple(AD_HOC_SUB_PROCESS_ELEMENT_ID, ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple(PROCESS_ID, ProcessInstanceIntent.ELEMENT_COMPLETED));
+  }
+
+  @Test
+  public void shouldCancelRemainingInstancesWhenCancellationIsEnabled() {
+    // given
+    final BpmnModelInstance process =
+        process(
+            adHocSubProcess -> {
+              adHocSubProcess.zeebeActiveElementsCollectionExpression("activateElements");
+              adHocSubProcess.completionCondition("condition");
+              adHocSubProcess.cancelRemainingInstances(true);
+              adHocSubProcess.task("A");
+              adHocSubProcess.task("B");
+              adHocSubProcess.serviceTask("ServiceTask", b -> b.zeebeJobType("testType")).task("C");
+            });
+
+    ENGINE.deployment().withXmlResource(process).deploy();
+
+    // when
+    final long processInstanceKey =
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId(PROCESS_ID)
+            .withVariables(
+                Map.of("activateElements", List.of("A", "ServiceTask"), "condition", true))
+            .create();
+
+    // then
+    assertThat(
+            RecordingExporter.processInstanceRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .limitToProcessInstanceCompleted())
+        .extracting(r -> r.getValue().getElementId(), Record::getIntent)
+        .describedAs("Expect ad-hoc subprocess to complete and to terminate service task")
+        .containsSubsequence(
+            tuple(AD_HOC_SUB_PROCESS_ELEMENT_ID, ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple("A", ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple("ServiceTask", ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple("A", ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple("ServiceTask", ProcessInstanceIntent.TERMINATE_ELEMENT),
+            tuple("ServiceTask", ProcessInstanceIntent.ELEMENT_TERMINATED),
+            tuple(AD_HOC_SUB_PROCESS_ELEMENT_ID, ProcessInstanceIntent.ELEMENT_COMPLETING),
+            tuple(AD_HOC_SUB_PROCESS_ELEMENT_ID, ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple(PROCESS_ID, ProcessInstanceIntent.ELEMENT_COMPLETED))
+        .describedAs(
+            "Expect service task and dependent activity to never complete as it is terminated")
+        .doesNotContain(
+            tuple("ServiceTask", ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple("C", ProcessInstanceIntent.ELEMENT_ACTIVATED));
+  }
+
+  @Test
+  public void shouldNotCancelRemainingInstancesWhenCancellationIsDisabled() {
+    final BpmnModelInstance process =
+        process(
+            adHocSubProcess -> {
+              adHocSubProcess.zeebeActiveElementsCollectionExpression("activateElements");
+              adHocSubProcess.completionCondition("condition");
+              adHocSubProcess.cancelRemainingInstances(false);
+              adHocSubProcess.task("A");
+              adHocSubProcess.task("B");
+              adHocSubProcess.serviceTask("ServiceTask", b -> b.zeebeJobType("testType")).task("C");
+            });
+
+    ENGINE.deployment().withXmlResource(process).deploy();
+
+    // create instance and wait until ad-hoc subprocess blocks on ServiceTask being completed
+    final long processInstanceKey =
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId(PROCESS_ID)
+            .withVariables(
+                Map.of("activateElements", List.of("A", "ServiceTask"), "condition", true))
+            .create();
+
+    // helps to stop at a specific point after the ad-hoc subprocess is activated
+    ENGINE.signal().withSignalName("signal").broadcast();
+
+    // expect process not to complete until service task is completed
+    assertThat(
+            RecordingExporter.records()
+                .limit(signalBroadcasted("signal"))
+                .processInstanceRecords()
+                .withProcessInstanceKey(processInstanceKey))
+        .extracting(r -> r.getValue().getElementId(), Record::getIntent)
+        .describedAs("Expect service task be activated and ad-hoc subprocess to not complete")
+        .containsSubsequence(
+            tuple(AD_HOC_SUB_PROCESS_ELEMENT_ID, ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple("A", ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple("ServiceTask", ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple("A", ProcessInstanceIntent.ELEMENT_COMPLETED))
+        .describedAs(
+            "Expect service task not to be terminated because cancelRemainingInstances is false")
+        .doesNotContain(
+            tuple("ServiceTask", ProcessInstanceIntent.ELEMENT_TERMINATED),
+            tuple(AD_HOC_SUB_PROCESS_ELEMENT_ID, ProcessInstanceIntent.ELEMENT_COMPLETED));
+
+    // complete service task
+    ENGINE.job().ofInstance(processInstanceKey).withType("testType").complete();
+
+    assertThat(
+            RecordingExporter.processInstanceRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .limitToProcessInstanceCompleted())
+        .extracting(r -> r.getValue().getElementId(), Record::getIntent)
+        .describedAs(
+            "Expect ad-hoc subprocess to complete after service task is completed and condition applies")
+        .containsSubsequence(
+            tuple("ServiceTask", ProcessInstanceIntent.ELEMENT_COMPLETED),
             tuple(AD_HOC_SUB_PROCESS_ELEMENT_ID, ProcessInstanceIntent.ELEMENT_COMPLETING),
             tuple(AD_HOC_SUB_PROCESS_ELEMENT_ID, ProcessInstanceIntent.ELEMENT_COMPLETED),
             tuple(PROCESS_ID, ProcessInstanceIntent.ELEMENT_COMPLETED));
@@ -588,7 +855,7 @@ public final class AdHocSubProcessTest {
             tuple(BpmnElementType.PROCESS, ProcessInstanceIntent.ELEMENT_COMPLETED));
 
     final List<Long> adHocSubProcessKeys =
-        RecordingExporter.processInstanceRecords()
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
             .withProcessInstanceKey(processInstanceKey)
             .withElementType(BpmnElementType.AD_HOC_SUB_PROCESS)
             .limit(3)
@@ -609,5 +876,53 @@ public final class AdHocSubProcessTest {
             tuple("A", adHocSubProcessKeys.get(0)),
             tuple("B", adHocSubProcessKeys.get(1)),
             tuple("C", adHocSubProcessKeys.get(2)));
+  }
+
+  @Test
+  public void shouldActivateMultiInstanceElement() {
+    // given
+    final BpmnModelInstance process =
+        process(
+            adHocSubProcess -> {
+              adHocSubProcess.zeebeActiveElementsCollectionExpression("activateElements");
+              adHocSubProcess.task("A").multiInstance().zeebeInputCollectionExpression("[1,2]");
+              adHocSubProcess.task("B");
+            });
+
+    ENGINE.deployment().withXmlResource(process).deploy();
+
+    // when
+    final long processInstanceKey =
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId(PROCESS_ID)
+            .withVariable("activateElements", List.of("A"))
+            .create();
+
+    // then
+    assertThat(
+            RecordingExporter.processInstanceRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .limitToProcessInstanceCompleted())
+        .extracting(
+            r -> r.getValue().getElementId(),
+            r -> r.getValue().getBpmnElementType(),
+            Record::getIntent)
+        .containsSubsequence(
+            tuple(
+                "A", BpmnElementType.MULTI_INSTANCE_BODY, ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple("A", BpmnElementType.TASK, ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple("A", BpmnElementType.TASK, ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple("A", BpmnElementType.TASK, ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple("A", BpmnElementType.TASK, ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple(
+                "A", BpmnElementType.MULTI_INSTANCE_BODY, ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple(PROCESS_ID, BpmnElementType.PROCESS, ProcessInstanceIntent.ELEMENT_COMPLETED));
+  }
+
+  private static Predicate<Record<RecordValue>> signalBroadcasted(final String signalName) {
+    return r ->
+        r.getIntent() == SignalIntent.BROADCASTED
+            && ((SignalRecord) r.getValue()).getSignalName().equals(signalName);
   }
 }

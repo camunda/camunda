@@ -29,7 +29,7 @@ import org.testcontainers.elasticsearch.ElasticsearchContainer;
 import org.testcontainers.junit.jupiter.Container;
 
 @DisabledIfSystemProperty(
-    named = SearchDBExtension.IT_OPENSEARCH_AWS_INSTANCE_URL_PROPERTY,
+    named = SearchDBExtension.TEST_INTEGRATION_OPENSEARCH_AWS_URL,
     matches = "^(?=\\s*\\S).*$",
     disabledReason = "Excluding from AWS OS IT CI")
 final class ElasticsearchIncidentUpdateRepositoryIT extends IncidentUpdateRepositoryIT {

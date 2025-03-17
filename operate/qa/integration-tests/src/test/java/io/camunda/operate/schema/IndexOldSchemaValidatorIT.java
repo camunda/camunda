@@ -7,7 +7,6 @@
  */
 package io.camunda.operate.schema;
 
-import static io.camunda.operate.util.CollectionUtil.map;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -26,6 +25,7 @@ import io.camunda.operate.qa.util.TestSchemaManager;
 import io.camunda.operate.store.elasticsearch.RetryElasticsearchClient;
 import io.camunda.operate.store.opensearch.client.sync.OpenSearchIndexOperations;
 import io.camunda.operate.store.opensearch.client.sync.RichOpenSearchClient;
+import io.camunda.operate.util.CollectionUtil;
 import io.camunda.operate.util.IndexPrefixHolder;
 import io.camunda.operate.util.apps.nobeans.TestApplicationWithNoBeans;
 import io.camunda.webapps.schema.descriptors.AbstractIndexDescriptor;
@@ -36,6 +36,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -168,6 +169,51 @@ public class IndexOldSchemaValidatorIT {
   }
 
   @Test
+  public void testNewerVersionsForArchivedIndices() {
+    // Only older versions
+    final Set<String> givenIndexNames =
+        versionsOf(processIndex, olderVersions, "2022.01.01_10", "2022_01_01-10", "2022-01-01");
+    whenDatabaseClientReturnsIndexNames(givenIndexNames);
+    assertThat(indexSchemaValidator.newerVersionsForIndex(processIndex)).isEmpty();
+
+    // Only current version
+    whenDatabaseClientReturnsIndexNames(
+        versionsOf(
+            processIndex,
+            Set.of(processIndex.getVersion()),
+            "2022.01.01_10",
+            "2022_01_01_10",
+            "2022-01-01"));
+    assertThat(indexSchemaValidator.newerVersionsForIndex(processIndex)).isEmpty();
+
+    // Only newer versions
+    whenDatabaseClientReturnsIndexNames(
+        versionsOf(processIndex, newerVersions, "2022.01.01_10", "2022_01_01-10", "2022-01-01"));
+    assertThat(indexSchemaValidator.newerVersionsForIndex(processIndex)).containsAll(newerVersions);
+  }
+
+  @Test
+  public void testOlderVersionsForArchivedIndices() {
+    // Only newer versions
+    whenDatabaseClientReturnsIndexNames(
+        versionsOf(processIndex, newerVersions, "2022.01.01_10", "2022_01_01-10", "2022-01-01"));
+    assertThat(indexSchemaValidator.olderVersionsForIndex(processIndex)).isEmpty();
+    // Only current version
+    whenDatabaseClientReturnsIndexNames(
+        versionsOf(
+            processIndex,
+            Set.of(processIndex.getVersion()),
+            "2022.01.01_10",
+            "2022_01_01_10",
+            "2022-01-01"));
+    assertThat(indexSchemaValidator.olderVersionsForIndex(processIndex)).isEmpty();
+    // Only older versions
+    whenDatabaseClientReturnsIndexNames(
+        versionsOf(processIndex, olderVersions, "2022.01.01_10", "2022_01_01-10", "2022-01-01"));
+    assertThat(indexSchemaValidator.olderVersionsForIndex(processIndex)).isEqualTo(olderVersions);
+  }
+
+  @Test
   public void testIsValid() {
     // No indices
     whenDatabaseClientReturnsIndexNames(Set.of());
@@ -256,7 +302,22 @@ public class IndexOldSchemaValidatorIT {
   }
 
   private Set<String> versionsOf(final IndexDescriptor index, final Set<String> versions) {
-    return new HashSet<>(map(versions, version -> getFullQualifiedIndexName(index, version)));
+    return versionsOf(index, versions, null);
+  }
+
+  private Set<String> versionsOf(
+      final IndexDescriptor index, final Set<String> versions, final String... archiverSuffix) {
+    return versions.stream()
+        .flatMap(
+            version -> {
+              final String mainIndexName = getFullQualifiedIndexName(index, version);
+              if (!CollectionUtil.isEmpty(archiverSuffix)) {
+                return Stream.of(archiverSuffix).map(suffix -> mainIndexName + suffix);
+              } else {
+                return Stream.of(mainIndexName);
+              }
+            })
+        .collect(Collectors.toSet());
   }
 
   // See AbstractIndexDescriptor::getFullQualifiedIndexName

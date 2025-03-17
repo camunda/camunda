@@ -17,7 +17,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 @DisabledIfSystemProperty(
-    named = SearchDBExtension.IT_OPENSEARCH_AWS_INSTANCE_URL_PROPERTY,
+    named = SearchDBExtension.TEST_INTEGRATION_OPENSEARCH_AWS_URL,
     matches = "^(?=\\s*\\S).*$",
     disabledReason = "Excluding from AWS OS IT CI")
 final class ElasticsearchBatchOperationUpdateRepositoryIT extends BatchOperationUpdateRepositoryIT {

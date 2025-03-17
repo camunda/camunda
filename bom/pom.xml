@@ -42,7 +42,7 @@
     <!-- Camunda License v1.0 header -->
     <license.header>${maven.multiModuleProjectDirectory}/parent/COPYING-HEADER.txt</license.header>
 
-    <plugin.version.flatten>1.6.0</plugin.version.flatten>
+    <plugin.version.flatten>1.7.0</plugin.version.flatten>
     <plugin.version.javadoc>3.11.2</plugin.version.javadoc>
     <plugin.version.license>4.6</plugin.version.license>
     <plugin.version.spotless>2.44.3</plugin.version.spotless>

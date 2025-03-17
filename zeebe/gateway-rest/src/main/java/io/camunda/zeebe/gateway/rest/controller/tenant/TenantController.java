@@ -28,7 +28,6 @@ import io.camunda.zeebe.gateway.rest.SearchQueryRequestMapper;
 import io.camunda.zeebe.gateway.rest.SearchQueryResponseMapper;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaDeleteMapping;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaGetMapping;
-import io.camunda.zeebe.gateway.rest.annotation.CamundaPatchMapping;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaPostMapping;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaPutMapping;
 import io.camunda.zeebe.gateway.rest.controller.CamundaRestController;
@@ -76,7 +75,7 @@ public class TenantController {
         .fold(RestErrorMapper::mapProblemToResponse, this::search);
   }
 
-  @CamundaPatchMapping(path = "/{tenantId}")
+  @CamundaPutMapping(path = "/{tenantId}")
   public CompletableFuture<ResponseEntity<Object>> updateTenant(
       @PathVariable final String tenantId,
       @RequestBody final TenantUpdateRequest tenantUpdateRequest) {
@@ -104,24 +103,24 @@ public class TenantController {
             userQuery -> searchUsersInTenant(tenantId, userQuery));
   }
 
-  @CamundaPutMapping(path = "/{tenantKey}/mapping-rules/{mappingKey}")
+  @CamundaPutMapping(path = "/{tenantId}/mapping-rules/{mappingKey}")
   public CompletableFuture<ResponseEntity<Object>> assignMappingToTenant(
-      @PathVariable final long tenantKey, @PathVariable final long mappingKey) {
+      @PathVariable final String tenantId, @PathVariable final long mappingKey) {
     return RequestMapper.executeServiceMethodWithNoContentResult(
         () ->
             tenantServices
                 .withAuthentication(RequestMapper.getAuthentication())
-                .addMember(tenantKey, EntityType.MAPPING, mappingKey));
+                .addMember(tenantId, EntityType.MAPPING, mappingKey));
   }
 
-  @CamundaPutMapping(path = "/{tenantKey}/groups/{groupKey}")
+  @CamundaPutMapping(path = "/{tenantId}/groups/{groupKey}")
   public CompletableFuture<ResponseEntity<Object>> assignGroupToTenant(
-      @PathVariable final long tenantKey, @PathVariable final long groupKey) {
+      @PathVariable final String tenantId, @PathVariable final long groupKey) {
     return RequestMapper.executeServiceMethodWithNoContentResult(
         () ->
             tenantServices
                 .withAuthentication(RequestMapper.getAuthentication())
-                .addMember(tenantKey, EntityType.GROUP, groupKey));
+                .addMember(tenantId, EntityType.GROUP, groupKey));
   }
 
   @CamundaDeleteMapping(path = "/{tenantId}")
@@ -144,24 +143,24 @@ public class TenantController {
                 .removeMember(tenantId, EntityType.USER, username));
   }
 
-  @CamundaDeleteMapping(path = "/{tenantKey}/mapping-rules/{mappingKey}")
+  @CamundaDeleteMapping(path = "/{tenantId}/mapping-rules/{mappingKey}")
   public CompletableFuture<ResponseEntity<Object>> removeMappingFromTenant(
-      @PathVariable final long tenantKey, @PathVariable final long mappingKey) {
+      @PathVariable final String tenantId, @PathVariable final long mappingKey) {
     return RequestMapper.executeServiceMethodWithNoContentResult(
         () ->
             tenantServices
                 .withAuthentication(RequestMapper.getAuthentication())
-                .removeMember(tenantKey, EntityType.MAPPING, mappingKey));
+                .removeMember(tenantId, EntityType.MAPPING, mappingKey));
   }
 
-  @CamundaDeleteMapping(path = "/{tenantKey}/groups/{groupKey}")
+  @CamundaDeleteMapping(path = "/{tenantId}/groups/{groupKey}")
   public CompletableFuture<ResponseEntity<Object>> removeGroupFromTenant(
-      @PathVariable final long tenantKey, @PathVariable final long groupKey) {
+      @PathVariable final String tenantId, @PathVariable final long groupKey) {
     return RequestMapper.executeServiceMethodWithNoContentResult(
         () ->
             tenantServices
                 .withAuthentication(RequestMapper.getAuthentication())
-                .removeMember(tenantKey, EntityType.GROUP, groupKey));
+                .removeMember(tenantId, EntityType.GROUP, groupKey));
   }
 
   private CompletableFuture<ResponseEntity<Object>> createTenant(final TenantDTO tenantDTO) {

@@ -7,11 +7,12 @@
  */
 package io.camunda.exporter.tasks.archiver;
 
+import static io.camunda.exporter.utils.SearchDBExtension.*;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.amazonaws.regions.DefaultAwsRegionProviderChain;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.camunda.exporter.config.ExporterConfiguration.ArchiverConfiguration;
+import io.camunda.exporter.config.ExporterConfiguration.HistoryConfiguration;
 import io.camunda.exporter.config.ExporterConfiguration.RetentionConfiguration;
 import io.camunda.exporter.metrics.CamundaExporterMetrics;
 import io.camunda.exporter.schema.opensearch.OpensearchEngineClient;
@@ -69,22 +70,24 @@ final class OpenSearchArchiverRepositoryIT {
   private static final Logger LOGGER =
       LoggerFactory.getLogger(OpenSearchArchiverRepositoryIT.class);
 
-  @RegisterExtension private static SearchDBExtension searchDB = SearchDBExtension.create();
+  @RegisterExtension private static SearchDBExtension searchDB = create();
 
   private static final ObjectMapper MAPPER = TestObjectMapper.objectMapper();
   @AutoClose private final RestClientTransport transport = createRestClient();
   private final SimpleMeterRegistry meterRegistry = new SimpleMeterRegistry();
-  private final ArchiverConfiguration config = new ArchiverConfiguration();
+  private final HistoryConfiguration config = new HistoryConfiguration();
   private final ConnectConfiguration connectConfiguration = new ConnectConfiguration();
   private final RetentionConfiguration retention = new RetentionConfiguration();
-  private final String processInstanceIndex = "process-instance-" + UUID.randomUUID();
-  private final String batchOperationIndex = "batch-operation-" + UUID.randomUUID();
+  private final String processInstanceIndex =
+      ARCHIVER_IDX_PREFIX + "process-instance-" + UUID.randomUUID();
+  private final String batchOperationIndex =
+      ARCHIVER_IDX_PREFIX + "batch-operation-" + UUID.randomUUID();
   private final OpenSearchClient testClient = createOpenSearchClient();
 
   @Test
   void shouldDeleteDocuments() throws IOException {
     // given
-    final var indexName = UUID.randomUUID().toString();
+    final var indexName = ARCHIVER_IDX_PREFIX + UUID.randomUUID().toString();
     final var repository = createRepository();
     final var documents =
         List.of(new TestDocument("1"), new TestDocument("2"), new TestDocument("3"));
@@ -112,7 +115,7 @@ final class OpenSearchArchiverRepositoryIT {
   @Test
   void shouldSetIndexLifeCycle() throws IOException {
     // given
-    final var indexName = UUID.randomUUID().toString();
+    final var indexName = ARCHIVER_IDX_PREFIX + UUID.randomUUID().toString();
     final var repository = createRepository();
     testClient.indices().create(r -> r.index(indexName));
 
@@ -135,7 +138,7 @@ final class OpenSearchArchiverRepositoryIT {
   @ParameterizedTest
   @ValueSource(strings = {"", "test"})
   @DisabledIfSystemProperty(
-      named = SearchDBExtension.IT_OPENSEARCH_AWS_INSTANCE_URL_PROPERTY,
+      named = TEST_INTEGRATION_OPENSEARCH_AWS_URL,
       matches = "^(?=\\s*\\S).*$",
       disabledReason = "Excluding from AWS OS IT CI - policy modification not allowed")
   void shouldSetIndexLifeCycleOnAllValidIndexes(final String prefix) throws IOException {
@@ -195,8 +198,8 @@ final class OpenSearchArchiverRepositoryIT {
   @Test
   void shouldReindexDocuments() throws IOException {
     // given
-    final var sourceIndexName = UUID.randomUUID().toString();
-    final var destIndexName = UUID.randomUUID().toString();
+    final var sourceIndexName = ARCHIVER_IDX_PREFIX + UUID.randomUUID().toString();
+    final var destIndexName = ARCHIVER_IDX_PREFIX + UUID.randomUUID().toString();
     final var repository = createRepository();
     final var documents =
         List.of(new TestDocument("1"), new TestDocument("2"), new TestDocument("3"));
@@ -234,8 +237,8 @@ final class OpenSearchArchiverRepositoryIT {
   @Test
   void shouldMoveDocuments() throws IOException {
     // given
-    final var sourceIndexName = UUID.randomUUID().toString();
-    final var destIndexName = UUID.randomUUID().toString();
+    final var sourceIndexName = ARCHIVER_IDX_PREFIX + UUID.randomUUID().toString();
+    final var destIndexName = ARCHIVER_IDX_PREFIX + UUID.randomUUID().toString();
     final var repository = createRepository();
     final var documents =
         List.of(new TestDocument("1"), new TestDocument("2"), new TestDocument("3"));
@@ -436,8 +439,7 @@ final class OpenSearchArchiverRepositoryIT {
   }
 
   private OpenSearchClient createOpenSearchClient() {
-    final var isAWSRun =
-        System.getProperty(SearchDBExtension.IT_OPENSEARCH_AWS_INSTANCE_URL_PROPERTY, "");
+    final var isAWSRun = System.getProperty(TEST_INTEGRATION_OPENSEARCH_AWS_URL, "");
     if (isAWSRun.isEmpty()) {
       return new OpenSearchClient(transport);
     } else {
@@ -456,8 +458,7 @@ final class OpenSearchArchiverRepositoryIT {
   }
 
   private OpenSearchAsyncClient createOpenSearchAsyncClient() {
-    final var isAWSRun =
-        System.getProperty(SearchDBExtension.IT_OPENSEARCH_AWS_INSTANCE_URL_PROPERTY, "");
+    final var isAWSRun = System.getProperty(TEST_INTEGRATION_OPENSEARCH_AWS_URL, "");
     if (isAWSRun.isEmpty()) {
       return new OpenSearchAsyncClient(transport);
     } else {

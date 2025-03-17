@@ -16,6 +16,8 @@
 package io.camunda.process.test.impl.testresult;
 
 import io.camunda.client.api.search.response.FlowNodeInstance;
+import io.camunda.client.api.search.response.Incident;
+import io.camunda.client.api.search.response.ProcessInstance;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -23,29 +25,20 @@ import java.util.Map;
 
 public class ProcessInstanceResult {
 
-  private long processInstanceKey;
-  private String processId;
+  private ProcessInstance processInstance;
 
   private Map<String, String> variables = new HashMap<>();
 
-  private List<OpenIncident> openIncidents = new ArrayList<>();
+  private List<Incident> openIncidents = new ArrayList<>();
 
   private List<FlowNodeInstance> activeFlowNodeInstances = new ArrayList<>();
 
-  public long getProcessInstanceKey() {
-    return processInstanceKey;
+  public ProcessInstance getProcessInstance() {
+    return processInstance;
   }
 
-  public void setProcessInstanceKey(final long processInstanceKey) {
-    this.processInstanceKey = processInstanceKey;
-  }
-
-  public String getProcessId() {
-    return processId;
-  }
-
-  public void setProcessId(final String processId) {
-    this.processId = processId;
+  public void setProcessInstance(final ProcessInstance processInstance) {
+    this.processInstance = processInstance;
   }
 
   public Map<String, String> getVariables() {
@@ -56,11 +49,11 @@ public class ProcessInstanceResult {
     this.variables = variables;
   }
 
-  public List<OpenIncident> getOpenIncidents() {
+  public List<Incident> getOpenIncidents() {
     return openIncidents;
   }
 
-  public void setOpenIncidents(final List<OpenIncident> openIncidents) {
+  public void setOpenIncidents(final List<Incident> openIncidents) {
     this.openIncidents = openIncidents;
   }
 

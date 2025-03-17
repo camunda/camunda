@@ -55,7 +55,7 @@ jobs:
       # Setup: read java version from pom
       - name: "Read Java / Version Info"
         id: pom-info
-        uses: YunaBraska/java-info-action@9c8a348415c8e8dd64423238a01838973a4e128a # 2.1.37
+        uses: YunaBraska/java-info-action@9cade115244a047aa71a76efa88d15f84c07607c # 2.1.41
         with:
           work-dir: ./optimize
 
@@ -84,7 +84,7 @@ jobs:
       - name: Build optimize dependencies
         uses: ./.github/actions/run-maven
         with:
-          parameters: -pl optimize/backend -am install -Dquickly -P skipFrontendBuild,runAssembly -T 1
+          parameters: -f optimize/pom.xml -pl backend -am install -T1
 
       #########################################################################
       # Build Optimize
@@ -102,7 +102,7 @@ jobs:
           DOCKER_BUILD_RECORD_UPLOAD: false
         with:
           context: .
-          file: optimize-internal-test.Dockerfile
+          file: optimize.Dockerfile
           provenance: false
           build-args: |
             VERSION=${{ steps.pom-info.outputs.project_version }}

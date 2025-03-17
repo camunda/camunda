@@ -172,7 +172,7 @@
     <!-- Micrometer Prometheus -->
     <dependency>
       <groupId>io.micrometer</groupId>
-      <artifactId>micrometer-registry-prometheus-simpleclient</artifactId>
+      <artifactId>micrometer-registry-prometheus</artifactId>
     </dependency>
 
     <dependency>
@@ -521,7 +521,7 @@
             <dependency>org.springdoc:springdoc-openapi-starter-webmvc-ui</dependency>
             <dependency>org.thymeleaf:thymeleaf</dependency>
             <dependency>jakarta.json:jakarta.json-api</dependency>
-            <dependency>io.micrometer:micrometer-registry-prometheus-simpleclient</dependency>
+            <dependency>io.micrometer:micrometer-registry-prometheus</dependency>
             <!-- Thesse dependencies are indirectly used by the awssdk auth plugin. It requires these
      classes on the classpath in order to resolve the AWS credentials -->
             <dependency>software.amazon.awssdk:sts</dependency>

@@ -9,17 +9,20 @@ package io.camunda.zeebe.qa.util.cluster;
 
 import io.camunda.application.MainSupport;
 import io.camunda.application.Profile;
+import io.camunda.application.commons.configuration.WorkingDirectoryConfiguration.WorkingDirectory;
 import io.camunda.application.initializers.HealthConfigurationInitializer;
 import io.camunda.authentication.config.AuthenticationProperties;
 import io.camunda.security.entity.AuthenticationMethod;
 import io.camunda.zeebe.qa.util.cluster.util.ContextOverrideInitializer;
 import io.camunda.zeebe.qa.util.cluster.util.ContextOverrideInitializer.Bean;
 import io.camunda.zeebe.test.util.socket.SocketUtil;
+import java.nio.file.Path;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.Banner.Mode;
@@ -187,6 +190,28 @@ public abstract class TestSpringApplication<T extends TestSpringApplication<T>>
 
   public final T withAuthenticatedAccess() {
     return withUnauthenticatedAccess(false);
+  }
+
+  /**
+   * Sets the broker's working directory, aka its data directory. If a path is given, the broker
+   * will not delete it on shutdown.
+   *
+   * @param directory path to the broker's root data directory
+   * @return itself for chaining
+   */
+  public final T withWorkingDirectory(final Path directory) {
+    return withBean(
+        "workingDirectory", new WorkingDirectory(directory, false), WorkingDirectory.class);
+  }
+
+  public final Optional<AuthenticationMethod> apiAuthenticationMethod() {
+    if (property(AuthenticationProperties.API_UNPROTECTED, Boolean.class, true)) {
+      return Optional.empty();
+    } else {
+      return AuthenticationMethod.parse(
+          property(
+              AuthenticationProperties.METHOD, String.class, AuthenticationMethod.BASIC.name()));
+    }
   }
 
   /** Returns the command line arguments that will be passed when the application is started. */

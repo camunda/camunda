@@ -9,6 +9,7 @@ package io.camunda.it.client;
 
 import static io.camunda.client.api.search.response.UserTaskState.COMPLETED;
 import static io.camunda.client.api.search.response.UserTaskState.CREATED;
+import static io.camunda.qa.util.multidb.CamundaMultiDBExtension.TIMEOUT_DATA_AVAILABILITY;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
@@ -16,11 +17,11 @@ import io.camunda.client.CamundaClient;
 import io.camunda.client.api.command.ProblemException;
 import io.camunda.client.api.search.response.UserTask;
 import io.camunda.client.api.search.response.UserTaskState;
+import io.camunda.client.impl.search.filter.builder.StringPropertyImpl;
 import io.camunda.client.protocol.rest.UserTaskVariableFilterRequest;
-import io.camunda.it.utils.MultiDbTest;
+import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import java.io.InputStream;
-import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
@@ -69,13 +70,10 @@ class UserTaskQueryTest {
 
   @Test
   public void shouldRetrieveTaskByLocalVariable() {
-    final UserTaskVariableFilterRequest variableValueFilter =
-        new UserTaskVariableFilterRequest().name("task02").value("1");
-
     final var result =
         camundaClient
             .newUserTaskQuery()
-            .filter(f -> f.localVariables(List.of(variableValueFilter)))
+            .filter(f -> f.localVariables(Map.of("task02", "1")))
             .send()
             .join();
     assertThat(result.items().size()).isEqualTo(1);
@@ -104,13 +102,10 @@ class UserTaskQueryTest {
 
   @Test
   public void shouldRetrieveTaskByProcessInstanceVariable() {
-    final UserTaskVariableFilterRequest variableValueFilter =
-        new UserTaskVariableFilterRequest().name("task02").value("1");
-
     final var result =
         camundaClient
             .newUserTaskQuery()
-            .filter(f -> f.processInstanceVariables(List.of(variableValueFilter)))
+            .filter(f -> f.processInstanceVariables(Map.of("task02", "1")))
             .send()
             .join();
 
@@ -141,26 +136,22 @@ class UserTaskQueryTest {
 
   @Test
   public void shouldRetrieveTaskByProcessInstanceAndLocalVariable() {
-    final UserTaskVariableFilterRequest variableValueFilter =
-        new UserTaskVariableFilterRequest().name("task02");
-
+    final Map<String, Object> variableValueFilter = Map.of("task02", 1);
     final var result =
         camundaClient
             .newUserTaskQuery()
             .filter(
                 f ->
-                    f.processInstanceVariables(List.of(variableValueFilter))
-                        .localVariables(List.of(variableValueFilter)))
+                    f.processInstanceVariables(variableValueFilter)
+                        .localVariables(variableValueFilter))
             .send()
             .join();
 
     // Validate the size of the items
-    assertThat(result.items()).hasSize(2);
+    assertThat(result.items()).hasSize(1);
 
-    // Validate that names "P1" and "P2" exist in the result
-    // Also validate no duplicated itens once it is 2 elements.
-    assertThat(result.items().stream().map(item -> item.getName()))
-        .containsExactlyInAnyOrder("P1", "P2");
+    // Validate that name "P1" exists in the result
+    assertThat(result.items().stream().map(item -> item.getName())).containsExactlyInAnyOrder("P1");
   }
 
   @Test
@@ -185,13 +176,10 @@ class UserTaskQueryTest {
 
   @Test
   public void shouldRetrieveVariablesFromUserTask() {
-    final UserTaskVariableFilterRequest variableValueFilter =
-        new UserTaskVariableFilterRequest().name("task02").value("1");
-
     final var resultUserTaskQuery =
         camundaClient
             .newUserTaskQuery()
-            .filter(f -> f.localVariables(List.of(variableValueFilter)))
+            .filter(f -> f.localVariables(Map.of("task02", "1")))
             .send()
             .join();
 
@@ -255,48 +243,78 @@ class UserTaskQueryTest {
   }
 
   @Test
-  public void shouldRetrieveTaskByVariableNameSearch() {
+  public void shouldThrowExceptionIfVariableValueNull() {
+
+    // given
     final UserTaskVariableFilterRequest variableValueFilter =
         new UserTaskVariableFilterRequest().name("process01");
 
-    final var result =
-        camundaClient
-            .newUserTaskQuery()
-            .filter(f -> f.processInstanceVariables(List.of(variableValueFilter)))
-            .send()
-            .join();
-    assertThat(result.items().size()).isEqualTo(2);
+    // when
+    final var exception =
+        assertThrows(
+            IllegalArgumentException.class,
+            () ->
+                camundaClient
+                    .newUserTaskQuery()
+                    .filter(f -> f.processInstanceVariables(List.of(variableValueFilter)))
+                    .send()
+                    .join());
+    // then
+    assertThat(exception.getMessage()).isEqualTo("Variable value cannot be null");
   }
 
   @Test
   public void shouldNotRetrieveTaskByInvalidVariableValue() {
-    final UserTaskVariableFilterRequest variableValueFilter =
-        new UserTaskVariableFilterRequest().name("process01").value("\"pVariable\"");
-
     final var result =
         camundaClient
             .newUserTaskQuery()
-            .filter(f -> f.processInstanceVariables(List.of(variableValueFilter)))
+            .filter(f -> f.processInstanceVariables(Map.of("process01", "\"pVariable\"")))
             .send()
             .join();
     assertThat(result.items().size()).isEqualTo(0);
   }
 
   @Test
-  public void shouldRetrieveTaskByOrLocalVariableCondition() {
-    final UserTaskVariableFilterRequest variableValueFilter1 =
-        new UserTaskVariableFilterRequest().name("task02").value("1");
+  public void shouldNotRetrieveTaskIfNotAllLocalVariablesMatch() {
+    final var result =
+        camundaClient
+            .newUserTaskQuery()
+            .filter(f -> f.localVariables(Map.of("task02", "1", "task01", "\"test\"")))
+            .send()
+            .join();
+    assertThat(result.items()).isEmpty();
+  }
 
-    final UserTaskVariableFilterRequest variableValueFilter2 =
-        new UserTaskVariableFilterRequest().name("task01").value("\"test\"");
+  @Test
+  public void shouldRetrieveTaskByLocalVariablesLike() {
+    final UserTaskVariableFilterRequest variableValueFilter1 =
+        new UserTaskVariableFilterRequest()
+            .name("task01")
+            .value(new StringPropertyImpl().like("\"te*\"").build());
 
     final var result =
         camundaClient
             .newUserTaskQuery()
-            .filter(f -> f.localVariables(List.of(variableValueFilter1, variableValueFilter2)))
+            .filter(f -> f.localVariables(List.of(variableValueFilter1)))
             .send()
             .join();
-    assertThat(result.items().size()).isEqualTo(2);
+    assertThat(result.items().size()).isEqualTo(1);
+  }
+
+  @Test
+  public void shouldRetrieveTaskByLocalVariablesIn() {
+    final UserTaskVariableFilterRequest variableValueFilter1 =
+        new UserTaskVariableFilterRequest()
+            .name("task01")
+            .value(new StringPropertyImpl().in("\"test\"").build());
+
+    final var result =
+        camundaClient
+            .newUserTaskQuery()
+            .filter(f -> f.localVariables(List.of(variableValueFilter1)))
+            .send()
+            .join();
+    assertThat(result.items().size()).isEqualTo(1);
   }
 
   @Test
@@ -1297,7 +1315,7 @@ class UserTaskQueryTest {
 
   private static void waitForTasksBeingExported() {
     Awaitility.await("should receive data from ES")
-        .atMost(Duration.ofMinutes(1))
+        .atMost(TIMEOUT_DATA_AVAILABILITY)
         .ignoreExceptions() // Ignore exceptions and continue retrying
         .untilAsserted(
             () -> {
@@ -1316,7 +1334,7 @@ class UserTaskQueryTest {
     camundaClient.newUserTaskCompleteCommand(userTaskKeyTaskAssigned).send().join();
 
     Awaitility.await("should export Assigned task and Completed to ElasticSearch")
-        .atMost(Duration.ofMinutes(1))
+        .atMost(TIMEOUT_DATA_AVAILABILITY)
         .ignoreExceptions() // Ignore exceptions and continue retrying
         .untilAsserted(
             () -> {

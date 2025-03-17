@@ -9,7 +9,8 @@ package io.camunda.service;
 
 import io.camunda.search.clients.GroupSearchClient;
 import io.camunda.search.entities.GroupEntity;
-import io.camunda.search.exception.NotFoundException;
+import io.camunda.search.exception.CamundaSearchException;
+import io.camunda.search.exception.ErrorMessages;
 import io.camunda.search.query.GroupQuery;
 import io.camunda.search.query.SearchQueryBuilders;
 import io.camunda.search.query.SearchQueryResult;
@@ -72,7 +73,10 @@ public class GroupServices extends SearchQueryService<GroupServices, GroupQuery,
   public GroupEntity getGroup(final Long groupKey) {
     return findGroup(groupKey)
         .orElseThrow(
-            () -> new NotFoundException("Group with groupKey %d not found".formatted(groupKey)));
+            () ->
+                new CamundaSearchException(
+                    ErrorMessages.ERROR_NOT_FOUND_GROUP_BY_KEY.formatted(groupKey),
+                    CamundaSearchException.Reason.NOT_FOUND));
   }
 
   public Optional<GroupEntity> findGroupByName(final String name) {
@@ -85,7 +89,10 @@ public class GroupServices extends SearchQueryService<GroupServices, GroupQuery,
   public GroupEntity getGroupByName(final String name) {
     return findGroupByName(name)
         .orElseThrow(
-            () -> new NotFoundException("Group with group name %s not found".formatted(name)));
+            () ->
+                new CamundaSearchException(
+                    ErrorMessages.ERROR_NOT_FOUND_GROUP_BY_NAME.formatted(name),
+                    CamundaSearchException.Reason.NOT_FOUND));
   }
 
   public List<GroupEntity> getGroupsByUserKey(final long userKey) {

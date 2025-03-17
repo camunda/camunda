@@ -48,17 +48,6 @@ public class TenantClient {
    * Creates a new {@link TenantAddEntityClient} for adding an entity to a tenant. The client uses
    * the internal command writer to submit the add entity commands.
    *
-   * @param tenantKey the key of the tenant
-   * @return a new instance of {@link TenantAddEntityClient}
-   */
-  public TenantAddEntityClient addEntity(final long tenantKey) {
-    return new TenantAddEntityClient(writer, tenantKey);
-  }
-
-  /**
-   * Creates a new {@link TenantAddEntityClient} for adding an entity to a tenant. The client uses
-   * the internal command writer to submit the add entity commands.
-   *
    * @param tenantId the id of the tenant
    * @return a new instance of {@link TenantAddEntityClient}
    */
@@ -141,17 +130,6 @@ public class TenantClient {
     }
 
     /**
-     * Sets the entityKey for the tenant record.
-     *
-     * @param entityKey the key of the tenant entity
-     * @return this instance
-     */
-    public TenantCreationClient withEntityKey(final Long entityKey) {
-      tenantRecord.setEntityKey(entityKey);
-      return this;
-    }
-
-    /**
      * Creates the tenant record and returns the resulting record.
      *
      * @return the created tenant record
@@ -222,17 +200,6 @@ public class TenantClient {
     }
 
     /**
-     * Sets the entityKey for the tenant record.
-     *
-     * @param entityKey the key of the tenant entity
-     * @return this instance
-     */
-    public TenantUpdateClient withEntityKey(final Long entityKey) {
-      tenantRecord.setEntityKey(entityKey);
-      return this;
-    }
-
-    /**
      * Submits the update command for the tenant record and returns the updated record.
      *
      * @return the updated tenant record
@@ -274,21 +241,10 @@ public class TenantClient {
     private final TenantRecord tenantRecord;
     private Function<Long, Record<TenantRecordValue>> expectation = SUCCESS_SUPPLIER;
 
-    public TenantAddEntityClient(final CommandWriter writer, final long tenantKey) {
-      this.writer = writer;
-      tenantRecord = new TenantRecord();
-      tenantRecord.setTenantKey(tenantKey);
-    }
-
     public TenantAddEntityClient(final CommandWriter writer, final String tenantId) {
       this.writer = writer;
       tenantRecord = new TenantRecord();
       tenantRecord.setTenantId(tenantId);
-    }
-
-    public TenantAddEntityClient withEntityKey(final long entityKey) {
-      tenantRecord.setEntityKey(entityKey);
-      return this;
     }
 
     public TenantAddEntityClient withEntityId(final String entityId) {

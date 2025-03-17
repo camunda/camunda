@@ -11,12 +11,11 @@ import {ChartColumn, Dashboard, Folder} from '@carbon/icons-react';
 import {del, get, post} from 'request';
 import {EntityListEntity, GenericReport} from 'types';
 import {track} from 'tracking';
-import {getFullURL} from '../api';
 
 export async function loadReports(collection?: string | null): Promise<GenericReport[]> {
-  let url = getFullURL('api/report');
+  let url = 'api/report';
   if (collection) {
-    url = getFullURL(`api/collection/${collection}/reports`);
+    url = `api/collection/${collection}/reports`;
   }
   const response = await get(url);
   return await response.json();
@@ -32,12 +31,12 @@ export async function loadEntities(
     params.sortOrder = sortOrder;
   }
 
-  const response = await get(getFullURL('api/entities'), params);
+  const response = await get('api/entities', params);
   return await response.json();
 }
 
 export async function deleteEntity(type: string, id: string): Promise<Response> {
-  const response = await del(getFullURL(`api/${type}/${id}`), {force: true});
+  const response = await del(`api/${type}/${id}`, {force: true});
   track(createEventName('delete', type), {entityId: id});
   return response;
 }
@@ -67,7 +66,7 @@ export async function copyEntity(
     query.collectionId = collectionId;
   }
 
-  const response = await post(getFullURL(`api/${type}/${id}/copy`), undefined, {query});
+  const response = await post(`api/${type}/${id}/copy`, undefined, {query});
   const json = await response.json();
 
   return json.id as string;
@@ -78,7 +77,7 @@ export async function createEntity(
   initialValues = {},
   context?: string
 ): Promise<GenericReport> {
-  const response = await post(getFullURL('api/' + type), initialValues);
+  const response = await post('api/' + type, initialValues);
   const json = await response.json();
   track(createEventName('create', type), {entityId: json.id, context});
   return json.id;

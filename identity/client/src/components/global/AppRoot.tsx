@@ -12,6 +12,9 @@ import { g10, bodyShort01 } from "@carbon/elements";
 import AppHeader from "src/components/layout/AppHeader";
 import ErrorBoundary from "src/components/global/ErrorBoundary";
 import { NotificationProvider } from "src/components/notifications";
+import { useApi } from "src/utility/api";
+import { getAuthentication } from "src/utility/api/authentication";
+import ForbiddenComponent from "src/pages/forbidden/component.tsx";
 
 const GlobalStyle = createGlobalStyle`
   body {
@@ -60,6 +63,24 @@ const GridMainContent = styled.div`
 `;
 
 const AppContent: FC<{ children?: ReactNode }> = ({ children }) => {
+  const { data: camundaUser } = useApi(getAuthentication);
+  if (
+    !camundaUser?.authorizedApplications.includes("identity") &&
+    !camundaUser?.authorizedApplications.includes("*")
+  ) {
+    return (
+      <>
+        <GridHeader>
+          <AppHeader />
+        </GridHeader>
+        <GridMain>
+          <GridMainContent>
+            <ForbiddenComponent />
+          </GridMainContent>
+        </GridMain>
+      </>
+    );
+  }
   return (
     <>
       <GridHeader>

@@ -31,12 +31,12 @@ public class RaftReplicationMetrics extends RaftMetrics {
     commitIndex =
         StatefulGauge.builder(COMMIT_INDEX.getName())
             .description(COMMIT_INDEX.getDescription())
-            .tags(RaftKeyNames.PARTITION_GROUP.asString(), partitionGroupName)
+            .tag(RaftKeyNames.PARTITION_GROUP.asString(), partitionGroupName)
             .register(registry);
     appendIndex =
         StatefulGauge.builder(APPEND_INDEX.getName())
             .description(APPEND_INDEX.getDescription())
-            .tags(RaftKeyNames.PARTITION_GROUP.asString(), partitionGroupName)
+            .tag(RaftKeyNames.PARTITION_GROUP.asString(), partitionGroupName)
             .register(registry);
   }
 

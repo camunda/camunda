@@ -1,6 +1,6 @@
 services:
   elasticsearch:
-    image: docker.elastic.co/elasticsearch/elasticsearch:${ES_VERSION:-8.13.0}
+    image: docker.elastic.co/elasticsearch/elasticsearch:${ES_VERSION:-8.16.4}
     container_name: elasticsearch
     profiles: ['cloud', 'self-managed', 'cloud:elasticsearch', 'self-managed:elasticsearch']
     environment:
@@ -105,7 +105,7 @@ services:
       - opensearch
   keycloak:
     container_name: keycloak
-    image: bitnami/keycloak:26.1.2@sha256:f7fbc4e9270e11fff1f8cf08e29bfb39bdf9e7866de731d7368cdfcfb6501d50
+    image: bitnami/keycloak:26.1.4@sha256:71afb4d7aae7f059f67c2cb80ced840400bfd8562ec00a84f1af658e09335a7d
     profiles: ['self-managed', 'self-managed:opensearch', 'self-managed:elasticsearch']
     ports:
       - '18080:8080'
@@ -193,7 +193,7 @@ services:
     ports:
       - '28080:8080'
     healthcheck:
-      test: ['CMD-SHELL', "wget -O - -q 'http://localhost:28080/actuator/health/readiness'"]
+      test: ['CMD-SHELL', "wget -O - -q 'http://localhost:8080/actuator/health/readiness'"]
       interval: 30s
       timeout: 1s
       retries: 5
@@ -225,7 +225,7 @@ services:
     ports:
       - '28080:8080'
     healthcheck:
-      test: ['CMD-SHELL', "wget -O - -q 'http://localhost:28080/actuator/health/readiness'"]
+      test: ['CMD-SHELL', "wget -O - -q 'http://localhost:8080/actuator/health/readiness'"]
       interval: 30s
       timeout: 1s
       retries: 5

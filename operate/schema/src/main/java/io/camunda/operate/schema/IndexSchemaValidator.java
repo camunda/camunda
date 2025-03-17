@@ -31,7 +31,7 @@ public class IndexSchemaValidator {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(IndexSchemaValidator.class);
 
-  private static final Pattern VERSION_PATTERN = Pattern.compile(".*-(\\d+\\.\\d+\\.\\d+.*)_.*");
+  private static final Pattern VERSION_PATTERN = Pattern.compile("(\\d+\\.\\d+\\.\\d+)_.*");
 
   @Autowired Set<IndexDescriptor> indexDescriptors;
 
@@ -70,14 +70,17 @@ public class IndexSchemaValidator {
   private Set<String> versionsForIndex(final IndexDescriptor indexDescriptor) {
     final Set<String> allIndexNames = getAllIndexNamesForIndex(indexDescriptor);
     return allIndexNames.stream()
-        .map(this::getVersionFromIndexName)
+        .map(name -> getVersionFromIndexName(indexDescriptor, name))
         .filter(Optional::isPresent)
         .map(Optional::get)
         .collect(Collectors.toSet());
   }
 
-  private Optional<String> getVersionFromIndexName(final String indexName) {
-    final Matcher matcher = VERSION_PATTERN.matcher(indexName);
+  private Optional<String> getVersionFromIndexName(
+      final IndexDescriptor index, final String indexName) {
+    final String truncatedIndexName =
+        indexName.substring(index.getIndexNameWithoutVersion().length() + 1); // +1 for dash
+    final Matcher matcher = VERSION_PATTERN.matcher(truncatedIndexName);
     if (matcher.matches() && matcher.groupCount() > 0) {
       return Optional.of(matcher.group(1));
     }

@@ -76,7 +76,7 @@ public class TenantAddEntityProcessor implements DistributedTypedRecordProcessor
     final var persistedTenant = tenantLookup.get();
     final var tenantKey = persistedTenant.getTenantKey();
     final var tenantId = persistedTenant.getTenantId();
-    record.setTenantId(tenantId);
+    record.setTenantKey(tenantKey);
 
     final var authorizationRequest =
         new AuthorizationRequest(command, AuthorizationResourceType.TENANT, PermissionType.UPDATE)
@@ -109,18 +109,6 @@ public class TenantAddEntityProcessor implements DistributedTypedRecordProcessor
 
   /** Loads the persisted tenant by the tenant key if it is set, otherwise by the tenant id. */
   private Either<String, PersistedTenant> getPersistedTenant(final TenantRecord record) {
-    if (record.hasTenantKey()) {
-      final var tenantKey = record.getTenantKey();
-      return tenantState
-          .getTenantByKey(tenantKey)
-          .<Either<String, PersistedTenant>>map(Either::right)
-          .orElseGet(
-              () ->
-                  Either.left(
-                      "Expected to add entity to tenant with key '%s', but no tenant with this key exists."
-                          .formatted(tenantKey)));
-    }
-
     final var tenantId = record.getTenantId();
     return tenantState
         .getTenantById(tenantId)
@@ -139,13 +127,13 @@ public class TenantAddEntityProcessor implements DistributedTypedRecordProcessor
   private boolean validateEntityAssignment(
       final TypedRecord<TenantRecord> command, final String tenantId) {
     final var entityType = command.getValue().getEntityType();
-    final var entityKey = command.getValue().getEntityKey();
+    final var entityId = command.getValue().getEntityId();
     return switch (entityType) {
       case USER -> checkUserAssignment(command, tenantId);
-      case MAPPING -> checkMappingAssignment(entityKey, command, tenantId);
-      case GROUP -> checkGroupAssignment(entityKey, command, tenantId);
+      case MAPPING -> checkMappingAssignment(entityId, command, tenantId);
+      case GROUP -> checkGroupAssignment(entityId, command, tenantId);
       default ->
-          throw new IllegalStateException(formatErrorMessage(entityKey, tenantId, "doesn't exist"));
+          throw new IllegalStateException(formatErrorMessage(entityId, tenantId, "doesn't exist"));
     };
   }
 
@@ -174,56 +162,57 @@ public class TenantAddEntityProcessor implements DistributedTypedRecordProcessor
   }
 
   private boolean checkMappingAssignment(
-      final long entityKey, final TypedRecord<TenantRecord> command, final String tenantId) {
-    final var mapping = mappingState.get(entityKey);
+      final String mappingId, final TypedRecord<TenantRecord> command, final String tenantId) {
+    final var mapping = mappingState.get(mappingId);
     if (mapping.isEmpty()) {
       rejectCommand(
           command,
           RejectionType.NOT_FOUND,
-          formatErrorMessage(entityKey, tenantId, "doesn't exist"));
+          formatErrorMessage(mappingId, tenantId, "doesn't exist"));
       return false;
     }
     if (mapping.get().getTenantIdsList().contains(tenantId)) {
-      createEntityNotExistRejectCommand(command, entityKey, tenantId);
+      createEntityNotExistRejectCommand(command, mappingId, tenantId);
       return false;
     }
     return true;
   }
 
   private boolean checkGroupAssignment(
-      final long entityKey, final TypedRecord<TenantRecord> command, final String tenantId) {
-    final var group = groupState.get(entityKey);
+      final String entityId, final TypedRecord<TenantRecord> command, final String tenantId) {
+    // TODO remove the Long parsing once Groups are migrated to work with ids instead of keys
+    final var group = groupState.get(Long.parseLong(entityId));
 
     if (group.isEmpty()) {
-      createEntityNotExistRejectCommand(command, entityKey, tenantId);
+      createEntityNotExistRejectCommand(command, entityId, tenantId);
       return false;
     }
 
     if (group.get().getTenantIdsList().contains(tenantId)) {
-      createAlreadyAssignedRejectCommand(command, entityKey, tenantId);
+      createAlreadyAssignedRejectCommand(command, entityId, tenantId);
       return false;
     }
     return true;
   }
 
   private void createEntityNotExistRejectCommand(
-      final TypedRecord<TenantRecord> command, final long entityKey, final String tenantId) {
+      final TypedRecord<TenantRecord> command, final String entityId, final String tenantId) {
     rejectCommand(
-        command, RejectionType.NOT_FOUND, formatErrorMessage(entityKey, tenantId, "doesn't exist"));
+        command, RejectionType.NOT_FOUND, formatErrorMessage(entityId, tenantId, "doesn't exist"));
   }
 
   private void createAlreadyAssignedRejectCommand(
-      final TypedRecord<TenantRecord> command, final long entityKey, final String tenantId) {
+      final TypedRecord<TenantRecord> command, final String entityId, final String tenantId) {
     rejectCommand(
         command,
         RejectionType.INVALID_ARGUMENT,
-        formatErrorMessage(entityKey, tenantId, "is already assigned to the tenant"));
+        formatErrorMessage(entityId, tenantId, "is already assigned to the tenant"));
   }
 
   private String formatErrorMessage(
-      final long entityKey, final String tenantId, final String reason) {
-    return "Expected to add entity with key '%s' to tenant with tenantId '%s', but the entity %s."
-        .formatted(entityKey, tenantId, reason);
+      final String entityId, final String tenantId, final String reason) {
+    return "Expected to add entity with id '%s' to tenant with tenantId '%s', but the entity %s."
+        .formatted(entityId, tenantId, reason);
   }
 
   private void rejectCommandWithUnauthorizedError(

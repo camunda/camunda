@@ -33,8 +33,6 @@ import org.springframework.stereotype.Component;
 @Component
 public class RecordsReaderHolder {
 
-  public static final Integer MINIMUM_EMPTY_BATCHES_FOR_COMPLETED_READER = 5;
-
   private static final Logger LOGGER = LoggerFactory.getLogger(RecordsReaderHolder.class);
 
   private Set<RecordsReader> recordsReader = null;
@@ -93,7 +91,7 @@ public class RecordsReaderHolder {
 
       final var reader = getRecordsReader(partitionId, importValueType);
       return countEmptyBatchesAfterImportingDone.get(reader)
-          >= MINIMUM_EMPTY_BATCHES_FOR_COMPLETED_READER;
+          >= tasklistProperties.getImporter().getCompletedReaderMinEmptyBatches();
     }
 
     return false;

@@ -45,6 +45,7 @@ import io.camunda.operate.webapp.rest.dto.operation.CreateOperationRequestDto;
 import io.camunda.operate.webapp.rest.dto.operation.ModifyProcessInstanceRequestDto;
 import io.camunda.operate.webapp.security.oauth2.IdentityJwt2AuthenticationTokenConverter;
 import io.camunda.operate.webapp.zeebe.operation.OperationExecutor;
+import io.camunda.operate.zeebeimport.ZeebeImporter;
 import io.camunda.webapps.schema.descriptors.operate.template.FlowNodeInstanceTemplate;
 import io.camunda.webapps.schema.entities.operate.EventType;
 import io.camunda.webapps.schema.entities.operate.FlowNodeInstanceEntity;
@@ -54,6 +55,7 @@ import io.camunda.webapps.schema.entities.operation.OperationType;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import java.io.IOException;
+import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.Future;
 import java.util.function.Predicate;
@@ -61,12 +63,14 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import org.apache.commons.lang3.Validate;
 import org.apache.http.HttpStatus;
+import org.awaitility.Awaitility;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.BeanFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Scope;
+import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
@@ -85,10 +89,14 @@ public class OperateTester {
   @Autowired protected IncidentReader incidentReader;
   @Autowired protected ListViewReader listViewReader;
   @Autowired protected FlowNodeInstanceReader flowNodeInstanceReader;
+
+  @Autowired(required = false)
+  protected ZeebeImporter zeebeImporter;
+
+  @Autowired private BeanFactory beanFactory;
   private final CamundaClient camundaClient;
   private final MockMvcTestRule mockMvcTestRule;
   private final SearchTestRule searchTestRule;
-  @Autowired private BeanFactory beanFactory;
   private Long processDefinitionKey;
   private Long processInstanceKey;
   private Long jobKey;
@@ -96,6 +104,10 @@ public class OperateTester {
 
   @Autowired(required = false)
   private IdentityJwt2AuthenticationTokenConverter jwtAuthenticationConverter;
+
+  @Autowired(required = false)
+  @Qualifier("importThreadPoolExecutor")
+  private ThreadPoolTaskExecutor importExecutor;
 
   @Autowired
   @Qualifier("processIsDeployedCheck")
@@ -965,5 +977,12 @@ public class OperateTester {
     }
     SecurityContextHolder.getContext().setAuthentication(jwtAuthenticationConverter.convert(jwt));
     return this;
+  }
+
+  public void performOneRoundOfImport() {
+    zeebeImporter.performOneRoundOfImport();
+    Awaitility.await("Waiting for import threads to finish")
+        .atMost(Duration.ofSeconds(30))
+        .untilAsserted(() -> assertThat(importExecutor.getActiveCount()).isEqualTo(0));
   }
 }

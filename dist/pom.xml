@@ -466,9 +466,16 @@
       </exclusions>
     </dependency>
 
+    <!-- Micrometer backend/implementations -->
     <dependency>
       <groupId>io.micrometer</groupId>
-      <artifactId>micrometer-registry-prometheus-simpleclient</artifactId>
+      <artifactId>micrometer-registry-prometheus</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.micrometer</groupId>
+      <artifactId>micrometer-registry-otlp</artifactId>
+      <scope>runtime</scope>
     </dependency>
 
     <dependency>
@@ -841,7 +848,6 @@
             <dependency>org.springframework.boot:spring-boot-starter-web</dependency>
             <dependency>org.openapitools:jackson-databind-nullable</dependency>
             <dependency>jakarta.servlet:jakarta.servlet-api</dependency>
-            <dependency>jakarta.annotation:jakarta.annotation-api</dependency>
 
             <!-- Needed for configuring the Identity SDK by providing an IdentityConfiguration bean -->
             <dependency>io.camunda:identity-spring-boot-autoconfigure</dependency>
@@ -858,6 +864,9 @@
             <!-- Used to parse PKCS1 certificates -->
             <dependency>org.bouncycastle:bcprov-jdk18on</dependency>
             <dependency>org.bouncycastle:bcpkix-jdk18on</dependency>
+
+            <!-- Micrometer Exporters/Registries -->
+            <dependency>io.micrometer:micrometer-registry-otlp</dependency>
           </usedDependencies>
           <ignoredUnusedDeclaredDependencies>
             <dep>com.nimbusds:oauth2-oidc-sdk</dep>
@@ -872,7 +881,7 @@
       <plugin>
         <groupId>org.openapitools</groupId>
         <artifactId>openapi-generator-maven-plugin</artifactId>
-        <version>7.10.0</version>
+        <version>7.12.0</version>
         <executions>
           <execution>
             <id>backups</id>

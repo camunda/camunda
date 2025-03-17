@@ -12,7 +12,7 @@ import static org.assertj.core.api.Assertions.within;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import io.camunda.client.CamundaClient;
-import io.camunda.it.utils.MultiDbTest;
+import io.camunda.qa.util.multidb.MultiDbTest;
 import java.io.ByteArrayInputStream;
 import java.time.Duration;
 import java.time.OffsetDateTime;

@@ -69,6 +69,7 @@ public final class CompleteJobTest extends ClientTest {
     assertThat(request.getVariables()).isEmpty();
     // gRPC provides the result with default value, so checking for default property value here.
     assertThat(request.getResult().getDenied()).isFalse();
+    assertThat(request.getResult().getDeniedReason()).isEmpty();
 
     rule.verifyDefaultRequestTimeout();
   }
@@ -199,6 +200,7 @@ public final class CompleteJobTest extends ClientTest {
     final CompleteJobRequest request = gatewayService.getLastRequest();
     assertThat(request.getJobKey()).isEqualTo(job.getKey());
     assertThat(request.getResult().getDenied()).isFalse();
+    assertThat(request.getResult().getDeniedReason()).isEmpty();
 
     rule.verifyDefaultRequestTimeout();
   }
@@ -216,23 +218,56 @@ public final class CompleteJobTest extends ClientTest {
     final CompleteJobRequest request = gatewayService.getLastRequest();
     assertThat(request.getJobKey()).isEqualTo(job.getKey());
     assertThat(request.getResult().getDenied()).isFalse();
+    assertThat(request.getResult().getDeniedReason()).isEmpty();
 
     rule.verifyDefaultRequestTimeout();
   }
 
   @Test
-  public void shouldCompleteJobWithResultDeniedTrue() {
+  public void shouldCompleteJobWithResultDeniedTrueAndDeniedReason() {
     // given
     final ActivatedJob job = Mockito.mock(ActivatedJob.class);
     Mockito.when(job.getKey()).thenReturn(12L);
 
     // when
-    client.newCompleteCommand(job).withResult().deny(true).send().join();
+    client
+        .newCompleteCommand(job)
+        .withResult()
+        .deny(true)
+        .deniedReason("Reason to deny lifecycle transition")
+        .send()
+        .join();
 
     // then
     final CompleteJobRequest request = gatewayService.getLastRequest();
     assertThat(request.getJobKey()).isEqualTo(job.getKey());
     assertThat(request.getResult().getDenied()).isTrue();
+    assertThat(request.getResult().getDeniedReason())
+        .isEqualTo("Reason to deny lifecycle transition");
+
+    rule.verifyDefaultRequestTimeout();
+  }
+
+  @Test
+  public void shouldCompleteJobWithResultDeniedWithAndDeniedReason() {
+    // given
+    final ActivatedJob job = Mockito.mock(ActivatedJob.class);
+    Mockito.when(job.getKey()).thenReturn(12L);
+
+    // when
+    client
+        .newCompleteCommand(job)
+        .withResult()
+        .deny(true, "Reason to deny lifecycle transition")
+        .send()
+        .join();
+
+    // then
+    final CompleteJobRequest request = gatewayService.getLastRequest();
+    assertThat(request.getJobKey()).isEqualTo(job.getKey());
+    assertThat(request.getResult().getDenied()).isTrue();
+    assertThat(request.getResult().getDeniedReason())
+        .isEqualTo("Reason to deny lifecycle transition");
 
     rule.verifyDefaultRequestTimeout();
   }
@@ -250,6 +285,7 @@ public final class CompleteJobTest extends ClientTest {
     final CompleteJobRequest request = gatewayService.getLastRequest();
     assertThat(request.getJobKey()).isEqualTo(job.getKey());
     assertThat(request.getResult().getDenied()).isFalse();
+    assertThat(request.getResult().getDeniedReason()).isEmpty();
 
     rule.verifyDefaultRequestTimeout();
   }
@@ -261,12 +297,18 @@ public final class CompleteJobTest extends ClientTest {
     Mockito.when(job.getKey()).thenReturn(12L);
 
     // when
-    client.newCompleteCommand(job).withResult(r -> r.deny(true)).send().join();
+    client
+        .newCompleteCommand(job)
+        .withResult(r -> r.deny(true).deniedReason("Reason to deny lifecycle transition"))
+        .send()
+        .join();
 
     // then
     final CompleteJobRequest request = gatewayService.getLastRequest();
     assertThat(request.getJobKey()).isEqualTo(job.getKey());
     assertThat(request.getResult().getDenied()).isTrue();
+    assertThat(request.getResult().getDeniedReason())
+        .isEqualTo("Reason to deny lifecycle transition");
 
     rule.verifyDefaultRequestTimeout();
   }
@@ -291,6 +333,7 @@ public final class CompleteJobTest extends ClientTest {
     final CompleteJobRequest request = gatewayService.getLastRequest();
     assertThat(request.getJobKey()).isEqualTo(job.getKey());
     assertThat(request.getResult().getDenied()).isFalse();
+    assertThat(request.getResult().getDeniedReason()).isEmpty();
     assertThat(request.getVariables()).isEqualTo("{\"we_can\":\"still_set_vars\"}");
 
     rule.verifyDefaultRequestTimeout();
@@ -464,6 +507,7 @@ public final class CompleteJobTest extends ClientTest {
             .setResult(
                 JobResult.newBuilder()
                     .setDenied(false)
+                    .setDeniedReason("")
                     .setCorrections(
                         JobResultCorrections.newBuilder()
                             .setAssignee("Test")
@@ -515,6 +559,7 @@ public final class CompleteJobTest extends ClientTest {
             .setResult(
                 JobResult.newBuilder()
                     .setDenied(false)
+                    .setDeniedReason("")
                     .setCorrections(
                         JobResultCorrections.newBuilder()
                             .setAssignee("Test")

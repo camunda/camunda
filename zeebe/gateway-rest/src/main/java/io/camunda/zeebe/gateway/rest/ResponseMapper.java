@@ -224,7 +224,7 @@ public final class ResponseMapper {
               final var detail = new DocumentCreationFailureDetail();
               final var defaultProblemDetail = mapDocumentErrorToProblem(error.error());
               detail.setDetail(defaultProblemDetail.getDetail());
-              detail.setFilename(error.request().metadata().fileName());
+              detail.setFileName(error.request().metadata().fileName());
               response.addFailedDocumentsItem(detail);
             });
     return ResponseEntity.status(HttpStatus.MULTI_STATUS)
@@ -261,7 +261,7 @@ public final class ResponseMapper {
         status = HttpStatus.METHOD_NOT_ALLOWED;
       }
       default -> {
-        detail = null;
+        detail = "An error occurred: " + e.getClass().getName();
         status = HttpStatus.INTERNAL_SERVER_ERROR;
       }
     }
@@ -281,7 +281,7 @@ public final class ResponseMapper {
             .size(internalMetadata.size())
             .contentType(internalMetadata.contentType())
             .processDefinitionId(internalMetadata.processDefinitionId())
-            .processInstanceKey(internalMetadata.processInstanceKey());
+            .processInstanceKey(KeyUtil.keyToString(internalMetadata.processInstanceKey()));
     Optional.ofNullable(internalMetadata.customProperties())
         .ifPresent(map -> map.forEach(externalMetadata::putCustomPropertiesItem));
     return new DocumentReference()

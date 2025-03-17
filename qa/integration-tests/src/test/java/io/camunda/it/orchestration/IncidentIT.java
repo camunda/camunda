@@ -18,7 +18,7 @@ import io.camunda.client.api.search.response.Incident;
 import io.camunda.client.api.search.response.IncidentErrorType;
 import io.camunda.client.api.search.response.IncidentState;
 import io.camunda.client.api.search.response.ProcessInstance;
-import io.camunda.it.utils.MultiDbTest;
+import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.test.util.Strings;
 import java.time.Duration;

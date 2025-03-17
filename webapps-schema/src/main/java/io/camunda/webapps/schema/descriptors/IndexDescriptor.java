@@ -33,6 +33,8 @@ public interface IndexDescriptor {
 
   String getAllVersionsIndexNameRegexPattern();
 
+  String getIndexNameWithoutVersion();
+
   String getVersion();
 
   default Optional<String> getTenantIdField() {

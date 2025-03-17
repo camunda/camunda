@@ -29,7 +29,6 @@ public final class ConfigurationServiceConstants {
 
   public static final String EMAIL_AUTHENTICATION = "$.email.authentication";
 
-  public static final String CONFIGURED_WEBHOOKS = "$.webhookAlerting.webhooks";
   public static final String DIGEST_CRON_TRIGGER = "$.digest.cronTrigger";
   // @formatter:off
   public static final String DATABASE_MAX_JOB_QUEUE_SIZE =
@@ -140,7 +139,6 @@ public final class ConfigurationServiceConstants {
   public static final String ES_INDEX_NESTED_DOCUMENTS_LIMIT =
       "$.es.settings.index.nested_documents_limit";
 
-  public static final String ENGINE_DATE_FORMAT = "$.serialization.engineDateFormat";
   public static final String CONTAINER_HOST = "$.container.host";
   public static final String CONTAINER_CONTEXT_PATH = "$.container.contextPath";
   public static final String CONTAINER_KEYSTORE_PASSWORD = "$.container.keystore.password";

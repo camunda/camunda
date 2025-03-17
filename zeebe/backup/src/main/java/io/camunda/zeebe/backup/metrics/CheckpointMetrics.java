@@ -9,31 +9,32 @@ package io.camunda.zeebe.backup.metrics;
 
 import static io.camunda.zeebe.backup.metrics.CheckpointMetricsDoc.*;
 
+import io.camunda.zeebe.util.micrometer.StatefulGauge;
 import io.micrometer.core.instrument.Counter;
-import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.util.EnumMap;
 import java.util.Map;
 import java.util.Objects;
-import java.util.concurrent.atomic.AtomicLong;
 
 public class CheckpointMetrics {
   private final MeterRegistry registry;
   private final Map<CheckpointMetricsResultValue, Counter> checkpointRecords =
       new EnumMap<>(CheckpointMetricsResultValue.class);
-  private final AtomicLong checkpointPosition = new AtomicLong(0L);
-  private final AtomicLong checkpointId = new AtomicLong(0L);
+  private final StatefulGauge checkpointPosition;
+  private final StatefulGauge checkpointId;
 
   public CheckpointMetrics(final MeterRegistry meterRegistry) {
     registry = Objects.requireNonNull(meterRegistry, "registry cannot be null");
 
-    Gauge.builder(CHECKPOINT_POSITION.getName(), checkpointPosition::get)
-        .description(CHECKPOINT_POSITION.getDescription())
-        .register(meterRegistry);
+    checkpointPosition =
+        StatefulGauge.builder(CHECKPOINT_POSITION.getName())
+            .description(CHECKPOINT_POSITION.getDescription())
+            .register(meterRegistry);
 
-    Gauge.builder(CHECKPOINT_POSITION.getName(), checkpointPosition::get)
-        .description(CHECKPOINT_POSITION.getDescription())
-        .register(meterRegistry);
+    checkpointId =
+        StatefulGauge.builder(CHECKPOINT_ID.getName())
+            .description(CHECKPOINT_POSITION.getDescription())
+            .register(meterRegistry);
   }
 
   public void created(final long checkpointId, final long checkpointPosition) {
@@ -57,7 +58,7 @@ public class CheckpointMetrics {
   private Counter registerCheckpointRecords(final CheckpointMetricsResultValue value) {
     return Counter.builder(CHECKPOINTS_RECORDS.getName())
         .description(CHECKPOINTS_RECORDS.getDescription())
-        .tags(CheckpointMetricsKeyName.RESULT.asString(), value.value())
+        .tag(CheckpointMetricsKeyName.RESULT.asString(), value.value())
         .register(registry);
   }
 }

@@ -18,7 +18,7 @@ package io.camunda.zeebe.client.impl.command;
 import static io.camunda.zeebe.client.impl.command.ArgumentUtil.ensureNotNull;
 
 import com.google.protobuf.ByteString;
-import io.camunda.client.protocol.rest.DeploymentResponse;
+import io.camunda.client.protocol.rest.DeploymentResult;
 import io.camunda.zeebe.client.CredentialsProvider.StatusCode;
 import io.camunda.zeebe.client.ZeebeClientConfiguration;
 import io.camunda.zeebe.client.api.JsonMapper;
@@ -251,7 +251,7 @@ public final class DeployResourceCommandImpl
         "/deployments",
         multipartEntityBuilder,
         httpRequestConfig.build(),
-        DeploymentResponse.class,
+        DeploymentResult.class,
         DeploymentEventImpl::new,
         result);
     return result;

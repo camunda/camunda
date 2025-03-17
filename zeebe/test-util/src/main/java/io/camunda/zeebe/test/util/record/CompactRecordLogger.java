@@ -13,6 +13,9 @@ import static java.util.Map.ofEntries;
 import static org.apache.commons.lang3.StringUtils.leftPad;
 import static org.apache.commons.lang3.StringUtils.rightPad;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
@@ -79,11 +82,18 @@ import org.slf4j.LoggerFactory;
 public class CompactRecordLogger {
 
   private static final Logger LOG = LoggerFactory.getLogger("io.camunda.zeebe.test");
-  private static final String BLOCK_SEPARATOR = " - ";
+  private static final String BLOCK_SEPARATOR = " ";
 
   // List rather than Map to preserve order
   private static final List<Entry<String, String>> ABBREVIATIONS =
       List.of(
+          entry("COMPLETE_TASK_LISTENER", "COMP_TL"),
+          entry("DENY_TASK_LISTENER", "DENY_TL"),
+          entry("TASK_LISTENER", "TL"),
+          entry("ASSIGNMENT_DENIED", "ASGN_DENIED"),
+          entry("COMPLETION_DENIED", "COMP_DENIED"),
+          entry("UPDATE_DENIED", "UPDT_DENIED"),
+          entry("SEQUENCE_FLOW_TAKEN", "SQ_FLW_TKN"),
           entry("PROCESS_INSTANCE_CREATION", "CREA"),
           entry("PROCESS_INSTANCE_MODIFICATION", "MOD"),
           entry("PROCESS_INSTANCE", "PI"),
@@ -124,6 +134,7 @@ public class CompactRecordLogger {
   private final ArrayList<Record<?>> records;
 
   private final List<Process> processes = new ArrayList<>();
+  private ObjectMapper objectMapper;
 
   {
     valueLoggers.put(ValueType.DEPLOYMENT, this::summarizeDeployment);
@@ -234,14 +245,14 @@ public class CompactRecordLogger {
     if (multiPartition) {
       bulkMessage.append("P[partitionId]");
     }
-    bulkMessage.append("K[key] - [summary of value]\n");
-
     bulkMessage.append(
-        "\tP9K999 - key; #999 - record position; \"ID\" element/process id; @\"elementid\"/[P9K999] - element with ID and key\n");
-    bulkMessage.append(
-        "\tKeys are decomposed into partition id and per partition key (e.g. 2251799813685253 -> P1K005). If single partition, the partition is omitted.\n");
-    bulkMessage.append(
-        "\tLong IDs are shortened (e.g. 'startEvent_5d56488e-0570-416c-ba2d-36d2a3acea78' -> 'star..acea78'\n");
+        """
+        K[key] - [summary of value]
+        \tP9K999 - key; #999 - record position; "ID" element/process id; @"elementid"/[P9K999] - element with ID and key
+        \tKeys are decomposed into partition id and per partition key (e.g. 2251799813685253 -> P1K005). If single partition, the partition is omitted.
+        \tLong IDs are shortened (e.g. 'startEvent_5d56488e-0570-416c-ba2d-36d2a3acea78' -> 'star..acea78'
+        \tHeaders defined in 'Protocol' are abbreviated (e.g. 'io.camunda.zeebe:userTaskKey:2251799813685253' -> 'uTK:K005').
+        """);
     bulkMessage.append("--------\n");
 
     records.forEach(record -> bulkMessage.append(summarizeRecord(record)).append("\n"));
@@ -425,19 +436,19 @@ public class CompactRecordLogger {
   private String summarizeJob(final Record<?> record) {
     final var value = (JobRecordValue) record.getValue();
 
-    return summarizeJobRecordValue(record.getKey(), value);
+    return summarizeJobRecordValue(-1L, value);
   }
 
   private String summarizeJobRecordValue(final long jobKey, final JobRecordValue value) {
     final var result = new StringBuilder();
 
     if (jobKey != -1) {
-      result.append(shortenKey(jobKey));
+      result.append(shortenKey(jobKey)).append(" ");
     }
     if (!StringUtils.isEmpty(value.getType())) {
       result
-          .append(" \"")
-          .append(value.getType())
+          .append("\"")
+          .append(StringUtils.abbreviateMiddle(value.getType(), "..", 10))
           .append("\"")
           .append(summarizeElementInformation(value.getElementId(), value.getElementInstanceKey()));
     }
@@ -445,9 +456,9 @@ public class CompactRecordLogger {
     if (value.getJobKind() != null && value.getJobKind() != JobKind.BPMN_ELEMENT) {
       result
           .append(" (")
-          .append(value.getJobKind())
+          .append(abbreviate(value.getJobKind().toString()))
           .append("[")
-          .append(value.getJobListenerEventType())
+          .append(abbreviate(value.getJobListenerEventType().toString()))
           .append("]),");
     }
 
@@ -458,11 +469,67 @@ public class CompactRecordLogger {
     }
 
     result
-        .append(
-            summarizeProcessInformation(value.getBpmnProcessId(), value.getProcessInstanceKey()))
+        .append(summarizeCustomHeaders(value.getCustomHeaders()))
         .append(summarizeVariables(value.getVariables()));
 
     return result.toString();
+  }
+
+  private String summarizeCustomHeaders(final Map<String, String> customHeaders) {
+    if (customHeaders.isEmpty()) {
+      return "";
+    }
+    return " [%s]"
+        .formatted(
+            customHeaders.entrySet().stream()
+                .map(this::abbreviateEntry)
+                .map(e -> "%s:'%s'".formatted(e.getKey(), e.getValue()))
+                .collect(Collectors.joining(",")));
+  }
+
+  private Entry<String, String> abbreviateEntry(final Entry<String, String> entry) {
+    var key = entry.getKey();
+    var value = entry.getValue();
+    if (key.toLowerCase().contains("key")) {
+      final long longOrNegative = getLongOrNegative(value);
+      if (longOrNegative > 0) {
+        value = shortenKey(longOrNegative);
+      }
+    }
+    if (key.equals(Protocol.USER_TASK_CHANGED_ATTRIBUTES_HEADER_NAME)
+        && value.length() > 2
+        && value.startsWith("[")
+        && value.endsWith("]")) {
+      if (objectMapper == null) {
+        // lazy load object mapper
+        objectMapper = new ObjectMapper();
+      }
+      List<String> changedAttributes = null;
+      try {
+        changedAttributes = objectMapper.readValue(value, new TypeReference<>() {});
+      } catch (final JsonProcessingException e) {
+        LOG.warn("Failed to parse changed attributes '{}' as json list", value);
+      }
+      if (changedAttributes != null) {
+        value =
+            changedAttributes.stream()
+                .map(CompactRecordLogger::abbreviateToFirstLetters)
+                .collect(Collectors.joining(",", "[", "]"));
+      }
+    }
+
+    if (key.startsWith("io.camunda.zeebe:")) {
+      key = key.replace("io.camunda.zeebe:", "");
+      key = abbreviateToFirstLetters(key);
+    }
+    key = StringUtils.abbreviateMiddle(key, "..", 10);
+    value = StringUtils.abbreviateMiddle(value, "..", 10);
+    return entry(key, value);
+  }
+
+  /** Returns only the first letter and any each capital letter. For example, userTaskKey -> uTK */
+  private static String abbreviateToFirstLetters(final String toAbbreviate) {
+    return toAbbreviate.replaceAll("(?<!^)[a-z]", "");
   }
 
   private String summarizeJobBatch(final Record<?> record) {
@@ -580,23 +647,23 @@ public class CompactRecordLogger {
     final StringBuilder result = new StringBuilder();
     if (!value.getElementInstancePath().isEmpty()) {
       result
-          .append(" ElementInstancePath: ")
+          .append(" EI:")
           .append(
               value.getElementInstancePath().stream()
-                  .map(p -> p.stream().map(this::shortenKey).collect(Collectors.joining(" -> ")))
+                  .map(p -> p.stream().map(this::shortenKey).collect(Collectors.joining("->")))
                   .toList());
     }
     if (!value.getProcessDefinitionPath().isEmpty()) {
       result
-          .append(" ProcessDefinitionPath: [")
+          .append(" PD:[")
           .append(
               value.getProcessDefinitionPath().stream()
                   .map(this::shortenKey)
-                  .collect(Collectors.joining(" -> ")))
+                  .collect(Collectors.joining("->")))
           .append("]");
     }
     if (!value.getCallingElementPath().isEmpty()) {
-      result.append(" CallingElementPath: ").append(value.getCallingElementPath());
+      result.append(" CE: ").append(value.getCallingElementPath());
     }
     return result.toString();
   }
@@ -832,7 +899,16 @@ public class CompactRecordLogger {
           summarizeElementInformation(value.getElementId(), value.getElementInstanceKey()));
     }
 
-    addIfNotEmpty(result, value.getChangedAttributes(), " changedAttributes");
+    if (value.getChangedAttributes() != null && !value.getChangedAttributes().isEmpty()) {
+      result
+          .append(" changedAttributes")
+          .append(" \"")
+          .append(
+              value.getChangedAttributes().stream()
+                  .map(CompactRecordLogger::abbreviateToFirstLetters)
+                  .toList())
+          .append("\"");
+    }
     addIfNotEmpty(result, value.getAssignee(), " assignee");
     addIfNotEmpty(result, value.getCandidateUsersList(), " candidateUsersList");
     addIfNotEmpty(result, value.getCandidateGroupsList(), " candidateGroupsList");
@@ -938,8 +1014,6 @@ public class CompactRecordLogger {
         .append(formatId(value.getTenantId()))
         .append(", Name=")
         .append(formatId(value.getName()))
-        .append(", EntityKey=")
-        .append(shortenKey(value.getEntityKey()))
         .append(", EntityId=")
         .append(formatId(value.getEntityId()))
         .append("]");
@@ -1080,6 +1154,14 @@ public class CompactRecordLogger {
       final StringBuilder result, final List<String> value, final String name) {
     if (value != null && !value.isEmpty()) {
       result.append(name).append(" \"").append(value).append("\"");
+    }
+  }
+
+  private static long getLongOrNegative(final String value) {
+    try {
+      return Long.parseLong(value);
+    } catch (final NumberFormatException e) {
+      return -1;
     }
   }
 }

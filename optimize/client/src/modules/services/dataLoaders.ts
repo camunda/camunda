@@ -8,7 +8,6 @@
 
 import {ProcessFilter, Variable} from 'types';
 import {get, post} from 'request';
-import {getFullURL} from '../api';
 
 export async function loadProcessDefinitionXml(
   key?: string,
@@ -21,7 +20,7 @@ export async function loadProcessDefinitionXml(
   }
 
   try {
-    const response = await get(getFullURL('api/definition/process/xml'), payload);
+    const response = await get('api/definition/process/xml', payload);
 
     return await response.text();
   } catch (_e) {
@@ -41,7 +40,7 @@ type LoadVariablesPayload = {
 };
 
 export const loadVariables = async (payload: LoadVariablesPayload) => {
-  const response = await post(getFullURL('api/variables'), payload);
+  const response = await post('api/variables', payload);
 
   return (await response.json()) as Variable[];
 };

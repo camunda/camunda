@@ -75,7 +75,7 @@ public class TenantCreateProcessor implements DistributedTypedRecordProcessor<Te
   public void processDistributedCommand(final TypedRecord<TenantRecord> command) {
     final var record = command.getValue();
     tenantState
-        .getTenantByKey(record.getTenantKey())
+        .getTenantById(record.getTenantId())
         .ifPresentOrElse(
             tenant -> {
               final var errorMessage =
@@ -99,7 +99,7 @@ public class TenantCreateProcessor implements DistributedTypedRecordProcessor<Te
   }
 
   private boolean tenantAlreadyExists(final String tenantId) {
-    return tenantState.getTenantKeyById(tenantId).isPresent();
+    return tenantState.getTenantById(tenantId).isPresent();
   }
 
   private void createTenant(final TypedRecord<TenantRecord> command, final TenantRecord record) {

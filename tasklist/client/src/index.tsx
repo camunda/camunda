@@ -10,8 +10,8 @@
 
 import {createRoot} from 'react-dom/client';
 import {App} from './App';
-import {tracking} from 'modules/tracking';
-import {initI18next} from 'modules/internationalization/i18next';
+import {tracking} from 'common/tracking';
+import {initI18next} from 'common/i18n/i18next';
 import './index.scss';
 import {StrictMode} from 'react';
 
@@ -21,12 +21,10 @@ function mock(): Promise<void> {
       import.meta.env.DEV ||
       window.location.host.match(/camunda\.cloud$/) !== null
     ) {
-      import('modules/mockServer/startBrowserMocking').then(
-        ({startBrowserMocking}) => {
-          startBrowserMocking();
-          resolve();
-        },
-      );
+      import('common/msw/startBrowserMocking').then(({startBrowserMocking}) => {
+        startBrowserMocking();
+        resolve();
+      });
     } else {
       resolve();
     }

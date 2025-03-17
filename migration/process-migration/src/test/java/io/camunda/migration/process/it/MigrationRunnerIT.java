@@ -168,7 +168,15 @@ public class MigrationRunnerIT extends AdapterTest {
     refreshIndices();
 
     // then
-    final var records = readRecords(ProcessEntity.class, processIndex.getFullQualifiedName());
+
+    final var records =
+        Awaitility.await()
+            .atMost(30, TimeUnit.SECONDS)
+            .pollInterval(2, TimeUnit.SECONDS)
+            .ignoreExceptions()
+            .until(
+                () -> readRecords(ProcessEntity.class, processIndex.getFullQualifiedName()),
+                res -> res.getFirst().getIsPublic() != null);
 
     // Since the key field is marked as a keyword in ES/OS the sorting is done lexicographically
     assertProcessorStepContentIsStored("9");

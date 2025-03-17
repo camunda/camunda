@@ -12,21 +12,23 @@ import static io.camunda.zeebe.backup.metrics.BackupManagerMetricsDoc.*;
 import io.camunda.zeebe.util.CloseableSilently;
 import io.camunda.zeebe.util.collection.Table;
 import io.camunda.zeebe.util.micrometer.MicrometerUtil;
+import io.camunda.zeebe.util.micrometer.StatefulGauge;
 import io.micrometer.core.instrument.Counter;
-import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
 import java.util.EnumMap;
 import java.util.Map;
 import java.util.Objects;
-import java.util.concurrent.atomic.AtomicLong;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class BackupManagerMetrics {
 
+  public static final Logger LOGGER = LoggerFactory.getLogger(BackupManagerMetrics.class);
   private final MeterRegistry registry;
   private final Table<OperationType, OperationResult, Counter> totalOperations =
       Table.ofEnum(OperationType.class, OperationResult.class, Counter[]::new);
-  private final Map<OperationType, AtomicLong> operationInProgress =
+  private final Map<OperationType, StatefulGauge> operationInProgress =
       new EnumMap<>(OperationType.class);
   private final Map<OperationType, Timer> backupOperationLatency =
       new EnumMap<>(OperationType.class);
@@ -75,27 +77,23 @@ public class BackupManagerMetrics {
   private Timer registerBackupLatency(final OperationType operationType) {
     return Timer.builder(BACKUP_OPERATIONS_LATENCY.getName())
         .description(BACKUP_OPERATIONS_LATENCY.getDescription())
-        .tags(MetricKeyName.OPERATION.asString(), operationType.name())
+        .tag(MetricKeyName.OPERATION.asString(), operationType.name())
         .register(registry);
   }
 
-  private AtomicLong getOperationInProgress(final OperationType operationType) {
-    var value = operationInProgress.get(operationType);
-    if (value == null) {
-      value = new AtomicLong();
-      operationInProgress.put(operationType, value);
-      Gauge.builder(BACKUP_OPERATIONS_IN_PROGRESS.getName(), value::get)
-          .description(BACKUP_OPERATIONS_IN_PROGRESS.getDescription())
-          .register(registry);
-    }
-    return value;
+  private StatefulGauge registerOperationInProgress(final OperationType operationType) {
+    return StatefulGauge.builder(BACKUP_OPERATIONS_IN_PROGRESS.getName())
+        .description(BACKUP_OPERATIONS_IN_PROGRESS.getDescription())
+        .tag(MetricKeyName.OPERATION.asString(), operationType.name())
+        .register(registry);
   }
 
   private OperationMetrics start(final OperationType operation) {
     final var timer =
         backupOperationLatency.computeIfAbsent(operation, this::registerBackupLatency);
+    operationInProgress.computeIfAbsent(operation, this::registerOperationInProgress).increment();
+
     final var timerSample = MicrometerUtil.timer(timer, Timer.start(registry.config().clock()));
-    getOperationInProgress(operation).incrementAndGet();
     return new OperationMetrics(timerSample, operation);
   }
 
@@ -110,7 +108,15 @@ public class BackupManagerMetrics {
 
     public <T> void complete(final T ignored, final Throwable throwable) {
       timer.close();
-      getOperationInProgress(operation).decrementAndGet();
+      final var gauge = operationInProgress.get(operation);
+      if (gauge != null) {
+        gauge.decrement();
+      } else {
+        LOGGER.warn(
+            "Expected to decrement count of operations in progress of type {}, but none was found",
+            operation);
+      }
+
       final var result = throwable != null ? OperationResult.FAILED : OperationResult.COMPLETED;
       totalOperations
           .computeIfAbsent(operation, result, BackupManagerMetrics.this::registerTotalOperation)

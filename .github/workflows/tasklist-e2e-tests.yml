@@ -35,7 +35,7 @@ jobs:
     if: ${{ needs.detect-changes.outputs.tasklist-backend-changes == 'true' || needs.detect-changes.outputs.tasklist-frontend-changes == 'true' }}
     services:
       elasticsearch:
-        image: docker.elastic.co/elasticsearch/elasticsearch:8.17.2
+        image: docker.elastic.co/elasticsearch/elasticsearch:8.17.3
         env:
           discovery.type: single-node
           cluster.name: docker-cluster
@@ -51,7 +51,7 @@ jobs:
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
       - name: Import Secrets
         id: secrets
-        uses: hashicorp/vault-action@a1b77a09293a4366e48a5067a86692ac6e94fdc0
+        uses: hashicorp/vault-action@7709c609789c5e27b757a85817483caadbb5939a
         with:
           url: ${{ secrets.VAULT_ADDR }}
           method: approle
@@ -63,7 +63,7 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          node-version: "22"
       - name: Setup yarn
         run: npm install -g yarn
       - name: Install node dependencies

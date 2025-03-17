@@ -7,6 +7,7 @@
  */
 package io.camunda.it.orchestration;
 
+import static io.camunda.qa.util.multidb.CamundaMultiDBExtension.TIMEOUT_DATA_AVAILABILITY;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 
@@ -25,7 +26,7 @@ import io.camunda.client.api.search.response.ProcessDefinition;
 import io.camunda.client.api.search.response.ProcessInstance;
 import io.camunda.client.api.search.response.UserTask;
 import io.camunda.client.api.search.response.Variable;
-import io.camunda.it.utils.MultiDbTest;
+import io.camunda.qa.util.multidb.MultiDbTest;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -236,6 +237,7 @@ public class ProcessMigrationIT {
       final Consumer<IncidentFilter> filter,
       final Consumer<List<Incident>> asserter) {
     await()
+        .atMost(TIMEOUT_DATA_AVAILABILITY)
         .untilAsserted(
             () -> {
               final var incidents = client.newIncidentQuery().filter(filter).send().join().items();
@@ -312,6 +314,7 @@ public class ProcessMigrationIT {
       final Consumer<FlownodeInstanceFilter> filter,
       final Consumer<List<FlowNodeInstance>> asserter) {
     await()
+        .atMost(TIMEOUT_DATA_AVAILABILITY)
         .untilAsserted(
             () -> {
               final var result =
@@ -325,6 +328,7 @@ public class ProcessMigrationIT {
       final Consumer<VariableFilter> filter,
       final Consumer<List<Variable>> asserter) {
     await()
+        .atMost(TIMEOUT_DATA_AVAILABILITY)
         .untilAsserted(
             () -> {
               final var result = client.newVariableQuery().filter(filter).send().join().items();
@@ -337,6 +341,7 @@ public class ProcessMigrationIT {
       final Consumer<ProcessDefinitionFilter> filter,
       final Consumer<List<ProcessDefinition>> asserter) {
     await()
+        .atMost(TIMEOUT_DATA_AVAILABILITY)
         .ignoreExceptions()
         .untilAsserted(
             () -> {
@@ -351,6 +356,7 @@ public class ProcessMigrationIT {
       final Consumer<ProcessInstanceFilter> filter,
       final Consumer<List<ProcessInstance>> asserter) {
     await()
+        .atMost(TIMEOUT_DATA_AVAILABILITY)
         .ignoreExceptions()
         .untilAsserted(
             () -> {
@@ -365,6 +371,7 @@ public class ProcessMigrationIT {
       final Consumer<UserTaskFilter> filter,
       final Consumer<List<UserTask>> asserter) {
     await()
+        .atMost(TIMEOUT_DATA_AVAILABILITY)
         .ignoreExceptions()
         .untilAsserted(
             () -> {

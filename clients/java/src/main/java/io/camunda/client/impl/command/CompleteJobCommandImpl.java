@@ -108,7 +108,11 @@ public final class CompleteJobCommandImpl extends CommandWithVariables<CompleteJ
 
   @Override
   public CompleteJobCommandStep1 withResult(final CompleteJobResult jobResult) {
-    return withResult().deny(jobResult.isDenied()).correct(jobResult.getCorrections()).resultDone();
+    return withResult()
+        .deny(jobResult.isDenied())
+        .deniedReason(jobResult.getDeniedReason())
+        .correct(jobResult.getCorrections())
+        .resultDone();
   }
 
   @Override
@@ -118,6 +122,7 @@ public final class CompleteJobCommandImpl extends CommandWithVariables<CompleteJ
     final CompleteJobResult reconstructedJobResult =
         new CompleteJobResult()
             .deny(resultRest.getDenied() != null ? resultRest.getDenied() : false)
+            .deniedReason(resultRest.getDeniedReason())
             .correct(reconstructCorrections());
     return withResult(jobResultModifier.apply(reconstructedJobResult));
   }
@@ -138,6 +143,19 @@ public final class CompleteJobCommandImpl extends CommandWithVariables<CompleteJ
   public CompleteJobCommandStep2 deny(final boolean isDenied) {
     resultRest.setDenied(isDenied);
     resultGrpc.setDenied(isDenied);
+    onResultChange();
+    return this;
+  }
+
+  @Override
+  public CompleteJobCommandStep2 deny(final boolean isDenied, final String deniedReason) {
+    return deny(isDenied).deniedReason(deniedReason);
+  }
+
+  @Override
+  public CompleteJobCommandStep2 deniedReason(final String deniedReason) {
+    resultRest.setDeniedReason(deniedReason);
+    resultGrpc.setDeniedReason(deniedReason == null ? "" : deniedReason);
     onResultChange();
     return this;
   }

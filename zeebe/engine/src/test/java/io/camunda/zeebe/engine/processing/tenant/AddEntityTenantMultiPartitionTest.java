@@ -50,11 +50,10 @@ public class AddEntityTenantMultiPartitionTest {
         .create()
         .getKey();
     final var tenantId = UUID.randomUUID().toString();
-    final var tenantKey =
-        engine.tenant().newTenant().withTenantId(tenantId).create().getValue().getTenantKey();
+    engine.tenant().newTenant().withTenantId(tenantId).create();
     engine
         .tenant()
-        .addEntity(tenantKey)
+        .addEntity(tenantId)
         .withEntityId(username)
         .withEntityType(EntityType.USER)
         .add();
@@ -116,11 +115,10 @@ public class AddEntityTenantMultiPartitionTest {
         .create()
         .getKey();
     final var tenantId = UUID.randomUUID().toString();
-    final var tenantKey =
-        engine.tenant().newTenant().withTenantId(tenantId).create().getValue().getTenantKey();
+    engine.tenant().newTenant().withTenantId(tenantId).create();
     engine
         .tenant()
-        .addEntity(tenantKey)
+        .addEntity(tenantId)
         .withEntityId(username)
         .withEntityType(EntityType.USER)
         .add();
@@ -153,11 +151,10 @@ public class AddEntityTenantMultiPartitionTest {
 
     // when
     final var tenantId = UUID.randomUUID().toString();
-    final var tenantKey =
-        engine.tenant().newTenant().withTenantId(tenantId).create().getValue().getTenantKey();
+    engine.tenant().newTenant().withTenantId(tenantId).create();
     engine
         .tenant()
-        .addEntity(tenantKey)
+        .addEntity(tenantId)
         .withEntityId(username)
         .withEntityType(EntityType.USER)
         .add();

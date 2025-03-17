@@ -43,7 +43,7 @@ jobs:
           cache: false  # disabling since not working anyways without a cache-dependency-path specified
 
       - name: golangci-lint
-        uses: golangci/golangci-lint-action@ec5d18412c0aeab7936cb16880d708ba2a64e1ae # v6.2.0
+        uses: golangci/golangci-lint-action@4696ba8babb6127d732c3c6dde519db15edab9ea # v6.5.1
         with:
           working-directory: ./c8run
 
@@ -67,7 +67,7 @@ jobs:
         shell: bash
         id: build-dist
         run: |
-          ./mvnw -B -T1C -DskipTests -DskipChecks -Dflatten.skip=true package
+          ./mvnw -B -T1C -DskipTests -DskipChecks -Dflatten.skip=true -Dskip.fe.build=false package
           export ARTIFACT=$(./mvnw -pl dist/ help:evaluate -Dexpression=project.build.finalName -q -DforceStdout)
           echo "distball=dist/target/${ARTIFACT}.tar.gz" >> $GITHUB_OUTPUT
           echo "distzip=dist/target/${ARTIFACT}.zip" >> $GITHUB_OUTPUT
@@ -161,7 +161,7 @@ jobs:
 
       - name: Import Secrets
         id: secrets
-        uses: hashicorp/vault-action@d1720f055e0635fd932a1d2a48f87a666a57906c # v3.0.0
+        uses: hashicorp/vault-action@7709c609789c5e27b757a85817483caadbb5939a # v3.3.0
         with:
           url: ${{ secrets.VAULT_ADDR }}
           method: approle
@@ -213,19 +213,20 @@ jobs:
           java-version: '22'
 
       - name: Set env
-        run: echo "JAVA_HOME=$env:JAVA_HOME_22_x64" >> $env:GITHUB_ENV
+        run: echo "JAVA_HOME=${JAVA_HOME_22_X64}" >> $GITHUB_ENV
+        shell: bash
 
       - name: Unit tests
         run: go test
         working-directory: .\c8run
-        shell: cmd
+        shell: bash
         env:
           JAVA_VERSION: "22.0.2"
 
       - name: Run c8run
-        run: .\c8run.exe start --config e2e_tests/prefix-config.yaml
-        working-directory: .\c8run
-        shell: cmd
+        run: bash -c './c8run.exe start --config e2e_tests/prefix-config.yaml'
+        working-directory: ./c8run
+        shell: bash
         env:
           JAVA_VERSION: "22.0.2"
 

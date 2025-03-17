@@ -82,13 +82,6 @@ public class TenantWriter {
             tenant.tenantId(),
             "io.camunda.db.rdbms.sql.TenantMapper.delete",
             tenant.tenantId()));
-    executionQueue.executeInQueue(
-        new QueueItem(
-            ContextType.TENANT,
-            WriteStatementType.DELETE,
-            tenant.tenantId(),
-            "io.camunda.db.rdbms.sql.TenantMapper.deleteAllMembers",
-            tenant.tenantId()));
   }
 
   private boolean mergeToQueue(

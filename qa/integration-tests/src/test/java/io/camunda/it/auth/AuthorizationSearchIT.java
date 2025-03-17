@@ -14,11 +14,11 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.protocol.rest.PermissionTypeEnum;
-import io.camunda.it.utils.CamundaMultiDBExtension;
 import io.camunda.qa.util.auth.Authenticated;
 import io.camunda.qa.util.auth.Permissions;
 import io.camunda.qa.util.auth.User;
 import io.camunda.qa.util.auth.UserDefinition;
+import io.camunda.qa.util.multidb.CamundaMultiDBExtension;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import java.io.IOException;
 import java.net.URI;
@@ -36,6 +36,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 @Tag("multi-db-test")
 @DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "rdbms")
+@DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "AWS_OS")
 class AuthorizationSearchIT {
 
   static final TestStandaloneBroker BROKER =

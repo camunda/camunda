@@ -1,111 +1,50 @@
 ---
 name: Tasklist Docker Tests
 on:
-  push:
-    branches:
-      - 'main'
-      - 'stable/**'
-      - 'release**'
-  pull_request:
-
-# Limit workflow to 1 concurrent run per ref (branch): new commit -> old runs are canceled to save costs
-# Exception for main branch: complete builds for every commit needed for confidenence
-concurrency:
-  cancel-in-progress: true
-  group: ${{ format('{0}-{1}', github.workflow, github.ref == 'refs/heads/main' && github.sha || github.ref) }}
+  workflow_dispatch: { }
+  workflow_call: { }
 
 jobs:
-  detect-changes:
-    outputs:
-      tasklist-backend-changes: ${{ steps.filter.outputs.tasklist-backend-changes }}
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    permissions:
-      pull-requests: read
-    steps:
-      - uses: actions/checkout@v4
-      # Detect changes against the base branch
-      - name: Detect changes
-        uses: ./.github/actions/paths-filter
-        id: filter
   integration-tests:
-    name: Docker container tests
-    needs: [detect-changes]
-    if: ${{ needs.detect-changes.outputs.tasklist-backend-changes == 'true' }}
+    name: Tasklist Docker tests
     runs-on: gcp-core-4-default
-    timeout-minutes: 40
-    env:
-      TASKLIST_TEST_DOCKER_IMAGE: localhost:5000/camunda/tasklist:current-test
-      BRANCH_NAME: ${{ github.head_ref || github.ref_name }}
+    timeout-minutes: 15
+    permissions: {}  # GITHUB_TOKEN unused in this job
     services:
       registry:
         image: registry:2
         ports:
           - 5000:5000
     steps:
-      - name: Check out repository code
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
-      - name: Test Dockerfile with Hadolint
-        uses: hadolint/hadolint-action@v3.1.0
+      - uses: actions/checkout@v4
+      - uses: hadolint/hadolint-action@v3.1.0
         with:
           ignore: DL3018 # redundant when pinning the base image
           dockerfile: tasklist.Dockerfile
-      - name: Import Secrets
-        id: secrets
-        uses: hashicorp/vault-action@a1b77a09293a4366e48a5067a86692ac6e94fdc0
+      - uses: ./.github/actions/setup-build
         with:
-          url: ${{ secrets.VAULT_ADDR }}
-          method: approle
-          roleId: ${{ secrets.VAULT_ROLE_ID }}
-          secretId: ${{ secrets.VAULT_SECRET_ID }}
-          secrets: |
-            secret/data/github.com/organizations/camunda NEXUS_USR;
-            secret/data/github.com/organizations/camunda NEXUS_PSW;
-      - name: Setup Java
-        uses: actions/setup-java@v4
+          dockerhub-readonly: true
+          vault-address: ${{ secrets.VAULT_ADDR }}
+          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+      - id: build-backend
+        uses: ./.github/actions/build-zeebe
         with:
-          distribution: "adopt"
-          java-version: "21"
-      - name: Setup Maven
-        uses: ./.github/actions/setup-maven-dist
+          maven-extra-args: -D skip.fe.build -D skipOptimize
+      - uses: ./.github/actions/build-platform-docker
         with:
-          maven-version: "3.9.6"
-          set-mvnw: true
-      # Use CI Nexus as co-located pull-through cache for Maven artifacts via ~/.m2/settings.xml
-      - name: 'Create settings.xml'
-        uses: s4u/maven-settings-action@v3.1.0
-        with:
-          githubServer: false
-          servers: |
-            [{
-              "id": "camunda-nexus",
-              "username": "${{ steps.secrets.outputs.NEXUS_USR }}",
-              "password": "${{ steps.secrets.outputs.NEXUS_PSW }}"
-            }]
-          mirrors: '[{"url": "https://repository.nexus.camunda.cloud/content/groups/internal/", "id": "camunda-nexus", "mirrorOf": "*", "name": "camunda Nexus"}]'
-      - name: Build backend
-        run: ./mvnw clean install -B -T1C -DskipChecks -PskipFrontendBuild -DskipTests=true -B -DskipRemoteStaging=true -Dmaven.deploy.skip=true
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-        with:
-          driver-opts: network=host
-      - name: Build and push to local registry
-        uses: docker/build-push-action@v6
-        env:
-          DOCKER_BUILD_SUMMARY: false
-          DOCKER_BUILD_RECORD_UPLOAD: false
-        with:
-          context: .
+          repository: localhost:5000/camunda/tasklist
+          version: current-test
           push: true
-          tags: ${{ env.TASKLIST_TEST_DOCKER_IMAGE }}
-          file: tasklist.Dockerfile
+          distball: ${{ steps.build-backend.outputs.distball }}
+          dockerfile: tasklist.Dockerfile
       - name: Run Docker tests
-        run: ./mvnw -pl tasklist/qa/integration-tests -DskipChecks -Dtest=StartupIT -Dsurefire.failIfNoSpecifiedTests=false -Dspring.profiles.active=docker-test test
+        run: ./mvnw --no-snapshot-updates -pl tasklist/qa/integration-tests -DskipChecks -Dtest=StartupIT -Dsurefire.failIfNoSpecifiedTests=false -Dspring.profiles.active=docker-test test
       - name: Upload Test Report
         if: failure()
         uses: ./.github/actions/collect-test-artifacts
         with:
-          name: "docker tests"
+          name: "tasklist docker tests"
       - name: Observe build status
         if: always()
         continue-on-error: true

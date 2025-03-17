@@ -17,11 +17,11 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.command.ProblemException;
-import io.camunda.it.utils.CamundaMultiDBExtension;
 import io.camunda.qa.util.auth.Authenticated;
 import io.camunda.qa.util.auth.Permissions;
 import io.camunda.qa.util.auth.User;
 import io.camunda.qa.util.auth.UserDefinition;
+import io.camunda.qa.util.multidb.CamundaMultiDBExtension;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import java.time.Duration;
 import java.util.List;
@@ -35,6 +35,7 @@ import org.junit.jupiter.api.function.Executable;
 
 @Tag("multi-db-test")
 @DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "rdbms")
+@DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "AWS_OS")
 class UserTaskAuthorizationIT {
   static final TestStandaloneBroker BROKER =
       new TestStandaloneBroker().withBasicAuth().withAuthorizationsEnabled();

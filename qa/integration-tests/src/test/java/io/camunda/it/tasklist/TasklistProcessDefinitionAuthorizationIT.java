@@ -53,7 +53,7 @@ public class TasklistProcessDefinitionAuthorizationIT {
   private TestStandaloneCamunda broker =
       new TestStandaloneCamunda()
           .withCamundaExporter()
-          .withSecurityConfig(c -> c.getAuthorizations().setEnabled(true))
+          .withAuthorizationsEnabled()
           .withSecurityConfig(
               c ->
                   c.getInitialization()

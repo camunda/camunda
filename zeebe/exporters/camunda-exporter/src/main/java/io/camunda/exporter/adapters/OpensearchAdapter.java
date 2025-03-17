@@ -18,7 +18,6 @@ import io.camunda.exporter.schema.SearchEngineClient;
 import io.camunda.exporter.schema.opensearch.OpensearchEngineClient;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.exporter.store.OpensearchBatchRequest;
-import io.camunda.exporter.utils.OpensearchScriptBuilder;
 import io.camunda.search.connect.configuration.ConnectConfiguration;
 import io.camunda.search.connect.os.OpensearchConnector;
 import java.io.IOException;
@@ -51,8 +50,7 @@ class OpensearchAdapter implements ClientAdapter {
 
   @Override
   public BatchRequest createBatchRequest() {
-    return new OpensearchBatchRequest(
-        client, new BulkRequest.Builder(), new OpensearchScriptBuilder());
+    return new OpensearchBatchRequest(client, new BulkRequest.Builder());
   }
 
   @Override

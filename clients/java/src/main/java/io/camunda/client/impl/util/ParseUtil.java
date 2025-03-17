@@ -21,7 +21,7 @@ public class ParseUtil {
     return input == null ? null : Long.parseLong(input);
   }
 
-  public static Long parseLongOrEmpty(final String input) {
+  public static long parseLongOrEmpty(final String input) {
     return input == null ? -1L : Long.parseLong(input);
   }
 

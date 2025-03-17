@@ -18,20 +18,18 @@ package io.atomix.raft.metrics;
 
 import static io.atomix.raft.metrics.RaftRoleMetricsDoc.*;
 
+import io.camunda.zeebe.util.micrometer.StatefulGauge;
 import io.micrometer.core.instrument.Counter;
-import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicLong;
 
 public class RaftRoleMetrics extends RaftMetrics {
 
   private final Counter heartbeatMiss;
   private final Timer heartbeatTime;
-  private final AtomicInteger roleValue = new AtomicInteger(0);
-  private final AtomicLong electionLatencyValue = new AtomicLong(0L);
+  private final StatefulGauge role;
+  private final StatefulGauge electionLatency;
 
   public RaftRoleMetrics(final String partitionName, final MeterRegistry registry) {
     super(partitionName);
@@ -39,40 +37,42 @@ public class RaftRoleMetrics extends RaftMetrics {
     heartbeatMiss =
         Counter.builder(HEARTBEAT_MISS.getName())
             .description(HEARTBEAT_MISS.getDescription())
-            .tags(RaftKeyNames.PARTITION_GROUP.asString(), partitionGroupName)
+            .tag(RaftKeyNames.PARTITION_GROUP.asString(), partitionGroupName)
             .register(registry);
     heartbeatTime =
         Timer.builder(HEARTBEAT_TIME.getName())
             .description(HEARTBEAT_TIME.getDescription())
             .serviceLevelObjectives(HEARTBEAT_TIME.getTimerSLOs())
-            .tags(RaftKeyNames.PARTITION_GROUP.asString(), partitionGroupName)
+            .tag(RaftKeyNames.PARTITION_GROUP.asString(), partitionGroupName)
             .register(registry);
 
-    Gauge.builder(ROLE.getName(), roleValue::get)
-        .description(ROLE.getDescription())
-        .tags(RaftKeyNames.PARTITION_GROUP.asString(), partitionGroupName)
-        .register(registry);
+    role =
+        StatefulGauge.builder(ROLE.getName())
+            .description(ROLE.getDescription())
+            .tag(RaftKeyNames.PARTITION_GROUP.asString(), partitionGroupName)
+            .register(registry);
 
-    Gauge.builder(ELECTION_LATENCY.getName(), electionLatencyValue::get)
-        .description(ELECTION_LATENCY.getDescription())
-        .tags(RaftKeyNames.PARTITION_GROUP.asString(), partitionName)
-        .register(registry);
+    electionLatency =
+        StatefulGauge.builder(ELECTION_LATENCY.getName())
+            .description(ELECTION_LATENCY.getDescription())
+            .tag(RaftKeyNames.PARTITION_GROUP.asString(), partitionName)
+            .register(registry);
   }
 
   public void becomingInactive() {
-    roleValue.set(0);
+    role.set(0);
   }
 
   public void becomingFollower() {
-    roleValue.set(1);
+    role.set(1);
   }
 
   public void becomingCandidate() {
-    roleValue.set(2);
+    role.set(2);
   }
 
   public void becomingLeader() {
-    roleValue.set(3);
+    role.set(3);
   }
 
   public void countHeartbeatMiss() {
@@ -88,6 +88,6 @@ public class RaftRoleMetrics extends RaftMetrics {
   }
 
   public void setElectionLatency(final long latencyMs) {
-    electionLatencyValue.set(latencyMs);
+    electionLatency.set(latencyMs);
   }
 }

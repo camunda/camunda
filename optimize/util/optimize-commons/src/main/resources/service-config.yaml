@@ -107,8 +107,8 @@ container:
     # secure HTTPS connections.
     https: ${CAMUNDA_OPTIMIZE_CONTAINER_PORTS_HTTPS:8091}
     # A port number that will be used by Optimize's Actuator management server
-    # always defaults to 9600
-    actuator: ${MANAGEMENT_SERVER_PORT:9600}
+    # always defaults to 8092
+    actuator: ${MANAGEMENT_SERVER_PORT:8092}
   # HTTPS requires an SSL Certificate. When you generate an SSL Certificate,
   # you are creating a keystore file and a keystore password for use when the
   # browser interface connects
@@ -487,11 +487,6 @@ es:
       className: ${CAMUNDA_OPTIMIZE_ELASTICSEARCH_INTERCEPTORPLUGINS_4_CLASSNAME:}
       jarPath: ${CAMUNDA_OPTIMIZE_ELASTICSEARCH_INTERCEPTORPLUGINS_4_JARPATH:}
 
-serialization:
-  # Define a custom date format that should be used for
-  # fetching date data from the engine(should be the same as in the engine)
-  engineDateFormat: yyyy-MM-dd'T'HH:mm:ss.SSSZ
-
 alerting:
   quartz:
     jobStore: 'org.quartz.simpl.RAMJobStore'
@@ -522,32 +517,6 @@ email:
     # States how the connection to the server should be secured.
     # Possible values are 'NONE', 'STARTTLS' or 'SSL/TLS'
     securityProtocol: ${CAMUNDA_OPTIMIZE_EMAIL_AUTHENTICATION_SECURITY_PROTOCOL:NONE}
-
-webhookAlerting:
-  webhooks:
-  # Name of the webhook, must be unique.
-#    'myWebhook':
-#      # URL of the webhook which can receive alerts from Optimize
-#      url: 'someUrl'
-#      # Map of the headers of the request sent to the webhook URL
-#      headers:
-#        'Authorization': 'auth token'
-#        'Content-type': 'application/json'
-#      # HTTP Method for the webhook request
-#      httpMethod: 'POST'
-#      # The default payload structure with the alertMessagePlaceholder {{ALERT_MESSAGE}} for the alert text.
-#      # Optimize will replace this placeholder with the content of the alert message.
-#      defaultPayload: '{"text": "{{ALERT_MESSAGE}}"}'
-#      # HTTP forward proxy configuration
-#      proxy:
-#        # whether an HTTP proxy should be used for requests to the webhook URL
-#        enabled: false
-#        # the host of the proxy to use
-#        host: null
-#        # the port of the proxy to use
-#        port: null
-#        # whether this proxy is using a secured connection
-#        sslEnabled: false
 
 digest:
   # cron expression to define when enabled email digests are to be sent

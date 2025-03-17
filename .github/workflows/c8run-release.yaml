@@ -7,11 +7,20 @@ on:
         type: string
         required: true
         default: ""
-      camundaRelease:
-        description: "name of release in camunda"
+      camundaVersion:
+        description: "Camunda minor version in format x.y, x.y-rc, or alpha"
         type: string
         required: true
         default: ""
+      camundaAppsRelease:
+        description: "Name of the Camunda apps GH release"
+        type: string
+        required: true
+        default: ""
+      publishToCamundaAppsRelease:
+        description: "Publish C8Run artifact to Camunda apps GH release too (by default C8Run has its own GH release)"
+        type: boolean
+        default: false
 
 permissions:
   actions: read
@@ -29,23 +38,81 @@ permissions:
   security-events: none
   statuses: write
 
+env:
+  CAMUNDA_RUN_NAME: c8run-${{ inputs.camundaVersion }}
+
 jobs:
-  release:
-    name: C8Run Release ${{ matrix.os }}
-    runs-on: ${{ matrix.os }}
+  init:
+    name: Create C8Run tag/release
+    runs-on: ubuntu-latest
     timeout-minutes: 15
+    steps:
+      - name: ℹ️ Print workflow inputs ℹ️
+        shell: bash
+        env:
+          WORKFLOW_INPUTS: ${{ toJson(inputs) }}
+        run: |
+          echo "Action Inputs:"
+          echo "${WORKFLOW_INPUTS}"
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.branch }}
+      - name: Clean up old release
+        env:
+          GH_TOKEN: '${{ secrets.GITHUB_TOKEN }}'
+        run: |
+          gh release view ${{ env.CAMUNDA_RUN_NAME }} &&
+            gh release delete ${{ env.CAMUNDA_RUN_NAME }} --cleanup-tag ||
+            true
+          # To avoid any race condition when the release is created again.
+          sleep 5
+      - name: Create new release
+        run: |
+          gh release create ${{ env.CAMUNDA_RUN_NAME }} --title ${{ env.CAMUNDA_RUN_NAME }} \
+            --target ${{ inputs.branch }} --notes "${{ env.CAMUNDA_RUN_NAME }}"
+        env:
+          GH_TOKEN: '${{ secrets.GITHUB_TOKEN }}'
+
+  release:
+    needs: init
+    name: C8Run - ${{ matrix.os.name }}
+    runs-on: ${{ matrix.os.id }}
+    timeout-minutes: 15
+    env:
+      CAMUNDA_RUN_NAME_ARTIFACT_WITH_MINOR_VERSION: "camunda8-run-${{ inputs.camundaVersion }}-${{ matrix.os.artifactSuffix }}"
+      CAMUNDA_RUN_NAME_ARTIFACT_WITH_PATCH_VERSION: "camunda8-run-${{ inputs.camundaAppsRelease }}-${{ matrix.os.artifactSuffix }}"
     strategy:
+      fail-fast: false
       matrix:
         # macos-latest is ARM, mac os 13 will execute on x86 runner.
-        os: [ubuntu-latest, macos-latest, macos-13]
+        os:
+          - name: Ubuntu (AMD64)
+            id: ubuntu-latest
+            artifactSuffix: linux-x86_64.tar.gz
+            workingDir: ./c8run
+            command: ./c8run
+          - name: MacOS (ARM64)
+            id: macos-latest
+            artifactSuffix: darwin-aarch64.tar.gz
+            workingDir: ./c8run
+            command: ./c8run
+          - name: MacOS (AMD64)
+            id: macos-13
+            artifactSuffix: darwin-x86_64.tar.gz
+            workingDir: ./c8run
+            command: ./c8run
+          - name: Windows (AMD64)
+            id: windows-latest
+            artifactSuffix: windows-x86_64.zip
+            workingDir: ./c8run
+            command: ./c8run.exe
     steps:
       - uses: actions/checkout@v4
         with:
           ref: ${{ inputs.branch }}
-
       - name: Import Secrets
         id: secrets
-        uses: hashicorp/vault-action@d1720f055e0635fd932a1d2a48f87a666a57906c # v3.0.0
+        uses: hashicorp/vault-action@7709c609789c5e27b757a85817483caadbb5939a # v3.3.0
         with:
           url: ${{ secrets.VAULT_ADDR }}
           method: approle
@@ -54,73 +121,84 @@ jobs:
           secrets: |
             secret/data/products/distribution/ci NEXUS_USERNAME;
             secret/data/products/distribution/ci NEXUS_PASSWORD;
-
+            secret/data/common/jenkins/downloads-camunda-cloud_google_sa_key DOWNLOAD_CENTER_GCLOUD_KEY_BYTES | GCP_CREDENTIALS_NAME;
       - uses: actions/setup-go@v5
         with:
           go-version: '>=1.23.1'
           cache: false  # disabling since not working anyways without a cache-dependency-path specified
-
-      - name: Build c8run
-        run: go build
-        working-directory: ./c8run
-
-      - name: make a package
-        run: ./c8run package
+      - name: Build artifact
+        working-directory: ${{ matrix.os.workingDir }}
         shell: bash
-        working-directory: ./c8run
+        run: go build
+      - name: Create artifact package
+        working-directory: ${{ matrix.os.workingDir }}
+        shell: bash
+        run: ${{ matrix.os.command }} package
         env:
           JAVA_ARTIFACTS_USER: ${{ steps.secrets.outputs.NEXUS_USERNAME }}
           JAVA_ARTIFACTS_PASSWORD: ${{ steps.secrets.outputs.NEXUS_PASSWORD }}
-
-      - name: upload asset
-        working-directory: ./c8run
-        run: gh release upload "${{ env.CAMUNDA_RELEASE }}" camunda8-run-*
+      # - name: Generate artifact checksum
+      #   uses: jmgilman/actions-generate-checksum@3ea6dc9bf8eecf28e2ecc982fab683484a1a8561 # v1
+      #   with:
+      #     method: sha1
+      #     output: "${{ env.CAMUNDA_RUN_NAME_ARTIFACT_WITH_PATCH_VERSION }}.sha1sum"
+      #     patterns: |
+      #       ${{ env.CAMUNDA_RUN_NAME_ARTIFACT_WITH_PATCH_VERSION }}
+      - name: Copy artifact
+        working-directory: ${{ matrix.os.workingDir }}
+        shell: bash
+        run: |
+          ls -lsa
+          # Artifact.
+          cp -a ${{ env.CAMUNDA_RUN_NAME_ARTIFACT_WITH_PATCH_VERSION }} \
+            ${{ env.CAMUNDA_RUN_NAME_ARTIFACT_WITH_MINOR_VERSION }}
+          # # Hash sum.
+          # cp -a ${{ env.CAMUNDA_RUN_NAME_ARTIFACT_WITH_PATCH_VERSION }}.sha1sum \
+          #   ${{ env.CAMUNDA_RUN_NAME_ARTIFACT_WITH_MINOR_VERSION }}.sha1sum
+      - name: Upload artifact to C8Run release
+        working-directory: ${{ matrix.os.workingDir }}
+        shell: bash
+        run: |
+          gh release upload "${{ env.CAMUNDA_RUN_NAME }}" \
+            ${{ env.CAMUNDA_RUN_NAME_ARTIFACT_WITH_MINOR_VERSION }}*
         env:
           GH_TOKEN: ${{ github.token }}
-          CAMUNDA_RELEASE: ${{ inputs.camundaRelease }}
+      - name: Upload artifact to Camunda apps release
+        if: inputs.publishToCamundaAppsRelease
+        working-directory: ${{ matrix.os.workingDir }}
+        shell: bash
+        run: |
+          gh release upload "${{ inputs.camundaAppsRelease }}" \
+            ${{ env.CAMUNDA_RUN_NAME_ARTIFACT_WITH_PATCH_VERSION }}*
+        env:
+          GH_TOKEN: ${{ github.token }}
+      - name: Upload artifact to Camunda download center
+        uses: camunda/infra-global-github-actions/download-center-upload@main
+        with:
+          gcp_credentials: ${{ steps.secrets.outputs.GCP_CREDENTIALS_NAME }}
+          version: ${{ inputs.camundaAppsRelease }}
+          artifact_file: ./c8run/camunda8-run-*
+          artifact_subpath: c8run
 
-  release_windows:
-    name: C8Run Release windows
-    runs-on: windows-latest
+  post:
+    needs: release
+    name: Add release summary
+    runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v4
-        with:
-          ref: ${{ inputs.branch }}
-
-      - name: Import Secrets
-        id: secrets
-        uses: hashicorp/vault-action@d1720f055e0635fd932a1d2a48f87a666a57906c # v3.0.0
-        with:
-          url: ${{ secrets.VAULT_ADDR }}
-          method: approle
-          roleId: ${{ secrets.VAULT_ROLE_ID }}
-          secretId: ${{ secrets.VAULT_SECRET_ID }}
-          secrets: |
-            secret/data/products/distribution/ci NEXUS_USERNAME;
-            secret/data/products/distribution/ci NEXUS_PASSWORD;
-
-      - uses: actions/setup-go@v5
-        with:
-          go-version: '>=1.23.1'
-          cache: false  # disabling since not working anyways without a cache-dependency-path specified
-
-      - name: Build c8run
-        run: go build
-        working-directory: .\c8run
-
-      - name: make a package
-        run: .\c8run.exe package
-        working-directory: .\c8run
-        env:
-          GH_TOKEN: ${{ github.token }}
-          JAVA_ARTIFACTS_USER: ${{ steps.secrets.outputs.NEXUS_USERNAME }}
-          JAVA_ARTIFACTS_PASSWORD: ${{ steps.secrets.outputs.NEXUS_PASSWORD }}
-
-      - name: upload asset
-        working-directory: .\c8run
+      - name: Camunda apps release on GitHub
+        if: inputs.publishToCamundaAppsRelease
+        shell: bash
         run: |
-          gh release upload "${{ env.CAMUNDA_RELEASE }}" camunda8-run-${{ env.CAMUNDA_RELEASE }}-windows-x86_64.zip
-        env:
-          GH_TOKEN: ${{ github.token }}
-          CAMUNDA_RELEASE: ${{ inputs.camundaRelease }}
+          app_release_url_gh="https://github.com/camunda/camunda/releases/tag/${{ inputs.camundaAppsRelease }}"
+          echo "⭐ Release URL - Camunda apps release on GitHub: ${app_release_url_gh}" >> $GITHUB_STEP_SUMMARY
+      - name: C8Run release on GitHub
+        shell: bash
+        run: |
+          c8run_release_url_gh="https://github.com/camunda/camunda/releases/tag/${{ env.CAMUNDA_RUN_NAME }}"
+          echo "⭐ Release URL - C8Run release on GitHub: ${c8run_release_url_gh}" >> $GITHUB_STEP_SUMMARY
+      - name: C8Run release on Camunda Download Center
+        shell: bash
+        run: |
+          c8run_release_url_dc="https://downloads.camunda.cloud/release/camunda/c8run/${{ inputs.camundaAppsRelease }}/"
+          echo "⭐ Release URL - C8Run release on Camunda Download Center: ${c8run_release_url_dc}" >> $GITHUB_STEP_SUMMARY

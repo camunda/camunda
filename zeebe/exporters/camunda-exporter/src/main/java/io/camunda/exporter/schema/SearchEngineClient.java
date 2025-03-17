@@ -47,4 +47,8 @@ public interface SearchEngineClient {
 
   void updateIndexTemplateSettings(
       final IndexTemplateDescriptor indexTemplateDescriptor, final IndexSettings currentSettings);
+
+  void deleteIndex(final String indexName);
+
+  void truncateIndex(final String indexName);
 }

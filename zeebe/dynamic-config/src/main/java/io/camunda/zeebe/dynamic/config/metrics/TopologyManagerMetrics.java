@@ -46,7 +46,7 @@ public class TopologyManagerMetrics {
     return Timer.builder(OPERATION_DURATION.getName())
         .description(OPERATION_DURATION.getDescription())
         .serviceLevelObjectives(OPERATION_DURATION.getTimerSLOs())
-        .tags(TopologyManagerMetricsKeyName.OPERATION.asString(), operation)
+        .tag(TopologyManagerMetricsKeyName.OPERATION.asString(), operation)
         .register(registry);
   }
 

@@ -509,6 +509,18 @@
       <artifactId>jakarta.servlet-api</artifactId>
       <scope>test</scope>
     </dependency>
+
+    <dependency>
+      <groupId>io.micrometer</groupId>
+      <artifactId>micrometer-registry-otlp</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>io.micrometer</groupId>
+      <artifactId>micrometer-registry-prometheus</artifactId>
+      <scope>test</scope>
+    </dependency>
   </dependencies>
 
   <build>

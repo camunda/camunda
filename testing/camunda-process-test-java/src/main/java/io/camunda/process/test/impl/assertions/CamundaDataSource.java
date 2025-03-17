@@ -15,44 +15,78 @@
  */
 package io.camunda.process.test.impl.assertions;
 
+import io.camunda.client.CamundaClient;
+import io.camunda.client.api.search.SearchRequestPage;
+import io.camunda.client.api.search.filter.FlownodeInstanceFilter;
+import io.camunda.client.api.search.filter.IncidentFilter;
+import io.camunda.client.api.search.filter.ProcessInstanceFilter;
 import io.camunda.client.api.search.response.FlowNodeInstance;
+import io.camunda.client.api.search.response.Incident;
 import io.camunda.client.api.search.response.ProcessInstance;
-import io.camunda.process.test.impl.client.CamundaApiClient;
-import io.camunda.process.test.impl.client.IncidentDto;
-import io.camunda.process.test.impl.client.ProcessInstanceDto;
-import io.camunda.process.test.impl.client.VariableDto;
-import java.io.IOException;
+import io.camunda.client.api.search.response.Variable;
 import java.util.List;
+import java.util.function.Consumer;
 
 public class CamundaDataSource {
 
-  private final CamundaApiClient camundaApiClient;
+  private static final Consumer<SearchRequestPage> DEFAULT_PAGE_REQUEST = page -> page.limit(100);
 
-  public CamundaDataSource(final String camundaApiEndpoint) {
-    camundaApiClient = new CamundaApiClient(camundaApiEndpoint);
+  private final CamundaClient client;
+
+  public CamundaDataSource(final CamundaClient client) {
+    this.client = client;
   }
 
-  public ProcessInstanceDto getProcessInstance(final long processInstanceKey) throws IOException {
-    return camundaApiClient.getProcessInstanceByKey(processInstanceKey);
+  public List<FlowNodeInstance> findFlowNodeInstancesByProcessInstanceKey(
+      final long processInstanceKey) {
+    return findFlowNodeInstances(filter -> filter.processInstanceKey(processInstanceKey));
   }
 
-  public List<FlowNodeInstance> getFlowNodeInstancesByProcessInstanceKey(
-      final long processInstanceKey) throws IOException {
-    return camundaApiClient
-        .findFlowNodeInstancesByProcessInstanceKey(processInstanceKey)
-        .getItems();
+  public List<FlowNodeInstance> findFlowNodeInstances(
+      final Consumer<FlownodeInstanceFilter> filter) {
+    return client
+        .newFlownodeInstanceQuery()
+        .filter(filter)
+        .sort(sort -> sort.startDate().asc())
+        .page(DEFAULT_PAGE_REQUEST)
+        .send()
+        .join()
+        .items();
   }
 
-  public List<VariableDto> getVariablesByProcessInstanceKey(final long processInstanceKey)
-      throws IOException {
-    return camundaApiClient.findVariablesByProcessInstanceKey(processInstanceKey).getItems();
+  public List<Variable> findVariablesByProcessInstanceKey(final long processInstanceKey) {
+    return client
+        .newVariableQuery()
+        .filter(filter -> filter.processInstanceKey(processInstanceKey))
+        .page(DEFAULT_PAGE_REQUEST)
+        .send()
+        .join()
+        .items();
   }
 
-  public List<ProcessInstance> findProcessInstances() throws IOException {
-    return camundaApiClient.findProcessInstances().getItems();
+  public List<ProcessInstance> findProcessInstances() {
+    return findProcessInstances(filter -> {});
   }
 
-  public IncidentDto getIncidentByKey(final long incidentKey) throws IOException {
-    return camundaApiClient.getIncidentByKey(incidentKey);
+  public List<ProcessInstance> findProcessInstances(final Consumer<ProcessInstanceFilter> filter) {
+    return client
+        .newProcessInstanceQuery()
+        .filter(filter)
+        .sort(sort -> sort.startDate().asc())
+        .page(DEFAULT_PAGE_REQUEST)
+        .send()
+        .join()
+        .items();
+  }
+
+  public List<Incident> findIncidents(final Consumer<IncidentFilter> filter) {
+    return client
+        .newIncidentQuery()
+        .filter(filter)
+        .sort(sort -> sort.creationTime().asc())
+        .page(DEFAULT_PAGE_REQUEST)
+        .send()
+        .join()
+        .items();
   }
 }

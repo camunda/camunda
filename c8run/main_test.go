@@ -8,6 +8,8 @@
 package main
 
 import (
+	"github.com/camunda/camunda/c8run/internal/overrides"
+	"github.com/camunda/camunda/c8run/internal/types"
 	"github.com/stretchr/testify/assert"
 	"strings"
 	"testing"
@@ -15,16 +17,16 @@ import (
 
 func TestCamundaCmdWithKeystoreSettings(t *testing.T) {
 
-	settings := C8RunSettings{
-		config:           "",
-		detached:         false,
-		port:             8080,
-		keystore:         "/tmp/camundatest/certs/secret.jks",
-		keystorePassword: "changeme",
+	settings := types.C8RunSettings{
+		Config:           "",
+		Detached:         false,
+		Port:             8080,
+		Keystore:         "/tmp/camundatest/certs/secret.jks",
+		KeystorePassword: "changeme",
 	}
-	expectedJavaOpts := "JAVA_OPTS= -Dserver.ssl.keystore=file:" + settings.keystore + " -Dserver.ssl.enabled=true" + " -Dserver.ssl.key-password=" + settings.keystorePassword + " -Dspring.profiles.active=operate,tasklist,broker,identity,consolidated-auth"
+	expectedJavaOpts := "JAVA_OPTS= -Dserver.ssl.keystore=file:" + settings.Keystore + " -Dserver.ssl.enabled=true" + " -Dserver.ssl.key-password=" + settings.KeystorePassword + " -Dspring.profiles.active=operate,tasklist,broker,identity,consolidated-auth"
 
-	javaOpts := adjustJavaOpts("", settings)
+	javaOpts := overrides.AdjustJavaOpts("", settings)
 	c8runPlatform := getC8RunPlatform()
 	err := validateKeystore(settings, "/tmp/camundatest/")
 	assert.Nil(t, err)
@@ -43,12 +45,12 @@ func TestCamundaCmdWithKeystoreSettings(t *testing.T) {
 
 func TestCamundaCmdKeystoreRequiresPassword(t *testing.T) {
 
-	settings := C8RunSettings{
-		config:           "",
-		detached:         false,
-		port:             8080,
-		keystore:         "/tmp/camundatest/certs/secret.jks",
-		keystorePassword: "",
+	settings := types.C8RunSettings{
+		Config:           "",
+		Detached:         false,
+		Port:             8080,
+		Keystore:         "/tmp/camundatest/certs/secret.jks",
+		KeystorePassword: "",
 	}
 	err := validateKeystore(settings, "/tmp/camundatest/")
 
@@ -58,10 +60,10 @@ func TestCamundaCmdKeystoreRequiresPassword(t *testing.T) {
 
 func TestCamundaCmdDifferentPort(t *testing.T) {
 
-	settings := C8RunSettings{
-		port: 8087,
+	settings := types.C8RunSettings{
+		Port: 8087,
 	}
-	javaOpts := adjustJavaOpts("", settings)
+	javaOpts := overrides.AdjustJavaOpts("", settings)
 	c8runPlatform := getC8RunPlatform()
 
 	cmd := c8runPlatform.CamundaCmd("8.7.0", "/tmp/camundatest/", "", javaOpts)
@@ -79,10 +81,10 @@ func TestCamundaCmdDifferentPort(t *testing.T) {
 
 func TestCamundaCmdUsername(t *testing.T) {
 
-	settings := C8RunSettings{
-		username: "admin",
+	settings := types.C8RunSettings{
+		Username: "admin",
 	}
-	javaOpts := adjustJavaOpts("", settings)
+	javaOpts := overrides.AdjustJavaOpts("", settings)
 	c8runPlatform := getC8RunPlatform()
 
 	cmd := c8runPlatform.CamundaCmd("8.7.0", "/tmp/camundatest/", "", javaOpts)
@@ -100,10 +102,10 @@ func TestCamundaCmdUsername(t *testing.T) {
 
 func TestCamundaCmdPassword(t *testing.T) {
 
-	settings := C8RunSettings{
-		password: "changeme",
+	settings := types.C8RunSettings{
+		Password: "changeme",
 	}
-	javaOpts := adjustJavaOpts("", settings)
+	javaOpts := overrides.AdjustJavaOpts("", settings)
 	c8runPlatform := getC8RunPlatform()
 
 	cmd := c8runPlatform.CamundaCmd("8.7.0", "/tmp/camundatest/", "", javaOpts)

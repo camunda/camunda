@@ -30,9 +30,11 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.ValueSource;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.Mockito;
 
 class CompleteJobRestTest extends ClientRestTest {
@@ -149,34 +151,67 @@ class CompleteJobRestTest extends ClientRestTest {
     JsonUtil.assertEquality(JsonUtil.toJson(request.getVariables()), expectedVariable);
   }
 
-  @ParameterizedTest
-  @ValueSource(booleans = {true, false})
-  void shouldCompleteWithResult(final boolean denied) {
-    // given
-    final long jobKey = 12;
-
-    // when
-    client.newCompleteCommand(jobKey).withResult().deny(denied).send().join();
-
-    // then
-    final JobCompletionRequest request = gatewayService.getLastRequest(JobCompletionRequest.class);
-    assertThat(request.getResult()).isNotNull();
-    assertThat(request.getResult().getDenied()).isEqualTo(denied);
+  private static Stream<Arguments> denialDetails() {
+    return Stream.of(
+        Arguments.of(true, "Reason to deny lifecycle transition"), Arguments.of(false, null));
   }
 
   @ParameterizedTest
-  @ValueSource(booleans = {true, false})
-  void shouldCompleteWithResultObject(final boolean denied) {
+  @MethodSource("denialDetails")
+  void shouldCompleteWithResult(final boolean denied, final String deniedReason) {
     // given
     final long jobKey = 12;
 
     // when
-    client.newCompleteCommand(jobKey).withResult(r -> r.deny(denied)).send().join();
+    client
+        .newCompleteCommand(jobKey)
+        .withResult()
+        .deny(denied)
+        .deniedReason(deniedReason)
+        .send()
+        .join();
 
     // then
     final JobCompletionRequest request = gatewayService.getLastRequest(JobCompletionRequest.class);
     assertThat(request.getResult()).isNotNull();
     assertThat(request.getResult().getDenied()).isEqualTo(denied);
+    assertThat(request.getResult().getDeniedReason()).isEqualTo(deniedReason);
+  }
+
+  @ParameterizedTest
+  @MethodSource("denialDetails")
+  void shouldCompleteWithResultDeniedWithReason(final boolean denied, final String deniedReason) {
+    // given
+    final long jobKey = 12;
+
+    // when
+    client.newCompleteCommand(jobKey).withResult().deny(denied, deniedReason).send().join();
+
+    // then
+    final JobCompletionRequest request = gatewayService.getLastRequest(JobCompletionRequest.class);
+    assertThat(request.getResult()).isNotNull();
+    assertThat(request.getResult().getDenied()).isEqualTo(denied);
+    assertThat(request.getResult().getDeniedReason()).isEqualTo(deniedReason);
+  }
+
+  @ParameterizedTest
+  @MethodSource("denialDetails")
+  void shouldCompleteWithResultObject(final boolean denied, final String deniedReason) {
+    // given
+    final long jobKey = 12;
+
+    // when
+    client
+        .newCompleteCommand(jobKey)
+        .withResult(r -> r.deny(denied).deniedReason(deniedReason))
+        .send()
+        .join();
+
+    // then
+    final JobCompletionRequest request = gatewayService.getLastRequest(JobCompletionRequest.class);
+    assertThat(request.getResult()).isNotNull();
+    assertThat(request.getResult().getDenied()).isEqualTo(denied);
+    assertThat(request.getResult().getDeniedReason()).isEqualTo(deniedReason);
   }
 
   @Test
@@ -216,6 +251,7 @@ class CompleteJobRestTest extends ClientRestTest {
     final JobCompletionRequest request = gatewayService.getLastRequest(JobCompletionRequest.class);
     assertThat(request.getResult()).isNotNull();
     assertThat(request.getResult().getDenied()).isNull();
+    assertThat(request.getResult().getDeniedReason()).isNull();
   }
 
   @Test

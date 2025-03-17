@@ -21,7 +21,7 @@ services:
       - "5432:5432"
 
   mariadb:
-    image: mariadb:11.6
+    image: mariadb:11.7
     restart: always
     environment:
       MARIADB_ROOT_PASSWORD: example

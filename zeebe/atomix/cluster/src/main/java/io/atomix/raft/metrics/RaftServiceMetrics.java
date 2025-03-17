@@ -35,7 +35,7 @@ public final class RaftServiceMetrics extends RaftMetrics {
         Timer.builder(COMPACTION_TIME.getName())
             .description(COMPACTION_TIME.getDescription())
             .serviceLevelObjectives(COMPACTION_TIME.getTimerSLOs())
-            .tags(RaftKeyNames.PARTITION_GROUP.asString(), partitionGroupName)
+            .tag(RaftKeyNames.PARTITION_GROUP.asString(), partitionGroupName)
             .register(registry);
     this.registry = registry;
   }

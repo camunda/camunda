@@ -25,19 +25,17 @@ public class TenantEntityRemovedApplier implements TypedEventApplier<TenantInten
   }
 
   @Override
-  public void applyState(final long key, final TenantRecord tenant) {
+  public void applyState(final long tenantKey, final TenantRecord tenant) {
     switch (tenant.getEntityType()) {
       case USER -> {
-        final var tenantKey = tenantState.getTenantKeyById(tenant.getTenantId()).orElseThrow();
-        final var userKey = userState.getUser(tenant.getEntityId()).orElseThrow().getUserKey();
-        tenantState.removeEntity(tenantKey, userKey);
+        tenantState.removeEntity(tenant);
         userState.removeTenant(tenant.getEntityId(), tenant.getTenantId());
       }
       default ->
           throw new UnsupportedOperationException(
               String.format(
-                  "Expected to remove entity with key %d and type %s from tenant %s, but type %s is not supported.",
-                  tenant.getEntityKey(),
+                  "Expected to remove entity with id %s and type %s from tenant %s, but type %s is not supported.",
+                  tenant.getEntityId(),
                   tenant.getEntityType(),
                   tenant.getTenantId(),
                   tenant.getEntityType()));

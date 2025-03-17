@@ -520,12 +520,12 @@ public final class ZeebeAssertHelper {
   }
 
   public static void assertEntityAssignedToTenant(
-      final long tenantKey, final long entityKey, final Consumer<TenantRecordValue> consumer) {
+      final String tenantId, final String entityId, final Consumer<TenantRecordValue> consumer) {
     final TenantRecordValue tenantRecordValue =
         RecordingExporter.tenantRecords()
             .withIntent(TenantIntent.ENTITY_ADDED)
-            .withTenantKey(tenantKey)
-            .withEntityKey(entityKey)
+            .withTenantId(tenantId)
+            .withEntityId(entityId)
             .getFirst()
             .getValue();
 
@@ -564,11 +564,11 @@ public final class ZeebeAssertHelper {
   }
 
   public static void assertGroupUnassignedFromTenant(
-      final long tenantKey, final Consumer<TenantRecordValue> consumer) {
+      final String tenantId, final Consumer<TenantRecordValue> consumer) {
     final var tenantRecordValue =
         RecordingExporter.tenantRecords()
             .withIntent(TenantIntent.ENTITY_REMOVED)
-            .withTenantKey(tenantKey)
+            .withTenantId(tenantId)
             .getFirst()
             .getValue();
 

@@ -7,6 +7,7 @@
  */
 package io.camunda.it.client;
 
+import static io.camunda.qa.util.multidb.CamundaMultiDBExtension.TIMEOUT_DATA_AVAILABILITY;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.client.CamundaClient;
@@ -14,7 +15,6 @@ import io.camunda.client.api.command.CreateProcessInstanceCommandStep1;
 import io.camunda.client.api.response.DeploymentEvent;
 import io.camunda.client.api.response.ProcessInstanceEvent;
 import io.camunda.client.api.search.response.SearchQueryResponse;
-import java.time.Duration;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
@@ -87,7 +87,7 @@ public class QueryTest {
   public static void waitForProcessInstancesToStart(
       final CamundaClient camundaClient, final int expectedProcessInstances) {
     Awaitility.await("should start process instances and import in Operate")
-        .atMost(Duration.ofSeconds(60))
+        .atMost(TIMEOUT_DATA_AVAILABILITY)
         .ignoreExceptions() // Ignore exceptions and continue retrying
         .untilAsserted(
             () -> {
@@ -99,7 +99,7 @@ public class QueryTest {
   public static void waitForFlowNodeInstances(
       final CamundaClient camundaClient, final int expectedFlowNodeInstances) {
     Awaitility.await("should wait until flow node instances are available")
-        .atMost(Duration.ofSeconds(60))
+        .atMost(TIMEOUT_DATA_AVAILABILITY)
         .ignoreExceptions() // Ignore exceptions and continue retrying
         .untilAsserted(
             () -> {
@@ -111,7 +111,7 @@ public class QueryTest {
   public static void waitForProcessesToBeDeployed(
       final CamundaClient camundaClient, final int expectedProcessDefinitions) {
     Awaitility.await("should deploy processes and import in Operate")
-        .atMost(Duration.ofSeconds(15))
+        .atMost(TIMEOUT_DATA_AVAILABILITY)
         .ignoreExceptions() // Ignore exceptions and continue retrying
         .untilAsserted(
             () -> {
@@ -123,7 +123,7 @@ public class QueryTest {
   public static void waitUntilProcessInstanceHasIncidents(
       final CamundaClient camundaClient, final int expectedIncidents) {
     Awaitility.await("should wait until incidents are exists")
-        .atMost(Duration.ofSeconds(15))
+        .atMost(TIMEOUT_DATA_AVAILABILITY)
         .ignoreExceptions() // Ignore exceptions and continue retrying
         .untilAsserted(
             () -> {
@@ -140,7 +140,7 @@ public class QueryTest {
   public static void waitUntilProcessInstanceIsEnded(
       final CamundaClient camundaClient, final long processInstanceKey) {
     Awaitility.await("should wait until process is ended")
-        .atMost(Duration.ofSeconds(15))
+        .atMost(TIMEOUT_DATA_AVAILABILITY)
         .ignoreExceptions() // Ignore exceptions and continue retrying
         .untilAsserted(
             () -> {
@@ -154,27 +154,10 @@ public class QueryTest {
             });
   }
 
-  public static void waitUntilProcessInstanceIsGone(
-      final CamundaClient camundaClient, final long processInstanceKey) {
-    Awaitility.await("should wait until process is ended")
-        .atMost(Duration.ofSeconds(15))
-        .ignoreExceptions() // Ignore exceptions and continue retrying
-        .untilAsserted(
-            () -> {
-              final var result =
-                  camundaClient
-                      .newProcessInstanceQuery()
-                      .filter(f -> f.processInstanceKey(processInstanceKey))
-                      .send()
-                      .join();
-              assertThat(result.page().totalItems()).isEqualTo(0);
-            });
-  }
-
   public static void waitUntilFlowNodeInstanceHasIncidents(
       final CamundaClient camundaClient, final int expectedIncidents) {
     Awaitility.await("should wait until flow node instance has incidents")
-        .atMost(Duration.ofSeconds(15))
+        .atMost(TIMEOUT_DATA_AVAILABILITY)
         .ignoreExceptions() // Ignore exceptions and continue retrying
         .untilAsserted(
             () -> {

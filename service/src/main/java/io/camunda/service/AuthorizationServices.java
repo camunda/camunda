@@ -14,6 +14,7 @@ import io.camunda.search.query.SearchQueryBuilders;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.auth.Authentication;
 import io.camunda.security.auth.Authorization;
+import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.service.search.core.SearchQueryService;
 import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
@@ -33,20 +34,27 @@ public class AuthorizationServices
     extends SearchQueryService<AuthorizationServices, AuthorizationQuery, AuthorizationEntity> {
 
   private final AuthorizationSearchClient authorizationSearchClient;
+  private final SecurityConfiguration securityConfiguration;
 
   public AuthorizationServices(
       final BrokerClient brokerClient,
       final SecurityContextProvider securityContextProvider,
       final AuthorizationSearchClient authorizationSearchClient,
-      final Authentication authentication) {
+      final Authentication authentication,
+      final SecurityConfiguration securityConfiguration) {
     super(brokerClient, securityContextProvider, authentication);
     this.authorizationSearchClient = authorizationSearchClient;
+    this.securityConfiguration = securityConfiguration;
   }
 
   @Override
   public AuthorizationServices withAuthentication(final Authentication authentication) {
     return new AuthorizationServices(
-        brokerClient, securityContextProvider, authorizationSearchClient, authentication);
+        brokerClient,
+        securityContextProvider,
+        authorizationSearchClient,
+        authentication,
+        securityConfiguration);
   }
 
   @Override
@@ -82,8 +90,13 @@ public class AuthorizationServices
   }
 
   public List<String> getAuthorizedApplications(final Set<String> ownerIds) {
+    if (!securityConfiguration.getAuthorizations().isEnabled()) {
+      // if authorizations are not enabled, we default to a wildcard authorization which is
+      // needed for frontend side checks
+      return List.of("*");
+    }
     return getAuthorizedResources(
-        ownerIds, PermissionType.READ, AuthorizationResourceType.APPLICATION);
+        ownerIds, PermissionType.ACCESS, AuthorizationResourceType.APPLICATION);
   }
 
   public Set<String> fetchAssignedPermissions(

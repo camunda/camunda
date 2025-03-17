@@ -17,7 +17,7 @@ import io.camunda.search.entities.DecisionInstanceEntity.DecisionDefinitionType;
 import io.camunda.search.entities.DecisionInstanceEntity.DecisionInstanceInputEntity;
 import io.camunda.search.entities.DecisionInstanceEntity.DecisionInstanceOutputEntity;
 import io.camunda.search.entities.DecisionInstanceEntity.DecisionInstanceState;
-import io.camunda.search.exception.NotFoundException;
+import io.camunda.search.exception.CamundaSearchException;
 import io.camunda.search.filter.DecisionInstanceFilter;
 import io.camunda.search.filter.Operation;
 import io.camunda.search.query.DecisionInstanceQuery;
@@ -293,7 +293,10 @@ public class DecisionInstanceQueryControllerTest extends RestControllerTest {
     // given
     final var decisionInstanceId = "123-1";
     when(decisionInstanceServices.getById(decisionInstanceId))
-        .thenThrow(new NotFoundException("Decision instance with key 123-1 was not found."));
+        .thenThrow(
+            new CamundaSearchException(
+                "Decision instance with key 123-1 was not found.",
+                CamundaSearchException.Reason.NOT_FOUND));
     // when
     webClient
         .get()

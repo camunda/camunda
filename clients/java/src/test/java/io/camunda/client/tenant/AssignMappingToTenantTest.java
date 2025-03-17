@@ -27,32 +27,32 @@ import org.junit.jupiter.api.Test;
 
 public class AssignMappingToTenantTest extends ClientRestTest {
 
-  private static final long TENANT_KEY = 123L;
+  private static final String TENANT_ID = "tenantId";
   private static final long MAPPING_KEY = 456L;
 
   @Test
   void shouldAssignMappingToTenant() {
     // when
-    client.newAssignMappingToTenantCommand(TENANT_KEY).mappingKey(MAPPING_KEY).send().join();
+    client.newAssignMappingToTenantCommand(TENANT_ID).mappingKey(MAPPING_KEY).send().join();
 
     // then
     final String requestPath = RestGatewayService.getLastRequest().getUrl();
     assertThat(requestPath)
-        .isEqualTo(REST_API_PATH + "/tenants/" + TENANT_KEY + "/mapping-rules/" + MAPPING_KEY);
+        .isEqualTo(REST_API_PATH + "/tenants/" + TENANT_ID + "/mapping-rules/" + MAPPING_KEY);
   }
 
   @Test
   void shouldRaiseExceptionOnNotFoundTenant() {
     // given
     gatewayService.errorOnRequest(
-        REST_API_PATH + "/tenants/" + TENANT_KEY + "/mapping-rules/" + MAPPING_KEY,
+        REST_API_PATH + "/tenants/" + TENANT_ID + "/mapping-rules/" + MAPPING_KEY,
         () -> new ProblemDetail().title("Not Found").status(404));
 
     // when / then
     assertThatThrownBy(
             () ->
                 client
-                    .newAssignMappingToTenantCommand(TENANT_KEY)
+                    .newAssignMappingToTenantCommand(TENANT_ID)
                     .mappingKey(MAPPING_KEY)
                     .send()
                     .join())
@@ -64,14 +64,14 @@ public class AssignMappingToTenantTest extends ClientRestTest {
   void shouldRaiseExceptionOnNotFoundMapping() {
     // given
     gatewayService.errorOnRequest(
-        REST_API_PATH + "/tenants/" + TENANT_KEY + "/mapping-rules/" + MAPPING_KEY,
+        REST_API_PATH + "/tenants/" + TENANT_ID + "/mapping-rules/" + MAPPING_KEY,
         () -> new ProblemDetail().title("Not Found").status(404));
 
     // when / then
     assertThatThrownBy(
             () ->
                 client
-                    .newAssignMappingToTenantCommand(TENANT_KEY)
+                    .newAssignMappingToTenantCommand(TENANT_ID)
                     .mappingKey(MAPPING_KEY)
                     .send()
                     .join())
@@ -83,14 +83,14 @@ public class AssignMappingToTenantTest extends ClientRestTest {
   void shouldHandleServerError() {
     // given
     gatewayService.errorOnRequest(
-        REST_API_PATH + "/tenants/" + TENANT_KEY + "/mapping-rules/" + MAPPING_KEY,
+        REST_API_PATH + "/tenants/" + TENANT_ID + "/mapping-rules/" + MAPPING_KEY,
         () -> new ProblemDetail().title("Internal Server Error").status(500));
 
     // when / then
     assertThatThrownBy(
             () ->
                 client
-                    .newAssignMappingToTenantCommand(TENANT_KEY)
+                    .newAssignMappingToTenantCommand(TENANT_ID)
                     .mappingKey(MAPPING_KEY)
                     .send()
                     .join())
@@ -102,14 +102,14 @@ public class AssignMappingToTenantTest extends ClientRestTest {
   void shouldRaiseExceptionOnForbiddenRequest() {
     // given
     gatewayService.errorOnRequest(
-        REST_API_PATH + "/tenants/" + TENANT_KEY + "/mapping-rules/" + MAPPING_KEY,
+        REST_API_PATH + "/tenants/" + TENANT_ID + "/mapping-rules/" + MAPPING_KEY,
         () -> new ProblemDetail().title("Forbidden").status(403));
 
     // when / then
     assertThatThrownBy(
             () ->
                 client
-                    .newAssignMappingToTenantCommand(TENANT_KEY)
+                    .newAssignMappingToTenantCommand(TENANT_ID)
                     .mappingKey(MAPPING_KEY)
                     .send()
                     .join())

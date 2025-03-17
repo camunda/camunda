@@ -11,6 +11,8 @@ import static io.camunda.search.query.SearchQueryBuilders.processDefinitionSearc
 
 import io.camunda.search.clients.ProcessDefinitionSearchClient;
 import io.camunda.search.entities.ProcessDefinitionEntity;
+import io.camunda.search.entities.ProcessDefinitionFlowNodeStatisticsEntity;
+import io.camunda.search.filter.ProcessDefinitionStatisticsFilter;
 import io.camunda.search.query.ProcessDefinitionQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.auth.Authentication;
@@ -19,6 +21,7 @@ import io.camunda.service.exception.ForbiddenException;
 import io.camunda.service.search.core.SearchQueryService;
 import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
+import java.util.List;
 import java.util.Optional;
 
 public class ProcessDefinitionServices
@@ -44,6 +47,16 @@ public class ProcessDefinitionServices
                 authentication,
                 Authorization.of(a -> a.processDefinition().readProcessDefinition())))
         .searchProcessDefinitions(query);
+  }
+
+  public List<ProcessDefinitionFlowNodeStatisticsEntity> flowNodeStatistics(
+      final ProcessDefinitionStatisticsFilter filter) {
+    return processDefinitionSearchClient
+        .withSecurityContext(
+            securityContextProvider.provideSecurityContext(
+                authentication,
+                Authorization.of(a -> a.processDefinition().readProcessDefinition())))
+        .processDefinitionFlowNodeStatistics(filter);
   }
 
   @Override

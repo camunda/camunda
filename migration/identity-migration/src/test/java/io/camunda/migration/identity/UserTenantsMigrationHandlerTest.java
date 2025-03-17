@@ -11,6 +11,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.assertArg;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
@@ -59,7 +60,7 @@ final class UserTenantsMigrationHandlerTest {
       @Mock(answer = Answers.RETURNS_SELF) final MappingServices mappingServices) {
     when(tenantServices.createTenant(any()))
         .thenReturn(CompletableFuture.completedFuture(new TenantRecord()));
-    when(tenantServices.addMember(any(), any(), anyLong()))
+    when(tenantServices.addMember(anyString(), any(), anyLong()))
         .thenReturn(CompletableFuture.completedFuture(new TenantRecord()));
     when(mappingServices.createMapping(any()))
         .thenReturn(CompletableFuture.completedFuture(new MappingRecord()));
@@ -97,7 +98,7 @@ final class UserTenantsMigrationHandlerTest {
         .thenReturn(CompletableFuture.completedFuture(new TenantRecord()));
     when(mappingServices.createMapping(any()))
         .thenReturn(CompletableFuture.completedFuture(new MappingRecord()));
-    when(tenantServices.addMember(any(), any(), anyLong()))
+    when(tenantServices.addMember(anyString(), any(), anyLong()))
         .thenReturn(CompletableFuture.completedFuture(new TenantRecord()));
 
     // when
@@ -106,7 +107,7 @@ final class UserTenantsMigrationHandlerTest {
     // then
     verify(managementIdentityClient, times(2)).fetchUserTenants(anyInt());
     verify(tenantServices, times(4)).getById(any());
-    verify(tenantServices, times(4)).addMember(any(), any(), anyLong());
+    verify(tenantServices, times(4)).addMember(anyString(), any(), anyLong());
     verify(mappingServices, times(2)).findMapping(any(MappingDTO.class));
   }
 
@@ -165,7 +166,7 @@ final class UserTenantsMigrationHandlerTest {
             new BrokerRejectionException(
                 new BrokerRejection(TenantIntent.ADD_ENTITY, -1, RejectionType.ALREADY_EXISTS, "")))
         .when(tenantServices)
-        .addMember(any(), any(), anyLong());
+        .addMember(anyString(), any(), anyLong());
 
     // when
     migrationHandler.migrate();
@@ -173,7 +174,7 @@ final class UserTenantsMigrationHandlerTest {
     // then
     verify(managementIdentityClient, times(2)).fetchUserTenants(anyInt());
     verify(tenantServices, times(4)).getById(any());
-    verify(tenantServices, times(4)).addMember(any(), any(), anyLong());
+    verify(tenantServices, times(4)).addMember(anyString(), any(), anyLong());
     verify(mappingServices, times(2)).createMapping(any());
     verify(managementIdentityClient, times(2))
         .updateMigrationStatus(

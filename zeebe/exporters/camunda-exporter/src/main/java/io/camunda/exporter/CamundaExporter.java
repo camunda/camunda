@@ -38,6 +38,7 @@ import io.camunda.exporter.store.BatchRequest;
 import io.camunda.exporter.store.ExporterBatchWriter;
 import io.camunda.exporter.tasks.BackgroundTaskManager;
 import io.camunda.exporter.tasks.BackgroundTaskManagerFactory;
+import io.camunda.webapps.schema.descriptors.AbstractIndexDescriptor;
 import io.camunda.webapps.schema.descriptors.operate.index.ImportPositionIndex;
 import io.camunda.webapps.schema.descriptors.tasklist.index.TasklistImportPositionIndex;
 import io.camunda.zeebe.exporter.api.Exporter;
@@ -51,6 +52,8 @@ import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.util.SemanticVersion;
 import io.camunda.zeebe.util.VisibleForTesting;
 import java.time.Duration;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Set;
 import org.agrona.CloseHelper;
 import org.slf4j.Logger;
@@ -69,7 +72,7 @@ public class CamundaExporter implements Exporter {
   private BackgroundTaskManager taskManager;
   private ExporterMetadata metadata;
   private boolean exporterCanFlush = false;
-  private boolean zeebeIndicesExist = false;
+  private boolean zeebeIndicesVersion87Exist = false;
   private SearchEngineClient searchEngineClient;
   private int partitionId;
 
@@ -124,13 +127,7 @@ public class CamundaExporter implements Exporter {
   public void open(final Controller controller) {
     this.controller = controller;
     searchEngineClient = clientAdapter.getSearchEngineClient();
-    final var schemaManager =
-        new SchemaManager(
-            searchEngineClient,
-            provider.getIndexDescriptors(),
-            provider.getIndexTemplateDescriptors(),
-            configuration,
-            clientAdapter.objectMapper());
+    final var schemaManager = createSchemaManager();
 
     schemaManager.startup();
 
@@ -216,9 +213,51 @@ public class CamundaExporter implements Exporter {
     }
   }
 
+  @Override
+  public void purge() {
+    searchEngineClient = clientAdapter.getSearchEngineClient();
+    final var schemaManager = createSchemaManager();
+
+    // Indices
+    final var emptiedIndices = schemaManager.truncateIndices();
+
+    // Delete archived indices
+    schemaManager.deleteArchivedIndices();
+
+    // At this point, several indices still have data, e.g.
+    // deployment, tasklist-task, process, operate-event, operate-list-view,
+    // operate-flownode-instance, process-instance-creation, user-task,
+    // process-instance
+    // If I stop deleting things right here, tests will not pass.
+
+    // Indices, not managed by the SchemaManager
+    // This code can be removed, once we have the unified SchemaManager, which will take care of
+    // deleting all indices it manages (#26890).
+    final var indexNames = String.join(",", prefixedNames("operate-*", "tasklist-*"));
+    LOG.debug("Purging exporter indexes: {}", indexNames);
+    searchEngineClient.getMappings(indexNames, MappingSource.INDEX).keySet().stream()
+        .filter(index -> !emptiedIndices.contains(index))
+        .forEach(searchEngineClient::truncateIndex);
+  }
+
+  private SchemaManager createSchemaManager() {
+    return new SchemaManager(
+        searchEngineClient,
+        provider.getIndexDescriptors(),
+        provider.getIndexTemplateDescriptors(),
+        configuration,
+        clientAdapter.objectMapper());
+  }
+
   @VisibleForTesting
   ExporterMetadata getMetadata() {
     return metadata;
+  }
+
+  private List<String> prefixedNames(final String... names) {
+    final var indexPrefix =
+        AbstractIndexDescriptor.formatIndexPrefix(configuration.getIndex().getPrefix());
+    return Arrays.stream(names).map(s -> indexPrefix + s).toList();
   }
 
   private void ensureCachedRecordsLessThanBulkSize(final Record<?> record) {
@@ -292,16 +331,16 @@ public class CamundaExporter implements Exporter {
                   d -> d instanceof ImportPositionIndex || d instanceof TasklistImportPositionIndex)
               .toList();
 
-      if (!zeebeIndicesExist) {
-        zeebeIndicesExist =
+      if (!zeebeIndicesVersion87Exist) {
+        zeebeIndicesVersion87Exist =
             !searchEngineClient
                 .getMappings(
-                    configuration.getIndex().getZeebeIndexPrefix() + "*", MappingSource.INDEX)
+                    configuration.getIndex().getZeebeIndexPrefix() + "*8.7.*_", MappingSource.INDEX)
                 .isEmpty();
       }
 
       exporterCanFlush =
-          !zeebeIndicesExist
+          !zeebeIndicesVersion87Exist
               || searchEngineClient.importersCompleted(partitionId, importPositionIndices);
     } catch (final Exception e) {
       LOG.warn("Unexpected exception occurred checking importers completed, will retry later.", e);

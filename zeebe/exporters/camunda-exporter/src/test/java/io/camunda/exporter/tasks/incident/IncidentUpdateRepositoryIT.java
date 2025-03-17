@@ -7,6 +7,7 @@
  */
 package io.camunda.exporter.tasks.incident;
 
+import static io.camunda.exporter.utils.SearchDBExtension.INCIDENT_IDX_PREFIX;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.exporter.adapters.ClientAdapter;
@@ -74,7 +75,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 @SuppressWarnings("resource")
 @Testcontainers
 @DisabledIfSystemProperty(
-    named = SearchDBExtension.IT_OPENSEARCH_AWS_INSTANCE_URL_PROPERTY,
+    named = SearchDBExtension.TEST_INTEGRATION_OPENSEARCH_AWS_URL,
     matches = "^(?=\\s*\\S).*$",
     disabledReason = "Excluding from AWS OS IT CI")
 abstract class IncidentUpdateRepositoryIT {
@@ -91,7 +92,7 @@ abstract class IncidentUpdateRepositoryIT {
 
   protected IncidentUpdateRepositoryIT(final String databaseUrl, final boolean isElastic) {
     final var config = new ExporterConfiguration();
-    final var indexPrefix = UUID.randomUUID().toString();
+    final var indexPrefix = INCIDENT_IDX_PREFIX + UUID.randomUUID();
     config.getConnect().setIndexPrefix(indexPrefix);
     config.getConnect().setUrl(databaseUrl);
     config.getConnect().setType(isElastic ? "elasticsearch" : "opensearch");
@@ -140,7 +141,7 @@ abstract class IncidentUpdateRepositoryIT {
       throws IOException;
 
   @DisabledIfSystemProperty(
-      named = SearchDBExtension.IT_OPENSEARCH_AWS_INSTANCE_URL_PROPERTY,
+      named = SearchDBExtension.TEST_INTEGRATION_OPENSEARCH_AWS_URL,
       matches = "^(?=\\s*\\S).*$",
       disabledReason = "Excluding from AWS OS IT CI")
   @Nested
@@ -218,7 +219,7 @@ abstract class IncidentUpdateRepositoryIT {
   }
 
   @DisabledIfSystemProperty(
-      named = SearchDBExtension.IT_OPENSEARCH_AWS_INSTANCE_URL_PROPERTY,
+      named = SearchDBExtension.TEST_INTEGRATION_OPENSEARCH_AWS_URL,
       matches = "^(?=\\s*\\S).*$",
       disabledReason = "Excluding from AWS OS IT CI")
   @Nested
@@ -361,7 +362,7 @@ abstract class IncidentUpdateRepositoryIT {
   }
 
   @DisabledIfSystemProperty(
-      named = SearchDBExtension.IT_OPENSEARCH_AWS_INSTANCE_URL_PROPERTY,
+      named = SearchDBExtension.TEST_INTEGRATION_OPENSEARCH_AWS_URL,
       matches = "^(?=\\s*\\S).*$",
       disabledReason = "Excluding from AWS OS IT CI")
   @Nested
@@ -539,7 +540,7 @@ abstract class IncidentUpdateRepositoryIT {
   }
 
   @DisabledIfSystemProperty(
-      named = SearchDBExtension.IT_OPENSEARCH_AWS_INSTANCE_URL_PROPERTY,
+      named = SearchDBExtension.TEST_INTEGRATION_OPENSEARCH_AWS_URL,
       matches = "^(?=\\s*\\S).*$",
       disabledReason = "Excluding from AWS OS IT CI")
   @Nested
@@ -638,6 +639,11 @@ abstract class IncidentUpdateRepositoryIT {
         }
 
         @Override
+        public String getIndexNameWithoutVersion() {
+          return source.getIndexNameWithoutVersion();
+        }
+
+        @Override
         public String getVersion() {
           return source.getVersion();
         }
@@ -646,7 +652,7 @@ abstract class IncidentUpdateRepositoryIT {
   }
 
   @DisabledIfSystemProperty(
-      named = SearchDBExtension.IT_OPENSEARCH_AWS_INSTANCE_URL_PROPERTY,
+      named = SearchDBExtension.TEST_INTEGRATION_OPENSEARCH_AWS_URL,
       matches = "^(?=\\s*\\S).*$",
       disabledReason = "Excluding from AWS OS IT CI")
   @Nested
@@ -742,7 +748,7 @@ abstract class IncidentUpdateRepositoryIT {
   }
 
   @DisabledIfSystemProperty(
-      named = SearchDBExtension.IT_OPENSEARCH_AWS_INSTANCE_URL_PROPERTY,
+      named = SearchDBExtension.TEST_INTEGRATION_OPENSEARCH_AWS_URL,
       matches = "^(?=\\s*\\S).*$",
       disabledReason = "Excluding from AWS OS IT CI")
   @Nested
@@ -832,7 +838,7 @@ abstract class IncidentUpdateRepositoryIT {
   }
 
   @DisabledIfSystemProperty(
-      named = SearchDBExtension.IT_OPENSEARCH_AWS_INSTANCE_URL_PROPERTY,
+      named = SearchDBExtension.TEST_INTEGRATION_OPENSEARCH_AWS_URL,
       matches = "^(?=\\s*\\S).*$",
       disabledReason = "Excluding from AWS OS IT CI")
   @Nested
@@ -883,7 +889,7 @@ abstract class IncidentUpdateRepositoryIT {
   }
 
   @DisabledIfSystemProperty(
-      named = SearchDBExtension.IT_OPENSEARCH_AWS_INSTANCE_URL_PROPERTY,
+      named = SearchDBExtension.TEST_INTEGRATION_OPENSEARCH_AWS_URL,
       matches = "^(?=\\s*\\S).*$",
       disabledReason = "Excluding from AWS OS IT CI")
   @Nested
@@ -981,7 +987,7 @@ abstract class IncidentUpdateRepositoryIT {
   }
 
   @DisabledIfSystemProperty(
-      named = SearchDBExtension.IT_OPENSEARCH_AWS_INSTANCE_URL_PROPERTY,
+      named = SearchDBExtension.TEST_INTEGRATION_OPENSEARCH_AWS_URL,
       matches = "^(?=\\s*\\S).*$",
       disabledReason = "Excluding from AWS OS IT CI")
   @Nested

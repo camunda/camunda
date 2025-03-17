@@ -9,7 +9,6 @@ package io.camunda.exporter.store;
 
 import io.camunda.exporter.errorhandling.Error;
 import io.camunda.exporter.exceptions.PersistenceException;
-import io.camunda.exporter.utils.OpensearchScriptBuilder;
 import io.camunda.webapps.schema.entities.ExporterEntity;
 import java.io.IOException;
 import java.util.List;
@@ -20,6 +19,7 @@ import org.opensearch.client.opensearch.OpenSearchClient;
 import org.opensearch.client.opensearch._types.OpenSearchException;
 import org.opensearch.client.opensearch._types.Refresh;
 import org.opensearch.client.opensearch.core.BulkRequest;
+import org.opensearch.client.opensearch.core.BulkRequest.Builder;
 import org.opensearch.client.opensearch.core.BulkResponse;
 import org.opensearch.client.opensearch.core.bulk.BulkResponseItem;
 import org.slf4j.Logger;
@@ -32,15 +32,10 @@ public class OpensearchBatchRequest implements BatchRequest {
   private static final Logger LOGGER = LoggerFactory.getLogger(OpensearchBatchRequest.class);
   private final OpenSearchClient osClient;
   private final BulkRequest.Builder bulkRequestBuilder;
-  private final OpensearchScriptBuilder scriptBuilder;
 
-  public OpensearchBatchRequest(
-      final OpenSearchClient osClient,
-      final BulkRequest.Builder bulkRequestBuilder,
-      final OpensearchScriptBuilder scriptBuilder) {
+  public OpensearchBatchRequest(final OpenSearchClient osClient, final Builder bulkRequestBuilder) {
     this.osClient = osClient;
     this.bulkRequestBuilder = bulkRequestBuilder;
-    this.scriptBuilder = scriptBuilder;
   }
 
   @Override
@@ -105,47 +100,6 @@ public class OpensearchBatchRequest implements BatchRequest {
   }
 
   @Override
-  public BatchRequest upsertWithScript(
-      final String index,
-      final String id,
-      final ExporterEntity entity,
-      final String script,
-      final Map<String, Object> parameters) {
-    return upsertWithScriptAndRouting(index, id, entity, script, parameters, null);
-  }
-
-  @Override
-  public BatchRequest upsertWithScriptAndRouting(
-      final String index,
-      final String id,
-      final ExporterEntity entity,
-      final String script,
-      final Map<String, Object> parameters,
-      final String routing) {
-    LOGGER.debug(
-        "Add upsert request with routing {} for index {} id {} entity {} and script {} with parameters {} ",
-        routing,
-        index,
-        id,
-        entity,
-        script,
-        parameters);
-
-    bulkRequestBuilder.operations(
-        op ->
-            op.update(
-                upd ->
-                    upd.index(index)
-                        .id(id)
-                        .upsert(entity)
-                        .script(scriptBuilder.getScriptWithParameters(script, parameters))
-                        .routing(routing)
-                        .retryOnConflict(UPDATE_RETRY_COUNT)));
-
-    return this;
-  }
-
-  @Override
   public BatchRequest update(
       final String index, final String id, final Map<String, Object> updateFields) {
     LOGGER.debug(
@@ -172,31 +126,6 @@ public class OpensearchBatchRequest implements BatchRequest {
             op.update(
                 upd ->
                     upd.index(index).id(id).document(entity).retryOnConflict(UPDATE_RETRY_COUNT)));
-
-    return this;
-  }
-
-  @Override
-  public BatchRequest updateWithScript(
-      final String index,
-      final String id,
-      final String script,
-      final Map<String, Object> parameters) {
-    LOGGER.debug(
-        "Add upsert request with for index {} id {} and script {} with parameters {} ",
-        index,
-        id,
-        script,
-        parameters);
-
-    bulkRequestBuilder.operations(
-        op ->
-            op.update(
-                upd ->
-                    upd.index(index)
-                        .id(id)
-                        .script(scriptBuilder.getScriptWithParameters(script, parameters))
-                        .retryOnConflict(UPDATE_RETRY_COUNT)));
 
     return this;
   }

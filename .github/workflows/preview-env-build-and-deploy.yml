@@ -95,6 +95,12 @@ jobs:
       previewEnv: true
 
   deploy-preview:
+    # permission needed for the camunda/infra-global-github-actions/preview-env/create
+    # action to have access to Kubernetes events
+    permissions:
+      contents: read
+      deployments: write
+      id-token: write
     if: |
         needs.build-tasklist.result != 'skipped' && needs.build-tasklist.result != 'cancelled' &&
         needs.build-operate.result != 'skipped' && needs.build-operate.result != 'cancelled' &&
@@ -102,7 +108,6 @@ jobs:
         needs.build-zeebe.result != 'skipped' && needs.build-zeebe.result != 'cancelled'
     needs: [ build-optimize, build-operate, build-tasklist, conflicts, build-zeebe ]
     runs-on: ubuntu-latest
-    timeout-minutes: 10
     name: Deploy Preview Environment C8SM
     env:
       BRANCH_NAME: ${{ github.head_ref }} # head_ref = branch on PR
@@ -120,7 +125,7 @@ jobs:
       # Setup: import secrets from vault
       - name: Import secrets
         id: secrets
-        uses: hashicorp/vault-action@d1720f055e0635fd932a1d2a48f87a666a57906c # v3.0.0
+        uses: hashicorp/vault-action@7709c609789c5e27b757a85817483caadbb5939a # v3.3.0
         with:
           url: ${{ secrets.VAULT_ADDR }}
           method: approle
@@ -181,6 +186,8 @@ jobs:
           app_url: https://${{ steps.sanitize.outputs.branch_name }}.camunda.camunda.cloud/operate
           argocd_arguments: ${{ env.argocd_arguments }}
           argocd_server: argocd.int.camunda.com
+          argocd_wait_for_sync_timeout: "1800" # waits up to 30 minutes
+          github_token: ${{ secrets.GITHUB_TOKEN }}
 
   comment:
     if: always() && needs.deploy-preview.result != 'skipped' && needs.deploy-preview.result != 'cancelled'

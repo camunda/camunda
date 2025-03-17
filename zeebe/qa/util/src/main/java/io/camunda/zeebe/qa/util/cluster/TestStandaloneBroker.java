@@ -11,13 +11,12 @@ import io.atomix.cluster.MemberId;
 import io.camunda.application.Profile;
 import io.camunda.application.commons.CommonsModuleConfiguration;
 import io.camunda.application.commons.configuration.BrokerBasedConfiguration.BrokerBasedProperties;
-import io.camunda.application.commons.configuration.WorkingDirectoryConfiguration.WorkingDirectory;
 import io.camunda.application.commons.search.SearchClientDatabaseConfiguration.SearchClientProperties;
 import io.camunda.application.commons.security.CamundaSecurityConfiguration.CamundaSecurityProperties;
 import io.camunda.authentication.config.AuthenticationProperties;
-import io.camunda.client.CamundaClientBuilder;
 import io.camunda.security.configuration.ConfiguredUser;
 import io.camunda.security.configuration.InitializationConfiguration;
+import io.camunda.security.entity.AuthenticationMethod;
 import io.camunda.zeebe.broker.BrokerModuleConfiguration;
 import io.camunda.zeebe.broker.system.configuration.ExporterCfg;
 import io.camunda.zeebe.gateway.impl.configuration.GatewayCfg;
@@ -27,8 +26,9 @@ import io.camunda.zeebe.qa.util.actuator.HealthActuator;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.socket.SocketUtil;
 import java.net.URI;
-import java.nio.file.Path;
+import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.function.Consumer;
 import org.springframework.boot.builder.SpringApplicationBuilder;
@@ -105,6 +105,8 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
   }
 
   public TestStandaloneBroker withAuthorizationsEnabled() {
+    // when using authorizations, api authentication needs to be enforced too
+    withAuthenticatedAccess();
     return withSecurityConfig(cfg -> cfg.getAuthorizations().setEnabled(true));
   }
 
@@ -157,16 +159,6 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
   @Override
   public GatewayCfg gatewayConfig() {
     return config.getGateway();
-  }
-
-  @Override
-  public CamundaClientBuilder newClientBuilder() {
-    if (!isGateway()) {
-      throw new IllegalStateException(
-          "Cannot create a new client for this broker, as it does not have an embedded gateway");
-    }
-
-    return TestStandaloneApplication.super.newClientBuilder();
   }
 
   /**
@@ -238,25 +230,28 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
     return config;
   }
 
-  /**
-   * Sets the broker's working directory, aka its data directory. If a path is given, the broker
-   * will not delete it on shutdown.
-   *
-   * @param directory path to the broker's root data directory
-   * @return itself for chaining
-   */
-  public TestStandaloneBroker withWorkingDirectory(final Path directory) {
-    return withBean(
-        "workingDirectory", new WorkingDirectory(directory, false), WorkingDirectory.class);
+  @Override
+  public Optional<AuthenticationMethod> clientAuthenticationMethod() {
+    return apiAuthenticationMethod();
   }
 
   public TestStandaloneBroker withCamundaExporter(final String elasticSearchUrl) {
+    return withCamundaExporter(elasticSearchUrl, null);
+  }
+
+  public TestStandaloneBroker withCamundaExporter(
+      final String elasticSearchUrl, final String retentionPolicyName) {
+    final var exporterConfigArgs =
+        new HashMap<String, Object>(
+            Map.of("connect", Map.of("url", elasticSearchUrl), "bulk", Map.of("size", 1)));
+    if (retentionPolicyName != null) {
+      exporterConfigArgs.put("retention", Map.of("enabled", true, "policyName", "test-policy"));
+    }
     withExporter(
         "CamundaExporter",
         cfg -> {
           cfg.setClassName("io.camunda.exporter.CamundaExporter");
-          cfg.setArgs(
-              Map.of("connect", Map.of("url", elasticSearchUrl), "bulk", Map.of("size", 1)));
+          cfg.setArgs(exporterConfigArgs);
         });
     final var searchClient = new SearchClientProperties();
     searchClient.setUrl(elasticSearchUrl);

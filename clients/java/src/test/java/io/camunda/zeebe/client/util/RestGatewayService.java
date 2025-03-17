@@ -19,7 +19,7 @@ import com.github.tomakehurst.wiremock.client.WireMock;
 import com.github.tomakehurst.wiremock.junit5.WireMockRuntimeInfo;
 import com.github.tomakehurst.wiremock.stubbing.ServeEvent;
 import com.github.tomakehurst.wiremock.verification.LoggedRequest;
-import io.camunda.client.protocol.rest.DeploymentResponse;
+import io.camunda.client.protocol.rest.DeploymentResult;
 import io.camunda.client.protocol.rest.EvaluateDecisionResult;
 import io.camunda.client.protocol.rest.JobActivationResult;
 import io.camunda.client.protocol.rest.ProblemDetail;
@@ -79,7 +79,7 @@ public class RestGatewayService {
                 .willReturn(WireMock.okJson(JSON_MAPPER.toJson(response))));
   }
 
-  public void onDeploymentsRequest(final DeploymentResponse response) {
+  public void onDeploymentsRequest(final DeploymentResult response) {
     mockInfo
         .getWireMock()
         .register(

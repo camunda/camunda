@@ -20,7 +20,6 @@ import io.camunda.zeebe.scheduler.ActorScheduler;
 import io.camunda.zeebe.util.CloseableSilently;
 import io.camunda.zeebe.util.FileUtil;
 import io.micrometer.core.instrument.MeterRegistry;
-import io.micrometer.prometheus.PrometheusMeterRegistry;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
@@ -69,7 +68,7 @@ public class BrokerModuleConfiguration implements CloseableSilently {
       final AtomixCluster cluster,
       final BrokerClient brokerClient,
       final BrokerShutdownHelper shutdownHelper,
-      final PrometheusMeterRegistry meterRegistry,
+      final MeterRegistry meterRegistry,
       final SecurityConfiguration securityConfiguration,
       // The UserServices class is not available if you want to start-up the Standalone Broker
       @Autowired(required = false) final UserServices userServices,

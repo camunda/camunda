@@ -27,65 +27,67 @@ import org.junit.jupiter.api.Test;
 @ZeebeIntegration
 class UnassignGroupFromTenantTest {
 
+  public static final String TENANT_ID = "tenantId";
+
   @TestZeebe
   private final TestStandaloneBroker zeebe =
       new TestStandaloneBroker().withRecordingExporter(true).withUnauthenticatedAccess();
 
   @AutoClose private CamundaClient client;
 
-  private long tenantKey;
   private long groupKey;
 
   @BeforeEach
   void initClientAndInstances() {
     client = zeebe.newClientBuilder().defaultRequestTimeout(Duration.ofSeconds(15)).build();
-    tenantKey =
-        client
-            .newCreateTenantCommand()
-            .tenantId("tenantId")
-            .name("Tenant Name")
-            .send()
-            .join()
-            .getTenantKey();
+    client
+        .newCreateTenantCommand()
+        .tenantId(TENANT_ID)
+        .name("Tenant Name")
+        .send()
+        .join()
+        .getTenantKey();
 
     groupKey = client.newCreateGroupCommand().name("group").send().join().getGroupKey();
 
     // Assign group to tenant to set up test scenario
-    client.newAssignGroupToTenantCommand(tenantKey).groupKey(groupKey).send().join();
+    client.newAssignGroupToTenantCommand(TENANT_ID).groupKey(groupKey).send().join();
   }
 
   @Test
   void shouldUnassignGroupFromTenant() {
     // when
-    client.newUnassignGroupFromTenantCommand(tenantKey).groupKey(groupKey).send().join();
+    client.newUnassignGroupFromTenantCommand(TENANT_ID).groupKey(groupKey).send().join();
 
     // then
     ZeebeAssertHelper.assertGroupUnassignedFromTenant(
-        tenantKey,
+        TENANT_ID,
         (tenant) -> {
-          assertThat(tenant.getTenantKey()).isEqualTo(tenantKey);
-          assertThat(tenant.getEntityKey()).isEqualTo(groupKey);
+          assertThat(tenant.getTenantId()).isEqualTo(TENANT_ID);
+          // TODO remove the String parsing once Groups are migrated to work with ids instead of
+          // keys
+          assertThat(tenant.getEntityId()).isEqualTo(String.valueOf(groupKey));
         });
   }
 
   @Test
   void shouldRejectIfTenantDoesNotExist() {
     // given
-    final long nonExistentTenantKey = 999999L;
+    final var nonExistentTenantId = "nonExistingTenantId";
 
     // when / then
     assertThatThrownBy(
             () ->
                 client
-                    .newUnassignGroupFromTenantCommand(nonExistentTenantKey)
+                    .newUnassignGroupFromTenantCommand(nonExistentTenantId)
                     .groupKey(groupKey)
                     .send()
                     .join())
         .isInstanceOf(ProblemException.class)
         .hasMessageContaining("Failed with code 404: 'Not Found'")
         .hasMessageContaining(
-            "Expected to remove entity from tenant with key '%d', but no tenant with this key exists."
-                .formatted(nonExistentTenantKey));
+            "Expected to remove entity from tenant with id '%s', but no tenant with this id exists."
+                .formatted(nonExistentTenantId));
   }
 
   @Test
@@ -97,15 +99,15 @@ class UnassignGroupFromTenantTest {
     assertThatThrownBy(
             () ->
                 client
-                    .newUnassignGroupFromTenantCommand(tenantKey)
+                    .newUnassignGroupFromTenantCommand(TENANT_ID)
                     .groupKey(nonExistentGroupKey)
                     .send()
                     .join())
         .isInstanceOf(ProblemException.class)
         .hasMessageContaining("Failed with code 404: 'Not Found'")
         .hasMessageContaining(
-            " Expected to remove entity with key '%d' from tenant with key '%d', but the entity does not exist."
-                .formatted(nonExistentGroupKey, tenantKey));
+            " Expected to remove entity with key '%d' from tenant with id '%s', but the entity does not exist."
+                .formatted(nonExistentGroupKey, TENANT_ID));
   }
 
   @Test
@@ -115,14 +117,14 @@ class UnassignGroupFromTenantTest {
             () ->
                 client
                     // Group key is not assigned
-                    .newUnassignGroupFromTenantCommand(tenantKey)
+                    .newUnassignGroupFromTenantCommand(TENANT_ID)
                     .groupKey(groupKey + 1)
                     .send()
                     .join())
         .isInstanceOf(ProblemException.class)
         .hasMessageContaining("Failed with code 404: 'Not Found'")
         .hasMessageContaining(
-            "Expected to remove entity with key '%d' from tenant with key '%d', but the entity does not exist."
-                .formatted(groupKey + 1, tenantKey));
+            "Expected to remove entity with key '%d' from tenant with id '%s', but the entity does not exist."
+                .formatted(groupKey + 1, TENANT_ID));
   }
 }

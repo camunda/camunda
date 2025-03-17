@@ -47,7 +47,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.opensearch.client.opensearch._types.OpenSearchException;
 
 @DisabledIfSystemProperty(
-    named = SearchDBExtension.IT_OPENSEARCH_AWS_INSTANCE_URL_PROPERTY,
+    named = SearchDBExtension.TEST_INTEGRATION_OPENSEARCH_AWS_URL,
     matches = "^(?=\\s*\\S).*$",
     disabledReason = "Excluding from AWS OS IT CI")
 @ExtendWith(CamundaExporterITInvocationProvider.class)
@@ -361,8 +361,8 @@ public class SchemaManagerIT {
       final ExporterConfiguration config, final SearchClientAdapter searchClientAdapter)
       throws IOException {
     config.setCreateSchema(true);
-    config.getArchiver().getRetention().setEnabled(true);
-    config.getArchiver().getRetention().setPolicyName("policy_name");
+    config.getHistory().getRetention().setEnabled(true);
+    config.getHistory().getRetention().setPolicyName("policy_name");
 
     final var schemaManager =
         new SchemaManager(

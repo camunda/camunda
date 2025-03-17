@@ -23,7 +23,6 @@ import {
   isDurationReport,
   isAlertCompatibleReport,
 } from 'services';
-import {getWebhooks} from 'config';
 import {useErrorHandling} from 'hooks';
 
 import CopyAlertModal from './modals/CopyAlertModal';
@@ -39,7 +38,6 @@ const AlertList = ({collection, readOnly}) => {
   const [copying, setCopying] = useState(null);
   const [reports, setReports] = useState(null);
   const [alerts, setAlerts] = useState(null);
-  const [webhooks, setWebhooks] = useState(null);
   const [loading, setLoading] = useState(false);
   const {mightFail} = useErrorHandling();
 
@@ -65,14 +63,9 @@ const AlertList = ({collection, readOnly}) => {
     syncAlerts();
   }, [syncAlerts, syncReports]);
 
-  const loadWebhooks = useCallback(() => {
-    mightFail(getWebhooks(), setWebhooks, showError);
-  }, [mightFail]);
-
   useEffect(() => {
     loadData();
-    loadWebhooks();
-  }, [loadData, loadWebhooks]);
+  }, [loadData]);
 
   const openAddAlertModal = () => setEditing({});
   const openEditAlertModal = (alert) => setEditing(alert);
@@ -157,8 +150,7 @@ const AlertList = ({collection, readOnly}) => {
         rows={
           !isLoading &&
           alerts.map((alert) => {
-            const {id, name, webhook, emails, reportId, threshold, thresholdOperator} = alert;
-            const inactive = webhook && emails?.length === 0 && !webhooks?.includes(webhook);
+            const {id, name, emails, reportId, threshold, thresholdOperator} = alert;
 
             return {
               id,
@@ -169,9 +161,8 @@ const AlertList = ({collection, readOnly}) => {
               meta: [
                 reports.find((report) => report.id === reportId).name,
                 formatDescription(reportId, thresholdOperator, threshold),
-                emails?.join(', ') || webhook,
+                emails?.join(', '),
               ],
-              warning: inactive && t('alert.inactiveStatus'),
               actions: !readOnly && [
                 {
                   icon: <Edit />,
@@ -204,7 +195,6 @@ const AlertList = ({collection, readOnly}) => {
         <AlertModal
           initialAlert={editing}
           reports={reports}
-          webhooks={webhooks}
           onClose={closeEditAlertModal}
           onConfirm={(alert) => {
             if (editing.id) {

@@ -37,9 +37,13 @@ const mockPostRequest = function <Type extends DefaultBodyType>(url: string) {
      *
      * Otherwise an error will be thrown
      */
-    withSuccess: (responseData: Type, options?: {expectPolling?: boolean}) => {
+    withSuccess: (
+      responseData: Type,
+      options?: {expectPolling?: boolean; mockResolverFn?: jest.Mock},
+    ) => {
       mockServer.use(
         rest.post(url, (req, res, ctx) => {
+          options?.mockResolverFn?.();
           checkPollingHeader({req, expectPolling: options?.expectPolling});
           return res.once(ctx.json(responseData));
         }),

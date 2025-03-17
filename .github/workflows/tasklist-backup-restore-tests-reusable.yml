@@ -1,11 +1,19 @@
-# This is a reusable workflow for running 'Backup and Restore' tests.
+# This is a workflow for 'Tasklist Backup and Restore' tests (supported only for 8.7 and lower versions).
 name: Tasklist Backup and restore tests (reusable)
 
 on:
-  workflow_call:
+  workflow_dispatch:
     inputs:
       database:
-        description: "Database name ('elasticsearch' or 'opensearch')"
+        description: "Database type"
+        required: true
+        type: choice
+        options:
+          - elasticsearch
+          - opensearch
+      branch:
+        description: 'Specifies the branch, for which the tests should be executed. Note that the workflow is supported only for 8.7 and lower versions'
+        default: 'stable/8.7'
         required: true
         type: string
 
@@ -20,13 +28,14 @@ jobs:
     timeout-minutes: 20
     steps:
       # Setup: checkout
-      - name: Checkout repository
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.branch }}
 
       # Setup: import secrets from vault
       - name: Import Secrets
         id: secrets # important to refer to it in later steps
-        uses: hashicorp/vault-action@a1b77a09293a4366e48a5067a86692ac6e94fdc0
+        uses: hashicorp/vault-action@7709c609789c5e27b757a85817483caadbb5939a
         with:
           url: ${{ secrets.VAULT_ADDR }}
           method: approle
@@ -36,7 +45,6 @@ jobs:
           secrets: |
             secret/data/github.com/organizations/camunda NEXUS_USR;
             secret/data/github.com/organizations/camunda NEXUS_PSW;
-            secret/data/products/tasklist/ci/tasklist TASKLIST_CI_ALERT_WEBHOOK_URL;
 
       # Setup: configure Java, Maven, settings.xml
       - name: Setup Java ${{ env.JAVA_VERSION }}
@@ -78,17 +86,3 @@ jobs:
       - name: Run backup and restore tests
         run: |
           ./mvnw -B -pl tasklist/qa/backup-restore-tests -DskipChecks -DtasklistDatabase=${{ inputs.database }} -P-skipTests verify
-
-      # Notify: send Slack notification on tests failure
-      - name: Send Slack notification on failure
-        if: failure()
-        uses: slackapi/slack-github-action@v2.0.0
-        with:
-          webhook: ${{ steps.secrets.outputs.TASKLIST_CI_ALERT_WEBHOOK_URL }}
-          webhook-type: incoming-webhook
-          payload: |
-            {
-              "workflow_name": "Backup and restore tests",
-              "github_run_url": "https://github.com/camunda/camunda/actions/runs/${{ github.run_id }}",
-              "branch": "${{ github.head_ref || github.ref_name }}"
-            }

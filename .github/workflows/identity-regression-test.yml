@@ -35,7 +35,9 @@ jobs:
       fail-fast: false
       matrix:
         env: [ 'local' ]
-        case: [ 'identity-regression-test.http' ]
+        case:
+          - 'identity-regression-test.http'
+          - 'identity-tenant-regression-test.http'
 
     runs-on: ubuntu-latest
     environment: '${{ matrix.env }}-http-tests'
@@ -44,7 +46,7 @@ jobs:
 
     services:
       elasticsearch:
-        image: docker.elastic.co/elasticsearch/elasticsearch:8.17.2
+        image: docker.elastic.co/elasticsearch/elasticsearch:8.17.3
         env:
           discovery.type: single-node
           cluster.name: docker-cluster
@@ -58,6 +60,9 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.branch }}
+          fetch-depth: 0
 
       - uses: ./.github/actions/setup-build
         with:
@@ -71,7 +76,7 @@ jobs:
         id: build-dist
         run: |
           ./mvnw -B -T1C -DskipTests -DskipChecks -Dflatten.skip=true package
-      
+
       - name: Extract Distribution Tarball
         run: |
           cd ./dist/target
@@ -85,7 +90,7 @@ jobs:
           export ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_BULK_SIZE=100  && \
           export ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_INDEX_SHOULDWAITFORIMPORTERS=false  && \
           export CAMUNDA_SECURITY_AUTHORIZATIONS_ENABLED=true && \
-          export CAMUNDA_SECURITY_AUTHENTICATION_BASIC_ALLOWUNAUTHENTICATEDAPIACCESS=false && \
+          export CAMUNDA_SECURITY_AUTHENTICATION_UNPROTECTEDAPI=false && \
           export SPRING_PROFILES_ACTIVE=identity,tasklist,operate,broker,consolidated-auth && \
           ./bin/camunda &
           sleep 60
@@ -95,14 +100,14 @@ jobs:
         run: |
           curl -f -L -o ijhttp.zip "https://jb.gg/ijhttp/latest"
           unzip ijhttp.zip
-          ijhttp/ijhttp http/${{ matrix.case }} --private-env-file http/http-client.private.env.json --report -t 60000
+          ijhttp/ijhttp http/${{ matrix.case }} --private-env-file http/http-client.private.env.json --env ${{ matrix.env }} --report -t 60000
 
       - name: Publish Test Report
-        if: success() || failure()
-        uses: mikepenz/action-junit-report@v4
+        if: always()
+        uses: EnricoMi/publish-unit-test-result-action@v2
         with:
-          report_paths: '**/reports/report.xml'
-          include_passed: true
+          files: '**/reports/report.xml'
+          comment_mode: off
 
       - name: Cleanup
         shell: bash

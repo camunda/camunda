@@ -22,6 +22,7 @@ import io.camunda.zeebe.broker.client.api.dto.BrokerRejection;
 import io.camunda.zeebe.gateway.protocol.rest.TenantCreateRequest;
 import io.camunda.zeebe.gateway.protocol.rest.TenantUpdateRequest;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
+import io.camunda.zeebe.gateway.rest.validator.IdentifierPatterns;
 import io.camunda.zeebe.protocol.impl.record.value.tenant.TenantRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.TenantIntent;
@@ -53,7 +54,7 @@ public class TenantControllerTest extends RestControllerTest {
   }
 
   @ParameterizedTest
-  @ValueSource(strings = {"foo", "Foo", "foo123"})
+  @ValueSource(strings = {"foo", "Foo", "foo123", "foo_", "foo.", "foo@"})
   void createTenantShouldReturnAccepted(final String id) {
     // given
     final var tenantName = "Test Tenant";
@@ -167,8 +168,7 @@ public class TenantControllerTest extends RestControllerTest {
       strings = {
         "foo~", "foo!", "foo#", "foo$", "foo%", "foo^", "foo&", "foo*", "foo(", "foo)", "foo=",
         "foo+", "foo{", "foo[", "foo}", "foo]", "foo|", "foo\\", "foo:", "foo;", "foo\"", "foo'",
-        "foo<", "foo>", "foo,", "foo?", "foo/", "foo ", "foo@", "foo_", "foo.", "foo\t", "foo\n",
-        "foo\r",
+        "foo<", "foo>", "foo,", "foo?", "foo/", "foo ", "foo\t", "foo\n", "foo\r"
       })
   void shouldRejectTenantCreationWithIllegalCharactersInId(final String id) {
     // given
@@ -192,10 +192,10 @@ public class TenantControllerTest extends RestControllerTest {
               "type": "about:blank",
               "status": 400,
               "title": "INVALID_ARGUMENT",
-              "detail": "The provided tenantId contains illegal characters. It must match the pattern '[a-zA-Z0-9]+'.",
+              "detail": "The provided tenantId contains illegal characters. It must match the pattern '%s'.",
               "instance": "%s"
             }"""
-                .formatted(TENANT_BASE_URL));
+                .formatted(IdentifierPatterns.ID_PATTERN, TENANT_BASE_URL));
 
     // then
     verifyNoInteractions(tenantServices);
@@ -251,7 +251,7 @@ public class TenantControllerTest extends RestControllerTest {
 
     // when
     webClient
-        .patch()
+        .put()
         .uri("%s/%s".formatted(TENANT_BASE_URL, tenantId))
         .accept(MediaType.APPLICATION_JSON)
         .contentType(MediaType.APPLICATION_JSON)
@@ -285,7 +285,7 @@ public class TenantControllerTest extends RestControllerTest {
 
     // when / then
     webClient
-        .patch()
+        .put()
         .uri(uri)
         .accept(MediaType.APPLICATION_JSON)
         .contentType(MediaType.APPLICATION_JSON)
@@ -317,7 +317,7 @@ public class TenantControllerTest extends RestControllerTest {
 
     // when / then
     webClient
-        .patch()
+        .put()
         .uri(uri)
         .accept(MediaType.APPLICATION_JSON)
         .contentType(MediaType.APPLICATION_JSON)
@@ -360,7 +360,7 @@ public class TenantControllerTest extends RestControllerTest {
 
     // when / then
     webClient
-        .patch()
+        .put()
         .uri(path)
         .accept(MediaType.APPLICATION_JSON)
         .contentType(MediaType.APPLICATION_JSON)
@@ -400,23 +400,23 @@ public class TenantControllerTest extends RestControllerTest {
   @MethodSource("provideAddMemberByKeyTestCases")
   void testAddMemberToTenantByKey(final EntityType entityType, final String entityPath) {
     // given
-    final var tenantKey = 100L;
+    final var tenantId = "tenantId";
     final var entityKey = 42L;
 
-    when(tenantServices.addMember(tenantKey, entityType, entityKey))
+    when(tenantServices.addMember(tenantId, entityType, entityKey))
         .thenReturn(CompletableFuture.completedFuture(null));
 
     // when
     webClient
         .put()
-        .uri("%s/%s/%s/%s".formatted(TENANT_BASE_URL, tenantKey, entityPath, entityKey))
+        .uri("%s/%s/%s/%s".formatted(TENANT_BASE_URL, tenantId, entityPath, entityKey))
         .accept(MediaType.APPLICATION_JSON)
         .exchange()
         .expectStatus()
         .isNoContent();
 
     // then
-    verify(tenantServices, times(1)).addMember(tenantKey, entityType, entityKey);
+    verify(tenantServices, times(1)).addMember(tenantId, entityType, entityKey);
   }
 
   @ParameterizedTest
@@ -446,23 +446,23 @@ public class TenantControllerTest extends RestControllerTest {
   @MethodSource("provideRemoveMemberByKeyTestCases")
   void testRemoveMemberByKeyFromTenant(final EntityType entityType, final String entityPath) {
     // given
-    final var tenantKey = 100L;
+    final var tenantId = "tenantId";
     final var entityKey = 42L;
 
-    when(tenantServices.removeMember(tenantKey, entityType, entityKey))
+    when(tenantServices.removeMember(tenantId, entityType, entityKey))
         .thenReturn(CompletableFuture.completedFuture(null));
 
     // when
     webClient
         .delete()
-        .uri("%s/%s/%s/%s".formatted(TENANT_BASE_URL, tenantKey, entityPath, entityKey))
+        .uri("%s/%s/%s/%s".formatted(TENANT_BASE_URL, tenantId, entityPath, entityKey))
         .accept(MediaType.APPLICATION_JSON)
         .exchange()
         .expectStatus()
         .isNoContent();
 
     // then
-    verify(tenantServices, times(1)).removeMember(tenantKey, entityType, entityKey);
+    verify(tenantServices, times(1)).removeMember(tenantId, entityType, entityKey);
   }
 
   @ParameterizedTest

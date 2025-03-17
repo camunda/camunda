@@ -7,12 +7,11 @@
  */
 package io.camunda.authentication.config;
 
-import static org.springframework.security.web.util.matcher.AntPathRequestMatcher.antMatcher;
-
-import com.google.common.collect.Sets;
 import io.camunda.authentication.CamundaUserDetailsService;
 import io.camunda.authentication.ConditionalOnAuthenticationMethod;
+import io.camunda.authentication.ConditionalOnUnprotectedApi;
 import io.camunda.authentication.filters.TenantRequestAttributeFilter;
+import io.camunda.authentication.filters.WebApplicationAuthorizationCheckFilter;
 import io.camunda.authentication.handler.AuthFailureHandler;
 import io.camunda.authentication.handler.CustomMethodSecurityExpressionHandler;
 import io.camunda.security.configuration.MultiTenancyConfiguration;
@@ -24,7 +23,6 @@ import io.camunda.service.TenantServices;
 import io.camunda.service.UserServices;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import java.util.Arrays;
 import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -34,7 +32,6 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
 import org.springframework.core.annotation.Order;
-import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.expression.method.MethodSecurityExpressionHandler;
 import org.springframework.security.config.Customizer;
@@ -42,11 +39,16 @@ import org.springframework.security.config.annotation.method.configuration.Enabl
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
+import org.springframework.security.config.annotation.web.configurers.HeadersConfigurer;
+import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
 import org.springframework.security.oauth2.client.registration.InMemoryClientRegistrationRepository;
+import org.springframework.security.oauth2.jwt.JwtDecoder;
+import org.springframework.security.oauth2.jwt.JwtValidators;
+import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
 import org.springframework.security.web.SecurityFilterChain;
-import org.springframework.security.web.util.matcher.RequestMatcher;
+import org.springframework.security.web.access.intercept.AuthorizationFilter;
 
 @Configuration
 @EnableWebSecurity
@@ -54,23 +56,35 @@ import org.springframework.security.web.util.matcher.RequestMatcher;
 @Profile("consolidated-auth")
 public class WebSecurityConfig {
   public static final String SESSION_COOKIE = "camunda-session";
-  private static final int ORDER_WEBAPP_API_PROTECTION = 1;
-  private static final int ORDER_UNPROTECTED_API = 2;
-  private static final int ORDER_LOGIN_LOGOUT_HANDLING = 3;
+
   private static final Logger LOG = LoggerFactory.getLogger(WebSecurityConfig.class);
+  // Used for chains that grant unauthenticated access, always comes first.
+  private static final int ORDER_UNPROTECTED = 0;
+  // Used for chains that protect the APIs or Webapp paths.
+  private static final int ORDER_WEBAPP_API = 1;
+  // Intended for a "catch-all-unhandled"-chain protecting all resources by default
+  private static final int ORDER_UNHANDLED = 2;
   private static final String LOGIN_URL = "/login";
   private static final String LOGOUT_URL = "/logout";
-  private static final Set<String> API_PATHS = Set.of("/v1/**", "/v2/**");
-  private static final Set<String> UNAUTHENTICATED_PATHS =
+  private static final Set<String> API_PATHS = Set.of("/api/**", "/v1/**", "/v2/**");
+  private static final Set<String> UNPROTECTED_API_PATHS =
       Set.of(
-          LOGIN_URL,
-          "/",
-          // webapps are single page apps
+          // these v2 endpoints are public
+          "/v2/license",
+          // deprecated Tasklist v1 Public Endpoints
+          "/v1/external/process/**");
+  private static final Set<String> WEBAPP_PATHS =
+      Set.of(
+          "/login/**",
+          "/logout",
           "/identity/**",
           "/operate/**",
           "/tasklist/**",
-          // these v2 endpoints are public
-          "/v2/license",
+          "/",
+          "/sso-callback/**",
+          "/oauth2/authorization/**");
+  private static final Set<String> UNPROTECTED_PATHS =
+      Set.of(
           // endpoint for failure forwarding
           "/error",
           // all actuator endpoints
@@ -80,8 +94,8 @@ public class WebSecurityConfig {
           "/health",
           "/startup",
           // deprecated Tasklist v1 Public Endpoints
-          "/v1/external/process/**",
-          "/new/**");
+          "/new/**",
+          "/favicon.ico");
 
   @Bean
   @ConditionalOnMissingBean(MethodSecurityExpressionHandler.class)
@@ -91,136 +105,51 @@ public class WebSecurityConfig {
   }
 
   @Bean
-  @ConditionalOnAuthenticationMethod(AuthenticationMethod.BASIC)
-  public CamundaUserDetailsService camundaUserDetailsService(
-      final UserServices userServices,
-      final AuthorizationServices authorizationServices,
-      final RoleServices roleServices,
-      final TenantServices tenantServices) {
-    return new CamundaUserDetailsService(
-        userServices, authorizationServices, roleServices, tenantServices);
-  }
-
-  @Bean
-  @ConditionalOnAuthenticationMethod(AuthenticationMethod.OIDC)
-  public ClientRegistrationRepository clientRegistrationRepository(
-      final SecurityConfiguration securityConfiguration) {
-    return new InMemoryClientRegistrationRepository(
-        OidcClientRegistration.create(securityConfiguration.getAuthentication().getOidc()));
-  }
-
-  @Bean
-  @ConditionalOnAuthenticationMethod(AuthenticationMethod.OIDC)
-  @Order(ORDER_WEBAPP_API_PROTECTION)
-  public SecurityFilterChain oidcHttpSecurity(
-      final HttpSecurity httpSecurity,
-      final AuthFailureHandler authFailureHandler,
-      final ClientRegistrationRepository clientRegistrationRepository)
+  @Order(ORDER_UNPROTECTED)
+  public SecurityFilterChain unprotectedPathsSecurityFilterChain(final HttpSecurity httpSecurity)
       throws Exception {
-    return baseHttpSecurity(httpSecurity, authFailureHandler, UNAUTHENTICATED_PATHS)
-        .oauth2ResourceServer(
-            oauth2 ->
-                oauth2.jwt(
-                    jwtConfigurer ->
-                        jwtConfigurer.jwkSetUri(
-                            clientRegistrationRepository
-                                .findByRegistrationId(OidcClientRegistration.REGISTRATION_ID)
-                                .getProviderDetails()
-                                .getJwkSetUri())))
-        .oauth2Login(oauthLoginConfigurer -> {})
-        .oidcLogout(httpSecurityOidcLogoutConfigurer -> {})
-        .logout(
-            (logout) ->
-                logout
-                    .logoutUrl(LOGOUT_URL)
-                    .logoutSuccessHandler(this::genericSuccessHandler)
-                    .deleteCookies())
-        .build();
-  }
-
-  private void genericSuccessHandler(
-      final HttpServletRequest request,
-      final HttpServletResponse response,
-      final Authentication authentication) {
-    response.setStatus(HttpStatus.NO_CONTENT.value());
-  }
-
-  @Bean
-  @ConditionalOnAuthenticationMethod(AuthenticationMethod.BASIC)
-  @Order(ORDER_WEBAPP_API_PROTECTION)
-  public SecurityFilterChain httpBasicAuthSecurityFilterChain(
-      final HttpSecurity httpSecurity,
-      final AuthFailureHandler authFailureHandler,
-      final SecurityConfiguration securityConfiguration)
-      throws Exception {
-    LOG.info("HTTP Basic authentication is enabled");
-    return baseHttpSecurity(
-            withSecurityMatcher(
-                httpSecurity,
-                request ->
-                    isBasicAuthRequest(request)
-                        // If authentication isn't disabled for the API, all API requests without a
-                        // session cookie or Referer header are treated as basic auth requests to
-                        // work around a limitation of Java's HTTP client, which only sends an
-                        // Authorization header after the server sends a WWW-Authenticate header in
-                        // a 401 response.
-                        || securityConfiguration.isApiProtected()
-                            && isApiRequest(request)
-                            && !isFrontendRequest(request)),
-            authFailureHandler,
-            UNAUTHENTICATED_PATHS)
-        .httpBasic(Customizer.withDefaults())
+    return httpSecurity
+        .securityMatcher(UNPROTECTED_PATHS.toArray(String[]::new))
+        .authorizeHttpRequests(
+            (authorizeHttpRequests) -> authorizeHttpRequests.anyRequest().permitAll())
+        .headers(WebSecurityConfig::setupStrictTransportSecurity)
+        .csrf(AbstractHttpConfigurer::disable)
+        .cors(AbstractHttpConfigurer::disable)
+        .formLogin(AbstractHttpConfigurer::disable)
+        .anonymous(AbstractHttpConfigurer::disable)
         .build();
   }
 
   @Bean
-  @Order(ORDER_UNPROTECTED_API)
-  public SecurityFilterChain unprotectedApiAccessSecurityFilterChain(
-      final HttpSecurity httpSecurity,
-      final AuthFailureHandler authFailureHandler,
-      final SecurityConfiguration securityConfiguration)
+  @ConditionalOnUnprotectedApi
+  @Order(ORDER_UNPROTECTED)
+  public SecurityFilterChain unprotectedApiAuthSecurityFilterChain(final HttpSecurity httpSecurity)
       throws Exception {
-    if (securityConfiguration.isApiProtected()) {
-      return null;
-    }
-
     LOG.warn(
-        "The API is accessible without authentication. Please disable {} for any deployment.",
+        "The API is unprotected. Please disable {} for any deployment.",
         AuthenticationProperties.API_UNPROTECTED);
-    return baseHttpSecurity(
-            withSecurityMatcher(
-                httpSecurity, request -> isApiRequest(request) && !hasSessionCookie(request)),
-            authFailureHandler,
-            Sets.union(UNAUTHENTICATED_PATHS, API_PATHS))
+    return httpSecurity
+        .securityMatcher(API_PATHS.toArray(String[]::new))
+        .authorizeHttpRequests(
+            (authorizeHttpRequests) -> authorizeHttpRequests.anyRequest().permitAll())
+        .headers(WebSecurityConfig::setupStrictTransportSecurity)
+        .csrf(AbstractHttpConfigurer::disable)
+        .cors(AbstractHttpConfigurer::disable)
+        .formLogin(AbstractHttpConfigurer::disable)
+        .anonymous(AbstractHttpConfigurer::disable)
         .build();
   }
 
   @Bean
-  @ConditionalOnAuthenticationMethod(AuthenticationMethod.BASIC)
-  @Order(ORDER_LOGIN_LOGOUT_HANDLING)
-  public SecurityFilterChain loginAuthSecurityFilterChain(
-      final HttpSecurity httpSecurity, final AuthFailureHandler authFailureHandler)
-      throws Exception {
-    LOG.info("Configuring login auth");
-    return baseHttpSecurity(httpSecurity, authFailureHandler, UNAUTHENTICATED_PATHS)
-        .formLogin(
-            formLogin ->
-                formLogin
-                    .loginPage(LOGIN_URL)
-                    .loginProcessingUrl(LOGIN_URL)
-                    .failureHandler(authFailureHandler)
-                    .successHandler(this::genericSuccessHandler))
-        .logout(
-            (logout) ->
-                logout
-                    .logoutUrl(LOGOUT_URL)
-                    .logoutSuccessHandler(this::genericSuccessHandler)
-                    .deleteCookies(SESSION_COOKIE))
-        .exceptionHandling(
-            exceptionHandling ->
-                exceptionHandling
-                    .authenticationEntryPoint(authFailureHandler)
-                    .accessDeniedHandler(authFailureHandler))
+  @Order(ORDER_UNHANDLED)
+  public SecurityFilterChain protectedUnhandledPathsSecurityFilterChain(
+      final HttpSecurity httpSecurity) throws Exception {
+    // all resources not yet explicitly handled by any previous chain require an authenticated user
+    // thus by default unhandled paths are always protected
+    return httpSecurity
+        .securityMatcher("/**")
+        .authorizeHttpRequests(
+            (authorizeHttpRequests) -> authorizeHttpRequests.anyRequest().denyAll())
         .build();
   }
 
@@ -230,59 +159,197 @@ public class WebSecurityConfig {
     return new FilterRegistrationBean<>(new TenantRequestAttributeFilter(configuration));
   }
 
-  private static boolean isBasicAuthRequest(final HttpServletRequest request) {
-    final String authorizationHeader = request.getHeader(HttpHeaders.AUTHORIZATION);
-    // If the client sends an `Authorization: Basic` header, treat this as a basic auth request.
-    return authorizationHeader != null && authorizationHeader.startsWith("Basic ");
+  @Bean
+  public WebApplicationAuthorizationCheckFilter applicationAuthorizationFilterFilter(
+      final SecurityConfiguration securityConfiguration) {
+    return new WebApplicationAuthorizationCheckFilter(securityConfiguration);
   }
 
-  private static boolean isFrontendRequest(final HttpServletRequest request) {
-    return hasSessionCookie(request) || request.getHeader(HttpHeaders.REFERER) != null;
+  private static void noContentSuccessHandler(
+      final HttpServletRequest request,
+      final HttpServletResponse response,
+      final Authentication authentication) {
+    response.setStatus(HttpStatus.NO_CONTENT.value());
   }
 
-  private static boolean hasSessionCookie(final HttpServletRequest request) {
-    if (request.getCookies() == null) {
-      return false;
+  private static void setupStrictTransportSecurity(final HeadersConfigurer<HttpSecurity> headers) {
+    headers.httpStrictTransportSecurity(
+        (httpStrictTransportSecurity) ->
+            httpStrictTransportSecurity
+                .includeSubDomains(true)
+                .maxAgeInSeconds(63072000)
+                .preload(true));
+  }
+
+  @Configuration
+  @ConditionalOnAuthenticationMethod(AuthenticationMethod.BASIC)
+  public static class BasicConfiguration {
+    @Bean
+    public CamundaUserDetailsService camundaUserDetailsService(
+        final UserServices userServices,
+        final AuthorizationServices authorizationServices,
+        final RoleServices roleServices,
+        final TenantServices tenantServices) {
+      return new CamundaUserDetailsService(
+          userServices, authorizationServices, roleServices, tenantServices);
     }
-    return Arrays.stream(request.getCookies())
-        .anyMatch(cookie -> cookie.getName().equals(SESSION_COOKIE));
+
+    @Bean
+    @Order(ORDER_WEBAPP_API)
+    public SecurityFilterChain httpBasicApiAuthSecurityFilterChain(
+        final HttpSecurity httpSecurity, final AuthFailureHandler authFailureHandler)
+        throws Exception {
+      LOG.info("The API is protected by HTTP Basic authentication.");
+      return httpSecurity
+          .securityMatcher(API_PATHS.toArray(String[]::new))
+          .authorizeHttpRequests(
+              (authorizeHttpRequests) ->
+                  authorizeHttpRequests
+                      .requestMatchers(UNPROTECTED_API_PATHS.toArray(String[]::new))
+                      .permitAll()
+                      .anyRequest()
+                      .authenticated())
+          .headers(WebSecurityConfig::setupStrictTransportSecurity)
+          .csrf(AbstractHttpConfigurer::disable)
+          .cors(AbstractHttpConfigurer::disable)
+          .formLogin(AbstractHttpConfigurer::disable)
+          .anonymous(AbstractHttpConfigurer::disable)
+          .httpBasic(Customizer.withDefaults())
+          .exceptionHandling(
+              // this prevents the usage of the default BasicAuthenticationEntryPoint returning
+              // a WWW-Authenticate header that causes browsers to prompt for basic login
+              exceptionHandling ->
+                  exceptionHandling
+                      .authenticationEntryPoint(authFailureHandler)
+                      .accessDeniedHandler(authFailureHandler))
+          // do not create a session on api authentication, that's to be done on webapp login only
+          .sessionManagement(
+              (sessionManagement) ->
+                  sessionManagement.sessionCreationPolicy(SessionCreationPolicy.NEVER))
+          .build();
+    }
+
+    @Bean
+    @Order(ORDER_WEBAPP_API)
+    public SecurityFilterChain httpBasicWebappAuthSecurityFilterChain(
+        final HttpSecurity httpSecurity,
+        final AuthFailureHandler authFailureHandler,
+        final WebApplicationAuthorizationCheckFilter webApplicationAuthorizationCheckFilter)
+        throws Exception {
+      LOG.info("Web Applications Login/Logout is setup.");
+      return httpSecurity
+          .securityMatcher(WEBAPP_PATHS.toArray(String[]::new))
+          // webapps are accessible without any authentication required
+          .authorizeHttpRequests(
+              (authorizeHttpRequests) -> authorizeHttpRequests.anyRequest().permitAll())
+          .csrf(AbstractHttpConfigurer::disable)
+          .cors(AbstractHttpConfigurer::disable)
+          .anonymous(AbstractHttpConfigurer::disable)
+          // http basic auth is possible to obtain a session
+          .httpBasic(Customizer.withDefaults())
+          // login/logout is still possible to obtain a session
+          // the session grants access to the API as well, via #httpBasicApiAuthSecurityFilterChain
+          .formLogin(
+              formLogin ->
+                  formLogin
+                      .loginPage(LOGIN_URL)
+                      .loginProcessingUrl(LOGIN_URL)
+                      .failureHandler(authFailureHandler)
+                      .successHandler(WebSecurityConfig::noContentSuccessHandler))
+          .logout(
+              (logout) ->
+                  logout
+                      .logoutUrl(LOGOUT_URL)
+                      .logoutSuccessHandler(WebSecurityConfig::noContentSuccessHandler)
+                      .deleteCookies(SESSION_COOKIE))
+          .exceptionHandling(
+              exceptionHandling ->
+                  exceptionHandling
+                      .authenticationEntryPoint(authFailureHandler)
+                      .accessDeniedHandler(authFailureHandler))
+          .addFilterAfter(webApplicationAuthorizationCheckFilter, AuthorizationFilter.class)
+          .build();
+    }
   }
 
-  private static boolean isApiRequest(final HttpServletRequest request) {
-    return API_PATHS.stream().anyMatch(path -> antMatcher(path).matches(request));
-  }
+  @Configuration
+  @ConditionalOnAuthenticationMethod(AuthenticationMethod.OIDC)
+  public static class OidcConfiguration {
+    @Bean
+    public ClientRegistrationRepository clientRegistrationRepository(
+        final SecurityConfiguration securityConfiguration) {
+      return new InMemoryClientRegistrationRepository(
+          OidcClientRegistration.create(securityConfiguration.getAuthentication().getOidc()));
+    }
 
-  private static HttpSecurity withSecurityMatcher(
-      final HttpSecurity httpSecurity, final RequestMatcher requestMatcher) {
-    return httpSecurity.securityMatchers(matchers -> matchers.requestMatchers(requestMatcher));
-  }
+    @Bean
+    public JwtDecoder jwtDecoder(
+        final SecurityConfiguration securityConfiguration,
+        final ClientRegistrationRepository clientRegistrationRepository) {
+      // Do not rely on the configured uri, the client registration can automatically discover it
+      // based on the issuer uri.
+      final var jwkSetUri =
+          clientRegistrationRepository
+              .findByRegistrationId(OidcClientRegistration.REGISTRATION_ID)
+              .getProviderDetails()
+              .getJwkSetUri();
 
-  private HttpSecurity baseHttpSecurity(
-      final HttpSecurity httpSecurity,
-      final AuthFailureHandler authFailureHandler,
-      final Set<String> unauthenticatedPaths)
-      throws Exception {
-    return httpSecurity
-        .authorizeHttpRequests(
-            (authorizeHttpRequests) ->
-                authorizeHttpRequests
-                    .requestMatchers(unauthenticatedPaths.toArray(String[]::new))
-                    .permitAll()
-                    .anyRequest()
-                    .authenticated())
-        .headers(
-            (headers) ->
-                headers.httpStrictTransportSecurity(
-                    (httpStrictTransportSecurity) ->
-                        httpStrictTransportSecurity
-                            .includeSubDomains(true)
-                            .maxAgeInSeconds(63072000)
-                            .preload(true)))
-        .exceptionHandling(
-            (exceptionHandling) -> exceptionHandling.accessDeniedHandler(authFailureHandler))
-        .csrf(AbstractHttpConfigurer::disable)
-        .cors(AbstractHttpConfigurer::disable)
-        .formLogin(AbstractHttpConfigurer::disable)
-        .anonymous(AbstractHttpConfigurer::disable);
+      final var decoder = NimbusJwtDecoder.withJwkSetUri(jwkSetUri).build();
+
+      final var validAudiences = securityConfiguration.getAuthentication().getOidc().getAudiences();
+      if (validAudiences != null) {
+        decoder.setJwtValidator(
+            JwtValidators.createDefaultWithValidators(new AudienceValidator(validAudiences)));
+      }
+
+      return decoder;
+    }
+
+    @Bean
+    @Order(ORDER_WEBAPP_API)
+    public SecurityFilterChain oidcHttpSecurity(
+        final HttpSecurity httpSecurity,
+        final AuthFailureHandler authFailureHandler,
+        final ClientRegistrationRepository clientRegistrationRepository,
+        final WebApplicationAuthorizationCheckFilter webApplicationAuthorizationCheckFilter,
+        final JwtDecoder jwtDecoder)
+        throws Exception {
+      return httpSecurity
+          .securityMatcher(API_PATHS.toArray(new String[0]))
+          .securityMatcher(WEBAPP_PATHS.toArray(new String[0]))
+          .authorizeHttpRequests(
+              (authorizeHttpRequests) ->
+                  authorizeHttpRequests
+                      .requestMatchers(UNPROTECTED_API_PATHS.toArray(String[]::new))
+                      .permitAll()
+                      .anyRequest()
+                      .authenticated())
+          .headers(WebSecurityConfig::setupStrictTransportSecurity)
+          .exceptionHandling(
+              (exceptionHandling) -> exceptionHandling.accessDeniedHandler(authFailureHandler))
+          .csrf(AbstractHttpConfigurer::disable)
+          .cors(AbstractHttpConfigurer::disable)
+          .formLogin(AbstractHttpConfigurer::disable)
+          .anonymous(AbstractHttpConfigurer::disable)
+          .oauth2ResourceServer(
+              oauth2 -> oauth2.jwt(jwtConfigurer -> jwtConfigurer.decoder(jwtDecoder)))
+          .oauth2Login(
+              oauthLoginConfigurer -> {
+                oauthLoginConfigurer
+                    .clientRegistrationRepository(clientRegistrationRepository)
+                    .redirectionEndpoint(
+                        redirectionEndpointConfig ->
+                            redirectionEndpointConfig.baseUri("/sso-callback"));
+              })
+          .oidcLogout(httpSecurityOidcLogoutConfigurer -> {})
+          .logout(
+              (logout) ->
+                  logout
+                      .logoutUrl(LOGOUT_URL)
+                      .logoutSuccessHandler(WebSecurityConfig::noContentSuccessHandler)
+                      .deleteCookies())
+          .addFilterAfter(webApplicationAuthorizationCheckFilter, AuthorizationFilter.class)
+          .build();
+    }
   }
 }

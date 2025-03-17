@@ -26,7 +26,7 @@ public class AWSSearchDBExtension extends SearchDBExtension {
 
   @Override
   public void beforeAll(final ExtensionContext context) throws Exception {
-    final var url = System.getProperty(IT_OPENSEARCH_AWS_INSTANCE_URL_PROPERTY);
+    final var url = System.getProperty(TEST_INTEGRATION_OPENSEARCH_AWS_URL);
     final var configuration = new ConnectConfiguration();
     configuration.setUrl(url);
     final var connector = new OpensearchConnector(configuration);

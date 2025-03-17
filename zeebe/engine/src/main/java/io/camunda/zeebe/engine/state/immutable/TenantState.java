@@ -17,49 +17,23 @@ import java.util.function.Function;
 public interface TenantState {
 
   /**
-   * Retrieves a tenant record by its key.
-   *
-   * @param tenantKey the key of the tenant to retrieve
-   * @return an Optional containing the tenant record if it exists, otherwise an empty Optional
-   */
-  Optional<PersistedTenant> getTenantByKey(final long tenantKey);
-
-  /**
-   * Retrieves the tenant key associated with the given tenant ID.
-   *
-   * @param tenantId the unique identifier of the tenant to look up
-   * @return an {@link Optional} containing the tenant key if the tenant exists, or an empty {@link
-   *     Optional} if not
-   */
-  Optional<Long> getTenantKeyById(final String tenantId);
-
-  /**
    * Retrieves the entity type associated with the given tenant key and entity key.
    *
-   * @param tenantKey the key of the tenant
-   * @param entityKey the key of the entity
+   * @param tenantId the id of the tenant
+   * @param entityId the id of the entity
    * @return an {@link Optional} containing the {@link EntityType} if it exists, or an empty {@link
    *     Optional} if not
    */
-  Optional<EntityType> getEntityType(final long tenantKey, final long entityKey);
+  Optional<EntityType> getEntityType(final String tenantId, final String entityId);
 
   /**
-   * Checks if the specified entity is assigned to the given tenant.
+   * Retrieves all entities associated with a given tenant id, grouped by their entity type.
    *
-   * @param entityKey the key of the entity to check
-   * @param tenantKey the key of the tenant
-   * @return true if the entity is assigned to the tenant, false otherwise
-   */
-  boolean isEntityAssignedToTenant(final long entityKey, final long tenantKey);
-
-  /**
-   * Retrieves all entities associated with a given tenant key, grouped by their entity type.
-   *
-   * @param tenantKey the key of the tenant whose entities are being retrieved
+   * @param tenantId the id of the tenant whose entities are being retrieved
    * @return a {@link Map} where each key is an {@link EntityType} and the corresponding value is a
-   *     {@link List} of entity keys associated with that type
+   *     {@link List} of entity ids associated with that type
    */
-  Map<EntityType, List<Long>> getEntitiesByType(long tenantKey);
+  Map<EntityType, List<String>> getEntitiesByType(String tenantId);
 
   /**
    * Loops over all tenants and applies the provided callback. It stops looping over the tenants,

@@ -58,7 +58,7 @@ public class CompatibilityTasklistAssignUserTaskAuthorizationIT {
   private TestStandaloneCamunda standaloneCamunda =
       new TestStandaloneCamunda()
           .withCamundaExporter()
-          .withSecurityConfig(c -> c.getAuthorizations().setEnabled(true))
+          .withAuthorizationsEnabled()
           .withProperty("camunda.tasklist.zeebe.compatibility.enabled", true)
           .withAuthenticationMethod(AuthenticationMethod.BASIC);
 
