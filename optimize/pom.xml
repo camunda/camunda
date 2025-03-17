@@ -367,6 +367,7 @@
               <dep>org.apache.tika:tika-core</dep>
               <dep>org.opensearch.client:opensearch-java</dep>
               <dep>org.opensearch.client:opensearch-rest-client</dep>
+              <dep>com.nimbusds:nimbus-jose-jwt</dep>
             </ignoredNonTestScopedDependencies>
           </configuration>
         </plugin>

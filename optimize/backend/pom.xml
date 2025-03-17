@@ -690,10 +690,11 @@
       <scope>test</scope>
     </dependency>
 
+    <!-- this is necessary. Dependency:analyze error suppressed -->
     <dependency>
       <groupId>com.nimbusds</groupId>
       <artifactId>nimbus-jose-jwt</artifactId>
-      <version>10.0.2</version>
+      <version>${version.nimbus-jose-jwt}</version>
     </dependency>
 
   </dependencies>
