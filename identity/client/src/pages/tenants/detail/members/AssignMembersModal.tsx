@@ -100,7 +100,9 @@ const AssignMembersModal: FC<
       overflowVisible
     >
       <p>
-        <Translate>Search and assign user to tenant</Translate>
+        <Translate i18nKey="searchAndAssignUsersToTenant">
+          Search and assign user to tenant
+        </Translate>
       </p>
       {selectedUsers.length > 0 && (
         <SelectedUsers>
