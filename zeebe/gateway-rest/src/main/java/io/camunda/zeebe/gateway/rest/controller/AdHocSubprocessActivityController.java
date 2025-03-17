@@ -44,7 +44,7 @@ public class AdHocSubprocessActivityController {
   }
 
   @CamundaPostMapping(path = "/{adHocSubprocessInstanceKey}/activation")
-  public CompletableFuture<ResponseEntity<Object>> modifyProcessInstance(
+  public CompletableFuture<ResponseEntity<Object>> activateAdHocSubprocessActivities(
       @PathVariable final String adHocSubprocessInstanceKey,
       @RequestBody final AdHocSubprocessActivateActivitiesInstruction activationRequest) {
     return RequestMapper.toAdHocSubprocessActivateActivitiesRequest(
