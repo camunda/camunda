@@ -75,7 +75,7 @@ services:
 
   operate: &operate
     container_name: operate-${DATABASE}
-    image: camunda/operate:8.6.11
+    image: camunda/operate:8.6.12
     ports:
       - 8088:8081
     environment:
