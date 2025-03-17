@@ -71,6 +71,17 @@ public final class TestHelper {
         .join();
   }
 
+  public static DeploymentEvent deployResource(
+      final CamundaClient camundaClient,
+      final BpmnModelInstance processModel,
+      final String resourceName) {
+    return camundaClient
+        .newDeployResourceCommand()
+        .addProcessModel(processModel, resourceName)
+        .send()
+        .join();
+  }
+
   public static DeploymentEvent deployResourceForTenant(
       final CamundaClient camundaClient, final String resourceName, final String tenantId) {
     return camundaClient
@@ -144,6 +155,74 @@ public final class TestHelper {
                   camundaClient
                       .newProcessInstanceSearchRequest()
                       .filter(f -> f.hasIncident(true))
+                      .send()
+                      .join();
+              assertThat(result.page().totalItems()).isEqualTo(expectedIncidents);
+            });
+  }
+
+  public static void waitUntilIncidentIsResolvedOnProcessInstance(
+      final CamundaClient camundaClient, final int expectedProcessInstances) {
+    Awaitility.await("should wait until incidents are resolved")
+        .atMost(TIMEOUT_DATA_AVAILABILITY)
+        .ignoreExceptions() // Ignore exceptions and continue retrying
+        .untilAsserted(
+            () -> {
+              final var result =
+                  camundaClient
+                      .newProcessInstanceQuery()
+                      .filter(f -> f.hasIncident(false))
+                      .send()
+                      .join();
+              assertThat(result.page().totalItems()).isEqualTo(expectedProcessInstances);
+            });
+  }
+
+  public static void waitUntilIncidentIsResolvedOnFlowNodeInstance(
+      final CamundaClient camundaClient, final int expectedFlowNodeInstances) {
+    Awaitility.await("should wait until incidents are resolved")
+        .atMost(TIMEOUT_DATA_AVAILABILITY)
+        .ignoreExceptions() // Ignore exceptions and continue retrying
+        .untilAsserted(
+            () -> {
+              final var result =
+                  camundaClient
+                      .newFlownodeInstanceQuery()
+                      .filter(f -> f.hasIncident(false))
+                      .send()
+                      .join();
+              assertThat(result.page().totalItems()).isEqualTo(expectedFlowNodeInstances);
+            });
+  }
+
+  public static void waitUntilIncidentsAreActive(
+      final CamundaClient camundaClient, final int expectedIncidents) {
+    Awaitility.await("should wait until incidents are resolved")
+        .atMost(TIMEOUT_DATA_AVAILABILITY)
+        .ignoreExceptions() // Ignore exceptions and continue retrying
+        .untilAsserted(
+            () -> {
+              final var result =
+                  camundaClient
+                      .newIncidentQuery()
+                      .filter(f -> f.state(IncidentState.ACTIVE))
+                      .send()
+                      .join();
+              assertThat(result.page().totalItems()).isEqualTo(expectedIncidents);
+            });
+  }
+
+  public static void waitUntilIncidentsAreResolved(
+      final CamundaClient camundaClient, final int expectedIncidents) {
+    Awaitility.await("should wait until incidents are resolved")
+        .atMost(TIMEOUT_DATA_AVAILABILITY)
+        .ignoreExceptions() // Ignore exceptions and continue retrying
+        .untilAsserted(
+            () -> {
+              final var result =
+                  camundaClient
+                      .newIncidentQuery()
+                      .filter(f -> f.state(IncidentState.RESOLVED))
                       .send()
                       .join();
               assertThat(result.page().totalItems()).isEqualTo(expectedIncidents);
