@@ -11,7 +11,9 @@ import {QueryClientProvider} from '@tanstack/react-query';
 import {useProcessInstancesFlowNodeStates} from './useFlowNodeStates';
 import {mockFetchProcessInstancesStatistics} from 'modules/mocks/api/v2/processInstances/fetchProcessInstancesStatistics';
 import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
+import {useFilters} from 'modules/hooks/useFilters';
 import * as filterModule from 'modules/hooks/useProcessInstancesFilters';
+import {ProcessInstanceFilters} from 'modules/utils/filter/shared';
 
 jest.mock('modules/hooks/useFilters');
 jest.mock('modules/hooks/useProcessInstancesFilters');
@@ -23,8 +25,13 @@ describe('useProcessInstancesFlowNodeStates', () => {
     </QueryClientProvider>
   );
 
+  const mockFilters: ProcessInstanceFilters = {};
+
   beforeEach(() => {
     jest.spyOn(filterModule, 'useProcessInstanceFilters').mockReturnValue({});
+    (useFilters as jest.Mock).mockReturnValue({
+      getFilters: () => mockFilters,
+    });
   });
 
   afterEach(() => {

@@ -12,7 +12,9 @@ import {useBatchModificationOverlayData} from './useBatchModificationOverlayData
 import {mockFetchProcessInstancesStatistics} from 'modules/mocks/api/v2/processInstances/fetchProcessInstancesStatistics';
 import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
 import {MODIFICATIONS} from 'modules/bpmn-js/badgePositions';
+import {useFilters} from 'modules/hooks/useFilters';
 import * as filterModule from 'modules/hooks/useProcessInstancesFilters';
+import {ProcessInstanceFilters} from 'modules/utils/filter/shared';
 
 jest.mock('modules/hooks/useProcessInstancesFilters');
 jest.mock('modules/hooks/useFilters');
@@ -24,8 +26,15 @@ describe('useBatchModificationOverlayData', () => {
     </QueryClientProvider>
   );
 
+  const mockFilters: ProcessInstanceFilters = {
+    flowNodeId: 'messageCatchEvent',
+  };
+
   beforeEach(() => {
     jest.spyOn(filterModule, 'useProcessInstanceFilters').mockReturnValue({});
+    (useFilters as jest.Mock).mockReturnValue({
+      getFilters: () => mockFilters,
+    });
   });
 
   afterEach(() => {
