@@ -14,16 +14,32 @@ import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.MappingIntent;
 import org.agrona.DirectBuffer;
 
-public class BrokerMappingDeleteRequest extends BrokerExecuteCommand<MappingRecord> {
+public class BrokerMappingUpdateRequest extends BrokerExecuteCommand<MappingRecord> {
+
   private final MappingRecord requestDto = new MappingRecord();
 
-  public BrokerMappingDeleteRequest() {
-    super(ValueType.MAPPING, MappingIntent.DELETE);
+  public BrokerMappingUpdateRequest() {
+    super(ValueType.MAPPING, MappingIntent.UPDATE);
     setPartitionId(Protocol.DEPLOYMENT_PARTITION);
   }
 
-  public BrokerMappingDeleteRequest setId(final String mappingId) {
-    requestDto.setId(mappingId);
+  public BrokerMappingUpdateRequest setClaimName(final String claimName) {
+    requestDto.setClaimName(claimName);
+    return this;
+  }
+
+  public BrokerMappingUpdateRequest setClaimValue(final String claimValue) {
+    requestDto.setClaimValue(claimValue);
+    return this;
+  }
+
+  public BrokerMappingUpdateRequest setName(final String name) {
+    requestDto.setName(name);
+    return this;
+  }
+
+  public BrokerMappingUpdateRequest setId(final String id) {
+    requestDto.setId(id);
     return this;
   }
 

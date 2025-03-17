@@ -12,16 +12,16 @@ import io.camunda.zeebe.engine.state.mutable.MutableMappingState;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.MappingRecord;
 import io.camunda.zeebe.protocol.record.intent.MappingIntent;
 
-public class MappingDeletedApplier implements TypedEventApplier<MappingIntent, MappingRecord> {
+public class MappingUpdatedApplier implements TypedEventApplier<MappingIntent, MappingRecord> {
 
   private final MutableMappingState mappingState;
 
-  public MappingDeletedApplier(final MutableMappingState mappingState) {
+  public MappingUpdatedApplier(final MutableMappingState mappingState) {
     this.mappingState = mappingState;
   }
 
   @Override
   public void applyState(final long key, final MappingRecord value) {
-    mappingState.delete(value.getId());
+    mappingState.update(value);
   }
 }
