@@ -27,6 +27,7 @@ import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.EntityType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import java.util.Set;
+import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -105,13 +106,15 @@ public class MappingAppliersTest {
   public void shouldThrowExceptionWhenUpdateNotExistingMappingId() {
     // given
     final var mappingRecord = createMapping();
-    mappingRecord.setId("new-id");
+    mappingRecord.setId(UUID.randomUUID().toString());
     // when + then
     assertThatThrownBy(
             () -> mappingUpdatedApplier.applyState(mappingRecord.getMappingKey(), mappingRecord))
         .isInstanceOf(IllegalStateException.class)
         .hasMessageContaining(
-            "Expected to update mapping with id 'new-id', but a mapping with this id does not exist.");
+            String.format(
+                "Expected to update mapping with id '%s', but a mapping with this id does not exist.",
+                mappingRecord.getId()));
   }
 
   private MappingRecord createMapping() {
@@ -124,7 +127,8 @@ public class MappingAppliersTest {
             .setMappingKey(mappingKey)
             .setClaimName(claimName)
             .setClaimValue(claimValue)
-            .setName(claimName);
+            .setName(claimName)
+            .setId(UUID.randomUUID().toString());
     mappingState.create(mappingRecord);
     // create role
     final long roleKey = 2L;
