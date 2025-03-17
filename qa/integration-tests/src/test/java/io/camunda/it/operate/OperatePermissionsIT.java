@@ -46,33 +46,33 @@ public class OperatePermissionsIT {
   @RegisterExtension
   static final CamundaMultiDBExtension EXTENSION = new CamundaMultiDBExtension(STANDALONE_CAMUNDA);
 
-  private static final String SUPER_USER = "super";
-  private static final String RESTRICTED_USER = "restricted";
+  private static final String SUPER_USER_USERNAME = "super";
+  private static final String RESTRICTED_USER_USERNAME = "restricted";
   private static final String PROCESS_DEFINITION_ID_1 = "service_tasks_v1";
   private static final String PROCESS_DEFINITION_ID_2 = "incident_process_v1";
   private static final List<Process> DEPLOYED_PROCESSES = new ArrayList<>();
 
   @UserDefinition
-  private static final User superUser =
+  private static final User SUPER_USER =
       new User(
-          SUPER_USER,
+          SUPER_USER_USERNAME,
           "password",
           List.of(
               new Permissions(RESOURCE, CREATE, List.of("*")),
               new Permissions(PROCESS_DEFINITION, READ_PROCESS_DEFINITION, List.of("*"))));
 
   @UserDefinition
-  private static final User restrictedUser =
+  private static final User RESTRICTED_USER =
       new User(
-          RESTRICTED_USER,
+          RESTRICTED_USER_USERNAME,
           "password",
           List.of(
               new Permissions(
                   PROCESS_DEFINITION, READ_PROCESS_DEFINITION, List.of(PROCESS_DEFINITION_ID_1))));
 
   @BeforeAll
-  public static void beforeAll(@Authenticated(SUPER_USER) final CamundaClient superUserClient)
-      throws Exception {
+  public static void beforeAll(
+      @Authenticated(SUPER_USER_USERNAME) final CamundaClient superUserClient) throws Exception {
     final List<String> processes = List.of(PROCESS_DEFINITION_ID_1, PROCESS_DEFINITION_ID_2);
     processes.forEach(
         process ->
@@ -91,8 +91,8 @@ public class OperatePermissionsIT {
 
   @Test
   public void shouldGetProcessByKeyOnlyForAuthorizedProcesses(
-      @Authenticated(SUPER_USER) final CamundaClient superClient,
-      @Authenticated(RESTRICTED_USER) final CamundaClient restrictedClient) {
+      @Authenticated(SUPER_USER_USERNAME) final CamundaClient superClient,
+      @Authenticated(RESTRICTED_USER_USERNAME) final CamundaClient restrictedClient) {
     // super user can read all process definitions
     DEPLOYED_PROCESSES.stream()
         .map(Process::getProcessDefinitionKey)
