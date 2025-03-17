@@ -47,7 +47,7 @@
     <version.commons-math>3.6.1</version.commons-math>
     <version.commons-codec>1.17.2</version.commons-codec>
     <version.commons-compress>1.26.2</version.commons-compress>
-    <version.zstd-jni>1.5.7-1</version.zstd-jni>
+    <version.zstd-jni>1.5.7-2</version.zstd-jni>
     <version.commons-text>1.10.0</version.commons-text>
     <version.cron-utils>9.2.1</version.cron-utils>
     <version.docker-java-api>3.3.6</version.docker-java-api>
