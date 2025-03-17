@@ -7,15 +7,12 @@
  */
 
 import { FC } from "react";
+import { TrashCan } from "@carbon/react/icons";
 import { C3EmptyState } from "@camunda/camunda-composite-components";
 import useTranslate from "src/utility/localization";
 import { useApi } from "src/utility/api/hooks";
 import { getMembersByGroup } from "src/utility/api/membership";
-import EntityList, {
-  DocumentationDescription,
-} from "src/components/entityList";
-import { DocumentationLink } from "src/components/documentation";
-import { TrashCan } from "@carbon/react/icons";
+import EntityList from "src/components/entityList";
 import { useEntityModal } from "src/components/modal";
 import AssignMembersModal from "src/pages/groups/detail/members/AssignMembersModal";
 import DeleteModal from "src/pages/groups/detail/members/DeleteModal";
@@ -25,7 +22,7 @@ type MembersProps = {
 };
 
 const Members: FC<MembersProps> = ({ groupId }) => {
-  const { t, Translate } = useTranslate();
+  const { t } = useTranslate("groups");
 
   const {
     data: users,
@@ -55,11 +52,9 @@ const Members: FC<MembersProps> = ({ groupId }) => {
   if (!loading && !success)
     return (
       <C3EmptyState
-        heading={t("Something's wrong")}
-        description={t(
-          'We were unable to load the members. Click "Retry" to try again.',
-        )}
-        button={{ label: t("Retry"), onClick: reload }}
+        heading={t("somethingsWrong")}
+        description={t("unableToLoadMembers")}
+        button={{ label: t("retry"), onClick: reload }}
       />
     );
 
@@ -67,16 +62,16 @@ const Members: FC<MembersProps> = ({ groupId }) => {
     return (
       <>
         <C3EmptyState
-          heading={t("Assign members to this group")}
+          heading={t("assignUsersToGroup")}
           description={t(
             "Members of this group will be given access and roles that are assigned to this group.",
           )}
           button={{
-            label: t("Assign members"),
+            label: t("assignUser"),
             onClick: openAssignModal,
           }}
           link={{
-            label: t("Learn more about groups"),
+            label: t("learnMoreAboutGroups"),
             href: `/identity/concepts/access-control/groups`,
           }}
         />
@@ -87,37 +82,26 @@ const Members: FC<MembersProps> = ({ groupId }) => {
   return (
     <>
       <EntityList
-        title={t("Assigned members")}
         data={users?.items}
         headers={[
-          { header: t("Username"), key: "username" },
-          { header: t("Email"), key: "email" },
+          { header: t("userId"), key: "key" },
+          { header: t("username"), key: "username" },
         ]}
         sortProperty="username"
         loading={loading}
-        addEntityLabel={t("Assign members")}
+        addEntityLabel={t("assignUser")}
+        searchPlaceholder={t("searchByUsername")}
         menuItems={[
           {
-            label: t("Remove"),
+            label: t("remove"),
             icon: TrashCan,
             isDangerous: true,
             onClick: unassignMember,
           },
         ]}
       />
-      {success && !areNoUsersAssigned && (
-        <DocumentationDescription>
-          <Translate>To learn more, visit our</Translate>{" "}
-          <DocumentationLink path="/concepts/access-control/groups">
-            {t("groups documentation")}
-          </DocumentationLink>
-          .
-        </DocumentationDescription>
-      )}
-      <>
-        {assignUsersModal}
-        {unassignMemberModal}
-      </>
+      {assignUsersModal}
+      {unassignMemberModal}
     </>
   );
 };

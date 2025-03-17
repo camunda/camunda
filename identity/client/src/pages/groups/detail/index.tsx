@@ -24,6 +24,11 @@ import { useEntityModal } from "src/components/modal";
 import EditModal from "src/pages/groups/modals/EditModal";
 import DeleteModal from "src/pages/groups/modals/DeleteModal";
 import { Description } from "src/pages/groups/detail/components";
+import {
+  IS_GROUP_USERS_SUPPORTED,
+  IS_GROUP_ROLES_SUPPORTED,
+  IS_GROUP_MAPPINGS_SUPPORTED,
+} from "src/feature-flags";
 
 const Details: FC = () => {
   const navigate = useNavigate();
@@ -87,21 +92,46 @@ const Details: FC = () => {
             </Flex>
           )}
         </Stack>
-        {group && (
-          <Section>
-            <Tabs
-              tabs={[
-                {
-                  key: "users",
-                  label: t("users"),
-                  content: <Members groupId={group?.groupKey} />,
-                },
-              ]}
-              selectedTabKey={tab}
-              path={`../${id}`}
-            />
-          </Section>
-        )}
+        {(IS_GROUP_USERS_SUPPORTED ||
+          IS_GROUP_ROLES_SUPPORTED ||
+          IS_GROUP_MAPPINGS_SUPPORTED) &&
+          group && (
+            <Section>
+              <Tabs
+                tabs={[
+                  ...(IS_GROUP_USERS_SUPPORTED
+                    ? [
+                        {
+                          key: "users",
+                          label: t("users"),
+                          content: <Members groupId={group?.groupKey} />,
+                        },
+                      ]
+                    : []),
+                  ...(IS_GROUP_ROLES_SUPPORTED
+                    ? [
+                        {
+                          key: "roles",
+                          label: t("roles"),
+                          content: <div>roles</div>, //<Roles groupId={group?.groupKey} />,
+                        },
+                      ]
+                    : []),
+                  ...(IS_GROUP_MAPPINGS_SUPPORTED
+                    ? [
+                        {
+                          key: "mappings",
+                          label: t("mappings"),
+                          content: <div>mappings</div>, //<Mappings groupId={group?.groupKey} />,
+                        },
+                      ]
+                    : []),
+                ]}
+                selectedTabKey={tab}
+                path={`../${id}`}
+              />
+            </Section>
+          )}
         {editModal}
         {deleteModal}
       </>

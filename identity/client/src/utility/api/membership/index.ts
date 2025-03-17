@@ -5,6 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
+
 import { ApiDefinition, apiDelete, apiGet, apiPost, apiPut } from "../request";
 import { User } from "src/utility/api/users";
 import { GROUPS_ENDPOINT } from "src/utility/api/groups";
@@ -27,19 +28,19 @@ export const getMembersByTenantId: ApiDefinition<
   GetTenantMembersParams
 > = ({ tenantId }) => apiPost(`${TENANTS_ENDPOINT}/${tenantId}/users/search`);
 
-type AssignGroupMemberParams = GetGroupMembersParams & { userId: string };
+type AssignGroupMemberParams = GetGroupMembersParams & { username: string };
 export const assignGroupMember: ApiDefinition<
   undefined,
   AssignGroupMemberParams
-> = ({ groupId, userId }) =>
-  apiPost(`${GROUPS_ENDPOINT}/${groupId}/users`, { id: userId });
+> = ({ groupId, username }) =>
+  apiPost(`${GROUPS_ENDPOINT}/${groupId}/users/${username}`);
 
 type UnassignGroupMemberParams = AssignGroupMemberParams;
 export const unassignGroupMember: ApiDefinition<
   undefined,
   UnassignGroupMemberParams
-> = ({ groupId, userId }) =>
-  apiDelete(`${GROUPS_ENDPOINT}/${groupId}/users/${userId}`);
+> = ({ groupId, username }) =>
+  apiDelete(`${GROUPS_ENDPOINT}/${groupId}/users/${username}`);
 
 type AssignTenantMemberParams = GetTenantMembersParams & { username: string };
 export const assignTenantMember: ApiDefinition<

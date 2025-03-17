@@ -22,5 +22,22 @@
   "groupDescriptionPlaceholder": "Enter a group description (Max 255 characters)",
   "pleaseEnterValidGroupId": "Please enter a valid group ID (only alphanumeric characters and max 256 characters)",
   "groupIdHelperText": "The group ID must be unique and can not be modified",
-  "openGroupContextMenu": "Open group context menu"
+  "openGroupContextMenu": "Open group context menu",
+  "somethingsWrong": "Something's wrong",
+  "unableToLoadMembers": "We were unable to load the members. Click \"Retry\" to try again.",
+  "retry": "Retry",
+  "assignUser": "Assign user",
+  "assigningUser": "Assigning user",
+  "assignUsersToGroup": "Assign users to this Group",
+  "userId": "User ID",
+  "username": "Username",
+  "searchByUsername": "Search by username",
+  "remove": "Remove",
+  "searchAndAssignUsersToGroup": "Search and assign users to group",
+  "searchByNameOrEmail": "Search by full name or email address",
+  "usersCouldNotLoad": "Users could not be loaded.",
+  "groupMemberRemoved": "Group member has been removed.",
+  "removeUser": "Remove user",
+  "removingUser": "Removing user",
+  "removeUserConfirmation": "Are you sure you want to remove <strong>{{username}}</strong> from this group?"
 }
