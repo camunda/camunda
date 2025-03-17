@@ -763,10 +763,6 @@
               <mainClass>io.camunda.application.StandaloneOperate</mainClass>
             </program>
             <program>
-              <id>optimize</id>
-              <mainClass>io.camunda.application.StandaloneOptimize</mainClass>
-            </program>
-            <program>
               <id>migrate</id>
               <mainClass>io.camunda.operate.schema.migration.SchemaMigration</mainClass>
             </program>

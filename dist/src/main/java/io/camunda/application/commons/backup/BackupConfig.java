@@ -11,8 +11,6 @@ import static io.camunda.application.commons.backup.ConfigValidation.*;
 
 import io.camunda.application.commons.conditions.WebappEnabledCondition;
 import io.camunda.operate.property.OperateProperties;
-import io.camunda.optimize.service.metadata.Version;
-import io.camunda.optimize.service.util.configuration.db.DatabaseBackup;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.webapps.backup.repository.BackupRepositoryProps;
 import io.camunda.webapps.backup.repository.BackupRepositoryPropsRecord;
@@ -91,10 +89,5 @@ public class BackupConfig {
         operateProperties.getRepositoryName(),
         operateProperties.getSnapshotTimeout(),
         operateProperties.getIncompleteCheckTimeoutInSeconds());
-  }
-
-  public static BackupRepositoryProps props(final DatabaseBackup databaseBackup) {
-    final var version = Version.VERSION;
-    return new BackupRepositoryPropsRecord(version, databaseBackup.getSnapshotRepositoryName());
   }
 }
