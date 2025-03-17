@@ -25,6 +25,7 @@ import io.camunda.client.api.command.ProblemException;
 import io.camunda.client.api.response.Process;
 import io.camunda.client.api.response.ProcessInstanceEvent;
 import io.camunda.client.api.search.response.FlowNodeInstance;
+import io.camunda.client.api.search.response.FlowNodeInstanceState;
 import io.camunda.client.api.search.response.ProcessInstance;
 import io.camunda.client.impl.search.filter.builder.StringPropertyImpl;
 import io.camunda.client.protocol.rest.ProcessInstanceStateEnum;
@@ -44,7 +45,7 @@ public class ProcessInstanceAndFlowNodeInstanceQueryTest {
 
   static final List<Process> DEPLOYED_PROCESSES = new ArrayList<>();
   static final List<ProcessInstanceEvent> PROCESS_INSTANCES = new ArrayList<>();
-
+  private static long processInstanceWithIncidentKey;
   private static FlowNodeInstance flowNodeInstance;
   private static FlowNodeInstance flowNodeInstanceWithIncident;
   private static CamundaClient camundaClient;
@@ -76,7 +77,10 @@ public class ProcessInstanceAndFlowNodeInstanceQueryTest {
     PROCESS_INSTANCES.add(
         startProcessInstance(camundaClient, "service_tasks_v2", "{\"path\":222}"));
     PROCESS_INSTANCES.add(startProcessInstance(camundaClient, "manual_process"));
-    PROCESS_INSTANCES.add(startProcessInstance(camundaClient, "incident_process_v1"));
+    final ProcessInstanceEvent processInstanceWithIncident =
+        startProcessInstance(camundaClient, "incident_process_v1");
+    processInstanceWithIncidentKey = processInstanceWithIncident.getProcessInstanceKey();
+    PROCESS_INSTANCES.add(processInstanceWithIncident);
     PROCESS_INSTANCES.add(startProcessInstance(camundaClient, "parent_process_v1"));
 
     waitForProcessInstancesToStart(camundaClient, 7);
@@ -133,6 +137,18 @@ public class ProcessInstanceAndFlowNodeInstanceQueryTest {
     assertThat(result.getState()).isEqualTo(ACTIVE);
     assertThat(result.getHasIncident()).isFalse();
     assertThat(result.getTenantId()).isEqualTo("<default>");
+  }
+
+  @Test
+  void testProcessInstanceWithIncident() {
+    // when
+    final var result =
+        camundaClient.newProcessInstanceGetRequest(processInstanceWithIncidentKey).send().join();
+
+    // then
+    assertThat(result).isNotNull();
+    assertThat(result.getState()).isEqualTo(ACTIVE);
+    assertThat(result.getHasIncident()).isTrue();
   }
 
   @Test
@@ -997,6 +1013,13 @@ public class ProcessInstanceAndFlowNodeInstanceQueryTest {
     // then
     assertThat(result.items().size()).isEqualTo(1);
     assertThat(result.items().getFirst().getIncidentKey()).isEqualTo(incidentKey);
+  }
+
+  @Test
+  void testFlowNodeInstanceWithIncident() {
+    // then
+    assertThat(flowNodeInstanceWithIncident.getState()).isEqualTo(FlowNodeInstanceState.ACTIVE);
+    assertThat(flowNodeInstanceWithIncident.getIncident()).isEqualTo(true);
   }
 
   @Test
