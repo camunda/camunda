@@ -1,4 +1,4 @@
-name: "Sign & Notarize c8run"
+name: "Sign & Notarize macOS code"
 description: "Signs with Developer ID App certificate and notarizes the resulting zip file."
 
 # We define inputs for everything needed to sign and notarize:
@@ -51,8 +51,8 @@ runs:
       shell: bash
       run: chmod +x ./.github/actions/sign-and-notarize/sign_all_mach_o_and_jars.sh
 
-    # STEP C: Sign c8run content (top-level + jar-embedded code, including .app)
-    - name: Sign c8run
+    # STEP C: Sign distribution (top-level + jar-embedded code, including .app)
+    - name: Sign distribution
       shell: bash
       run: |
         ./.github/actions/sign-and-notarize/sign_all_mach_o_and_jars.sh \
@@ -74,6 +74,3 @@ runs:
           --password "$INPUT_APP_PASSWORD" \
           --team-id "$INPUT_TEAM_ID" \
           --wait
-
-    # STEP F: (Optional) Upload or stash artifact?
-    # Jesse do we want this here or in the workflow?
