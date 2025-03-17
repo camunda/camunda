@@ -99,8 +99,8 @@ const AssignMembersModal: FC<
       overflowVisible
     >
       <p>
-        <Translate i18nKey="searchAndAssignUsersToGroup">
-          Search and assign users to group
+        <Translate i18nKey="searchAndAssignUserToGroup">
+          Search and assign user to group
         </Translate>
       </p>
       {selectedUsers.length > 0 && (

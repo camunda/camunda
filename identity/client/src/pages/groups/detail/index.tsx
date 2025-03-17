@@ -19,7 +19,6 @@ import Flex from "src/components/layout/Flex";
 import PageHeadline from "src/components/layout/PageHeadline";
 import Tabs from "src/components/tabs";
 import { getGroupDetails } from "src/utility/api/groups";
-import Members from "src/pages/groups/detail/members";
 import { useEntityModal } from "src/components/modal";
 import EditModal from "src/pages/groups/modals/EditModal";
 import DeleteModal from "src/pages/groups/modals/DeleteModal";
@@ -29,6 +28,8 @@ import {
   IS_GROUP_ROLES_SUPPORTED,
   IS_GROUP_MAPPINGS_SUPPORTED,
 } from "src/feature-flags";
+import Members from "src/pages/groups/detail/members";
+import Roles from "src/pages/groups/detail/roles";
 
 const Details: FC = () => {
   const navigate = useNavigate();
@@ -113,7 +114,7 @@ const Details: FC = () => {
                         {
                           key: "roles",
                           label: t("roles"),
-                          content: <div>roles</div>, //<Roles groupId={group?.groupKey} />,
+                          content: <Roles groupId={group?.groupKey} />,
                         },
                       ]
                     : []),
