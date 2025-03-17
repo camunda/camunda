@@ -44,6 +44,9 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
 import org.springframework.security.oauth2.client.registration.InMemoryClientRegistrationRepository;
+import org.springframework.security.oauth2.jwt.JwtDecoder;
+import org.springframework.security.oauth2.jwt.JwtValidators;
+import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.access.intercept.AuthorizationFilter;
 
@@ -72,13 +75,14 @@ public class WebSecurityConfig {
           "/v1/external/process/**");
   private static final Set<String> WEBAPP_PATHS =
       Set.of(
-          "/sso-callback/**",
           "/login/**",
           "/logout",
           "/identity/**",
           "/operate/**",
           "/tasklist/**",
-          "/");
+          "/",
+          "/sso-callback/**",
+          "/oauth2/authorization/**");
   private static final Set<String> UNPROTECTED_PATHS =
       Set.of(
           // endpoint for failure forwarding
@@ -279,12 +283,36 @@ public class WebSecurityConfig {
     }
 
     @Bean
+    public JwtDecoder jwtDecoder(
+        final SecurityConfiguration securityConfiguration,
+        final ClientRegistrationRepository clientRegistrationRepository) {
+      // Do not rely on the configured uri, the client registration can automatically discover it
+      // based on the issuer uri.
+      final var jwkSetUri =
+          clientRegistrationRepository
+              .findByRegistrationId(OidcClientRegistration.REGISTRATION_ID)
+              .getProviderDetails()
+              .getJwkSetUri();
+
+      final var decoder = NimbusJwtDecoder.withJwkSetUri(jwkSetUri).build();
+
+      final var validAudiences = securityConfiguration.getAuthentication().getOidc().getAudiences();
+      if (validAudiences != null) {
+        decoder.setJwtValidator(
+            JwtValidators.createDefaultWithValidators(new AudienceValidator(validAudiences)));
+      }
+
+      return decoder;
+    }
+
+    @Bean
     @Order(ORDER_WEBAPP_API)
     public SecurityFilterChain oidcHttpSecurity(
         final HttpSecurity httpSecurity,
         final AuthFailureHandler authFailureHandler,
         final ClientRegistrationRepository clientRegistrationRepository,
-        final WebApplicationAuthorizationCheckFilter webApplicationAuthorizationCheckFilter)
+        final WebApplicationAuthorizationCheckFilter webApplicationAuthorizationCheckFilter,
+        final JwtDecoder jwtDecoder)
         throws Exception {
       return httpSecurity
           .securityMatcher(API_PATHS.toArray(new String[0]))
@@ -304,14 +332,7 @@ public class WebSecurityConfig {
           .formLogin(AbstractHttpConfigurer::disable)
           .anonymous(AbstractHttpConfigurer::disable)
           .oauth2ResourceServer(
-              oauth2 ->
-                  oauth2.jwt(
-                      jwtConfigurer ->
-                          jwtConfigurer.jwkSetUri(
-                              clientRegistrationRepository
-                                  .findByRegistrationId(OidcClientRegistration.REGISTRATION_ID)
-                                  .getProviderDetails()
-                                  .getJwkSetUri())))
+              oauth2 -> oauth2.jwt(jwtConfigurer -> jwtConfigurer.decoder(jwtDecoder)))
           .oauth2Login(
               oauthLoginConfigurer -> {
                 oauthLoginConfigurer

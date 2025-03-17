@@ -32,6 +32,7 @@ import io.camunda.exporter.adapters.ClientAdapter;
 import io.camunda.exporter.cache.ExporterEntityCacheProvider;
 import io.camunda.exporter.config.ConnectionTypes;
 import io.camunda.exporter.config.ExporterConfiguration;
+import io.camunda.exporter.config.ExporterConfiguration.RetentionConfiguration;
 import io.camunda.exporter.exceptions.PersistenceException;
 import io.camunda.exporter.handlers.ExportHandler;
 import io.camunda.exporter.schema.MappingSource;
@@ -67,6 +68,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -147,19 +149,65 @@ final class CamundaExporterIT {
     p2Exporter.configure(p2Context);
 
     // when
-    new Thread(
+    final var future =
+        CompletableFuture.runAsync(
             () -> {
               final var p1ExporterController = new ExporterTestController();
               p1Exporter.open(p1ExporterController);
-            })
-        .start();
+            });
 
     // then
     assertThatNoException()
         .isThrownBy(
             () -> {
               final var p2ExporterController = new ExporterTestController();
-              p1Exporter.open(p2ExporterController);
+              p2Exporter.open(p2ExporterController);
+            });
+    Awaitility.await("Partition one has been opened successfully")
+        .atMost(Duration.ofSeconds(30))
+        .untilAsserted(
+            () -> {
+              assertThat(future).isNotCompletedExceptionally();
+              assertThat(future).isCompleted();
+            });
+  }
+
+  @TestTemplate
+  void shouldOpenDifferentPartitionsWithRetention(
+      final ExporterConfiguration config, final SearchClientAdapter ignored) {
+    // given
+    final RetentionConfiguration retention = config.getHistory().getRetention();
+    retention.setEnabled(true);
+    retention.setPolicyName("shouldOpenDifferentPartitionsWithRetention");
+    final var p1Exporter = new CamundaExporter();
+    final var p1Context = getContextFromConfig(config, 1);
+    p1Exporter.configure(p1Context);
+
+    final var p2Exporter = new CamundaExporter();
+    final var p2Context = getContextFromConfig(config, 2);
+    p2Exporter.configure(p2Context);
+
+    // when
+    final var future =
+        CompletableFuture.runAsync(
+            () -> {
+              final var p1ExporterController = new ExporterTestController();
+              p1Exporter.open(p1ExporterController);
+            });
+
+    // then
+    assertThatNoException()
+        .isThrownBy(
+            () -> {
+              final var p2ExporterController = new ExporterTestController();
+              p2Exporter.open(p2ExporterController);
+            });
+    Awaitility.await("Partition one has been opened successfully")
+        .atMost(Duration.ofSeconds(30))
+        .untilAsserted(
+            () -> {
+              assertThat(future).isNotCompletedExceptionally();
+              assertThat(future).isCompleted();
             });
   }
 
@@ -680,6 +728,41 @@ final class CamundaExporterIT {
     }
 
     @TestTemplate
+    void shouldMarkImportersAsCompletedEvenIfVersion88ZeebeIndicesExist(
+        final ExporterConfiguration config, final SearchClientAdapter clientAdapter)
+        throws IOException {
+      final String zeebeIndexPrefix = CUSTOM_PREFIX + "-zeebe-record";
+      config.getIndex().setZeebeIndexPrefix(zeebeIndexPrefix);
+      createSchemas(config, clientAdapter);
+      clientAdapter.index("1", zeebeIndexPrefix + "-decision_8.8.0", Map.of("key", "12345"));
+
+      // adds a not complete position index document so exporter sees importing as not yet completed
+      indexImportPositionEntity("decision", false, clientAdapter);
+      clientAdapter.refresh();
+
+      final var context = spy(getContextFromConfig(config));
+      doReturn(partitionId).when(context).getPartitionId();
+      camundaExporter.configure(context);
+      camundaExporter.open(controller);
+
+      controller.runScheduledTasks(Duration.ofMinutes(1));
+
+      // when
+      final var record =
+          factory.generateRecord(
+              ValueType.USER,
+              r -> r.withBrokerVersion("8.8.0").withTimestamp(System.currentTimeMillis()),
+              UserIntent.CREATED);
+
+      camundaExporter.export(record);
+
+      // then
+      assertThat(controller.getPosition()).isEqualTo(record.getPosition());
+      verify(controller, times(1))
+          .updateLastExportedRecordPosition(eq(record.getPosition()), any());
+    }
+
+    @TestTemplate
     void shouldFlushIfImporterNotCompletedButNoZeebeIndices(
         final ExporterConfiguration config, final SearchClientAdapter clientAdapter)
         throws IOException {
@@ -725,14 +808,14 @@ final class CamundaExporterIT {
     }
 
     @TestTemplate
-    void shouldNotFlushIfImportersAreNotCompletedAndThereAreZeebeIndices(
+    void shouldNotFlushIf87IndicesExistToBeImported(
         final ExporterConfiguration config, final SearchClientAdapter clientAdapter)
         throws IOException {
       // given
       final String zeebeIndexPrefix = CUSTOM_PREFIX + "-zeebe-record";
       config.getIndex().setZeebeIndexPrefix(zeebeIndexPrefix);
       createSchemas(config, clientAdapter);
-      clientAdapter.index("1", zeebeIndexPrefix + "-decision", Map.of("key", "12345"));
+      clientAdapter.index("1", zeebeIndexPrefix + "-decision_8.7.0_", Map.of("key", "12345"));
 
       // adds a not complete position index document so exporter sees importing as not yet completed
       indexImportPositionEntity("decision", false, clientAdapter);
@@ -877,7 +960,7 @@ final class CamundaExporterIT {
       config.getIndex().setZeebeIndexPrefix(zeebeIndexPrefix);
 
       // Simulate existing zeebe index so it will not skip the wait for importers
-      clientAdapter.index("1", zeebeIndexPrefix + "-decision", Map.of("key", "12345"));
+      clientAdapter.index("1", zeebeIndexPrefix + "-decision_8.7.0_", Map.of("key", "12345"));
 
       // if schemas are never created then import position indices do not exist and all checks about
       // whether the importers are completed will return false.

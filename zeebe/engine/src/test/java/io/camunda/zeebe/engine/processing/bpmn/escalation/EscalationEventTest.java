@@ -253,8 +253,8 @@ public class EscalationEventTest {
             BpmnElementType.START_EVENT,
             BpmnElementType.MANUAL_TASK,
             BpmnElementType.EVENT_SUB_PROCESS,
-            BpmnElementType.EVENT_SUB_PROCESS,
             BpmnElementType.SUB_PROCESS,
+            BpmnElementType.EVENT_SUB_PROCESS,
             BpmnElementType.SUB_PROCESS,
             BpmnElementType.MULTI_INSTANCE_BODY,
             BpmnElementType.PROCESS);

@@ -337,6 +337,10 @@ public class ElasticsearchBackupRepository implements BackupRepository {
     final GetSnapshotResponse response;
     try {
       response = esClient.snapshot().get(snapshotsStatusRequest);
+      if (response.snapshots().isEmpty()) {
+        throw new ResourceNotFoundException(
+            String.format("No backup with id [%s] found.", backupId));
+      }
       return response.snapshots();
     } catch (final IOException ex) {
       final String reason =

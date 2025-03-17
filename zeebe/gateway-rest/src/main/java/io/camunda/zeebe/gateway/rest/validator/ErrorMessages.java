@@ -36,4 +36,6 @@ public final class ErrorMessages {
       "The provided %s exceeds the limit of %d characters";
   public static final String ERROR_MESSAGE_ILLEGAL_CHARACTER =
       "The provided %s contains illegal characters. It must match the pattern '%s'";
+  public static final String ERROR_MESSAGE_NULL_VARIABLE_NAME = "Variable name cannot be null.";
+  public static final String ERROR_MESSAGE_NULL_VARIABLE_VALUE = "Variable value cannot be null.";
 }

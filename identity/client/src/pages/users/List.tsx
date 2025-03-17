@@ -25,7 +25,7 @@ import EditModal from "src/pages/users/modals/EditModal";
 import DeleteModal from "src/pages/users/modals/DeleteModal";
 
 const List: FC = () => {
-  const { t, Translate } = useTranslate();
+  const { t } = useTranslate("users");
   const navigate = useNavigate();
   const {
     data: userSearchResults,
@@ -40,7 +40,11 @@ const List: FC = () => {
   const showDetails = ({ username }: User) => navigate(`${username}`);
 
   const pageHeader = (
-    <PageHeader title="Users" linkText="users" linkUrl="/concepts/users/" />
+    <PageHeader
+      title={t("Users")}
+      linkText="users"
+      linkUrl="/concepts/users/"
+    />
   );
 
   if (success && !userSearchResults?.items.length) {
@@ -48,24 +52,24 @@ const List: FC = () => {
       <Page>
         {pageHeader}
         <C3EmptyState
-          heading={t("No users created yet")}
+          heading={t("noUsersCreatedYet")}
           description={
             <>
-              <Translate>Start by</Translate>{" "}
+              {t("startBy")}{" "}
               <DocumentationLink path="/concepts/access-control/users">
-                creating a new user
+                {t("creatingANewUser")}
               </DocumentationLink>{" "}
-              <Translate>to get started</Translate>
+              {t("toGetStarted")}
             </>
           }
           button={{
-            label: t("Create a user"),
+            label: t("createAUser"),
             onClick: addUser,
             icon: Add,
           }}
           link={{
             href: documentationHref("/concepts/access-control/users", ""),
-            label: t("Learn more about users"),
+            label: t("learnMoreAboutUsers"),
           }}
         />
         {addUserModal}
@@ -79,18 +83,18 @@ const List: FC = () => {
       <EntityList
         data={userSearchResults == null ? [] : userSearchResults.items}
         headers={[
-          { header: t("Username"), key: "username" },
-          { header: t("Name"), key: "name" },
-          { header: t("Email"), key: "email" },
+          { header: t("username"), key: "username" },
+          { header: t("name"), key: "name" },
+          { header: t("email"), key: "email" },
         ]}
         menuItems={[
           {
-            label: t("Edit user"),
+            label: t("editUser"),
             onClick: editUser,
             icon: Edit,
           },
           {
-            label: t("Delete"),
+            label: t("delete"),
             icon: TrashCan,
             onClick: deleteUser,
             isDangerous: true,
@@ -98,15 +102,15 @@ const List: FC = () => {
         ]}
         sortProperty="username"
         onEntityClick={showDetails}
-        addEntityLabel={t("Create user")}
+        addEntityLabel={t("createUser")}
         onAddEntity={addUser}
         loading={loading}
-        searchPlaceholder={t("Search by username")}
+        searchPlaceholder={t("searchByUsername")}
       />
       {!loading && !success && (
         <TranslatedErrorInlineNotification
-          title="The list of users could not be loaded."
-          actionButton={{ label: "Retry", onClick: reload }}
+          title={t("listUsersLoadError")}
+          actionButton={{ label: t("retry"), onClick: reload }}
         />
       )}
       {addUserModal}

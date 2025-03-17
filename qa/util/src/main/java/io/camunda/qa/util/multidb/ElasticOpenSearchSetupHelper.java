@@ -29,7 +29,7 @@ public class ElasticOpenSearchSetupHelper implements MultiDbSetupHelper {
   private static final Logger LOGGER = LoggerFactory.getLogger(ElasticOpenSearchSetupHelper.class);
   protected final Collection<IndexDescriptor> expectedDescriptors;
   protected final String endpoint;
-  private final HttpClient httpClient = HttpClient.newHttpClient();
+  protected final HttpClient httpClient = HttpClient.newHttpClient();
 
   public ElasticOpenSearchSetupHelper(
       final String endpoint, final Collection<IndexDescriptor> expectedDescriptors) {

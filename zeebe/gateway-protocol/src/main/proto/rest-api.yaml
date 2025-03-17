@@ -3699,8 +3699,12 @@ components:
           type: string
           description: Name of the variable.
         value:
-          type: string
+          allOf:
+            - $ref: "#/components/schemas/StringFilterProperty"
           description: The value of the variable.
+      required:
+        - name
+        - value
     VariableUserTaskFilterRequest:
       description: The user task variable search filters.
       type: object
@@ -4282,6 +4286,10 @@ components:
           description: The process definition key.
           allOf:
             - $ref: "#/components/schemas/BasicStringFilterProperty"
+        batchOperationId:
+          description: The batch operation ID.
+          allOf:
+            - $ref: "#/components/schemas/StringFilterProperty"
     ProcessInstanceVariableFilterRequest:
       description: Process instance variable filter.
       type: object
@@ -4291,7 +4299,11 @@ components:
           type: string
         value:
           description: The value of the variable.
-          type: string
+          allOf:
+            - $ref: "#/components/schemas/StringFilterProperty"
+      required:
+        - name
+        - value
     ProcessInstanceSearchQueryResult:
       description: Process instance search response.
       type: object

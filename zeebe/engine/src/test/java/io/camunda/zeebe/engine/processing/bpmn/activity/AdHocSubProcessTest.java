@@ -855,7 +855,7 @@ public final class AdHocSubProcessTest {
             tuple(BpmnElementType.PROCESS, ProcessInstanceIntent.ELEMENT_COMPLETED));
 
     final List<Long> adHocSubProcessKeys =
-        RecordingExporter.processInstanceRecords()
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
             .withProcessInstanceKey(processInstanceKey)
             .withElementType(BpmnElementType.AD_HOC_SUB_PROCESS)
             .limit(3)
@@ -876,6 +876,48 @@ public final class AdHocSubProcessTest {
             tuple("A", adHocSubProcessKeys.get(0)),
             tuple("B", adHocSubProcessKeys.get(1)),
             tuple("C", adHocSubProcessKeys.get(2)));
+  }
+
+  @Test
+  public void shouldActivateMultiInstanceElement() {
+    // given
+    final BpmnModelInstance process =
+        process(
+            adHocSubProcess -> {
+              adHocSubProcess.zeebeActiveElementsCollectionExpression("activateElements");
+              adHocSubProcess.task("A").multiInstance().zeebeInputCollectionExpression("[1,2]");
+              adHocSubProcess.task("B");
+            });
+
+    ENGINE.deployment().withXmlResource(process).deploy();
+
+    // when
+    final long processInstanceKey =
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId(PROCESS_ID)
+            .withVariable("activateElements", List.of("A"))
+            .create();
+
+    // then
+    assertThat(
+            RecordingExporter.processInstanceRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .limitToProcessInstanceCompleted())
+        .extracting(
+            r -> r.getValue().getElementId(),
+            r -> r.getValue().getBpmnElementType(),
+            Record::getIntent)
+        .containsSubsequence(
+            tuple(
+                "A", BpmnElementType.MULTI_INSTANCE_BODY, ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple("A", BpmnElementType.TASK, ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple("A", BpmnElementType.TASK, ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple("A", BpmnElementType.TASK, ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple("A", BpmnElementType.TASK, ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple(
+                "A", BpmnElementType.MULTI_INSTANCE_BODY, ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple(PROCESS_ID, BpmnElementType.PROCESS, ProcessInstanceIntent.ELEMENT_COMPLETED));
   }
 
   private static Predicate<Record<RecordValue>> signalBroadcasted(final String signalName) {

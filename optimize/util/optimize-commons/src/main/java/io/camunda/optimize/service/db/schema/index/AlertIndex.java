@@ -29,7 +29,6 @@ public abstract class AlertIndex<TBuilder> extends DefaultIndexMappingCreator<TB
   public static final String LAST_MODIFIER = AlertDefinitionDto.Fields.lastModifier;
   public static final String REPORT_ID = AlertCreationRequestDto.Fields.reportId;
   public static final String EMAILS = AlertCreationRequestDto.Fields.emails;
-  public static final String WEBHOOK = AlertCreationRequestDto.Fields.webhook;
   public static final String THRESHOLD = AlertCreationRequestDto.Fields.threshold;
   public static final String THRESHOLD_OPERATOR = AlertCreationRequestDto.Fields.thresholdOperator;
   public static final String FIX_NOTIFICATION = AlertCreationRequestDto.Fields.fixNotification;
@@ -62,7 +61,6 @@ public abstract class AlertIndex<TBuilder> extends DefaultIndexMappingCreator<TB
         .properties(LAST_MODIFIER, Property.of(p -> p.keyword(k -> k)))
         .properties(REPORT_ID, Property.of(p -> p.keyword(k -> k)))
         .properties(EMAILS, Property.of(p -> p.keyword(k -> k)))
-        .properties(WEBHOOK, Property.of(p -> p.keyword(k -> k)))
         .properties(THRESHOLD_OPERATOR, Property.of(p -> p.keyword(k -> k)))
         .properties(FIX_NOTIFICATION, Property.of(p -> p.boolean_(k -> k)))
         .properties(THRESHOLD, Property.of(p -> p.double_(k -> k)))
