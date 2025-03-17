@@ -119,7 +119,7 @@ class OpensearchBackupRepositoryTest {
         new BackupService.SnapshotRequest(
             "repo",
             "camunda_operate_1_2",
-            new SnapshotIndexCollection(List.of("index-1", "index-2")),
+            new SnapshotIndexCollection(List.of("index-1", "index-2"), List.of("index-3")),
             new Metadata(1L, "1", 1, 1));
     final Runnable onSuccess = () -> {};
     final Runnable onFailure = () -> fail("Should execute snapshot successfully.");
@@ -130,7 +130,7 @@ class OpensearchBackupRepositoryTest {
                 new SnapshotInfo.Builder()
                     .snapshot("snapshot")
                     .dataStreams(List.of())
-                    .indices(List.of("index-1", "index-2"))
+                    .indices(List.of("index-1", "index-2", "index-3"))
                     .uuid("uuid")
                     .state(SnapshotState.SUCCESS.toString())
                     .build())
@@ -147,7 +147,7 @@ class OpensearchBackupRepositoryTest {
         new SnapshotRequest(
             "repo",
             "camunda_operate_1_2",
-            new SnapshotIndexCollection(List.of("index-1", "index-2")),
+            new SnapshotIndexCollection(List.of("index-1", "index-2"), List.of("index-3")),
             new Metadata(1L, "1", 1, 1));
     final Runnable onSuccess = () -> fail("Should execute snapshot with failures.");
     final Runnable onFailure = () -> {};

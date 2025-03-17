@@ -90,12 +90,11 @@ public class BackupServiceImplTest {
     assertThat(backup.getScheduledSnapshots())
         .isEqualTo(
             List.of(
-                "test_snapshot_1_1_6",
-                "test_snapshot_1_2_6",
-                "test_snapshot_1_3_6",
-                "test_snapshot_1_4_6",
-                "test_snapshot_1_5_6",
-                "test_snapshot_1_6_6"));
+                "test_snapshot_1_1_5",
+                "test_snapshot_1_2_5",
+                "test_snapshot_1_3_5",
+                "test_snapshot_1_4_5",
+                "test_snapshot_1_5_5"));
 
     Awaitility.await("All backups are done")
         .untilAsserted(
@@ -104,12 +103,12 @@ public class BackupServiceImplTest {
               assertThat(backupState).isNotNull();
               assertThat(backupState.getBackupId()).isEqualTo(1L);
               assertThat(backupState.getState()).isEqualTo(BackupStateDto.COMPLETED);
-              assertThat(backupState.getDetails()).hasSize(6);
+              assertThat(backupState.getDetails()).hasSize(5);
               assertThat(backupState.getDetails())
                   .allSatisfy(detail -> detail.getState().equals("COMPLETED"));
             });
     final var snapshotRequests = backupRepository.snapshotRequests.get(1L);
-    assertThat(snapshotRequests.stream().map(i -> i.indices().indices()))
+    assertThat(snapshotRequests.stream().map(i -> i.indices().allIndices()))
         .containsExactly(
             List.of("prio1"),
             List.of("prio2"),

@@ -102,7 +102,7 @@ public class BackupServiceImpl implements BackupService {
           new SnapshotRequest(repositoryName, snapshotName, indexCollection, metadata);
 
       LOGGER.debug(
-          "Snapshot part {} contains indices {}", metadata.partNo(), indexCollection.indices());
+          "Snapshot part {} contains indices {}", metadata.partNo(), indexCollection.allIndices());
       requestsQueue.offer(snapshotRequest);
       LOGGER.debug("Snapshot scheduled: {}", snapshotName);
       snapshotNames.add(snapshotName);
@@ -128,12 +128,21 @@ public class BackupServiceImpl implements BackupService {
     final var list = new ArrayList<SnapshotIndexCollection>();
     final var missingIndicesList = new ArrayList<String>();
     for (final var indices : backupPriorities.indicesSplitBySnapshot().toList()) {
-      final var foundIndices = repository.checkAllIndicesExist(indices.indices());
-      final var missingIndices =
-          indices.indices().stream().filter(idx -> !foundIndices.contains(idx)).toList();
-      if (!missingIndices.isEmpty()) {
-        missingIndicesList.addAll(missingIndices);
-        LOGGER.warn("Missing indices:{}. All indices found are {}", missingIndices, foundIndices);
+      final var foundIndices = repository.checkAllIndicesExist(indices.allIndices());
+      final var missingNonRequiredIndices =
+          indices.skippableIndices().stream().filter(idx -> !foundIndices.contains(idx)).toList();
+      final var missingRequiredIndices =
+          indices.requiredIndices().stream().filter(idx -> !foundIndices.contains(idx)).toList();
+      if (!missingRequiredIndices.isEmpty()) {
+        missingIndicesList.addAll(missingRequiredIndices);
+        LOGGER.warn(
+            "Missing required indices:{}. All indices found are {}",
+            missingRequiredIndices,
+            foundIndices);
+      }
+      // skip this part if there is no index, but they are not required
+      if (!foundIndices.isEmpty()) {
+        list.add(indices.removeSkippableIndices(missingNonRequiredIndices));
       }
     }
     if (!missingIndicesList.isEmpty()) {

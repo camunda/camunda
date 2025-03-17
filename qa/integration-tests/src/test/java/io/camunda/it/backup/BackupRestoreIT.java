@@ -290,7 +290,7 @@ public class BackupRestoreIT {
         new SnapshotRequest(
             REPOSITORY_NAME,
             SNAPSHOT_NAME_PROVIDER.getSnapshotName(metadata),
-            new SnapshotIndexCollection(indices),
+            new SnapshotIndexCollection(indices, List.of()),
             metadata),
         () -> {
           zeebeIndicesBackupStatus.set("COMPLETED");

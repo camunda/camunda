@@ -698,27 +698,6 @@
       <scope>test</scope>
     </dependency>
 
-    <!-- optimize -->
-    <!-- TODO - remove these once optimize is removed from backups) -->
-
-    <dependency>
-      <groupId>io.camunda.optimize</groupId>
-      <artifactId>optimize-commons</artifactId>
-      <version>${project.version}</version>
-    </dependency>
-
-    <dependency>
-      <groupId>io.camunda.optimize</groupId>
-      <artifactId>optimize-backend</artifactId>
-      <version>${project.version}</version>
-    </dependency>
-
-    <dependency>
-      <groupId>io.camunda.optimize</groupId>
-      <artifactId>optimize-webjar</artifactId>
-      <version>${project.version}</version>
-    </dependency>
-
     <dependency>
       <groupId>org.mockito</groupId>
       <artifactId>mockito-junit-jupiter</artifactId>

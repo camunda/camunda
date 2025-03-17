@@ -9,4 +9,13 @@ package io.camunda.webapps.schema.descriptors.backup;
 
 public interface BackupPriority {
   String getFullQualifiedName();
+
+  /**
+   * Some indices can be skipped if not found, such as optimize indices if optimize is not deployed
+   *
+   * @return if this index can be skipped if it's not created in the DB
+   */
+  default boolean required() {
+    return true;
+  }
 }

@@ -191,7 +191,7 @@ public class ElasticsearchBackupRepositoryTest {
         new SnapshotRequest(
             "repo-name-1",
             snapshotNameProvider.getSnapshotName(metadata),
-            new SnapshotIndexCollection(List.of("index-1", "index-2")),
+            new SnapshotIndexCollection(List.of("index-1", "index-2"), List.of("index-3")),
             metadata);
     // 1 element array to bypass closures over final fields
     backupRepository.executeSnapshotting(

@@ -264,7 +264,7 @@ public class OpensearchBackupRepository implements BackupRepository {
         createSnapshotRequestBuilder(
                 snapshotRequest.repositoryName(),
                 snapshotRequest.snapshotName(),
-                snapshotRequest.indices().indices())
+                snapshotRequest.indices().allIndices())
             .ignoreUnavailable(
                 false) // ignoreUnavailable = false - indices defined by their exact name MUST be
             // present
