@@ -38,7 +38,7 @@ public class OpenApiConfig {
                     .externalDocs(
                         new ExternalDocumentation()
                             .description("Camunda 8 API Documentation")
-                            .url("classpath:proto/rest-api.yaml")); // Mantendo no classpath
+                            .url("classpath:proto/rest-api.yaml"));
               } catch (final Exception e) {
                 throw new RuntimeException("Error to load Camunda OpenAPI YAML", e);
               }
