@@ -57,7 +57,7 @@ services:
 
   tasklist: &tasklist
     container_name: tasklist-${DATABASE}
-    image: camunda/tasklist:8.6.11
+    image: camunda/tasklist:8.6.12
     ports:
       - 8080:8080
     environment:
