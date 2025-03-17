@@ -8,7 +8,7 @@
 package io.camunda.operate.util;
 
 import io.camunda.operate.exceptions.PersistenceException;
-import io.camunda.operate.property.OperateProperties;
+import io.camunda.config.operate.OperateProperties;
 import io.camunda.operate.zeebe.ImportValueType;
 import io.camunda.webapps.schema.entities.ExporterEntity;
 import java.io.IOException;

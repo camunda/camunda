@@ -10,7 +10,7 @@ package io.camunda.operate.rest;
 import static io.camunda.operate.util.OperateAbstractIT.DEFAULT_USER;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.operate.property.OperateProperties;
+import io.camunda.config.operate.OperateProperties;
 import io.camunda.operate.qa.util.DependencyInjectionTestExecutionListener;
 import io.camunda.operate.util.TestApplication;
 import io.camunda.operate.util.j5templates.MockMvcManager;

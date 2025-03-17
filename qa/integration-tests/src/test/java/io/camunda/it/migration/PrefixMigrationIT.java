@@ -13,7 +13,7 @@ import io.camunda.application.commons.migration.PrefixMigrationHelper;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.CredentialsProvider;
 import io.camunda.client.api.response.ProcessInstanceEvent;
-import io.camunda.operate.property.OperateProperties;
+import io.camunda.config.operate.OperateProperties;
 import io.camunda.qa.util.cluster.TestSimpleCamundaApplication;
 import io.camunda.qa.util.multidb.MultiDbConfigurator;
 import io.camunda.search.connect.configuration.ConnectConfiguration;

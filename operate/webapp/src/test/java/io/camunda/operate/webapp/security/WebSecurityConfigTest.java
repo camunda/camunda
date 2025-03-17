@@ -11,9 +11,9 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import io.camunda.operate.property.CloudProperties;
-import io.camunda.operate.property.OperateProperties;
-import io.camunda.operate.property.WebSecurityProperties;
+import io.camunda.config.operate.CloudProperties;
+import io.camunda.config.operate.OperateProperties;
+import io.camunda.config.operate.WebSecurityProperties;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;

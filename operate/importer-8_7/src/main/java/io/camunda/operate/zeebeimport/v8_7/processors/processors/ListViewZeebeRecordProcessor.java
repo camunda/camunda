@@ -23,7 +23,7 @@ import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.*;
 
 import io.camunda.operate.cache.ProcessCache;
 import io.camunda.operate.exceptions.PersistenceException;
-import io.camunda.operate.property.OperateProperties;
+import io.camunda.config.operate.OperateProperties;
 import io.camunda.operate.store.BatchRequest;
 import io.camunda.operate.store.FlowNodeStore;
 import io.camunda.operate.store.ListViewStore;

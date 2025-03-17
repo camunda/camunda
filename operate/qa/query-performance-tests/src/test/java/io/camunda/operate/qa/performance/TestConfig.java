@@ -31,7 +31,7 @@ import org.springframework.http.converter.json.Jackson2ObjectMapperBuilder;
 @ComponentScan(
     basePackages = {
       "io.camunda.operate.util.rest",
-      "io.camunda.operate.property",
+      "io.camunda.config.operate",
       "io.camunda.operate.schema.indices",
       "io.camunda.operate.schema.templates",
       "io.camunda.operate.qa.performance"

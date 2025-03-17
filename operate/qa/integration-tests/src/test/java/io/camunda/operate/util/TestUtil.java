@@ -7,7 +7,7 @@
  */
 package io.camunda.operate.util;
 
-import static io.camunda.operate.property.OperationExecutorProperties.LOCK_TIMEOUT_DEFAULT;
+import static io.camunda.config.operate.OperationExecutorProperties.LOCK_TIMEOUT_DEFAULT;
 import static io.camunda.operate.schema.SchemaManager.OPERATE_DELETE_ARCHIVED_INDICES;
 import static io.camunda.operate.util.OperateAbstractIT.DEFAULT_USER;
 import static io.camunda.webapps.schema.entities.AbstractExporterEntity.DEFAULT_TENANT_ID;

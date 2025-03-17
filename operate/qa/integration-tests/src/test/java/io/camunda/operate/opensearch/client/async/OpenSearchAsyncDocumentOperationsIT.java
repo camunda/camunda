@@ -12,7 +12,7 @@ import static io.camunda.operate.store.opensearch.dsl.RequestDSL.deleteByQueryRe
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.operate.opensearch.client.AbstractOpenSearchOperationIT;
-import io.camunda.operate.property.OperateProperties;
+import io.camunda.config.operate.OperateProperties;
 import io.camunda.operate.schema.indices.UserIndex;
 import java.util.List;
 import org.junit.Test;
@@ -55,7 +55,7 @@ public class OpenSearchAsyncDocumentOperationsIT extends AbstractOpenSearchOpera
                     .task()
                     .totalImpactedByTask(task, scheduler)
                     .get();
-              } catch (Exception e) {
+              } catch (final Exception e) {
                 throw new RuntimeException(e);
               }
             });

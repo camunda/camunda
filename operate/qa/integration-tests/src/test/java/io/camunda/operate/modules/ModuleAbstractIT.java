@@ -7,7 +7,7 @@
  */
 package io.camunda.operate.modules;
 
-import io.camunda.operate.property.OperateProperties;
+import io.camunda.config.operate.OperateProperties;
 import io.camunda.operate.util.apps.modules.ModulesTestApplication;
 import io.camunda.operate.webapp.security.UserService;
 import org.junit.runner.RunWith;

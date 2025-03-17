@@ -10,7 +10,7 @@ package io.camunda.operate.webapp.security.sso;
 import static io.camunda.operate.OperateProfileService.SSO_AUTH_PROFILE;
 
 import com.auth0.jwt.interfaces.Claim;
-import io.camunda.operate.property.OperateProperties;
+import io.camunda.config.operate.OperateProperties;
 import io.camunda.operate.webapp.rest.dto.UserDto;
 import io.camunda.operate.webapp.security.AbstractUserService;
 import io.camunda.operate.webapp.security.Permission;

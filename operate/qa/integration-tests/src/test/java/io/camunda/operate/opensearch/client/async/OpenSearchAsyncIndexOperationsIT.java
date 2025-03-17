@@ -15,7 +15,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.operate.entities.UserEntity;
 import io.camunda.operate.opensearch.client.AbstractOpenSearchOperationIT;
-import io.camunda.operate.property.OperateProperties;
+import io.camunda.config.operate.OperateProperties;
 import io.camunda.operate.schema.indices.UserIndex;
 import io.camunda.operate.store.opensearch.client.sync.OpenSearchDocumentOperations;
 import java.util.List;

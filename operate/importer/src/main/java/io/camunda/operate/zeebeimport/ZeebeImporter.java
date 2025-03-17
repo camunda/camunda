@@ -8,7 +8,7 @@
 package io.camunda.operate.zeebeimport;
 
 import io.camunda.operate.Metrics;
-import io.camunda.operate.property.OperateProperties;
+import io.camunda.config.operate.OperateProperties;
 import jakarta.annotation.PostConstruct;
 import java.util.Collection;
 import org.slf4j.Logger;

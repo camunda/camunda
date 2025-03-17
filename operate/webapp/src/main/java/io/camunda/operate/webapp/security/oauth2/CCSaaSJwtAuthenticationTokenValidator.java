@@ -13,7 +13,7 @@ import static io.camunda.operate.util.CollectionUtil.getOrDefaultFromMap;
 import static io.camunda.operate.util.ConversionUtils.stringIsEmpty;
 
 import io.camunda.operate.exceptions.OperateRuntimeException;
-import io.camunda.operate.property.OperateProperties;
+import io.camunda.config.operate.OperateProperties;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;

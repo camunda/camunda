@@ -13,7 +13,7 @@ import static io.camunda.operate.util.ThreadUtil.sleepFor;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.operate.data.generation.DataGeneratorConfig.DataGeneratorThread;
-import io.camunda.operate.property.ImportProperties;
+import io.camunda.config.operate.ImportProperties;
 import io.camunda.operate.qa.util.ZeebeTestUtil;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
