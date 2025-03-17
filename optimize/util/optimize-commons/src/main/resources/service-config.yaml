@@ -518,32 +518,6 @@ email:
     # Possible values are 'NONE', 'STARTTLS' or 'SSL/TLS'
     securityProtocol: ${CAMUNDA_OPTIMIZE_EMAIL_AUTHENTICATION_SECURITY_PROTOCOL:NONE}
 
-webhookAlerting:
-  webhooks:
-  # Name of the webhook, must be unique.
-#    'myWebhook':
-#      # URL of the webhook which can receive alerts from Optimize
-#      url: 'someUrl'
-#      # Map of the headers of the request sent to the webhook URL
-#      headers:
-#        'Authorization': 'auth token'
-#        'Content-type': 'application/json'
-#      # HTTP Method for the webhook request
-#      httpMethod: 'POST'
-#      # The default payload structure with the alertMessagePlaceholder {{ALERT_MESSAGE}} for the alert text.
-#      # Optimize will replace this placeholder with the content of the alert message.
-#      defaultPayload: '{"text": "{{ALERT_MESSAGE}}"}'
-#      # HTTP forward proxy configuration
-#      proxy:
-#        # whether an HTTP proxy should be used for requests to the webhook URL
-#        enabled: false
-#        # the host of the proxy to use
-#        host: null
-#        # the port of the proxy to use
-#        port: null
-#        # whether this proxy is using a secured connection
-#        sslEnabled: false
-
 digest:
   # cron expression to define when enabled email digests are to be sent
   cronTrigger: "0 0 9 * * MON"
