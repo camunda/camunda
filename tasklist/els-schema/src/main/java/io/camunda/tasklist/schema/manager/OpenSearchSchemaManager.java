@@ -185,11 +185,8 @@ public class OpenSearchSchemaManager implements SchemaManager {
     for (final Map.Entry<IndexDescriptor, Set<IndexMappingProperty>> indexNewFields :
         newFields.entrySet()) {
       if (indexNewFields.getKey() instanceof final IndexTemplateDescriptor templateDescriptor) {
-        LOGGER.info("Update template: " + templateDescriptor.getTemplateName());
-        final String json = readTemplateJson(templateDescriptor.getSchemaClasspathFilename());
-        final PutIndexTemplateRequest indexTemplateRequest =
-            prepareIndexTemplateRequest(templateDescriptor, json);
-        putIndexTemplate(indexTemplateRequest);
+        LOGGER.info("Update template: {}", templateDescriptor.getTemplateName());
+        createTemplate(templateDescriptor, true);
       }
 
       final Map<String, Property> properties;
@@ -311,6 +308,11 @@ public class OpenSearchSchemaManager implements SchemaManager {
   }
 
   private void createTemplate(final IndexTemplateDescriptor templateDescriptor) {
+    createTemplate(templateDescriptor, false);
+  }
+
+  private void createTemplate(
+      final IndexTemplateDescriptor templateDescriptor, final boolean overwrite) {
     final IndexTemplateMapping template = getTemplateFrom(templateDescriptor);
 
     putIndexTemplate(
@@ -319,7 +321,8 @@ public class OpenSearchSchemaManager implements SchemaManager {
             .template(template)
             .name(templateDescriptor.getTemplateName())
             .composedOf(List.of(settingsTemplateName()))
-            .build());
+            .build(),
+        overwrite);
 
     // This is necessary, otherwise tasklist won't find indexes at startup
     final String indexName = templateDescriptor.getFullQualifiedName();
@@ -335,28 +338,22 @@ public class OpenSearchSchemaManager implements SchemaManager {
     }
   }
 
-  private void putIndexTemplate(final PutIndexTemplateRequest request) {
-    final boolean created = retryOpenSearchClient.createTemplate(request);
-    if (created) {
-      LOGGER.debug("Template [{}] was successfully created", request.name());
-    } else {
-      LOGGER.debug("Template [{}] was NOT created", request.name());
-    }
-  }
-
   private IndexTemplateMapping getTemplateFrom(final IndexTemplateDescriptor templateDescriptor) {
     final String templateFilename = templateDescriptor.getSchemaClasspathFilename();
 
-    final InputStream templateConfig =
-        OpenSearchSchemaManager.class.getResourceAsStream(templateFilename);
+    try (final InputStream templateConfig =
+        OpenSearchSchemaManager.class.getResourceAsStream(templateFilename)) {
 
-    final JsonpMapper mapper = openSearchClient._transport().jsonpMapper();
-    final JsonParser parser = mapper.jsonProvider().createParser(templateConfig);
-
-    return new IndexTemplateMapping.Builder()
-        .mappings(IndexTemplateMapping._DESERIALIZER.deserialize(parser, mapper).mappings())
-        .aliases(templateDescriptor.getAlias(), new Alias.Builder().build())
-        .build();
+      final JsonpMapper mapper = openSearchClient._transport().jsonpMapper();
+      final JsonParser parser = mapper.jsonProvider().createParser(templateConfig);
+      return new IndexTemplateMapping.Builder()
+          .mappings(IndexTemplateMapping._DESERIALIZER.deserialize(parser, mapper).mappings())
+          .aliases(templateDescriptor.getAlias(), new Alias.Builder().build())
+          .build();
+    } catch (final IOException e) {
+      throw new TasklistRuntimeException(
+          "Failed to load template file " + templateFilename + " from classpath", e);
+    }
   }
 
   private void createIndex(final CreateIndexRequest createIndexRequest, final String indexName) {

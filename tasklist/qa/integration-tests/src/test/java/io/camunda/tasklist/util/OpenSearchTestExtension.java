@@ -36,6 +36,7 @@ import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.jupiter.api.extension.TestExecutionExceptionHandler;
 import org.opensearch.client.opensearch.OpenSearchClient;
 import org.opensearch.client.opensearch._types.FieldValue;
+import org.opensearch.client.opensearch._types.mapping.TypeMapping;
 import org.opensearch.client.opensearch.core.DeleteByQueryRequest;
 import org.opensearch.client.opensearch.indices.FlushRequest;
 import org.opensearch.client.opensearch.indices.GetIndexResponse;
@@ -281,6 +282,17 @@ public class OpenSearchTestExtension
           waitingRound,
           finishedTime);
     }
+  }
+
+  public TypeMapping getIndexTemplateMapping(final String templateName) throws IOException {
+    return osClient
+        .indices()
+        .getIndexTemplate(r -> r.name(templateName))
+        .indexTemplates()
+        .getFirst()
+        .indexTemplate()
+        .template()
+        .mappings();
   }
 
   private boolean areIndicesAreCreated(final String indexPrefix, final int minCountOfIndices)
