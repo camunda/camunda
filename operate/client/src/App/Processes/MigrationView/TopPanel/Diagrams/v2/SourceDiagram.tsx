@@ -32,11 +32,14 @@ const SourceDiagram: React.FC = observer(() => {
 
   const {data: overlayData} = useProcessInstancesOverlayData(
     {
-      ...processInstanceFilters,
-      processInstanceKey: {
-        $in: processInstancesSelectionStore.selectedProcessInstanceIds,
+      filter: {
+        ...processInstanceFilters,
+        processInstanceKey: {
+          $in: processInstancesSelectionStore.selectedProcessInstanceIds,
+        },
       },
     },
+    processName,
     processInstancesSelectionStore.selectedProcessInstanceIds.length > 0,
   );
 

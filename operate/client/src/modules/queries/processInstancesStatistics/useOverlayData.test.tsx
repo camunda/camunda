@@ -93,9 +93,12 @@ describe('useProcessInstancesOverlayStatistics', () => {
 
     mockFetchProcessInstancesStatistics().withSuccess(mockData);
 
-    const {result} = renderHook(() => useProcessInstancesOverlayData({}), {
-      wrapper,
-    });
+    const {result} = renderHook(
+      () => useProcessInstancesOverlayData({}, 'process1'),
+      {
+        wrapper,
+      },
+    );
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
@@ -105,9 +108,12 @@ describe('useProcessInstancesOverlayStatistics', () => {
   it('should handle server error while fetching process instances overlay statistics', async () => {
     mockFetchProcessInstancesStatistics().withServerError();
 
-    const {result} = renderHook(() => useProcessInstancesOverlayData({}), {
-      wrapper,
-    });
+    const {result} = renderHook(
+      () => useProcessInstancesOverlayData({}, 'process1'),
+      {
+        wrapper,
+      },
+    );
 
     await waitFor(() => expect(result.current.isError).toBe(true));
 
@@ -119,9 +125,12 @@ describe('useProcessInstancesOverlayStatistics', () => {
   it('should handle network error while fetching process instances overlay statistics', async () => {
     mockFetchProcessInstancesStatistics().withNetworkError();
 
-    const {result} = renderHook(() => useProcessInstancesOverlayData({}), {
-      wrapper,
-    });
+    const {result} = renderHook(
+      () => useProcessInstancesOverlayData({}, 'process1'),
+      {
+        wrapper,
+      },
+    );
 
     await waitFor(() => expect(result.current.isError).toBe(true));
 
@@ -133,9 +142,12 @@ describe('useProcessInstancesOverlayStatistics', () => {
   it('should handle empty data', async () => {
     mockFetchProcessInstancesStatistics().withSuccess([]);
 
-    const {result} = renderHook(() => useProcessInstancesOverlayData({}), {
-      wrapper,
-    });
+    const {result} = renderHook(
+      () => useProcessInstancesOverlayData({}, 'process1'),
+      {
+        wrapper,
+      },
+    );
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
@@ -143,20 +155,33 @@ describe('useProcessInstancesOverlayStatistics', () => {
   });
 
   it('should handle loading state', async () => {
-    const {result} = renderHook(() => useProcessInstancesOverlayData({}), {
-      wrapper,
-    });
+    const {result} = renderHook(
+      () => useProcessInstancesOverlayData({}, 'process1'),
+      {
+        wrapper,
+      },
+    );
 
     expect(result.current.isLoading).toBe(true);
   });
 
   it('should not fetch data when enabled is false', async () => {
     const {result} = renderHook(
-      () => useProcessInstancesOverlayData({}, false),
+      () => useProcessInstancesOverlayData({}, 'process1', false),
       {
         wrapper,
       },
     );
+
+    expect(result.current.isLoading).toBe(false);
+    expect(result.current.isFetched).toBe(false);
+    expect(result.current.data).toBeUndefined();
+  });
+
+  it('should not fetch data when processDefinitionKey is undefined', async () => {
+    const {result} = renderHook(() => useProcessInstancesOverlayData({}), {
+      wrapper,
+    });
 
     expect(result.current.isLoading).toBe(false);
     expect(result.current.isFetched).toBe(false);

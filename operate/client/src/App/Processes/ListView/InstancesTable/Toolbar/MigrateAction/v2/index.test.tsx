@@ -35,6 +35,7 @@ const PROCESS_ID = 'eventBasedGatewayProcess';
 jest.mock('modules/stores/processes/processes.list', () => ({
   processesStore: {
     getPermissions: jest.fn(),
+    getProcessId: () => PROCESS_ID,
     state: {processes: []},
     versionsByProcessAndTenant: {
       [`{${PROCESS_ID}}-{<default>}`]: [
