@@ -17,6 +17,7 @@ package io.camunda.process.test.api;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.process.test.impl.assertions.CamundaDataSource;
+import io.camunda.process.test.impl.client.CamundaManagementClient;
 import io.camunda.process.test.impl.extension.CamundaProcessTestContextImpl;
 import io.camunda.process.test.impl.runtime.CamundaContainerRuntime;
 import io.camunda.process.test.impl.runtime.CamundaContainerRuntimeBuilder;
@@ -26,12 +27,15 @@ import io.camunda.process.test.impl.testresult.ProcessTestResult;
 import io.camunda.zeebe.client.ZeebeClient;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
+import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
+import org.junit.jupiter.api.extension.AfterAllCallback;
 import org.junit.jupiter.api.extension.AfterEachCallback;
+import org.junit.jupiter.api.extension.BeforeAllCallback;
 import org.junit.jupiter.api.extension.BeforeEachCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.jupiter.api.extension.ExtensionContext.Namespace;
@@ -57,7 +61,8 @@ import org.junit.platform.commons.util.ReflectionUtils;
  *   <li>Stop the runtime
  * </ul>
  */
-public class CamundaProcessTestExtension implements BeforeEachCallback, AfterEachCallback {
+public class CamundaProcessTestExtension
+    implements BeforeEachCallback, BeforeAllCallback, AfterEachCallback, AfterAllCallback {
 
   /** The JUnit extension namespace to store the runtime and context. */
   public static final Namespace NAMESPACE = Namespace.create(CamundaProcessTestExtension.class);
@@ -75,6 +80,8 @@ public class CamundaProcessTestExtension implements BeforeEachCallback, AfterEac
 
   private CamundaContainerRuntime containerRuntime;
   private CamundaProcessTestResultCollector processTestResultCollector;
+
+  private CamundaManagementClient camundaManagementClient;
 
   CamundaProcessTestExtension(
       final CamundaContainerRuntimeBuilder containerRuntimeBuilder,
@@ -103,11 +110,19 @@ public class CamundaProcessTestExtension implements BeforeEachCallback, AfterEac
   }
 
   @Override
-  public void beforeEach(final ExtensionContext context) throws Exception {
+  public void beforeAll(final ExtensionContext context) {
     // create runtime
     containerRuntime = containerRuntimeBuilder.build();
     containerRuntime.start();
 
+    final URI endpoint = containerRuntime.getCamundaContainer().getMonitoringApiAddress();
+    camundaManagementClient =
+        new CamundaManagementClient(
+            containerRuntime.getCamundaContainer().getMonitoringApiAddress());
+  }
+
+  @Override
+  public void beforeEach(final ExtensionContext context) throws Exception {
     final CamundaProcessTestContext camundaProcessTestContext =
         new CamundaProcessTestContextImpl(
             containerRuntime.getCamundaContainer(),
@@ -179,13 +194,19 @@ public class CamundaProcessTestExtension implements BeforeEachCallback, AfterEac
     CamundaAssert.reset();
     // close all created clients
     closeCreatedClients();
-    // close the runtime
-    containerRuntime.close();
+    // purge cluster
+    camundaManagementClient.purgeCluster();
 
     // print test results
     if (isTestFailed(extensionContext)) {
       processTestResultPrinter.print(testResult);
     }
+  }
+
+  @Override
+  public void afterAll(final ExtensionContext context) throws Exception {
+    // close the runtime
+    containerRuntime.close();
   }
 
   private static boolean isTestFailed(final ExtensionContext extensionContext) {

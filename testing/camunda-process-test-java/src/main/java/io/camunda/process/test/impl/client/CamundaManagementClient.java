@@ -108,6 +108,7 @@ public class CamundaManagementClient {
    *     code
    */
   public void purgeCluster(final Duration timeout) {
+    System.out.println("INITIATING CLUSTER PURGE");
     final MinimalPlannedOperationsResponseDto startPurgeResponse = startPurge();
 
     try {
@@ -121,6 +122,8 @@ public class CamundaManagementClient {
     } catch (final Exception e) {
       throw new RuntimeException("Failed to purge the cluster", e);
     }
+
+    System.out.println("PURGE CLUSTER COMPLETE");
   }
 
   private MinimalPlannedOperationsResponseDto startPurge() {
@@ -151,7 +154,9 @@ public class CamundaManagementClient {
   private <T> T sendRequest(final ClassicHttpRequest request, final Class<T> clazz)
       throws IOException {
     final String responseBody = sendRequest(request);
-    return objectMapper.readValue(responseBody, clazz);
+    final T response = objectMapper.readValue(responseBody, clazz);
+    System.out.println("Response:  " + responseBody);
+    return response;
   }
 
   private String sendRequest(final ClassicHttpRequest request) throws IOException {
