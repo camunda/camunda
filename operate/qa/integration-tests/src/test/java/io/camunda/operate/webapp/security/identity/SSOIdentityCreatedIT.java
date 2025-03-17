@@ -10,11 +10,11 @@ package io.camunda.operate.webapp.security.identity;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.application.commons.security.CamundaSecurityConfiguration.CamundaSecurityProperties;
+import io.camunda.authentication.tenant.TenantService;
 import io.camunda.identity.sdk.Identity;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.webapp.security.SecurityContextWrapper;
 import io.camunda.operate.webapp.security.permission.PermissionsService;
-import io.camunda.operate.webapp.security.tenant.TenantService;
 import io.camunda.security.impl.AuthorizationChecker;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -32,7 +32,6 @@ import org.springframework.test.context.junit4.SpringRunner;
       IdentityConfigurer.class,
       OperateProperties.class,
       CamundaSecurityProperties.class,
-      TenantService.class,
       PermissionsService.class,
       SecurityContextWrapper.class
     },
@@ -43,6 +42,9 @@ import org.springframework.test.context.junit4.SpringRunner;
 public class SSOIdentityCreatedIT {
 
   @MockBean AuthorizationChecker authorizationChecker;
+
+  @MockBean(name = "tenantServiceImpl")
+  TenantService tenantService;
 
   @Autowired
   @Qualifier("saasIdentity")

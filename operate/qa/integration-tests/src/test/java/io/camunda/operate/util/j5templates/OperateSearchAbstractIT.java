@@ -13,6 +13,7 @@ import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.camunda.authentication.tenant.TenantService;
 import io.camunda.operate.cache.ProcessCache;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.util.TestApplication;
@@ -20,7 +21,6 @@ import io.camunda.operate.util.searchrepository.TestSearchRepository;
 import io.camunda.operate.webapp.rest.dto.UserDto;
 import io.camunda.operate.webapp.security.Permission;
 import io.camunda.operate.webapp.security.UserService;
-import io.camunda.operate.webapp.security.tenant.TenantService;
 import java.util.List;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;

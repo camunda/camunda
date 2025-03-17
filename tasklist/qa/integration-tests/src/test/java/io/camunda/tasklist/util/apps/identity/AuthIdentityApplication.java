@@ -7,9 +7,11 @@
  */
 package io.camunda.tasklist.util.apps.identity;
 
+import io.camunda.authentication.tenant.TenantService;
 import io.camunda.tasklist.TasklistModuleConfiguration;
 import io.camunda.tasklist.util.TestApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.FilterType;
 import org.springframework.context.annotation.FullyQualifiedAnnotationBeanNameGenerator;
@@ -29,4 +31,7 @@ import org.springframework.context.annotation.FullyQualifiedAnnotationBeanNameGe
           value = TasklistModuleConfiguration.class),
     },
     nameGenerator = FullyQualifiedAnnotationBeanNameGenerator.class)
-public class AuthIdentityApplication extends TestApplication {}
+public class AuthIdentityApplication extends TestApplication {
+
+  @MockBean private TenantService tenantService;
+}

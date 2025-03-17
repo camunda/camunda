@@ -33,6 +33,7 @@ import com.auth0.AuthorizeUrl;
 import com.auth0.IdentityVerificationException;
 import com.auth0.Tokens;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.camunda.authentication.tenant.TenantService;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.util.apps.sso.AuthSSOApplication;
 import io.camunda.tasklist.webapp.dto.UserDTO;
@@ -99,6 +100,7 @@ public class AuthenticationWithPersistentSessionsIT implements AuthenticationTes
   @Autowired private TestRestTemplate testRestTemplate;
   @Autowired private TasklistProperties tasklistProperties;
   @MockBean private AuthenticationController authenticationController;
+  @MockBean private TenantService tenantService;
 
   @MockBean private AssigneeMigrator assigneeMigrator;
   @MockBean private UserGroupService userGroupService;

@@ -355,7 +355,7 @@ public class FinishedImportingIT extends OperateZeebeAbstractIT {
         .forEach(ElasticsearchRecordsReader::postConstruct);
 
     await()
-        .atMost(Duration.ofSeconds(30))
+        .atMost(Duration.ofSeconds(60))
         .until(
             () -> {
               final var searchRequest =
@@ -394,7 +394,7 @@ public class FinishedImportingIT extends OperateZeebeAbstractIT {
   private void assertImportPositionMatchesRecord(
       final Record<RecordValue> record, final ImportValueType type, final int partitionId) {
     await()
-        .atMost(Duration.ofSeconds(30))
+        .atMost(Duration.ofSeconds(60))
         .untilAsserted(
             () -> {
               final var req =

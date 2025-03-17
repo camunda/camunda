@@ -26,7 +26,7 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 @ExtendWith(SpringExtension.class)
 @SpringBootTest(
-    classes = TestApplication.class,
+    classes = {TestApplication.class},
     properties = {
       TasklistProperties.PREFIX + ".importer.startLoadingDataOnStartup = false",
       TasklistProperties.PREFIX + ".archiver.rolloverEnabled = false",
@@ -41,6 +41,7 @@ public abstract class TasklistIntegrationTest {
 
   protected OffsetDateTime testStartTime;
   @Autowired private ApplicationContext applicationContext;
+
   @MockBean private CamundaUserService camundaUserService;
 
   @BeforeEach

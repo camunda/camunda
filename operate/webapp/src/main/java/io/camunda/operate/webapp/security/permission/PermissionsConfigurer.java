@@ -7,7 +7,7 @@
  */
 package io.camunda.operate.webapp.security.permission;
 
-import io.camunda.operate.webapp.security.tenant.TenantService;
+import io.camunda.authentication.tenant.TenantService;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.security.impl.AuthorizationChecker;
 import org.springframework.context.annotation.Bean;

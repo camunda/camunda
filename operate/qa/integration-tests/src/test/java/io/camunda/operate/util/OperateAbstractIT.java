@@ -15,13 +15,13 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import io.camunda.authentication.tenant.TenantService;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.qa.util.DependencyInjectionTestExecutionListener;
 import io.camunda.operate.webapp.rest.dto.UserDto;
 import io.camunda.operate.webapp.rest.exception.NotAuthorizedException;
 import io.camunda.operate.webapp.security.Permission;
 import io.camunda.operate.webapp.security.UserService;
-import io.camunda.operate.webapp.security.tenant.TenantService;
 import io.camunda.operate.zeebe.PartitionHolder;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
@@ -67,7 +67,8 @@ public abstract class OperateAbstractIT {
 
   @MockBean protected UserService userService;
 
-  @MockBean protected TenantService tenantService;
+  @MockBean(name = "tenantService")
+  protected TenantService tenantService;
 
   @Before
   public void before() {
