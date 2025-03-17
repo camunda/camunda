@@ -1520,6 +1520,42 @@ paths:
         "500":
           $ref: "#/components/responses/InternalServerError"
 
+  /process-instances/batch-operations/cancellation:
+    post:
+      tags:
+        - Process instance
+      operationId: cancelProcessInstancesBatchOperation
+      summary: Create cancel process instances batch operation
+      description: |
+        Cancels multiple running process instances.
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProcessInstanceFilter"
+      responses:
+        "200":
+          description: The key of the batch operation.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BatchOperationCreatedResult"
+        "400":
+          description: >
+            The process instance batch operation failed.
+            More details are provided in the response body.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
   /process-instances/{processInstanceKey}/migration:
     post:
       tags:
@@ -7264,6 +7300,16 @@ components:
         formKey:
           description: The assigned key, which acts as a unique identifier for this form.
           type: string
+    BatchOperationCreatedResult:
+      type: object
+      properties:
+        batchOperationKey:
+          description: >
+            Key of the batch operation
+          type: string
+        batchOperationType:
+          description: Batch operation type
+          type: string
     BatchOperationSearchQuerySortRequest:
       type: object
       properties:
@@ -7355,6 +7401,7 @@ components:
         operationsCompletedCount:
           type: integer
           format: int32
+
     BatchOperationItemSearchQueryResult:
       type: object
       allOf:
@@ -7365,6 +7412,7 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/BatchOperationItemResponse"
+
     BatchOperationItemResponse:
       type: object
       properties:
@@ -7377,6 +7425,7 @@ components:
         state:
           description: State of the item
           type: string
+
   responses:
     InternalServerError:
       description: >

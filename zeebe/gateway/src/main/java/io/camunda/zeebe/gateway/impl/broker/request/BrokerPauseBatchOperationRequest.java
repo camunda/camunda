@@ -10,7 +10,7 @@ package io.camunda.zeebe.gateway.impl.broker.request;
 import io.camunda.zeebe.broker.client.api.dto.BrokerExecuteCommand;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationExecutionRecord;
 import io.camunda.zeebe.protocol.record.ValueType;
-import io.camunda.zeebe.protocol.record.intent.BatchOperationIntent;
+import io.camunda.zeebe.protocol.record.intent.BatchOperationExecutionIntent;
 import org.agrona.DirectBuffer;
 
 public class BrokerPauseBatchOperationRequest
@@ -19,14 +19,13 @@ public class BrokerPauseBatchOperationRequest
   BatchOperationExecutionRecord requestDto = new BatchOperationExecutionRecord();
 
   public BrokerPauseBatchOperationRequest() {
-    super(ValueType.BATCH_OPERATION_EXECUTION, BatchOperationIntent.PAUSE);
+    super(ValueType.BATCH_OPERATION_EXECUTION, BatchOperationExecutionIntent.PAUSE);
   }
 
   public BrokerPauseBatchOperationRequest setBatchOperationKey(final long batchOperationKey) {
     requestDto.setBatchOperationKey(batchOperationKey);
     return this;
   }
-
 
   @Override
   public BatchOperationExecutionRecord getRequestWriter() {
@@ -39,5 +38,4 @@ public class BrokerPauseBatchOperationRequest
     responseDto.wrap(buffer);
     return responseDto;
   }
-
 }

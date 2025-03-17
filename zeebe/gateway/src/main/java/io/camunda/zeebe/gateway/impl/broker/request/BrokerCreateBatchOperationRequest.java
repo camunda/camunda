@@ -9,11 +9,13 @@ package io.camunda.zeebe.gateway.impl.broker.request;
 
 import io.camunda.search.filter.FilterBase;
 import io.camunda.zeebe.broker.client.api.dto.BrokerExecuteCommand;
+import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationCreationRecord;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationIntent;
 import io.camunda.zeebe.protocol.record.value.BatchOperationType;
 import org.agrona.DirectBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
 
 public class BrokerCreateBatchOperationRequest
     extends BrokerExecuteCommand<BatchOperationCreationRecord> {
@@ -21,7 +23,7 @@ public class BrokerCreateBatchOperationRequest
   BatchOperationCreationRecord requestDto = new BatchOperationCreationRecord();
 
   public BrokerCreateBatchOperationRequest() {
-    super(ValueType.BATCH_OPERATION, BatchOperationIntent.CREATE);
+    super(ValueType.BATCH_OPERATION_CREATION, BatchOperationIntent.CREATE);
   }
 
   public BrokerCreateBatchOperationRequest setBatchOperationType(
@@ -43,7 +45,7 @@ public class BrokerCreateBatchOperationRequest
   }
 
   public BrokerCreateBatchOperationRequest setFilter(final FilterBase filter) {
-    requestDto.setFilter(filter);
+    requestDto.setEntityFilter(new UnsafeBuffer(MsgPackConverter.convertToMsgPack(filter)));
     return this;
   }
 }
