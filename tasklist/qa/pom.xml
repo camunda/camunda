@@ -16,6 +16,7 @@
   <modules>
     <module>util</module>
     <module>integration-tests</module>
+    <module>migration-tests</module>
   </modules>
 
   <properties>

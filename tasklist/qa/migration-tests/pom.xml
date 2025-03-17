@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+    <groupId>io.camunda</groupId>
+    <artifactId>tasklist-qa</artifactId>
+    <version>8.8.0-SNAPSHOT</version>
+  </parent>
+  <artifactId>tasklist-qa-migration-tests-parent</artifactId>
+  <packaging>pom</packaging>
+
+  <name>Tasklist QA Migration Tests Parent</name>
+
+  <modules>
+    <module>test-fixture-840</module>
+    <module>test-fixture-850</module>
+    <module>test-fixture-860</module>
+    <module>test-fixture-870</module>
+    <module>test-fixture-880</module>
+    <module>migration-test</module>
+  </modules>
+
+</project>
