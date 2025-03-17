@@ -852,7 +852,7 @@ jobs:
             echo "parent_changed=false" >> "$GITHUB_OUTPUT"
           fi
       - name: Build single application
-        if: steps.parent_check.outputs.parent_changed == 'true'
+        if: steps.parent_check.outputs.file_changed == 'true'
         uses: ./.github/actions/run-maven
         with:
           parameters: install -pl dist -am -DskipTests -Dskip.fe.build=true -Dquickly
