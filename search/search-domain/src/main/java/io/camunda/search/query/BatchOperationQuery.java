@@ -35,7 +35,7 @@ public record BatchOperationQuery(
     private static final BatchOperationFilter EMPTY_FILTER =
         FilterBuilders.batchOperation().build();
     private static final BatchOperationSort EMPTY_SORT =
-        SortOptionBuilders.batchOperationSort().build();
+        SortOptionBuilders.batchOperation().build();
 
     private BatchOperationFilter filter;
     private BatchOperationSort sort;
@@ -64,7 +64,7 @@ public record BatchOperationQuery(
 
     public Builder sort(
         final Function<BatchOperationSort.Builder, ObjectBuilder<BatchOperationSort>> fn) {
-      return sort(SortOptionBuilders.batchOperationSort(fn));
+      return sort(SortOptionBuilders.batchOperation(fn));
     }
 
     @Override

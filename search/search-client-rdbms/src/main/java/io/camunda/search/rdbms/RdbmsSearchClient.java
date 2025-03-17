@@ -9,6 +9,7 @@ package io.camunda.search.rdbms;
 
 import io.camunda.db.rdbms.RdbmsService;
 import io.camunda.search.clients.AuthorizationSearchClient;
+import io.camunda.search.clients.BatchOperationSearchClient;
 import io.camunda.search.clients.DecisionDefinitionSearchClient;
 import io.camunda.search.clients.DecisionInstanceSearchClient;
 import io.camunda.search.clients.DecisionRequirementSearchClient;
@@ -26,6 +27,8 @@ import io.camunda.search.clients.UserSearchClient;
 import io.camunda.search.clients.UserTaskSearchClient;
 import io.camunda.search.clients.VariableSearchClient;
 import io.camunda.search.entities.AuthorizationEntity;
+import io.camunda.search.entities.BatchOperationEntity;
+import io.camunda.search.entities.BatchOperationEntity.BatchOperationItemEntity;
 import io.camunda.search.entities.DecisionDefinitionEntity;
 import io.camunda.search.entities.DecisionInstanceEntity;
 import io.camunda.search.entities.DecisionRequirementsEntity;
@@ -42,6 +45,7 @@ import io.camunda.search.entities.UserEntity;
 import io.camunda.search.entities.UserTaskEntity;
 import io.camunda.search.entities.VariableEntity;
 import io.camunda.search.query.AuthorizationQuery;
+import io.camunda.search.query.BatchOperationQuery;
 import io.camunda.search.query.DecisionDefinitionQuery;
 import io.camunda.search.query.DecisionInstanceQuery;
 import io.camunda.search.query.DecisionRequirementsQuery;
@@ -81,7 +85,8 @@ public class RdbmsSearchClient
         TenantSearchClient,
         MappingSearchClient,
         GroupSearchClient,
-        UsageMetricsSearchClient {
+        UsageMetricsSearchClient,
+        BatchOperationSearchClient {
 
   private static final Logger LOG = LoggerFactory.getLogger(RdbmsSearchClient.class);
 
@@ -297,5 +302,26 @@ public class RdbmsSearchClient
     LOG.debug("[RDBMS Search Client] Search for processDefinition: {}", query);
 
     return rdbmsService.getProcessDefinitionReader().search(query);
+  }
+
+  @Override
+  public SearchQueryResult<BatchOperationEntity> searchBatchOperations(
+      final BatchOperationQuery query) {
+    LOG.debug("[RDBMS Search Client] Search for batch operations: {}", query);
+
+    // return rdbmsService.getBatchOperationReader().search(query);
+    throw new UnsupportedOperationException(
+        "BatchOperationSearchClient searchBatchOperations not implemented yet.");
+  }
+
+  @Override
+  public List<BatchOperationItemEntity> getBatchOperationItems(final Long batchOperationKey) {
+    LOG.debug(
+        "[RDBMS Search Client] Search for batch operation items by batchOperationKey: {}",
+        batchOperationKey);
+
+    // return rdbmsService.getBatchOperationReader().getItems(batchOperationKey);
+    throw new UnsupportedOperationException(
+        "BatchOperationSearchClient getBatchOperationItems not implemented yet.");
   }
 }

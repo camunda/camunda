@@ -23,6 +23,7 @@ import io.camunda.search.entities.IncidentEntity.IncidentState;
 import io.camunda.search.entities.UserTaskEntity.UserTaskState;
 import io.camunda.search.filter.*;
 import io.camunda.search.filter.AuthorizationFilter;
+import io.camunda.search.filter.BatchOperationFilter;
 import io.camunda.search.filter.DecisionDefinitionFilter;
 import io.camunda.search.filter.DecisionInstanceFilter;
 import io.camunda.search.filter.DecisionRequirementsFilter;
@@ -35,6 +36,7 @@ import io.camunda.search.filter.UserTaskFilter;
 import io.camunda.search.filter.VariableFilter;
 import io.camunda.search.page.SearchQueryPage;
 import io.camunda.search.query.AuthorizationQuery;
+import io.camunda.search.query.BatchOperationQuery;
 import io.camunda.search.query.DecisionDefinitionQuery;
 import io.camunda.search.query.DecisionInstanceQuery;
 import io.camunda.search.query.DecisionRequirementsQuery;
@@ -53,6 +55,7 @@ import io.camunda.search.query.UserQuery;
 import io.camunda.search.query.UserTaskQuery;
 import io.camunda.search.query.VariableQuery;
 import io.camunda.search.sort.AuthorizationSort;
+import io.camunda.search.sort.BatchOperationSort;
 import io.camunda.search.sort.DecisionDefinitionSort;
 import io.camunda.search.sort.DecisionInstanceSort;
 import io.camunda.search.sort.DecisionRequirementsSort;
@@ -71,6 +74,8 @@ import io.camunda.search.sort.UserTaskSort;
 import io.camunda.search.sort.VariableSort;
 import io.camunda.util.ObjectBuilder;
 import io.camunda.zeebe.gateway.protocol.rest.*;
+import io.camunda.zeebe.gateway.protocol.rest.BatchOperationFilter.OperationTypeEnum;
+import io.camunda.zeebe.gateway.protocol.rest.BatchOperationFilter.StateEnum;
 import io.camunda.zeebe.gateway.rest.util.GenericVariable;
 import io.camunda.zeebe.gateway.rest.util.KeyUtil;
 import io.camunda.zeebe.gateway.rest.util.ProcessInstanceStateConverter;
@@ -514,6 +519,58 @@ public final class SearchQueryRequestMapper {
             SearchQueryRequestMapper::applyIncidentSortField);
     final var filter = toIncidentFilter(request.getFilter());
     return buildSearchQuery(filter, sort, page, SearchQueryBuilders::incidentSearchQuery);
+  }
+
+  public static Either<ProblemDetail, BatchOperationQuery> toBatchOperationQuery(
+      final BatchOperationSearchQuery request) {
+    if (request == null) {
+      return Either.right(SearchQueryBuilders.batchOperationQuery().build());
+    }
+    final var page = toSearchQueryPage(request.getPage());
+    final var sort =
+        toSearchQuerySort(
+            SearchQuerySortRequestMapper.fromBatchOperationSearchQuerySortRequest(
+                request.getSort()),
+            SortOptionBuilders::batchOperation,
+            SearchQueryRequestMapper::applyBatchOperationSortField);
+    final var filter = toBatchOperationFilter(request.getFilter());
+    return buildSearchQuery(filter, sort, page, SearchQueryBuilders::batchOperationQuery);
+  }
+
+  private static BatchOperationFilter toBatchOperationFilter(
+      final io.camunda.zeebe.gateway.protocol.rest.BatchOperationFilter filter) {
+    final var builder = FilterBuilders.batchOperation();
+
+    if (filter != null) {
+      ofNullable(filter.getBatchOperationKey())
+          .map(KeyUtil::keyToLong)
+          .ifPresent(builder::batchOperationKeys);
+      ofNullable(filter.getState()).map(StateEnum::toString).ifPresent(builder::states);
+      ofNullable(filter.getOperationType())
+          .map(OperationTypeEnum::toString)
+          .ifPresent(builder::operationTypes);
+    }
+
+    return builder.build();
+  }
+
+  private static List<String> applyBatchOperationSortField(
+      final BatchOperationSearchQuerySortRequest.FieldEnum field,
+      final BatchOperationSort.Builder builder) {
+    final List<String> validationErrors = new ArrayList<>();
+    if (field == null) {
+      validationErrors.add(ERROR_SORT_FIELD_MUST_NOT_BE_NULL);
+    } else {
+      switch (field) {
+        case BATCH_OPERATION_KEY -> builder.batchOperationKey();
+        case STATE -> builder.state();
+        case OPERATION_TYPE -> builder.operationType();
+        case START_DATE -> builder.startDate();
+        case END_DATE -> builder.endDate();
+        default -> validationErrors.add(ERROR_UNKNOWN_SORT_BY.formatted(field));
+      }
+    }
+    return validationErrors;
   }
 
   private static ProcessDefinitionFilter toProcessDefinitionFilter(
