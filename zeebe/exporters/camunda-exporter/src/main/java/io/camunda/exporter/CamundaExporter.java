@@ -127,12 +127,13 @@ public class CamundaExporter implements Exporter {
   public void open(final Controller controller) {
     this.controller = controller;
     searchEngineClient = clientAdapter.getSearchEngineClient();
-    final var schemaManager = createSchemaManager();
+    /*
+        final var schemaManager = createSchemaManager();
 
-    if (!schemaManager.isSchemaReadyForUse()) {
-      throw new IllegalStateException("Schema is not ready for use");
-    }
-
+        if (!schemaManager.isSchemaReadyForUse()) {
+          throw new IllegalStateException("Schema is not ready for use");
+        }
+    */
     writer = createBatchWriter(); // move before schemaManager.isSchemaReadyForUse()?
 
     checkImportersCompletedAndReschedule();

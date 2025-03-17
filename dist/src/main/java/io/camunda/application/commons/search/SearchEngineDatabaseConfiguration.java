@@ -13,12 +13,14 @@ import io.camunda.application.commons.search.SearchEngineDatabaseConfiguration.S
 import io.camunda.exporter.config.ExporterConfiguration.IndexSettings;
 import io.camunda.exporter.config.ExporterConfiguration.RetentionConfiguration;
 import io.camunda.search.connect.configuration.ConnectConfiguration;
+import io.camunda.zeebe.broker.exporter.repo.ExporterDescriptor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.DependsOn;
 
 @Configuration(proxyBeanMethods = false)
 @Conditional(SearchEngineEnabledCondition.class)
@@ -34,6 +36,13 @@ public class SearchEngineDatabaseConfiguration {
       final SearchEngineConfiguration searchEngineConfiguration,
       @Value("${camunda.database.create-schema:true}") final boolean createSchema) {
     return new SearchEngineSchemaInitializer(searchEngineConfiguration, createSchema);
+  }
+
+  /** workaround to make the broker wait for the schema to be created before starting */
+  @Bean
+  @DependsOn("searchEngineSchemaInitializer")
+  public ExporterDescriptor exporterDescriptor() {
+    return new ExporterDescriptor("fake");
   }
 
   @Bean
