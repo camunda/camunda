@@ -699,6 +699,7 @@
     </dependency>
 
     <!-- optimize -->
+    <!-- TODO - remove these once optimize is removed from backups) -->
 
     <dependency>
       <groupId>io.camunda.optimize</groupId>
