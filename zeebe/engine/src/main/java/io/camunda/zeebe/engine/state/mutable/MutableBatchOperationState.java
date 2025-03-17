@@ -21,8 +21,6 @@ public interface MutableBatchOperationState extends BatchOperationState {
    */
   void create(final long batchKey, final BatchOperationCreationRecord record);
 
-  void removeFromPending(final long batchKey, final BatchOperationExecutionRecord record);
-
   void appendKeys(final long batchKey, final BatchOperationSubbatchRecord record);
 
   void removeKeys(final long batchKey, final BatchOperationExecutionRecord record);

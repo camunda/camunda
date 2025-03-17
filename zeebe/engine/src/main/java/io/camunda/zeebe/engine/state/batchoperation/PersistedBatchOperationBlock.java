@@ -15,13 +15,13 @@ import io.camunda.zeebe.msgpack.value.LongValue;
 import java.util.Collection;
 import java.util.List;
 
-public class PersistedBatchOperationChunk extends UnpackedObject implements DbValue {
+public class PersistedBatchOperationBlock extends UnpackedObject implements DbValue {
 
   private final LongProperty keyProp = new LongProperty("key");
   private final LongProperty batchOperationKeyProp = new LongProperty("batchOperationKey");
   private final ArrayProperty<LongValue> keysProp = new ArrayProperty<>("keys", LongValue::new);
 
-  public PersistedBatchOperationChunk() {
+  public PersistedBatchOperationBlock() {
     super(3);
     declareProperty(keyProp).declareProperty(batchOperationKeyProp).declareProperty(keysProp);
   }
@@ -30,7 +30,7 @@ public class PersistedBatchOperationChunk extends UnpackedObject implements DbVa
     return keyProp.getValue();
   }
 
-  public PersistedBatchOperationChunk setKey(final long key) {
+  public PersistedBatchOperationBlock setKey(final long key) {
     keyProp.setValue(key);
     return this;
   }
@@ -39,7 +39,7 @@ public class PersistedBatchOperationChunk extends UnpackedObject implements DbVa
     return batchOperationKeyProp.getValue();
   }
 
-  public PersistedBatchOperationChunk setBatchOperationKey(final long batchOperationKey) {
+  public PersistedBatchOperationBlock setBatchOperationKey(final long batchOperationKey) {
     batchOperationKeyProp.setValue(batchOperationKey);
     return this;
   }
@@ -48,12 +48,12 @@ public class PersistedBatchOperationChunk extends UnpackedObject implements DbVa
     return keysProp.stream().map(LongValue::getValue).toList();
   }
 
-  public PersistedBatchOperationChunk appendKey(final Long key) {
+  public PersistedBatchOperationBlock appendKey(final Long key) {
     keysProp.add().setValue(key);
     return this;
   }
 
-  public PersistedBatchOperationChunk removeKeys(final Collection<Long> keys) {
+  public PersistedBatchOperationBlock removeKeys(final Collection<Long> keys) {
     final var newKeys =
         keysProp.stream().map(LongValue::getValue).filter(k -> !keys.contains(k)).toList();
 

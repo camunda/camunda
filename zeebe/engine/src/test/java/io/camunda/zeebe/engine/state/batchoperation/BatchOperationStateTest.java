@@ -24,13 +24,15 @@ import java.util.stream.Collectors;
 import java.util.stream.LongStream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
-@ExtendWith(ProcessingStateExtension.class)
 public class BatchOperationStateTest {
 
-  private static final int MAX_CHUNK_SIZE = 15;
+  @RegisterExtension
+  public static final ProcessingStateExtension EXTENSION =
+      new ProcessingStateExtension().withEngineConfiguration(c -> c.setBatchOperationBlockSize(15));
 
+  private static final int MAX_BLOCK_SIZE = 15;
   private MutableProcessingState processingState;
   private MutableBatchOperationState state;
 
@@ -96,9 +98,12 @@ public class BatchOperationStateTest {
     state.create(batchOperationKey, roleRecord);
 
     // when
-    state.removeFromPending(
+    state.appendKeys(
         batchOperationKey,
-        new BatchOperationExecutionRecord().setBatchOperationKey(batchOperationKey));
+        new BatchOperationSubbatchRecord()
+            .setBatchOperationKey(batchOperationKey)
+            .setSubbatchKey(2L)
+            .setKeys(LongStream.range(0, 99).boxed().toList()));
 
     // then
     final var pendingKeys = new ArrayList<>();
@@ -225,8 +230,8 @@ public class BatchOperationStateTest {
     // then
     final var persistedBatchOperation = state.get(batchOperationKey).get();
 
-    assertThat(persistedBatchOperation.getMinChunkKey()).isEqualTo(0);
-    assertThat(persistedBatchOperation.getMaxChunkKey()).isEqualTo(0);
+    assertThat(persistedBatchOperation.getMinBlockKey()).isEqualTo(0);
+    assertThat(persistedBatchOperation.getMaxBlockKey()).isEqualTo(0);
 
     final var nextKeys = state.getNextEntityKeys(batchOperationKey, 5);
     assertThat(nextKeys).hasSize(5);
@@ -257,8 +262,8 @@ public class BatchOperationStateTest {
     // then
     final var persistedBatchOperation = state.get(batchOperationKey).get();
 
-    assertThat(persistedBatchOperation.getMinChunkKey()).isEqualTo(0);
-    assertThat(persistedBatchOperation.getMaxChunkKey()).isEqualTo(0);
+    assertThat(persistedBatchOperation.getMinBlockKey()).isEqualTo(0);
+    assertThat(persistedBatchOperation.getMaxBlockKey()).isEqualTo(0);
 
     final var nextKeys = state.getNextEntityKeys(batchOperationKey, 10);
     assertThat(nextKeys).hasSize(5);
@@ -289,8 +294,8 @@ public class BatchOperationStateTest {
     // then
     final var persistedBatchOperation = state.get(batchOperationKey).get();
 
-    assertThat(persistedBatchOperation.getMinChunkKey()).isEqualTo(0);
-    assertThat(persistedBatchOperation.getMaxChunkKey()).isEqualTo(6);
+    assertThat(persistedBatchOperation.getMinBlockKey()).isEqualTo(0);
+    assertThat(persistedBatchOperation.getMaxBlockKey()).isEqualTo(6);
   }
 
   @Test
@@ -327,8 +332,8 @@ public class BatchOperationStateTest {
     // then
     final var persistedBatchOperation = state.get(batchOperationKey).get();
 
-    assertThat(persistedBatchOperation.getMinChunkKey()).isEqualTo(0);
-    assertThat(persistedBatchOperation.getMaxChunkKey()).isEqualTo(19);
+    assertThat(persistedBatchOperation.getMinBlockKey()).isEqualTo(0);
+    assertThat(persistedBatchOperation.getMaxBlockKey()).isEqualTo(19);
   }
 
   @Test
@@ -346,8 +351,8 @@ public class BatchOperationStateTest {
     // then
     final var persistedBatchOperation = state.get(batchOperationKey).get();
 
-    assertThat(persistedBatchOperation.getMinChunkKey()).isEqualTo(0);
-    assertThat(persistedBatchOperation.getMaxChunkKey()).isEqualTo(6);
+    assertThat(persistedBatchOperation.getMinBlockKey()).isEqualTo(0);
+    assertThat(persistedBatchOperation.getMaxBlockKey()).isEqualTo(6);
 
     final var nextKeys = state.getNextEntityKeys(batchOperationKey, 5);
     assertThat(nextKeys).hasSize(5);
@@ -355,7 +360,7 @@ public class BatchOperationStateTest {
   }
 
   @Test
-  void shouldMarkChunkAsProcessed() {
+  void shouldMarkBlockAsProcessed() {
     // given
     final var batchOperationKey = createDefaultBatch(1, 100);
 
@@ -365,13 +370,13 @@ public class BatchOperationStateTest {
         new BatchOperationExecutionRecord()
             .setBatchOperationKey(batchOperationKey)
             .setKeys(
-                LongStream.rangeClosed(0, MAX_CHUNK_SIZE).boxed().collect(Collectors.toSet())));
+                LongStream.rangeClosed(0, MAX_BLOCK_SIZE).boxed().collect(Collectors.toSet())));
 
     // then
     final var persistedBatchOperation = state.get(batchOperationKey).get();
 
-    assertThat(persistedBatchOperation.getMinChunkKey()).isEqualTo(1);
-    assertThat(persistedBatchOperation.getMaxChunkKey()).isEqualTo(6);
+    assertThat(persistedBatchOperation.getMinBlockKey()).isEqualTo(1);
+    assertThat(persistedBatchOperation.getMaxBlockKey()).isEqualTo(6);
 
     final var nextKeys = state.getNextEntityKeys(batchOperationKey, 3);
     assertThat(nextKeys).containsSequence(List.of(15L, 16L, 17L));

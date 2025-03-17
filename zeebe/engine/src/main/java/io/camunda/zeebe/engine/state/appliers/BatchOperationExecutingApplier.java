@@ -23,7 +23,6 @@ public class BatchOperationExecutingApplier
 
   @Override
   public void applyState(final long key, final BatchOperationExecutionRecord value) {
-    batchOperationState.removeFromPending(key, value);
     batchOperationState.removeKeys(key, value);
   }
 }

@@ -35,8 +35,8 @@ public class PersistedBatchOperation extends UnpackedObject implements DbValue {
       new EnumProperty<>("status", BatchOperationState.class);
   private final IntegerProperty offsetProp = new IntegerProperty("offset", 0);
   private final DocumentProperty filterProp = new DocumentProperty("filter");
-  private final ArrayProperty<LongValue> chunkKeysProp =
-      new ArrayProperty<LongValue>("chunkKeys", LongValue::new);
+  private final ArrayProperty<LongValue> blockKeysProp =
+      new ArrayProperty<LongValue>("blockKeys", LongValue::new);
 
   public PersistedBatchOperation() {
     super(7);
@@ -46,7 +46,7 @@ public class PersistedBatchOperation extends UnpackedObject implements DbValue {
         .declareProperty(statusProp)
         .declareProperty(offsetProp)
         .declareProperty(filterProp)
-        .declareProperty(chunkKeysProp);
+        .declareProperty(blockKeysProp);
   }
 
   public boolean canCancel() {
@@ -120,24 +120,24 @@ public class PersistedBatchOperation extends UnpackedObject implements DbValue {
   }
 
   public List<Long> getKeys() {
-    return chunkKeysProp.stream().map(LongValue::getValue).toList();
+    return blockKeysProp.stream().map(LongValue::getValue).toList();
   }
 
-  public long nextChunkKey() {
-    final var nextKey = getMaxChunkKey() + 1;
-    chunkKeysProp.add().setValue(nextKey);
+  public long nextBlockKey() {
+    final var nextKey = getMaxBlockKey() + 1;
+    blockKeysProp.add().setValue(nextKey);
 
     return nextKey;
   }
 
-  public PersistedBatchOperation removeChunkKey(final Long chunkKey) {
+  public PersistedBatchOperation removeBlockKey(final Long blockKey) {
     final var newKeys =
-        chunkKeysProp.stream().map(LongValue::getValue).filter(k -> !k.equals(chunkKey)).toList();
+        blockKeysProp.stream().map(LongValue::getValue).filter(k -> !k.equals(blockKey)).toList();
 
-    chunkKeysProp.reset();
+    blockKeysProp.reset();
 
     for (final var key : newKeys) {
-      chunkKeysProp.add().setValue(key);
+      blockKeysProp.add().setValue(key);
     }
 
     return this;
@@ -147,15 +147,15 @@ public class PersistedBatchOperation extends UnpackedObject implements DbValue {
     return filterProp.getValue();
   }
 
-  public long getMinChunkKey() {
-    return chunkKeysProp.stream()
+  public long getMinBlockKey() {
+    return blockKeysProp.stream()
         .min(Comparator.comparing(LongValue::getValue))
         .map(LongValue::getValue)
         .orElse(-1L);
   }
 
-  public long getMaxChunkKey() {
-    return chunkKeysProp.stream()
+  public long getMaxBlockKey() {
+    return blockKeysProp.stream()
         .max(Comparator.comparing(LongValue::getValue))
         .map(LongValue::getValue)
         .orElse(-1L);

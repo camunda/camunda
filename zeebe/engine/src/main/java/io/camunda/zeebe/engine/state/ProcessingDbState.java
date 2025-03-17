@@ -176,7 +176,7 @@ public class ProcessingDbState implements MutableProcessingState {
     groupState = new DbGroupState(zeebeDb, transactionContext);
     tenantState = new DbTenantState(zeebeDb, transactionContext);
     mappingState = new DbMappingState(zeebeDb, transactionContext);
-    batchOperationState = new DbBatchOperationState(zeebeDb, transactionContext);
+    batchOperationState = new DbBatchOperationState(zeebeDb, transactionContext, config);
     this.transientProcessMessageSubscriptionState = transientProcessMessageSubscriptionState;
   }
 
@@ -269,6 +269,11 @@ public class ProcessingDbState implements MutableProcessingState {
   }
 
   @Override
+  public MutableResourceState getResourceState() {
+    return resourceState;
+  }
+
+  @Override
   public MutableSignalSubscriptionState getSignalSubscriptionState() {
     return signalSubscriptionState;
   }
@@ -336,11 +341,6 @@ public class ProcessingDbState implements MutableProcessingState {
   @Override
   public MutableMappingState getMappingState() {
     return mappingState;
-  }
-
-  @Override
-  public MutableResourceState getResourceState() {
-    return resourceState;
   }
 
   @Override
