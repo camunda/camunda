@@ -23,6 +23,7 @@ import {TargetDiagram} from './TargetDiagram';
 import {processInstanceMigrationStore} from 'modules/stores/processInstanceMigration';
 import {Wrapper} from '../tests/mocks';
 import * as filterModule from 'modules/hooks/useProcessInstancesFilters';
+import * as processIdModule from 'modules/hooks/useProcessId';
 import {mockFetchProcessInstancesStatistics} from 'modules/mocks/api/v2/processInstances/fetchProcessInstancesStatistics';
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
 import {processInstancesSelectionStore} from 'modules/stores/processInstancesSelection';
@@ -33,6 +34,7 @@ jest.mock('modules/hooks/useProcessInstancesFilters');
 describe('Target Diagram', () => {
   beforeEach(() => {
     jest.spyOn(filterModule, 'useProcessInstanceFilters').mockReturnValue({});
+    jest.spyOn(processIdModule, 'useProcessId').mockReturnValue('123');
   });
 
   afterEach(() => {
