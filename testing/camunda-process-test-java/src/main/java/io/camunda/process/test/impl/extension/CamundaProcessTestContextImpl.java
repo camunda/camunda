@@ -44,7 +44,8 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
     this.clientCreationCallback = clientCreationCallback;
 
     camundaManagementClient =
-        new CamundaManagementClient(camundaContainer.getMonitoringApiAddress());
+        new CamundaManagementClient(
+            camundaContainer.getMonitoringApiAddress(), camundaContainer.getRestApiAddress());
   }
 
   @Override
