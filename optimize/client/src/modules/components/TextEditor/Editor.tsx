@@ -11,7 +11,7 @@ import classnames from 'classnames';
 import {EditorState, SerializedEditorState, SerializedLexicalNode} from 'lexical';
 import {RichTextPlugin} from '@lexical/react/LexicalRichTextPlugin';
 import {ContentEditable} from '@lexical/react/LexicalContentEditable';
-import LexicalErrorBoundary from '@lexical/react/LexicalErrorBoundary';
+import {LexicalErrorBoundary} from '@lexical/react/LexicalErrorBoundary';
 import {OnChangePlugin} from '@lexical/react/LexicalOnChangePlugin';
 import update from 'immutability-helper';
 
