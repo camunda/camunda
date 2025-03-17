@@ -36,10 +36,13 @@ public class CamundaProcessTestExtensionIT {
   private CamundaProcessTestContext processTestContext;
 
   @Test
-  void shouldCreateProcessInstance() {
+  void shouldCreateProcessInstance() throws InterruptedException {
+    System.out.println("Running shouldCreateProcessInstance");
     // given
+    // TODO cache problem? Check purge; ElasticSearch data deletion also has a delay, might that be
+    // a problem?
     final BpmnModelInstance process =
-        Bpmn.createExecutableProcess("process")
+        Bpmn.createExecutableProcess("process1")
             .startEvent()
             .name("start")
             .zeebeOutputExpression("\"active\"", "status")
@@ -50,26 +53,29 @@ public class CamundaProcessTestExtensionIT {
             .zeebeOutputExpression("\"ok\"", "result")
             .done();
 
-    client.newDeployResourceCommand().addProcessModel(process, "process.bpmn").send().join();
+    client.newDeployResourceCommand().addProcessModel(process, "process1.bpmn").send().join();
 
     // when
     final ProcessInstanceEvent processInstance =
-        client.newCreateInstanceCommand().bpmnProcessId("process").latestVersion().send().join();
+        client.newCreateInstanceCommand().bpmnProcessId("process1").latestVersion().send().join();
 
     // then
     CamundaAssert.assertThat(processInstance)
         .isActive()
         .hasActiveElements(byName("task"))
         .hasVariable("status", "active");
+
+    System.out.println("Finished running shouldCreateProcessInstance");
   }
 
   @Test
   void shouldTriggerTimerEvent() {
+    System.out.println("Running shouldTriggerTimerEvent");
     // given
     final Duration timerDuration = Duration.ofHours(1);
 
     final BpmnModelInstance process =
-        Bpmn.createExecutableProcess("process")
+        Bpmn.createExecutableProcess("process2")
             .startEvent()
             .name("start")
             .userTask("A")
@@ -84,10 +90,10 @@ public class CamundaProcessTestExtensionIT {
             .endEvent()
             .done();
 
-    client.newDeployResourceCommand().addProcessModel(process, "process.bpmn").send().join();
+    client.newDeployResourceCommand().addProcessModel(process, "process2.bpmn").send().join();
 
     final ProcessInstanceEvent processInstance =
-        client.newCreateInstanceCommand().bpmnProcessId("process").latestVersion().send().join();
+        client.newCreateInstanceCommand().bpmnProcessId("process2").latestVersion().send().join();
 
     // when
     CamundaAssert.assertThat(processInstance).hasActiveElements(byName("A"));
@@ -105,26 +111,29 @@ public class CamundaProcessTestExtensionIT {
 
     assertThat(Duration.between(timeBefore, timeAfter))
         .isCloseTo(timerDuration, Duration.ofSeconds(10));
+
+    System.out.println("Finished running shouldTriggerTimerEvent");
   }
 
   @Test
   void shouldQueryProcessInstances() {
+    System.out.println("Running shouldQueryProcessInstances");
     // given
     final BpmnModelInstance process =
-        Bpmn.createExecutableProcess("process")
+        Bpmn.createExecutableProcess("process3")
             .startEvent()
             .name("start")
             .userTask()
-            .name("task")
+            .name("asdföklhag")
             .endEvent()
             .name("end")
             .done();
 
-    client.newDeployResourceCommand().addProcessModel(process, "process.bpmn").send().join();
+    client.newDeployResourceCommand().addProcessModel(process, "process3.bpmn").send().join();
 
     // when
     final ProcessInstanceEvent processInstance =
-        client.newCreateInstanceCommand().bpmnProcessId("process").latestVersion().send().join();
+        client.newCreateInstanceCommand().bpmnProcessId("process3").latestVersion().send().join();
 
     // then
     Awaitility.await()
@@ -135,5 +144,6 @@ public class CamundaProcessTestExtensionIT {
                     .hasSize(1)
                     .extracting(ProcessInstance::getProcessInstanceKey)
                     .contains(processInstance.getProcessInstanceKey()));
+    System.out.println("Finished running shouldQueryProcessInstances");
   }
 }

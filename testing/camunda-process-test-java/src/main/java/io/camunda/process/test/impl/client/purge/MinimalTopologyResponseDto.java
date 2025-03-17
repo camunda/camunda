@@ -20,6 +20,7 @@ public class MinimalTopologyResponseDto {
 
   public boolean isTopologyChangeCompleted(final long changeId) {
     if (lastChange == null) {
+      System.out.println("PURGE NOT READY");
       return false;
     }
 
