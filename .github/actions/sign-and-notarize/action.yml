@@ -1,0 +1,79 @@
+name: "Sign & Notarize c8run"
+description: "Signs c8run with Developer ID App certificate and notarizes the resulting zip file."
+
+# We define inputs for everything needed to sign and notarize:
+inputs:
+  p12-base64:
+    description: "Base64-encoded .p12 Developer ID cert"
+    required: true
+  p12-password:
+    description: "Password for the .p12 certificate"
+    required: false
+  developer-id-cert-name:
+    description: "Full name of your Developer ID Application cert, e.g., 'Developer ID Application: My Company (TEAMID)'"
+    required: true
+  apple-id:
+    description: "Apple ID for notarization"
+    required: true
+  app-password:
+    description: "Apple app-specific password for notarization"
+    required: true
+  team-id:
+    description: "Apple Developer Team ID"
+    required: true
+  path:
+    description: "Path to folder/binary that needs signing"
+    required: true
+
+runs:
+  using: "composite"
+
+  steps:
+    # STEP A: Import Developer ID cert into a temporary keychain
+    - name: Import Developer ID .p12
+      shell: bash
+      run: |
+        echo "$INPUT_P12_BASE64" | base64 --decode > dev_id.p12
+
+        security create-keychain -p "" build.keychain
+        security set-keychain-settings -lut 3600 build.keychain
+        security unlock-keychain -p "" build.keychain
+
+        security import dev_id.p12 -k build.keychain \
+          -P "$INPUT_P12_PASSWORD" \
+          -T /usr/bin/codesign
+
+        security list-keychains -s build.keychain $(security list-keychains | sed 's/\"//g')
+        security default-keychain -s build.keychain
+
+    # STEP B: Make signing script executable
+    - name: Make script executable
+      shell: bash
+      run: chmod +x ./.github/actions/sign-and-notarize/sign_all_c8run.sh
+
+    # STEP C: Sign c8run content (top-level + jar-embedded code, including .app)
+    - name: Sign c8run
+      shell: bash
+      run: |
+        ./.github/actions/sign-and-notarize/sign_all_c8run.sh \
+          "$INPUT_PATH" \
+          "$INPUT_DEVELOPER_ID_CERT_NAME"
+
+    # STEP D: Create zip
+    - name: Create zip
+      shell: bash
+      run: |
+        ditto -c -k --keepParent "$INPUT_PATH" c8run_signed.zip
+
+    # STEP E: Notarize the zip
+    - name: Notarize .zip
+      shell: bash
+      run: |
+        xcrun notarytool submit c8run_signed.zip \
+          --apple-id "$INPUT_APPLE_ID" \
+          --password "$INPUT_APP_PASSWORD" \
+          --team-id "$INPUT_TEAM_ID" \
+          --wait
+
+    # STEP F: (Optional) Upload or stash artifact?
+    # Jesse do we want this here or in the workflow?
