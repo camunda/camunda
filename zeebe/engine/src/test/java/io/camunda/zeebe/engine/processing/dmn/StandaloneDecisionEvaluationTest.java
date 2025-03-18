@@ -159,7 +159,7 @@ public class StandaloneDecisionEvaluationTest {
         ENGINE.decision().ofDecisionId(falseDecisionId).expectRejection().evaluate();
 
     // then
-    assertThat(record.getRejectionType()).isEqualTo(RejectionType.INVALID_ARGUMENT);
+    assertThat(record.getRejectionType()).isEqualTo(RejectionType.NOT_FOUND);
     assertThat(record.getIntent()).isEqualTo(DecisionEvaluationIntent.EVALUATE);
     assertThat(record.getRejectionReason())
         .isEqualTo(
@@ -181,7 +181,7 @@ public class StandaloneDecisionEvaluationTest {
         ENGINE.decision().ofDecisionKey(falseDecisionKey).expectRejection().evaluate();
 
     // then
-    assertThat(record.getRejectionType()).isEqualTo(RejectionType.INVALID_ARGUMENT);
+    assertThat(record.getRejectionType()).isEqualTo(RejectionType.NOT_FOUND);
     assertThat(record.getIntent()).isEqualTo(DecisionEvaluationIntent.EVALUATE);
     assertThat(record.getRejectionReason())
         .isEqualTo(

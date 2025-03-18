@@ -135,7 +135,7 @@ public class TenantAwareStandaloneDecisionEvaluationTest {
             .evaluate();
 
     // then
-    assertThat(record.getRejectionType()).isEqualTo(RejectionType.INVALID_ARGUMENT);
+    assertThat(record.getRejectionType()).isEqualTo(RejectionType.NOT_FOUND);
     assertThat(record.getIntent()).isEqualTo(DecisionEvaluationIntent.EVALUATE);
     assertThat(record.getRejectionReason())
         .isEqualTo(
@@ -162,7 +162,7 @@ public class TenantAwareStandaloneDecisionEvaluationTest {
             .evaluate();
 
     // then
-    assertThat(record.getRejectionType()).isEqualTo(RejectionType.INVALID_ARGUMENT);
+    assertThat(record.getRejectionType()).isEqualTo(RejectionType.NOT_FOUND);
     assertThat(record.getIntent()).isEqualTo(DecisionEvaluationIntent.EVALUATE);
     assertThat(record.getRejectionReason())
         .isEqualTo(
