@@ -67,7 +67,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 
 @Testcontainers
 @ZeebeIntegration
-public class MultiTenancyOverIdentityIT {
+public class MultiTenancyIT {
 
   @Container
   private static final ElasticsearchContainer CONTAINER =
