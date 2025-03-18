@@ -30,16 +30,19 @@ import {batchModificationStore} from 'modules/stores/batchModification';
 import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
 import {QueryClientProvider} from '@tanstack/react-query';
 import {MemoryRouter} from 'react-router-dom';
+import {processInstancesSelectionStore} from 'modules/stores/processInstancesSelection';
 
 jest.mock('modules/utils/bpmn');
 
 function getWrapper(initialPath: string = Paths.dashboard()) {
   const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
     useEffect(() => {
+      processInstancesSelectionStore.init();
       return () => {
         processXmlStore.reset();
         processesStore.reset();
         batchModificationStore.reset();
+        processInstancesSelectionStore.reset();
       };
     }, []);
 
@@ -49,6 +52,13 @@ function getWrapper(initialPath: string = Paths.dashboard()) {
           {children}
           <button onClick={batchModificationStore.enable}>
             Enable batch modification mode
+          </button>
+          <button
+            onClick={() =>
+              processInstancesSelectionStore.selectProcessInstance('0')
+            }
+          >
+            Select process instance
           </button>
         </MemoryRouter>
       </QueryClientProvider>
@@ -252,6 +262,54 @@ describe('DiagramPanel', () => {
 
     expect(await screen.findByTestId('diagram')).toBeInTheDocument();
     expect(await screen.findByTestId(/^state-overlay/)).toBeInTheDocument();
+  });
+
+  it('should not fetch batch modification data outside batch modification mode', async () => {
+    const queryString = '?process=bigVarProcess&version=1';
+
+    locationSpy.mockImplementation(() => ({
+      ...originalWindow.location,
+      search: queryString,
+    }));
+
+    const mockProcessInstancesStatisticsResolver = jest.fn();
+    mockFetchProcessInstancesStatistics().withSuccess(mockProcessStatistics, {
+      mockResolverFn: mockProcessInstancesStatisticsResolver,
+    });
+    mockFetchProcessXML().withSuccess('');
+
+    const {user} = render(<DiagramPanel />, {
+      wrapper: getWrapper(`${Paths.processes()}${queryString}`),
+    });
+
+    // Expect fetching initial statistics
+    await waitFor(() =>
+      expect(mockProcessInstancesStatisticsResolver).toHaveBeenCalledTimes(1),
+    );
+
+    await user.click(
+      screen.getByRole('button', {name: /select process instance/i}),
+    );
+
+    // Expect no fetching outside batch modification mode
+    await waitFor(() =>
+      expect(mockProcessInstancesStatisticsResolver).toHaveBeenCalledTimes(1),
+    );
+
+    mockFetchProcessInstancesStatistics().withSuccess(mockProcessStatistics, {
+      mockResolverFn: mockProcessInstancesStatisticsResolver,
+    });
+    await user.click(
+      screen.getByRole('button', {name: /enable batch modification mode/i}),
+    );
+    await user.click(
+      screen.getByRole('button', {name: /select process instance/i}),
+    );
+
+    // Expect fetching inside batch modification mode
+    await waitFor(() =>
+      expect(mockProcessInstancesStatisticsResolver).toHaveBeenCalledTimes(2),
+    );
   });
 
   it('should render batch modification notification', async () => {

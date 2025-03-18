@@ -214,7 +214,7 @@
     <dependency>
       <groupId>com.opencsv</groupId>
       <artifactId>opencsv</artifactId>
-      <version>5.9</version>
+      <version>${version.opencsv}</version>
       <exclusions>
         <exclusion>
           <groupId>commons-logging</groupId>
@@ -690,11 +690,11 @@
       <scope>test</scope>
     </dependency>
 
+    <!-- this is necessary. Dependency:analyze error suppressed -->
     <dependency>
       <groupId>com.nimbusds</groupId>
       <artifactId>nimbus-jose-jwt</artifactId>
-      <version>10.0.2</version>
-      <scope>test</scope>
+      <version>${version.nimbus-jose-jwt}</version>
     </dependency>
 
   </dependencies>

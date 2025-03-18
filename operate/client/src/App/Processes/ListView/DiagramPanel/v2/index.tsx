@@ -121,7 +121,7 @@ const DiagramPanel: React.FC = observer(() => {
       sourceFlowNodeId: flowNodeId,
       targetFlowNodeId: selectedTargetFlowNodeId ?? undefined,
     },
-    processId !== undefined,
+    processId !== undefined && batchModificationStore.state.isEnabled,
   );
 
   const isDiagramLoading =
