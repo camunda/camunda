@@ -315,13 +315,6 @@
     <dependency>
       <groupId>org.liquibase</groupId>
       <artifactId>liquibase-core</artifactId>
-      <exclusions>
-        <exclusion>
-          <!-- Conflicts with opencsv in optimize-backend dependency -->
-          <groupId>com.opencsv</groupId>
-          <artifactId>opencsv</artifactId>
-        </exclusion>
-      </exclusions>
     </dependency>
 
     <dependency>
