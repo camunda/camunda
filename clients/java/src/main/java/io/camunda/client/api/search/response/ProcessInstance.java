@@ -15,6 +15,8 @@
  */
 package io.camunda.client.api.search.response;
 
+import io.camunda.client.wrappers.ProcessInstanceState;
+
 public interface ProcessInstance {
 
   Long getProcessInstanceKey();
