@@ -64,8 +64,32 @@ public final class BoundedCommandCache {
     sizeReporter.accept(0);
   }
 
-  public void add(final LongHashSet keys) {
-    LockUtil.withLock(lock, () -> lockedAdd(keys));
+  public void add(final long key) {
+    LockUtil.withLock(
+        lock,
+        () -> {
+          final int evictionCount = cache.size() + 1 - capacity;
+          if (evictionCount > 0) {
+            evict(evictionCount);
+          }
+
+          cache.add(key);
+          sizeReporter.accept(cache.size());
+        });
+  }
+
+  public void addAll(final LongHashSet keys) {
+    LockUtil.withLock(
+        lock,
+        () -> {
+          final int evictionCount = cache.size() + keys.size() - capacity;
+          if (evictionCount > 0) {
+            evict(evictionCount);
+          }
+
+          cache.addAll(keys);
+          sizeReporter.accept(cache.size());
+        });
   }
 
   public boolean contains(final long key) {
@@ -101,16 +125,6 @@ public final class BoundedCommandCache {
           cache.clear();
           sizeReporter.accept(0);
         });
-  }
-
-  private void lockedAdd(final LongHashSet keys) {
-    final int evictionCount = cache.size() + keys.size() - capacity;
-    if (evictionCount > 0) {
-      evict(evictionCount);
-    }
-
-    cache.addAll(keys);
-    sizeReporter.accept(cache.size());
   }
 
   private void evict(final int count) {
