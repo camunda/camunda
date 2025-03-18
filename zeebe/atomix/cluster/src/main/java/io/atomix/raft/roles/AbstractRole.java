@@ -22,17 +22,15 @@ import io.atomix.cluster.MemberId;
 import io.atomix.raft.RaftError;
 import io.atomix.raft.RaftError.Type;
 import io.atomix.raft.RaftException;
-import io.atomix.raft.RaftServer;
 import io.atomix.raft.cluster.impl.DefaultRaftMember;
 import io.atomix.raft.impl.RaftContext;
 import io.atomix.raft.protocol.RaftRequest;
 import io.atomix.raft.protocol.RaftResponse;
-import io.atomix.utils.logging.ContextualLoggerFactory;
-import io.atomix.utils.logging.LoggerContext;
 import io.camunda.zeebe.util.Either;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.BiFunction;
 import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /** Abstract state. */
 public abstract class AbstractRole implements RaftRole {
@@ -43,13 +41,7 @@ public abstract class AbstractRole implements RaftRole {
 
   protected AbstractRole(final RaftContext raft) {
     this.raft = raft;
-    log =
-        ContextualLoggerFactory.getLogger(
-            getClass(),
-            LoggerContext.builder(RaftServer.class)
-                .addValue(raft.getName())
-                .add("role", role())
-                .build());
+    log = LoggerFactory.getLogger(getClass());
   }
 
   @Override

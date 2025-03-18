@@ -38,8 +38,6 @@ import io.atomix.raft.roles.RaftRole;
 import io.atomix.raft.storage.RaftStorage;
 import io.atomix.raft.storage.log.RaftLogReader;
 import io.atomix.raft.zeebe.ZeebeLogAppender;
-import io.atomix.utils.logging.ContextualLoggerFactory;
-import io.atomix.utils.logging.LoggerContext;
 import io.atomix.utils.serializer.Serializer;
 import io.camunda.zeebe.snapshots.PersistedSnapshotStore;
 import io.camunda.zeebe.snapshots.ReceivableSnapshotStore;
@@ -56,11 +54,11 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /** {@link Partition} server. */
 public class RaftPartitionServer implements HealthMonitorable {
-
-  private final Logger log;
+  private static final Logger LOGGER = LoggerFactory.getLogger(RaftPartitionServer.class);
 
   private final MemberId localMemberId;
   private final RaftPartition partition;
@@ -91,10 +89,6 @@ public class RaftPartitionServer implements HealthMonitorable {
     this.membershipService = membershipService;
     this.clusterCommunicator = clusterCommunicator;
     this.meterRegistry = meterRegistry;
-    log =
-        ContextualLoggerFactory.getLogger(
-            getClass(),
-            LoggerContext.builder(RaftPartitionServer.class).addValue(partition.name()).build());
     this.persistedSnapshotStore = persistedSnapshotStore;
     this.partitionMetadata = partitionMetadata;
     requestTimeout = config.getRequestTimeout();
@@ -106,7 +100,7 @@ public class RaftPartitionServer implements HealthMonitorable {
   public CompletableFuture<RaftPartitionServer> bootstrap() {
     final RaftStartupMetrics raftStartupMetrics =
         new RaftStartupMetrics(partition.name(), meterRegistry);
-    log.info("Server bootstrapping partition {}", partition.id());
+    LOGGER.info("Server bootstrapping partition {}", partition.id());
     final long bootstrapStartTime = System.currentTimeMillis();
     return server
         .bootstrap(partition.members())
@@ -115,12 +109,12 @@ public class RaftPartitionServer implements HealthMonitorable {
               if (e == null) {
                 final long endTime = System.currentTimeMillis();
                 raftStartupMetrics.observeBootstrapDuration(endTime - bootstrapStartTime);
-                log.info(
+                LOGGER.info(
                     "Server successfully bootstrapped partition {} in {}ms",
                     partition.id(),
                     endTime - bootstrapStartTime);
               } else {
-                log.warn("Server bootstrap failed for partition {}", partition.id(), e);
+                LOGGER.warn("Server bootstrap failed for partition {}", partition.id(), e);
               }
             })
         .thenApply(v -> this);
@@ -129,7 +123,7 @@ public class RaftPartitionServer implements HealthMonitorable {
   public CompletableFuture<RaftPartitionServer> join() {
     final var metrics = new RaftStartupMetrics(partition.name(), meterRegistry);
     final long joinStartTime = System.currentTimeMillis();
-    log.info("Server joining partition {}", partition.id());
+    LOGGER.info("Server joining partition {}", partition.id());
     return server
         .join(partitionMetadata.members())
         .whenComplete(
@@ -137,12 +131,12 @@ public class RaftPartitionServer implements HealthMonitorable {
               if (e == null) {
                 final long endTime = System.currentTimeMillis();
                 metrics.observeJoinDuration(endTime - joinStartTime);
-                log.info(
+                LOGGER.info(
                     "Server successfully joined partition {} in {}ms",
                     partition.id(),
                     endTime - joinStartTime);
               } else {
-                log.warn("Server join failed for partition {}", partition.id(), e);
+                LOGGER.warn("Server join failed for partition {}", partition.id(), e);
               }
             })
         .thenApply(v -> this);
@@ -274,7 +268,7 @@ public class RaftPartitionServer implements HealthMonitorable {
     try {
       FileUtil.deleteFolderIfExists(partition.dataDirectory().toPath());
     } catch (final IOException e) {
-      log.error("Failed to delete partition: {}", partition, e);
+      LOGGER.error("Failed to delete partition: {}", partition, e);
     }
   }
 
