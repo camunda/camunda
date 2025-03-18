@@ -128,7 +128,7 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
       final MeterRegistry meterRegistry,
       final ExporterMetadata exporterMetadata,
       final ObjectMapper objectMapper) {
-    final var globalPrefix = configuration.getIndex().getPrefix();
+    final var globalPrefix = configuration.getConnect().getIndexPrefix();
     final var isElasticsearch =
         ConnectionTypes.isElasticSearch(configuration.getConnect().getType());
     indexDescriptors = new IndexDescriptors(globalPrefix, isElasticsearch);

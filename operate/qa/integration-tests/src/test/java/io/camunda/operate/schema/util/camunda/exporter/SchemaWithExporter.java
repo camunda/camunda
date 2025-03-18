@@ -22,7 +22,6 @@ public class SchemaWithExporter {
 
   public SchemaWithExporter(final String prefix, final boolean isElasticsearch) {
     final var config = new ExporterConfiguration();
-    config.getIndex().setPrefix(prefix);
     config.getConnect().setIndexPrefix(prefix);
     config
         .getConnect()

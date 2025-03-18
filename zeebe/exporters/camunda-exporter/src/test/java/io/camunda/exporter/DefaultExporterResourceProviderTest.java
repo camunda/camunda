@@ -43,7 +43,8 @@ public class DefaultExporterResourceProviderTest {
             descriptor -> {
               final var name = descriptor.getFullQualifiedName();
               assertThat(name.matches(descriptor.getAllVersionsIndexNameRegexPattern())).isTrue();
-              assertThat(isValidIndexDescriptorName(descriptor, config.getIndex().getPrefix()))
+              assertThat(
+                      isValidIndexDescriptorName(descriptor, config.getConnect().getIndexPrefix()))
                   .isTrue();
             });
 
@@ -53,7 +54,7 @@ public class DefaultExporterResourceProviderTest {
             descriptor ->
                 assertThat(
                         isValidIndexTemplateDescriptorName(
-                            descriptor, config.getIndex().getPrefix()))
+                            descriptor, config.getConnect().getIndexPrefix()))
                     .isTrue());
   }
 
@@ -61,10 +62,10 @@ public class DefaultExporterResourceProviderTest {
     final var configNoPrefix = new ExporterConfiguration();
 
     final var configWithPrefix = new ExporterConfiguration();
-    configWithPrefix.getIndex().setPrefix("global");
+    configWithPrefix.getConnect().setIndexPrefix("global");
 
     final var configWithComponentNameAsPrefix = new ExporterConfiguration();
-    configWithComponentNameAsPrefix.getIndex().setPrefix("operate");
+    configWithComponentNameAsPrefix.getConnect().setIndexPrefix("operate");
 
     return Stream.of(configNoPrefix, configWithPrefix, configWithComponentNameAsPrefix);
   }

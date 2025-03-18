@@ -43,12 +43,12 @@ public final class ConfigValidator {
           e);
     }
 
-    if (configuration.getIndex().getPrefix() != null
-        && configuration.getIndex().getPrefix().contains("_")) {
+    if (configuration.getConnect().getIndexPrefix() != null
+        && configuration.getConnect().getIndexPrefix().contains("_")) {
       throw new ExporterException(
           String.format(
               "CamundaExporter index.prefix must not contain underscore. Current value: %s",
-              configuration.getIndex().getPrefix()));
+              configuration.getConnect().getIndexPrefix()));
     }
 
     final Integer numberOfShards = configuration.getIndex().getNumberOfShards();
