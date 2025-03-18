@@ -20,10 +20,10 @@ final class BoundedCommandCacheTest {
   void shouldNotExceedCapacity() {
     // given
     final var cache = new BoundedCommandCache(4);
-    cache.add(setOf(1, 2, 3, 4));
+    cache.addAll(setOf(1, 2, 3, 4));
 
     // when
-    cache.add(setOf(5, 6));
+    cache.addAll(setOf(5, 6));
 
     // then
     assertThat(cache.size()).isEqualTo(4);
@@ -36,10 +36,10 @@ final class BoundedCommandCacheTest {
     // given
     final var cache = new BoundedCommandCache(4);
     final var initialKeys = setOf(1, 2, 3, 4);
-    cache.add(initialKeys);
+    cache.addAll(initialKeys);
 
     // when
-    cache.add(setOf(5, 6));
+    cache.addAll(setOf(5, 6));
 
     // then
     final var remainingInitialKeys =
@@ -54,7 +54,7 @@ final class BoundedCommandCacheTest {
     final var cache = new BoundedCommandCache(reportedSize::set);
 
     // when - then
-    cache.add(setOf(1, 2, 3, 4));
+    cache.addAll(setOf(1, 2, 3, 4));
     assertThat(reportedSize).hasValue(4);
 
     // when - then
@@ -79,7 +79,7 @@ final class BoundedCommandCacheTest {
     // given
     final var reportedSize = new AtomicInteger();
     final var cache = new BoundedCommandCache(reportedSize::set);
-    cache.add(setOf(1, 2, 3, 4));
+    cache.addAll(setOf(1, 2, 3, 4));
 
     // when
     cache.clear();
