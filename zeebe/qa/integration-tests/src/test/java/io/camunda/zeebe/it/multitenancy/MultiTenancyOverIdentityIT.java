@@ -224,7 +224,7 @@ public class MultiTenancyOverIdentityIT {
       assertThat(result)
           .failsWithin(Duration.ofSeconds(10))
           .withThrowableThat()
-          .withMessageContaining("UNAUTHORIZED")
+          .withMessageContaining("FORBIDDEN")
           .withMessageContaining(
               "Insufficient permissions to perform operation 'CREATE' on resource 'RESOURCE' for tenant '%s'"
                   .formatted(TENANT_B));
