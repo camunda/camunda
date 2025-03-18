@@ -184,22 +184,22 @@ class ProcessAuthorizationIT {
 
 ## How to run the acceptance tests locally
 
-When running the multi database acceptance tests locally they will default to Elasticsearch. The corresponding extension
+When running the multi-database acceptance tests locally, they will default to Elasticsearch. The corresponding extension
 will [spin up an Elasticsearch test container for local execution](https://github.com/camunda/camunda/blob/2a51cc662a6c59b65a5f455220145017d6be2a1c/qa/util/src/main/java/io/camunda/qa/util/multidb/CamundaMultiDBExtension.java#L212).
 
-Sometimes we need to validate different secondary storages locally, for example for reproducing a failure, for that we can configure the test execution.
+Sometimes, we need to validate different secondary storages locally, for example, to reproduce a failure. For that, we can configure the test execution.
 
-In Intellij you can edit the `Run/Debug configuration` (see this [guide](https://www.jetbrains.com/help/idea/run-debug-configuration-junit.html)), and pass in additional properties and environment variables.
+In Intellij, you can edit the `Run/Debug configuration` (see this [guide](https://www.jetbrains.com/help/idea/run-debug-configuration-junit.html)) and pass in additional properties and environment variables.
 
-Use the following property: `test.integration.camunda.database.type` to specify the database type. To make this easier we also provide specific maven profiles.
+To specify the database type, use the following property: `test.integration.camunda.database.type`. We also provide specific Maven profiles to make this easier.
 
-* For available maven profiles take a look at the `qa/integration-test/pom.xml`.
-* For available database types look at: `io.camunda.qa.util.multidb.CamundaMultiDBExtension#DatabaseType`
+* For available maven profiles, take a look at the `qa/integration-test/pom.xml`.
+* For available database types, look at `io.camunda.qa.util.multidb.CamundaMultiDBExtension#DatabaseType`
 
 > [!Important]
 >
-> If you want to run against a different secondary storage, you need to spin it up on your own (manually). For example via docker.
-> Make sure that the container is available under :9200, for ES or OS.
+> If you want to run against a different secondary storage, you need to spin it up manually, for example, via docker.
+> Ensure the container is available under `:9200` for ES or OS.
 
 ### Example to run against OpenSearch:
 
