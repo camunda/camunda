@@ -6,16 +6,14 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import { FC } from "react";
-import ForbiddenPage from "src/pages/forbidden/ForbiddenPage";
-import AppRoot from "src/components/global/AppRoot.tsx";
+import type {CurrentUser} from '@vzeta/camunda-api-zod-schemas/identity';
 
-const Forbidden: FC = () => {
+function isForbidden(user: CurrentUser | undefined) {
   return (
-    <AppRoot>
-      <ForbiddenPage />
-    </AppRoot>
+    Array.isArray(user?.authorizedApplications) &&
+    !user.authorizedApplications.includes('tasklist') &&
+    !user.authorizedApplications.includes('*')
   );
-};
+}
 
-export default Forbidden;
+export {isForbidden};
