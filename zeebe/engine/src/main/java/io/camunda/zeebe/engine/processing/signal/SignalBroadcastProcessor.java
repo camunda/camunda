@@ -79,8 +79,7 @@ public class SignalBroadcastProcessor implements DistributedTypedRecordProcessor
     final long eventKey = keyGenerator.nextKey();
     final var signalRecord = command.getValue();
 
-    final var authorizedTenantIds = authCheckBehavior.getAuthorizedTenantIds(command);
-    if (!authorizedTenantIds.isAuthorizedForTenantId(signalRecord.getTenantId())) {
+    if (!authCheckBehavior.isAssignedToTenant(command, signalRecord.getTenantId())) {
       final var message =
           "Expected to broadcast signal for tenant '%s', but user is not assigned to this tenant."
               .formatted(signalRecord.getTenantId());

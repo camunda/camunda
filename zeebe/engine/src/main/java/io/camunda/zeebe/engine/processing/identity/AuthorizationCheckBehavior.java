@@ -347,6 +347,20 @@ public final class AuthorizationCheckBehavior {
     }
   }
 
+  /**
+   * Checks if a user is assigned to a specific tenant.
+   *
+   * @param command The command send by the user
+   * @param tenantId The tenant we want to check assignment for
+   * @return true if assigned, false otherwise
+   */
+  public boolean isAssignedToTenant(final TypedRecord<?> command, final String tenantId) {
+    if (!securityConfig.getMultiTenancy().isEnabled()) {
+      return true;
+    }
+    return getAuthorizedTenantIds(command).isAuthorizedForTenantId(tenantId);
+  }
+
   public AuthorizedTenants getAuthorizedTenantIds(final TypedRecord<?> command) {
     if (isAuthorizedAnonymousUser(command)) {
       return AuthorizedTenants.ANONYMOUS;
