@@ -12,8 +12,8 @@ import static io.camunda.search.clients.query.SearchQueryBuilders.stringTerms;
 import static io.camunda.search.clients.query.SearchQueryBuilders.term;
 import static io.camunda.webapps.schema.descriptors.usermanagement.index.AuthorizationIndex.OWNER_ID;
 import static io.camunda.webapps.schema.descriptors.usermanagement.index.AuthorizationIndex.OWNER_TYPE;
-import static io.camunda.webapps.schema.descriptors.usermanagement.index.AuthorizationIndex.PERMISSIONS_RESOURCEID;
 import static io.camunda.webapps.schema.descriptors.usermanagement.index.AuthorizationIndex.PERMISSIONS_TYPES;
+import static io.camunda.webapps.schema.descriptors.usermanagement.index.AuthorizationIndex.RESOURCE_ID;
 import static io.camunda.webapps.schema.descriptors.usermanagement.index.AuthorizationIndex.RESOURCE_TYPE;
 
 import io.camunda.search.clients.query.SearchQuery;
@@ -32,7 +32,7 @@ public final class AuthorizationFilterTransformer
     return and(
         stringTerms(OWNER_ID, filter.ownerIds()),
         filter.ownerType() == null ? null : term(OWNER_TYPE, filter.ownerType()),
-        stringTerms(PERMISSIONS_RESOURCEID, filter.resourceIds()),
+        stringTerms(RESOURCE_ID, filter.resourceIds()),
         filter.resourceType() == null ? null : term(RESOURCE_TYPE, filter.resourceType()),
         filter.permissionTypes() == null
             ? null

@@ -19,7 +19,7 @@ public class AuthorizationIndex extends UserManagementIndexDescriptor implements
   public static final String OWNER_TYPE = "ownerType";
   public static final String RESOURCE_TYPE = "resourceType";
   public static final String PERMISSIONS_TYPES = "permissionTypes";
-  public static final String PERMISSIONS_RESOURCEID = "resourceId";
+  public static final String RESOURCE_ID = "resourceId";
 
   public AuthorizationIndex(final String indexPrefix, final boolean isElasticsearch) {
     super(indexPrefix, isElasticsearch);
