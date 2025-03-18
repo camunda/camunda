@@ -7,10 +7,11 @@
  */
 package io.camunda.search.filter;
 
-import io.camunda.search.entities.IncidentEntity.ErrorType;
-import io.camunda.search.entities.IncidentEntity.IncidentState;
 import static io.camunda.util.CollectionUtil.addValuesToList;
 import static io.camunda.util.CollectionUtil.collectValues;
+
+import io.camunda.search.entities.IncidentEntity.ErrorType;
+import io.camunda.search.entities.IncidentEntity.IncidentState;
 import io.camunda.util.ObjectBuilder;
 import java.util.Collections;
 import java.util.List;

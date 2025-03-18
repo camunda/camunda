@@ -27,7 +27,6 @@ public class BrokerPauseBatchOperationRequest
     return this;
   }
 
-
   @Override
   public BatchOperationExecutionRecord getRequestWriter() {
     return requestDto;
@@ -39,5 +38,4 @@ public class BrokerPauseBatchOperationRequest
     responseDto.wrap(buffer);
     return responseDto;
   }
-
 }

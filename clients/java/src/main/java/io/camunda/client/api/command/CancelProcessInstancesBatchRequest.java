@@ -17,6 +17,4 @@ package io.camunda.client.api.command;
 
 import io.camunda.client.api.search.response.BatchOperation;
 
-public interface CancelProcessInstancesBatchRequest extends FinalCommandStep<BatchOperation> {
-
-}
+public interface CancelProcessInstancesBatchRequest extends FinalCommandStep<BatchOperation> {}

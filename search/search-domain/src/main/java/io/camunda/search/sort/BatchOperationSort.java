@@ -18,7 +18,8 @@ public record BatchOperationSort(List<FieldSorting> orderings) implements SortOp
     return orderings;
   }
 
-  public static BatchOperationSort of(final Function<Builder, ObjectBuilder<BatchOperationSort>> fn) {
+  public static BatchOperationSort of(
+      final Function<Builder, ObjectBuilder<BatchOperationSort>> fn) {
     return SortOptionBuilders.batchOperationSort(fn);
   }
 

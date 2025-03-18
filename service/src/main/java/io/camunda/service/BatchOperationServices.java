@@ -27,8 +27,8 @@ import java.util.concurrent.CompletableFuture;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public final class BatchOperationServices extends
-    SearchQueryService<BatchOperationServices, BatchOperationQuery, BatchOperationEntity> {
+public final class BatchOperationServices
+    extends SearchQueryService<BatchOperationServices, BatchOperationQuery, BatchOperationEntity> {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(BatchOperationServices.class);
 
@@ -57,22 +57,20 @@ public final class BatchOperationServices extends
 
   public BatchOperationEntity getByKey(final Long key) {
     final var result =
-        batchOperationSearchClient
-            .searchBatchOperations(batchOperationQuery(q -> q.filter(f -> f.batchOperationKeys(key))));
+        batchOperationSearchClient.searchBatchOperations(
+            batchOperationQuery(q -> q.filter(f -> f.batchOperationKeys(key))));
     return getSingleResultOrThrow(result, key, "BatchOperation");
   }
 
   public List<BatchOperationItemEntity> getItemsByKey(final Long key) {
-    return batchOperationSearchClient
-        .getBatchOperationItems(key);
+    return batchOperationSearchClient.getBatchOperationItems(key);
   }
 
   public CompletableFuture<BatchOperationExecutionRecord> cancel(final long batchKey) {
     LOGGER.debug("Cancelling batch operation with key '{}'", batchKey);
 
     final var brokerRequest =
-        new BrokerCancelBatchOperationRequest()
-            .setBatchOperationKey(batchKey);
+        new BrokerCancelBatchOperationRequest().setBatchOperationKey(batchKey);
 
     return sendBrokerRequest(brokerRequest);
   }
@@ -80,9 +78,7 @@ public final class BatchOperationServices extends
   public CompletableFuture<BatchOperationExecutionRecord> pause(final long batchKey) {
     LOGGER.debug("Pausing batch operation with key '{}'", batchKey);
 
-    final var brokerRequest =
-        new BrokerPauseBatchOperationRequest()
-            .setBatchOperationKey(batchKey);
+    final var brokerRequest = new BrokerPauseBatchOperationRequest().setBatchOperationKey(batchKey);
 
     return sendBrokerRequest(brokerRequest);
   }
@@ -91,10 +87,8 @@ public final class BatchOperationServices extends
     LOGGER.debug("Resuming batch operation with key '{}'", batchKey);
 
     final var brokerRequest =
-        new BrokerResumeBatchOperationRequest()
-            .setBatchOperationKey(batchKey);
+        new BrokerResumeBatchOperationRequest().setBatchOperationKey(batchKey);
 
     return sendBrokerRequest(brokerRequest);
   }
-
 }

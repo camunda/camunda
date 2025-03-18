@@ -17,8 +17,7 @@ import java.util.function.Function;
 
 public final class ProcessInstanceFixtures extends CommonFixtures {
 
-  private ProcessInstanceFixtures() {
-  }
+  private ProcessInstanceFixtures() {}
 
   public static ProcessInstanceDbModel createRandomized(
       final Function<ProcessInstanceDbModelBuilder, ProcessInstanceDbModelBuilder>

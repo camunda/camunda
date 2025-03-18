@@ -17,16 +17,12 @@ package io.camunda.client.impl.fetch;
 
 import io.camunda.client.api.CamundaFuture;
 import io.camunda.client.api.command.FinalCommandStep;
-import io.camunda.client.api.fetch.BatchOperationGetRequest;
 import io.camunda.client.api.fetch.BatchOperationItemsGetRequest;
-import io.camunda.client.api.search.response.BatchOperation;
 import io.camunda.client.api.search.response.BatchOperationItems;
 import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
 import io.camunda.client.impl.search.SearchResponseMapper;
-import io.camunda.client.protocol.rest.BatchOperationItemResponse;
 import io.camunda.client.protocol.rest.BatchOperationItemSearchQueryResult;
-import io.camunda.client.protocol.rest.BatchOperationResponse;
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 import org.apache.hc.client5.http.config.RequestConfig;
@@ -37,7 +33,8 @@ public class BatchOperationItemsGetRequestImpl implements BatchOperationItemsGet
   private final RequestConfig.Builder httpRequestConfig;
   private final long batchOperationKey;
 
-  public BatchOperationItemsGetRequestImpl(final HttpClient httpClient, final long batchOperationKey) {
+  public BatchOperationItemsGetRequestImpl(
+      final HttpClient httpClient, final long batchOperationKey) {
     this.httpClient = httpClient;
     httpRequestConfig = httpClient.newRequestConfig();
     this.batchOperationKey = batchOperationKey;

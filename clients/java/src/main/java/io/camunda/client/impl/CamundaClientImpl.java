@@ -354,7 +354,7 @@ public final class CamundaClientImpl implements CamundaClient {
     final GatewayStub gatewayStub = GatewayGrpc.newStub(channel).withCallCredentials(credentials);
     if (!config.getInterceptors().isEmpty()) {
       return gatewayStub.withInterceptors(
-          config.getInterceptors().toArray(new ClientInterceptor[]{}));
+          config.getInterceptors().toArray(new ClientInterceptor[] {}));
     }
     return gatewayStub;
   }
@@ -371,8 +371,7 @@ public final class CamundaClientImpl implements CamundaClient {
 
     try {
       return objectMapper.readValue(
-          defaultServiceConfig, new TypeReference<Map<String, Object>>() {
-          });
+          defaultServiceConfig, new TypeReference<Map<String, Object>>() {});
     } catch (final IOException e) {
       Loggers.LOGGER.warn(
           "Failed to read default service config from classpath; will not configure a default retry policy",

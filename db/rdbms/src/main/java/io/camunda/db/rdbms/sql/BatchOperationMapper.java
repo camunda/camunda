@@ -33,27 +33,19 @@ public interface BatchOperationMapper {
 
   Long count(BatchOperationDbQuery query);
 
-  List<BatchOperationDbModel> search( BatchOperationDbQuery query);
+  List<BatchOperationDbModel> search(BatchOperationDbQuery query);
 
-  List<BatchOperationItemEntity> getItems( Long batchOperationKey);
+  List<BatchOperationItemEntity> getItems(Long batchOperationKey);
 
   record BatchOperationUpdateDto(
-      long batchOperationKey,
-      BatchOperationState state,
-      OffsetDateTime endDate) {}
+      long batchOperationKey, BatchOperationState state, OffsetDateTime endDate) {}
 
-  record BatchOperationUpdateTotalCountDto(
-      long batchOperationKey,
-      int operationsTotalCount) {}
+  record BatchOperationUpdateTotalCountDto(long batchOperationKey, int operationsTotalCount) {}
 
-  record BatchOperationItemsDto(
-      Long batchOperationKey,
-      List<Long> items) {}
+  record BatchOperationItemsDto(Long batchOperationKey, List<Long> items) {}
 
   record BatchOperationItemDto(
-      Long batchOperationKey,
-      Long itemKey,
-      BatchOperationEntity.BatchOperationState state) {}
+      Long batchOperationKey, Long itemKey, BatchOperationEntity.BatchOperationState state) {}
 
   record BatchOperationItemStateUpdateDto(
       Long batchOperationKey,

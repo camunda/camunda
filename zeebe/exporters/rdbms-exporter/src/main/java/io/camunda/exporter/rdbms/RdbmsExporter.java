@@ -140,7 +140,8 @@ public class RdbmsExporter {
     }
 
     if (!exported) {
-      LOG.trace("[RDBMS Exporter] Record with key {} and original partitionId {} could not be exported {}.",
+      LOG.trace(
+          "[RDBMS Exporter] Record with key {} and original partitionId {} could not be exported {}.",
           record.getKey(),
           Protocol.decodePartitionId(record.getKey()),
           record);

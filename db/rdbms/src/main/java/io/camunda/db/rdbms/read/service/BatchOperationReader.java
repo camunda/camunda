@@ -8,12 +8,9 @@
 package io.camunda.db.rdbms.read.service;
 
 import io.camunda.db.rdbms.read.domain.BatchOperationDbQuery;
-import io.camunda.db.rdbms.read.domain.DbQuerySorting;
-import io.camunda.db.rdbms.read.domain.IncidentDbQuery;
 import io.camunda.db.rdbms.read.mapper.BatchOperationEntityMapper;
 import io.camunda.db.rdbms.sql.BatchOperationMapper;
 import io.camunda.db.rdbms.sql.columns.BatchOperationSearchColumn;
-import io.camunda.db.rdbms.sql.columns.IncidentSearchColumn;
 import io.camunda.search.entities.BatchOperationEntity;
 import io.camunda.search.entities.BatchOperationEntity.BatchOperationItemEntity;
 import io.camunda.search.query.BatchOperationQuery;
@@ -34,9 +31,10 @@ public class BatchOperationReader extends AbstractEntityReader<BatchOperationEnt
   }
 
   public boolean exists(final Long batchOperationKey) {
-    var query = new BatchOperationDbQuery.Builder()
-        .filter(b -> b.batchOperationKeys(batchOperationKey))
-        .build();
+    var query =
+        new BatchOperationDbQuery.Builder()
+            .filter(b -> b.batchOperationKeys(batchOperationKey))
+            .build();
 
     return batchOperationMapper.count(query) == 1;
   }
@@ -49,15 +47,15 @@ public class BatchOperationReader extends AbstractEntityReader<BatchOperationEnt
 
     LOG.trace("[RDBMS DB] Search for batch operations with filter {}", dbQuery);
     final var totalHits = batchOperationMapper.count(dbQuery);
-    final var hits = batchOperationMapper.search(dbQuery).stream()
-        .map(BatchOperationEntityMapper::toEntity)
-        .toList();
+    final var hits =
+        batchOperationMapper.search(dbQuery).stream()
+            .map(BatchOperationEntityMapper::toEntity)
+            .toList();
     return buildSearchQueryResult(totalHits, hits, dbSort);
   }
 
   public List<BatchOperationItemEntity> getItems(final Long batchOperationKey) {
 
-    return batchOperationMapper.getItems(batchOperationKey).stream()
-        .toList();
+    return batchOperationMapper.getItems(batchOperationKey).stream().toList();
   }
 }

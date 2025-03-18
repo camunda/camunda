@@ -89,7 +89,7 @@ public enum ZbColumnFamilies implements EnumValue {
   DEPRECATED_PROCESS_SUBSCRIPTION_BY_KEY(32),
   // migration start
   @Deprecated // only used for migration logic
-      PROCESS_SUBSCRIPTION_BY_SENT_TIME(33),
+  PROCESS_SUBSCRIPTION_BY_SENT_TIME(33),
   // migration end
 
   // incident

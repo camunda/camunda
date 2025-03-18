@@ -18,7 +18,7 @@ package io.camunda.client.api.search.response;
 public enum BatchOperationType {
   PROCESS_CANCELLATION,
 
-/*  public static ProcessInstanceStateEnum toProtocolState(final BatchOperationType value) {
+  /*  public static ProcessInstanceStateEnum toProtocolState(final BatchOperationType value) {
     return (value == null) ? null : ProcessInstanceStateEnum.fromValue(value.name());
   }
 

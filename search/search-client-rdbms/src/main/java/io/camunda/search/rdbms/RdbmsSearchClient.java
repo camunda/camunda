@@ -314,7 +314,9 @@ public class RdbmsSearchClient
 
   @Override
   public List<BatchOperationItemEntity> getBatchOperationItems(final Long batchOperationKey) {
-    LOG.debug("[RDBMS Search Client] Search for batch operation items by batchOperationKey: {}", batchOperationKey);
+    LOG.debug(
+        "[RDBMS Search Client] Search for batch operation items by batchOperationKey: {}",
+        batchOperationKey);
 
     return rdbmsService.getBatchOperationReader().getItems(batchOperationKey);
   }

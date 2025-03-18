@@ -12,8 +12,6 @@ import io.camunda.db.rdbms.write.RdbmsWriter;
 import io.camunda.db.rdbms.write.RdbmsWriterConfig;
 import io.camunda.exporter.rdbms.handlers.BatchOperationCreatedExportHandler;
 import io.camunda.exporter.rdbms.handlers.BatchOperationExecutionExportHandler;
-import io.camunda.exporter.rdbms.handlers.BatchOperationCreatedExportHandler;
-import io.camunda.exporter.rdbms.handlers.BatchOperationExecutionExportHandler;
 import io.camunda.exporter.rdbms.handlers.BatchOperationSubBatchExportHandler;
 import io.camunda.exporter.rdbms.handlers.DecisionDefinitionExportHandler;
 import io.camunda.exporter.rdbms.handlers.DecisionInstanceExportHandler;
@@ -209,10 +207,7 @@ public class RdbmsExporterWrapper implements Exporter {
       final RdbmsExporterConfig.Builder builder) {
     builder.withHandler(
         ValueType.BATCH_OPERATION,
-        new BatchOperationCreatedExportHandler(
-            rdbmsWriter.getBatchOperationWriter(),
-            partitionId
-        ));
+        new BatchOperationCreatedExportHandler(rdbmsWriter.getBatchOperationWriter(), partitionId));
     builder.withHandler(
         ValueType.BATCH_OPERATION_SUBBATCH,
         new BatchOperationSubBatchExportHandler(rdbmsWriter.getBatchOperationWriter()));

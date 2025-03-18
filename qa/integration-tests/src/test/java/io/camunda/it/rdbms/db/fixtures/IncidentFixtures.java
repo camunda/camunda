@@ -17,8 +17,7 @@ import java.util.function.Function;
 
 public final class IncidentFixtures extends CommonFixtures {
 
-  private IncidentFixtures() {
-  }
+  private IncidentFixtures() {}
 
   public static IncidentDbModel createRandomized(
       final Function<IncidentDbModel.Builder, IncidentDbModel.Builder> builderFunction) {

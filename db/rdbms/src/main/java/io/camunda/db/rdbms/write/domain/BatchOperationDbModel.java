@@ -3,7 +3,6 @@ package io.camunda.db.rdbms.write.domain;
 import io.camunda.search.entities.BatchOperationEntity.BatchOperationState;
 import io.camunda.util.ObjectBuilder;
 import java.time.OffsetDateTime;
-import java.util.Set;
 
 public class BatchOperationDbModel {
 

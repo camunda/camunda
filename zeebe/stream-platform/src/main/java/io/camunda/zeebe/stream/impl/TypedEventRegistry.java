@@ -130,6 +130,5 @@ public final class TypedEventRegistry {
     TYPE_REGISTRY = Collections.unmodifiableMap(typeRegistry);
   }
 
-  private TypedEventRegistry() {
-  }
+  private TypedEventRegistry() {}
 }

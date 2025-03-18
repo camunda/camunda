@@ -28,9 +28,10 @@ public class BatchOperationItemsImpl implements BatchOperationItems {
 
   public BatchOperationItemsImpl(final BatchOperationItemSearchQueryResult queryResult) {
     assert queryResult.getItems() != null; // TODO
-    items = queryResult.getItems().stream()
-        .map(BatchOperationItemImpl::new)
-        .collect(ArrayList::new, ArrayList::add, ArrayList::addAll);
+    items =
+        queryResult.getItems().stream()
+            .map(BatchOperationItemImpl::new)
+            .collect(ArrayList::new, ArrayList::add, ArrayList::addAll);
   }
 
   @Override
@@ -38,7 +39,7 @@ public class BatchOperationItemsImpl implements BatchOperationItems {
     return items;
   }
 
-  public static class BatchOperationItemImpl implements  BatchOperationItem {
+  public static class BatchOperationItemImpl implements BatchOperationItem {
 
     private final Long batchOperationKey;
 
@@ -67,5 +68,4 @@ public class BatchOperationItemsImpl implements BatchOperationItems {
       return state;
     }
   }
-
 }

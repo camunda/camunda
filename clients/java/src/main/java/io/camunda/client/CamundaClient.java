@@ -101,16 +101,14 @@ import io.camunda.client.impl.CamundaClientCloudBuilderImpl;
 import io.camunda.client.impl.CamundaClientImpl;
 import java.util.function.Consumer;
 
-/**
- * The client to communicate with a Camunda broker/cluster.
- */
+/** The client to communicate with a Camunda broker/cluster. */
 public interface CamundaClient extends AutoCloseable, JobClient {
 
   /**
    * @return a new Camunda client with default configuration values. In order to customize
-   * configuration, use the methods {@link #newClientBuilder()} or
-   * {@link #newClient(CamundaClientConfiguration)}. See {@link CamundaClientBuilder} for the
-   * configuration options and default values.
+   *     configuration, use the methods {@link #newClientBuilder()} or {@link
+   *     #newClient(CamundaClientConfiguration)}. See {@link CamundaClientBuilder} for the
+   *     configuration options and default values.
    */
   static CamundaClient newClient() {
     return newClientBuilder().build();
@@ -177,8 +175,8 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    * </pre>
    *
    * @return a builder for the command
-   * @deprecated since 8 for removal with 8.1, replaced by
-   * {@link CamundaClient#newDeployResourceCommand()}
+   * @deprecated since 8 for removal with 8.1, replaced by {@link
+   *     CamundaClient#newDeployResourceCommand()}
    */
   DeployProcessCommandStep1 newDeployCommand();
 
@@ -594,8 +592,8 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    *  .send();
    * </pre>
    *
-   * <p>If the user task is linked to a process instance then this command will complete the
-   * related activity and continue the flow.
+   * <p>If the user task is linked to a process instance then this command will complete the related
+   * activity and continue the flow.
    *
    * <p>This command is only sent via REST over HTTP, not via gRPC <br>
    * <br>

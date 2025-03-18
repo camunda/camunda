@@ -7,9 +7,10 @@
  */
 package io.camunda.zeebe.stream.impl;
 
+import static io.camunda.zeebe.protocol.record.RecordMetadataDecoder.operationReferenceNullValue;
+
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
-import static io.camunda.zeebe.protocol.record.RecordMetadataDecoder.operationReferenceNullValue;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.ValueType;
@@ -44,8 +45,11 @@ public final class BufferedTaskResultBuilder implements TaskResultBuilder {
   }
 
   @Override
-  public boolean appendCommandRecord(final long key, final Intent intent,
-      final UnifiedRecordValue value, final long operationReference) {
+  public boolean appendCommandRecord(
+      final long key,
+      final Intent intent,
+      final UnifiedRecordValue value,
+      final long operationReference) {
     final ValueType valueType = TypedEventRegistry.TYPE_REGISTRY.get(value.getClass());
     if (valueType == null) {
       // usually happens when the record is not registered at the TypedStreamEnvironment

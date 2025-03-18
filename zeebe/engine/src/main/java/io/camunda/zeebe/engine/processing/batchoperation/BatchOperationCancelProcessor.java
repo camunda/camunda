@@ -28,8 +28,7 @@ import org.slf4j.LoggerFactory;
 public final class BatchOperationCancelProcessor
     implements DistributedTypedRecordProcessor<BatchOperationExecutionRecord> {
 
-  private static final Logger LOGGER = LoggerFactory.getLogger(
-      BatchOperationCancelProcessor.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(BatchOperationCancelProcessor.class);
 
   private static final String MESSAGE_PREFIX =
       "Expected to cancel a batch operation with key '%d', but ";
@@ -48,8 +47,7 @@ public final class BatchOperationCancelProcessor
       final Writers writers,
       final KeyGenerator keyGenerator,
       final CommandDistributionBehavior commandDistributionBehavior,
-      final ProcessingState processingState
-  ) {
+      final ProcessingState processingState) {
     stateWriter = writers.state();
     responseWriter = writers.response();
     rejectionWriter = writers.rejection();
@@ -65,10 +63,9 @@ public final class BatchOperationCancelProcessor
     LOGGER.debug("Processing new command with key '{}': {}", command.getKey(), recordValue);
 
     // validation
-    final var batchOperation = batchOperationState.get(command.getValue().getBatchOperationKey())
-        .orElse(null);
-    if (batchOperation == null
-        || !batchOperation.canCancel()) {
+    final var batchOperation =
+        batchOperationState.get(command.getValue().getBatchOperationKey()).orElse(null);
+    if (batchOperation == null || !batchOperation.canCancel()) {
       rejectionWriter.appendRejection(
           command,
           RejectionType.NOT_FOUND,
@@ -82,14 +79,8 @@ public final class BatchOperationCancelProcessor
 
     cancelBatchOperation(command);
     responseWriter.writeEventOnCommand(
-        batchKey,
-        BatchOperationIntent.CANCELED,
-        command.getValue(),
-        command);
-    commandDistributionBehavior
-        .withKey(batchKey)
-        .unordered()
-        .distribute(command);
+        batchKey, BatchOperationIntent.CANCELED, command.getValue(), command);
+    commandDistributionBehavior.withKey(batchKey).unordered().distribute(command);
   }
 
   @Override
@@ -102,9 +93,9 @@ public final class BatchOperationCancelProcessor
   }
 
   private void cancelBatchOperation(final TypedRecord<BatchOperationExecutionRecord> command) {
-    stateWriter.appendFollowUpEvent(command.getValue().getBatchOperationKey(),
+    stateWriter.appendFollowUpEvent(
+        command.getValue().getBatchOperationKey(),
         BatchOperationIntent.CANCELED,
         command.getValue());
   }
-
 }

@@ -79,7 +79,7 @@ public class QueryTest {
       final CamundaClient camundaClient, final String bpmnProcessId, final String payload) {
     final CreateProcessInstanceCommandStep1.CreateProcessInstanceCommandStep3
         createProcessInstanceCommandStep3 =
-        camundaClient.newCreateInstanceCommand().bpmnProcessId(bpmnProcessId).latestVersion();
+            camundaClient.newCreateInstanceCommand().bpmnProcessId(bpmnProcessId).latestVersion();
     if (payload != null) {
       createProcessInstanceCommandStep3.variables(payload);
     }
@@ -106,10 +106,7 @@ public class QueryTest {
         .untilAsserted(
             () -> {
               final var result =
-                  camundaClient
-                      .newProcessInstanceGetRequest(processInstanceKey)
-                      .send()
-                      .join();
+                  camundaClient.newProcessInstanceGetRequest(processInstanceKey).send().join();
               assertThat(result.getState()).isEqualTo(ProcessInstanceState.TERMINATED);
             });
   }

@@ -17,35 +17,39 @@ public final class BatchOperationFixtures {
 
   private BatchOperationFixtures() {}
 
-  public static BatchOperationDbModel createRandomized(final Function<Builder, Builder> builderFunction) {
+  public static BatchOperationDbModel createRandomized(
+      final Function<Builder, Builder> builderFunction) {
     final var key = CommonFixtures.nextKey();
-    final var builder = new Builder()
-        .batchOperationKey(key)
-        .state(randomEnum(BatchOperationState.class))
-        .operationType("some-operation" + RANDOM.nextInt(1000))
-        .startDate(OffsetDateTime.now())
-        .endDate(OffsetDateTime.now().plusSeconds(1))
-        .operationsTotalCount(RANDOM.nextInt(1000))
-        .operationsFailedCount(RANDOM.nextInt(1000))
-        .operationsCompletedCount(RANDOM.nextInt(1000));
+    final var builder =
+        new Builder()
+            .batchOperationKey(key)
+            .state(randomEnum(BatchOperationState.class))
+            .operationType("some-operation" + RANDOM.nextInt(1000))
+            .startDate(OffsetDateTime.now())
+            .endDate(OffsetDateTime.now().plusSeconds(1))
+            .operationsTotalCount(RANDOM.nextInt(1000))
+            .operationsFailedCount(RANDOM.nextInt(1000))
+            .operationsCompletedCount(RANDOM.nextInt(1000));
     return builderFunction.apply(builder).build();
   }
 
   public static List<BatchOperationDbModel> createAndSaveRandomBatchOperations(
       final RdbmsWriter rdbmsWriter, final Function<Builder, Builder> builderFunction) {
-    final List<BatchOperationDbModel> models = IntStream.range(0, 20)
-        .mapToObj(i -> createRandomized(builderFunction))
-        .peek(rdbmsWriter.getBatchOperationWriter()::createIfNotAlreadyExists)
-        .collect(Collectors.toList());
+    final List<BatchOperationDbModel> models =
+        IntStream.range(0, 20)
+            .mapToObj(i -> createRandomized(builderFunction))
+            .peek(rdbmsWriter.getBatchOperationWriter()::createIfNotAlreadyExists)
+            .collect(Collectors.toList());
     rdbmsWriter.flush();
     return models;
   }
 
   public static List<Long> createAndSaveRandomBatchOperationItems(
       final RdbmsWriter rdbmsWriter, final Long batchOperationKey, final int count) {
-    final List<Long> items = IntStream.range(0, count)
-        .mapToObj(i -> CommonFixtures.nextKey())
-        .collect(Collectors.toList());
+    final List<Long> items =
+        IntStream.range(0, count)
+            .mapToObj(i -> CommonFixtures.nextKey())
+            .collect(Collectors.toList());
     insertBatchOperationsItems(rdbmsWriter, batchOperationKey, items);
     return items;
   }

@@ -9,13 +9,11 @@ package io.camunda.zeebe.engine.state.appliers;
 
 import io.camunda.zeebe.engine.state.TypedEventApplier;
 import io.camunda.zeebe.engine.state.mutable.MutableBatchOperationState;
-import io.camunda.zeebe.engine.state.mutable.MutableUserState;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationCreationRecord;
-import io.camunda.zeebe.protocol.impl.record.value.user.UserRecord;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationIntent;
-import io.camunda.zeebe.protocol.record.intent.UserIntent;
 
-public class BatchOperationCreatedApplier implements TypedEventApplier<BatchOperationIntent, BatchOperationCreationRecord> {
+public class BatchOperationCreatedApplier
+    implements TypedEventApplier<BatchOperationIntent, BatchOperationCreationRecord> {
 
   private final MutableBatchOperationState batchOperationState;
 

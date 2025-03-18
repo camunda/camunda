@@ -28,18 +28,17 @@ import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 import org.apache.hc.client5.http.config.RequestConfig;
 
-public class CancelProcessInstancesBatchRequestImpl implements
-    CancelProcessInstancesBatchRequest {
+public class CancelProcessInstancesBatchRequestImpl implements CancelProcessInstancesBatchRequest {
 
   private final HttpClient httpClient;
   private final RequestConfig.Builder httpRequestConfig;
   private final ProcessInstanceFilter processInstanceFilter;
   private final JsonMapper objectMapper;
 
-  public CancelProcessInstancesBatchRequestImpl(final HttpClient httpClient, final
-  ProcessInstanceFilter processInstanceFilter,
-      final JsonMapper jsonMapper
-  ) {
+  public CancelProcessInstancesBatchRequestImpl(
+      final HttpClient httpClient,
+      final ProcessInstanceFilter processInstanceFilter,
+      final JsonMapper jsonMapper) {
     this.httpClient = httpClient;
     objectMapper = jsonMapper;
     httpRequestConfig = httpClient.newRequestConfig();

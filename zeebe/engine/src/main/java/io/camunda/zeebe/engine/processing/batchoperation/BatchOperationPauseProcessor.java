@@ -28,8 +28,7 @@ import org.slf4j.LoggerFactory;
 public final class BatchOperationPauseProcessor
     implements DistributedTypedRecordProcessor<BatchOperationExecutionRecord> {
 
-  private static final Logger LOGGER = LoggerFactory.getLogger(
-      BatchOperationPauseProcessor.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(BatchOperationPauseProcessor.class);
 
   private static final String MESSAGE_PREFIX =
       "Expected to pause a batch operation with key '%d', but ";
@@ -48,8 +47,7 @@ public final class BatchOperationPauseProcessor
       final Writers writers,
       final KeyGenerator keyGenerator,
       final CommandDistributionBehavior commandDistributionBehavior,
-      final ProcessingState processingState
-  ) {
+      final ProcessingState processingState) {
     stateWriter = writers.state();
     responseWriter = writers.response();
     rejectionWriter = writers.rejection();
@@ -66,8 +64,7 @@ public final class BatchOperationPauseProcessor
 
     // validation
     final var batchOperation = batchOperationState.get(batchKey).orElse(null);
-    if (batchOperation == null
-        || !batchOperation.canPause()) {
+    if (batchOperation == null || !batchOperation.canPause()) {
       rejectionWriter.appendRejection(
           command,
           RejectionType.NOT_FOUND,
@@ -81,31 +78,25 @@ public final class BatchOperationPauseProcessor
 
     pauseBatchOperation(command);
     responseWriter.writeEventOnCommand(
-        batchKey,
-        BatchOperationIntent.PAUSED,
-        command.getValue(),
-        command);
+        batchKey, BatchOperationIntent.PAUSED, command.getValue(), command);
     final var key = keyGenerator.nextKey();
-    commandDistributionBehavior
-        .withKey(key)
-        .unordered()
-        .distribute(command);
+    commandDistributionBehavior.withKey(key).unordered().distribute(command);
   }
 
   @Override
   public void processDistributedCommand(final TypedRecord<BatchOperationExecutionRecord> command) {
     final var recordValue = command.getValue();
 
-    LOGGER.debug("Processing distributed command with key '{}': {}",
-        command.getValue().getBatchOperationKey(), recordValue);
+    LOGGER.debug(
+        "Processing distributed command with key '{}': {}",
+        command.getValue().getBatchOperationKey(),
+        recordValue);
     pauseBatchOperation(command);
     commandDistributionBehavior.acknowledgeCommand(command);
   }
 
   private void pauseBatchOperation(final TypedRecord<BatchOperationExecutionRecord> command) {
-    stateWriter.appendFollowUpEvent(command.getValue().getBatchOperationKey(),
-        BatchOperationIntent.PAUSED,
-        command.getValue());
+    stateWriter.appendFollowUpEvent(
+        command.getValue().getBatchOperationKey(), BatchOperationIntent.PAUSED, command.getValue());
   }
-
 }

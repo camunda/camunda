@@ -18,10 +18,9 @@ package io.camunda.client.impl.response;
 import io.camunda.client.api.response.CancelProcessInstancesBatchResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass;
 
-public class CancelProcessInstancesBatchResponseImpl implements
-    CancelProcessInstancesBatchResponse {
+public class CancelProcessInstancesBatchResponseImpl
+    implements CancelProcessInstancesBatchResponse {
 
   public CancelProcessInstancesBatchResponseImpl(
-      final GatewayOuterClass.CancelProcessInstanceResponse response) {
-  }
+      final GatewayOuterClass.CancelProcessInstanceResponse response) {}
 }

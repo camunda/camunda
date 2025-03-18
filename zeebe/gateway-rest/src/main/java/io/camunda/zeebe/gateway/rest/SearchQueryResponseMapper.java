@@ -7,7 +7,6 @@
  */
 package io.camunda.zeebe.gateway.rest;
 
-import io.camunda.zeebe.gateway.protocol.rest.BatchOperationItemSearchQueryResult;
 import static io.camunda.zeebe.gateway.rest.ResponseMapper.formatDate;
 import static java.util.Collections.emptyList;
 import static java.util.Optional.ofNullable;
@@ -42,6 +41,7 @@ import io.camunda.zeebe.gateway.protocol.rest.AdHocSubprocessActivityResult;
 import io.camunda.zeebe.gateway.protocol.rest.AuthorizationResult;
 import io.camunda.zeebe.gateway.protocol.rest.AuthorizationSearchResult;
 import io.camunda.zeebe.gateway.protocol.rest.BatchOperationItemResponse;
+import io.camunda.zeebe.gateway.protocol.rest.BatchOperationItemSearchQueryResult;
 import io.camunda.zeebe.gateway.protocol.rest.BatchOperationResponse;
 import io.camunda.zeebe.gateway.protocol.rest.BatchOperationSearchQueryResult;
 import io.camunda.zeebe.gateway.protocol.rest.DecisionDefinitionResult;
@@ -97,8 +97,7 @@ import java.util.stream.Collectors;
 
 public final class SearchQueryResponseMapper {
 
-  private SearchQueryResponseMapper() {
-  }
+  private SearchQueryResponseMapper() {}
 
   public static UsageMetricsResponse toUsageMetricsResponse(
       final UsageMetricsCount usageMetricsCount) {
@@ -352,10 +351,12 @@ public final class SearchQueryResponseMapper {
   public static BatchOperationItemSearchQueryResult toBatchOperationItemSearchQueryResult(
       final List<BatchOperationItemEntity> batchOperations) {
     return new BatchOperationItemSearchQueryResult()
-        .items(batchOperations.stream().map(SearchQueryResponseMapper::toBatchOperationItem).toList());
+        .items(
+            batchOperations.stream().map(SearchQueryResponseMapper::toBatchOperationItem).toList());
   }
 
-  public static BatchOperationItemResponse toBatchOperationItem(final BatchOperationItemEntity entity) {
+  public static BatchOperationItemResponse toBatchOperationItem(
+      final BatchOperationItemEntity entity) {
     return new BatchOperationItemResponse()
         .batchOperationKey(entity.batchOperationKey().toString())
         .itemKey(entity.itemKey().toString())
@@ -743,7 +744,5 @@ public final class SearchQueryResponseMapper {
     return ProcessInstanceStateEnum.fromValue(value.name());
   }
 
-  private record RuleIdentifier(String ruleId, int ruleIndex) {
-
-  }
+  private record RuleIdentifier(String ruleId, int ruleIndex) {}
 }

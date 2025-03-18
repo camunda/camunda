@@ -34,8 +34,8 @@ final class ResultBuilderBackedTypedCommandWriter extends AbstractResultBuilderB
   }
 
   @Override
-  public void appendFollowUpCommand(final long key, final Intent intent, final RecordValue value,
-      final long operationReference) {
+  public void appendFollowUpCommand(
+      final long key, final Intent intent, final RecordValue value, final long operationReference) {
     appendRecord(key, intent, value, operationReference);
   }
 
@@ -48,7 +48,8 @@ final class ResultBuilderBackedTypedCommandWriter extends AbstractResultBuilderB
     appendRecord(key, intent, value, -1);
   }
 
-  private void appendRecord(final long key, final Intent intent, final RecordValue value, final long operationReference) {
+  private void appendRecord(
+      final long key, final Intent intent, final RecordValue value, final long operationReference) {
     final var metadata =
         new RecordMetadata()
             .recordType(RecordType.COMMAND)

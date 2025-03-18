@@ -232,7 +232,8 @@ public class MyBatisConfiguration {
   }
 
   @Bean
-  public MapperFactoryBean<BatchOperationMapper> batchOperationMapper(final SqlSessionFactory sqlSessionFactory) {
+  public MapperFactoryBean<BatchOperationMapper> batchOperationMapper(
+      final SqlSessionFactory sqlSessionFactory) {
     return createMapperFactoryBean(sqlSessionFactory, BatchOperationMapper.class);
   }
 

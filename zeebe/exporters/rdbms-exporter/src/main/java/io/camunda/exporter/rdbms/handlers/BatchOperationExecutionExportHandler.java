@@ -11,11 +11,11 @@ import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class BatchOperationExecutionExportHandler implements
-    RdbmsExportHandler<BatchOperationExecutionRecordValue> {
+public class BatchOperationExecutionExportHandler
+    implements RdbmsExportHandler<BatchOperationExecutionRecordValue> {
 
-  private static final Logger LOGGER = LoggerFactory.getLogger(
-      BatchOperationExecutionExportHandler.class);
+  private static final Logger LOGGER =
+      LoggerFactory.getLogger(BatchOperationExecutionExportHandler.class);
 
   private static final Set<BatchOperationIntent> EXPORTABLE_INTENTS =
       Set.of(
@@ -24,8 +24,7 @@ public class BatchOperationExecutionExportHandler implements
           BatchOperationIntent.COMPLETED,
           BatchOperationIntent.CANCELED,
           BatchOperationIntent.PAUSED,
-          BatchOperationIntent.RESUMED
-      );
+          BatchOperationIntent.RESUMED);
 
   private final BatchOperationWriter batchOperationWriter;
 
@@ -35,12 +34,12 @@ public class BatchOperationExecutionExportHandler implements
 
   @Override
   public boolean canExport(final Record<BatchOperationExecutionRecordValue> record) {
-    if(record.getValueType() == ValueType.BATCH_OPERATION_EXECUTION
+    if (record.getValueType() == ValueType.BATCH_OPERATION_EXECUTION
         && record.getIntent() instanceof final BatchOperationIntent intent) {
       return EXPORTABLE_INTENTS.contains(intent);
     }
 
-    return  false;
+    return false;
   }
 
   @Override
@@ -49,22 +48,14 @@ public class BatchOperationExecutionExportHandler implements
     final var batchOperationKey = value.getBatchOperationKey();
     if (record.getIntent().equals(BatchOperationIntent.COMPLETED)) {
       batchOperationWriter.finish(
-          batchOperationKey,
-          DateUtil.toOffsetDateTime(record.getTimestamp())
-      );
+          batchOperationKey, DateUtil.toOffsetDateTime(record.getTimestamp()));
     } else if (record.getIntent().equals(BatchOperationIntent.CANCELED)) {
       batchOperationWriter.cancel(
-          batchOperationKey,
-          DateUtil.toOffsetDateTime(record.getTimestamp())
-      );
+          batchOperationKey, DateUtil.toOffsetDateTime(record.getTimestamp()));
     } else if (record.getIntent().equals(BatchOperationIntent.PAUSED)) {
-      batchOperationWriter.paused(
-          batchOperationKey
-      );
+      batchOperationWriter.paused(batchOperationKey);
     } else if (record.getIntent().equals(BatchOperationIntent.RESUMED)) {
-      batchOperationWriter.resumed(
-          batchOperationKey
-      );
+      batchOperationWriter.resumed(batchOperationKey);
     }
   }
 }

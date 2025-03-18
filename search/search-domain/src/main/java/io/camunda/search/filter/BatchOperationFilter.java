@@ -10,18 +10,14 @@ package io.camunda.search.filter;
 import static io.camunda.util.CollectionUtil.addValuesToList;
 import static io.camunda.util.CollectionUtil.collectValues;
 
-import io.camunda.search.entities.IncidentEntity.ErrorType;
-import io.camunda.search.entities.IncidentEntity.IncidentState;
 import io.camunda.util.ObjectBuilder;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 
 public record BatchOperationFilter(
-    List<Long> batchOperationKeys,
-    List<String> operationTypes,
-    List<String> states
-) implements FilterBase {
+    List<Long> batchOperationKeys, List<String> operationTypes, List<String> states)
+    implements FilterBase {
 
   public static final class Builder implements ObjectBuilder<BatchOperationFilter> {
 
@@ -61,8 +57,7 @@ public record BatchOperationFilter(
       return new BatchOperationFilter(
           Objects.requireNonNullElse(batchOperationKeys, Collections.emptyList()),
           Objects.requireNonNullElse(operationTypes, Collections.emptyList()),
-          Objects.requireNonNullElse(states, Collections.emptyList())
-      );
+          Objects.requireNonNullElse(states, Collections.emptyList()));
     }
   }
 }

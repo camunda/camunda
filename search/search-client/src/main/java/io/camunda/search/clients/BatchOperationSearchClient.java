@@ -9,11 +9,8 @@ package io.camunda.search.clients;
 
 import io.camunda.search.entities.BatchOperationEntity;
 import io.camunda.search.entities.BatchOperationEntity.BatchOperationItemEntity;
-import io.camunda.search.entities.ProcessInstanceEntity;
 import io.camunda.search.query.BatchOperationQuery;
-import io.camunda.search.query.ProcessInstanceQuery;
 import io.camunda.search.query.SearchQueryResult;
-import io.camunda.security.auth.SecurityContext;
 import java.util.List;
 
 public interface BatchOperationSearchClient {
@@ -21,5 +18,4 @@ public interface BatchOperationSearchClient {
   SearchQueryResult<BatchOperationEntity> searchBatchOperations(BatchOperationQuery query);
 
   List<BatchOperationItemEntity> getBatchOperationItems(Long batchOperationKey);
-
 }

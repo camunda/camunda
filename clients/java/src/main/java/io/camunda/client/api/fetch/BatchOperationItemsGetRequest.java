@@ -16,7 +16,6 @@
 package io.camunda.client.api.fetch;
 
 import io.camunda.client.api.command.FinalCommandStep;
-import io.camunda.client.api.search.response.BatchOperation;
 import io.camunda.client.api.search.response.BatchOperationItems;
 
 public interface BatchOperationItemsGetRequest extends FinalCommandStep<BatchOperationItems> {}

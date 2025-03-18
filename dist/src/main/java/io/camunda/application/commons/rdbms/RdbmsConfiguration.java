@@ -150,7 +150,8 @@ public class RdbmsConfiguration {
   }
 
   @Bean
-  public BatchOperationReader batchOperationReader(final BatchOperationMapper batchOperationMapper) {
+  public BatchOperationReader batchOperationReader(
+      final BatchOperationMapper batchOperationMapper) {
     return new BatchOperationReader(batchOperationMapper);
   }
 
@@ -207,8 +208,7 @@ public class RdbmsConfiguration {
       final UserTaskReader userTaskReader,
       final FormReader formReader,
       final MappingReader mappingReader,
-      final BatchOperationReader batchOperationReader
-  ) {
+      final BatchOperationReader batchOperationReader) {
     return new RdbmsService(
         rdbmsWriterFactory,
         authorizationReader,

@@ -23,7 +23,9 @@ public interface BatchOperationItems {
 
   interface BatchOperationItem {
     Long getBatchOperationKey();
+
     Long getKey();
+
     String getState();
   }
 }

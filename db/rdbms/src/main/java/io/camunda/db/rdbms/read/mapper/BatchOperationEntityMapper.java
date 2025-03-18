@@ -14,8 +14,6 @@ public class BatchOperationEntityMapper {
         dbModel.endDate(),
         dbModel.operationsTotalCount(),
         dbModel.operationsFailedCount(),
-        dbModel.operationsCompletedCount()
-    );
+        dbModel.operationsCompletedCount());
   }
-
 }

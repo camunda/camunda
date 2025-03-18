@@ -9,28 +9,33 @@ package io.camunda.search.query;
 
 import io.camunda.search.filter.BatchOperationFilter;
 import io.camunda.search.filter.FilterBuilders;
-import io.camunda.search.filter.IncidentFilter;
 import io.camunda.search.page.SearchQueryPage;
 import io.camunda.search.sort.BatchOperationSort;
-import io.camunda.search.sort.IncidentSort;
 import io.camunda.search.sort.SortOptionBuilders;
 import io.camunda.util.ObjectBuilder;
 import java.util.Objects;
 import java.util.function.Function;
 
-public record BatchOperationQuery(BatchOperationFilter filter, BatchOperationSort sort, SearchQueryPage page)
+public record BatchOperationQuery(
+    BatchOperationFilter filter, BatchOperationSort sort, SearchQueryPage page)
     implements TypedSearchQuery<BatchOperationFilter, BatchOperationSort> {
 
-  public static BatchOperationQuery of(final Function<Builder, ObjectBuilder<BatchOperationQuery>> fn) {
+  public static BatchOperationQuery of(
+      final Function<Builder, ObjectBuilder<BatchOperationQuery>> fn) {
     return fn.apply(new Builder()).build();
   }
 
   public static final class Builder extends AbstractQueryBuilder<Builder>
       implements TypedSearchQueryBuilder<
-      BatchOperationQuery, BatchOperationQuery.Builder, BatchOperationFilter, BatchOperationSort> {
+          BatchOperationQuery,
+          BatchOperationQuery.Builder,
+          BatchOperationFilter,
+          BatchOperationSort> {
 
-    private static final BatchOperationFilter EMPTY_FILTER = FilterBuilders.batchOperation().build();
-    private static final BatchOperationSort EMPTY_SORT = SortOptionBuilders.batchOperationSort().build();
+    private static final BatchOperationFilter EMPTY_FILTER =
+        FilterBuilders.batchOperation().build();
+    private static final BatchOperationSort EMPTY_SORT =
+        SortOptionBuilders.batchOperationSort().build();
 
     private BatchOperationFilter filter;
     private BatchOperationSort sort;
@@ -57,7 +62,8 @@ public record BatchOperationQuery(BatchOperationFilter filter, BatchOperationSor
       return filter(FilterBuilders.batchOperation(fn));
     }
 
-    public Builder sort(final Function<BatchOperationSort.Builder, ObjectBuilder<BatchOperationSort>> fn) {
+    public Builder sort(
+        final Function<BatchOperationSort.Builder, ObjectBuilder<BatchOperationSort>> fn) {
       return sort(SortOptionBuilders.batchOperationSort(fn));
     }
 

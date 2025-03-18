@@ -134,8 +134,8 @@ public final class ResponseMapper {
   }
 
   public static JobActivationResult<io.camunda.zeebe.gateway.protocol.rest.JobActivationResult>
-  toActivateJobsResponse(
-      final io.camunda.zeebe.gateway.impl.job.JobActivationResponse activationResponse) {
+      toActivateJobsResponse(
+          final io.camunda.zeebe.gateway.impl.job.JobActivationResponse activationResponse) {
     final Iterator<LongValue> jobKeys = activationResponse.brokerResponse().jobKeys().iterator();
     final Iterator<JobRecord> jobs = activationResponse.brokerResponse().jobs().iterator();
 
@@ -458,9 +458,10 @@ public final class ResponseMapper {
 
   public static ResponseEntity<Object> toCancelProcessInstanceBatchOperationWithResultResponse(
       final BatchOperationCreationRecord brokerResponse) {
-    final var response = new BatchOperationCreatedResult()
-        .batchOperationKey(KeyUtil.keyToString(brokerResponse.getBatchOperationKey()))
-        .batchOperationType(brokerResponse.getBatchOperationType().toString());
+    final var response =
+        new BatchOperationCreatedResult()
+            .batchOperationKey(KeyUtil.keyToString(brokerResponse.getBatchOperationKey()))
+            .batchOperationType(brokerResponse.getBatchOperationType().toString());
     return new ResponseEntity<>(response, HttpStatus.CREATED);
   }
 

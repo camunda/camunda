@@ -18,7 +18,8 @@ public record BatchOperationDbQuery(
 
   public static final class Builder implements ObjectBuilder<BatchOperationDbQuery> {
 
-    private static final BatchOperationFilter EMPTY_FILTER = FilterBuilders.batchOperation().build();
+    private static final BatchOperationFilter EMPTY_FILTER =
+        FilterBuilders.batchOperation().build();
 
     private BatchOperationFilter filter;
     private DbQuerySorting<BatchOperationEntity> sort;
@@ -46,8 +47,8 @@ public record BatchOperationDbQuery(
 
     public Builder sort(
         final Function<
-            DbQuerySorting.Builder<BatchOperationEntity>,
-            ObjectBuilder<DbQuerySorting<BatchOperationEntity>>>
+                DbQuerySorting.Builder<BatchOperationEntity>,
+                ObjectBuilder<DbQuerySorting<BatchOperationEntity>>>
             fn) {
       return sort(DbQuerySorting.of(fn));
     }

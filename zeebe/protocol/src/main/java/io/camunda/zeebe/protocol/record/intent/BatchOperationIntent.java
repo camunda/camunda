@@ -35,8 +35,7 @@ public enum BatchOperationIntent implements Intent {
   RESUMED((short) 11),
 
   CREATE_SUBBATCH((short) 12),
-  CREATED_SUBBATCH((short) 13),
-  ;
+  CREATED_SUBBATCH((short) 13);
 
   private final short value;
 

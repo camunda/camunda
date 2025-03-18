@@ -1,11 +1,11 @@
 package io.camunda.exporter.rdbms.handlers;
 
+import static io.camunda.zeebe.protocol.record.RecordMetadataDecoder.operationReferenceNullValue;
+
 import io.camunda.db.rdbms.write.service.BatchOperationWriter;
 import io.camunda.exporter.rdbms.RdbmsExportHandler;
 import io.camunda.search.entities.BatchOperationEntity.BatchOperationState;
 import io.camunda.zeebe.protocol.record.Record;
-import static io.camunda.zeebe.protocol.record.RecordMetadataDecoder.operationReferenceNullValue;
-
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
@@ -14,14 +14,16 @@ import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class ProcessInstanceBatchOperationExportHandler implements RdbmsExportHandler<ProcessInstanceRecordValue> {
+public class ProcessInstanceBatchOperationExportHandler
+    implements RdbmsExportHandler<ProcessInstanceRecordValue> {
 
-  private static final Logger LOGGER = LoggerFactory.getLogger(
-      ProcessInstanceBatchOperationExportHandler.class);
+  private static final Logger LOGGER =
+      LoggerFactory.getLogger(ProcessInstanceBatchOperationExportHandler.class);
 
   private final BatchOperationWriter batchOperationWriter;
 
-  public ProcessInstanceBatchOperationExportHandler(final BatchOperationWriter batchOperationWriter) {
+  public ProcessInstanceBatchOperationExportHandler(
+      final BatchOperationWriter batchOperationWriter) {
     this.batchOperationWriter = batchOperationWriter;
   }
 
@@ -42,14 +44,12 @@ public class ProcessInstanceBatchOperationExportHandler implements RdbmsExportHa
       batchOperationWriter.updateItem(
           record.getOperationReference(),
           value.getProcessInstanceKey(),
-          BatchOperationState.COMPLETED
-      );
+          BatchOperationState.COMPLETED);
     } else if (isRejectedCanceled(record)) {
       batchOperationWriter.updateItem(
           record.getOperationReference(),
           value.getProcessInstanceKey(),
-          BatchOperationState.FAILED
-      );
+          BatchOperationState.FAILED);
     }
   }
 

@@ -33,13 +33,9 @@ public final class BatchOperationCreateSubbatchProcessor
   @Override
   public void processRecord(final TypedRecord<BatchOperationSubbatchRecord> command) {
     final var recordValue = command.getValue();
-    LOGGER.debug(
-        "Processing new command with key '{}': {}",
-        command.getKey(),
-        recordValue);
+    LOGGER.debug("Processing new command with key '{}': {}", command.getKey(), recordValue);
 
-    stateWriter.appendFollowUpEvent(command.getKey(), BatchOperationIntent.CREATED_SUBBATCH,
-        recordValue);
+    stateWriter.appendFollowUpEvent(
+        command.getKey(), BatchOperationIntent.CREATED_SUBBATCH, recordValue);
   }
-
 }

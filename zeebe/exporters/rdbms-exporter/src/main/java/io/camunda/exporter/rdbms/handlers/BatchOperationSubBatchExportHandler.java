@@ -1,16 +1,11 @@
 package io.camunda.exporter.rdbms.handlers;
 
-import io.camunda.db.rdbms.write.domain.BatchOperationDbModel;
 import io.camunda.db.rdbms.write.service.BatchOperationWriter;
 import io.camunda.exporter.rdbms.RdbmsExportHandler;
-import io.camunda.search.entities.BatchOperationEntity.BatchOperationState;
-import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationIntent;
-import io.camunda.zeebe.protocol.record.value.BatchOperationCreationRecordValue;
 import io.camunda.zeebe.protocol.record.value.BatchOperationSubbatchRecordValue;
-import io.camunda.zeebe.util.DateUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -41,5 +36,4 @@ public class BatchOperationSubBatchExportHandler
     final var value = record.getValue();
     batchOperationWriter.updateBatchAndInsertItems(value.getBatchOperationKey(), value.getKeys());
   }
-
 }

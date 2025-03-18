@@ -8,7 +8,6 @@
 package io.camunda.db.rdbms.sql.columns;
 
 import io.camunda.search.entities.BatchOperationEntity;
-import io.camunda.search.entities.ProcessDefinitionEntity;
 import java.util.function.Function;
 
 public enum BatchOperationSearchColumn implements SearchColumn<BatchOperationEntity> {

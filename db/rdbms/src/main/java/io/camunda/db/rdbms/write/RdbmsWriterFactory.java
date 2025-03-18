@@ -7,7 +7,6 @@
  */
 package io.camunda.db.rdbms.write;
 
-import io.camunda.db.rdbms.RdbmsService;
 import io.camunda.db.rdbms.config.VendorDatabaseProperties;
 import io.camunda.db.rdbms.read.service.BatchOperationReader;
 import io.camunda.db.rdbms.sql.DecisionInstanceMapper;

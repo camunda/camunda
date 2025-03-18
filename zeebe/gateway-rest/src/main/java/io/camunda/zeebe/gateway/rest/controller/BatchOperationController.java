@@ -8,10 +8,10 @@
 package io.camunda.zeebe.gateway.rest.controller;
 
 import static io.camunda.search.query.SearchQueryBuilders.batchOperationQuery;
-import io.camunda.zeebe.gateway.protocol.rest.BatchOperationItemSearchQueryResult;
 import static io.camunda.zeebe.gateway.rest.RestErrorMapper.mapErrorToResponse;
 
 import io.camunda.service.BatchOperationServices;
+import io.camunda.zeebe.gateway.protocol.rest.BatchOperationItemSearchQueryResult;
 import io.camunda.zeebe.gateway.protocol.rest.BatchOperationResponse;
 import io.camunda.zeebe.gateway.protocol.rest.BatchOperationSearchQueryResult;
 import io.camunda.zeebe.gateway.rest.RequestMapper;
@@ -72,9 +72,11 @@ public class BatchOperationController {
   public ResponseEntity<Object> cancelBatchOperation(@PathVariable final long key) {
     // TODO better return value
     try {
-      final var result = batchOperationServices
-          .withAuthentication(RequestMapper.getAuthentication())
-          .cancel(key).get();
+      final var result =
+          batchOperationServices
+              .withAuthentication(RequestMapper.getAuthentication())
+              .cancel(key)
+              .get();
     } catch (final InterruptedException | ExecutionException e) {
       throw new RuntimeException(e);
     }
@@ -86,9 +88,11 @@ public class BatchOperationController {
   public ResponseEntity<Object> PauseBatchOperation(@PathVariable final long key) {
     // TODO better return value
     try {
-      final var result = batchOperationServices
-          .withAuthentication(RequestMapper.getAuthentication())
-          .pause(key).get();
+      final var result =
+          batchOperationServices
+              .withAuthentication(RequestMapper.getAuthentication())
+              .pause(key)
+              .get();
     } catch (final InterruptedException | ExecutionException e) {
       throw new RuntimeException(e);
     }
@@ -100,9 +104,11 @@ public class BatchOperationController {
   public ResponseEntity<Object> resumeBatchOperation(@PathVariable final long key) {
     // TODO better return value
     try {
-      final var result = batchOperationServices
-          .withAuthentication(RequestMapper.getAuthentication())
-          .resume(key).get();
+      final var result =
+          batchOperationServices
+              .withAuthentication(RequestMapper.getAuthentication())
+              .resume(key)
+              .get();
     } catch (final InterruptedException | ExecutionException e) {
       throw new RuntimeException(e);
     }
@@ -114,11 +120,9 @@ public class BatchOperationController {
     try {
       // TODO use query
       final var result = batchOperationServices.search(batchOperationQuery().build());
-      return ResponseEntity.ok(
-          SearchQueryResponseMapper.toBatchOperationSearchQueryResult(result));
+      return ResponseEntity.ok(SearchQueryResponseMapper.toBatchOperationSearchQueryResult(result));
     } catch (final Exception e) {
       return mapErrorToResponse(e);
     }
   }
-
 }

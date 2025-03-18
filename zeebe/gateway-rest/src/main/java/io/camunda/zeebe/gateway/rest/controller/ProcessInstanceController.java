@@ -139,7 +139,8 @@ public class ProcessInstanceController {
             processInstanceServices
                 .withAuthentication(RequestMapper.getAuthentication())
                 .cancelProcessInstanceBatchOperationWithResult(filter),
-        ResponseMapper::toCancelProcessInstanceBatchOperationWithResultResponse); // TODO better response
+        ResponseMapper
+            ::toCancelProcessInstanceBatchOperationWithResultResponse); // TODO better response
   }
 
   private CompletableFuture<ResponseEntity<Object>> createProcessInstance(

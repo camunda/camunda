@@ -27,8 +27,11 @@ public interface TaskResultBuilder {
    *
    * @return returns true if the record still fits into the result, false otherwise
    */
-  boolean appendCommandRecord(final long key, final Intent intent, final UnifiedRecordValue value, final long operationReference);
-
+  boolean appendCommandRecord(
+      final long key,
+      final Intent intent,
+      final UnifiedRecordValue value,
+      final long operationReference);
 
   /**
    * Appends a record to the result without a key

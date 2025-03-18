@@ -12,7 +12,8 @@ import io.camunda.zeebe.engine.state.mutable.MutableBatchOperationState;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationExecutionRecord;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationIntent;
 
-public class BatchOperationCompletedApplier implements TypedEventApplier<BatchOperationIntent, BatchOperationExecutionRecord> {
+public class BatchOperationCompletedApplier
+    implements TypedEventApplier<BatchOperationIntent, BatchOperationExecutionRecord> {
 
   private final MutableBatchOperationState batchOperationState;
 

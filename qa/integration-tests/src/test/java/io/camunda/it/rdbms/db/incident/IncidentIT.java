@@ -7,14 +7,16 @@
  */
 package io.camunda.it.rdbms.db.incident;
 
+import static io.camunda.it.rdbms.db.fixtures.CommonFixtures.nextKey;
+import static io.camunda.it.rdbms.db.fixtures.IncidentFixtures.createAndSaveIncident;
+import static io.camunda.it.rdbms.db.fixtures.IncidentFixtures.createAndSaveRandomIncidents;
+import static org.assertj.core.api.Assertions.assertThat;
+
 import io.camunda.db.rdbms.RdbmsService;
 import io.camunda.db.rdbms.read.service.IncidentReader;
 import io.camunda.db.rdbms.write.RdbmsWriter;
 import io.camunda.db.rdbms.write.domain.IncidentDbModel;
-import static io.camunda.it.rdbms.db.fixtures.CommonFixtures.nextKey;
 import io.camunda.it.rdbms.db.fixtures.IncidentFixtures;
-import static io.camunda.it.rdbms.db.fixtures.IncidentFixtures.createAndSaveIncident;
-import static io.camunda.it.rdbms.db.fixtures.IncidentFixtures.createAndSaveRandomIncidents;
 import io.camunda.it.rdbms.db.fixtures.ProcessDefinitionFixtures;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsInvocationContextProviderExtension;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsTestApplication;
@@ -24,7 +26,6 @@ import io.camunda.search.query.IncidentQuery;
 import io.camunda.search.sort.IncidentSort;
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
-import static org.assertj.core.api.Assertions.assertThat;
 import org.assertj.core.data.TemporalUnitWithinOffset;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.TestTemplate;
@@ -197,11 +198,11 @@ public class IncidentIT {
                             p ->
                                 p.size(5)
                                     .searchAfter(
-                                        new Object[]{
-                                            instanceAfter.state(),
-                                            instanceAfter.creationTime(),
-                                            instanceAfter.flowNodeId(),
-                                            instanceAfter.processInstanceKey()
+                                        new Object[] {
+                                          instanceAfter.state(),
+                                          instanceAfter.creationTime(),
+                                          instanceAfter.flowNodeId(),
+                                          instanceAfter.processInstanceKey()
                                         }))));
 
     assertThat(nextPage.total()).isEqualTo(20);

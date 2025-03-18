@@ -66,8 +66,7 @@ import java.util.stream.Collectors;
 
 public final class SearchResponseMapper {
 
-  private SearchResponseMapper() {
-  }
+  private SearchResponseMapper() {}
 
   public static SearchQueryResponse<ProcessDefinition> toProcessDefinitionSearchResponse(
       final ProcessDefinitionSearchQueryResult response) {
@@ -149,7 +148,8 @@ public final class SearchResponseMapper {
     return new BatchOperationImpl(response);
   }
 
-  public static BatchOperationItems toBatchOperationItemsGetResponse(final BatchOperationItemSearchQueryResult response) {
+  public static BatchOperationItems toBatchOperationItemsGetResponse(
+      final BatchOperationItemSearchQueryResult response) {
     return new BatchOperationItemsImpl(response);
   }
 

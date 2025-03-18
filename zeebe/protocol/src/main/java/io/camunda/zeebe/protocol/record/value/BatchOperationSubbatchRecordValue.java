@@ -22,8 +22,7 @@ import org.immutables.value.Value;
 
 @Value.Immutable
 @ImmutableProtocol(builder = ImmutableBatchOperationSubbatchRecordValue.Builder.class)
-public interface BatchOperationSubbatchRecordValue
-    extends BatchOperationRelated, RecordValue {
+public interface BatchOperationSubbatchRecordValue extends BatchOperationRelated, RecordValue {
 
   /**
    * @return subset of keys for the batch operation which where processed
