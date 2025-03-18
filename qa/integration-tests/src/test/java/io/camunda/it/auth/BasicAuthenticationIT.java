@@ -13,7 +13,8 @@ import io.camunda.client.CamundaClient;
 import io.camunda.qa.util.auth.Authenticated;
 import io.camunda.qa.util.auth.User;
 import io.camunda.qa.util.auth.UserDefinition;
-import io.camunda.qa.util.multidb.CamundaMultiDBExtension;
+import io.camunda.qa.util.multidb.MultiDbTest;
+import io.camunda.qa.util.multidb.MultiDbTestApplication;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import java.net.HttpURLConnection;
 import java.net.URI;
@@ -24,22 +25,19 @@ import java.net.http.HttpResponse;
 import java.util.Base64;
 import java.util.List;
 import org.junit.jupiter.api.AutoClose;
-import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
-import org.junit.jupiter.api.extension.RegisterExtension;
 
-@Tag("multi-db-test")
+@MultiDbTest
 @DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "rdbms")
 @DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "AWS_OS")
 public class BasicAuthenticationIT {
 
   public static final String PATH_V2_AUTHENTICATION_ME = "v2/authentication/me";
+
+  @MultiDbTestApplication
   private static final TestStandaloneBroker BROKER =
       new TestStandaloneBroker().withBasicAuth().withAuthenticatedAccess();
-
-  @RegisterExtension
-  private static final CamundaMultiDBExtension EXTENSION = new CamundaMultiDBExtension(BROKER);
 
   private static final String USERNAME = "correct_username";
   private static final String PASSWORD = "correct_password";

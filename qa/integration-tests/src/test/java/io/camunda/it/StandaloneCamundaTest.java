@@ -12,26 +12,22 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.client.CamundaClient;
 import io.camunda.qa.util.cluster.TestRestOperateClient.ProcessInstanceResult;
 import io.camunda.qa.util.cluster.TestSimpleCamundaApplication;
-import io.camunda.qa.util.multidb.CamundaMultiDBExtension;
+import io.camunda.qa.util.multidb.MultiDbTest;
+import io.camunda.qa.util.multidb.MultiDbTestApplication;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.util.Either;
 import java.time.Duration;
 import org.awaitility.Awaitility;
-import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
-import org.junit.jupiter.api.extension.RegisterExtension;
 
-@Tag("multi-db-test")
+@MultiDbTest
 @DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "rdbms")
 public class StandaloneCamundaTest {
 
+  @MultiDbTestApplication
   private static final TestSimpleCamundaApplication CAMUNDA_APPLICATION =
       new TestSimpleCamundaApplication().withUnauthenticatedAccess();
-
-  @RegisterExtension
-  private static final CamundaMultiDBExtension EXTENSION =
-      new CamundaMultiDBExtension(CAMUNDA_APPLICATION);
 
   private static CamundaClient camundaClient;
 
