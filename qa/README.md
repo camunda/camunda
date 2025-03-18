@@ -32,9 +32,9 @@ This ensures we consistently write such tests and cover all necessary supported 
 
 ### For special cases:
 
-* It might make sense that you completely derail from the common standard of writing an acceptance test and not use the multi database extension at all
-* This can be cases where you need direct access to the secondary storage, need to play with the application lifecycle, can't support all secondary storages, etc.
-  * Best examples are backup and restore or migration tests.
+* You might need to derail from the common standard of writing an acceptance test and not use the multi-database extension at all
+* You might need direct access to the secondary storage, need to play with the application lifecycle, or not be able to support all secondary storage options.
+* Best examples are backup & restore or migration tests.
 
 > [!Important]
 >
