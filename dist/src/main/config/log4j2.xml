@@ -36,7 +36,7 @@
       </EnvironmentArbiter>
       <DefaultArbiter>
         <RollingFile name="RollingFile" fileName="${log.path}/zeebe.log"
-          filePattern="${log.path}/zeebe-%d{yyyy-MM-dd}-%i.log.gz" createOnDemand="true">
+          filePattern="${log.path}/zeebe-%d{yyyy-MM-dd}-%i.log.gz">
           <PatternLayout pattern="${log.pattern}" />
           <Policies>
             <TimeBasedTriggeringPolicy/>
