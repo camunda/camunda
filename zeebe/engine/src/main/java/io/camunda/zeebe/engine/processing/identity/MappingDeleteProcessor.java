@@ -131,7 +131,7 @@ public class MappingDeleteProcessor implements DistributedTypedRecordProcessor<M
           new TenantRecord()
               .setTenantKey(tenant.getTenantKey())
               .setTenantId(tenant.getTenantId())
-              .setEntityKey(mappingKey)
+              .setEntityId(mapping.getId())
               .setEntityType(EntityType.MAPPING));
     }
     for (final var roleKey : mapping.getRoleKeysList()) {

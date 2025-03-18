@@ -68,6 +68,8 @@ public abstract class BaseWebConfigurer {
 
   protected void applySecurityHeadersSettings(final HttpSecurity http) throws Exception {
     http.headers()
+        .frameOptions()
+        .disable()
         .contentSecurityPolicy(
             tasklistProperties.getSecurityProperties().getContentSecurityPolicy());
   }

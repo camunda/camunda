@@ -38,8 +38,8 @@ const EntityDetail: FC<EntityDetailProps> = ({
     <StructuredListWrapper ariaLabel={listLabel}>
       {loading && <Loading />}
       <StructuredListBody>
-        {data?.map(({ label, value }) => (
-          <StructuredListRow key={label}>
+        {data?.map(({ label, value }, idx) => (
+          <StructuredListRow key={`${label}-${idx}`}>
             <HeadCell head noWrap>
               {label}
             </HeadCell>

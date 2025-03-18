@@ -9,6 +9,7 @@ package io.camunda.operate.qa.util;
 
 import static io.camunda.operate.qa.util.ContainerVersionsUtil.ZEEBE_CURRENTVERSION_DOCKER_REPO_PROPERTY_NAME;
 import static io.camunda.operate.util.ThreadUtil.sleepFor;
+import static io.camunda.webapps.schema.SupportedVersions.SUPPORTED_ELASTICSEARCH_VERSION;
 import static org.testcontainers.images.PullPolicy.alwaysPull;
 
 import io.camunda.operate.exceptions.OperateRuntimeException;
@@ -35,7 +36,6 @@ import org.apache.http.HttpHost;
 import org.elasticsearch.ElasticsearchException;
 import org.elasticsearch.action.admin.cluster.health.ClusterHealthRequest;
 import org.elasticsearch.action.admin.cluster.health.ClusterHealthResponse;
-import org.elasticsearch.client.ElasticsearchClient;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestClient;
 import org.elasticsearch.client.RestHighLevelClient;
@@ -298,9 +298,7 @@ public class TestContainerUtil {
     elsContainer =
         new ElasticsearchContainer(
                 String.format(
-                    "%s:%s",
-                    DOCKER_ELASTICSEARCH_IMAGE_NAME,
-                    ElasticsearchClient.class.getPackage().getImplementationVersion()))
+                    "%s:%s", DOCKER_ELASTICSEARCH_IMAGE_NAME, SUPPORTED_ELASTICSEARCH_VERSION))
             .withNetwork(getNetwork())
             .withEnv("xpack.security.enabled", "false")
             .withEnv("path.repo", "~/")
@@ -309,6 +307,7 @@ public class TestContainerUtil {
     elsContainer.setWaitStrategy(
         new HostPortWaitStrategy().withStartupTimeout(Duration.ofSeconds(240L)));
     elsContainer.start();
+    elsContainer.followOutput(new Slf4jLogConsumer(LOGGER));
 
     testContext.setNetwork(getNetwork());
     testContext.setExternalElsHost(elsContainer.getContainerIpAddress());

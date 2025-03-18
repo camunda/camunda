@@ -10,6 +10,7 @@ package io.camunda.zeebe.engine.processing.deployment.model.validation;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.model.bpmn.builder.AdHocSubProcessBuilder;
+import io.camunda.zeebe.model.bpmn.instance.AdHocSubProcess;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeAdHoc;
 import java.util.function.Consumer;
 import org.junit.jupiter.api.Test;
@@ -28,7 +29,7 @@ public class AdHocSubProcessValidatorTest {
   }
 
   @Test
-  void withNoActiveElementsCollection() {
+  void withNoActiveElementsCollectionOrCompletionConditionExpression() {
     // given
     final BpmnModelInstance process = process(adHocSubProcess -> adHocSubProcess.task("A"));
 
@@ -78,5 +79,52 @@ public class AdHocSubProcessValidatorTest {
     ProcessValidationUtil.validateProcess(
         process,
         ExpectedValidationResult.expect(ZeebeAdHoc.class, "failed to parse expression '???'"));
+  }
+
+  @Test
+  void withCompletionConditionExpression() {
+    // given
+    final BpmnModelInstance process =
+        process(
+            adHocSubProcess -> {
+              adHocSubProcess.completionCondition("condition");
+              adHocSubProcess.task("A");
+            });
+
+    // when/then
+    ProcessValidationUtil.validateProcess(process);
+  }
+
+  @Test
+  void withEmptyCompletionConditionExpression() {
+    // given
+    final BpmnModelInstance process =
+        process(
+            adHocSubProcess -> {
+              adHocSubProcess.completionCondition("");
+              adHocSubProcess.task("A");
+            });
+
+    // when/then
+    ProcessValidationUtil.validateProcess(
+        process,
+        ExpectedValidationResult.expect(
+            AdHocSubProcess.class, "Expected expression but found static value ''"));
+  }
+
+  @Test
+  void withInvalidCompletionConditionExpression() {
+    // given
+    final BpmnModelInstance process =
+        process(
+            adHocSubProcess -> {
+              adHocSubProcess.completionCondition("???");
+              adHocSubProcess.task("A");
+            });
+
+    // when/then
+    ProcessValidationUtil.validateProcess(
+        process,
+        ExpectedValidationResult.expect(AdHocSubProcess.class, "failed to parse expression '???'"));
   }
 }

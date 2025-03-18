@@ -7,15 +7,20 @@
  */
 package io.camunda.security.configuration;
 
+import java.util.Arrays;
+import java.util.List;
+import java.util.Set;
+
 public class OidcAuthenticationConfiguration {
   private String issuerUri;
   private String clientId;
   private String clientSecret;
   private String grantType = "authorization_code";
   private String redirectUri;
-  private String scope = "openid,profile";
+  private List<String> scope = Arrays.asList("openid", "profile");
   private String jwkSetUri;
   private String authorizationUri;
+  private Set<String> audiences;
 
   public String getIssuerUri() {
     return issuerUri;
@@ -57,11 +62,11 @@ public class OidcAuthenticationConfiguration {
     this.redirectUri = redirectUri;
   }
 
-  public String getScope() {
+  public List<String> getScope() {
     return scope;
   }
 
-  public void setScope(final String scope) {
+  public void setScope(final List<String> scope) {
     this.scope = scope;
   }
 
@@ -79,5 +84,13 @@ public class OidcAuthenticationConfiguration {
 
   public void setAuthorizationUri(final String authorizationUri) {
     this.authorizationUri = authorizationUri;
+  }
+
+  public Set<String> getAudiences() {
+    return audiences;
+  }
+
+  public void setAudiences(final Set<String> audiences) {
+    this.audiences = audiences;
   }
 }

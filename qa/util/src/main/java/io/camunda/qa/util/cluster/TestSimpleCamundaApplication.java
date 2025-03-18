@@ -246,4 +246,8 @@ public final class TestSimpleCamundaApplication
   public Optional<AuthenticationMethod> clientAuthenticationMethod() {
     return apiAuthenticationMethod();
   }
+
+  public TestRestOperateClient newOperateClient() {
+    return new TestRestOperateClient(restAddress());
+  }
 }

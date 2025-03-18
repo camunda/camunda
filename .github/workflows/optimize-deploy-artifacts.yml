@@ -52,10 +52,10 @@ jobs:
         vault-address: ${{ secrets.VAULT_ADDR }}
         vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
         vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
-    - name: Build monorepo
+    - name: Build Optimize Backend
       uses: ./.github/actions/run-maven
       with:
-        parameters: install -pl optimize/backend -am  -Dquickly -PrunAssembly -T1
+        parameters: install -f optimize/pom.xml -pl backend -am -PrunAssembly -T1
 
     - name: Generate production .tar.gz
       uses: ./.github/actions/run-maven
