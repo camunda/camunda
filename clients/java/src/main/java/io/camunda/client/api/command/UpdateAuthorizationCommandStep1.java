@@ -16,9 +16,9 @@
 package io.camunda.client.api.command;
 
 import io.camunda.client.api.response.UpdateAuthorizationResponse;
-import io.camunda.client.protocol.rest.OwnerTypeEnum;
-import io.camunda.client.protocol.rest.PermissionTypeEnum;
-import io.camunda.client.protocol.rest.ResourceTypeEnum;
+import io.camunda.client.wrappers.OwnerType;
+import io.camunda.client.wrappers.PermissionType;
+import io.camunda.client.wrappers.ResourceType;
 
 public interface UpdateAuthorizationCommandStep1 {
 
@@ -38,7 +38,7 @@ public interface UpdateAuthorizationCommandStep1 {
      * @param ownerType the type of the owner of the permissions
      * @return the builder for this command
      */
-    UpdateAuthorizationCommandStep3 ownerType(OwnerTypeEnum ownerType);
+    UpdateAuthorizationCommandStep3 ownerType(OwnerType ownerType);
   }
 
   interface UpdateAuthorizationCommandStep3 {
@@ -60,7 +60,7 @@ public interface UpdateAuthorizationCommandStep1 {
      * @param resourceType the type of the resource
      * @return the builder for this command
      */
-    UpdateAuthorizationCommandStep5 resourceType(ResourceTypeEnum resourceType);
+    UpdateAuthorizationCommandStep5 resourceType(ResourceType resourceType);
   }
 
   interface UpdateAuthorizationCommandStep5 {
@@ -71,7 +71,7 @@ public interface UpdateAuthorizationCommandStep1 {
      * @param permissionTypes the permission types
      * @return the builder for this command
      */
-    UpdateAuthorizationCommandStep6 permissionTypes(PermissionTypeEnum... permissionTypes);
+    UpdateAuthorizationCommandStep6 permissionTypes(PermissionType... permissionTypes);
   }
 
   interface UpdateAuthorizationCommandStep6

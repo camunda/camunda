@@ -13,29 +13,43 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.camunda.client.api.search.response;
+package io.camunda.client.wrappers;
 
 import io.camunda.client.impl.util.EnumUtil;
-import io.camunda.client.protocol.rest.ProcessInstanceStateEnum;
 
-public enum ProcessInstanceState {
-  ACTIVE,
-  COMPLETED,
-  TERMINATED,
+public enum ResourceType {
+  AUTHORIZATION,
+  MAPPING_RULE,
+  MESSAGE,
+  BATCH,
+  APPLICATION,
+  SYSTEM,
+  TENANT,
+  RESOURCE,
+  PROCESS_DEFINITION,
+  DECISION_REQUIREMENTS_DEFINITION,
+  DECISION_DEFINITION,
+  GROUP,
+  USER,
+  ROLE,
   UNKNOWN_ENUM_VALUE;
 
-  public static ProcessInstanceStateEnum toProtocolState(final ProcessInstanceState value) {
-    return (value == null) ? null : ProcessInstanceStateEnum.fromValue(value.name());
+  public static io.camunda.client.protocol.rest.ResourceTypeEnum toProtocolEnum(
+      final ResourceType value) {
+    return (value == null)
+        ? null
+        : io.camunda.client.protocol.rest.ResourceTypeEnum.fromValue(value.name());
   }
 
-  public static ProcessInstanceState fromProtocolState(final ProcessInstanceStateEnum value) {
+  public static ResourceType fromProtocolEnum(
+      final io.camunda.client.protocol.rest.ResourceTypeEnum value) {
     if (value == null) {
       return null;
     }
     try {
-      return ProcessInstanceState.valueOf(value.name());
+      return ResourceType.valueOf(value.name());
     } catch (final IllegalArgumentException e) {
-      EnumUtil.logUnknownEnumValue(value, "process instance state", values());
+      EnumUtil.logUnknownEnumValue(value, value.getClass().getName(), values());
       return UNKNOWN_ENUM_VALUE;
     }
   }
