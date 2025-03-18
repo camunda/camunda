@@ -15,10 +15,12 @@ import io.camunda.it.migration.util.CamundaMigrator;
 import io.camunda.search.clients.core.SearchQueryHit;
 import io.camunda.search.clients.core.SearchQueryRequest;
 import io.camunda.search.clients.query.SearchQueryBuilders;
+import io.camunda.search.connect.configuration.DatabaseType;
 import io.camunda.tasklist.webapp.api.rest.v1.entities.TaskSearchRequest;
 import io.camunda.tasklist.webapp.api.rest.v1.entities.TaskSearchResponse;
 import io.camunda.webapps.schema.descriptors.tasklist.template.TaskTemplate;
 import io.camunda.webapps.schema.entities.tasklist.TaskEntity;
+import io.camunda.webapps.schema.entities.tasklist.TaskEntity.TaskImplementation;
 import io.camunda.webapps.schema.entities.tasklist.TaskJoinRelationship.TaskJoinRelationshipType;
 import io.camunda.webapps.schema.entities.tasklist.TasklistEntity;
 import io.camunda.zeebe.model.bpmn.Bpmn;
@@ -27,7 +29,9 @@ import java.net.URI;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.Duration;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.UnaryOperator;
@@ -35,8 +39,44 @@ import org.awaitility.Awaitility;
 
 public abstract class UserTaskMigrationHelper {
   protected static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
+  protected static final Map<DatabaseType, Map<String, Long>> userTaskKeys = new HashMap<>();
+  protected static final Map<DatabaseType, Map<TaskImplementation, Long>> processDefinitionKeys =
+      new HashMap<>();
 
-  protected long deployAndStartUserTaskProcess(
+  static void setup(
+      final DatabaseType databaseType, final CamundaMigrator migrator, final String assignee) {
+    userTaskKeys.put(databaseType, new HashMap<>());
+    processDefinitionKeys.put(databaseType, new HashMap<>());
+
+    final var jobWorkerProcessDefinitionKey =
+        deployProcess(migrator.getCamundaClient(), t -> t.zeebeAssignee(assignee));
+    processDefinitionKeys
+        .get(databaseType)
+        .put(TaskImplementation.JOB_WORKER, jobWorkerProcessDefinitionKey);
+
+    final var zeebeProcessDefinitionKey =
+        deployProcess(migrator.getCamundaClient(), t -> t.zeebeUserTask().zeebeAssignee(assignee));
+    processDefinitionKeys
+        .get(databaseType)
+        .put(TaskImplementation.ZEEBE_USER_TASK, zeebeProcessDefinitionKey);
+
+    var processInstanceKey =
+        startProcessInstance(migrator.getCamundaClient(), zeebeProcessDefinitionKey);
+    var taskKey = waitForTaskToBeImportedReturningId(migrator, processInstanceKey);
+    userTaskKeys.get(databaseType).put("first", taskKey);
+
+    processInstanceKey =
+        startProcessInstance(migrator.getCamundaClient(), zeebeProcessDefinitionKey);
+    taskKey = waitForTaskToBeImportedReturningId(migrator, processInstanceKey);
+    userTaskKeys.get(databaseType).put("second", taskKey);
+
+    processInstanceKey =
+        startProcessInstance(migrator.getCamundaClient(), jobWorkerProcessDefinitionKey);
+    taskKey = waitForTaskToBeImportedReturningId(migrator, processInstanceKey);
+    userTaskKeys.get(databaseType).put("third", taskKey);
+  }
+
+  protected static long deployProcess(
       final CamundaClient client, final UnaryOperator<UserTaskBuilder> builder) {
     final var process =
         Bpmn.createExecutableProcess("task-process")
@@ -46,23 +86,37 @@ public abstract class UserTaskMigrationHelper {
             .endEvent()
             .done();
 
-    client.newDeployResourceCommand().addProcessModel(process, "task-process.bpmn").send().join();
+    return client
+        .newDeployResourceCommand()
+        .addProcessModel(process, "task-process.bpmn")
+        .send()
+        .join()
+        .getProcesses()
+        .getFirst()
+        .getProcessDefinitionKey();
+  }
 
+  protected static long startProcessInstance(
+      final CamundaClient client, final long processDefinitionKey) {
     return client
         .newCreateInstanceCommand()
-        .bpmnProcessId("task-process")
-        .latestVersion()
+        .processDefinitionKey(processDefinitionKey)
         .send()
         .join()
         .getProcessInstanceKey();
   }
 
-  protected long waitForTaskToBeImportedReturningId(
-      final CamundaMigrator migrator, final long piKey) throws JsonProcessingException {
+  protected static long waitForTaskToBeImportedReturningId(
+      final CamundaMigrator migrator, final long piKey) {
     final AtomicLong userTaskKey = new AtomicLong();
-    final String body =
-        OBJECT_MAPPER.writeValueAsString(
-            new TaskSearchRequest().setProcessInstanceKey(String.valueOf(piKey)));
+    final String body;
+    try {
+      body =
+          OBJECT_MAPPER.writeValueAsString(
+              new TaskSearchRequest().setProcessInstanceKey(String.valueOf(piKey)));
+    } catch (final JsonProcessingException e) {
+      throw new RuntimeException(e);
+    }
     Awaitility.await("Wait for tasks to be imported")
         .ignoreExceptions()
         .pollInterval(Duration.ofSeconds(1))
