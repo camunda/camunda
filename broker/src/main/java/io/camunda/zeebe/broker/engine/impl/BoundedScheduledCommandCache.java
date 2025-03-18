@@ -124,6 +124,17 @@ public final class BoundedScheduledCommandCache implements StageableScheduledCom
       }
     }
 
+    @Override
+    public void rollback() {
+      for (final var entry : stagedKeys.entrySet()) {
+        final var cache = caches.get(entry.getKey());
+        if (cache != null) {
+          // TODO: use a batch remove operation to avoid multiple locks
+          entry.getValue().forEachLong(cache::remove);
+        }
+      }
+    }
+
     private LongHashSet stagedKeys(final Intent intent) {
       return stagedKeys.computeIfAbsent(intent, ignored -> new LongHashSet());
     }

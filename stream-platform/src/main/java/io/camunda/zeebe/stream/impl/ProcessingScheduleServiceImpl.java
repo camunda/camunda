@@ -155,6 +155,10 @@ public class ProcessingScheduleServiceImpl
       final var result = task.execute(builder);
       final var recordBatch = result.getRecordBatch();
 
+      // Persist before writing to ensure that we add to the cache before processing can remove it
+      // again.
+      stagedCache.persist();
+
       // we need to retry the writing if the dispatcher return zero or negative position (this means
       // it was full during writing)
       // it will be freed from the LogStorageAppender concurrently, which means we might be able to
@@ -173,13 +177,12 @@ public class ProcessingScheduleServiceImpl
 
       writeFuture.onComplete(
           (v, t) -> {
-            if (t == null) {
-              stagedCache.persist();
-            } else {
+            if (t != null) {
+              stagedCache.rollback();
               // todo handle error;
               //   can happen if we tried to write a too big batch of records
               //   this should resolve if we use the buffered writer were we detect these errors
-              // earlier
+              //   earlier
               LOG.warn("Writing of scheduled TaskResult failed!", t);
             }
           });
