@@ -33,7 +33,8 @@ public record ProcessInstanceFilter(
     List<Operation<String>> tenantIdOperations,
     List<VariableValueFilter> variableFilters,
     List<Operation<String>> batchOperationIdOperations,
-    List<Operation<String>> errorMessageOperations)
+    List<Operation<String>> errorMessageOperations,
+    Boolean hasRetriesLeft)
     implements FilterBase {
 
   public Builder toBuilder() {
@@ -73,6 +74,7 @@ public record ProcessInstanceFilter(
     private List<VariableValueFilter> variableFilters;
     private List<Operation<String>> batchOperationIdOperations;
     private List<Operation<String>> errorMessageOperations;
+    private Boolean hasRetriesLeft;
 
     public Builder processInstanceKeyOperations(final List<Operation<Long>> operations) {
       processInstanceKeyOperations = addValuesToList(processInstanceKeyOperations, operations);
@@ -292,6 +294,11 @@ public record ProcessInstanceFilter(
       return this;
     }
 
+    public Builder hasRetriesLeft(final Boolean value) {
+      hasRetriesLeft = value;
+      return this;
+    }
+
     @Override
     public ProcessInstanceFilter build() {
       return new ProcessInstanceFilter(
@@ -311,7 +318,8 @@ public record ProcessInstanceFilter(
           Objects.requireNonNullElse(tenantIdOperations, Collections.emptyList()),
           Objects.requireNonNullElse(variableFilters, Collections.emptyList()),
           Objects.requireNonNullElse(batchOperationIdOperations, Collections.emptyList()),
-          Objects.requireNonNullElse(errorMessageOperations, Collections.emptyList()));
+          Objects.requireNonNullElse(errorMessageOperations, Collections.emptyList()),
+          hasRetriesLeft);
     }
   }
 }

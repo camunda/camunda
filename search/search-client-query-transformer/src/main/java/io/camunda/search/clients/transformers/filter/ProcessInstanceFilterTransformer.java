@@ -15,6 +15,7 @@ import static io.camunda.webapps.schema.descriptors.template.ListViewTemplate.BP
 import static io.camunda.webapps.schema.descriptors.template.ListViewTemplate.END_DATE;
 import static io.camunda.webapps.schema.descriptors.template.ListViewTemplate.ERROR_MSG;
 import static io.camunda.webapps.schema.descriptors.template.ListViewTemplate.INCIDENT;
+import static io.camunda.webapps.schema.descriptors.template.ListViewTemplate.JOB_FAILED_WITH_RETRIES_LEFT;
 import static io.camunda.webapps.schema.descriptors.template.ListViewTemplate.JOIN_RELATION;
 import static io.camunda.webapps.schema.descriptors.template.ListViewTemplate.KEY;
 import static io.camunda.webapps.schema.descriptors.template.ListViewTemplate.PARENT_FLOW_NODE_INSTANCE_KEY;
@@ -99,7 +100,14 @@ public final class ProcessInstanceFilterTransformer
     ofNullable(stringOperations(BATCH_OPERATION_IDS, filter.batchOperationIdOperations()))
         .ifPresent(queries::addAll);
 
+    ofNullable(geHasRetriesLeftQuery(filter.hasRetriesLeft())).ifPresent(queries::add);
+
     return and(queries);
+  }
+
+  private SearchQuery geHasRetriesLeftQuery(final Boolean hasRetriesLeft) {
+    return hasChildQuery(
+        ACTIVITIES_JOIN_RELATION, term(JOB_FAILED_WITH_RETRIES_LEFT, hasRetriesLeft));
   }
 
   private SearchQuery getIsProcessInstanceQuery() {

@@ -411,6 +411,33 @@ public final class ProcessInstanceQueryTransformerTest extends AbstractTransform
   }
 
   @Test
+  public void shouldQueryByHasRetriesLeft() {
+    // given
+    final var processInstanceFilter = FilterBuilders.processInstance(f -> f.hasRetriesLeft(true));
+
+    // when
+    final var searchRequest = transformQuery(processInstanceFilter);
+
+    // then
+    final var queryVariant = searchRequest.queryOption();
+    assertThat(queryVariant).isInstanceOf(SearchBoolQuery.class);
+    assertThat(((SearchBoolQuery) queryVariant).must()).hasSize(2);
+
+    assertIsSearchTermQuery(
+        ((SearchBoolQuery) queryVariant).must().getFirst().queryOption(),
+        "joinRelation",
+        "processInstance");
+
+    assertThat(((SearchBoolQuery) queryVariant).must().get(1).queryOption())
+        .isInstanceOfSatisfying(
+            SearchHasChildQuery.class,
+            (searchHasChildQuery) -> {
+              assertIsSearchTermQuery(
+                  searchHasChildQuery.query().queryOption(), "jobFailedWithRetriesLeft", true);
+            });
+  }
+
+  @Test
   public void shouldCreateDefaultFilter() {
     // given
 
