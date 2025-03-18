@@ -136,7 +136,7 @@ while IFS= read -r -d '' jar_file; do
   # 1) Temp folder
   tmpdir="$(mktemp -d)"
   # 2) Unzip jar
-  unzip -q -o "$jar_abs_path" -d "$tmpdir"
+  jar -xf "$jar_abs_path" -C "$tmpdir"
 
   # 3) sign Mach-O or .app inside extracted folder
   sign_macho_in_folder "$tmpdir"
@@ -148,7 +148,7 @@ while IFS= read -r -d '' jar_file; do
   (
     cd "$tmpdir"
     echo "  -> Re-zipping into $jar_abs_path"
-    zip -r -q -X "$jar_abs_path" .
+    jar -uf "$jar_abs_path" ./
   )
 
   rm -rf "$tmpdir"
