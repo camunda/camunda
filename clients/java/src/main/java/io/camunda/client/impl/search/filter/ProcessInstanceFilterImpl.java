@@ -282,11 +282,17 @@ public class ProcessInstanceFilterImpl
   }
 
   @Override
+  public ProcessInstanceFilter hasRetriesLeft(final Boolean hasRetriesLeft) {
+    filter.hasRetriesLeft(hasRetriesLeft);
+    return this;
+  }
+
+  @Override
   protected io.camunda.client.protocol.rest.ProcessInstanceFilter getSearchRequestProperty() {
     return filter;
   }
 
-  static void variableValueNullCheck(Object value) {
+  static void variableValueNullCheck(final Object value) {
     if (value == null) {
       throw new IllegalArgumentException("Variable value cannot be null");
     }

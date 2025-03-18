@@ -106,8 +106,11 @@ public final class ProcessInstanceFilterTransformer
   }
 
   private SearchQuery geHasRetriesLeftQuery(final Boolean hasRetriesLeft) {
-    return hasChildQuery(
-        ACTIVITIES_JOIN_RELATION, term(JOB_FAILED_WITH_RETRIES_LEFT, hasRetriesLeft));
+    if (hasRetriesLeft != null) {
+      return hasChildQuery(
+          ACTIVITIES_JOIN_RELATION, term(JOB_FAILED_WITH_RETRIES_LEFT, hasRetriesLeft));
+    }
+    return null;
   }
 
   private SearchQuery getIsProcessInstanceQuery() {

@@ -9,6 +9,7 @@ package io.camunda.it.util;
 
 import static io.camunda.qa.util.multidb.CamundaMultiDBExtension.TIMEOUT_DATA_AVAILABILITY;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.awaitility.Awaitility.await;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.command.CreateProcessInstanceCommandStep1;
@@ -249,6 +250,21 @@ public final class TestHelper {
                       .send()
                       .join();
               assertThat(result.page().totalItems()).isEqualTo(expectedIncidents);
+            });
+  }
+
+  public static void waitUntilJobWorkerHasFailedJob(final CamundaClient camundaClient) {
+    await("should wait until the process instance has been updated to reflect retries left.")
+        .atMost(TIMEOUT_DATA_AVAILABILITY)
+        .untilAsserted(
+            () -> {
+              final var result =
+                  camundaClient
+                      .newProcessInstanceQuery()
+                      .filter(f -> f.hasRetriesLeft(true))
+                      .send()
+                      .join();
+              assertThat(result.items().size()).isGreaterThan(0);
             });
   }
 
