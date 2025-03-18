@@ -17,8 +17,8 @@ import io.camunda.client.api.search.response.ProcessInstanceState;
 import io.camunda.client.api.search.response.SearchQueryResponse;
 import io.camunda.client.api.search.response.UserTask;
 import io.camunda.client.protocol.rest.ProblemDetail;
-import io.camunda.qa.util.multidb.CamundaMultiDBExtension;
 import io.camunda.qa.util.multidb.MultiDbTest;
+import io.camunda.qa.util.multidb.MultiDbTestApplication;
 import io.camunda.zeebe.management.cluster.PlannedOperationsResponse;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
@@ -36,18 +36,15 @@ import org.assertj.core.api.Assertions;
 import org.assertj.core.api.InstanceOfAssertFactories;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.RegisterExtension;
 
 @MultiDbTest
 public class ClusterPurgeMultiDbIT {
 
   private static CamundaClient client;
 
+  @MultiDbTestApplication
   private static final TestStandaloneApplication<?> APPLICATION =
       new TestStandaloneBroker().withUnauthenticatedAccess();
-
-  @RegisterExtension
-  public static final CamundaMultiDBExtension EXTENSION = new CamundaMultiDBExtension(APPLICATION);
 
   private static final int TIMEOUT = 40;
 
