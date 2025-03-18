@@ -16,8 +16,6 @@
 package io.camunda.client.api.search.filter;
 
 import io.camunda.client.api.search.request.TypedSearchRequest.SearchRequestFilter;
-import io.camunda.client.api.search.response.IncidentErrorType;
-import io.camunda.client.api.search.response.IncidentState;
 
 public interface IncidentFilter extends SearchRequestFilter {
 
@@ -59,7 +57,8 @@ public interface IncidentFilter extends SearchRequestFilter {
    * @param errorType the error type of incident
    * @return the updated filter
    */
-  IncidentFilter errorType(final IncidentErrorType errorType);
+  IncidentFilter errorType(
+      final io.camunda.client.api.search.enums.IncidentFilter.ErrorType errorType);
 
   /**
    * Filters incidents by error message.
@@ -99,7 +98,7 @@ public interface IncidentFilter extends SearchRequestFilter {
    * @param value the state of incident
    * @return the updated filter
    */
-  IncidentFilter state(final IncidentState value);
+  IncidentFilter state(final io.camunda.client.api.search.enums.IncidentFilter.State value);
 
   /**
    * Filters incidents by job key.

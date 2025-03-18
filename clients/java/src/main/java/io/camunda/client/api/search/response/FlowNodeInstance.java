@@ -15,6 +15,8 @@
  */
 package io.camunda.client.api.search.response;
 
+import io.camunda.client.api.search.enums.FlowNodeInstanceResult;
+
 public interface FlowNodeInstance {
 
   /** key */
@@ -48,11 +50,11 @@ public interface FlowNodeInstance {
   Long getIncidentKey();
 
   /** state of flow node instance */
-  FlowNodeInstanceState getState();
+  FlowNodeInstanceResult.State getState();
 
   /** tenant id for flow node instance */
   String getTenantId();
 
   /** type of flow node instance */
-  FlowNodeInstanceType getType();
+  FlowNodeInstanceResult.Type getType();
 }
