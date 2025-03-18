@@ -16,6 +16,9 @@
 package io.camunda.zeebe.protocol.record;
 
 import io.camunda.zeebe.protocol.record.intent.AuthorizationIntent;
+import io.camunda.zeebe.protocol.record.intent.BatchOperationChunkIntent;
+import io.camunda.zeebe.protocol.record.intent.BatchOperationExecutionIntent;
+import io.camunda.zeebe.protocol.record.intent.BatchOperationIntent;
 import io.camunda.zeebe.protocol.record.intent.ClockIntent;
 import io.camunda.zeebe.protocol.record.intent.CommandDistributionIntent;
 import io.camunda.zeebe.protocol.record.intent.CompensationSubscriptionIntent;
@@ -63,6 +66,9 @@ import io.camunda.zeebe.protocol.record.intent.management.CheckpointIntent;
 import io.camunda.zeebe.protocol.record.intent.scaling.RedistributionIntent;
 import io.camunda.zeebe.protocol.record.intent.scaling.ScaleIntent;
 import io.camunda.zeebe.protocol.record.value.AuthorizationRecordValue;
+import io.camunda.zeebe.protocol.record.value.BatchOperationChunkRecordValue;
+import io.camunda.zeebe.protocol.record.value.BatchOperationCreationRecordValue;
+import io.camunda.zeebe.protocol.record.value.BatchOperationExecutionRecordValue;
 import io.camunda.zeebe.protocol.record.value.ClockRecordValue;
 import io.camunda.zeebe.protocol.record.value.CommandDistributionRecordValue;
 import io.camunda.zeebe.protocol.record.value.CompensationSubscriptionRecordValue;
@@ -267,6 +273,16 @@ public final class ValueTypeMapping {
     mapping.put(
         ValueType.IDENTITY_SETUP,
         new Mapping<>(IdentitySetupRecordValue.class, IdentitySetupIntent.class));
+    mapping.put(
+        ValueType.BATCH_OPERATION_CREATION,
+        new Mapping<>(BatchOperationCreationRecordValue.class, BatchOperationIntent.class));
+    mapping.put(
+        ValueType.BATCH_OPERATION_CHUNK,
+        new Mapping<>(BatchOperationChunkRecordValue.class, BatchOperationChunkIntent.class));
+    mapping.put(
+        ValueType.BATCH_OPERATION_EXECUTION,
+        new Mapping<>(
+            BatchOperationExecutionRecordValue.class, BatchOperationExecutionIntent.class));
     return mapping;
   }
 

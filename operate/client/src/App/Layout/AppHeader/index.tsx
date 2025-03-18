@@ -62,55 +62,57 @@ const AppHeader: React.FC = observer(() => {
       }}
       forwardRef={Link}
       navbar={{
-        elements: [
-          {
-            key: 'dashboard',
-            label: 'Dashboard',
-            isCurrentPage: currentPage === 'dashboard',
-            routeProps: {
-              to: Paths.dashboard(),
-              onClick: () => {
-                tracking.track({
-                  eventName: 'navigation',
-                  link: 'header-dashboard',
-                  currentPage,
-                });
+        elements: authenticationStore.isForbidden()
+          ? []
+          : [
+              {
+                key: 'dashboard',
+                label: 'Dashboard',
+                isCurrentPage: currentPage === 'dashboard',
+                routeProps: {
+                  to: Paths.dashboard(),
+                  onClick: () => {
+                    tracking.track({
+                      eventName: 'navigation',
+                      link: 'header-dashboard',
+                      currentPage,
+                    });
+                  },
+                },
               },
-            },
-          },
-          {
-            key: 'processes',
-            label: 'Processes',
-            isCurrentPage: currentPage === 'processes',
-            routeProps: {
-              to: Locations.processes(),
-              state: {refreshContent: true, hideOptionalFilters: true},
-              onClick: () => {
-                tracking.track({
-                  eventName: 'navigation',
-                  link: 'header-processes',
-                  currentPage,
-                });
+              {
+                key: 'processes',
+                label: 'Processes',
+                isCurrentPage: currentPage === 'processes',
+                routeProps: {
+                  to: Locations.processes(),
+                  state: {refreshContent: true, hideOptionalFilters: true},
+                  onClick: () => {
+                    tracking.track({
+                      eventName: 'navigation',
+                      link: 'header-processes',
+                      currentPage,
+                    });
+                  },
+                },
               },
-            },
-          },
-          {
-            key: 'decisions',
-            label: 'Decisions',
-            isCurrentPage: currentPage === 'decisions',
-            routeProps: {
-              to: Locations.decisions(),
-              state: {refreshContent: true, hideOptionalFilters: true},
-              onClick: () => {
-                tracking.track({
-                  eventName: 'navigation',
-                  link: 'header-decisions',
-                  currentPage,
-                });
+              {
+                key: 'decisions',
+                label: 'Decisions',
+                isCurrentPage: currentPage === 'decisions',
+                routeProps: {
+                  to: Locations.decisions(),
+                  state: {refreshContent: true, hideOptionalFilters: true},
+                  onClick: () => {
+                    tracking.track({
+                      eventName: 'navigation',
+                      link: 'header-decisions',
+                      currentPage,
+                    });
+                  },
+                },
               },
-            },
-          },
-        ],
+            ],
         licenseTag: {
           show: licenseTagStore.state.isTagVisible,
           isProductionLicense: licenseTagStore.state.isProductionLicense,

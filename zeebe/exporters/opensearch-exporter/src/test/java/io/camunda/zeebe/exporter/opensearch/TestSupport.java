@@ -64,6 +64,9 @@ final class TestSupport {
       case MESSAGE_CORRELATION -> config.messageCorrelation = value;
       case USER -> config.user = value;
       case AUTHORIZATION -> config.authorization = value;
+      case BATCH_OPERATION_CREATION -> config.batchOperationCreation = value;
+      case BATCH_OPERATION_CHUNK -> config.batchOperationChunk = value;
+      case BATCH_OPERATION_EXECUTION -> config.batchOperationExecution = value;
       default ->
           throw new IllegalArgumentException(
               "No known indexing configuration option for value type " + valueType);
@@ -111,7 +114,10 @@ final class TestSupport {
             ValueType.GROUP,
             ValueType.MAPPING,
             ValueType.IDENTITY_SETUP,
-            ValueType.RESOURCE);
+            ValueType.RESOURCE,
+            ValueType.BATCH_OPERATION_CREATION,
+            ValueType.BATCH_OPERATION_CHUNK,
+            ValueType.BATCH_OPERATION_EXECUTION);
     return EnumSet.complementOf(excludedValueTypes).stream();
   }
 }

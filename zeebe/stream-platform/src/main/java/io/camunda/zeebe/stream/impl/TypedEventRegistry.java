@@ -12,6 +12,9 @@ import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRe
 import io.camunda.zeebe.protocol.impl.record.value.authorization.IdentitySetupRecord;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.MappingRecord;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.RoleRecord;
+import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationChunkRecord;
+import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationCreationRecord;
+import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationExecutionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.clock.ClockRecord;
 import io.camunda.zeebe.protocol.impl.record.value.compensation.CompensationSubscriptionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.decision.DecisionEvaluationRecord;
@@ -116,6 +119,9 @@ public final class TypedEventRegistry {
     registry.put(ValueType.GROUP, GroupRecord.class);
     registry.put(ValueType.REDISTRIBUTION, RedistributionRecord.class);
     registry.put(ValueType.IDENTITY_SETUP, IdentitySetupRecord.class);
+    registry.put(ValueType.BATCH_OPERATION_CREATION, BatchOperationCreationRecord.class);
+    registry.put(ValueType.BATCH_OPERATION_EXECUTION, BatchOperationExecutionRecord.class);
+    registry.put(ValueType.BATCH_OPERATION_CHUNK, BatchOperationChunkRecord.class);
 
     EVENT_REGISTRY = Collections.unmodifiableMap(registry);
 
