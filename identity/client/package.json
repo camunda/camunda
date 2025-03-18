@@ -26,7 +26,7 @@
     "react-router": "6.26.2",
     "react-router-dom": "6.26.2",
     "react-transition-group": "4.4.5",
-    "styled-components": "6.1.15"
+    "styled-components": "6.1.16"
   },
   "devDependencies": {
     "@types/event-source-polyfill": "1.0.5",
