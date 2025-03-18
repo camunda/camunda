@@ -16,7 +16,6 @@ import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.CommandDistributionIntent;
 import io.camunda.zeebe.protocol.record.intent.MappingIntent;
-import io.camunda.zeebe.protocol.record.intent.RoleIntent;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.time.Duration;
@@ -106,7 +105,7 @@ public class UpdateMappingMultiPartitionTest {
   public void distributionShouldNotOvertakeOtherCommandsInSameQueue() {
     // given the role creation distribution is intercepted
     for (int partitionId = 2; partitionId <= PARTITION_COUNT; partitionId++) {
-      interceptRoleCreateForPartition(partitionId);
+      interceptCreateForPartition(partitionId);
     }
     final var claimName = UUID.randomUUID().toString();
     final var claimValue = UUID.randomUUID().toString();
@@ -119,8 +118,6 @@ public class UpdateMappingMultiPartitionTest {
         .withName(name)
         .withId(id)
         .create();
-    final var roleName = UUID.randomUUID().toString();
-    engine.role().newRole(roleName).create();
     engine
         .mapping()
         .updateMapping(id)
@@ -133,15 +130,16 @@ public class UpdateMappingMultiPartitionTest {
     engine.increaseTime(Duration.ofMinutes(1));
 
     // then
-    assertThat(RecordingExporter.commandDistributionRecords(CommandDistributionIntent.FINISHED))
+    assertThat(
+            RecordingExporter.commandDistributionRecords(CommandDistributionIntent.FINISHED)
+                .limit(2))
         .extracting(r -> r.getValue().getValueType(), r -> r.getValue().getIntent())
         .containsExactly(
             tuple(ValueType.MAPPING, MappingIntent.CREATE),
-            tuple(ValueType.ROLE, RoleIntent.CREATE),
             tuple(ValueType.MAPPING, MappingIntent.UPDATE));
   }
 
-  private void interceptRoleCreateForPartition(final int partitionId) {
+  private void interceptCreateForPartition(final int partitionId) {
     final var hasInterceptedPartition = new AtomicBoolean(false);
     engine.interceptInterPartitionCommands(
         (receiverPartitionId, valueType, intent, recordKey, command) -> {
@@ -149,7 +147,7 @@ public class UpdateMappingMultiPartitionTest {
             return true;
           }
           hasInterceptedPartition.set(true);
-          return !(receiverPartitionId == partitionId && intent == RoleIntent.CREATE);
+          return !(receiverPartitionId == partitionId && intent == MappingIntent.CREATE);
         });
   }
 }
