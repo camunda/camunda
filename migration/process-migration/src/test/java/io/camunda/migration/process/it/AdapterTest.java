@@ -88,8 +88,8 @@ public abstract class AdapterTest {
   public static void configure() {
     properties = new ProcessMigrationProperties();
     properties.setBatchSize(5);
-    properties.setMinRetryDelay(Duration.ofMillis(100));
-    properties.setMaxRetryDelay(Duration.ofMillis(500));
+    properties.getRetry().setMinRetryDelay(Duration.ofMillis(100));
+    properties.getRetry().setMaxRetryDelay(Duration.ofMillis(500));
     properties.setImporterFinishedTimeout(Duration.ofSeconds(1));
     ES_CONFIGURATION.setUrl("http://localhost:" + ES_CONTAINER.getMappedPort(9200));
     OS_CONFIGURATION.setType("opensearch");

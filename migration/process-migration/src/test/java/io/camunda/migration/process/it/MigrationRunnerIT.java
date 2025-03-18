@@ -269,8 +269,8 @@ public class MigrationRunnerIT extends AdapterTest {
     // given
     this.isElasticsearch = isElasticsearch;
     properties.setImporterFinishedTimeout(Duration.ofSeconds(2));
-    properties.setMinRetryDelay(Duration.ofSeconds(1));
-    properties.setMaxRetryDelay(Duration.ofSeconds(1));
+    properties.getRetry().setMinRetryDelay(Duration.ofSeconds(1));
+    properties.getRetry().setMaxRetryDelay(Duration.ofSeconds(1));
     properties.setBatchSize(4);
     writeImportPositionToIndex(TestData.completedImportPosition(1));
     final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
@@ -383,8 +383,8 @@ public class MigrationRunnerIT extends AdapterTest {
     // invalid URL
     connectConfiguration.setUrl("http://localhost:3333");
     final var migrator = new MigrationRunner(properties, connectConfiguration, meterRegistry);
-    properties.setMaxRetries(2);
-    properties.setMinRetryDelay(Duration.ofSeconds(1));
+    properties.getRetry().setMaxRetries(2);
+    properties.getRetry().setMinRetryDelay(Duration.ofSeconds(1));
 
     final var ex = assertThrows(MigrationException.class, migrator::call);
     assertThat(ex.getMessage()).isEqualTo("Failed to fetch last migrated process");
