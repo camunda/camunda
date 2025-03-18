@@ -33,7 +33,7 @@
 
     <!-- maven plugin versions -->
     <plugin.version.license>3.0</plugin.version.license>
-    <plugin.version.jib>3.4.4</plugin.version.jib>
+    <plugin.version.jib>3.4.5</plugin.version.jib>
   </properties>
 
   <dependencies>
