@@ -56,19 +56,20 @@ public class RetryDecorator {
   }
 
   private <T> Retry buildRetry(final String message, final Predicate<T> retryPredicate) {
-    final RetryConfig config =
+    final var retryConfigBuilder =
         RetryConfig.<T>custom()
             .maxAttempts(retryConfiguration.getMaxRetries())
-            .retryOnResult(retryPredicate)
             .intervalBiFunction(
                 IntervalBiFunction.ofIntervalFunction(
                     IntervalFunction.ofExponentialRandomBackoff(
                         retryConfiguration.getMinRetryDelay(),
                         RETRY_DELAY_MULTIPLIER,
                         retryConfiguration.getMaxRetryDelay())))
-            .retryOnException(retryOnExceptionPredicate)
-            .build();
-
+            .retryOnException(retryOnExceptionPredicate);
+    if (retryPredicate != null) {
+      retryConfigBuilder.retryOnResult(retryPredicate);
+    }
+    final var config = retryConfigBuilder.build();
     final RetryRegistry registry = RetryRegistry.of(config);
     final Retry retry = registry.retry("operation-retry");
 

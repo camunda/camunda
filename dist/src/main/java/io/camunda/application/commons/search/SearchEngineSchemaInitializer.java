@@ -8,14 +8,18 @@
 package io.camunda.application.commons.search;
 
 import io.camunda.exporter.adapters.ClientAdapter;
+import io.camunda.exporter.exceptions.ElasticsearchExporterException;
+import io.camunda.exporter.exceptions.OpensearchExporterException;
 import io.camunda.exporter.schema.SchemaManager;
 import io.camunda.exporter.schema.config.SearchEngineConfiguration;
 import io.camunda.webapps.schema.descriptors.IndexDescriptors;
 import java.io.IOException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.InitializingBean;
 
 public class SearchEngineSchemaInitializer implements InitializingBean {
-
+  private static final Logger LOGGER = LoggerFactory.getLogger(SearchEngineSchemaInitializer.class);
   private final SearchEngineConfiguration searchEngineConfiguration;
 
   public SearchEngineSchemaInitializer(final SearchEngineConfiguration searchEngineConfiguration) {
@@ -37,6 +41,12 @@ public class SearchEngineSchemaInitializer implements InitializingBean {
               searchEngineConfiguration,
               clientAdapter.objectMapper());
       schemaManager.startup();
+    } catch (final ElasticsearchExporterException | OpensearchExporterException e) {
+      if (e.getCause() instanceof java.net.ConnectException) {
+        LOGGER.warn("Could not connect to search engine, skipping schema creation", e); // FIXME
+      } else {
+        throw e;
+      }
     }
   }
 }
