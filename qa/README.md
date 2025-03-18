@@ -219,6 +219,6 @@ Define the following property in your run configuration
 
 `-Dtest.integration.camunda.database.type=os`
 
-Alternatively you can also specify the respective maven profile `-Pe2e-opensearch-test`
+Alternatively, you can also specify the respective maven profile `-Pe2e-opensearch-test`
 
 Run the test.
