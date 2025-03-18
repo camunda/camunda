@@ -244,7 +244,7 @@ public class CamundaMultiDBExtension
   public void beforeAll(final ExtensionContext context) {
     LOGGER.info("Starting up Camunda instance, with {}", databaseType);
     final Class<?> testClass = context.getRequiredTestClass();
-    final var isHistoryRelatedTest = testClass.getAnnotation(HistoryMultiDbTest.class) != null;
+    final var isHistoryRelatedTest = testClass.isAnnotationPresent(HistoryMultiDbTest.class);
     testPrefix = testClass.getSimpleName().toLowerCase();
 
     setupTestApplication(testClass);
@@ -335,7 +335,7 @@ public class CamundaMultiDBExtension
       final Class<?> testClass, Predicate<Field> predicate) {
     var testStandaloneApplication = defaultTestApplication;
     var shouldBeManaged = true;
-    predicate = predicate.and(field -> field.getAnnotation(MultiDbTestApplication.class) != null);
+    predicate = predicate.and(field -> field.isAnnotationPresent(MultiDbTestApplication.class));
     for (final Field field : testClass.getDeclaredFields()) {
       try {
         if (predicate.test(field)) {
