@@ -26,6 +26,9 @@ import io.camunda.client.impl.search.filter.builder.StringPropertyImpl;
 import io.camunda.client.impl.search.request.TypedSearchRequestPropertyProvider;
 import io.camunda.client.impl.util.ParseUtil;
 import io.camunda.client.protocol.rest.UserTaskVariableFilterRequest;
+import io.camunda.client.wrappers.DateTimeFilterProperty;
+import io.camunda.client.wrappers.IntegerFilterProperty;
+import io.camunda.client.wrappers.StringFilterProperty;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Map;
@@ -64,7 +67,7 @@ public class UserTaskFilterImpl
   public UserTaskFilter assignee(final Consumer<StringProperty> fn) {
     final StringProperty property = new StringPropertyImpl();
     fn.accept(property);
-    filter.setAssignee(property.build());
+    filter.setAssignee(StringFilterProperty.toProtocolObject(property.build()));
     return this;
   }
 
@@ -78,7 +81,7 @@ public class UserTaskFilterImpl
   public UserTaskFilter priority(final Consumer<IntegerProperty> fn) {
     final IntegerPropertyImpl property = new IntegerPropertyImpl();
     fn.accept(property);
-    filter.setPriority(property.build());
+    filter.setPriority(IntegerFilterProperty.toProtocolObject(property.build()));
     return this;
   }
 
@@ -98,7 +101,7 @@ public class UserTaskFilterImpl
   public UserTaskFilter candidateGroup(final Consumer<StringProperty> fn) {
     final StringProperty property = new StringPropertyImpl();
     fn.accept(property);
-    filter.setCandidateGroup(property.build());
+    filter.setCandidateGroup(StringFilterProperty.toProtocolObject(property.build()));
     return this;
   }
 
@@ -112,7 +115,7 @@ public class UserTaskFilterImpl
   public UserTaskFilter candidateUser(final Consumer<StringProperty> fn) {
     final StringProperty property = new StringPropertyImpl();
     fn.accept(property);
-    filter.setCandidateUser(property.build());
+    filter.setCandidateUser(StringFilterProperty.toProtocolObject(property.build()));
     return this;
   }
 
@@ -163,7 +166,7 @@ public class UserTaskFilterImpl
                     request.setName(entry.getKey());
                     final StringProperty property = new StringPropertyImpl();
                     property.eq(entry.getValue().toString());
-                    request.setValue(property.build());
+                    request.setValue(StringFilterProperty.toProtocolObject(property.build()));
                     return request;
                   })
               .collect(Collectors.toList());
@@ -195,7 +198,7 @@ public class UserTaskFilterImpl
                     request.setName(entry.getKey());
                     final StringProperty property = new StringPropertyImpl();
                     property.eq(entry.getValue().toString());
-                    request.setValue(property.build());
+                    request.setValue(StringFilterProperty.toProtocolObject(property.build()));
                     return request;
                   })
               .collect(Collectors.toList());
@@ -221,7 +224,7 @@ public class UserTaskFilterImpl
   public UserTaskFilter creationDate(final Consumer<DateTimeProperty> fn) {
     final DateTimeProperty property = new DateTimePropertyImpl();
     fn.accept(property);
-    filter.setCreationDate(property.build());
+    filter.setCreationDate(DateTimeFilterProperty.toProtocolObject(property.build()));
     return this;
   }
 
@@ -235,7 +238,7 @@ public class UserTaskFilterImpl
   public UserTaskFilter completionDate(final Consumer<DateTimeProperty> fn) {
     final DateTimeProperty property = new DateTimePropertyImpl();
     fn.accept(property);
-    filter.setCompletionDate(property.build());
+    filter.setCompletionDate(DateTimeFilterProperty.toProtocolObject(property.build()));
     return this;
   }
 
@@ -249,7 +252,7 @@ public class UserTaskFilterImpl
   public UserTaskFilter followUpDate(final Consumer<DateTimeProperty> fn) {
     final DateTimeProperty property = new DateTimePropertyImpl();
     fn.accept(property);
-    filter.setFollowUpDate(property.build());
+    filter.setFollowUpDate(DateTimeFilterProperty.toProtocolObject(property.build()));
     return this;
   }
 
@@ -263,7 +266,7 @@ public class UserTaskFilterImpl
   public UserTaskFilter dueDate(final Consumer<DateTimeProperty> fn) {
     final DateTimeProperty property = new DateTimePropertyImpl();
     fn.accept(property);
-    filter.setDueDate(property.build());
+    filter.setDueDate(DateTimeFilterProperty.toProtocolObject(property.build()));
     return this;
   }
 

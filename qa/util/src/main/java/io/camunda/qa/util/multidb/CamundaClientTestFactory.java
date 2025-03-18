@@ -9,7 +9,9 @@ package io.camunda.qa.util.multidb;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.impl.basicauth.BasicAuthCredentialsProviderBuilder;
-import io.camunda.client.protocol.rest.OwnerTypeEnum;
+import io.camunda.client.wrappers.OwnerType;
+import io.camunda.client.wrappers.PermissionType;
+import io.camunda.client.wrappers.ResourceType;
 import io.camunda.qa.util.auth.Authenticated;
 import io.camunda.qa.util.auth.Permissions;
 import io.camunda.qa.util.auth.User;
@@ -113,10 +115,11 @@ public final class CamundaClientTestFactory implements AutoCloseable {
                     defaultClient
                         .newCreateAuthorizationCommand()
                         .ownerId(username)
-                        .ownerType(OwnerTypeEnum.USER)
+                        .ownerType(OwnerType.USER)
                         .resourceId(resourceId)
-                        .resourceType(permission.resourceType())
-                        .permissionTypes(permission.permissionType())
+                        .resourceType(ResourceType.fromProtocolEnum(permission.resourceType()))
+                        .permissionTypes(
+                            PermissionType.fromProtocolEnum(permission.permissionType()))
                         .send()
                         .join();
                   });
