@@ -13,7 +13,7 @@ import static java.util.Arrays.asList;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import io.camunda.exporter.config.ConnectionTypes;
-import io.camunda.exporter.config.ExporterConfiguration;
+import io.camunda.exporter.schema.config.SearchEngineConfiguration;
 import io.camunda.search.connect.es.ElasticsearchConnector;
 import io.camunda.search.connect.os.OpensearchConnector;
 import io.camunda.zeebe.test.util.testcontainers.TestSearchContainers;
@@ -35,7 +35,7 @@ import org.opensearch.client.opensearch.OpenSearchClient;
 import org.opensearch.testcontainers.OpensearchContainer;
 import org.testcontainers.elasticsearch.ElasticsearchContainer;
 
-public class CamundaExporterITInvocationProvider
+public class SchemaManagerITInvocationProvider
     implements TestTemplateInvocationContextProvider,
         AfterAllCallback,
         BeforeAllCallback,
@@ -52,19 +52,18 @@ public class CamundaExporterITInvocationProvider
   private OpenSearchClient osClient;
   private final List<AutoCloseable> closeables = new ArrayList<>();
 
-  protected ExporterConfiguration getConfigWithConnectionDetails(
+  protected SearchEngineConfiguration getConfigWithConnectionDetails(
       final ConnectionTypes connectionType) {
-    final var config = new ExporterConfiguration();
-    config.getIndex().setPrefix(CONFIG_PREFIX);
-    config.getBulk().setSize(1); // force flushing on the first record
+    final var config = SearchEngineConfiguration.of(b -> b);
+    config.connect().setIndexPrefix(CONFIG_PREFIX);
     if (connectionType == ELASTICSEARCH) {
-      config.getConnect().setUrl(elsContainer.getHttpHostAddress());
+      config.connect().setUrl(elsContainer.getHttpHostAddress());
 
     } else if (connectionType == OPENSEARCH) {
-      config.getConnect().setUrl(osContainer.getHttpHostAddress());
+      config.connect().setUrl(osContainer.getHttpHostAddress());
     }
-    config.getConnect().setClusterName(connectionType.name());
-    config.getConnect().setType(connectionType.getType());
+    config.connect().setClusterName(connectionType.name());
+    config.connect().setType(connectionType.getType());
     return config;
   }
 
@@ -85,12 +84,12 @@ public class CamundaExporterITInvocationProvider
     osContainer.start();
 
     final var osConfig = getConfigWithConnectionDetails(OPENSEARCH);
-    final var osConnector = new OpensearchConnector(osConfig.getConnect());
+    final var osConnector = new OpensearchConnector(osConfig.connect());
     osClient = osConnector.createClient();
     osClientAdapter = new SearchClientAdapter(osClient, osConnector.objectMapper());
 
     final var elsConfig = getConfigWithConnectionDetails(ELASTICSEARCH);
-    final var esConnector = new ElasticsearchConnector(elsConfig.getConnect());
+    final var esConnector = new ElasticsearchConnector(elsConfig.connect());
     elsClient = esConnector.createClient();
     elsClientAdapter = new SearchClientAdapter(elsClient, esConnector.objectMapper());
 
@@ -107,7 +106,7 @@ public class CamundaExporterITInvocationProvider
       return false;
     }
 
-    return (testParams[0].getType().equals(ExporterConfiguration.class)
+    return (testParams[0].getType().equals(SearchEngineConfiguration.class)
         && testParams[1].getType().equals(SearchClientAdapter.class));
   }
 
@@ -120,13 +119,13 @@ public class CamundaExporterITInvocationProvider
         invocationContext(getConfigWithConnectionDetails(ELASTICSEARCH), elsClientAdapter));
   }
 
-  protected ParameterResolver exporterConfigResolver(final ExporterConfiguration config) {
+  protected ParameterResolver searchEngineConfigResolver(final SearchEngineConfiguration config) {
     return new ParameterResolver() {
 
       @Override
       public boolean supportsParameter(
           final ParameterContext parameterCtx, final ExtensionContext extensionCtx) {
-        return parameterCtx.getParameter().getType().equals(ExporterConfiguration.class);
+        return parameterCtx.getParameter().getType().equals(SearchEngineConfiguration.class);
       }
 
       @Override
@@ -157,17 +156,17 @@ public class CamundaExporterITInvocationProvider
   }
 
   private TestTemplateInvocationContext invocationContext(
-      final ExporterConfiguration config, final SearchClientAdapter clientAdapter) {
+      final SearchEngineConfiguration config, final SearchClientAdapter clientAdapter) {
     return new TestTemplateInvocationContext() {
 
       @Override
       public String getDisplayName(final int invocationIndex) {
-        return config.getConnect().getType();
+        return config.connect().getType();
       }
 
       @Override
       public List<Extension> getAdditionalExtensions() {
-        return asList(exporterConfigResolver(config), clientAdapterResolver(clientAdapter));
+        return asList(searchEngineConfigResolver(config), clientAdapterResolver(clientAdapter));
       }
     };
   }

@@ -5,59 +5,68 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.migration.process.util;
+package io.camunda.zeebe.util.retry;
 
-import co.elastic.clients.elasticsearch._types.ElasticsearchException;
-import io.camunda.migration.process.config.ProcessMigrationProperties;
 import io.github.resilience4j.core.IntervalBiFunction;
 import io.github.resilience4j.core.IntervalFunction;
 import io.github.resilience4j.retry.Retry;
 import io.github.resilience4j.retry.RetryConfig;
 import io.github.resilience4j.retry.RetryRegistry;
-import java.io.IOException;
 import java.util.concurrent.Callable;
 import java.util.function.Predicate;
-import org.opensearch.client.opensearch._types.OpenSearchException;
-import org.opensearch.client.opensearch.generic.OpenSearchClientException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class AdapterRetryDecorator {
+public class RetryDecorator {
 
-  private static final Logger LOG = LoggerFactory.getLogger(AdapterRetryDecorator.class);
+  private static final Logger LOG = LoggerFactory.getLogger(RetryDecorator.class);
   private static final double RETRY_DELAY_MULTIPLIER = 2;
-  private final ProcessMigrationProperties properties;
+  private final RetryConfiguration retryConfiguration;
+  private final Predicate<Throwable> retryOnExceptionPredicate;
 
-  public AdapterRetryDecorator(final ProcessMigrationProperties properties) {
-    this.properties = properties;
+  public RetryDecorator(
+      final RetryConfiguration retryConfiguration,
+      final Predicate<Throwable> retryOnExceptionPredicate) {
+    this.retryConfiguration = retryConfiguration;
+    this.retryOnExceptionPredicate = retryOnExceptionPredicate;
+  }
+
+  public RetryDecorator(final RetryConfiguration retryConfiguration) {
+    this(retryConfiguration, e -> false);
+  }
+
+  public RetryDecorator withRetryOnException(final Predicate<Throwable> retryOnExceptionPredicate) {
+    return new RetryDecorator(retryConfiguration, retryOnExceptionPredicate);
+  }
+
+  public RetryDecorator withRetryOnAllExceptions() {
+    return new RetryDecorator(retryConfiguration, e -> true);
   }
 
   public <T> T decorate(
       final String message, final Callable<T> callable, final Predicate<T> retryPredicate)
       throws Exception {
-
     final Retry retry = buildRetry(message, retryPredicate);
     return Retry.decorateCallable(retry, callable).call();
+  }
+
+  public void decorate(final String message, final Runnable callable) {
+    final Retry retry = buildRetry(message, null);
+    Retry.decorateRunnable(retry, callable).run();
   }
 
   private <T> Retry buildRetry(final String message, final Predicate<T> retryPredicate) {
     final RetryConfig config =
         RetryConfig.<T>custom()
-            .maxAttempts(properties.getMaxRetries())
-            .waitDuration(properties.getMinRetryDelay())
+            .maxAttempts(retryConfiguration.getMaxRetries())
             .retryOnResult(retryPredicate)
             .intervalBiFunction(
                 IntervalBiFunction.ofIntervalFunction(
                     IntervalFunction.ofExponentialRandomBackoff(
-                        properties.getMinRetryDelay(),
+                        retryConfiguration.getMinRetryDelay(),
                         RETRY_DELAY_MULTIPLIER,
-                        properties.getMaxRetryDelay())))
-            .retryOnException(
-                throwable ->
-                    throwable instanceof IOException
-                        || throwable instanceof ElasticsearchException
-                        || throwable instanceof OpenSearchException
-                        || throwable instanceof OpenSearchClientException)
+                        retryConfiguration.getMaxRetryDelay())))
+            .retryOnException(retryOnExceptionPredicate)
             .build();
 
     final RetryRegistry registry = RetryRegistry.of(config);

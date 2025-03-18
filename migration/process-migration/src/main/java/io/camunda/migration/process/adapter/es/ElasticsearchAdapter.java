@@ -10,6 +10,7 @@ package io.camunda.migration.process.adapter.es;
 import static java.util.stream.Collectors.toList;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
+import co.elastic.clients.elasticsearch._types.ElasticsearchException;
 import co.elastic.clients.elasticsearch._types.Refresh;
 import co.elastic.clients.elasticsearch._types.Result;
 import co.elastic.clients.elasticsearch._types.SortOrder;
@@ -25,13 +26,13 @@ import io.camunda.migration.process.adapter.Adapter;
 import io.camunda.migration.process.adapter.MigrationRepositoryIndex;
 import io.camunda.migration.process.adapter.ProcessorStep;
 import io.camunda.migration.process.config.ProcessMigrationProperties;
-import io.camunda.migration.process.util.AdapterRetryDecorator;
 import io.camunda.search.connect.configuration.ConnectConfiguration;
 import io.camunda.search.connect.es.ElasticsearchConnector;
 import io.camunda.webapps.schema.descriptors.operate.index.ImportPositionIndex;
 import io.camunda.webapps.schema.descriptors.operate.index.ProcessIndex;
 import io.camunda.webapps.schema.entities.operate.ImportPositionEntity;
 import io.camunda.webapps.schema.entities.operate.ProcessEntity;
+import io.camunda.zeebe.util.retry.RetryDecorator;
 import java.io.IOException;
 import java.util.Comparator;
 import java.util.List;
@@ -46,7 +47,7 @@ public class ElasticsearchAdapter implements Adapter {
   private final MigrationRepositoryIndex migrationRepositoryIndex;
   private final ProcessIndex processIndex;
   private final ImportPositionIndex importPositionIndex;
-  private final AdapterRetryDecorator retryDecorator;
+  private final RetryDecorator retryDecorator;
 
   public ElasticsearchAdapter(
       final ProcessMigrationProperties properties,
@@ -57,7 +58,10 @@ public class ElasticsearchAdapter implements Adapter {
     processIndex = new ProcessIndex(connectConfiguration.getIndexPrefix(), true);
     importPositionIndex = new ImportPositionIndex(connectConfiguration.getIndexPrefix(), true);
     client = new ElasticsearchConnector(connectConfiguration).createClient();
-    retryDecorator = new AdapterRetryDecorator(properties);
+    retryDecorator =
+        new RetryDecorator(properties.getRetry())
+            .withRetryOnException(
+                e -> e instanceof IOException || e instanceof ElasticsearchException);
   }
 
   @Override

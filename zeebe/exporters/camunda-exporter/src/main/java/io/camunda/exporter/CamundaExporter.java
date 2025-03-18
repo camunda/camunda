@@ -34,6 +34,7 @@ import io.camunda.exporter.metrics.CamundaExporterMetrics;
 import io.camunda.exporter.schema.MappingSource;
 import io.camunda.exporter.schema.SchemaManager;
 import io.camunda.exporter.schema.SearchEngineClient;
+import io.camunda.exporter.schema.config.SearchEngineConfiguration;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.exporter.store.ExporterBatchWriter;
 import io.camunda.exporter.tasks.BackgroundTaskManager;
@@ -263,7 +264,11 @@ public class CamundaExporter implements Exporter {
         searchEngineClient,
         provider.getIndexDescriptors(),
         provider.getIndexTemplateDescriptors(),
-        configuration,
+        SearchEngineConfiguration.of(
+            b ->
+                b.connect(configuration.getConnect())
+                    .index(configuration.getIndex())
+                    .retention(configuration.getHistory().getRetention())),
         clientAdapter.objectMapper());
   }
 

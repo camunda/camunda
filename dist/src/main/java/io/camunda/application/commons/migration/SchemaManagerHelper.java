@@ -7,10 +7,9 @@
  */
 package io.camunda.application.commons.migration;
 
-import io.camunda.application.commons.search.SearchEngineConfiguration;
 import io.camunda.exporter.adapters.ClientAdapter;
-import io.camunda.exporter.config.ExporterConfiguration;
 import io.camunda.exporter.schema.SchemaManager;
+import io.camunda.exporter.schema.config.SearchEngineConfiguration;
 import io.camunda.search.connect.configuration.DatabaseType;
 import io.camunda.webapps.schema.descriptors.IndexDescriptors;
 import org.slf4j.Logger;
@@ -23,7 +22,6 @@ public final class SchemaManagerHelper {
 
   public static void createSchema(
       final SearchEngineConfiguration configuration, final ClientAdapter clientAdapter) {
-    final var config = createExporterConfig(configuration);
     final var isElasticsearch = configuration.connect().getTypeEnum() == DatabaseType.ELASTICSEARCH;
 
     final IndexDescriptors indexDescriptors =
@@ -34,20 +32,9 @@ public final class SchemaManagerHelper {
             clientAdapter.getSearchEngineClient(),
             indexDescriptors.indices(),
             indexDescriptors.templates(),
-            config,
+            configuration,
             clientAdapter.objectMapper());
 
     schemaManager.startup();
-  }
-
-  private static ExporterConfiguration createExporterConfig(
-      final SearchEngineConfiguration searchEngineConfiguration) {
-    final var config = new ExporterConfiguration();
-    config.setConnect(searchEngineConfiguration.connect());
-    config.setIndex(searchEngineConfiguration.index());
-    config.getIndex().setPrefix(searchEngineConfiguration.connect().getIndexPrefix()); // FIXME
-    config.getHistory().setRetention(searchEngineConfiguration.retention());
-
-    return config;
   }
 }

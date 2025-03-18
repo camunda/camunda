@@ -8,13 +8,14 @@
 package io.camunda.exporter.schema;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.camunda.exporter.config.ExporterConfiguration;
 import io.camunda.exporter.config.ExporterConfiguration.IndexSettings;
 import io.camunda.exporter.config.ExporterConfiguration.RetentionConfiguration;
 import io.camunda.exporter.exceptions.ElasticsearchExporterException;
 import io.camunda.exporter.exceptions.OpensearchExporterException;
+import io.camunda.exporter.schema.config.SearchEngineConfiguration;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
+import io.camunda.zeebe.util.retry.RetryDecorator;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
@@ -36,15 +37,16 @@ public class SchemaManager {
   private final SearchEngineClient searchEngineClient;
   private final Collection<IndexDescriptor> indexDescriptors;
   private final Collection<IndexTemplateDescriptor> indexTemplateDescriptors;
-  private final ExporterConfiguration config;
+  private final SearchEngineConfiguration config;
   private final ObjectMapper objectMapper;
   private final ExecutorService virtualThreadExecutor;
+  private final RetryDecorator retryDecorator;
 
   public SchemaManager(
       final SearchEngineClient searchEngineClient,
       final Collection<IndexDescriptor> indexDescriptors,
       final Collection<IndexTemplateDescriptor> indexTemplateDescriptors,
-      final ExporterConfiguration config,
+      final SearchEngineConfiguration config,
       final ObjectMapper objectMapper) {
     virtualThreadExecutor = Executors.newVirtualThreadPerTaskExecutor();
     this.searchEngineClient = searchEngineClient;
@@ -52,14 +54,30 @@ public class SchemaManager {
     this.indexTemplateDescriptors = indexTemplateDescriptors;
     this.config = config;
     this.objectMapper = objectMapper;
+    retryDecorator =
+        new RetryDecorator(config.schemaManager().getRetry())
+            .withRetryOnException(
+                e -> {
+                  if (e.getCause() instanceof java.net.ConnectException) {
+                    LOG.warn(
+                        "Could not connect to search engine, skipping schema creation", e); // FIXME
+                    return false;
+                  } else {
+                    return true;
+                  }
+                });
   }
 
   public void startup() {
-    if (!config.isCreateSchema()) {
+    if (!config.schemaManager().isCreateSchema()) {
       LOG.info(
           "Will not make any changes to indices and index templates as [createSchema] is false");
       return;
     }
+    retryDecorator.decorate("init schema", this::initializeSchema);
+  }
+
+  private void initializeSchema() {
     LOG.info("Schema creation is enabled. Start Schema management.");
     final var schemaValidator = new IndexSchemaValidator(objectMapper);
     final var newIndexProperties = validateIndices(schemaValidator);
@@ -76,7 +94,7 @@ public class SchemaManager {
     updateSchemaMappings(newIndexTemplateProperties);
     updateSchemaSettings();
 
-    final RetentionConfiguration retention = config.getHistory().getRetention();
+    final RetentionConfiguration retention = config.retention();
     if (retention.isEnabled()) {
       LOG.info(
           "Retention is enabled. Create ILM policy [name: '{}', retention: '{}']",
@@ -91,7 +109,7 @@ public class SchemaManager {
   private void updateSchemaSettings() {
     final var existingTemplateNames =
         searchEngineClient
-            .getMappings(config.getIndex().getPrefix() + "*", MappingSource.INDEX_TEMPLATE)
+            .getMappings(config.connect().getIndexPrefix() + "*", MappingSource.INDEX_TEMPLATE)
             .keySet();
 
     final var existingIndexNames = existingIndexNames();
@@ -192,7 +210,7 @@ public class SchemaManager {
     }
     final var existingTemplateNames =
         searchEngineClient
-            .getMappings(config.getIndex().getPrefix() + "*", MappingSource.INDEX_TEMPLATE)
+            .getMappings(config.connect().getIndexPrefix() + "*", MappingSource.INDEX_TEMPLATE)
             .keySet();
 
     return indexTemplateDescriptors.stream()
@@ -293,9 +311,9 @@ public class SchemaManager {
     final var templateReplicas = getNumberOfReplicasFromConfig(indexName);
     final var templateShards =
         config
-            .getIndex()
+            .index()
             .getShardsByIndexName()
-            .getOrDefault(indexName, config.getIndex().getNumberOfShards());
+            .getOrDefault(indexName, config.index().getNumberOfShards());
 
     final var settings = new IndexSettings();
     settings.setNumberOfShards(templateShards);
@@ -306,9 +324,9 @@ public class SchemaManager {
 
   private int getNumberOfReplicasFromConfig(final String indexName) {
     return config
-        .getIndex()
+        .index()
         .getReplicasByIndexName()
-        .getOrDefault(indexName, config.getIndex().getNumberOfReplicas());
+        .getOrDefault(indexName, config.index().getNumberOfReplicas());
   }
 
   private Map<IndexDescriptor, Collection<IndexMappingProperty>> validateIndices(
@@ -335,7 +353,7 @@ public class SchemaManager {
 
     final var currentTemplates =
         searchEngineClient.getMappings(
-            config.getIndex().getPrefix() + "*", MappingSource.INDEX_TEMPLATE);
+            config.index().getPrefix() + "*", MappingSource.INDEX_TEMPLATE);
 
     LOG.info(
         "Validate '{}' existing index templates based on '{}' template descriptors",
