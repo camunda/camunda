@@ -8,7 +8,7 @@
 package io.camunda.exporter.tasks.archiver;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import io.camunda.exporter.config.ExporterConfiguration.ArchiverConfiguration;
+import io.camunda.exporter.config.ExporterConfiguration.HistoryConfiguration;
 import io.camunda.exporter.config.ExporterConfiguration.RetentionConfiguration;
 import io.camunda.exporter.metrics.CamundaExporterMetrics;
 import io.camunda.exporter.tasks.util.OpensearchRepository;
@@ -60,7 +60,7 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
   private static final String INDEX_WILDCARD = ".+-\\d+\\.\\d+\\.\\d+_.+$";
 
   private final int partitionId;
-  private final ArchiverConfiguration config;
+  private final HistoryConfiguration config;
   private final RetentionConfiguration retention;
   private final String indexPrefix;
   private final String processInstanceIndex;
@@ -71,7 +71,7 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
 
   public OpenSearchArchiverRepository(
       final int partitionId,
-      final ArchiverConfiguration config,
+      final HistoryConfiguration config,
       final RetentionConfiguration retention,
       final String indexPrefix,
       final String processInstanceIndex,

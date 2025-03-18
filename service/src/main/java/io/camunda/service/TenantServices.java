@@ -25,6 +25,7 @@ import io.camunda.zeebe.gateway.impl.broker.request.tenant.BrokerTenantDeleteReq
 import io.camunda.zeebe.gateway.impl.broker.request.tenant.BrokerTenantUpdateRequest;
 import io.camunda.zeebe.protocol.impl.record.value.tenant.TenantRecord;
 import io.camunda.zeebe.protocol.record.value.EntityType;
+import java.io.Serializable;
 import java.util.Collection;
 import java.util.List;
 import java.util.Set;
@@ -91,10 +92,11 @@ public class TenantServices extends SearchQueryService<TenantServices, TenantQue
    */
   public CompletableFuture<TenantRecord> addMember(
       final String tenantId, final EntityType entityType, final long entityKey) {
+    final var entityId = String.valueOf(entityKey);
     return sendBrokerRequest(
         BrokerTenantEntityRequest.createAddRequest()
             .setTenantId(tenantId)
-            .setEntity(entityType, entityKey));
+            .setEntity(entityType, entityId));
   }
 
   public CompletableFuture<TenantRecord> addMember(
@@ -111,10 +113,11 @@ public class TenantServices extends SearchQueryService<TenantServices, TenantQue
    */
   public CompletableFuture<TenantRecord> removeMember(
       final String tenantId, final EntityType entityType, final long entityKey) {
+    final var entityId = String.valueOf(entityKey);
     return sendBrokerRequest(
         BrokerTenantEntityRequest.createRemoveRequest()
             .setTenantId(tenantId)
-            .setEntity(entityType, entityKey));
+            .setEntity(entityType, entityId));
   }
 
   public CompletableFuture<TenantRecord> removeMember(
@@ -161,7 +164,8 @@ public class TenantServices extends SearchQueryService<TenantServices, TenantQue
     return tenantEntity;
   }
 
-  public record TenantDTO(Long key, String tenantId, String name, String description) {
+  public record TenantDTO(Long key, String tenantId, String name, String description)
+      implements Serializable {
     public static TenantDTO fromEntity(final TenantEntity entity) {
       return new TenantDTO(entity.key(), entity.tenantId(), entity.name(), entity.description());
     }

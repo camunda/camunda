@@ -7,75 +7,100 @@
  */
 package io.camunda.zeebe.stream.impl;
 
-import io.camunda.zeebe.scheduler.ConcurrencyControl;
+import static io.camunda.zeebe.stream.api.scheduling.AsyncTaskGroup.ASYNC_PROCESSING;
+
 import io.camunda.zeebe.scheduler.future.ActorFuture;
+import io.camunda.zeebe.stream.api.scheduling.AsyncTaskGroup;
 import io.camunda.zeebe.stream.api.scheduling.ProcessingScheduleService;
 import io.camunda.zeebe.stream.api.scheduling.SimpleProcessingScheduleService;
 import io.camunda.zeebe.stream.api.scheduling.Task;
 import java.time.Duration;
 
-public class ExtendedProcessingScheduleServiceImpl implements ProcessingScheduleService {
-
+class ExtendedProcessingScheduleServiceImpl implements ProcessingScheduleService {
+  private final AsyncScheduleServiceContext context;
   private final SimpleProcessingScheduleService processorActorService;
-  private final SimpleProcessingScheduleService asyncActorService;
-  private final ConcurrencyControl concurrencyControl;
   private final boolean alwaysAsync;
 
   public ExtendedProcessingScheduleServiceImpl(
+      final AsyncScheduleServiceContext asyncScheduleServiceContext,
       final SimpleProcessingScheduleService processorActorService,
-      final SimpleProcessingScheduleService asyncActorService,
-      final ConcurrencyControl concurrencyControl,
       final boolean alwaysAsync) {
+    context = asyncScheduleServiceContext;
     this.processorActorService = processorActorService;
-    this.asyncActorService = asyncActorService;
-    this.concurrencyControl = concurrencyControl;
     this.alwaysAsync = alwaysAsync;
   }
 
   @Override
   public void runAtFixedRateAsync(final Duration delay, final Task task) {
-    concurrencyControl.run(
-        () -> {
-          // we must run in different actor in order to schedule task
-          asyncActorService.runAtFixedRate(delay, task);
-        });
+    runAtFixedRateAsync(delay, task, ASYNC_PROCESSING);
   }
 
   @Override
   public ScheduledTask runDelayedAsync(final Duration delay, final Task task) {
-    final var futureScheduledTask = concurrencyControl.<ScheduledTask>createFuture();
-    concurrencyControl.run(
-        () -> {
-          // we must run in different actor in order to schedule task
-          final var scheduledTask = asyncActorService.runDelayed(delay, task);
-          futureScheduledTask.complete(scheduledTask);
-        });
-    return new AsyncScheduledTask(futureScheduledTask);
+    return runDelayedAsync(delay, task, ASYNC_PROCESSING);
   }
 
   @Override
   public ScheduledTask runAtAsync(final long timestamp, final Task task) {
-    final var futureScheduledTask = concurrencyControl.<ScheduledTask>createFuture();
-    concurrencyControl.run(
+    return runAtAsync(timestamp, task, ASYNC_PROCESSING);
+  }
+
+  @Override
+  public void runAtFixedRateAsync(
+      final Duration delay, final Task task, final AsyncTaskGroup taskGroup) {
+    final var actor = context.geAsyncActor(taskGroup);
+    final var actorService = actor.getScheduleService();
+    actor.run(
         () -> {
           // we must run in different actor in order to schedule task
-          final var scheduledTask = asyncActorService.runAt(timestamp, task);
+          actorService.runAtFixedRate(delay, task);
+        });
+  }
+
+  @Override
+  public ScheduledTask runDelayedAsync(
+      final Duration delay, final Task task, final AsyncTaskGroup taskGroup) {
+    final var actor = context.geAsyncActor(taskGroup);
+    final var actorService = actor.getScheduleService();
+
+    final var futureScheduledTask = actor.<ScheduledTask>createFuture();
+    actor.run(
+        () -> {
+          // we must run in different actor in order to schedule task
+          final var scheduledTask = actorService.runDelayed(delay, task);
           futureScheduledTask.complete(scheduledTask);
         });
-    return new AsyncScheduledTask(futureScheduledTask);
+    return new AsyncScheduledTask(futureScheduledTask, taskGroup);
+  }
+
+  @Override
+  public ScheduledTask runAtAsync(
+      final long timestamp, final Task task, final AsyncTaskGroup taskGroup) {
+    final var actor = context.geAsyncActor(taskGroup);
+    final var actorService = actor.getScheduleService();
+    final var futureScheduledTask = actor.<ScheduledTask>createFuture();
+    actor.run(
+        () -> {
+          // we must run in different actor in order to schedule task
+          final var scheduledTask = actorService.runAt(timestamp, task);
+          futureScheduledTask.complete(scheduledTask);
+        });
+    return new AsyncScheduledTask(futureScheduledTask, taskGroup);
   }
 
   @Override
   public ScheduledTask runDelayed(final Duration delay, final Runnable task) {
     if (alwaysAsync) {
-      final var futureScheduledTask = concurrencyControl.<ScheduledTask>createFuture();
-      concurrencyControl.run(
+      final var actor = context.geAsyncActor(ASYNC_PROCESSING);
+      final var actorService = actor.getScheduleService();
+      final var futureScheduledTask = actor.<ScheduledTask>createFuture();
+      actor.run(
           () -> {
             // we must run in different actor in order to schedule task
-            final var scheduledTask = asyncActorService.runDelayed(delay, task);
+            final var scheduledTask = actorService.runDelayed(delay, task);
             futureScheduledTask.complete(scheduledTask);
           });
-      return new AsyncScheduledTask(futureScheduledTask);
+      return new AsyncScheduledTask(futureScheduledTask, ASYNC_PROCESSING);
     } else {
       return processorActorService.runDelayed(delay, task);
     }
@@ -102,14 +127,16 @@ public class ExtendedProcessingScheduleServiceImpl implements ProcessingSchedule
   @Override
   public ScheduledTask runAt(final long timestamp, final Runnable task) {
     if (alwaysAsync) {
-      final var futureScheduledTask = concurrencyControl.<ScheduledTask>createFuture();
-      concurrencyControl.run(
+      final var actor = context.geAsyncActor(ASYNC_PROCESSING);
+      final var actorService = actor.getScheduleService();
+      final var futureScheduledTask = actor.<ScheduledTask>createFuture();
+      actor.run(
           () -> {
             // we must run in different actor in order to schedule task
-            final var scheduledTask = asyncActorService.runAt(timestamp, task);
+            final var scheduledTask = actorService.runAt(timestamp, task);
             futureScheduledTask.complete(scheduledTask);
           });
-      return new AsyncScheduledTask(futureScheduledTask);
+      return new AsyncScheduledTask(futureScheduledTask, ASYNC_PROCESSING);
     } else {
       return processorActorService.runAt(timestamp, task);
     }
@@ -131,9 +158,12 @@ public class ExtendedProcessingScheduleServiceImpl implements ProcessingSchedule
   private final class AsyncScheduledTask implements ScheduledTask {
 
     private final ActorFuture<ScheduledTask> futureScheduledTask;
+    private final AsyncTaskGroup taskGroup;
 
-    public AsyncScheduledTask(final ActorFuture<ScheduledTask> futureScheduledTask) {
+    public AsyncScheduledTask(
+        final ActorFuture<ScheduledTask> futureScheduledTask, final AsyncTaskGroup taskGroup) {
       this.futureScheduledTask = futureScheduledTask;
+      this.taskGroup = taskGroup;
     }
 
     /**
@@ -142,9 +172,13 @@ public class ExtendedProcessingScheduleServiceImpl implements ProcessingSchedule
      */
     @Override
     public void cancel() {
-      concurrencyControl.run(
+      final var actor = context.geAsyncActor(taskGroup);
+      if (actor == null) {
+        return;
+      }
+      actor.run(
           () ->
-              concurrencyControl.runOnCompletion(
+              actor.runOnCompletion(
                   futureScheduledTask,
                   (scheduledTask, throwable) -> {
                     if (scheduledTask != null) {

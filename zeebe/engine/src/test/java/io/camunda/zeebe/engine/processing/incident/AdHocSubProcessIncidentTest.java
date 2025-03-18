@@ -186,6 +186,64 @@ public class AdHocSubProcessIncidentTest {
   }
 
   @Test
+  public void shouldCreateIncidentIfCompletionConditionDoesNotResolveToBoolean() {
+    // given
+    final BpmnModelInstance process =
+        process(
+            adHocSubProcess -> {
+              adHocSubProcess.zeebeActiveElementsCollectionExpression("activeElements");
+              adHocSubProcess.completionCondition("completionCondition");
+              adHocSubProcess.task("A");
+              adHocSubProcess.task("B");
+              adHocSubProcess.task("C");
+            });
+
+    ENGINE.deployment().withXmlResource(process).deploy();
+
+    final long processInstanceKey =
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId(PROCESS_ID)
+            .withVariables(
+                Map.ofEntries(
+                    Map.entry("activeElements", List.of("A", "C")),
+                    Map.entry("completionCondition", "not a boolean")))
+            .create();
+
+    final var incidentCreated =
+        RecordingExporter.incidentRecords(IncidentIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementId("A")
+            .getFirst();
+
+    Assertions.assertThat(incidentCreated.getValue())
+        .hasElementId("A")
+        .hasErrorType(ErrorType.EXTRACT_VALUE_ERROR)
+        .hasErrorMessage(
+            "Failed to evaluate completion condition. Expected result of the expression 'completionCondition' to be 'BOOLEAN', but was 'STRING'.");
+
+    // when
+    ENGINE
+        .variables()
+        .ofScope(incidentCreated.getValue().getVariableScopeKey())
+        .withDocument(Map.of("completionCondition", true))
+        .update();
+
+    ENGINE.incident().ofInstance(processInstanceKey).withKey(incidentCreated.getKey()).resolve();
+
+    // then
+    assertThat(
+            RecordingExporter.processInstanceRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .limitToProcessInstanceCompleted())
+        .extracting(r -> r.getValue().getElementId(), Record::getIntent)
+        .containsSubsequence(
+            tuple(AD_HOC_SUB_PROCESS_ELEMENT_ID, ProcessInstanceIntent.ELEMENT_COMPLETING),
+            tuple(AD_HOC_SUB_PROCESS_ELEMENT_ID, ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple(PROCESS_ID, ProcessInstanceIntent.ELEMENT_COMPLETED));
+  }
+
+  @Test
   public void shouldResolveIncidentWithActiveElements() {
     // given
     final BpmnModelInstance process =

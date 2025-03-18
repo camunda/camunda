@@ -913,12 +913,7 @@ describe('VariablePanel', () => {
     expect(
       screen.queryByText('No Input Mappings defined'),
     ).not.toBeInTheDocument();
-    expect(
-      screen.getByRole('heading', {name: 'Variables'}),
-    ).toBeInTheDocument();
-    expect(
-      screen.queryByRole('tab', {name: 'Variables'}),
-    ).not.toBeInTheDocument();
+    expect(screen.getByRole('tab', {name: 'Variables'})).toBeInTheDocument();
     expect(
       screen.queryByRole('tab', {name: 'Input Mappings'}),
     ).not.toBeInTheDocument();

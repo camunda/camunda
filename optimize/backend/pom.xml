@@ -11,13 +11,6 @@
   <artifactId>optimize-backend</artifactId>
   <name>Optimize Backend</name>
 
-  <properties>
-    <it.test.excludedGroups></it.test.excludedGroups>
-    <it.test.includedGroups></it.test.includedGroups>
-    <test.forkCount></test.forkCount>
-    <version.tomcat>10.1.34</version.tomcat>
-  </properties>
-
   <dependencies>
     <!-- Logging dependencies -->
 
@@ -55,11 +48,13 @@
       <artifactId>camunda-bpmn-model</artifactId>
       <version>${version.camunda}</version>
     </dependency>
+
     <dependency>
       <groupId>org.camunda.bpm.model</groupId>
       <artifactId>camunda-dmn-model</artifactId>
       <version>${version.camunda}</version>
     </dependency>
+
     <dependency>
       <groupId>org.camunda.bpm</groupId>
       <artifactId>camunda-engine</artifactId>
@@ -75,9 +70,11 @@
         </exclusion>
       </exclusions>
     </dependency>
+
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>camunda-search-client-connect</artifactId>
+      <version>${project.version}</version>
     </dependency>
 
     <!-- Zeebe dependencies -->
@@ -86,9 +83,11 @@
       <artifactId>zeebe-protocol</artifactId>
       <version>${project.version}</version>
     </dependency>
+
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>camunda-client-java</artifactId>
+      <version>${project.version}</version>
       <scope>test</scope>
     </dependency>
 
@@ -103,6 +102,7 @@
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>identity-spring-boot-starter</artifactId>
+      <version>${version.identity}</version>
     </dependency>
 
     <!-- Spring -->
@@ -154,6 +154,7 @@
     <dependency>
       <groupId>org.javassist</groupId>
       <artifactId>javassist</artifactId>
+      <version>${version.javassist}</version>
     </dependency>
 
     <dependency>
@@ -213,7 +214,7 @@
     <dependency>
       <groupId>com.opencsv</groupId>
       <artifactId>opencsv</artifactId>
-      <version>5.9</version>
+      <version>${version.opencsv}</version>
       <exclusions>
         <exclusion>
           <groupId>commons-logging</groupId>
@@ -278,16 +279,20 @@
       <version>${version.zeebe-test-container}</version>
       <scope>test</scope>
     </dependency>
+
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>zeebe-protocol-jackson</artifactId>
+      <version>${project.version}</version>
       <scope>test</scope>
     </dependency>
+
     <dependency>
       <groupId>org.springframework</groupId>
       <artifactId>spring-test</artifactId>
       <scope>test</scope>
     </dependency>
+
     <dependency>
       <groupId>com.icegreen</groupId>
       <artifactId>greenmail</artifactId>
@@ -304,11 +309,13 @@
         </exclusion>
       </exclusions>
     </dependency>
+
     <dependency>
       <groupId>com.github.wnameless.json</groupId>
       <artifactId>json-flattener</artifactId>
       <version>0.17.2</version>
     </dependency>
+
     <dependency>
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-starter-test</artifactId>
@@ -335,6 +342,7 @@
     <dependency>
       <groupId>org.opensearch.client</groupId>
       <artifactId>opensearch-java</artifactId>
+      <version>${version.opensearch-java}</version>
       <exclusions>
         <exclusion>
           <groupId>commons-logging</groupId>
@@ -406,6 +414,7 @@
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>identity-sdk</artifactId>
+      <version>${version.identity}</version>
     </dependency>
 
     <dependency>
@@ -491,6 +500,7 @@
     <dependency>
       <groupId>org.opensearch.client</groupId>
       <artifactId>opensearch-rest-client</artifactId>
+      <version>${version.opensearch}</version>
     </dependency>
 
     <dependency>
@@ -520,6 +530,7 @@
     <dependency>
       <groupId>org.jetbrains</groupId>
       <artifactId>annotations</artifactId>
+      <version>${version.jetbrains-annotations}</version>
       <scope>runtime</scope>
     </dependency>
 
@@ -566,6 +577,7 @@
     <dependency>
       <groupId>org.apache.commons</groupId>
       <artifactId>commons-text</artifactId>
+      <version>${version.commons-text}</version>
     </dependency>
 
     <dependency>
@@ -633,6 +645,7 @@
     <dependency>
       <groupId>org.apache.httpcomponents</groupId>
       <artifactId>httpclient</artifactId>
+      <version>${version.httpclient}</version>
     </dependency>
 
     <!-- scope here is wider than test. Dependency:analyze error suppressed -->
@@ -670,17 +683,29 @@
       <groupId>org.apache.logging.log4j</groupId>
       <artifactId>log4j-slf4j2-impl</artifactId>
     </dependency>
+
+    <dependency>
+      <groupId>org.wiremock</groupId>
+      <artifactId>wiremock-standalone</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <!-- this is necessary. Dependency:analyze error suppressed -->
+    <dependency>
+      <groupId>com.nimbusds</groupId>
+      <artifactId>nimbus-jose-jwt</artifactId>
+      <version>${version.nimbus-jose-jwt}</version>
+    </dependency>
+
   </dependencies>
 
   <build>
     <finalName>optimize-backend-${project.version}</finalName>
     <resources>
-      <!-- TODO: Remove this resource block once legacy Optimize Main class is no longer -->
       <resource>
-        <targetPath>META-INF/resources/optimize</targetPath>
+        <targetPath>${project.build.outputDirectory}/META-INF/resources</targetPath>
         <directory>../client/dist</directory>
       </resource>
-
       <resource>
         <directory>src/main/resources</directory>
       </resource>

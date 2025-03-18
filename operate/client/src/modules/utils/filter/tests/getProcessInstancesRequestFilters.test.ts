@@ -12,7 +12,9 @@ describe('getProcessInstancesRequestFilters', () => {
   const originalLocation = window.location;
 
   afterEach(() => {
-    window.location = originalLocation;
+    Object.defineProperty(window, 'location', {
+      value: originalLocation,
+    });
   });
 
   it('should get process instances request filters', () => {

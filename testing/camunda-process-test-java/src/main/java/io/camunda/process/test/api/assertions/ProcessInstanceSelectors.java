@@ -15,6 +15,7 @@
  */
 package io.camunda.process.test.api.assertions;
 
+import io.camunda.client.api.search.filter.ProcessInstanceFilter;
 import io.camunda.client.api.search.response.ProcessInstance;
 
 /** A collection of predefined {@link ProcessInstanceSelector}s. */
@@ -57,6 +58,11 @@ public class ProcessInstanceSelectors {
     public String describe() {
       return String.format("key: %s", processInstanceKey);
     }
+
+    @Override
+    public void applyFilter(final ProcessInstanceFilter filter) {
+      filter.processInstanceKey(processInstanceKey);
+    }
   }
 
   private static final class ProcessDefinitionIdSelector implements ProcessInstanceSelector {
@@ -75,6 +81,11 @@ public class ProcessInstanceSelectors {
     @Override
     public String describe() {
       return String.format("process-id: '%s'", processDefinitionId);
+    }
+
+    @Override
+    public void applyFilter(final ProcessInstanceFilter filter) {
+      filter.processDefinitionId(processDefinitionId);
     }
   }
 }

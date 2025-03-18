@@ -48,7 +48,7 @@
 services:
   keycloak:
     container_name: keycloak
-    image: bitnami/keycloak:26.1.3@sha256:56249cf91274b093389b9b4b3edc10fe9162c95dcd32aca8222592e3a71123ac
+    image: bitnami/keycloak:26.1.4@sha256:71afb4d7aae7f059f67c2cb80ced840400bfd8562ec00a84f1af658e09335a7d
     ports:
       - "18080:8080"
     environment:
@@ -78,7 +78,7 @@ services:
       KEYCLOAK_URL: http://keycloak:8080/auth
       IDENTITY_AUTH_PROVIDER_BACKEND_URL: http://keycloak:8080/auth/realms/camunda-platform
       KEYCLOAK_INIT_OPTIMIZE_SECRET: XALaRPl5qwTEItdwCMiPS62nVpKs7dL7
-      KEYCLOAK_INIT_OPTIMIZE_ROOT_URL: http://localhost:8080
+      KEYCLOAK_INIT_OPTIMIZE_ROOT_URL: http://localhost:8090
       KEYCLOAK_USERS_0_USERNAME: "demo"
       KEYCLOAK_USERS_0_PASSWORD: "demo"
       KEYCLOAK_USERS_0_FIRST_NAME: "demo"

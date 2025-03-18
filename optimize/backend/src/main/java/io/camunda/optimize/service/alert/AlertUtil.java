@@ -16,7 +16,6 @@ public class AlertUtil {
       final AlertCreationRequestDto toCreate, final AlertDefinitionDto result) {
     result.setCheckInterval(toCreate.getCheckInterval());
     result.setEmails(toCreate.getEmails());
-    result.setWebhook(toCreate.getWebhook());
     result.setFixNotification(toCreate.isFixNotification());
     result.setName(toCreate.getName());
     result.setReminder(toCreate.getReminder());

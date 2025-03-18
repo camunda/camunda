@@ -15,11 +15,13 @@
  */
 package io.camunda.process.test.api;
 
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.camunda.client.api.response.ProcessInstanceEvent;
+import io.camunda.client.api.search.filter.FlownodeInstanceFilter;
 import io.camunda.client.api.search.response.FlowNodeInstance;
 import io.camunda.process.test.api.assertions.ElementSelectors;
 import io.camunda.process.test.impl.assertions.CamundaDataSource;
@@ -28,12 +30,15 @@ import io.camunda.process.test.utils.ProcessInstanceBuilder;
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.function.Consumer;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Captor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -60,7 +65,7 @@ public class ElementAssertTest {
 
   @BeforeEach
   void configureMocks() {
-    when(camundaDataSource.findProcessInstances())
+    when(camundaDataSource.findProcessInstances(any()))
         .thenReturn(
             Collections.singletonList(
                 ProcessInstanceBuilder.newActiveProcessInstance(PROCESS_INSTANCE_KEY).build()));
@@ -84,13 +89,16 @@ public class ElementAssertTest {
   @Nested
   class ElementSource {
 
+    @Mock private FlownodeInstanceFilter flownodeInstanceFilter;
+    @Captor private ArgumentCaptor<Consumer<FlownodeInstanceFilter>> flowNodeInstanceFilterCapture;
+
     @BeforeEach
     void configureMocks() {
       final FlowNodeInstance flowNodeInstanceA = newActiveFlowNodeInstance("A");
       final FlowNodeInstance flowNodeInstanceB = newActiveFlowNodeInstance("B");
       final FlowNodeInstance flowNodeInstanceC = newCompletedFlowNodeInstance("C");
 
-      when(camundaDataSource.getFlowNodeInstancesByProcessInstanceKey(PROCESS_INSTANCE_KEY))
+      when(camundaDataSource.findFlowNodeInstances(any()))
           .thenReturn(Arrays.asList(flowNodeInstanceA, flowNodeInstanceB, flowNodeInstanceC));
     }
 
@@ -105,7 +113,13 @@ public class ElementAssertTest {
       when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
 
       // then
-      CamundaAssert.assertThat(processInstanceEvent).hasActiveElements("A", "B");
+      CamundaAssert.assertThat(processInstanceEvent).hasActiveElements("A");
+
+      verify(camundaDataSource).findFlowNodeInstances(flowNodeInstanceFilterCapture.capture());
+
+      flowNodeInstanceFilterCapture.getValue().accept(flownodeInstanceFilter);
+      verify(flownodeInstanceFilter).processInstanceKey(PROCESS_INSTANCE_KEY);
+      verify(flownodeInstanceFilter).flowNodeId("A");
     }
 
     @Test
@@ -141,8 +155,13 @@ public class ElementAssertTest {
       when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
 
       // then
-      CamundaAssert.assertThat(processInstanceEvent)
-          .hasActiveElements(ElementSelectors.byId("A"), ElementSelectors.byId("B"));
+      CamundaAssert.assertThat(processInstanceEvent).hasActiveElements(ElementSelectors.byId("A"));
+
+      verify(camundaDataSource).findFlowNodeInstances(flowNodeInstanceFilterCapture.capture());
+
+      flowNodeInstanceFilterCapture.getValue().accept(flownodeInstanceFilter);
+      verify(flownodeInstanceFilter).processInstanceKey(PROCESS_INSTANCE_KEY);
+      verify(flownodeInstanceFilter).flowNodeId("A");
     }
 
     @Test
@@ -172,8 +191,12 @@ public class ElementAssertTest {
 
       // then
       CamundaAssert.assertThat(processInstanceEvent)
-          .hasActiveElements(
-              ElementSelectors.byName("element_A"), ElementSelectors.byName("element_B"));
+          .hasActiveElements(ElementSelectors.byName("element_A"));
+
+      verify(camundaDataSource).findFlowNodeInstances(flowNodeInstanceFilterCapture.capture());
+
+      flowNodeInstanceFilterCapture.getValue().accept(flownodeInstanceFilter);
+      verify(flownodeInstanceFilter).processInstanceKey(PROCESS_INSTANCE_KEY);
     }
 
     @Test
@@ -210,7 +233,7 @@ public class ElementAssertTest {
       final FlowNodeInstance flowNodeInstanceA = newActiveFlowNodeInstance("A");
       final FlowNodeInstance flowNodeInstanceB = newActiveFlowNodeInstance("B");
 
-      when(camundaDataSource.getFlowNodeInstancesByProcessInstanceKey(PROCESS_INSTANCE_KEY))
+      when(camundaDataSource.findFlowNodeInstances(any()))
           .thenReturn(Arrays.asList(flowNodeInstanceA, flowNodeInstanceB));
 
       // when
@@ -226,7 +249,7 @@ public class ElementAssertTest {
       final FlowNodeInstance flowNodeInstanceActive = newActiveFlowNodeInstance("A");
       final FlowNodeInstance flowNodeInstanceCompleted = newCompletedFlowNodeInstance("A");
 
-      when(camundaDataSource.getFlowNodeInstancesByProcessInstanceKey(PROCESS_INSTANCE_KEY))
+      when(camundaDataSource.findFlowNodeInstances(any()))
           .thenReturn(Arrays.asList(flowNodeInstanceCompleted, flowNodeInstanceActive));
 
       // when
@@ -242,7 +265,7 @@ public class ElementAssertTest {
       final FlowNodeInstance flowNodeInstanceA = newActiveFlowNodeInstance("A");
       final FlowNodeInstance flowNodeInstanceB = newActiveFlowNodeInstance("B");
 
-      when(camundaDataSource.getFlowNodeInstancesByProcessInstanceKey(PROCESS_INSTANCE_KEY))
+      when(camundaDataSource.findFlowNodeInstances(any()))
           .thenReturn(Collections.singletonList(flowNodeInstanceA))
           .thenReturn(Arrays.asList(flowNodeInstanceA, flowNodeInstanceB));
 
@@ -252,8 +275,7 @@ public class ElementAssertTest {
       // then
       CamundaAssert.assertThat(processInstanceEvent).hasActiveElements("A", "B");
 
-      verify(camundaDataSource, times(2))
-          .getFlowNodeInstancesByProcessInstanceKey(PROCESS_INSTANCE_KEY);
+      verify(camundaDataSource, times(2)).findFlowNodeInstances(any());
     }
 
     @Test
@@ -262,7 +284,7 @@ public class ElementAssertTest {
       final FlowNodeInstance flowNodeInstanceA = newActiveFlowNodeInstance("A");
       final FlowNodeInstance flowNodeInstanceB = newActiveFlowNodeInstance("B");
 
-      when(camundaDataSource.getFlowNodeInstancesByProcessInstanceKey(PROCESS_INSTANCE_KEY))
+      when(camundaDataSource.findFlowNodeInstances(any()))
           .thenReturn(Arrays.asList(flowNodeInstanceA, flowNodeInstanceB));
 
       // when
@@ -285,7 +307,7 @@ public class ElementAssertTest {
       final FlowNodeInstance flowNodeInstanceB = newCompletedFlowNodeInstance("B");
       final FlowNodeInstance flowNodeInstanceC = newTerminatedFlowNodeInstance("C");
 
-      when(camundaDataSource.getFlowNodeInstancesByProcessInstanceKey(PROCESS_INSTANCE_KEY))
+      when(camundaDataSource.findFlowNodeInstances(any()))
           .thenReturn(Arrays.asList(flowNodeInstanceA, flowNodeInstanceB, flowNodeInstanceC));
 
       // when
@@ -300,7 +322,7 @@ public class ElementAssertTest {
                   + "\t- 'C': terminated",
               PROCESS_INSTANCE_KEY);
 
-      verify(camundaDataSource).getFlowNodeInstancesByProcessInstanceKey(PROCESS_INSTANCE_KEY);
+      verify(camundaDataSource).findFlowNodeInstances(any());
     }
 
     @Test
@@ -309,7 +331,7 @@ public class ElementAssertTest {
       final FlowNodeInstance flowNodeInstanceA = newActiveFlowNodeInstance("A");
       final FlowNodeInstance flowNodeInstanceA2 = newActiveFlowNodeInstance("A");
 
-      when(camundaDataSource.getFlowNodeInstancesByProcessInstanceKey(PROCESS_INSTANCE_KEY))
+      when(camundaDataSource.findFlowNodeInstances(any()))
           .thenReturn(Arrays.asList(flowNodeInstanceA, flowNodeInstanceA2));
 
       // when
@@ -327,7 +349,7 @@ public class ElementAssertTest {
     @Test
     void shouldFailIfProcessInstanceNotFound() {
       // given
-      when(camundaDataSource.findProcessInstances()).thenReturn(Collections.emptyList());
+      when(camundaDataSource.findProcessInstances(any())).thenReturn(Collections.emptyList());
 
       // when
       when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
@@ -348,7 +370,7 @@ public class ElementAssertTest {
       final FlowNodeInstance flowNodeInstanceA = newCompletedFlowNodeInstance("A");
       final FlowNodeInstance flowNodeInstanceB = newCompletedFlowNodeInstance("B");
 
-      when(camundaDataSource.getFlowNodeInstancesByProcessInstanceKey(PROCESS_INSTANCE_KEY))
+      when(camundaDataSource.findFlowNodeInstances(any()))
           .thenReturn(Arrays.asList(flowNodeInstanceA, flowNodeInstanceB));
 
       // when
@@ -364,7 +386,7 @@ public class ElementAssertTest {
       final FlowNodeInstance flowNodeInstanceActive = newCompletedFlowNodeInstance("A");
       final FlowNodeInstance flowNodeInstanceCompleted = newActiveFlowNodeInstance("A");
 
-      when(camundaDataSource.getFlowNodeInstancesByProcessInstanceKey(PROCESS_INSTANCE_KEY))
+      when(camundaDataSource.findFlowNodeInstances(any()))
           .thenReturn(Arrays.asList(flowNodeInstanceCompleted, flowNodeInstanceActive));
 
       // when
@@ -381,7 +403,7 @@ public class ElementAssertTest {
       final FlowNodeInstance activeFlowNodeInstanceB = newActiveFlowNodeInstance("B");
       final FlowNodeInstance completedFlowNodeInstanceB = newCompletedFlowNodeInstance("B");
 
-      when(camundaDataSource.getFlowNodeInstancesByProcessInstanceKey(PROCESS_INSTANCE_KEY))
+      when(camundaDataSource.findFlowNodeInstances(any()))
           .thenReturn(Arrays.asList(flowNodeInstanceA, activeFlowNodeInstanceB))
           .thenReturn(Arrays.asList(flowNodeInstanceA, completedFlowNodeInstanceB));
 
@@ -391,8 +413,7 @@ public class ElementAssertTest {
       // then
       CamundaAssert.assertThat(processInstanceEvent).hasCompletedElements("A", "B");
 
-      verify(camundaDataSource, times(2))
-          .getFlowNodeInstancesByProcessInstanceKey(PROCESS_INSTANCE_KEY);
+      verify(camundaDataSource, times(2)).findFlowNodeInstances(any());
     }
 
     @Test
@@ -401,7 +422,7 @@ public class ElementAssertTest {
       final FlowNodeInstance flowNodeInstanceA = newCompletedFlowNodeInstance("A");
       final FlowNodeInstance flowNodeInstanceB = newCompletedFlowNodeInstance("B");
 
-      when(camundaDataSource.getFlowNodeInstancesByProcessInstanceKey(PROCESS_INSTANCE_KEY))
+      when(camundaDataSource.findFlowNodeInstances(any()))
           .thenReturn(Arrays.asList(flowNodeInstanceA, flowNodeInstanceB));
 
       // when
@@ -425,7 +446,7 @@ public class ElementAssertTest {
       final FlowNodeInstance flowNodeInstanceA = newCompletedFlowNodeInstance("A");
       final FlowNodeInstance flowNodeInstanceB = newTerminatedFlowNodeInstance("B");
 
-      when(camundaDataSource.getFlowNodeInstancesByProcessInstanceKey(PROCESS_INSTANCE_KEY))
+      when(camundaDataSource.findFlowNodeInstances(any()))
           .thenReturn(Arrays.asList(flowNodeInstanceA, flowNodeInstanceB));
 
       // when
@@ -439,7 +460,7 @@ public class ElementAssertTest {
                   + "\t- 'B': terminated",
               PROCESS_INSTANCE_KEY);
 
-      verify(camundaDataSource).getFlowNodeInstancesByProcessInstanceKey(PROCESS_INSTANCE_KEY);
+      verify(camundaDataSource).findFlowNodeInstances(any());
     }
 
     @Test
@@ -448,7 +469,7 @@ public class ElementAssertTest {
       final FlowNodeInstance flowNodeInstanceA = newCompletedFlowNodeInstance("A");
       final FlowNodeInstance flowNodeInstanceA2 = newCompletedFlowNodeInstance("A");
 
-      when(camundaDataSource.getFlowNodeInstancesByProcessInstanceKey(PROCESS_INSTANCE_KEY))
+      when(camundaDataSource.findFlowNodeInstances(any()))
           .thenReturn(Arrays.asList(flowNodeInstanceA, flowNodeInstanceA2));
 
       // when
@@ -466,7 +487,7 @@ public class ElementAssertTest {
     @Test
     void shouldFailIfProcessInstanceNotFound() {
       // given
-      when(camundaDataSource.findProcessInstances()).thenReturn(Collections.emptyList());
+      when(camundaDataSource.findProcessInstances(any())).thenReturn(Collections.emptyList());
 
       // when
       when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
@@ -487,7 +508,7 @@ public class ElementAssertTest {
       final FlowNodeInstance flowNodeInstanceA = newTerminatedFlowNodeInstance("A");
       final FlowNodeInstance flowNodeInstanceB = newTerminatedFlowNodeInstance("B");
 
-      when(camundaDataSource.getFlowNodeInstancesByProcessInstanceKey(PROCESS_INSTANCE_KEY))
+      when(camundaDataSource.findFlowNodeInstances(any()))
           .thenReturn(Arrays.asList(flowNodeInstanceA, flowNodeInstanceB));
 
       // when
@@ -503,7 +524,7 @@ public class ElementAssertTest {
       final FlowNodeInstance flowNodeInstanceActive = newTerminatedFlowNodeInstance("A");
       final FlowNodeInstance flowNodeInstanceCompleted = newActiveFlowNodeInstance("A");
 
-      when(camundaDataSource.getFlowNodeInstancesByProcessInstanceKey(PROCESS_INSTANCE_KEY))
+      when(camundaDataSource.findFlowNodeInstances(any()))
           .thenReturn(Arrays.asList(flowNodeInstanceCompleted, flowNodeInstanceActive));
 
       // when
@@ -520,7 +541,7 @@ public class ElementAssertTest {
       final FlowNodeInstance activeFlowNodeInstanceB = newActiveFlowNodeInstance("B");
       final FlowNodeInstance terminatedFlowNodeInstanceB = newTerminatedFlowNodeInstance("B");
 
-      when(camundaDataSource.getFlowNodeInstancesByProcessInstanceKey(PROCESS_INSTANCE_KEY))
+      when(camundaDataSource.findFlowNodeInstances(any()))
           .thenReturn(Arrays.asList(flowNodeInstanceA, activeFlowNodeInstanceB))
           .thenReturn(Arrays.asList(flowNodeInstanceA, terminatedFlowNodeInstanceB));
 
@@ -530,8 +551,7 @@ public class ElementAssertTest {
       // then
       CamundaAssert.assertThat(processInstanceEvent).hasTerminatedElements("A", "B");
 
-      verify(camundaDataSource, times(2))
-          .getFlowNodeInstancesByProcessInstanceKey(PROCESS_INSTANCE_KEY);
+      verify(camundaDataSource, times(2)).findFlowNodeInstances(any());
     }
 
     @Test
@@ -540,7 +560,7 @@ public class ElementAssertTest {
       final FlowNodeInstance flowNodeInstanceA = newTerminatedFlowNodeInstance("A");
       final FlowNodeInstance flowNodeInstanceB = newTerminatedFlowNodeInstance("B");
 
-      when(camundaDataSource.getFlowNodeInstancesByProcessInstanceKey(PROCESS_INSTANCE_KEY))
+      when(camundaDataSource.findFlowNodeInstances(any()))
           .thenReturn(Arrays.asList(flowNodeInstanceA, flowNodeInstanceB));
 
       // when
@@ -564,7 +584,7 @@ public class ElementAssertTest {
       final FlowNodeInstance flowNodeInstanceA = newCompletedFlowNodeInstance("A");
       final FlowNodeInstance flowNodeInstanceB = newTerminatedFlowNodeInstance("B");
 
-      when(camundaDataSource.getFlowNodeInstancesByProcessInstanceKey(PROCESS_INSTANCE_KEY))
+      when(camundaDataSource.findFlowNodeInstances(any()))
           .thenReturn(Arrays.asList(flowNodeInstanceA, flowNodeInstanceB));
 
       // when
@@ -578,7 +598,7 @@ public class ElementAssertTest {
                   + "\t- 'A': completed",
               PROCESS_INSTANCE_KEY);
 
-      verify(camundaDataSource).getFlowNodeInstancesByProcessInstanceKey(PROCESS_INSTANCE_KEY);
+      verify(camundaDataSource).findFlowNodeInstances(any());
     }
 
     @Test
@@ -587,7 +607,7 @@ public class ElementAssertTest {
       final FlowNodeInstance flowNodeInstanceA = newCompletedFlowNodeInstance("A");
       final FlowNodeInstance flowNodeInstanceA2 = newCompletedFlowNodeInstance("A");
 
-      when(camundaDataSource.getFlowNodeInstancesByProcessInstanceKey(PROCESS_INSTANCE_KEY))
+      when(camundaDataSource.findFlowNodeInstances(any()))
           .thenReturn(Arrays.asList(flowNodeInstanceA, flowNodeInstanceA2));
 
       // when
@@ -605,7 +625,7 @@ public class ElementAssertTest {
     @Test
     void shouldFailIfProcessInstanceNotFound() {
       // given
-      when(camundaDataSource.findProcessInstances()).thenReturn(Collections.emptyList());
+      when(camundaDataSource.findProcessInstances(any())).thenReturn(Collections.emptyList());
 
       // when
       when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
@@ -632,7 +652,7 @@ public class ElementAssertTest {
       final FlowNodeInstance flowNodeInstanceC2 = newActiveFlowNodeInstance("C");
       final FlowNodeInstance flowNodeInstanceC3 = newActiveFlowNodeInstance("C");
 
-      when(camundaDataSource.getFlowNodeInstancesByProcessInstanceKey(PROCESS_INSTANCE_KEY))
+      when(camundaDataSource.findFlowNodeInstances(any()))
           .thenReturn(
               Arrays.asList(
                   flowNodeInstanceA,
@@ -658,7 +678,7 @@ public class ElementAssertTest {
       final FlowNodeInstance flowNodeInstance1 = newActiveFlowNodeInstance("A");
       final FlowNodeInstance flowNodeInstance2 = newActiveFlowNodeInstance("A");
 
-      when(camundaDataSource.getFlowNodeInstancesByProcessInstanceKey(PROCESS_INSTANCE_KEY))
+      when(camundaDataSource.findFlowNodeInstances(any()))
           .thenReturn(Arrays.asList(flowNodeInstance1, flowNodeInstance2));
 
       // when
@@ -680,7 +700,7 @@ public class ElementAssertTest {
       final FlowNodeInstance flowNodeInstanceA = newActiveFlowNodeInstance("A");
       final FlowNodeInstance flowNodeInstanceB = newActiveFlowNodeInstance("B");
 
-      when(camundaDataSource.getFlowNodeInstancesByProcessInstanceKey(PROCESS_INSTANCE_KEY))
+      when(camundaDataSource.findFlowNodeInstances(any()))
           .thenReturn(Arrays.asList(flowNodeInstanceA, flowNodeInstanceB));
 
       // when
@@ -701,7 +721,7 @@ public class ElementAssertTest {
       final FlowNodeInstance flowNodeInstanceA1 = newCompletedFlowNodeInstance("A");
       final FlowNodeInstance flowNodeInstanceA2 = newTerminatedFlowNodeInstance("A");
 
-      when(camundaDataSource.getFlowNodeInstancesByProcessInstanceKey(PROCESS_INSTANCE_KEY))
+      when(camundaDataSource.findFlowNodeInstances(any()))
           .thenReturn(Arrays.asList(flowNodeInstanceA1, flowNodeInstanceA2));
 
       // when
@@ -720,8 +740,7 @@ public class ElementAssertTest {
     @Test
     void shouldFailIfNotCreated() {
       // given
-      when(camundaDataSource.getFlowNodeInstancesByProcessInstanceKey(PROCESS_INSTANCE_KEY))
-          .thenReturn(Collections.emptyList());
+      when(camundaDataSource.findFlowNodeInstances(any())).thenReturn(Collections.emptyList());
 
       // when
       when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
@@ -766,7 +785,7 @@ public class ElementAssertTest {
       final FlowNodeInstance flowNodeInstanceB = newActiveFlowNodeInstance("B");
       final FlowNodeInstance flowNodeInstanceA2 = newActiveFlowNodeInstance("A");
 
-      when(camundaDataSource.getFlowNodeInstancesByProcessInstanceKey(PROCESS_INSTANCE_KEY))
+      when(camundaDataSource.findFlowNodeInstances(any()))
           .thenReturn(Arrays.asList(flowNodeInstanceA1, flowNodeInstanceB))
           .thenReturn(Arrays.asList(flowNodeInstanceA1, flowNodeInstanceB, flowNodeInstanceA2));
 
@@ -776,8 +795,7 @@ public class ElementAssertTest {
       // then
       CamundaAssert.assertThat(processInstanceEvent).hasActiveElement("A", 2);
 
-      verify(camundaDataSource, times(2))
-          .getFlowNodeInstancesByProcessInstanceKey(PROCESS_INSTANCE_KEY);
+      verify(camundaDataSource, times(2)).findFlowNodeInstances(any());
     }
   }
 
@@ -796,7 +814,7 @@ public class ElementAssertTest {
       final FlowNodeInstance flowNodeInstanceC2 = newCompletedFlowNodeInstance("C");
       final FlowNodeInstance flowNodeInstanceC3 = newCompletedFlowNodeInstance("C");
 
-      when(camundaDataSource.getFlowNodeInstancesByProcessInstanceKey(PROCESS_INSTANCE_KEY))
+      when(camundaDataSource.findFlowNodeInstances(any()))
           .thenReturn(
               Arrays.asList(
                   flowNodeInstanceA,
@@ -822,7 +840,7 @@ public class ElementAssertTest {
       final FlowNodeInstance flowNodeInstance1 = newCompletedFlowNodeInstance("A");
       final FlowNodeInstance flowNodeInstance2 = newCompletedFlowNodeInstance("A");
 
-      when(camundaDataSource.getFlowNodeInstancesByProcessInstanceKey(PROCESS_INSTANCE_KEY))
+      when(camundaDataSource.findFlowNodeInstances(any()))
           .thenReturn(Arrays.asList(flowNodeInstance1, flowNodeInstance2));
 
       // when
@@ -844,7 +862,7 @@ public class ElementAssertTest {
       final FlowNodeInstance flowNodeInstanceA = newCompletedFlowNodeInstance("A");
       final FlowNodeInstance flowNodeInstanceB = newCompletedFlowNodeInstance("B");
 
-      when(camundaDataSource.getFlowNodeInstancesByProcessInstanceKey(PROCESS_INSTANCE_KEY))
+      when(camundaDataSource.findFlowNodeInstances(any()))
           .thenReturn(Arrays.asList(flowNodeInstanceA, flowNodeInstanceB));
 
       // when
@@ -865,7 +883,7 @@ public class ElementAssertTest {
       final FlowNodeInstance flowNodeInstanceA1 = newTerminatedFlowNodeInstance("A");
       final FlowNodeInstance flowNodeInstanceA2 = newActiveFlowNodeInstance("A");
 
-      when(camundaDataSource.getFlowNodeInstancesByProcessInstanceKey(PROCESS_INSTANCE_KEY))
+      when(camundaDataSource.findFlowNodeInstances(any()))
           .thenReturn(Arrays.asList(flowNodeInstanceA1, flowNodeInstanceA2));
 
       // when
@@ -884,8 +902,7 @@ public class ElementAssertTest {
     @Test
     void shouldFailIfNotCreated() {
       // given
-      when(camundaDataSource.getFlowNodeInstancesByProcessInstanceKey(PROCESS_INSTANCE_KEY))
-          .thenReturn(Collections.emptyList());
+      when(camundaDataSource.findFlowNodeInstances(any())).thenReturn(Collections.emptyList());
 
       // when
       when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
@@ -930,7 +947,7 @@ public class ElementAssertTest {
       final FlowNodeInstance flowNodeInstanceA2 = newActiveFlowNodeInstance("A");
       final FlowNodeInstance flowNodeInstanceA3 = newCompletedFlowNodeInstance("A");
 
-      when(camundaDataSource.getFlowNodeInstancesByProcessInstanceKey(PROCESS_INSTANCE_KEY))
+      when(camundaDataSource.findFlowNodeInstances(any()))
           .thenReturn(Arrays.asList(flowNodeInstanceA1, flowNodeInstanceA2))
           .thenReturn(Arrays.asList(flowNodeInstanceA1, flowNodeInstanceA3));
 
@@ -940,8 +957,7 @@ public class ElementAssertTest {
       // then
       CamundaAssert.assertThat(processInstanceEvent).hasCompletedElement("A", 2);
 
-      verify(camundaDataSource, times(2))
-          .getFlowNodeInstancesByProcessInstanceKey(PROCESS_INSTANCE_KEY);
+      verify(camundaDataSource, times(2)).findFlowNodeInstances(any());
     }
   }
 
@@ -960,7 +976,7 @@ public class ElementAssertTest {
       final FlowNodeInstance flowNodeInstanceC2 = newTerminatedFlowNodeInstance("C");
       final FlowNodeInstance flowNodeInstanceC3 = newTerminatedFlowNodeInstance("C");
 
-      when(camundaDataSource.getFlowNodeInstancesByProcessInstanceKey(PROCESS_INSTANCE_KEY))
+      when(camundaDataSource.findFlowNodeInstances(any()))
           .thenReturn(
               Arrays.asList(
                   flowNodeInstanceA,
@@ -986,7 +1002,7 @@ public class ElementAssertTest {
       final FlowNodeInstance flowNodeInstance1 = newTerminatedFlowNodeInstance("A");
       final FlowNodeInstance flowNodeInstance2 = newTerminatedFlowNodeInstance("A");
 
-      when(camundaDataSource.getFlowNodeInstancesByProcessInstanceKey(PROCESS_INSTANCE_KEY))
+      when(camundaDataSource.findFlowNodeInstances(any()))
           .thenReturn(Arrays.asList(flowNodeInstance1, flowNodeInstance2));
 
       // when
@@ -1008,7 +1024,7 @@ public class ElementAssertTest {
       final FlowNodeInstance flowNodeInstanceA = newTerminatedFlowNodeInstance("A");
       final FlowNodeInstance flowNodeInstanceB = newTerminatedFlowNodeInstance("B");
 
-      when(camundaDataSource.getFlowNodeInstancesByProcessInstanceKey(PROCESS_INSTANCE_KEY))
+      when(camundaDataSource.findFlowNodeInstances(any()))
           .thenReturn(Arrays.asList(flowNodeInstanceA, flowNodeInstanceB));
 
       // when
@@ -1029,7 +1045,7 @@ public class ElementAssertTest {
       final FlowNodeInstance flowNodeInstanceA1 = newCompletedFlowNodeInstance("A");
       final FlowNodeInstance flowNodeInstanceA2 = newActiveFlowNodeInstance("A");
 
-      when(camundaDataSource.getFlowNodeInstancesByProcessInstanceKey(PROCESS_INSTANCE_KEY))
+      when(camundaDataSource.findFlowNodeInstances(any()))
           .thenReturn(Arrays.asList(flowNodeInstanceA1, flowNodeInstanceA2));
 
       // when
@@ -1048,8 +1064,7 @@ public class ElementAssertTest {
     @Test
     void shouldFailIfNotCreated() {
       // given
-      when(camundaDataSource.getFlowNodeInstancesByProcessInstanceKey(PROCESS_INSTANCE_KEY))
-          .thenReturn(Collections.emptyList());
+      when(camundaDataSource.findFlowNodeInstances(any())).thenReturn(Collections.emptyList());
 
       // when
       when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
@@ -1094,7 +1109,7 @@ public class ElementAssertTest {
       final FlowNodeInstance flowNodeInstanceA2 = newActiveFlowNodeInstance("A");
       final FlowNodeInstance flowNodeInstanceA3 = newTerminatedFlowNodeInstance("A");
 
-      when(camundaDataSource.getFlowNodeInstancesByProcessInstanceKey(PROCESS_INSTANCE_KEY))
+      when(camundaDataSource.findFlowNodeInstances(any()))
           .thenReturn(Arrays.asList(flowNodeInstanceA1, flowNodeInstanceA2))
           .thenReturn(Arrays.asList(flowNodeInstanceA1, flowNodeInstanceA3));
 
@@ -1104,8 +1119,109 @@ public class ElementAssertTest {
       // then
       CamundaAssert.assertThat(processInstanceEvent).hasTerminatedElement("A", 2);
 
-      verify(camundaDataSource, times(2))
-          .getFlowNodeInstancesByProcessInstanceKey(PROCESS_INSTANCE_KEY);
+      verify(camundaDataSource, times(2)).findFlowNodeInstances(any());
+    }
+  }
+
+  @Nested
+  class HasNotActivatedElements {
+
+    @Test
+    void shouldHasNotActivatedElements() {
+      // given
+      when(camundaDataSource.findFlowNodeInstances(any())).thenReturn(Collections.emptyList());
+
+      // when
+      when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
+
+      // then
+      CamundaAssert.assertThat(processInstanceEvent).hasNotActivatedElements("A", "B");
+    }
+
+    @Test
+    void shouldFailIfElementsAreActive() {
+      // given
+      final FlowNodeInstance flowNodeInstanceA = newActiveFlowNodeInstance("A");
+      final FlowNodeInstance flowNodeInstanceB = newActiveFlowNodeInstance("B");
+
+      when(camundaDataSource.findFlowNodeInstances(any()))
+          .thenReturn(Arrays.asList(flowNodeInstanceA, flowNodeInstanceB));
+
+      // when
+      when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
+
+      // then
+      Assertions.assertThatThrownBy(
+              () ->
+                  CamundaAssert.assertThat(processInstanceEvent)
+                      .hasNotActivatedElements("A", "B", "C"))
+          .hasMessage(
+              "Process instance [key: %d] should have not activated elements ['A', 'B', 'C'] but the following elements were activated:\n"
+                  + "\t- 'A': active\n"
+                  + "\t- 'B': active",
+              PROCESS_INSTANCE_KEY);
+    }
+
+    @Test
+    void shouldFailIfElementsAreCompleted() {
+      // given
+      final FlowNodeInstance flowNodeInstanceA = newCompletedFlowNodeInstance("A");
+      final FlowNodeInstance flowNodeInstanceB = newCompletedFlowNodeInstance("B");
+
+      when(camundaDataSource.findFlowNodeInstances(any()))
+          .thenReturn(Arrays.asList(flowNodeInstanceA, flowNodeInstanceB));
+
+      // when
+      when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
+
+      // then
+      Assertions.assertThatThrownBy(
+              () ->
+                  CamundaAssert.assertThat(processInstanceEvent)
+                      .hasNotActivatedElements("A", "B", "C"))
+          .hasMessage(
+              "Process instance [key: %d] should have not activated elements ['A', 'B', 'C'] but the following elements were activated:\n"
+                  + "\t- 'A': completed\n"
+                  + "\t- 'B': completed",
+              PROCESS_INSTANCE_KEY);
+    }
+
+    @Test
+    void shouldFailIfElementsAreTerminated() {
+      // given
+      final FlowNodeInstance flowNodeInstanceA = newTerminatedFlowNodeInstance("A");
+      final FlowNodeInstance flowNodeInstanceB = newTerminatedFlowNodeInstance("B");
+
+      when(camundaDataSource.findFlowNodeInstances(any()))
+          .thenReturn(Arrays.asList(flowNodeInstanceA, flowNodeInstanceB));
+
+      // when
+      when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
+
+      // then
+      Assertions.assertThatThrownBy(
+              () ->
+                  CamundaAssert.assertThat(processInstanceEvent)
+                      .hasNotActivatedElements("A", "B", "C"))
+          .hasMessage(
+              "Process instance [key: %d] should have not activated elements ['A', 'B', 'C'] but the following elements were activated:\n"
+                  + "\t- 'A': terminated\n"
+                  + "\t- 'B': terminated",
+              PROCESS_INSTANCE_KEY);
+    }
+
+    @Test
+    void shouldFailIfProcessInstanceNotFound() {
+      // given
+      when(camundaDataSource.findProcessInstances(any())).thenReturn(Collections.emptyList());
+
+      // when
+      when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
+
+      // then
+      Assertions.assertThatThrownBy(
+              () -> CamundaAssert.assertThat(processInstanceEvent).hasNotActivatedElements("A"))
+          .hasMessage("No process instance [key: %d] found.", PROCESS_INSTANCE_KEY);
     }
   }
 }

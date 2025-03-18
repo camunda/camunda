@@ -24,8 +24,8 @@
     "react-debounced": "1.1.2",
     "react-dom": "18.3.1",
     "react-i18next": "15.4.0",
-    "react-router": "7.2.0",
-    "react-router-dom": "7.2.0",
+    "react-router": "7.3.0",
+    "react-router-dom": "7.3.0",
     "react-transition-group": "4.4.5",
     "styled-components": "6.1.13"
   },
@@ -50,8 +50,9 @@
     "rollup": "4.35.0",
     "rollup-plugin-license": "^3.5.3",
     "sass": "1.85.1",
-    "typescript": "5.7.3",
-    "vite": "6.2.0"
+    "typescript": "5.8.2",
+    "vite": "6.2.0",
+    "vite-plugin-svgr": "^4.3.0"
   },
   "packageManager": "yarn@4.3.1",
   "stableVersion": "8.8.0-SNAPSHOT"

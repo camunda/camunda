@@ -48,6 +48,7 @@ import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.oauth2.core.OAuth2TokenValidator;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
+import org.springframework.security.oauth2.jwt.JwtValidators;
 import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.HttpStatusEntryPoint;
@@ -192,11 +193,15 @@ public class CCSMSecurityConfigurerAdapter extends AbstractSecurityConfigurerAda
         .orElseGet(() -> new OptimizeStaticTokenDecoder(configurationService));
   }
 
+  @SuppressWarnings("unchecked")
   private JwtDecoder createJwtDecoderWithAudience(final String jwtSetUri) {
     final NimbusJwtDecoder jwtDecoder = NimbusJwtDecoder.withJwkSetUri(jwtSetUri).build();
     final OAuth2TokenValidator<Jwt> audienceValidator =
         new AudienceValidator(getAudienceFromConfiguration());
-    jwtDecoder.setJwtValidator(audienceValidator);
+    // The default validator already contains validation for timestamp and X509 thumbprint
+    final OAuth2TokenValidator<Jwt> combinedValidatorWithDefaults =
+        JwtValidators.createDefaultWithValidators(audienceValidator);
+    jwtDecoder.setJwtValidator(combinedValidatorWithDefaults);
     return jwtDecoder;
   }
 

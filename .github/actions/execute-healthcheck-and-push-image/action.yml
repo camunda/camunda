@@ -39,7 +39,7 @@ runs:
           --build-arg DATE="${DATE}" \
           --build-arg REVISION="${REVISION}" \
           --platform linux/amd64,linux/arm64 \
-          --file optimize-internal-test.Dockerfile \
+          --file optimize.Dockerfile \
           --provenance false \
           --push \
           .

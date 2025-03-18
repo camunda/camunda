@@ -12,7 +12,9 @@ describe('getDecisionInstancesRequestFilters', () => {
   const originalLocation = window.location;
 
   afterEach(() => {
-    window.location = originalLocation;
+    Object.defineProperty(window, 'location', {
+      value: originalLocation,
+    });
   });
   it('should get decision instances request filters', () => {
     const mockLocation = {
