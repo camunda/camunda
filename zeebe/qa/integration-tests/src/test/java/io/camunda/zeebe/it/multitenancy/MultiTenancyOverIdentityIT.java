@@ -18,6 +18,7 @@ import io.camunda.client.api.response.AssignUserTaskResponse;
 import io.camunda.client.api.response.BroadcastSignalResponse;
 import io.camunda.client.api.response.CompleteJobResponse;
 import io.camunda.client.api.response.CompleteUserTaskResponse;
+import io.camunda.client.api.response.CorrelateMessageResponse;
 import io.camunda.client.api.response.DeleteResourceResponse;
 import io.camunda.client.api.response.DeploymentEvent;
 import io.camunda.client.api.response.EvaluateDecisionResponse;
@@ -628,6 +629,71 @@ public class MultiTenancyOverIdentityIT {
           .withMessageContaining("NOT_FOUND")
           .withMessageContaining(
               "Expected to perform operation 'CREATE' on resource 'MESSAGE', but no resource was found for tenant '%s'"
+                  .formatted(TENANT_B));
+    }
+  }
+
+  @Test
+  void shouldStartProcessWhenCorrelatingMessageForTenant() {
+    // given
+    final String messageName = "message";
+    process =
+        Bpmn.createExecutableProcess(processId).startEvent().message(messageName).endEvent().done();
+    try (final var client = createCamundaClient(USER_TENANT_A)) {
+      client
+          .newDeployResourceCommand()
+          .addProcessModel(process, "process.bpmn")
+          .tenantId(TENANT_A)
+          .send()
+          .join();
+
+      // when
+      final Future<CorrelateMessageResponse> result =
+          client
+              .newCorrelateMessageCommand()
+              .messageName(messageName)
+              .withoutCorrelationKey()
+              .tenantId(TENANT_A)
+              .send();
+
+      // then
+      assertThat(result)
+          .describedAs(
+              "Expect that message can be published as the client has access process of tenant-a")
+          .succeedsWithin(Duration.ofSeconds(10));
+    }
+  }
+
+  @Test
+  void shouldDenyCorrelateMessageWhenUnauthorized() {
+    // given
+    final String messageName = "message";
+    process =
+        Bpmn.createExecutableProcess(processId).startEvent().message(messageName).endEvent().done();
+    try (final var client = createCamundaClient(USER_TENANT_A)) {
+      client
+          .newDeployResourceCommand()
+          .addProcessModel(process, "process.bpmn")
+          .tenantId(TENANT_A)
+          .send()
+          .join();
+
+      // when
+      final Future<CorrelateMessageResponse> result =
+          client
+              .newCorrelateMessageCommand()
+              .messageName(messageName)
+              .withoutCorrelationKey()
+              .tenantId(TENANT_B)
+              .send();
+
+      // then
+      assertThat(result)
+          .failsWithin(Duration.ofSeconds(10))
+          .withThrowableThat()
+          .withMessageContaining("FORBIDDEN")
+          .withMessageContaining(
+              "Expected to correlate message for tenant '%s', but user is not assigned to this tenant."
                   .formatted(TENANT_B));
     }
   }

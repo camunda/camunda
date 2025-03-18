@@ -88,6 +88,17 @@ public final class MessageCorrelationCorrelateProcessor
   @Override
   public void processRecord(final TypedRecord<MessageCorrelationRecord> command) {
     final var messageCorrelationRecord = command.getValue();
+
+    final var authorizedTenantIds = authCheckBehavior.getAuthorizedTenantIds(command);
+    if (!authorizedTenantIds.isAuthorizedForTenantId(messageCorrelationRecord.getTenantId())) {
+      final var message =
+          "Expected to correlate message for tenant '%s', but user is not assigned to this tenant."
+              .formatted(messageCorrelationRecord.getTenantId());
+      rejectionWriter.appendRejection(command, RejectionType.FORBIDDEN, message);
+      responseWriter.writeRejectionOnCommand(command, RejectionType.FORBIDDEN, message);
+      return;
+    }
+
     final long messageKey = keyGenerator.nextKey();
     messageCorrelationRecord
         .setMessageKey(messageKey)
