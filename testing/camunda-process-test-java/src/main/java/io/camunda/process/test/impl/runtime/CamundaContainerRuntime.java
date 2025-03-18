@@ -39,11 +39,11 @@ public class CamundaContainerRuntime implements AutoCloseable {
   private static final Logger LOGGER = LoggerFactory.getLogger(CamundaContainerRuntime.class);
 
   private static final String NETWORK_ALIAS_CAMUNDA = "camunda";
-  private static final String NETWORK_ALIAS_ELASTICSEARCH = "elasticsearch";
+  //private static final String NETWORK_ALIAS_ELASTICSEARCH = "elasticsearch";
   private static final String NETWORK_ALIAS_CONNECTORS = "connectors";
 
-  private static final String ELASTICSEARCH_URL =
-      "http://" + NETWORK_ALIAS_ELASTICSEARCH + ":" + ContainerRuntimePorts.ELASTICSEARCH_REST_API;
+  //private static final String ELASTICSEARCH_URL =
+  //    "http://" + NETWORK_ALIAS_ELASTICSEARCH + ":" + ContainerRuntimePorts.ELASTICSEARCH_REST_API;
 
   private static final String CAMUNDA_GRPC_API =
       NETWORK_ALIAS_CAMUNDA + ":" + ContainerRuntimePorts.CAMUNDA_GATEWAY_API;
@@ -54,7 +54,7 @@ public class CamundaContainerRuntime implements AutoCloseable {
 
   private final Network network;
   private final CamundaContainer camundaContainer;
-  private final ElasticsearchContainer elasticsearchContainer;
+  //private final ElasticsearchContainer elasticsearchContainer;
   private final ConnectorsContainer connectorsContainer;
 
   private final boolean connectorsEnabled;
@@ -65,12 +65,12 @@ public class CamundaContainerRuntime implements AutoCloseable {
     connectorsEnabled = builder.isConnectorsEnabled();
     network = Network.newNetwork();
 
-    elasticsearchContainer = createElasticsearchContainer(network, builder);
+    //elasticsearchContainer = createElasticsearchContainer(network, builder);
     camundaContainer = createCamundaContainer(network, builder);
     connectorsContainer = createConnectorsContainer(network, builder);
   }
 
-  private ElasticsearchContainer createElasticsearchContainer(
+  /** private ElasticsearchContainer createElasticsearchContainer(
       final Network network, final CamundaContainerRuntimeBuilder builder) {
     final ElasticsearchContainer container =
         containerFactory
@@ -86,7 +86,7 @@ public class CamundaContainerRuntime implements AutoCloseable {
     builder.getElasticsearchExposedPorts().forEach(container::addExposedPort);
 
     return container;
-  }
+  } **/
 
   private CamundaContainer createCamundaContainer(
       final Network network, final CamundaContainerRuntimeBuilder builder) {
@@ -155,7 +155,7 @@ public class CamundaContainerRuntime implements AutoCloseable {
   }
 
   public ElasticsearchContainer getElasticsearchContainer() {
-    return elasticsearchContainer;
+    return null;
   }
 
   public ConnectorsContainer getConnectorsContainer() {

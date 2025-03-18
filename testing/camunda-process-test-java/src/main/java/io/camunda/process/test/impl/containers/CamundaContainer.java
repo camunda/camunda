@@ -19,6 +19,7 @@ import io.camunda.process.test.impl.runtime.ContainerRuntimeEnvs;
 import io.camunda.process.test.impl.runtime.ContainerRuntimePorts;
 import java.net.URI;
 import java.time.Duration;
+import java.util.UUID;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.Network;
 import org.testcontainers.containers.wait.strategy.HttpWaitStrategy;
@@ -32,7 +33,7 @@ public class CamundaContainer extends GenericContainer<CamundaContainer> {
   private static final String READY_ENDPOINT = "/actuator/health";
 
   private static final String ACTIVE_SPRING_PROFILES =
-      "rdbmsH2"; // "operate,tasklist,broker,consolidated-auth";
+      "broker"; // "operate,tasklist,broker,consolidated-auth";
   private static final String LOG_APPENDER_STACKDRIVER = "Stackdriver";
 
   private static final String GRPC_API = "localhost:" + ContainerRuntimePorts.CAMUNDA_GATEWAY_API;
@@ -59,13 +60,32 @@ public class CamundaContainer extends GenericContainer<CamundaContainer> {
         //        .withEnv(ContainerRuntimeEnvs.CAMUNDA_ENV_TASKLIST_CSRF_PREVENTION_ENABLED,
         // "false")
         .withEnv(ContainerRuntimeEnvs.CAMUNDA_ENV_ZEEBE_LOG_APPENDER, LOG_APPENDER_STACKDRIVER)
-        .withEnv("camunda.database.type", "rdbms")
+        .withEnv("ZEEBE_BROKER_GATEWAY_ENABLE", "true")
+        .withEnv("ZEEBE_BROKER_GATEWAY_SECURITY_ENABLED", "false")
+        .withRdbms()
         .addExposedPorts(
             ContainerRuntimePorts.CAMUNDA_GATEWAY_API,
             ContainerRuntimePorts.CAMUNDA_COMMAND_API,
             ContainerRuntimePorts.CAMUNDA_INTERNAL_API,
             ContainerRuntimePorts.CAMUNDA_MONITORING_API,
             ContainerRuntimePorts.CAMUNDA_REST_API);
+  }
+
+  public CamundaContainer withRdbms() {
+      withEnv("CAMUNDA_DATABASE_TYPE", "rdbms")
+        .withEnv("SPRING_DATASOURCE_URL", "jdbc:h2:mem:testdb+" + UUID.randomUUID() + ";DB_CLOSE_DELAY=-1;MODE=PostgreSQL")
+        .withEnv("SPRING_DATASOURCE_DRIVER_CLASS_NAME", "org.h2.Driver")
+        .withEnv("SPRING_DATASOURCE_USERNAME", "sa")
+        .withEnv("SPRING_DATASOURCE_PASSWORD", "")
+        .withEnv("ZEEBE_BROKER_EXPORTERS_RDBMS_CLASSNAME", "io.camunda.exporter.rdbms.RdbmsExporter")
+        .withEnv("ZEEBE_BROKER_EXPORTERS_RDBMS_ARGS_FLUSH_INTERVAL", "PT0S")
+        .withEnv("ZEEBE_BROKER_EXPORTERS_RDBMS_ARGS_DEFAULT_HISTORY_TTL", "PT2S")
+        .withEnv("ZEEBE_BROKER_EXPORTERS_RDBMS_ARGS_MIN_HISTORY_CLEANUP_INTERVAL", "PT2S")
+        .withEnv("ZEEBE_BROKER_EXPORTERS_RDBMS_ARGS_MAX_HISTORY_CLEANUP_INTERVAL", "PT5S")
+        .withEnv("LOGGING_LEVEL_IO_CAMUNDA_DB_RDBMS", "DEBUG")
+        .withEnv("LOGGING_LEVEL_ORG_MYBATIS", "DEBUG");
+
+    return this;
   }
 
   public CamundaContainer withElasticsearchUrl(final String url) {
