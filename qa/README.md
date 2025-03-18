@@ -38,12 +38,12 @@ This ensures we consistently write such tests and cover all necessary supported 
 
 > [!Important]
 >
-> :dragon: Be aware of the consequences when derail from the standard
+> :dragon: Be aware of the consequences when derailing from the standard
 >
-> 1. You need to make sure that you cover all supported secondary storages for that feature
-> 2. The test infrastructure will likely be more complex, and might be even duplicated
-> 3. The test execution might be impacted and slower, as other tests, because you need to take care of starting dependencies on your own
-> 4. The test will not be consistent with other tests, causing additional cognitive load for an engineer to understand the test
+> 1. You need to cover all supported secondary storages for that feature yourself.
+> 2. The test infrastructure will likely be more complex and may be duplicated.
+> 3. You need to take care of starting dependencies on your own. Thus, the test execution might be impacted and slower than other tests.
+> 4. The test will not be consistent with other tests, causing additional cognitive load for other engineers to understand it.
 
 ### Examples:
 
