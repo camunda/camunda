@@ -129,8 +129,7 @@ public final class BoundedScheduledCommandCache implements StageableScheduledCom
       for (final var entry : stagedKeys.entrySet()) {
         final var cache = caches.get(entry.getKey());
         if (cache != null) {
-          // TODO: use a batch remove operation to avoid multiple locks
-          entry.getValue().forEachLong(cache::remove);
+          cache.removeAll(entry.getValue());
         }
       }
     }
