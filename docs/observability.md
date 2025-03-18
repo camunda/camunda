@@ -119,6 +119,11 @@ aggregate logs. The file output is then mostly for bare metal systems, where log
 found on the server itself, and are periodically logged over, allowing the user to specify a
 retention window.
 
+> [!Note]
+> You can disable the file logging via `CAMUNDA_LOG_FILE_APPENDER_ENABLED=false` environment
+> variable. This is done in the configuration file by using so-called
+> [Arbiters](https://logging.apache.org/log4j/2.x/manual/configuration.html#arbiters).
+
 Finally, while we support all Log4j2 output formats (aka layouts), C8 is configured out of the box
 to use a basic logging pattern called `Console`. This targets primarily development and testing
 setups. For production use cases, it's recommended to use the `StackdriverLayout`, a JSON layout
@@ -138,21 +143,29 @@ distribution's [log4j2.xml](../dist/src/main/config/log4j2.xml) for more.
 log statements logically.
 
 Since configuration is applied based on logger name prefix, the common pattern is to use the class
-name as the logger name. This will uniquely identify your logger by using the fully qualified name
-of the class, but also allow you to apply configuration (e.g. log level) to all loggers in a
-package, module, etc.
+name as the logger name. This will uniquely identify your logger by using the [fully qualified name
+of the class](https://docs.oracle.com/javase/specs/jls/se17/html/jls-6.html#jls-6.7).
 
-For example, let's say you wanted to get debug information about the broker module: you could
-configure
+By doing this, you can configure log level, appenders, output format, etc., not only for a specific
+class (e.g. for tracing), but for a complete package, module, namespace, etc., simply by matching
+prefixes. Using the class name thus makes it very intuitive to find the location of the log and
+understand its context.
 
-- `io.camunda.broker.Foo`
-- `io.camunda.broker.Bar`
-- `io.camunda.gateway.`
-- `io.camunda.broker.Foo`
+For example, take the `zeebe-util` module, where all classes live under the `io.camunda.zeebe.util`
+package. By configuring the log level to `DEBUG` for `io.camunda.zeebe.util`, you would see debug
+level logging (and higher) for all classes under the module. Now, say we want to trace allocations
+from the `io.camunda.zeebe.util.allocation` classes, we could also configure a logger with this name
+to `TRACE`. If we only cared to trace
+[DirectBufferAllocator](../zeebe/util/src/main/java/io/camunda/zeebe/util/allocation/DirectBufferAllocator.java),
+then we could simply set `io.camunda.zeebe.util.allocation.DirectBufferAllocator` to trace.
 
-For example, you may want to trace a specific class, but keep the log level higher for the rest of
-the application. Or trace a package, setting the log level to `TRACE`, but keep the level of other
-packages higher to reduce noise.
+> [!Note]
+> Doing so would also trace inner classes, as their fully qualified class names are prefixed by the
+> enclosing class' FQCN. However, in many such cases, this is still what you want to do.
+
+> [!Note]
+> Remember, you can change the log level dynamically at runtime, making the above feature very
+> powerful to diagnose problems on a live system.
 
 ##### Logs: Levels
 
