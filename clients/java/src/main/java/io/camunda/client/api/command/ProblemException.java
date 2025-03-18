@@ -15,7 +15,7 @@
  */
 package io.camunda.client.api.command;
 
-import io.camunda.client.protocol.rest.ProblemDetail;
+import io.camunda.client.wrappers.ProblemDetail;
 
 public class ProblemException extends ClientHttpException {
   private final ProblemDetail details;
