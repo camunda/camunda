@@ -103,7 +103,7 @@
     "react-test-renderer": "18.3.1",
     "source-map-explorer": "2.5.3",
     "ts-toolbelt": "9.6.0",
-    "typescript": "5.7.3"
+    "typescript": "5.8.2"
   },
   "lint-staged": {
     "*": [
