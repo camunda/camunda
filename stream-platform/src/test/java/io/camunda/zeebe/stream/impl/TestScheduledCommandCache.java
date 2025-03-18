@@ -48,6 +48,7 @@ public class TestScheduledCommandCache implements ScheduledCommandCache {
     @Override
     public StagedScheduledCommandCache stage() {
       stagedCache.persisted = false;
+      stagedCache.cachedKeys.clear();
       return stagedCache;
     }
 
@@ -69,7 +70,12 @@ public class TestScheduledCommandCache implements ScheduledCommandCache {
       public void persist() {
         persisted = true;
         cachedKeys.forEach((i, keys) -> keys.forEach(key -> TestCommandCache.this.add(i, key)));
-        cachedKeys.clear();
+      }
+
+      @Override
+      public void rollback() {
+        persisted = false;
+        cachedKeys.forEach((i, keys) -> keys.forEach(key -> TestCommandCache.this.remove(i, key)));
       }
 
       public boolean persisted() {
