@@ -17,7 +17,7 @@ import io.camunda.client.CamundaClient;
 import io.camunda.client.api.command.ProblemException;
 import io.camunda.client.api.search.response.UserTask;
 import io.camunda.client.api.search.response.UserTaskState;
-import io.camunda.client.impl.search.filter.builder.StringPropertyImpl;
+import io.camunda.client.protocol.rest.StringFilterProperty;
 import io.camunda.client.protocol.rest.UserTaskVariableFilterRequest;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.zeebe.model.bpmn.Bpmn;
@@ -295,7 +295,7 @@ class UserTaskSearchTest {
     final UserTaskVariableFilterRequest variableValueFilter1 =
         new UserTaskVariableFilterRequest()
             .name("task01")
-            .value(new StringPropertyImpl().like("\"te*\"").build());
+            .value(new StringFilterProperty().$like("\"te*\""));
 
     final var result =
         camundaClient
@@ -311,7 +311,7 @@ class UserTaskSearchTest {
     final UserTaskVariableFilterRequest variableValueFilter1 =
         new UserTaskVariableFilterRequest()
             .name("task01")
-            .value(new StringPropertyImpl().in("\"test\"").build());
+            .value(new StringFilterProperty().add$InItem("\"test\""));
 
     final var result =
         camundaClient

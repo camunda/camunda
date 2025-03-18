@@ -20,6 +20,7 @@ import io.camunda.client.api.search.filter.builder.StringProperty;
 import io.camunda.client.impl.search.filter.builder.StringPropertyImpl;
 import io.camunda.client.impl.search.request.TypedSearchRequestPropertyProvider;
 import io.camunda.client.protocol.rest.VariableUserTaskFilterRequest;
+import io.camunda.client.wrappers.StringFilterProperty;
 import java.util.function.Consumer;
 
 public class UserTaskVariableFilterImpl
@@ -42,7 +43,7 @@ public class UserTaskVariableFilterImpl
   public UserTaskVariableFilter name(final Consumer<StringProperty> fn) {
     final StringProperty property = new StringPropertyImpl();
     fn.accept(property);
-    filter.setName(property.build());
+    filter.setName(StringFilterProperty.toProtocolObject(property.build()));
     return this;
   }
 
