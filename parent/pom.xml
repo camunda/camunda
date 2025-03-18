@@ -76,7 +76,6 @@
     <version.msgpack>0.9.9</version.msgpack>
     <version.netty>4.1.119.Final</version.netty>
     <version.objenesis>3.4</version.objenesis>
-    <version.opencsv>5.10</version.opencsv>
     <version.opensearch>2.14.0</version.opensearch>
     <version.opensearch-java>2.19.0</version.opensearch-java>
     <version.opensearch.testcontainers>2.1.3</version.opensearch.testcontainers>
