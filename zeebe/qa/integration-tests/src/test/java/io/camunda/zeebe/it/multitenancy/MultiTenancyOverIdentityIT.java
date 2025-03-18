@@ -936,7 +936,7 @@ public class MultiTenancyOverIdentityIT {
           .withThrowableThat()
           .withMessageContaining("NOT_FOUND")
           .withMessageContaining(
-              "Command 'UPDATE' rejected with code 'NOT_FOUND': Expected to update job with key '2251799813685327', but no such job was found"
+              "Command 'UPDATE' rejected with code 'NOT_FOUND': Expected to update job with key '%d', but no such job was found"
                   .formatted(activatedJob.getKey()));
     }
   }
@@ -981,7 +981,7 @@ public class MultiTenancyOverIdentityIT {
           .withThrowableThat()
           .withMessageContaining("NOT_FOUND")
           .withMessageContaining(
-              "Command 'COMPLETE' rejected with code 'NOT_FOUND': Expected to complete job with key '2251799813685288', but no such job was found"
+              "Command 'COMPLETE' rejected with code 'NOT_FOUND': Expected to complete job with key '%d', but no such job was found"
                   .formatted(activatedJob.getKey()));
     }
   }
