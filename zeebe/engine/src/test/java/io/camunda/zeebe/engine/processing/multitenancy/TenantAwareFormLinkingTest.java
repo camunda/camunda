@@ -24,7 +24,12 @@ public class TenantAwareFormLinkingTest {
   private static final String FORM_ID = "Form_0w7r08e";
   private static final String TEST_FORM = "/form/test-form-1.form";
   private static final String TENANT = "tenant";
-  @Rule public final EngineRule engine = EngineRule.singlePartition();
+
+  @Rule
+  public final EngineRule engine =
+      EngineRule.singlePartition()
+          .withSecurityConfig(config -> config.getMultiTenancy().setEnabled(true));
+
   @Rule public final BrokerClassRuleHelper helper = new BrokerClassRuleHelper();
 
   @Test

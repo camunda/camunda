@@ -28,7 +28,7 @@ public class TenantAwareModifyProcessInstanceTest {
   @ClassRule
   public static final EngineRule ENGINE =
       EngineRule.singlePartition()
-          .withSecurityConfig(config -> config.getAuthorizations().setEnabled(true));
+          .withSecurityConfig(config -> config.getMultiTenancy().setEnabled(true));
 
   @Rule public final TestWatcher watcher = new RecordingExporterTestWatcher();
 

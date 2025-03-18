@@ -450,8 +450,7 @@ public final class FailJobTest {
             .withKey(jobKey)
             .ofInstance(job.getProcessInstanceKey())
             .withRetries(retries)
-            .withAuthorizedTenantIds(tenantId)
-            .fail();
+            .fail(username);
 
     // then
     Assertions.assertThat(failRecord).hasRecordType(RecordType.EVENT).hasIntent(FAILED);

@@ -26,7 +26,7 @@ public class TenantAwareCancelProcessInstanceTest {
   @ClassRule
   public static final EngineRule ENGINE =
       EngineRule.singlePartition()
-          .withSecurityConfig(config -> config.getAuthorizations().setEnabled(true));
+          .withSecurityConfig(config -> config.getMultiTenancy().setEnabled(true));
 
   @Rule public final TestWatcher watcher = new RecordingExporterTestWatcher();
 
@@ -71,7 +71,7 @@ public class TenantAwareCancelProcessInstanceTest {
     final var tenantId = "another-tenant";
     final var username = "username";
     final var user = ENGINE.user().newUser(username).create().getValue();
-    ENGINE.tenant().newTenant().withTenantId(tenantId).create().getValue().getTenantKey();
+    ENGINE.tenant().newTenant().withTenantId(tenantId).create();
     ENGINE
         .tenant()
         .addEntity(tenantId)

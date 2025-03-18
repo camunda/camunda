@@ -93,7 +93,8 @@ public final class MessagePublishProcessor implements TypedRecordProcessor<Messa
             command,
             AuthorizationResourceType.MESSAGE,
             PermissionType.CREATE,
-            command.getValue().getTenantId());
+            command.getValue().getTenantId(),
+            true);
     final var isAuthorized = authCheckBehavior.isAuthorized(authRequest);
     if (isAuthorized.isLeft()) {
       final var rejection = isAuthorized.getLeft();

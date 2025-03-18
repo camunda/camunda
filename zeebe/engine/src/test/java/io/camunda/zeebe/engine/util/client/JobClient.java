@@ -230,6 +230,18 @@ public final class JobClient {
     return expectation.apply(position);
   }
 
+  public Record<JobRecordValue> updateTimeout(final String username) {
+    final long jobKey = findJobKey();
+    final long position =
+        writer.writeCommand(
+            jobKey,
+            JobIntent.UPDATE_TIMEOUT,
+            username,
+            jobRecord,
+            authorizedTenantIds.toArray(new String[0]));
+    return expectation.apply(position);
+  }
+
   public Record<JobRecordValue> update() {
     final long jobKey = findJobKey();
     final long position =
@@ -244,6 +256,18 @@ public final class JobClient {
         writer.writeCommand(
             jobKey, JobIntent.THROW_ERROR, jobRecord, authorizedTenantIds.toArray(new String[0]));
 
+    return expectation.apply(position);
+  }
+
+  public Record<JobRecordValue> throwError(final String username) {
+    final long jobKey = findJobKey();
+    final long position =
+        writer.writeCommand(
+            jobKey,
+            JobIntent.THROW_ERROR,
+            username,
+            jobRecord,
+            authorizedTenantIds.toArray(new String[0]));
     return expectation.apply(position);
   }
 }
