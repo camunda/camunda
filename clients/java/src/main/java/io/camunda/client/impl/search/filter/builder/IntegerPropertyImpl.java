@@ -17,11 +17,12 @@ package io.camunda.client.impl.search.filter.builder;
 
 import io.camunda.client.api.search.filter.builder.IntegerProperty;
 import io.camunda.client.impl.util.CollectionUtil;
-import io.camunda.client.protocol.rest.IntegerFilterProperty;
+import io.camunda.client.wrappers.IntegerFilterProperty;
 import java.util.List;
 
 public class IntegerPropertyImpl implements IntegerProperty {
-  private final IntegerFilterProperty filterProperty = new IntegerFilterProperty();
+  private final io.camunda.client.protocol.rest.IntegerFilterProperty filterProperty =
+      new io.camunda.client.protocol.rest.IntegerFilterProperty();
 
   @Override
   public IntegerProperty eq(final Integer value) {
@@ -54,7 +55,7 @@ public class IntegerPropertyImpl implements IntegerProperty {
 
   @Override
   public IntegerFilterProperty build() {
-    return filterProperty;
+    return IntegerFilterProperty.fromProtocolObject(filterProperty);
   }
 
   @Override

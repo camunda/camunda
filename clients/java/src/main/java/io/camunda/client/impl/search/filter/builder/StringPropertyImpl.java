@@ -17,11 +17,12 @@ package io.camunda.client.impl.search.filter.builder;
 
 import io.camunda.client.api.search.filter.builder.StringProperty;
 import io.camunda.client.impl.util.CollectionUtil;
-import io.camunda.client.protocol.rest.StringFilterProperty;
+import io.camunda.client.wrappers.StringFilterProperty;
 import java.util.List;
 
 public class StringPropertyImpl implements StringProperty {
-  private final StringFilterProperty filterProperty = new StringFilterProperty();
+  private final io.camunda.client.protocol.rest.StringFilterProperty filterProperty =
+      new io.camunda.client.protocol.rest.StringFilterProperty();
 
   @Override
   public StringProperty eq(final String value) {
@@ -54,7 +55,7 @@ public class StringPropertyImpl implements StringProperty {
 
   @Override
   public StringFilterProperty build() {
-    return filterProperty;
+    return StringFilterProperty.fromProtocolObject(filterProperty);
   }
 
   @Override
