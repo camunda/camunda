@@ -24,6 +24,7 @@ import {TreeNode} from './styled';
 import {FlowNodeIcon} from 'modules/components/FlowNodeIcon';
 import {isSubProcess} from 'modules/bpmn-js/utils/isSubProcess';
 import {Bar} from './Bar';
+import {isAdHocSubProcess} from 'modules/bpmn-js/utils/isAdHocSubProcess';
 
 const TREE_NODE_HEIGHT = 32;
 
@@ -121,7 +122,10 @@ const FlowNodeInstancesTree: React.FC<Props> = observer(
     const isMultiInstanceBody = flowNodeInstance.type === 'MULTI_INSTANCE_BODY';
 
     const isFoldable =
-      isMultiInstanceBody || isSubProcess(businessObject) || isRoot;
+      isMultiInstanceBody ||
+      isSubProcess(businessObject) ||
+      isAdHocSubProcess(businessObject) ||
+      isRoot;
 
     const hasChildren = flowNodeInstance.isPlaceholder
       ? isFoldable &&
