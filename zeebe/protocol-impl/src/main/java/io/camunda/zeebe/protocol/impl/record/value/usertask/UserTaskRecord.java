@@ -76,7 +76,8 @@ public final class UserTaskRecord extends UnifiedRecordValue implements UserTask
           CANDIDATE_USERS, UserTaskRecord::getCandidateUsersList,
           DUE_DATE, UserTaskRecord::getDueDateBuffer,
           FOLLOW_UP_DATE, UserTaskRecord::getFollowUpDateBuffer,
-          PRIORITY, UserTaskRecord::getPriority);
+          PRIORITY, UserTaskRecord::getPriority,
+          VARIABLES, UserTaskRecord::getVariablesBuffer);
 
   private final LongProperty userTaskKeyProp = new LongProperty("userTaskKey", -1);
   private final StringProperty assigneeProp = new StringProperty(ASSIGNEE, EMPTY_STRING);

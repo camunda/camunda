@@ -14,9 +14,13 @@ import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.engine.util.client.UserTaskClient;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskListenerEventType;
+import io.camunda.zeebe.protocol.Protocol;
+import io.camunda.zeebe.protocol.record.value.JobRecordValue;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
+import java.util.Map;
 import java.util.UUID;
 import java.util.function.Consumer;
+import java.util.stream.Stream;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Rule;
@@ -76,5 +80,41 @@ public class TaskListenerTaskHeadersTest {
 
     assertThat(activatedListenerJob.getCustomHeaders()).contains(entry("key", "value"));
     helper.completeJobs(processInstanceKey, listenerType);
+  }
+
+  @Test
+  public void shouldTrackVariablesAsChangedAttributeWhenTaskUpdateIsTriggeredByVariableUpdate() {
+    // given: a process instance with a user task that has multiple `updating` listeners
+    final var listenerTypes = new String[] {listenerType, listenerType + "_2", listenerType + "_3"};
+    final long processInstanceKey =
+        helper.createProcessInstance(
+            helper.createUserTaskWithTaskListeners(
+                ZeebeTaskListenerEventType.updating, listenerTypes));
+
+    final var userTaskInstanceKey = helper.getUserTaskElementInstanceKey(processInstanceKey);
+
+    // when: updating task-scoped variables
+    ENGINE
+        .variables()
+        .ofScope(userTaskInstanceKey)
+        .withDocument(Map.of("var_name", "var_value"))
+        .withLocalSemantic()
+        .expectPartialUpdate()
+        .update();
+
+    // then: verify all updating listener jobs receive "variables" as a changed attribute in headers
+    final Consumer<JobRecordValue> assertChangedAttributesHeader =
+        job ->
+            assertThat(job.getCustomHeaders())
+                .containsEntry(
+                    Protocol.USER_TASK_CHANGED_ATTRIBUTES_HEADER_NAME, "[\"variables\"]");
+
+    Stream.of(listenerTypes)
+        .forEach(
+            listener -> {
+              helper.assertActivatedJob(
+                  processInstanceKey, listener, assertChangedAttributesHeader);
+              helper.completeJobs(processInstanceKey, listener);
+            });
   }
 }

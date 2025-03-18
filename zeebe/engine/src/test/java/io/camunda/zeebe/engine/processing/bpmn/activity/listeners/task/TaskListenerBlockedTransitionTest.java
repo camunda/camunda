@@ -130,7 +130,7 @@ public class TaskListenerBlockedTransitionTest {
             Assertions.assertThat(userTask)
                 .hasAction("my_custom_action")
                 .hasVariables(Map.of("foo_var", "bar"))
-                .hasNoChangedAttributes());
+                .hasOnlyChangedAttributes(UserTaskRecord.VARIABLES));
     helper.assertThatProcessInstanceCompleted(processInstanceKey);
   }
 

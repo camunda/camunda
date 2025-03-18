@@ -82,6 +82,10 @@ public final class VariableClient {
     return withDocument(new UnsafeBuffer(MsgPackConverter.convertToMsgPack(variables)));
   }
 
+  public VariableClient withLocalSemantic() {
+    return withUpdateSemantic(VariableDocumentUpdateSemantic.LOCAL);
+  }
+
   public VariableClient withUpdateSemantic(final VariableDocumentUpdateSemantic semantic) {
     variableDocumentRecord.setUpdateSemantics(semantic);
     return this;
