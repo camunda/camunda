@@ -2559,6 +2559,8 @@
                            pin it to the wrong version, but azure-sdk also, transitively, causes
                            dependency convergence issues -->
                       <exclude>com.microsoft.azure:msal4j</exclude>
+                      <!-- Needed to mitigate INC-2490, to be removed afterwards -->
+                      <exclude>com.opencsv:opencsv</exclude>
                     </excludes>
                   </dependencyConvergence>
                 </rules>
