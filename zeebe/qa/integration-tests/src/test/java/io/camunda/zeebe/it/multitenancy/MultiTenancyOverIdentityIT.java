@@ -626,9 +626,9 @@ public class MultiTenancyOverIdentityIT {
       assertThat(result)
           .failsWithin(Duration.ofSeconds(10))
           .withThrowableThat()
-          .withMessageContaining("NOT_FOUND")
+          .withMessageContaining("FORBIDDEN")
           .withMessageContaining(
-              "Expected to perform operation 'CREATE' on resource 'MESSAGE', but no resource was found for tenant '%s'"
+              "Insufficient permissions to perform operation 'CREATE' on resource 'MESSAGE' for tenant '%s'"
                   .formatted(TENANT_B));
     }
   }
