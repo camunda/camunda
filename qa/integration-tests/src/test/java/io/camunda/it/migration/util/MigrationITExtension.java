@@ -12,6 +12,7 @@ import io.camunda.search.clients.DocumentBasedSearchClient;
 import io.camunda.search.connect.configuration.DatabaseType;
 import io.camunda.webapps.schema.descriptors.IndexDescriptors;
 import io.camunda.zeebe.test.util.testcontainers.TestSearchContainers;
+import io.camunda.zeebe.util.FileUtil;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -21,11 +22,11 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.BiConsumer;
 import java.util.stream.Stream;
 import org.agrona.CloseHelper;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.extension.AfterAllCallback;
-import org.junit.jupiter.api.extension.AfterEachCallback;
 import org.junit.jupiter.api.extension.BeforeAllCallback;
 import org.junit.jupiter.api.extension.Extension;
 import org.junit.jupiter.api.extension.ExtensionContext;
@@ -40,54 +41,47 @@ import org.testcontainers.containers.Network;
 import org.testcontainers.elasticsearch.ElasticsearchContainer;
 
 public class MigrationITExtension
-    implements AfterAllCallback,
-        BeforeAllCallback,
-        AfterEachCallback,
-        TestTemplateInvocationContextProvider {
+    implements AfterAllCallback, BeforeAllCallback, TestTemplateInvocationContextProvider {
 
   private static final String TASKLIST = "tasklist";
   private static final String OPERATE = "operate";
   private static final String STORE_NAMESPACE = "MigrationITExtension";
+  private static final String STORE_NAMESPACE_OS = "MigrationITExtension-OS";
   private static final String INDEX_PREFIX = "INDEX_PREFIX";
   private static final String DATABASE_TYPE = "DATABASE_TYPE";
   private static final String HAS_87_DATA = "HAS_87_DATA";
   private static final String MIGRATOR = "MIGRATOR";
   private static final String DATABASE_TESTER = "DATABASE_CHECKS";
-  private final List<AutoCloseable> dbClosables = new ArrayList<>();
+
+  private final List<AutoCloseable> closables = new ArrayList<>();
   private final Map<DatabaseType, Network> networks = new HashMap<>();
   private final Set<DatabaseType> databaseTypes =
       Set.of(DatabaseType.ELASTICSEARCH, DatabaseType.OPENSEARCH);
   private final Map<DatabaseType, String> databaseExternalUrls = new HashMap<>();
-  private Map<String, String> initialEnvOverrides = new HashMap<>();
+
+  private Map<DatabaseType, Map<String, String>> initialEnvOverrides =
+      new HashMap<>() {
+        {
+          put(DatabaseType.ELASTICSEARCH, new HashMap<>());
+          put(DatabaseType.OPENSEARCH, new HashMap<>());
+        }
+      };
+  private Map<DatabaseType, Map<String, String>> upgradeEnvOverrides =
+      new HashMap<>() {
+        {
+          put(DatabaseType.ELASTICSEARCH, new HashMap<>());
+          put(DatabaseType.OPENSEARCH, new HashMap<>());
+        }
+      };
   private Path tempDir;
+  private BiConsumer<DatabaseType, CamundaMigrator> beforeUpgradeConsumer = (db, migrator) -> {};
 
   @Override
   public void afterAll(final ExtensionContext context) throws IOException {
     final var clazz = context.getTestClass().get();
     if (!isNestedClass(clazz)) {
-      CloseHelper.quietCloseAll(dbClosables);
-      Files.deleteIfExists(tempDir);
-    }
-  }
-
-  @Override
-  public void afterEach(final ExtensionContext context) {
-    final String indexPrefix = getStore(context).get(INDEX_PREFIX, String.class);
-    final DatabaseType db = getStore(context).get(DATABASE_TYPE, DatabaseType.class);
-    try {
-      final CamundaMigrator migrator = getStore(context).get(MIGRATOR, CamundaMigrator.class);
-      if (migrator != null) {
-        migrator.close();
-        migrator.cleanup();
-      }
-      final MigrationDatabaseChecks checks =
-          getStore(context).get(DATABASE_TESTER, MigrationDatabaseChecks.class);
-      if (checks != null) {
-        checks.cleanup(indexPrefix);
-        checks.close();
-      }
-    } catch (final Exception e) {
-      throw new RuntimeException("Error during cleanup for database: " + db, e);
+      CloseHelper.quietCloseAll(closables);
+      FileUtil.deleteFolderIfExists(tempDir);
     }
   }
 
@@ -102,8 +96,25 @@ public class MigrationITExtension
                 final Network network = Network.newNetwork();
                 startDatabaseContainer(db, network);
                 networks.put(db, network);
+                startUpMigrator(db, context);
+                beforeUpgradeConsumer.accept(
+                    db, getStore(db, context).get(MIGRATOR, CamundaMigrator.class));
+                upgrade(db, context, upgradeEnvOverrides.get(db));
               });
     }
+  }
+
+  /**
+   * Allows to provide a consumer that will be called before the upgrade process starts. This can be
+   * used to setup the database with data that is required for the upgrade process.
+   *
+   * @param upgradeConsumer
+   * @return self for chaining
+   */
+  public MigrationITExtension withBeforeUpgradeConsumer(
+      final BiConsumer<DatabaseType, CamundaMigrator> upgradeConsumer) {
+    beforeUpgradeConsumer = upgradeConsumer;
+    return this;
   }
 
   @Override
@@ -114,83 +125,74 @@ public class MigrationITExtension
   @Override
   public Stream<TestTemplateInvocationContext> provideTestTemplateInvocationContexts(
       final ExtensionContext context) {
-    return databaseTypes.stream()
-        .flatMap(
-            db -> {
-              final String indexPrefix = context.getTestMethod().get().getName().toLowerCase();
-              getStore(context).put(INDEX_PREFIX, indexPrefix);
-              getStore(context).put(DATABASE_TYPE, db);
-              final CamundaMigrator migrator =
-                  new CamundaMigrator(networks.get(db), indexPrefix, tempDir);
-              migrator.initialize(db, databaseExternalUrls.get(db), initialEnvOverrides);
-              final var expectedDescriptors =
-                  new IndexDescriptors(indexPrefix, db.equals(DatabaseType.ELASTICSEARCH)).all();
-              final MigrationDatabaseChecks checks =
-                  new MigrationDatabaseChecks(databaseExternalUrls.get(db), expectedDescriptors);
-              getStore(context).put(MIGRATOR, migrator);
-              getStore(context).put(DATABASE_TESTER, checks);
-              return Stream.of(invocationContext(db));
-            });
+    return databaseTypes.stream().flatMap(db -> Stream.of(invocationContext(db)));
   }
 
-  public MigrationITExtension withInitialEnvOverrides(final Map<String, String> envOverrides) {
+  public MigrationITExtension withInitialEnvOverrides(
+      final Map<DatabaseType, Map<String, String>> envOverrides) {
     initialEnvOverrides = envOverrides;
     return this;
   }
 
-  public void upgrade(final ExtensionContext context, final Map<String, String> envOverrides) {
-    final DatabaseType databaseType = getStore(context).get(DATABASE_TYPE, DatabaseType.class);
-    final String indexPrefix = getStore(context).get(INDEX_PREFIX, String.class);
+  public MigrationITExtension withUpgradeEnvOverrides(
+      final Map<DatabaseType, Map<String, String>> envOverrides) {
+    upgradeEnvOverrides = envOverrides;
+    return this;
+  }
+
+  private void startUpMigrator(final DatabaseType db, final ExtensionContext context) {
+    final String indexPrefix = context.getTestClass().get().getSimpleName().toLowerCase();
+    getStore(db, context).put(INDEX_PREFIX, indexPrefix);
+    getStore(db, context).put(DATABASE_TYPE, db);
+    final CamundaMigrator migrator =
+        new CamundaMigrator(networks.get(db), indexPrefix, tempDir.resolve(db.name()));
+    migrator.initialize(db, databaseExternalUrls.get(db), initialEnvOverrides.get(db));
+    final var expectedDescriptors =
+        new IndexDescriptors(indexPrefix, db.equals(DatabaseType.ELASTICSEARCH)).all();
+    final MigrationDatabaseChecks checks =
+        new MigrationDatabaseChecks(databaseExternalUrls.get(db), expectedDescriptors, indexPrefix);
+    closables.add(migrator);
+    closables.add(checks);
+    getStore(db, context).put(MIGRATOR, migrator);
+    getStore(db, context).put(DATABASE_TESTER, checks);
+  }
+
+  private void upgrade(
+      final DatabaseType db,
+      final ExtensionContext context,
+      final Map<String, String> envOverrides) {
+    final DatabaseType databaseType = getStore(db, context).get(DATABASE_TYPE, DatabaseType.class);
     final MigrationDatabaseChecks tester =
-        getStore(context).get(DATABASE_TESTER, MigrationDatabaseChecks.class);
+        getStore(db, context).get(DATABASE_TESTER, MigrationDatabaseChecks.class);
+    awaitImportersFlushed(tester);
 
-    if (getStore(context).getOrDefault(HAS_87_DATA, Boolean.class, false)) {
-      awaitImportersFlushed(tester, indexPrefix);
-    }
-
-    final CamundaMigrator migrator = getStore(context).get(MIGRATOR, CamundaMigrator.class);
+    final CamundaMigrator migrator = getStore(db, context).get(MIGRATOR, CamundaMigrator.class);
     migrator.update(databaseType, envOverrides);
-
-    awaitExporterReadiness(tester, indexPrefix);
+    awaitExporterReadiness(tester);
 
     /* Ingest an 8.8 Record in order to trigger importers empty batch counting */
     ingestRecordToTriggerImporters(migrator.getCamundaClient());
 
-    awaitImportersFinished(tester, indexPrefix);
+    awaitImportersFinished(tester);
   }
 
   private boolean isNestedClass(final Class<?> currentClass) {
     return !ModifierSupport.isStatic(currentClass) && currentClass.isMemberClass();
   }
 
-  public CamundaClient getCamundaClient(final ExtensionContext context) {
-    return getStore(context).get(MIGRATOR, CamundaMigrator.class).getCamundaClient();
-  }
-
-  /**
-   * If the test case creates data on 8.7 version, it should be marked as such in order to wait for
-   * the Tasklist & Operate import-position indices to be flushed
-   */
-  public void has87Data(final ExtensionContext context) {
-    getStore(context).put(HAS_87_DATA, true);
-  }
-
-  public CamundaMigrator getMigrator(final ExtensionContext context) {
-    return getStore(context).get(MIGRATOR, CamundaMigrator.class);
-  }
-
   private TestTemplateInvocationContext invocationContext(final DatabaseType databaseType) {
     return new TestTemplateInvocationContext() {
 
       private Object resolveParam(final Class<?> param, final ExtensionContext context) {
+        final ExtensionContext.Store store = getStore(databaseType, context);
         if (param.equals(DatabaseType.class)) {
-          return getStore(context).get(DATABASE_TYPE, DatabaseType.class);
+          return store.get(DATABASE_TYPE, DatabaseType.class);
         } else if (param.equals(CamundaMigrator.class)) {
-          return getStore(context).get(MIGRATOR, CamundaMigrator.class);
+          return store.get(MIGRATOR, CamundaMigrator.class);
         } else if (param.equals(CamundaClient.class)) {
-          return getStore(context).get(MIGRATOR, CamundaMigrator.class).getCamundaClient();
+          return store.get(MIGRATOR, CamundaMigrator.class).getCamundaClient();
         } else if (param.equals(DocumentBasedSearchClient.class)) {
-          return getStore(context).get(MIGRATOR, CamundaMigrator.class).getSearchClient();
+          return store.get(MIGRATOR, CamundaMigrator.class).getSearchClient();
         } else if (param.equals(ExtensionContext.class)) {
           return context;
         }
@@ -243,7 +245,7 @@ public class MigrationITExtension
                 .withNetwork(network)
                 .withNetworkAliases("elasticsearch");
         elasticsearchContainer.start();
-        dbClosables.add(elasticsearchContainer);
+        closables.add(elasticsearchContainer);
         databaseExternalUrls.put(db, "http://" + elasticsearchContainer.getHttpHostAddress());
         break;
       case OPENSEARCH:
@@ -253,41 +255,37 @@ public class MigrationITExtension
                 .withNetworkAliases("opensearch");
         opensearchContainer.start();
         databaseExternalUrls.put(db, opensearchContainer.getHttpHostAddress());
-        dbClosables.add(opensearchContainer);
+        closables.add(opensearchContainer);
         break;
       default:
         throw new IllegalArgumentException("Unsupported database type: " + db);
     }
   }
 
-  private void awaitExporterReadiness(
-      final MigrationDatabaseChecks tester, final String indexPrefix) {
+  private void awaitExporterReadiness(final MigrationDatabaseChecks tester) {
     Awaitility.await("Await database and exporter readiness")
         .timeout(Duration.ofMinutes(1))
         .pollInterval(Duration.ofMillis(500))
-        .untilAsserted(() -> tester.validateSchemaCreation(indexPrefix));
+        .untilAsserted(tester::validateSchema);
   }
 
-  private void awaitImportersFinished(
-      final MigrationDatabaseChecks tester, final String indexPrefix) {
+  private void awaitImportersFinished(final MigrationDatabaseChecks tester) {
     Awaitility.await("Await Importers finished")
         .timeout(Duration.ofMinutes(1))
         .pollInterval(Duration.ofSeconds(1))
         .until(
             () ->
-                tester.checkImportersFinished(indexPrefix, OPERATE)
-                    && tester.checkImportersFinished(indexPrefix, TASKLIST));
+                tester.checkImportersFinished(OPERATE) && tester.checkImportersFinished(TASKLIST));
   }
 
-  private void awaitImportersFlushed(
-      final MigrationDatabaseChecks tester, final String indexPrefix) {
+  private void awaitImportersFlushed(final MigrationDatabaseChecks tester) {
     Awaitility.await("Await Import Positions have been flushed")
         .timeout(Duration.ofMinutes(1))
         .pollInterval(Duration.ofMillis(500))
         .until(
             () ->
-                tester.checkImportPositionsFlushed(indexPrefix, OPERATE)
-                    && tester.checkImportPositionsFlushed(indexPrefix, TASKLIST));
+                tester.checkImportPositionsFlushed(OPERATE)
+                    && tester.checkImportPositionsFlushed(TASKLIST));
   }
 
   private void ingestRecordToTriggerImporters(final CamundaClient client) {
@@ -298,7 +296,12 @@ public class MigrationITExtension
         .join();
   }
 
-  private static ExtensionContext.Store getStore(final ExtensionContext context) {
-    return context.getStore(ExtensionContext.Namespace.create(STORE_NAMESPACE));
+  private static ExtensionContext.Store getStore(
+      final DatabaseType db, final ExtensionContext context) {
+    if (db == DatabaseType.ELASTICSEARCH) {
+      return context.getStore(ExtensionContext.Namespace.create(STORE_NAMESPACE));
+    } else {
+      return context.getStore(ExtensionContext.Namespace.create(STORE_NAMESPACE_OS));
+    }
   }
 }

@@ -37,7 +37,7 @@ import org.agrona.CloseHelper;
 import org.testcontainers.containers.Network;
 import org.testcontainers.utility.DockerImageName;
 
-public class CamundaMigrator extends ApiCallable {
+public class CamundaMigrator extends ApiCallable implements AutoCloseable {
   private static final String OS_USER = "admin";
   private static final String OS_PASSWORD = "yourStrongPassword123!";
   private static final String URL = "http://%s:%d";
@@ -59,6 +59,11 @@ public class CamundaMigrator extends ApiCallable {
     this.network = network;
     this.indexPrefix = indexPrefix;
     volume = CamundaVolume.newCamundaVolume();
+    try {
+      Files.createDirectory(tempDir);
+    } catch (final IOException e) {
+      throw new UncheckedIOException(e);
+    }
     zeebeDataPath = tempDir.resolve(volume.getName());
   }
 
@@ -169,11 +174,9 @@ public class CamundaMigrator extends ApiCallable {
     return this;
   }
 
-  public void close() {
+  @Override
+  public void close() throws IOException {
     CloseHelper.quietCloseAll(camundaContainer, broker, tasklistClient, operateClient);
-  }
-
-  public void cleanup() throws IOException {
     if (Files.exists(zeebeDataPath)) {
       FileUtil.deleteFolder(zeebeDataPath);
     }
