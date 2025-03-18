@@ -18,7 +18,7 @@ import org.springframework.context.annotation.Configuration;
 public class OpenApiConfig {
 
   @Bean
-  public GroupedOpenApi zeebeApi() {
+  public GroupedOpenApi camundaApi() {
     return GroupedOpenApi.builder()
         .group("Camunda 8 API")
         .addOpenApiCustomizer(
@@ -38,11 +38,13 @@ public class OpenApiConfig {
                     .externalDocs(
                         new ExternalDocumentation()
                             .description("Camunda 8 API Documentation")
-                            .url("classpath:proto/rest-api.yaml"));
+                            .url("https://docs.camunda.io/"));
+
               } catch (final Exception e) {
                 throw new RuntimeException("Error to load Camunda OpenAPI YAML", e);
               }
             })
+        .pathsToMatch("/v2/**")
         .build();
   }
 }
