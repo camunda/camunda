@@ -22,7 +22,7 @@
     "history": "5.3.0",
     "lodash": "4.17.21",
     "mixpanel-browser": "2.55.1",
-    "mobx": "6.13.6",
+    "mobx": "6.13.7",
     "mobx-react": "9.1.1",
     "react": "18.3.1",
     "react-dom": "18.3.1",
@@ -32,7 +32,7 @@
     "react-transition-group": "4.4.5",
     "sass": "1.79.6",
     "serve": "14.2.4",
-    "styled-components": "6.1.15",
+    "styled-components": "6.1.16",
     "stylis": "4.3.6"
   },
   "scripts": {

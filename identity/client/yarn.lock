@@ -2939,7 +2939,7 @@ __metadata:
     react-transition-group: "npm:4.4.5"
     rollup-plugin-license: "npm:3.5.3"
     sass: "npm:1.79.6"
-    styled-components: "npm:6.1.15"
+    styled-components: "npm:6.1.16"
     typescript: "npm:5.6.3"
     vite: "npm:6.0.11"
   languageName: unknown
@@ -5164,9 +5164,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"styled-components@npm:6.1.15":
-  version: 6.1.15
-  resolution: "styled-components@npm:6.1.15"
+"styled-components@npm:6.1.16":
+  version: 6.1.16
+  resolution: "styled-components@npm:6.1.16"
   dependencies:
     "@emotion/is-prop-valid": "npm:1.2.2"
     "@emotion/unitless": "npm:0.8.1"
@@ -5180,7 +5180,7 @@ __metadata:
   peerDependencies:
     react: ">= 16.8.0"
     react-dom: ">= 16.8.0"
-  checksum: 10c0/7c29db75af722599e10962ef74edd86423275385a3bf6baeb76783dfacc3de7608d1cc07b0d5866986e5263d60f0801b0d1f5b3b63be1af23bed68fdca8eaab6
+  checksum: 10c0/190d6d5dc9099489fac37e23be5bda7fef399ca9f9230f1de81100b98ec1c75070ef5990241c007126d97f40069d3c864f4239e185161a70ff111dd3e3bf5370
   languageName: node
   linkType: hard
 
