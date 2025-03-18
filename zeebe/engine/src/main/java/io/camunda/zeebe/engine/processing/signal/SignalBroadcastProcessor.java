@@ -15,7 +15,6 @@ import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavi
 import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior.AuthorizationRequest;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior.ForbiddenException;
-import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior.NotFoundException;
 import io.camunda.zeebe.engine.processing.streamprocessor.DistributedTypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
@@ -80,6 +79,16 @@ public class SignalBroadcastProcessor implements DistributedTypedRecordProcessor
     final long eventKey = keyGenerator.nextKey();
     final var signalRecord = command.getValue();
 
+    final var authorizedTenantIds = authCheckBehavior.getAuthorizedTenantIds(command);
+    if (!authorizedTenantIds.isAuthorizedForTenantId(signalRecord.getTenantId())) {
+      final var message =
+          "Expected to broadcast signal for tenant '%s', but user is not assigned to this tenant."
+              .formatted(signalRecord.getTenantId());
+      rejectionWriter.appendRejection(command, RejectionType.FORBIDDEN, message);
+      responseWriter.writeRejectionOnCommand(command, RejectionType.FORBIDDEN, message);
+      return;
+    }
+
     stateWriter.appendFollowUpEvent(eventKey, SignalIntent.BROADCASTED, signalRecord);
 
     signalSubscriptionState.visitBySignalName(
@@ -139,12 +148,6 @@ public class SignalBroadcastProcessor implements DistributedTypedRecordProcessor
 
     final var isAuthorized = authCheckBehavior.isAuthorized(authRequest);
     if (isAuthorized.isLeft()) {
-      final var rejection = isAuthorized.getLeft();
-      if (RejectionType.NOT_FOUND.equals(rejection.type())) {
-        throw new NotFoundException(
-            "Expected to broadcast signal with name '%s', but no such signal was found"
-                .formatted(command.getValue().getSignalName()));
-      }
       throw new ForbiddenException(authRequest);
     }
   }
@@ -173,21 +176,13 @@ public class SignalBroadcastProcessor implements DistributedTypedRecordProcessor
   @Override
   public ProcessingError tryHandleError(
       final TypedRecord<SignalRecord> command, final Throwable error) {
-
-    switch (error) {
-      case final NotFoundException exception:
-        rejectionWriter.appendRejection(command, RejectionType.NOT_FOUND, exception.getMessage());
-        responseWriter.writeRejectionOnCommand(
-            command, RejectionType.NOT_FOUND, exception.getMessage());
-        return ProcessingError.EXPECTED_ERROR;
-      case final ForbiddenException exception:
-        rejectionWriter.appendRejection(
-            command, exception.getRejectionType(), exception.getMessage());
-        responseWriter.writeRejectionOnCommand(
-            command, exception.getRejectionType(), exception.getMessage());
-        return ProcessingError.EXPECTED_ERROR;
-      default:
-        return ProcessingError.UNEXPECTED_ERROR;
+    if (error instanceof final ForbiddenException exception) {
+      rejectionWriter.appendRejection(
+          command, exception.getRejectionType(), exception.getMessage());
+      responseWriter.writeRejectionOnCommand(
+          command, exception.getRejectionType(), exception.getMessage());
+      return ProcessingError.EXPECTED_ERROR;
     }
+    return ProcessingError.UNEXPECTED_ERROR;
   }
 }

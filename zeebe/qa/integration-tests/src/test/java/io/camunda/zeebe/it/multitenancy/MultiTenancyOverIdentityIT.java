@@ -1355,10 +1355,10 @@ public class MultiTenancyOverIdentityIT {
       assertThat(result)
           .failsWithin(Duration.ofSeconds(10))
           .withThrowableThat()
-          .withMessageContaining("NOT_FOUND")
+          .withMessageContaining("FORBIDDEN")
           .withMessageContaining(
-              "Expected to broadcast signal with name '%s', but no such signal was found"
-                  .formatted(signalName));
+              "Expected to broadcast signal for tenant '%s', but user is not assigned to this tenant."
+                  .formatted(TENANT_A));
     }
   }
 
