@@ -22,7 +22,7 @@
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>camunda-search-client-plugin</artifactId>
-      <version>8.6.11</version>
+      <version>8.6.12</version>
       <scope>test</scope>
     </dependency>
 
