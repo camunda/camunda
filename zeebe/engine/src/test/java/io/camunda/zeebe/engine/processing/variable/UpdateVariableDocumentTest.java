@@ -15,6 +15,7 @@ import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.protocol.record.Record;
+import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.VariableDocumentIntent;
 import io.camunda.zeebe.protocol.record.intent.VariableIntent;
@@ -70,10 +71,10 @@ public final class UpdateVariableDocumentTest {
         () -> RecordingExporter.records().between(activatedEvent.getPosition(), completedPosition);
 
     assertVariableRecordsProduced(processInstanceKey, recordsSupplier);
-    assertVariableDocumentEventProduced(document, activatedEvent, recordsSupplier);
+    assertVariableDocumentEventsProduced(document, activatedEvent, recordsSupplier);
   }
 
-  private void assertVariableDocumentEventProduced(
+  private void assertVariableDocumentEventsProduced(
       final Map<String, Object> document,
       final Record<ProcessInstanceRecordValue> activatedEvent,
       final Supplier<RecordStream> records) {
@@ -81,12 +82,14 @@ public final class UpdateVariableDocumentTest {
             records
                 .get()
                 .variableDocumentRecords()
-                .withIntent(VariableDocumentIntent.UPDATED)
+                .onlyEvents()
+                .withValueType(ValueType.VARIABLE_DOCUMENT)
                 .withScopeKey(activatedEvent.getKey())
                 .withUpdateSemantics(VariableDocumentUpdateSemantic.PROPAGATE)
                 .withVariables(document)
-                .getFirst())
-        .isNotNull();
+                .limit(r -> r.getIntent() == VariableDocumentIntent.UPDATED))
+        .extracting(Record::getIntent)
+        .containsExactly(VariableDocumentIntent.UPDATING, VariableDocumentIntent.UPDATED);
 
     final Record<VariableDocumentRecordValue> updatedRecord =
         records
