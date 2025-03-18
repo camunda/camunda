@@ -27,8 +27,6 @@ import io.atomix.raft.cluster.RaftCluster;
 import io.atomix.raft.cluster.RaftMember.Type;
 import io.atomix.raft.impl.RaftContext.State;
 import io.atomix.raft.storage.RaftStorage;
-import io.atomix.utils.logging.ContextualLoggerFactory;
-import io.atomix.utils.logging.LoggerContext;
 import io.camunda.zeebe.util.health.FailureListener;
 import java.util.Collection;
 import java.util.Map;
@@ -38,6 +36,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Provides a standalone implementation of the <a href="http://raft.github.io/">Raft consensus
@@ -46,9 +45,9 @@ import org.slf4j.Logger;
  * @see RaftStorage
  */
 public class DefaultRaftServer implements RaftServer {
+  private static final Logger LOGGER = LoggerFactory.getLogger(DefaultRaftServer.class);
 
   protected final RaftContext context;
-  private final Logger log;
   private final AtomicReference<CompletableFuture<RaftServer>> openFutureRef =
       new AtomicReference<>();
   private volatile boolean started;
@@ -56,10 +55,6 @@ public class DefaultRaftServer implements RaftServer {
 
   public DefaultRaftServer(final RaftContext context) {
     this.context = checkNotNull(context, "context cannot be null");
-    log =
-        ContextualLoggerFactory.getLogger(
-            getClass(),
-            LoggerContext.builder(RaftServer.class).addValue(context.getName()).build());
   }
 
   @Override
@@ -197,7 +192,7 @@ public class DefaultRaftServer implements RaftServer {
           .whenComplete(
               (result, error) -> {
                 if (error == null) {
-                  log.info("Server join completed. Waiting for the server to be READY");
+                  LOGGER.info("Server join completed. Waiting for the server to be READY");
                   context.addStateChangeListener(new StartedStateListener(this));
                 } else {
                   openFutureRef.get().completeExceptionally(error);
@@ -210,11 +205,11 @@ public class DefaultRaftServer implements RaftServer {
         .whenComplete(
             (result, error) -> {
               if (error == null) {
-                log.debug("Server started successfully!");
+                LOGGER.debug("Server started successfully!");
               } else if (error instanceof CancelledBootstrapException) {
-                log.debug("Server bootstrap cancelled", error);
+                LOGGER.debug("Server bootstrap cancelled", error);
               } else {
-                log.warn("Failed to start server", error);
+                LOGGER.warn("Failed to start server", error);
               }
             });
   }
