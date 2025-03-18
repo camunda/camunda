@@ -11,7 +11,7 @@
   <parent>
     <groupId>io.camunda</groupId>
     <artifactId>identity-parent</artifactId>
-    <version>8.6.11111</version>
+    <version>8.6.11-test2-SNAPSHOT</version>
   </parent>
 
   <artifactId>identity-migration</artifactId>
