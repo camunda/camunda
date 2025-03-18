@@ -15,6 +15,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import io.camunda.security.configuration.AuthorizationsConfiguration;
+import io.camunda.security.configuration.MultiTenancyConfiguration;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior.AuthorizationRequest;
@@ -50,6 +51,9 @@ public class AuthorizationCheckBehaviorTest {
     final var authConfig = new AuthorizationsConfiguration();
     authConfig.setEnabled(true);
     securityConfig.setAuthorizations(authConfig);
+    final var multiTenancyConfig = new MultiTenancyConfiguration();
+    multiTenancyConfig.setEnabled(true);
+    securityConfig.setMultiTenancy(multiTenancyConfig);
     authorizationCheckBehavior = new AuthorizationCheckBehavior(processingState, securityConfig);
   }
 
