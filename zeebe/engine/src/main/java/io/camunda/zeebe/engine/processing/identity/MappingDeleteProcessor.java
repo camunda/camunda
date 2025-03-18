@@ -73,8 +73,8 @@ public class MappingDeleteProcessor implements DistributedTypedRecordProcessor<M
   public void processNewCommand(final TypedRecord<MappingRecord> command) {
     final var record = command.getValue();
     final String id = record.getId();
-    final var persistedMapping = mappingState.get(id);
-    if (persistedMapping.isEmpty()) {
+    final var persistedMappingOptional = mappingState.get(id);
+    if (persistedMappingOptional.isEmpty()) {
       final var errorMessage = MAPPING_NOT_FOUND_ERROR_MESSAGE.formatted(id);
       rejectionWriter.appendRejection(command, RejectionType.NOT_FOUND, errorMessage);
       responseWriter.writeRejectionOnCommand(command, RejectionType.NOT_FOUND, errorMessage);
@@ -91,10 +91,11 @@ public class MappingDeleteProcessor implements DistributedTypedRecordProcessor<M
       responseWriter.writeRejectionOnCommand(command, rejection.type(), rejection.reason());
       return;
     }
-
-    deleteMapping(persistedMapping.get());
+    final var persistedMapping = persistedMappingOptional.get();
+    record.setMappingKey(persistedMapping.getMappingKey());
+    deleteMapping(persistedMapping);
     responseWriter.writeEventOnCommand(
-        record.getMappingKey(), MappingIntent.DELETED, record, command);
+        persistedMapping.getMappingKey(), MappingIntent.DELETED, record, command);
 
     final long key = keyGenerator.nextKey();
     commandDistributionBehavior
