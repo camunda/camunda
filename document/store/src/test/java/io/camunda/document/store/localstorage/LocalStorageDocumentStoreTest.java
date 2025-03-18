@@ -22,11 +22,14 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
+import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.Executors;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.MockedStatic;
 
 class LocalStorageDocumentStoreTest {
@@ -114,6 +117,24 @@ class LocalStorageDocumentStoreTest {
     assertInstanceOf(DocumentAlreadyExists.class, result.getLeft());
   }
 
+  @ParameterizedTest
+  @MethodSource("provideInvalidDocumentId")
+  void createDocumentShouldFailIfDocumentIdIsInvalid(final String documentId) {
+    // given
+    final byte[] content = "test-content".getBytes();
+    createDocumentForTest(content, documentId);
+
+    final DocumentCreationRequest request =
+        new DocumentCreationRequest(
+            documentId, new ByteArrayInputStream(content), givenMetadata(content));
+
+    // when
+    final var result = documentStore.createDocument(request).join();
+
+    // then
+    assertInstanceOf(InvalidInput.class, result.getLeft());
+  }
+
   @Test
   void getDocumentShouldSucceed() {
     // given
@@ -140,6 +161,16 @@ class LocalStorageDocumentStoreTest {
     // then
     assertTrue(result.isLeft());
     assertInstanceOf(DocumentNotFound.class, result.getLeft());
+  }
+
+  @ParameterizedTest
+  @MethodSource("provideInvalidDocumentId")
+  void getDocumentShouldFailIfDocumentIdIsInvalid(final String documentId) {
+    // when
+    final var result = documentStore.getDocument(documentId).join();
+
+    // then
+    assertInstanceOf(InvalidInput.class, result.getLeft());
   }
 
   @Test
@@ -264,5 +295,9 @@ class LocalStorageDocumentStoreTest {
   private DocumentMetadataModel givenMetadata(final byte[] content) {
     return new DocumentMetadataModel(
         "text/plain", "test-file.txt", null, (long) content.length, null, null, null);
+  }
+
+  private static List<String> provideInvalidDocumentId() {
+    return List.of("/test", "\\what.txt", "..file.tiff", "../../../back.png");
   }
 }
