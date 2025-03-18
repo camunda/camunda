@@ -54,6 +54,16 @@ const nestedSubProcessesInstance = Object.freeze(
   }),
 );
 
+const adHocSubProcessesInstance = Object.freeze(
+  createInstance({
+    id: '222734982389310',
+    processId: '12517992348923884',
+    processName: 'Ad Hoc Process',
+    state: 'ACTIVE',
+    bpmnProcessId: 'AdHocProcess',
+  }),
+);
+
 const nestedSubProcessFlowNodeInstances: FlowNodeInstances = {
   [nestedSubProcessesInstance.id]: {
     running: null,
@@ -684,6 +694,66 @@ const multipleSubprocessesWithTwoRunningScopesMock: {
   },
 };
 
+const adHocNodeFlowNodeInstances: {
+  level1: FlowNodeInstances;
+  level2: FlowNodeInstances;
+} = {
+  level1: {
+    [adHocSubProcessesInstance.id]: {
+      running: null,
+      children: [
+        {
+          id: '2251799813686130',
+          type: 'START_EVENT',
+          state: 'COMPLETED',
+          flowNodeId: 'StartEvent_1',
+          startDate: '2020-08-18T12:07:33.953+0000',
+          endDate: '2020-08-18T12:07:34.034+0000',
+          treePath: `${adHocSubProcessesInstance.id}/2251799813686130`,
+          sortValues: ['1606300828415', '2251799813686130'],
+        },
+        {
+          id: '1241799813612356',
+          type: 'AD_HOC_SUB_PROCESS',
+          state: 'COMPLETED',
+          flowNodeId: 'AdHocSubProcess',
+          startDate: '2020-08-18T12:07:33.953+0000',
+          endDate: '2020-08-18T12:07:34.034+0000',
+          treePath: `${adHocSubProcessesInstance.id}/1241799813612356`,
+          sortValues: ['1606300828415', '2251799813686156'],
+        },
+        {
+          id: '2251799813686156',
+          type: 'END_EVENT',
+          state: 'COMPLETED',
+          flowNodeId: 'EndEvent_1',
+          startDate: '2020-08-18T12:07:33.953+0000',
+          endDate: '2020-08-18T12:07:34.034+0000',
+          treePath: `${adHocSubProcessesInstance.id}/2251799813686156`,
+          sortValues: ['1606300828415', '2251799813686156'],
+        },
+      ],
+    },
+  },
+  level2: {
+    [`${adHocSubProcessesInstance.id}/1241799813612356`]: {
+      running: null,
+      children: [
+        {
+          id: '22345625376130',
+          type: 'TASK',
+          state: 'COMPLETED',
+          flowNodeId: 'Task_A',
+          startDate: '2020-08-18T12:07:33.953+0000',
+          endDate: '2020-08-18T12:07:34.034+0000',
+          treePath: `${adHocSubProcessesInstance.id}/1241799813612356/22345625376130`,
+          sortValues: ['1606300828415', '2251799813686130'],
+        },
+      ],
+    },
+  },
+};
+
 const Wrapper = ({children}: {children?: React.ReactNode}) => {
   useEffect(() => {
     return () => {
@@ -706,12 +776,14 @@ const Wrapper = ({children}: {children?: React.ReactNode}) => {
 export {
   multiInstanceProcessInstance,
   nestedSubProcessesInstance,
+  adHocSubProcessesInstance,
   processId,
   processInstanceId,
   flowNodeInstances,
   eventSubProcessFlowNodeInstances,
   nestedSubProcessFlowNodeInstances,
   nestedSubProcessFlowNodeInstance,
+  adHocNodeFlowNodeInstances,
   mockFlowNodeInstance,
   multipleFlowNodeInstances,
   multipleSubprocessesWithOneRunningScopeMock,
