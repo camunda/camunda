@@ -18,6 +18,7 @@ public record MappingFilter(
     List<String> claimNames,
     String claimValue,
     String name,
+    String id,
     List<Claim> claims)
     implements FilterBase {
   public static final class Builder implements ObjectBuilder<MappingFilter> {
@@ -26,6 +27,7 @@ public record MappingFilter(
     private List<String> claimNames;
     private String claimValue;
     private String name;
+    private String id;
     private List<Claim> claims;
 
     public Builder mappingKey(final Long value) {
@@ -53,6 +55,11 @@ public record MappingFilter(
       return this;
     }
 
+    public Builder id(final String value) {
+      id = value;
+      return this;
+    }
+
     public Builder claims(final List<Claim> claims) {
       this.claims = claims;
       return this;
@@ -60,7 +67,7 @@ public record MappingFilter(
 
     @Override
     public MappingFilter build() {
-      return new MappingFilter(mappingKey, claimName, claimNames, claimValue, name, claims);
+      return new MappingFilter(mappingKey, claimName, claimNames, claimValue, name, id, claims);
     }
   }
 
