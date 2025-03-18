@@ -5,23 +5,49 @@ This module contains acceptance tests for the whole Camunda 8 platform, covering
 In the following document, we shortly highlight general recommendations and how-tos/examples of how to write them.
 This ensures we consistently write such tests and cover all necessary supported environments.
 
-## General
+## When to write acceptance tests
 
-* For simple cases:
-  * Make use of the `@MultiDbTest` annotation (if possible).
-  * By default, it will use the `TestStandaloneBroker` class to reduce the scope to a minimum.
-  * The `@MutliDbTest` annotation will ensure that your test is tagged as a test that should be executed against multiple secondary storage, such as Elasticsearch (ES), OpenSearch (OS), RDBMS, etc.
-  * The `@MutliDbTest` annotation will mark your test class with `@ExtendsWith` using the `CamundaMultiDBExtension`.
-  * The execution against different secondary storage is done on our CI.yml GitHub workflow, where separate jobs exist. A specific test property is set for the database type, allowing the extension to configure the test application correctly (specific Exporter, etc.).
-* For advanced cases:
-  * This might apply when you want to run the complete platform or need to configure the broker test application.
-  * To run the complete platform, you can use `TestSimpleCamundaApplication`, which bundles all components together.
-  * With that, you can use `@RegisterExtension` and `CamundaMultiDBExtension` directly.
-  * This might also be necessary for more sophisticated broker configurations, such as testing different or specific authentications.
+1. You should write acceptance tests when implementing a feature and validating the user flow
+   1. This comes after writing unit tests and integration tests, for more details please see our [testing guide](../docs/testing.md).
+   2. Integration tests might live in a different submodule, where two or more dependencies are tested together
+   3. Unit tests live in a module, related to the code of the unit
+2. As a regression test, when fixing a bug that impacted the user flow/behavior.
 
-## Examples:
+## How to write acceptance tests
 
-### Simple use case
+### For simple cases:
+
+* Make use of the `@MultiDbTest` annotation (if possible).
+* By default, it will use the `TestStandaloneBroker` class to reduce the scope to a minimum.
+* The `@MutliDbTest` annotation will ensure that your test is tagged as a test that should be executed against multiple secondary storage, such as Elasticsearch (ES), OpenSearch (OS), RDBMS, etc.
+* The `@MutliDbTest` annotation will mark your test class with `@ExtendsWith` using the `CamundaMultiDBExtension`.
+* The execution against different secondary storage is done on our CI.yml GitHub workflow, where separate jobs exist. A specific test property is set for the database type, allowing the extension to configure the test application correctly (specific Exporter, etc.).
+
+### For advanced cases:
+
+* Advanced cases might apply when you want to run the complete platform or need to configure the broker test application.
+* To run the complete platform, you can use `TestSimpleCamundaApplication`, which bundles all components together.
+* With that, you can use `@RegisterExtension` and `CamundaMultiDBExtension` directly.
+* This might also be necessary for more sophisticated broker configurations, such as testing different or specific authentications.
+
+### For special cases:
+
+* You might need to derail from the common standard of writing an acceptance test and not use the multi-database extension at all
+* You might need direct access to the secondary storage, need to play with the application lifecycle, or not be able to support all secondary storage options.
+* Best examples are backup & restore or migration tests.
+
+> [!Important]
+>
+> :dragon: Be aware of the consequences when derailing from the standard
+>
+> 1. You need to cover all supported secondary storages for that feature yourself.
+> 2. The test infrastructure will likely be more complex and may be duplicated.
+> 3. You need to take care of starting dependencies on your own. Thus, the test execution might be impacted and slower than other tests.
+> 4. The test will not be consistent with other tests, causing additional cognitive load for other engineers to understand it.
+
+### Examples:
+
+#### Simple use case
 
 **Need:**
 * We need to validate a feature end to end, with a small scope running broker, REST API, and exporter
@@ -50,7 +76,7 @@ public class ProcessDefinitionQueryTest {
   }
 ```
 
-### Advanced use case
+#### Advanced use case
 
 **Need:**
 
@@ -85,9 +111,10 @@ class SomeIT {
     assertThat(processDefinitions.stream().map(p -> p.getProcessDefinitionId()).toList())
         .containsExactlyInAnyOrder("service_tasks_v1", "service_tasks_v2");
   }
+}
 ```
 
-### Authentication E2E tests
+##### Authentication E2E tests
 
 We should highlight some special features for the authentication tests here.
 
@@ -152,5 +179,46 @@ class ProcessAuthorizationIT {
     assertThat(processDefinitions.stream().map(p -> p.getProcessDefinitionId()).toList())
         .containsExactlyInAnyOrder("service_tasks_v1", "service_tasks_v2");
   }
+}
 ```
 
+## How to run the acceptance tests locally
+
+When running the multi-database acceptance tests locally, they will default to Elasticsearch. The corresponding extension
+will [spin up an Elasticsearch test container for local execution](https://github.com/camunda/camunda/blob/2a51cc662a6c59b65a5f455220145017d6be2a1c/qa/util/src/main/java/io/camunda/qa/util/multidb/CamundaMultiDBExtension.java#L212).
+
+Sometimes, we need to validate different secondary storages locally, for example, to reproduce a failure. For that, we can configure the test execution.
+
+In Intellij, you can edit the `Run/Debug configuration` (see this [guide](https://www.jetbrains.com/help/idea/run-debug-configuration-junit.html)) and pass in additional properties and environment variables.
+
+To specify the database type, use the following property: `test.integration.camunda.database.type`. We also provide specific Maven profiles to make this easier.
+
+* For available maven profiles, take a look at the `qa/integration-test/pom.xml`.
+* For available database types, look at `io.camunda.qa.util.multidb.CamundaMultiDBExtension#DatabaseType`
+
+> [!Important]
+>
+> If you want to run against a different secondary storage, you need to spin it up manually, for example, via docker.
+> Ensure the container is available under `:9200` for ES or OS.
+
+### Example to run against OpenSearch
+
+Spin up an OpenSearch container via docker (or podman):
+
+```shell
+docker run -d -p 9200:9200 \
+              -p 9600:9600 \
+              -e "discovery.type=single-node" \
+              -e "OPENSEARCH_INITIAL_ADMIN_PASSWORD=yourStrongPassword123!" \
+              -e "OPENSEARCH_PASSWORD=changeme" \
+              -e "DISABLE_SECURITY_PLUGIN=true" \
+              opensearchproject/opensearch:latest
+```
+
+Define the following property in your run configuration
+
+`-Dtest.integration.camunda.database.type=os`
+
+Alternatively, you can also specify the respective maven profile `-Pe2e-opensearch-test`
+
+Run the test.
