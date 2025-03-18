@@ -7,6 +7,7 @@
  */
 package io.camunda.it.cluster;
 
+import static io.camunda.qa.util.multidb.CamundaMultiDBExtension.TIMEOUT_DATA_AVAILABILITY;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.client.CamundaClient;
@@ -16,8 +17,8 @@ import io.camunda.client.api.search.response.ProcessInstanceState;
 import io.camunda.client.api.search.response.SearchQueryResponse;
 import io.camunda.client.api.search.response.UserTask;
 import io.camunda.client.protocol.rest.ProblemDetail;
-import io.camunda.qa.util.multidb.CamundaMultiDBExtension;
 import io.camunda.qa.util.multidb.MultiDbTest;
+import io.camunda.qa.util.multidb.MultiDbTestApplication;
 import io.camunda.zeebe.management.cluster.PlannedOperationsResponse;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
@@ -35,18 +36,15 @@ import org.assertj.core.api.Assertions;
 import org.assertj.core.api.InstanceOfAssertFactories;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.RegisterExtension;
 
 @MultiDbTest
 public class ClusterPurgeMultiDbIT {
 
   private static CamundaClient client;
 
+  @MultiDbTestApplication
   private static final TestStandaloneApplication<?> APPLICATION =
       new TestStandaloneBroker().withUnauthenticatedAccess();
-
-  @RegisterExtension
-  public static final CamundaMultiDBExtension EXTENSION = new CamundaMultiDBExtension(APPLICATION);
 
   private static final int TIMEOUT = 40;
 
@@ -287,16 +285,19 @@ public class ClusterPurgeMultiDbIT {
 
   private void assertThatChangesAreApplied(final PlannedOperationsResponse planChangeResponse) {
     Awaitility.await("until cluster purge completes")
+        .atMost(TIMEOUT_DATA_AVAILABILITY)
         .untilAsserted(
             () ->
                 Assertions.assertThatNoException()
                     .isThrownBy(() -> APPLICATION.healthActuator().ready()));
     Awaitility.await("until cluster is ready")
+        .atMost(TIMEOUT_DATA_AVAILABILITY)
         .untilAsserted(
             () ->
                 TopologyAssert.assertThat(client.newTopologyRequest().send().join())
                     .isComplete(1, 1, 1));
     Awaitility.await("until cluster is healthy")
+        .atMost(TIMEOUT_DATA_AVAILABILITY)
         .untilAsserted(
             () -> TopologyAssert.assertThat(client.newTopologyRequest().send().join()).isHealthy());
 

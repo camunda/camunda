@@ -6,17 +6,17 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import { FC, PointerEvent, ReactNode } from "react";
+import { FC, MouseEvent, ReactNode } from "react";
 import styled from "styled-components";
 import { Breadcrumb, BreadcrumbItem, Content, Stack } from "@carbon/react";
 import {
   spacing04,
   spacing06,
   spacing07,
+  spacing08,
   styles,
   textSecondary,
 } from "@carbon/elements";
-import { cssSize } from "src/utility/style";
 import { useNavigate } from "react-router";
 import { DocumentationLink } from "src/components/documentation";
 import useTranslate from "src/utility/localization";
@@ -30,7 +30,7 @@ const PageSubTitle = styled.div`
   font-size: ${styles.bodyCompact01.fontSize};
   font-weight: ${styles.bodyCompact01.fontWeight};
   letter-spacing: ${styles.bodyCompact01.letterSpacing};
-  letter-height: ${styles.bodyCompact01.lineHeight};
+  line-height: ${styles.bodyCompact01.lineHeight};
   color: ${textSecondary};
 `;
 
@@ -40,6 +40,7 @@ const StackWithMargin = styled(Stack)`
 
 const Page = styled(Content)`
   height: 100%;
+  padding: ${spacing08};
 `;
 
 type PageHeaderProps = {
@@ -59,7 +60,7 @@ export const PageHeader: FC<PageHeaderProps> = ({
     <StackWithMargin gap={spacing04}>
       <PageTitle>{title}</PageTitle>
       <PageSubTitle>
-        <Translate i18nKey="moreInfo">
+        <Translate i18nKey="moreInfo" values={{ linkText }}>
           For more information, see documentation on{" "}
           <DocumentationLink path={linkUrl} withIcon>
             {linkText}
@@ -70,10 +71,6 @@ export const PageHeader: FC<PageHeaderProps> = ({
   );
 };
 
-const StyledBreadcrumb = styled(Breadcrumb)`
-  margin-left: ${cssSize(2)};
-`;
-
 type BreadcrumbsProps = {
   items: {
     href: string;
@@ -83,20 +80,20 @@ type BreadcrumbsProps = {
 
 export const Breadcrumbs: FC<BreadcrumbsProps> = ({ items }) => {
   const navigate = useNavigate();
-  const onClick = (href: string) => (e: PointerEvent) => {
+  const onClick = (href: string) => (e: MouseEvent<HTMLLIElement>) => {
     navigate(href);
     e.preventDefault();
     e.stopPropagation();
   };
 
   return (
-    <StyledBreadcrumb>
+    <Breadcrumb>
       {items.map(({ href, title }) => (
         <BreadcrumbItem href={href} onClick={onClick(href)} key={href}>
           {title}
         </BreadcrumbItem>
       ))}
-    </StyledBreadcrumb>
+    </Breadcrumb>
   );
 };
 

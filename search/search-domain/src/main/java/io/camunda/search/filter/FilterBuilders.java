@@ -32,6 +32,11 @@ public final class FilterBuilders {
     return fn.apply(processDefinition()).build();
   }
 
+  public static ProcessDefinitionStatisticsFilter.Builder processDefinitionStatisticsFilter(
+      final long processDefinitionKey) {
+    return new ProcessDefinitionStatisticsFilter.Builder(processDefinitionKey);
+  }
+
   public static ProcessInstanceFilter.Builder processInstance() {
     return new ProcessInstanceFilter.Builder();
   }

@@ -27,6 +27,8 @@ public final class ErrorMessages {
   public static final String ERROR_MESSAGE_AT_LEAST_ONE_FIELD = "At least one of %s is required";
   public static final String ERROR_MESSAGE_INVALID_TENANT =
       "Expected to handle request %s with tenant identifier '%s', but %s";
+  public static final String ERROR_MESSAGE_INVALID_TENANTS =
+      "Expected to handle request %s with tenant identifiers %s, but %s";
   public static final String ERROR_MESSAGE_ONLY_ONE_FIELD = "Only one of %s is allowed";
   public static final String ERROR_MESSAGE_INVALID_EMAIL = "The provided email '%s' is not valid";
   public static final String ERROR_MESSAGE_ALL_REQUIRED_FIELD = "All %s are required";
@@ -34,4 +36,6 @@ public final class ErrorMessages {
       "The provided %s exceeds the limit of %d characters";
   public static final String ERROR_MESSAGE_ILLEGAL_CHARACTER =
       "The provided %s contains illegal characters. It must match the pattern '%s'";
+  public static final String ERROR_MESSAGE_NULL_VARIABLE_NAME = "Variable name cannot be null.";
+  public static final String ERROR_MESSAGE_NULL_VARIABLE_VALUE = "Variable value cannot be null.";
 }

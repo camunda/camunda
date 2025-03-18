@@ -87,7 +87,7 @@ jobs:
         run: ./mvnw -pl zeebe/benchmarks/project jib:build -P worker -D image="gcr.io/zeebe-io/worker:${{ steps.image-tag.outputs.image-tag }}"
       - name: Import Secrets
         id: secrets
-        uses: hashicorp/vault-action@v3.0.0
+        uses: hashicorp/vault-action@v3.3.0
         with:
           url: ${{ secrets.VAULT_ADDR }}
           method: approle

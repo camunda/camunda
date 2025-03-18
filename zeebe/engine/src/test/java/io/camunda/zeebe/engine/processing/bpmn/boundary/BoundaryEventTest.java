@@ -259,6 +259,7 @@ public final class BoundaryEventTest {
             tuple(ValueType.PROCESS_INSTANCE, ProcessInstanceIntent.ELEMENT_TERMINATING),
             tuple(ValueType.PROCESS_INSTANCE_BATCH, ProcessInstanceBatchIntent.TERMINATE),
             tuple(ValueType.PROCESS_INSTANCE, ProcessInstanceIntent.TERMINATE_ELEMENT),
+            tuple(ValueType.PROCESS_INSTANCE_BATCH, ProcessInstanceBatchIntent.TERMINATED),
             tuple(ValueType.PROCESS_INSTANCE, ProcessInstanceIntent.ELEMENT_TERMINATING),
             tuple(ValueType.JOB, JobIntent.CANCELED),
             tuple(ValueType.PROCESS_INSTANCE, ProcessInstanceIntent.ELEMENT_TERMINATED),

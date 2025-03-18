@@ -43,7 +43,7 @@ jobs:
           cache: false  # disabling since not working anyways without a cache-dependency-path specified
 
       - name: golangci-lint
-        uses: golangci/golangci-lint-action@2226d7cb06a077cd73e56eedd38eecad18e5d837 # v6.5.0
+        uses: golangci/golangci-lint-action@4696ba8babb6127d732c3c6dde519db15edab9ea # v6.5.1
         with:
           working-directory: ./c8run
 
@@ -161,7 +161,7 @@ jobs:
 
       - name: Import Secrets
         id: secrets
-        uses: hashicorp/vault-action@d1720f055e0635fd932a1d2a48f87a666a57906c # v3.0.0
+        uses: hashicorp/vault-action@7709c609789c5e27b757a85817483caadbb5939a # v3.3.0
         with:
           url: ${{ secrets.VAULT_ADDR }}
           method: approle

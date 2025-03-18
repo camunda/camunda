@@ -106,17 +106,14 @@ const AssignMembersModal: FC<
           ))}
         </SelectedUsers>
       )}
-
       <DropdownSearch
         autoFocus
         items={unassignedUsers}
         itemTitle={({ username }) => username}
         itemSubTitle={({ email }) => email}
         placeholder={t("Search by full name or email address")}
-        onChange={() => null}
         onSelect={onSelectUser}
       />
-
       {!loading && error && (
         <TranslatedErrorInlineNotification
           title={t("Users could not be loaded.")}

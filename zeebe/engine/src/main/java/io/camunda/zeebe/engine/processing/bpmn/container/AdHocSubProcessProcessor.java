@@ -21,6 +21,7 @@ import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnVariableMappingBehav
 import io.camunda.zeebe.engine.processing.common.ExpressionProcessor;
 import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableAdHocSubProcess;
+import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.ErrorType;
 import io.camunda.zeebe.util.Either;
 import java.util.Collections;
@@ -204,25 +205,76 @@ public class AdHocSubProcessProcessor
   }
 
   @Override
+  public Either<Failure, ?> beforeExecutionPathCompleted(
+      final ExecutableAdHocSubProcess adHocSubProcess,
+      final BpmnElementContext adHocSubProcessContext,
+      final BpmnElementContext childContext) {
+    final Expression completionConditionExpression = adHocSubProcess.getCompletionCondition();
+    if (completionConditionExpression == null) {
+      return Either.right(null);
+    }
+
+    return expressionProcessor
+        .evaluateBooleanExpression(
+            completionConditionExpression, adHocSubProcessContext.getElementInstanceKey())
+        .mapLeft(
+            failure ->
+                new Failure(
+                    "Failed to evaluate completion condition. " + failure.getMessage(),
+                    ErrorType.EXTRACT_VALUE_ERROR));
+  }
+
+  @Override
   public void afterExecutionPathCompleted(
-      final ExecutableAdHocSubProcess element,
+      final ExecutableAdHocSubProcess adHocSubProcess,
       final BpmnElementContext adHocSubProcessContext,
       final BpmnElementContext childContext,
       final Boolean satisfiesCompletionCondition) {
+    if (satisfiesCompletionCondition == null) {
+      // completion condition is not set - complete the ad-hoc subprocess if possible (no other
+      // activity is active), otherwise skip completion as the same block will be evaluated when
+      // the next activity is completed
+      if (stateBehavior.canBeCompleted(childContext)) {
+        stateTransitionBehavior.completeElement(adHocSubProcessContext);
+      }
 
-    if (stateBehavior.canBeCompleted(childContext)) {
-      stateTransitionBehavior.completeElement(adHocSubProcessContext);
+      return;
+    }
+
+    if (satisfiesCompletionCondition) {
+      if (adHocSubProcess.isCancelRemainingInstances()) {
+        // terminate all remaining child instances & directly complete ad-hoc subprocess if there
+        // is no child activity left - otherwise see onChildTerminated
+        final boolean hasNoActiveChildren =
+            stateTransitionBehavior.terminateChildInstances(adHocSubProcessContext);
+        if (hasNoActiveChildren) {
+          stateTransitionBehavior.completeElement(adHocSubProcessContext);
+        }
+      } else {
+        // complete ad-hoc subprocess if possible, otherwise skip completion as the same block
+        // will be evaluated when the next activity is completed
+        if (stateBehavior.canBeCompleted(childContext)) {
+          stateTransitionBehavior.completeElement(adHocSubProcessContext);
+        }
+      }
     }
   }
 
   @Override
   public void onChildTerminated(
-      final ExecutableAdHocSubProcess element,
+      final ExecutableAdHocSubProcess adHocSubProcess,
       final BpmnElementContext adHocSubProcessContext,
       final BpmnElementContext childContext) {
-
-    if (stateBehavior.canBeTerminated(childContext)) {
-      terminate(element, adHocSubProcessContext);
+    if (adHocSubProcessContext.getIntent() == ProcessInstanceIntent.ELEMENT_TERMINATING) {
+      // child termination is initiated in onTerminate
+      // terminate ad-hoc subprocess as soon as all child instances have been terminated
+      if (stateBehavior.canBeTerminated(childContext)) {
+        terminate(adHocSubProcess, adHocSubProcessContext);
+      }
+    } else if (stateBehavior.canBeCompleted(childContext)) {
+      // complete the ad-hoc subprocess because its completion condition was met previously and
+      // all remaining child instances were terminated.
+      stateTransitionBehavior.completeElement(adHocSubProcessContext);
     }
   }
 }

@@ -319,11 +319,9 @@ public class MigrationITInvocationProvider
                     .script(
                         Script.of(
                             s ->
-                                s.inline(
-                                    i ->
-                                        i.source(
-                                                "ctx._source.isPublic = ctx._source.remove('startedByForm')")
-                                            .lang("painless")))));
+                                s.source(
+                                        "ctx._source.isPublic = ctx._source.remove('startedByForm')")
+                                    .lang("painless"))));
 
         break;
       case OPENSEARCH:

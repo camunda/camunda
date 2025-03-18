@@ -47,7 +47,7 @@ jobs:
     steps:
       - name: Import Secrets
         id: secrets
-        uses: hashicorp/vault-action@a1b77a09293a4366e48a5067a86692ac6e94fdc0 # v3.1.0
+        uses: hashicorp/vault-action@7709c609789c5e27b757a85817483caadbb5939a # v3.3.0
         with:
           url: ${{ secrets.VAULT_ADDR }}
           method: approle
@@ -59,7 +59,7 @@ jobs:
 
       - name: Send failure Slack notification
         uses: slackapi/slack-github-action@485a9d42d3a73031f12ec201c457e2162c45d02d # v2.0.0
-        if: ${{ always() && needs.helm-deploy.result != 'success' }}
+        if: ${{ always() && needs.helm-deploy.result != 'success' && github.event_name == 'schedule' }}
         with:
           webhook: ${{ steps.secrets.outputs.SLACK_TOPMONOREPOCI_WEBHOOK_URL }}
           webhook-type: incoming-webhook

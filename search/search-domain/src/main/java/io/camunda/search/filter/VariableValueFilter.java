@@ -7,6 +7,7 @@
  */
 package io.camunda.search.filter;
 
+import io.camunda.util.ListBuilder;
 import io.camunda.util.ObjectBuilder;
 import java.util.ArrayList;
 import java.util.List;
@@ -26,7 +27,8 @@ public record VariableValueFilter(String name, List<UntypedOperation> valueOpera
         + ']';
   }
 
-  public static final class Builder implements ObjectBuilder<VariableValueFilter> {
+  public static final class Builder
+      implements ObjectBuilder<VariableValueFilter>, ListBuilder<VariableValueFilter> {
 
     private String name;
     private final List<UntypedOperation> valueOperations = new ArrayList<>();
@@ -46,9 +48,25 @@ public record VariableValueFilter(String name, List<UntypedOperation> valueOpera
       return this;
     }
 
+    public <T> Builder valueTypedOperations(final List<Operation<T>> operations) {
+      operations.forEach(operation -> valueOperations.add(UntypedOperation.of(operation)));
+      return this;
+    }
+
     @Override
     public VariableValueFilter build() {
       return new VariableValueFilter(Objects.requireNonNull(name), valueOperations);
+    }
+
+    @Override
+    public List<VariableValueFilter> buildList() {
+      final List<VariableValueFilter> variableValueFilters = new ArrayList<>();
+      for (UntypedOperation untypedOperation : valueOperations) {
+        final VariableValueFilter variableValueFilter =
+            new VariableValueFilter.Builder().name(name).valueOperation(untypedOperation).build();
+        variableValueFilters.add(variableValueFilter);
+      }
+      return variableValueFilters;
     }
   }
 }

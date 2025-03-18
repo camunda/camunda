@@ -19,7 +19,7 @@ This starts elasticsearch and zeebe docker containers, then installs operate loc
 You can shutdown the application with Control-C.
 At the first run it takes some time to resolve all dependencies.
 
-### Use docker
+### Use Camunda 8 with Elasticsearch docker container
 
 To run the application locally you can use `docker`, `docker-compose` and
 `make`. Make sure to have a recent version of these tools installed
@@ -30,21 +30,35 @@ Windows users need to install `make` manually on their shell. You can find
 instructions on how to do it
 [here](https://gist.github.com/evanwill/0207876c3243bbb6863e65ec5dc3f058#make).
 
-To spawn the full local environment, run this command in the root folder:
+#### Zeebe + Operate + Elasticsearch
+
+To run Camunda 8 with Zeebe and Operate profiles, run this command in the operate folder:
 
 ```
 make env-up
 ```
 
-The app will be running at `localhost:8080`.
+The Operate webapp will be running at `localhost:8080/operate`.
 
-To stop:
+#### Zeebe + Operate + Identity + Elasticsearch
+
+To run Camunda 8 with Zeebe, Operate and Identity profiles, run this command in the operate folder:
+
+```
+make env-identity-up
+```
+
+The Operate webapp will be running at `localhost:8080/operate`.
+
+The Identity webapp will be running at `localhost:8080/identity`.
+
+#### Stop dev environment
 
 ```
 make env-down
 ```
 
-To see the status of the environment, you can run:
+#### Check status of the environment
 
 ```
 make env-status
@@ -54,7 +68,7 @@ This command should pull/build the necessary containers to run the
 application locally, the first run might take a while. This includes
 a local elasticsearch, zeebe, operate backend and frontend.
 
-You can clean your local docker environment using:
+#### Clean your local docker environment
 
 ```
 make env-clean

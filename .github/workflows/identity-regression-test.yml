@@ -35,7 +35,9 @@ jobs:
       fail-fast: false
       matrix:
         env: [ 'local' ]
-        case: [ 'identity-regression-test.http' ]
+        case:
+          - 'identity-regression-test.http'
+          - 'identity-tenant-regression-test.http'
 
     runs-on: ubuntu-latest
     environment: '${{ matrix.env }}-http-tests'
@@ -44,7 +46,7 @@ jobs:
 
     services:
       elasticsearch:
-        image: docker.elastic.co/elasticsearch/elasticsearch:8.17.2
+        image: docker.elastic.co/elasticsearch/elasticsearch:8.17.3
         env:
           discovery.type: single-node
           cluster.name: docker-cluster

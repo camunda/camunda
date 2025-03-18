@@ -18,7 +18,8 @@ import io.camunda.qa.util.auth.Authenticated;
 import io.camunda.qa.util.auth.Permissions;
 import io.camunda.qa.util.auth.User;
 import io.camunda.qa.util.auth.UserDefinition;
-import io.camunda.qa.util.multidb.CamundaMultiDBExtension;
+import io.camunda.qa.util.multidb.MultiDbTest;
+import io.camunda.qa.util.multidb.MultiDbTestApplication;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import java.io.IOException;
 import java.net.URI;
@@ -29,20 +30,17 @@ import java.net.http.HttpResponse;
 import java.util.Base64;
 import java.util.List;
 import org.junit.jupiter.api.AutoClose;
-import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
-import org.junit.jupiter.api.extension.RegisterExtension;
 
-@Tag("multi-db-test")
+@MultiDbTest
 @DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "rdbms")
+@DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "AWS_OS")
 class AuthorizationSearchIT {
 
+  @MultiDbTestApplication
   static final TestStandaloneBroker BROKER =
       new TestStandaloneBroker().withBasicAuth().withAuthorizationsEnabled();
-
-  @RegisterExtension
-  static final CamundaMultiDBExtension EXTENSION = new CamundaMultiDBExtension(BROKER);
 
   private static final ObjectMapper OBJECT_MAPPER =
       new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);

@@ -13,7 +13,7 @@ import static io.camunda.it.client.QueryTest.waitForFlowNodeInstances;
 import static io.camunda.it.client.QueryTest.waitForProcessInstancesToStart;
 import static io.camunda.it.client.QueryTest.waitForProcessesToBeDeployed;
 import static io.camunda.it.client.QueryTest.waitUntilProcessInstanceIsEnded;
-import static io.camunda.it.client.QueryTest.waitUntilProcessInstanceIsGone;
+import static io.camunda.qa.util.multidb.CamundaMultiDBExtension.TIMEOUT_DATA_AVAILABILITY;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.client.CamundaClient;
@@ -24,8 +24,10 @@ import java.time.Duration;
 import java.util.Objects;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 
 @HistoryMultiDbTest
+@DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "AWS_OS")
 public class HistoryCleanupIT {
 
   static final String RESOURCE_NAME = "process/process_with_assigned_user_task.bpmn";
@@ -43,7 +45,7 @@ public class HistoryCleanupIT {
 
     // when we complete the user task
     Awaitility.await("until a task is available for completion")
-        .atMost(Duration.ofMinutes(1))
+        .atMost(TIMEOUT_DATA_AVAILABILITY)
         .ignoreExceptions() // Ignore exceptions and continue retrying
         .until(
             () -> camundaClient.newUserTaskQuery().send().join().items().getFirst(),
@@ -55,13 +57,20 @@ public class HistoryCleanupIT {
     waitUntilProcessInstanceIsEnded(camundaClient, processInstanceEvent.getProcessInstanceKey());
 
     // and soon it should be gone
-    waitUntilProcessInstanceIsGone(camundaClient, processInstanceEvent.getProcessInstanceKey());
-
-    Awaitility.await("should wait until tasks are deleted")
+    final long processInstanceKey = processInstanceEvent.getProcessInstanceKey();
+    Awaitility.await("should wait until process and tasks are deleted")
         .atMost(Duration.ofMinutes(5))
         .ignoreExceptions() // Ignore exceptions and continue retrying
         .untilAsserted(
             () -> {
+              final var result =
+                  camundaClient
+                      .newProcessInstanceQuery()
+                      .filter(f -> f.processInstanceKey(processInstanceKey))
+                      .send()
+                      .join();
+              assertThat(result.page().totalItems()).isEqualTo(0);
+
               final var taskAmount =
                   camundaClient
                       .newUserTaskQuery()

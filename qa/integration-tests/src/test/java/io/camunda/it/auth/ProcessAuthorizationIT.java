@@ -21,27 +21,25 @@ import io.camunda.qa.util.auth.Authenticated;
 import io.camunda.qa.util.auth.Permissions;
 import io.camunda.qa.util.auth.User;
 import io.camunda.qa.util.auth.UserDefinition;
-import io.camunda.qa.util.multidb.CamundaMultiDBExtension;
+import io.camunda.qa.util.multidb.MultiDbTest;
+import io.camunda.qa.util.multidb.MultiDbTestApplication;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import java.time.Duration;
 import java.util.List;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
-import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.api.function.Executable;
 
-@Tag("multi-db-test")
+@MultiDbTest
 @DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "rdbms")
+@DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "AWS_OS")
 class ProcessAuthorizationIT {
 
+  @MultiDbTestApplication
   static final TestStandaloneBroker BROKER =
       new TestStandaloneBroker().withBasicAuth().withAuthorizationsEnabled();
-
-  @RegisterExtension
-  static final CamundaMultiDBExtension EXTENSION = new CamundaMultiDBExtension(BROKER);
 
   private static final String ADMIN = "admin";
   private static final String RESTRICTED = "restrictedUser";

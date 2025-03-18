@@ -26,6 +26,7 @@ import io.camunda.search.entities.GroupEntity;
 import io.camunda.search.entities.IncidentEntity;
 import io.camunda.search.entities.MappingEntity;
 import io.camunda.search.entities.ProcessDefinitionEntity;
+import io.camunda.search.entities.ProcessDefinitionFlowNodeStatisticsEntity;
 import io.camunda.search.entities.ProcessInstanceEntity;
 import io.camunda.search.entities.RoleEntity;
 import io.camunda.search.entities.TenantEntity;
@@ -60,6 +61,7 @@ import io.camunda.zeebe.gateway.protocol.rest.MappingSearchQueryResult;
 import io.camunda.zeebe.gateway.protocol.rest.MatchedDecisionRuleItem;
 import io.camunda.zeebe.gateway.protocol.rest.OwnerTypeEnum;
 import io.camunda.zeebe.gateway.protocol.rest.PermissionTypeEnum;
+import io.camunda.zeebe.gateway.protocol.rest.ProcessDefinitionFlowNodeStatisticsResult;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessDefinitionResult;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessDefinitionSearchQueryResult;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceResult;
@@ -108,6 +110,25 @@ public final class SearchQueryResponseMapper {
             ofNullable(result.items())
                 .map(SearchQueryResponseMapper::toProcessDefinitions)
                 .orElseGet(Collections::emptyList));
+  }
+
+  public static List<ProcessDefinitionFlowNodeStatisticsResult>
+      toProcessDefinitionFlowNodeStatisticsResults(
+          final List<ProcessDefinitionFlowNodeStatisticsEntity> result) {
+    return result.stream()
+        .map(SearchQueryResponseMapper::toProcessDefinitionFlowNodeStatisticsResult)
+        .toList();
+  }
+
+  private static ProcessDefinitionFlowNodeStatisticsResult
+      toProcessDefinitionFlowNodeStatisticsResult(
+          final ProcessDefinitionFlowNodeStatisticsEntity result) {
+    return new ProcessDefinitionFlowNodeStatisticsResult()
+        .flowNodeId(result.flowNodeId())
+        .active(result.active())
+        .canceled(result.canceled())
+        .incidents(result.incidents())
+        .completed(result.completed());
   }
 
   public static ProcessInstanceSearchQueryResult toProcessInstanceSearchQueryResponse(
@@ -298,7 +319,9 @@ public final class SearchQueryResponseMapper {
   }
 
   public static RoleResult toRole(final RoleEntity roleEntity) {
-    return new RoleResult().key(KeyUtil.keyToString(roleEntity.roleKey())).name(roleEntity.name());
+    return new RoleResult()
+        .roleKey(KeyUtil.keyToString(roleEntity.roleKey()))
+        .name(roleEntity.name());
   }
 
   private static List<GroupResult> toGroups(final List<GroupEntity> groups) {
@@ -487,7 +510,7 @@ public final class SearchQueryResponseMapper {
 
   public static UserResult toUser(final UserEntity user) {
     return new UserResult()
-        .key(KeyUtil.keyToString(user.userKey()))
+        .userKey(KeyUtil.keyToString(user.userKey()))
         .username(user.username())
         .email(user.email())
         .name(user.name());

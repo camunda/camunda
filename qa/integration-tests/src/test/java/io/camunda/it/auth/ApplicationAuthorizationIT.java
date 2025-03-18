@@ -11,13 +11,16 @@ import static io.camunda.client.protocol.rest.PermissionTypeEnum.ACCESS;
 import static io.camunda.client.protocol.rest.ResourceTypeEnum.APPLICATION;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.client.CamundaClient;
 import io.camunda.qa.util.auth.Authenticated;
 import io.camunda.qa.util.auth.Permissions;
 import io.camunda.qa.util.auth.User;
 import io.camunda.qa.util.auth.UserDefinition;
 import io.camunda.qa.util.cluster.TestSimpleCamundaApplication;
-import io.camunda.qa.util.multidb.CamundaMultiDBExtension;
+import io.camunda.qa.util.multidb.MultiDbTest;
+import io.camunda.qa.util.multidb.MultiDbTestApplication;
 import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.net.URI;
@@ -29,29 +32,29 @@ import java.net.http.HttpResponse;
 import java.util.Base64;
 import java.util.List;
 import org.junit.jupiter.api.AutoClose;
-import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
-import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
-@Tag("multi-db-test")
+@MultiDbTest
 @DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "rdbms")
+@DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "AWS_OS")
 class ApplicationAuthorizationIT {
 
   private static final String PATH_OPERATE = "operate";
   private static final String PATH_OPERATE_WEBAPP_USER = "/user";
+
+  @MultiDbTestApplication
   private static final TestSimpleCamundaApplication STANDALONE_CAMUNDA =
       new TestSimpleCamundaApplication().withBasicAuth().withAuthorizationsEnabled();
-
-  @RegisterExtension
-  private static final CamundaMultiDBExtension EXTENSION =
-      new CamundaMultiDBExtension(STANDALONE_CAMUNDA);
 
   private static final String RESTRICTED = "restricted";
   private static final String ADMIN = "admin";
   private static final String DEFAULT_PASSWORD = "password";
+
+  private static final ObjectMapper OBJECT_MAPPER =
+      new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 
   @UserDefinition
   private static final User ADMIN_USER =
@@ -171,6 +174,24 @@ class ApplicationAuthorizationIT {
     assertAccessAllowed(response);
   }
 
+  @Test
+  void meContainsAppUserSpecificAuthorizations(
+      @Authenticated(RESTRICTED) final CamundaClient restrictedClient)
+      throws IOException, URISyntaxException, InterruptedException {
+    // when
+    final HttpRequest request =
+        HttpRequest.newBuilder()
+            .uri(createUri(restrictedClient, "v2/authentication/me"))
+            .header("Authorization", basicAuthentication(RESTRICTED))
+            .build();
+    final HttpResponse<String> response =
+        HTTP_CLIENT.send(request, HttpResponse.BodyHandlers.ofString());
+
+    // then
+    final MeResponse meResponse = OBJECT_MAPPER.readValue(response.body(), MeResponse.class);
+    assertThat(meResponse.authorizedApplications).containsExactly("tasklist");
+  }
+
   private static void assertRedirectToForbidden(
       final String appName, final HttpResponse<String> response) {
     assertThat(response.statusCode()).isEqualTo(HttpURLConnection.HTTP_MOVED_TEMP);
@@ -197,4 +218,6 @@ class ApplicationAuthorizationIT {
             HttpURLConnection.HTTP_FORBIDDEN,
             HttpURLConnection.HTTP_MOVED_TEMP);
   }
+
+  private record MeResponse(List<String> authorizedApplications) {}
 }

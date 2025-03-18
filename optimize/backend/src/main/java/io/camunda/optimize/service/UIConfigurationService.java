@@ -10,7 +10,6 @@ package io.camunda.optimize.service;
 import static io.camunda.optimize.service.util.configuration.OptimizeProfile.CCSM;
 import static io.camunda.optimize.service.util.configuration.OptimizeProfile.CLOUD;
 
-import com.google.common.collect.Lists;
 import io.camunda.identity.sdk.Identity;
 import io.camunda.optimize.dto.optimize.query.ui_configuration.MixpanelConfigResponseDto;
 import io.camunda.optimize.dto.optimize.query.ui_configuration.OnboardingResponseDto;
@@ -25,7 +24,6 @@ import io.camunda.optimize.service.util.configuration.OptimizeProfile;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
-import java.util.List;
 import java.util.Optional;
 import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Component;
@@ -79,7 +77,6 @@ public class UIConfigurationService {
     uiConfigurationDto.setUserTaskAssigneeAnalyticsEnabled(
         configurationService.getUiConfiguration().isUserTaskAssigneeAnalyticsEnabled());
     uiConfigurationDto.setOptimizeProfile(optimizeProfile);
-    uiConfigurationDto.setWebhooks(getConfiguredWebhooks());
     uiConfigurationDto.setExportCsvLimit(
         configurationService.getCsvConfiguration().getExportCsvLimit());
     uiConfigurationDto.setMaxNumDataSourcesForReport(
@@ -147,13 +144,6 @@ public class UIConfigurationService {
     }
     throw new OptimizeConfigurationException(
         "Could not determine whether Optimize is running in enterprise mode");
-  }
-
-  private List<String> getConfiguredWebhooks() {
-    final List<String> sortedWebhooksList =
-        Lists.newArrayList(configurationService.getConfiguredWebhooks().keySet());
-    sortedWebhooksList.sort(String.CASE_INSENSITIVE_ORDER);
-    return sortedWebhooksList;
   }
 
   private boolean isUserSearchAvailable(final OptimizeProfile optimizeProfile) {

@@ -175,6 +175,18 @@ public class ProcessInstanceAssertj
   }
 
   @Override
+  public ProcessInstanceAssert hasNotActivatedElements(final String... elementIds) {
+    elementAssertj.hasNotActivatedElements(getProcessInstanceKey(), elementIds);
+    return this;
+  }
+
+  @Override
+  public ProcessInstanceAssert hasNotActivatedElements(final ElementSelector... elementSelectors) {
+    elementAssertj.hasNotActivatedElements(getProcessInstanceKey(), elementSelectors);
+    return this;
+  }
+
+  @Override
   public ProcessInstanceAssert hasVariableNames(final String... variableNames) {
     variableAssertj.hasVariableNames(getProcessInstanceKey(), variableNames);
     return this;
@@ -228,7 +240,9 @@ public class ProcessInstanceAssertj
   }
 
   private Optional<ProcessInstance> findProcessInstance() {
-    return dataSource.findProcessInstances().stream().filter(actual::test).findFirst();
+    return dataSource.findProcessInstances(actual::applyFilter).stream()
+        .filter(actual::test)
+        .findFirst();
   }
 
   private void awaitProcessInstance() {

@@ -1,4 +1,6 @@
+---
 name: Camunda Platform Release Dry Run from main
+
 on:
   workflow_dispatch:
     inputs:
@@ -31,64 +33,50 @@ jobs:
       nextDevelopmentVersion: 0.0.0-SNAPSHOT
       isLatest: ${{ matrix.latest }}
       dryRun: true
-  notify:
-    name: Send slack notification
-    runs-on: ubuntu-latest
-    needs: [ dry-run-release ]
-    if: ${{ github.event_name == 'schedule' }}
-    steps:
-      - id: slack-notify-failure
-        name: Send failure slack notification
-        uses: slackapi/slack-github-action@v2.0.0
-        if: ${{ always() && needs.dry-run-release.result != 'success' }}
-        with:
-          webhook: ${{ secrets.SLACK_WEBHOOK_URL }}
-          webhook-type: incoming-webhook
-          # For posting a rich message using Block Kit
-          payload: |
-            {
-              "blocks": [
-                {
-                  "type": "section",
-                  "text": {
-                    "type": "mrkdwn",
-                    "text": ":alarm: *Release Dry Run* from `main` failed! :alarm:\n"
-                  }
-                },
-                {
-                  "type": "section",
-                  "text": {
-                    "type": "mrkdwn",
-                    "text": "Please check the related workflow execution: https://github.com/camunda/camunda/actions/runs/${{ github.run_id }}"
-                  }
-                }
-              ]
-            }
-      - id: slack-notify-success
-        name: Send success slack notification
-        uses: slackapi/slack-github-action@v2.0.0
-        if: ${{ always() && needs.dry-run-release.result == 'success' }}
-        with:
-          webhook: ${{ secrets.SLACK_WEBHOOK_URL }}
-          webhook-type: incoming-webhook
-          # For posting a rich message using Block Kit
-          payload: |
-            {
-              "blocks": [
-                {
-                  "type": "section",
-                  "text": {
-                    "type": "mrkdwn",
-                    "text": ":tada: *Release Dry Run* from `main` succeeded! :tada:\n"
-                  }
-                },
-                {
-                  "type": "section",
-                  "text": {
-                    "type": "mrkdwn",
-                    "text": "Nothing to check today. Good job! :clap:\n"
-                  }
-                }
-              ]
-            }
 
+  notify:
+    name: Send Slack notification
+    runs-on: ubuntu-latest
+    needs: [dry-run-release]
+    if: always()
+    timeout-minutes: 5
+    permissions: {}  # GITHUB_TOKEN unused in this job
+    steps:
+      - name: Import Secrets
+        id: secrets
+        uses: hashicorp/vault-action@7709c609789c5e27b757a85817483caadbb5939a # v3.3.0
+        with:
+          url: ${{ secrets.VAULT_ADDR }}
+          method: approle
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          exportEnv: false # we rely on step outputs, no need for environment variables
+          secrets: |
+            secret/data/products/camunda/ci/github-actions SLACK_TOPMONOREPORELEASE_WEBHOOK_URL;
+
+      - name: Send failure Slack notification
+        uses: slackapi/slack-github-action@485a9d42d3a73031f12ec201c457e2162c45d02d # v2.0.0
+        if: ${{ always() && needs.dry-run-release.result != 'success' && github.event_name == 'schedule' }}
+        with:
+          webhook: ${{ steps.secrets.outputs.SLACK_TOPMONOREPORELEASE_WEBHOOK_URL }}
+          webhook-type: incoming-webhook
+          # For posting a rich message using Block Kit
+          payload: |
+            {
+              "blocks": [
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": ":alarm: *Release Dry Run* on `${{ inputs.branch || 'main' }}` failed!\n"
+                  }
+                },
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "Please check this <https://github.com/camunda/camunda/actions/runs/${{ github.run_id }}|GHA workflow run>."
+                  }
+                }
+              ]
+            }

@@ -134,7 +134,7 @@ jobs:
           service_account: "github-actions-camunda@team-infosec.iam.gserviceaccount.com"
 
       - name: Login to infosec registry
-        uses: docker/login-action@9780b0c442fbb1117ed29e0efdff1e18412f7567 # v3
+        uses: docker/login-action@74a5d142397b4f367a81961eba4e8cd7edddf772 # v3
         with:
           registry: europe-west1-docker.pkg.dev
           username: oauth2accesstoken

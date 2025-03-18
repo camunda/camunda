@@ -14,7 +14,6 @@ import io.camunda.zeebe.logstreams.log.LogRecordAwaiter;
 import io.camunda.zeebe.logstreams.log.LogStream;
 import io.camunda.zeebe.logstreams.log.LogStreamReader;
 import io.camunda.zeebe.scheduler.Actor;
-import io.camunda.zeebe.scheduler.ActorControl;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
 import io.camunda.zeebe.scheduler.clock.ActorClock;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
@@ -24,6 +23,7 @@ import io.camunda.zeebe.stream.api.StreamClock;
 import io.camunda.zeebe.stream.api.StreamClock.ControllableStreamClock.Modification;
 import io.camunda.zeebe.stream.api.StreamProcessorLifecycleAware;
 import io.camunda.zeebe.stream.api.scheduling.ScheduledCommandCache.StageableScheduledCommandCache;
+import io.camunda.zeebe.stream.impl.AsyncUtil.Step;
 import io.camunda.zeebe.stream.impl.metrics.ScheduledTaskMetrics;
 import io.camunda.zeebe.stream.impl.metrics.StreamProcessorMetrics;
 import io.camunda.zeebe.stream.impl.records.RecordValues;
@@ -111,9 +111,8 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
   private ActorFuture<LastProcessingPositions> replayCompletedFuture;
 
   private final List<RecordProcessor> recordProcessors = new ArrayList<>();
+  private AsyncScheduleServiceContext asyncScheduleServiceContext;
   private ProcessingScheduleServiceImpl processorActorService;
-  private ProcessingScheduleServiceImpl asyncScheduleService;
-  private AsyncProcessingScheduleServiceActor asyncActor;
 
   protected StreamProcessor(final StreamProcessorBuilder processorBuilder) {
     actorSchedulingService = processorBuilder.getActorSchedulingService();
@@ -167,8 +166,9 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
 
       final var scheduledTaskMetrics =
           ScheduledTaskMetrics.of(streamProcessorContext.getMeterRegistry());
-      processorActorService =
-          new ProcessingScheduleServiceImpl(
+
+      final var actorServiceFactory =
+          new ProcessingScheduleServiceFactory(
               streamProcessorContext::getStreamProcessorPhase,
               streamProcessorContext.getAbortCondition(),
               logStream::newLogStreamWriter,
@@ -176,23 +176,18 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
               streamProcessorContext.getClock(),
               streamProcessorContext.getScheduledTaskCheckInterval(),
               scheduledTaskMetrics);
-      asyncScheduleService =
-          new ProcessingScheduleServiceImpl(
-              streamProcessorContext::getStreamProcessorPhase, // this is volatile
-              streamProcessorContext.getAbortCondition(),
-              logStream::newLogStreamWriter,
-              scheduledCommandCache,
-              streamProcessorContext.getClock(),
-              streamProcessorContext.getScheduledTaskCheckInterval(),
-              scheduledTaskMetrics);
-      asyncActor = new AsyncProcessingScheduleServiceActor(asyncScheduleService, partitionId);
-      final var extendedProcessingScheduleService =
+
+      asyncScheduleServiceContext =
+          new AsyncScheduleServiceContext(actorSchedulingService, actorServiceFactory, partitionId);
+
+      processorActorService = actorServiceFactory.create();
+
+      final var processingScheduleService =
           new ExtendedProcessingScheduleServiceImpl(
+              asyncScheduleServiceContext,
               processorActorService,
-              asyncScheduleService,
-              asyncActor.getActorControl(),
               streamProcessorContext.enableAsyncScheduledTasks());
-      streamProcessorContext.scheduleService(extendedProcessingScheduleService);
+      streamProcessorContext.scheduleService(processingScheduleService);
 
       initRecordProcessors();
 
@@ -259,7 +254,7 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
   @Override
   public ActorFuture<Void> closeAsync() {
     if (isOpened.getAndSet(false)) {
-      actor.run(() -> asyncActor.closeAsync().onComplete((v, t) -> actor.close()));
+      actor.run(() -> asyncScheduleServiceContext.closeAsync().onComplete((v, t) -> actor.close()));
     }
 
     return closeFuture;
@@ -286,7 +281,6 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
 
   private void tearDown() {
     processorActorService.close();
-    asyncScheduleService.close();
     streamProcessorContext.getLogStreamReader().close();
     logStream.removeRecordAvailableListener(this);
     replayStateMachine.close();
@@ -296,24 +290,6 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
   private void healthCheckTick() {
     lastTickTime = ActorClock.currentTimeMillis();
     actor.schedule(HEALTH_CHECK_TICK_DURATION, this::healthCheckTick);
-  }
-
-  private void chainSteps(final int index, final Step[] steps, final Runnable last) {
-    if (index == steps.length) {
-      last.run();
-      return;
-    }
-
-    final Step step = steps[index];
-    step.run()
-        .onComplete(
-            (v, t) -> {
-              if (t == null) {
-                chainSteps(index + 1, steps, last);
-              } else {
-                onFailure(t);
-              }
-            });
   }
 
   private void startProcessing(final LastProcessingPositions lastProcessingPositions) {
@@ -396,19 +372,19 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
     streamProcessorContext.streamProcessorPhase(Phase.PROCESSING);
     metrics.setStreamProcessorProcessing();
 
-    chainSteps(
+    AsyncUtil.chainSteps(
         0,
         new Step[] {
-          () -> processorActorService.open(actor),
-          () -> actorSchedulingService.submitActor(asyncActor)
+          () -> processorActorService.open(actor), () -> asyncScheduleServiceContext.submitActors()
         },
-        () -> startProcessing(lastProcessingPositions));
+        () -> startProcessing(lastProcessingPositions),
+        this::onFailure);
   }
 
   private void onFailure(final Throwable throwable) {
     LOG.error("Actor {} failed in phase {}.", actorName, actor.getLifecyclePhase(), throwable);
 
-    final var asyncActorCloseFuture = asyncActor.closeAsync();
+    final var asyncActorCloseFuture = asyncScheduleServiceContext.closeAsync();
     asyncActorCloseFuture.onComplete(
         (v, t) -> {
           actor.fail(throwable);
@@ -582,70 +558,6 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
 
   private record ImmutableStreamClock(Instant instant, Modification currentModification)
       implements StreamClock {}
-
-  private static final class AsyncProcessingScheduleServiceActor extends Actor {
-
-    private final ProcessingScheduleServiceImpl scheduleService;
-    private CompletableActorFuture<Void> closeFuture = CompletableActorFuture.completed(null);
-    private final String asyncScheduleActorName;
-    private final int partitionId;
-
-    public AsyncProcessingScheduleServiceActor(
-        final ProcessingScheduleServiceImpl scheduleService, final int partitionId) {
-      this.scheduleService = scheduleService;
-      asyncScheduleActorName = buildActorName("AsyncProcessingScheduleActor", partitionId);
-      this.partitionId = partitionId;
-    }
-
-    @Override
-    protected Map<String, String> createContext() {
-      final var context = super.createContext();
-      context.put(ACTOR_PROP_PARTITION_ID, Integer.toString(partitionId));
-      return context;
-    }
-
-    @Override
-    public String getName() {
-      return asyncScheduleActorName;
-    }
-
-    @Override
-    protected void onActorStarting() {
-      final ActorFuture<Void> actorFuture = scheduleService.open(actor);
-      actor.runOnCompletionBlockingCurrentPhase(
-          actorFuture,
-          (v, t) -> {
-            if (t != null) {
-              actor.fail(t);
-            }
-          });
-      closeFuture = new CompletableActorFuture<>();
-    }
-
-    @Override
-    protected void onActorClosed() {
-      closeFuture.complete(null);
-    }
-
-    @Override
-    public CompletableActorFuture<Void> closeAsync() {
-      actor.close();
-      return closeFuture;
-    }
-
-    @Override
-    public void onActorFailed() {
-      closeFuture.complete(null);
-    }
-
-    public ActorControl getActorControl() {
-      return actor;
-    }
-  }
-
-  private interface Step {
-    ActorFuture<Void> run();
-  }
 
   public enum Phase {
     INITIAL,
