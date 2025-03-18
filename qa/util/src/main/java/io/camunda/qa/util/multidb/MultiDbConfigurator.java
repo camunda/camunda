@@ -29,6 +29,22 @@ public class MultiDbConfigurator {
     this.testApplication = testApplication;
   }
 
+  public void configureElasticsearchSupportIncludingOldExporter(
+      final String elasticsearchUrl, final String indexPrefix) {
+    configureElasticsearchSupport(elasticsearchUrl, indexPrefix);
+
+    testApplication.withExporter(
+        "ElasticsearchExporter",
+        cfg -> {
+          cfg.setClassName(ElasticsearchExporter.class.getName());
+          cfg.setArgs(
+              Map.of(
+                  "url", elasticsearchUrl,
+                  "index", Map.of("prefix", zeebeIndexPrefix()),
+                  "bulk", Map.of("size", 1)));
+        });
+  }
+
   public void configureElasticsearchSupport(
       final String elasticsearchUrl, final String indexPrefix) {
     configureElasticsearchSupport(elasticsearchUrl, indexPrefix, false);
@@ -93,16 +109,29 @@ public class MultiDbConfigurator {
                   "bulk",
                   Map.of("size", 1)));
         });
+  }
+
+  public void configureOpenSearchSupportIncludingOldExporter(
+      final String opensearchUrl,
+      final String indexPrefix,
+      final String userName,
+      final String userPassword) {
+    configureOpenSearchSupport(opensearchUrl, indexPrefix, userName, userPassword);
 
     testApplication.withExporter(
-        "ElasticsearchExporter",
+        "OpensearchExporter",
         cfg -> {
-          cfg.setClassName(ElasticsearchExporter.class.getName());
+          cfg.setClassName(OpensearchExporter.class.getName());
           cfg.setArgs(
               Map.of(
-                  "url", elasticsearchUrl,
-                  "index", Map.of("prefix", zeebeIndexPrefix()),
-                  "bulk", Map.of("size", 1)));
+                  "url",
+                  opensearchUrl,
+                  "index",
+                  Map.of("prefix", zeebeIndexPrefix()),
+                  "bulk",
+                  Map.of("size", 1),
+                  "authentication",
+                  Map.of("username", userName, "password", userPassword)));
         });
   }
 
@@ -188,22 +217,6 @@ public class MultiDbConfigurator {
                           "0s")),
                   "bulk",
                   Map.of("size", 1)));
-        });
-
-    testApplication.withExporter(
-        "OpensearchExporter",
-        cfg -> {
-          cfg.setClassName(OpensearchExporter.class.getName());
-          cfg.setArgs(
-              Map.of(
-                  "url",
-                  opensearchUrl,
-                  "index",
-                  Map.of("prefix", zeebeIndexPrefix()),
-                  "bulk",
-                  Map.of("size", 1),
-                  "authentication",
-                  Map.of("username", userName, "password", userPassword)));
         });
   }
 
