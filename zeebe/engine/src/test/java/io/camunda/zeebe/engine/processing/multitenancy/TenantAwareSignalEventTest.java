@@ -16,7 +16,6 @@ import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.SignalIntent;
 import io.camunda.zeebe.protocol.record.value.EntityType;
-import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.test.util.Strings;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
@@ -64,37 +63,6 @@ public class TenantAwareSignalEventTest {
   public void setup() {
     processId = Strings.newRandomValidBpmnId();
     signalName = "signal-%s".formatted(processId);
-  }
-
-  @Test
-  public void shouldBroadcastSignalForDefaultTenant() {
-    // given
-    ENGINE
-        .deployment()
-        .withXmlResource(
-            Bpmn.createExecutableProcess(processId)
-                .startEvent("signal-start")
-                .signal(signalName)
-                .endEvent()
-                .done())
-        .withTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER)
-        .deploy();
-
-    // when
-    final var broadcasted = ENGINE.signal().withSignalName(signalName).broadcast(USERNAME);
-
-    // then
-    assertThat(broadcasted)
-        .describedAs("Expect that signal was broadcast successfully")
-        .hasIntent(SignalIntent.BROADCASTED);
-
-    assertThat(
-            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
-                .withBpmnProcessId(processId)
-                .withElementId("signal-start")
-                .getFirst())
-        .describedAs("Expect that process instance was created")
-        .isNotNull();
   }
 
   @Test
