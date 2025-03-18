@@ -15,6 +15,7 @@ import {useProcessInstancesStatisticsOptions} from './useProcessInstancesStatist
 import {OverlayData} from 'modules/bpmn-js/BpmnJS';
 import {getInstancesCount} from 'modules/utils/statistics/processInstances';
 import {useQuery} from '@tanstack/react-query';
+import {processInstancesSelectionStore} from 'modules/stores/processInstancesSelection';
 
 function batchModificationOverlayParser(params: {
   sourceFlowNodeId?: string;
@@ -54,9 +55,29 @@ function useBatchModificationOverlayData(
   params: {sourceFlowNodeId?: string; targetFlowNodeId?: string},
   enabled?: boolean,
 ) {
+  const {
+    selectedProcessInstanceIds,
+    excludedProcessInstanceIds,
+    state: {selectionMode},
+  } = processInstancesSelectionStore;
+
+  const ids = ['EXCLUDE', 'ALL'].includes(selectionMode)
+    ? []
+    : selectedProcessInstanceIds;
+
+  const processInstanceKey = {
+    $in: ids,
+    ...(excludedProcessInstanceIds.length > 0 && {
+      $nin: excludedProcessInstanceIds,
+    }),
+  };
+
   return useQuery(
     useProcessInstancesStatisticsOptions<OverlayData[]>(
-      payload,
+      {
+        ...payload,
+        processInstanceKey,
+      },
       batchModificationOverlayParser(params),
       enabled,
     ),

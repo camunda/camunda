@@ -34,10 +34,6 @@ import {useLocation} from 'react-router-dom';
 import {Operations} from 'modules/components/Operations';
 import {BatchModificationFooter} from '../BatchModificationFooter';
 import {getProcessInstancesRequestFilters} from 'modules/utils/filter';
-import {usePrefetchProcessInstancesStatistics} from 'modules/queries/processInstancesStatistics/useProcessInstancesStatistics';
-import {useProcessInstanceFilters} from 'modules/hooks/useProcessInstancesFilters';
-import {ProcessInstanceState} from 'modules/api/v2/processInstances/fetchProcessInstancesStatistics';
-import {useMemo} from 'react';
 
 const ROW_HEIGHT = 34;
 
@@ -46,7 +42,6 @@ const InstancesTable: React.FC = observer(() => {
     areProcessInstancesEmpty,
     state: {status, filteredProcessInstancesCount, processInstances},
   } = processInstancesStore;
-  const processInstanceFilters = useProcessInstanceFilters();
 
   /**
    * Is true if at least one process instances from the store has a version tag.
@@ -87,48 +82,6 @@ const InstancesTable: React.FC = observer(() => {
 
     return 'content';
   };
-
-  const {
-    selectedProcessInstanceIds,
-    excludedProcessInstanceIds,
-    state: {selectionMode},
-  } = processInstancesSelectionStore;
-
-  const isBatchModificationEnabled = batchModificationStore.state.isEnabled;
-
-  const requestFilterParameters = useMemo(() => {
-    if (!isBatchModificationEnabled) {
-      return null;
-    }
-
-    const filteredIds = processInstanceFilters.processInstanceKey?.$in;
-    const ids = ['EXCLUDE', 'ALL'].includes(selectionMode)
-      ? (filteredIds ?? [])
-      : selectedProcessInstanceIds;
-    const stateFilters: ProcessInstanceState[] = [
-      ProcessInstanceState.RUNNING,
-      ProcessInstanceState.INCIDENT,
-    ].filter((state) => processInstanceFilters.state?.$in?.includes(state));
-
-    return {
-      ...processInstanceFilters,
-      processInstanceKey: {
-        $in: ids,
-        $nin: excludedProcessInstanceIds,
-      },
-      state: {
-        $in: stateFilters,
-      },
-    };
-  }, [
-    selectedProcessInstanceIds,
-    excludedProcessInstanceIds,
-    isBatchModificationEnabled,
-    selectionMode,
-    processInstanceFilters,
-  ]);
-
-  usePrefetchProcessInstancesStatistics(requestFilterParameters ?? {}, true);
 
   const getEmptyListMessage = () => {
     return {

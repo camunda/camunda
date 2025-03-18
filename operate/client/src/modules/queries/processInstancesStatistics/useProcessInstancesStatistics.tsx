@@ -13,7 +13,7 @@ import {
   ProcessInstancesStatisticsRequest,
 } from 'modules/api/v2/processInstances/fetchProcessInstancesStatistics';
 import {useProcessInstanceFilters} from 'modules/hooks/useProcessInstancesFilters';
-import {usePrefetchQuery, UseQueryOptions} from '@tanstack/react-query';
+import {UseQueryOptions} from '@tanstack/react-query';
 import {RequestError} from 'modules/request';
 
 function getQueryKey(payload: ProcessInstancesStatisticsRequest) {
@@ -47,16 +47,4 @@ function useProcessInstancesStatisticsOptions<
   );
 }
 
-function usePrefetchProcessInstancesStatistics(
-  payload: ProcessInstancesStatisticsRequest,
-  enabled?: boolean,
-) {
-  return usePrefetchQuery(
-    useProcessInstancesStatisticsOptions(payload, (data) => data, enabled),
-  );
-}
-
-export {
-  usePrefetchProcessInstancesStatistics,
-  useProcessInstancesStatisticsOptions,
-};
+export {useProcessInstancesStatisticsOptions};

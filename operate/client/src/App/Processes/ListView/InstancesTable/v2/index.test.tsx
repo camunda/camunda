@@ -18,15 +18,10 @@ import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
 import {processInstancesStore} from 'modules/stores/processInstances';
 import {processInstancesSelectionStore} from 'modules/stores/processInstancesSelection';
 import {processesStore} from 'modules/stores/processes/processes.list';
-import {mockFetchProcessInstancesStatistics} from 'modules/mocks/api/v2/processInstances/fetchProcessInstancesStatistics';
 import {mockFetchProcessInstances} from 'modules/mocks/api/processInstances/fetchProcessInstances';
 import {mockFetchGroupedProcesses} from 'modules/mocks/api/processes/fetchGroupedProcesses';
 import {mockFetchProcessXML} from 'modules/mocks/api/processes/fetchProcessXML';
-import {
-  groupedProcessesMock,
-  mockProcessInstances,
-  mockProcessStatisticsV2 as mockProcessStatistics,
-} from 'modules/testUtils';
+import {groupedProcessesMock, mockProcessInstances} from 'modules/testUtils';
 
 jest.mock('modules/utils/bpmn');
 
@@ -66,7 +61,6 @@ describe('<InstancesTable />', () => {
   beforeEach(() => {
     mockFetchProcessInstances().withSuccess(mockProcessInstances);
     mockFetchGroupedProcesses().withSuccess(groupedProcessesMock);
-    mockFetchProcessInstancesStatistics().withSuccess(mockProcessStatistics);
     mockFetchProcessXML().withSuccess('');
 
     processesStore.fetchProcesses();
