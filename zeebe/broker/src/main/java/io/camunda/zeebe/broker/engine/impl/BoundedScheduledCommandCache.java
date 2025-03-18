@@ -60,9 +60,7 @@ public final class BoundedScheduledCommandCache implements StageableScheduledCom
   public void add(final Intent intent, final long key) {
     final var cache = caches.get(intent);
     if (cache != null) {
-      final var singleton = new LongHashSet();
-      singleton.add(key);
-      cache.add(singleton);
+      cache.add(key);
     }
   }
 
@@ -119,7 +117,17 @@ public final class BoundedScheduledCommandCache implements StageableScheduledCom
       for (final var entry : stagedKeys.entrySet()) {
         final var cache = caches.get(entry.getKey());
         if (cache != null) {
-          cache.add(entry.getValue());
+          cache.addAll(entry.getValue());
+        }
+      }
+    }
+
+    @Override
+    public void rollback() {
+      for (final var entry : stagedKeys.entrySet()) {
+        final var cache = caches.get(entry.getKey());
+        if (cache != null) {
+          cache.removeAll(entry.getValue());
         }
       }
     }

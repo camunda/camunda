@@ -13,54 +13,10 @@ import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import org.agrona.collections.LongHashSet;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 final class BoundedCommandCacheTest {
-  @Test
-  void shouldNotExceedCapacity() {
-    // given
-    final var cache = new BoundedCommandCache(4);
-    cache.add(setOf(1, 2, 3, 4));
-
-    // when
-    cache.add(setOf(5, 6));
-
-    // then
-    assertThat(cache.size()).isEqualTo(4);
-    assertThat(cache.contains(5)).isTrue();
-    assertThat(cache.contains(6)).isTrue();
-  }
-
-  @Test
-  void shouldEvictRandomKeysOnCapacityReached() {
-    // given
-    final var cache = new BoundedCommandCache(4);
-    final var initialKeys = setOf(1, 2, 3, 4);
-    cache.add(initialKeys);
-
-    // when
-    cache.add(setOf(5, 6));
-
-    // then
-    final var remainingInitialKeys =
-        initialKeys.stream().filter(cache::contains).collect(Collectors.toSet());
-    assertThat(remainingInitialKeys).hasSize(2).containsAnyElementsOf(initialKeys);
-  }
-
-  @Test
-  void shouldReportSizeChanges() {
-    // given
-    final var reportedSize = new AtomicInteger();
-    final var cache = new BoundedCommandCache(reportedSize::set);
-
-    // when - then
-    cache.add(setOf(1, 2, 3, 4));
-    assertThat(reportedSize).hasValue(4);
-
-    // when - then
-    cache.remove(1);
-    assertThat(reportedSize).hasValue(3);
-  }
 
   @Test
   void shouldReportSizeToResetMetricOnCreation() {
@@ -79,7 +35,7 @@ final class BoundedCommandCacheTest {
     // given
     final var reportedSize = new AtomicInteger();
     final var cache = new BoundedCommandCache(reportedSize::set);
-    cache.add(setOf(1, 2, 3, 4));
+    cache.addAll(setOf(1, 2, 3, 4));
 
     // when
     cache.clear();
@@ -93,5 +49,105 @@ final class BoundedCommandCacheTest {
     final var set = new LongHashSet();
     set.addAll(Arrays.stream(keys).boxed().toList());
     return set;
+  }
+
+  @Nested
+  final class BulkOperations {
+
+    @Test
+    void shouldNotExceedCapacity() {
+      // given
+      final var cache = new BoundedCommandCache(4);
+      cache.addAll(setOf(1, 2, 3, 4));
+
+      // when
+      cache.addAll(setOf(5, 6));
+
+      // then
+      assertThat(cache.size()).isEqualTo(4);
+      assertThat(cache.contains(5)).isTrue();
+      assertThat(cache.contains(6)).isTrue();
+    }
+
+    @Test
+    void shouldEvictRandomKeysOnCapacityReached() {
+      // given
+      final var cache = new BoundedCommandCache(4);
+      final var initialKeys = setOf(1, 2, 3, 4);
+      cache.addAll(initialKeys);
+
+      // when
+      cache.addAll(setOf(5, 6));
+
+      // then
+      final var remainingInitialKeys =
+          initialKeys.stream().filter(cache::contains).collect(Collectors.toSet());
+      assertThat(remainingInitialKeys).hasSize(2).containsAnyElementsOf(initialKeys);
+    }
+
+    @Test
+    void shouldReportSizeChanges() {
+      // given
+      final var reportedSize = new AtomicInteger();
+      final var cache = new BoundedCommandCache(reportedSize::set);
+
+      // when - then
+      cache.addAll(setOf(1, 2, 3, 4));
+      assertThat(reportedSize).hasValue(4);
+
+      // when - then
+      cache.remove(1);
+      assertThat(reportedSize).hasValue(3);
+    }
+  }
+
+  @Nested
+  final class SingletonOperations {
+
+    @Test
+    void shouldNotExceedCapacity() {
+      // given
+      final var cache = new BoundedCommandCache(4);
+      cache.addAll(setOf(1, 2, 3, 4));
+
+      // when
+      cache.add(5);
+
+      // then
+      assertThat(cache.size()).isEqualTo(4);
+      assertThat(cache.contains(5)).isTrue();
+    }
+
+    @Test
+    void shouldEvictRandomKeysOnCapacityReached() {
+      // given
+      final var cache = new BoundedCommandCache(4);
+      final var initialKeys = setOf(1, 2, 3, 4);
+      cache.addAll(initialKeys);
+
+      // when
+      cache.add(5);
+
+      // then
+      final var remainingInitialKeys =
+          initialKeys.stream().filter(cache::contains).collect(Collectors.toSet());
+      assertThat(remainingInitialKeys).hasSize(3).containsAnyElementsOf(initialKeys);
+    }
+
+    @Test
+    void shouldReportSizeChanges() {
+      // given
+      final var reportedSize = new AtomicInteger();
+      final var cache = new BoundedCommandCache(reportedSize::set);
+
+      // when - then
+      cache.add(1);
+      cache.add(2);
+      assertThat(reportedSize).hasValue(2);
+
+      // when - then
+      cache.remove(1);
+      assertThat(reportedSize).hasValue(1);
+    }
   }
 }
