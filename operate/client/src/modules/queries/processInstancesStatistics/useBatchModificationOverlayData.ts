@@ -13,9 +13,11 @@ import {
 import {MODIFICATIONS} from 'modules/bpmn-js/badgePositions';
 import {useProcessInstancesStatisticsOptions} from './useProcessInstancesStatistics';
 import {OverlayData} from 'modules/bpmn-js/BpmnJS';
-import {getInstancesCount} from 'modules/utils/statistics/processInstances';
+import {
+  getInstancesCount,
+  getProcessInstanceKey,
+} from 'modules/utils/statistics/processInstances';
 import {useQuery} from '@tanstack/react-query';
-import {processInstancesSelectionStore} from 'modules/stores/processInstancesSelection';
 
 function batchModificationOverlayParser(params: {
   sourceFlowNodeId?: string;
@@ -55,22 +57,7 @@ function useBatchModificationOverlayData(
   params: {sourceFlowNodeId?: string; targetFlowNodeId?: string},
   enabled?: boolean,
 ) {
-  const {
-    selectedProcessInstanceIds,
-    excludedProcessInstanceIds,
-    state: {selectionMode},
-  } = processInstancesSelectionStore;
-
-  const ids = ['EXCLUDE', 'ALL'].includes(selectionMode)
-    ? []
-    : selectedProcessInstanceIds;
-
-  const processInstanceKey = {
-    $in: ids,
-    ...(excludedProcessInstanceIds.length > 0 && {
-      $nin: excludedProcessInstanceIds,
-    }),
-  };
+  const processInstanceKey = getProcessInstanceKey();
 
   return useQuery(
     useProcessInstancesStatisticsOptions<OverlayData[]>(

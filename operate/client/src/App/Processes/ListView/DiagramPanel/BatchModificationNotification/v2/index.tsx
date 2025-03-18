@@ -11,7 +11,6 @@ import {useInstancesCount} from 'modules/queries/processInstancesStatistics/useI
 import {processXmlStore} from 'modules/stores/processXml/processXml.list';
 import pluralSuffix from 'modules/utils/pluralSuffix';
 import {Container, InlineNotification, Button} from '../styled';
-import {processInstancesSelectionStore} from 'modules/stores/processInstancesSelection';
 
 type Props = {
   sourceFlowNodeId?: string;
@@ -21,16 +20,7 @@ type Props = {
 
 const BatchModificationNotification: React.FC<Props> = observer(
   ({sourceFlowNodeId, targetFlowNodeId, onUndoClick}) => {
-    const selectedProcessInstanceIds =
-      processInstancesSelectionStore.selectedProcessInstanceIds;
-    const {data: instancesCount = 0} = useInstancesCount(
-      {
-        processInstanceKey: {
-          $in: selectedProcessInstanceIds,
-        },
-      },
-      sourceFlowNodeId,
-    );
+    const {data: instancesCount = 0} = useInstancesCount({}, sourceFlowNodeId);
 
     const sourceFlowNodeName = sourceFlowNodeId
       ? processXmlStore.getFlowNodeName(sourceFlowNodeId)

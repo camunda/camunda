@@ -20,7 +20,6 @@ import useOperationApply from '../../../useOperationApply';
 import {panelStatesStore} from 'modules/stores/panelStates';
 import {tracking} from 'modules/tracking';
 import {useInstancesCount} from 'modules/queries/processInstancesStatistics/useInstancesCount';
-import {processInstancesSelectionStore} from 'modules/stores/processInstancesSelection';
 
 const BatchModificationSummaryModal: React.FC<StateProps> = observer(
   ({open, setOpen}) => {
@@ -40,16 +39,7 @@ const BatchModificationSummaryModal: React.FC<StateProps> = observer(
     const targetFlowNodeName = targetFlowNodeId
       ? processXmlStore.getFlowNodeName(targetFlowNodeId)
       : undefined;
-    const selectedProcessInstanceIds =
-      processInstancesSelectionStore.selectedProcessInstanceIds;
-    const {data: instancesCount} = useInstancesCount(
-      {
-        processInstanceKey: {
-          $in: selectedProcessInstanceIds,
-        },
-      },
-      sourceFlowNodeId,
-    );
+    const {data: instancesCount} = useInstancesCount({}, sourceFlowNodeId);
     const isPrimaryButtonDisabled =
       sourceFlowNodeId === undefined || targetFlowNodeId === null;
     const headers = [
