@@ -81,6 +81,15 @@ public final class BoundedCommandCache {
         });
   }
 
+  public void removeAll(final LongHashSet keys) {
+    LockUtil.withLock(
+        lock,
+        () -> {
+          cache.removeAll(keys);
+          sizeReporter.accept(cache.size());
+        });
+  }
+
   public int size() {
     return LockUtil.withLock(lock, cache::size);
   }
