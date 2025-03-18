@@ -22,14 +22,29 @@
         serviceVersion="${log.stackdriver.serviceVersion}"/>
     </Console>
 
-    <RollingFile name="RollingFile" fileName="${log.path}/zeebe.log"
-      filePattern="${log.path}/zeebe-%d{yyyy-MM-dd}-%i.log.gz">
-      <PatternLayout pattern="${log.pattern}" />
-      <Policies>
-        <TimeBasedTriggeringPolicy/>
-        <SizeBasedTriggeringPolicy size="250 MB"/>
-      </Policies>
-    </RollingFile>
+    <!--
+      The conditional inclusion of the appender is done here, and not on the AppenderRef, because if
+      we only do it on the AppenderRef, the declaration of the appender here still causes Log4j2 to
+      create the directory structure, the log file, etc., though we won't write to it.
+
+      By conditionally including the appender itself, and providing a dummy `Null` otherwise, we can
+      then avoid this altogether.
+      -->
+    <Select>
+      <EnvironmentArbiter propertyName="CAMUNDA_LOG_FILE_APPENDER_ENABLED" propertyValue="false">
+        <Null name="RollingFile" />
+      </EnvironmentArbiter>
+      <DefaultArbiter>
+        <RollingFile name="RollingFile" fileName="${log.path}/zeebe.log"
+          filePattern="${log.path}/zeebe-%d{yyyy-MM-dd}-%i.log.gz">
+          <PatternLayout pattern="${log.pattern}" />
+          <Policies>
+            <TimeBasedTriggeringPolicy/>
+            <SizeBasedTriggeringPolicy size="250 MB"/>
+          </Policies>
+        </RollingFile>
+      </DefaultArbiter>
+    </Select>
   </Appenders>
 
   <Loggers>
@@ -41,7 +56,7 @@
     <Logger name="org.springframework" level="INFO" />
 
     <Root level="WARN">
-      <AppenderRef ref="RollingFile"/>
+      <AppenderRef ref="RollingFile" />
 
       <!-- remove to disable console logging -->
       <AppenderRef ref="${env:ZEEBE_LOG_APPENDER:-${env:OPERATE_LOG_APPENDER:-${env:OPTIMIZE_LOG_APPENDER:-${env:TASKLIST_LOG_APPENDER:-Console}}}}"/>
