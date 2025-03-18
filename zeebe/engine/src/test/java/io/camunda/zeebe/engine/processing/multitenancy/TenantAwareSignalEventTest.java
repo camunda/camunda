@@ -26,7 +26,10 @@ import org.junit.rules.TestWatcher;
 
 public class TenantAwareSignalEventTest {
 
-  @ClassRule public static final EngineRule ENGINE = EngineRule.singlePartition();
+  @ClassRule
+  public static final EngineRule ENGINE =
+      EngineRule.singlePartition()
+          .withSecurityConfig(config -> config.getMultiTenancy().setEnabled(true));
 
   @Rule public final TestWatcher testWatcher = new RecordingExporterTestWatcher();
   private String processId;

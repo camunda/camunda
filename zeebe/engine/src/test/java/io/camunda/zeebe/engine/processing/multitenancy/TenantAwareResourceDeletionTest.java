@@ -29,7 +29,11 @@ import org.junit.Test;
 
 public class TenantAwareResourceDeletionTest {
 
-  @ClassRule public static final EngineRule ENGINE = EngineRule.singlePartition();
+  @ClassRule
+  public static final EngineRule ENGINE =
+      EngineRule.singlePartition()
+          .withSecurityConfig(config -> config.getMultiTenancy().setEnabled(true));
+
   private static final String DRG_SINGLE_DECISION = "/dmn/decision-table.dmn";
   private static final String TEST_FORM_1 = "/form/test-form-1.form";
   private static final BpmnModelInstance PROCESS =

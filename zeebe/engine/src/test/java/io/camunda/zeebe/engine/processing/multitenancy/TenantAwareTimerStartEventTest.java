@@ -32,7 +32,11 @@ public class TenantAwareTimerStartEventTest {
   private static final String PROCESS_ID = "process";
   private static final String TENANT = "tenant-a";
 
-  @Rule public final EngineRule engine = EngineRule.singlePartition();
+  @Rule
+  public final EngineRule engine =
+      EngineRule.singlePartition()
+          .withSecurityConfig(config -> config.getMultiTenancy().setEnabled(true));
+
   private long processDefinitionKey;
 
   private static BpmnModelInstance processWithTimerStartEvent(

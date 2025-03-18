@@ -24,7 +24,10 @@ import org.junit.Test;
 
 public class TenantAwareProcessInstanceVariableTest {
 
-  @ClassRule public static final EngineRule ENGINE_RULE = EngineRule.singlePartition();
+  @ClassRule
+  public static final EngineRule ENGINE_RULE =
+      EngineRule.singlePartition()
+          .withSecurityConfig(config -> config.getMultiTenancy().setEnabled(true));
 
   public static final String PROCESS_ID = "process";
   private static final String TENANT_ID = "foo";
