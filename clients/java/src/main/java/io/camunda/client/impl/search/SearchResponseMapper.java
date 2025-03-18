@@ -16,6 +16,8 @@
 package io.camunda.client.impl.search;
 
 import io.camunda.client.api.JsonMapper;
+import io.camunda.client.api.search.response.BatchOperation;
+import io.camunda.client.api.search.response.BatchOperationItems;
 import io.camunda.client.api.search.response.DecisionDefinition;
 import io.camunda.client.api.search.response.DecisionInstance;
 import io.camunda.client.api.search.response.DecisionRequirements;
@@ -27,6 +29,8 @@ import io.camunda.client.api.search.response.SearchQueryResponse;
 import io.camunda.client.api.search.response.SearchResponsePage;
 import io.camunda.client.api.search.response.UserTask;
 import io.camunda.client.api.search.response.Variable;
+import io.camunda.client.impl.search.response.BatchOperationImpl;
+import io.camunda.client.impl.search.response.BatchOperationItemsImpl;
 import io.camunda.client.impl.search.response.DecisionDefinitionImpl;
 import io.camunda.client.impl.search.response.DecisionInstanceImpl;
 import io.camunda.client.impl.search.response.DecisionRequirementsImpl;
@@ -38,7 +42,22 @@ import io.camunda.client.impl.search.response.SearchQueryResponseImpl;
 import io.camunda.client.impl.search.response.SearchResponsePageImpl;
 import io.camunda.client.impl.search.response.UserTaskImpl;
 import io.camunda.client.impl.search.response.VariableImpl;
-import io.camunda.client.protocol.rest.*;
+import io.camunda.client.protocol.rest.BatchOperationItemSearchQueryResult;
+import io.camunda.client.protocol.rest.BatchOperationResponse;
+import io.camunda.client.protocol.rest.DecisionDefinitionSearchQueryResult;
+import io.camunda.client.protocol.rest.DecisionInstanceSearchQueryResult;
+import io.camunda.client.protocol.rest.DecisionRequirementsSearchQueryResult;
+import io.camunda.client.protocol.rest.FlowNodeInstanceResult;
+import io.camunda.client.protocol.rest.FlowNodeInstanceSearchQueryResult;
+import io.camunda.client.protocol.rest.IncidentResult;
+import io.camunda.client.protocol.rest.IncidentSearchQueryResult;
+import io.camunda.client.protocol.rest.ProcessDefinitionResult;
+import io.camunda.client.protocol.rest.ProcessDefinitionSearchQueryResult;
+import io.camunda.client.protocol.rest.ProcessInstanceResult;
+import io.camunda.client.protocol.rest.ProcessInstanceSearchQueryResult;
+import io.camunda.client.protocol.rest.SearchQueryPageResponse;
+import io.camunda.client.protocol.rest.UserTaskSearchQueryResult;
+import io.camunda.client.protocol.rest.VariableSearchQueryResult;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
@@ -123,6 +142,15 @@ public final class SearchResponseMapper {
 
   public static Incident toIncidentGetResponse(final IncidentResult response) {
     return new IncidentImpl(response);
+  }
+
+  public static BatchOperation toBatchOperationGetResponse(final BatchOperationResponse response) {
+    return new BatchOperationImpl(response);
+  }
+
+  public static BatchOperationItems toBatchOperationItemsGetResponse(
+      final BatchOperationItemSearchQueryResult response) {
+    return new BatchOperationItemsImpl(response);
   }
 
   private static SearchResponsePage toSearchResponsePage(

@@ -12,7 +12,7 @@ import io.camunda.zeebe.scheduler.SchedulingHints;
 /**
  * Enum to define the different task groups for the {@link
  * io.camunda.zeebe.stream.api.scheduling.ProcessingScheduleService}. The task groups are used to
- * specify the actor in which the tasks are executed. *
+ * specify the actor in which the tasks are executed.
  *
  * <p>Adding an extra value to the enum guarantees creating a new actor for this group.
  *
@@ -24,7 +24,8 @@ import io.camunda.zeebe.scheduler.SchedulingHints;
  * @see SchedulingHints
  */
 public enum AsyncTaskGroup {
-  ASYNC_PROCESSING("AsyncProcessingScheduleActor", SchedulingHints.cpuBound());
+  ASYNC_PROCESSING("AsyncProcessingScheduleActor", SchedulingHints.cpuBound()),
+  BATCH_OPERATIONS("BatchOperationsScheduleActor", SchedulingHints.ioBound());
   private final String name;
   private final SchedulingHints schedulingHints;
 

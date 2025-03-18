@@ -540,7 +540,7 @@ public final class SearchQueryRequestMapper {
     return StringUtils.isEmpty(text) ? null : OffsetDateTime.parse(text);
   }
 
-  private static Either<List<String>, ProcessInstanceFilter> toProcessInstanceFilter(
+  public static Either<List<String>, ProcessInstanceFilter> toProcessInstanceFilter(
       final io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceFilter filter) {
     final var builder = FilterBuilders.processInstance();
     final List<String> validationErrors = new ArrayList<>();

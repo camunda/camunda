@@ -7,7 +7,8 @@
  */
 package io.camunda.search.filter;
 
-import static io.camunda.util.CollectionUtil.*;
+import static io.camunda.util.CollectionUtil.addValuesToList;
+import static io.camunda.util.CollectionUtil.collectValues;
 
 import io.camunda.util.FilterUtil;
 import io.camunda.util.ObjectBuilder;
@@ -31,8 +32,29 @@ public record ProcessInstanceFilter(
     Boolean hasIncident,
     List<Operation<String>> tenantIdOperations,
     List<VariableValueFilter> variableFilters,
+    List<Integer> partitionIds,
     List<Operation<String>> batchOperationIdOperations)
     implements FilterBase {
+
+  public Builder toBuilder() {
+    return new Builder()
+        .processInstanceKeyOperations(processInstanceKeyOperations)
+        .processDefinitionIdOperations(processDefinitionIdOperations)
+        .processDefinitionNameOperations(processDefinitionNameOperations)
+        .processDefinitionVersionOperations(processDefinitionVersionOperations)
+        .processDefinitionVersionTagOperations(processDefinitionVersionTagOperations)
+        .processDefinitionKeyOperations(processDefinitionKeyOperations)
+        .parentProcessInstanceKeyOperations(parentProcessInstanceKeyOperations)
+        .parentFlowNodeInstanceKeyOperations(parentFlowNodeInstanceKeyOperations)
+        .startDateOperations(startDateOperations)
+        .endDateOperations(endDateOperations)
+        .stateOperations(stateOperations)
+        .hasIncident(hasIncident)
+        .tenantIdOperations(tenantIdOperations)
+        .variables(variableFilters)
+        .partitionIds(partitionIds)
+        .batchOperationIdOperations(batchOperationIdOperations);
+  }
 
   public static final class Builder implements ObjectBuilder<ProcessInstanceFilter> {
 
@@ -50,6 +72,7 @@ public record ProcessInstanceFilter(
     private Boolean hasIncident;
     private List<Operation<String>> tenantIdOperations;
     private List<VariableValueFilter> variableFilters;
+    private List<Integer> partitionIds;
     private List<Operation<String>> batchOperationIdOperations;
 
     public Builder processInstanceKeyOperations(final List<Operation<Long>> operations) {
@@ -240,6 +263,11 @@ public record ProcessInstanceFilter(
       return this;
     }
 
+    public Builder partitionIds(final List<Integer> partitionIds) {
+      this.partitionIds = addValuesToList(this.partitionIds, partitionIds);
+      return this;
+    }
+
     public Builder batchOperationIdOperations(final List<Operation<String>> operations) {
       batchOperationIdOperations = addValuesToList(batchOperationIdOperations, operations);
       return this;
@@ -273,6 +301,7 @@ public record ProcessInstanceFilter(
           hasIncident,
           Objects.requireNonNullElse(tenantIdOperations, Collections.emptyList()),
           Objects.requireNonNullElse(variableFilters, Collections.emptyList()),
+          Objects.requireNonNullElse(partitionIds, Collections.emptyList()),
           Objects.requireNonNullElse(batchOperationIdOperations, Collections.emptyList()));
     }
   }

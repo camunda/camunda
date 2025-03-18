@@ -31,6 +31,7 @@ import java.nio.file.attribute.BasicFileAttributes;
 import java.time.InstantSource;
 import java.util.SortedMap;
 import java.util.TreeMap;
+import java.util.function.Function;
 import org.junit.jupiter.api.extension.BeforeEachCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.jupiter.api.extension.ExtensionContext.Namespace;
@@ -76,6 +77,8 @@ public class ProcessingStateExtension implements BeforeEachCallback {
 
   private static final String FIELD_STATE = "state";
 
+  private Function<EngineConfiguration, EngineConfiguration> engineConfigurationBuilder = c -> c;
+
   @Override
   public void beforeEach(final ExtensionContext context) {
     context
@@ -84,11 +87,18 @@ public class ProcessingStateExtension implements BeforeEachCallback {
         .forEach(instance -> injectFields(context, instance, instance.getClass()));
   }
 
+  public ProcessingStateExtension withEngineConfiguration(
+      final Function<EngineConfiguration, EngineConfiguration> engineConfigurationBuilder) {
+    this.engineConfigurationBuilder = engineConfigurationBuilder;
+    return this;
+  }
+
   public ProcessingStateExtensionState lookupOrCreate(final ExtensionContext extensionContext) {
     final var store = getStore(extensionContext);
 
     return (ProcessingStateExtensionState)
-        store.getOrComputeIfAbsent(FIELD_STATE, (key) -> new ProcessingStateExtensionState());
+        store.getOrComputeIfAbsent(
+            FIELD_STATE, (key) -> new ProcessingStateExtensionState(engineConfigurationBuilder));
   }
 
   private void injectFields(
@@ -151,7 +161,8 @@ public class ProcessingStateExtension implements BeforeEachCallback {
     private TransactionContext transactionContext;
     private MutableProcessingState processingState;
 
-    private ProcessingStateExtensionState() {
+    private ProcessingStateExtensionState(
+        final Function<EngineConfiguration, EngineConfiguration> engineConfigurationBuilder) {
 
       final var factory = DefaultZeebeDbFactory.defaultFactory();
       try {
@@ -168,7 +179,7 @@ public class ProcessingStateExtension implements BeforeEachCallback {
                 keyGenerator,
                 new TransientPendingSubscriptionState(),
                 new TransientPendingSubscriptionState(),
-                new EngineConfiguration(),
+                engineConfigurationBuilder.apply(new EngineConfiguration()),
                 InstantSource.system());
       } catch (final Exception e) {
         ExceptionUtils.throwAsUncheckedException(e);

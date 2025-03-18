@@ -27,6 +27,7 @@ import io.camunda.search.query.ProcessInstanceQuery;
 import io.camunda.search.sort.ProcessInstanceSort;
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
+import java.util.List;
 import org.assertj.core.data.TemporalUnitWithinOffset;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.TestTemplate;
@@ -240,6 +241,7 @@ public class ProcessInstanceIT {
                     .endDate(NOW)
                     .parentProcessInstanceKey(-1L)
                     .parentElementInstanceKey(-1L)
+                    .partitionId(1)
                     .version(1)));
 
     final var searchResult =
@@ -253,7 +255,8 @@ public class ProcessInstanceIT {
                                     .processDefinitionKeys(1337L)
                                     .states(ProcessInstanceState.ACTIVE.name())
                                     .parentProcessInstanceKeys(-1L)
-                                    .parentFlowNodeInstanceKeys(-1L))
+                                    .parentFlowNodeInstanceKeys(-1L)
+                                    .partitionIds(List.of(1)))
                         .sort(s -> s)
                         .page(p -> p.from(0).size(5))));
 
