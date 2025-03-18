@@ -120,7 +120,7 @@ public final class AuthorizationCheckBehavior {
     if (securityConfig.getMultiTenancy().isEnabled()) {
       if (!isUserAuthorizedForTenant(request, userOptional.get())) {
         final var rejectionType =
-            request.isNewResource() ? RejectionType.UNAUTHORIZED : RejectionType.NOT_FOUND;
+            request.isNewResource() ? RejectionType.FORBIDDEN : RejectionType.NOT_FOUND;
         return Either.left(new Rejection(rejectionType, request.getTenantErrorMessage()));
       }
     }
