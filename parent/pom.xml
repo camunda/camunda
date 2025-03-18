@@ -165,7 +165,7 @@
     <version.hdr-histogram>2.2.2</version.hdr-histogram>
     <version.joda-time>2.13.1</version.joda-time>
     <version.commons-collections4>4.4</version.commons-collections4>
-    <version.jetty>11.0.24</version.jetty>
+    <version.jetty>11.0.25</version.jetty>
     <version.xmlunit-core>2.10.0</version.xmlunit-core>
 
     <!-- Auth0 Dependencies -->
