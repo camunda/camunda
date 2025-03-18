@@ -14,6 +14,7 @@ import static org.springframework.beans.factory.config.BeanDefinition.SCOPE_PROT
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.camunda.exporter.schema.config.SearchEngineConfiguration;
 import io.camunda.tasklist.property.TasklistElasticsearchProperties;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.qa.util.TasklistIndexPrefixHolder;
@@ -81,6 +82,7 @@ public class ElasticsearchTestExtension
   private RestHighLevelClient zeebeEsClient;
 
   @Autowired private TasklistProperties tasklistProperties;
+  @Autowired private SearchEngineConfiguration searchEngineConfiguration;
   @Autowired private ZeebeImporter zeebeImporter;
   @Autowired private RecordsReaderHolder recordsReaderHolder;
   private boolean failed = false;
@@ -100,6 +102,7 @@ public class ElasticsearchTestExtension
           Optional.ofNullable(indexPrefixHolder.createNewIndexPrefix()).orElse(indexPrefix);
       tasklistProperties.getElasticsearch().setIndexPrefix(indexPrefix);
       tasklistProperties.getZeebeElasticsearch().setPrefix(indexPrefix);
+      searchEngineConfiguration.connect().setIndexPrefix(indexPrefix);
     }
     /* Needed for the tasklist-user index */
     elasticsearchSchemaManager.createSchema();
@@ -120,6 +123,9 @@ public class ElasticsearchTestExtension
     }
     tasklistProperties
         .getElasticsearch()
+        .setIndexPrefix(TasklistElasticsearchProperties.DEFAULT_INDEX_PREFIX);
+    searchEngineConfiguration
+        .connect()
         .setIndexPrefix(TasklistElasticsearchProperties.DEFAULT_INDEX_PREFIX);
     assertMaxOpenScrollContexts(10);
   }

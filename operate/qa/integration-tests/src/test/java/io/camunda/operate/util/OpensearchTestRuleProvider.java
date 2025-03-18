@@ -11,6 +11,7 @@ import static io.camunda.operate.store.opensearch.dsl.RequestDSL.getIndexRequest
 import static io.camunda.operate.util.ThreadUtil.sleepFor;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.exporter.schema.config.SearchEngineConfiguration;
 import io.camunda.operate.conditions.OpensearchCondition;
 import io.camunda.operate.exceptions.PersistenceException;
 import io.camunda.operate.property.OperateOpensearchProperties;
@@ -76,6 +77,7 @@ public class OpensearchTestRuleProvider implements SearchTestRuleProvider {
   protected OpenSearchClient zeebeOsClient;
 
   @Autowired protected OperateProperties operateProperties;
+  @Autowired protected SearchEngineConfiguration searchEngineConfiguration;
   @Autowired protected RecordsReaderHolder recordsReaderHolder;
   protected boolean failed = false;
   Map<Class<? extends ExporterEntity>, String> entityToAliasMap;
@@ -111,6 +113,7 @@ public class OpensearchTestRuleProvider implements SearchTestRuleProvider {
       indexPrefix =
           Optional.ofNullable(indexPrefixHolder.createNewIndexPrefix()).orElse(indexPrefix);
       operateProperties.getOpensearch().setIndexPrefix(indexPrefix);
+      searchEngineConfiguration.connect().setIndexPrefix(indexPrefix);
     }
     if (operateProperties.getOpensearch().isCreateSchema()) {
       final var schemaExporterHelper = new SchemaWithExporter(indexPrefix, false);
@@ -128,6 +131,9 @@ public class OpensearchTestRuleProvider implements SearchTestRuleProvider {
         richOpenSearchClient.index(), richOpenSearchClient.template(), indexPrefix);
     operateProperties
         .getOpensearch()
+        .setIndexPrefix(OperateOpensearchProperties.DEFAULT_INDEX_PREFIX);
+    searchEngineConfiguration
+        .connect()
         .setIndexPrefix(OperateOpensearchProperties.DEFAULT_INDEX_PREFIX);
     assertMaxOpenScrollContexts(15);
   }
