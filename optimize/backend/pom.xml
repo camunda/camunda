@@ -214,7 +214,7 @@
     <dependency>
       <groupId>com.opencsv</groupId>
       <artifactId>opencsv</artifactId>
-      <version>${version.opencsv}</version>
+      <version>5.9</version>
       <exclusions>
         <exclusion>
           <groupId>commons-logging</groupId>
