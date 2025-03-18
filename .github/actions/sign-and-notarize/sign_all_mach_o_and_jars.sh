@@ -136,7 +136,9 @@ while IFS= read -r -d '' jar_file; do
   # 1) Temp folder
   tmpdir="$(mktemp -d)"
   # 2) Unzip jar
-  jar -xf "$jar_abs_path" -C "$tmpdir"
+  pushd $tmpdir
+  jar -xf "$jar_abs_path"
+  popd
 
   # 3) sign Mach-O or .app inside extracted folder
   sign_macho_in_folder "$tmpdir"
