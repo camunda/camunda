@@ -12,14 +12,7 @@ import {FilterableMultiSelect} from '@carbon/react';
 import {t} from 'translation';
 import {getRandomId} from 'services';
 
-import {
-  itemToString,
-  itemToElement,
-  identityToItem,
-  getItems,
-  getSelectedIdentity,
-  Item,
-} from './service';
+import {itemToElement, identityToItem, getItems, getSelectedIdentity} from './service';
 import useLoadIdentities from './useLoadIdentities';
 import {UserInputProps} from './UserTypeahead';
 
@@ -132,7 +125,16 @@ export default function MultiUserInput({
         }
       }}
       items={items}
-      itemToString={itemToString}
+      itemToString={(item) => {
+        if (!item) {
+          return '';
+        }
+
+        const {label, subText, id} = item;
+        // the FilterableMultiSelect filters items based on the string below
+        // we have to include all relevant information to ensure they appear in the menu
+        return label + subText + (id || '');
+      }}
       itemToElement={(item) => itemToElement(item, textValue)}
     />
   );
