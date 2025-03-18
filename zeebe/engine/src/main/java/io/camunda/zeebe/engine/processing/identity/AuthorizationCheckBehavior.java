@@ -348,7 +348,9 @@ public final class AuthorizationCheckBehavior {
   }
 
   /**
-   * Checks if a user is assigned to a specific tenant.
+   * Checks if a user is assigned to a specific tenant. If multi-tenancy is disabled, this method
+   * will always return true. If a command is written by Zeebe internally, it will also always
+   * return true.
    *
    * @param command The command send by the user
    * @param tenantId The tenant we want to check assignment for
@@ -358,20 +360,19 @@ public final class AuthorizationCheckBehavior {
     if (!securityConfig.getMultiTenancy().isEnabled()) {
       return true;
     }
+
+    if (!command.hasRequestMetadata()) {
+      // The command is written by Zeebe internally. Internal Zeebe commands are always allowed to
+      // access all tenants
+      return true;
+    }
+
     return getAuthorizedTenantIds(command).isAuthorizedForTenantId(tenantId);
   }
 
   public AuthorizedTenants getAuthorizedTenantIds(final TypedRecord<?> command) {
     if (isAuthorizedAnonymousUser(command)) {
       return AuthorizedTenants.ANONYMOUS;
-    }
-
-    // todo: this is a temporary solution until we adjust all the tests to fetch the tenant from the
-    // state
-    if (command.getAuthorizations().get(Authorization.AUTHORIZED_TENANTS) != null) {
-      final var authorizedTenants =
-          (List<String>) command.getAuthorizations().get(Authorization.AUTHORIZED_TENANTS);
-      return new AuthenticatedAuthorizedTenants(authorizedTenants);
     }
 
     final var username = getUsername(command);
