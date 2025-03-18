@@ -201,7 +201,7 @@ To specify the database type, use the following property: `test.integration.camu
 > If you want to run against a different secondary storage, you need to spin it up manually, for example, via docker.
 > Ensure the container is available under `:9200` for ES or OS.
 
-### Example to run against OpenSearch:
+### Example to run against OpenSearch
 
 Spin up an OpenSearch container via docker (or podman):
 
