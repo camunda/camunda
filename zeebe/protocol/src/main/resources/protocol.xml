@@ -65,6 +65,9 @@
       <validValue name="MAPPING">47</validValue>
       <validValue name="IDENTITY_SETUP">48</validValue>
       <validValue name="RESOURCE">49</validValue>
+      <validValue name="BATCH_OPERATION_CREATION">50</validValue>
+      <validValue name="BATCH_OPERATION_EXECUTION">51</validValue>
+      <validValue name="BATCH_OPERATION_CHUNK">52</validValue>
 
       <!-- Management records / record not related to process automation -->
       <validValue name="REDISTRIBUTION">252</validValue>

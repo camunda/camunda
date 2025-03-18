@@ -207,6 +207,10 @@ public class OpensearchExporterConfiguration {
 
     public boolean authorization = true;
 
+    public boolean batchOperationCreation = false;
+    public boolean batchOperationChunk = false;
+    public boolean batchOperationExecution = false;
+
     // index settings
     private Integer numberOfShards = null;
     private Integer numberOfReplicas = null;
