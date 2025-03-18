@@ -41,6 +41,9 @@ public interface ScheduledCommandCache {
     public void persist() {}
 
     @Override
+    public void rollback() {}
+
+    @Override
     public void add(final Intent intent, final long key) {}
 
     @Override
@@ -64,11 +67,16 @@ public interface ScheduledCommandCache {
    * Represents staged changes to the cache that have not been persisted yet. Call {@link
    * #persist()} to do so.
    *
+   * <p>Once persisted, staged changes can be rolled back by calling {@link #rollback()}. This will
+   * remove all staged changes from the main cache.
+   *
    * <p>See {@link StageableScheduledCommandCache} for more.
    */
   interface ScheduledCommandCacheChanges {
 
     void persist();
+
+    void rollback();
   }
 
   /**
