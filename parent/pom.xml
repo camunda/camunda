@@ -982,14 +982,6 @@
       </dependency>
 
       <dependency>
-        <groupId>com.google.cloud</groupId>
-        <artifactId>libraries-bom</artifactId>
-        <version>${version.google-sdk}</version>
-        <type>pom</type>
-        <scope>import</scope>
-      </dependency>
-
-      <dependency>
         <groupId>software.amazon.awssdk</groupId>
         <artifactId>bom</artifactId>
         <version>${version.awssdk}</version>
@@ -1065,6 +1057,18 @@
         <groupId>org.eclipse.jetty</groupId>
         <artifactId>jetty-bom</artifactId>
         <version>${version.jetty}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+
+      <!--
+        As this includes so-called "first party" dependencies" which may be of different versions,
+        this must also be after most library-specific BOMs (but above Spring's)
+      -->
+      <dependency>
+        <groupId>com.google.cloud</groupId>
+        <artifactId>libraries-bom</artifactId>
+        <version>${version.google-sdk}</version>
         <type>pom</type>
         <scope>import</scope>
       </dependency>
