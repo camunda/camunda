@@ -279,7 +279,7 @@ public class CamundaExporter implements Exporter {
 
   private List<String> prefixedNames(final String... names) {
     final var indexPrefix =
-        AbstractIndexDescriptor.formatIndexPrefix(configuration.getIndex().getPrefix());
+        AbstractIndexDescriptor.formatIndexPrefix(configuration.getConnect().getIndexPrefix());
     return Arrays.stream(names).map(s -> indexPrefix + s).toList();
   }
 

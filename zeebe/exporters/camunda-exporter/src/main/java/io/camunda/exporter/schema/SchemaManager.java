@@ -353,7 +353,7 @@ public class SchemaManager {
 
     final var currentTemplates =
         searchEngineClient.getMappings(
-            config.index().getPrefix() + "*", MappingSource.INDEX_TEMPLATE);
+            config.connect().getIndexPrefix() + "*", MappingSource.INDEX_TEMPLATE);
 
     LOG.info(
         "Validate '{}' existing index templates based on '{}' template descriptors",

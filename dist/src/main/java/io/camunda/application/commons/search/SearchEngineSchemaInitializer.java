@@ -27,7 +27,7 @@ public class SearchEngineSchemaInitializer implements InitializingBean {
     try (final var clientAdapter = ClientAdapter.of(searchEngineConfiguration.connect())) {
       final IndexDescriptors indexDescriptors =
           new IndexDescriptors(
-              searchEngineConfiguration.index().getPrefix(),
+              searchEngineConfiguration.connect().getIndexPrefix(),
               searchEngineConfiguration.connect().getTypeEnum().isElasticSearch());
       final SchemaManager schemaManager =
           new SchemaManager(

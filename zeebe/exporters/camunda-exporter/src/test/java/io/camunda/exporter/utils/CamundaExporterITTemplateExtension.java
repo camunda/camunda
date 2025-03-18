@@ -120,7 +120,7 @@ public class CamundaExporterITTemplateExtension
   protected ExporterConfiguration getConfigWithConnectionDetails(
       final ConnectionTypes connectionType) {
     final var config = new ExporterConfiguration();
-    config.getIndex().setPrefix(SearchDBExtension.CUSTOM_PREFIX);
+    config.getConnect().setIndexPrefix(SearchDBExtension.CUSTOM_PREFIX);
     config.getBulk().setSize(1); // force flushing on the first record
     if (connectionType == ELASTICSEARCH) {
       config.getConnect().setUrl(extension.esUrl());

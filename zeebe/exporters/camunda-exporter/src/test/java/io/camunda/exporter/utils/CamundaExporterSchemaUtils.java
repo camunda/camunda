@@ -20,7 +20,8 @@ public final class CamundaExporterSchemaUtils {
   public static void createSchemas(final ExporterConfiguration config) throws IOException {
     final var indexDescriptors =
         new IndexDescriptors(
-            config.getIndex().getPrefix(), config.getConnect().getTypeEnum().isElasticSearch());
+            config.getConnect().getIndexPrefix(),
+            config.getConnect().getTypeEnum().isElasticSearch());
     try (final ClientAdapter clientAdapter = ClientAdapter.of(config.getConnect())) {
       new SchemaManager(
               clientAdapter.getSearchEngineClient(),

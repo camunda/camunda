@@ -119,7 +119,6 @@ public class ExporterConfiguration {
 
   public static class IndexSettings {
     public static final int DEFAULT_VARIABLE_SIZE_THRESHOLD = 8191;
-    private String prefix = "";
     private String zeebeIndexPrefix = "zeebe-record";
 
     private Integer numberOfShards = 1;
@@ -131,14 +130,6 @@ public class ExporterConfiguration {
     private Integer variableSizeThreshold = DEFAULT_VARIABLE_SIZE_THRESHOLD;
 
     private boolean shouldWaitForImporters = true;
-
-    public String getPrefix() {
-      return prefix;
-    }
-
-    public void setPrefix(final String prefix) {
-      this.prefix = prefix;
-    }
 
     public Integer getNumberOfShards() {
       return numberOfShards;
@@ -183,10 +174,7 @@ public class ExporterConfiguration {
     @Override
     public String toString() {
       return "IndexSettings{"
-          + "prefix='"
-          + prefix
-          + '\''
-          + ", numberOfShards="
+          + "numberOfShards="
           + numberOfShards
           + ", numberOfReplicas="
           + numberOfReplicas
