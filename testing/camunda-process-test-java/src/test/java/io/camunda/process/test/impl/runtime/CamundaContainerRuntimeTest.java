@@ -32,7 +32,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Answers;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.testcontainers.elasticsearch.ElasticsearchContainer;
 
 @ExtendWith(MockitoExtension.class)
 public class CamundaContainerRuntimeTest {
@@ -54,9 +53,6 @@ public class CamundaContainerRuntimeTest {
   @Mock private ContainerFactory containerFactory;
 
   @Mock(answer = Answers.RETURNS_SELF)
-  private ElasticsearchContainer elasticsearchContainer;
-
-  @Mock(answer = Answers.RETURNS_SELF)
   private CamundaContainer camundaContainer;
 
   @Mock(answer = Answers.RETURNS_SELF)
@@ -64,8 +60,6 @@ public class CamundaContainerRuntimeTest {
 
   @BeforeEach
   void configureMocks() {
-    when(containerFactory.createElasticsearchContainer(any(), any()))
-        .thenReturn(elasticsearchContainer);
     when(containerFactory.createCamundaContainer(any(), any())).thenReturn(camundaContainer);
     when(containerFactory.createConnectorsContainer(any(), any())).thenReturn(connectorsContainer);
   }
@@ -78,11 +72,9 @@ public class CamundaContainerRuntimeTest {
 
     // then
     assertThat(runtime).isNotNull();
-    assertThat(runtime.getElasticsearchContainer()).isEqualTo(elasticsearchContainer);
     assertThat(runtime.getCamundaContainer()).isEqualTo(camundaContainer);
     assertThat(runtime.getConnectorsContainer()).isEqualTo(connectorsContainer);
 
-    verify(elasticsearchContainer, never()).start();
     verify(camundaContainer, never()).start();
     verify(connectorsContainer, never()).start();
   }
@@ -97,7 +89,7 @@ public class CamundaContainerRuntimeTest {
     runtime.start();
 
     // then
-    verify(elasticsearchContainer).start();
+    // verifyNoInteractions(elasticsearchContainer).start();
     verify(camundaContainer).start();
     verify(connectorsContainer, never()).start();
 
@@ -105,7 +97,7 @@ public class CamundaContainerRuntimeTest {
     runtime.close();
 
     // then
-    verify(elasticsearchContainer).stop();
+    // verify(elasticsearchContainer).stop();
     verify(camundaContainer).stop();
     verify(connectorsContainer, never()).stop();
   }
@@ -116,10 +108,6 @@ public class CamundaContainerRuntimeTest {
     CamundaContainerRuntime.newBuilder().withContainerFactory(containerFactory).build();
 
     // then
-    verify(containerFactory)
-        .createElasticsearchContainer(
-            ContainerRuntimeDefaults.ELASTICSEARCH_DOCKER_IMAGE_NAME,
-            ContainerRuntimeDefaults.ELASTICSEARCH_DOCKER_IMAGE_VERSION);
     verify(containerFactory)
         .createCamundaContainer(
             ContainerRuntimeDefaults.CAMUNDA_DOCKER_IMAGE_NAME,
@@ -156,7 +144,9 @@ public class CamundaContainerRuntimeTest {
     verify(camundaContainer).withLogConsumer(any());
   }
 
-  @Test
+  // @Test
+  // The ES container has been removed in favor of a H2 database solution. However, in the future ES
+  // is going to be configurable as part of {@see https://github.com/camunda/camunda/issues/29854}
   void shouldConfigureElasticsearchContainer() {
     // given
     final String dockerImageName = "custom-elasticsearch";
@@ -176,10 +166,6 @@ public class CamundaContainerRuntimeTest {
 
     // then
     verify(containerFactory).createElasticsearchContainer(dockerImageName, dockerImageVersion);
-    verify(elasticsearchContainer).withEnv(EXPECTED_ENV_VARS);
-    verify(elasticsearchContainer).addExposedPort(100);
-    verify(elasticsearchContainer).addExposedPort(200);
-    verify(elasticsearchContainer).withLogConsumer(any());
   }
 
   @Test

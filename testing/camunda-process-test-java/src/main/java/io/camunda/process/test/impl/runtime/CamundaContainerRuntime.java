@@ -46,7 +46,7 @@ public class CamundaContainerRuntime implements AutoCloseable {
       "http://" + NETWORK_ALIAS_ELASTICSEARCH + ":" + ContainerRuntimePorts.ELASTICSEARCH_REST_API;
 
   private static final String CAMUNDA_GRPC_API =
-      NETWORK_ALIAS_CAMUNDA + ":" + ContainerRuntimePorts.CAMUNDA_GATEWAY_API;
+      "http://" + NETWORK_ALIAS_CAMUNDA + ":" + ContainerRuntimePorts.CAMUNDA_GATEWAY_API;
   private static final String CAMUNDA_REST_API =
       "http://" + NETWORK_ALIAS_CAMUNDA + ":" + ContainerRuntimePorts.CAMUNDA_REST_API;
 
@@ -54,7 +54,6 @@ public class CamundaContainerRuntime implements AutoCloseable {
 
   private final Network network;
   private final CamundaContainer camundaContainer;
-  private final ElasticsearchContainer elasticsearchContainer;
   private final ConnectorsContainer connectorsContainer;
 
   private final boolean connectorsEnabled;
@@ -65,11 +64,12 @@ public class CamundaContainerRuntime implements AutoCloseable {
     connectorsEnabled = builder.isConnectorsEnabled();
     network = Network.newNetwork();
 
-    elasticsearchContainer = createElasticsearchContainer(network, builder);
     camundaContainer = createCamundaContainer(network, builder);
     connectorsContainer = createConnectorsContainer(network, builder);
   }
 
+  // The ES container has been removed in favor of a H2 database solution. However, in the future ES
+  // is going to be configurable as part of {@see https://github.com/camunda/camunda/issues/29854}
   private ElasticsearchContainer createElasticsearchContainer(
       final Network network, final CamundaContainerRuntimeBuilder builder) {
     final ElasticsearchContainer container =
@@ -98,7 +98,6 @@ public class CamundaContainerRuntime implements AutoCloseable {
                 createContainerJsonLogger(builder.getCamundaLoggerName(), CamundaLogEntry.class))
             .withNetwork(network)
             .withNetworkAliases(NETWORK_ALIAS_CAMUNDA)
-            .withElasticsearchUrl(ELASTICSEARCH_URL)
             .withEnv(builder.getCamundaEnvVars());
 
     builder.getCamundaExposedPorts().forEach(container::addExposedPort);
@@ -129,7 +128,6 @@ public class CamundaContainerRuntime implements AutoCloseable {
 
   public void start() {
     final List<GenericContainer<?>> containers = new ArrayList<>();
-    containers.add(elasticsearchContainer);
     containers.add(camundaContainer);
     if (connectorsEnabled) {
       containers.add(connectorsContainer);
@@ -153,10 +151,6 @@ public class CamundaContainerRuntime implements AutoCloseable {
     return camundaContainer;
   }
 
-  public ElasticsearchContainer getElasticsearchContainer() {
-    return elasticsearchContainer;
-  }
-
   public ConnectorsContainer getConnectorsContainer() {
     return connectorsContainer;
   }
@@ -171,7 +165,6 @@ public class CamundaContainerRuntime implements AutoCloseable {
     }
 
     camundaContainer.stop();
-    elasticsearchContainer.stop();
     network.close();
 
     final Instant endTime = Instant.now();
