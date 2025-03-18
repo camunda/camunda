@@ -354,7 +354,11 @@ public class CamundaMultiDBExtension
           }
         }
       } catch (final Exception ex) {
-        throw new RuntimeException(ex);
+        throw new RuntimeException(
+            String.format(
+                "Expected to find field annotated with %s from type %s, but fail during that.",
+                MultiDbTestApplication.class, TestSpringApplication.class),
+            ex);
       }
     }
     return new ApplicationUnderTest(testStandaloneApplication, shouldBeManaged);
