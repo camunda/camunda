@@ -1,7 +1,7 @@
 # This workflow ensures that pull requests aren't updated using merge commits.
 # To update a pull request with the latest changes you should rebase your branch on the base branch.
-# See our contributing guide's section on 'Creating a pull request' for more information:
-# https://github.com/camunda/camunda/blob/main/CONTRIBUTING.md#creating-a-pull-request
+# For more information, please refer to our contributing guide's section on 'Updating a pull request':
+# https://github.com/camunda/camunda/blob/main/CONTRIBUTING.md#updating-a-pull-request
 #
 # It is allowed to have merge commits in a pull request.
 # An example is a pull request that builds upon the work of another pull request.
