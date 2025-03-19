@@ -49,15 +49,15 @@ public class ConnectorsContainer extends GenericContainer<ConnectorsContainer> {
   }
 
   public ConnectorsContainer withZeebeGrpcApi(final String zeebeGrpcApi) {
-    withEnv(ContainerRuntimeEnvs.CONNECTORS_ENV_ZEEBE_CLIENT_BROKER_GATEWAY_ADDRESS, zeebeGrpcApi);
-    withEnv(ContainerRuntimeEnvs.CONNECTORS_ENV_ZEEBE_CLIENT_SECURITY_PLAINTEXT, "true");
+    withEnv("CAMUNDA_CLIENT_GRPC-ADDRESS", zeebeGrpcApi);
     return this;
   }
 
   public ConnectorsContainer withOperateApi(final String operateRestApi) {
-    withEnv(ContainerRuntimeEnvs.CONNECTORS_ENV_CAMUNDA_OPERATE_CLIENT_URL, operateRestApi);
-    withEnv(ContainerRuntimeEnvs.CONNECTORS_ENV_CAMUNDA_OPERATE_CLIENT_USERNAME, "demo");
-    withEnv(ContainerRuntimeEnvs.CONNECTORS_ENV_CAMUNDA_OPERATE_CLIENT_PASSWORD, "demo");
+    withEnv("CAMUNDA_CLIENT_REST-ADDRESS", operateRestApi);
+    withEnv("CAMUNDA_CLIENT_MODE", "self-managed");
+    withEnv("CAMUNDA_CLIENT_AUTH_USERNAME", "demo");
+    withEnv("CAMUNDA_CLIENT_AUTH_PASSWORD", "demo");
     return this;
   }
 
