@@ -129,6 +129,24 @@ const runningInstance: InstanceMock = {
       completed: 1,
     },
   ],
+  statisticsV2: {
+    items: [
+      {
+        elementId: 'Activity_0dex012',
+        active: 1,
+        canceled: 0,
+        incidents: 0,
+        completed: 0,
+      },
+      {
+        elementId: 'StartEvent_1',
+        active: 0,
+        canceled: 0,
+        incidents: 0,
+        completed: 1,
+      },
+    ],
+  },
   metaData: {
     flowNodeInstanceId: '2251799813687150',
     flowNodeId: null,

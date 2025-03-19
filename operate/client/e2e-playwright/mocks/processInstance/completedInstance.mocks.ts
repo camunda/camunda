@@ -86,6 +86,31 @@ const completedInstance: InstanceMock = {
       completed: 1,
     },
   ],
+  statisticsV2: {
+    items: [
+      {
+        elementId: 'EndEvent_02qhg5x',
+        active: 0,
+        canceled: 0,
+        incidents: 0,
+        completed: 1,
+      },
+      {
+        elementId: 'IntermediateCatchEvent_1l4zjh6',
+        active: 0,
+        canceled: 0,
+        incidents: 0,
+        completed: 1,
+      },
+      {
+        elementId: 'StartEvent_1',
+        active: 0,
+        canceled: 0,
+        incidents: 0,
+        completed: 1,
+      },
+    ],
+  },
   xml: `<?xml version="1.0" encoding="UTF-8"?>
     <bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" id="Definitions_1hjjfka" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Zeebe Modeler" exporterVersion="0.7.0">
       <bpmn:process id="timerProcess" name="Timer process" isExecutable="true">

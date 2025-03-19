@@ -53,6 +53,17 @@ test.describe('process instance migration', () => {
             completed: 0,
           },
         ],
+        statisticsV2: {
+          items: [
+            {
+              elementId: 'checkPayment',
+              active: 20,
+              canceled: 0,
+              incidents: 0,
+              completed: 0,
+            },
+          ],
+        },
         processXml: open('orderProcess_v3.bpmn'),
       }),
     );
@@ -125,6 +136,17 @@ test.describe('process instance migration', () => {
             completed: 0,
           },
         ],
+        statisticsV2: {
+          items: [
+            {
+              elementId: 'checkPayment',
+              active: 3,
+              canceled: 0,
+              incidents: 0,
+              completed: 0,
+            },
+          ],
+        },
         groupedProcesses: mockGroupedProcesses.filter((process) => {
           return process.bpmnProcessId === 'orderProcess';
         }),
@@ -227,6 +249,17 @@ test.describe('process instance migration', () => {
             completed: 0,
           },
         ],
+        statisticsV2: {
+          items: [
+            {
+              elementId: 'checkPayment',
+              active: 3,
+              canceled: 0,
+              incidents: 0,
+              completed: 0,
+            },
+          ],
+        },
         processXml: open('orderProcess_v2.bpmn'),
       }),
     );
