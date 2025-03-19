@@ -29,6 +29,15 @@ const completedOrderProcessInstance: InstanceMock = {
       completed: 1,
     },
   ],
+  statisticsV2: [
+    {
+      flowNodeId: 'EndEvent_042s0oc',
+      active: 0,
+      canceled: 0,
+      incidents: 0,
+      completed: 1,
+    },
+  ],
   variables: [
     {
       id: '2251799813687144-signalNumber',

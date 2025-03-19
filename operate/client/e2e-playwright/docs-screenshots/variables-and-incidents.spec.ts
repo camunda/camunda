@@ -106,6 +106,7 @@ test.describe('variables and incidents', () => {
         processInstanceDetail: orderProcessInstance.incidentState.detail,
         flowNodeInstances: orderProcessInstance.incidentState.flowNodeInstances,
         statistics: orderProcessInstance.incidentState.statistics,
+        statisticsV2: orderProcessInstance.incidentState.statisticsV2,
         sequenceFlows: orderProcessInstance.incidentState.sequenceFlows,
         variables: orderProcessInstance.incidentState.variables,
         incidents: orderProcessInstance.incidentState.incidents,
@@ -185,6 +186,7 @@ test.describe('variables and incidents', () => {
         processInstanceDetail: orderProcessInstance.incidentState.detail,
         flowNodeInstances: orderProcessInstance.incidentState.flowNodeInstances,
         statistics: orderProcessInstance.incidentState.statistics,
+        statisticsV2: orderProcessInstance.incidentState.statisticsV2,
         sequenceFlows: orderProcessInstance.incidentState.sequenceFlows,
         variables: orderProcessInstance.incidentResolvedState.variables,
         incidents: orderProcessInstance.incidentState.incidents,
@@ -246,6 +248,7 @@ test.describe('variables and incidents', () => {
         flowNodeInstances:
           orderProcessInstance.incidentResolvedState.flowNodeInstances,
         statistics: orderProcessInstance.incidentResolvedState.statistics,
+        statisticsV2: orderProcessInstance.incidentResolvedState.statisticsV2,
         sequenceFlows: orderProcessInstance.incidentResolvedState.sequenceFlows,
         variables: orderProcessInstance.incidentResolvedState.variables,
         xml: orderProcessInstance.incidentResolvedState.xml,
@@ -270,6 +273,7 @@ test.describe('variables and incidents', () => {
         flowNodeInstances:
           orderProcessInstance.completedState.flowNodeInstances,
         statistics: orderProcessInstance.completedState.statistics,
+        statisticsV2: orderProcessInstance.completedState.statisticsV2,
         sequenceFlows: orderProcessInstance.completedState.sequenceFlows,
         variables: orderProcessInstance.completedState.variables,
         xml: orderProcessInstance.completedState.xml,
