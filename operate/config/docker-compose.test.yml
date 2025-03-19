@@ -23,7 +23,7 @@ services:
       - ./els-snapshots:/usr/local/els-snapshots
   zeebe:
     container_name: zeebe
-    image: camunda/zeebe:8.6.11
+    image: camunda/zeebe:8.6.12
     environment:
       - "JAVA_TOOL_OPTIONS=-Xms512m -Xmx512m"
       - ZEEBE_HOST=${ZEEBE_HOST:-}
