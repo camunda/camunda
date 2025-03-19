@@ -37,7 +37,7 @@ public final class AuthorizationCheckBehavior {
   public static final String FORBIDDEN_ERROR_MESSAGE =
       "Insufficient permissions to perform operation '%s' on resource '%s'";
   public static final String FORBIDDEN_FOR_TENANT_ERROR_MESSAGE =
-      FORBIDDEN_ERROR_MESSAGE + " for tenant '%s'";
+      "Expected to perform operation '%s' on resource '%s' for tenant '%s', but user is not assigned to this tenant";
   public static final String FORBIDDEN_ERROR_MESSAGE_WITH_RESOURCE =
       FORBIDDEN_ERROR_MESSAGE + ", required resource identifiers are one of '%s'";
   public static final String NOT_FOUND_ERROR_MESSAGE =
@@ -49,9 +49,10 @@ public final class AuthorizationCheckBehavior {
       "Unauthorized to perform operation '%s' on resource '%s'";
   private final AuthorizationState authorizationState;
   private final UserState userState;
-  private final SecurityConfiguration securityConfig;
   private final MappingState mappingState;
   private final GroupState groupState;
+  private final boolean authorizationsEnabled;
+  private final boolean multiTenancyEnabled;
 
   public AuthorizationCheckBehavior(
       final ProcessingState processingState, final SecurityConfiguration securityConfig) {
@@ -60,7 +61,8 @@ public final class AuthorizationCheckBehavior {
     mappingState = processingState.getMappingState();
     groupState = processingState.getGroupState();
     processingState.getTenantState();
-    this.securityConfig = securityConfig;
+    authorizationsEnabled = securityConfig.getAuthorizations().isEnabled();
+    multiTenancyEnabled = securityConfig.getMultiTenancy().isEnabled();
   }
 
   /**
@@ -76,8 +78,7 @@ public final class AuthorizationCheckBehavior {
    *     {@link Void} if the user is authorized
    */
   public Either<Rejection, Void> isAuthorized(final AuthorizationRequest request) {
-    if (!securityConfig.getAuthorizations().isEnabled()
-        && !securityConfig.getMultiTenancy().isEnabled()) {
+    if (!authorizationsEnabled && !multiTenancyEnabled) {
       return Either.right(null);
     }
 
@@ -117,18 +118,19 @@ public final class AuthorizationCheckBehavior {
                   request.getPermissionType(), request.getResourceType())));
     }
 
-    if (securityConfig.getMultiTenancy().isEnabled()) {
-      if (!isUserAuthorizedForTenant(request, userOptional.get())) {
+    final var user = userOptional.get();
+    if (multiTenancyEnabled) {
+      if (!isUserAuthorizedForTenant(request, user)) {
         final var rejectionType =
             request.isNewResource() ? RejectionType.FORBIDDEN : RejectionType.NOT_FOUND;
         return Either.left(new Rejection(rejectionType, request.getTenantErrorMessage()));
       }
     }
 
-    if (securityConfig.getAuthorizations().isEnabled()) {
+    if (authorizationsEnabled) {
       final var authorizedResourceIdentifiers =
           getUserAuthorizedResourceIdentifiers(
-              userOptional.get(), request.getResourceType(), request.getPermissionType());
+              user, request.getResourceType(), request.getPermissionType());
       return checkResourceIdentifiers(request, authorizedResourceIdentifiers);
     }
     return Either.right(null);
@@ -142,8 +144,19 @@ public final class AuthorizationCheckBehavior {
    * @return an {@link Either} containing a {@link Rejection} or {@link Void}
    */
   private Either<Rejection, Void> isMappingAuthorized(final AuthorizationRequest request) {
-    if (securityConfig.getAuthorizations().isEnabled()) {
-      final var authorizedResourceIdentifiers = getMappingsAuthorizedResourceIdentifiers(request);
+    final var persistedMappings = getPersistedMappings(request.getCommand());
+
+    if (multiTenancyEnabled) {
+      if (!isMappingAuthorizedForTenant(request, persistedMappings)) {
+        final var rejectionType =
+            request.isNewResource() ? RejectionType.FORBIDDEN : RejectionType.NOT_FOUND;
+        return Either.left(new Rejection(rejectionType, request.getTenantErrorMessage()));
+      }
+    }
+
+    if (authorizationsEnabled) {
+      final var authorizedResourceIdentifiers =
+          getMappingsAuthorizedResourceIdentifiers(request, persistedMappings);
       return checkResourceIdentifiers(request, authorizedResourceIdentifiers);
     }
     return Either.right(null);
@@ -177,10 +190,6 @@ public final class AuthorizationCheckBehavior {
   private boolean isUserAuthorizedForTenant(
       final AuthorizationRequest request, final PersistedUser user) {
     final var tenantId = request.tenantId;
-    if (tenantId.equals(TenantOwned.DEFAULT_TENANT_IDENTIFIER)) {
-      return true;
-    }
-
     if (user.getTenantIdsList().contains(tenantId)) {
       return true;
     }
@@ -189,24 +198,40 @@ public final class AuthorizationCheckBehavior {
   }
 
   private boolean isMappingAuthorizedForTenant(
-      final AuthorizationRequest request, final PersistedMapping mapping) {
+      final AuthorizationRequest request, final List<PersistedMapping> persistedMappings) {
     final var tenantId = request.tenantId;
-    if (tenantId.equals(TenantOwned.DEFAULT_TENANT_IDENTIFIER)) {
+
+    final var mappingAssignedToTenant =
+        persistedMappings.stream()
+            .flatMap(persistedMapping -> persistedMapping.getTenantIdsList().stream())
+            .collect(Collectors.toSet())
+            .contains(tenantId);
+
+    if (mappingAssignedToTenant) {
       return true;
     }
 
-    if (mapping.getTenantIdsList().contains(request.getTenantId())) {
-      return true;
-    }
+    final var groupKeys =
+        persistedMappings.stream()
+            .flatMap(persistedMapping -> persistedMapping.getGroupKeysList().stream())
+            .collect(Collectors.toSet());
 
-    return areGroupsAuthorizedForTenant(mapping.getGroupKeysList(), tenantId);
+    return areGroupsAuthorizedForTenant(groupKeys, tenantId);
   }
 
   private boolean areGroupsAuthorizedForTenant(final List<Long> groupKeys, final String tenantId) {
+    return areGroupsAuthorizedForTenant(new HashSet<>(groupKeys), tenantId);
+  }
+
+  private boolean areGroupsAuthorizedForTenant(final Set<Long> groupKeys, final String tenantId) {
     return getTenantIdsForGroups(groupKeys).contains(tenantId);
   }
 
   private Set<String> getTenantIdsForGroups(final List<Long> groupKeys) {
+    return getTenantIdsForGroups(new HashSet<>(groupKeys));
+  }
+
+  private Set<String> getTenantIdsForGroups(final Set<Long> groupKeys) {
     return groupKeys.stream()
         .map(groupState::get)
         .filter(Optional::isPresent)
@@ -216,7 +241,7 @@ public final class AuthorizationCheckBehavior {
   }
 
   public Set<String> getAllAuthorizedResourceIdentifiers(final AuthorizationRequest request) {
-    if (!securityConfig.getAuthorizations().isEnabled()) {
+    if (!authorizationsEnabled) {
       return Set.of(WILDCARD_PERMISSION);
     }
 
@@ -277,16 +302,18 @@ public final class AuthorizationCheckBehavior {
         Stream.concat(roleAuthorizedResourceIdentifiers, groupAuthorizedResourceIdentifiers));
   }
 
+  private Stream<String> getMappingsAuthorizedResourceIdentifiers(
+      final AuthorizationRequest request) {
+    return getMappingsAuthorizedResourceIdentifiers(
+        request, getPersistedMappings(request.getCommand()));
+  }
+
   // TODO: refactor to use String-based ownerKeys when all Identity-related entities use them
   // https://github.com/camunda/camunda/issues/26981
   private Stream<String> getMappingsAuthorizedResourceIdentifiers(
-      final AuthorizationRequest request) {
-    return extractUserTokenClaims(request.getCommand())
-        .<PersistedMapping>mapMulti(
-            (claim, stream) ->
-                mappingState.get(claim.claimName(), claim.claimValue()).ifPresent(stream))
-        .filter(mapping -> isMappingAuthorizedForTenant(request, mapping))
-        .<String>mapMulti(
+      final AuthorizationRequest request, final List<PersistedMapping> persistedMappings) {
+    return persistedMappings.stream()
+        .mapMulti(
             (mapping, stream) -> {
               getAuthorizedResourceIdentifiersForOwners(
                       AuthorizationOwnerType.MAPPING,
@@ -366,7 +393,7 @@ public final class AuthorizationCheckBehavior {
    * @return true if assigned, false otherwise
    */
   public boolean isAssignedToTenant(final TypedRecord<?> command, final String tenantId) {
-    if (!securityConfig.getMultiTenancy().isEnabled()) {
+    if (!multiTenancyEnabled) {
       return true;
     }
 
@@ -400,9 +427,7 @@ public final class AuthorizationCheckBehavior {
     }
 
     final var tenantsOfMapping =
-        extractUserTokenClaims(command)
-            .map(claim -> mappingState.get(claim.claimName(), claim.claimValue()))
-            .<PersistedMapping>mapMulti(Optional::ifPresent)
+        getPersistedMappings(command).stream()
             .flatMap(
                 mapping -> {
                   final var tenantIdsList = mapping.getTenantIdsList();
@@ -415,7 +440,7 @@ public final class AuthorizationCheckBehavior {
         : new AuthenticatedAuthorizedTenants(tenantsOfMapping);
   }
 
-  private static Stream<UserTokenClaim> extractUserTokenClaims(final TypedRecord<?> command) {
+  private List<PersistedMapping> getPersistedMappings(final TypedRecord<?> command) {
     return command.getAuthorizations().entrySet().stream()
         .filter(entry -> entry.getKey().startsWith(Authorization.USER_TOKEN_CLAIM_PREFIX))
         .flatMap(
@@ -429,7 +454,10 @@ public final class AuthorizationCheckBehavior {
               } else {
                 return Stream.of(new UserTokenClaim(claimName, claimValue.toString()));
               }
-            });
+            })
+        .map((claim) -> mappingState.get(claim.claimName(), claim.claimValue()))
+        .<PersistedMapping>mapMulti(Optional::ifPresent)
+        .toList();
   }
 
   public static final class AuthorizationRequest {

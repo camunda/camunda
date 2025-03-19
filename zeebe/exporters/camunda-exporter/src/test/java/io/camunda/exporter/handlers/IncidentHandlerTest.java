@@ -382,6 +382,38 @@ public class IncidentHandlerTest {
   }
 
   /**
+   * Must be imported correctly so that resolving the incident considers deploying the missing
+   * resource.
+   */
+  @Test
+  void shouldHandleResourceNotFoundErrorType() {
+    // given
+    final long expectedId = 123;
+    final IncidentRecordValue incidentRecordValue =
+        ImmutableIncidentRecordValue.builder()
+            .from(factory.generateObject(IncidentRecordValue.class))
+            .withErrorType(ErrorType.RESOURCE_NOT_FOUND)
+            .build();
+
+    final Record<IncidentRecordValue> incidentRecord =
+        factory.generateRecord(
+            ValueType.INCIDENT,
+            r ->
+                r.withIntent(ProcessIntent.CREATED)
+                    .withValue(incidentRecordValue)
+                    .withKey(expectedId));
+
+    final IncidentEntity incidentEntity = new IncidentEntity();
+
+    // when
+    underTest.updateEntity(incidentRecord, incidentEntity);
+
+    // then
+    assertThat(incidentEntity.getErrorType())
+        .isEqualTo(io.camunda.webapps.schema.entities.operate.ErrorType.RESOURCE_NOT_FOUND);
+  }
+
+  /**
    * Must be imported correctly so that resolving the incident considers incrementing job retries.
    */
   @Test

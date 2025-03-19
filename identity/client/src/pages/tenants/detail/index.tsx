@@ -56,7 +56,7 @@ const Details: FC = () => {
                 <Stack gap={spacing03}>
                   <Stack orientation="horizontal" gap={spacing01}>
                     <PageHeadline>{tenant.name}</PageHeadline>
-                    <OverflowMenu ariaLabel={t("openUsersContextMenu")}>
+                    <OverflowMenu ariaLabel={t("openTenantContextMenu")}>
                       <OverflowMenuItem
                         itemText={t("delete")}
                         onClick={() => {
@@ -91,7 +91,7 @@ const Details: FC = () => {
                   ? [
                       {
                         key: "groups",
-                        label: t("groups"),
+                        label: t("Groups"),
                         content: <Groups tenantId={tenant.tenantId} />,
                       },
                     ]

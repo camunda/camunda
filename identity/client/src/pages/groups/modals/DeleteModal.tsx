@@ -21,7 +21,7 @@ const DeleteModal: FC<UseEntityModalProps<Group>> = ({
   onClose,
   onSuccess,
 }) => {
-  const { t } = useTranslate();
+  const { t, Translate } = useTranslate("groups");
   const { enqueueNotification } = useNotifications();
 
   const [callDeleteGroup, { loading }] = useApiCall(deleteGroup);
@@ -33,7 +33,7 @@ const DeleteModal: FC<UseEntityModalProps<Group>> = ({
     if (success) {
       enqueueNotification({
         kind: "success",
-        title: t("Group has been deleted."),
+        title: t("groupHasBeenDeleted"),
       });
       onSuccess();
     }
@@ -42,14 +42,23 @@ const DeleteModal: FC<UseEntityModalProps<Group>> = ({
   return (
     <Modal
       open={open}
-      headline={t('Are you sure you want to delete the group "{{ name }}"?', {
-        name: group?.name,
-      })}
+      headline={t("deleteGroup")}
       onSubmit={handleSubmit}
       loading={loading}
-      loadingDescription={t("Deleting group")}
+      loadingDescription={t("deletingGroup")}
       onClose={onClose}
-    />
+      confirmLabel={t("deleteGroup")}
+    >
+      <p>
+        <Translate
+          i18nKey="deleteGroupConfirmation"
+          values={{ groupKey: group.groupKey }}
+        >
+          Are you sure you want to delete <strong>{group.groupKey}</strong>?{" "}
+          This action cannot be undone.
+        </Translate>
+      </p>
+    </Modal>
   );
 };
 

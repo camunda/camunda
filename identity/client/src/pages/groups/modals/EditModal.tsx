@@ -14,6 +14,7 @@ import { useApiCall } from "src/utility/api/hooks";
 import { useNotifications } from "src/components/notifications";
 import { Group, updateGroup } from "src/utility/api/groups";
 import TextField from "src/components/form/TextField";
+import { isValidGroupId } from "./isValidGroupId";
 
 const EditModal: FC<UseEntityModalProps<Group>> = ({
   entity: group,
@@ -21,47 +22,74 @@ const EditModal: FC<UseEntityModalProps<Group>> = ({
   onClose,
   onSuccess,
 }) => {
-  const { t } = useTranslate();
+  const { t } = useTranslate("groups");
   const { enqueueNotification } = useNotifications();
 
   const [callUpdateGroup, { error, loading }] = useApiCall(updateGroup, {
     suppressErrorNotification: true,
   });
 
-  const [name, setName] = useState(group.name);
+  const [groupName, setGroupName] = useState(group.name);
+  const [groupId, setGroupId] = useState(group.groupKey);
+  const [description, setDescription] = useState(group.description);
+  const [isGroupIdValid, setIsGroupIdValid] = useState(true);
 
   const handleSubmit = async () => {
     const { success } = await callUpdateGroup({
       groupKey: group.groupKey,
-      name: name.trim(),
+      name: groupName.trim(),
     });
 
     if (success) {
       enqueueNotification({
         kind: "success",
-        title: t("Group has been updated."),
+        title: t("groupHasBeenUpdated"),
       });
       onSuccess();
     }
+  };
+
+  const validateGroupId = (id: string) => {
+    setIsGroupIdValid(isValidGroupId(id));
   };
 
   return (
     <FormModal
       size="sm"
       open={open}
-      headline={t("Rename group")}
+      headline={t("editGroup")}
       onSubmit={handleSubmit}
       onClose={onClose}
       loading={loading}
-      loadingDescription={t("Updating group")}
-      confirmLabel={t("Edit")}
+      loadingDescription={t("updatingGroup")}
+      confirmLabel={t("editGroup")}
+      submitDisabled={!groupName || !groupId || !isGroupIdValid}
     >
       <TextField
-        label={t("Name")}
-        value={name}
-        placeholder={t("My group")}
-        onChange={setName}
+        label={t("groupId")}
+        value={groupId}
+        placeholder={t("groupIdPlaceholder")}
+        onChange={(value) => {
+          validateGroupId(value);
+          setGroupId(value);
+        }}
+        errors={!isGroupIdValid ? [t("pleaseEnterValidGroupId")] : []}
+        readOnly
+      />
+      <TextField
+        label={t("groupName")}
+        value={groupName}
+        placeholder={t("groupNamePlaceholder")}
+        onChange={setGroupName}
         autoFocus
+      />
+      <TextField
+        label={t("description")}
+        value={description || ""}
+        placeholder={t("groupDescriptionPlaceholder")}
+        onChange={setDescription}
+        cols={2}
+        enableCounter
       />
       {error && (
         <InlineNotification

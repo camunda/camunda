@@ -34,6 +34,7 @@ public enum IncidentErrorType {
   CALLED_DECISION_ERROR,
   DECISION_EVALUATION_ERROR,
   FORM_NOT_FOUND,
+  RESOURCE_NOT_FOUND,
   UNKNOWN_ENUM_VALUE;
 
   public static IncidentFilter.ErrorTypeEnum toProtocolErrorType(final IncidentErrorType value) {
