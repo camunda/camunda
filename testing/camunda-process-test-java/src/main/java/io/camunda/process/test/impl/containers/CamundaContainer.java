@@ -22,6 +22,7 @@ import java.time.Duration;
 import java.util.UUID;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.Network;
+import org.testcontainers.containers.wait.strategy.HostPortWaitStrategy;
 import org.testcontainers.containers.wait.strategy.HttpWaitStrategy;
 import org.testcontainers.containers.wait.strategy.WaitAllStrategy;
 import org.testcontainers.containers.wait.strategy.WaitAllStrategy.Mode;
@@ -30,7 +31,7 @@ import org.testcontainers.utility.DockerImageName;
 public class CamundaContainer extends GenericContainer<CamundaContainer> {
 
   private static final Duration DEFAULT_STARTUP_TIMEOUT = Duration.ofMinutes(1);
-  private static final String READY_ENDPOINT = "/actuator/health";
+  private static final String READY_ENDPOINT = "/ready";
 
   private static final String ACTIVE_SPRING_PROFILES =
       "broker"; // "operate,tasklist,broker,consolidated-auth";
@@ -72,12 +73,15 @@ public class CamundaContainer extends GenericContainer<CamundaContainer> {
   }
 
   public CamundaContainer withRdbms() {
-      withEnv("CAMUNDA_DATABASE_TYPE", "rdbms")
-        .withEnv("SPRING_DATASOURCE_URL", "jdbc:h2:mem:testdb+" + UUID.randomUUID() + ";DB_CLOSE_DELAY=-1;MODE=PostgreSQL")
+    withEnv("CAMUNDA_DATABASE_TYPE", "rdbms")
+        .withEnv(
+            "SPRING_DATASOURCE_URL",
+            "jdbc:h2:mem:testdb+" + UUID.randomUUID() + ";DB_CLOSE_DELAY=-1;MODE=PostgreSQL")
         .withEnv("SPRING_DATASOURCE_DRIVER_CLASS_NAME", "org.h2.Driver")
         .withEnv("SPRING_DATASOURCE_USERNAME", "sa")
         .withEnv("SPRING_DATASOURCE_PASSWORD", "")
-        .withEnv("ZEEBE_BROKER_EXPORTERS_RDBMS_CLASSNAME", "io.camunda.exporter.rdbms.RdbmsExporter")
+        .withEnv(
+            "ZEEBE_BROKER_EXPORTERS_RDBMS_CLASSNAME", "io.camunda.exporter.rdbms.RdbmsExporter")
         .withEnv("ZEEBE_BROKER_EXPORTERS_RDBMS_ARGS_FLUSH_INTERVAL", "PT0S")
         .withEnv("ZEEBE_BROKER_EXPORTERS_RDBMS_ARGS_DEFAULT_HISTORY_TTL", "PT2S")
         .withEnv("ZEEBE_BROKER_EXPORTERS_RDBMS_ARGS_MIN_HISTORY_CLEANUP_INTERVAL", "PT2S")
@@ -116,7 +120,7 @@ public class CamundaContainer extends GenericContainer<CamundaContainer> {
 
   private WaitAllStrategy newDefaultWaitStrategy() {
     return new WaitAllStrategy(Mode.WITH_OUTER_TIMEOUT)
-        //        .withStrategy(new HostPortWaitStrategy())
+        .withStrategy(new HostPortWaitStrategy())
         .withStrategy(newDefaultBrokerReadyCheck())
         .withStartupTimeout(DEFAULT_STARTUP_TIMEOUT);
   }
