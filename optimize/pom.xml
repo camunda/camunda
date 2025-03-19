@@ -5,13 +5,13 @@
   <parent>
     <groupId>io.camunda</groupId>
     <artifactId>zeebe-parent</artifactId>
-    <version>8.8.0-alpha1</version>
+    <version>8.8.0-28522-SNAPSHOT</version>
     <relativePath>../parent/pom.xml</relativePath>
   </parent>
 
   <groupId>io.camunda.optimize</groupId>
   <artifactId>optimize-parent</artifactId>
-  <version>8.8.0-alpha1</version>
+  <version>8.8.0-28522-SNAPSHOT</version>
   <packaging>pom</packaging>
   <name>Optimize Parent</name>
 
