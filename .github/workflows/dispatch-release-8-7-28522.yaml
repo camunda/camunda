@@ -11,7 +11,7 @@ jobs:
     uses: ./.github/workflows/camunda-platform-release.yml
     secrets: inherit
     with:
-      releaseVersion: "8.7.0-test-SNAPSHOT"
+      releaseVersion: "8.7.0-test"
       nextDevelopmentVersion: "8.7.0-test2-SNAPSHOT"
       isLatest: true
       dryRun: false
