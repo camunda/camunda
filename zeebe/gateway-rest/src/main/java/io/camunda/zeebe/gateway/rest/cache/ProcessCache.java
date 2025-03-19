@@ -12,6 +12,8 @@ import com.github.benmanes.caffeine.cache.Caffeine;
 import com.github.benmanes.caffeine.cache.LoadingCache;
 import io.camunda.search.entities.FlowNodeInstanceEntity;
 import io.camunda.search.entities.UserTaskEntity;
+import io.camunda.zeebe.broker.client.api.BrokerTopologyListener;
+import io.camunda.zeebe.broker.client.api.BrokerTopologyManager;
 import io.camunda.zeebe.gateway.rest.config.GatewayRestConfiguration;
 import io.camunda.zeebe.gateway.rest.util.ProcessFlowNodeProvider;
 import java.util.Collections;
@@ -39,7 +41,8 @@ public class ProcessCache {
 
   public ProcessCache(
       final GatewayRestConfiguration configuration,
-      final ProcessFlowNodeProvider processFlowNodeProvider) {
+      final ProcessFlowNodeProvider processFlowNodeProvider,
+      final BrokerTopologyManager brokerTopologyManager) {
     this.processFlowNodeProvider = processFlowNodeProvider;
     final var cacheBuilder =
         Caffeine.newBuilder().maximumSize(configuration.getProcessCache().getMaxSize());
@@ -48,6 +51,8 @@ public class ProcessCache {
       cacheBuilder.expireAfterAccess(expirationIdle, TimeUnit.MILLISECONDS);
     }
     cache = cacheBuilder.build(new ProcessCacheLoader());
+
+    brokerTopologyManager.addTopologyListener(new ProcessCacheInvalidator(this));
   }
 
   public ProcessCacheItem getCacheItem(final long processDefinitionKey) {
@@ -78,6 +83,10 @@ public class ProcessCache {
     return getCacheItem(flowNode.processDefinitionKey()).getFlowNodeName(flowNode.flowNodeId());
   }
 
+  public void invalidate() {
+    cache.invalidateAll();
+  }
+
   private final class ProcessCacheLoader implements CacheLoader<Long, ProcessCacheItem> {
 
     @Override
@@ -102,6 +111,19 @@ public class ProcessCache {
               Collectors.toMap(
                   Map.Entry::getKey,
                   entry -> new ProcessCacheItem(Collections.unmodifiableMap(entry.getValue()))));
+    }
+  }
+
+  private final class ProcessCacheInvalidator implements BrokerTopologyListener {
+    private final ProcessCache cache;
+
+    public ProcessCacheInvalidator(final ProcessCache cache) {
+      this.cache = cache;
+    }
+
+    @Override
+    public void completedClusterChange() {
+      cache.invalidate();
     }
   }
 }
