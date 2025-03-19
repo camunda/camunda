@@ -29,9 +29,13 @@ public final class DistributionMetrics {
    */
   public void reset(final int counter) {}
 
-  public void addDistribution(final long distributionKey) {}
+  public void addDistribution(final long distributionKey) {
+    // gauge
+  }
 
-  public void removeDistribution(final long distributionKey) {}
+  public void removeDistribution(final long distributionKey) {
+    // gauge
+  }
 
   public void addPendingDistribution(final int partitionId, final long distributionKey) {
     getPartitionMetrics(partitionId).addPendingDistribution(distributionKey);
@@ -71,9 +75,7 @@ public final class DistributionMetrics {
    * @param partitionId the partition id of the distribution
    * @param distributionKey the key of the distribution
    */
-  public void acknowledgeDistribution(final int partitionId, final long distributionKey) {
-    getPartitionMetrics(partitionId).acknowledgeDistribution(distributionKey);
-  }
+  public void acknowledgeDistribution(final int partitionId, final long distributionKey) {}
 
   /**
    * This method is called when a current inflight distribution is being retried. This may happen if
@@ -104,18 +106,32 @@ public final class DistributionMetrics {
       // TODO: setup micrometer metrics once (performance)
     }
 
-    public void addPendingDistribution(final long distributionKey) {}
+    public void addPendingDistribution(final long distributionKey) {
+      // gauge
+    }
 
-    public void removePendingDistribution(final long distributionKey) {}
+    public void removePendingDistribution(final long distributionKey) {
+      // gauge
+    }
 
-    public void noPendingDistribution(final long distributionKey) {}
+    public void addInflightDistribution(final long distributionKey) {
+      // gauge
+    }
 
-    public void addInflightDistribution(final long distributionKey) {}
+    public void removeInflightDistribution(final long distributionKey) {
+      // gauge
+    }
 
-    public void removeInflightDistribution(final long distributionKey) {}
+    public void retryInflightDistribution(final long distributionKey) {
+      // counter
+    }
 
-    public void retryInflightDistribution(final long distributionKey) {}
+    public void noPendingDistribution(final long distributionKey) {
+      // counter
+    }
 
-    public void acknowledgeDistribution(final long distributionKey) {}
+    public void acknowledgeDistribution(final long distributionKey) {
+      // counter
+    }
   }
 }
