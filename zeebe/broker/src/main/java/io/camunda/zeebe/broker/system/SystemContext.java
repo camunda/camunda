@@ -33,6 +33,7 @@ import io.camunda.zeebe.broker.system.configuration.backup.GcsBackupStoreConfig;
 import io.camunda.zeebe.broker.system.configuration.backup.S3BackupStoreConfig;
 import io.camunda.zeebe.broker.system.configuration.partitioning.FixedPartitionCfg;
 import io.camunda.zeebe.broker.system.configuration.partitioning.Scheme;
+import io.camunda.zeebe.engine.secondarydb.SecondaryDbQueryService;
 import io.camunda.zeebe.scheduler.ActorScheduler;
 import io.camunda.zeebe.util.TlsConfigUtil;
 import io.camunda.zeebe.util.VisibleForTesting;
@@ -72,6 +73,7 @@ public final class SystemContext {
   private final UserServices userServices;
   private final PasswordEncoder passwordEncoder;
   private final JwtDecoder jwtDecoder;
+  private final SecondaryDbQueryService secondaryDbQueryService;
 
   public SystemContext(
       final Duration shutdownTimeout,
@@ -84,7 +86,8 @@ public final class SystemContext {
       final SecurityConfiguration securityConfiguration,
       final UserServices userServices,
       final PasswordEncoder passwordEncoder,
-      final JwtDecoder jwtDecoder) {
+      final JwtDecoder jwtDecoder,
+      final SecondaryDbQueryService secondaryDbQueryService) {
     this.shutdownTimeout = shutdownTimeout;
     this.brokerCfg = brokerCfg;
     this.identityConfiguration = identityConfiguration;
@@ -96,6 +99,7 @@ public final class SystemContext {
     this.userServices = userServices;
     this.passwordEncoder = passwordEncoder;
     this.jwtDecoder = jwtDecoder;
+    this.secondaryDbQueryService = secondaryDbQueryService;
     initSystemContext();
   }
 
@@ -120,7 +124,8 @@ public final class SystemContext {
         securityConfiguration,
         userServices,
         passwordEncoder,
-        jwtDecoder);
+        jwtDecoder,
+        null);
   }
 
   private void initSystemContext() {
@@ -377,5 +382,9 @@ public final class SystemContext {
 
   public JwtDecoder getJwtDecoder() {
     return jwtDecoder;
+  }
+
+  public SecondaryDbQueryService getSecondaryDbQueryService() {
+    return secondaryDbQueryService;
   }
 }

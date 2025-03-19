@@ -16,6 +16,7 @@ import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.exporter.repo.ExporterDescriptor;
 import io.camunda.zeebe.broker.exporter.repo.ExporterRepository;
 import io.camunda.zeebe.broker.system.SystemContext;
+import io.camunda.zeebe.engine.secondarydb.SecondaryDbQueryService;
 import io.camunda.zeebe.scheduler.ActorScheduler;
 import io.camunda.zeebe.util.CloseableSilently;
 import io.camunda.zeebe.util.FileUtil;
@@ -58,6 +59,7 @@ public class BrokerModuleConfiguration implements CloseableSilently {
   private final UserServices userServices;
   private final PasswordEncoder passwordEncoder;
   private final JwtDecoder jwtDecoder;
+  private final SecondaryDbQueryService secondaryDbQueryService;
 
   private Broker broker;
 
@@ -75,7 +77,8 @@ public class BrokerModuleConfiguration implements CloseableSilently {
       // The UserServices class is not available if you want to start-up the Standalone Broker
       @Autowired(required = false) final UserServices userServices,
       final PasswordEncoder passwordEncoder,
-      @Autowired(required = false) final JwtDecoder jwtDecoder) {
+      @Autowired(required = false) final JwtDecoder jwtDecoder,
+      final SecondaryDbQueryService secondaryDbQueryService) {
     this.configuration = configuration;
     this.identityConfiguration = identityConfiguration;
     this.springBrokerBridge = springBrokerBridge;
@@ -88,6 +91,7 @@ public class BrokerModuleConfiguration implements CloseableSilently {
     this.userServices = userServices;
     this.passwordEncoder = passwordEncoder;
     this.jwtDecoder = jwtDecoder;
+    this.secondaryDbQueryService = secondaryDbQueryService;
   }
 
   @Bean
@@ -115,7 +119,8 @@ public class BrokerModuleConfiguration implements CloseableSilently {
             securityConfiguration,
             userServices,
             passwordEncoder,
-            jwtDecoder);
+            jwtDecoder,
+            secondaryDbQueryService);
     springBrokerBridge.registerShutdownHelper(
         errorCode -> shutdownHelper.initiateShutdown(errorCode));
     broker =

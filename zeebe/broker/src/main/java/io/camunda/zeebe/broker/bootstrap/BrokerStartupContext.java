@@ -27,6 +27,7 @@ import io.camunda.zeebe.broker.system.monitoring.BrokerHealthCheckService;
 import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageMonitor;
 import io.camunda.zeebe.broker.transport.adminapi.AdminApiRequestHandler;
 import io.camunda.zeebe.broker.transport.commandapi.CommandApiServiceImpl;
+import io.camunda.zeebe.engine.secondarydb.SecondaryDbQueryService;
 import io.camunda.zeebe.protocol.impl.encoding.BrokerInfo;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
@@ -58,6 +59,8 @@ public interface BrokerStartupContext {
   ConcurrencyControl getConcurrencyControl();
 
   BrokerHealthCheckService getHealthCheckService();
+
+  SecondaryDbQueryService getSecondaryDbQueryService();
 
   void addPartitionListener(PartitionListener partitionListener);
 
