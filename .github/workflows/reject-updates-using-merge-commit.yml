@@ -40,12 +40,18 @@ jobs:
             for parent in $parents; do
               if git merge-base --is-ancestor $parent $base; then
                 echo "Updating your pull request using a merge commit is not allowed."
-                echo "We try to avoid using merge commits in pull requests to keep the history easy to follow, and allow automated porting of the pull request."
-                echo "Please update your pull request by rebasing your branch on the base branch."
+                echo "Please remove merge commit '$merge_commit' from your pull request,"
+                echo "and update your pull request by rebasing your branch onto '$base'."
+                echo "For more information, please refer to our contributing guide's section on 'Updating a pull request':"
+                echo "https://github.com/camunda/camunda/blob/main/CONTRIBUTING.md#updating-a-pull-request"
+
                 echo "> [!IMPORTANT]" >> $GITHUB_STEP_SUMMARY
                 echo "> Updating your pull request using a merge commit is not allowed." >> $GITHUB_STEP_SUMMARY
-                echo "> We try to avoid using merge commits in pull requests to keep the history easy to follow, and allow automated porting of the pull request." >> $GITHUB_STEP_SUMMARY
-                echo "> Please update your pull request by rebasing your branch on the base branch." >> $GITHUB_STEP_SUMMARY
+                echo "> Please remove merge commit '$merge_commit' from your pull request," >> $GITHUB_STEP_SUMMARY
+                echo "> and update your pull request by rebasing your branch onto '$base'." >> $GITHUB_STEP_SUMMARY
+                echo "> For more information, please refer to our contributing guide's section on 'Updating a pull request':" >> $GITHUB_STEP_SUMMARY
+                echo "> https://github.com/camunda/camunda/blob/main/CONTRIBUTING.md#updating-a-pull-request" >> $GITHUB_STEP_SUMMARY
+
                 exit 1
               fi
             done
