@@ -39,41 +39,41 @@ import org.awaitility.Awaitility;
 
 public abstract class UserTaskMigrationHelper {
   protected static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
-  protected static final Map<DatabaseType, Map<String, Long>> userTaskKeys = new HashMap<>();
-  protected static final Map<DatabaseType, Map<TaskImplementation, Long>> processDefinitionKeys =
+  protected static final Map<DatabaseType, Map<String, Long>> USER_TASK_KEYS = new HashMap<>();
+  protected static final Map<DatabaseType, Map<TaskImplementation, Long>> PROCESS_DEFINITION_KEYS =
       new HashMap<>();
 
   static void setup(
       final DatabaseType databaseType, final CamundaMigrator migrator, final String assignee) {
-    userTaskKeys.put(databaseType, new HashMap<>());
-    processDefinitionKeys.put(databaseType, new HashMap<>());
+    USER_TASK_KEYS.put(databaseType, new HashMap<>());
+    PROCESS_DEFINITION_KEYS.put(databaseType, new HashMap<>());
 
     final var jobWorkerProcessDefinitionKey =
         deployProcess(migrator.getCamundaClient(), t -> t.zeebeAssignee(assignee));
-    processDefinitionKeys
+    PROCESS_DEFINITION_KEYS
         .get(databaseType)
         .put(TaskImplementation.JOB_WORKER, jobWorkerProcessDefinitionKey);
 
     final var zeebeProcessDefinitionKey =
         deployProcess(migrator.getCamundaClient(), t -> t.zeebeUserTask().zeebeAssignee(assignee));
-    processDefinitionKeys
+    PROCESS_DEFINITION_KEYS
         .get(databaseType)
         .put(TaskImplementation.ZEEBE_USER_TASK, zeebeProcessDefinitionKey);
 
     var processInstanceKey =
         startProcessInstance(migrator.getCamundaClient(), zeebeProcessDefinitionKey);
     var taskKey = waitForTaskToBeImportedReturningId(migrator, processInstanceKey);
-    userTaskKeys.get(databaseType).put("first", taskKey);
+    USER_TASK_KEYS.get(databaseType).put("first", taskKey);
 
     processInstanceKey =
         startProcessInstance(migrator.getCamundaClient(), zeebeProcessDefinitionKey);
     taskKey = waitForTaskToBeImportedReturningId(migrator, processInstanceKey);
-    userTaskKeys.get(databaseType).put("second", taskKey);
+    USER_TASK_KEYS.get(databaseType).put("second", taskKey);
 
     processInstanceKey =
         startProcessInstance(migrator.getCamundaClient(), jobWorkerProcessDefinitionKey);
     taskKey = waitForTaskToBeImportedReturningId(migrator, processInstanceKey);
-    userTaskKeys.get(databaseType).put("third", taskKey);
+    USER_TASK_KEYS.get(databaseType).put("third", taskKey);
   }
 
   protected static long deployProcess(
