@@ -13,7 +13,7 @@
 
   <groupId>io.camunda</groupId>
   <artifactId>zeebe-bom</artifactId>
-  <version>8.7.0-28522-SNAPSHOT</version>
+  <version>8.7.0-test</version>
   <packaging>pom</packaging>
 
   <name>Zeebe BOM</name>
@@ -24,7 +24,7 @@
   <scm>
     <connection>scm:git:git@github.com:camunda/camunda.git</connection>
     <developerConnection>scm:git:git@github.com:camunda/camunda.git</developerConnection>
-    <tag>8.7.0-alpha5</tag>
+    <tag>8.7.0-test</tag>
     <url>https://github.com/camunda/camunda</url>
   </scm>
 
