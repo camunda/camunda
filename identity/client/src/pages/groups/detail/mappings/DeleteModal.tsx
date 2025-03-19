@@ -4,27 +4,26 @@
  * See the NOTICE file distributed with this work for additional information regarding copyright ownership.
  * Licensed under the Camunda License 1.0. You may not use this file except in compliance with the Camunda License 1.0.
  */
-
 import { FC } from "react";
-import { useApiCall } from "src/utility/api/hooks";
+import { useApiCall } from "src/utility/api";
 import useTranslate from "src/utility/localization";
 import {
   DeleteModal as Modal,
   UseEntityModalCustomProps,
 } from "src/components/modal";
 import { useNotifications } from "src/components/notifications";
-import { User } from "src/utility/api/users";
-import { unassignGroupMember } from "src/utility/api/membership";
+import { Mapping } from "src/utility/api/mappings";
+import { unassignGroupMapping } from "src/utility/api/groups";
 
-type RemoveGroupMemberModalProps = UseEntityModalCustomProps<
-  User,
+type RemoveGroupMappingModalProps = UseEntityModalCustomProps<
+  Mapping,
   {
     groupId: string;
   }
 >;
 
-const DeleteModal: FC<RemoveGroupMemberModalProps> = ({
-  entity: user,
+const DeleteModal: FC<RemoveGroupMappingModalProps> = ({
+  entity: mapping,
   open,
   onClose,
   onSuccess,
@@ -33,19 +32,19 @@ const DeleteModal: FC<RemoveGroupMemberModalProps> = ({
   const { t, Translate } = useTranslate("groups");
   const { enqueueNotification } = useNotifications();
 
-  const [callUnassignMember, { loading }] = useApiCall(unassignGroupMember);
+  const [callUnassignMapping, { loading }] = useApiCall(unassignGroupMapping);
 
   const handleSubmit = async () => {
-    if (groupId && user) {
-      const { success } = await callUnassignMember({
+    if (groupId && mapping) {
+      const { success } = await callUnassignMapping({
         groupId,
-        username: user.username,
+        id: mapping.id,
       });
 
       if (success) {
         enqueueNotification({
           kind: "success",
-          title: t("groupMemberRemoved"),
+          title: t("groupMappingRemoved"),
         });
         onSuccess();
       }
@@ -55,19 +54,19 @@ const DeleteModal: FC<RemoveGroupMemberModalProps> = ({
   return (
     <Modal
       open={open}
-      headline={t("removeUser")}
+      headline={t("removeMapping")}
       onSubmit={handleSubmit}
       loading={loading}
-      loadingDescription={t("removingUser")}
+      loadingDescription={t("removingMapping")}
       onClose={onClose}
-      confirmLabel={t("removeUser")}
+      confirmLabel={t("removeMapping")}
     >
       <p>
         <Translate
-          i18nKey="removeUserConfirmation"
-          values={{ username: user.username }}
+          i18nKey="removeMappingFromGroup"
+          values={{ mappingId: mapping.id }}
         >
-          Are you sure you want to remove <strong>{user.username}</strong> from
+          Are you sure you want to remove <strong>{mapping.id}</strong> from
           this group?
         </Translate>
       </p>

@@ -11,29 +11,29 @@ import { C3EmptyState } from "@camunda/camunda-composite-components";
 import { TrashCan } from "@carbon/react/icons";
 import useTranslate from "src/utility/localization";
 import { useApi } from "src/utility/api/hooks";
-import { getMappingsByTenantId } from "src/utility/api/tenants";
+import { getMappingsByGroupId } from "src/utility/api/groups";
 import EntityList from "src/components/entityList";
 import { useEntityModal } from "src/components/modal";
-import DeleteModal from "src/pages/tenants/detail/mappings/DeleteModal";
-import AssignMappingsModal from "src/pages/tenants/detail/mappings/AssignMappingsModal";
+import DeleteModal from "src/pages/groups/detail/mappings/DeleteModal";
+import AssignMappingsModal from "src/pages/groups/detail/mappings/AssignMappingsModal";
 
 type MappingsProps = {
-  tenantId: string;
+  groupId: string;
 };
 
-const Mappings: FC<MappingsProps> = ({ tenantId }) => {
-  const { t } = useTranslate("tenants");
+const Mappings: FC<MappingsProps> = ({ groupId }) => {
+  const { t } = useTranslate("groups");
 
   const {
     data: mappings,
     loading,
     success,
     reload,
-  } = useApi(getMappingsByTenantId, {
-    tenantId: tenantId,
+  } = useApi(getMappingsByGroupId, {
+    groupId: groupId,
   });
 
-  const isAssignedMappingsListEmpty = !mappings || mappings.items?.length === 0;
+  const isMappingsListEmpty = !mappings || mappings.items?.length === 0;
 
   const [assignMappings, assignMappingsModal] = useEntityModal(
     AssignMappingsModal,
@@ -42,12 +42,12 @@ const Mappings: FC<MappingsProps> = ({ tenantId }) => {
       assignedMappings: mappings?.items || [],
     },
   );
-  const openAssignModal = () => assignMappings({ id: tenantId });
+  const openAssignModal = () => assignMappings({ id: groupId });
   const [unassignMapping, unassignMappingModal] = useEntityModal(
     DeleteModal,
     reload,
     {
-      tenant: tenantId,
+      groupId,
     },
   );
 
@@ -60,19 +60,19 @@ const Mappings: FC<MappingsProps> = ({ tenantId }) => {
       />
     );
 
-  if (success && isAssignedMappingsListEmpty)
+  if (success && isMappingsListEmpty)
     return (
       <>
         <C3EmptyState
-          heading={t("assignMappingsToTenant")}
-          description={t("tenantMemberAccessDisclaimer")}
+          heading={t("assignMappingsToGroup")}
+          description={t("groupMemberAccessDisclaimer")}
           button={{
             label: t("assignMapping"),
             onClick: openAssignModal,
           }}
           link={{
-            label: t("learnMoreAboutTenants"),
-            href: `/identity/concepts/access-control/tenants`,
+            label: t("learnMoreAboutGroups"),
+            href: `/identity/concepts/access-control/groups`,
           }}
         />
         {assignMappingsModal}

@@ -11,29 +11,29 @@ import { C3EmptyState } from "@camunda/camunda-composite-components";
 import { TrashCan } from "@carbon/react/icons";
 import useTranslate from "src/utility/localization";
 import { useApi } from "src/utility/api/hooks";
-import { getRolesByTenantId } from "src/utility/api/tenants";
+import { getRolesByGroupId } from "src/utility/api/groups";
 import EntityList from "src/components/entityList";
 import { useEntityModal } from "src/components/modal";
-import DeleteModal from "src/pages/tenants/detail/roles/DeleteModal";
-import AssignRolesModal from "src/pages/tenants/detail/roles/AssignRolesModal";
+import DeleteModal from "src/pages/groups/detail/roles/DeleteModal";
+import AssignRolesModal from "src/pages/groups/detail/roles/AssignRolesModal";
 
 type RolesProps = {
-  tenantId: string;
+  groupId: string;
 };
 
-const Roles: FC<RolesProps> = ({ tenantId }) => {
-  const { t } = useTranslate("tenants");
+const Roles: FC<RolesProps> = ({ groupId }) => {
+  const { t } = useTranslate("groups");
 
   const {
     data: roles,
     loading,
     success,
     reload,
-  } = useApi(getRolesByTenantId, {
-    tenantId: tenantId,
+  } = useApi(getRolesByGroupId, {
+    groupId: groupId,
   });
 
-  const isAssignedRolesListEmpty = !roles || roles.items?.length === 0;
+  const isRolesListEmpty = !roles || roles.items?.length === 0;
 
   const [assignRoles, assignRolesModal] = useEntityModal(
     AssignRolesModal,
@@ -42,12 +42,12 @@ const Roles: FC<RolesProps> = ({ tenantId }) => {
       assignedRoles: roles?.items || [],
     },
   );
-  const openAssignModal = () => assignRoles({ id: tenantId });
+  const openAssignModal = () => assignRoles({ id: groupId });
   const [unassignRole, unassignRoleModal] = useEntityModal(
     DeleteModal,
     reload,
     {
-      tenant: tenantId,
+      groupId,
     },
   );
 
@@ -60,19 +60,19 @@ const Roles: FC<RolesProps> = ({ tenantId }) => {
       />
     );
 
-  if (success && isAssignedRolesListEmpty)
+  if (success && isRolesListEmpty)
     return (
       <>
         <C3EmptyState
-          heading={t("assignRolesToTenant")}
-          description={t("tenantMemberAccessDisclaimer")}
+          heading={t("assignRolesToGroup")}
+          description={t("groupMemberAccessDisclaimer")}
           button={{
             label: t("assignRole"),
             onClick: openAssignModal,
           }}
           link={{
-            label: t("learnMoreAboutTenants"),
-            href: `/identity/concepts/access-control/tenants`,
+            label: t("learnMoreAboutGroups"),
+            href: `/identity/concepts/access-control/groups`,
           }}
         />
         {assignRolesModal}
