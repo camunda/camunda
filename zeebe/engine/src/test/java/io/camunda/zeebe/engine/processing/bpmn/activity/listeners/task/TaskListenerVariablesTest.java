@@ -251,6 +251,37 @@ public class TaskListenerVariablesTest {
 
   /* VariableDocument update tests */
   @Test
+  public void shouldRejectVariableUpdateWithPropagateSemanticForUserTask() {
+    // given: a process instance with a Camunda user task
+    final long processInstanceKey =
+        helper.createProcessInstance(helper.createProcessWithZeebeUserTask(t -> t));
+    final var createdUserTaskRecord =
+        RecordingExporter.userTaskRecords(UserTaskIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst();
+
+    // when: attempting to update variables with 'PROPAGATE' semantic for a user task instance
+    final var variableUpdateRejection =
+        ENGINE
+            .variables()
+            .ofScope(createdUserTaskRecord.getValue().getElementInstanceKey())
+            .withDocument(Map.of("approvalStatus", "SUBMITTED"))
+            .withPropagateSemantic()
+            .expectRejection()
+            .update();
+
+    // then
+    Assertions.assertThat(variableUpdateRejection)
+        .describedAs(
+            "Expect rejection when trying to update variables for a user task instance with 'PROPAGATE' semantic")
+        .hasRecordType(RecordType.COMMAND_REJECTION)
+        .hasValueType(ValueType.VARIABLE_DOCUMENT)
+        .hasRejectionReason(
+            "Expected to update variables for user task with key '%d', but updates with 'PROPAGATE' semantic are not supported yet."
+                .formatted(createdUserTaskRecord.getKey()));
+  }
+
+  @Test
   public void shouldRejectVariableUpdateWhenUserTaskIsNotInCreatedState() {
     // given: a process instance with a user task having an assignee and task listeners
     final long processInstanceKey =
@@ -273,6 +304,7 @@ public class TaskListenerVariablesTest {
             .variables()
             .ofScope(assigningUserTaskRecord.getValue().getElementInstanceKey())
             .withDocument(Map.of("employeeId", "E12345"))
+            .withLocalSemantic()
             .expectRejection()
             .update();
 
@@ -306,6 +338,7 @@ public class TaskListenerVariablesTest {
             .variables()
             .ofScope(createdUserTaskRecord.getValue().getElementInstanceKey())
             .withDocument(Map.of("approvalStatus", "SUBMITTED"))
+            .withLocalSemantic()
             .update();
 
     // then: variable update should be successful and trigger the user task update transition
@@ -354,6 +387,7 @@ public class TaskListenerVariablesTest {
         .variables()
         .ofScope(userTaskElementInstanceKey)
         .withDocument(Map.of("approvalStatus", "APPROVED"))
+        .withLocalSemantic()
         .expectPartialUpdate()
         .update();
 

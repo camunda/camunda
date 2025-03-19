@@ -299,6 +299,7 @@ public class TaskListenerBlockedTransitionTest {
         .variables()
         .ofScope(userTaskElementInstanceKey)
         .withDocument(Map.of("approvalStatus", "APPROVED"))
+        .withLocalSemantic()
         .expectPartialUpdate()
         .update();
     helper.completeJobs(processInstanceKey, listenerType, listenerType + "_2", listenerType + "_3");

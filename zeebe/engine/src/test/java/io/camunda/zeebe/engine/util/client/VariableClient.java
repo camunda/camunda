@@ -86,6 +86,10 @@ public final class VariableClient {
     return withUpdateSemantic(VariableDocumentUpdateSemantic.LOCAL);
   }
 
+  public VariableClient withPropagateSemantic() {
+    return withUpdateSemantic(VariableDocumentUpdateSemantic.PROPAGATE);
+  }
+
   public VariableClient withUpdateSemantic(final VariableDocumentUpdateSemantic semantic) {
     variableDocumentRecord.setUpdateSemantics(semantic);
     return this;
