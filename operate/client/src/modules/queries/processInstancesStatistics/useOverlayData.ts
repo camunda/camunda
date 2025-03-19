@@ -18,7 +18,8 @@ import {
   COMPLETED_END_EVENT_BADGE,
   INCIDENTS_BADGE,
 } from 'modules/bpmn-js/badgePositions';
-import {useProcessInstancesStatistics} from './useProcessInstancesStatistics';
+import {useProcessInstancesStatisticsOptions} from './useProcessInstancesStatistics';
+import {useQuery} from '@tanstack/react-query';
 
 type FlowNodeState =
   | 'active'
@@ -85,10 +86,12 @@ function useProcessInstancesOverlayData(
   payload: ProcessInstancesStatisticsRequest,
   enabled?: boolean,
 ) {
-  return useProcessInstancesStatistics<OverlayData[]>(
-    payload,
-    overlayParser,
-    enabled,
+  return useQuery(
+    useProcessInstancesStatisticsOptions<OverlayData[]>(
+      payload,
+      overlayParser,
+      enabled,
+    ),
   );
 }
 

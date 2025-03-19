@@ -6,15 +6,15 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {useQuery, UseQueryOptions, UseQueryResult} from '@tanstack/react-query';
+import {UseQueryOptions} from '@tanstack/react-query';
 import {RequestError, RequestResult} from 'modules/request';
 
-function useGenericQuery<T, TSelect = T>(
+function genericQueryOptions<T, TSelect = T>(
   queryKey: unknown[],
   fetchFunction: () => RequestResult<T>,
   options?: UseQueryOptions<T, RequestError, TSelect>,
-): UseQueryResult<TSelect, RequestError> {
-  return useQuery<T, RequestError, TSelect>({
+): UseQueryOptions<T, RequestError, TSelect> {
+  return {
     queryKey,
     queryFn: async () => {
       const {response, error} = await fetchFunction();
@@ -26,7 +26,7 @@ function useGenericQuery<T, TSelect = T>(
       throw error;
     },
     ...options,
-  });
+  };
 }
 
-export {useGenericQuery};
+export {genericQueryOptions};
