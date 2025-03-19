@@ -12,10 +12,10 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.client.CamundaClient;
 import io.camunda.it.migration.util.CamundaMigrator;
+import io.camunda.qa.util.multidb.CamundaMultiDBExtension.DatabaseType;
 import io.camunda.search.clients.core.SearchQueryHit;
 import io.camunda.search.clients.core.SearchQueryRequest;
 import io.camunda.search.clients.query.SearchQueryBuilders;
-import io.camunda.search.connect.configuration.DatabaseType;
 import io.camunda.tasklist.webapp.api.rest.v1.entities.TaskSearchRequest;
 import io.camunda.tasklist.webapp.api.rest.v1.entities.TaskSearchResponse;
 import io.camunda.webapps.schema.descriptors.tasklist.template.TaskTemplate;
@@ -39,41 +39,34 @@ import org.awaitility.Awaitility;
 
 public abstract class UserTaskMigrationHelper {
   protected static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
-  protected static final Map<DatabaseType, Map<String, Long>> USER_TASK_KEYS = new HashMap<>();
-  protected static final Map<DatabaseType, Map<TaskImplementation, Long>> PROCESS_DEFINITION_KEYS =
-      new HashMap<>();
+  protected static final Map<String, Long> USER_TASK_KEYS = new HashMap<>();
+  protected static final Map<TaskImplementation, Long> PROCESS_DEFINITION_KEYS = new HashMap<>();
 
   static void setup(
       final DatabaseType databaseType, final CamundaMigrator migrator, final String assignee) {
-    USER_TASK_KEYS.put(databaseType, new HashMap<>());
-    PROCESS_DEFINITION_KEYS.put(databaseType, new HashMap<>());
 
     final var jobWorkerProcessDefinitionKey =
         deployProcess(migrator.getCamundaClient(), t -> t.zeebeAssignee(assignee));
-    PROCESS_DEFINITION_KEYS
-        .get(databaseType)
-        .put(TaskImplementation.JOB_WORKER, jobWorkerProcessDefinitionKey);
+    PROCESS_DEFINITION_KEYS.put(TaskImplementation.JOB_WORKER, jobWorkerProcessDefinitionKey);
 
     final var zeebeProcessDefinitionKey =
         deployProcess(migrator.getCamundaClient(), t -> t.zeebeUserTask().zeebeAssignee(assignee));
-    PROCESS_DEFINITION_KEYS
-        .get(databaseType)
-        .put(TaskImplementation.ZEEBE_USER_TASK, zeebeProcessDefinitionKey);
+    PROCESS_DEFINITION_KEYS.put(TaskImplementation.ZEEBE_USER_TASK, zeebeProcessDefinitionKey);
 
     var processInstanceKey =
         startProcessInstance(migrator.getCamundaClient(), zeebeProcessDefinitionKey);
     var taskKey = waitForTaskToBeImportedReturningId(migrator, processInstanceKey);
-    USER_TASK_KEYS.get(databaseType).put("first", taskKey);
+    USER_TASK_KEYS.put("first", taskKey);
 
     processInstanceKey =
         startProcessInstance(migrator.getCamundaClient(), zeebeProcessDefinitionKey);
     taskKey = waitForTaskToBeImportedReturningId(migrator, processInstanceKey);
-    USER_TASK_KEYS.get(databaseType).put("second", taskKey);
+    USER_TASK_KEYS.put("second", taskKey);
 
     processInstanceKey =
         startProcessInstance(migrator.getCamundaClient(), jobWorkerProcessDefinitionKey);
     taskKey = waitForTaskToBeImportedReturningId(migrator, processInstanceKey);
-    USER_TASK_KEYS.get(databaseType).put("third", taskKey);
+    USER_TASK_KEYS.put("third", taskKey);
   }
 
   protected static long deployProcess(

@@ -12,13 +12,16 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.client.CamundaClient;
 import io.camunda.it.migration.util.CamundaMigrator;
 import io.camunda.it.migration.util.MigrationITExtension;
-import io.camunda.search.connect.configuration.DatabaseType;
 import io.camunda.webapps.schema.entities.tasklist.TaskEntity.TaskImplementation;
 import java.time.Duration;
 import org.awaitility.Awaitility;
-import org.junit.jupiter.api.TestTemplate;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+@Tag("multi-db-test")
+@DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "rdbms")
 public class UnassignUserTaskMigrationIT extends UserTaskMigrationHelper {
 
   @RegisterExtension
@@ -26,11 +29,10 @@ public class UnassignUserTaskMigrationIT extends UserTaskMigrationHelper {
       new MigrationITExtension()
           .withBeforeUpgradeConsumer((db, migrator) -> setup(db, migrator, "demo"));
 
-  @TestTemplate
-  void shouldUnassign87ZeebeTaskV1(
-      final DatabaseType databaseType, final CamundaMigrator migrator) {
+  @Test
+  void shouldUnassign87ZeebeTaskV1(final CamundaMigrator migrator) {
 
-    final long taskKey = USER_TASK_KEYS.get(databaseType).get("first");
+    final long taskKey = USER_TASK_KEYS.get("first");
 
     final var res =
         migrator.getTasklistClient().withAuthentication("demo", "demo").unassignUserTask(taskKey);
@@ -39,25 +41,23 @@ public class UnassignUserTaskMigrationIT extends UserTaskMigrationHelper {
     shouldBeUnassigned(migrator.getCamundaClient(), taskKey);
   }
 
-  @TestTemplate
-  void shouldUnassign87ZeebeTaskV2(
-      final DatabaseType databaseType, final CamundaMigrator migrator) {
+  @Test
+  void shouldUnassign87ZeebeTaskV2(final CamundaMigrator migrator) {
 
-    final long taskKey = USER_TASK_KEYS.get(databaseType).get("second");
+    final long taskKey = USER_TASK_KEYS.get("second");
 
     migrator.getCamundaClient().newUserTaskUnassignCommand(taskKey).send().join();
 
     shouldBeUnassigned(migrator.getCamundaClient(), taskKey);
   }
 
-  @TestTemplate
-  void shouldUnassign88ZeebeTaskV1(
-      final DatabaseType databaseType, final CamundaMigrator migrator) {
+  @Test
+  void shouldUnassign88ZeebeTaskV1(final CamundaMigrator migrator) {
 
     final var piKey =
         startProcessInstance(
             migrator.getCamundaClient(),
-            PROCESS_DEFINITION_KEYS.get(databaseType).get(TaskImplementation.ZEEBE_USER_TASK));
+            PROCESS_DEFINITION_KEYS.get(TaskImplementation.ZEEBE_USER_TASK));
     final var taskKey = waitFor88TaskToBeImportedReturningId(migrator, piKey);
 
     final var res =
@@ -67,14 +67,13 @@ public class UnassignUserTaskMigrationIT extends UserTaskMigrationHelper {
     shouldBeUnassigned(migrator.getCamundaClient(), taskKey);
   }
 
-  @TestTemplate
-  void shouldUnassign88ZeebeTaskV2(
-      final DatabaseType databaseType, final CamundaMigrator migrator) {
+  @Test
+  void shouldUnassign88ZeebeTaskV2(final CamundaMigrator migrator) {
 
     final var piKey =
         startProcessInstance(
             migrator.getCamundaClient(),
-            PROCESS_DEFINITION_KEYS.get(databaseType).get(TaskImplementation.ZEEBE_USER_TASK));
+            PROCESS_DEFINITION_KEYS.get(TaskImplementation.ZEEBE_USER_TASK));
     final var taskKey = waitFor88TaskToBeImportedReturningId(migrator, piKey);
 
     migrator.getCamundaClient().newUserTaskUnassignCommand(taskKey).send().join();
@@ -82,11 +81,10 @@ public class UnassignUserTaskMigrationIT extends UserTaskMigrationHelper {
     shouldBeUnassigned(migrator.getCamundaClient(), taskKey);
   }
 
-  @TestTemplate
-  void shouldUnAssign87JobWorkerV1(
-      final DatabaseType databaseType, final CamundaMigrator migrator) {
+  @Test
+  void shouldUnAssign87JobWorkerV1(final CamundaMigrator migrator) {
 
-    final long taskKey = USER_TASK_KEYS.get(databaseType).get("third");
+    final long taskKey = USER_TASK_KEYS.get("third");
 
     final var res =
         migrator.getTasklistClient().withAuthentication("demo", "demo").unassignUserTask(taskKey);
@@ -95,14 +93,13 @@ public class UnassignUserTaskMigrationIT extends UserTaskMigrationHelper {
     shouldBeUnassigned(migrator.getCamundaClient(), taskKey);
   }
 
-  @TestTemplate
-  void shouldUnAssign88JobWorkerV1(
-      final DatabaseType databaseType, final CamundaMigrator migrator) {
+  @Test
+  void shouldUnAssign88JobWorkerV1(final CamundaMigrator migrator) {
 
     final var piKey =
         startProcessInstance(
             migrator.getCamundaClient(),
-            PROCESS_DEFINITION_KEYS.get(databaseType).get(TaskImplementation.ZEEBE_USER_TASK));
+            PROCESS_DEFINITION_KEYS.get(TaskImplementation.ZEEBE_USER_TASK));
     final var taskKey = waitFor88TaskToBeImportedReturningId(migrator, piKey);
 
     final var res =

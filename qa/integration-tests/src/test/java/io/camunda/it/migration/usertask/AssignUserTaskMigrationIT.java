@@ -12,13 +12,16 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.client.CamundaClient;
 import io.camunda.it.migration.util.CamundaMigrator;
 import io.camunda.it.migration.util.MigrationITExtension;
-import io.camunda.search.connect.configuration.DatabaseType;
 import io.camunda.webapps.schema.entities.tasklist.TaskEntity.TaskImplementation;
 import java.time.Duration;
 import org.awaitility.Awaitility;
-import org.junit.jupiter.api.TestTemplate;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+@Tag("multi-db-test")
+@DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "rdbms")
 public class AssignUserTaskMigrationIT extends UserTaskMigrationHelper {
 
   @RegisterExtension
@@ -26,10 +29,10 @@ public class AssignUserTaskMigrationIT extends UserTaskMigrationHelper {
       new MigrationITExtension()
           .withBeforeUpgradeConsumer((db, migrator) -> setup(db, migrator, null));
 
-  @TestTemplate
-  void shouldAssign87ZeebeTaskV1(final DatabaseType databaseType, final CamundaMigrator migrator) {
+  @Test
+  void shouldAssign87ZeebeTaskV1(final CamundaMigrator migrator) {
 
-    final long taskKey = USER_TASK_KEYS.get(databaseType).get("first");
+    final long taskKey = USER_TASK_KEYS.get("first");
     final var res =
         migrator
             .getTasklistClient()
@@ -40,23 +43,23 @@ public class AssignUserTaskMigrationIT extends UserTaskMigrationHelper {
     shouldBeAssigned(migrator.getCamundaClient(), taskKey);
   }
 
-  @TestTemplate
-  void shouldAssign87ZeebeTaskV2(final DatabaseType databaseType, final CamundaMigrator migrator) {
+  @Test
+  void shouldAssign87ZeebeTaskV2(final CamundaMigrator migrator) {
 
-    final long taskKey = USER_TASK_KEYS.get(databaseType).get("second");
+    final long taskKey = USER_TASK_KEYS.get("second");
 
     migrator.getCamundaClient().newUserTaskAssignCommand(taskKey).assignee("demo").send().join();
 
     shouldBeAssigned(migrator.getCamundaClient(), taskKey);
   }
 
-  @TestTemplate
-  void shouldAssign88ZeebeTaskV1(final DatabaseType databaseType, final CamundaMigrator migrator) {
+  @Test
+  void shouldAssign88ZeebeTaskV1(final CamundaMigrator migrator) {
 
     final var piKey =
         startProcessInstance(
             migrator.getCamundaClient(),
-            PROCESS_DEFINITION_KEYS.get(databaseType).get(TaskImplementation.ZEEBE_USER_TASK));
+            PROCESS_DEFINITION_KEYS.get(TaskImplementation.ZEEBE_USER_TASK));
     final var taskKey = waitFor88TaskToBeImportedReturningId(migrator, piKey);
 
     final var res =
@@ -69,13 +72,13 @@ public class AssignUserTaskMigrationIT extends UserTaskMigrationHelper {
     shouldBeAssigned(migrator.getCamundaClient(), taskKey);
   }
 
-  @TestTemplate
-  void shouldAssign88ZeebeTaskV2(final DatabaseType databaseType, final CamundaMigrator migrator) {
+  @Test
+  void shouldAssign88ZeebeTaskV2(final CamundaMigrator migrator) {
 
     final var piKey =
         startProcessInstance(
             migrator.getCamundaClient(),
-            PROCESS_DEFINITION_KEYS.get(databaseType).get(TaskImplementation.ZEEBE_USER_TASK));
+            PROCESS_DEFINITION_KEYS.get(TaskImplementation.ZEEBE_USER_TASK));
     final var taskKey = waitFor88TaskToBeImportedReturningId(migrator, piKey);
 
     migrator.getCamundaClient().newUserTaskAssignCommand(taskKey).assignee("demo").send().join();
@@ -83,10 +86,10 @@ public class AssignUserTaskMigrationIT extends UserTaskMigrationHelper {
     shouldBeAssigned(migrator.getCamundaClient(), taskKey);
   }
 
-  @TestTemplate
-  void shouldAssign87JobWorkerV1(final DatabaseType databaseType, final CamundaMigrator migrator) {
+  @Test
+  void shouldAssign87JobWorkerV1(final CamundaMigrator migrator) {
 
-    final long taskKey = USER_TASK_KEYS.get(databaseType).get("third");
+    final long taskKey = USER_TASK_KEYS.get("third");
     final var res =
         migrator
             .getTasklistClient()
@@ -97,13 +100,13 @@ public class AssignUserTaskMigrationIT extends UserTaskMigrationHelper {
     shouldBeAssigned(migrator.getCamundaClient(), taskKey);
   }
 
-  @TestTemplate
-  void shouldAssign88JobWorkerV1(final DatabaseType databaseType, final CamundaMigrator migrator) {
+  @Test
+  void shouldAssign88JobWorkerV1(final CamundaMigrator migrator) {
 
     final var piKey =
         startProcessInstance(
             migrator.getCamundaClient(),
-            PROCESS_DEFINITION_KEYS.get(databaseType).get(TaskImplementation.JOB_WORKER));
+            PROCESS_DEFINITION_KEYS.get(TaskImplementation.JOB_WORKER));
     final var taskKey = waitFor88TaskToBeImportedReturningId(migrator, piKey);
 
     final var res =
