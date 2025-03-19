@@ -43,9 +43,9 @@ const AssignRolesModal: FC<
 
   const unassignedRoles =
     roleSearchResults?.items.filter(
-      ({ key }) =>
-        !assignedRoles.some((role) => role.key === key) &&
-        !selectedRoles.some((role) => role.key === key),
+      ({ roleKey }) =>
+        !assignedRoles.some((role) => role.roleKey === roleKey) &&
+        !selectedRoles.some((role) => role.roleKey === roleKey),
     ) || [];
 
   const onSelectRole = (role: Role) => {
@@ -53,9 +53,11 @@ const AssignRolesModal: FC<
   };
 
   const onUnselectRole =
-    ({ key }: Role) =>
+    ({ roleKey }: Role) =>
     () => {
-      setSelectedRoles(selectedRoles.filter((role) => role.key !== key));
+      setSelectedRoles(
+        selectedRoles.filter((role) => role.roleKey !== roleKey),
+      );
     };
 
   const canSubmit = group && selectedRoles.length;
@@ -66,8 +68,8 @@ const AssignRolesModal: FC<
     setLoadingAssignRole(true);
 
     const results = await Promise.all(
-      selectedRoles.map(({ key }) =>
-        callAssignRole({ key, groupId: group.id }),
+      selectedRoles.map(({ roleKey }) =>
+        callAssignRole({ roleKey, groupId: group.id }),
       ),
     );
 
@@ -105,13 +107,13 @@ const AssignRolesModal: FC<
         <SelectedRoles>
           {selectedRoles.map((role) => (
             <Tag
-              key={role.key}
+              key={role.roleKey}
               onClose={onUnselectRole(role)}
               size="md"
               type="blue"
               filter
             >
-              {role.key}
+              {role.roleKey}
             </Tag>
           ))}
         </SelectedRoles>
@@ -119,7 +121,7 @@ const AssignRolesModal: FC<
       <DropdownSearch
         autoFocus
         items={unassignedRoles}
-        itemTitle={({ key }) => String(key)}
+        itemTitle={({ roleKey }) => roleKey}
         itemSubTitle={({ name }) => name}
         placeholder={t("searchByRoleId")}
         onSelect={onSelectRole}
