@@ -133,7 +133,7 @@ jobs:
             -D skipOptimize \
             -DskipTests \
             -X \
-            -DwaitBeforeTagging=0 \
+            -DwaitBeforeTagging=10 \
             -Dskip.docker \
             -P-autoFormat \
             -DpreparationGoals="" \
