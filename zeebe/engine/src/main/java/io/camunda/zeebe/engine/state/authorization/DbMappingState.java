@@ -84,6 +84,37 @@ public class DbMappingState implements MutableMappingState {
   }
 
   @Override
+  public void update(final MappingRecord mappingRecord) {
+    mappingId.wrapString(mappingRecord.getId());
+    get(mappingRecord.getId())
+        .ifPresentOrElse(
+            persistedMapping -> {
+              mappingKey.wrapLong(persistedMapping.getMappingKey());
+
+              // remove old record from mapping by claim
+              claimName.wrapString(persistedMapping.getClaimName());
+              claimValue.wrapString(persistedMapping.getClaimValue());
+              mappingColumnFamily.deleteExisting(claim);
+
+              persistedMapping.setName(mappingRecord.getName());
+              persistedMapping.setClaimName(mappingRecord.getClaimName());
+              persistedMapping.setClaimValue(mappingRecord.getClaimValue());
+
+              claimName.wrapString(persistedMapping.getClaimName());
+              claimValue.wrapString(persistedMapping.getClaimValue());
+              mappingColumnFamily.insert(claim, persistedMapping);
+              claimByKeyColumnFamily.update(mappingKey, fkClaim);
+              claimByIdColumnFamily.update(mappingId, fkClaim);
+            },
+            () -> {
+              throw new IllegalStateException(
+                  String.format(
+                      "Expected to update mapping with id '%s', but a mapping with this id does not exist.",
+                      mappingRecord.getId()));
+            });
+  }
+
+  @Override
   public void addRole(final long mappingKey, final long roleKey) {
     this.mappingKey.wrapLong(mappingKey);
     final var fkClaim = claimByKeyColumnFamily.get(this.mappingKey);
