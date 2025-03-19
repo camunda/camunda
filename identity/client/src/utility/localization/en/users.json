@@ -8,6 +8,7 @@
   "name": "Name",
   "email": "Email",
   "editUser": "Edit user",
+  "editUserWithName": "Edit user {{username}}",
   "createUser": "Create user",
   "searchByUsername": "Search by username",
   "listUsersLoadError": "The list of users could not be loaded.",
@@ -16,6 +17,7 @@
   "enterName": "Enter name",
   "enterEmailAddress": "Enter email address",
   "pleaseEnterValidEmail": "Please enter a valid email",
+  "pleaseEnterValidPassword": "Passwords do not match",
   "userDeleted": "User has been deleted.",
   "deleteUser": "Delete user",
   "deletingUser": "Deleting user...",
@@ -28,5 +30,8 @@
   "enterNewPassword": "Enter new password",
   "keepCurrentPassword": "Leave empty to keep current password",
   "userDetails": "User details",
-  "openContextMenu": "Open users context menu"
+  "openContextMenu": "Open users context menu",
+  "repeatPassword": "Repeat password",
+  "resetPassword": "Reset password",
+  "resetPasswordInfo": "New password must be at least 6 characters long and include at least one number."
 }

@@ -10,14 +10,6 @@ export const Row = styled.div`
   grid-template-columns: 1fr 2fr;
 `;
 
-export const Divider = styled.hr`
-  width: 100%;
-  border-top: 1px solid var(--cds-layer-01);
-  border-left: none;
-  border-right: none;
-  margin-top: 1rem;
-`;
-
 export const TextFieldContainer = styled.div`
   margin-top: 3px;
 `;

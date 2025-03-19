@@ -23,7 +23,9 @@ const AddModal: FC<UseModalProps> = ({ open, onClose, onSuccess }) => {
   const [email, setEmail] = useState("");
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+  const [repeatedPassword, setRepeatedPassword] = useState("");
   const [emailValid, setEmailValid] = useState(true);
+  const [passwordValid, setPasswordValid] = useState(true);
 
   const handleSubmit = async () => {
     const { success } = await apiCall({
@@ -42,6 +44,12 @@ const AddModal: FC<UseModalProps> = ({ open, onClose, onSuccess }) => {
     setEmailValid(isValidEmail(email));
   }
 
+  function validatePassword() {
+    if (password && repeatedPassword) {
+      setPasswordValid(password === repeatedPassword);
+    }
+  }
+
   return (
     <FormModal
       open={open}
@@ -49,7 +57,13 @@ const AddModal: FC<UseModalProps> = ({ open, onClose, onSuccess }) => {
       onClose={onClose}
       onSubmit={handleSubmit}
       loading={loading}
-      submitDisabled={!name || !email || !username || !password}
+      submitDisabled={
+        !name ||
+        !email ||
+        !username ||
+        !password ||
+        password !== repeatedPassword
+      }
       loadingDescription={t("creatingUser")}
       confirmLabel={t("createUser")}
     >
@@ -80,7 +94,17 @@ const AddModal: FC<UseModalProps> = ({ open, onClose, onSuccess }) => {
         value={password}
         placeholder={t("password")}
         onChange={setPassword}
+        onBlur={validatePassword}
         type="password"
+      />
+      <TextField
+        label={t("repeatPassword")}
+        value={repeatedPassword}
+        placeholder={t("repeatPassword")}
+        onChange={setRepeatedPassword}
+        onBlur={validatePassword}
+        type="password"
+        errors={!passwordValid ? [t("pleaseEnterValidPassword")] : []}
       />
       {error && (
         <InlineNotification
