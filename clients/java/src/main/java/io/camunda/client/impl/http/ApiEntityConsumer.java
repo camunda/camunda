@@ -15,6 +15,7 @@
  */
 package io.camunda.client.impl.http;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.client.impl.http.TypedApiEntityConsumer.JsonApiEntityConsumer;
 import io.camunda.client.impl.http.TypedApiEntityConsumer.RawApiEntityConsumer;
@@ -51,26 +52,31 @@ final class ApiEntityConsumer<T> extends AbstractBinAsyncEntityConsumer<ApiEntit
   private static final List<ContentType> SUPPORTED_TEXT_CONTENT_TYPES =
       Arrays.asList(ContentType.TEXT_XML);
   private final ObjectMapper json;
-  private final Class<T> type;
+  private final TypeReference<T> typeReference;
   private final int chunkSize;
 
   private TypedApiEntityConsumer<T> entityConsumer;
 
   ApiEntityConsumer(final ObjectMapper json, final Class<T> type, final int chunkSize) {
+    this(json, new ClassTypeReference<>(type), chunkSize);
+  }
+
+  ApiEntityConsumer(
+      final ObjectMapper json, final TypeReference<T> typeReference, final int chunkSize) {
     this.json = json;
-    this.type = type;
+    this.typeReference = typeReference;
     this.chunkSize = chunkSize;
   }
 
   @Override
   protected void streamStart(final ContentType contentType) throws IOException {
     if (ContentType.APPLICATION_JSON.isSameMimeType(contentType)) {
-      entityConsumer = new JsonApiEntityConsumer<>(json, type, true);
+      entityConsumer = new JsonApiEntityConsumer<>(json, typeReference, true);
     } else if (ContentType.APPLICATION_PROBLEM_JSON.isSameMimeType(contentType)) {
-      entityConsumer = new JsonApiEntityConsumer<>(json, type, false);
+      entityConsumer = new JsonApiEntityConsumer<>(json, typeReference, false);
     } else {
       final boolean isResponse =
-          String.class.equals(type)
+          String.class.equals(typeReference.getType())
               && SUPPORTED_TEXT_CONTENT_TYPES.stream().anyMatch(t -> t.isSameMimeType(contentType));
       entityConsumer = new RawApiEntityConsumer<>(isResponse, chunkSize);
     }

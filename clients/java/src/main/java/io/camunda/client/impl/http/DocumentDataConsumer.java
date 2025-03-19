@@ -15,6 +15,7 @@
  */
 package io.camunda.client.impl.http;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.client.impl.http.CircularBufferInputStream.CapacityCallback;
 import io.camunda.client.impl.http.TypedApiEntityConsumer.JsonApiEntityConsumer;
@@ -69,7 +70,8 @@ public class DocumentDataConsumer<T>
     maxCapacity = bufferCapacity;
     inputStream = new CircularBufferInputStream(bufferCapacity);
     try {
-      problemDetailConsumer = new JsonApiEntityConsumer<>(json, InputStream.class, false);
+      problemDetailConsumer =
+          new JsonApiEntityConsumer<>(json, new TypeReference<InputStream>() {}, false);
     } catch (final IOException e) {
       throw new RuntimeException(e);
     }

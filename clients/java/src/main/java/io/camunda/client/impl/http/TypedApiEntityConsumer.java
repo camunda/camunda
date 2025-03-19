@@ -18,6 +18,7 @@ package io.camunda.client.impl.http;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.JsonToken;
 import com.fasterxml.jackson.core.json.async.NonBlockingByteBufferJsonParser;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.util.TokenBuffer;
 import io.camunda.client.protocol.rest.ProblemDetail;
@@ -75,16 +76,17 @@ public interface TypedApiEntityConsumer<T> {
   class JsonApiEntityConsumer<T> implements TypedApiEntityConsumer<T> {
     private static final Logger LOGGER = LoggerFactory.getLogger(JsonApiEntityConsumer.class);
     private final ObjectMapper json;
-    private final Class<T> type;
+    private final TypeReference<T> typeReference;
     private final NonBlockingByteBufferJsonParser parser;
     private final TokenBuffer buffer;
     private final boolean isResponse;
     private int bufferedBytes;
 
     public JsonApiEntityConsumer(
-        final ObjectMapper json, final Class<T> type, final boolean isResponse) throws IOException {
+        final ObjectMapper json, final TypeReference<T> typeReference, final boolean isResponse)
+        throws IOException {
       this.json = json;
-      this.type = type;
+      this.typeReference = typeReference;
       this.isResponse = isResponse;
       parser =
           (NonBlockingByteBufferJsonParser) json.getFactory().createNonBlockingByteBufferParser();
@@ -95,7 +97,7 @@ public interface TypedApiEntityConsumer<T> {
     public ApiEntity<T> generateContent() throws IOException {
       try {
         if (isResponse) {
-          return ApiEntity.of(json.readValue(buffer.asParserOnFirstToken(), type));
+          return ApiEntity.of(json.readValue(buffer.asParserOnFirstToken(), typeReference));
         }
         return ApiEntity.of(json.readValue(buffer.asParserOnFirstToken(), ProblemDetail.class));
       } catch (final IOException ioe) {
