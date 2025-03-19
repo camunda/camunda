@@ -33,7 +33,10 @@ public class CommandDistributionFinishProcessor
     final var distributionRecord = record.getValue();
     Optional.ofNullable(distributionRecord.getQueueId())
         .ifPresent(commandDistributionBehavior::continueAfterQueue);
+
     stateWriter.appendFollowUpEvent(
         record.getKey(), CommandDistributionIntent.FINISHED, distributionRecord);
+
+    commandDistributionBehavior.getMetrics().removeActiveDistribution();
   }
 }

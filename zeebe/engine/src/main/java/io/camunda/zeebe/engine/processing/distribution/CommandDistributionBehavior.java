@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.distribution;
 
+import io.camunda.zeebe.engine.metrics.DistributionMetrics;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.SideEffectWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
@@ -141,6 +142,9 @@ public final class CommandDistributionBehavior {
           }
           distributeToPartition(partition, distributionRecord, distributionKey);
         });
+
+    getMetrics().startedDistribution();
+    getMetrics().addActiveDistribution();
   }
 
   private void distributeToPartition(
@@ -162,6 +166,8 @@ public final class CommandDistributionBehavior {
     if (canDistributeImmediately) {
       startDistributing(partition, distributionRecord, distributionKey);
     }
+
+    getMetrics().addPendingDistribution(partition);
   }
 
   private void enqueueDistribution(
@@ -209,6 +215,7 @@ public final class CommandDistributionBehavior {
       final long distributionKey) {
     final var valueType = distributionRecord.getValueType();
     final var intent = distributionRecord.getIntent();
+    final var queueId = distributionRecord.getQueueId();
 
     commandDistributionDistributing.reset();
 
@@ -220,6 +227,7 @@ public final class CommandDistributionBehavior {
         commandDistributionDistributing
             .setPartitionId(partition)
             .setValueType(valueType)
+            .setQueueId(queueId)
             .setIntent(intent));
 
     // This getter makes a hard copy of the command value, which we need to send the command to the
@@ -236,6 +244,8 @@ public final class CommandDistributionBehavior {
               partition, valueType, intent, distributionKey, commandValue);
           return true;
         });
+
+    getMetrics().addInflightDistribution(partition);
   }
 
   /**
@@ -264,6 +274,8 @@ public final class CommandDistributionBehavior {
               acknowledgeRecord);
           return true;
         });
+
+    getMetrics().sentAcknowledgeDistribution(receiverPartitionId);
   }
 
   private <T extends UnifiedRecordValue> void requestContinuation(
@@ -288,6 +300,10 @@ public final class CommandDistributionBehavior {
 
     stateWriter.appendFollowUpEvent(
         key, CommandDistributionIntent.CONTINUATION_REQUESTED, commandDistributionContinuation);
+  }
+
+  public DistributionMetrics getMetrics() {
+    return distributionState.getMetrics();
   }
 
   public interface RequestBuilder {
