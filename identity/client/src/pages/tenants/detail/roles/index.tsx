@@ -84,7 +84,7 @@ const Roles: FC<RolesProps> = ({ tenantId }) => {
       <EntityList
         data={roles?.items}
         headers={[
-          { header: t("roleId"), key: "key" },
+          { header: t("roleId"), key: "roleKey" },
           { header: t("roleName"), key: "name" },
         ]}
         sortProperty="key"
