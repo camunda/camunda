@@ -13,7 +13,7 @@
   <parent>
     <groupId>io.camunda</groupId>
     <artifactId>camunda-qa</artifactId>
-    <version>8.8.0-28522-SNAPSHOT</version>
+    <version>8.8.0-28522</version>
   </parent>
 
   <artifactId>camunda-qa-integration-tests</artifactId>
