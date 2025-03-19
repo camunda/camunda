@@ -16,14 +16,12 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
-import io.camunda.zeebe.engine.state.authorization.PersistedMapping;
 import io.camunda.zeebe.engine.state.distribution.DistributionQueue;
 import io.camunda.zeebe.engine.state.immutable.MappingState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.state.immutable.RoleState;
 import io.camunda.zeebe.engine.state.immutable.TenantState;
 import io.camunda.zeebe.engine.state.immutable.UserState;
-import io.camunda.zeebe.engine.state.user.PersistedUser;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.IdentitySetupRecord;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.MappingRecord;
@@ -42,6 +40,7 @@ import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.EntityType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
+import java.util.Collections;
 import org.agrona.collections.MutableBoolean;
 
 @ExcludeAuthorizationCheck
@@ -114,27 +113,6 @@ public final class IdentitySetupInitializeProcessor
               addAllPermissions(role.getRoleKey());
             });
 
-    record.getUsers().stream()
-        .map(UserRecord.class::cast)
-        .forEach(
-            user ->
-                userState
-                    .getUser(user.getUsername())
-                    .map(PersistedUser::getUserKey)
-                    .ifPresentOrElse(
-                        userKey -> {
-                          user.setUserKey(userKey);
-                          if (assignEntityToRole(role.getRoleKey(), userKey, EntityType.USER)) {
-                            createdNewEntities.set(true);
-                          }
-                        },
-                        () -> {
-                          createdNewEntities.set(true);
-                          final long userKey = keyGenerator.nextKey();
-                          user.setUserKey(userKey);
-                          createUser(user, role.getRoleKey());
-                        }));
-
     final var tenant = record.getDefaultTenant();
     tenantState
         .getTenantById(tenant.getTenantId())
@@ -147,18 +125,47 @@ public final class IdentitySetupInitializeProcessor
               createTenant(tenant);
             });
 
+    record.getUsers().stream()
+        .map(UserRecord.class::cast)
+        .forEach(
+            user ->
+                userState
+                    .getUser(user.getUsername())
+                    .ifPresentOrElse(
+                        persistedUser -> {
+                          user.setUserKey(persistedUser.getUserKey());
+                          if (assignEntityToRole(
+                              role.getRoleKey(), persistedUser.getUserKey(), EntityType.USER)) {
+                            createdNewEntities.set(true);
+                          }
+                          if (assignEntityToTenant(
+                              tenant, persistedUser.getUsername(), EntityType.USER)) {
+                            createdNewEntities.set(true);
+                          }
+                        },
+                        () -> {
+                          createdNewEntities.set(true);
+                          final long userKey = keyGenerator.nextKey();
+                          user.setUserKey(userKey);
+                          createUser(user, role.getRoleKey(), tenant);
+                        }));
+
     record.getMappings().stream()
         .map(MappingRecord.class::cast)
         .forEach(
             mapping ->
                 mappingState
                     .get(mapping.getClaimName(), mapping.getClaimValue())
-                    .map(PersistedMapping::getMappingKey)
                     .ifPresentOrElse(
-                        mappingKey -> {
-                          mapping.setMappingKey(mappingKey);
+                        persistedMapping -> {
+                          mapping.setMappingKey(persistedMapping.getMappingKey());
                           if (assignEntityToRole(
-                              role.getRoleKey(), mappingKey, EntityType.MAPPING)) {
+                              role.getRoleKey(),
+                              persistedMapping.getMappingKey(),
+                              EntityType.MAPPING)) {
+                            createdNewEntities.set(true);
+                          }
+                          if (assignEntityToTenant(tenant, mapping.getId(), EntityType.MAPPING)) {
                             createdNewEntities.set(true);
                           }
                         },
@@ -166,7 +173,7 @@ public final class IdentitySetupInitializeProcessor
                           createdNewEntities.set(true);
                           final long mappingKey = keyGenerator.nextKey();
                           mapping.setMappingKey(mappingKey);
-                          createMapping(mapping, role.getRoleKey());
+                          createMapping(mapping, role.getRoleKey(), tenant);
                         }));
     return createdNewEntities.get();
   }
@@ -177,6 +184,11 @@ public final class IdentitySetupInitializeProcessor
       createRole(role);
     }
 
+    final var tenant = record.getDefaultTenant();
+    if (tenantState.getTenantById(tenant.getTenantId()).isEmpty()) {
+      createTenant(tenant);
+    }
+
     record.getUsers().stream()
         .map(UserRecord.class::cast)
         .forEach(
@@ -184,14 +196,13 @@ public final class IdentitySetupInitializeProcessor
                 userState
                     .getUser(user.getUserKey())
                     .ifPresentOrElse(
-                        userKey ->
-                            assignEntityToRole(
-                                role.getRoleKey(), userKey.getUserKey(), EntityType.USER),
-                        () -> createUser(user, role.getRoleKey())));
-
-    if (tenantState.getTenantById(record.getDefaultTenant().getTenantId()).isEmpty()) {
-      createTenant(record.getDefaultTenant());
-    }
+                        persistedUser -> {
+                          assignEntityToRole(
+                              role.getRoleKey(), persistedUser.getUserKey(), EntityType.USER);
+                          assignEntityToTenant(
+                              tenant, persistedUser.getUsername(), EntityType.USER);
+                        },
+                        () -> createUser(user, role.getRoleKey(), tenant)));
 
     record.getMappings().stream()
         .map(MappingRecord.class::cast)
@@ -200,28 +211,35 @@ public final class IdentitySetupInitializeProcessor
                 mappingState
                     .get(mapping.getClaimName(), mapping.getClaimValue())
                     .ifPresentOrElse(
-                        mappingKey ->
-                            assignEntityToRole(
-                                role.getRoleKey(), mappingKey.getMappingKey(), EntityType.MAPPING),
-                        () -> createMapping(mapping, role.getRoleKey())));
+                        persistedMapping -> {
+                          assignEntityToRole(
+                              role.getRoleKey(),
+                              persistedMapping.getMappingKey(),
+                              EntityType.MAPPING);
+                          assignEntityToTenant(tenant, mapping.getId(), EntityType.MAPPING);
+                        },
+                        () -> createMapping(mapping, role.getRoleKey(), tenant)));
   }
 
   private void createRole(final RoleRecord role) {
     stateWriter.appendFollowUpEvent(role.getRoleKey(), RoleIntent.CREATED, role);
   }
 
-  private void createUser(final UserRecord user, final long roleKey) {
+  private void createUser(final UserRecord user, final long roleKey, final TenantRecord tenant) {
     stateWriter.appendFollowUpEvent(user.getUserKey(), UserIntent.CREATED, user);
     assignEntityToRole(roleKey, user.getUserKey(), EntityType.USER);
+    assignEntityToTenant(tenant, user.getUsername(), EntityType.USER);
   }
 
   private void createTenant(final TenantRecord tenant) {
     stateWriter.appendFollowUpEvent(tenant.getTenantKey(), TenantIntent.CREATED, tenant);
   }
 
-  private void createMapping(final MappingRecord mapping, final long roleKey) {
+  private void createMapping(
+      final MappingRecord mapping, final long roleKey, final TenantRecord tenant) {
     stateWriter.appendFollowUpEvent(mapping.getMappingKey(), MappingIntent.CREATED, mapping);
     assignEntityToRole(roleKey, mapping.getMappingKey(), EntityType.MAPPING);
+    assignEntityToTenant(tenant, mapping.getId(), EntityType.MAPPING);
   }
 
   private boolean assignEntityToRole(
@@ -234,6 +252,28 @@ public final class IdentitySetupInitializeProcessor
     final var record =
         new RoleRecord().setRoleKey(roleKey).setEntityKey(entityKey).setEntityType(entityType);
     stateWriter.appendFollowUpEvent(roleKey, RoleIntent.ENTITY_ADDED, record);
+    return true;
+  }
+
+  private boolean assignEntityToTenant(
+      final TenantRecord tenant, final String entityId, final EntityType entityType) {
+    final var isAlreadyAssigned =
+        tenantState
+            .getEntitiesByType(tenant.getTenantId())
+            .getOrDefault(entityType, Collections.emptyList())
+            .contains(entityId);
+    if (isAlreadyAssigned) {
+      return false;
+    }
+
+    final var record =
+        new TenantRecord()
+            .setTenantId(tenant.getTenantId())
+            .setEntityId(entityId)
+            .setEntityType(entityType);
+    // TODO tenantKey should become a generic initilization key when switching to commands
+    //  (https://github.com/camunda/camunda/issues/29810)
+    stateWriter.appendFollowUpEvent(tenant.getTenantKey(), TenantIntent.ENTITY_ADDED, record);
     return true;
   }
 
