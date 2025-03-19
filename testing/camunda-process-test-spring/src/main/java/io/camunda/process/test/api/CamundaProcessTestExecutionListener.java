@@ -21,10 +21,12 @@ import io.camunda.process.test.impl.assertions.CamundaDataSource;
 import io.camunda.process.test.impl.configuration.CamundaContainerRuntimeConfiguration;
 import io.camunda.process.test.impl.extension.CamundaProcessTestContextImpl;
 import io.camunda.process.test.impl.proxy.CamundaClientProxy;
+import io.camunda.process.test.impl.proxy.CamundaProcessSpecRunnerProxy;
 import io.camunda.process.test.impl.proxy.CamundaProcessTestContextProxy;
 import io.camunda.process.test.impl.proxy.ZeebeClientProxy;
 import io.camunda.process.test.impl.runtime.CamundaContainerRuntime;
 import io.camunda.process.test.impl.runtime.CamundaContainerRuntimeBuilder;
+import io.camunda.process.test.impl.spec.ProcessSpecRunner;
 import io.camunda.process.test.impl.testresult.CamundaProcessTestResultCollector;
 import io.camunda.process.test.impl.testresult.CamundaProcessTestResultPrinter;
 import io.camunda.process.test.impl.testresult.ProcessTestResult;
@@ -104,6 +106,10 @@ public class CamundaProcessTestExecutionListener implements TestExecutionListene
         .getApplicationContext()
         .getBean(CamundaProcessTestContextProxy.class)
         .setContext(camundaProcessTestContext);
+    testContext
+        .getApplicationContext()
+        .getBean(CamundaProcessSpecRunnerProxy.class)
+        .setClient(new ProcessSpecRunner(camundaProcessTestContext));
 
     // publish Zeebe client
     testContext.getApplicationContext().publishEvent(new CamundaClientCreatedEvent(this, client));
