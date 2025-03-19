@@ -9,6 +9,7 @@ package io.camunda.application.commons.rest;
 
 import io.camunda.application.commons.rest.RestApiConfiguration.GatewayRestProperties;
 import io.camunda.service.ProcessDefinitionServices;
+import io.camunda.zeebe.broker.client.api.BrokerTopologyManager;
 import io.camunda.zeebe.gateway.rest.ConditionalOnRestGatewayEnabled;
 import io.camunda.zeebe.gateway.rest.cache.ProcessCache;
 import io.camunda.zeebe.gateway.rest.config.GatewayRestConfiguration;
@@ -34,8 +35,10 @@ public class RestApiConfiguration {
   @Bean
   public ProcessCache processCache(
       final GatewayRestConfiguration configuration,
-      final ProcessFlowNodeProvider processFlowNodeProvider) {
-    return new ProcessCache(configuration, processFlowNodeProvider);
+      final ProcessFlowNodeProvider processFlowNodeProvider,
+      final BrokerTopologyManager brokerTopologyManager) {
+
+    return new ProcessCache(configuration, processFlowNodeProvider, brokerTopologyManager);
   }
 
   @ConfigurationProperties("camunda.rest")

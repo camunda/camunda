@@ -18,6 +18,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
 import com.github.benmanes.caffeine.cache.LoadingCache;
+import io.camunda.zeebe.broker.client.api.BrokerTopologyManager;
 import io.camunda.zeebe.gateway.rest.config.GatewayRestConfiguration;
 import io.camunda.zeebe.gateway.rest.util.ProcessFlowNodeProvider;
 import io.camunda.zeebe.gateway.rest.util.ProcessFlowNodeProvider.ProcessFlowNode;
@@ -37,12 +38,14 @@ class ProcessCacheTest {
   private ProcessCache processCache;
   private GatewayRestConfiguration configuration;
   private ProcessFlowNodeProvider processFlowNodeProvider;
+  private BrokerTopologyManager brokerTopologyManager;
 
   @BeforeEach
   public void setUp() {
     configuration = new GatewayRestConfiguration();
     processFlowNodeProvider = mock(ProcessFlowNodeProvider.class);
-    processCache = new ProcessCache(configuration, processFlowNodeProvider);
+    brokerTopologyManager = mock(BrokerTopologyManager.class);
+    processCache = new ProcessCache(configuration, processFlowNodeProvider, brokerTopologyManager);
     mockLoad(Tuple.of(1L, new ProcessFlowNode("id1", "Name 1")));
   }
 
@@ -164,7 +167,7 @@ class ProcessCacheTest {
   void shouldRemoveExpiredItem() throws InterruptedException {
     // given
     configuration.getProcessCache().setExpirationIdleMillis(10L);
-    processCache = new ProcessCache(configuration, processFlowNodeProvider);
+    processCache = new ProcessCache(configuration, processFlowNodeProvider, brokerTopologyManager);
     processCache.getCacheItem(1L);
     getCache().cleanUp();
     assertThat(getCacheMap()).hasSize(1);
@@ -181,7 +184,7 @@ class ProcessCacheTest {
   void shouldRefreshReadItemAndRemoveLeastRecentlyUsed() {
     // given
     configuration.getProcessCache().setMaxSize(2);
-    processCache = new ProcessCache(configuration, processFlowNodeProvider);
+    processCache = new ProcessCache(configuration, processFlowNodeProvider, brokerTopologyManager);
     processCache.getCacheItem(1L);
     processCache.getCacheItem(2L);
     getCache().cleanUp();
