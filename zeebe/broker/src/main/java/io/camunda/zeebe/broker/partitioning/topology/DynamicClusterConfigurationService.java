@@ -131,6 +131,18 @@ public class DynamicClusterConfigurationService implements ClusterConfigurationS
     final var localMember =
         brokerStartupContext.getClusterServices().getMembershipService().getLocalMember().id();
 
+    final var persistedConfig =
+        clusterConfigurationManagerService.getPersistedClusterConfiguration();
+    // here we check if the partition count coming from the broker configuration is the same as the
+    // one in the cluster topology which comes from the persisted configuration in the broker.
+    if (!persistedConfig.isUninitialized()
+        && brokerConfiguration.getCluster().getPartitionsCount()
+            != persistedConfig.getConfiguration().partitionCount()) {
+      brokerConfiguration
+          .getCluster()
+          .setPartitionsCount(persistedConfig.getConfiguration().partitionCount());
+    }
+
     final var staticConfiguration =
         StaticConfigurationGenerator.getStaticConfiguration(brokerConfiguration, localMember);
 

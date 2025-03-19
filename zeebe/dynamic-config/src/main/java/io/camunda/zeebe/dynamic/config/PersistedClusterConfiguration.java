@@ -23,7 +23,7 @@ import java.util.zip.CRC32C;
  * a fixed-size header containing a version and a checksum, followed by the serialized
  * configuration.
  */
-final class PersistedClusterConfiguration {
+public final class PersistedClusterConfiguration {
   // Header is a single byte for the version, followed by a long for the checksum.
   public static final int HEADER_LENGTH = Byte.BYTES + Long.BYTES;
   // Constant version, to be incremented if the format changes.
@@ -64,7 +64,7 @@ final class PersistedClusterConfiguration {
     return new PersistedClusterConfiguration(topologyFile, serializer, currentlyPersisted);
   }
 
-  ClusterConfiguration getConfiguration() {
+  public ClusterConfiguration getConfiguration() {
     return clusterConfiguration;
   }
 

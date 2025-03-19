@@ -112,6 +112,10 @@ public final class ClusterConfigurationManagerService
         clusterConfigurationGossiper::updateClusterConfiguration);
   }
 
+  public PersistedClusterConfiguration getPersistedClusterConfiguration() {
+    return persistedClusterConfiguration;
+  }
+
   private ClusterConfigurationInitializer getNonCoordinatorInitializer(
       final ClusterMembershipService membershipService,
       final StaticConfiguration staticConfiguration) {
