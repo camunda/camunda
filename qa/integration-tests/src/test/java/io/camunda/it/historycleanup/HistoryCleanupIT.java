@@ -17,7 +17,6 @@ import static io.camunda.qa.util.multidb.CamundaMultiDBExtension.TIMEOUT_DATA_AV
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.client.CamundaClient;
-import io.camunda.client.api.response.ProcessInstanceEvent;
 import io.camunda.client.api.search.response.UserTask;
 import io.camunda.qa.util.multidb.HistoryMultiDbTest;
 import java.time.Duration;
@@ -38,26 +37,28 @@ public class HistoryCleanupIT {
     // given
     deployResource(camundaClient, RESOURCE_NAME).getProcesses().getFirst();
     waitForProcessesToBeDeployed(camundaClient, 1);
-    final ProcessInstanceEvent processInstanceEvent =
-        startProcessInstance(camundaClient, "foo", "{\"variable\":\"bud\"}");
-    waitForProcessInstancesToStart(camundaClient, 1);
-    waitForFlowNodeInstances(camundaClient, 2);
+    // start two PIs
+    startProcessInstance(camundaClient, "foo", "{\"variable\":\"bud\"}");
+    startProcessInstance(camundaClient, "foo", "{\"variable\":\"bud2\"}");
+    // await them
+    waitForProcessInstancesToStart(camundaClient, 2);
+    waitForFlowNodeInstances(camundaClient, 4);
 
-    // when we complete the user task
-    Awaitility.await("until a task is available for completion")
-        .atMost(TIMEOUT_DATA_AVAILABILITY)
-        .ignoreExceptions() // Ignore exceptions and continue retrying
-        .until(
-            () -> camundaClient.newUserTaskQuery().send().join().items().getFirst(),
-            Objects::nonNull);
-    final UserTask userTask = camundaClient.newUserTaskQuery().send().join().items().getFirst();
+    // when we complete the user task of one instance
+    final UserTask userTask =
+        Awaitility.await("until a task is available for completion")
+            .atMost(TIMEOUT_DATA_AVAILABILITY)
+            .ignoreExceptions() // Ignore exceptions and continue retrying
+            .until(
+                () -> camundaClient.newUserTaskQuery().send().join().items().getFirst(),
+                Objects::nonNull);
     camundaClient.newUserTaskCompleteCommand(userTask.getUserTaskKey()).send().join();
 
-    // then process should be ended
-    waitUntilProcessInstanceIsEnded(camundaClient, processInstanceEvent.getProcessInstanceKey());
+    // then one of the process instance should be ended, but still exist to query
+    final Long processInstanceKey = userTask.getProcessInstanceKey();
+    waitUntilProcessInstanceIsEnded(camundaClient, processInstanceKey);
 
     // and soon it should be gone
-    final long processInstanceKey = processInstanceEvent.getProcessInstanceKey();
     Awaitility.await("should wait until process and tasks are deleted")
         .atMost(Duration.ofMinutes(5))
         .ignoreExceptions() // Ignore exceptions and continue retrying
@@ -81,5 +82,10 @@ public class HistoryCleanupIT {
                       .totalItems();
               assertThat(taskAmount).isZero();
             });
+
+    // the other should still exist
+    final var result = camundaClient.newProcessInstanceQuery().send().join();
+    assertThat(result.page().totalItems()).isEqualTo(1);
+    assertThat(result.items().getFirst().getProcessInstanceKey()).isNotEqualTo(processInstanceKey);
   }
 }
