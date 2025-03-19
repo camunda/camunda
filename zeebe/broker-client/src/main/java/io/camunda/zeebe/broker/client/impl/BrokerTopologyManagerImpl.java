@@ -248,33 +248,14 @@ public final class BrokerTopologyManagerImpl extends Actor
   private void notifyOnClusterChangeCompleted(
       final ClusterConfiguration clusterTopology, final BrokerClusterStateImpl topologyToUpdate) {
 
-    updateCurrentTopologyLastChangeIdIfNecessary(clusterTopology, topologyToUpdate);
-
     clusterTopology
         .lastChange()
         .filter(lastChange -> lastChange.id() > topologyToUpdate.getLastCompletedChangeId())
         .ifPresent(
             lastChange -> {
-              LOG.debug("The cluster has for sure been updated with new id " + lastChange.id());
+              LOG.info("The cluster has for sure been updated with new id " + lastChange.id());
 
               topologyListeners.forEach(BrokerTopologyListener::completedClusterChange);
-              topologyToUpdate.setLastCompletedChangeId(lastChange.id());
-            });
-  }
-
-  /*
-   * When the app starts up the lastCompletedChangeId is set to-1.
-   * We should ignore it by setting it to the current topology changeId
-   */
-  private void updateCurrentTopologyLastChangeIdIfNecessary(
-      final ClusterConfiguration clusterTopology, final BrokerClusterStateImpl topologyToUpdate) {
-
-    clusterTopology
-        .lastChange()
-        .filter(lastChange -> topologyToUpdate.getLastCompletedChangeId() == -1)
-        .ifPresent(
-            lastChange -> {
-              LOG.debug("Updating initial topologyState to " + lastChange.id());
               topologyToUpdate.setLastCompletedChangeId(lastChange.id());
             });
   }

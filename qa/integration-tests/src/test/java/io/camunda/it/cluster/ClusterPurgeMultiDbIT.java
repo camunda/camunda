@@ -174,7 +174,75 @@ public class ClusterPurgeMultiDbIT {
   }
 
   @Test
-  void clusterShouldBeReusableAfterPurge() throws InterruptedException {
+  void shouldPurgeProcessCache() {
+    // GIVEN
+    final ClusterActuator actuator = ClusterActuator.of(APPLICATION);
+    final var processDefinitionKey1 =
+        deployProcessModel(
+            Bpmn.createExecutableProcess("test-process1")
+                .startEvent()
+                .userTask()
+                .zeebeUserTask()
+                .name("user-task-1")
+                .endEvent()
+                .done());
+    final var processInstanceKey1 = startProcess(processDefinitionKey1);
+
+    Awaitility.await("until user task is active")
+        .ignoreExceptions()
+        .atMost(Duration.ofSeconds(2 * TIMEOUT))
+        .untilAsserted(
+            () -> {
+              final Future<SearchQueryResponse<UserTask>> userTaskFuture =
+                  client.newUserTaskQuery().send();
+              Assertions.assertThat(userTaskFuture)
+                  .succeedsWithin(Duration.ofSeconds(TIMEOUT))
+                  .extracting(SearchQueryResponse::items)
+                  .satisfies(items -> Assertions.assertThat(items).hasSize(1));
+            });
+
+    // Query API so cache is filled
+    final var items1 =
+        client
+            .newFlownodeInstanceQuery()
+            .filter((f) -> f.processInstanceKey(processInstanceKey1))
+            .sort(sort -> sort.startDate().asc())
+            .send()
+            .join()
+            .items();
+
+    // WHEN
+    final var planChangeResponse = actuator.purge(false);
+
+    // THEN
+    assertThatChangesAreApplied(planChangeResponse);
+
+    final var processModel =
+        Bpmn.createExecutableProcess("test-process2")
+            .startEvent()
+            .userTask()
+            .zeebeUserTask()
+            .name("test-task-2")
+            .endEvent()
+            .done();
+    final var processDefinitionKey2 = deployProcessModel(processModel);
+    final var processInstanceKey2 = startProcess(processDefinitionKey2);
+
+    final var items2 =
+        client
+            .newFlownodeInstanceQuery()
+            .filter((f) -> f.processInstanceKey(processInstanceKey1))
+            .sort(sort -> sort.startDate().asc())
+            .send()
+            .join()
+            .items();
+
+    // This will fail, if the ProcessCache is not cleared.
+    assertThat((items2.get(1)).getFlowNodeName()).isEqualTo("test-task-2");
+  }
+
+  @Test
+  void clusterShouldBeReusableAfterPurge() {
     // GIVEN
     final ClusterActuator actuator = ClusterActuator.of(APPLICATION);
     deployProcessModel(Bpmn.createExecutableProcess("any-process").startEvent().endEvent().done());
