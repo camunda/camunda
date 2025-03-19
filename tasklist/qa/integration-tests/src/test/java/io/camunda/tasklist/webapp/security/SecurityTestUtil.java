@@ -5,7 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.operate.webapp.security;
+package io.camunda.tasklist.webapp.security;
 
 import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jose.JOSEObjectType;
@@ -14,33 +14,13 @@ import com.nimbusds.jose.JWSHeader;
 import com.nimbusds.jose.JWSSigner;
 import com.nimbusds.jose.crypto.ECDSASigner;
 import com.nimbusds.jose.crypto.RSASSASigner;
-import com.nimbusds.jose.jwk.Curve;
 import com.nimbusds.jose.jwk.ECKey;
-import com.nimbusds.jose.jwk.KeyUse;
 import com.nimbusds.jose.jwk.RSAKey;
-import com.nimbusds.jose.jwk.gen.ECKeyGenerator;
-import com.nimbusds.jose.jwk.gen.RSAKeyGenerator;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
 import java.util.Date;
 
 public class SecurityTestUtil {
-
-  public static RSAKey getRsaJWK(final JWSAlgorithm alg) throws JOSEException {
-    return new RSAKeyGenerator(2048)
-        .keyID("123")
-        .keyUse(KeyUse.SIGNATURE)
-        .algorithm(alg)
-        .generate();
-  }
-
-  public static ECKey getEcJWK(final JWSAlgorithm alg, final Curve curve) throws JOSEException {
-    return new ECKeyGenerator(curve)
-        .algorithm(alg)
-        .keyUse(KeyUse.SIGNATURE)
-        .keyID("345")
-        .generate();
-  }
 
   public static String signAndSerialize(
       final RSAKey rsaKey,
