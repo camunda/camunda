@@ -12,6 +12,7 @@ import static io.camunda.optimize.service.util.configuration.EnvironmentProperti
 import io.camunda.optimize.rest.HealthRestService;
 import io.camunda.optimize.rest.LocalizationRestService;
 import io.camunda.optimize.rest.UIConfigurationRestService;
+import io.camunda.optimize.rest.constants.RestConstants;
 import io.camunda.optimize.rest.security.cloud.CCSaasAuth0WebSecurityConfig;
 import io.camunda.optimize.service.exceptions.OptimizeConfigurationException;
 import io.camunda.optimize.service.util.PanelNotificationConstants;
@@ -71,6 +72,7 @@ public class OptimizeTomcatConfig {
             OptimizeResourceConstants.STATIC_RESOURCE_PATH,
             OptimizeResourceConstants.ACTUATOR_ENDPOINT,
             PanelNotificationConstants.SEND_NOTIFICATION_TO_ALL_ORG_USERS_ENDPOINT,
+            RestConstants.BACKUP_ENDPOINT,
             UIConfigurationRestService.UI_CONFIGURATION_PATH,
             "/favicon.ico",
             "/index.html"
