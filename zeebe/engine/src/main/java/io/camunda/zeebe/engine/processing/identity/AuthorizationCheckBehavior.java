@@ -37,7 +37,7 @@ public final class AuthorizationCheckBehavior {
   public static final String FORBIDDEN_ERROR_MESSAGE =
       "Insufficient permissions to perform operation '%s' on resource '%s'";
   public static final String FORBIDDEN_FOR_TENANT_ERROR_MESSAGE =
-      FORBIDDEN_ERROR_MESSAGE + " for tenant '%s'";
+      "Expected to perform operation '%s' on resource '%s' for tenant '%s', but user is not assigned to this tenant";
   public static final String FORBIDDEN_ERROR_MESSAGE_WITH_RESOURCE =
       FORBIDDEN_ERROR_MESSAGE + ", required resource identifiers are one of '%s'";
   public static final String NOT_FOUND_ERROR_MESSAGE =
@@ -118,8 +118,9 @@ public final class AuthorizationCheckBehavior {
                   request.getPermissionType(), request.getResourceType())));
     }
 
+    final var user = userOptional.get();
     if (multiTenancyEnabled) {
-      if (!isUserAuthorizedForTenant(request, userOptional.get())) {
+      if (!isUserAuthorizedForTenant(request, user)) {
         final var rejectionType =
             request.isNewResource() ? RejectionType.FORBIDDEN : RejectionType.NOT_FOUND;
         return Either.left(new Rejection(rejectionType, request.getTenantErrorMessage()));
@@ -129,7 +130,7 @@ public final class AuthorizationCheckBehavior {
     if (authorizationsEnabled) {
       final var authorizedResourceIdentifiers =
           getUserAuthorizedResourceIdentifiers(
-              userOptional.get(), request.getResourceType(), request.getPermissionType());
+              user, request.getResourceType(), request.getPermissionType());
       return checkResourceIdentifiers(request, authorizedResourceIdentifiers);
     }
     return Either.right(null);
