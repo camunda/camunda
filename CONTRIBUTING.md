@@ -184,11 +184,43 @@ Before opening your first pull request, please have a look at this [guide](https
 3. The reviewer will look at the pull request in the following days and give you either feedback or accept the changes. Your reviewer might use [emoji code](#review-emoji-code) during the reviewing process.
    1. If there are changes requested, address them in a new commit. Notify the reviewer in a comment if the pull request is ready for review again. If the changes are accepted squash them again in the related commit and force push. Then initiate a merge by adding your PR to the merge queue via the `Merge when ready` button.
    2. If no changes are requested, the reviewer will initiate a merge themselves.
-4. If there are merge conflicts, the author of the pull request has to manually rebase their branch onto the target branch (often `main`) and force push. We try to avoid using merge commits in pull requests to keep the history easy to follow, and allow [automated porting of the pull request](#backporting-changes).
+4. If there are merge conflicts, the author of the pull request has to [update their pull request by manually rebasing](#updating-a-pull-request).
 5. When a merge is initiated, a bot will merge your branch with the latest
    `main` and run the CI on it.
    1. If everything goes well, the branch is merged and deleted and the issue and pull request are closed.
    2. If there are CI errors, the author of the pull request has to check if they are caused by its changes and address them. If they are flaky tests, please have a look at this [guide](docs/ci.md#determine-flakiness) on how to handle them. Once the CI errors are resolved, a merge can be retried by simply enqueueing the PR again.
+
+## Updating a pull request
+
+If there are merge conflicts on a pull request, the author of the pull request has to update it with the latest changes and resolve the conflicts manually.
+You can do this by rebasing your branch onto the target branch (often `main`) and force push.
+
+First fetch the latest changes, and start rebasing on the target branch:
+
+```sh
+# Example: target is origin/main
+git fetch origin
+git rebase origin/main
+```
+
+After resolving the conflicts, you can continue the rebase:
+
+```sh
+git rebase --continue
+```
+
+After the rebase is completed, you can force push your branch:
+
+```sh
+git push --force-with-lease
+```
+
+We require rebasing instead of using merge commits to update a pull request to:
+- keep the history easy to follow,
+- allow [automated porting of the pull request](#backporting-changes),
+- and avoid automatically requesting reviews from unrelated users due to [CODEOWNERS](https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners).
+
+We encourage contributors to regularly rebase their pull requests to minimize the accumulation of merge conflicts.
 
 ## Reviewing a pull request
 
