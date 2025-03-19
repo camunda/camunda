@@ -91,6 +91,36 @@ public class ActivateAdHocSubProcessActivityTest {
 
   @Test
   public void
+      givenRunningAdhocSubProcessInstanceWhenActivatingExistingElementThenTheElementHasCorrectTreePath() {
+    ENGINE
+        .adHocSubProcessActivity()
+        .withAdHocSubProcessInstanceKey(String.valueOf(adHocSubProcessInstanceKey))
+        .withElementIds("A")
+        .activate();
+
+    final var generatedActivityInstanceKey =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementType(BpmnElementType.TASK)
+            .withElementId("A")
+            .map(Record::getKey)
+            .limit(1)
+            .toList()
+            .getFirst();
+
+    final var expectedElementPath =
+        List.of(
+            List.of(processInstanceKey, adHocSubProcessInstanceKey, generatedActivityInstanceKey));
+    assertThat(
+            RecordingExporter.processInstanceRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .limitToProcessInstanceCompleted())
+        .extracting(r -> r.getValue().getElementId(), r -> r.getValue().getElementInstancePath())
+        .contains(tuple("A", expectedElementPath));
+  }
+
+  @Test
+  public void
       givenRunningAdhocSubProcessInstanceWhenElementIsSuccessfullyActivatedThenActivatedEventIsWrittenToLog() {
     ENGINE
         .adHocSubProcessActivity()
