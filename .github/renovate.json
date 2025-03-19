@@ -176,12 +176,6 @@
       "description": "Both dependencies need to be updated at once for green CI.",
       "matchPackageNames": ["@playwright/test", "mcr.microsoft.com/playwright"],
       "groupName": "playwright"
-    },
-    {
-      "description": "Automerge all updates with green CI.",
-      "matchPackagePatterns": ["*"],
-      "automerge": true,
-      "addLabels": ["automerge"]
     }
   ],
   "dockerfile": {
