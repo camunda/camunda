@@ -46,6 +46,7 @@
     <plugin.version.javadoc>3.10.1</plugin.version.javadoc>
     <plugin.version.license>4.5</plugin.version.license>
     <plugin.version.spotless>2.43.0</plugin.version.spotless>
+    <plugin.version.spotless>2.43.0</plugin.version.spotless>
 
     <!--
       Define the skipChecks property here ONLY for the plugins defined in this module;
@@ -192,6 +193,11 @@
   <build>
     <pluginManagement>
       <plugins>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-release-plugin</artifactId>
+          <version>3.1.1</version>
+        </plugin>
         <!-- Formatting plugin -->
         <plugin>
           <groupId>com.diffplug.spotless</groupId>
