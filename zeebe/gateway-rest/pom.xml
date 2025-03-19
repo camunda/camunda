@@ -373,11 +373,18 @@
   <build>
     <resources>
       <resource>
+<<<<<<< HEAD
         <targetPath>apidoc</targetPath>
+=======
+>>>>>>> 28bfd361 (feat: move to camunda controller for swagger)
         <directory>../gateway-protocol/src/main/proto</directory>
         <includes>
           <include>rest-api.yaml</include>
         </includes>
+<<<<<<< HEAD
+=======
+        <targetPath>apidoc</targetPath>
+>>>>>>> 28bfd361 (feat: move to camunda controller for swagger)
       </resource>
     </resources>
     <plugins>
