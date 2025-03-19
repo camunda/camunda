@@ -189,6 +189,9 @@ public final class EventAppliers implements EventApplier {
     register(VariableIntent.MIGRATED, new VariableMigratedApplier());
     register(VariableDocumentIntent.UPDATING, new VariableDocumentUpdatingApplier(variableState));
     register(VariableDocumentIntent.UPDATED, new VariableDocumentUpdatedApplier(variableState));
+    register(
+        VariableDocumentIntent.UPDATE_DENIED,
+        new VariableDocumentUpdateDeniedApplier(variableState));
   }
 
   private void registerProcessInstanceEventAppliers(final MutableProcessingState state) {

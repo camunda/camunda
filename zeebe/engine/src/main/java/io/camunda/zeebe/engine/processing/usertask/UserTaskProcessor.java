@@ -26,6 +26,7 @@ import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
 import io.camunda.zeebe.engine.state.immutable.ProcessState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.state.immutable.UserTaskState.LifecycleState;
+import io.camunda.zeebe.engine.state.immutable.VariableState;
 import io.camunda.zeebe.engine.state.instance.ElementInstance;
 import io.camunda.zeebe.engine.state.instance.UserTaskTransitionTriggerRequestMetadata;
 import io.camunda.zeebe.engine.state.mutable.MutableUserTaskState;
@@ -34,6 +35,7 @@ import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
+import io.camunda.zeebe.protocol.record.intent.VariableDocumentIntent;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import java.util.Optional;
@@ -50,10 +52,14 @@ public class UserTaskProcessor implements TypedRecordProcessor<UserTaskRecord> {
   private static final String USER_TASK_UPDATE_REJECTION =
       "Update of the User Task with key '%d' was denied by Task Listener. Reason to deny: '%s'";
 
+  private static final String USER_TASK_VARIABLE_UPDATE_REJECTION =
+      "Variable update for user task instance with key '%d' was denied by Task Listener. Reason to deny: '%s'";
+
   private final UserTaskCommandProcessors commandProcessors;
   private final ProcessState processState;
   private final MutableUserTaskState userTaskState;
   private final ElementInstanceState elementInstanceState;
+  private final VariableState variableState;
 
   private final BpmnJobBehavior jobBehavior;
 
@@ -74,6 +80,7 @@ public class UserTaskProcessor implements TypedRecordProcessor<UserTaskRecord> {
     processState = state.getProcessState();
     this.userTaskState = userTaskState;
     elementInstanceState = state.getElementInstanceState();
+    variableState = state.getVariableState();
 
     jobBehavior = bpmnBehaviors.jobBehavior();
 
@@ -214,7 +221,7 @@ public class UserTaskProcessor implements TypedRecordProcessor<UserTaskRecord> {
 
     final var metadata =
         new UserTaskTransitionTriggerRequestMetadata()
-            .setIntent((UserTaskIntent) command.getIntent())
+            .setIntent(command.getIntent())
             .setTriggerType(ValueType.USER_TASK)
             .setRequestId(command.getRequestId())
             .setRequestStreamId(command.getRequestStreamId());
@@ -248,16 +255,52 @@ public class UserTaskProcessor implements TypedRecordProcessor<UserTaskRecord> {
     stateWriter.appendFollowUpEvent(persistedRecord.getUserTaskKey(), intent, persistedRecord);
     recordRequestMetadata.ifPresent(
         metadata -> {
-          responseWriter.writeRejection(
-              command.getKey(),
-              mapDeniedIntentToResponseIntent(intent),
-              command.getValue(),
-              command.getValueType(),
-              RejectionType.INVALID_STATE,
-              mapDeniedIntentToResponseRejectionReason(
-                  intent, persistedRecord.getUserTaskKey(), command.getValue().getDeniedReason()),
-              metadata.getRequestId(),
-              metadata.getRequestStreamId());
+          switch (metadata.getTriggerType()) {
+            case USER_TASK ->
+                responseWriter.writeRejection(
+                    command.getKey(),
+                    mapDeniedIntentToResponseIntent(intent),
+                    command.getValue(),
+                    command.getValueType(),
+                    RejectionType.INVALID_STATE,
+                    mapDeniedIntentToResponseRejectionReason(
+                        intent,
+                        persistedRecord.getUserTaskKey(),
+                        command.getValue().getDeniedReason()),
+                    metadata.getRequestId(),
+                    metadata.getRequestStreamId());
+            case VARIABLE_DOCUMENT -> {
+              final long userTaskInstanceKey = command.getValue().getElementInstanceKey();
+              variableState
+                  .findVariableDocumentState(userTaskInstanceKey)
+                  .ifPresent(
+                      variableDocumentState -> {
+                        final long variableDocumentKey = variableDocumentState.getKey();
+                        final var variableDocumentRecord = variableDocumentState.getRecord();
+                        stateWriter.appendFollowUpEvent(
+                            variableDocumentKey,
+                            VariableDocumentIntent.UPDATE_DENIED,
+                            variableDocumentRecord);
+
+                        final var deniedReason =
+                            USER_TASK_VARIABLE_UPDATE_REJECTION.formatted(
+                                userTaskInstanceKey, command.getValue().getDeniedReason());
+                        responseWriter.writeRejection(
+                            variableDocumentKey,
+                            VariableDocumentIntent.UPDATE,
+                            variableDocumentRecord,
+                            ValueType.VARIABLE_DOCUMENT,
+                            RejectionType.INVALID_STATE,
+                            deniedReason,
+                            metadata.getRequestId(),
+                            metadata.getRequestStreamId());
+                      });
+            }
+            default ->
+                throw new IllegalArgumentException(
+                    "Unexpected user task transition trigger type: '%s'"
+                        .formatted(metadata.getTriggerType()));
+          }
         });
   }
 
