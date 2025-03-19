@@ -38,7 +38,7 @@ import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 
-public final class NativeUserTaskTest {
+public final class CamundaUserTaskTest {
 
   @ClassRule public static final EngineRule ENGINE = EngineRule.singlePartition();
 
@@ -700,6 +700,40 @@ public final class NativeUserTaskTest {
 
     Assertions.assertThat(userTaskState.getUserTask(createdUserTask.getUserTaskKey()))
         .hasAssignee("foo");
+  }
+
+  @Test
+  public void shouldCancelUserTask() {
+    // given
+    ENGINE.deployment().withXmlResource(process()).deploy();
+
+    // when
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    ENGINE.processInstance().withInstanceKey(processInstanceKey).cancel();
+
+    // then
+    assertThat(
+            RecordingExporter.processInstanceRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .limitToProcessInstanceTerminated())
+        .extracting(r -> tuple(r.getValue().getBpmnElementType(), r.getIntent()))
+        .containsSubsequence(
+            tuple(BpmnElementType.PROCESS, ProcessInstanceIntent.TERMINATE_ELEMENT),
+            tuple(BpmnElementType.PROCESS, ProcessInstanceIntent.ELEMENT_TERMINATING),
+            tuple(BpmnElementType.USER_TASK, ProcessInstanceIntent.TERMINATE_ELEMENT),
+            tuple(BpmnElementType.USER_TASK, ProcessInstanceIntent.ELEMENT_TERMINATING),
+            tuple(BpmnElementType.USER_TASK, ProcessInstanceIntent.ELEMENT_TERMINATED),
+            tuple(BpmnElementType.PROCESS, ProcessInstanceIntent.ELEMENT_TERMINATED));
+
+    assertThat(
+            RecordingExporter.userTaskRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .limit(r -> r.getIntent() == UserTaskIntent.CANCELED))
+        .extracting(Record::getValueType, Record::getIntent)
+        .containsSubsequence(
+            tuple(ValueType.USER_TASK, UserTaskIntent.CANCELING),
+            tuple(ValueType.USER_TASK, UserTaskIntent.CANCELED));
   }
 
   @Test
