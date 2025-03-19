@@ -70,7 +70,7 @@ public class MappingCreatedUpdatedHandlerTest {
     final var idList = underTest.generateIds(mappingRecord);
 
     // then
-    assertThat(idList).containsExactly(String.valueOf(mappingRecord.getKey()));
+    assertThat(idList).containsExactly(String.valueOf(mappingRecord.getValue().getId()));
   }
 
   @Test
@@ -98,7 +98,7 @@ public class MappingCreatedUpdatedHandlerTest {
     final Record<MappingRecordValue> mappingRecord =
         factory.generateRecord(
             ValueType.MAPPING,
-            r -> r.withIntent(MappingIntent.CREATED).withValue(mappingRecordValue));
+            r -> r.withIntent(MappingIntent.UPDATED).withValue(mappingRecordValue));
 
     // when
     final MappingEntity mappingEntity =
@@ -113,8 +113,7 @@ public class MappingCreatedUpdatedHandlerTest {
     assertThat(mappingEntity.getClaimName()).isEqualTo("updated-claim");
     assertThat(mappingEntity.getClaimValue()).isEqualTo("updated-value");
     assertThat(mappingEntity.getName()).isEqualTo("updated-name");
-    // should not update id
-    assertThat(mappingEntity.getId()).isEqualTo("old-id");
+    assertThat(mappingEntity.getId()).isEqualTo("updated-id");
   }
 
   @Test
