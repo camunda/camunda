@@ -368,11 +368,11 @@
   <build>
     <resources>
       <resource>
+        <targetPath>apidoc</targetPath>
         <directory>../gateway-protocol/src/main/proto</directory>
         <includes>
           <include>rest-api.yaml</include>
         </includes>
-        <targetPath>apidoc</targetPath>
       </resource>
     </resources>
     <plugins>
