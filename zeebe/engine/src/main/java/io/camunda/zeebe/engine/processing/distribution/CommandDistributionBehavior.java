@@ -264,6 +264,8 @@ public final class CommandDistributionBehavior {
               acknowledgeRecord);
           return true;
         });
+
+    distributionState.getMetrics().acknowledgeDistribution(currentPartitionId, distributionKey);
   }
 
   private <T extends UnifiedRecordValue> void requestContinuation(
