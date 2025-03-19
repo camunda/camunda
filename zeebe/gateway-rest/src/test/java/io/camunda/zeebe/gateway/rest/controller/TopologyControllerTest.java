@@ -21,14 +21,14 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.Mockito;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 @WebMvcTest(TopologyController.class)
 public class TopologyControllerTest extends RestControllerTest {
 
-  @MockBean BrokerClient brokerClient;
-  @MockBean BrokerTopologyManager topologyManager;
+  @MockitoBean BrokerClient brokerClient;
+  @MockitoBean BrokerTopologyManager topologyManager;
 
   @BeforeEach
   void setUp() {
@@ -47,6 +47,7 @@ public class TopologyControllerTest extends RestControllerTest {
           "clusterSize": 3,
           "partitionsCount": 1,
           "replicationFactor": 3,
+          "lastCompletedChangeId": 1,
           "brokers": [
             {
               "nodeId": 0,
@@ -222,7 +223,7 @@ public class TopologyControllerTest extends RestControllerTest {
 
     @Override
     public long getLastCompletedChangeId() {
-      return 0;
+      return 1;
     }
   }
 }
