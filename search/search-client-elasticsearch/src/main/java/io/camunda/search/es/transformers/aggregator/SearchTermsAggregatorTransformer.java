@@ -5,18 +5,18 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.search.os.transformers.aggregator;
+package io.camunda.search.es.transformers.aggregator;
 
+import co.elastic.clients.elasticsearch._types.aggregations.Aggregation;
+import co.elastic.clients.elasticsearch._types.aggregations.AggregationBuilders;
+import co.elastic.clients.elasticsearch._types.aggregations.TermsAggregation;
 import io.camunda.search.clients.aggregator.SearchTermsAggregator;
-import io.camunda.search.os.transformers.OpensearchTransformers;
-import org.opensearch.client.opensearch._types.aggregations.Aggregation;
-import org.opensearch.client.opensearch._types.aggregations.AggregationBuilders;
-import org.opensearch.client.opensearch._types.aggregations.TermsAggregation;
+import io.camunda.search.es.transformers.ElasticsearchTransformers;
 
-public final class TermsAggregationTransformer
-    extends AggregationOptionTransformer<SearchTermsAggregator, Aggregation> {
+public final class SearchTermsAggregatorTransformer
+    extends AggregatorTransformer<SearchTermsAggregator, Aggregation> {
 
-  public TermsAggregationTransformer(final OpensearchTransformers transformers) {
+  public SearchTermsAggregatorTransformer(final ElasticsearchTransformers transformers) {
     super(transformers);
   }
 
@@ -30,7 +30,8 @@ public final class TermsAggregationTransformer
             .minDocCount(value.minDocCount())
             .build();
 
-    // Wrap it inside an Aggregation object
-    return Aggregation.of(a -> a.terms(termsAggregation));
+    final var builder = new Aggregation.Builder().terms(termsAggregation);
+    applySubAggregations(builder, value);
+    return builder.build();
   }
 }
