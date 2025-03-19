@@ -9,6 +9,7 @@ package io.camunda.it.operate;
 
 import static io.camunda.client.protocol.rest.PermissionTypeEnum.CREATE;
 import static io.camunda.client.protocol.rest.PermissionTypeEnum.READ_PROCESS_DEFINITION;
+import static io.camunda.client.protocol.rest.PermissionTypeEnum.READ_PROCESS_INSTANCE;
 import static io.camunda.client.protocol.rest.ResourceTypeEnum.PROCESS_DEFINITION;
 import static io.camunda.client.protocol.rest.ResourceTypeEnum.RESOURCE;
 import static io.camunda.it.client.QueryTest.deployResource;
@@ -43,6 +44,7 @@ public class OperatePermissionsIT {
   static final TestSimpleCamundaApplication STANDALONE_CAMUNDA =
       new TestSimpleCamundaApplication().withAuthorizationsEnabled().withBasicAuth();
 
+  private static final String ADMIN_USERNAME = "admin";
   private static final String SUPER_USER_USERNAME = "super";
   private static final String RESTRICTED_USER_USERNAME = "restricted";
   private static final String PROCESS_DEFINITION_ID_1 = "service_tasks_v1";
@@ -50,13 +52,18 @@ public class OperatePermissionsIT {
   private static final List<Process> DEPLOYED_PROCESSES = new ArrayList<>();
 
   @UserDefinition
+  private static final User ADMIN =
+      new User(
+          ADMIN_USERNAME, "password", List.of(new Permissions(RESOURCE, CREATE, List.of("*"))));
+
+  @UserDefinition
   private static final User SUPER_USER =
       new User(
           SUPER_USER_USERNAME,
           "password",
           List.of(
-              new Permissions(RESOURCE, CREATE, List.of("*")),
-              new Permissions(PROCESS_DEFINITION, READ_PROCESS_DEFINITION, List.of("*"))));
+              new Permissions(PROCESS_DEFINITION, READ_PROCESS_DEFINITION, List.of("*")),
+              new Permissions(PROCESS_DEFINITION, READ_PROCESS_INSTANCE, List.of("*"))));
 
   @UserDefinition
   private static final User RESTRICTED_USER =
@@ -69,12 +76,14 @@ public class OperatePermissionsIT {
 
   @BeforeAll
   public static void beforeAll(
-      @Authenticated(SUPER_USER_USERNAME) final CamundaClient superUserClient) throws Exception {
+      @Authenticated(ADMIN_USERNAME) final CamundaClient adminClient,
+      @Authenticated(SUPER_USER_USERNAME) final CamundaClient superUserClient)
+      throws Exception {
     final List<String> processes = List.of(PROCESS_DEFINITION_ID_1, PROCESS_DEFINITION_ID_2);
     processes.forEach(
         process ->
             DEPLOYED_PROCESSES.addAll(
-                deployResource(superUserClient, String.format("process/%s.bpmn", process))
+                deployResource(adminClient, String.format("process/%s.bpmn", process))
                     .getProcesses()));
     assertThat(DEPLOYED_PROCESSES).hasSize(processes.size());
 
@@ -88,16 +97,16 @@ public class OperatePermissionsIT {
 
   @Test
   public void shouldGetProcessByKeyOnlyForAuthorizedProcesses(
-      @Authenticated(SUPER_USER_USERNAME) final CamundaClient superClient,
       @Authenticated(RESTRICTED_USER_USERNAME) final CamundaClient restrictedClient) {
     // super user can read all process definitions
-    DEPLOYED_PROCESSES.stream()
-        .map(Process::getProcessDefinitionKey)
-        .forEach(
-            key ->
-                assertThatNoException()
-                    .isThrownBy(
-                        () -> superClient.newProcessDefinitionGetRequest(key).send().join()));
+    final var operateClient =
+        STANDALONE_CAMUNDA.newOperateClient(SUPER_USER.username(), SUPER_USER.password());
+
+    assertThat(
+            DEPLOYED_PROCESSES.stream()
+                .map(Process::getProcessDefinitionKey)
+                .allMatch((key) -> operateClient.internalGetProcessDefinitionByKey(key).isRight()))
+        .isTrue();
 
     // restricted user can read process definition 1
     assertThatNoException()
