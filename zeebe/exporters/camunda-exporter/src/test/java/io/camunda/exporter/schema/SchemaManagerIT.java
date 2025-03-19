@@ -9,6 +9,7 @@ package io.camunda.exporter.schema;
 
 import static io.camunda.exporter.schema.SchemaTestUtil.mappingsMatch;
 import static io.camunda.exporter.utils.SchemaManagerITInvocationProvider.CONFIG_PREFIX;
+import static io.camunda.exporter.utils.SearchDBExtension.CUSTOM_PREFIX;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatNoException;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -16,9 +17,10 @@ import static org.mockito.Mockito.when;
 
 import co.elastic.clients.elasticsearch._types.ElasticsearchException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.camunda.exporter.adapters.ClientAdapter;
 import io.camunda.exporter.config.ConnectionTypes;
-import io.camunda.exporter.config.ExporterConfiguration;
 import io.camunda.exporter.config.ExporterConfiguration.IndexSettings;
+import io.camunda.exporter.config.ExporterConfiguration.RetentionConfiguration;
 import io.camunda.exporter.schema.config.SearchEngineConfiguration;
 import io.camunda.exporter.schema.elasticsearch.ElasticsearchEngineClient;
 import io.camunda.exporter.schema.opensearch.OpensearchEngineClient;
@@ -33,11 +35,14 @@ import io.camunda.webapps.schema.descriptors.IndexDescriptors;
 import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
 import io.camunda.zeebe.test.util.junit.RegressionTestTemplate;
 import java.io.IOException;
+import java.time.Duration;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
+import org.apache.commons.lang3.RandomStringUtils;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.TestTemplate;
@@ -587,7 +592,7 @@ public class SchemaManagerIT {
 
   @TestTemplate
   void shouldCreateCorrespondingIndexIfIndexTemplateAlreadyExists(
-      final ExporterConfiguration config, final SearchClientAdapter searchClientAdapter)
+      final SearchEngineConfiguration config, final SearchClientAdapter searchClientAdapter)
       throws IOException {
     // given
     final var searchEngineClient = searchEngineClientFromConfig(config);
@@ -637,5 +642,185 @@ public class SchemaManagerIT {
 
     schemaManager.startup();
     assertThatNoException().isThrownBy(schemaManager::startup);
+  }
+
+  @TestTemplate
+  void shouldStartDifferentSchemaManagersWithRetention(
+      final SearchEngineConfiguration config, final SearchClientAdapter ignored) {
+    // given
+    final RetentionConfiguration retention = config.retention();
+    retention.setEnabled(true);
+    retention.setPolicyName("shouldOpenDifferentPartitionsWithRetention");
+
+    final var schemaManager1 =
+        new SchemaManager(
+            searchEngineClientFromConfig(config),
+            Set.of(),
+            Set.of(indexTemplate),
+            config,
+            objectMapper);
+
+    final var schemaManager2 =
+        new SchemaManager(
+            searchEngineClientFromConfig(config),
+            Set.of(),
+            Set.of(indexTemplate),
+            config,
+            objectMapper);
+
+    // when
+    final var future = CompletableFuture.runAsync(() -> schemaManager1.startup());
+
+    // then
+    assertThatNoException().isThrownBy(() -> schemaManager2.startup());
+    Awaitility.await("Schema manager one has been run successfully")
+        .atMost(Duration.ofSeconds(30))
+        .untilAsserted(
+            () -> {
+              assertThat(future).isNotCompletedExceptionally();
+              assertThat(future).isCompleted();
+            });
+  }
+
+  @TestTemplate
+  @DisabledIfSystemProperty(
+      named = SearchDBExtension.TEST_INTEGRATION_OPENSEARCH_AWS_URL,
+      matches = "^(?=\\s*\\S).*$",
+      disabledReason = "Ineligible test for AWS OS integration")
+  void shouldHaveCorrectSchemaUpdatesWithMultipleExporters(
+      final SearchEngineConfiguration config, final SearchClientAdapter clientAdapter)
+      throws Exception {
+    // given
+    final var schemaManager1 = createSchemaManager(Set.of(index), Set.of(indexTemplate), config);
+    final var schemaManager2 = createSchemaManager(Set.of(index), Set.of(indexTemplate), config);
+
+    when(index.getMappingsClasspathFilename()).thenReturn("/mappings-added-property.json");
+    when(indexTemplate.getMappingsClasspathFilename()).thenReturn("/mappings-added-property.json");
+
+    // when
+    schemaManager1.startup();
+    schemaManager2.startup();
+
+    // then
+    final var retrievedIndex = clientAdapter.getIndexAsNode(index.getFullQualifiedName());
+    final var retrievedIndexTemplate =
+        clientAdapter.getIndexTemplateAsNode(indexTemplate.getTemplateName());
+
+    assertThat(mappingsMatch(retrievedIndex.get("mappings"), "/mappings-added-property.json"))
+        .isTrue();
+    assertThat(
+            mappingsMatch(
+                retrievedIndexTemplate.at("/index_template/template/mappings"),
+                "/mappings-added-property.json"))
+        .isTrue();
+  }
+
+  @TestTemplate
+  @DisabledIfSystemProperty(
+      named = SearchDBExtension.TEST_INTEGRATION_OPENSEARCH_AWS_URL,
+      matches = "^(?=\\s*\\S).*$",
+      disabledReason = "Ineligible test for AWS OS integration")
+  void shouldNotErrorIfOldSchemaManagerStartsWhileNewSchemaManagerHasAlreadyStarted(
+      final SearchEngineConfiguration config, final SearchClientAdapter clientAdapter)
+      throws Exception {
+    // given
+    final var updatedSchemaManager =
+        createSchemaManager(Set.of(index), Set.of(indexTemplate), config);
+    final var oldSchemaManager = createSchemaManager(Set.of(index), Set.of(indexTemplate), config);
+
+    // when
+    when(index.getMappingsClasspathFilename()).thenReturn("/mappings-added-property.json");
+    when(indexTemplate.getMappingsClasspathFilename()).thenReturn("/mappings-added-property.json");
+
+    updatedSchemaManager.startup();
+
+    when(index.getMappingsClasspathFilename()).thenReturn("/mappings.json");
+    when(indexTemplate.getMappingsClasspathFilename()).thenReturn("/mappings.json");
+
+    oldSchemaManager.startup();
+
+    // then
+    final var retrievedIndex = clientAdapter.getIndexAsNode(index.getFullQualifiedName());
+    final var retrievedIndexTemplate =
+        clientAdapter.getIndexTemplateAsNode(indexTemplate.getTemplateName());
+
+    assertThat(mappingsMatch(retrievedIndex.get("mappings"), "/mappings-added-property.json"))
+        .isTrue();
+    assertThat(
+            mappingsMatch(
+                retrievedIndexTemplate.at("/index_template/template/mappings"),
+                "/mappings-added-property.json"))
+        .isTrue();
+  }
+
+  @TestTemplate
+  void shouldCreateHarmonizedSchema(
+      final SearchEngineConfiguration config, final SearchClientAdapter ignored) {
+    // given
+    final var newPrefix =
+        CUSTOM_PREFIX + RandomStringUtils.insecure().nextAlphabetic(9).toLowerCase();
+    config.connect().setIndexPrefix(newPrefix);
+    final var indexDescriptors =
+        new IndexDescriptors(newPrefix, config.connect().getTypeEnum().isElasticSearch());
+    final SchemaManager schemaManager =
+        createSchemaManager(indexDescriptors.indices(), indexDescriptors.templates(), config);
+
+    final var adapter = ClientAdapter.of(config.connect());
+    final var mappingsBeforeStart =
+        adapter.getSearchEngineClient().getMappings(newPrefix + "*", MappingSource.INDEX);
+    assertThat(mappingsBeforeStart.keySet()).isEmpty();
+
+    // when
+    schemaManager.startup();
+
+    // then
+    final var mappingsAfterOpen =
+        adapter.getSearchEngineClient().getMappings(newPrefix + "*", MappingSource.INDEX);
+    assertThat(mappingsAfterOpen.keySet())
+        // we verify the names hard coded on purpose
+        // to make sure no index will be accidentally dropped, names are changed or added
+        .containsExactlyInAnyOrder(
+            newPrefix + "-camunda-authorization-8.8.0_",
+            newPrefix + "-camunda-group-8.8.0_",
+            newPrefix + "-camunda-mapping-8.8.0_",
+            newPrefix + "-camunda-role-8.8.0_",
+            newPrefix + "-camunda-tenant-8.8.0_",
+            newPrefix + "-camunda-user-8.8.0_",
+            newPrefix + "-camunda-web-session-8.8.0_",
+            newPrefix + "-operate-batch-operation-1.0.0_",
+            newPrefix + "-operate-decision-8.3.0_",
+            newPrefix + "-operate-decision-instance-8.3.0_",
+            newPrefix + "-operate-decision-requirements-8.3.0_",
+            newPrefix + "-operate-event-8.3.0_",
+            newPrefix + "-operate-flownode-instance-8.3.1_",
+            newPrefix + "-operate-import-position-8.3.0_",
+            newPrefix + "-operate-incident-8.3.1_",
+            newPrefix + "-operate-list-view-8.3.0_",
+            newPrefix + "-operate-metric-8.3.0_",
+            newPrefix + "-operate-message-8.5.0_",
+            newPrefix + "-operate-operation-8.4.1_",
+            newPrefix + "-operate-post-importer-queue-8.3.0_",
+            newPrefix + "-operate-process-8.3.0_",
+            newPrefix + "-operate-sequence-flow-8.3.0_",
+            newPrefix + "-operate-variable-8.3.0_",
+            newPrefix + "-operate-job-8.6.0_",
+            newPrefix + "-tasklist-draft-task-variable-8.3.0_",
+            newPrefix + "-tasklist-form-8.4.0_",
+            newPrefix + "-tasklist-metric-8.3.0_",
+            newPrefix + "-tasklist-task-8.5.0_",
+            newPrefix + "-tasklist-task-variable-8.3.0_",
+            newPrefix + "-tasklist-import-position-8.2.0_");
+  }
+
+  private SchemaManager createSchemaManager(
+      final Collection<IndexDescriptor> indexDescriptors,
+      final Collection<IndexTemplateDescriptor> templateDescriptors,
+      final SearchEngineConfiguration config) {
+    return new SchemaManager(
+        searchEngineClientFromConfig(config),
+        indexDescriptors,
+        templateDescriptors,
+        config,
+        objectMapper);
   }
 }
