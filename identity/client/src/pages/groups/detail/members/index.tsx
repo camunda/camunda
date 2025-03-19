@@ -33,7 +33,7 @@ const Members: FC<MembersProps> = ({ groupId }) => {
     groupId: groupId,
   });
 
-  const areNoUsersAssigned = !users || users.items?.length === 0;
+  const isUsersListEmpty = !users || users.items?.length === 0;
   const [assignUsers, assignUsersModal] = useEntityModal(
     AssignMembersModal,
     reload,
@@ -46,7 +46,7 @@ const Members: FC<MembersProps> = ({ groupId }) => {
     DeleteModal,
     reload,
     {
-      group: groupId,
+      groupId,
     },
   );
   if (!loading && !success)
@@ -58,7 +58,7 @@ const Members: FC<MembersProps> = ({ groupId }) => {
       />
     );
 
-  if (success && areNoUsersAssigned)
+  if (success && isUsersListEmpty)
     return (
       <>
         <C3EmptyState

@@ -18,7 +18,7 @@ import { unassignGroupMapping } from "src/utility/api/groups";
 type RemoveGroupMappingModalProps = UseEntityModalCustomProps<
   Mapping,
   {
-    group: string;
+    groupId: string;
   }
 >;
 
@@ -27,7 +27,7 @@ const DeleteModal: FC<RemoveGroupMappingModalProps> = ({
   open,
   onClose,
   onSuccess,
-  group,
+  groupId,
 }) => {
   const { t, Translate } = useTranslate("groups");
   const { enqueueNotification } = useNotifications();
@@ -35,9 +35,9 @@ const DeleteModal: FC<RemoveGroupMappingModalProps> = ({
   const [callUnassignMapping, { loading }] = useApiCall(unassignGroupMapping);
 
   const handleSubmit = async () => {
-    if (group && mapping) {
+    if (groupId && mapping) {
       const { success } = await callUnassignMapping({
-        groupId: group,
+        groupId,
         id: mapping.id,
       });
 

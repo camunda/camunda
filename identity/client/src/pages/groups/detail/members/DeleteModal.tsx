@@ -19,7 +19,7 @@ import { unassignGroupMember } from "src/utility/api/membership";
 type RemoveGroupMemberModalProps = UseEntityModalCustomProps<
   User,
   {
-    group: string;
+    groupId: string;
   }
 >;
 
@@ -28,7 +28,7 @@ const DeleteModal: FC<RemoveGroupMemberModalProps> = ({
   open,
   onClose,
   onSuccess,
-  group,
+  groupId,
 }) => {
   const { t, Translate } = useTranslate("groups");
   const { enqueueNotification } = useNotifications();
@@ -36,9 +36,9 @@ const DeleteModal: FC<RemoveGroupMemberModalProps> = ({
   const [callUnassignMember, { loading }] = useApiCall(unassignGroupMember);
 
   const handleSubmit = async () => {
-    if (group && user) {
+    if (groupId && user) {
       const { success } = await callUnassignMember({
-        groupId: group,
+        groupId,
         username: user.username,
       });
 

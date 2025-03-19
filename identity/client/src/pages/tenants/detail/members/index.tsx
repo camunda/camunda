@@ -33,7 +33,7 @@ const Members: FC<MembersProps> = ({ tenantId }) => {
     tenantId: tenantId,
   });
 
-  const areNoUsersAssigned = !users || users.items?.length === 0;
+  const isAssignedUsersListEmpty = !users || users.items?.length === 0;
   const [assignUsers, assignUsersModal] = useEntityModal(
     AssignMembersModal,
     reload,
@@ -59,7 +59,7 @@ const Members: FC<MembersProps> = ({ tenantId }) => {
       />
     );
 
-  if (success && areNoUsersAssigned)
+  if (success && isAssignedUsersListEmpty)
     return (
       <>
         <C3EmptyState

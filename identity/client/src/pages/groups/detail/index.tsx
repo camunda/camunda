@@ -105,7 +105,7 @@ const Details: FC = () => {
                     ? [
                         {
                           key: "users",
-                          label: t("users"),
+                          label: t("Users"),
                           content: <Members groupId={group?.groupKey} />,
                         },
                       ]
@@ -114,7 +114,7 @@ const Details: FC = () => {
                     ? [
                         {
                           key: "roles",
-                          label: t("roles"),
+                          label: t("Roles"),
                           content: <Roles groupId={group?.groupKey} />,
                         },
                       ]
@@ -123,7 +123,7 @@ const Details: FC = () => {
                     ? [
                         {
                           key: "mappings",
-                          label: t("mappings"),
+                          label: t("Mappings"),
                           content: <Mappings groupId={group?.groupKey} />,
                         },
                       ]

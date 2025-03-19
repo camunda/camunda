@@ -33,7 +33,7 @@ const Roles: FC<RolesProps> = ({ groupId }) => {
     groupId: groupId,
   });
 
-  const areNoRolesAssigned = !roles || roles.items?.length === 0;
+  const isRolesListEmpty = !roles || roles.items?.length === 0;
 
   const [assignRoles, assignRolesModal] = useEntityModal(
     AssignRolesModal,
@@ -47,7 +47,7 @@ const Roles: FC<RolesProps> = ({ groupId }) => {
     DeleteModal,
     reload,
     {
-      group: groupId,
+      groupId,
     },
   );
 
@@ -60,7 +60,7 @@ const Roles: FC<RolesProps> = ({ groupId }) => {
       />
     );
 
-  if (success && areNoRolesAssigned)
+  if (success && isRolesListEmpty)
     return (
       <>
         <C3EmptyState

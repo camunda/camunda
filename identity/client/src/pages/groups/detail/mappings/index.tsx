@@ -33,7 +33,7 @@ const Mappings: FC<MappingsProps> = ({ groupId }) => {
     groupId: groupId,
   });
 
-  const areNoMappingsAssigned = !mappings || mappings.items?.length === 0;
+  const isMappingsListEmpty = !mappings || mappings.items?.length === 0;
 
   const [assignMappings, assignMappingsModal] = useEntityModal(
     AssignMappingsModal,
@@ -47,7 +47,7 @@ const Mappings: FC<MappingsProps> = ({ groupId }) => {
     DeleteModal,
     reload,
     {
-      group: groupId,
+      groupId,
     },
   );
 
@@ -60,7 +60,7 @@ const Mappings: FC<MappingsProps> = ({ groupId }) => {
       />
     );
 
-  if (success && areNoMappingsAssigned)
+  if (success && isMappingsListEmpty)
     return (
       <>
         <C3EmptyState

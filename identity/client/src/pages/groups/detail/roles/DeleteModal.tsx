@@ -18,7 +18,7 @@ import { unassignGroupRole } from "src/utility/api/groups";
 type RemoveGroupRoleModalProps = UseEntityModalCustomProps<
   Role,
   {
-    group: string;
+    groupId: string;
   }
 >;
 
@@ -27,7 +27,7 @@ const DeleteModal: FC<RemoveGroupRoleModalProps> = ({
   open,
   onClose,
   onSuccess,
-  group,
+  groupId,
 }) => {
   const { t, Translate } = useTranslate("groups");
   const { enqueueNotification } = useNotifications();
@@ -35,9 +35,9 @@ const DeleteModal: FC<RemoveGroupRoleModalProps> = ({
   const [callUnassignRole, { loading }] = useApiCall(unassignGroupRole);
 
   const handleSubmit = async () => {
-    if (group && role) {
+    if (groupId && role) {
       const { success } = await callUnassignRole({
-        groupId: group,
+        groupId,
         key: role.key,
       });
 

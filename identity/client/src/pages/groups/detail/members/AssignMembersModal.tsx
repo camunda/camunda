@@ -28,7 +28,7 @@ const AssignMembersModal: FC<
     { assignedUsers: User[] }
   >
 > = ({ entity: group, assignedUsers, onSuccess, open, onClose }) => {
-  const { t, Translate } = useTranslate("groups");
+  const { t } = useTranslate("groups");
   const [selectedUsers, setSelectedUsers] = useState<User[]>([]);
   const [loadingAssignUser, setLoadingAssignUser] = useState(false);
 
@@ -98,11 +98,7 @@ const AssignMembersModal: FC<
       onClose={onClose}
       overflowVisible
     >
-      <p>
-        <Translate i18nKey="searchAndAssignUserToGroup">
-          Search and assign user to group
-        </Translate>
-      </p>
+      <p>{t("searchAndAssignUserToGroup")}</p>
       {selectedUsers.length > 0 && (
         <SelectedUsers>
           {selectedUsers.map((user) => (

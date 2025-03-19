@@ -33,7 +33,7 @@ const Roles: FC<RolesProps> = ({ tenantId }) => {
     tenantId: tenantId,
   });
 
-  const areNoRolesAssigned = !roles || roles.items?.length === 0;
+  const isAssignedRolesListEmpty = !roles || roles.items?.length === 0;
 
   const [assignRoles, assignRolesModal] = useEntityModal(
     AssignRolesModal,
@@ -60,7 +60,7 @@ const Roles: FC<RolesProps> = ({ tenantId }) => {
       />
     );
 
-  if (success && areNoRolesAssigned)
+  if (success && isAssignedRolesListEmpty)
     return (
       <>
         <C3EmptyState
