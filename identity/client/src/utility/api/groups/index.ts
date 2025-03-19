@@ -19,6 +19,7 @@ export const GROUPS_ENDPOINT = "/groups";
 export type Group = {
   groupKey: string;
   name: string;
+  description?: string;
 };
 
 export const searchGroups: ApiDefinition<SearchResponse<Group>> = () =>
