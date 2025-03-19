@@ -33,7 +33,8 @@ env:
   RELEASE_BRANCH: ${{ inputs.releaseBranch != '' && inputs.releaseBranch || format('release-{0}', inputs.releaseVersion) }}
   RELEASE_VERSION: ${{ inputs.releaseVersion }}
   GH_TOKEN: ${{ github.token }} # needs to be available for the gh CLI tool
-  GITHUB_TOKEN_USR: ${{ github.token }} # needs to be available for the SCM URL in pom.xml
+  GITHUB_TOKEN_USR: "" # needs to be available for the SCM URL in pom.xml
+  GITHUB_TOKEN_PSW: ${{ github.token }}
 jobs:
   release:
     name: Maven Release
