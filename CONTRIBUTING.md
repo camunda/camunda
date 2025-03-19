@@ -159,23 +159,13 @@ follow the following steps:
 
 Before opening your first pull request, please have a look at this [guide](https://github.com/camunda/zeebe/wiki/Pull-Requests-and-Code-Reviews#pull-requests).
 
-1. To start the review process create a new pull request on GitHub from your
-   branch to the `main` branch. Give it a meaningful name and describe
-   your changes in the body of the pull request. Lastly add a link to the issue
-   this pull request closes, i.e. by writing in the description `closes #123`
-2. Assign the pull request to one developer to review, if you are not sure who
-   should review the issue skip this step. Someone will assign a reviewer for
-   you.
-3. The reviewer will look at the pull request in the following days and give
-   you either feedback or accept the changes. Your reviewer might use
-   [emoji code](#review-emoji-code) during the reviewing process.
-   1. If there are changes requested address them in a new commit. Notify the
-      reviewer in a comment if the pull request is ready for review again. If
-      the changes are accepted squash them again in the related commit and force push.
-      Then initiate a merge by writing a comment with the content `bors merge`.
-   2. If no changes are requested the reviewer will initiate a merge by adding a
-      comment with the content `bors merge`.
-4. When a merge is initiated, a bot will merge your branch with the latest
+1. To start the review process create a new pull request on GitHub from your branch to the `main` branch. Give it a meaningful name and describe your changes in the body of the pull request. Lastly add a link to the issue this pull request closes, i.e. by writing in the description `closes #123`. Without referencing the issue, our [changelog generation] will not recognize your PR as a new feature or fix and instead only include it in the list of merged PRs.
+2. Assign the pull request to one developer to review, if you are not sure who should review the issue skip this step. Someone will assign a reviewer for you.
+3. The reviewer will look at the pull request in the following days and give you either feedback or accept the changes. Your reviewer might use [emoji code](#review-emoji-code) during the reviewing process.
+   1. If there are changes requested, address them in a new commit. Notify the reviewer in a comment if the pull request is ready for review again. If the changes are accepted squash them again in the related commit and force push. Then initiate a merge by adding your PR to the merge queue via the `Merge when ready` button.
+   2. If no changes are requested, the reviewer will initiate a merge themselves.
+4. If there are merge conflicts, the author of the pull request has to [update their pull request by manually rebasing](#updating-a-pull-request).
+5. When a merge is initiated, a bot will merge your branch with the latest
    `main` and run the CI on it.
    1. If everything goes well the branch is merged and deleted and the issue
       and pull request are closed.
@@ -187,6 +177,38 @@ Before opening your first pull request, please have a look at this [guide](https
       have a look at this [guide](docs/ci.md#determine-flakiness) on how to handle them.
       Once the CI errors are resolved, a merge can be retried with a comment with
       the content `bors retry`.
+
+## Updating a pull request
+
+If there are merge conflicts on a pull request, the author of the pull request has to update it with the latest changes and resolve the conflicts manually.
+You can do this by rebasing your branch onto the target branch (often `main`) and force push.
+
+First fetch the latest changes, and start rebasing on the target branch:
+
+```sh
+# Example: target is origin/main
+git fetch origin
+git rebase origin/main
+```
+
+After resolving the conflicts, you can continue the rebase:
+
+```sh
+git rebase --continue
+```
+
+After the rebase is completed, you can force push your branch:
+
+```sh
+git push --force-with-lease
+```
+
+We require rebasing instead of using merge commits to update a pull request to:
+- keep the history easy to follow,
+- allow [automated porting of the pull request](#backporting-changes),
+- and avoid automatically requesting reviews from unrelated users due to [CODEOWNERS](https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners).
+
+We encourage contributors to regularly rebase their pull requests to minimize the accumulation of merge conflicts.
 
 ## Reviewing a pull request
 
