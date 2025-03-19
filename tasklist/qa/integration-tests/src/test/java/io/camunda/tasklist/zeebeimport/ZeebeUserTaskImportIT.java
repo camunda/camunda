@@ -83,7 +83,7 @@ public class ZeebeUserTaskImportIT extends TasklistZeebeIntegrationTest {
   }
 
   @Test
-  public void shouldImportZeebeUserTaskWithNullVariableValue() {
+  public void shouldImportCompletedZeebeUserTaskWithVariables() {
     final String bpmnProcessId = "testProcess";
     final String flowNodeBpmnId1 = "taskA";
     final String flowNodeBpmnId2 = "taskB";
@@ -106,7 +106,17 @@ public class ZeebeUserTaskImportIT extends TasklistZeebeIntegrationTest {
             .startProcessInstance(bpmnProcessId)
             .waitUntil()
             .taskIsCreated(flowNodeBpmnId1)
-            .completeZeebeUserTask(flowNodeBpmnId1, Map.of("varA", objectMapper.nullNode()))
+            .completeZeebeUserTask(
+                flowNodeBpmnId1,
+                Map.of(
+                    "varA",
+                    objectMapper.nullNode(),
+                    "varB",
+                    Long.MAX_VALUE,
+                    "varC",
+                    Integer.MAX_VALUE,
+                    "varD",
+                    "str"))
             .waitUntil()
             .taskIsCreated(flowNodeBpmnId2)
             .getTaskId();
@@ -123,7 +133,11 @@ public class ZeebeUserTaskImportIT extends TasklistZeebeIntegrationTest {
         .hasApplicationJsonContentType()
         .extractingListContent(objectMapper, VariableSearchResponse.class)
         .extracting("name", "previewValue", "value")
-        .containsExactly(tuple("varA", "null", "null"));
+        .containsExactlyInAnyOrder(
+            tuple("varA", "null", "null"),
+            tuple("varB", "9223372036854775807", "9223372036854775807"),
+            tuple("varC", "2147483647", "2147483647"),
+            tuple("varD", "\"str\"", "\"str\""));
   }
 
   @Test
