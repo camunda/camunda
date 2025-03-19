@@ -16,6 +16,7 @@
 package io.camunda.client.incident;
 
 import static io.camunda.client.api.search.response.IncidentErrorType.CALLED_DECISION_ERROR;
+import static io.camunda.client.api.search.response.IncidentErrorType.RESOURCE_NOT_FOUND;
 import static io.camunda.client.api.search.response.IncidentState.ACTIVE;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -214,6 +215,22 @@ public class SearchIncidentTest extends ClientRestTest {
         assertThat(value.name()).isEqualTo(protocolValue.name());
       }
     }
+  }
+
+  @Test
+  void shouldSearchIncidentByResourceNotFoundError() {
+    // when
+    client
+        .newIncidentQuery()
+        .filter(f -> f.incidentKey(1L).errorType(RESOURCE_NOT_FOUND))
+        .send()
+        .join();
+
+    // then
+    final IncidentSearchQuery request = gatewayService.getLastRequest(IncidentSearchQuery.class);
+    final IncidentFilter filter = request.getFilter();
+    assertThat(filter.getIncidentKey()).isEqualTo("1");
+    assertThat(filter.getErrorType()).isEqualTo(ErrorTypeEnum.RESOURCE_NOT_FOUND);
   }
 
   private void assertSort(
