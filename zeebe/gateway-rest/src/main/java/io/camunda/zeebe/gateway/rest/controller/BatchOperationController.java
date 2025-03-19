@@ -75,7 +75,10 @@ public class BatchOperationController {
 
   private ResponseEntity<BatchOperationSearchQueryResult> search(final BatchOperationQuery query) {
     try {
-      final var result = batchOperationServices.search(query);
+      final var result =
+          batchOperationServices
+              .withAuthentication(RequestMapper.getAuthentication())
+              .search(query);
       return ResponseEntity.ok(SearchQueryResponseMapper.toBatchOperationSearchQueryResult(result));
     } catch (final Exception e) {
       return mapErrorToResponse(e);
