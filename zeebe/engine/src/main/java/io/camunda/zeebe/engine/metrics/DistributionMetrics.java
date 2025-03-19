@@ -30,7 +30,7 @@ public final class DistributionMetrics {
   public void reset(final int counter) {}
 
   public void addDistribution(final long distributionKey) {
-    // gauge
+    // gauge  + counter?
   }
 
   public void removeDistribution(final long distributionKey) {
