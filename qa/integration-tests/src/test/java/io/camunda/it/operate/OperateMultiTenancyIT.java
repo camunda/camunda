@@ -14,17 +14,22 @@ import static org.springframework.http.HttpStatus.OK;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.qa.util.auth.Authenticated;
+import io.camunda.qa.util.auth.User;
+import io.camunda.qa.util.auth.UserDefinition;
 import io.camunda.qa.util.cluster.TestSimpleCamundaApplication;
-import io.camunda.qa.util.multidb.CamundaMultiDBExtension;
+import io.camunda.qa.util.multidb.MultiDbTest;
+import io.camunda.qa.util.multidb.MultiDbTestApplication;
 import io.camunda.security.configuration.InitializationConfiguration;
 import java.time.Duration;
+import java.util.List;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 
-@Tag("multi-db-test")
+@MultiDbTest
+@DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "rdbms")
+@DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "AWS_OS")
 public class OperateMultiTenancyIT {
 
   public static final String PASSWORD = "password";
@@ -36,19 +41,20 @@ public class OperateMultiTenancyIT {
   private static long procDefKey1;
   private static long procDefKey2;
 
+  @MultiDbTestApplication
   private static final TestSimpleCamundaApplication TEST_INSTANCE =
       new TestSimpleCamundaApplication().withBasicAuth().withMultiTenancyEnabled();
 
-  @RegisterExtension
-  public static final CamundaMultiDBExtension EXTENSION =
-      new CamundaMultiDBExtension(TEST_INSTANCE);
+  @UserDefinition private static final User USER1 = new User(USERNAME_1, PASSWORD, List.of());
+
+  @UserDefinition private static final User USER2 = new User(USERNAME_2, PASSWORD, List.of());
 
   @BeforeAll
   public static void beforeAll(
       @Authenticated(InitializationConfiguration.DEFAULT_USER_USERNAME)
-          final CamundaClient adminClient) {
-    createUser(adminClient, USERNAME_1);
-    createUser(adminClient, USERNAME_2);
+          final CamundaClient adminClient,
+      @Authenticated(USERNAME_1) final CamundaClient user1Client,
+      @Authenticated(USERNAME_2) final CamundaClient user2Client) {
     createTenant(
         adminClient,
         TENANT_ID_1,
@@ -101,17 +107,6 @@ public class OperateMultiTenancyIT {
       assertThat(operateClient2.internalGetProcessDefinitionByKey(procDefKey1).get().statusCode())
           .isEqualTo(NOT_FOUND.value());
     }
-  }
-
-  public static void createUser(final CamundaClient client, final String username) {
-    client
-        .newUserCreateCommand()
-        .username(username)
-        .password(PASSWORD)
-        .name("name")
-        .email("test@camunda.com")
-        .send()
-        .join();
   }
 
   public static void createTenant(
