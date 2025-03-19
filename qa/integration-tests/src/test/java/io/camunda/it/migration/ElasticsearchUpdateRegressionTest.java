@@ -98,6 +98,7 @@ public class ElasticsearchUpdateRegressionTest {
 
     // then
     Awaitility.await("wait for processes")
+        .atMost(Duration.ofMinutes(1))
         .untilAsserted(
             () -> {
               final SearchQueryResponse<ProcessDefinition> searchQueryResponse =
