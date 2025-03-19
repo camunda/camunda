@@ -14,6 +14,8 @@ import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.protocol.record.Record;
+import io.camunda.zeebe.protocol.record.RecordAssert;
+import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.AdHocSubProcessActivityActivationIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
@@ -145,6 +147,36 @@ public class ActivateAdHocSubProcessActivityTest {
         .extracting(r -> r.getValue().getElements().getFirst().getElementId(), Record::getIntent)
         .describedAs("Expected flow node that doesn't exist to be rejected.")
         .contains(tuple("does-not-exist", AdHocSubProcessActivityActivationIntent.ACTIVATE));
+  }
+
+  @Test
+  public void
+      givenAdhocSubProcessThatDoesNotExistWhenActivatingElementsThenTheActivationIsRejected() {
+    final var nonExistingAdhocSubProcessInstanceKey = "1";
+
+    final var rejection =
+        ENGINE
+            .adHocSubProcessActivity()
+            .withAdHocSubProcessInstanceKey(nonExistingAdhocSubProcessInstanceKey)
+            .withElementIds("A")
+            .expectRejection()
+            .activate();
+
+    RecordAssert.assertThat(rejection)
+        .describedAs("Expected rejection because adhoc subprocess does not exist.")
+        .hasRejectionType(RejectionType.NOT_FOUND)
+        .hasRejectionReason(
+            "Expected to activate activities for ad-hoc subprocess but no ad-hoc subprocess instance found with key '%s'."
+                .formatted(nonExistingAdhocSubProcessInstanceKey));
+
+    assertThat(
+            RecordingExporter.adHocSubProcessActivityActivationRecords()
+                .withAdHocSubProcessInstanceKey(nonExistingAdhocSubProcessInstanceKey)
+                .onlyCommandRejections()
+                .limit(1))
+        .describedAs(
+            "Expected activation to be rejected because the adhoc subprocess instance does not exist.")
+        .isNotEmpty();
   }
 
   @Test

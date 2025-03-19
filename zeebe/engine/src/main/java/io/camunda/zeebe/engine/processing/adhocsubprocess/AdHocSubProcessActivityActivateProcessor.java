@@ -80,7 +80,7 @@ public class AdHocSubProcessActivityActivateProcessor
     if (adHocSubprocessElementInstance == null) {
       writeRejectionError(
           command,
-          RejectionType.INVALID_STATE,
+          RejectionType.NOT_FOUND,
           String.format(
               ERROR_MSG_ADHOC_SUBPROCESS_NOT_FOUND,
               command.getValue().getAdHocSubProcessInstanceKey()));
