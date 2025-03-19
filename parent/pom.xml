@@ -121,7 +121,7 @@
     <version.servlet-api>2.5</version.servlet-api>
     <version.osgi>6.0.0</version.osgi>
     <version.findbugs-annotations>3.0.1u2</version.findbugs-annotations>
-    <version.spotbugs>4.9.2</version.spotbugs>
+    <version.spotbugs>4.9.3</version.spotbugs>
     <version.archunit>1.4.0</version.archunit>
     <version.easy-random>5.0.0</version.easy-random>
     <version.jcip>1.0</version.jcip>
