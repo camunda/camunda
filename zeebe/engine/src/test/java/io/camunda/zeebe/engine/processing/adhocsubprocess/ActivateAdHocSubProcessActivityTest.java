@@ -132,21 +132,28 @@ public class ActivateAdHocSubProcessActivityTest {
   @Test
   public void
       givenRunningAdhocSubProcessInstanceWhenActivatingElementThatDoesNotExistThenTheActivationIsRejected() {
-    ENGINE
-        .adHocSubProcessActivity()
-        .withAdHocSubProcessInstanceKey(String.valueOf(adHocSubProcessInstanceKey))
-        .withElementIds("does-not-exist")
-        .expectRejection()
-        .activate();
+    final var nonExistingActivities = List.of("does_not_exist");
+    final var rejection =
+        ENGINE
+            .adHocSubProcessActivity()
+            .withAdHocSubProcessInstanceKey(String.valueOf(adHocSubProcessInstanceKey))
+            .withElementIds(nonExistingActivities.toArray(new String[0]))
+            .expectRejection()
+            .activate();
+
+    RecordAssert.assertThat(rejection)
+        .describedAs("Expected rejection because given activities do not exist.")
+        .hasRejectionType(RejectionType.NOT_FOUND)
+        .hasRejectionReason(
+            "Expected to activate activities for ad-hoc subprocess with key '%s', but the given elements %s do not exist."
+                .formatted(adHocSubProcessInstanceKey, nonExistingActivities));
 
     assertThat(
             RecordingExporter.adHocSubProcessActivityActivationRecords()
                 .withAdHocSubProcessInstanceKey(String.valueOf(adHocSubProcessInstanceKey))
-                .onlyCommandRejections()
-                .limit(1))
-        .extracting(r -> r.getValue().getElements().getFirst().getElementId(), Record::getIntent)
-        .describedAs("Expected flow node that doesn't exist to be rejected.")
-        .contains(tuple("does-not-exist", AdHocSubProcessActivityActivationIntent.ACTIVATE));
+                .withIntent(AdHocSubProcessActivityActivationIntent.ACTIVATED)
+                .exists())
+        .isFalse();
   }
 
   @Test
@@ -180,8 +187,7 @@ public class ActivateAdHocSubProcessActivityTest {
   }
 
   @Test
-  public void
-      givenAdhocSubProcessInATerminalStateWhenActivatingElementsThenTheActivationIsRejected() {
+  public void givenAdhocSubProcessInFinalStateWhenActivatingElementsThenTheActivationIsRejected() {
     ENGINE
         .adHocSubProcessActivity()
         .withAdHocSubProcessInstanceKey(String.valueOf(adHocSubProcessInstanceKey))
@@ -208,21 +214,28 @@ public class ActivateAdHocSubProcessActivityTest {
   @Test
   public void
       givenRunningAdhocSubProcessWhenAttemptingToActivateDuplicateElementsThenTheActivationIsRejected() {
-    ENGINE
-        .adHocSubProcessActivity()
-        .withAdHocSubProcessInstanceKey(String.valueOf(adHocSubProcessInstanceKey))
-        .withElementIds("A")
-        .withElementIds("A")
-        .expectRejection()
-        .activate();
+    final var rejection =
+        ENGINE
+            .adHocSubProcessActivity()
+            .withAdHocSubProcessInstanceKey(String.valueOf(adHocSubProcessInstanceKey))
+            .withElementIds("A")
+            .withElementIds("A")
+            .expectRejection()
+            .activate();
+
+    RecordAssert.assertThat(rejection)
+        .describedAs(
+            "Expected activation to be rejected because duplicate flow nodes are provided.")
+        .hasRejectionType(RejectionType.INVALID_ARGUMENT)
+        .hasRejectionReason(
+            "Expected to activate activities for ad-hoc subprocess with key '%s', but duplicate activities were given."
+                .formatted(adHocSubProcessInstanceKey));
 
     assertThat(
             RecordingExporter.adHocSubProcessActivityActivationRecords()
                 .withAdHocSubProcessInstanceKey(String.valueOf(adHocSubProcessInstanceKey))
-                .onlyCommandRejections()
-                .limit(1))
-        .describedAs(
-            "Expected activation to be rejected because duplicate flow nodes are provided.")
-        .isNotEmpty();
+                .withIntent(AdHocSubProcessActivityActivationIntent.ACTIVATED)
+                .exists())
+        .isFalse();
   }
 }
