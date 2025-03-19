@@ -9,6 +9,7 @@ package io.camunda.search.clients;
 
 import static io.camunda.zeebe.protocol.record.value.EntityType.USER;
 
+import io.camunda.search.aggregation.ProcessDefinitionFlowNodeStatisticsAggregation;
 import io.camunda.search.clients.auth.DocumentAuthorizationQueryStrategy;
 import io.camunda.search.clients.transformers.ServiceTransformers;
 import io.camunda.search.entities.AuthorizationEntity;
@@ -23,6 +24,7 @@ import io.camunda.search.entities.GroupEntity;
 import io.camunda.search.entities.IncidentEntity;
 import io.camunda.search.entities.MappingEntity;
 import io.camunda.search.entities.ProcessDefinitionEntity;
+import io.camunda.search.entities.ProcessDefinitionFlowNodeStatisticsEntity;
 import io.camunda.search.entities.ProcessInstanceEntity;
 import io.camunda.search.entities.RoleEntity;
 import io.camunda.search.entities.TenantEntity;
@@ -31,6 +33,7 @@ import io.camunda.search.entities.UsageMetricsEntity;
 import io.camunda.search.entities.UserEntity;
 import io.camunda.search.entities.UserTaskEntity;
 import io.camunda.search.entities.VariableEntity;
+import io.camunda.search.filter.ProcessDefinitionStatisticsFilter;
 import io.camunda.search.filter.UsageMetricsFilter;
 import io.camunda.search.query.AuthorizationQuery;
 import io.camunda.search.query.BatchOperationQuery;
@@ -42,6 +45,7 @@ import io.camunda.search.query.FormQuery;
 import io.camunda.search.query.GroupQuery;
 import io.camunda.search.query.IncidentQuery;
 import io.camunda.search.query.MappingQuery;
+import io.camunda.search.query.ProcessDefinitionFlowNodeStatisticsQuery;
 import io.camunda.search.query.ProcessDefinitionQuery;
 import io.camunda.search.query.ProcessInstanceQuery;
 import io.camunda.search.query.RoleQuery;
@@ -164,6 +168,16 @@ public class DocumentBasedSearchClients implements SearchClientsProxy, Closeable
       final ProcessDefinitionQuery filter) {
     return getSearchExecutor()
         .search(filter, io.camunda.webapps.schema.entities.operate.ProcessEntity.class);
+  }
+
+  @Override
+  public List<ProcessDefinitionFlowNodeStatisticsEntity> processDefinitionFlowNodeStatistics(
+      final ProcessDefinitionStatisticsFilter filter) {
+    return getSearchExecutor()
+        .aggregate(
+            new ProcessDefinitionFlowNodeStatisticsQuery(filter),
+            ProcessDefinitionFlowNodeStatisticsAggregation.class)
+        .items();
   }
 
   @Override

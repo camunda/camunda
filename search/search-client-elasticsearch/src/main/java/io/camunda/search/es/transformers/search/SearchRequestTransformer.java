@@ -19,6 +19,7 @@ import io.camunda.search.es.transformers.ElasticsearchTransformers;
 import io.camunda.search.sort.SearchSortOptions;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 public final class SearchRequestTransformer
@@ -58,6 +59,21 @@ public final class SearchRequestTransformer
     if (value.source() != null) {
       builder.source(of(value.source()));
     }
+
+    final var aggregations = value.aggregations();
+    if (aggregations != null && !aggregations.isEmpty()) {
+      builder.aggregations(
+          aggregations.stream()
+              .map(
+                  aggregation ->
+                      Map.entry(
+                          aggregation.getName(),
+                          transformers
+                              .getSearchAggregationTransformer(aggregation.getClass())
+                              .apply(aggregation)))
+              .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue)));
+    }
+
     return builder;
   }
 

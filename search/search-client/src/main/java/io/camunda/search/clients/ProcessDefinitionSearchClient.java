@@ -20,11 +20,8 @@ public interface ProcessDefinitionSearchClient {
   SearchQueryResult<ProcessDefinitionEntity> searchProcessDefinitions(
       ProcessDefinitionQuery filter);
 
-  default List<ProcessDefinitionFlowNodeStatisticsEntity> processDefinitionFlowNodeStatistics(
-      final ProcessDefinitionStatisticsFilter filter) {
-    // TODO not implemented yet
-    return null;
-  }
+  List<ProcessDefinitionFlowNodeStatisticsEntity> processDefinitionFlowNodeStatistics(
+      final ProcessDefinitionStatisticsFilter filter);
 
   ProcessDefinitionSearchClient withSecurityContext(SecurityContext securityContext);
 }
