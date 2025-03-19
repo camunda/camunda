@@ -13,6 +13,7 @@ import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
 
+import io.camunda.security.configuration.ConfiguredUser;
 import io.camunda.zeebe.auth.Authorization;
 import io.camunda.zeebe.engine.util.AuthorizationUtil;
 import io.camunda.zeebe.engine.util.EngineRule;
@@ -21,6 +22,7 @@ import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.ResourceIntent;
+import io.camunda.zeebe.protocol.record.value.EntityType;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.protocol.record.value.deployment.Resource;
 import io.camunda.zeebe.protocol.record.value.deployment.ResourceAssert;
@@ -28,6 +30,7 @@ import io.camunda.zeebe.stream.api.CommandResponseWriter;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
+import java.util.List;
 import java.util.function.Consumer;
 import org.junit.Before;
 import org.junit.Rule;
@@ -41,16 +44,41 @@ public class TenantAwareResourceFetchTest {
   private static final VerificationWithTimeout VERIFICATION_TIMEOUT =
       timeout(Duration.ofSeconds(1).toMillis());
 
+  private static final String USERNAME = "username";
   private static final String TENANT_A = "tenant-a";
   private static final String TENANT_B = "tenant-b";
 
-  @Rule public final EngineRule engine = EngineRule.singlePartition();
+  @Rule
+  public final EngineRule engine =
+      EngineRule.singlePartition()
+          .withIdentitySetup()
+          .withSecurityConfig(
+              config -> {
+                config.getMultiTenancy().setEnabled(true);
+                config
+                    .getInitialization()
+                    .setUsers(List.of(new ConfiguredUser(USERNAME, "password", "name", "email")));
+              });
 
   private CommandResponseWriter mockCommandResponseWriter;
   private ResourceRecord resourceResponse;
 
   @Before
   public void setUp() {
+    engine.tenant().newTenant().withTenantId(TENANT_A).create();
+    engine.tenant().newTenant().withTenantId(TENANT_B).create();
+    engine
+        .tenant()
+        .addEntity(TENANT_A)
+        .withEntityId(USERNAME)
+        .withEntityType(EntityType.USER)
+        .add();
+    engine
+        .tenant()
+        .addEntity(TENANT_B)
+        .withEntityId(USERNAME)
+        .withEntityType(EntityType.USER)
+        .add();
     mockCommandResponseWriter = engine.getCommandResponseWriter();
     interceptResponseWriter();
   }
@@ -74,7 +102,7 @@ public class TenantAwareResourceFetchTest {
             .resourceFetch()
             .withResourceKey(resourceKey)
             .withAuthorizedTenantIds(TENANT_A, TENANT_B)
-            .fetch();
+            .fetch(USERNAME);
 
     // then
     verify(mockCommandResponseWriter, VERIFICATION_TIMEOUT).intent(ResourceIntent.FETCHED);
@@ -130,8 +158,6 @@ public class TenantAwareResourceFetchTest {
   @Test
   public void shouldFetchResourceAssignedToCustomTenantWithAnonymousUser() throws Exception {
     // given
-    engine.tenant().newTenant().withTenantId(TENANT_A).create();
-    engine.tenant().newTenant().withTenantId(TENANT_B).create();
     final var resourceBytes = readFile(TEST_RESOURCE);
     final var deployment =
         engine
