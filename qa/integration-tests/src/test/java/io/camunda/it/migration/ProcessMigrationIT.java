@@ -35,7 +35,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 @DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "rdbms")
 public class ProcessMigrationIT {
 
-  private static final Map<String, Long> processDefinitionKeys = new HashMap<>();
+  private static final Map<String, Long> PROCESS_DEFINITION_KEYS = new HashMap<>();
 
   @RegisterExtension
   static final MigrationITExtension PROVIDER =
@@ -59,7 +59,7 @@ public class ProcessMigrationIT {
             .getFirst()
             .getProcessDefinitionKey();
     awaitProcessDefinitionCreated(formStartedProcessKey, migrator);
-    processDefinitionKeys.put("formStartedProcessKey", formStartedProcessKey);
+    PROCESS_DEFINITION_KEYS.put("formStartedProcessKey", formStartedProcessKey);
 
     final var embeddedFormStartedProcessKey =
         migrator
@@ -73,13 +73,13 @@ public class ProcessMigrationIT {
             .getProcessDefinitionKey();
     awaitProcessDefinitionCreated(embeddedFormStartedProcessKey, migrator);
 
-    processDefinitionKeys.put("embeddedFormStartedProcessKey", embeddedFormStartedProcessKey);
+    PROCESS_DEFINITION_KEYS.put("embeddedFormStartedProcessKey", embeddedFormStartedProcessKey);
   }
 
   @Test
   void shouldMigrateProcessDefinition(final CamundaMigrator migrator) {
 
-    final var processDefinitionKey = processDefinitionKeys.get("formStartedProcessKey");
+    final var processDefinitionKey = PROCESS_DEFINITION_KEYS.get("formStartedProcessKey");
     Awaitility.await("Form data should be present on process definition")
         .atMost(Duration.ofSeconds(30))
         .pollInterval(Duration.ofSeconds(1))
@@ -97,7 +97,7 @@ public class ProcessMigrationIT {
   @Test
   void shouldMigrateProcessDefinitionWithEmbeddedForm(final CamundaMigrator migrator) {
 
-    final long processDefinitionKey = processDefinitionKeys.get("embeddedFormStartedProcessKey");
+    final long processDefinitionKey = PROCESS_DEFINITION_KEYS.get("embeddedFormStartedProcessKey");
 
     Awaitility.await("Form data should be present on process definition")
         .atMost(Duration.ofSeconds(30))
