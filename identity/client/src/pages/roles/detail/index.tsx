@@ -13,7 +13,6 @@ import DeleteModal from "src/pages/roles/modals/DeleteModal";
 import Flex from "src/components/layout/Flex";
 import { DetailPageHeaderFallback } from "src/components/fallbacks";
 import Tabs from "src/components/tabs";
-import EditModal from "src/pages/roles/modals/EditModal";
 import RolePermissions from "src/pages/roles/detail/RolePermissions";
 
 const Details: FC = () => {
@@ -24,17 +23,15 @@ const Details: FC = () => {
     tab: string;
   }>();
 
-  const { data: role, loading } = useApi(getRole, {
-    key: id ? parseInt(id, 10) : -1,
+  const { data: roleSearchResults, loading } = useApi(getRole, {
+    roleKey: id,
   });
 
   const [deleteRole, deleteModal] = useEntityModal(DeleteModal, () =>
     navigate("..", { replace: true }),
   );
 
-  const [editRole, editRoleModal] = useEntityModal(EditModal, () =>
-    navigate("..", { replace: true }),
-  );
+  const role = roleSearchResults !== null ? roleSearchResults.items[0] : null;
 
   if (!loading && !role) return <NotFound />;
 
@@ -54,12 +51,6 @@ const Details: FC = () => {
                     isDelete
                     onClick={() => {
                       deleteRole(role);
-                    }}
-                  />
-                  <OverflowMenuItem
-                    itemText={t("Edit")}
-                    onClick={() => {
-                      editRole(role);
                     }}
                   />
                 </OverflowMenu>
@@ -87,7 +78,6 @@ const Details: FC = () => {
         </Section>
       </>
       {deleteModal}
-      {editRoleModal}
     </StackPage>
   );
 };

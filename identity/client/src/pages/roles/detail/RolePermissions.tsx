@@ -3,9 +3,6 @@ import useTranslate from "src/utility/localization";
 import { Role } from "src/utility/api/roles";
 import EntityList from "src/components/entityList";
 import { C3EmptyState } from "@camunda/camunda-composite-components";
-import { useEntityModal } from "src/components/modal";
-import EditModal from "src/pages/roles/modals/EditModal";
-import { useNavigate } from "react-router";
 import usePermissionsTranslated from "src/pages/roles/modals/usePermissionsTranslated";
 
 type RoleDetailsProps = {
@@ -14,14 +11,9 @@ type RoleDetailsProps = {
 };
 
 const RolePermissions: FC<RoleDetailsProps> = ({ role, loading }) => {
-  const navigate = useNavigate();
   const { t } = useTranslate();
 
   const availableItems = usePermissionsTranslated(role?.permissions);
-  const [editRole, editRoleModal] = useEntityModal(EditModal, () =>
-    navigate("..", { replace: true }),
-  );
-  const openEditRole = () => editRole(role!);
 
   if (availableItems.length == 0) {
     return (
@@ -33,14 +25,13 @@ const RolePermissions: FC<RoleDetailsProps> = ({ role, loading }) => {
           )}
           button={{
             label: t("Edit Role"),
-            onClick: openEditRole,
+            onClick: () => {},
           }}
           link={{
             label: t("Learn more about roles"),
             href: `/identity/concepts/access-control/roles`,
           }}
         />
-        {editRoleModal}
       </>
     );
   }

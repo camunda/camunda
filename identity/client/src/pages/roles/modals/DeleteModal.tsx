@@ -21,7 +21,7 @@ const DeleteModal: FC<UseEntityModalProps<Role>> = ({
 
   const handleSubmit = async () => {
     const { success } = await callDeleteApi({
-      key: entity.key,
+      roleKey: entity.roleKey,
     });
 
     if (success) {
