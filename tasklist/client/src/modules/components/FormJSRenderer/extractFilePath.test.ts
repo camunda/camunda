@@ -8,7 +8,7 @@
 
 import {extractFilePath} from './extractFilePath';
 
-describe.only('extractFilePath', () => {
+describe('extractFilePath', () => {
   it('should extract file paths from an object', () => {
     const mock = {
       a: 'files::123',
