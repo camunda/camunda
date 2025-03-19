@@ -38,7 +38,7 @@ public class ProcessMigrationIT {
   private static final Map<String, Long> PROCESS_DEFINITION_KEYS = new HashMap<>();
 
   @RegisterExtension
-  static final MigrationITExtension PROVIDER =
+  private static final MigrationITExtension PROVIDER =
       new MigrationITExtension().withBeforeUpgradeConsumer(ProcessMigrationIT::setup);
 
   private static void setup(final DatabaseType databaseType, final CamundaMigrator migrator) {
