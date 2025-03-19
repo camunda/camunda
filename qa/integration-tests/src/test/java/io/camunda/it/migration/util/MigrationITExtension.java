@@ -20,7 +20,6 @@ import io.camunda.webapps.schema.descriptors.IndexDescriptors;
 import io.camunda.zeebe.test.util.testcontainers.TestSearchContainers;
 import io.camunda.zeebe.util.FileUtil;
 import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
@@ -55,7 +54,7 @@ public class MigrationITExtension
   private String indexPrefix;
   private String databaseUrl;
   private CamundaMigrator migrator;
-  private final Path tempDir;
+  private Path tempDir;
   private MigrationDatabaseChecks migrationDatabaseChecks;
   private BiConsumer<DatabaseType, CamundaMigrator> beforeUpgradeConsumer = (db, migrator) -> {};
 
@@ -63,11 +62,6 @@ public class MigrationITExtension
     final String property = System.getProperty(PROP_CAMUNDA_IT_DATABASE_TYPE);
     databaseType =
         property == null ? DatabaseType.LOCAL : DatabaseType.valueOf(property.toUpperCase());
-    try {
-      tempDir = Files.createTempDirectory(indexPrefix + "-zeebe");
-    } catch (final IOException e) {
-      throw new UncheckedIOException(e);
-    }
   }
 
   @Override
@@ -85,6 +79,7 @@ public class MigrationITExtension
     final var clazz = context.getTestClass().get();
     if (!isNestedClass(clazz)) {
       indexPrefix = clazz.getSimpleName().toLowerCase();
+      tempDir = Files.createTempDirectory(indexPrefix + "-zeebe");
       setupDatabase();
       migrator = new CamundaMigrator(indexPrefix, tempDir, databaseType, databaseUrl);
       migrator.initialize(initialEnvOverrides);
