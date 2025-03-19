@@ -13,6 +13,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.it.migration.util.CamundaMigrator;
 import io.camunda.it.migration.util.MigrationITExtension;
 import io.camunda.operate.webapp.api.v1.entities.ProcessDefinition;
+import io.camunda.qa.util.multidb.CamundaMultiDBExtension.DatabaseType;
 import io.camunda.search.clients.core.SearchQueryHit;
 import io.camunda.search.clients.core.SearchQueryRequest;
 import io.camunda.search.clients.query.SearchQueryBuilders;
@@ -22,31 +23,32 @@ import java.net.URI;
 import java.net.http.HttpResponse;
 import java.time.Duration;
 import java.util.HashMap;
+import java.util.Map;
 import java.util.Optional;
 import org.awaitility.Awaitility;
-import org.junit.jupiter.api.TestInstance;
-import org.junit.jupiter.api.TestInstance.Lifecycle;
-import org.junit.jupiter.api.TestTemplate;
-import org.junit.jupiter.api.extension.ExtensionContext;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-@TestInstance(Lifecycle.PER_CLASS)
+@Tag("multi-db-test")
+@DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "rdbms")
 public class ProcessMigrationIT {
 
-  @RegisterExtension static final MigrationITExtension PROVIDER = new MigrationITExtension();
+  private static final Map<String, Long> processDefinitionKeys = new HashMap<>();
 
-  @TestTemplate
-  void shouldMigrateProcessDefinition(
-      final ExtensionContext context, final CamundaMigrator migrator) {
+  @RegisterExtension
+  static final MigrationITExtension PROVIDER =
+      new MigrationITExtension().withBeforeUpgradeConsumer(ProcessMigrationIT::setup);
 
-    // given
+  private static void setup(final DatabaseType databaseType, final CamundaMigrator migrator) {
     migrator
         .getCamundaClient()
         .newDeployResourceCommand()
         .addResourceFromClasspath("form/form.form")
         .send()
         .join();
-    final var processDefinitionKey =
+    final var formStartedProcessKey =
         migrator
             .getCamundaClient()
             .newDeployResourceCommand()
@@ -56,16 +58,31 @@ public class ProcessMigrationIT {
             .getProcesses()
             .getFirst()
             .getProcessDefinitionKey();
+    awaitProcessDefinitionCreated(formStartedProcessKey, migrator);
+    processDefinitionKeys.put("formStartedProcessKey", formStartedProcessKey);
 
-    awaitProcessDefinitionCreated(processDefinitionKey, migrator);
-    PROVIDER.has87Data(context);
+    final var embeddedFormStartedProcessKey =
+        migrator
+            .getCamundaClient()
+            .newDeployResourceCommand()
+            .addResourceFromClasspath("process/startedByFormProcess.bpmn")
+            .send()
+            .join()
+            .getProcesses()
+            .getFirst()
+            .getProcessDefinitionKey();
+    awaitProcessDefinitionCreated(embeddedFormStartedProcessKey, migrator);
 
-    // when
-    PROVIDER.upgrade(context, new HashMap<>());
+    processDefinitionKeys.put("embeddedFormStartedProcessKey", embeddedFormStartedProcessKey);
+  }
 
-    // then
+  @Test
+  void shouldMigrateProcessDefinition(final CamundaMigrator migrator) {
+
+    final var processDefinitionKey = processDefinitionKeys.get("formStartedProcessKey");
     Awaitility.await("Form data should be present on process definition")
         .atMost(Duration.ofSeconds(30))
+        .pollInterval(Duration.ofSeconds(1))
         .untilAsserted(
             () -> {
               final var proc = findProcess(migrator, processDefinitionKey);
@@ -77,31 +94,14 @@ public class ProcessMigrationIT {
             });
   }
 
-  @TestTemplate
-  void shouldMigrateProcessDefinitionWithEmbeddedForm(
-      final ExtensionContext context, final CamundaMigrator migrator) {
+  @Test
+  void shouldMigrateProcessDefinitionWithEmbeddedForm(final CamundaMigrator migrator) {
 
-    // given
-    final var processDefinitionKey =
-        migrator
-            .getCamundaClient()
-            .newDeployResourceCommand()
-            .addResourceFromClasspath("process/startedByFormProcess.bpmn")
-            .send()
-            .join()
-            .getProcesses()
-            .getFirst()
-            .getProcessDefinitionKey();
+    final long processDefinitionKey = processDefinitionKeys.get("embeddedFormStartedProcessKey");
 
-    awaitProcessDefinitionCreated(processDefinitionKey, migrator);
-    PROVIDER.has87Data(context);
-
-    // when
-    PROVIDER.upgrade(context, new HashMap<>());
-
-    // then
     Awaitility.await("Form data should be present on process definition")
         .atMost(Duration.ofSeconds(30))
+        .pollInterval(Duration.ofSeconds(1))
         .untilAsserted(
             () -> {
               final var proc = findProcess(migrator, processDefinitionKey);
@@ -113,7 +113,7 @@ public class ProcessMigrationIT {
             });
   }
 
-  private void awaitProcessDefinitionCreated(
+  private static void awaitProcessDefinitionCreated(
       final long processDefinitionKey, final CamundaMigrator migrator) {
     final ObjectMapper mapper = new ObjectMapper();
 
