@@ -129,6 +129,7 @@ jobs:
             -DremoteTagging=${PUSH_CHANGES} \
             -DcompletionGoals="spotless:apply" \
             -DskipTests \
+            -DsuppressCommitBeforeTagOrBranch=true \
             -X \
             -DwaitBeforeTagging=0 \
             -Dskip.docker \
