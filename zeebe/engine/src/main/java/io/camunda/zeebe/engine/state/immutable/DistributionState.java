@@ -7,10 +7,12 @@
  */
 package io.camunda.zeebe.engine.state.immutable;
 
+import io.camunda.zeebe.engine.metrics.DistributionMetrics;
 import io.camunda.zeebe.protocol.impl.record.value.distribution.CommandDistributionRecord;
+import io.camunda.zeebe.stream.api.StreamProcessorLifecycleAware;
 import java.util.Optional;
 
-public interface DistributionState {
+public interface DistributionState extends StreamProcessorLifecycleAware {
 
   /**
    * Returns whether there are any retriable distributions for a given key.
@@ -111,6 +113,8 @@ public interface DistributionState {
    * Returns the continuation command for the given key and queue or null if no such command exists.
    */
   CommandDistributionRecord getContinuationRecord(String queue, long key);
+
+  DistributionMetrics getMetrics();
 
   /** This visitor can visit pending distributions of {@link CommandDistributionRecord}. */
   @FunctionalInterface

@@ -17,9 +17,11 @@ import io.camunda.zeebe.db.impl.DbLong;
 import io.camunda.zeebe.db.impl.DbNil;
 import io.camunda.zeebe.db.impl.DbString;
 import io.camunda.zeebe.engine.Loggers;
+import io.camunda.zeebe.engine.metrics.DistributionMetrics;
 import io.camunda.zeebe.engine.state.mutable.MutableDistributionState;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.protocol.impl.record.value.distribution.CommandDistributionRecord;
+import io.camunda.zeebe.stream.api.ReadonlyStreamProcessorContext;
 import java.util.Optional;
 import org.agrona.collections.MutableBoolean;
 import org.agrona.collections.MutableLong;
@@ -61,6 +63,8 @@ public class DbDistributionState implements MutableDistributionState {
 
   private final DbLong continuationKey;
   private final DbCompositeKey<DbString, DbLong> continuationByQueueKey;
+
+  private final DistributionMetrics metrics;
 
   public DbDistributionState(
       final ZeebeDb<ZbColumnFamilies> zeebeDb, final TransactionContext transactionContext) {
@@ -109,6 +113,24 @@ public class DbDistributionState implements MutableDistributionState {
             transactionContext,
             continuationByQueueKey,
             new PersistedCommandDistribution());
+
+    metrics = new DistributionMetrics(zeebeDb.getMeterRegistry());
+  }
+
+  @Override
+  public void onRecovered(final ReadonlyStreamProcessorContext context) {
+    getMetrics().reset();
+
+    commandDistributionRecordColumnFamily.forEach(
+        (distributionKey, record) -> getMetrics().addActiveDistribution());
+
+    pendingDistributionColumnFamily.forEach(
+        (distributionPartitionKey, record) ->
+            getMetrics().addPendingDistribution(distributionPartitionKey.second().getValue()));
+
+    retriableDistributionColumnFamily.forEach(
+        (distributionPartitionKey, record) ->
+            getMetrics().addInflightDistribution(distributionPartitionKey.second().getValue()));
   }
 
   @Override
@@ -247,6 +269,7 @@ public class DbDistributionState implements MutableDistributionState {
 
     return new CommandDistributionRecord()
         .setPartitionId(partition)
+        .setQueueId(persistedDistribution.getQueueId().orElse(null))
         .setValueType(persistedDistribution.getValueType())
         .setIntent(persistedDistribution.getIntent())
         .setCommandValue(persistedDistribution.getCommandValue());
@@ -381,5 +404,10 @@ public class DbDistributionState implements MutableDistributionState {
         .setValueType(persistedCommandDistribution.getValueType())
         .setIntent(persistedCommandDistribution.getIntent())
         .setCommandValue(persistedCommandDistribution.getCommandValue());
+  }
+
+  @Override
+  public DistributionMetrics getMetrics() {
+    return metrics;
   }
 }

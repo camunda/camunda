@@ -193,6 +193,7 @@ public class ProcessingDbState implements MutableProcessingState {
     messageSubscriptionState.onRecovered(context);
     processMessageSubscriptionState.onRecovered(context);
     bannedInstanceState.onRecovered(context);
+    distributionState.onRecovered(context);
     messageState.onRecovered(context);
   }
 
