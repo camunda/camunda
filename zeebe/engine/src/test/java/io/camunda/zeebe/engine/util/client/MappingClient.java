@@ -26,8 +26,8 @@ public class MappingClient {
     return new MappingCreateClient(writer, name);
   }
 
-  public MappingDeleteClient deleteMapping(final long key) {
-    return new MappingDeleteClient(writer, key);
+  public MappingDeleteClient deleteMapping(final String id) {
+    return new MappingDeleteClient(writer, id);
   }
 
   public MappingUpdateClient updateMapping(final String id) {
@@ -111,10 +111,10 @@ public class MappingClient {
     private final MappingRecord mappingRecord;
     private Function<Long, Record<MappingRecordValue>> expectation = SUCCESS_SUPPLIER;
 
-    public MappingDeleteClient(final CommandWriter writer, final long key) {
+    public MappingDeleteClient(final CommandWriter writer, final String id) {
       this.writer = writer;
       mappingRecord = new MappingRecord();
-      mappingRecord.setMappingKey(key);
+      mappingRecord.setId(id);
     }
 
     public Record<MappingRecordValue> delete() {
