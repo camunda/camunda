@@ -8,5 +8,10 @@
   "noRoles": "No roles created yet",
   "createNewRoleToStart": "Create a new role to get started",
   "createRole": "Create role",
-  "learnMoreAboutRoles": "Learn more about roles"
+  "learnMoreAboutRoles": "Learn more about roles",
+  "roleHasBeenDeleted": "Role has been deleted",
+  "deleteRoleSuccess": "You have successfully deleted role {{ name }}",
+  "deleteRole": "Delete role",
+  "deletingRole": "Deleting role",
+  "deleteRoleConfirmation": "Are you sure you want to delete <strong>{{roleKey}}</strong>?"
 }

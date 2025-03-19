@@ -38,9 +38,10 @@ type CreateRoleParams = Omit<Role, "roleKey">;
 export const createRole: ApiDefinition<Role, CreateRoleParams> = (role) =>
   apiPost(ROLES_ENDPOINT, role);
 
-interface DeleteRoleParams {
+export type DeleteRoleParams = {
   roleKey: string;
-}
-export const deleteRole: ApiDefinition<undefined, DeleteRoleParams> = ({
+  name: string;
+};
+export const deleteRole: ApiDefinition<undefined, { roleKey: string }> = ({
   roleKey,
 }) => apiDelete(`${ROLES_ENDPOINT}/${roleKey}`);
