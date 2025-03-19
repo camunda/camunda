@@ -141,6 +141,11 @@ final class PublishMessageDispatchStrategyTest {
     public PartitionHealthStatus getPartitionHealth(final int brokerId, final int partition) {
       throw new UnsupportedOperationException();
     }
+
+    @Override
+    public long getLastCompletedChangeId() {
+      throw new UnsupportedOperationException();
+    }
   }
 
   private record TestTopologyManager(

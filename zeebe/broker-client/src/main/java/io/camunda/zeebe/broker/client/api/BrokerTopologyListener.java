@@ -12,7 +12,9 @@ import io.atomix.cluster.MemberId;
 /** Listener which will be notified when a broker is added or removed from the topology. */
 public interface BrokerTopologyListener {
 
-  void brokerAdded(MemberId memberId);
+  default void brokerAdded(final MemberId memberId) {}
 
-  void brokerRemoved(MemberId memberId);
+  default void brokerRemoved(final MemberId memberId) {}
+
+  default void completedClusterChange() {}
 }

@@ -46,7 +46,8 @@ public final class TopologyController {
       response
           .clusterSize(topology.getClusterSize())
           .partitionsCount(topology.getPartitionsCount())
-          .replicationFactor(topology.getReplicationFactor());
+          .replicationFactor(topology.getReplicationFactor())
+          .lastCompletedChangeId(topology.getLastCompletedChangeId());
 
       topology
           .getBrokers()

@@ -5803,6 +5803,11 @@ components:
           description: The version of the Zeebe Gateway.
           type: string
           nullable: true
+        lastCompletedChangeId:
+          description: ID of the last completed change
+          type: integer
+          format: int64
+          nullable: true
     LicenseResponse:
       description: The response of a license request.
       type: object

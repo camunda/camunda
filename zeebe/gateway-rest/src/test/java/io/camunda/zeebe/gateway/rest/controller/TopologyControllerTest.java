@@ -219,5 +219,10 @@ public class TopologyControllerTest extends RestControllerTest {
         default -> PartitionHealthStatus.NULL_VAL;
       };
     }
+
+    @Override
+    public long getLastCompletedChangeId() {
+      return 0;
+    }
   }
 }
