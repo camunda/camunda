@@ -17,6 +17,7 @@ import io.camunda.zeebe.engine.util.client.UserTaskClient;
 import io.camunda.zeebe.model.bpmn.builder.UserTaskBuilder;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskListenerEventType;
 import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
+import io.camunda.zeebe.protocol.impl.record.value.variable.VariableDocumentRecord;
 import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
@@ -30,9 +31,9 @@ import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.UUID;
 import java.util.function.Consumer;
+import java.util.function.Predicate;
 import java.util.function.UnaryOperator;
 import org.apache.commons.lang3.StringUtils;
 import org.junit.Before;
@@ -312,16 +313,24 @@ public class TaskListenerBlockedTransitionTest {
         listenerType + "_2",
         listenerType + "_3");
 
+    final Predicate<Record<?>> isUserTaskOrVariableDocumentWithElementInstanceKey =
+        r -> {
+          if (r.getValue() instanceof UserTaskRecord utr) {
+            return utr.getElementInstanceKey() == userTaskElementInstanceKey;
+          } else if (r.getValue() instanceof VariableDocumentRecord vdr) {
+            return vdr.getScopeKey() == userTaskElementInstanceKey;
+          }
+          return false;
+        };
+
     assertThat(
             RecordingExporter.records()
-                .filter(
-                    r ->
-                        Set.of(ValueType.USER_TASK, ValueType.VARIABLE_DOCUMENT)
-                            .contains(r.getValueType()))
+                .filter(isUserTaskOrVariableDocumentWithElementInstanceKey)
+                .skipUntil(r -> r.getIntent() == VariableDocumentIntent.UPDATE)
                 .limit(r -> r.getIntent() == VariableDocumentIntent.UPDATED))
         .extracting(Record::getValueType, Record::getIntent)
         .describedAs("Verify the expected sequence of UserTask and VariableDocument intents")
-        .containsSequence(
+        .containsExactly(
             tuple(ValueType.VARIABLE_DOCUMENT, VariableDocumentIntent.UPDATE),
             tuple(ValueType.VARIABLE_DOCUMENT, VariableDocumentIntent.UPDATING),
             tuple(ValueType.USER_TASK, UserTaskIntent.UPDATING),
