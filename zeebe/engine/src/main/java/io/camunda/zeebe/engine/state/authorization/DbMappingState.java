@@ -185,7 +185,13 @@ public class DbMappingState implements MutableMappingState {
   public Optional<PersistedMapping> get(final String claimName, final String claimValue) {
     this.claimName.wrapString(claimName);
     this.claimValue.wrapString(claimValue);
-    return Optional.ofNullable(mappingColumnFamily.get(claim));
+    final var persistedMapping = mappingColumnFamily.get(claim);
+
+    if (persistedMapping == null) {
+      return Optional.empty();
+    }
+
+    return Optional.of(persistedMapping.copy());
   }
 
   @Override
