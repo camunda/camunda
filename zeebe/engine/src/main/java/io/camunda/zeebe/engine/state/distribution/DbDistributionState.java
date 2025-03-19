@@ -17,10 +17,13 @@ import io.camunda.zeebe.db.impl.DbLong;
 import io.camunda.zeebe.db.impl.DbNil;
 import io.camunda.zeebe.db.impl.DbString;
 import io.camunda.zeebe.engine.Loggers;
+import io.camunda.zeebe.engine.metrics.DistributionMetrics;
 import io.camunda.zeebe.engine.state.mutable.MutableDistributionState;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.protocol.impl.record.value.distribution.CommandDistributionRecord;
+import io.camunda.zeebe.stream.api.ReadonlyStreamProcessorContext;
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.agrona.collections.MutableBoolean;
 import org.agrona.collections.MutableLong;
 import org.agrona.collections.MutableReference;
@@ -61,6 +64,8 @@ public class DbDistributionState implements MutableDistributionState {
 
   private final DbLong continuationKey;
   private final DbCompositeKey<DbString, DbLong> continuationByQueueKey;
+
+  private final DistributionMetrics metrics;
 
   public DbDistributionState(
       final ZeebeDb<ZbColumnFamilies> zeebeDb, final TransactionContext transactionContext) {
@@ -109,6 +114,18 @@ public class DbDistributionState implements MutableDistributionState {
             transactionContext,
             continuationByQueueKey,
             new PersistedCommandDistribution());
+
+    metrics = new DistributionMetrics(zeebeDb.getMeterRegistry());
+  }
+
+  @Override
+  public void onRecovered(final ReadonlyStreamProcessorContext context) {
+    final var counter = new AtomicInteger(0);
+
+    // TODO: do it by partition and for each column families
+    // what about performance here? is it okay to take longer during recovery phase?
+    pendingDistributionColumnFamily.forEach(ignore -> counter.getAndIncrement());
+    getMetrics().reset(counter.get());
   }
 
   @Override
@@ -117,12 +134,16 @@ public class DbDistributionState implements MutableDistributionState {
     this.distributionKey.wrapLong(distributionKey);
     commandDistributionRecordColumnFamily.insert(
         this.distributionKey, new PersistedCommandDistribution().wrap(commandDistributionRecord));
+
+    getMetrics().addDistribution(distributionKey);
   }
 
   @Override
   public void removeCommandDistribution(final long distributionKey) {
     this.distributionKey.wrapLong(distributionKey);
     commandDistributionRecordColumnFamily.deleteIfExists(this.distributionKey);
+
+    getMetrics().removeDistribution(distributionKey);
   }
 
   @Override
@@ -130,6 +151,8 @@ public class DbDistributionState implements MutableDistributionState {
     this.distributionKey.wrapLong(distributionKey);
     partitionKey.wrapInt(partition);
     retriableDistributionColumnFamily.insert(distributionPartitionKey, DbNil.INSTANCE);
+
+    getMetrics().addInflightDistribution(partition, distributionKey);
   }
 
   @Override
@@ -137,6 +160,8 @@ public class DbDistributionState implements MutableDistributionState {
     this.distributionKey.wrapLong(distributionKey);
     partitionKey.wrapInt(partition);
     retriableDistributionColumnFamily.deleteExisting(distributionPartitionKey);
+
+    getMetrics().removeInflightDistribution(partition, distributionKey);
   }
 
   @Override
@@ -144,6 +169,10 @@ public class DbDistributionState implements MutableDistributionState {
     this.distributionKey.wrapLong(distributionKey);
     partitionKey.wrapInt(partition);
     pendingDistributionColumnFamily.upsert(distributionPartitionKey, DbNil.INSTANCE);
+
+    // TODO: the upsert above makes counting metrics difficult as this is currently called twice
+    // (ENQUEUED/DISTRIBUTING) and therefore would also be counted twice.
+    getMetrics().addPendingDistribution(partition, distributionKey);
   }
 
   @Override
@@ -151,6 +180,8 @@ public class DbDistributionState implements MutableDistributionState {
     this.distributionKey.wrapLong(distributionKey);
     partitionKey.wrapInt(partition);
     pendingDistributionColumnFamily.deleteExisting(distributionPartitionKey);
+
+    getMetrics().removePendingDistribution(partition, distributionKey);
   }
 
   @Override
@@ -381,5 +412,10 @@ public class DbDistributionState implements MutableDistributionState {
         .setValueType(persistedCommandDistribution.getValueType())
         .setIntent(persistedCommandDistribution.getIntent())
         .setCommandValue(persistedCommandDistribution.getCommandValue());
+  }
+
+  @Override
+  public DistributionMetrics getMetrics() {
+    return metrics;
   }
 }
