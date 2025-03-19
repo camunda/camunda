@@ -8,10 +8,10 @@
 package io.camunda.zeebe.engine.state.appliers;
 
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
-import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
-import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
+import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
+import io.camunda.zeebe.protocol.record.intent.Intent;
 
-public class AppliersTestSetupHelper {
+class AppliersTestSetupHelper {
 
   private final EventAppliers eventAppliers;
 
@@ -25,11 +25,11 @@ public class AppliersTestSetupHelper {
    *
    * @implNote applies the event using the latest version of the record.
    * @param intent the intent of the event to apply
-   * @param userTaskRecord data of the event to apply
+   * @param recordValue data of the event to apply
    */
   void applyEventToState(
-      final long userTaskKey, final UserTaskIntent intent, final UserTaskRecord userTaskRecord) {
+      final long key, final Intent intent, final UnifiedRecordValue recordValue) {
     final int latestVersion = eventAppliers.getLatestVersion(intent);
-    eventAppliers.applyState(userTaskKey, intent, userTaskRecord, latestVersion);
+    eventAppliers.applyState(key, intent, recordValue, latestVersion);
   }
 }
