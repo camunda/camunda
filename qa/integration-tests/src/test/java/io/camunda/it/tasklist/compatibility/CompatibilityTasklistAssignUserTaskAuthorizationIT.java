@@ -18,7 +18,8 @@ import io.camunda.qa.util.auth.User;
 import io.camunda.qa.util.auth.UserDefinition;
 import io.camunda.qa.util.cluster.TestRestTasklistClient;
 import io.camunda.qa.util.cluster.TestSimpleCamundaApplication;
-import io.camunda.qa.util.multidb.CamundaMultiDBExtension;
+import io.camunda.qa.util.multidb.MultiDbTest;
+import io.camunda.qa.util.multidb.MultiDbTestApplication;
 import io.camunda.tasklist.webapp.api.rest.v1.entities.TaskSearchResponse;
 import java.net.http.HttpResponse;
 import java.time.Duration;
@@ -27,23 +28,19 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
-import org.junit.jupiter.api.extension.RegisterExtension;
 
-@Tag("multi-db-test")
+@MultiDbTest
 @DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "rdbms")
 public class CompatibilityTasklistAssignUserTaskAuthorizationIT {
 
+  @MultiDbTestApplication
   private static final TestSimpleCamundaApplication STANDALONE_CAMUNDA =
       new TestSimpleCamundaApplication()
           .withAuthorizationsEnabled()
           .withBasicAuth()
           .withProperty("camunda.tasklist.zeebe.compatibility.enabled", true);
-
-  @RegisterExtension
-  static final CamundaMultiDBExtension EXTENSION = new CamundaMultiDBExtension(STANDALONE_CAMUNDA);
 
   private static final String PROCESS_ID = "foo";
   private static final String PROCESS_ID_WITH_JOB_BASED_USERTASK =
