@@ -33,8 +33,7 @@ public class CamundaContainer extends GenericContainer<CamundaContainer> {
   private static final Duration DEFAULT_STARTUP_TIMEOUT = Duration.ofMinutes(1);
   private static final String READY_ENDPOINT = "/ready";
 
-  private static final String ACTIVE_SPRING_PROFILES =
-      "broker"; // "operate,tasklist,broker,consolidated-auth";
+  private static final String ACTIVE_SPRING_PROFILES = "broker,consolidated-auth";
   private static final String LOG_APPENDER_STACKDRIVER = "Stackdriver";
 
   private static final String CAMUNDA_EXPORTER_CLASSNAME = "io.camunda.exporter.CamundaExporter";
@@ -51,8 +50,6 @@ public class CamundaContainer extends GenericContainer<CamundaContainer> {
         .withEnv(ContainerRuntimeEnvs.CAMUNDA_ENV_SPRING_PROFILES_ACTIVE, ACTIVE_SPRING_PROFILES)
         .withEnv(ContainerRuntimeEnvs.CAMUNDA_ENV_ZEEBE_CLOCK_CONTROLLED, "true")
         .withEnv(ContainerRuntimeEnvs.CAMUNDA_ENV_ZEEBE_LOG_APPENDER, LOG_APPENDER_STACKDRIVER)
-        .withEnv("ZEEBE_BROKER_GATEWAY_ENABLE", "true")
-        .withEnv("ZEEBE_BROKER_GATEWAY_SECURITY_ENABLED", "false")
         .withRdbms()
         .addExposedPorts(
             ContainerRuntimePorts.CAMUNDA_GATEWAY_API,
