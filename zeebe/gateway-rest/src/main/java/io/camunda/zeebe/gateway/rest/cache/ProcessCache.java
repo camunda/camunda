@@ -78,6 +78,10 @@ public class ProcessCache {
     return getCacheItem(flowNode.processDefinitionKey()).getFlowNodeName(flowNode.flowNodeId());
   }
 
+  public void invalidate() {
+    cache.invalidateAll();
+  }
+
   private final class ProcessCacheLoader implements CacheLoader<Long, ProcessCacheItem> {
 
     @Override
