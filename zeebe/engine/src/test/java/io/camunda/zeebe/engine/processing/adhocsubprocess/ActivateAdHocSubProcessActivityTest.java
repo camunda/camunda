@@ -13,15 +13,19 @@ import static org.assertj.core.groups.Tuple.tuple;
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
+import io.camunda.zeebe.protocol.impl.record.value.signal.SignalRecord;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordAssert;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.AdHocSubProcessActivityActivationIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
+import io.camunda.zeebe.protocol.record.intent.SignalIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
+import io.camunda.zeebe.test.util.record.ProcessInstanceRecordStream;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.util.List;
+import java.util.Map;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Rule;
@@ -32,6 +36,7 @@ public class ActivateAdHocSubProcessActivityTest {
 
   private static final String PROCESS_ID = "process";
   private static final String AD_HOC_SUB_PROCESS_ELEMENT_ID = "ad-hoc";
+  private static final String COMPLETION_CONDITION_VAR = "completionCondition";
 
   @Rule public final RecordingExporterTestWatcher watcher = new RecordingExporterTestWatcher();
 
@@ -49,12 +54,18 @@ public class ActivateAdHocSubProcessActivityTest {
                   adHocSubProcess.task("A");
                   adHocSubProcess.task("B");
                   adHocSubProcess.task("C");
+                  adHocSubProcess.completionCondition(COMPLETION_CONDITION_VAR);
                 })
             .endEvent()
             .done();
 
     ENGINE.deployment().withXmlResource(processInstance).deploy();
-    processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+    processInstanceKey =
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId(PROCESS_ID)
+            .withVariables(Map.of(COMPLETION_CONDITION_VAR, true))
+            .create();
 
     adHocSubProcessInstanceKey =
         RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
@@ -117,6 +128,55 @@ public class ActivateAdHocSubProcessActivityTest {
                 .limitToProcessInstanceCompleted())
         .extracting(r -> r.getValue().getElementId(), r -> r.getValue().getElementInstancePath())
         .contains(tuple("A", expectedElementPath));
+  }
+
+  @Test
+  public void
+      givenRunningAdhocSubprocessInstanceWhenActivatingElementsThenAdhocSubprocessIsOnlyCompletedWhenCompletionConditionIsMet() {
+    // prepare the test case by setting the completion condition variable to false which ensures
+    // that the adhoc subprocess doesn't complete before we want it to.
+    ENGINE
+        .variables()
+        .withDocument(Map.of(COMPLETION_CONDITION_VAR, false))
+        .ofScope(adHocSubProcessInstanceKey)
+        .update();
+
+    ENGINE
+        .adHocSubProcessActivity()
+        .withAdHocSubProcessInstanceKey(String.valueOf(adHocSubProcessInstanceKey))
+        .withElementIds("A")
+        .activate();
+
+    final var signalName = "signal";
+    ENGINE.signal().withSignalName(signalName).broadcast();
+
+    assertThat(recordsUntilSignal(signalName))
+        .extracting(r -> r.getValue().getElementId(), Record::getIntent)
+        .contains(tuple("A", ProcessInstanceIntent.ELEMENT_COMPLETED))
+        .doesNotContainAnyElementsOf(
+            List.of(tuple("ad-hoc", ProcessInstanceIntent.ELEMENT_COMPLETED)));
+
+    // set the completion condition variable to `true` to ensure that the adhoc subprocess
+    // completes.
+    ENGINE
+        .variables()
+        .withDocument(Map.of(COMPLETION_CONDITION_VAR, true))
+        .ofScope(adHocSubProcessInstanceKey)
+        .update();
+    ENGINE
+        .adHocSubProcessActivity()
+        .withAdHocSubProcessInstanceKey(String.valueOf(adHocSubProcessInstanceKey))
+        .withElementIds("B")
+        .activate();
+
+    assertThat(
+            RecordingExporter.processInstanceRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .limitToProcessInstanceCompleted())
+        .extracting(r -> r.getValue().getElementId(), Record::getIntent)
+        .contains(
+            tuple("B", ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple("ad-hoc", ProcessInstanceIntent.ELEMENT_COMPLETED));
   }
 
   @Test
@@ -267,5 +327,15 @@ public class ActivateAdHocSubProcessActivityTest {
                 .withIntent(AdHocSubProcessActivityActivationIntent.ACTIVATED)
                 .exists())
         .isFalse();
+  }
+
+  private ProcessInstanceRecordStream recordsUntilSignal(final String signalName) {
+    return RecordingExporter.records()
+        .limit(
+            r ->
+                r.getIntent() == SignalIntent.BROADCASTED
+                    && ((SignalRecord) r.getValue()).getSignalName().equals(signalName))
+        .processInstanceRecords()
+        .withProcessInstanceKey(processInstanceKey);
   }
 }
