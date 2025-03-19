@@ -24,13 +24,9 @@ import {
 } from "src/utility/api/authorizations";
 import { useNotifications } from "src/components/notifications";
 import TextField from "src/components/form/TextField";
+import Divider from "src/components/form/Divider";
 import { DocumentationLink } from "src/components/documentation";
-import {
-  Row,
-  Divider,
-  TextFieldContainer,
-  PermissionsSectionLabel,
-} from "./components";
+import { Row, TextFieldContainer, PermissionsSectionLabel } from "./components";
 
 type ResourcePermissionsType = {
   [key in keyof typeof ResourceType]: Authorization["permissionTypes"];
