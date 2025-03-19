@@ -102,6 +102,7 @@ import io.camunda.client.api.search.request.ProcessInstanceSearchRequest;
 import io.camunda.client.api.search.request.UserTaskSearchRequest;
 import io.camunda.client.api.search.request.UserTaskVariableSearchRequest;
 import io.camunda.client.api.search.request.VariableSearchRequest;
+import io.camunda.client.api.statistics.request.ProcessDefinitionFlowNodeStatisticsRequest;
 import io.camunda.client.api.worker.JobClient;
 import io.camunda.client.api.worker.JobWorkerBuilderStep1;
 import io.camunda.client.impl.command.ActivateAdHocSubprocessActivitiesCommandImpl;
@@ -180,6 +181,7 @@ import io.camunda.client.impl.search.request.ProcessInstanceSearchRequestImpl;
 import io.camunda.client.impl.search.request.UserTaskSearchRequestImpl;
 import io.camunda.client.impl.search.request.UserTaskVariableSearchRequestImpl;
 import io.camunda.client.impl.search.request.VariableSearchRequestImpl;
+import io.camunda.client.impl.statistics.request.ProcessDefinitionFlowNodeStatisticsRequestImpl;
 import io.camunda.client.impl.util.ExecutorResource;
 import io.camunda.client.impl.util.VersionUtil;
 import io.camunda.client.impl.worker.JobClientImpl;
@@ -655,6 +657,13 @@ public final class CamundaClientImpl implements CamundaClient {
   @Override
   public ProcessDefinitionSearchRequest newProcessDefinitionSearchRequest() {
     return new ProcessDefinitionSearchRequestImpl(httpClient, jsonMapper);
+  }
+
+  @Override
+  public ProcessDefinitionFlowNodeStatisticsRequest newProcessDefinitionFlowNodeStatisticsRequest(
+      final long processDefinitionKey) {
+    return new ProcessDefinitionFlowNodeStatisticsRequestImpl(
+        httpClient, jsonMapper, processDefinitionKey);
   }
 
   @Override

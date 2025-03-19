@@ -143,7 +143,7 @@
     </if>
     <if test="filter.tenantIdOperations != null and !filter.tenantIdOperations.isEmpty()">
       <foreach collection="filter.tenantIdOperations" item="operation">
-        AND TENANT_ID <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+        AND pi.TENANT_ID <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
       </foreach>
     </if>
     <if test="filter.hasIncident != null">
