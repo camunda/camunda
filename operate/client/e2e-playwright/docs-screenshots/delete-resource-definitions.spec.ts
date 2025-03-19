@@ -43,6 +43,9 @@ test.describe('delete resource definitions', () => {
           processInstances: [],
         },
         statistics: [],
+        statisticsV2: {
+          items: [],
+        },
         processXml: open('orderProcess.bpmn'),
         deleteProcess: mockDeleteProcess,
       }),

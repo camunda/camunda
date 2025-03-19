@@ -16,6 +16,7 @@ import {
   mockProcessXml,
   mockResponses,
   mockStatistics,
+  mockStatisticsV2,
 } from '../mocks/processes.mocks';
 import {URL_API_PATTERN} from '../constants';
 import {clientConfigMock} from '../mocks/clientConfig';
@@ -52,6 +53,9 @@ test.describe('processes page', () => {
           batchOperations: [],
           groupedProcesses: mockGroupedProcesses,
           statistics: [],
+          statisticsV2: {
+            items: [],
+          },
           processXml: '',
           processInstances: {
             processInstances: [],
@@ -123,6 +127,7 @@ test.describe('processes page', () => {
           batchOperations: mockBatchOperations,
           processInstances: mockProcessInstances,
           statistics: mockStatistics,
+          statisticsV2: mockStatisticsV2,
           processXml: mockProcessXml,
         }),
       );
@@ -168,6 +173,7 @@ test.describe('processes page', () => {
           batchOperations: mockBatchOperations,
           processInstances: mockProcessInstances,
           statistics: mockStatistics,
+          statisticsV2: mockStatisticsV2,
           processXml: mockProcessXml,
         }),
       );
@@ -212,6 +218,7 @@ test.describe('processes page', () => {
           batchOperations: mockBatchOperations,
           processInstances: mockProcessInstances,
           statistics: mockStatistics,
+          statisticsV2: mockStatisticsV2,
           processXml: mockProcessXml,
         }),
       );
@@ -257,6 +264,7 @@ test.describe('processes page', () => {
           batchOperations: mockBatchOperations,
           processInstances: mockProcessInstances,
           statistics: mockStatistics,
+          statisticsV2: mockStatisticsV2,
           processXml: mockProcessXml,
         }),
       );
@@ -293,6 +301,7 @@ test.describe('processes page', () => {
           batchOperations: mockBatchOperations,
           processInstances: mockProcessInstances,
           statistics: mockStatistics,
+          statisticsV2: mockStatisticsV2,
           processXml: mockProcessXml,
         }),
       );
@@ -327,6 +336,7 @@ test.describe('processes page', () => {
           batchOperations: mockBatchOperations,
           processInstances: mockProcessInstancesWithOperationError,
           statistics: mockStatistics,
+          statisticsV2: mockStatisticsV2,
           processXml: mockProcessXml,
         }),
       );
@@ -368,6 +378,7 @@ test.describe('processes page', () => {
           batchOperations: mockBatchOperations,
           processInstances: mockProcessInstancesWithOperationError,
           statistics: mockStatistics,
+          statisticsV2: mockStatisticsV2,
           processXml: mockProcessXml,
         }),
       );
