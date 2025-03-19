@@ -91,4 +91,33 @@ public class UserTaskCanceledApplierTest {
         .describedAs("Expect that state is cleared after cancellation of the User Task")
         .isNull();
   }
+
+  @Test
+  public void shouldCancelUserTaskWhenNoIntermediateStateAndRequestMetadataPresent() {
+    // given
+    final var userTaskKey = 1;
+
+    // Initial state of the User Task
+    final var initialState = new UserTaskRecord().setUserTaskKey(userTaskKey);
+
+    // Apply initial task creation
+    testSetup.applyEventToState(userTaskKey, UserTaskIntent.CREATING, initialState);
+    testSetup.applyEventToState(userTaskKey, UserTaskIntent.CREATED, initialState);
+
+    // when
+    userTaskCanceledApplier.applyState(userTaskKey, initialState);
+
+    // then
+    assertThat(userTaskState.getIntermediateState(userTaskKey))
+        .describedAs("Expect there is no intermediate state for the User Task")
+        .isNull();
+
+    assertThat(userTaskState.findRecordRequestMetadata(userTaskKey))
+        .describedAs("Expect there is no request metadata for the User Task")
+        .isEmpty();
+
+    Assertions.assertThat(userTaskState.getUserTask(userTaskKey))
+        .describedAs("Expect that state is cleared after cancellation of the User Task")
+        .isNull();
+  }
 }
