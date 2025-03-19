@@ -49,9 +49,10 @@ public final class AuthorizationCheckBehavior {
       "Unauthorized to perform operation '%s' on resource '%s'";
   private final AuthorizationState authorizationState;
   private final UserState userState;
-  private final SecurityConfiguration securityConfig;
   private final MappingState mappingState;
   private final GroupState groupState;
+  private final boolean authorizationsEnabled;
+  private final boolean multiTenancyEnabled;
 
   public AuthorizationCheckBehavior(
       final ProcessingState processingState, final SecurityConfiguration securityConfig) {
@@ -60,7 +61,8 @@ public final class AuthorizationCheckBehavior {
     mappingState = processingState.getMappingState();
     groupState = processingState.getGroupState();
     processingState.getTenantState();
-    this.securityConfig = securityConfig;
+    authorizationsEnabled = securityConfig.getAuthorizations().isEnabled();
+    multiTenancyEnabled = securityConfig.getMultiTenancy().isEnabled();
   }
 
   /**
@@ -76,8 +78,7 @@ public final class AuthorizationCheckBehavior {
    *     {@link Void} if the user is authorized
    */
   public Either<Rejection, Void> isAuthorized(final AuthorizationRequest request) {
-    if (!securityConfig.getAuthorizations().isEnabled()
-        && !securityConfig.getMultiTenancy().isEnabled()) {
+    if (!authorizationsEnabled && !multiTenancyEnabled) {
       return Either.right(null);
     }
 
@@ -117,7 +118,7 @@ public final class AuthorizationCheckBehavior {
                   request.getPermissionType(), request.getResourceType())));
     }
 
-    if (securityConfig.getMultiTenancy().isEnabled()) {
+    if (multiTenancyEnabled) {
       if (!isUserAuthorizedForTenant(request, userOptional.get())) {
         final var rejectionType =
             request.isNewResource() ? RejectionType.FORBIDDEN : RejectionType.NOT_FOUND;
@@ -125,7 +126,7 @@ public final class AuthorizationCheckBehavior {
       }
     }
 
-    if (securityConfig.getAuthorizations().isEnabled()) {
+    if (authorizationsEnabled) {
       final var authorizedResourceIdentifiers =
           getUserAuthorizedResourceIdentifiers(
               userOptional.get(), request.getResourceType(), request.getPermissionType());
@@ -142,7 +143,7 @@ public final class AuthorizationCheckBehavior {
    * @return an {@link Either} containing a {@link Rejection} or {@link Void}
    */
   private Either<Rejection, Void> isMappingAuthorized(final AuthorizationRequest request) {
-    if (securityConfig.getAuthorizations().isEnabled()) {
+    if (authorizationsEnabled) {
       final var authorizedResourceIdentifiers = getMappingsAuthorizedResourceIdentifiers(request);
       return checkResourceIdentifiers(request, authorizedResourceIdentifiers);
     }
@@ -208,7 +209,7 @@ public final class AuthorizationCheckBehavior {
   }
 
   public Set<String> getAllAuthorizedResourceIdentifiers(final AuthorizationRequest request) {
-    if (!securityConfig.getAuthorizations().isEnabled()) {
+    if (!authorizationsEnabled) {
       return Set.of(WILDCARD_PERMISSION);
     }
 
@@ -358,7 +359,7 @@ public final class AuthorizationCheckBehavior {
    * @return true if assigned, false otherwise
    */
   public boolean isAssignedToTenant(final TypedRecord<?> command, final String tenantId) {
-    if (!securityConfig.getMultiTenancy().isEnabled()) {
+    if (!multiTenancyEnabled) {
       return true;
     }
 
