@@ -366,6 +366,15 @@
   </dependencies>
 
   <build>
+    <resources>
+      <resource>
+        <directory>../gateway-protocol/src/main/proto</directory>
+        <includes>
+          <include>rest-api.yaml</include>
+        </includes>
+        <targetPath>apidoc</targetPath>
+      </resource>
+    </resources>
     <plugins>
       <plugin>
         <groupId>org.openapitools</groupId>
