@@ -23,28 +23,25 @@ import io.camunda.qa.util.auth.Permissions;
 import io.camunda.qa.util.auth.User;
 import io.camunda.qa.util.auth.UserDefinition;
 import io.camunda.qa.util.cluster.TestSimpleCamundaApplication;
-import io.camunda.qa.util.multidb.CamundaMultiDBExtension;
+import io.camunda.qa.util.multidb.MultiDbTest;
+import io.camunda.qa.util.multidb.MultiDbTestApplication;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
-import org.junit.jupiter.api.extension.RegisterExtension;
 
-@Tag("multi-db-test")
+@MultiDbTest
 @DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "rdbms")
 @DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "AWS_OS")
 public class OperatePermissionsIT {
 
+  @MultiDbTestApplication
   static final TestSimpleCamundaApplication STANDALONE_CAMUNDA =
       new TestSimpleCamundaApplication().withAuthorizationsEnabled().withBasicAuth();
-
-  @RegisterExtension
-  static final CamundaMultiDBExtension EXTENSION = new CamundaMultiDBExtension(STANDALONE_CAMUNDA);
 
   private static final String SUPER_USER_USERNAME = "super";
   private static final String RESTRICTED_USER_USERNAME = "restricted";
