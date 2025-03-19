@@ -54,3 +54,6 @@ Refer to https://docs.camunda.io/docs/guides/getting-started-java-spring/ for he
 -------------------------------------------
 ```
 
+## CI requirement for merging
+
+Only CI checks related to C8Run (those with "c8run" in the name) are required for merging. Non-C8Run-related CI checks can be ignored.
