@@ -8,10 +8,17 @@
   "noRoles": "No roles created yet",
   "createNewRoleToStart": "Create a new role to get started",
   "createRole": "Create role",
+  "creatingRole": "Creating role",
   "learnMoreAboutRoles": "Learn more about roles",
   "roleHasBeenDeleted": "Role has been deleted",
   "deleteRoleSuccess": "You have successfully deleted role {{ name }}",
   "deleteRole": "Delete role",
   "deletingRole": "Deleting role",
-  "deleteRoleConfirmation": "Are you sure you want to delete <strong>{{roleKey}}</strong>?"
+  "deleteRoleConfirmation": "Are you sure you want to delete <strong>{{roleKey}}</strong>?",
+  "roleIdPlaceholder": "Enter role ID",
+  "roleNamePlaceholder": "Enter role name",
+  "pleaseEnterValidRoleId": "Please enter a valid role ID (only alphanumeric characters and max 256 characters)",
+  "roleIdHelperText": "The role ID must be unique and can not be modified",
+  "description": "Description",
+  "roleDescriptionPlaceholder": "Enter a role description (Max 255 characters)"
 }

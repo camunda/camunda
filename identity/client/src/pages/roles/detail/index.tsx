@@ -13,7 +13,6 @@ import DeleteModal from "src/pages/roles/modals/DeleteModal";
 import Flex from "src/components/layout/Flex";
 import { DetailPageHeaderFallback } from "src/components/fallbacks";
 import Tabs from "src/components/tabs";
-import RolePermissions from "src/pages/roles/detail/RolePermissions";
 
 const Details: FC = () => {
   const navigate = useNavigate();
@@ -65,11 +64,6 @@ const Details: FC = () => {
                 key: "details",
                 label: t("Role details"),
                 content: <RoleDetails role={role} loading={loading} />,
-              },
-              {
-                key: "permissions",
-                label: t("Permissions"),
-                content: <RolePermissions role={role} loading={loading} />,
               },
             ]}
             selectedTabKey={tab}
