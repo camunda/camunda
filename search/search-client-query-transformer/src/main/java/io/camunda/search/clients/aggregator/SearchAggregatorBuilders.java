@@ -15,16 +15,16 @@ public final class SearchAggregatorBuilders {
     return new SearchChildrenAggregator.Builder();
   }
 
-  public static SearchChildrenAggregator children(final String type) {
-    return children().type(type).build();
+  public static SearchChildrenAggregator children(final String name, final String type) {
+    return children().name(name).type(type).build();
   }
 
   public static SearchTermsAggregator.Builder terms() {
     return new SearchTermsAggregator.Builder();
   }
 
-  public static SearchTermsAggregator terms(final String field) {
-    return terms().field(field).build();
+  public static SearchTermsAggregator terms(final String name, final String field) {
+    return terms().name(name).field(field).build();
   }
 
   public static SearchFilterAggregator.Builder filter() {

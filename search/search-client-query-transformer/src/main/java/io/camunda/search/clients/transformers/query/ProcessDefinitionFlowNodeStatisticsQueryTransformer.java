@@ -38,36 +38,6 @@ public class ProcessDefinitionFlowNodeStatisticsQueryTransformer
   public SearchQueryRequest apply(
       final TypedSearchQuery<ProcessDefinitionStatisticsFilter, NoSort> query) {
 
-    //    // aggregate active flow nodes
-    //    final var activeAgg =
-    //        filter(
-    //            AGGREGATION_ACTIVE,
-    //            and(
-    //                term(ListViewTemplate.INCIDENT, false),
-    //                term(ListViewTemplate.ACTIVITY_STATE, FlowNodeState.ACTIVE.toString())));
-    //
-    //    // aggregate completed flow nodes
-    //    final var completedAgg =
-    //        filter(
-    //            AGGREGATION_COMPLETED,
-    //            and(
-    //                term(ListViewTemplate.ACTIVITY_TYPE, FlowNodeType.END_EVENT.toString()),
-    //                term(ListViewTemplate.ACTIVITY_STATE, FlowNodeState.COMPLETED.toString())));
-    //
-    //    // aggregate canceled flow nodes
-    //    final var canceledAgg =
-    //        filter(
-    //            AGGREGATION_CANCELED,
-    //            term(ListViewTemplate.ACTIVITY_STATE, FlowNodeState.TERMINATED.toString()));
-    //
-    //    // aggregate incidents flow nodes
-    //    final var incidentsAgg =
-    //        filter(
-    //            AGGREGATION_INCIDENTS,
-    //            and(
-    //                term(ListViewTemplate.INCIDENT, true),
-    //                term(ListViewTemplate.ACTIVITY_STATE, FlowNodeState.ACTIVE.toString())));
-
     // aggregate filters for active, completed, canceled, incidents
     final var filtersAgg =
         filters()
@@ -99,7 +69,6 @@ public class ProcessDefinitionFlowNodeStatisticsQueryTransformer
             .field(ListViewTemplate.ACTIVITY_ID)
             .size(AGGREGATION_TERMS_SIZE)
             .aggregations(filtersAgg)
-            // .aggregations(activeAgg, completedAgg, canceledAgg, incidentsAgg)
             .build();
 
     // aggregate filter flow nodes
