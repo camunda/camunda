@@ -5,9 +5,9 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.operate.webapp.security.oauth2;
+package io.camunda.tasklist.webapp.security.oauth;
 
-import static io.camunda.operate.webapp.security.SecurityTestUtil.signAndSerialize;
+import static io.camunda.tasklist.webapp.security.SecurityTestUtil.signAndSerialize;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.fail;
