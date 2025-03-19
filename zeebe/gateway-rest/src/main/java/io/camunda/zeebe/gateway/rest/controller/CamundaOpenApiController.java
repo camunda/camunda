@@ -8,34 +8,56 @@
 package io.camunda.zeebe.gateway.rest.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
+import io.camunda.zeebe.gateway.rest.RestErrorMapper;
+import jakarta.annotation.PostConstruct;
 import java.nio.charset.StandardCharsets;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.core.io.ClassPathResource;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 
 @CamundaRestController
 public class CamundaOpenApiController {
 
-  @GetMapping(value = "/camunda-api-docs", produces = MediaType.APPLICATION_JSON_VALUE)
-  public ResponseEntity<String> loadCamundaApiDocs() {
+  @Autowired private ObjectMapper objectMapper;
+
+  @Autowired
+  @Qualifier("yamlObjectMapper")
+  private ObjectMapper yamlMapper;
+
+  private String cachedJsonContent;
+
+  @PostConstruct
+  public void init() {
     try {
       final ClassPathResource resource = new ClassPathResource("apidoc/rest-api.yaml");
-
       final String yamlContent =
           new String(resource.getInputStream().readAllBytes(), StandardCharsets.UTF_8);
 
-      final ObjectMapper yamlReader = new ObjectMapper(new YAMLFactory());
-      final Object obj = yamlReader.readValue(yamlContent, Object.class);
+      final Object yamlObject = yamlMapper.readValue(yamlContent, Object.class);
 
-      final ObjectMapper jsonWriter = new ObjectMapper();
-      final String jsonContent = jsonWriter.writeValueAsString(obj);
+      cachedJsonContent = objectMapper.writeValueAsString(yamlObject);
 
-      return ResponseEntity.ok(jsonContent);
     } catch (final Exception e) {
-      return ResponseEntity.internalServerError()
-          .body("{\"error\": \"Failed to load YAML: " + e.getMessage() + "\"}");
+      throw new RuntimeException("Failed to load and parse OpenAPI YAML file at startup", e);
+    }
+  }
+
+  @GetMapping(value = "/camunda-api-docs", produces = MediaType.APPLICATION_JSON_VALUE)
+  public ResponseEntity<String> loadCamundaApiDocs() {
+    if (cachedJsonContent != null) {
+      return ResponseEntity.ok(cachedJsonContent);
+    } else {
+      final ProblemDetail problemDetail =
+          RestErrorMapper.createProblemDetail(
+              HttpStatus.INTERNAL_SERVER_ERROR,
+              "OpenAPI documentation not available.",
+              "Failed to load YAML file with OpenAPI documentation.");
+      return RestErrorMapper.mapProblemToResponse(problemDetail);
     }
   }
 }
