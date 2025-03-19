@@ -50,27 +50,27 @@ public class RaftCorruptedDataTest {
     raftRule.triggerDataLossOnNode(node1.id());
 
     // after shutdown the servers must be created from scratch with the same server name.
-    final var server1 = raftRule.createServer(node0);
-    final var server2 = raftRule.createServer(node1);
+    final var server0 = raftRule.createServer(node0);
+    final var server1 = raftRule.createServer(node1);
 
     // bootstrap the nodes with data loss
     CompletableFuture.allOf(
-            server1.bootstrap(node0, node1, node2), server2.bootstrap(node0, node1, node2))
+            server0.bootstrap(node0, node1, node2), server1.bootstrap(node0, node1, node2))
         .join();
 
     // wait for the two corrupted nodes to form quorum
     Awaitility.await("corrupted nodes form a quorum")
-        .until(() -> server1.isLeader() || server2.isLeader());
+        .until(() -> server0.isLeader() || server1.isLeader());
     // when
     // the node with up-to-date log joins the cluster
-    final var server3 = raftRule.createServer(node2);
+    final var server2 = raftRule.createServer(node2);
 
     // then
-    // node3 fails to boostrap, because it detects the commitIndex mismatch
-    assertThatThrownBy(() -> server3.bootstrap(node0, node1, node2).get(2, TimeUnit.SECONDS))
+    // node2 fails to boostrap, because it detects the commitIndex mismatch
+    assertThatThrownBy(() -> server2.bootstrap(node0, node1, node2).get(2, TimeUnit.SECONDS))
         .isExactlyInstanceOf(TimeoutException.class);
 
     // node does not become follower
-    Awaitility.await("node becomes INACTIVE").until(() -> server3.getRole().equals(Role.INACTIVE));
+    Awaitility.await("node becomes INACTIVE").until(() -> server2.getRole().equals(Role.INACTIVE));
   }
 }
