@@ -177,10 +177,6 @@ public final class AuthorizationCheckBehavior {
   private boolean isUserAuthorizedForTenant(
       final AuthorizationRequest request, final PersistedUser user) {
     final var tenantId = request.tenantId;
-    if (tenantId.equals(TenantOwned.DEFAULT_TENANT_IDENTIFIER)) {
-      return true;
-    }
-
     if (user.getTenantIdsList().contains(tenantId)) {
       return true;
     }
@@ -191,10 +187,6 @@ public final class AuthorizationCheckBehavior {
   private boolean isMappingAuthorizedForTenant(
       final AuthorizationRequest request, final PersistedMapping mapping) {
     final var tenantId = request.tenantId;
-    if (tenantId.equals(TenantOwned.DEFAULT_TENANT_IDENTIFIER)) {
-      return true;
-    }
-
     if (mapping.getTenantIdsList().contains(request.getTenantId())) {
       return true;
     }
