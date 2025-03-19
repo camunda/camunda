@@ -111,7 +111,6 @@ public class AdHocSubProcessActivityActivateProcessor
       return;
     }
 
-    final var adHocSubprocessElementId = adHocSubprocessElementInstance.getValue().getElementId();
     if (adHocSubprocessElementInstance.isInFinalState()) {
       writeRejectionError(
           command,
@@ -192,22 +191,6 @@ public class AdHocSubProcessActivityActivateProcessor
         AdHocSubProcessActivityActivationIntent.ACTIVATED,
         command.getValue(),
         command);
-  }
-
-  @Override
-  public ProcessingError tryHandleError(
-      final TypedRecord<AdHocSubProcessActivityActivationRecord> command, final Throwable error) {
-    return switch (error) {
-      case final IllegalArgumentException e -> {
-        writeRejectionError(command, RejectionType.INVALID_ARGUMENT, e.getMessage());
-        yield ProcessingError.EXPECTED_ERROR;
-      }
-      case final IllegalStateException e -> {
-        writeRejectionError(command, RejectionType.INVALID_STATE, e.getMessage());
-        yield ProcessingError.EXPECTED_ERROR;
-      }
-      default -> ProcessingError.UNEXPECTED_ERROR;
-    };
   }
 
   private void writeRejectionError(
