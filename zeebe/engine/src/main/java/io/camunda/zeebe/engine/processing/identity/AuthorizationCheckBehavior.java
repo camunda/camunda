@@ -36,10 +36,14 @@ public final class AuthorizationCheckBehavior {
 
   public static final String FORBIDDEN_ERROR_MESSAGE =
       "Insufficient permissions to perform operation '%s' on resource '%s'";
+  public static final String FORBIDDEN_FOR_TENANT_ERROR_MESSAGE =
+      FORBIDDEN_ERROR_MESSAGE + " for tenant '%s'";
   public static final String FORBIDDEN_ERROR_MESSAGE_WITH_RESOURCE =
       FORBIDDEN_ERROR_MESSAGE + ", required resource identifiers are one of '%s'";
   public static final String NOT_FOUND_ERROR_MESSAGE =
       "Expected to %s with key '%s', but no %s was found";
+  public static final String NOT_FOUND_FOR_TENANT_ERROR_MESSAGE =
+      "Expected to perform operation '%s' on resource '%s', but no resource was found for tenant '%s'";
   public static final String WILDCARD_PERMISSION = "*";
   private static final String UNAUTHORIZED_ERROR_MESSAGE =
       "Unauthorized to perform operation '%s' on resource '%s'";
@@ -72,7 +76,8 @@ public final class AuthorizationCheckBehavior {
    *     {@link Void} if the user is authorized
    */
   public Either<Rejection, Void> isAuthorized(final AuthorizationRequest request) {
-    if (!securityConfig.getAuthorizations().isEnabled()) {
+    if (!securityConfig.getAuthorizations().isEnabled()
+        && !securityConfig.getMultiTenancy().isEnabled()) {
       return Either.right(null);
     }
 
@@ -85,38 +90,63 @@ public final class AuthorizationCheckBehavior {
       return Either.right(null);
     }
 
-    final Stream<String> authorizedResourceIdentifiers;
-    final var userKey = getUserKey(request);
-    if (userKey.isPresent()) {
-      final var userOptional = userState.getUser(userKey.get());
-      if (userOptional.isEmpty()) {
-        return Either.left(
-            new Rejection(
-                RejectionType.UNAUTHORIZED,
-                UNAUTHORIZED_ERROR_MESSAGE.formatted(
-                    request.getPermissionType(), request.getResourceType())));
-      }
-      // verify if the user is authorized for the tenant
-      if (!isUserAuthorizedForTenant(request, userOptional.get())) {
-        return Either.left(
-            new Rejection(RejectionType.NOT_FOUND, request.getForbiddenErrorMessage()));
-      }
+    final var username = getUsername(request);
+    if (username.isPresent()) {
+      return isUserAuthorized(request, username.get());
+    } else {
+      return isMappingAuthorized(request);
+    }
+  }
 
-      authorizedResourceIdentifiers =
+  /**
+   * Verifies a user is authorized to perform this request. This method checks if the user has
+   * access to the tenant and if the user has the required permissions for the resource.
+   *
+   * @param request the authorization request to check authorization for
+   * @param username the username of the user making this request
+   * @return an {@link Either} containing a {@link Rejection} or {@link Void}
+   */
+  private Either<Rejection, Void> isUserAuthorized(
+      final AuthorizationRequest request, final String username) {
+    final var userOptional = userState.getUser(username);
+    if (userOptional.isEmpty()) {
+      return Either.left(
+          new Rejection(
+              RejectionType.UNAUTHORIZED,
+              UNAUTHORIZED_ERROR_MESSAGE.formatted(
+                  request.getPermissionType(), request.getResourceType())));
+    }
+
+    if (securityConfig.getMultiTenancy().isEnabled()) {
+      if (!isUserAuthorizedForTenant(request, userOptional.get())) {
+        final var rejectionType =
+            request.isNewResource() ? RejectionType.FORBIDDEN : RejectionType.NOT_FOUND;
+        return Either.left(new Rejection(rejectionType, request.getTenantErrorMessage()));
+      }
+    }
+
+    if (securityConfig.getAuthorizations().isEnabled()) {
+      final var authorizedResourceIdentifiers =
           getUserAuthorizedResourceIdentifiers(
               userOptional.get(), request.getResourceType(), request.getPermissionType());
-    } else {
-      authorizedResourceIdentifiers = getMappingsAuthorizedResourceIdentifiers(request);
+      return checkResourceIdentifiers(request, authorizedResourceIdentifiers);
     }
+    return Either.right(null);
+  }
 
-    // Check if authorizations contain a resource identifier that matches the required resource
-    // identifiers
-    if (hasRequiredPermission(request.getResourceIds(), authorizedResourceIdentifiers)) {
-      return Either.right(null);
-    } else {
-      return Either.left(
-          new Rejection(RejectionType.FORBIDDEN, request.getForbiddenErrorMessage()));
+  /**
+   * Verifies a mapping is authorized to perform this request. This method checks if the mapping has
+   * the required permissions for the resource.
+   *
+   * @param request the authorization request to check authorization for
+   * @return an {@link Either} containing a {@link Rejection} or {@link Void}
+   */
+  private Either<Rejection, Void> isMappingAuthorized(final AuthorizationRequest request) {
+    if (securityConfig.getAuthorizations().isEnabled()) {
+      final var authorizedResourceIdentifiers = getMappingsAuthorizedResourceIdentifiers(request);
+      return checkResourceIdentifiers(request, authorizedResourceIdentifiers);
     }
+    return Either.right(null);
   }
 
   /**
@@ -135,8 +165,13 @@ public final class AuthorizationCheckBehavior {
     return Optional.ofNullable(authorizedAnonymousUserClaim).map(Boolean.class::cast).orElse(false);
   }
 
-  private Optional<Long> getUserKey(final AuthorizationRequest request) {
-    return getUserKey(request.getCommand());
+  private Optional<String> getUsername(final AuthorizationRequest request) {
+    return getUsername(request.getCommand());
+  }
+
+  private Optional<String> getUsername(final TypedRecord<?> command) {
+    return Optional.ofNullable(
+        (String) command.getAuthorizations().get(Authorization.AUTHORIZED_USERNAME));
   }
 
   private boolean isUserAuthorizedForTenant(
@@ -189,11 +224,11 @@ public final class AuthorizationCheckBehavior {
       return Set.of(WILDCARD_PERMISSION);
     }
 
-    return getUserKey(request)
+    return getUsername(request)
         .map(
-            userKey ->
+            username ->
                 userState
-                    .getUser(userKey)
+                    .getUser(username)
                     .map(
                         persistedUser ->
                             getUserAuthorizedResourceIdentifiers(
@@ -299,10 +334,49 @@ public final class AuthorizationCheckBehavior {
                     .stream());
   }
 
-  private static boolean hasRequiredPermission(
-      final Set<String> requiredResourceIdentifiers,
-      final Stream<String> authorizedResourceIdentifiers) {
-    return authorizedResourceIdentifiers.anyMatch(requiredResourceIdentifiers::contains);
+  /**
+   * Checks the resource identifiers of the request against the authorized resource identifiers of
+   * the entity.
+   *
+   * @param request the authorization request to check authorization for
+   * @param authorizedResourceIdentifiers the authorized resource identifiers of the entity
+   * @return an {@link Either} containing a {@link Rejection} if there is no match or {@link Void}
+   *     if there is.
+   */
+  private Either<Rejection, Void> checkResourceIdentifiers(
+      final AuthorizationRequest request, final Stream<String> authorizedResourceIdentifiers) {
+    final var isAuthorized =
+        authorizedResourceIdentifiers.anyMatch(
+            resourceId -> request.getResourceIds().contains(resourceId));
+    if (isAuthorized) {
+      return Either.right(null);
+    } else {
+      return Either.left(
+          new Rejection(RejectionType.FORBIDDEN, request.getForbiddenErrorMessage()));
+    }
+  }
+
+  /**
+   * Checks if a user is assigned to a specific tenant. If multi-tenancy is disabled, this method
+   * will always return true. If a command is written by Zeebe internally, it will also always
+   * return true.
+   *
+   * @param command The command send by the user
+   * @param tenantId The tenant we want to check assignment for
+   * @return true if assigned, false otherwise
+   */
+  public boolean isAssignedToTenant(final TypedRecord<?> command, final String tenantId) {
+    if (!securityConfig.getMultiTenancy().isEnabled()) {
+      return true;
+    }
+
+    if (!command.hasRequestMetadata()) {
+      // The command is written by Zeebe internally. Internal Zeebe commands are always allowed to
+      // access all tenants
+      return true;
+    }
+
+    return getAuthorizedTenantIds(command).isAuthorizedForTenantId(tenantId);
   }
 
   public AuthorizedTenants getAuthorizedTenantIds(final TypedRecord<?> command) {
@@ -310,18 +384,10 @@ public final class AuthorizationCheckBehavior {
       return AuthorizedTenants.ANONYMOUS;
     }
 
-    // todo: this is a temporary solution until we adjust all the tests to fetch the tenant from the
-    // state
-    if (command.getAuthorizations().get(Authorization.AUTHORIZED_TENANTS) != null) {
-      final var authorizedTenants =
-          (List<String>) command.getAuthorizations().get(Authorization.AUTHORIZED_TENANTS);
-      return new AuthenticatedAuthorizedTenants(authorizedTenants);
-    }
-
-    final var userKey = getUserKey(command);
-    if (userKey.isPresent()) {
+    final var username = getUsername(command);
+    if (username.isPresent()) {
       return userState
-          .getUser(userKey.get())
+          .getUser(username.get())
           .map(
               user -> {
                 final List<String> tenantIds = user.getTenantIdsList();
@@ -349,13 +415,6 @@ public final class AuthorizationCheckBehavior {
         : new AuthenticatedAuthorizedTenants(tenantsOfMapping);
   }
 
-  private Optional<Long> getUserKey(final TypedRecord<?> command) {
-    return Optional.ofNullable(
-            (String) command.getAuthorizations().get(Authorization.AUTHORIZED_USERNAME))
-        .flatMap(userState::getUser)
-        .map(PersistedUser::getUserKey);
-  }
-
   private static Stream<UserTokenClaim> extractUserTokenClaims(final TypedRecord<?> command) {
     return command.getAuthorizations().entrySet().stream()
         .filter(entry -> entry.getKey().startsWith(Authorization.USER_TOKEN_CLAIM_PREFIX))
@@ -379,18 +438,29 @@ public final class AuthorizationCheckBehavior {
     private final PermissionType permissionType;
     private final Set<String> resourceIds;
     private final String tenantId;
+    private final boolean isNewResource;
 
     public AuthorizationRequest(
         final TypedRecord<?> command,
         final AuthorizationResourceType resourceType,
         final PermissionType permissionType,
-        final String tenantId) {
+        final String tenantId,
+        final boolean isNewResource) {
       this.command = command;
       this.resourceType = resourceType;
       this.permissionType = permissionType;
       resourceIds = new HashSet<>();
       resourceIds.add(WILDCARD_PERMISSION);
       this.tenantId = tenantId;
+      this.isNewResource = isNewResource;
+    }
+
+    public AuthorizationRequest(
+        final TypedRecord<?> command,
+        final AuthorizationResourceType resourceType,
+        final PermissionType permissionType,
+        final String tenantId) {
+      this(command, resourceType, permissionType, tenantId, false);
     }
 
     public AuthorizationRequest(
@@ -410,6 +480,10 @@ public final class AuthorizationCheckBehavior {
 
     public PermissionType getPermissionType() {
       return permissionType;
+    }
+
+    public boolean isNewResource() {
+      return isNewResource;
     }
 
     public AuthorizationRequest addResourceId(final String resourceId) {
@@ -432,6 +506,12 @@ public final class AuthorizationCheckBehavior {
           ? FORBIDDEN_ERROR_MESSAGE.formatted(permissionType, resourceType)
           : FORBIDDEN_ERROR_MESSAGE_WITH_RESOURCE.formatted(
               permissionType, resourceType, resourceIds.stream().sorted().toList());
+    }
+
+    public String getTenantErrorMessage() {
+      final var errorMsg =
+          isNewResource ? FORBIDDEN_FOR_TENANT_ERROR_MESSAGE : NOT_FOUND_FOR_TENANT_ERROR_MESSAGE;
+      return errorMsg.formatted(permissionType, resourceType, tenantId);
     }
   }
 

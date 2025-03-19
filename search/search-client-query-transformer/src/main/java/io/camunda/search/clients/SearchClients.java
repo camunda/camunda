@@ -12,6 +12,8 @@ import static io.camunda.zeebe.protocol.record.value.EntityType.USER;
 import io.camunda.search.clients.auth.DocumentAuthorizationQueryStrategy;
 import io.camunda.search.clients.transformers.ServiceTransformers;
 import io.camunda.search.entities.AuthorizationEntity;
+import io.camunda.search.entities.BatchOperationEntity;
+import io.camunda.search.entities.BatchOperationEntity.BatchOperationItemEntity;
 import io.camunda.search.entities.DecisionDefinitionEntity;
 import io.camunda.search.entities.DecisionInstanceEntity;
 import io.camunda.search.entities.DecisionRequirementsEntity;
@@ -31,6 +33,7 @@ import io.camunda.search.entities.UserTaskEntity;
 import io.camunda.search.entities.VariableEntity;
 import io.camunda.search.filter.UsageMetricsFilter;
 import io.camunda.search.query.AuthorizationQuery;
+import io.camunda.search.query.BatchOperationQuery;
 import io.camunda.search.query.DecisionDefinitionQuery;
 import io.camunda.search.query.DecisionInstanceQuery;
 import io.camunda.search.query.DecisionRequirementsQuery;
@@ -72,6 +75,7 @@ public class SearchClients
         MappingSearchClient,
         GroupSearchClient,
         UsageMetricsSearchClient,
+        BatchOperationSearchClient,
         CloseableSilently {
 
   private final DocumentBasedSearchClient searchClient;
@@ -311,5 +315,16 @@ public class SearchClients
     return userQuery.toBuilder()
         .filter(userQuery.filter().toBuilder().usernames(usernames).build())
         .build();
+  }
+
+  @Override
+  public SearchQueryResult<BatchOperationEntity> searchBatchOperations(
+      final BatchOperationQuery query) {
+    throw new UnsupportedOperationException("Not implemented yet");
+  }
+
+  @Override
+  public List<BatchOperationItemEntity> getBatchOperationItems(final Long batchOperationKey) {
+    throw new UnsupportedOperationException("Not implemented yet");
   }
 }

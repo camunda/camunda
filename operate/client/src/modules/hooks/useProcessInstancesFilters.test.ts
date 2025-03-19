@@ -9,7 +9,10 @@
 import {renderHook} from '@testing-library/react-hooks';
 import {useFilters} from 'modules/hooks/useFilters';
 import {ProcessInstanceFilters} from 'modules/utils/filter/shared';
-import {ProcessInstancesStatisticsRequest} from 'modules/api/v2/processInstances/fetchProcessInstancesStatistics';
+import {
+  ProcessInstancesStatisticsRequest,
+  ProcessInstanceState,
+} from 'modules/api/v2/processInstances/fetchProcessInstancesStatistics';
 import {useProcessInstanceFilters} from './useProcessInstancesFilters';
 import {processesStore} from 'modules/stores/processes/processes.list';
 
@@ -67,7 +70,12 @@ describe('useProcessInstanceFilters', () => {
         $in: ['id1', 'id2'],
       },
       state: {
-        $in: ['RUNNING', 'INCIDENT', 'COMPLETED', 'CANCELED'],
+        $in: [
+          ProcessInstanceState.RUNNING,
+          ProcessInstanceState.INCIDENT,
+          ProcessInstanceState.COMPLETED,
+          ProcessInstanceState.CANCELED,
+        ],
       },
       parentProcessInstanceKey: 'parent1',
       tenantId: 'tenant1',
@@ -109,7 +117,7 @@ describe('useProcessInstanceFilters', () => {
         $gt: '2023-01-01',
       },
       state: {
-        $in: ['RUNNING'],
+        $in: [ProcessInstanceState.RUNNING],
       },
     };
 

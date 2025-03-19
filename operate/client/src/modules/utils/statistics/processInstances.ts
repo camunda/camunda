@@ -7,6 +7,7 @@
  */
 
 import {ProcessInstancesStatisticsDto} from 'modules/api/v2/processInstances/fetchProcessInstancesStatistics';
+import {processInstancesSelectionStore} from 'modules/stores/processInstancesSelection';
 
 function getInstancesCount(
   data: ProcessInstancesStatisticsDto[],
@@ -23,4 +24,23 @@ function getInstancesCount(
   return flowNodeStatistics.active + flowNodeStatistics.incidents;
 }
 
-export {getInstancesCount};
+const getProcessInstanceKey = () => {
+  const {
+    selectedProcessInstanceIds,
+    excludedProcessInstanceIds,
+    state: {selectionMode},
+  } = processInstancesSelectionStore;
+
+  const ids = ['EXCLUDE', 'ALL'].includes(selectionMode)
+    ? []
+    : selectedProcessInstanceIds;
+
+  return {
+    $in: ids,
+    ...(excludedProcessInstanceIds.length > 0 && {
+      $nin: excludedProcessInstanceIds,
+    }),
+  };
+};
+
+export {getInstancesCount, getProcessInstanceKey};

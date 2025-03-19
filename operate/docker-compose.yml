@@ -101,7 +101,7 @@ services:
       - 8000:8000
     restart: always
   operate-opensearch:
-    image: camunda/operate:8.6.11
+    image: camunda/operate:8.6.12
     container_name: operate-opensearch
     environment:
       - SERVER_PORT=8080

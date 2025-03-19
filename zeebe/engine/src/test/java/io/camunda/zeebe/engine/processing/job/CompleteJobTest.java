@@ -389,11 +389,7 @@ public final class CompleteJobTest {
 
     // when
     final Record<JobRecordValue> jobCompletedRecord =
-        ENGINE
-            .job()
-            .withKey(batchRecord.getValue().getJobKeys().get(0))
-            .withAuthorizedTenantIds(tenantId)
-            .complete();
+        ENGINE.job().withKey(batchRecord.getValue().getJobKeys().get(0)).complete(username);
 
     // then
     final JobRecordValue recordValue = jobCompletedRecord.getValue();

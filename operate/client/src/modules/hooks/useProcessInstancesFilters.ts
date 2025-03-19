@@ -91,10 +91,10 @@ function mapFiltersToRequest(
   }
 
   const state: ProcessInstanceState[] = [];
-  if (active) state.push('RUNNING');
-  if (incidents) state.push('INCIDENT');
-  if (completed) state.push('COMPLETED');
-  if (canceled) state.push('CANCELED');
+  if (active) state.push(ProcessInstanceState.RUNNING);
+  if (incidents) state.push(ProcessInstanceState.INCIDENT);
+  if (completed) state.push(ProcessInstanceState.COMPLETED);
+  if (canceled) state.push(ProcessInstanceState.CANCELED);
 
   if (state.length > 0) {
     request.state = {

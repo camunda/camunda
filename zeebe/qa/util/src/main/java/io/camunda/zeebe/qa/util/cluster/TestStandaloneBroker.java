@@ -171,6 +171,11 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
     return this;
   }
 
+  /** Enables multi-tenancy in the security configuration. */
+  public TestStandaloneBroker withMultiTenancyEnabled() {
+    return withSecurityConfig(cfg -> cfg.getMultiTenancy().setEnabled(true));
+  }
+
   /**
    * Returns the health actuator for this broker. You can use this to check for liveness, readiness,
    * and startup.

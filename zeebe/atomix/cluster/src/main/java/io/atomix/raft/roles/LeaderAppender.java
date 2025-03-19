@@ -39,8 +39,6 @@ import io.atomix.raft.protocol.ReplicatableJournalRecord;
 import io.atomix.raft.protocol.VersionedAppendRequest;
 import io.atomix.raft.snapshot.impl.SnapshotChunkImpl;
 import io.atomix.raft.storage.log.IndexedRaftLogEntry;
-import io.atomix.utils.logging.ContextualLoggerFactory;
-import io.atomix.utils.logging.LoggerContext;
 import io.camunda.zeebe.snapshots.PersistedSnapshot;
 import io.camunda.zeebe.snapshots.SnapshotChunk;
 import io.camunda.zeebe.snapshots.SnapshotChunkReader;
@@ -56,6 +54,7 @@ import java.util.TreeMap;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeoutException;
 import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * The leader appender is responsible for sending {@link AppendRequest}s on behalf of a leader to
@@ -63,10 +62,10 @@ import org.slf4j.Logger;
  */
 final class LeaderAppender {
 
+  private static final Logger LOGGER = LoggerFactory.getLogger(LeaderAppender.class);
   private static final int MIN_BACKOFF_FAILURE_COUNT = 5;
 
   private final int maxBatchSizePerAppend;
-  private final Logger log;
   private final RaftContext raft;
   private boolean open = true;
 
@@ -82,9 +81,6 @@ final class LeaderAppender {
 
   LeaderAppender(final LeaderRole leader) {
     raft = checkNotNull(leader.raft, "context cannot be null");
-    log =
-        ContextualLoggerFactory.getLogger(
-            getClass(), LoggerContext.builder(RaftServer.class).addValue(raft.getName()).build());
     metrics = new LeaderAppenderMetrics(raft.getName(), raft.getMeterRegistry());
     maxBatchSizePerAppend = raft.getMaxAppendBatchSize();
     leaderTime = System.currentTimeMillis();
@@ -210,7 +206,7 @@ final class LeaderAppender {
 
     final long timestamp = System.currentTimeMillis();
 
-    log.trace("Sending {} to {}", request, member.getMember().memberId());
+    LOGGER.trace("Sending {} to {}", request, member.getMember().memberId());
     raft.getProtocol()
         .append(member.getMember().memberId(), request)
         .whenCompleteAsync(
@@ -226,7 +222,7 @@ final class LeaderAppender {
                 }
 
                 if (error == null) {
-                  log.trace("Received {} from {}", response, member.getMember().memberId());
+                  LOGGER.trace("Received {} from {}", response, member.getMember().memberId());
                   handleAppendResponse(member, request, response, timestamp);
                 } else {
                   handleAppendResponseFailure(member, request, error);
@@ -274,7 +270,7 @@ final class LeaderAppender {
   /** Resets the match index when a response fails. */
   private void resetMatchIndex(final RaftMemberContext member, final AppendResponse response) {
     if (response.lastLogIndex() < member.getMatchIndex()) {
-      log.trace("Reset match index for {} to {}", member, member.getMatchIndex());
+      LOGGER.trace("Reset match index for {} to {}", member, member.getMatchIndex());
       member.setMatchIndex(response.lastLogIndex());
       observeRemainingMemberEntries(member);
     }
@@ -293,7 +289,7 @@ final class LeaderAppender {
 
   private void resetNextIndex(final RaftMemberContext member, final long nextIndex) {
     member.reset(nextIndex);
-    log.trace("Reset next index for {} to {}", member, nextIndex);
+    LOGGER.trace("Reset next index for {} to {}", member, nextIndex);
   }
 
   /** Resets the snapshot index of the member when a response fails. */
@@ -301,7 +297,7 @@ final class LeaderAppender {
     final long snapshotIndex = response.lastSnapshotIndex();
     if (member.getSnapshotIndex() != snapshotIndex) {
       member.setSnapshotIndex(snapshotIndex);
-      log.trace("Reset snapshot index for {} to {}", member, snapshotIndex);
+      LOGGER.trace("Reset snapshot index for {} to {}", member, snapshotIndex);
     }
   }
 
@@ -322,14 +318,14 @@ final class LeaderAppender {
   /** Connects to the member and sends a configure request. */
   private void sendConfigureRequest(
       final RaftMemberContext member, final ConfigureRequest request) {
-    log.debug("Configuring {} : {}", member.getMember().memberId(), request);
+    LOGGER.debug("Configuring {} : {}", member.getMember().memberId(), request);
 
     // Start the configure to the member.
     member.startConfigure();
 
     final long timestamp = System.currentTimeMillis();
 
-    log.trace("Sending {} to {}", request, member.getMember().memberId());
+    LOGGER.trace("Sending {} to {}", request, member.getMember().memberId());
     raft.getProtocol()
         .configure(member.getMember().memberId(), request)
         .whenCompleteAsync(
@@ -339,13 +335,13 @@ final class LeaderAppender {
                 member.completeConfigure();
 
                 if (error == null) {
-                  log.trace("Received {} from {}", response, member.getMember().memberId());
+                  LOGGER.trace("Received {} from {}", response, member.getMember().memberId());
                   handleConfigureResponse(member, request, response, timestamp);
                 } else {
-                  if (log.isTraceEnabled()) {
-                    log.debug("Failed to configure {}", member.getMember().memberId(), error);
+                  if (LOGGER.isTraceEnabled()) {
+                    LOGGER.debug("Failed to configure {}", member.getMember().memberId(), error);
                   } else {
-                    log.debug("Failed to configure {}", member.getMember().memberId());
+                    LOGGER.debug("Failed to configure {}", member.getMember().memberId());
                   }
                   handleConfigureResponseFailure(member, request, error);
                 }
@@ -387,7 +383,7 @@ final class LeaderAppender {
         final SnapshotChunkReader snapshotChunkReader = persistedSnapshot.newChunkReader();
         member.setSnapshotChunkReader(snapshotChunkReader);
       } catch (final UncheckedIOException e) {
-        log.warn(
+        LOGGER.warn(
             "Expected to send Snapshot {} to {}. But could not open SnapshotChunkReader. Will retry.",
             persistedSnapshot.getId(),
             member,
@@ -436,7 +432,7 @@ final class LeaderAppender {
               .build();
       return Optional.of(request);
     } catch (final UncheckedIOException e) {
-      log.warn(
+      LOGGER.warn(
           "Expected to send next chunk of Snapshot {} to {}. But could not read SnapshotChunk. Snapshot may have been deleted. Will retry.",
           persistedSnapshot.getId(),
           member.getMember().memberId(),
@@ -455,7 +451,7 @@ final class LeaderAppender {
 
     final long timestamp = System.currentTimeMillis();
 
-    log.trace("Sending {} to {}", request, member.getMember().memberId());
+    LOGGER.trace("Sending {} to {}", request, member.getMember().memberId());
     raft.getProtocol()
         .install(member.getMember().memberId(), request)
         .whenCompleteAsync(
@@ -465,7 +461,7 @@ final class LeaderAppender {
                 member.completeInstall();
 
                 if (error == null) {
-                  log.trace("Received {} from {}", response, member.getMember().memberId());
+                  LOGGER.trace("Received {} from {}", response, member.getMember().memberId());
                   handleInstallResponse(member, request, response, timestamp);
                 } else {
                   // Trigger reactions to the install response failure.
@@ -529,7 +525,7 @@ final class LeaderAppender {
       final RaftMemberContext member,
       final InstallRequest request,
       final InstallResponse response) {
-    log.warn(
+    LOGGER.warn(
         "Failed to send {} to member {}, with {}. Restart sending snapshot.",
         request,
         member.getMember().memberId(),
@@ -648,7 +644,7 @@ final class LeaderAppender {
     // when attempting to send entries to down followers.
     final int failures = member.incrementFailureCount();
     if (failures <= 3 || failures % 100 == 0) {
-      log.warn("{} to {} failed", request, member.getMember().memberId(), error);
+      LOGGER.warn("{} to {} failed", request, member.getMember().memberId(), error);
     }
 
     // Fail heartbeat futures.
@@ -663,7 +659,7 @@ final class LeaderAppender {
         System.currentTimeMillis() - Math.max(computeResponseTime(), leaderTime);
     if (member.getFailureCount() >= minStepDownFailureCount
         && quorumResponseTime > maxQuorumResponseTimeout) {
-      log.warn(
+      LOGGER.warn(
           "Suspected network partition after {} failures from {} over a period of time {} > {}, stepping down",
           member.getFailureCount(),
           member.getMember().memberId(),
@@ -714,7 +710,7 @@ final class LeaderAppender {
     }
     // If we've received a greater term, update the term and transition back to follower.
     else if (response.term() > raft.getTerm()) {
-      log.info(
+      LOGGER.info(
           "Received successful append response higher term ({} > {}) from {}, implying there is a new leader - transitioning to follower",
           response.term(),
           raft.getTerm(),
@@ -808,7 +804,7 @@ final class LeaderAppender {
       final AppendResponse response) {
     // If we've received a greater term, update the term and transition back to follower.
     if (response.term() > raft.getTerm()) {
-      log.info(
+      LOGGER.info(
           "Received error append response with higher term ({} > {}) from {}, implying there is a new leader, transitioning to follower",
           response.term(),
           raft.getTerm(),
@@ -826,7 +822,7 @@ final class LeaderAppender {
       // when attempting to send entries to down followers.
       final int failures = member.incrementFailureCount();
       if (failures <= 3 || failures % 100 == 0) {
-        log.warn(
+        LOGGER.warn(
             "{} to {} failed: {}",
             request,
             member.getMember().memberId(),
@@ -910,7 +906,7 @@ final class LeaderAppender {
 
   private void replicateSnapshot(final RaftMemberContext member) {
     final var persistedSnapshot = raft.getCurrentSnapshot();
-    log.debug(
+    LOGGER.debug(
         "Replicating snapshot {} to {}",
         persistedSnapshot.getIndex(),
         member.getMember().memberId());
@@ -1025,7 +1021,7 @@ final class LeaderAppender {
     if (commitIndex > 0
         && commitIndex > previousCommitIndex
         && (leaderIndex > 0 && commitIndex >= leaderIndex)) {
-      log.trace("Committed entries up to {}", commitIndex);
+      LOGGER.trace("Committed entries up to {}", commitIndex);
       raft.setCommitIndex(commitIndex);
       completeCommits(commitIndex);
     }

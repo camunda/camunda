@@ -478,7 +478,6 @@ public final class JobThrowErrorTest {
   @Test
   public void shouldThrowErrorForCustomTenant() {
     // given
-    final String tenantId = "acme";
     final var job = ENGINE.createJob(jobType, PROCESS_ID, Collections.emptyMap(), tenantId);
 
     // when
@@ -488,8 +487,7 @@ public final class JobThrowErrorTest {
             .withKey(job.getKey())
             .withErrorCode("error")
             .withErrorMessage("error-message")
-            .withAuthorizedTenantIds(tenantId)
-            .throwError();
+            .throwError(username);
 
     // then
     Assertions.assertThat(result).hasRecordType(RecordType.EVENT).hasIntent(ERROR_THROWN);

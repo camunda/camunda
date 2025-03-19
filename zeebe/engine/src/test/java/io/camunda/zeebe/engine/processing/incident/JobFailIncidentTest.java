@@ -24,10 +24,12 @@ import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.JobBatchIntent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
+import io.camunda.zeebe.protocol.record.value.EntityType;
 import io.camunda.zeebe.protocol.record.value.ErrorType;
 import io.camunda.zeebe.protocol.record.value.IncidentRecordValue;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
+import io.camunda.zeebe.test.util.Strings;
 import io.camunda.zeebe.test.util.collection.Maps;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
@@ -152,19 +154,22 @@ public final class JobFailIncidentTest {
   public void shouldCreateIncidentIfJobHasNoRetriesLeftWithCustomTenant() {
     // given
     final String processId = "test-process";
-    final String tenantId = "acme";
+    final String tenantId = Strings.newRandomValidIdentityId();
+    final String username = Strings.newRandomValidIdentityId();
+    ENGINE.tenant().newTenant().withTenantId(tenantId).create();
+    ENGINE.user().newUser(username).create();
+    ENGINE
+        .tenant()
+        .addEntity(tenantId)
+        .withEntityId(username)
+        .withEntityType(EntityType.USER)
+        .add();
     final Record<JobRecordValue> jobRecord =
         ENGINE.createJob(JOB_TYPE, processId, Collections.emptyMap(), tenantId);
     final long piKey = jobRecord.getValue().getProcessInstanceKey();
 
     // when
-    ENGINE
-        .job()
-        .withType(JOB_TYPE)
-        .withRetries(0)
-        .ofInstance(piKey)
-        .withAuthorizedTenantIds(tenantId)
-        .fail();
+    ENGINE.job().withType(JOB_TYPE).withRetries(0).ofInstance(piKey).fail(username);
 
     // then
     final Record<IncidentRecordValue> incidentEvent =
@@ -356,29 +361,26 @@ public final class JobFailIncidentTest {
   public void shouldResolveIncidentWithCustomTenant() {
     // given
     final String processId = "test-process";
-    final String tenantId = "acme";
+    final String tenantId = Strings.newRandomValidIdentityId();
+    final String username = Strings.newRandomValidIdentityId();
+    ENGINE.tenant().newTenant().withTenantId(tenantId).create();
+    ENGINE.user().newUser(username).create();
+    ENGINE
+        .tenant()
+        .addEntity(tenantId)
+        .withEntityId(username)
+        .withEntityType(EntityType.USER)
+        .add();
     final Record<JobRecordValue> jobRecord =
         ENGINE.createJob(JOB_TYPE, processId, Collections.emptyMap(), tenantId);
     final long piKey = jobRecord.getValue().getProcessInstanceKey();
-    ENGINE
-        .job()
-        .withType(JOB_TYPE)
-        .withRetries(0)
-        .ofInstance(piKey)
-        .withAuthorizedTenantIds(tenantId)
-        .fail();
+    ENGINE.job().withType(JOB_TYPE).withRetries(0).ofInstance(piKey).fail(username);
 
     // when
-    ENGINE
-        .job()
-        .ofInstance(piKey)
-        .withType(JOB_TYPE)
-        .withRetries(1)
-        .withAuthorizedTenantIds(tenantId)
-        .updateRetries();
+    ENGINE.job().ofInstance(piKey).withType(JOB_TYPE).withRetries(1).updateRetries(username);
 
     final Record<IncidentRecordValue> resolvedIncident =
-        ENGINE.incident().ofInstance(piKey).withAuthorizedTenantIds(tenantId).resolve();
+        ENGINE.incident().ofInstance(piKey).resolve(username);
 
     // then
     assertThat(resolvedIncident.getValue()).hasTenantId(tenantId);
@@ -389,27 +391,34 @@ public final class JobFailIncidentTest {
   public void shouldRejectResolvingIncidentWithUnauthorizedTenant() {
     // given
     final String processId = "test-process";
-    final String tenantId = "acme";
-    final String unauthorizedTenantId = "foo";
+    final String tenantId = Strings.newRandomValidIdentityId();
+    final String unauthorizedTenantId = Strings.newRandomValidIdentityId();
+    final String authorizedUser = Strings.newRandomValidIdentityId();
+    final String unauthorizedUser = Strings.newRandomValidIdentityId();
+    ENGINE.tenant().newTenant().withTenantId(tenantId).create();
+    ENGINE.tenant().newTenant().withTenantId(unauthorizedTenantId).create();
+    ENGINE.user().newUser(authorizedUser).create();
+    ENGINE
+        .tenant()
+        .addEntity(tenantId)
+        .withEntityId(authorizedUser)
+        .withEntityType(EntityType.USER)
+        .add();
+    ENGINE.user().newUser(unauthorizedUser).create();
+    ENGINE
+        .tenant()
+        .addEntity(unauthorizedTenantId)
+        .withEntityId(unauthorizedUser)
+        .withEntityType(EntityType.USER)
+        .add();
     final Record<JobRecordValue> jobRecord =
         ENGINE.createJob(JOB_TYPE, processId, Collections.emptyMap(), tenantId);
     final long piKey = jobRecord.getValue().getProcessInstanceKey();
-    ENGINE
-        .job()
-        .withType(JOB_TYPE)
-        .withRetries(0)
-        .ofInstance(piKey)
-        .withAuthorizedTenantIds(tenantId)
-        .fail();
+    ENGINE.job().withType(JOB_TYPE).withRetries(0).ofInstance(piKey).fail(authorizedUser);
 
     // when
     final Record<IncidentRecordValue> resolvedIncident =
-        ENGINE
-            .incident()
-            .ofInstance(piKey)
-            .withAuthorizedTenantIds(unauthorizedTenantId)
-            .expectRejection()
-            .resolve();
+        ENGINE.incident().ofInstance(piKey).expectRejection().resolve(unauthorizedUser);
 
     // then
     assertThat(resolvedIncident).hasRejectionType(RejectionType.NOT_FOUND);

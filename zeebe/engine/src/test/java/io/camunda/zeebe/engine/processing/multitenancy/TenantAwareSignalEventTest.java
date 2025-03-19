@@ -10,15 +10,18 @@ package io.camunda.zeebe.engine.processing.multitenancy;
 import static io.camunda.zeebe.protocol.record.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.security.configuration.ConfiguredUser;
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.SignalIntent;
-import io.camunda.zeebe.protocol.record.value.TenantOwned;
+import io.camunda.zeebe.protocol.record.value.EntityType;
 import io.camunda.zeebe.test.util.Strings;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
+import java.util.List;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
@@ -26,11 +29,35 @@ import org.junit.rules.TestWatcher;
 
 public class TenantAwareSignalEventTest {
 
-  @ClassRule public static final EngineRule ENGINE = EngineRule.singlePartition();
+  public static final String USERNAME = "username";
+  public static final String TENANT_ID = "custom-tenant";
+
+  @ClassRule
+  public static final EngineRule ENGINE =
+      EngineRule.singlePartition()
+          .withIdentitySetup()
+          .withSecurityConfig(config -> config.getMultiTenancy().setEnabled(true))
+          .withSecurityConfig(
+              config ->
+                  config
+                      .getInitialization()
+                      .setUsers(
+                          List.of(new ConfiguredUser(USERNAME, "password", "name", "email"))));
 
   @Rule public final TestWatcher testWatcher = new RecordingExporterTestWatcher();
   private String processId;
   private String signalName;
+
+  @BeforeClass
+  public static void beforeClass() {
+    ENGINE.tenant().newTenant().withTenantId(TENANT_ID).create();
+    ENGINE
+        .tenant()
+        .addEntity(TENANT_ID)
+        .withEntityId(USERNAME)
+        .withEntityType(EntityType.USER)
+        .add();
+  }
 
   @Before
   public void setup() {
@@ -39,40 +66,9 @@ public class TenantAwareSignalEventTest {
   }
 
   @Test
-  public void shouldBroadcastSignalForDefaultTenant() {
-    // given
-    ENGINE
-        .deployment()
-        .withXmlResource(
-            Bpmn.createExecutableProcess(processId)
-                .startEvent("signal-start")
-                .signal(signalName)
-                .endEvent()
-                .done())
-        .withTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER)
-        .deploy();
-
-    // when
-    final var broadcasted = ENGINE.signal().withSignalName(signalName).broadcast();
-
-    // then
-    assertThat(broadcasted)
-        .describedAs("Expect that signal was broadcast successfully")
-        .hasIntent(SignalIntent.BROADCASTED);
-
-    assertThat(
-            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
-                .withBpmnProcessId(processId)
-                .withElementId("signal-start")
-                .getFirst())
-        .describedAs("Expect that process instance was created")
-        .isNotNull();
-  }
-
-  @Test
   public void shouldBroadcastSignalForSpecificTenant() {
     // given
-    final String tenantId = "custom-tenant";
+    final String tenantId = TENANT_ID;
     ENGINE
         .deployment()
         .withXmlResource(
@@ -86,7 +82,7 @@ public class TenantAwareSignalEventTest {
 
     // when
     final var broadcasted =
-        ENGINE.signal().withSignalName(signalName).withTenantId(tenantId).broadcast();
+        ENGINE.signal().withSignalName(signalName).withTenantId(tenantId).broadcast(USERNAME);
 
     // then
     assertThat(broadcasted)
@@ -106,7 +102,7 @@ public class TenantAwareSignalEventTest {
   @Test
   public void shouldBroadcastToSignalCatchEventForSpecificTenant() {
     // given
-    final String tenantId = "custom-tenant";
+    final String tenantId = TENANT_ID;
     ENGINE
         .deployment()
         .withXmlResource(
@@ -122,7 +118,7 @@ public class TenantAwareSignalEventTest {
 
     // when
     final var broadcasted =
-        ENGINE.signal().withSignalName(signalName).withTenantId(tenantId).broadcast();
+        ENGINE.signal().withSignalName(signalName).withTenantId(tenantId).broadcast(USERNAME);
 
     // then
     assertThat(broadcasted)
@@ -142,7 +138,7 @@ public class TenantAwareSignalEventTest {
   @Test
   public void shouldBroadcastToSignalCatchEventAttachedToEventBasedGatewayForSpecificTenant() {
     // given
-    final String tenantId = "custom-tenant";
+    final String tenantId = TENANT_ID;
     ENGINE
         .deployment()
         .withXmlResource(
@@ -163,7 +159,7 @@ public class TenantAwareSignalEventTest {
 
     // when
     final var broadcasted =
-        ENGINE.signal().withSignalName(signalName).withTenantId(tenantId).broadcast();
+        ENGINE.signal().withSignalName(signalName).withTenantId(tenantId).broadcast(USERNAME);
 
     // then
     assertThat(broadcasted)
@@ -183,7 +179,7 @@ public class TenantAwareSignalEventTest {
   @Test
   public void shouldBroadcastToSignalEventSubProcessEventForSpecificTenant() {
     // given
-    final String tenantId = "custom-tenant";
+    final String tenantId = TENANT_ID;
     ENGINE
         .deployment()
         .withXmlResource(
@@ -201,7 +197,7 @@ public class TenantAwareSignalEventTest {
 
     // when
     final var broadcasted =
-        ENGINE.signal().withSignalName(signalName).withTenantId(tenantId).broadcast();
+        ENGINE.signal().withSignalName(signalName).withTenantId(tenantId).broadcast(USERNAME);
 
     // then
     assertThat(broadcasted)
@@ -221,7 +217,7 @@ public class TenantAwareSignalEventTest {
   @Test
   public void shouldBroadcastToSignalBoundaryEventForSpecificTenant() {
     // given
-    final String tenantId = "custom-tenant";
+    final String tenantId = TENANT_ID;
     ENGINE
         .deployment()
         .withXmlResource(
@@ -238,7 +234,7 @@ public class TenantAwareSignalEventTest {
 
     // when
     final var broadcasted =
-        ENGINE.signal().withSignalName(signalName).withTenantId(tenantId).broadcast();
+        ENGINE.signal().withSignalName(signalName).withTenantId(tenantId).broadcast(USERNAME);
 
     // then
     assertThat(broadcasted)
@@ -258,7 +254,7 @@ public class TenantAwareSignalEventTest {
   @Test
   public void shouldThrowIntermediateSignalEventForSpecificTenant() {
     // given
-    final String tenantId = "custom-tenant";
+    final String tenantId = TENANT_ID;
     ENGINE
         .deployment()
         .withXmlResource(
@@ -296,7 +292,7 @@ public class TenantAwareSignalEventTest {
   @Test
   public void shouldThrowSignalEndEventForSpecificTenant() {
     // given
-    final String tenantId = "custom-tenant";
+    final String tenantId = TENANT_ID;
     ENGINE
         .deployment()
         .withXmlResource(
@@ -333,7 +329,7 @@ public class TenantAwareSignalEventTest {
   @Test
   public void shouldCatchThrownSignalEndEventForSpecificTenant() {
     // given
-    final String tenantId = "custom-tenant";
+    final String tenantId = TENANT_ID;
     ENGINE
         .deployment()
         .withXmlResource(

@@ -163,6 +163,26 @@ public class MappingClient {
       return expectation.apply(mappingRecord.getId());
     }
 
+    public Record<MappingRecordValue> update(final String username) {
+      writer.writeCommand(MappingIntent.UPDATE, username, mappingRecord);
+      return expectation.apply(mappingRecord.getId());
+    }
+
+    public MappingUpdateClient withClaimName(final String claimName) {
+      mappingRecord.setClaimName(claimName);
+      return this;
+    }
+
+    public MappingUpdateClient withClaimValue(final String claimValue) {
+      mappingRecord.setClaimValue(claimValue);
+      return this;
+    }
+
+    public MappingUpdateClient withName(final String name) {
+      mappingRecord.setName(name);
+      return this;
+    }
+
     public MappingUpdateClient expectRejection() {
       expectation = REJECTION_SUPPLIER;
       return this;
