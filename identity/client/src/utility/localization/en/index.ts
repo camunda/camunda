@@ -4,6 +4,7 @@ import authorizations from "./authorizations.json";
 import tenants from "./tenants.json";
 import users from "./users.json";
 import groups from "./groups.json";
+import roles from "./roles.json";
 
 export default {
   components,
@@ -12,4 +13,5 @@ export default {
   tenants,
   users,
   groups,
+  roles,
 };

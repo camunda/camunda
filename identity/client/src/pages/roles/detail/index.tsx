@@ -13,8 +13,6 @@ import DeleteModal from "src/pages/roles/modals/DeleteModal";
 import Flex from "src/components/layout/Flex";
 import { DetailPageHeaderFallback } from "src/components/fallbacks";
 import Tabs from "src/components/tabs";
-import EditModal from "src/pages/roles/modals/EditModal";
-import RolePermissions from "src/pages/roles/detail/RolePermissions";
 
 const Details: FC = () => {
   const navigate = useNavigate();
@@ -24,17 +22,15 @@ const Details: FC = () => {
     tab: string;
   }>();
 
-  const { data: role, loading } = useApi(getRole, {
-    key: id ? parseInt(id, 10) : -1,
+  const { data: roleSearchResults, loading } = useApi(getRole, {
+    roleKey: id,
   });
 
   const [deleteRole, deleteModal] = useEntityModal(DeleteModal, () =>
     navigate("..", { replace: true }),
   );
 
-  const [editRole, editRoleModal] = useEntityModal(EditModal, () =>
-    navigate("..", { replace: true }),
-  );
+  const role = roleSearchResults !== null ? roleSearchResults.items[0] : null;
 
   if (!loading && !role) return <NotFound />;
 
@@ -56,12 +52,6 @@ const Details: FC = () => {
                       deleteRole(role);
                     }}
                   />
-                  <OverflowMenuItem
-                    itemText={t("Edit")}
-                    onClick={() => {
-                      editRole(role);
-                    }}
-                  />
                 </OverflowMenu>
               </>
             )}
@@ -75,11 +65,6 @@ const Details: FC = () => {
                 label: t("Role details"),
                 content: <RoleDetails role={role} loading={loading} />,
               },
-              {
-                key: "permissions",
-                label: t("Permissions"),
-                content: <RolePermissions role={role} loading={loading} />,
-              },
             ]}
             selectedTabKey={tab}
             path={`../${id}`}
@@ -87,7 +72,6 @@ const Details: FC = () => {
         </Section>
       </>
       {deleteModal}
-      {editRoleModal}
     </StackPage>
   );
 };

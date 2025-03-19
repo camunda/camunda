@@ -38,7 +38,7 @@ const DeleteModal: FC<RemoveGroupRoleModalProps> = ({
     if (groupId && role) {
       const { success } = await callUnassignRole({
         groupId,
-        key: role.key,
+        roleKey: role.roleKey,
       });
 
       if (success) {
@@ -64,10 +64,10 @@ const DeleteModal: FC<RemoveGroupRoleModalProps> = ({
       <p>
         <Translate
           i18nKey="removeRoleConfirmation"
-          values={{ roleKey: role.key }}
+          values={{ roleKey: role.roleKey }}
         >
-          Are you sure you want to remove <strong>{role.key}</strong> from this
-          group?
+          Are you sure you want to remove <strong>{role.roleKey}</strong> from
+          this group?
         </Translate>
       </p>
     </Modal>
