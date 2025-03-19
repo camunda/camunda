@@ -37,9 +37,6 @@ public class CamundaContainer extends GenericContainer<CamundaContainer> {
       "broker"; // "operate,tasklist,broker,consolidated-auth";
   private static final String LOG_APPENDER_STACKDRIVER = "Stackdriver";
 
-  private static final String GRPC_API = "localhost:" + ContainerRuntimePorts.CAMUNDA_GATEWAY_API;
-  private static final String REST_API = "localhost:" + ContainerRuntimePorts.CAMUNDA_REST_API;
-
   private static final String CAMUNDA_EXPORTER_CLASSNAME = "io.camunda.exporter.CamundaExporter";
   private static final String CAMUNDA_EXPORTER_BULK_SIZE = "1";
 
@@ -53,13 +50,6 @@ public class CamundaContainer extends GenericContainer<CamundaContainer> {
         .waitingFor(newDefaultWaitStrategy())
         .withEnv(ContainerRuntimeEnvs.CAMUNDA_ENV_SPRING_PROFILES_ACTIVE, ACTIVE_SPRING_PROFILES)
         .withEnv(ContainerRuntimeEnvs.CAMUNDA_ENV_ZEEBE_CLOCK_CONTROLLED, "true")
-        //        .withEnv(ContainerRuntimeEnvs.CAMUNDA_ENV_OPERATE_ZEEBE_GATEWAYADDRESS, GRPC_API)
-        //        .withEnv(ContainerRuntimeEnvs.CAMUNDA_ENV_OPERATE_CSRF_PREVENTION_ENABLED,
-        // "false")
-        //        .withEnv(ContainerRuntimeEnvs.CAMUNDA_ENV_TASKLIST_ZEEBE_GATEWAYADDRESS, GRPC_API)
-        //        .withEnv(ContainerRuntimeEnvs.CAMUNDA_ENV_TASKLIST_ZEEBE_RESTADDRESS, REST_API)
-        //        .withEnv(ContainerRuntimeEnvs.CAMUNDA_ENV_TASKLIST_CSRF_PREVENTION_ENABLED,
-        // "false")
         .withEnv(ContainerRuntimeEnvs.CAMUNDA_ENV_ZEEBE_LOG_APPENDER, LOG_APPENDER_STACKDRIVER)
         .withEnv("ZEEBE_BROKER_GATEWAY_ENABLE", "true")
         .withEnv("ZEEBE_BROKER_GATEWAY_SECURITY_ENABLED", "false")
