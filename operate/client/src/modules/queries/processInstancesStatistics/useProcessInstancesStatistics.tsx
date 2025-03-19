@@ -14,7 +14,6 @@ import {
 import {useProcessInstanceFilters} from 'modules/hooks/useProcessInstancesFilters';
 import {skipToken, UseQueryOptions} from '@tanstack/react-query';
 import {RequestError} from 'modules/request';
-import {useFilters} from 'modules/hooks/useFilters';
 
 function getQueryKey(
   payload: GetProcessDefinitionStatisticsRequestBody,
@@ -40,8 +39,6 @@ function useProcessInstancesStatisticsOptions<
   T
 > {
   const filters = useProcessInstanceFilters();
-  const {getFilters} = useFilters();
-  const {flowNodeId} = getFilters();
 
   const combinedFilters = {
     ...payload,

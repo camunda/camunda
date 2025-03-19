@@ -14,6 +14,7 @@ import {
   mockProcessXml,
   mockStatistics,
   mockResponses,
+  mockStatisticsV2,
 } from '../mocks/processes.mocks';
 import {validateResults} from './validateResults';
 import {URL_API_PATTERN} from '../constants';
@@ -34,6 +35,7 @@ test.describe('processes', () => {
           batchOperations: mockBatchOperations,
           processInstances: mockProcessInstances,
           statistics: mockStatistics,
+          statisticsV2: mockStatisticsV2,
           processXml: mockProcessXml,
         }),
       );
