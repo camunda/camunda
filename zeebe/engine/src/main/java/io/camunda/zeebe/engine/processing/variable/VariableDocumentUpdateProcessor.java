@@ -172,9 +172,6 @@ public final class VariableDocumentUpdateProcessor
       return;
     }
 
-    final long key = keyGenerator.nextKey();
-    writers.state().appendFollowUpEvent(key, VariableDocumentIntent.UPDATING, value);
-
     final long processDefinitionKey = scope.getValue().getProcessDefinitionKey();
     final long processInstanceKey = scope.getValue().getProcessInstanceKey();
     final DirectBuffer bpmnProcessId = scope.getValue().getBpmnProcessIdBuffer();
@@ -205,6 +202,8 @@ public final class VariableDocumentUpdateProcessor
       writers.response().writeRejectionOnCommand(record, RejectionType.INVALID_ARGUMENT, reason);
       return;
     }
+
+    final long key = keyGenerator.nextKey();
 
     writers.state().appendFollowUpEvent(key, VariableDocumentIntent.UPDATED, value);
     writers.response().writeEventOnCommand(key, VariableDocumentIntent.UPDATED, value, record);
