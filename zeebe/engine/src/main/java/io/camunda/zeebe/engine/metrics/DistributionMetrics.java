@@ -65,6 +65,17 @@ public final class DistributionMetrics {
   }
 
   /**
+   * This method is called on the target partition when a distribution command has been successfully
+   * processed
+   *
+   * @param partitionId the partition id of the distribution
+   * @param distributionKey the key of the distribution
+   */
+  public void acknowledgeDistribution(final int partitionId, final long distributionKey) {
+    getPartitionMetrics(partitionId).acknowledgeDistribution(distributionKey);
+  }
+
+  /**
    * This method is called when a current inflight distribution is being retried. This may happen if
    * the acknowledgement of the target partition is not received by the origin partition in-time.
    * See CommandRedistribution.java
@@ -104,5 +115,7 @@ public final class DistributionMetrics {
     public void removeInflightDistribution(final long distributionKey) {}
 
     public void retryInflightDistribution(final long distributionKey) {}
+
+    public void acknowledgeDistribution(final long distributionKey) {}
   }
 }
