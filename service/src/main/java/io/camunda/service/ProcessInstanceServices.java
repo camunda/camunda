@@ -11,6 +11,8 @@ import static io.camunda.search.query.SearchQueryBuilders.processInstanceSearchQ
 
 import io.camunda.search.clients.ProcessInstanceSearchClient;
 import io.camunda.search.entities.ProcessInstanceEntity;
+import io.camunda.search.entities.ProcessInstanceEntity.ProcessInstanceState;
+import io.camunda.search.filter.ProcessInstanceFilter;
 import io.camunda.search.query.ProcessInstanceQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.auth.Authentication;
@@ -21,10 +23,12 @@ import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.util.ObjectBuilder;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerCancelProcessInstanceRequest;
+import io.camunda.zeebe.gateway.impl.broker.request.BrokerCreateBatchOperationRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerCreateProcessInstanceRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerCreateProcessInstanceWithResultRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerMigrateProcessInstanceRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerModifyProcessInstanceRequest;
+import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationCreationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationStartInstruction;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceMigrationMappingInstruction;
@@ -34,6 +38,7 @@ import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstan
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceModificationTerminateInstruction;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceResultRecord;
+import io.camunda.zeebe.protocol.record.value.BatchOperationType;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
@@ -42,6 +47,8 @@ import java.util.function.Function;
 public final class ProcessInstanceServices
     extends SearchQueryService<
         ProcessInstanceServices, ProcessInstanceQuery, ProcessInstanceEntity> {
+
+  public static final long NO_PARENT_EXISTS_KEY = -1L;
 
   private final ProcessInstanceSearchClient processInstanceSearchClient;
 
@@ -135,6 +142,24 @@ public final class ProcessInstanceServices
     if (request.operationReference() != null) {
       brokerRequest.setOperationReference(request.operationReference());
     }
+    return sendBrokerRequest(brokerRequest);
+  }
+
+  public CompletableFuture<BatchOperationCreationRecord>
+      cancelProcessInstanceBatchOperationWithResult(final ProcessInstanceFilter filter) {
+    final var rootInstanceFilter =
+        filter.toBuilder()
+            // It is only possible to cancel root processes in zeebe,
+            // whereby zeebe then automatically cancels the sub-processes.
+            .parentProcessInstanceKeys(NO_PARENT_EXISTS_KEY)
+            .states(ProcessInstanceState.ACTIVE.name())
+            .build();
+
+    final var brokerRequest =
+        new BrokerCreateBatchOperationRequest()
+            .setFilter(rootInstanceFilter)
+            .setBatchOperationType(BatchOperationType.PROCESS_CANCELLATION);
+
     return sendBrokerRequest(brokerRequest);
   }
 
