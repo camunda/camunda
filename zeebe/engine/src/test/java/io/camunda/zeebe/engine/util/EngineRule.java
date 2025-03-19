@@ -17,6 +17,7 @@ import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.processing.EngineProcessors;
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
 import io.camunda.zeebe.engine.processing.streamprocessor.JobStreamer;
+import io.camunda.zeebe.engine.secondarydb.SecondaryDbQueryService;
 import io.camunda.zeebe.engine.state.DefaultZeebeDbFactory;
 import io.camunda.zeebe.engine.state.ProcessingDbState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
@@ -112,6 +113,7 @@ public final class EngineRule extends ExternalResource {
   private ArrayList<TestInterPartitionCommandSender> interPartitionCommandSenders;
   private Consumer<SecurityConfiguration> securityConfigModifier = cfg -> {};
   private Consumer<EngineConfiguration> engineConfigModifier = cfg -> {};
+  private SecondaryDbQueryService secondaryDbQueryService;
 
   private EngineRule(final int partitionCount) {
     this(partitionCount, null);
@@ -204,6 +206,12 @@ public final class EngineRule extends ExternalResource {
     return this;
   }
 
+  public EngineRule withSecondaryDbQueryService(
+      final SecondaryDbQueryService secondaryDbQueryService) {
+    this.secondaryDbQueryService = secondaryDbQueryService;
+    return this;
+  }
+
   private void startProcessors(final StreamProcessorMode mode, final boolean awaitOpening) {
     interPartitionCommandSenders = new ArrayList<>();
 
@@ -223,7 +231,8 @@ public final class EngineRule extends ExternalResource {
                         new SubscriptionCommandSender(partitionId, interPartitionCommandSender),
                         interPartitionCommandSender,
                         featureFlags,
-                        jobStreamer)
+                        jobStreamer,
+                        secondaryDbQueryService)
                     .withListener(
                         new ProcessingExporterTransistor(
                             environmentRule.getLogStream(partitionId)));
