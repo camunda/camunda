@@ -30,6 +30,7 @@ import io.camunda.zeebe.broker.system.monitoring.BrokerHealthCheckService;
 import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageMonitor;
 import io.camunda.zeebe.broker.transport.adminapi.AdminApiRequestHandler;
 import io.camunda.zeebe.broker.transport.commandapi.CommandApiServiceImpl;
+import io.camunda.zeebe.engine.secondarydb.SecondaryDbQueryService;
 import io.camunda.zeebe.protocol.impl.encoding.BrokerInfo;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
@@ -62,6 +63,7 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
   private final SecurityConfiguration securityConfiguration;
   private final UserServices userServices;
   private final PasswordEncoder passwordEncoder;
+  private final SecondaryDbQueryService secondaryDbQueryService;
 
   private ConcurrencyControl concurrencyControl;
   private DiskSpaceUsageMonitor diskSpaceUsageMonitor;
@@ -91,7 +93,8 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
       final MeterRegistry meterRegistry,
       final SecurityConfiguration securityConfiguration,
       final UserServices userServices,
-      final PasswordEncoder passwordEncoder) {
+      final PasswordEncoder passwordEncoder,
+      final SecondaryDbQueryService secondaryDbQueryService) {
 
     this.brokerInfo = requireNonNull(brokerInfo);
     this.configuration = requireNonNull(configuration);
@@ -107,6 +110,7 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
     this.securityConfiguration = requireNonNull(securityConfiguration);
     this.userServices = userServices;
     this.passwordEncoder = passwordEncoder;
+    this.secondaryDbQueryService = secondaryDbQueryService;
     partitionListeners.addAll(additionalPartitionListeners);
   }
 
@@ -141,7 +145,8 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
         new SimpleMeterRegistry(),
         securityConfiguration,
         userServices,
-        passwordEncoder);
+        passwordEncoder,
+        null);
   }
 
   @Override
@@ -186,6 +191,11 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
   @Override
   public BrokerHealthCheckService getHealthCheckService() {
     return healthCheckService;
+  }
+
+  @Override
+  public SecondaryDbQueryService getSecondaryDbQueryService() {
+    return secondaryDbQueryService;
   }
 
   @Override

@@ -52,6 +52,7 @@ import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
 import io.camunda.zeebe.engine.processing.EngineProcessors;
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
 import io.camunda.zeebe.engine.processing.streamprocessor.JobStreamer;
+import io.camunda.zeebe.engine.secondarydb.SecondaryDbQueryService;
 import io.camunda.zeebe.protocol.impl.encoding.BrokerInfo;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
@@ -107,6 +108,7 @@ public final class ZeebePartitionFactory {
   private final FeatureFlags featureFlags;
   private final List<PartitionRaftListener> partitionRaftListeners;
   private final SecurityConfiguration securityConfig;
+  private final SecondaryDbQueryService secondaryDbQueryService;
 
   public ZeebePartitionFactory(
       final ActorSchedulingService actorSchedulingService,
@@ -122,7 +124,8 @@ public final class ZeebePartitionFactory {
       final List<PartitionRaftListener> partitionRaftListeners,
       final TopologyManagerImpl topologyManager,
       final FeatureFlags featureFlags,
-      final SecurityConfiguration securityConfig) {
+      final SecurityConfiguration securityConfig,
+      final SecondaryDbQueryService secondaryDbQueryService) {
     this.actorSchedulingService = actorSchedulingService;
     this.brokerCfg = brokerCfg;
     this.localBroker = localBroker;
@@ -137,6 +140,7 @@ public final class ZeebePartitionFactory {
     this.topologyManager = topologyManager;
     this.featureFlags = featureFlags;
     this.securityConfig = securityConfig;
+    this.secondaryDbQueryService = secondaryDbQueryService;
   }
 
   public ZeebePartition constructPartition(
@@ -232,7 +236,8 @@ public final class ZeebePartitionFactory {
           subscriptionCommandSender,
           partitionCommandSender,
           featureFlags,
-          jobStreamer);
+          jobStreamer,
+          secondaryDbQueryService);
     };
   }
 }
