@@ -43,11 +43,11 @@ public record BatchOperationFilter(
       return this;
     }
 
-    public Builder states(final String value, final String... values) {
-      return states(collectValues(value, values));
+    public Builder status(final String value, final String... values) {
+      return status(collectValues(value, values));
     }
 
-    public Builder states(final List<String> values) {
+    public Builder status(final List<String> values) {
       states = addValuesToList(states, values);
       return this;
     }

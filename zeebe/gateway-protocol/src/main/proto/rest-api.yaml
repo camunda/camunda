@@ -27,6 +27,7 @@ tags:
   - name: Ad-hoc subprocess
   - name: Authentication
   - name: Authorization
+  - name: Batch operation
   - name: Clock
   - name: Cluster
   - name: Decision definition
@@ -3405,6 +3406,109 @@ paths:
           $ref: "#/components/responses/InvalidData"
         "404":
           description: The signal is not found.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+  /batch-operations/{batchOperationKey}:
+    get:
+      tags:
+        - Batch operation
+      operationId: getBatchOperation
+      summary: Get batch operation
+      description: Get batch operation by key.
+      parameters:
+        - name: batchOperationKey
+          in: path
+          required: true
+          description: |
+            The key of the batch operation.
+          schema:
+            type: string
+      responses:
+        "200":
+          description: The batch operation was found.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BatchOperationResponse"
+        "400":
+          description: The provided data is not valid.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "404":
+          description: The batch operation is not found.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+  /batch-operations/{batchOperationKey}/items:
+    get:
+      tags:
+        - Batch operation
+      operationId: getBatchOperationItems
+      summary: Get batch operation items
+      description: Get items for a batch operation.
+      parameters:
+        - name: batchOperationKey
+          in: path
+          required: true
+          description: |
+            The key of the batch operation.
+          schema:
+            type: string
+      responses:
+        "200":
+          description: The batch operation items were found.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BatchOperationItemSearchQueryResult"
+        "400":
+          description: The provided data is not valid.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "404":
+          description: The batch operation was not found.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+  /batch-operations/search:
+    post:
+      tags:
+        - Batch operation
+      operationId: searchBatchOperations
+      summary: Search batch operations
+      description: Search for batch operations based on given criteria.
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProcessInstanceSearchQuery"
+      responses:
+        "200":
+          description: The batch operation search result.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BatchOperationSearchQueryResult"
+        "400":
+          description: The provided data is not valid.
           content:
             application/problem+json:
               schema:
@@ -7156,6 +7260,135 @@ components:
         formKey:
           description: The assigned key, which acts as a unique identifier for this form.
           type: string
+    BatchOperationSearchQuerySortRequest:
+      type: object
+      properties:
+        field:
+          description: The field to sort by.
+          type: string
+          enum:
+            - batchOperationKey
+            - operationType
+            - status
+            - startDate
+            - endDate
+        order:
+          $ref: "#/components/schemas/SortOrderEnum"
+      required:
+        - field
+    BatchOperationSearchQuery:
+      description: Batch operation search request.
+      type: object
+      allOf:
+        - $ref: "#/components/schemas/SearchQueryRequest"
+      properties:
+        sort:
+          description: Sort field criteria.
+          type: array
+          items:
+            $ref: "#/components/schemas/BatchOperationSearchQuerySortRequest"
+        filter:
+          description: The batch operation search filters.
+          allOf:
+            - $ref: "#/components/schemas/BatchOperationFilter"
+    BatchOperationFilter:
+      description: Batch operation filter request.
+      type: object
+      properties:
+        batchOperationKey:
+          description: The batch operation key.
+          type: string
+        operationType:
+          type: string
+          description: The operation type of the batch operation.
+          enum:
+            - PROCESS_CANCELLATION
+        status:
+          type: string
+          description: The status of the batch operation.
+          enum:
+            - CREATED
+            - ACTIVE
+            - PAUSED
+            - COMPLETED
+            - COMPLETED_WITH_ERRORS
+            - CANCELED
+    BatchOperationSearchQueryResult:
+      type: object
+      allOf:
+        - $ref: "#/components/schemas/SearchQueryResponse"
+      properties:
+        items:
+          description: The matching batch operations.
+          type: array
+          items:
+            $ref: "#/components/schemas/BatchOperationResponse"
+    BatchOperationResponse:
+      type: object
+      properties:
+        batchOperationKey:
+          description: Key of the batch operation.
+          type: string
+        status:
+          description: The status of the batch operation.
+          type: string
+          enum:
+            - CREATED
+            - ACTIVE
+            - PAUSED
+            - COMPLETED
+            - COMPLETED_WITH_ERRORS
+            - CANCELED
+        batchOperationType:
+          description: The type of the batch operation.
+          type: string
+          example: PROCESS_CANCELLATION
+        startDate:
+          type: string
+          description: The start date of the batch operation.
+          format: date-time
+        endDate:
+          type: string
+          description: The end date of the batch operation.
+          format: date-time
+        operationsTotalCount:
+          type: integer
+          description: The total number of items contained in this stacking process.
+          format: int32
+        operationsFailedCount:
+          type: integer
+          description: The number of items which failed during execution of the batch operation. (e.g. because they are rejected by the machine)
+          format: int32
+        operationsCompletedCount:
+          type: integer
+          description: The number of successfully completed tasks.
+          format: int32
+    BatchOperationItemSearchQueryResult:
+      type: object
+      allOf:
+        - $ref: "#/components/schemas/SearchQueryResponse"
+      properties:
+        items:
+          description: The matching batch operations.
+          type: array
+          items:
+            $ref: "#/components/schemas/BatchOperationItemResponse"
+    BatchOperationItemResponse:
+      type: object
+      properties:
+        batchOperationKey:
+          description: Key of the batch operation.
+          type: string
+        itemKey:
+          description: Key of the item, e.g. a process instance key.
+          type: string
+        status:
+          description: Status of the item.
+          type: string
+          enum:
+            - ACTIVE
+            - COMPLETED
+            - FAILED
   responses:
     InternalServerError:
       description: >

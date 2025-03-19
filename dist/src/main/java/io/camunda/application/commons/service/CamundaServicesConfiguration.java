@@ -10,6 +10,7 @@ package io.camunda.application.commons.service;
 import io.camunda.document.store.EnvironmentConfigurationLoader;
 import io.camunda.document.store.SimpleDocumentStoreRegistry;
 import io.camunda.search.clients.AuthorizationSearchClient;
+import io.camunda.search.clients.BatchOperationSearchClient;
 import io.camunda.search.clients.DecisionDefinitionSearchClient;
 import io.camunda.search.clients.DecisionInstanceSearchClient;
 import io.camunda.search.clients.DecisionRequirementSearchClient;
@@ -30,6 +31,7 @@ import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.security.impl.AuthorizationChecker;
 import io.camunda.service.AdHocSubprocessActivityServices;
 import io.camunda.service.AuthorizationServices;
+import io.camunda.service.BatchOperationServices;
 import io.camunda.service.ClockServices;
 import io.camunda.service.DecisionDefinitionServices;
 import io.camunda.service.DecisionInstanceServices;
@@ -271,6 +273,15 @@ public class CamundaServicesConfiguration {
   public SignalServices signalServices(
       final BrokerClient brokerClient, final SecurityContextProvider securityContextProvider) {
     return new SignalServices(brokerClient, securityContextProvider, null);
+  }
+
+  @Bean
+  public BatchOperationServices batchOperationServices(
+      final BrokerClient brokerClient,
+      final SecurityContextProvider securityContextProvider,
+      final BatchOperationSearchClient batchOperationSearchClient) {
+    return new BatchOperationServices(
+        brokerClient, securityContextProvider, batchOperationSearchClient, null);
   }
 
   @Bean
