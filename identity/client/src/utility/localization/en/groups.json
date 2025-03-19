@@ -1,7 +1,4 @@
 {
-  "edit": "Edit",
-  "delete": "Delete",
-  "groups": "Groups",
   "groupId": "Group ID",
   "groupName": "Group name",
   "noGroupsCreated": "No groups created yet",
@@ -23,5 +20,6 @@
   "groupIdPlaceholder": "Enter group ID",
   "groupNamePlaceholder": "Enter group name",
   "groupDescriptionPlaceholder": "Enter a group description (Max 255 characters)",
-  "pleaseEnterValidGroupId": "Please enter a valid group ID (only alphanumeric characters and max 256 characters)"
+  "pleaseEnterValidGroupId": "Please enter a valid group ID (only alphanumeric characters and max 256 characters)",
+  "groupIdHelperText": "The group ID must be unique and can not be modified"
 }

@@ -74,13 +74,14 @@ const EditModal: FC<UseEntityModalProps<Group>> = ({
           setGroupId(value);
         }}
         errors={!isGroupIdValid ? [t("pleaseEnterValidGroupId")] : []}
-        autoFocus
+        readOnly
       />
       <TextField
         label={t("groupName")}
         value={groupName}
         placeholder={t("groupNamePlaceholder")}
         onChange={setGroupName}
+        autoFocus
       />
       <TextField
         label={t("description")}

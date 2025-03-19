@@ -61,6 +61,7 @@ const AddModal: FC<UseModalProps> = ({ open, onClose, onSuccess }) => {
           setGroupId(value);
         }}
         errors={!isGroupIdValid ? [t("pleaseEnterValidGroupId")] : []}
+        helperText={t("groupIdHelperText")}
         autoFocus
       />
       <TextField
