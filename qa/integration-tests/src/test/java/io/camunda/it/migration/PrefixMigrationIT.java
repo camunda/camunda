@@ -148,12 +148,12 @@ public class PrefixMigrationIT {
     prefixMigration();
 
     // then
-    final var currentCamundaClient =
-        startLatestCamunda(esContainer.getHttpHostAddress(), NEW_PREFIX, true);
-
-    final var processDefinitions = currentCamundaClient.newProcessDefinitionQuery().send().join();
-    assertThat(processDefinitions.items().size()).isEqualTo(1);
-    assertThat(processDefinitions.items().getFirst().getProcessDefinitionKey())
-        .isEqualTo(event.getProcesses().getFirst().getProcessDefinitionKey());
+    try (final var currentCamundaClient =
+        startLatestCamunda(esContainer.getHttpHostAddress(), NEW_PREFIX, true)) {
+      final var processDefinitions = currentCamundaClient.newProcessDefinitionQuery().send().join();
+      assertThat(processDefinitions.items().size()).isEqualTo(1);
+      assertThat(processDefinitions.items().getFirst().getProcessDefinitionKey())
+          .isEqualTo(event.getProcesses().getFirst().getProcessDefinitionKey());
+    }
   }
 }
