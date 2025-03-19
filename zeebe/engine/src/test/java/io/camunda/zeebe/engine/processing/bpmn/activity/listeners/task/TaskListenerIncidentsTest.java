@@ -12,9 +12,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 
 import io.camunda.zeebe.engine.util.EngineRule;
-import io.camunda.zeebe.engine.util.client.UserTaskClient;
 import io.camunda.zeebe.model.bpmn.builder.UserTaskBuilder;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskListenerEventType;
+import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
 import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
@@ -55,7 +55,7 @@ public class TaskListenerIncidentsTest {
     verifyIncidentCreationOnListenerJobWithoutRetriesAndResolution(
         ZeebeTaskListenerEventType.assigning,
         userTask -> userTask.zeebeAssignee("gandalf"),
-        userTaskClient -> {},
+        pik -> {},
         UserTaskIntent.ASSIGNED);
   }
 
@@ -65,7 +65,7 @@ public class TaskListenerIncidentsTest {
     verifyIncidentCreationOnListenerJobWithoutRetriesAndResolution(
         ZeebeTaskListenerEventType.assigning,
         UnaryOperator.identity(),
-        userTaskClient -> userTaskClient.withAssignee("bilbo").assign(),
+        pik -> ENGINE.userTask().ofInstance(pik).withAssignee("bilbo").assign(),
         UserTaskIntent.ASSIGNED);
   }
 
@@ -75,7 +75,7 @@ public class TaskListenerIncidentsTest {
     verifyIncidentCreationOnListenerJobWithoutRetriesAndResolution(
         ZeebeTaskListenerEventType.assigning,
         UnaryOperator.identity(),
-        userTaskClient -> userTaskClient.withAssignee("bilbo").claim(),
+        pik -> ENGINE.userTask().ofInstance(pik).withAssignee("bilbo").claim(),
         UserTaskIntent.ASSIGNED);
   }
 
@@ -85,7 +85,24 @@ public class TaskListenerIncidentsTest {
     verifyIncidentCreationOnListenerJobWithoutRetriesAndResolution(
         ZeebeTaskListenerEventType.updating,
         UnaryOperator.identity(),
-        UserTaskClient::update,
+        pik -> ENGINE.userTask().ofInstance(pik).update(),
+        UserTaskIntent.UPDATED);
+  }
+
+  @Test
+  public void
+      shouldCreateJobNoRetriesIncidentForUpdatingListenerAndContinueAfterResolutionOnTaskVariablesUpdate() {
+    verifyIncidentCreationOnListenerJobWithoutRetriesAndResolution(
+        ZeebeTaskListenerEventType.updating,
+        UnaryOperator.identity(),
+        pik ->
+            ENGINE
+                .variables()
+                .ofScope(helper.getUserTaskElementInstanceKey(pik))
+                .withDocument(Map.of("status", "APPROVED"))
+                .withLocalSemantic()
+                .expectPartialUpdate()
+                .update(),
         UserTaskIntent.UPDATED);
   }
 
@@ -95,14 +112,14 @@ public class TaskListenerIncidentsTest {
     verifyIncidentCreationOnListenerJobWithoutRetriesAndResolution(
         ZeebeTaskListenerEventType.completing,
         UnaryOperator.identity(),
-        UserTaskClient::complete,
+        pik -> ENGINE.userTask().ofInstance(pik).complete(),
         UserTaskIntent.COMPLETED);
   }
 
   private void verifyIncidentCreationOnListenerJobWithoutRetriesAndResolution(
       final ZeebeTaskListenerEventType eventType,
       final UnaryOperator<UserTaskBuilder> userTaskBuilder,
-      final Consumer<UserTaskClient> userTaskAction,
+      final Consumer<Long> transitionTrigger,
       final UserTaskIntent terminalActionIntent) {
 
     // given
@@ -116,8 +133,8 @@ public class TaskListenerIncidentsTest {
                         .zeebeTaskListener(l -> l.eventType(eventType).type(listenerType + "_2"))
                         .zeebeTaskListener(l -> l.eventType(eventType).type(listenerType + "_3"))));
 
-    // when: performing the user task action
-    userTaskAction.accept(ENGINE.userTask().ofInstance(processInstanceKey));
+    // when: trigger the user task transition
+    transitionTrigger.accept(processInstanceKey);
 
     // complete first listener job
     helper.completeJobs(processInstanceKey, listenerType);
@@ -187,7 +204,7 @@ public class TaskListenerIncidentsTest {
         ZeebeTaskListenerEventType.completing,
         "completing_listener_var_name",
         "expression_completing_listener_2",
-        UserTaskClient::complete,
+        pik -> ENGINE.userTask().ofInstance(pik).complete(),
         UserTaskIntent.COMPLETED,
         userTask -> Assertions.assertThat(userTask).hasAction("complete"));
   }
@@ -198,7 +215,7 @@ public class TaskListenerIncidentsTest {
         ZeebeTaskListenerEventType.assigning,
         "assigning_listener_var_name",
         "expression_assigning_listener_2",
-        userTask -> userTask.withAssignee("me").assign(),
+        pik -> ENGINE.userTask().ofInstance(pik).withAssignee("me").assign(),
         UserTaskIntent.ASSIGNED,
         userTask -> Assertions.assertThat(userTask).hasAssignee("me").hasAction("assign"));
   }
@@ -209,7 +226,7 @@ public class TaskListenerIncidentsTest {
         ZeebeTaskListenerEventType.assigning,
         "assigning_listener_var_name",
         "expression_assigning_listener_2",
-        userTask -> userTask.withAssignee("me").claim(),
+        pik -> ENGINE.userTask().ofInstance(pik).withAssignee("me").claim(),
         UserTaskIntent.ASSIGNED,
         userTask -> Assertions.assertThat(userTask).hasAssignee("me").hasAction("claim"));
   }
@@ -220,16 +237,38 @@ public class TaskListenerIncidentsTest {
         ZeebeTaskListenerEventType.updating,
         "updating_listener_var_name",
         "expression_updating_listener_2",
-        UserTaskClient::update,
+        pik -> ENGINE.userTask().ofInstance(pik).update(),
         UserTaskIntent.UPDATED,
         userTask -> Assertions.assertThat(userTask).hasAction("update"));
+  }
+
+  @Test
+  public void
+      shouldRetryUserTaskUpdateCommandAfterExtractValueErrorIncidentResolutionOnTaskVariablesUpdate() {
+    testUserTaskCommandRetryAfterExtractValueError(
+        ZeebeTaskListenerEventType.updating,
+        "updating_listener_var_name",
+        "expression_updating_listener_2",
+        pik ->
+            ENGINE
+                .variables()
+                .ofScope(helper.getUserTaskElementInstanceKey(pik))
+                .withDocument(Map.of("status", "APPROVED"))
+                .withLocalSemantic()
+                .expectPartialUpdate()
+                .update(),
+        UserTaskIntent.UPDATED,
+        userTask ->
+            Assertions.assertThat(userTask)
+                .hasAction("")
+                .hasOnlyChangedAttributes(UserTaskRecord.VARIABLES));
   }
 
   private void testUserTaskCommandRetryAfterExtractValueError(
       final ZeebeTaskListenerEventType eventType,
       final String variableName,
       final String variableValue,
-      final Consumer<UserTaskClient> userTaskAction,
+      final Consumer<Long> transitionTrigger,
       final UserTaskIntent expectedIntent,
       final Consumer<UserTaskRecordValue> assertion) {
 
@@ -239,8 +278,8 @@ public class TaskListenerIncidentsTest {
             helper.createUserTaskWithTaskListeners(
                 eventType, listenerType, "=" + variableName, listenerType + "_3"));
 
-    // when: perform the user task action
-    userTaskAction.accept(ENGINE.userTask().ofInstance(processInstanceKey));
+    // when: trigger the user task transition
+    transitionTrigger.accept(processInstanceKey);
 
     // complete the first task listener job
     ENGINE.job().ofInstance(processInstanceKey).withType(listenerType).complete();
