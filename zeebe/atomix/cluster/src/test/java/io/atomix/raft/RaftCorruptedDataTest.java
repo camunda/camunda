@@ -13,8 +13,6 @@ import io.atomix.cluster.MemberId;
 import io.atomix.raft.RaftServer.Role;
 import java.util.Arrays;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 import org.awaitility.Awaitility;
 import org.junit.Rule;
 import org.junit.Test;
@@ -66,11 +64,10 @@ public class RaftCorruptedDataTest {
     final var server2 = raftRule.createServer(node2);
 
     // then
-    // node2 fails to boostrap, because it detects the commitIndex mismatch
-    assertThatThrownBy(() -> server2.bootstrap(node0, node1, node2).get(2, TimeUnit.SECONDS))
-        .isExactlyInstanceOf(TimeoutException.class);
+    // trigger bootstrap async
+    server2.bootstrap(node0, node1, node2);
 
-    // node does not become follower
+    // node does not become follower - goes to inactive as it detects that it has longer log
     Awaitility.await("node becomes INACTIVE").until(() -> server2.getRole().equals(Role.INACTIVE));
   }
 }
