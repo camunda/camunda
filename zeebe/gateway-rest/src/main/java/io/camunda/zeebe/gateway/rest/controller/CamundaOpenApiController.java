@@ -9,12 +9,11 @@ package io.camunda.zeebe.gateway.rest.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
+import java.nio.charset.StandardCharsets;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
-
-import java.nio.charset.StandardCharsets;
 
 @CamundaRestController
 public class CamundaOpenApiController {
@@ -24,7 +23,8 @@ public class CamundaOpenApiController {
     try {
       final ClassPathResource resource = new ClassPathResource("apidoc/rest-api.yaml");
 
-      final String yamlContent = new String(resource.getInputStream().readAllBytes(), StandardCharsets.UTF_8);
+      final String yamlContent =
+          new String(resource.getInputStream().readAllBytes(), StandardCharsets.UTF_8);
 
       final ObjectMapper yamlReader = new ObjectMapper(new YAMLFactory());
       final Object obj = yamlReader.readValue(yamlContent, Object.class);
