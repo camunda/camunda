@@ -49,7 +49,6 @@ public class MigrationITExtension
   private static final String STORE_NAMESPACE_OS = "MigrationITExtension-OS";
   private static final String INDEX_PREFIX = "INDEX_PREFIX";
   private static final String DATABASE_TYPE = "DATABASE_TYPE";
-  private static final String HAS_87_DATA = "HAS_87_DATA";
   private static final String MIGRATOR = "MIGRATOR";
   private static final String DATABASE_TESTER = "DATABASE_CHECKS";
 

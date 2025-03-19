@@ -142,9 +142,10 @@ public class CamundaMigrator extends ApiCallable implements AutoCloseable {
 
     final var multiDbConfigurator = new MultiDbConfigurator(broker);
     if (databaseType.equals(DatabaseType.ELASTICSEARCH)) {
-      multiDbConfigurator.configureElasticsearchSupport(databaseUrl, indexPrefix);
+      multiDbConfigurator.configureElasticsearchSupportIncludingOldExporter(
+          databaseUrl, indexPrefix);
     } else {
-      multiDbConfigurator.configureOpenSearchSupport(
+      multiDbConfigurator.configureOpenSearchSupportIncludingOldExporter(
           databaseUrl, indexPrefix, OS_USER, OS_PASSWORD);
     }
     final Map<String, String> env = new HashMap<>();
