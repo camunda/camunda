@@ -194,15 +194,6 @@ public class CamundaExporter implements Exporter {
     // complete the importing.
 
     if (configuration.getIndex().shouldWaitForImporters() && !exporterCanFlush) {
-      if (writer.getBatchSize() == configuration.getBulk().getSize()) {
-        LOG.info(
-            """
- Cached maximum batch size [{}] number of records, exporting will block at the current position of [{}] while waiting for the importers to finish
- processing records from previous version
- """,
-            configuration.getBulk().getSize(),
-            record.getPosition());
-      }
 
       ensureCachedRecordsLessThanBulkSize(record);
 
@@ -287,6 +278,16 @@ public class CamundaExporter implements Exporter {
 
   private void ensureCachedRecordsLessThanBulkSize(final Record<?> record) {
     final var maxCachedRecords = configuration.getBulk().getSize();
+
+    if (writer.getBatchSize() == configuration.getBulk().getSize()) {
+      LOG.info(
+          """
+Cached maximum batch size [{}] number of records, exporting will block at the current position of [{}] while waiting for the importers to finish
+processing records from previous version
+""",
+          configuration.getBulk().getSize(),
+          record.getPosition());
+    }
 
     if (writer.getBatchSize() >= maxCachedRecords) {
       final var warnMsg =
