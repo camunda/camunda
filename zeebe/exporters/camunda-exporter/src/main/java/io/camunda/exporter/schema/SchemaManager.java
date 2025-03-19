@@ -164,16 +164,8 @@ public class SchemaManager {
       return;
     }
 
-    final var existingTemplateNames =
-        Collections.synchronizedSet(
-            searchEngineClient
-                .getMappings(config.getIndex().getPrefix() + "*", MappingSource.INDEX_TEMPLATE)
-                .keySet());
-
     LOG.info(
-        "Found '{}' existing index templates. Create missing index templates based on '{}' descriptors.",
-        existingTemplateNames.size(),
-        indexTemplateDescriptors.size());
+        "Creating index templates based on '{}' descriptors.", indexTemplateDescriptors.size());
     final var futures =
         indexTemplateDescriptors.stream()
             .map(
