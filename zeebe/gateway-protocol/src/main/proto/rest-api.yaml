@@ -5078,6 +5078,7 @@ components:
         - DELETE_PROCESS
         - DELETE_DRD
         - DELETE_FORM
+        - DELETE_RESOURCE
         - DELETE_PROCESS_INSTANCE
         - DELETE_DECISION_INSTANCE
     ResourceTypeEnum:
