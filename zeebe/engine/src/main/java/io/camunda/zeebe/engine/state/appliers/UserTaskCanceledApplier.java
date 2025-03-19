@@ -27,9 +27,7 @@ public final class UserTaskCanceledApplier
     if (userTaskState.getIntermediateState(key) != null) {
       userTaskState.deleteIntermediateState(key);
     }
-    if (userTaskState.findRecordRequestMetadata(key).isPresent()) {
-      userTaskState.deleteRecordRequestMetadata(key);
-    }
+    userTaskState.deleteRecordRequestMetadata(key);
     userTaskState.delete(key);
   }
 }
