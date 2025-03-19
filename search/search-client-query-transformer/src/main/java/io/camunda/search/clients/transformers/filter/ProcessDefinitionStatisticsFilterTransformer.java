@@ -74,9 +74,6 @@ public class ProcessDefinitionStatisticsFilterTransformer
       queries.add(processVariableQuery);
     }
 
-    // ofNullable(stringOperations(BATCH_OPERATION_IDS, filter.batchOperationIdOperations()))
-    //    .ifPresent(queries::addAll);
-
     return and(queries);
   }
 
