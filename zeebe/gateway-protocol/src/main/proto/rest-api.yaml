@@ -27,7 +27,7 @@ tags:
   - name: Ad-hoc subprocess
   - name: Authentication
   - name: Authorization
-  - name: Batch Operation
+  - name: Batch operation
   - name: Clock
   - name: Cluster
   - name: Decision definition
@@ -3416,21 +3416,21 @@ paths:
   /batch-operations/{batchOperationKey}:
     get:
       tags:
-        - Batch Operation
+        - Batch operation
       operationId: getBatchOperation
-      summary: Get Batch Operation for batch operation key
-      description: Get Batch Operation
+      summary: Get batch operation
+      description: Get batch operation by key.
       parameters:
         - name: batchOperationKey
           in: path
           required: true
           description: |
-            The key of the batch operation
+            The key of the batch operation.
           schema:
             type: string
       responses:
         "200":
-          description: Batch Operation
+          description: The batch operation was found.
           content:
             application/json:
               schema:
@@ -3442,7 +3442,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
         "404":
-          description: The signal is not found.
+          description: The batch operation is not found.
           content:
             application/problem+json:
               schema:
@@ -3453,21 +3453,21 @@ paths:
   /batch-operations/{batchOperationKey}/items:
     get:
       tags:
-        - Batch Operation Items
+        - Batch operation
       operationId: getBatchOperationItems
-      summary: Get Items for Batch Operation
-      description: Get Batch Operation Items
+      summary: Get batch operation items
+      description: Get items for a batch operation.
       parameters:
         - name: batchOperationKey
           in: path
           required: true
           description: |
-            The key of the batch operation
+            The key of the batch operation.
           schema:
             type: string
       responses:
         "200":
-          description: Batch Operation Items
+          description: The batch operation items were found.
           content:
             application/json:
               schema:
@@ -3479,7 +3479,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
         "404":
-          description: The signal is not found.
+          description: The batch operation was not found.
           content:
             application/problem+json:
               schema:
@@ -3490,10 +3490,10 @@ paths:
   /batch-operations/search:
     post:
       tags:
-        - Batch Operation
+        - Batch operation
       operationId: searchBatchOperations
-      summary: Search Batch Operations
-      description: Searches for Batch Operations
+      summary: Search batch operations
+      description: Search for batch operations based on given criteria.
       requestBody:
         required: false
         content:
@@ -3502,7 +3502,7 @@ paths:
               $ref: "#/components/schemas/ProcessInstanceSearchQuery"
       responses:
         "200":
-          description: List of Batch Operations.
+          description: The batch operation search result.
           content:
             application/json:
               schema:
@@ -7296,11 +7296,11 @@ components:
       type: object
       properties:
         batchOperationKey:
-          description: The batch operation key
+          description: The batch operation key.
           type: string
         operationType:
           type: string
-          description: The operation type of the batch operation
+          description: The operation type of the batch operation.
           enum:
             - PROCESS_CANCELLATION
         status:
@@ -7327,7 +7327,7 @@ components:
       type: object
       properties:
         batchOperationKey:
-          description: Key of the batch operation
+          description: Key of the batch operation.
           type: string
         status:
           description: The status of the batch operation.
@@ -7377,13 +7377,13 @@ components:
       type: object
       properties:
         batchOperationKey:
-          description: Key of the batch operation
+          description: Key of the batch operation.
           type: string
         itemKey:
-          description: Key of the item, e.g. a process instance key
+          description: Key of the item, e.g. a process instance key.
           type: string
         status:
-          description: Status of the item
+          description: Status of the item.
           type: string
           enum:
             - ACTIVE
