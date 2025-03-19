@@ -61,7 +61,8 @@ public class MigrationITExtension
 
   public MigrationITExtension() {
     final String property = System.getProperty(PROP_CAMUNDA_IT_DATABASE_TYPE);
-    databaseType = property == null ? DatabaseType.LOCAL : DatabaseType.valueOf(property);
+    databaseType =
+        property == null ? DatabaseType.LOCAL : DatabaseType.valueOf(property.toUpperCase());
     try {
       tempDir = Files.createTempDirectory(indexPrefix + "-zeebe");
     } catch (final IOException e) {
