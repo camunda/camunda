@@ -13,13 +13,12 @@ import {observer} from 'mobx-react';
 import {TargetProcessField} from './TargetProcessField';
 import {TargetVersionField} from './TargetVersionField';
 import {processesStore} from 'modules/stores/processes/processes.migration';
-import {processXmlStore} from 'modules/stores/processXml/processXml.migration.target';
-
 import {DiagramShell} from 'modules/components/DiagramShell';
 import {Diagram} from 'modules/components/Diagram';
 import {useEffect} from 'react';
 import {diagramOverlaysStore} from 'modules/stores/diagramOverlays';
 import {ModificationBadgeOverlay} from 'App/ProcessInstance/TopPanel/ModificationBadgeOverlay';
+import {useMigrationTargetXml} from 'modules/queries/processDefinitions/useMigrationTargetXml';
 
 const OVERLAY_TYPE = 'migrationTargetSummary';
 
@@ -28,29 +27,32 @@ const TargetDiagram: React.FC = observer(() => {
     migrationState: {selectedTargetVersion},
     selectedTargetProcessId,
   } = processesStore;
-  const isDiagramLoading = processXmlStore.state.status === 'fetching';
   const isVersionSelected = selectedTargetVersion !== null;
   const {isSummaryStep} = processInstanceMigrationStore;
   const stateOverlays = diagramOverlaysStore.state.overlays.filter(
     ({type}) => type === OVERLAY_TYPE,
   );
 
+  const {
+    data,
+    isLoading: isMigrationTargetXmlLoading,
+    isError: isMigrationTargetXmlError,
+  } = useMigrationTargetXml({
+    processDefinitionKey: selectedTargetProcessId!,
+    enabled: selectedTargetProcessId !== undefined,
+  });
+
   useEffect(() => {
-    if (selectedTargetProcessId !== undefined) {
-      processXmlStore.fetchProcessXml(selectedTargetProcessId);
-    } else {
-      processXmlStore.reset();
-    }
     processInstanceMigrationStore.setTargetProcessDefinitionKey(
       selectedTargetProcessId ?? null,
     );
   }, [selectedTargetProcessId]);
 
   const getStatus = () => {
-    if (isDiagramLoading) {
+    if (isMigrationTargetXmlLoading) {
       return 'loading';
     }
-    if (processXmlStore.state.status === 'error') {
+    if (isMigrationTargetXmlError) {
       return 'error';
     }
     if (!isVersionSelected) {
@@ -74,10 +76,12 @@ const TargetDiagram: React.FC = observer(() => {
         }}
         messagePosition="center"
       >
-        {processXmlStore.state.xml !== null && (
+        {data?.xml !== undefined && (
           <Diagram
-            xml={processXmlStore.state.xml}
-            selectableFlowNodes={processXmlStore.selectableIds}
+            xml={data.xml}
+            selectableFlowNodes={data.selectableFlowNodes.map(
+              (flowNode) => flowNode.id,
+            )}
             selectedFlowNodeIds={
               processInstanceMigrationStore.selectedTargetFlowNodeId
                 ? [processInstanceMigrationStore.selectedTargetFlowNodeId]

@@ -9,9 +9,10 @@
 import {useEffect} from 'react';
 import {processInstanceMigrationStore} from 'modules/stores/processInstanceMigration';
 import {processXmlStore as processXmlMigrationSourceStore} from 'modules/stores/processXml/processXml.migration.source';
-import {processXmlStore as processXmlMigrationTargetStore} from 'modules/stores/processXml/processXml.migration.target';
 import {processStatisticsStore} from 'modules/stores/processStatistics/processStatistics.migration.source';
 import {open} from 'modules/mocks/diagrams';
+import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
+import {QueryClientProvider} from '@tanstack/react-query';
 
 const elements = {
   checkPayment: {
@@ -228,22 +229,14 @@ const Wrapper = ({children}: Props) => {
     return () => {
       processInstanceMigrationStore.reset();
       processXmlMigrationSourceStore.reset();
-      processXmlMigrationTargetStore.reset();
       processStatisticsStore.reset();
     };
   }, []);
 
   return (
-    <>
+    <QueryClientProvider client={getMockQueryClient()}>
       {children}
-      <button
-        onClick={() => {
-          processXmlMigrationTargetStore.fetchProcessXml();
-        }}
-      >
-        Fetch Target Process
-      </button>
-    </>
+    </QueryClientProvider>
   );
 };
 
