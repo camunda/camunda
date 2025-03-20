@@ -43,8 +43,24 @@ public final class ElementInstance extends UnpackedObject implements DbValue {
   private final IntegerProperty executionListenerIndexProp =
       new IntegerProperty("executionListenerIndex", 0);
 
+  /**
+   * Expresses the current depth of the process instance in the called process tree.
+   *
+   * <p>A root process instance has depth 1. Each child instance has the depth of its parent
+   * incremented by 1.
+   *
+   * @since 8.3.22, 8.4.18, 8.5.17, 8.6.12, and 8.7
+   * @apiNote This property is added in 8.7 and backported to 8.6.12, 8.5.17, 8.4.18, and 8.3.22.
+   *     Any child process instances created before 8.7 (or any of these patches) will have a depth
+   *     of 1 rather than a correct value. Child instances created before the property existed will
+   *     have a depth of 1 + the depth of the parent instance. Therefore, child instances created on
+   *     or after the property was added that are part of a root process instance created prior to
+   *     the property existed, will not have a correct depth.
+   */
+  private final IntegerProperty processDepth = new IntegerProperty("processDepth", 1);
+
   public ElementInstance() {
-    super(13);
+    super(14);
     declareProperty(parentKeyProp)
         .declareProperty(childCountProp)
         .declareProperty(childActivatedCountProp)
@@ -57,7 +73,8 @@ public final class ElementInstance extends UnpackedObject implements DbValue {
         .declareProperty(recordProp)
         .declareProperty(activeSequenceFlowsProp)
         .declareProperty(userTaskKeyProp)
-        .declareProperty(executionListenerIndexProp);
+        .declareProperty(executionListenerIndexProp)
+        .declareProperty(processDepth);
   }
 
   public ElementInstance(
@@ -244,5 +261,13 @@ public final class ElementInstance extends UnpackedObject implements DbValue {
 
   public void resetExecutionListenerIndex() {
     executionListenerIndexProp.setValue(0);
+  }
+
+  public int getProcessDepth() {
+    return processDepth.getValue();
+  }
+
+  public void setProcessDepth(final int depth) {
+    processDepth.setValue(depth);
   }
 }

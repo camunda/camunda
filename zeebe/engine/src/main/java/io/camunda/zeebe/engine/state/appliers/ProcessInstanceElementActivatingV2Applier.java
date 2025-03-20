@@ -29,14 +29,14 @@ import java.util.List;
 import java.util.stream.IntStream;
 
 /** Applies state changes for `ProcessInstance:Element_Activating` */
-final class ProcessInstanceElementActivatingApplier
+final class ProcessInstanceElementActivatingV2Applier
     implements TypedEventApplier<ProcessInstanceIntent, ProcessInstanceRecord> {
 
   private final MutableElementInstanceState elementInstanceState;
   private final ProcessState processState;
   private final MutableEventScopeInstanceState eventScopeInstanceState;
 
-  public ProcessInstanceElementActivatingApplier(
+  public ProcessInstanceElementActivatingV2Applier(
       final MutableElementInstanceState elementInstanceState,
       final ProcessState processState,
       final MutableEventScopeInstanceState eventScopeInstanceState) {
@@ -52,11 +52,12 @@ final class ProcessInstanceElementActivatingApplier
     cleanupSequenceFlowsTaken(value);
 
     final var flowScopeInstance = elementInstanceState.getInstance(value.getFlowScopeKey());
-    elementInstanceState.newInstance(
-        flowScopeInstance, elementInstanceKey, value, ProcessInstanceIntent.ELEMENT_ACTIVATING);
+    final var elementInstance =
+        elementInstanceState.newInstance(
+            flowScopeInstance, elementInstanceKey, value, ProcessInstanceIntent.ELEMENT_ACTIVATING);
 
     if (flowScopeInstance == null) {
-      applyRootProcessState(elementInstanceKey, value);
+      applyRootProcessState(elementInstance, value);
       return;
     }
 
@@ -86,7 +87,6 @@ final class ProcessInstanceElementActivatingApplier
               value.getTenantId(),
               value.getElementIdBuffer(),
               ExecutableFlowNode.class);
-
       // before a parallel or inclusive gateway is activated, all incoming sequence flows of the
       // gateway must
       // be taken at least once. decrement the number of the taken sequence flows for each incoming
@@ -113,7 +113,7 @@ final class ProcessInstanceElementActivatingApplier
   }
 
   private void applyRootProcessState(
-      final long elementInstanceKey, final ProcessInstanceRecord value) {
+      final ElementInstance elementInstance, final ProcessInstanceRecord value) {
     final var parentElementInstance =
         elementInstanceState.getInstance(value.getParentElementInstanceKey());
     if (parentElementInstance != null) {
@@ -121,8 +121,14 @@ final class ProcessInstanceElementActivatingApplier
       // it should always be a call-activity, but let's try to be safe
       final var parentElementType = parentElementInstance.getValue().getBpmnElementType();
       if (parentElementType == BpmnElementType.CALL_ACTIVITY) {
-        parentElementInstance.setCalledChildInstanceKey(elementInstanceKey);
+        parentElementInstance.setCalledChildInstanceKey(elementInstance.getKey());
         elementInstanceState.updateInstance(parentElementInstance);
+
+        final var parentProcessInstance =
+            elementInstanceState.getInstance(
+                elementInstance.getValue().getParentProcessInstanceKey());
+        elementInstance.setProcessDepth(parentProcessInstance.getProcessDepth() + 1);
+        elementInstanceState.updateInstance(elementInstance);
       }
     }
   }
