@@ -80,24 +80,23 @@ public class ProcessDefinitionQueryTest {
 
 **Need:**
 
-* We need to configure the broker for specific authentication
-* We need to make use of the `@RegisterExtension` to pass in the Broker, pre-configured
-* We need to make sure that the test is tagged with `@Tag("multi-db-test")`
+* We need to configure the broker for specific authentication, for that we need to make use of `TestStandaloneBroker` or `TestSimpleCamundaApplication`
+* We need to annotate the test applications with `MultiDbTestApplication`, to mark application managed by `CamundaMultiDbExtension`
 
 **Optional:**
 
 * We might not want to run the test for all secondary storage, as it is not yet supported. We can use the `@DisabledIfSystemProperty` annotation
+* We might want to disable the lifecycle management of the annotated test application, this can be done via: `@MultiDbTestApplication(managedLifecycle = false)`
+  * This is especially useful, if we want to start and stop the test application inside the test (to validate restarts, or something similar)
 
 ```java
-@Tag("multi-db-test")
+@MultiDbTest
 @DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "rdbms")
 class SomeIT {
 
+  @MultiDbTestApplication
   static final TestStandaloneBroker BROKER =
       new TestStandaloneBroker().withBasicAuth().withAuthorizationsEnabled();
-
-  @RegisterExtension
-  static final CamundaMultiDBExtension EXTENSION = new CamundaMultiDBExtension(BROKER);
 
   private static CamundaClient camundaClient; // <- will be injected
 
@@ -116,26 +115,22 @@ class SomeIT {
 
 ##### Authentication E2E tests
 
-We should highlight some special features for the authentication tests here.
+We want to highlight some special features for the authentication tests here.
 
-* For the tests, users (that are used in tests) can be predefined and annotated with `@UserDefinition`. As such, they are created, and an authenticated client is created later.
+* For the authentication related tests, users (that are used in tests) can be predefined and annotated with `@UserDefinition`. This allows the extension to collect the related user definitions.
 * Authenticated clients can be created via `@Authenticated` annotation, specifying a user to be used.
-* Mostly, authentication tests can't use the `@MultiDbTest` annotation as of now, as they need to configure the broker or Camunda application specifically
-  * As a consequence, they need to be tagged with `@Tag("multi-db-test")` separately to ensure we run tests against all environments
-  * They need to use the `@RegisterExtension` to pass in the Broker, pre-configured
+  * When a client annotated with `Authenticated` is injected (as field or parameter), the respective/referenced user is created.
 
 **Example:**
 
 ```java
-@Tag("multi-db-test")
+@MultiDbTest
 @DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "rdbms")
 class ProcessAuthorizationIT {
 
+  @MultiDbTestApplication
   static final TestStandaloneBroker BROKER =
       new TestStandaloneBroker().withBasicAuth().withAuthorizationsEnabled();
-
-  @RegisterExtension
-  static final CamundaMultiDBExtension EXTENSION = new CamundaMultiDBExtension(BROKER);
 
   private static final String ADMIN = "admin";
   private static final String RESTRICTED = "restricted-user";
