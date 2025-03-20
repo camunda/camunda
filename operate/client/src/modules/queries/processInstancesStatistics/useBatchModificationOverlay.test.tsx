@@ -66,7 +66,7 @@ describe('useBatchModificationOverlayData', () => {
             sourceFlowNodeId: 'messageCatchEvent',
             targetFlowNodeId: 'targetNode',
           },
-          true,
+          'process1',
         ),
       {
         wrapper,
@@ -86,7 +86,7 @@ describe('useBatchModificationOverlayData', () => {
         useBatchModificationOverlayData(
           {},
           {sourceFlowNodeId: 'sourceNode', targetFlowNodeId: 'targetNode'},
-          true,
+          'process1',
         ),
       {
         wrapper,
@@ -108,7 +108,7 @@ describe('useBatchModificationOverlayData', () => {
         useBatchModificationOverlayData(
           {},
           {sourceFlowNodeId: 'sourceNode', targetFlowNodeId: 'targetNode'},
-          true,
+          'process1',
         ),
       {
         wrapper,
@@ -130,7 +130,7 @@ describe('useBatchModificationOverlayData', () => {
         useBatchModificationOverlayData(
           {},
           {sourceFlowNodeId: 'sourceNode', targetFlowNodeId: 'targetNode'},
-          true,
+          'process1',
         ),
       {
         wrapper,
@@ -148,7 +148,7 @@ describe('useBatchModificationOverlayData', () => {
         useBatchModificationOverlayData(
           {},
           {sourceFlowNodeId: 'sourceNode', targetFlowNodeId: 'targetNode'},
-          true,
+          'process1',
         ),
       {
         wrapper,
@@ -156,23 +156,5 @@ describe('useBatchModificationOverlayData', () => {
     );
 
     expect(result.current.isLoading).toBe(true);
-  });
-
-  it('should not fetch data when enabled is false', async () => {
-    const {result} = renderHook(
-      () =>
-        useBatchModificationOverlayData(
-          {},
-          {sourceFlowNodeId: 'sourceNode', targetFlowNodeId: 'targetNode'},
-          false,
-        ),
-      {
-        wrapper,
-      },
-    );
-
-    expect(result.current.isLoading).toBe(false);
-    expect(result.current.isFetched).toBe(false);
-    expect(result.current.data).toBeUndefined();
   });
 });

@@ -23,6 +23,7 @@ import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
 import {processInstanceMigrationStore} from 'modules/stores/processInstanceMigration';
 import {useEffect} from 'react';
 import {processInstancesSelectionStore} from 'modules/stores/processInstancesSelection';
+import * as filterModule from 'modules/hooks/useProcessInstancesFilters';
 
 jest.mock('modules/hooks/useProcessInstancesFilters');
 
@@ -67,6 +68,10 @@ const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
 };
 
 describe('Source Diagram', () => {
+  beforeEach(() => {
+    jest.spyOn(filterModule, 'useProcessInstanceFilters').mockReturnValue({});
+  });
+
   it('should render process name and version', async () => {
     mockFetchGroupedProcesses().withSuccess(groupedProcessesMock);
 

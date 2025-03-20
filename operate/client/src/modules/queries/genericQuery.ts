@@ -6,25 +6,28 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {UseQueryOptions} from '@tanstack/react-query';
+import {skipToken, UseQueryOptions} from '@tanstack/react-query';
 import {RequestError, RequestResult} from 'modules/request';
 
 function genericQueryOptions<T, TSelect = T>(
   queryKey: unknown[],
   fetchFunction: () => RequestResult<T>,
   options?: UseQueryOptions<T, RequestError, TSelect>,
+  skip?: boolean,
 ): UseQueryOptions<T, RequestError, TSelect> {
   return {
     queryKey,
-    queryFn: async () => {
-      const {response, error} = await fetchFunction();
+    queryFn: skip
+      ? skipToken
+      : async () => {
+          const {response, error} = await fetchFunction();
 
-      if (response !== null) {
-        return response;
-      }
+          if (response !== null) {
+            return response;
+          }
 
-      throw error;
-    },
+          throw error;
+        },
     ...options,
   };
 }

@@ -7,9 +7,10 @@
  */
 
 import {
-  ProcessInstancesStatisticsDto,
-  ProcessInstancesStatisticsRequest,
-} from 'modules/api/v2/processInstances/fetchProcessInstancesStatistics';
+  GetProcessDefinitionStatisticsRequestBody,
+  GetProcessDefinitionStatisticsResponseBody,
+  ProcessDefinitionStatistic,
+} from '@vzeta/camunda-api-zod-schemas/operate';
 import {OverlayData} from 'modules/bpmn-js/BpmnJS';
 import {
   ACTIVE_BADGE,
@@ -37,59 +38,73 @@ const overlayPositions = {
 };
 
 export function overlayParser(
-  data: ProcessInstancesStatisticsDto[],
+  data: GetProcessDefinitionStatisticsResponseBody,
 ): OverlayData[] {
-  const flowNodeStates = data.flatMap((statistics) => {
-    const types: FlowNodeState[] = [
-      'active',
-      'incidents',
-      'canceled',
-      'completed',
-    ];
-    return types.reduce<
-      {
-        flowNodeId: string;
-        count: number;
-        flowNodeState: FlowNodeState;
-      }[]
-    >((states, flowNodeState) => {
-      const count = Number(
-        statistics[flowNodeState as keyof ProcessInstancesStatisticsDto],
-      );
-      if (count > 0) {
-        return [
-          ...states,
-          {
-            flowNodeId: statistics.flowNodeId,
-            count,
-            flowNodeState:
-              flowNodeState === 'completed'
-                ? 'completedEndEvents'
-                : flowNodeState,
-          },
-        ];
-      } else {
-        return states;
-      }
-    }, []);
-  });
+  const flowNodeStates = data.flatMap(
+    (statistics: ProcessDefinitionStatistic) => {
+      const types: FlowNodeState[] = [
+        'active',
+        'incidents',
+        'canceled',
+        'completed',
+      ];
+      return types.reduce<
+        {
+          flowNodeId: string;
+          count: number;
+          flowNodeState: FlowNodeState;
+        }[]
+      >((states, flowNodeState) => {
+        const count = Number(
+          statistics[flowNodeState as keyof ProcessDefinitionStatistic],
+        );
+        if (count > 0) {
+          return [
+            ...states,
+            {
+              flowNodeId: statistics.flowNodeId,
+              count,
+              flowNodeState:
+                flowNodeState === 'completed'
+                  ? 'completedEndEvents'
+                  : flowNodeState,
+            },
+          ];
+        } else {
+          return states;
+        }
+      }, []);
+    },
+  );
 
-  return flowNodeStates.map(({flowNodeState, count, flowNodeId}) => ({
-    payload: {flowNodeState, count},
-    type: `statistics-${flowNodeState}`,
-    flowNodeId,
-    position: overlayPositions[flowNodeState],
-  }));
+  return flowNodeStates.map(
+    ({
+      flowNodeState,
+      count,
+      flowNodeId,
+    }: {
+      flowNodeState: FlowNodeState;
+      count: number;
+      flowNodeId: string;
+    }) => ({
+      payload: {flowNodeState, count},
+      type: `statistics-${flowNodeState}`,
+      flowNodeId,
+      position: overlayPositions[flowNodeState],
+    }),
+  );
 }
 
 function useProcessInstancesOverlayData(
-  payload: ProcessInstancesStatisticsRequest,
+  payload: GetProcessDefinitionStatisticsRequestBody,
+  processDefinitionKey?: string,
   enabled?: boolean,
 ) {
   return useQuery(
     useProcessInstancesStatisticsOptions<OverlayData[]>(
       payload,
       overlayParser,
+      processDefinitionKey,
       enabled,
     ),
   );
