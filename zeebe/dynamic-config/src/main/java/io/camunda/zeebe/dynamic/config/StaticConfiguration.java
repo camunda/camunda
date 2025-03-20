@@ -29,6 +29,11 @@ public record StaticConfiguration(
     return partitionIds.size();
   }
 
+  public int setPartitionCount(final int partitionCount) {
+
+    return partitionIds.size();
+  }
+
   public ClusterConfiguration generateTopology() {
     final Set<PartitionMetadata> partitionDistribution = generatePartitionDistribution();
     return ConfigurationUtil.getClusterConfigFrom(
