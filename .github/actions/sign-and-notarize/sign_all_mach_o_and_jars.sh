@@ -151,7 +151,10 @@ while IFS= read -r -d '' jar_file; do
   (
     cd "$tmpdir"
     echo "  -> Re-zipping into $jar_abs_path"
-    jar -m META-INF/MANIFEST.MF -c -f "$jar_abs_path" ./
+    FOUND=$(find META-INF -name "*.SF")
+    if [[ "$FOUND" == "" ]]; then
+      jar -m META-INF/MANIFEST.MF -c -f "$jar_abs_path" ./
+    fi
   )
 
   rm -rf "$tmpdir"
