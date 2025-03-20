@@ -11,6 +11,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatNoException;
 
 import feign.FeignException.NotFound;
+import io.camunda.application.commons.backup.HistoryBackupComponent;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.search.response.ProcessInstanceState;
 import io.camunda.management.backups.StateCode;
@@ -24,7 +25,6 @@ import io.camunda.webapps.backup.BackupStateDto;
 import io.camunda.webapps.backup.Metadata;
 import io.camunda.webapps.backup.repository.SnapshotNameProvider;
 import io.camunda.webapps.schema.descriptors.backup.SnapshotIndexCollection;
-import io.camunda.zeebe.backup.azure.AzureBackupStore;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.configuration.backup.BackupStoreCfg.BackupStoreType;
 import io.camunda.zeebe.qa.util.actuator.BackupActuator;
@@ -183,7 +183,7 @@ public class BackupRestoreIT {
 
   @ParameterizedTest
   @MethodSource(value = {"sources"})
-  public void shonldBackupAndRestoreToPreviousState(final BackupRestoreTestConfig config)
+  public void shouldBackupAndRestoreToPreviousState(final BackupRestoreTestConfig config)
       throws Exception {
     // given
     setup(config);
@@ -205,6 +205,8 @@ public class BackupRestoreIT {
     exportingActuator.resume();
 
     // when
+    // closing down backup's thread poll before shutting down testStandaloneApplication
+    testStandaloneApplication.bean(HistoryBackupComponent.class).shutdownExecutor();
     // if we stop all apps and restart elasticsearch
     testStandaloneApplication.stop();
     // Zeebe's folder is deleted by ZeebeIntegration automatically when the application is stop()
