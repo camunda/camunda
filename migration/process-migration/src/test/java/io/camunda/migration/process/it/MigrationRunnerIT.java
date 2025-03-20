@@ -52,13 +52,13 @@ public class MigrationRunnerIT extends AdapterTest {
     writeProcessToIndex(entityToBeMigrated);
     writeProcessToIndex(entityNotToBeMigrated);
     writeImportPositionToIndex(TestData.completedImportPosition(1));
-    awaitRecordsArePresent(ProcessEntity.class, processIndex.getFullQualifiedName());
+    awaitRecordsArePresent(ProcessEntity.class, processIndex.getFullQualifiedName(), 2);
 
     // when
     final String migratedEntityId =
         adapter.migrate(List.of(MigrationUtil.migrate(entityToBeMigrated)));
     adapter.writeLastMigratedEntity(migratedEntityId);
-    awaitRecordsArePresent(ProcessorStep.class, migrationRepositoryIndex.getFullQualifiedName());
+    awaitRecordsArePresent(ProcessorStep.class, migrationRepositoryIndex.getFullQualifiedName(), 1);
     refreshIndices();
 
     // then
@@ -112,7 +112,7 @@ public class MigrationRunnerIT extends AdapterTest {
     writeProcessToIndex(TestData.processEntityWithoutForm(2L));
     writeProcessToIndex(TestData.processEntityWithPublicFormKey(3L));
     writeImportPositionToIndex(TestData.completedImportPosition(1));
-    awaitRecordsArePresent(ProcessEntity.class, processIndex.getFullQualifiedName());
+    awaitRecordsArePresent(ProcessEntity.class, processIndex.getFullQualifiedName(), 3);
     // when
     runMigration();
     refreshIndices();
@@ -161,22 +161,14 @@ public class MigrationRunnerIT extends AdapterTest {
       writeProcessToIndex(TestData.processEntityWithPublicFormId((long) i));
     }
     writeImportPositionToIndex(TestData.completedImportPosition(1));
-    awaitRecordsArePresent(ProcessEntity.class, processIndex.getFullQualifiedName());
+    awaitRecordsArePresent(ProcessEntity.class, processIndex.getFullQualifiedName(), 20);
 
     // when
     runMigration();
     refreshIndices();
 
     // then
-
-    final var records =
-        Awaitility.await()
-            .atMost(30, TimeUnit.SECONDS)
-            .pollInterval(2, TimeUnit.SECONDS)
-            .ignoreExceptions()
-            .until(
-                () -> readRecords(ProcessEntity.class, processIndex.getFullQualifiedName()),
-                res -> res.getFirst().getIsPublic() != null);
+    final var records = readRecords(ProcessEntity.class, processIndex.getFullQualifiedName());
 
     // Since the key field is marked as a keyword in ES/OS the sorting is done lexicographically
     assertProcessorStepContentIsStored("9");
@@ -196,7 +188,7 @@ public class MigrationRunnerIT extends AdapterTest {
       writeProcessToIndex(TestData.processEntityWithPublicFormId((long) i));
     }
     writeImportPositionToIndex(TestData.completedImportPosition(1));
-    awaitRecordsArePresent(ProcessEntity.class, processIndex.getFullQualifiedName());
+    awaitRecordsArePresent(ProcessEntity.class, processIndex.getFullQualifiedName(), 9);
     writeProcessorStepToIndex("5");
     // when
     runMigration();
@@ -252,7 +244,7 @@ public class MigrationRunnerIT extends AdapterTest {
     writeProcessorStepToIndex("2");
     writeProcessToIndex(entityToBeMigrated);
     writeProcessToIndex(entityNotToBeMigrated);
-    awaitRecordsArePresent(ProcessEntity.class, processIndex.getFullQualifiedName());
+    awaitRecordsArePresent(ProcessEntity.class, processIndex.getFullQualifiedName(), 2);
 
     // when
     runMigration();
@@ -318,7 +310,8 @@ public class MigrationRunnerIT extends AdapterTest {
     writeImportPositionToIndex(
         TestData.completedImportPosition(1), TestData.notCompletedImportPosition(2));
     esClient.indices().refresh();
-    awaitRecordsArePresent(ImportPositionEntity.class, importPositionIndex.getFullQualifiedName());
+    awaitRecordsArePresent(
+        ImportPositionEntity.class, importPositionIndex.getFullQualifiedName(), 2);
     final var latch = new CountDownLatch(1);
 
     new Thread(
@@ -354,7 +347,8 @@ public class MigrationRunnerIT extends AdapterTest {
     writeProcessToIndex(TestData.processEntityWithPublicFormKey(2L));
     writeImportPositionToIndex(TestData.completedImportPosition(1));
     refreshIndices();
-    awaitRecordsArePresent(ImportPositionEntity.class, importPositionIndex.getFullQualifiedName());
+    awaitRecordsArePresent(
+        ImportPositionEntity.class, importPositionIndex.getFullQualifiedName(), 1);
 
     // when
     Awaitility.await()
