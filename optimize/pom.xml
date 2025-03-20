@@ -237,64 +237,6 @@
     </dependency>
   </dependencies>
 
-  <!-- Fix for bug with downloading snapshots from Camunda Nexus using groups with RELEASE and SNAPSHOTS -->
-  <repositories>
-    <repository>
-      <releases>
-        <enabled>true</enabled>
-      </releases>
-      <snapshots>
-        <enabled>true</enabled>
-      </snapshots>
-      <id>camunda-nexus</id>
-      <name>Camunda Nexus</name>
-      <url>https://artifacts.camunda.com/artifactory/internal/</url>
-    </repository>
-
-    <repository>
-      <id>central</id>
-      <name>Maven Central</name>
-      <url>https://repo1.maven.org/maven2/</url>
-    </repository>
-
-    <!-- add the elasticsearch repo -->
-    <repository>
-      <releases>
-        <enabled>true</enabled>
-      </releases>
-      <snapshots>
-        <enabled>true</enabled>
-      </snapshots>
-      <id>elasticsearch-releases</id>
-      <url>https://artifacts.elastic.co/maven</url>
-      <layout>default</layout>
-    </repository>
-
-    <repository>
-      <releases>
-        <enabled>true</enabled>
-      </releases>
-      <snapshots>
-        <enabled>false</enabled>
-      </snapshots>
-      <id>camunda-cpm</id>
-      <name>Camunda BPM Repository</name>
-      <url>https://artifacts.camunda.com/artifactory/camunda-bpm/</url>
-    </repository>
-
-    <repository>
-      <releases>
-        <enabled>false</enabled>
-      </releases>
-      <snapshots>
-        <enabled>true</enabled>
-      </snapshots>
-      <id>camunda-bpm-snapshots</id>
-      <name>Camunda BPM Snapshot Repository</name>
-      <url>https://artifacts.camunda.com/artifactory/camunda-bpm-snapshots/</url>
-    </repository>
-  </repositories>
-
   <build>
     <pluginManagement>
       <plugins>
