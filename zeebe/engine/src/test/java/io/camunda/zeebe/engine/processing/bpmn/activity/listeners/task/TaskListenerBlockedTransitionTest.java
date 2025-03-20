@@ -20,6 +20,7 @@ import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
 import io.camunda.zeebe.protocol.impl.record.value.variable.VariableDocumentRecord;
 import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.Record;
+import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
@@ -87,6 +88,44 @@ public class TaskListenerBlockedTransitionTest {
               assertThat(jobRecordValue.getRetries()).isEqualTo(8);
             });
     helper.assertThatProcessInstanceCompleted(processInstanceKey);
+  }
+
+  @Test
+  public void shouldRejectTaskVariableUpdateWhenUserTaskIsNotInCreatedState() {
+    // given: a process instance with a user task having an assignee and task listeners
+    final long processInstanceKey =
+        helper.createProcessInstance(
+            helper.createProcessWithZeebeUserTask(
+                t ->
+                    t.zeebeAssignee("initial_assignee")
+                        .zeebeTaskListener(l -> l.assigning().type(listenerType + "_assigning"))
+                        .zeebeTaskListener(l -> l.updating().type(listenerType + "_updating"))));
+
+    // since the user task has an initial assignee, the assignment transition is triggered
+    final var assigningUserTaskRecord =
+        RecordingExporter.userTaskRecords(UserTaskIntent.ASSIGNING)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst();
+
+    // when: attempting to update variables while the user task is in the 'ASSIGNING' state
+    final var variableUpdateRejection =
+        ENGINE
+            .variables()
+            .ofScope(assigningUserTaskRecord.getValue().getElementInstanceKey())
+            .withDocument(Map.of("employeeId", "E12345"))
+            .withLocalSemantic()
+            .expectRejection()
+            .update();
+
+    // then
+    Assertions.assertThat(variableUpdateRejection)
+        .describedAs(
+            "Expect rejection when trying to update variables for a user task that is currently in the 'ASSIGNING' state")
+        .hasRecordType(RecordType.COMMAND_REJECTION)
+        .hasValueType(ValueType.VARIABLE_DOCUMENT)
+        .hasRejectionReason(
+            "Expected to trigger update transition for user task with key '%d', but it is in state 'ASSIGNING'"
+                .formatted(assigningUserTaskRecord.getKey()));
   }
 
   @Test
