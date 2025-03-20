@@ -15,16 +15,12 @@
  */
 package io.camunda.client.flownodeinstance;
 
-import static io.camunda.client.api.search.response.FlowNodeInstanceState.ACTIVE;
-import static io.camunda.client.api.search.response.FlowNodeInstanceType.SERVICE_TASK;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.github.tomakehurst.wiremock.http.RequestMethod;
 import com.github.tomakehurst.wiremock.verification.LoggedRequest;
-import io.camunda.client.api.search.response.FlowNodeInstanceState;
-import io.camunda.client.api.search.response.FlowNodeInstanceType;
-import io.camunda.client.impl.search.request.SearchRequestSort;
-import io.camunda.client.impl.search.request.SearchRequestSortMapper;
+import io.camunda.client.impl.search.SearchQuerySortRequest;
+import io.camunda.client.impl.search.SearchQuerySortRequestMapper;
 import io.camunda.client.protocol.rest.*;
 import io.camunda.client.util.ClientRestTest;
 import java.util.List;
@@ -35,7 +31,7 @@ public class FlownodeInstanceTest extends ClientRestTest {
   @Test
   void shouldSearchFlownodeInstance() {
     // when
-    client.newFlownodeInstanceSearchRequest().send().join();
+    client.newFlownodeInstanceQuery().send().join();
 
     // then
     final FlowNodeInstanceSearchQuery request =
@@ -47,12 +43,12 @@ public class FlownodeInstanceTest extends ClientRestTest {
   void shouldSearchFlownodeInstanceWithFullFilters() {
     // when
     client
-        .newFlownodeInstanceSearchRequest()
+        .newFlownodeInstanceQuery()
         .filter(
             f ->
                 f.flowNodeInstanceKey(1L)
-                    .type(SERVICE_TASK)
-                    .state(ACTIVE)
+                    .type(io.camunda.client.wrappers.FlowNodeInstanceFilter.Type.SERVICE_TASK)
+                    .state(io.camunda.client.wrappers.FlowNodeInstanceFilter.State.ACTIVE)
                     .processDefinitionKey(2L)
                     .processDefinitionId("complexProcess")
                     .processInstanceKey(3L)
@@ -82,7 +78,7 @@ public class FlownodeInstanceTest extends ClientRestTest {
   void shouldSearchFlownodeInstanceWithFullSorting() {
     // when
     client
-        .newFlownodeInstanceSearchRequest()
+        .newFlownodeInstanceQuery()
         .sort(
             s ->
                 s.flowNodeInstanceKey()
@@ -110,8 +106,8 @@ public class FlownodeInstanceTest extends ClientRestTest {
     // then
     final FlowNodeInstanceSearchQuery request =
         gatewayService.getLastRequest(FlowNodeInstanceSearchQuery.class);
-    final List<SearchRequestSort> sorts =
-        SearchRequestSortMapper.fromFlowNodeInstanceSearchQuerySortRequest(
+    final List<SearchQuerySortRequest> sorts =
+        SearchQuerySortRequestMapper.fromFlowNodeInstanceSearchQuerySortRequest(
             Objects.requireNonNull(request.getSort()));
     assertThat(sorts.size()).isEqualTo(9);
     assertSort(sorts.get(0), "processDefinitionKey", SortOrderEnum.ASC);
@@ -137,62 +133,8 @@ public class FlownodeInstanceTest extends ClientRestTest {
     assertThat(request.getMethod()).isEqualTo(RequestMethod.GET);
   }
 
-  @Test
-  public void shouldConvertFlowNodeInstanceType() {
-
-    for (final FlowNodeInstanceType value : FlowNodeInstanceType.values()) {
-      final FlowNodeInstanceFilter.TypeEnum protocolValue =
-          FlowNodeInstanceType.toProtocolType(value);
-      assertThat(protocolValue).isNotNull();
-      if (value == FlowNodeInstanceType.UNKNOWN_ENUM_VALUE) {
-        assertThat(protocolValue)
-            .isEqualTo(FlowNodeInstanceFilter.TypeEnum.UNKNOWN_DEFAULT_OPEN_API);
-      } else {
-        assertThat(protocolValue.name()).isEqualTo(value.name());
-      }
-    }
-
-    for (final FlowNodeInstanceResult.TypeEnum protocolValue :
-        FlowNodeInstanceResult.TypeEnum.values()) {
-      final FlowNodeInstanceType value = FlowNodeInstanceType.fromProtocolType(protocolValue);
-      assertThat(value).isNotNull();
-      if (protocolValue == FlowNodeInstanceResult.TypeEnum.UNKNOWN_DEFAULT_OPEN_API) {
-        assertThat(value).isEqualTo(FlowNodeInstanceType.UNKNOWN_ENUM_VALUE);
-      } else {
-        assertThat(value.name()).isEqualTo(protocolValue.name());
-      }
-    }
-  }
-
-  @Test
-  public void shouldConvertFlowNodeInstanceState() {
-
-    for (final FlowNodeInstanceState value : FlowNodeInstanceState.values()) {
-      final FlowNodeInstanceFilter.StateEnum protocolValue =
-          FlowNodeInstanceState.toProtocolState(value);
-      assertThat(protocolValue).isNotNull();
-      if (value == FlowNodeInstanceState.UNKNOWN_ENUM_VALUE) {
-        assertThat(protocolValue)
-            .isEqualTo(FlowNodeInstanceFilter.StateEnum.UNKNOWN_DEFAULT_OPEN_API);
-      } else {
-        assertThat(protocolValue.name()).isEqualTo(value.name());
-      }
-    }
-
-    for (final FlowNodeInstanceResult.StateEnum protocolValue :
-        FlowNodeInstanceResult.StateEnum.values()) {
-      final FlowNodeInstanceState value = FlowNodeInstanceState.fromProtocolState(protocolValue);
-      assertThat(value).isNotNull();
-      if (protocolValue == FlowNodeInstanceResult.StateEnum.UNKNOWN_DEFAULT_OPEN_API) {
-        assertThat(value).isEqualTo(FlowNodeInstanceState.UNKNOWN_ENUM_VALUE);
-      } else {
-        assertThat(value.name()).isEqualTo(protocolValue.name());
-      }
-    }
-  }
-
   private void assertSort(
-      final SearchRequestSort sort, final String field, final SortOrderEnum order) {
+      final SearchQuerySortRequest sort, final String field, final SortOrderEnum order) {
     assertThat(sort.getField()).isEqualTo(field);
     assertThat(sort.getOrder()).isEqualTo(order);
   }
