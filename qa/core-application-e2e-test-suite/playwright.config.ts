@@ -25,18 +25,7 @@ const useReportersWithSlack: any[] = [
       sendResults: 'always',
       meta: [
         {
-          key: (() => {
-            switch (process.env.MINOR_VERSION) {
-              case '8.8':
-                return `Test Results for mono repo - 8.8`;
-              case '8.7':
-                return `Test Results for mono repo - 8.7`;
-              case '8.6':
-                return 'Test Results for mono repo - 8.6';
-              default:
-                return 'Test Results';
-            }
-          })(),
+          key: 'Nightly Test Results for Mono Repo - 8.8',
           value: `<https://github.com/camunda/camunda/actions/runs/${process.env.GITHUB_RUN_ID}|📊>`,
         },
       ],
@@ -53,9 +42,7 @@ const changedFolders =
     : [];
 
 export default defineConfig({
-  testDir: process.env.MINOR_VERSION
-    ? `./tests/${process.env.MINOR_VERSION}/`
-    : `./tests/`,
+  testDir: `./tests/`,
   timeout: 12 * 60 * 1000,
   workers: 4,
   retries: 1,
@@ -67,7 +54,6 @@ export default defineConfig({
     {
       name: 'chromium',
       use: devices['Desktop Chrome'],
-      dependencies: ['chromium-setup'],
       // Specify only tests in the changed folders for the 'chromium' project
       testMatch: changedFolders.includes('chromium')
         ? changedFolders.map((folder) => `**/${folder}/*.spec.ts`)
@@ -76,23 +62,9 @@ export default defineConfig({
     {
       name: 'firefox',
       use: devices['Desktop Firefox'],
-      dependencies: ['firefox-setup'],
     },
     {
       name: 'msedge',
-      use: devices['Desktop Edge'],
-      dependencies: ['edge-setup'],
-    },
-    {
-      name: 'chromium-setup',
-      use: devices['Desktop Chrome'],
-    },
-    {
-      name: 'firefox-setup',
-      use: devices['Desktop Firefox'],
-    },
-    {
-      name: 'edge-setup',
       use: devices['Desktop Edge'],
     },
   ],

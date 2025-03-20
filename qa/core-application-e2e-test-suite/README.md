@@ -29,7 +29,6 @@ Create a `.env` file inside `core-application-e2e-test-suite`. Your `.env` file 
 
 ```bash
 LOCAL_TEST=true
-MINOR_VERSION=version_to_test
 CORE_APPLICATION_TASKLIST_URL=http://localhost:8080
 CORE_APPLICATION_OPERATE_URL=http://localhost:8081
 CAMUNDA_AUTH_STRATEGY= BASIC
@@ -66,7 +65,7 @@ npx playwright test --ui
 
 For testing with C8 SM, ensure you have an active SM instance. To set this up:
 
-1. Open a terminal in the `config` folder inside the `tasklist` directory.
+1. Open a terminal in the `config` folder inside the `core-application-e2e-test-suite` directory.
 2. Run the following command to start the necessary services using Docker Compose:
 
    ```bash

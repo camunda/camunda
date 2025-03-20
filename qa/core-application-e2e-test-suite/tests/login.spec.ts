@@ -6,8 +6,8 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {test} from '@fixtures/8.7';
-import {navigateToApp} from '@pages/8.7/UtilitiesPage';
+import {test} from 'fixtures';
+import {navigateToApp} from '@pages/UtilitiesPage';
 import {expect} from '@playwright/test';
 import {captureScreenshot, captureFailureVideo} from '@setup';
 
