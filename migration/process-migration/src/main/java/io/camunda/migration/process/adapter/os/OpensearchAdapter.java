@@ -71,7 +71,10 @@ public class OpensearchAdapter implements Adapter {
           retryDecorator.decorate(
               "Migrate entities %s".formatted(idList),
               () -> client.bulk(bulkRequest),
-              (res) -> res == null || res.items().isEmpty());
+              (res) ->
+                  res == null
+                      || res.items().isEmpty()
+                      || res.items().stream().allMatch(i -> i.error() != null));
     } catch (final Exception e) {
       throw new MigrationException("Failed to migrate entities %s".formatted(idList), e);
     }
