@@ -12,7 +12,9 @@ import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerDeleteResourceRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerDeployResourceRequest;
+import io.camunda.zeebe.gateway.impl.broker.request.BrokerFetchResourceRequest;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
+import io.camunda.zeebe.protocol.impl.record.value.deployment.ResourceRecord;
 import io.camunda.zeebe.protocol.impl.record.value.resource.ResourceDeletionRecord;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
@@ -49,7 +51,14 @@ public final class ResourceServices extends ApiServices<ResourceServices> {
     return sendBrokerRequest(brokerRequest);
   }
 
+  public CompletableFuture<ResourceRecord> fetchResource(final ResourceFetchRequest request) {
+    return sendBrokerRequest(
+        new BrokerFetchResourceRequest().setResourceKey(request.resourceKey()));
+  }
+
   public record DeployResourcesRequest(Map<String, byte[]> resources, String tenantId) {}
 
   public record ResourceDeletionRequest(long resourceKey, Long operationReference) {}
+
+  public record ResourceFetchRequest(long resourceKey) {}
 }
