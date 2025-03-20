@@ -21,6 +21,7 @@ import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.intent.AuthorizationIntent;
+import io.camunda.zeebe.protocol.record.intent.BatchOperationChunkIntent;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationIntent;
 import io.camunda.zeebe.protocol.record.intent.ClockIntent;
 import io.camunda.zeebe.protocol.record.intent.CommandDistributionIntent;
@@ -567,6 +568,9 @@ public final class EventAppliers implements EventApplier {
     register(
         BatchOperationIntent.CREATED,
         new BatchOperationCreatedApplier(state.getBatchOperationState()));
+    register(
+        BatchOperationChunkIntent.CREATED,
+        new BatchOperationChunkCreatedApplier(state.getBatchOperationState()));
   }
 
   private void registerIdentitySetupAppliers() {

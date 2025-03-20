@@ -8,7 +8,9 @@
 package io.camunda.zeebe.engine.state.mutable;
 
 import io.camunda.zeebe.engine.state.immutable.BatchOperationState;
+import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationChunkRecord;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationCreationRecord;
+import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationExecutionRecord;
 
 public interface MutableBatchOperationState extends BatchOperationState {
 
@@ -18,4 +20,8 @@ public interface MutableBatchOperationState extends BatchOperationState {
    * @param record the batch operation creation record to create
    */
   void create(final long batchKey, final BatchOperationCreationRecord record);
+
+  void appendKeys(final long batchKey, final BatchOperationChunkRecord record);
+
+  void removeKeys(final long batchKey, BatchOperationExecutionRecord record);
 }
