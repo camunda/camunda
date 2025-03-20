@@ -95,9 +95,25 @@ public class MappingServices
                     CamundaSearchException.Reason.NOT_FOUND));
   }
 
+  public MappingEntity getMapping(final String mappingId) {
+    return findMapping(mappingId)
+        .orElseThrow(
+            () ->
+                new CamundaSearchException(
+                    ErrorMessages.ERROR_NOT_FOUND_MAPPING_BY_ID.formatted(mappingId),
+                    CamundaSearchException.Reason.NOT_FOUND));
+  }
+
   public Optional<MappingEntity> findMapping(final Long mappingKey) {
     return search(
             SearchQueryBuilders.mappingSearchQuery().filter(f -> f.mappingKey(mappingKey)).build())
+        .items()
+        .stream()
+        .findFirst();
+  }
+
+  public Optional<MappingEntity> findMapping(final String mappingId) {
+    return search(SearchQueryBuilders.mappingSearchQuery().filter(f -> f.id(mappingId)).build())
         .items()
         .stream()
         .findFirst();
