@@ -23,6 +23,7 @@ import io.camunda.zeebe.gateway.protocol.rest.BatchOperationSearchQueryResult;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import java.time.OffsetDateTime;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -104,6 +105,48 @@ class BatchOperationControllerTest extends RestControllerTest {
             }],
             "page":{"totalItems":1,"firstSortValues":[],"lastSortValues":[]}
            }""");
+  }
+
+  @Test
+  void shouldCancelBatchOperation() {
+    final var batchOperationKey = 1L;
+    when(batchOperationServices.cancel(batchOperationKey))
+        .thenReturn(CompletableFuture.completedFuture(null));
+
+    webClient
+        .put()
+        .uri("/v2/batch-operations/{key}/cancel", batchOperationKey)
+        .exchange()
+        .expectStatus()
+        .isAccepted();
+  }
+
+  @Test
+  void shouldPauseBatchOperation() {
+    final var batchOperationKey = 1L;
+    when(batchOperationServices.pause(batchOperationKey))
+        .thenReturn(CompletableFuture.completedFuture(null));
+
+    webClient
+        .put()
+        .uri("/v2/batch-operations/{key}/pause", batchOperationKey)
+        .exchange()
+        .expectStatus()
+        .isAccepted();
+  }
+
+  @Test
+  void shouldResumeBatchOperation() {
+    final var batchOperationKey = 1L;
+    when(batchOperationServices.resume(batchOperationKey))
+        .thenReturn(CompletableFuture.completedFuture(null));
+
+    webClient
+        .put()
+        .uri("/v2/batch-operations/{key}/resume", batchOperationKey)
+        .exchange()
+        .expectStatus()
+        .isAccepted();
   }
 
   @Test
