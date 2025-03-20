@@ -61,7 +61,7 @@ public final class BatchOperationChunkRecord extends UnifiedRecordValue
     return chunkKeyProp.getValue();
   }
 
-  public BatchOperationChunkRecord setKeyChunkKey(final Long key) {
+  public BatchOperationChunkRecord setChunkKey(final Long key) {
     chunkKeyProp.setValue(key);
     return this;
   }
@@ -69,6 +69,6 @@ public final class BatchOperationChunkRecord extends UnifiedRecordValue
   public void wrap(final BatchOperationChunkRecord record) {
     setBatchOperationKey(record.getBatchOperationKey());
     setEntityKeys(record.getEntityKeys());
-    setKeyChunkKey(record.getChunkKey());
+    setChunkKey(record.getChunkKey());
   }
 }
