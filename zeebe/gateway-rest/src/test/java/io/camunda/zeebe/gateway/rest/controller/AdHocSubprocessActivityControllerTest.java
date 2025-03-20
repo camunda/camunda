@@ -13,6 +13,7 @@ import static org.junit.jupiter.params.provider.Arguments.arguments;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.assertArg;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import io.camunda.search.entities.AdHocSubprocessActivityEntity;
@@ -21,11 +22,15 @@ import io.camunda.search.exception.CamundaSearchException;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.auth.Authentication;
 import io.camunda.service.AdHocSubprocessActivityServices;
+import io.camunda.service.AdHocSubprocessActivityServices.AdHocSubprocessActivateActivitiesRequest;
+import io.camunda.service.AdHocSubprocessActivityServices.AdHocSubprocessActivateActivitiesRequest.AdHocSubprocessActivateActivityReference;
 import io.camunda.zeebe.gateway.protocol.rest.AdHocSubprocessActivityResult;
 import io.camunda.zeebe.gateway.protocol.rest.AdHocSubprocessActivityResult.TypeEnum;
 import io.camunda.zeebe.gateway.protocol.rest.AdHocSubprocessActivitySearchQueryResult;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
+import io.camunda.zeebe.protocol.impl.record.value.adhocsubprocess.AdHocSubProcessActivityActivationRecord;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
@@ -41,6 +46,8 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 class AdHocSubprocessActivityControllerTest extends RestControllerTest {
   private static final String AD_HOC_ACTIVITIES_URL = "/v2/element-instances/ad-hoc-activities";
   private static final String SEARCH_ACTIVITIES_URL = AD_HOC_ACTIVITIES_URL + "/search";
+  private static final String ACTIVATE_ACTIVITIES_URL =
+      AD_HOC_ACTIVITIES_URL + "/{adHocSubprocessInstanceKey}/activation";
 
   @MockitoBean private AdHocSubprocessActivityServices adHocSubprocessActivityServices;
 
@@ -171,6 +178,8 @@ class AdHocSubprocessActivityControllerTest extends RestControllerTest {
             """)
           .jsonPath(".detail")
           .isEqualTo(expectedErrorDetail);
+
+      verifyNoInteractions(adHocSubprocessActivityServices);
     }
 
     @Test
@@ -274,6 +283,124 @@ class AdHocSubprocessActivityControllerTest extends RestControllerTest {
               }
               """,
               "No filter.adHocSubprocessId provided."));
+    }
+  }
+
+  @Nested
+  class ActivateActivities {
+
+    private static final String AD_HOC_SUBPROCESS_INSTANCE_KEY = "123456789";
+
+    @Test
+    void shouldActivateActivities() {
+      when(adHocSubprocessActivityServices.activateActivities(
+              any(AdHocSubprocessActivateActivitiesRequest.class)))
+          .thenReturn(
+              CompletableFuture.completedFuture(new AdHocSubProcessActivityActivationRecord()));
+
+      webClient
+          .post()
+          .uri(ACTIVATE_ACTIVITIES_URL, AD_HOC_SUBPROCESS_INSTANCE_KEY)
+          .accept(MediaType.APPLICATION_JSON)
+          .contentType(MediaType.APPLICATION_JSON)
+          .bodyValue(
+              """
+            {
+              "elements": [
+                {"elementId": "A"},
+                {"elementId": "B"},
+                {"elementId": "C"}
+              ]
+            }
+            """)
+          .exchange()
+          .expectStatus()
+          .isNoContent();
+
+      verify(adHocSubprocessActivityServices)
+          .activateActivities(
+              assertArg(
+                  request -> {
+                    assertThat(request.adHocSubprocessInstanceKey())
+                        .isEqualTo(AD_HOC_SUBPROCESS_INSTANCE_KEY);
+
+                    assertThat(request.elements())
+                        .extracting(AdHocSubprocessActivateActivityReference::elementId)
+                        .containsExactly("A", "B", "C");
+                  }));
+    }
+
+    @ParameterizedTest
+    @MethodSource("invalidActivateParameters")
+    void shouldReturnBadRequestWhenValidationFails(
+        final String request, final String expectedErrorDetail) {
+      webClient
+          .post()
+          .uri(ACTIVATE_ACTIVITIES_URL, AD_HOC_SUBPROCESS_INSTANCE_KEY)
+          .accept(MediaType.APPLICATION_JSON)
+          .contentType(MediaType.APPLICATION_JSON)
+          .bodyValue(request)
+          .exchange()
+          .expectStatus()
+          .isBadRequest()
+          .expectBody()
+          .json(
+              """
+            {
+                "type": "about:blank",
+                "title": "INVALID_ARGUMENT",
+                "status": 400,
+                "instance": "/v2/element-instances/ad-hoc-activities/%s/activation"
+            }
+            """
+                  .formatted(AD_HOC_SUBPROCESS_INSTANCE_KEY))
+          .jsonPath(".detail")
+          .isEqualTo(expectedErrorDetail);
+
+      verifyNoInteractions(adHocSubprocessActivityServices);
+    }
+
+    static Stream<Arguments> invalidActivateParameters() {
+      return Stream.of(
+          arguments(
+              """
+              {}
+              """,
+              "No elements provided."),
+          arguments(
+              """
+              {
+                "elements": []
+              }
+              """,
+              "No elements provided."),
+          arguments(
+              """
+              {
+                "elements": [
+                  {}
+                ]
+              }
+              """,
+              "No elements[0].elementId provided."),
+          arguments(
+              """
+              {
+                "elements": [
+                  { "elementId": null }
+                ]
+              }
+              """,
+              "No elements[0].elementId provided."),
+          arguments(
+              """
+              {
+                "elements": [
+                  { "elementId": "    " }
+                ]
+              }
+              """,
+              "No elements[0].elementId provided."));
     }
   }
 }
