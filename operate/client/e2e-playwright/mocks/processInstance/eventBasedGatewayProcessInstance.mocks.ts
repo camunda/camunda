@@ -405,6 +405,36 @@ const eventBasedGatewayProcessInstance: InstanceMock = {
       completed: 1,
     },
   ],
+  statisticsV2: [
+    {
+      flowNodeId: 'eventBasedGateway',
+      active: 0,
+      canceled: 0,
+      incidents: 0,
+      completed: 1,
+    },
+    {
+      flowNodeId: 'messageTask',
+      active: 0,
+      canceled: 0,
+      incidents: 1,
+      completed: 0,
+    },
+    {
+      flowNodeId: 'timerEvent',
+      active: 0,
+      canceled: 0,
+      incidents: 0,
+      completed: 1,
+    },
+    {
+      flowNodeId: 'timerStartEvent',
+      active: 0,
+      canceled: 0,
+      incidents: 0,
+      completed: 1,
+    },
+  ],
   incidents: {
     count: 1,
     incidents: [
