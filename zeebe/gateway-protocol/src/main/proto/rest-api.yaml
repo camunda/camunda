@@ -3516,6 +3516,111 @@ paths:
         "500":
           $ref: "#/components/responses/InternalServerError"
 
+  /batch-operation/{batchOperationKey}/cancel:
+    put:
+      tags:
+        - Batch operation
+      operationId: cancelBatchOperation
+      summary: Cancel Batch operation
+      description: Cancels a running batch operation.
+      parameters:
+        - name: batchOperationKey
+          in: path
+          required: true
+          description: |
+            The key of the batch operation.
+          schema:
+            type: string
+      requestBody:
+        content: { }
+        required: false
+      responses:
+        "200":
+          description: The batch operation was successfully cancelled.
+          content: { }
+        "400":
+          $ref: "#/components/responses/InvalidData"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          description: Not found. The batch operation was not found.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+  /batch-operation/{batchOperationKey}/pause:
+    put:
+      tags:
+        - Batch operation
+      operationId: pauseBatchOperation
+      summary: Pause Batch operation
+      description: Pauses a running batch operation.
+      parameters:
+        - name: batchOperationKey
+          in: path
+          required: true
+          description: |
+            The key of the batch operation.
+          schema:
+            type: string
+      requestBody:
+        content: { }
+        required: false
+      responses:
+        "200":
+          description: The batch operation was successfully paused.
+          content: { }
+        "400":
+          $ref: "#/components/responses/InvalidData"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          description: Not found. The batch operation was not found.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+  /batch-operation/{batchOperationKey}/resume:
+    put:
+      tags:
+        - Batch operation
+      operationId: pauseBatchOperation
+      summary: Pause Batch operation
+      description: Pauses a running batch operation.
+      parameters:
+        - name: batchOperationKey
+          in: path
+          required: true
+          description: |
+            The key of the batch operation.
+          schema:
+            type: string
+      requestBody:
+        content: { }
+        required: false
+      responses:
+        "200":
+          description: The batch operation was successfully paused.
+          content: { }
+        "400":
+          $ref: "#/components/responses/InvalidData"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          description: Not found. The batch operation was not found.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
 components:
   schemas:
     TenantCreateRequest:
