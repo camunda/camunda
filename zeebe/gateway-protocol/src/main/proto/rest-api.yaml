@@ -488,7 +488,7 @@ paths:
           schema:
             type: string
       responses:
-        "202":
+        "204":
           description: The user was successfully assigned to the tenant.
         "400":
           $ref: "#/components/responses/InvalidData"
@@ -522,7 +522,7 @@ paths:
           schema:
             type: string
       responses:
-        "202":
+        "204":
           description: The user was successfully removed from the tenant.
         "400":
           $ref: "#/components/responses/InvalidData"
@@ -586,7 +586,7 @@ paths:
           schema:
             type: string
       responses:
-        "202":
+        "204":
           description: The mapping rule was successfully assigned to the tenant.
         "400":
           $ref: "#/components/responses/InvalidData"
@@ -621,7 +621,7 @@ paths:
           schema:
             type: string
       responses:
-        "202":
+        "204":
           description: The mapping rule was successfully removed from the tenant.
         "400":
           $ref: "#/components/responses/InvalidData"
@@ -657,7 +657,7 @@ paths:
           schema:
             type: string
       responses:
-        "202":
+        "204":
           description: The group was successfully assigned to the tenant.
         "400":
           $ref: "#/components/responses/InvalidData"
@@ -692,7 +692,7 @@ paths:
           schema:
             type: string
       responses:
-        "202":
+        "204":
           description: The group was successfully removed from the tenant.
         "400":
           $ref: "#/components/responses/InvalidData"
