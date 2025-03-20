@@ -45,7 +45,11 @@ public class UpdateGroupTest extends ClientRestTest {
   void shouldUpdateGroupWithChangeset() {
     // when
     final GroupChangeset changeset = new GroupChangeset().name(UPDATED_NAME);
-    client.newUpdateGroupCommand(GROUP_KEY).update(changeset).send().join();
+    client
+        .newUpdateGroupCommand(GROUP_KEY)
+        .update(io.camunda.client.wrappers.GroupChangeset.fromProtocolObject(changeset))
+        .send()
+        .join();
 
     // then
     final GroupUpdateRequest request = gatewayService.getLastRequest(GroupUpdateRequest.class);

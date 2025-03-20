@@ -150,7 +150,11 @@ public class UpdateJobTest {
     final var initialDeadline = job.getDeadline();
 
     // when
-    client.newUpdateJobCommand(jobKey).update(changeset).send().join();
+    client
+        .newUpdateJobCommand(jobKey)
+        .update(io.camunda.client.wrappers.JobChangeset.fromProtocolObject(changeset))
+        .send()
+        .join();
 
     // then
     assertTimeoutIncreased(initialDeadline, jobKey, true);
@@ -169,7 +173,11 @@ public class UpdateJobTest {
     final var initialDeadline = job.getDeadline();
 
     // when
-    client.newUpdateJobCommand(jobKey).update(changeset).send().join();
+    client
+        .newUpdateJobCommand(jobKey)
+        .update(io.camunda.client.wrappers.JobChangeset.fromProtocolObject(changeset))
+        .send()
+        .join();
 
     // then
     assertRetriesUpdated(jobKey, true, retries);
@@ -190,7 +198,11 @@ public class UpdateJobTest {
     final var initialRetries = job.getRetries();
 
     // when
-    client.newUpdateJobCommand(jobKey).update(changeset).send().join();
+    client
+        .newUpdateJobCommand(jobKey)
+        .update(io.camunda.client.wrappers.JobChangeset.fromProtocolObject(changeset))
+        .send()
+        .join();
 
     // then
     assertTimeoutIncreased(initialDeadline, jobKey, true);
