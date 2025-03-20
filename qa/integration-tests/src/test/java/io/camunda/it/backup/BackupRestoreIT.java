@@ -101,7 +101,6 @@ public class BackupRestoreIT {
   final ContainerLogsDumper logsWatcher =
       new ContainerLogsDumper(() -> Map.of("azurite", AZURITE_CONTAINER));
 
-  private AzureBackupStore store;
   private final String containerName =
       RandomStringUtils.insecure().nextAlphabetic(10).toLowerCase();
   // cannot be a @Container because it's initialized in setup()
