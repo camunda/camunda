@@ -20,7 +20,7 @@ import io.camunda.client.api.search.filter.builder.IntegerProperty;
 import io.camunda.client.api.search.filter.builder.StringProperty;
 import io.camunda.client.api.search.request.TypedSearchRequest.SearchRequestFilter;
 import io.camunda.client.api.search.response.UserTaskState;
-import io.camunda.client.protocol.rest.UserTaskVariableFilterRequest;
+import io.camunda.client.wrappers.UserTaskVariableFilterRequest;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Map;
