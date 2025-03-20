@@ -23,6 +23,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Process cache uses a Caffeine {@link LoadingCache} to store process definition key and {@link
@@ -35,6 +37,8 @@ import java.util.stream.Collectors;
  * GatewayRestConfiguration.ProcessCacheConfiguration} properties.
  */
 public class ProcessCache {
+
+  private static final Logger LOGGER = LoggerFactory.getLogger(ProcessCache.class);
 
   private final LoadingCache<Long, ProcessCacheItem> cache;
   private final ProcessFlowNodeProvider processFlowNodeProvider;
@@ -85,6 +89,7 @@ public class ProcessCache {
 
   public void invalidate() {
     cache.invalidateAll();
+    LOGGER.debug("Cache invalidated");
   }
 
   private final class ProcessCacheLoader implements CacheLoader<Long, ProcessCacheItem> {

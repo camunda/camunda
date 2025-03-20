@@ -16,7 +16,6 @@ public interface BrokerClusterState {
   int UNKNOWN_NODE_ID = -1;
   int NODE_ID_NULL = UNKNOWN_NODE_ID - 1;
   int PARTITION_ID_NULL = NODE_ID_NULL - 1;
-  int NO_LAST_COMPLETED_CHANGE_ID = -1;
 
   boolean isInitialized();
 
@@ -50,7 +49,5 @@ public interface BrokerClusterState {
 
   PartitionHealthStatus getPartitionHealth(int brokerId, int partition);
 
-  default long getLastCompletedChangeId() {
-    return NO_LAST_COMPLETED_CHANGE_ID;
-  }
+  long getLastCompletedChangeId();
 }
