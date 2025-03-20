@@ -21,6 +21,7 @@ import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
+import io.camunda.zeebe.protocol.record.intent.VariableIntent;
 import io.camunda.zeebe.protocol.record.value.ErrorType;
 import io.camunda.zeebe.protocol.record.value.JobListenerEventType;
 import io.camunda.zeebe.protocol.record.value.UserTaskRecordValue;
@@ -91,19 +92,30 @@ public class TaskListenerIncidentsTest {
 
   @Test
   public void
-      shouldCreateJobNoRetriesIncidentForUpdatingListenerAndContinueAfterResolutionOnTaskVariablesUpdate() {
-    verifyIncidentCreationOnListenerJobWithoutRetriesAndResolution(
-        ZeebeTaskListenerEventType.updating,
-        UnaryOperator.identity(),
-        pik ->
-            ENGINE
-                .variables()
-                .ofScope(helper.getUserTaskElementInstanceKey(pik))
-                .withDocument(Map.of("status", "APPROVED"))
-                .withLocalSemantic()
-                .expectPartialUpdate()
-                .update(),
-        UserTaskIntent.UPDATED);
+      shouldCreateJobNoRetriesIncidentContinueAfterResolutionAndCreateLocalTaskVariableOnTaskVariablesUpdate() {
+    final long processInstanceKey =
+        verifyIncidentCreationOnListenerJobWithoutRetriesAndResolution(
+            ZeebeTaskListenerEventType.updating,
+            UnaryOperator.identity(),
+            pik ->
+                ENGINE
+                    .variables()
+                    .ofScope(helper.getUserTaskElementInstanceKey(pik))
+                    .withDocument(Map.of("status", "APPROVED"))
+                    .withLocalSemantic()
+                    .expectPartialUpdate()
+                    .update(),
+            UserTaskIntent.UPDATED);
+
+    Assertions.assertThat(
+            RecordingExporter.variableRecords(VariableIntent.CREATED)
+                .withScopeKey(helper.getUserTaskElementInstanceKey(processInstanceKey))
+                .getFirst()
+                .getValue())
+        .describedAs(
+            "Expect that the variable was created in the user task's local scope with the expected value")
+        .hasName("status")
+        .hasValue("\"APPROVED\"");
   }
 
   @Test
@@ -116,7 +128,7 @@ public class TaskListenerIncidentsTest {
         UserTaskIntent.COMPLETED);
   }
 
-  private void verifyIncidentCreationOnListenerJobWithoutRetriesAndResolution(
+  private long verifyIncidentCreationOnListenerJobWithoutRetriesAndResolution(
       final ZeebeTaskListenerEventType eventType,
       final UnaryOperator<UserTaskBuilder> userTaskBuilder,
       final Consumer<Long> transitionTrigger,
@@ -196,6 +208,7 @@ public class TaskListenerIncidentsTest {
             tuple(ValueType.JOB, JobIntent.COMPLETED),
             tuple(ValueType.USER_TASK, UserTaskIntent.COMPLETE_TASK_LISTENER),
             tuple(ValueType.USER_TASK, terminalActionIntent));
+    return processInstanceKey;
   }
 
   @Test
@@ -244,27 +257,38 @@ public class TaskListenerIncidentsTest {
 
   @Test
   public void
-      shouldRetryUserTaskUpdateCommandAfterExtractValueErrorIncidentResolutionOnTaskVariablesUpdate() {
-    testUserTaskCommandRetryAfterExtractValueError(
-        ZeebeTaskListenerEventType.updating,
-        "updating_listener_var_name",
-        "expression_updating_listener_2",
-        pik ->
-            ENGINE
-                .variables()
-                .ofScope(helper.getUserTaskElementInstanceKey(pik))
-                .withDocument(Map.of("status", "APPROVED"))
-                .withLocalSemantic()
-                .expectPartialUpdate()
-                .update(),
-        UserTaskIntent.UPDATED,
-        userTask ->
-            Assertions.assertThat(userTask)
-                .hasAction("")
-                .hasOnlyChangedAttributes(UserTaskRecord.VARIABLES));
+      shouldRetryUserTaskUpdateCommandAfterExtractValueErrorIncidentResolutionAndCreateLocalTaskVariableOnTaskVariablesUpdate() {
+    final long processInstanceKey =
+        testUserTaskCommandRetryAfterExtractValueError(
+            ZeebeTaskListenerEventType.updating,
+            "updating_listener_var_name",
+            "expression_updating_listener_2",
+            pik ->
+                ENGINE
+                    .variables()
+                    .ofScope(helper.getUserTaskElementInstanceKey(pik))
+                    .withDocument(Map.of("status", "APPROVED"))
+                    .withLocalSemantic()
+                    .expectPartialUpdate()
+                    .update(),
+            UserTaskIntent.UPDATED,
+            userTask ->
+                Assertions.assertThat(userTask)
+                    .hasAction("")
+                    .hasOnlyChangedAttributes(UserTaskRecord.VARIABLES));
+
+    Assertions.assertThat(
+            RecordingExporter.variableRecords(VariableIntent.CREATED)
+                .withScopeKey(helper.getUserTaskElementInstanceKey(processInstanceKey))
+                .getFirst()
+                .getValue())
+        .describedAs(
+            "Expect that the variable was created in the user task's local scope with the expected value")
+        .hasName("status")
+        .hasValue("\"APPROVED\"");
   }
 
-  private void testUserTaskCommandRetryAfterExtractValueError(
+  private long testUserTaskCommandRetryAfterExtractValueError(
       final ZeebeTaskListenerEventType eventType,
       final String variableName,
       final String variableValue,
@@ -322,6 +346,7 @@ public class TaskListenerIncidentsTest {
         listenerType + "_3");
 
     helper.assertUserTaskRecordWithIntent(processInstanceKey, expectedIntent, assertion);
+    return processInstanceKey;
   }
 
   @Test
