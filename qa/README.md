@@ -88,12 +88,9 @@ public class ProcessDefinitionQueryTest {
 > The separation of test application and extension (to configure different secondary storages) is on purpose.
 >
 > This is for:
->  * Single responsibility
->    * the `CamundaMultiDbExtension` only focuses on configuring the database based on various factors (e.g. CI job)
->  * KISS: to keep things light
->  * Favor composability: make it reusable
->    * the extension handles configuring the DB, and can be used in different occasions together with using the standalone Camunda, standalone Broker, or something different
->    * the test applications focus on the respective application lifecycle and flexible configuration
+> * Single responsibility: the `CamundaMultiDbExtension` only focuses on configuring the database based on various factors (e.g. CI job)
+> * KISS: to keep things light
+> * Favor composability: To make it reusable. The extension handles configuring the DB, and can be used in different occasions together with using the standalone Camunda, standalone Broker, or something different. The test applications focus on the respective application lifecycle and flexible configuration
 
 **Optional:**
 
