@@ -374,7 +374,7 @@ final class BrokerTopologyManagerTest {
     addTopologyListener(listener);
 
     // when
-    final ClusterConfiguration clusterTopologyWithTwoBrokers =
+    final ClusterConfiguration clusterTopology =
         new ClusterConfiguration(
             1,
             Map.of(),
@@ -382,7 +382,7 @@ final class BrokerTopologyManagerTest {
             Optional.empty(),
             Optional.empty());
 
-    topologyManager.onClusterConfigurationUpdated(clusterTopologyWithTwoBrokers);
+    topologyManager.onClusterConfigurationUpdated(clusterTopology);
     actorSchedulerRule.workUntilDone();
 
     // then

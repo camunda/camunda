@@ -224,7 +224,7 @@ public final class BrokerTopologyManagerImpl extends Actor
 
     updateTopology(
         topologyToUpdate -> {
-          notifyOnClusterChangeCompleted(clusterTopology, topologyToUpdate);
+          updateOnClusterChangeCompleted(clusterTopology, topologyToUpdate);
 
           final var newClusterSize = clusterTopology.clusterSize();
           final var newPartitionsCount = clusterTopology.partitionCount();
@@ -245,7 +245,7 @@ public final class BrokerTopologyManagerImpl extends Actor
         });
   }
 
-  private void notifyOnClusterChangeCompleted(
+  private void updateOnClusterChangeCompleted(
       final ClusterConfiguration clusterTopology, final BrokerClusterStateImpl topologyToUpdate) {
 
     clusterTopology
@@ -253,10 +253,9 @@ public final class BrokerTopologyManagerImpl extends Actor
         .filter(lastChange -> lastChange.id() > topologyToUpdate.getLastCompletedChangeId())
         .ifPresent(
             lastChange -> {
-              LOG.info("The cluster has for sure been updated with new id " + lastChange.id());
-
               topologyListeners.forEach(BrokerTopologyListener::completedClusterChange);
               topologyToUpdate.setLastCompletedChangeId(lastChange.id());
+              LOG.debug("Updated topology with last completed change id " + lastChange.id());
             });
   }
 }

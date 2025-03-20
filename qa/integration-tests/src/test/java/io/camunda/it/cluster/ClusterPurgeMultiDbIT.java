@@ -237,7 +237,19 @@ public class ClusterPurgeMultiDbIT {
             .join()
             .items();
 
-    // This will fail, if the ProcessCache is not cleared.
+    /*
+     * This will fail if the ProcessCache is not cleared.
+     *
+     * Scenario:
+     * - A new cluster is started and a Process model is deployed.
+     * - We execute a flow node instance query which also populates the ProcessCache.
+     * - We purge the cluster, but don't delete the ProcessCache.
+     * - We deploy a new Process model, but this will have the same key as the old one.
+     * - We execute a flow node instance query which finds outdated data in the ProcessCache.
+     * - The outdated data is returned instead of the correct information.
+     * - Therefore, without purging the ProcessCache, the query will not return a FlowNode of name
+     *   "test-task-2"
+     */
     assertThat((items2.get(1)).getFlowNodeName()).isEqualTo("test-task-2");
   }
 
