@@ -11,6 +11,16 @@ import io.micrometer.core.instrument.MeterRegistry;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
+/**
+ * Ideas:
+ *
+ * <p>- TimeGauge to track the age of the current/oldest distribution? or last latency to another
+ * partition? Probably better a histogram /timer
+ *
+ * <p>TimeGauge is probably better for onRecovery Tracking???
+ *
+ * <p>- ... - ... - ...
+ */
 public final class DistributionMetrics {
 
   private final MeterRegistry meterRegistry;
@@ -89,9 +99,14 @@ public final class DistributionMetrics {
     getPartitionMetrics(partitionId).retryInflightDistribution(distributionKey);
   }
 
-  private PartitionDistributionMetrics getPartitionMetrics(final int partitionId) {
+  public PartitionDistributionMetrics getPartitionMetrics(final int partitionId) {
     return partitionMetrics.computeIfAbsent(
         partitionId, id -> new PartitionDistributionMetrics(id, meterRegistry));
+  }
+
+  public void timedRedistribution(final Runnable redistribution) {
+    // timer
+    redistribution.run();
   }
 
   private class PartitionDistributionMetrics {

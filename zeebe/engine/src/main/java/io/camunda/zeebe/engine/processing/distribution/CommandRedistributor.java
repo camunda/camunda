@@ -74,7 +74,12 @@ public final class CommandRedistributor implements StreamProcessorLifecycleAware
   public void onRecovered(final ReadonlyStreamProcessorContext context) {
     context
         .getScheduleService()
-        .runAtFixedRate(COMMAND_REDISTRIBUTION_INTERVAL, this::runRetryCycle);
+        .runAtFixedRate(COMMAND_REDISTRIBUTION_INTERVAL, this::redistribute);
+  }
+
+  // TODO: maybe push this one level higher in the SchedulerService to monitor all tasks
+  public void redistribute() {
+    distributionState.getMetrics().timedRedistribution(this::runRetryCycle);
   }
 
   private void runRetryCycle() {
