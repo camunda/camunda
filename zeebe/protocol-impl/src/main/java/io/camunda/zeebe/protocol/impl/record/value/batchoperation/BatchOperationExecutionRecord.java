@@ -8,10 +8,13 @@
 package io.camunda.zeebe.protocol.impl.record.value.batchoperation;
 
 import io.camunda.zeebe.msgpack.property.ArrayProperty;
+import io.camunda.zeebe.msgpack.property.EnumProperty;
+import io.camunda.zeebe.msgpack.property.IntegerProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.value.LongValue;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.value.BatchOperationExecutionRecordValue;
+import io.camunda.zeebe.protocol.record.value.BatchOperationType;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -19,15 +22,24 @@ public final class BatchOperationExecutionRecord extends UnifiedRecordValue
     implements BatchOperationExecutionRecordValue {
 
   public static final String PROP_BATCH_OPERATION_KEY = "batchOperationKey";
-  public static final String PROP_ENTITY_KEY_LIST = "entitykeys";
+  public static final String PROP_OFFSET = "offset";
+  public static final String PROP_KEY_LIST = "keys";
+  public static final String PROP_BATCH_OPERATION_TYPE = "batchOperationType";
 
   private final LongProperty batchOperationKeyProp = new LongProperty(PROP_BATCH_OPERATION_KEY);
-  private final ArrayProperty<LongValue> entityKeysProp =
-      new ArrayProperty<>(PROP_ENTITY_KEY_LIST, LongValue::new);
+  private final IntegerProperty offsetProp = new IntegerProperty(PROP_OFFSET, 0);
+  private final ArrayProperty<LongValue> keysProp =
+      new ArrayProperty<>(PROP_KEY_LIST, LongValue::new);
+  private final EnumProperty<BatchOperationType> batchOperationTypeProp =
+      new EnumProperty<>(
+          PROP_BATCH_OPERATION_TYPE, BatchOperationType.class, BatchOperationType.UNSPECIFIED);
 
   public BatchOperationExecutionRecord() {
-    super(2);
-    declareProperty(batchOperationKeyProp).declareProperty(entityKeysProp);
+    super(4);
+    declareProperty(batchOperationKeyProp)
+        .declareProperty(offsetProp)
+        .declareProperty(keysProp)
+        .declareProperty(batchOperationTypeProp);
   }
 
   @Override
@@ -42,18 +54,41 @@ public final class BatchOperationExecutionRecord extends UnifiedRecordValue
   }
 
   @Override
-  public Set<Long> getEntityKeys() {
-    return entityKeysProp.stream().map(LongValue::getValue).collect(Collectors.toSet());
+  public Integer getOffset() {
+    return offsetProp.getValue();
+  }
+
+  public BatchOperationExecutionRecord setOffset(final Integer offset) {
+    offsetProp.reset();
+    offsetProp.setValue(offset);
+    return this;
+  }
+
+  @Override
+  public Set<Long> getKeys() {
+    return keysProp.stream().map(LongValue::getValue).collect(Collectors.toSet());
   }
 
   public BatchOperationExecutionRecord setKeys(final Set<Long> keys) {
-    entityKeysProp.reset();
-    keys.forEach(key -> entityKeysProp.add().setValue(key));
+    keysProp.reset();
+    keys.forEach(key -> keysProp.add().setValue(key));
+    return this;
+  }
+
+  @Override
+  public BatchOperationType getBatchOperationType() {
+    return batchOperationTypeProp.getValue();
+  }
+
+  public BatchOperationExecutionRecord setBatchOperationType(
+      final BatchOperationType batchOperationType) {
+    batchOperationTypeProp.setValue(batchOperationType);
     return this;
   }
 
   public BatchOperationExecutionRecord wrap(final BatchOperationExecutionRecord record) {
-    setKeys(record.getEntityKeys());
+    setKeys(record.getKeys());
+    setBatchOperationType(record.getBatchOperationType());
     return this;
   }
 }
