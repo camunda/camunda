@@ -12,7 +12,7 @@ import static org.mockito.Mockito.*;
 
 import io.camunda.client.api.command.ClientException;
 import io.camunda.client.api.command.ProblemException;
-import io.camunda.client.protocol.rest.ProblemDetail;
+import io.camunda.client.wrappers.ProblemDetail;
 import java.net.SocketTimeoutException;
 import org.junit.jupiter.api.Test;
 
@@ -23,9 +23,9 @@ class ErrorHandlingUtilsTest {
     // Given
     final ProblemDetail problemDetail =
         new ProblemDetail()
-            .status(409)
-            .title("INVALID_STATE")
-            .detail("Task is already in progress.");
+            .setStatus(409)
+            .setTitle("INVALID_STATE")
+            .setDetail("Task is already in progress.");
 
     final ProblemException problemException = mock(ProblemException.class);
     when(problemException.details()).thenReturn(problemDetail);

@@ -15,7 +15,7 @@ import io.camunda.client.api.command.ProblemException;
 import io.camunda.client.api.search.response.ProcessInstance;
 import io.camunda.client.api.search.response.SearchQueryResponse;
 import io.camunda.client.api.search.response.UserTask;
-import io.camunda.client.protocol.rest.ProblemDetail;
+import io.camunda.client.wrappers.ProblemDetail;
 import io.camunda.client.wrappers.ProcessInstanceState;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.qa.util.multidb.MultiDbTestApplication;
