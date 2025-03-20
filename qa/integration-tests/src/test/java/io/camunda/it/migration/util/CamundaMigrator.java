@@ -49,7 +49,7 @@ public class CamundaMigrator extends ApiCallable implements AutoCloseable {
   private final Path zeebeDataPath;
   private CamundaClient camundaClient;
   private ZeebeContainer camundaContainer;
-  private TestSimpleCamundaApplication broker;
+  private TestSimpleCamundaApplication camunda;
   private TestRestTasklistClient tasklistClient;
   private TestRestOperateClient operateClient;
   private DocumentBasedSearchClient searchClients;
@@ -73,7 +73,7 @@ public class CamundaMigrator extends ApiCallable implements AutoCloseable {
     camundaContainer =
         new ZeebeContainer(image)
             .withAdditionalExposedPort(8080)
-            .withStartupTimeout(Duration.ofMinutes(2))
+            .withStartupTimeout(Duration.ofMinutes(1))
             .withNetworkAliases("camunda")
             .withExtraHost("internal.host", "host-gateway");
 
@@ -125,7 +125,7 @@ public class CamundaMigrator extends ApiCallable implements AutoCloseable {
 
     camundaContainer.close();
     extractVolume();
-    broker =
+    camunda =
         new TestSimpleCamundaApplication()
             .withBasicAuth()
             .withAuthenticatedAccess()
@@ -137,7 +137,7 @@ public class CamundaMigrator extends ApiCallable implements AutoCloseable {
                 })
             .withWorkingDirectory(zeebeDataPath.resolve("usr/local/zeebe"));
 
-    final var multiDbConfigurator = new MultiDbConfigurator(broker);
+    final var multiDbConfigurator = new MultiDbConfigurator(camunda);
     if (databaseType.equals(DatabaseType.ES) || databaseType.equals(DatabaseType.LOCAL)) {
       multiDbConfigurator.configureElasticsearchSupportIncludingOldExporter(
           databaseUrl, indexPrefix);
@@ -154,12 +154,12 @@ public class CamundaMigrator extends ApiCallable implements AutoCloseable {
     env.put("camunda.tasklist.importer.readerBackoff", "200");
 
     env.putAll(envOverrides);
-    env.forEach(broker::withProperty);
+    env.forEach(camunda::withProperty);
 
-    broker.start();
-    broker.awaitCompleteTopology();
-    camundaClient = broker.newClientBuilder().build();
-    url = URL.formatted(broker.host(), broker.mappedPort(TestZeebePort.REST));
+    camunda.start();
+    camunda.awaitCompleteTopology();
+    camundaClient = camunda.newClientBuilder().build();
+    url = URL.formatted(camunda.host(), camunda.mappedPort(TestZeebePort.REST));
     final var uri = URI.create(url + "/");
     tasklistClient = new TestRestTasklistClient(uri, databaseUrl);
     operateClient = new TestRestOperateClient(uri, "demo", "demo");
@@ -174,7 +174,7 @@ public class CamundaMigrator extends ApiCallable implements AutoCloseable {
 
   @Override
   public void close() throws IOException {
-    CloseHelper.quietCloseAll(camundaContainer, broker, tasklistClient, operateClient);
+    CloseHelper.quietCloseAll(camundaContainer, camunda, tasklistClient, operateClient);
     if (Files.exists(zeebeDataPath)) {
       FileUtil.deleteFolder(zeebeDataPath);
     }
