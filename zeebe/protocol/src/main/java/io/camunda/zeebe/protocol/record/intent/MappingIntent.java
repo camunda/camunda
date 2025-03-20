@@ -15,11 +15,15 @@
  */
 package io.camunda.zeebe.protocol.record.intent;
 
+import java.util.Arrays;
+
 public enum MappingIntent implements Intent {
   CREATE(0),
   CREATED(1),
   DELETE(2),
-  DELETED(3);
+  DELETED(3),
+  UPDATE(4),
+  UPDATED(5);
 
   private final short value;
 
@@ -37,6 +41,7 @@ public enum MappingIntent implements Intent {
     switch (this) {
       case CREATED:
       case DELETED:
+      case UPDATED:
         return true;
       default:
         return false;
@@ -44,17 +49,10 @@ public enum MappingIntent implements Intent {
   }
 
   public static Intent from(final short value) {
-    switch (value) {
-      case 0:
-        return CREATE;
-      case 1:
-        return CREATED;
-      case 2:
-        return DELETE;
-      case 3:
-        return DELETED;
-      default:
-        return Intent.UNKNOWN;
-    }
+    return Arrays.stream(values())
+        .filter(m -> m.value() == value)
+        .findFirst()
+        .map(Intent.class::cast)
+        .orElse(Intent.UNKNOWN);
   }
 }

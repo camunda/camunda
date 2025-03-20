@@ -29,6 +29,7 @@ import com.tngtech.archunit.lang.SimpleConditionEvent;
 import com.tngtech.archunit.lang.syntax.ArchRuleDefinition;
 import io.camunda.zeebe.protocol.record.ImmutableProtocol;
 import io.camunda.zeebe.protocol.record.Record;
+import io.camunda.zeebe.protocol.record.value.BatchOperationRelated;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRelated;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import java.lang.reflect.Method;
@@ -90,6 +91,7 @@ final class ImmutableProtocolTest {
 
   private DescribedPredicate<JavaClass> getExcludedClasses() {
     return Predicates.equivalentTo(ProcessInstanceRelated.class)
+        .or(Predicates.equivalentTo(BatchOperationRelated.class))
         .or(Predicates.equivalentTo(TenantOwned.class));
   }
 

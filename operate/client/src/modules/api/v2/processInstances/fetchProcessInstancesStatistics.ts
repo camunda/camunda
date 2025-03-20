@@ -16,7 +16,12 @@ type ProcessInstancesStatisticsDto = {
   completed: number;
 };
 
-type ProcessInstanceState = 'RUNNING' | 'COMPLETED' | 'CANCELED' | 'INCIDENT';
+enum ProcessInstanceState {
+  RUNNING = 'RUNNING',
+  COMPLETED = 'COMPLETED',
+  CANCELED = 'CANCELED',
+  INCIDENT = 'INCIDENT',
+}
 
 type ProcessInstancesStatisticsRequest = {
   groupBy?: string;
@@ -62,9 +67,5 @@ const fetchProcessInstancesStatistics = async (
   });
 };
 
-export {fetchProcessInstancesStatistics};
-export type {
-  ProcessInstancesStatisticsDto,
-  ProcessInstancesStatisticsRequest,
-  ProcessInstanceState,
-};
+export {fetchProcessInstancesStatistics, ProcessInstanceState};
+export type {ProcessInstancesStatisticsDto, ProcessInstancesStatisticsRequest};

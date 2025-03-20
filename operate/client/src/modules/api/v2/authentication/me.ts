@@ -8,8 +8,6 @@
 
 import {requestAndParse} from 'modules/request';
 
-type AuthorizedApplications = Array<string>;
-
 type SalesPlanType =
   | 'paid'
   | 'paid-cc'
@@ -24,7 +22,7 @@ type MeDto = {
   userId: string;
   displayName: string | null;
   canLogout: boolean;
-  authorizedApplications?: AuthorizedApplications;
+  authorizedApplications?: Array<string>;
   roles: ReadonlyArray<string> | null;
   salesPlanType: SalesPlanType | null;
   c8Links: {

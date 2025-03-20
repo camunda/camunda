@@ -10,6 +10,7 @@ package io.camunda.search.clients.transformers.sort;
 import static io.camunda.webapps.schema.descriptors.usermanagement.index.AuthorizationIndex.ID;
 import static io.camunda.webapps.schema.descriptors.usermanagement.index.AuthorizationIndex.OWNER_ID;
 import static io.camunda.webapps.schema.descriptors.usermanagement.index.AuthorizationIndex.OWNER_TYPE;
+import static io.camunda.webapps.schema.descriptors.usermanagement.index.AuthorizationIndex.RESOURCE_ID;
 import static io.camunda.webapps.schema.descriptors.usermanagement.index.AuthorizationIndex.RESOURCE_TYPE;
 
 public class AuthorizationFieldSortingTransformer implements FieldSortingTransformer {
@@ -20,6 +21,7 @@ public class AuthorizationFieldSortingTransformer implements FieldSortingTransfo
       case "ownerId" -> OWNER_ID;
       case "ownerType" -> OWNER_TYPE;
       case "resourceType" -> RESOURCE_TYPE;
+      case "resourceId" -> RESOURCE_ID;
       default -> throw new IllegalArgumentException("Unknown field: " + domainField);
     };
   }

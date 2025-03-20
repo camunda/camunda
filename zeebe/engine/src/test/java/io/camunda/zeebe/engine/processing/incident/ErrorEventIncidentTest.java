@@ -22,6 +22,7 @@ import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
+import io.camunda.zeebe.protocol.record.value.EntityType;
 import io.camunda.zeebe.protocol.record.value.ErrorType;
 import io.camunda.zeebe.protocol.record.value.IncidentRecordValue;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
@@ -158,6 +159,15 @@ public final class ErrorEventIncidentTest {
   public void shouldCreateIncidentWithCustomTenant() {
     // given
     final String tenantId = "acme";
+    final String username = "username";
+    ENGINE.tenant().newTenant().withTenantId(tenantId).create();
+    ENGINE.user().newUser(username).create();
+    ENGINE
+        .tenant()
+        .addEntity(tenantId)
+        .withEntityId(username)
+        .withEntityType(EntityType.USER)
+        .add();
     ENGINE.deployment().withXmlResource(BOUNDARY_EVENT_PROCESS).withTenantId(tenantId).deploy();
 
     final long processInstanceKey =
@@ -170,7 +180,7 @@ public final class ErrorEventIncidentTest {
         .withType(JOB_TYPE)
         .withErrorCode("other-error")
         .withAuthorizedTenantIds(tenantId)
-        .throwError();
+        .throwError(username);
 
     // then
     final Record<IncidentRecordValue> incidentEvent =

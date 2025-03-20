@@ -62,6 +62,10 @@ public class CollectionService {
     this.identityService = identityService;
   }
 
+  public List<CollectionDefinitionDto> getAllCollections() {
+    return collectionReader.getAllCollections();
+  }
+
   public IdResponseDto createNewCollectionAndReturnId(
       final String userId,
       final PartialCollectionDefinitionRequestDto partialCollectionDefinitionDto) {

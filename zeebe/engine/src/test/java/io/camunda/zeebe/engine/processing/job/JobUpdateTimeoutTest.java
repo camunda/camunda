@@ -259,12 +259,7 @@ public class JobUpdateTimeoutTest {
 
     // when
     final Record<JobRecordValue> updatedRecord =
-        ENGINE
-            .job()
-            .withKey(jobKey)
-            .withTimeout(timeout)
-            .withAuthorizedTenantIds(tenantId)
-            .updateTimeout();
+        ENGINE.job().withKey(jobKey).withTimeout(timeout).updateTimeout(username);
 
     // then
     Assertions.assertThat(updatedRecord.getValue()).hasTenantId(tenantId);

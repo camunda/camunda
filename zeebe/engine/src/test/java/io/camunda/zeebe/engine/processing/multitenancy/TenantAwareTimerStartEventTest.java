@@ -10,6 +10,7 @@ package io.camunda.zeebe.engine.processing.multitenancy;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 
+import io.camunda.security.configuration.ConfiguredUser;
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
@@ -20,19 +21,32 @@ import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.TimerIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.BpmnEventType;
+import io.camunda.zeebe.protocol.record.value.EntityType;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import java.time.Duration;
+import java.util.List;
 import java.util.function.Consumer;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
 public class TenantAwareTimerStartEventTest {
-
+  public static final String USERNAME = "username";
   private static final String PROCESS_ID = "process";
   private static final String TENANT = "tenant-a";
 
-  @Rule public final EngineRule engine = EngineRule.singlePartition();
+  @Rule
+  public final EngineRule engine =
+      EngineRule.singlePartition()
+          .withIdentitySetup()
+          .withSecurityConfig(config -> config.getMultiTenancy().setEnabled(true))
+          .withSecurityConfig(
+              config ->
+                  config
+                      .getInitialization()
+                      .setUsers(
+                          List.of(new ConfiguredUser(USERNAME, "password", "name", "email"))));
+
   private long processDefinitionKey;
 
   private static BpmnModelInstance processWithTimerStartEvent(
@@ -44,6 +58,8 @@ public class TenantAwareTimerStartEventTest {
 
   @Before
   public void init() {
+    engine.tenant().newTenant().withTenantId(TENANT).create();
+    engine.tenant().addEntity(TENANT).withEntityId(USERNAME).withEntityType(EntityType.USER).add();
     final var process = processWithTimerStartEvent(c -> c.timerWithCycle("R2/PT1M"));
     final var deployment =
         engine.deployment().withXmlResource(process).withTenantId(TENANT).deploy();
@@ -177,7 +193,7 @@ public class TenantAwareTimerStartEventTest {
         .resourceDeletion()
         .withResourceKey(processDefinitionKey)
         .withAuthorizedTenantIds(TENANT)
-        .delete();
+        .delete(USERNAME);
 
     // then
     final var canceledEvent =
@@ -207,7 +223,7 @@ public class TenantAwareTimerStartEventTest {
         .resourceDeletion()
         .withResourceKey(latestProcessDefinitionKey)
         .withAuthorizedTenantIds(TENANT)
-        .delete();
+        .delete(USERNAME);
 
     // then
     final var canceledEvent =

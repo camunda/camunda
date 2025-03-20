@@ -84,7 +84,8 @@ runs:
         {
           echo 'result<<EOF'
           find . -iname 'TEST-*-FLAKY.xml' | xargs -d '\n' --no-run-if-empty -n1 python3 .github/actions/observe-build-status/junit-flaky-to-jsonl.py
-          echo EOF
+          (find . -iname 'TEST-*.xml' -exec grep -l '</failure>' {} + | grep -v 'FLAKY.xml' | xargs -d '\n' --no-run-if-empty -n1 python3 .github/actions/observe-build-status/junit-failure-to-jsonl.py || true)
+          echo 'EOF'
         } >> $GITHUB_OUTPUT
 
     - uses: camunda/infra-global-github-actions/submit-test-status@main

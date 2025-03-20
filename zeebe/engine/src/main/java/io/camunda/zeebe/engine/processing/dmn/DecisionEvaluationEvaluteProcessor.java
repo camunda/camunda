@@ -9,8 +9,8 @@ package io.camunda.zeebe.engine.processing.dmn;
 
 import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsString;
 
+import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.processing.common.DecisionBehavior;
-import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior.AuthorizationRequest;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
@@ -61,7 +61,7 @@ public class DecisionEvaluationEvaluteProcessor
   public void processRecord(final TypedRecord<DecisionEvaluationRecord> command) {
 
     final DecisionEvaluationRecord record = command.getValue();
-    final Either<Failure, PersistedDecision> decisionOrFailure = getDecision(record);
+    final var decisionOrFailure = getDecision(record);
 
     if (decisionOrFailure.isRight()) {
       final var decision = decisionOrFailure.get();
@@ -89,7 +89,12 @@ public class DecisionEvaluationEvaluteProcessor
     }
 
     decisionOrFailure
-        .flatMap(decisionBehavior::findParsedDrgByDecision)
+        .flatMap(
+            decision ->
+                decisionBehavior
+                    .findParsedDrgByDecision(decision)
+                    .mapLeft(
+                        failure -> new Rejection(RejectionType.NOT_FOUND, failure.getMessage())))
         .ifRightOrLeft(
             drg -> {
               final var decision = decisionOrFailure.get();
@@ -113,27 +118,31 @@ public class DecisionEvaluationEvaluteProcessor
                   evaluationRecordTuple.getRight(),
                   command);
             },
-            failure -> {
-              final String reason = failure.getMessage();
-              responseWriter.writeRejectionOnCommand(
-                  command, RejectionType.INVALID_ARGUMENT, reason);
-              rejectionWriter.appendRejection(command, RejectionType.INVALID_ARGUMENT, reason);
+            rejection -> {
+              final String reason = rejection.reason();
+              responseWriter.writeRejectionOnCommand(command, rejection.type(), reason);
+              rejectionWriter.appendRejection(command, rejection.type(), reason);
             });
   }
 
-  private Either<Failure, PersistedDecision> getDecision(final DecisionEvaluationRecord record) {
+  private Either<Rejection, PersistedDecision> getDecision(final DecisionEvaluationRecord record) {
 
     final String decisionId = record.getDecisionId();
     final long decisionKey = record.getDecisionKey();
 
     if (!decisionId.isEmpty()) {
-      return decisionBehavior.findLatestDecisionByIdAndTenant(decisionId, record.getTenantId());
+      return decisionBehavior
+          .findLatestDecisionByIdAndTenant(decisionId, record.getTenantId())
+          .mapLeft(failure -> new Rejection(RejectionType.NOT_FOUND, failure.getMessage()));
       // TODO: expand DecisionState API to find decisions by ID AND VERSION (#11230)
     } else if (decisionKey > -1L) {
-      return decisionBehavior.findDecisionByKeyAndTenant(decisionKey, record.getTenantId());
+      return decisionBehavior
+          .findDecisionByKeyAndTenant(decisionKey, record.getTenantId())
+          .mapLeft(failure -> new Rejection(RejectionType.NOT_FOUND, failure.getMessage()));
     } else {
       // if both ID and KEY are missing
-      return Either.left(new Failure(ERROR_MESSAGE_NO_IDENTIFIER_SPECIFIED));
+      return Either.left(
+          new Rejection(RejectionType.INVALID_ARGUMENT, ERROR_MESSAGE_NO_IDENTIFIER_SPECIFIED));
     }
   }
 }

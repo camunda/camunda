@@ -45,6 +45,12 @@ public class PersistedMapping extends UnpackedObject implements DbValue {
         .declareProperty(idProp);
   }
 
+  public PersistedMapping copy() {
+    final var copy = new PersistedMapping();
+    copy.copyFrom(this);
+    return copy;
+  }
+
   public long getMappingKey() {
     return mappingKeyProp.getValue();
   }

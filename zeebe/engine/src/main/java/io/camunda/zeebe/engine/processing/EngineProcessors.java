@@ -13,6 +13,7 @@ import io.camunda.zeebe.dmn.DecisionEngineFactory;
 import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.metrics.JobProcessingMetrics;
 import io.camunda.zeebe.engine.metrics.ProcessEngineMetrics;
+import io.camunda.zeebe.engine.processing.batchoperation.BatchOperationSetupProcessors;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviorsImpl;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnJobActivationBehavior;
@@ -42,6 +43,7 @@ import io.camunda.zeebe.engine.processing.job.JobEventProcessors;
 import io.camunda.zeebe.engine.processing.message.MessageEventProcessors;
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
 import io.camunda.zeebe.engine.processing.resource.ResourceDeletionDeleteProcessor;
+import io.camunda.zeebe.engine.processing.resource.ResourceFetchProcessor;
 import io.camunda.zeebe.engine.processing.signal.SignalBroadcastProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.JobStreamer;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
@@ -67,6 +69,7 @@ import io.camunda.zeebe.protocol.record.intent.DecisionEvaluationIntent;
 import io.camunda.zeebe.protocol.record.intent.DeploymentDistributionIntent;
 import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
 import io.camunda.zeebe.protocol.record.intent.ResourceDeletionIntent;
+import io.camunda.zeebe.protocol.record.intent.ResourceIntent;
 import io.camunda.zeebe.protocol.record.intent.SignalIntent;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import io.camunda.zeebe.stream.api.InterPartitionCommandSender;
@@ -307,6 +310,11 @@ public final class EngineProcessors {
         securityConfig,
         featureFlags);
 
+    addResourceFetchProcessors(typedRecordProcessors, writers, processingState, authCheckBehavior);
+
+    BatchOperationSetupProcessors.addBatchOperationProcessors(
+        keyGenerator, typedRecordProcessors, writers, commandDistributionBehavior);
+
     return typedRecordProcessors;
   }
 
@@ -522,6 +530,17 @@ public final class EngineProcessors {
             authCheckBehavior);
     typedRecordProcessors.onCommand(
         ValueType.RESOURCE_DELETION, ResourceDeletionIntent.DELETE, resourceDeletionProcessor);
+  }
+
+  private static void addResourceFetchProcessors(
+      final TypedRecordProcessors typedRecordProcessors,
+      final Writers writers,
+      final ProcessingState processingState,
+      final AuthorizationCheckBehavior authCheckBehavior) {
+    final var resourceFetchProcessor =
+        new ResourceFetchProcessor(writers, processingState, authCheckBehavior);
+    typedRecordProcessors.onCommand(
+        ValueType.RESOURCE, ResourceIntent.FETCH, resourceFetchProcessor);
   }
 
   private static void addSignalBroadcastProcessors(

@@ -204,12 +204,7 @@ public final class JobUpdateRetriesTest {
 
     // when
     final Record<JobRecordValue> updatedRecord =
-        ENGINE
-            .job()
-            .withKey(jobKey)
-            .withRetries(NEW_RETRIES)
-            .withAuthorizedTenantIds(tenantId)
-            .updateRetries();
+        ENGINE.job().withKey(jobKey).withRetries(NEW_RETRIES).updateRetries(username);
 
     // then
     Assertions.assertThat(updatedRecord.getValue()).hasTenantId(tenantId);

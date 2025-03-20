@@ -1,0 +1,149 @@
+networks:
+  zeebe_network: {}
+
+services:
+  postgres:
+    container_name: postgres
+    image: postgres:17.4-alpine
+    ports:
+      - '5432:5432'
+    environment:
+      POSTGRES_DB: identity
+      POSTGRES_USER: identity
+      POSTGRES_PASSWORD: 't2L@!AqSMg8%I%NmHM'
+    networks:
+      - zeebe_network
+
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.17.3
+    container_name: elasticsearch
+    environment:
+      - discovery.type=single-node
+      - cluster.name=elasticsearch
+      - bootstrap.memory_lock=true
+      - xpack.security.enabled=false
+      - 'ES_JAVA_OPTS=-Xms1024m -Xmx1024m'
+      - path.repo=/usr/local/els-snapshots
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    ports:
+      - 9200:9200
+      - 9300:9300
+    networks:
+      - zeebe_network
+    restart: always
+    volumes:
+      - ./els-snapshots:/usr/local/els-snapshots
+
+  opensearch:
+    image: opensearchproject/opensearch:2.19.1
+    container_name: opensearch
+    environment:
+      - cluster.name=opensearch-cluster
+      - discovery.type=single-node
+      - plugins.security.disabled=true
+      - bootstrap.memory_lock=true # along with the memlock settings below, disables swapping
+      - 'OPENSEARCH_JAVA_OPTS=-Xms1024m -Xmx1024m' # minimum and maximum Java heap size, recommend setting both to 50% of system RAM
+      - OPENSEARCH_INITIAL_ADMIN_PASSWORD=yourStrongPassword123!
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+      nofile:
+        soft: 65536 # maximum number of open files for the OpenSearch user, set to at least 65536 on modern systems
+        hard: 65536
+    ports:
+      - 9200:9200
+      - 9605:9605 # required for Performance Analyzer
+    networks:
+      - zeebe_network
+
+  kibana:
+    image: docker.elastic.co/kibana/kibana:8.17.3
+    ports:
+      - 5601:5601
+    environment:
+      - elasticsearch.hosts=elasticsearch:9200
+    depends_on:
+      - elasticsearch
+    networks:
+      - zeebe_network
+
+  keycloak:
+    depends_on:
+      - postgres
+    container_name: keycloak
+    image: bitnami/keycloak:26.1.4
+    ports:
+      - '18080:8080'
+    environment:
+      KEYCLOAK_HTTP_RELATIVE_PATH: /auth
+      KEYCLOAK_DATABASE_HOST: postgres
+      KEYCLOAK_DATABASE_NAME: identity
+      KEYCLOAK_DATABASE_USER: identity
+      KEYCLOAK_DATABASE_PASSWORD: 't2L@!AqSMg8%I%NmHM'
+      KEYCLOAK_ADMIN_USER: admin
+      KEYCLOAK_ADMIN_PASSWORD: admin
+    healthcheck:
+      test: ['CMD', 'curl', '-f', 'http://localhost:8080/auth']
+      interval: 30s
+      timeout: 15s
+      retries: 8
+      start_period: 30s
+    networks:
+      - zeebe_network
+
+  zeebe: &zeebe
+    container_name: zeebe-${DATABASE}
+    image: camunda/zeebe:SNAPSHOT
+    environment:
+      - 'JAVA_TOOL_OPTIONS=-Xms512m -Xmx512m'
+      #- "JAVA_OPTS=-agentlib:jdwp=transport=dt_socket,address=8000,server=y,suspend=n"
+    ports:
+      - 26500:26500
+      - 9601:9600
+      - 8089:8080
+    depends_on:
+      - ${DATABASE}
+    networks:
+      - zeebe_network
+    env_file:
+      - envs/.env.database.${DATABASE}
+    restart: always
+
+  tasklist: &tasklist
+    container_name: tasklist-${DATABASE}
+    image: camunda/tasklist:SNAPSHOT
+    ports:
+      - 8080:8080
+    environment:
+      - SPRING_PROFILES_ACTIVE=dev,consolidated-auth
+      - CAMUNDA_TASKLIST_ZEEBE_COMPATIBILITY_ENABLED=true
+    depends_on:
+      - ${DATABASE}
+      - zeebe
+    env_file:
+      - envs/.env.database.${DATABASE}
+    networks:
+      - zeebe_network
+    volumes:
+      - ./config/custom.css:/usr/local/tasklist/config/custom.css
+    restart: always
+
+  operate: &operate
+    container_name: operate-${DATABASE}
+    image: camunda/operate:SNAPSHOT
+    ports:
+      - 8081:8080
+    environment:
+      - SPRING_PROFILES_ACTIVE=dev,consolidated-auth
+    depends_on:
+      - ${DATABASE}
+      - zeebe
+    env_file:
+      - envs/.env.database.${DATABASE}
+    networks:
+      - zeebe_network
+    restart: always

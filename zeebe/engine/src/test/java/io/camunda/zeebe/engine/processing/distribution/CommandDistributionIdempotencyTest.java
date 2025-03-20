@@ -11,6 +11,7 @@ import static io.camunda.zeebe.engine.processing.processinstance.migration.Migra
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
 
+import io.camunda.zeebe.engine.processing.batchoperation.BatchOperationCreateProcessor;
 import io.camunda.zeebe.engine.processing.clock.ClockProcessor;
 import io.camunda.zeebe.engine.processing.deployment.DeploymentCreateProcessor;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationCreateProcessor;
@@ -24,6 +25,7 @@ import io.camunda.zeebe.engine.processing.identity.GroupUpdateProcessor;
 import io.camunda.zeebe.engine.processing.identity.IdentitySetupInitializeProcessor;
 import io.camunda.zeebe.engine.processing.identity.MappingCreateProcessor;
 import io.camunda.zeebe.engine.processing.identity.MappingDeleteProcessor;
+import io.camunda.zeebe.engine.processing.identity.MappingUpdateProcessor;
 import io.camunda.zeebe.engine.processing.identity.RoleAddEntityProcessor;
 import io.camunda.zeebe.engine.processing.identity.RoleCreateProcessor;
 import io.camunda.zeebe.engine.processing.identity.RoleDeleteProcessor;
@@ -44,6 +46,7 @@ import io.camunda.zeebe.engine.processing.user.UserUpdateProcessor;
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.engine.util.TestInterPartitionCommandSender.CommandInterceptor;
 import io.camunda.zeebe.model.bpmn.Bpmn;
+import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.MappingRecord;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.RoleRecord;
@@ -52,6 +55,7 @@ import io.camunda.zeebe.protocol.impl.record.value.user.UserRecord;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.AuthorizationIntent;
+import io.camunda.zeebe.protocol.record.intent.BatchOperationIntent;
 import io.camunda.zeebe.protocol.record.intent.ClockIntent;
 import io.camunda.zeebe.protocol.record.intent.CommandDistributionIntent;
 import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
@@ -66,6 +70,7 @@ import io.camunda.zeebe.protocol.record.intent.SignalIntent;
 import io.camunda.zeebe.protocol.record.intent.TenantIntent;
 import io.camunda.zeebe.protocol.record.intent.UserIntent;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
+import io.camunda.zeebe.protocol.record.value.BatchOperationType;
 import io.camunda.zeebe.protocol.record.value.CommandDistributionRecordValue;
 import io.camunda.zeebe.protocol.record.value.DeploymentRecordValue;
 import io.camunda.zeebe.protocol.record.value.EntityType;
@@ -91,6 +96,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
+import org.agrona.concurrent.UnsafeBuffer;
 import org.awaitility.Awaitility;
 import org.junit.After;
 import org.junit.AfterClass;
@@ -209,6 +215,22 @@ public class CommandDistributionIdempotencyTest {
 
                   return ENGINE.authorization().updateAuthorization(key).update();
                 }),
+            BatchOperationCreateProcessor.class
+          },
+          {
+            "BatchOperation.CREATE is idempotent",
+            new Scenario(
+                ValueType.BATCH_OPERATION_CREATION,
+                BatchOperationIntent.CREATE,
+                () ->
+                    ENGINE
+                        .batchOperation()
+                        .ofType(BatchOperationType.PROCESS_CANCELLATION)
+                        .withFilter(
+                            new UnsafeBuffer(
+                                MsgPackConverter.convertToMsgPack(
+                                    "{\"processInstanceKeys\": [1, 2, 3]}")))
+                        .create()),
             AuthorizationUpdateProcessor.class
           },
           {
@@ -307,13 +329,24 @@ public class CommandDistributionIdempotencyTest {
             MappingCreateProcessor.class
           },
           {
+            "Mapping.UPDATE is idempotent",
+            new Scenario(
+                ValueType.MAPPING,
+                MappingIntent.UPDATE,
+                () -> {
+                  final var mapping = createMapping();
+                  return ENGINE.mapping().updateMapping(mapping.getValue().getId()).update();
+                }),
+            MappingUpdateProcessor.class
+          },
+          {
             "Mapping.DELETE is idempotent",
             new Scenario(
                 ValueType.MAPPING,
                 MappingIntent.DELETE,
                 () -> {
                   final var mapping = createMapping();
-                  return ENGINE.mapping().deleteMapping(mapping.getKey()).delete();
+                  return ENGINE.mapping().deleteMapping(mapping.getValue().getId()).delete();
                 }),
             MappingDeleteProcessor.class
           },

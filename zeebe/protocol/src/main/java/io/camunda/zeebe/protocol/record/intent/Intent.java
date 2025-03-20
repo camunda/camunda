@@ -70,7 +70,10 @@ public interface Intent {
           RedistributionIntent.class,
           GroupIntent.class,
           MappingIntent.class,
-          IdentitySetupIntent.class);
+          IdentitySetupIntent.class,
+          BatchOperationIntent.class,
+          BatchOperationChunkIntent.class,
+          BatchOperationExecutionIntent.class);
   short NULL_VAL = 255;
   Intent UNKNOWN = UnknownIntent.UNKNOWN;
 
@@ -178,6 +181,12 @@ public interface Intent {
         return MappingIntent.from(intent);
       case IDENTITY_SETUP:
         return IdentitySetupIntent.from(intent);
+      case BATCH_OPERATION_CREATION:
+        return BatchOperationIntent.from(intent);
+      case BATCH_OPERATION_EXECUTION:
+        return BatchOperationExecutionIntent.from(intent);
+      case BATCH_OPERATION_CHUNK:
+        return BatchOperationChunkIntent.from(intent);
       case NULL_VAL:
       case SBE_UNKNOWN:
         return Intent.UNKNOWN;
@@ -275,6 +284,12 @@ public interface Intent {
         return MappingIntent.valueOf(intent);
       case IDENTITY_SETUP:
         return IdentitySetupIntent.valueOf(intent);
+      case BATCH_OPERATION_CREATION:
+        return BatchOperationIntent.valueOf(intent);
+      case BATCH_OPERATION_EXECUTION:
+        return BatchOperationExecutionIntent.valueOf(intent);
+      case BATCH_OPERATION_CHUNK:
+        return BatchOperationChunkIntent.valueOf(intent);
       case NULL_VAL:
       case SBE_UNKNOWN:
         return Intent.UNKNOWN;

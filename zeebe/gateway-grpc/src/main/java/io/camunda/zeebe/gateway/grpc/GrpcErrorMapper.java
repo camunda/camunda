@@ -224,8 +224,6 @@ public final class GrpcErrorMapper {
         builder.setCode(Code.INTERNAL_VALUE);
         break;
       case UNAUTHORIZED:
-        builder.setCode(Code.UNAUTHENTICATED_VALUE);
-        break;
       case FORBIDDEN:
         builder.setCode(Code.PERMISSION_DENIED_VALUE);
         break;

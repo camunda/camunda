@@ -3,9 +3,9 @@
   <modelVersion>4.0.0</modelVersion>
   <parent>
     <groupId>io.camunda</groupId>
-    <artifactId>zeebe-parent</artifactId>
+    <artifactId>camunda-testing</artifactId>
     <version>8.8.0-SNAPSHOT</version>
-    <relativePath>../../parent/pom.xml</relativePath>
+    <relativePath>../pom.xml</relativePath>
   </parent>
 
   <artifactId>camunda-process-test-java</artifactId>
@@ -13,16 +13,8 @@
   <name>Camunda Process Test Java</name>
   <description>Camunda's testing library for processes and process applications with Java</description>
 
-  <licenses>
-    <license>
-      <name>Apache License, Version 2.0</name>
-      <url>http://www.apache.org/licenses/LICENSE-2.0</url>
-    </license>
-  </licenses>
-
   <properties>
     <version.java>8</version.java>
-    <license.header>com/mycila/maven/plugin/license/templates/APACHE-2.txt</license.header>
   </properties>
 
   <dependencies>

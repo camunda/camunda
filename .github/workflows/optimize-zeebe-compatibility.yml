@@ -57,7 +57,7 @@ jobs:
       - name: Run Zeebe IT
         uses: ./.github/actions/run-maven
         with:
-          parameters: verify -Dzeebe.docker.version=${{ env.zeebe-version-to-use }} -Dit.test.includedGroups=ccsm-test -Dfailsafe.rerunFailingTestsCount=2 -Pccsm-it -pl optimize/backend -am
+          parameters: -f optimize/pom.xml verify -Dzeebe.docker.version=${{ env.zeebe-version-to-use }} -Dit.test.includedGroups=ccsm-test -Dfailsafe.rerunFailingTestsCount=2 -Pccsm-it -pl backend -am
       - name: Docker log dump
         uses: ./.github/actions/docker-logs
         if: always() # always dump the docker logs in case of success and failure

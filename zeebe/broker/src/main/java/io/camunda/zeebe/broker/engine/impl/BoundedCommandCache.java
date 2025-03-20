@@ -64,37 +64,25 @@ public final class BoundedCommandCache {
     sizeReporter.accept(0);
   }
 
-  public void add(final LongHashSet keys) {
-    LockUtil.withLock(lock, () -> lockedAdd(keys));
+  public void add(final long key) {
+    LockUtil.withLock(lock, () -> lockedAdd(key));
   }
 
-  public boolean contains(final long key) {
-    return LockUtil.withLock(lock, () -> cache.contains(key));
+  private void lockedAdd(final long key) {
+    final int evictionCount = cache.size() + 1 - capacity;
+    if (evictionCount > 0) {
+      evict(evictionCount);
+    }
+
+    cache.add(key);
+    sizeReporter.accept(cache.size());
   }
 
-  public void remove(final long key) {
-    LockUtil.withLock(
-        lock,
-        () -> {
-          cache.remove(key);
-          sizeReporter.accept(cache.size());
-        });
+  public void addAll(final LongHashSet keys) {
+    LockUtil.withLock(lock, () -> lockedAddAll(keys));
   }
 
-  public int size() {
-    return LockUtil.withLock(lock, cache::size);
-  }
-
-  public void clear() {
-    LockUtil.withLock(
-        lock,
-        () -> {
-          cache.clear();
-          sizeReporter.accept(0);
-        });
-  }
-
-  private void lockedAdd(final LongHashSet keys) {
+  private void lockedAddAll(final LongHashSet keys) {
     final int evictionCount = cache.size() + keys.size() - capacity;
     if (evictionCount > 0) {
       evict(evictionCount);
@@ -102,6 +90,41 @@ public final class BoundedCommandCache {
 
     cache.addAll(keys);
     sizeReporter.accept(cache.size());
+  }
+
+  public boolean contains(final long key) {
+    return LockUtil.withLock(lock, () -> cache.contains(key));
+  }
+
+  public void remove(final long key) {
+    LockUtil.withLock(lock, () -> lockedRemove(key));
+  }
+
+  private void lockedRemove(final long key) {
+    cache.remove(key);
+    sizeReporter.accept(cache.size());
+  }
+
+  public void removeAll(final LongHashSet keys) {
+    LockUtil.withLock(lock, () -> lockedRemoveAll(keys));
+  }
+
+  private void lockedRemoveAll(final LongHashSet keys) {
+    cache.removeAll(keys);
+    sizeReporter.accept(cache.size());
+  }
+
+  public int size() {
+    return LockUtil.withLock(lock, cache::size);
+  }
+
+  public void clear() {
+    LockUtil.withLock(lock, this::lockedClear);
+  }
+
+  private void lockedClear() {
+    cache.clear();
+    sizeReporter.accept(0);
   }
 
   private void evict(final int count) {

@@ -36,7 +36,10 @@ import org.junit.Test;
 
 public class TenantAwareBusinessRuleTaskTest {
 
-  @ClassRule public static final EngineRule ENGINE = EngineRule.singlePartition();
+  @ClassRule
+  public static final EngineRule ENGINE =
+      EngineRule.singlePartition()
+          .withSecurityConfig(config -> config.getMultiTenancy().setEnabled(true));
 
   private static final String DMN_DECISION_TABLE = "/dmn/decision-table.dmn";
   private static final String DMN_DECISION_TABLE_WITH_ASSERTION =

@@ -14,6 +14,7 @@ import io.camunda.qa.util.auth.Authenticated;
 import io.camunda.qa.util.auth.User;
 import io.camunda.qa.util.auth.UserDefinition;
 import io.camunda.webapps.schema.descriptors.IndexDescriptors;
+import io.camunda.zeebe.qa.util.cluster.TestSpringApplication;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneApplication;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
@@ -92,29 +93,23 @@ import org.testcontainers.elasticsearch.ElasticsearchContainer;
  *   }
  * }</pre>
  *
- * <p>There are more complex scenarios that might need to start respective TestApplication externally.
- * For such cases the extension can be used via:
+ * <p>There are more complex scenarios that might need to start or configure respective TestApplication externally.
+ * For such cases the respective {@link TestStandaloneApplication} can be annotated with {@link MultiDbTestApplication}:
  * <pre>{@code
- * @RegisterExtension
- * public final CamundaMultiDBExtension extension =
- *    new CamundaMultiDBExtension(new TestStandaloneBroker());
+ *    @MultiDbTestApplication
+ *    static final TestStandaloneBroker BROKER =
+ *        new TestStandaloneBroker().withBasicAuth().withAuthorizationsEnabled();
  * }</pre>
  *
  * This is for example necessary for authentication tests.
  *
- * <b>We need to make sure to tag the
- * corresponding tests as @Tag("multi-db-test"), otherwise tests are not executed in multi db fashion.</b>
- * This is per default done by the {@link MultiDbTest} annotation.
- *
  *  <pre>{@code
- *  @Tag("multi-db-test")
+ *  @MultiDbTest
  *  final class MyAuthMultiDbTest {
  *
+ *    @MultiDbTestApplication
  *    static final TestStandaloneBroker BROKER =
  *        new TestStandaloneBroker().withBasicAuth().withAuthorizationsEnabled();
- *
- *    @RegisterExtension
- *    static final CamundaMultiDBExtension EXTENSION = new CamundaMultiDBExtension(BROKER);
  *
  *    private static final String ADMIN = "admin";
  *
@@ -149,10 +144,47 @@ import org.testcontainers.elasticsearch.ElasticsearchContainer;
  * </pre>
  *
  *
- *
- *<p>The extension will take care of the life cycle of the {@link TestStandaloneApplication}, which
+ *<p>The extension will take care of the life cycle of the {@link TestStandaloneApplication} per default, which
  * means configuring the detected database (this includes Operate, Tasklist, Broker properties and
  * exporter), starting the application, and tearing down at the end.
+ *
+ * If this is not wanted, the {@link TestStandaloneApplication} can be annotated with  {@link MultiDbTestApplication}
+ * and the respective {@link MultiDbTestApplication#managedLifecycle()} set to false:
+ *
+ *
+ *  <pre>{@code
+ *  @MultiDbTest
+ *  final class MyAuthMultiDbTest {
+ *
+ *    @MultiDbTestApplication(managedLifecycle = false)
+ *    static final TestStandaloneBroker BROKER =
+ *        new TestStandaloneBroker().withBasicAuth().withAuthorizationsEnabled();
+ *
+ *    private static final String ADMIN = "admin";
+ *
+ *    @UserDefinition
+ *    private static final User ADMIN_USER =
+ *      new User(ADMIN,
+ *               "password",
+ *               List.of(new Permissions(AUTHORIZATION, PermissionTypeEnum.READ, List.of("*"))));
+ *
+ *   @BeforeAll
+ *   static void setup() {
+ *     // start BROKER separate
+ *   }
+ *
+ *    @Test
+ *    void shouldMakeUseOfClient(@Authenticated(ADMIN) final CamundaClient adminClient) {
+ *      // given
+ *      // ... set up
+ *
+ *      // when
+ *      topology = adminClient.newTopologyRequest().send().join();
+ *
+ *      // then
+ *      assertThat(topology.getClusterSize()).isEqualTo(1);
+ *    }
+ *  }</pre>
  *
  * <p>See {@link TestStandaloneApplication} for more details.
  */
@@ -177,37 +209,45 @@ public class CamundaMultiDBExtension
   private static final Logger LOGGER = LoggerFactory.getLogger(CamundaMultiDBExtension.class);
   private final DatabaseType databaseType;
   private final List<AutoCloseable> closeables = new ArrayList<>();
-  private final TestStandaloneApplication<?> testApplication;
+  private final TestStandaloneApplication<?> defaultTestApplication;
+
+  private ApplicationUnderTest applicationUnderTest;
   private String testPrefix;
-  private final MultiDbConfigurator multiDbConfigurator;
+  private MultiDbConfigurator multiDbConfigurator;
   private MultiDbSetupHelper setupHelper = new NoopDBSetupHelper();
   private CamundaClientTestFactory authenticatedClientFactory;
 
   public CamundaMultiDBExtension() {
     this(new TestStandaloneBroker());
-    closeables.add(testApplication);
-    testApplication
-        .withBrokerConfig(cfg -> cfg.getGateway().setEnable(true))
-        .withExporter(
-            "recordingExporter", cfg -> cfg.setClassName(RecordingExporter.class.getName()));
   }
 
   public CamundaMultiDBExtension(final TestStandaloneApplication testApplication) {
-    this.testApplication = testApplication;
-    multiDbConfigurator = new MultiDbConfigurator(testApplication);
+    defaultTestApplication = testApplication;
     // resolve active database and exporter type
     final String property = System.getProperty(PROP_CAMUNDA_IT_DATABASE_TYPE);
     databaseType =
         property == null ? DatabaseType.LOCAL : DatabaseType.valueOf(property.toUpperCase());
   }
 
+  private void setupTestApplication(final Class<?> testClass) {
+    applicationUnderTest = getApplicationUnderTest(testClass, ModifierSupport::isStatic);
+
+    final var application = applicationUnderTest.application();
+    multiDbConfigurator = new MultiDbConfigurator(application);
+    application
+        .withBrokerConfig(cfg -> cfg.getGateway().setEnable(true))
+        .withExporter(
+            "recordingExporter", cfg -> cfg.setClassName(RecordingExporter.class.getName()));
+  }
+
   @Override
   public void beforeAll(final ExtensionContext context) {
     LOGGER.info("Starting up Camunda instance, with {}", databaseType);
     final Class<?> testClass = context.getRequiredTestClass();
-    final var isHistoryRelatedTest = testClass.getAnnotation(HistoryMultiDbTest.class) != null;
+    final var isHistoryRelatedTest = testClass.isAnnotationPresent(HistoryMultiDbTest.class);
     testPrefix = testClass.getSimpleName().toLowerCase();
 
+    setupTestApplication(testClass);
     switch (databaseType) {
       case LOCAL -> {
         final ElasticsearchContainer elasticsearchContainer = setupElasticsearch();
@@ -251,13 +291,9 @@ public class CamundaMultiDBExtension
         .timeout(TIMEOUT_DATABASE_READINESS)
         .until(setupHelper::validateConnection);
 
-    testApplication.start();
-    testApplication.awaitCompleteTopology();
-
-    Awaitility.await("Await exporter readiness")
-        .timeout(TIMEOUT_DATABASE_EXPORTER_READINESS)
-        .pollInterval(Duration.ofMillis(500))
-        .until(() -> setupHelper.validateSchemaCreation(testPrefix));
+    if (applicationUnderTest.shouldBeManaged) {
+      manageApplicationUnderTest();
+    }
 
     authenticatedClientFactory = new CamundaClientTestFactory();
     // we support only static fields for now - to make sure test setups are build in a way
@@ -268,6 +304,18 @@ public class CamundaMultiDBExtension
     if (!users.isEmpty()) {
       authenticatedClientFactory.withUsers(users);
     }
+  }
+
+  private void manageApplicationUnderTest() {
+    final var application = applicationUnderTest.application;
+    closeables.add(application);
+    application.start();
+    application.awaitCompleteTopology();
+
+    Awaitility.await("Await exporter readiness")
+        .timeout(TIMEOUT_DATABASE_EXPORTER_READINESS)
+        .pollInterval(Duration.ofMillis(500))
+        .until(() -> setupHelper.validateSchemaCreation(testPrefix));
   }
 
   private ElasticsearchContainer setupElasticsearch() {
@@ -281,6 +329,39 @@ public class CamundaMultiDBExtension
     elasticsearchContainer.start();
     closeables.add(elasticsearchContainer);
     return elasticsearchContainer;
+  }
+
+  private ApplicationUnderTest getApplicationUnderTest(
+      final Class<?> testClass, Predicate<Field> predicate) {
+    var testStandaloneApplication = defaultTestApplication;
+    var shouldBeManaged = true;
+    predicate = predicate.and(field -> field.isAnnotationPresent(MultiDbTestApplication.class));
+    for (final Field field : testClass.getDeclaredFields()) {
+      try {
+        if (predicate.test(field)) {
+          if (TestStandaloneApplication.class.isAssignableFrom(field.getType())) {
+            field.setAccessible(true);
+            testStandaloneApplication = (TestStandaloneApplication<?>) field.get(null);
+            final MultiDbTestApplication annotation =
+                field.getAnnotation(MultiDbTestApplication.class);
+            shouldBeManaged = annotation.managedLifecycle();
+            field.setAccessible(false);
+          } else {
+            fail(
+                String.format(
+                    "Expected to find field annotated with %s from type %s, but found %s. It doesn't apply criteria.",
+                    MultiDbTestApplication.class, TestSpringApplication.class, field.getType()));
+          }
+        }
+      } catch (final Exception ex) {
+        throw new RuntimeException(
+            String.format(
+                "Expected to find field annotated with %s from type %s, but fail during that.",
+                MultiDbTestApplication.class, TestSpringApplication.class),
+            ex);
+      }
+    }
+    return new ApplicationUnderTest(testStandaloneApplication, shouldBeManaged);
   }
 
   private List<User> findUsers(
@@ -342,10 +423,13 @@ public class CamundaMultiDBExtension
 
   private CamundaClient createCamundaClient(final Authenticated authenticated) {
     final CamundaClient camundaClient =
-        authenticatedClientFactory.createCamundaClient(testApplication, authenticated);
+        authenticatedClientFactory.createCamundaClient(
+            applicationUnderTest.application, authenticated);
     closeables.add(camundaClient);
     return camundaClient;
   }
+
+  record ApplicationUnderTest(TestStandaloneApplication<?> application, boolean shouldBeManaged) {}
 
   private static final class NoopDBSetupHelper implements MultiDbSetupHelper {
     @Override

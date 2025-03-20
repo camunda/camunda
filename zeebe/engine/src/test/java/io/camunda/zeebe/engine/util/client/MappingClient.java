@@ -26,8 +26,12 @@ public class MappingClient {
     return new MappingCreateClient(writer, name);
   }
 
-  public MappingDeleteClient deleteMapping(final long key) {
-    return new MappingDeleteClient(writer, key);
+  public MappingDeleteClient deleteMapping(final String id) {
+    return new MappingDeleteClient(writer, id);
+  }
+
+  public MappingUpdateClient updateMapping(final String id) {
+    return new MappingUpdateClient(writer, id);
   }
 
   public static class MappingCreateClient {
@@ -107,10 +111,10 @@ public class MappingClient {
     private final MappingRecord mappingRecord;
     private Function<Long, Record<MappingRecordValue>> expectation = SUCCESS_SUPPLIER;
 
-    public MappingDeleteClient(final CommandWriter writer, final long key) {
+    public MappingDeleteClient(final CommandWriter writer, final String id) {
       this.writer = writer;
       mappingRecord = new MappingRecord();
-      mappingRecord.setMappingKey(key);
+      mappingRecord.setId(id);
     }
 
     public Record<MappingRecordValue> delete() {
@@ -119,6 +123,67 @@ public class MappingClient {
     }
 
     public MappingDeleteClient expectRejection() {
+      expectation = REJECTION_SUPPLIER;
+      return this;
+    }
+  }
+
+  public static class MappingUpdateClient {
+
+    private static final Function<String, Record<MappingRecordValue>> SUCCESS_SUPPLIER =
+        (position) ->
+            RecordingExporter.mappingRecords()
+                .withIntent(MappingIntent.UPDATED)
+                .filter(
+                    mappingRecordValueRecord ->
+                        mappingRecordValueRecord.getValue().getId().equals(position))
+                .getFirst();
+
+    private static final Function<String, Record<MappingRecordValue>> REJECTION_SUPPLIER =
+        (position) ->
+            RecordingExporter.mappingRecords()
+                .onlyCommandRejections()
+                .withIntent(MappingIntent.UPDATE)
+                .filter(
+                    mappingRecordValueRecord ->
+                        mappingRecordValueRecord.getValue().getId().equals(position))
+                .getFirst();
+    private final CommandWriter writer;
+    private final MappingRecord mappingRecord;
+    private Function<String, Record<MappingRecordValue>> expectation = SUCCESS_SUPPLIER;
+
+    public MappingUpdateClient(final CommandWriter writer, final String id) {
+      this.writer = writer;
+      mappingRecord = new MappingRecord();
+      mappingRecord.setId(id);
+    }
+
+    public Record<MappingRecordValue> update() {
+      writer.writeCommand(MappingIntent.UPDATE, mappingRecord);
+      return expectation.apply(mappingRecord.getId());
+    }
+
+    public Record<MappingRecordValue> update(final String username) {
+      writer.writeCommand(MappingIntent.UPDATE, username, mappingRecord);
+      return expectation.apply(mappingRecord.getId());
+    }
+
+    public MappingUpdateClient withClaimName(final String claimName) {
+      mappingRecord.setClaimName(claimName);
+      return this;
+    }
+
+    public MappingUpdateClient withClaimValue(final String claimValue) {
+      mappingRecord.setClaimValue(claimValue);
+      return this;
+    }
+
+    public MappingUpdateClient withName(final String name) {
+      mappingRecord.setName(name);
+      return this;
+    }
+
+    public MappingUpdateClient expectRejection() {
       expectation = REJECTION_SUPPLIER;
       return this;
     }

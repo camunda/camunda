@@ -129,22 +129,19 @@ public final class DeploymentCreateProcessor
 
   @Override
   public void processNewCommand(final TypedRecord<DeploymentRecord> command) {
+    final var newResourceAuthorization = true;
     final var authorizationRequest =
         new AuthorizationRequest(
             command,
             AuthorizationResourceType.RESOURCE,
             PermissionType.CREATE,
-            command.getValue().getTenantId());
+            command.getValue().getTenantId(),
+            newResourceAuthorization);
     final var isAuthorized = authCheckBehavior.isAuthorized(authorizationRequest);
     if (isAuthorized.isLeft()) {
       final var rejection = isAuthorized.getLeft();
-      final String errorMessage =
-          RejectionType.NOT_FOUND.equals(rejection.type())
-              ? "Expected to create a deployment for tenant '%s', but no such tenant was found"
-                  .formatted(command.getValue().getTenantId())
-              : rejection.reason();
-      rejectionWriter.appendRejection(command, rejection.type(), errorMessage);
-      responseWriter.writeRejectionOnCommand(command, rejection.type(), errorMessage);
+      rejectionWriter.appendRejection(command, rejection.type(), rejection.reason());
+      responseWriter.writeRejectionOnCommand(command, rejection.type(), rejection.reason());
       return;
     }
 

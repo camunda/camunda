@@ -167,4 +167,13 @@ public final class SearchQueryBuilders {
       final Function<IncidentQuery.Builder, ObjectBuilder<IncidentQuery>> fn) {
     return fn.apply(incidentSearchQuery()).build();
   }
+
+  public static BatchOperationQuery.Builder batchOperationQuery() {
+    return new BatchOperationQuery.Builder();
+  }
+
+  public static BatchOperationQuery batchOperationQuery(
+      final Function<BatchOperationQuery.Builder, ObjectBuilder<BatchOperationQuery>> fn) {
+    return fn.apply(batchOperationQuery()).build();
+  }
 }

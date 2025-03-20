@@ -5,6 +5,12 @@
   "Tenants": "Tenants",
   "Mappings": "Mappings",
   "Authorizations": "Authorizations",
+  "users": "Users",
+  "groups": "Groups",
+  "roles": "Roles",
+  "tenants": "Tenants",
+  "mappings": "Mappings",
+  "authorizations": "Authorizations",
   "unauthorized": "Unauthorized",
   "sessionExpired": "Looks like your session has expired",
   "forbidden": "Forbidden",
@@ -29,5 +35,8 @@
   "delete": "Delete",
   "update": "Update",
   "edit": "Edit",
-  "retry": "Retry"
+  "retry": "Retry",
+  "forbiddenPageTitle": "You don’t have access to this component",
+  "forbiddenPageDesc": " It looks like you don’t have the necessary permissions to access this component. <strong>Please contact your cluster admin</strong> to request access.",
+  "forbiddenPageLinkLabel": "Learn more about roles and permissions"
 }

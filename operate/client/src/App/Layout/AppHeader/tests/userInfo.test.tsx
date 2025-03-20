@@ -216,4 +216,26 @@ describe('User info', () => {
     window.open = originalWindowOpen;
     window.Osano = undefined;
   });
+
+  it('should hide nav links if operate is unauthorized', async () => {
+    const mockUser = createUser({
+      displayName: 'Franz Kafka',
+      canLogout: true,
+      authorizedApplications: ['tasklist'],
+    });
+
+    mockMe().withSuccess(mockUser);
+
+    render(<AppHeader />, {
+      wrapper: Wrapper,
+    });
+
+    await act(async () => {
+      await authenticationStore.authenticate();
+    });
+
+    expect(screen.queryByText('Dashboard')).not.toBeInTheDocument();
+    expect(screen.queryByText('Processes')).not.toBeInTheDocument();
+    expect(screen.queryByText('Decisions')).not.toBeInTheDocument();
+  });
 });

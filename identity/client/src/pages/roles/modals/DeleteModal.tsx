@@ -1,33 +1,33 @@
 import { FC } from "react";
+import { useApiCall } from "src/utility/api/hooks";
+import useTranslate from "src/utility/localization";
 import {
   DeleteModal as Modal,
   UseEntityModalProps,
 } from "src/components/modal";
-import useTranslate from "src/utility/localization";
-import { useApiCall } from "src/utility/api/hooks";
+import { deleteRole, DeleteRoleParams } from "src/utility/api/roles";
 import { useNotifications } from "src/components/notifications";
-import { deleteRole, Role } from "src/utility/api/roles";
 
-const DeleteModal: FC<UseEntityModalProps<Role>> = ({
-  entity,
+const DeleteModal: FC<UseEntityModalProps<DeleteRoleParams>> = ({
   open,
   onClose,
   onSuccess,
+  entity: { roleKey, name },
 }) => {
-  const { t } = useTranslate();
+  const { t, Translate } = useTranslate("roles");
   const { enqueueNotification } = useNotifications();
-
-  const [callDeleteApi, { loading }] = useApiCall(deleteRole);
+  const [apiCall, { loading }] = useApiCall(deleteRole);
 
   const handleSubmit = async () => {
-    const { success } = await callDeleteApi({
-      key: entity.key,
-    });
+    const { success } = await apiCall({ roleKey });
 
     if (success) {
       enqueueNotification({
         kind: "success",
-        title: t("Role has been deleted."),
+        title: t("roleHasBeenDeleted"),
+        subtitle: t("deleteRoleSuccess", {
+          name,
+        }),
       });
       onSuccess();
     }
@@ -36,14 +36,22 @@ const DeleteModal: FC<UseEntityModalProps<Role>> = ({
   return (
     <Modal
       open={open}
-      headline={t('Are you sure you want to delete the role "{{ name }}"?', {
-        name: entity.name,
-      })}
+      headline={t("deleteRole")}
       onSubmit={handleSubmit}
       loading={loading}
-      loadingDescription={t("Deleting role")}
+      loadingDescription={t("deletingRole")}
       onClose={onClose}
-    />
+      confirmLabel={t("deleteRole")}
+    >
+      <p>
+        <Translate
+          i18nKey="deleteRoleConfirmation"
+          values={{ roleKey: roleKey }}
+        >
+          Are you sure you want to delete <strong>{roleKey}</strong>?
+        </Translate>
+      </p>
+    </Modal>
   );
 };
 

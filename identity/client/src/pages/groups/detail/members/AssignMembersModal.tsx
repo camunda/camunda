@@ -1,3 +1,10 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda
+ * Services GmbH under one or more contributor license agreements.
+ * See the NOTICE file distributed with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file except in compliance with the Camunda License 1.0.
+ */
+
 import { FC, useEffect, useState } from "react";
 import { Tag } from "@carbon/react";
 import { UseEntityModalCustomProps } from "src/components/modal";
@@ -21,7 +28,7 @@ const AssignMembersModal: FC<
     { assignedUsers: User[] }
   >
 > = ({ entity: group, assignedUsers, onSuccess, open, onClose }) => {
-  const { t, Translate } = useTranslate();
+  const { t } = useTranslate("groups");
   const [selectedUsers, setSelectedUsers] = useState<User[]>([]);
   const [loadingAssignUser, setLoadingAssignUser] = useState(false);
 
@@ -31,13 +38,14 @@ const AssignMembersModal: FC<
     reload,
     error,
   } = useApi(searchUser);
+
   const [callAssignUser] = useApiCall(assignGroupMember);
 
   const unassignedUsers =
     userSearchResults?.items.filter(
-      ({ id }) =>
-        !assignedUsers.some((user) => user.id === id) &&
-        !selectedUsers.some((user) => user.id === id),
+      ({ username }) =>
+        !assignedUsers.some((user) => user.username === username) &&
+        !selectedUsers.some((user) => user.username === username),
     ) || [];
 
   const onSelectUser = (user: User) => {
@@ -45,9 +53,11 @@ const AssignMembersModal: FC<
   };
 
   const onUnselectUser =
-    ({ id }: User) =>
+    ({ username }: User) =>
     () => {
-      setSelectedUsers(selectedUsers.filter((user) => user.id !== id));
+      setSelectedUsers(
+        selectedUsers.filter((user) => user.username !== username),
+      );
     };
 
   const canSubmit = group && selectedUsers.length;
@@ -58,8 +68,8 @@ const AssignMembersModal: FC<
     setLoadingAssignUser(true);
 
     const results = await Promise.all(
-      selectedUsers.map(({ id }) =>
-        callAssignUser({ userId: id!, groupId: group.id }),
+      selectedUsers.map(({ username }) =>
+        callAssignUser({ username, groupId: group.id }),
       ),
     );
 
@@ -78,19 +88,17 @@ const AssignMembersModal: FC<
 
   return (
     <FormModal
-      headline={t("Assign members")}
-      confirmLabel={t("Assign")}
+      headline={t("assignUser")}
+      confirmLabel={t("assignUser")}
       loading={loadingAssignUser}
-      loadingDescription={t("Assigning members")}
+      loadingDescription={t("assigningUser")}
       open={open}
       onSubmit={handleSubmit}
       submitDisabled={!canSubmit}
       onClose={onClose}
       overflowVisible
     >
-      <p>
-        <Translate>Search and assign members to group.</Translate>
-      </p>
+      <p>{t("searchAndAssignUserToGroup")}</p>
       {selectedUsers.length > 0 && (
         <SelectedUsers>
           {selectedUsers.map((user) => (
@@ -111,13 +119,13 @@ const AssignMembersModal: FC<
         items={unassignedUsers}
         itemTitle={({ username }) => username}
         itemSubTitle={({ email }) => email}
-        placeholder={t("Search by full name or email address")}
+        placeholder={t("searchByNameOrEmail")}
         onSelect={onSelectUser}
       />
       {!loading && error && (
         <TranslatedErrorInlineNotification
-          title={t("Users could not be loaded.")}
-          actionButton={{ label: t("Retry"), onClick: reload }}
+          title={t("usersCouldNotLoad")}
+          actionButton={{ label: t("retry"), onClick: reload }}
         />
       )}
     </FormModal>

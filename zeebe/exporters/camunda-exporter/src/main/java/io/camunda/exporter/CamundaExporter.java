@@ -179,7 +179,22 @@ public class CamundaExporter implements Exporter {
       return;
     }
 
+    // Brownfield:
+    //
+    // Before flushing, Tasklist + Operate importers should have finished importing records of the
+    // previous version.
+    // Flushing is not possible to prevent data corruption (conflicting updates with Importers).
+    //
+    // For the importers to finish, the Elasticsearch/OpenSearch exporters need to
+    // export all records from the previous version. When Importer see records
+    // of a new version they can set as completed. Camunda Exporter skips older records to
+    // unblock other exporters, and let Importers do their job.
+    //
+    // As soon new records start to be exported, they get cached. Importers should be able to
+    // complete the importing.
+
     if (configuration.getIndex().shouldWaitForImporters() && !exporterCanFlush) {
+
       ensureCachedRecordsLessThanBulkSize(record);
 
       writer.addRecord(record);
@@ -187,6 +202,7 @@ public class CamundaExporter implements Exporter {
       LOG.info(
           "Waiting for importers to finish, cached record with key {} but did not flush",
           record.getKey());
+
       return;
     }
 
@@ -262,6 +278,16 @@ public class CamundaExporter implements Exporter {
 
   private void ensureCachedRecordsLessThanBulkSize(final Record<?> record) {
     final var maxCachedRecords = configuration.getBulk().getSize();
+
+    if (writer.getBatchSize() == configuration.getBulk().getSize()) {
+      LOG.info(
+          """
+Cached maximum batch size [{}] number of records, exporting will block at the current position of [{}] while waiting for the importers to finish
+processing records from previous version
+""",
+          configuration.getBulk().getSize(),
+          record.getPosition());
+    }
 
     if (writer.getBatchSize() >= maxCachedRecords) {
       final var warnMsg =

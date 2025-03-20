@@ -9,6 +9,7 @@
 import {InstancesList} from '../../Layout/InstancesList';
 import {VisuallyHiddenH1} from 'modules/components/VisuallyHiddenH1';
 import {Filters} from './Filters';
+import {InstancesTable as InstancesTableV2} from './InstancesTable/v2';
 import {InstancesTable} from './InstancesTable';
 import {DiagramPanel as DiagramPanelV2} from './DiagramPanel/v2';
 import {DiagramPanel} from './DiagramPanel';
@@ -134,7 +135,13 @@ const ListView: React.FC = observer(() => {
             <DiagramPanel />
           )
         }
-        bottomPanel={<InstancesTable />}
+        bottomPanel={
+          IS_PROCESS_INSTANCE_STATISTICS_V2_ENABLED ? (
+            <InstancesTableV2 />
+          ) : (
+            <InstancesTable />
+          )
+        }
         rightPanel={<OperationsPanel />}
         frame={{
           isVisible: batchModificationStore.state.isEnabled,

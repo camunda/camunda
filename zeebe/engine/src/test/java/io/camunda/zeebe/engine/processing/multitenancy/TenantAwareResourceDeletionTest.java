@@ -10,6 +10,7 @@ package io.camunda.zeebe.engine.processing.multitenancy;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 
+import io.camunda.security.configuration.ConfiguredUser;
 import io.camunda.zeebe.auth.Authorization;
 import io.camunda.zeebe.engine.util.AuthorizationUtil;
 import io.camunda.zeebe.engine.util.EngineRule;
@@ -20,16 +21,34 @@ import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordAssert;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.ResourceDeletionIntent;
+import io.camunda.zeebe.protocol.record.value.EntityType;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.test.util.BrokerClassRuleHelper;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
+import java.util.List;
+import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 
 public class TenantAwareResourceDeletionTest {
 
-  @ClassRule public static final EngineRule ENGINE = EngineRule.singlePartition();
+  public static final String USERNAME = "username";
+  public static final String TENANT_ID_A = "tenant-a";
+  public static final String TENANT_ID_B = "tenant-b";
+
+  @ClassRule
+  public static final EngineRule ENGINE =
+      EngineRule.singlePartition()
+          .withIdentitySetup()
+          .withSecurityConfig(config -> config.getMultiTenancy().setEnabled(true))
+          .withSecurityConfig(
+              config ->
+                  config
+                      .getInitialization()
+                      .setUsers(
+                          List.of(new ConfiguredUser(USERNAME, "password", "name", "email"))));
+
   private static final String DRG_SINGLE_DECISION = "/dmn/decision-table.dmn";
   private static final String TEST_FORM_1 = "/form/test-form-1.form";
   private static final BpmnModelInstance PROCESS =
@@ -37,14 +56,23 @@ public class TenantAwareResourceDeletionTest {
 
   @Rule public final BrokerClassRuleHelper helper = new BrokerClassRuleHelper();
 
-  private final String tenantIdA = "tenant-a";
-  private final String tenantIdB = "tenant-b";
+  @BeforeClass
+  public static void beforeClass() {
+    ENGINE.tenant().newTenant().withTenantId(TENANT_ID_A).create();
+    ENGINE.tenant().newTenant().withTenantId(TENANT_ID_B).create();
+    ENGINE
+        .tenant()
+        .addEntity(TENANT_ID_A)
+        .withEntityId(USERNAME)
+        .withEntityType(EntityType.USER)
+        .add();
+  }
 
   @Test
   public void shouldDeleteProcessForAuthorizedTenant() {
     // given
     final var deployment =
-        ENGINE.deployment().withXmlResource(PROCESS).withTenantId(tenantIdA).deploy();
+        ENGINE.deployment().withXmlResource(PROCESS).withTenantId(TENANT_ID_A).deploy();
     final var resourceKey =
         deployment.getValue().getProcessesMetadata().get(0).getProcessDefinitionKey();
 
@@ -53,11 +81,11 @@ public class TenantAwareResourceDeletionTest {
         ENGINE
             .resourceDeletion()
             .withResourceKey(resourceKey)
-            .withAuthorizedTenantIds(tenantIdA)
-            .delete();
+            .withAuthorizedTenantIds(TENANT_ID_A)
+            .delete(USERNAME);
 
     // then
-    Assertions.assertThat(deleted.getValue()).hasTenantId(tenantIdA);
+    Assertions.assertThat(deleted.getValue()).hasTenantId(TENANT_ID_A);
     verifyResourceIsDeleted(resourceKey);
   }
 
@@ -68,7 +96,7 @@ public class TenantAwareResourceDeletionTest {
         ENGINE
             .deployment()
             .withXmlClasspathResource(DRG_SINGLE_DECISION)
-            .withTenantId(tenantIdA)
+            .withTenantId(TENANT_ID_A)
             .deploy();
     final var resourceKey =
         deployment.getValue().getDecisionRequirementsMetadata().get(0).getDecisionRequirementsKey();
@@ -78,11 +106,11 @@ public class TenantAwareResourceDeletionTest {
         ENGINE
             .resourceDeletion()
             .withResourceKey(resourceKey)
-            .withAuthorizedTenantIds(tenantIdA)
-            .delete();
+            .withAuthorizedTenantIds(TENANT_ID_A)
+            .delete(USERNAME);
 
     // then
-    Assertions.assertThat(deleted.getValue()).hasTenantId(tenantIdA);
+    Assertions.assertThat(deleted.getValue()).hasTenantId(TENANT_ID_A);
     verifyResourceIsDeleted(resourceKey);
   }
 
@@ -90,7 +118,11 @@ public class TenantAwareResourceDeletionTest {
   public void shouldDeleteFormForAuthorizedTenant() {
     // given
     final var deployment =
-        ENGINE.deployment().withXmlClasspathResource(TEST_FORM_1).withTenantId(tenantIdA).deploy();
+        ENGINE
+            .deployment()
+            .withXmlClasspathResource(TEST_FORM_1)
+            .withTenantId(TENANT_ID_A)
+            .deploy();
     final var resourceKey = deployment.getValue().getFormMetadata().get(0).getFormKey();
 
     // when
@@ -98,11 +130,11 @@ public class TenantAwareResourceDeletionTest {
         ENGINE
             .resourceDeletion()
             .withResourceKey(resourceKey)
-            .withAuthorizedTenantIds(tenantIdA)
-            .delete();
+            .withAuthorizedTenantIds(TENANT_ID_A)
+            .delete(USERNAME);
 
     // then
-    Assertions.assertThat(deleted.getValue()).hasTenantId(tenantIdA);
+    Assertions.assertThat(deleted.getValue()).hasTenantId(TENANT_ID_A);
     verifyResourceIsDeleted(resourceKey);
   }
 
@@ -110,7 +142,7 @@ public class TenantAwareResourceDeletionTest {
   public void shouldNotDeleteResourceForUnauthorizedTenant() {
     // given
     final var deployment =
-        ENGINE.deployment().withXmlResource(PROCESS).withTenantId(tenantIdA).deploy();
+        ENGINE.deployment().withXmlResource(PROCESS).withTenantId(TENANT_ID_A).deploy();
     final var resourceKey =
         deployment.getValue().getProcessesMetadata().get(0).getProcessDefinitionKey();
 
@@ -119,7 +151,7 @@ public class TenantAwareResourceDeletionTest {
         ENGINE
             .resourceDeletion()
             .withResourceKey(resourceKey)
-            .withAuthorizedTenantIds(tenantIdB)
+            .withAuthorizedTenantIds(TENANT_ID_B)
             .expectRejection()
             .delete();
 
@@ -140,11 +172,8 @@ public class TenantAwareResourceDeletionTest {
   @Test
   public void shouldDeleteResourceAssignedToDefaultTenantWithAnonymousUser() {
     // given
-    ENGINE.tenant().newTenant().withTenantId(tenantIdA).create();
-    ENGINE.tenant().newTenant().withTenantId(tenantIdB).create();
-
     final var deployment =
-        ENGINE.deployment().withXmlResource(PROCESS).withTenantId(tenantIdA).deploy();
+        ENGINE.deployment().withXmlResource(PROCESS).withTenantId(TENANT_ID_A).deploy();
     final var resourceKey =
         deployment.getValue().getProcessesMetadata().getFirst().getProcessDefinitionKey();
 
@@ -155,7 +184,7 @@ public class TenantAwareResourceDeletionTest {
     final var deleted = ENGINE.resourceDeletion().withResourceKey(resourceKey).delete(anonymous);
 
     // then
-    Assertions.assertThat(deleted.getValue()).hasTenantId(tenantIdA);
+    Assertions.assertThat(deleted.getValue()).hasTenantId(TENANT_ID_A);
     verifyResourceIsDeleted(resourceKey);
   }
 

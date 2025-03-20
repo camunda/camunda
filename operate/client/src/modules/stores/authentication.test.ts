@@ -20,15 +20,17 @@ describe('stores/authentication', () => {
   });
 
   it.each([{canLogout: false}, {canLogout: true, isLoginDelegated: true}])(
-    'should handle third party authentication when client config is %s',
+    'should handle third-party authentication when client config is %s',
     async (config) => {
       Object.defineProperty(window, 'clientConfig', {
         ...config,
         writable: true,
       });
+
       const originalWindow = {...window};
       const windowSpy = jest.spyOn(global, 'window', 'get');
       const mockReload = jest.fn();
+
       // @ts-expect-error
       windowSpy.mockImplementation(() => ({
         ...originalWindow,
@@ -39,7 +41,6 @@ describe('stores/authentication', () => {
       }));
 
       mockMe().withSuccess(mockUserResponse);
-
       authenticationStore.authenticate();
 
       await waitFor(() =>
@@ -49,7 +50,6 @@ describe('stores/authentication', () => {
       );
 
       mockMe().withServerError(401);
-
       authenticationStore.authenticate();
 
       await waitFor(() =>
@@ -57,11 +57,11 @@ describe('stores/authentication', () => {
           'invalid-third-party-session',
         ),
       );
+
       expect(mockReload).toHaveBeenCalledTimes(1);
       expect(getStateLocally()?.wasReloaded).toBe(true);
 
       mockMe().withSuccess(mockUserResponse);
-
       authenticationStore.authenticate();
 
       await waitFor(() =>
@@ -69,10 +69,31 @@ describe('stores/authentication', () => {
           'user-information-fetched',
         ),
       );
+
       expect(mockReload).toHaveBeenCalledTimes(1);
       expect(getStateLocally()?.wasReloaded).toBe(false);
 
       windowSpy.mockRestore();
     },
   );
+
+  describe('isForbidden', () => {
+    it('should return true when authorizedApplications does not contain "operate" or "*"', () => {
+      authenticationStore.state.authorizedApplications = ['tasklist'];
+      expect(authenticationStore.isForbidden()).toBe(true);
+    });
+
+    it('should return false when authorizedApplications contains "operate"', () => {
+      authenticationStore.state.authorizedApplications = [
+        'tasklist',
+        'operate',
+      ];
+      expect(authenticationStore.isForbidden()).toBe(false);
+    });
+
+    it('should return false when authorizedApplications contains "*"', () => {
+      authenticationStore.state.authorizedApplications = ['*'];
+      expect(authenticationStore.isForbidden()).toBe(false);
+    });
+  });
 });

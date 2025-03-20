@@ -5,6 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
+
 import {Camunda8} from '@camunda8/sdk';
 import {JSONDoc} from '@camunda8/sdk/dist/zeebe/types';
 

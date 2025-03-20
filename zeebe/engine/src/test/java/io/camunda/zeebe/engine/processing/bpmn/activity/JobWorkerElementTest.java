@@ -23,10 +23,12 @@ import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.VariableIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
+import io.camunda.zeebe.protocol.record.value.EntityType;
 import io.camunda.zeebe.protocol.record.value.JobKind;
 import io.camunda.zeebe.protocol.record.value.JobListenerEventType;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
+import io.camunda.zeebe.test.util.Strings;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.util.Collection;
@@ -257,7 +259,16 @@ public final class JobWorkerElementTest {
   @Test
   public void shouldCompleteTaskWithCustomTenant() {
     // given
-    final String tenantId = "foo";
+    final String tenantId = Strings.newRandomValidIdentityId();
+    final String username = Strings.newRandomValidIdentityId();
+    ENGINE.tenant().newTenant().withTenantId(tenantId).create();
+    ENGINE.user().newUser(username).create();
+    ENGINE
+        .tenant()
+        .addEntity(tenantId)
+        .withEntityId(username)
+        .withEntityType(EntityType.USER)
+        .add();
     ENGINE
         .deployment()
         .withXmlResource(process(t -> t.zeebeJobType("test")))
@@ -273,7 +284,7 @@ public final class JobWorkerElementTest {
         .ofInstance(processInstanceKey)
         .withType("test")
         .withAuthorizedTenantIds(tenantId)
-        .complete();
+        .complete(username);
 
     // then
     assertThat(
