@@ -27,7 +27,6 @@ import io.camunda.process.test.impl.testresult.ProcessTestResult;
 import io.camunda.zeebe.client.ZeebeClient;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
-import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -82,6 +81,7 @@ public class CamundaProcessTestExtension
   private CamundaProcessTestResultCollector processTestResultCollector;
 
   private CamundaManagementClient camundaManagementClient;
+  private CamundaProcessTestContext camundaProcessTestContext;
 
   CamundaProcessTestExtension(
       final CamundaContainerRuntimeBuilder containerRuntimeBuilder,
@@ -115,20 +115,25 @@ public class CamundaProcessTestExtension
     containerRuntime = containerRuntimeBuilder.build();
     containerRuntime.start();
 
-    final URI endpoint = containerRuntime.getCamundaContainer().getMonitoringApiAddress();
     camundaManagementClient =
         new CamundaManagementClient(
-            containerRuntime.getCamundaContainer().getMonitoringApiAddress());
-  }
+            containerRuntime.getCamundaContainer().getMonitoringApiAddress(),
+            containerRuntime.getCamundaContainer().getRestApiAddress());
 
-  @Override
-  public void beforeEach(final ExtensionContext context) throws Exception {
-    final CamundaProcessTestContext camundaProcessTestContext =
+    camundaProcessTestContext =
         new CamundaProcessTestContextImpl(
             containerRuntime.getCamundaContainer(),
             containerRuntime.getConnectorsContainer(),
             createdClients::add);
 
+    // put in store
+    final Store store = context.getStore(NAMESPACE);
+    store.put(STORE_KEY_RUNTIME, containerRuntime);
+    store.put(STORE_KEY_CONTEXT, camundaProcessTestContext);
+  }
+
+  @Override
+  public void beforeEach(final ExtensionContext context) throws Exception {
     // inject fields
     try {
       injectField(context, CamundaClient.class, camundaProcessTestContext::createClient);
@@ -139,11 +144,6 @@ public class CamundaProcessTestExtension
       containerRuntime.close();
       throw e;
     }
-
-    // put in store
-    final Store store = context.getStore(NAMESPACE);
-    store.put(STORE_KEY_RUNTIME, containerRuntime);
-    store.put(STORE_KEY_CONTEXT, camundaProcessTestContext);
 
     // initialize assertions
     final CamundaDataSource dataSource =
@@ -192,8 +192,6 @@ public class CamundaProcessTestExtension
 
     // reset assertions
     CamundaAssert.reset();
-    // close all created clients
-    closeCreatedClients();
     // purge cluster
     camundaManagementClient.purgeCluster();
 
@@ -205,6 +203,8 @@ public class CamundaProcessTestExtension
 
   @Override
   public void afterAll(final ExtensionContext context) throws Exception {
+    // close all created clients
+    closeCreatedClients();
     // close the runtime
     containerRuntime.close();
   }
