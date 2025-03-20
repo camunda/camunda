@@ -10,10 +10,8 @@ package io.camunda.optimize.service.db.schema.index;
 import co.elastic.clients.elasticsearch._types.mapping.TypeMapping;
 import io.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import io.camunda.optimize.service.db.DatabaseConstants;
-import io.camunda.webapps.schema.descriptors.backup.Prio6Backup;
 
-public abstract class ProcessDefinitionIndex<TBuilder> extends AbstractDefinitionIndex<TBuilder>
-    implements Prio6Backup {
+public abstract class ProcessDefinitionIndex<TBuilder> extends AbstractDefinitionIndex<TBuilder> {
 
   public static final int VERSION = 6;
 

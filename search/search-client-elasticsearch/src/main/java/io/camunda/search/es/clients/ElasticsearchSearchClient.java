@@ -18,8 +18,6 @@ import co.elastic.clients.elasticsearch.core.ScrollResponse;
 import co.elastic.clients.elasticsearch.core.SearchRequest;
 import co.elastic.clients.elasticsearch.core.SearchResponse;
 import co.elastic.clients.elasticsearch.core.search.Hit;
-import co.elastic.clients.elasticsearch.indices.GetAliasRequest;
-import co.elastic.clients.elasticsearch.indices.GetAliasResponse;
 import io.camunda.search.clients.DocumentBasedSearchClient;
 import io.camunda.search.clients.DocumentBasedWriteClient;
 import io.camunda.search.clients.core.SearchDeleteRequest;
@@ -29,12 +27,8 @@ import io.camunda.search.clients.core.SearchIndexRequest;
 import io.camunda.search.clients.core.SearchQueryRequest;
 import io.camunda.search.clients.core.SearchQueryResponse;
 import io.camunda.search.clients.core.SearchWriteResponse;
-import io.camunda.search.clients.index.IndexAliasRequest;
-import io.camunda.search.clients.index.IndexAliasResponse;
 import io.camunda.search.clients.transformers.SearchTransfomer;
 import io.camunda.search.es.transformers.ElasticsearchTransformers;
-import io.camunda.search.es.transformers.index.IndexAliasRequestTransformer;
-import io.camunda.search.es.transformers.index.IndexAliasResponseTransformer;
 import io.camunda.search.es.transformers.search.SearchDeleteRequestTransformer;
 import io.camunda.search.es.transformers.search.SearchGetRequestTransformer;
 import io.camunda.search.es.transformers.search.SearchGetResponseTransformer;
@@ -136,20 +130,6 @@ public class ElasticsearchSearchClient
   }
 
   @Override
-  public IndexAliasResponse getAlias(final IndexAliasRequest request) {
-    try {
-      final var requestTransformer = getIndexAliasRequestTransformer();
-      final var elasticRequest = requestTransformer.apply(request);
-      final var response = client.indices().getAlias(elasticRequest);
-      return getIndexAliasResponseTransformer().apply(response);
-    } catch (final IOException | ElasticsearchException e) {
-      LOGGER.error(ErrorMessages.ERROR_FAILED_GET_ALIAS_REQUEST, e);
-      throw new CamundaSearchException(
-          ErrorMessages.ERROR_FAILED_GET_ALIAS_REQUEST, e, searchExceptionToReason(e));
-    }
-  }
-
-  @Override
   public <T> SearchWriteResponse index(final SearchIndexRequest<T> indexRequest) {
     try {
       final SearchIndexRequestTransformer<T> requestTransformer =
@@ -238,18 +218,6 @@ public class ElasticsearchSearchClient
     return (SearchWriteResponseTransformer) transformer;
   }
 
-  private IndexAliasRequestTransformer getIndexAliasRequestTransformer() {
-    final SearchTransfomer<IndexAliasRequest, GetAliasRequest> transformer =
-        transformers.getTransformer(IndexAliasRequest.class);
-    return (IndexAliasRequestTransformer) transformer;
-  }
-
-  private IndexAliasResponseTransformer getIndexAliasResponseTransformer() {
-    final SearchTransfomer<GetAliasResponse, IndexAliasResponse> transformer =
-        transformers.getTransformer(IndexAliasResponse.class);
-    return (IndexAliasResponseTransformer) transformer;
-  }
-
   @Override
   public void close() {
     if (client != null) {
@@ -261,7 +229,7 @@ public class ElasticsearchSearchClient
     }
   }
 
-  private static CamundaSearchException.Reason searchExceptionToReason(Exception e) {
+  private static CamundaSearchException.Reason searchExceptionToReason(final Exception e) {
     if (e instanceof ConnectException) {
       return CamundaSearchException.Reason.CONNECTION_FAILED;
     }

@@ -15,10 +15,9 @@ import co.elastic.clients.elasticsearch._types.mapping.TypeMapping;
 import io.camunda.optimize.dto.optimize.index.ImportIndexDto;
 import io.camunda.optimize.dto.optimize.index.PositionBasedImportIndexDto;
 import io.camunda.optimize.service.db.schema.DefaultIndexMappingCreator;
-import io.camunda.webapps.schema.descriptors.backup.Prio1Backup;
 
 public abstract class PositionBasedImportIndex<TBuilder>
-    extends DefaultIndexMappingCreator<TBuilder> implements Prio1Backup {
+    extends DefaultIndexMappingCreator<TBuilder> {
 
   public static final int VERSION = 3;
 
