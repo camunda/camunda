@@ -12,7 +12,7 @@ import static org.assertj.core.groups.Tuple.tuple;
 
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
-import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
+import io.camunda.zeebe.model.bpmn.builder.AdHocSubProcessBuilder;
 import io.camunda.zeebe.protocol.impl.record.value.signal.SignalRecord;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordAssert;
@@ -26,6 +26,7 @@ import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Consumer;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Rule;
@@ -45,36 +46,17 @@ public class ActivateAdHocSubProcessActivityTest {
 
   @Before
   public void setUp() {
-    final BpmnModelInstance processInstance =
-        Bpmn.createExecutableProcess(PROCESS_ID)
-            .startEvent()
-            .adHocSubProcess(
-                AD_HOC_SUB_PROCESS_ELEMENT_ID,
-                adHocSubProcess -> {
-                  adHocSubProcess.task("A");
-                  adHocSubProcess.task("B");
-                  adHocSubProcess.task("C");
-                  adHocSubProcess.completionCondition(COMPLETION_CONDITION_VAR);
-                })
-            .endEvent()
-            .done();
+    deployProcess(
+        PROCESS_ID,
+        adHocSubProcess -> {
+          adHocSubProcess.task("A");
+          adHocSubProcess.task("B");
+          adHocSubProcess.task("C");
+          adHocSubProcess.completionCondition(COMPLETION_CONDITION_VAR);
+        });
 
-    ENGINE.deployment().withXmlResource(processInstance).deploy();
-    processInstanceKey =
-        ENGINE
-            .processInstance()
-            .ofBpmnProcessId(PROCESS_ID)
-            .withVariables(Map.of(COMPLETION_CONDITION_VAR, true))
-            .create();
-
-    adHocSubProcessInstanceKey =
-        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
-            .withProcessInstanceKey(processInstanceKey)
-            .withElementType(BpmnElementType.AD_HOC_SUB_PROCESS)
-            .map(Record::getKey)
-            .limit(1)
-            .toList()
-            .getFirst();
+    processInstanceKey = getProcessInstanceKey(PROCESS_ID);
+    adHocSubProcessInstanceKey = getAdHocSubProcessInstanceKey(processInstanceKey);
   }
 
   @Test
@@ -277,28 +259,43 @@ public class ActivateAdHocSubProcessActivityTest {
   }
 
   @Test
-  public void givenAdhocSubProcessInFinalStateWhenActivatingElementsThenTheActivationIsRejected() {
-    ENGINE
-        .adHocSubProcessActivity()
-        .withAdHocSubProcessInstanceKey(String.valueOf(adHocSubProcessInstanceKey))
-        .withElementIds("A")
-        .activate();
+  public void givenNotActiveAdhocSubProcessWhenActivatingElementsThenTheActivationIsRejected() {
+    final var faultyProcessId = "process-rejection-test";
+    deployProcess(
+        faultyProcessId,
+        adHocSubProcess -> {
+          adHocSubProcess.task("A");
+          adHocSubProcess.task("B");
+          adHocSubProcess.task("C");
+          // add invalid expression to ensure that processing ends without completing the adhoc
+          // subprocess
+          adHocSubProcess.zeebeOutputExpression("assert(x, x != null)", "y");
+        });
+
+    final var faultyProcessInstanceKey = getProcessInstanceKey(faultyProcessId);
+    final var faultyAdhocSubProcessInstanceKey =
+        getAdHocSubProcessInstanceKey(faultyProcessInstanceKey);
 
     ENGINE
         .adHocSubProcessActivity()
-        .withAdHocSubProcessInstanceKey(String.valueOf(adHocSubProcessInstanceKey))
+        .withAdHocSubProcessInstanceKey(String.valueOf(faultyAdhocSubProcessInstanceKey))
         .withElementIds("A")
-        .expectRejection()
         .activate();
 
-    assertThat(
-            RecordingExporter.adHocSubProcessActivityActivationRecords()
-                .withAdHocSubProcessInstanceKey(String.valueOf(adHocSubProcessInstanceKey))
-                .onlyCommandRejections()
-                .limit(1))
-        .describedAs(
-            "Expected activation to be rejected because the adhoc subprocess has completed.")
-        .isNotEmpty();
+    final var rejection =
+        ENGINE
+            .adHocSubProcessActivity()
+            .withAdHocSubProcessInstanceKey(String.valueOf(faultyAdhocSubProcessInstanceKey))
+            .withElementIds("A")
+            .expectRejection()
+            .activate();
+
+    RecordAssert.assertThat(rejection)
+        .describedAs("Expected rejection because adhoc subprocess is not active.")
+        .hasRejectionType(RejectionType.INVALID_STATE)
+        .hasRejectionReason(
+            "Expected to activate activities for ad-hoc subprocess with key '%s', but it is not active."
+                .formatted(faultyAdhocSubProcessInstanceKey));
   }
 
   @Test
@@ -337,5 +334,36 @@ public class ActivateAdHocSubProcessActivityTest {
                     && ((SignalRecord) r.getValue()).getSignalName().equals(signalName))
         .processInstanceRecords()
         .withProcessInstanceKey(processInstanceKey);
+  }
+
+  private void deployProcess(
+      final String processId, final Consumer<AdHocSubProcessBuilder> modifier) {
+    final var process =
+        Bpmn.createExecutableProcess(processId)
+            .startEvent()
+            .adHocSubProcess(
+                ActivateAdHocSubProcessActivityTest.AD_HOC_SUB_PROCESS_ELEMENT_ID, modifier)
+            .endEvent()
+            .done();
+
+    ENGINE.deployment().withXmlResource(process).deploy();
+  }
+
+  private long getProcessInstanceKey(final String processId) {
+    return ENGINE
+        .processInstance()
+        .ofBpmnProcessId(processId)
+        .withVariables(Map.of(COMPLETION_CONDITION_VAR, true))
+        .create();
+  }
+
+  private long getAdHocSubProcessInstanceKey(final long processInstanceKey) {
+    return RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+        .withProcessInstanceKey(processInstanceKey)
+        .withElementType(BpmnElementType.AD_HOC_SUB_PROCESS)
+        .map(Record::getKey)
+        .limit(1)
+        .toList()
+        .getFirst();
   }
 }

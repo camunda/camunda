@@ -41,8 +41,8 @@ public class AdHocSubProcessActivityActivateProcessor
       "Expected to activate activities for ad-hoc subprocess but no ad-hoc subprocess instance found with key '%s'.";
   private static final String ERROR_MSG_DUPLICATE_ACTIVITIES =
       "Expected to activate activities for ad-hoc subprocess with key '%s', but duplicate activities were given.";
-  private static final String ERROR_MSG_ADHOC_SUBPROCESS_IS_FINAL =
-      "Expected to activate activities for ad-hoc subprocess with key '%s', but it has either been completed or terminated.";
+  private static final String ERROR_MSG_ADHOC_SUBPROCESS_IS_NO_ACTIVE =
+      "Expected to activate activities for ad-hoc subprocess with key '%s', but it is not active.";
   private static final String ERROR_MSG_ADHOC_SUBPROCESS_IS_NOT_ACTIVE =
       "Expected to activate activities for ad-hoc subprocess with key '%s', but it is not active.";
   private static final String ERROR_MSG_ELEMENTS_NOT_FOUND =
@@ -88,6 +88,17 @@ public class AdHocSubProcessActivityActivateProcessor
       return;
     }
 
+    if (!adHocSubprocessElementInstance.isActive()) {
+      writeRejectionError(
+          command,
+          RejectionType.INVALID_STATE,
+          String.format(
+              ERROR_MSG_ADHOC_SUBPROCESS_IS_NO_ACTIVE,
+              command.getValue().getAdHocSubProcessInstanceKey()));
+
+      return;
+    }
+
     final var authResult = authorize(command, adHocSubprocessElementInstance);
     if (authResult.isLeft()) {
       final var rejection = authResult.getLeft();
@@ -107,17 +118,6 @@ public class AdHocSubProcessActivityActivateProcessor
           RejectionType.INVALID_ARGUMENT,
           String.format(
               ERROR_MSG_DUPLICATE_ACTIVITIES, command.getValue().getAdHocSubProcessInstanceKey()));
-
-      return;
-    }
-
-    if (adHocSubprocessElementInstance.isInFinalState()) {
-      writeRejectionError(
-          command,
-          RejectionType.INVALID_STATE,
-          String.format(
-              ERROR_MSG_ADHOC_SUBPROCESS_IS_FINAL,
-              command.getValue().getAdHocSubProcessInstanceKey()));
 
       return;
     }
