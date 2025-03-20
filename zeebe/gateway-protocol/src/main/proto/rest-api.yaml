@@ -2652,6 +2652,8 @@ components:
             - CALLED_DECISION_ERROR
             - DECISION_EVALUATION_ERROR
             - FORM_NOT_FOUND
+            - RESOURCE_NOT_FOUND
+            - EXECUTION_LISTENER_NO_RETRIES
         errorMessage:
           type: string
           description: Error message which describes the error in more detail.
@@ -2764,6 +2766,8 @@ components:
             - CALLED_DECISION_ERROR
             - DECISION_EVALUATION_ERROR
             - FORM_NOT_FOUND
+            - RESOURCE_NOT_FOUND
+            - EXECUTION_LISTENER_NO_RETRIES
         errorMessage:
           type: string
           description: Error message which describes the error in more detail.

@@ -24,7 +24,8 @@ public enum ErrorType {
   CALLED_DECISION_ERROR("Called decision error"),
   DECISION_EVALUATION_ERROR("Decision evaluation error"),
 
-  FORM_NOT_FOUND("Form not found");
+  FORM_NOT_FOUND("Form not found"),
+  RESOURCE_NOT_FOUND("Resource not found");
 
   private static final Logger LOGGER = LoggerFactory.getLogger(ErrorType.class);
 

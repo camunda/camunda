@@ -15,6 +15,37 @@
  */
 package io.camunda.zeebe.protocol.record.value;
 
+/**
+ * Represents error types that are used to raise an incident in Zeebe.
+ *
+ * <p>When introducing a new {@code ErrorType}, ensure that it is properly recognized across related
+ * components. To integrate a new error type, check and update the following places:
+ *
+ * <table>
+ *   <thead>
+ *     <tr>
+ *       <th>Module</th>
+ *       <th>Required updates</th>
+ *     </tr>
+ *   </thead>
+ *   <tbody>
+ *     <tr>
+ *       <td><b>Webapps Schema</b></td>
+ *       <td>Add the new type in <code>entities/operate/ErrorType.java</code></td>
+ *     </tr>
+ *     <tr>
+ *       <td><b>Gateway Protocol</b></td>
+ *       <td>Add the new type in <code>src/main/proto/rest-api.yaml</code> for the following documents:
+ *           <ul><code>IncidentFilterRequestBase</code></ul>
+ *           <ul><code>IncidentItemBase</code></ul>
+ *       </td>
+ *     </tr>
+ *   </tbody>
+ * </table>
+ *
+ * <p>Failure to update all necessary components may result in missing or unrecognized incidents
+ * when querying or displaying incidents in Operate.
+ */
 public enum ErrorType {
   UNKNOWN,
 

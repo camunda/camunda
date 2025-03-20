@@ -424,6 +424,20 @@
           "old": "class io.camunda.zeebe.client.protocol.rest.DeploymentMetadata",
           "new": "class io.camunda.zeebe.client.protocol.rest.DeploymentMetadata",
           "justification": "Added resource to deployment metadata"
+        },
+        {
+          "ignore": true,
+          "code": "java.field.enumConstantOrderChanged",
+          "old": "field io.camunda.zeebe.client.protocol.rest.IncidentFilterRequest.ErrorTypeEnum.UNKNOWN_DEFAULT_OPEN_API",
+          "new": "field io.camunda.zeebe.client.protocol.rest.IncidentFilterRequest.ErrorTypeEnum.UNKNOWN_DEFAULT_OPEN_API",
+          "justification": "Added a missing enum EXECUTION_LISTENER_NO_RETRIES. The UNKNOWN_DEFAULT_OPEN_API enum is automatically added at the end of the list."
+        },
+        {
+          "ignore": true,
+          "code": "java.field.enumConstantOrderChanged",
+          "old": "field io.camunda.zeebe.client.protocol.rest.IncidentItem.ErrorTypeEnum.UNKNOWN_DEFAULT_OPEN_API",
+          "new": "field io.camunda.zeebe.client.protocol.rest.IncidentItem.ErrorTypeEnum.UNKNOWN_DEFAULT_OPEN_API",
+          "justification": "Added a missing enum EXECUTION_LISTENER_NO_RETRIES. The UNKNOWN_DEFAULT_OPEN_API enum is automatically added at the end of the list."
         }
       ]
     }

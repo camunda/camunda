@@ -25,6 +25,8 @@ import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 
 public final class IncidentFilterTest {
 
@@ -137,9 +139,13 @@ public final class IncidentFilterTest {
             });
   }
 
-  @Test
-  public void shouldQueryByErrorType() {
-    final var filter = FilterBuilders.incident(f -> f.errorTypes(ErrorType.JOB_NO_RETRIES));
+  @ParameterizedTest
+  @EnumSource(io.camunda.zeebe.protocol.record.value.ErrorType.class)
+  public void shouldQueryByErrorType(
+      final io.camunda.zeebe.protocol.record.value.ErrorType errorType) {
+    // given
+    final var serviceErrorType = ErrorType.valueOf(errorType.name());
+    final var filter = FilterBuilders.incident(f -> f.errorTypes(serviceErrorType));
     final var searchQuery = SearchQueryBuilders.incidentSearchQuery(q -> q.filter(filter));
 
     // when
@@ -154,7 +160,7 @@ public final class IncidentFilterTest {
             SearchTermQuery.class,
             t -> {
               assertThat(t.field()).isEqualTo("errorType");
-              assertThat(t.value().stringValue()).isEqualTo("JOB_NO_RETRIES");
+              assertThat(t.value().stringValue()).isEqualTo(serviceErrorType.name());
             });
   }
 
