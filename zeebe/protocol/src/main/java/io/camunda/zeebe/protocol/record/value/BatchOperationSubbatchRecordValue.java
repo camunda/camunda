@@ -17,25 +17,20 @@ package io.camunda.zeebe.protocol.record.value;
 
 import io.camunda.zeebe.protocol.record.ImmutableProtocol;
 import io.camunda.zeebe.protocol.record.RecordValue;
-import java.util.Set;
+import java.util.List;
 import org.immutables.value.Value;
 
 @Value.Immutable
-@ImmutableProtocol(builder = ImmutableBatchOperationExecutionRecordValue.Builder.class)
-public interface BatchOperationExecutionRecordValue extends BatchOperationRelated, RecordValue {
-
-  /**
-   * @return last processed position in the log stream
-   */
-  Integer getOffset();
+@ImmutableProtocol(builder = ImmutableBatchOperationSubbatchRecordValue.Builder.class)
+public interface BatchOperationSubbatchRecordValue extends BatchOperationRelated, RecordValue {
 
   /**
    * @return subset of keys for the batch operation which where processed
    */
-  Set<Long> getKeys();
+  List<Long> getKeys();
 
   /**
-   * @return batch operation type which defines the batch operation which should operate on the keys
+   * @return the key of this subbatch
    */
-  BatchOperationType getBatchOperationType();
+  Long getSubbatchKey();
 }
