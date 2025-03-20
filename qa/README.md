@@ -83,6 +83,18 @@ public class ProcessDefinitionQueryTest {
 * We need to configure the broker for specific authentication, for that we need to make use of `TestStandaloneBroker` or `TestSimpleCamundaApplication`
 * We need to annotate the test applications with `MultiDbTestApplication`, to mark application managed by `CamundaMultiDbExtension`
 
+> [!Note]
+>
+> The separation of test application and extension (to configure different secondary storages) is on purpose.
+>
+> This is for:
+>  * Single responsibility
+>    * the `CamundaMultiDbExtension` only focuses on configuring the database based on various factors (e.g. CI job)
+>  * KISS: to keep things light
+>  * Favor composability: make it reusable
+>    * the extension handles configuring the DB, and can be used in different occasions together with using the standalone Camunda, standalone Broker, or something different
+>    * the test applications focus on the respective application lifecycle and flexible configuration
+
 **Optional:**
 
 * We might not want to run the test for all secondary storage, as it is not yet supported. We can use the `@DisabledIfSystemProperty` annotation
