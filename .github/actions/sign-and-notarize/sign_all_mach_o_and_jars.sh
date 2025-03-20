@@ -151,7 +151,7 @@ while IFS= read -r -d '' jar_file; do
   (
     cd "$tmpdir"
     echo "  -> Re-zipping into $jar_abs_path"
-    jar -M -uf "$jar_abs_path" ./
+    jar -m META-INF/MANIFEST.MF -c -f "$jar_abs_path" ./
   )
 
   rm -rf "$tmpdir"
