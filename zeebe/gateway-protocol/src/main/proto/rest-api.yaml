@@ -5805,8 +5805,7 @@ components:
           nullable: true
         lastCompletedChangeId:
           description: ID of the last completed change
-          type: integer
-          format: int64
+          type: string
           nullable: true
     LicenseResponse:
       description: The response of a license request.
