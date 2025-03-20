@@ -173,6 +173,28 @@ public class CompatibilityTasklistUserTaskAuthorizationIT {
   }
 
   @Test
+  public void shouldNotUnassignUserTaskWithUnauthorizedUser(
+      @Authenticated(ADMIN_USER_NAME) final CamundaClient adminClient,
+      @Authenticated(TEST_USER_NAME_NO_PERMISSION) final CamundaClient noPermission) {
+    // given (admin) to create instance
+    // create a process instance - with pre-assigned user task
+    final var processInstanceKey =
+        createProcessInstance(adminClient, PROCESS_WITH_USER_TASK_PRE_ASSIGNED);
+    final var userTaskKeyPreAssigned = awaitUserTaskBeingAvailable(adminClient, processInstanceKey);
+    // given (non-admin) user without any authorizations
+
+    // when
+    final var response =
+        tasklistRestClient
+            .withAuthentication(TEST_USER_NAME_NO_PERMISSION, TEST_USER_PASSWORD)
+            .unassignUserTask(userTaskKeyPreAssigned);
+
+    // then
+    assertThat(response).isNotNull();
+    assertThat(response.statusCode()).isEqualTo(403);
+  }
+
+  @Test
   public void shouldNotAssignJobBasedUserTaskWithUnauthorizedUser(
       @Authenticated(ADMIN_USER_NAME) final CamundaClient adminClient,
       @Authenticated(TEST_USER_NAME_NO_PERMISSION) final CamundaClient noPermission) {
@@ -211,6 +233,28 @@ public class CompatibilityTasklistUserTaskAuthorizationIT {
         tasklistRestClient
             .withAuthentication(TEST_USER_NAME_NO_PERMISSION, TEST_USER_PASSWORD)
             .completeUserTask(userTaskKeyWithJobBasedUserTaskPreAssigned);
+
+    // then
+    assertThat(response).isNotNull();
+    assertThat(response.statusCode()).isEqualTo(403);
+  }
+
+  @Test
+  public void shouldNotUnassignJobBasedUserTaskWithUnauthorizedUser(
+      @Authenticated(ADMIN_USER_NAME) final CamundaClient adminClient,
+      @Authenticated(TEST_USER_NAME_NO_PERMISSION) final CamundaClient noPermission) {
+    // given (admin) to create instance
+    final var processInstanceKeyWithJobBasedUserTaskPreAssigned =
+        createProcessInstance(adminClient, PROCESS_ID_WITH_JOB_BASED_USERTASK_PRE_ASSIGNED);
+    final var userTaskKeyWithJobBasedUserTaskPreAssigned =
+        awaitJobBasedUserTaskBeingAvailable(processInstanceKeyWithJobBasedUserTaskPreAssigned);
+    // given (non-admin) user without any authorizations
+
+    // when
+    final var response =
+        tasklistRestClient
+            .withAuthentication(TEST_USER_NAME_NO_PERMISSION, TEST_USER_PASSWORD)
+            .unassignUserTask(userTaskKeyWithJobBasedUserTaskPreAssigned);
 
     // then
     assertThat(response).isNotNull();
