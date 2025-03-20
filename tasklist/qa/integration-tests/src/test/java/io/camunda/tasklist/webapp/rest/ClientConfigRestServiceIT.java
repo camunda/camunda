@@ -92,6 +92,6 @@ public class ClientConfigRestServiceIT {
                 + "\"mixpanelAPIHost\":\"https://fake.mixpanel.com\","
                 + "\"isResourcePermissionsEnabled\":false,"
                 + "\"isUserAccessRestrictionsEnabled\":true,"
-                + "\"maxRequestSize\":4194304};");
+                + "\"maxRequestSize\":10485760};");
   }
 }
