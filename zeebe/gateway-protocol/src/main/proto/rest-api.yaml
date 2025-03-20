@@ -3418,6 +3418,49 @@ paths:
         "500":
           $ref: "#/components/responses/InternalServerError"
 
+  /element-instances/ad-hoc-activities/{adHocSubprocessInstanceKey}/activation:
+    post:
+      tags:
+        - Ad-hoc subprocess
+      operationId: activateAdHocSubprocessActivities
+      summary: Activate activities within an ad-hoc subprocess
+      description: |
+        Activates selected activities within an ad-hoc subprocess identified by element ID.
+        The provided element IDs must exist within the ad-hoc subprocess instance identified by the
+        provided adHocSubprocessInstanceKey.
+      parameters:
+        - name: adHocSubprocessInstanceKey
+          in: path
+          required: true
+          description: The key of the ad-hoc subprocess instance that contains the activities.
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdHocSubprocessActivateActivitiesInstruction"
+      responses:
+        "204":
+          description: The ad-hoc subprocess instance is modified.
+        "400":
+          $ref: "#/components/responses/InvalidData"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          description: |
+            The ad-hoc subprocess instance is not found or the provided key does not identify an
+            ad-hoc subprocess.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
   /signals/broadcast:
     post:
       tags:
@@ -4815,6 +4858,24 @@ components:
         tenantId:
           description: The tenant ID for this activity.
           type: string
+    AdHocSubprocessActivateActivitiesInstruction:
+      type: object
+      properties:
+        elements:
+          description: Activities to activate.
+          type: array
+          items:
+            $ref: "#/components/schemas/AdHocSubprocessActivateActivityReference"
+      required:
+        - elements
+    AdHocSubprocessActivateActivityReference:
+      type: object
+      properties:
+        elementId:
+          description: The ID of the element that should be activated.
+          type: string
+      required:
+        - elementId
     DecisionDefinitionSearchQuerySortRequest:
       type: object
       properties:
