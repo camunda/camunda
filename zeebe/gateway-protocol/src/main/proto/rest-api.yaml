@@ -3345,6 +3345,7 @@ paths:
     get:
       tags:
         - Resource
+      operationId: getResource
       summary: Get resource
       description: |
         Returns a deployed resource.
@@ -3364,7 +3365,7 @@ paths:
           content:
             application/json:
               schema:
-                type: "#/components/schemas/ResourceResult"
+                $ref: "#/components/schemas/ResourceResult"
         "404":
           description: A resource with the given key was not found.
           content:
@@ -3377,6 +3378,7 @@ paths:
     get:
       tags:
         - Resource
+      operationId: getResourceContent
       summary: Get resource content
       description: |
         Returns the content of a deployed resource.
