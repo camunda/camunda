@@ -2644,7 +2644,6 @@ components:
             - UNKNOWN
             - IO_MAPPING_ERROR
             - JOB_NO_RETRIES
-            - EXECUTION_LISTENER_NO_RETRIES
             - CONDITION_ERROR
             - EXTRACT_VALUE_ERROR
             - CALLED_ELEMENT_ERROR
@@ -2654,6 +2653,7 @@ components:
             - DECISION_EVALUATION_ERROR
             - FORM_NOT_FOUND
             - RESOURCE_NOT_FOUND
+            - EXECUTION_LISTENER_NO_RETRIES
         errorMessage:
           type: string
           description: Error message which describes the error in more detail.
@@ -2758,7 +2758,6 @@ components:
             - UNKNOWN
             - IO_MAPPING_ERROR
             - JOB_NO_RETRIES
-            - EXECUTION_LISTENER_NO_RETRIES
             - CONDITION_ERROR
             - EXTRACT_VALUE_ERROR
             - CALLED_ELEMENT_ERROR
@@ -2768,6 +2767,7 @@ components:
             - DECISION_EVALUATION_ERROR
             - FORM_NOT_FOUND
             - RESOURCE_NOT_FOUND
+            - EXECUTION_LISTENER_NO_RETRIES
         errorMessage:
           type: string
           description: Error message which describes the error in more detail.
