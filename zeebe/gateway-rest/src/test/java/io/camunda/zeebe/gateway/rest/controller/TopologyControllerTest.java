@@ -47,7 +47,7 @@ public class TopologyControllerTest extends RestControllerTest {
           "clusterSize": 3,
           "partitionsCount": 1,
           "replicationFactor": 3,
-          "lastCompletedChangeId": 1,
+          "lastCompletedChangeId": "1",
           "brokers": [
             {
               "nodeId": 0,
