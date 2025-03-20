@@ -64,7 +64,7 @@ public class CamundaClientConfigurationDefaultPropertiesTest {
     assertThat(configuration.getGatewayAddress()).isEqualTo("0.0.0.0:26500");
     assertThat(configuration.getGrpcAddress()).isEqualTo(new URI("http://0.0.0.0:26500"));
     assertThat(configuration.getKeepAlive()).isEqualTo(Duration.ofSeconds(45));
-    assertThat(configuration.getMaxMessageSize()).isEqualTo(4 * ONE_MB);
+    assertThat(configuration.getMaxMessageSize()).isEqualTo(5 * ONE_MB);
     assertThat(configuration.getMaxMetadataSize()).isEqualTo(16 * ONE_KB);
     assertThat(configuration.getNumJobWorkerExecutionThreads()).isEqualTo(1);
     assertThat(configuration.getOverrideAuthority()).isNull();

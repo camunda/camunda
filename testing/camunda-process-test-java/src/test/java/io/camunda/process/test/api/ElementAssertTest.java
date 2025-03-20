@@ -18,11 +18,13 @@ package io.camunda.process.test.api;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
 import io.camunda.client.api.response.ProcessInstanceEvent;
 import io.camunda.client.api.search.filter.FlownodeInstanceFilter;
 import io.camunda.client.api.search.response.FlowNodeInstance;
+import io.camunda.client.api.search.response.FlowNodeInstanceState;
 import io.camunda.process.test.api.assertions.ElementSelectors;
 import io.camunda.process.test.impl.assertions.CamundaDataSource;
 import io.camunda.process.test.utils.FlowNodeInstanceBuilder;
@@ -1222,6 +1224,94 @@ public class ElementAssertTest {
       Assertions.assertThatThrownBy(
               () -> CamundaAssert.assertThat(processInstanceEvent).hasNotActivatedElements("A"))
           .hasMessage("No process instance [key: %d] found.", PROCESS_INSTANCE_KEY);
+    }
+  }
+
+  @Nested
+  class HasNoActiveElements {
+
+    @Mock private FlownodeInstanceFilter flownodeInstanceFilter;
+    @Captor private ArgumentCaptor<Consumer<FlownodeInstanceFilter>> flowNodeInstanceFilterCapture;
+
+    @Test
+    void shouldQueryOnlyActiveElements() {
+      // given
+      when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
+
+      // when
+      CamundaAssert.assertThat(processInstanceEvent).hasNoActiveElements("A");
+
+      // then
+      verify(camundaDataSource).findFlowNodeInstances(flowNodeInstanceFilterCapture.capture());
+
+      flowNodeInstanceFilterCapture.getValue().accept(flownodeInstanceFilter);
+      verify(flownodeInstanceFilter).processInstanceKey(PROCESS_INSTANCE_KEY);
+      verify(flownodeInstanceFilter).state(FlowNodeInstanceState.ACTIVE);
+      verify(flownodeInstanceFilter).flowNodeId("A");
+      verifyNoMoreInteractions(flownodeInstanceFilter);
+    }
+
+    @Test
+    void shouldPassIfElementsAreNotActive() {
+      // given
+      when(camundaDataSource.findFlowNodeInstances(any())).thenReturn(Collections.emptyList());
+
+      // when
+      when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
+
+      // then
+      CamundaAssert.assertThat(processInstanceEvent).hasNoActiveElements("A", "B");
+    }
+
+    @Test
+    void shouldFailIfElementsAreActive() {
+      // given
+      when(camundaDataSource.findFlowNodeInstances(any()))
+          .thenReturn(
+              Arrays.asList(newActiveFlowNodeInstance("A"), newActiveFlowNodeInstance("B")));
+
+      // when
+      when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
+
+      // then
+      Assertions.assertThatThrownBy(
+              () ->
+                  CamundaAssert.assertThat(processInstanceEvent).hasNoActiveElements("A", "B", "C"))
+          .hasMessage(
+              "Process instance [key: %d] should have no active elements ['A', 'B', 'C'] but the following elements were active:\n"
+                  + "\t- 'A': active\n"
+                  + "\t- 'B': active",
+              PROCESS_INSTANCE_KEY);
+    }
+
+    @Test
+    void shouldFailIfProcessInstanceNotFound() {
+      // given
+      when(camundaDataSource.findProcessInstances(any())).thenReturn(Collections.emptyList());
+
+      // when
+      when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
+
+      // then
+      Assertions.assertThatThrownBy(
+              () -> CamundaAssert.assertThat(processInstanceEvent).hasNoActiveElements("A"))
+          .hasMessage("No process instance [key: %d] found.", PROCESS_INSTANCE_KEY);
+    }
+
+    @Test
+    void shouldWaitUntilElementsAreEnded() {
+      // given
+      when(camundaDataSource.findFlowNodeInstances(any()))
+          .thenReturn(Collections.singletonList(newActiveFlowNodeInstance("A")))
+          .thenReturn(Collections.emptyList());
+
+      // when
+      when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
+
+      // then
+      CamundaAssert.assertThat(processInstanceEvent).hasNoActiveElements("A");
+
+      verify(camundaDataSource, times(2)).findFlowNodeInstances(any());
     }
   }
 }

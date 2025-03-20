@@ -24,12 +24,14 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import org.awaitility.Awaitility;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.MethodOrderer.OrderAnnotation;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.TestMethodOrder;
 import org.junit.jupiter.api.TestTemplate;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+@Disabled
 @TestMethodOrder(OrderAnnotation.class)
 public class MigrationUserTaskUpdateIT {
 

@@ -38,6 +38,7 @@
     <module>document</module>
     <module>security</module>
     <module>migration</module>
+    <module>optimize</module>
   </modules>
 
   <scm>

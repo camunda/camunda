@@ -5,31 +5,31 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
+
 import { FC, useState } from "react";
 import { InlineNotification } from "@carbon/react";
-import TextField from "src/components/form/TextField";
-import { useApiCall } from "src/utility/api";
-import useTranslate from "src/utility/localization";
 import { FormModal, UseModalProps } from "src/components/modal";
+import useTranslate from "src/utility/localization";
+import { useApiCall } from "src/utility/api/hooks";
+import TextField from "src/components/form/TextField";
 import { createRole } from "src/utility/api/roles";
-import EntityList from "src/components/entityList";
-import useAllPermissionsTranslated from "src/pages/roles/modals/useAllPermissionsTranslated";
+import { isValidRoleId } from "src/pages/roles/modals/isValidRoleId";
 
 const AddModal: FC<UseModalProps> = ({ open, onClose, onSuccess }) => {
   const { t } = useTranslate("roles");
-  const [apiCall, { loading, error }] = useApiCall(createRole, {
+
+  const [callAddRole, { loading, error }] = useApiCall(createRole, {
     suppressErrorNotification: true,
   });
-  const [name, setName] = useState("");
+
+  const [roleName, setRoleName] = useState("");
+  const [roleId, setRoleId] = useState("");
   const [description, setDescription] = useState("");
-  const { permissions, setPermissions, onSelect, onUnselect, availableItems } =
-    useAllPermissionsTranslated();
+  const [isRoleIdValid, setIsRoleIdValid] = useState(true);
 
   const handleSubmit = async () => {
-    const { success } = await apiCall({
-      name,
-      description,
-      permissions,
+    const { success } = await callAddRole({
+      name: roleName.trim(),
     });
 
     if (success) {
@@ -37,44 +37,46 @@ const AddModal: FC<UseModalProps> = ({ open, onClose, onSuccess }) => {
     }
   };
 
+  const validateRoleId = (id: string) => {
+    setIsRoleIdValid(isValidRoleId(id));
+  };
+
   return (
     <FormModal
       open={open}
-      headline={t("Create role")}
+      headline={t("createRole")}
       onClose={onClose}
       onSubmit={handleSubmit}
       loading={loading}
-      loadingDescription={t("Adding role")}
-      confirmLabel={t("Create role")}
+      loadingDescription={t("creatingRole")}
+      confirmLabel={t("createRole")}
+      submitDisabled={!roleName || !roleId || !isRoleIdValid}
     >
       <TextField
-        label={t("Name")}
-        value={name}
-        placeholder={t("Name")}
-        onChange={setName}
+        label={t("roleId")}
+        value={roleId}
+        placeholder={t("roleIdPlaceholder")}
+        onChange={(value) => {
+          validateRoleId(value);
+          setRoleId(value);
+        }}
+        errors={!isRoleIdValid ? [t("pleaseEnterValidRoleId")] : []}
+        helperText={t("roleIdHelperText")}
         autoFocus
       />
       <TextField
-        label={t("Description")}
-        value={description}
-        placeholder={t("Role description")}
-        onChange={setDescription}
+        label={t("roleName")}
+        value={roleName}
+        placeholder={t("roleNamePlaceholder")}
+        onChange={setRoleName}
       />
-      <EntityList
-        isInsideModal
-        data={availableItems}
-        headers={[
-          { header: t("Permission"), key: "permission" },
-          { header: t("Description"), key: "description" },
-        ]}
-        loading={loading}
-        batchSelection={{
-          onSelect,
-          onUnselect,
-          onSelectAll: (selected) =>
-            setPermissions(selected.map(({ permission }) => permission)),
-          isSelected: ({ permission }) => permissions.includes(permission),
-        }}
+      <TextField
+        label={t("description")}
+        value={description || ""}
+        placeholder={t("roleDescriptionPlaceholder")}
+        onChange={setDescription}
+        cols={2}
+        enableCounter
       />
       {error && (
         <InlineNotification

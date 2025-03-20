@@ -250,4 +250,8 @@ public final class TestSimpleCamundaApplication
   public TestRestOperateClient newOperateClient() {
     return new TestRestOperateClient(restAddress());
   }
+
+  public TestRestTasklistClient newTasklistClient() {
+    return new TestRestTasklistClient(restAddress());
+  }
 }

@@ -38,7 +38,7 @@ const DeleteModal: FC<RemoveTenantRoleModalProps> = ({
     if (tenant && role) {
       const { success } = await callUnassignRole({
         tenantId: tenant,
-        key: role.key,
+        roleKey: role.roleKey,
       });
 
       if (success) {
@@ -64,10 +64,10 @@ const DeleteModal: FC<RemoveTenantRoleModalProps> = ({
       <p>
         <Translate
           i18nKey="removeRoleFromTenant"
-          values={{ roleKey: role.key }}
+          values={{ roleKey: role.roleKey }}
         >
-          Are you sure you want to remove <strong>{role.key}</strong> from this
-          tenant?
+          Are you sure you want to remove <strong>{role.roleKey}</strong> from
+          this tenant?
         </Translate>
       </p>
     </Modal>

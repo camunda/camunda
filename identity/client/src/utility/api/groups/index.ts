@@ -65,20 +65,20 @@ export const getRolesByGroupId: ApiDefinition<
   GetGroupRolesParams
 > = ({ groupId }) => apiPost(`${GROUPS_ENDPOINT}/${groupId}/roles/search`);
 
-type AssignGroupRoleParams = GetGroupRolesParams & { key: number };
+type AssignGroupRoleParams = GetGroupRolesParams & { roleKey: string };
 export const assignGroupRole: ApiDefinition<
   undefined,
   AssignGroupRoleParams
-> = ({ groupId, key }) => {
-  return apiPut(`${GROUPS_ENDPOINT}/${groupId}/roles/${key}`);
+> = ({ groupId, roleKey }) => {
+  return apiPut(`${GROUPS_ENDPOINT}/${groupId}/roles/${roleKey}`);
 };
 
 type UnassignGroupRoleParams = AssignGroupRoleParams;
 export const unassignGroupRole: ApiDefinition<
   undefined,
   UnassignGroupRoleParams
-> = ({ groupId, key }) =>
-  apiDelete(`${GROUPS_ENDPOINT}/${groupId}/roles/${key}`);
+> = ({ groupId, roleKey }) =>
+  apiDelete(`${GROUPS_ENDPOINT}/${groupId}/roles/${roleKey}`);
 
 // ----------------- Mappings within a Group -----------------
 

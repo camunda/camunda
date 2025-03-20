@@ -9,8 +9,10 @@ package io.camunda.zeebe.engine.state;
 
 import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDb;
+import io.camunda.zeebe.engine.state.batchoperation.DbBatchOperationState;
 import io.camunda.zeebe.engine.state.deployment.DbDeploymentState;
 import io.camunda.zeebe.engine.state.distribution.DbDistributionState;
+import io.camunda.zeebe.engine.state.immutable.BatchOperationState;
 import io.camunda.zeebe.engine.state.immutable.DeploymentState;
 import io.camunda.zeebe.engine.state.immutable.DistributionState;
 import io.camunda.zeebe.engine.state.immutable.JobState;
@@ -41,6 +43,7 @@ public final class ScheduledTaskDbState implements ScheduledTaskState {
   private final PendingMessageSubscriptionState pendingMessageSubscriptionState;
   private final PendingProcessMessageSubscriptionState pendingProcessMessageSubscriptionState;
   private final UserTaskState userTaskState;
+  private final BatchOperationState batchOperationState;
 
   public ScheduledTaskDbState(
       final ZeebeDb<ZbColumnFamilies> zeebeDb,
@@ -61,6 +64,7 @@ public final class ScheduledTaskDbState implements ScheduledTaskState {
         new DbProcessMessageSubscriptionState(
             zeebeDb, transactionContext, transientProcessMessageSubscriptionState, clock);
     userTaskState = new DbUserTaskState(zeebeDb, transactionContext);
+    batchOperationState = new DbBatchOperationState(zeebeDb, transactionContext);
   }
 
   @Override
@@ -101,5 +105,10 @@ public final class ScheduledTaskDbState implements ScheduledTaskState {
   @Override
   public UserTaskState getUserTaskState() {
     return userTaskState;
+  }
+
+  @Override
+  public BatchOperationState getBatchOperationState() {
+    return batchOperationState;
   }
 }
