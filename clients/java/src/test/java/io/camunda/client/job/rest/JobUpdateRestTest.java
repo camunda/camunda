@@ -123,7 +123,11 @@ public class JobUpdateRestTest extends ClientRestTest {
     final JobChangeset changeset = new JobChangeset().retries(newRetries).timeout(newTimeout);
 
     // when
-    client.newUpdateJobCommand(jobKey).update(changeset).send().join();
+    client
+        .newUpdateJobCommand(jobKey)
+        .update(io.camunda.client.wrappers.JobChangeset.fromProtocolObject(changeset))
+        .send()
+        .join();
 
     // then
     final JobUpdateRequest request = gatewayService.getLastRequest(JobUpdateRequest.class);
@@ -139,7 +143,11 @@ public class JobUpdateRestTest extends ClientRestTest {
     final JobChangeset changeset = new JobChangeset().retries(newRetries);
 
     // when
-    client.newUpdateJobCommand(jobKey).update(changeset).send().join();
+    client
+        .newUpdateJobCommand(jobKey)
+        .update(io.camunda.client.wrappers.JobChangeset.fromProtocolObject(changeset))
+        .send()
+        .join();
 
     // then
     final JobUpdateRequest request = gatewayService.getLastRequest(JobUpdateRequest.class);
@@ -155,7 +163,11 @@ public class JobUpdateRestTest extends ClientRestTest {
     final JobChangeset changeset = new JobChangeset().timeout(newTimeout);
 
     // when
-    client.newUpdateJobCommand(jobKey).update(changeset).send().join();
+    client
+        .newUpdateJobCommand(jobKey)
+        .update(io.camunda.client.wrappers.JobChangeset.fromProtocolObject(changeset))
+        .send()
+        .join();
 
     // then
     final JobUpdateRequest request = gatewayService.getLastRequest(JobUpdateRequest.class);
@@ -265,7 +277,11 @@ public class JobUpdateRestTest extends ClientRestTest {
     final JobChangeset changeset = new JobChangeset().retries(newRetries).timeout(newTimeout);
 
     // when
-    client.newUpdateJobCommand(job).update(changeset).send().join();
+    client
+        .newUpdateJobCommand(job)
+        .update(io.camunda.client.wrappers.JobChangeset.fromProtocolObject(changeset))
+        .send()
+        .join();
 
     // then
     final JobUpdateRequest request = gatewayService.getLastRequest(JobUpdateRequest.class);
@@ -280,7 +296,11 @@ public class JobUpdateRestTest extends ClientRestTest {
     final JobChangeset changeset = new JobChangeset();
 
     // when
-    client.newUpdateJobCommand(jobKey).update(changeset).send().join();
+    client
+        .newUpdateJobCommand(jobKey)
+        .update(io.camunda.client.wrappers.JobChangeset.fromProtocolObject(changeset))
+        .send()
+        .join();
 
     // then
     final JobUpdateRequest request = gatewayService.getLastRequest(JobUpdateRequest.class);
@@ -296,7 +316,11 @@ public class JobUpdateRestTest extends ClientRestTest {
     final JobChangeset changeset = new JobChangeset();
 
     // when
-    client.newUpdateJobCommand(job).update(changeset).send().join();
+    client
+        .newUpdateJobCommand(job)
+        .update(io.camunda.client.wrappers.JobChangeset.fromProtocolObject(changeset))
+        .send()
+        .join();
 
     // then
     final JobUpdateRequest request = gatewayService.getLastRequest(JobUpdateRequest.class);
