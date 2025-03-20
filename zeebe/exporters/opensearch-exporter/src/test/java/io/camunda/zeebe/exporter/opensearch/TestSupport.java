@@ -67,6 +67,8 @@ final class TestSupport {
       case BATCH_OPERATION_CREATION -> config.batchOperationCreation = value;
       case BATCH_OPERATION_CHUNK -> config.batchOperationChunk = value;
       case BATCH_OPERATION_EXECUTION -> config.batchOperationExecution = value;
+      case AD_HOC_SUB_PROCESS_ACTIVITY_ACTIVATION ->
+          config.adHocSubProcessActivityActivation = value;
       default ->
           throw new IllegalArgumentException(
               "No known indexing configuration option for value type " + valueType);

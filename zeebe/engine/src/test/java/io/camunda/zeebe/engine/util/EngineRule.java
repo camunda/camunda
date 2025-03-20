@@ -21,6 +21,7 @@ import io.camunda.zeebe.engine.state.DefaultZeebeDbFactory;
 import io.camunda.zeebe.engine.state.ProcessingDbState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.util.TestInterPartitionCommandSender.CommandInterceptor;
+import io.camunda.zeebe.engine.util.client.AdHocSubProcessActivityClient;
 import io.camunda.zeebe.engine.util.client.AuthorizationClient;
 import io.camunda.zeebe.engine.util.client.BatchOperationClient;
 import io.camunda.zeebe.engine.util.client.ClockClient;
@@ -380,6 +381,10 @@ public final class EngineRule extends ExternalResource {
 
   public ResourceFetchClient resourceFetch() {
     return new ResourceFetchClient(environmentRule);
+  }
+
+  public AdHocSubProcessActivityClient adHocSubProcessActivity() {
+    return new AdHocSubProcessActivityClient(environmentRule);
   }
 
   public SignalClient signal() {

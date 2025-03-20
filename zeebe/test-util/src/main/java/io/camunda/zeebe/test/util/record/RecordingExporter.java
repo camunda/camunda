@@ -46,6 +46,7 @@ import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import io.camunda.zeebe.protocol.record.intent.VariableDocumentIntent;
 import io.camunda.zeebe.protocol.record.intent.VariableIntent;
 import io.camunda.zeebe.protocol.record.intent.scaling.ScaleIntent;
+import io.camunda.zeebe.protocol.record.value.AdHocSubProcessActivityActivationRecordValue;
 import io.camunda.zeebe.protocol.record.value.AuthorizationRecordValue;
 import io.camunda.zeebe.protocol.record.value.BatchOperationCreationRecordValue;
 import io.camunda.zeebe.protocol.record.value.ClockRecordValue;
@@ -437,6 +438,14 @@ public final class RecordingExporter implements Exporter {
   public static ResourceDeletionRecordStream resourceDeletionRecords(
       final ResourceDeletionIntent intent) {
     return resourceDeletionRecords().withIntent(intent);
+  }
+
+  public static AdHocSubProcessActivityActivationRecordStream
+      adHocSubProcessActivityActivationRecords() {
+    return new AdHocSubProcessActivityActivationRecordStream(
+        records(
+            ValueType.AD_HOC_SUB_PROCESS_ACTIVITY_ACTIVATION,
+            AdHocSubProcessActivityActivationRecordValue.class));
   }
 
   public static FormRecordStream formRecords() {
