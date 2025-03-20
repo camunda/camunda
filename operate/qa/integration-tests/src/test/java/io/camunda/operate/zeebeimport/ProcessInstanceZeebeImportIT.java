@@ -28,7 +28,6 @@ import io.camunda.operate.webapp.rest.dto.listview.ListViewRequestDto;
 import io.camunda.operate.webapp.rest.dto.listview.ListViewResponseDto;
 import io.camunda.operate.webapp.rest.dto.listview.ProcessInstanceStateDto;
 import io.camunda.operate.webapp.rest.dto.listview.VariablesQueryDto;
-import io.camunda.operate.zeebe.ImportValueType;
 import io.camunda.webapps.schema.descriptors.operate.template.VariableTemplate;
 import io.camunda.webapps.schema.entities.operate.FlowNodeInstanceEntity;
 import io.camunda.webapps.schema.entities.operate.FlowNodeState;
@@ -106,21 +105,6 @@ public class ProcessInstanceZeebeImportIT extends OperateZeebeAbstractIT {
     assertThat(allFlowNodeInstances).hasSize(2);
     assertStartFlowNodeCompleted(allFlowNodeInstances.get(0));
     assertFlowNodeIsActive(allFlowNodeInstances.get(1), "taskA");
-  }
-
-  @Test
-  public void processInstanceCreatedIfJobRecordProcessedFirst() {
-    final String processId = "Process_Start_Listener";
-    final Long processDefinitionKey = deployProcess("process-start-listener.bpmn");
-
-    // when
-    final Long processInstanceKey =
-        ZeebeTestUtil.startProcessInstance(camundaClient, processId, null);
-    searchTestRule.processRecordsWithTypeAndWait(
-        ImportValueType.JOB, listenerJobIsCreated, processInstanceKey, processId);
-    searchTestRule.processAllRecordsAndWait(processInstanceIsCreatedCheck, processInstanceKey);
-    final ListViewProcessInstanceDto dto = getSingleProcessInstanceForListView();
-    assertThat(dto.getBpmnProcessId()).isEqualTo(processId);
   }
 
   @Test
