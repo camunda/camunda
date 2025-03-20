@@ -4,6 +4,7 @@
  * See the NOTICE file distributed with this work for additional information regarding copyright ownership.
  * Licensed under the Camunda License 1.0. You may not use this file except in compliance with the Camunda License 1.0.
  */
+
 import { FC } from "react";
 import { useApiCall } from "src/utility/api";
 import useTranslate from "src/utility/localization";
@@ -62,8 +63,13 @@ const DeleteModal: FC<RemoveTenantMemberModalProps> = ({
       confirmLabel={t("removeUser")}
     >
       <p>
-        <Translate>Are you sure you want to remove</Translate>{" "}
-        <strong>{user.username}</strong> from this tenant?
+        <Translate
+          i18nKey="deleteUserConfirmation"
+          values={{ username: user.username }}
+        >
+          Are you sure you want to remove <strong>{user.username}</strong> from
+          this tenant?
+        </Translate>
       </p>
     </Modal>
   );

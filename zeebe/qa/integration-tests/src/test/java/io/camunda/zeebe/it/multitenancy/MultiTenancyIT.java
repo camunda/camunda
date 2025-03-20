@@ -56,7 +56,6 @@ import org.apache.hc.core5.http.HttpStatus;
 import org.assertj.core.api.InstanceOfAssertFactories;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Named;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -102,16 +101,6 @@ public class MultiTenancyIT {
                                   USER_TENANT_A_AND_B,
                                   USER_TENANT_A_AND_B,
                                   USER_TENANT_A_AND_B,
-                                  "test@camunda.com"),
-                              new ConfiguredUser(
-                                  USER_TENANT_A_WITHOUT_DEFAULT_TENANT,
-                                  USER_TENANT_A_WITHOUT_DEFAULT_TENANT,
-                                  USER_TENANT_A_WITHOUT_DEFAULT_TENANT,
-                                  "test@camunda.com"),
-                              new ConfiguredUser(
-                                  USER_WITHOUT_TENANT,
-                                  USER_WITHOUT_TENANT,
-                                  USER_WITHOUT_TENANT,
                                   "test@camunda.com"))));
 
   private String processId;
@@ -129,11 +118,12 @@ public class MultiTenancyIT {
       authUtil.awaitUserExistsInElasticsearch(USER_TENANT_A);
       authUtil.awaitUserExistsInElasticsearch(USER_TENANT_B);
       authUtil.awaitUserExistsInElasticsearch(USER_TENANT_A_AND_B);
-      authUtil.awaitUserExistsInElasticsearch(USER_TENANT_A_WITHOUT_DEFAULT_TENANT);
-      authUtil.awaitUserExistsInElasticsearch(USER_WITHOUT_TENANT);
+      // These users need to be created manually. If they are part of the configured users they
+      // would get the <default> tenant assigned.
+      authUtil.createUser(
+          USER_TENANT_A_WITHOUT_DEFAULT_TENANT, USER_TENANT_A_WITHOUT_DEFAULT_TENANT);
+      authUtil.createUser(USER_WITHOUT_TENANT, USER_WITHOUT_TENANT);
 
-      assignUsersToTenant(
-          client, DEFAULT_TENANT, USER_TENANT_A, USER_TENANT_B, USER_TENANT_A_AND_B);
       createTenantAndAssignUsers(
           client,
           TENANT_A,
@@ -227,12 +217,11 @@ public class MultiTenancyIT {
           .withThrowableThat()
           .withMessageContaining("FORBIDDEN")
           .withMessageContaining(
-              "Insufficient permissions to perform operation 'CREATE' on resource 'RESOURCE' for tenant '%s'"
-                  .formatted(TENANT_B));
+              "Expected to perform operation 'CREATE' on resource 'RESOURCE' for tenant '%s', but user is not assigned to this tenant"
+                  .formatted(TENANT_B, USER_TENANT_A));
     }
   }
 
-  @Disabled("https://github.com/camunda/camunda/issues/29518")
   @Test
   void shouldDenyDeployResourceWhenUnauthorizedForDefaultTenant() {
     // given
@@ -249,14 +238,14 @@ public class MultiTenancyIT {
       assertThat(result)
           .failsWithin(Duration.ofSeconds(10))
           .withThrowableThat()
-          .withMessageContaining("PERMISSION_DENIED")
+          .withMessageContaining("FORBIDDEN")
           .withMessageContaining(
-              "Expected to handle gRPC request DeployResource with tenant identifier '<default>'")
-          .withMessageContaining("but tenant is not authorized to perform this request");
+              "Expected to perform operation 'CREATE' on resource 'RESOURCE' for tenant '%s', but user is not assigned to this tenant"
+                  .formatted(
+                      TenantOwned.DEFAULT_TENANT_IDENTIFIER, USER_TENANT_A_WITHOUT_DEFAULT_TENANT));
     }
   }
 
-  @Disabled("https://github.com/camunda/camunda/issues/29518")
   @SuppressWarnings("deprecation")
   @Test
   void shouldDenyDeployProcessWhenUnauthorizedForDefaultTenant() {
@@ -273,8 +262,9 @@ public class MultiTenancyIT {
           .withThrowableThat()
           .withMessageContaining("PERMISSION_DENIED")
           .withMessageContaining(
-              "Expected to handle gRPC request DeployProcess with tenant identifier '<default>'")
-          .withMessageContaining("but tenant is not authorized to perform this request");
+              "Expected to perform operation 'CREATE' on resource 'RESOURCE' for tenant '%s', but user is not assigned to this tenant"
+                  .formatted(
+                      TenantOwned.DEFAULT_TENANT_IDENTIFIER, USER_TENANT_A_WITHOUT_DEFAULT_TENANT));
     }
   }
 
@@ -628,8 +618,8 @@ public class MultiTenancyIT {
           .withThrowableThat()
           .withMessageContaining("FORBIDDEN")
           .withMessageContaining(
-              "Insufficient permissions to perform operation 'CREATE' on resource 'MESSAGE' for tenant '%s'"
-                  .formatted(TENANT_B));
+              "Expected to perform operation 'CREATE' on resource 'MESSAGE' for tenant '%s', but user is not assigned to this tenant"
+                  .formatted(TENANT_B, USER_TENANT_A));
     }
   }
 

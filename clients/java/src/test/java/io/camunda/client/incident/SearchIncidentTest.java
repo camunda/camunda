@@ -29,10 +29,13 @@ import io.camunda.client.protocol.rest.*;
 import io.camunda.client.protocol.rest.IncidentFilter.ErrorTypeEnum;
 import io.camunda.client.protocol.rest.IncidentFilter.StateEnum;
 import io.camunda.client.util.ClientRestTest;
+import io.camunda.zeebe.protocol.record.value.ErrorType;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 
 public class SearchIncidentTest extends ClientRestTest {
 
@@ -214,6 +217,30 @@ public class SearchIncidentTest extends ClientRestTest {
         assertThat(value.name()).isEqualTo(protocolValue.name());
       }
     }
+  }
+
+  /*
+   * This test is parameterized to test all possible values of the Zeebe Protocol ErrorType enum.
+   * The goal is to catch any Zeebe Protocol error types not implemented in the Java client.
+   */
+  @ParameterizedTest(name = "Incident for ErrorType: {0}")
+  @EnumSource(value = ErrorType.class)
+  void shouldSearchIncidentByIncidentErrorType(final ErrorType errorType) {
+    // given
+    final IncidentErrorType incidentErrorType = IncidentErrorType.valueOf(errorType.name());
+
+    // when
+    client
+        .newIncidentQuery()
+        .filter(f -> f.incidentKey(1L).errorType(incidentErrorType))
+        .send()
+        .join();
+
+    // then
+    final IncidentSearchQuery request = gatewayService.getLastRequest(IncidentSearchQuery.class);
+    final IncidentFilter filter = request.getFilter();
+    assertThat(filter.getIncidentKey()).isEqualTo("1");
+    assertThat(filter.getErrorType()).isEqualTo(ErrorTypeEnum.valueOf(errorType.name()));
   }
 
   private void assertSort(

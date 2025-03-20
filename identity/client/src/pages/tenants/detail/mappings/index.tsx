@@ -33,7 +33,7 @@ const Mappings: FC<MappingsProps> = ({ tenantId }) => {
     tenantId: tenantId,
   });
 
-  const areNoMappingsAssigned = !mappings || mappings.items?.length === 0;
+  const isAssignedMappingsListEmpty = !mappings || mappings.items?.length === 0;
 
   const [assignMappings, assignMappingsModal] = useEntityModal(
     AssignMappingsModal,
@@ -60,7 +60,7 @@ const Mappings: FC<MappingsProps> = ({ tenantId }) => {
       />
     );
 
-  if (success && areNoMappingsAssigned)
+  if (success && isAssignedMappingsListEmpty)
     return (
       <>
         <C3EmptyState
