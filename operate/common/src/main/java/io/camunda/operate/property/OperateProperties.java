@@ -7,6 +7,7 @@
  */
 package io.camunda.operate.property;
 
+import io.camunda.operate.conditions.DatabaseInfo;
 import io.camunda.operate.conditions.DatabaseType;
 import java.util.List;
 import org.springframework.beans.factory.annotation.Value;
@@ -26,8 +27,6 @@ public class OperateProperties {
   public static final String PREFIX = "camunda.operate";
 
   public static final long BATCH_OPERATION_MAX_SIZE_DEFAULT = 1_000_000L;
-
-  public static final String ELASTIC_SEARCH = "elasticsearch";
 
   private static final String UNKNOWN_VERSION = "unknown-version";
 
@@ -56,8 +55,6 @@ public class OperateProperties {
   private boolean enterprise = false;
 
   private String tasklistUrl = null;
-
-  private String database = ELASTIC_SEARCH;
 
   @Value("${camunda.operate.internal.version.current}")
   private String version = UNKNOWN_VERSION;
@@ -342,14 +339,6 @@ public class OperateProperties {
     this.rfc3339ApiDateFormat = rfc3339ApiDateFormat;
   }
 
-  public String getDatabase() {
-    return database;
-  }
-
-  public void setDatabase(final String database) {
-    this.database = database;
-  }
-
   public String getIndexPrefix(final DatabaseType databaseType) {
     return switch (databaseType) {
       case Elasticsearch -> getElasticsearch() == null ? null : getElasticsearch().getIndexPrefix();
@@ -359,6 +348,6 @@ public class OperateProperties {
   }
 
   public String getIndexPrefix() {
-    return getIndexPrefix(DatabaseType.byCode(database).orElse(DatabaseType.Elasticsearch));
+    return getIndexPrefix(DatabaseInfo.getCurrent());
   }
 }

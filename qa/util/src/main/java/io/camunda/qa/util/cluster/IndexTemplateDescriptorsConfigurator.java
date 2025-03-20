@@ -7,6 +7,7 @@
  */
 package io.camunda.qa.util.cluster;
 
+import io.camunda.operate.conditions.DatabaseInfo;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.webapps.schema.descriptors.operate.index.DecisionIndex;
 import io.camunda.webapps.schema.descriptors.operate.index.DecisionRequirementsIndex;
@@ -40,207 +41,189 @@ import org.springframework.context.annotation.Profile;
 public class IndexTemplateDescriptorsConfigurator {
 
   @Bean
-  public DecisionIndex getDecisionIndex(final OperateProperties operateProperties) {
-    return new DecisionIndex(
-        operateProperties.getIndexPrefix(),
-        operateProperties.getDatabase().equals(OperateProperties.ELASTIC_SEARCH));
+  public DecisionIndex getDecisionIndex(
+      final OperateProperties operateProperties, final DatabaseInfo databaseInfo) {
+    return new DecisionIndex(operateProperties.getIndexPrefix(), databaseInfo.isElasticsearchDb());
   }
 
   @Bean
   public DecisionRequirementsIndex getDecisionRequirementsIndex(
-      final OperateProperties operateProperties) {
+      final OperateProperties operateProperties, final DatabaseInfo databaseInfo) {
     return new DecisionRequirementsIndex(
-        operateProperties.getIndexPrefix(),
-        operateProperties.getDatabase().equals(OperateProperties.ELASTIC_SEARCH));
+        operateProperties.getIndexPrefix(), databaseInfo.isElasticsearchDb());
   }
 
   @Bean
-  public MetricIndex getMetricIndex(final OperateProperties operateProperties) {
-    return new MetricIndex(
-        operateProperties.getIndexPrefix(),
-        operateProperties.getDatabase().equals(OperateProperties.ELASTIC_SEARCH));
+  public MetricIndex getMetricIndex(
+      final OperateProperties operateProperties, final DatabaseInfo databaseInfo) {
+    return new MetricIndex(operateProperties.getIndexPrefix(), databaseInfo.isElasticsearchDb());
   }
 
   @Bean
-  public ImportPositionIndex getImportPositionIndex(final OperateProperties operateProperties) {
+  public ImportPositionIndex getImportPositionIndex(
+      final OperateProperties operateProperties, final DatabaseInfo databaseInfo) {
     return new ImportPositionIndex(
-        operateProperties.getIndexPrefix(),
-        operateProperties.getDatabase().equals(OperateProperties.ELASTIC_SEARCH));
+        operateProperties.getIndexPrefix(), databaseInfo.isElasticsearchDb());
   }
 
   @Bean("operateProcessIndex")
-  public ProcessIndex getProcessIndex(final OperateProperties operateProperties) {
-    return new ProcessIndex(
-        operateProperties.getIndexPrefix(),
-        operateProperties.getDatabase().equals(OperateProperties.ELASTIC_SEARCH));
+  public ProcessIndex getProcessIndex(
+      final OperateProperties operateProperties, final DatabaseInfo databaseInfo) {
+    return new ProcessIndex(operateProperties.getIndexPrefix(), databaseInfo.isElasticsearchDb());
   }
 
   @Bean
   public DecisionInstanceTemplate getDecisionInstanceTemplate(
-      final OperateProperties operateProperties) {
+      final OperateProperties operateProperties, final DatabaseInfo databaseInfo) {
     return new DecisionInstanceTemplate(
-        operateProperties.getIndexPrefix(),
-        operateProperties.getDatabase().equals(OperateProperties.ELASTIC_SEARCH));
+        operateProperties.getIndexPrefix(), databaseInfo.isElasticsearchDb());
   }
 
   @Bean
-  public EventTemplate getEventTemplate(final OperateProperties operateProperties) {
-    return new EventTemplate(
-        operateProperties.getIndexPrefix(),
-        operateProperties.getDatabase().equals(OperateProperties.ELASTIC_SEARCH));
+  public EventTemplate getEventTemplate(
+      final OperateProperties operateProperties, final DatabaseInfo databaseInfo) {
+    return new EventTemplate(operateProperties.getIndexPrefix(), databaseInfo.isElasticsearchDb());
   }
 
   @Bean("operateFlowNodeInstanceTemplate")
   public FlowNodeInstanceTemplate getFlowNodeInstanceTemplate(
-      final OperateProperties operateProperties) {
+      final OperateProperties operateProperties, final DatabaseInfo databaseInfo) {
     return new FlowNodeInstanceTemplate(
-        operateProperties.getIndexPrefix(),
-        operateProperties.getDatabase().equals(OperateProperties.ELASTIC_SEARCH));
+        operateProperties.getIndexPrefix(), databaseInfo.isElasticsearchDb());
   }
 
   @Bean
-  public IncidentTemplate getIncidentTemplate(final OperateProperties operateProperties) {
+  public IncidentTemplate getIncidentTemplate(
+      final OperateProperties operateProperties, final DatabaseInfo databaseInfo) {
     return new IncidentTemplate(
-        operateProperties.getIndexPrefix(),
-        operateProperties.getDatabase().equals(OperateProperties.ELASTIC_SEARCH));
+        operateProperties.getIndexPrefix(), databaseInfo.isElasticsearchDb());
   }
 
   @Bean
-  public ListViewTemplate getListViewTemplate(final OperateProperties operateProperties) {
+  public ListViewTemplate getListViewTemplate(
+      final OperateProperties operateProperties, final DatabaseInfo databaseInfo) {
     return new ListViewTemplate(
-        operateProperties.getIndexPrefix(),
-        operateProperties.getDatabase().equals(OperateProperties.ELASTIC_SEARCH));
+        operateProperties.getIndexPrefix(), databaseInfo.isElasticsearchDb());
   }
 
   @Bean
-  public MessageTemplate getMessageTemplate(final OperateProperties operateProperties) {
+  public MessageTemplate getMessageTemplate(
+      final OperateProperties operateProperties, final DatabaseInfo databaseInfo) {
     return new MessageTemplate(
-        operateProperties.getIndexPrefix(),
-        operateProperties.getDatabase().equals(OperateProperties.ELASTIC_SEARCH));
+        operateProperties.getIndexPrefix(), databaseInfo.isElasticsearchDb());
   }
 
   @Bean
   public PostImporterQueueTemplate getPostImporterQueueTemplate(
-      final OperateProperties operateProperties) {
+      final OperateProperties operateProperties, final DatabaseInfo databaseInfo) {
     return new PostImporterQueueTemplate(
-        operateProperties.getIndexPrefix(),
-        operateProperties.getDatabase().equals(OperateProperties.ELASTIC_SEARCH));
+        operateProperties.getIndexPrefix(), databaseInfo.isElasticsearchDb());
   }
 
   @Bean
-  public SequenceFlowTemplate getSequenceFlowTemplate(final OperateProperties operateProperties) {
+  public SequenceFlowTemplate getSequenceFlowTemplate(
+      final OperateProperties operateProperties, final DatabaseInfo databaseInfo) {
     return new SequenceFlowTemplate(
-        operateProperties.getIndexPrefix(),
-        operateProperties.getDatabase().equals(OperateProperties.ELASTIC_SEARCH));
+        operateProperties.getIndexPrefix(), databaseInfo.isElasticsearchDb());
   }
 
   @Bean
-  public JobTemplate getJobTemplate(final OperateProperties operateProperties) {
-    return new JobTemplate(
-        operateProperties.getIndexPrefix(),
-        operateProperties.getDatabase().equals(OperateProperties.ELASTIC_SEARCH));
+  public JobTemplate getJobTemplate(
+      final OperateProperties operateProperties, final DatabaseInfo databaseInfo) {
+    return new JobTemplate(operateProperties.getIndexPrefix(), databaseInfo.isElasticsearchDb());
   }
 
   @Bean("operateVariableTemplate")
-  public VariableTemplate getVariableTemplate(final OperateProperties operateProperties) {
+  public VariableTemplate getVariableTemplate(
+      final OperateProperties operateProperties, final DatabaseInfo databaseInfo) {
     return new VariableTemplate(
-        operateProperties.getIndexPrefix(),
-        operateProperties.getDatabase().equals(OperateProperties.ELASTIC_SEARCH));
+        operateProperties.getIndexPrefix(), databaseInfo.isElasticsearchDb());
   }
 
   @Bean
-  public OperationTemplate getOperationTemplate(final OperateProperties operateProperties) {
+  public OperationTemplate getOperationTemplate(
+      final OperateProperties operateProperties, final DatabaseInfo databaseInfo) {
     return new OperationTemplate(
-        operateProperties.getIndexPrefix(),
-        operateProperties.getDatabase().equals(OperateProperties.ELASTIC_SEARCH));
+        operateProperties.getIndexPrefix(), databaseInfo.isElasticsearchDb());
   }
 
   @Bean
   public BatchOperationTemplate getBatchOperationTemplate(
-      final OperateProperties operateProperties) {
+      final OperateProperties operateProperties, final DatabaseInfo databaseInfo) {
     return new BatchOperationTemplate(
-        operateProperties.getIndexPrefix(),
-        operateProperties.getDatabase().equals(OperateProperties.ELASTIC_SEARCH));
+        operateProperties.getIndexPrefix(), databaseInfo.isElasticsearchDb());
   }
 
   @Bean
   public DraftTaskVariableTemplate getDraftTaskVariableTemplate(
-      final OperateProperties operateProperties) {
+      final OperateProperties operateProperties, final DatabaseInfo databaseInfo) {
     // Just take the provided DatabaseInfo, no need to distinguish between Tasklist or Operate
     return new DraftTaskVariableTemplate(
-        operateProperties.getIndexPrefix(),
-        operateProperties.getDatabase().equals(OperateProperties.ELASTIC_SEARCH));
+        operateProperties.getIndexPrefix(), databaseInfo.isElasticsearchDb());
   }
 
   @Bean
-  public FormIndex getFormIndex(final OperateProperties operateProperties) {
+  public FormIndex getFormIndex(
+      final OperateProperties operateProperties, final DatabaseInfo databaseInfo) {
     // Just take the provided DatabaseInfo, no need to distinguish between Tasklist or Operate
-    return new FormIndex(
-        operateProperties.getIndexPrefix(),
-        operateProperties.getDatabase().equals(OperateProperties.ELASTIC_SEARCH));
+    return new FormIndex(operateProperties.getIndexPrefix(), databaseInfo.isElasticsearchDb());
   }
 
   @Bean
-  public TasklistMetricIndex getTasklistMetricIndex(final OperateProperties operateProperties) {
+  public TasklistMetricIndex getTasklistMetricIndex(
+      final OperateProperties operateProperties, final DatabaseInfo databaseInfo) {
     // Just take the provided DatabaseInfo, no need to distinguish between Tasklist or Operate
     return new TasklistMetricIndex(
-        operateProperties.getIndexPrefix(),
-        operateProperties.getDatabase().equals(OperateProperties.ELASTIC_SEARCH));
+        operateProperties.getIndexPrefix(), databaseInfo.isElasticsearchDb());
   }
 
   @Bean("operateSnapshotTaskVariableTemplate")
   public SnapshotTaskVariableTemplate getOperateSnapshotTaskVariableTemplate(
-      final OperateProperties operateProperties) {
+      final OperateProperties operateProperties, final DatabaseInfo databaseInfo) {
     // Just take the provided DatabaseInfo, no need to distinguish between Tasklist or Operate
     return new SnapshotTaskVariableTemplate(
-        operateProperties.getIndexPrefix(),
-        operateProperties.getDatabase().equals(OperateProperties.ELASTIC_SEARCH));
+        operateProperties.getIndexPrefix(), databaseInfo.isElasticsearchDb());
   }
 
   @Bean("tasklistSnapshotTaskVariableTemplate")
   public SnapshotTaskVariableTemplate getTasklistSnapshotTaskVariableTemplate(
-      final OperateProperties operateProperties) {
+      final OperateProperties operateProperties, final DatabaseInfo databaseInfo) {
     // Just take the provided DatabaseInfo, no need to distinguish between Tasklist or Operate
     return new SnapshotTaskVariableTemplate(
-        operateProperties.getIndexPrefix(),
-        operateProperties.getDatabase().equals(OperateProperties.ELASTIC_SEARCH));
+        operateProperties.getIndexPrefix(), databaseInfo.isElasticsearchDb());
   }
 
   @Bean
-  public TaskTemplate getTaskTemplate(final OperateProperties operateProperties) {
+  public TaskTemplate getTaskTemplate(
+      final OperateProperties operateProperties, final DatabaseInfo databaseInfo) {
     // Just take the provided DatabaseInfo, no need to distinguish between Tasklist or Operate
-    return new TaskTemplate(
-        operateProperties.getIndexPrefix(),
-        operateProperties.getDatabase().equals(OperateProperties.ELASTIC_SEARCH));
+    return new TaskTemplate(operateProperties.getIndexPrefix(), databaseInfo.isElasticsearchDb());
   }
 
   @Bean("tasklistVariableTemplate")
-  public VariableTemplate getTasklistVariableTemplate(final OperateProperties operateProperties) {
+  public VariableTemplate getTasklistVariableTemplate(
+      final OperateProperties operateProperties, final DatabaseInfo databaseInfo) {
     return new VariableTemplate(
-        operateProperties.getIndexPrefix(),
-        operateProperties.getDatabase().equals(OperateProperties.ELASTIC_SEARCH));
+        operateProperties.getIndexPrefix(), databaseInfo.isElasticsearchDb());
   }
 
   @Bean("tasklistFlowNodeInstanceTemplate")
   public FlowNodeInstanceTemplate getTasklistFlowNodeInstanceTemplate(
-      final OperateProperties operateProperties) {
+      final OperateProperties operateProperties, final DatabaseInfo databaseInfo) {
     return new FlowNodeInstanceTemplate(
-        operateProperties.getIndexPrefix(),
-        operateProperties.getDatabase().equals(OperateProperties.ELASTIC_SEARCH));
+        operateProperties.getIndexPrefix(), databaseInfo.isElasticsearchDb());
   }
 
   @Bean
   public TasklistImportPositionIndex getTasklistImportPositionIndex(
-      final OperateProperties operateProperties) {
+      final OperateProperties operateProperties, final DatabaseInfo databaseInfo) {
     return new TasklistImportPositionIndex(
-        operateProperties.getIndexPrefix(),
-        operateProperties.getDatabase().equals(OperateProperties.ELASTIC_SEARCH));
+        operateProperties.getIndexPrefix(), databaseInfo.isElasticsearchDb());
   }
 
   @Bean("tasklistProcessIndex")
-  public ProcessIndex getTasklistProcessIndex(final OperateProperties operateProperties) {
-    return new ProcessIndex(
-        operateProperties.getIndexPrefix(),
-        operateProperties.getDatabase().equals(OperateProperties.ELASTIC_SEARCH));
+  public ProcessIndex getTasklistProcessIndex(
+      final OperateProperties operateProperties, final DatabaseInfo databaseInfo) {
+    return new ProcessIndex(operateProperties.getIndexPrefix(), databaseInfo.isElasticsearchDb());
   }
 }
