@@ -126,8 +126,7 @@ jobs:
             -Dtag=${RELEASE_VERSION} \
             -DreleaseVersion=${RELEASE_VERSION} \
             -DdevelopmentVersion=${DEVELOPMENT_VERSION} \
-            -DpushChanges=${PUSH_CHANGES} \
-            -DremoteTagging=${PUSH_CHANGES} \
+            -DpushChanges=false \
             -DcompletionGoals="spotless:apply" \
             -D skipOptimize \
             -DskipTests \
