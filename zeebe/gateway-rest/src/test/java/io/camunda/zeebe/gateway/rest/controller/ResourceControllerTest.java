@@ -17,9 +17,17 @@ import io.camunda.security.configuration.MultiTenancyConfiguration;
 import io.camunda.service.ResourceServices;
 import io.camunda.service.ResourceServices.DeployResourcesRequest;
 import io.camunda.service.ResourceServices.ResourceDeletionRequest;
+import io.camunda.service.ResourceServices.ResourceFetchRequest;
+import io.camunda.service.exception.CamundaBrokerException;
+import io.camunda.zeebe.broker.client.api.dto.BrokerError;
+import io.camunda.zeebe.broker.client.api.dto.BrokerRejection;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
+import io.camunda.zeebe.protocol.impl.record.value.deployment.ResourceRecord;
 import io.camunda.zeebe.protocol.impl.record.value.resource.ResourceDeletionRecord;
+import io.camunda.zeebe.protocol.record.ErrorCode;
+import io.camunda.zeebe.protocol.record.RejectionType;
+import io.camunda.zeebe.protocol.record.intent.ResourceIntent;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.concurrent.CompletableFuture;
 import org.junit.jupiter.api.BeforeEach;
@@ -29,6 +37,7 @@ import org.mockito.Captor;
 import org.mockito.Mockito;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.client.MultipartBodyBuilder;
 
@@ -38,6 +47,8 @@ public class ResourceControllerTest extends RestControllerTest {
   static final String RESOURCES_BASE_URL = "/v2";
   static final String DEPLOY_RESOURCES_ENDPOINT = RESOURCES_BASE_URL + "/deployments";
   static final String DELETE_RESOURCE_ENDPOINT = RESOURCES_BASE_URL + "/resources/%s/deletion";
+  static final String GET_RESOURCE_ENDPOINT = RESOURCES_BASE_URL + "/resources/%s";
+  static final String GET_RESOURCE_CONTENT_ENDPOINT = RESOURCES_BASE_URL + "/resources/%s/content";
 
   @MockBean ResourceServices resourceServices;
   @MockBean MultiTenancyConfiguration multiTenancyCfg;
@@ -481,5 +492,275 @@ public class ResourceControllerTest extends RestControllerTest {
         .contentType(MediaType.APPLICATION_PROBLEM_JSON)
         .expectBody()
         .json(expectedBody);
+  }
+
+  @Test
+  void shouldGetResource() {
+    // given
+    when(resourceServices.fetchResource(new ResourceFetchRequest(1)))
+        .thenReturn(
+            CompletableFuture.completedFuture(
+                new ResourceRecord()
+                    .setResourceName("test.rpa")
+                    .setResourceId("test")
+                    .setVersion(2)
+                    .setVersionTag("v2.0")
+                    .setTenantId("tenant-1")
+                    .setResourceKey(1)));
+
+    // when / then
+    webClient
+        .get()
+        .uri(GET_RESOURCE_ENDPOINT.formatted(1))
+        .exchange()
+        .expectStatus()
+        .isOk()
+        .expectBody()
+        .json(
+            """
+          {
+            "resourceName": "test.rpa",
+            "version": 2,
+            "versionTag": "v2.0",
+            "resourceId": "test",
+            "tenantId": "tenant-1",
+            "resourceKey": "1"
+          }
+          """);
+  }
+
+  @Test
+  void getResourceShouldYieldNotFoundWhenResourceNotFound() {
+    // given
+    when(resourceServices.fetchResource(new ResourceFetchRequest(1)))
+        .thenReturn(
+            CompletableFuture.failedFuture(
+                new CamundaBrokerException(
+                    new BrokerRejection(
+                        ResourceIntent.FETCH, 1L, RejectionType.NOT_FOUND, "Resource not found"))));
+    final var url = GET_RESOURCE_ENDPOINT.formatted(1);
+
+    // when / then
+    webClient
+        .get()
+        .uri(url)
+        .exchange()
+        .expectStatus()
+        .isNotFound()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .expectBody()
+        .json(
+            """
+            {
+              "type": "about:blank",
+              "status": 404,
+              "title": "NOT_FOUND",
+              "detail": "Command 'FETCH' rejected with code 'NOT_FOUND': Resource not found",
+              "instance": "%s"
+            }
+            """
+                .formatted(url));
+  }
+
+  @Test
+  void getResourceShouldYieldInternalServerErrorForProcessingErrorRejection() {
+    // given
+    when(resourceServices.fetchResource(new ResourceFetchRequest(1)))
+        .thenReturn(
+            CompletableFuture.failedFuture(
+                new CamundaBrokerException(
+                    new BrokerRejection(
+                        ResourceIntent.FETCH,
+                        1L,
+                        RejectionType.PROCESSING_ERROR,
+                        "something went wrong"))));
+    final var url = GET_RESOURCE_ENDPOINT.formatted(1);
+
+    // when / then
+    webClient
+        .get()
+        .uri(url)
+        .exchange()
+        .expectStatus()
+        .isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR)
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .expectBody()
+        .json(
+            """
+            {
+              "type": "about:blank",
+              "status": 500,
+              "title": "PROCESSING_ERROR",
+              "detail": "Command 'FETCH' rejected with code 'PROCESSING_ERROR': something went wrong",
+              "instance": "%s"
+            }
+            """
+                .formatted(url));
+  }
+
+  @Test
+  void getResourceShouldYieldInternalServerErrorForBrokerError() {
+    // given
+    when(resourceServices.fetchResource(new ResourceFetchRequest(1)))
+        .thenReturn(
+            CompletableFuture.failedFuture(
+                new CamundaBrokerException(
+                    new BrokerError(ErrorCode.INTERNAL_ERROR, "something went wrong"))));
+    final var url = GET_RESOURCE_ENDPOINT.formatted(1);
+
+    // when / then
+    webClient
+        .get()
+        .uri(url)
+        .exchange()
+        .expectStatus()
+        .isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR)
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .expectBody()
+        .json(
+            """
+            {
+              "type": "about:blank",
+              "status": 500,
+              "title": "INTERNAL_ERROR",
+              "detail": "Received an unexpected error from the broker, code: INTERNAL_ERROR, message: something went wrong",
+              "instance": "%s"
+            }
+            """
+                .formatted(url));
+  }
+
+  @Test
+  void shouldGetResourceContent() {
+    // given
+    final var content =
+        """
+        {
+          "id": "test",
+          "name": "test RPA script",
+          "script": "foo"
+        }
+        """;
+    when(resourceServices.fetchResource(new ResourceFetchRequest(1)))
+        .thenReturn(
+            CompletableFuture.completedFuture(
+                new ResourceRecord().setResource(BufferUtil.wrapString(content))));
+
+    // when / then
+    webClient
+        .get()
+        .uri(GET_RESOURCE_CONTENT_ENDPOINT.formatted(1))
+        .exchange()
+        .expectStatus()
+        .isOk()
+        .expectBody()
+        .json(content);
+  }
+
+  @Test
+  void getResourceContentShouldYieldNotFoundWhenResourceNotFound() {
+    // given
+    when(resourceServices.fetchResource(new ResourceFetchRequest(1)))
+        .thenReturn(
+            CompletableFuture.failedFuture(
+                new CamundaBrokerException(
+                    new BrokerRejection(
+                        ResourceIntent.FETCH, 1L, RejectionType.NOT_FOUND, "Resource not found"))));
+    final var url = GET_RESOURCE_CONTENT_ENDPOINT.formatted(1);
+
+    // when / then
+    webClient
+        .get()
+        .uri(url)
+        .exchange()
+        .expectStatus()
+        .isNotFound()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .expectBody()
+        .json(
+            """
+            {
+              "type": "about:blank",
+              "status": 404,
+              "title": "NOT_FOUND",
+              "detail": "Command 'FETCH' rejected with code 'NOT_FOUND': Resource not found",
+              "instance": "%s"
+            }
+            """
+                .formatted(url));
+  }
+
+  @Test
+  void getResourceContentShouldYieldInternalServerErrorForProcessingErrorRejection() {
+    // given
+    when(resourceServices.fetchResource(new ResourceFetchRequest(1)))
+        .thenReturn(
+            CompletableFuture.failedFuture(
+                new CamundaBrokerException(
+                    new BrokerRejection(
+                        ResourceIntent.FETCH,
+                        1L,
+                        RejectionType.PROCESSING_ERROR,
+                        "something went wrong"))));
+    final var url = GET_RESOURCE_CONTENT_ENDPOINT.formatted(1);
+
+    // when / then
+    webClient
+        .get()
+        .uri(url)
+        .exchange()
+        .expectStatus()
+        .isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR)
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .expectBody()
+        .json(
+            """
+            {
+              "type": "about:blank",
+              "status": 500,
+              "title": "PROCESSING_ERROR",
+              "detail": "Command 'FETCH' rejected with code 'PROCESSING_ERROR': something went wrong",
+              "instance": "%s"
+            }
+            """
+                .formatted(url));
+  }
+
+  @Test
+  void getResourceContentShouldYieldInternalServerErrorForBrokerError() {
+    // given
+    when(resourceServices.fetchResource(new ResourceFetchRequest(1)))
+        .thenReturn(
+            CompletableFuture.failedFuture(
+                new CamundaBrokerException(
+                    new BrokerError(ErrorCode.INTERNAL_ERROR, "something went wrong"))));
+    final var url = GET_RESOURCE_CONTENT_ENDPOINT.formatted(1);
+
+    // when / then
+    webClient
+        .get()
+        .uri(url)
+        .exchange()
+        .expectStatus()
+        .isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR)
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .expectBody()
+        .json(
+            """
+            {
+              "type": "about:blank",
+              "status": 500,
+              "title": "INTERNAL_ERROR",
+              "detail": "Received an unexpected error from the broker, code: INTERNAL_ERROR, message: something went wrong",
+              "instance": "%s"
+            }
+            """
+                .formatted(url));
   }
 }
