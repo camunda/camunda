@@ -4,7 +4,7 @@ import static io.camunda.zeebe.protocol.record.RecordMetadataDecoder.operationRe
 
 import io.camunda.db.rdbms.write.service.BatchOperationWriter;
 import io.camunda.exporter.rdbms.RdbmsExportHandler;
-import io.camunda.search.entities.BatchOperationEntity.BatchOperationState;
+import io.camunda.search.entities.BatchOperationEntity.BatchOperationItemStatus;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.ValueType;
@@ -44,12 +44,12 @@ public class ProcessInstanceBatchOperationExportHandler
       batchOperationWriter.updateItem(
           record.getOperationReference(),
           value.getProcessInstanceKey(),
-          BatchOperationState.COMPLETED);
+          BatchOperationItemStatus.COMPLETED);
     } else if (isRejectedCanceled(record)) {
       batchOperationWriter.updateItem(
           record.getOperationReference(),
           value.getProcessInstanceKey(),
-          BatchOperationState.FAILED);
+          BatchOperationItemStatus.FAILED);
     }
   }
 

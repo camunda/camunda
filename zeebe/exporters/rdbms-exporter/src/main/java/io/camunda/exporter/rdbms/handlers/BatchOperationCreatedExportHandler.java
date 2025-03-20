@@ -3,7 +3,7 @@ package io.camunda.exporter.rdbms.handlers;
 import io.camunda.db.rdbms.write.domain.BatchOperationDbModel;
 import io.camunda.db.rdbms.write.service.BatchOperationWriter;
 import io.camunda.exporter.rdbms.RdbmsExportHandler;
-import io.camunda.search.entities.BatchOperationEntity.BatchOperationState;
+import io.camunda.search.entities.BatchOperationEntity.BatchOperationStatus;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationIntent;
@@ -23,12 +23,10 @@ public class BatchOperationCreatedExportHandler
       LoggerFactory.getLogger(BatchOperationCreatedExportHandler.class);
 
   private final BatchOperationWriter batchOperationWriter;
-  private final long partitionId;
 
   public BatchOperationCreatedExportHandler(
-      final BatchOperationWriter batchOperationWriter, final long partitionId) {
+      final BatchOperationWriter batchOperationWriter) {
     this.batchOperationWriter = batchOperationWriter;
-    this.partitionId = partitionId;
   }
 
   @Override
@@ -46,7 +44,7 @@ public class BatchOperationCreatedExportHandler
     final var value = record.getValue();
     return new BatchOperationDbModel.Builder()
         .batchOperationKey(record.getKey())
-        .state(BatchOperationState.ACTIVE)
+        .status(BatchOperationStatus.ACTIVE)
         .operationType(value.getBatchOperationType().name())
         .startDate(DateUtil.toOffsetDateTime(record.getTimestamp()))
         .endDate(null)

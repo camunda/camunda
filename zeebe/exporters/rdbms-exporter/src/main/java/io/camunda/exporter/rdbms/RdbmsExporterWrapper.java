@@ -12,7 +12,7 @@ import io.camunda.db.rdbms.write.RdbmsWriter;
 import io.camunda.db.rdbms.write.RdbmsWriterConfig;
 import io.camunda.exporter.rdbms.handlers.BatchOperationCreatedExportHandler;
 import io.camunda.exporter.rdbms.handlers.BatchOperationExecutionExportHandler;
-import io.camunda.exporter.rdbms.handlers.BatchOperationSubBatchExportHandler;
+import io.camunda.exporter.rdbms.handlers.BatchOperationChunkExportHandler;
 import io.camunda.exporter.rdbms.handlers.DecisionDefinitionExportHandler;
 import io.camunda.exporter.rdbms.handlers.DecisionInstanceExportHandler;
 import io.camunda.exporter.rdbms.handlers.DecisionRequirementsExportHandler;
@@ -79,7 +79,7 @@ public class RdbmsExporterWrapper implements Exporter {
             .rdbmsWriter(rdbmsWriter);
 
     createHandlers(partitionId, rdbmsWriter, builder);
-    createBatchOperationHandlers(partitionId, rdbmsWriter, builder);
+    createBatchOperationHandlers(rdbmsWriter, builder);
 
     exporter = new RdbmsExporter(builder.build());
   }
@@ -202,15 +202,14 @@ public class RdbmsExporterWrapper implements Exporter {
   }
 
   private static void createBatchOperationHandlers(
-      final long partitionId,
       final RdbmsWriter rdbmsWriter,
       final RdbmsExporterConfig.Builder builder) {
     builder.withHandler(
         ValueType.BATCH_OPERATION_CREATION,
-        new BatchOperationCreatedExportHandler(rdbmsWriter.getBatchOperationWriter(), partitionId));
+        new BatchOperationCreatedExportHandler(rdbmsWriter.getBatchOperationWriter()));
     builder.withHandler(
         ValueType.BATCH_OPERATION_CHUNK,
-        new BatchOperationSubBatchExportHandler(rdbmsWriter.getBatchOperationWriter()));
+        new BatchOperationChunkExportHandler(rdbmsWriter.getBatchOperationWriter()));
     builder.withHandler(
         ValueType.BATCH_OPERATION_EXECUTION,
         new BatchOperationExecutionExportHandler(rdbmsWriter.getBatchOperationWriter()));

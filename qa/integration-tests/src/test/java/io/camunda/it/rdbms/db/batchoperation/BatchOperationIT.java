@@ -68,7 +68,7 @@ public class BatchOperationIT {
     final RdbmsWriter writer = rdbmsService.createWriter(0);
     final var batchOperation =
         createAndSaveBatchOperation(
-            writer, b -> b.state(BatchOperationStatus.ACTIVE).endDate(null).operationsTotalCount(0));
+            writer, b -> b.status(BatchOperationStatus.ACTIVE).endDate(null).operationsTotalCount(0));
 
     // when
     insertBatchOperationsItems(writer, batchOperation.batchOperationKey(), List.of(nextKey()));
@@ -104,7 +104,7 @@ public class BatchOperationIT {
         createAndSaveBatchOperation(
             writer,
             b ->
-                b.state(BatchOperationStatus.ACTIVE)
+                b.status(BatchOperationStatus.ACTIVE)
                     .endDate(null)
                     .operationsTotalCount(0)
                     .operationsCompletedCount(0));
@@ -159,7 +159,7 @@ public class BatchOperationIT {
         createAndSaveBatchOperation(
             writer,
             b ->
-                b.state(BatchOperationStatus.ACTIVE)
+                b.status(BatchOperationStatus.ACTIVE)
                     .endDate(null)
                     .operationsTotalCount(0)
                     .operationsFailedCount(0));
@@ -212,7 +212,7 @@ public class BatchOperationIT {
     // given
     final RdbmsWriter writer = rdbmsService.createWriter(0);
     final var batchOperation =
-        createAndSaveBatchOperation(writer, b -> b.state(BatchOperationStatus.ACTIVE).endDate(null));
+        createAndSaveBatchOperation(writer, b -> b.status(BatchOperationStatus.ACTIVE).endDate(null));
 
     final var items =
         createAndSaveRandomBatchOperationItems(writer, batchOperation.batchOperationKey(), 2);
@@ -262,7 +262,7 @@ public class BatchOperationIT {
     // given
     final RdbmsWriter writer = rdbmsService.createWriter(0);
     final var batchOperation =
-        createAndSaveBatchOperation(writer, b -> b.state(BatchOperationStatus.ACTIVE).endDate(null));
+        createAndSaveBatchOperation(writer, b -> b.status(BatchOperationStatus.ACTIVE).endDate(null));
 
     createAndSaveRandomBatchOperationItems(writer, batchOperation.batchOperationKey(), 2);
 
@@ -286,7 +286,7 @@ public class BatchOperationIT {
     // given
     final RdbmsWriter writer = rdbmsService.createWriter(0);
     final var batchOperation =
-        createAndSaveBatchOperation(writer, b -> b.state(BatchOperationStatus.ACTIVE).endDate(null));
+        createAndSaveBatchOperation(writer, b -> b.status(BatchOperationStatus.ACTIVE).endDate(null));
 
     createAndSaveRandomBatchOperationItems(writer, batchOperation.batchOperationKey(), 2);
 
@@ -313,7 +313,7 @@ public class BatchOperationIT {
     // given
     final RdbmsWriter writer = rdbmsService.createWriter(0);
     final var batchOperation =
-        createAndSaveBatchOperation(writer, b -> b.state(BatchOperationStatus.ACTIVE).endDate(null));
+        createAndSaveBatchOperation(writer, b -> b.status(BatchOperationStatus.ACTIVE).endDate(null));
 
     createAndSaveRandomBatchOperationItems(writer, batchOperation.batchOperationKey(), 2);
 
@@ -387,10 +387,10 @@ public class BatchOperationIT {
 
     createAndSaveRandomBatchOperations(
         rdbmsService.createWriter(0),
-        b -> b.state(BatchOperationEntity.BatchOperationStatus.COMPLETED));
+        b -> b.status(BatchOperationEntity.BatchOperationStatus.COMPLETED));
     final var batchOperation =
         createAndSaveBatchOperation(
-            rdbmsService.createWriter(0), b -> b.state(BatchOperationStatus.ACTIVE));
+            rdbmsService.createWriter(0), b -> b.status(BatchOperationStatus.ACTIVE));
 
     final var searchResult =
         rdbmsService

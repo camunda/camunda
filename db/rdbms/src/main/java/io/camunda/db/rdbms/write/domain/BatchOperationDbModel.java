@@ -7,7 +7,7 @@ import java.time.OffsetDateTime;
 public class BatchOperationDbModel {
 
   private Long batchOperationKey;
-  private BatchOperationStatus state;
+  private BatchOperationStatus status;
   private String operationType;
   private OffsetDateTime startDate;
   private OffsetDateTime endDate;
@@ -21,7 +21,7 @@ public class BatchOperationDbModel {
 
   public BatchOperationDbModel(
       final Long batchOperationKey,
-      final BatchOperationStatus state,
+      final BatchOperationStatus status,
       final String operationType,
       final OffsetDateTime startDate,
       final OffsetDateTime endDate,
@@ -29,7 +29,7 @@ public class BatchOperationDbModel {
       final int operationsFailedCount,
       final int operationsCompletedCount) {
     this.batchOperationKey = batchOperationKey;
-    this.state = state;
+    this.status = status;
     this.operationType = operationType;
     this.startDate = startDate;
     this.endDate = endDate;
@@ -47,12 +47,12 @@ public class BatchOperationDbModel {
     this.batchOperationKey = batchOperationKey;
   }
 
-  public BatchOperationStatus state() {
-    return state;
+  public BatchOperationStatus status() {
+    return status;
   }
 
-  public void state(final BatchOperationStatus state) {
-    this.state = state;
+  public void status(final BatchOperationStatus status) {
+    this.status = status;
   }
 
   public String operationType() {
@@ -107,7 +107,7 @@ public class BatchOperationDbModel {
   public static class Builder implements ObjectBuilder<BatchOperationDbModel> {
 
     private Long batchOperationKey;
-    private BatchOperationStatus state;
+    private BatchOperationStatus status;
     private String operationType;
     private OffsetDateTime startDate;
     private OffsetDateTime endDate;
@@ -122,8 +122,8 @@ public class BatchOperationDbModel {
       return this;
     }
 
-    public Builder state(final BatchOperationStatus state) {
-      this.state = state;
+    public Builder status(final BatchOperationStatus status) {
+      this.status = status;
       return this;
     }
 
@@ -161,7 +161,7 @@ public class BatchOperationDbModel {
     public BatchOperationDbModel build() {
       return new BatchOperationDbModel(
           batchOperationKey,
-          state,
+          status,
           operationType,
           startDate,
           endDate,

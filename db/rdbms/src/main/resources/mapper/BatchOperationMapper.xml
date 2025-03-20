@@ -10,7 +10,7 @@
     <constructor>
       <idArg column="BATCH_OPERATION_KEY" javaType="java.lang.Long"/>
     </constructor>
-    <result column="STATE" property="state"
+    <result column="STATUS" property="status"
       javaType="io.camunda.search.entities.BatchOperationEntity$BatchOperationState"/>
     <result column="OPERATION_TYPE" property="operationType" javaType="java.lang.String"/>
     <result column="START_DATE" property="startDate" javaType="java.time.OffsetDateTime"/>
@@ -25,14 +25,14 @@
     <constructor>
       <idArg column="BATCH_OPERATION_KEY" javaType="java.lang.Long"/>
       <arg column="ITEM_KEY" javaType="java.lang.Long"/>
-      <arg column="STATE"
+      <arg column="STATUS"
         javaType="io.camunda.search.entities.BatchOperationEntity$BatchOperationState"/>
     </constructor>
   </resultMap>
 
   <insert id="insert" parameterType="io.camunda.db.rdbms.write.domain.BatchOperationDbModel">
     INSERT INTO BATCH_OPERATION (BATCH_OPERATION_KEY,
-                                 STATE,
+                                 STATUS,
                                  OPERATION_TYPE,
                                  START_DATE,
                                  END_DATE,
@@ -40,7 +40,7 @@
                                  OPERATIONS_FAILED_COUNT,
                                  OPERATIONS_COMPLETED_COUNT)
     VALUES (#{batchOperationKey},
-            #{state},
+            #{status},
             #{operationType},
             #{startDate},
             #{endDate},
@@ -61,7 +61,7 @@
   <update id="updateCompleted"
     parameterType="io.camunda.db.rdbms.sql.BatchOperationMapper$BatchOperationUpdateDto">
     UPDATE BATCH_OPERATION
-    SET STATE    = #{state},
+    SET STATUS = #{status},
         END_DATE = #{endDate}
     WHERE BATCH_OPERATION_KEY = #{batchOperationKey}
   </update>
@@ -69,7 +69,7 @@
   <update id="updateItem"
     parameterType="io.camunda.db.rdbms.sql.BatchOperationMapper$BatchOperationItemDto">
     UPDATE BATCH_OPERATION_ITEM
-    SET STATE = #{state}
+    SET STATUS = #{status}
     WHERE BATCH_OPERATION_KEY = #{batchOperationKey}
       AND ITEM_KEY = #{itemKey}
   </update>
@@ -77,9 +77,9 @@
   <update id="updateItemsWithState"
     parameterType="io.camunda.db.rdbms.sql.BatchOperationMapper$BatchOperationItemDto">
     UPDATE BATCH_OPERATION_ITEM
-    SET STATE = #{newState}
+    SET STATUS = #{newState}
     WHERE BATCH_OPERATION_KEY = #{batchOperationKey}
-      AND STATE = #{oldState}
+      AND STATUS = #{oldState}
   </update>
 
   <update id="incrementOperationsTotalCount"
@@ -104,7 +104,7 @@
   <select id="getItems"
     parameterType="java.lang.Long"
     resultMap="BatchOperationItemResultMap">
-    SELECT BATCH_OPERATION_KEY, ITEM_KEY, STATE
+    SELECT BATCH_OPERATION_KEY, ITEM_KEY, STATUS
     FROM BATCH_OPERATION_ITEM
     WHERE BATCH_OPERATION_KEY = #{batchOperationKey}
   </select>
@@ -118,12 +118,12 @@
   <select id="search"
     parameterType="io.camunda.db.rdbms.read.domain.BatchOperationDbQuery"
     resultMap="BatchOperationResultMap"
-    statementType="PREPARED">
+    statusmentType="PREPARED">
 
   SELECT * FROM (
     SELECT
     bo.BATCH_OPERATION_KEY,
-    bo.STATE,
+    bo.STATUS,
     bo.OPERATION_TYPE,
     bo.START_DATE,
     bo.END_DATE,
@@ -153,9 +153,9 @@
         #{value}
       </foreach>
     </if>
-    <if test="filter.states != null and !filter.states.isEmpty()">
-      AND STATE IN
-      <foreach collection="filter.states" item="value" open="(" separator=", " close=")">#{value}
+    <if test="filter.status != null and !filter.status.isEmpty()">
+      AND STATUS IN
+      <foreach collection="filter.status" item="value" open="(" separator=", " close=")">#{value}
       </foreach>
     </if>
   </sql>
