@@ -53,7 +53,7 @@ public class MigrationRunner implements Migrator {
       final MeterRegistry meterRegistry) {
     this.properties = properties;
     adapter =
-        connect.getType().equals(ELASTICSEARCH)
+        connect.getTypeEnum().isElasticSearch()
             ? new ElasticsearchAdapter(properties, connect)
             : new OpensearchAdapter(properties, connect);
     scheduler = Executors.newScheduledThreadPool(1);
