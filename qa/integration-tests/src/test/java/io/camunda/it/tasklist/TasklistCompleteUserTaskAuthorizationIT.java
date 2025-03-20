@@ -35,9 +35,10 @@ import org.junit.jupiter.api.Test;
 @ZeebeIntegration
 public class TasklistCompleteUserTaskAuthorizationIT {
 
-  private static final String PROCESS_ID = "foo";
-  private static final String PROCESS_ID_WITH_JOB_BASED_USERTASK =
-      "PROCESS_WITH_JOB_BASED_USERTASK";
+  private static final String PROCESS_WITH_USER_TASK_PRE_ASSIGNED =
+      "PROCESS_WITH_USER_TASK_PRE_ASSIGNED";
+  private static final String PROCESS_WITH_JOB_BASED_USERTASK_PRE_ASSIGNED =
+      "PROCESS_WITH_JOB_BASED_USERTASK_PRE_ASSIGNED";
 
   private static final String ADMIN_USER_NAME = "foo";
   private static final String ADMIN_USER_PASSWORD = "foo";
@@ -102,19 +103,19 @@ public class TasklistCompleteUserTaskAuthorizationIT {
 
     // deploy a process as admin user
     deployResource(adminCamundaClient, "process/process_with_assigned_user_task.bpmn");
-    waitForProcessToBeDeployed(PROCESS_ID);
+    waitForProcessToBeDeployed(PROCESS_WITH_USER_TASK_PRE_ASSIGNED);
 
     // deploy process with a job based user task process
     deployResource(adminCamundaClient, "process/process_with_assigned_job_based_user_task.bpmn");
-    waitForProcessToBeDeployed(PROCESS_ID_WITH_JOB_BASED_USERTASK);
+    waitForProcessToBeDeployed(PROCESS_WITH_JOB_BASED_USERTASK_PRE_ASSIGNED);
 
     // create a process instance
-    final var processInstanceKey = createProcessInstance(PROCESS_ID);
+    final var processInstanceKey = createProcessInstance(PROCESS_WITH_USER_TASK_PRE_ASSIGNED);
     userTaskKey = awaitUserTaskBeingAvailable(processInstanceKey);
 
     // create a process instance with job based user task
     final var processInstanceKeyWithJobBasedUserTask =
-        createProcessInstance(PROCESS_ID_WITH_JOB_BASED_USERTASK);
+        createProcessInstance(PROCESS_WITH_JOB_BASED_USERTASK_PRE_ASSIGNED);
     userTaskKeyWithJobBasedUserTask =
         awaitJobBasedUserTaskBeingAvailable(processInstanceKeyWithJobBasedUserTask);
 
@@ -160,7 +161,7 @@ public class TasklistCompleteUserTaskAuthorizationIT {
         new Permissions(
             ResourceTypeEnum.PROCESS_DEFINITION,
             PermissionTypeEnum.UPDATE_USER_TASK,
-            List.of(PROCESS_ID)));
+            List.of(PROCESS_WITH_USER_TASK_PRE_ASSIGNED)));
 
     // when
     final var response =
@@ -182,7 +183,7 @@ public class TasklistCompleteUserTaskAuthorizationIT {
         new Permissions(
             ResourceTypeEnum.PROCESS_DEFINITION,
             PermissionTypeEnum.UPDATE_USER_TASK,
-            List.of(PROCESS_ID_WITH_JOB_BASED_USERTASK)));
+            List.of(PROCESS_WITH_JOB_BASED_USERTASK_PRE_ASSIGNED)));
 
     // when
     final var response =

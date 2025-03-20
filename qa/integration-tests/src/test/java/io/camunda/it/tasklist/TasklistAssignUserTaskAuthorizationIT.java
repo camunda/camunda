@@ -34,7 +34,7 @@ import org.junit.jupiter.api.Test;
 @ZeebeIntegration
 public class TasklistAssignUserTaskAuthorizationIT {
 
-  private static final String PROCESS_ID = "foo";
+  private static final String PROCESS_ID = "PROCESS_WITH_USER_TASK";
   private static final String PROCESS_ID_WITH_JOB_BASED_USERTASK =
       "PROCESS_WITH_JOB_BASED_USERTASK";
 
@@ -55,7 +55,7 @@ public class TasklistAssignUserTaskAuthorizationIT {
   private long userTaskKeyWithJobBasedUserTask;
 
   @TestZeebe
-  private TestStandaloneCamunda standaloneCamunda =
+  private final TestStandaloneCamunda standaloneCamunda =
       new TestStandaloneCamunda()
           .withCamundaExporter()
           .withAuthorizationsEnabled()

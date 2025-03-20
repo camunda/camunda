@@ -32,7 +32,8 @@ import org.junit.jupiter.api.Test;
 @ZeebeIntegration
 public class TasklistProcessDefinitionAuthorizationIT {
 
-  private static final String PROCESS_ID = "foo";
+  private static final String PROCESS_WITH_USER_TASK_PRE_ASSIGNED =
+      "PROCESS_WITH_USER_TASK_PRE_ASSIGNED";
   private static final String PROCESS_ID_WITH_JOB_BASED_USERTASK =
       "PROCESS_WITH_JOB_BASED_USERTASK";
 
@@ -83,7 +84,7 @@ public class TasklistProcessDefinitionAuthorizationIT {
     // deploy a process as admin user
     processDefinitionKey =
         deployResource(adminCamundaClient, "process/process_with_assigned_user_task.bpmn");
-    waitForProcessToBeDeployed(PROCESS_ID);
+    waitForProcessToBeDeployed(PROCESS_WITH_USER_TASK_PRE_ASSIGNED);
 
     // deploy process with a job based user task process
     deployResource(adminCamundaClient, "process/process_job_based_user_task.bpmn");
@@ -116,7 +117,7 @@ public class TasklistProcessDefinitionAuthorizationIT {
         new Permissions(
             ResourceTypeEnum.PROCESS_DEFINITION,
             PermissionTypeEnum.READ_PROCESS_DEFINITION,
-            List.of(PROCESS_ID)));
+            List.of(PROCESS_WITH_USER_TASK_PRE_ASSIGNED)));
 
     // when
     final var response =
@@ -152,7 +153,7 @@ public class TasklistProcessDefinitionAuthorizationIT {
         new Permissions(
             ResourceTypeEnum.PROCESS_DEFINITION,
             PermissionTypeEnum.CREATE_PROCESS_INSTANCE,
-            List.of(PROCESS_ID)));
+            List.of(PROCESS_WITH_USER_TASK_PRE_ASSIGNED)));
 
     // when
     final var response =
@@ -163,7 +164,7 @@ public class TasklistProcessDefinitionAuthorizationIT {
     // then
     assertThat(response).isNotNull();
     assertThat(response.stream().map(ProcessDefinitionResponse::bpmnProcessId))
-        .containsExactly(PROCESS_ID);
+        .containsExactly(PROCESS_WITH_USER_TASK_PRE_ASSIGNED);
   }
 
   @Test
@@ -174,7 +175,7 @@ public class TasklistProcessDefinitionAuthorizationIT {
         new Permissions(
             ResourceTypeEnum.PROCESS_DEFINITION,
             PermissionTypeEnum.CREATE_PROCESS_INSTANCE,
-            List.of(PROCESS_ID, PROCESS_ID_WITH_JOB_BASED_USERTASK)));
+            List.of(PROCESS_WITH_USER_TASK_PRE_ASSIGNED, PROCESS_ID_WITH_JOB_BASED_USERTASK)));
 
     // when
     final var response =
@@ -185,7 +186,8 @@ public class TasklistProcessDefinitionAuthorizationIT {
     // then
     assertThat(response).isNotNull();
     assertThat(response.stream().map(ProcessDefinitionResponse::bpmnProcessId))
-        .containsExactlyInAnyOrder(PROCESS_ID, PROCESS_ID_WITH_JOB_BASED_USERTASK);
+        .containsExactlyInAnyOrder(
+            PROCESS_WITH_USER_TASK_PRE_ASSIGNED, PROCESS_ID_WITH_JOB_BASED_USERTASK);
   }
 
   private long deployResource(final CamundaClient zeebeClient, final String resource) {
