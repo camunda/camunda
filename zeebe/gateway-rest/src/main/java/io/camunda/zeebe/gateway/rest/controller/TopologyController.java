@@ -17,6 +17,7 @@ import io.camunda.zeebe.gateway.protocol.rest.Partition.RoleEnum;
 import io.camunda.zeebe.gateway.protocol.rest.TopologyResponse;
 import io.camunda.zeebe.gateway.rest.Loggers;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaGetMapping;
+import io.camunda.zeebe.gateway.rest.util.KeyUtil;
 import io.camunda.zeebe.util.VersionUtil;
 import java.util.Set;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -47,7 +48,7 @@ public final class TopologyController {
           .clusterSize(topology.getClusterSize())
           .partitionsCount(topology.getPartitionsCount())
           .replicationFactor(topology.getReplicationFactor())
-          .lastCompletedChangeId(String.valueOf(topology.getLastCompletedChangeId()));
+          .lastCompletedChangeId(KeyUtil.keyToString(topology.getLastCompletedChangeId()));
 
       topology
           .getBrokers()
