@@ -46,14 +46,14 @@ public final class BatchOperationExecutionRecord extends UnifiedRecordValue
     return entityKeysProp.stream().map(LongValue::getValue).collect(Collectors.toSet());
   }
 
-  public BatchOperationExecutionRecord setKeys(final Set<Long> keys) {
+  public BatchOperationExecutionRecord setEntityKeys(final Set<Long> keys) {
     entityKeysProp.reset();
     keys.forEach(key -> entityKeysProp.add().setValue(key));
     return this;
   }
 
   public BatchOperationExecutionRecord wrap(final BatchOperationExecutionRecord record) {
-    setKeys(record.getEntityKeys());
+    setEntityKeys(record.getEntityKeys());
     return this;
   }
 }
