@@ -33,6 +33,7 @@ import io.camunda.zeebe.dynamic.config.changes.PartitionChangeExecutor;
 import io.camunda.zeebe.dynamic.config.changes.PartitionScalingChangeExecutor;
 import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
 import io.camunda.zeebe.engine.processing.streamprocessor.JobStreamer;
+import io.camunda.zeebe.engine.secondarydb.SecondaryDbQueryService;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerPartitionScaleUpRequest;
 import io.camunda.zeebe.protocol.impl.encoding.BrokerInfo;
 import io.camunda.zeebe.protocol.record.RejectionType;
@@ -93,7 +94,8 @@ public final class PartitionManagerImpl
       final ClusterConfigurationService clusterConfigurationService,
       final MeterRegistry meterRegistry,
       final BrokerClient brokerClient,
-      final SecurityConfiguration securityConfig) {
+      final SecurityConfiguration securityConfig,
+      final SecondaryDbQueryService secondaryDbQueryService) {
     this.brokerCfg = brokerCfg;
     this.concurrencyControl = concurrencyControl;
     this.actorSchedulingService = actorSchedulingService;
@@ -124,7 +126,8 @@ public final class PartitionManagerImpl
             partitionRaftListeners,
             topologyManager,
             featureFlags,
-            securityConfig);
+            securityConfig,
+            secondaryDbQueryService);
     managementService =
         new DefaultPartitionManagementService(
             clusterServices.getMembershipService(), clusterServices.getCommunicationService());

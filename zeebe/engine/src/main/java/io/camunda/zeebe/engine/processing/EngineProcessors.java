@@ -56,6 +56,7 @@ import io.camunda.zeebe.engine.processing.user.UserProcessors;
 import io.camunda.zeebe.engine.processing.usertask.UserTaskProcessor;
 import io.camunda.zeebe.engine.scaling.ScalingProcessors;
 import io.camunda.zeebe.engine.scaling.redistribution.RedistributionBehavior;
+import io.camunda.zeebe.engine.secondarydb.SecondaryDbQueryService;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.state.immutable.ScheduledTaskState;
 import io.camunda.zeebe.engine.state.message.TransientPendingSubscriptionState;
@@ -88,7 +89,8 @@ public final class EngineProcessors {
       final SubscriptionCommandSender subscriptionCommandSender,
       final InterPartitionCommandSender interPartitionCommandSender,
       final FeatureFlags featureFlags,
-      final JobStreamer jobStreamer) {
+      final JobStreamer jobStreamer,
+      final SecondaryDbQueryService secondaryDbQueryService) {
 
     final var processingState = typedRecordProcessorContext.getProcessingState();
     final var keyGenerator = processingState.getKeyGenerator();
