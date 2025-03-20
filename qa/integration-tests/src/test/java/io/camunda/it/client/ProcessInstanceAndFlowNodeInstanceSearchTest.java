@@ -30,6 +30,7 @@ import io.camunda.client.api.search.response.ProcessInstance;
 import io.camunda.client.protocol.rest.ProcessInstanceStateEnum;
 import io.camunda.client.protocol.rest.ProcessInstanceVariableFilterRequest;
 import io.camunda.client.protocol.rest.StringFilterProperty;
+import io.camunda.client.wrappers.FlowNodeInstanceFilter;
 import io.camunda.client.wrappers.ProcessInstanceState;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import java.time.OffsetDateTime;
@@ -1076,7 +1077,11 @@ public class ProcessInstanceAndFlowNodeInstanceQueryTest {
     final var state = flowNodeInstance.getState();
     // when
     final var result =
-        camundaClient.newFlownodeInstanceQuery().filter(f -> f.state(state)).send().join();
+        camundaClient
+            .newFlownodeInstanceQuery()
+            .filter(f -> f.state(FlowNodeInstanceFilter.State.valueOf(state.name())))
+            .send()
+            .join();
 
     // then
     assertThat(result.items().size()).isEqualTo(18);
@@ -1117,7 +1122,11 @@ public class ProcessInstanceAndFlowNodeInstanceQueryTest {
     final var type = flowNodeInstance.getType();
     // when
     final var result =
-        camundaClient.newFlownodeInstanceQuery().filter(f -> f.type(type)).send().join();
+        camundaClient
+            .newFlownodeInstanceQuery()
+            .filter(f -> f.type(FlowNodeInstanceFilter.Type.valueOf(type.name())))
+            .send()
+            .join();
 
     // then
     assertThat(result.items().size()).isEqualTo(3);
