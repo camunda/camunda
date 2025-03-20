@@ -170,7 +170,7 @@ public class OpensearchAdapter implements Adapter {
       retryDecorator.decorate(
           "Update last migrated process",
           () -> client.update(updateRequest, ProcessorStep.class),
-          res -> res.result() == null);
+          res -> res.result() != Result.Created && res.result() != Result.Updated);
     } catch (final Exception e) {
       throw new MigrationException("Failed to update migrated process", e);
     }
