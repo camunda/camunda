@@ -11,7 +11,7 @@
       <idArg column="BATCH_OPERATION_KEY" javaType="java.lang.Long"/>
     </constructor>
     <result column="STATUS" property="status"
-      javaType="io.camunda.search.entities.BatchOperationEntity$BatchOperationState"/>
+      javaType="io.camunda.search.entities.BatchOperationEntity$BatchOperationStatus"/>
     <result column="OPERATION_TYPE" property="operationType" javaType="java.lang.String"/>
     <result column="START_DATE" property="startDate" javaType="java.time.OffsetDateTime"/>
     <result column="END_DATE" property="endDate" javaType="java.time.OffsetDateTime"/>
@@ -26,7 +26,7 @@
       <idArg column="BATCH_OPERATION_KEY" javaType="java.lang.Long"/>
       <arg column="ITEM_KEY" javaType="java.lang.Long"/>
       <arg column="STATUS"
-        javaType="io.camunda.search.entities.BatchOperationEntity$BatchOperationState"/>
+        javaType="io.camunda.search.entities.BatchOperationEntity$BatchOperationItemStatus"/>
     </constructor>
   </resultMap>
 
@@ -118,7 +118,7 @@
   <select id="search"
     parameterType="io.camunda.db.rdbms.read.domain.BatchOperationDbQuery"
     resultMap="BatchOperationResultMap"
-    statusmentType="PREPARED">
+    statementType="PREPARED">
 
   SELECT * FROM (
     SELECT

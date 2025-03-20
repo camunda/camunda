@@ -38,14 +38,14 @@ public interface BatchOperationMapper {
   List<BatchOperationItemEntity> getItems(Long batchOperationKey);
 
   record BatchOperationUpdateDto(
-      long batchOperationKey, BatchOperationStatus state, OffsetDateTime endDate) {}
+      long batchOperationKey, BatchOperationStatus status, OffsetDateTime endDate) {}
 
   record BatchOperationUpdateTotalCountDto(long batchOperationKey, int operationsTotalCount) {}
 
   record BatchOperationItemsDto(Long batchOperationKey, List<Long> items) {}
 
   record BatchOperationItemDto(
-      Long batchOperationKey, Long itemKey, BatchOperationEntity.BatchOperationItemStatus state) {}
+      Long batchOperationKey, Long itemKey, BatchOperationEntity.BatchOperationItemStatus status) {}
 
   record BatchOperationItemStatusUpdateDto(
       Long batchOperationKey,

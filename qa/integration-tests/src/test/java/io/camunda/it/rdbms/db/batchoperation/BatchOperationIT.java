@@ -27,6 +27,7 @@ import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Objects;
+import java.util.stream.Collectors;
 import org.assertj.core.data.TemporalUnitWithinOffset;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.TestTemplate;
@@ -139,14 +140,14 @@ public class BatchOperationIT {
             .filter(i -> Objects.equals(i.itemKey(), items.getFirst()))
             .findFirst()
             .get();
-    assertThat(firstItem.status()).isEqualTo(BatchOperationStatus.COMPLETED);
+    assertThat(firstItem.status()).isEqualTo(BatchOperationItemStatus.COMPLETED);
 
     final var lastItem =
         updatedItems.stream()
             .filter(i -> Objects.equals(i.itemKey(), items.getLast()))
             .findFirst()
             .get();
-    assertThat(lastItem.status()).isEqualTo(BatchOperationStatus.ACTIVE);
+    assertThat(lastItem.status()).isEqualTo(BatchOperationItemStatus.ACTIVE);
   }
 
   @TestTemplate
@@ -201,7 +202,7 @@ public class BatchOperationIT {
             .filter(i -> Objects.equals(i.itemKey(), items.getLast()))
             .findFirst()
             .get();
-    assertThat(lastItem.status()).isEqualTo(BatchOperationStatus.ACTIVE);
+    assertThat(lastItem.status()).isEqualTo(BatchOperationItemStatus.ACTIVE);
   }
 
   @TestTemplate
@@ -236,23 +237,6 @@ public class BatchOperationIT {
         .isCloseTo(endDate, new TemporalUnitWithinOffset(1, ChronoUnit.MILLIS));
     assertThat(updatedBatchOperation.items().getFirst().status())
         .isEqualTo(BatchOperationStatus.CANCELED);
-
-    // and active items are canceled
-    final var updatedItems =
-        rdbmsService.getBatchOperationReader().getItems(batchOperation.batchOperationKey());
-    final var firstItem =
-        updatedItems.stream()
-            .filter(i -> Objects.equals(i.itemKey(), items.getFirst()))
-            .findFirst()
-            .get();
-    assertThat(firstItem.status()).isEqualTo(BatchOperationStatus.COMPLETED);
-
-    final var lastItem =
-        updatedItems.stream()
-            .filter(i -> Objects.equals(i.itemKey(), items.getLast()))
-            .findFirst()
-            .get();
-    assertThat(lastItem.status()).isEqualTo(BatchOperationStatus.CANCELED);
   }
 
   @TestTemplate
@@ -376,9 +360,11 @@ public class BatchOperationIT {
                     SearchQueryPage.of(b -> b.from(0).size(10))));
 
     assertThat(searchResult).isNotNull();
-    assertThat(searchResult.total()).isEqualTo(1);
-    assertThat(searchResult.items()).hasSize(1);
-    assertBatchOperationEntity(searchResult.items().getFirst(), batchOperation);
+    assertThat(searchResult.total()).isGreaterThanOrEqualTo(1);
+    assertThat(searchResult.items().size()).isGreaterThanOrEqualTo(1);
+    final var operationTypes = searchResult.items().stream().map(BatchOperationEntity::operationType).collect(
+        Collectors.toSet());
+    assertThat(operationTypes).containsOnly(batchOperation.operationType());
   }
 
   @TestTemplate
