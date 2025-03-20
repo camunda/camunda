@@ -16,7 +16,7 @@
 package io.camunda.client.api.command;
 
 import io.camunda.client.api.response.UpdateJobResponse;
-import io.camunda.client.protocol.rest.JobChangeset;
+import io.camunda.client.wrappers.JobChangeset;
 import java.time.Duration;
 
 public interface UpdateJobCommandStep1 {
