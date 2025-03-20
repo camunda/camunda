@@ -62,7 +62,9 @@ public final class BatchOperationCreationRecord extends UnifiedRecordValue
 
   @Override
   public String getEntityFilter() {
-    return MsgPackConverter.convertToJson(entityFilterProp.getValue());
+    return entityFilterProp.getValue().capacity() == 0
+        ? null
+        : MsgPackConverter.convertToJson(entityFilterProp.getValue());
   }
 
   public BatchOperationCreationRecord setEntityFilter(final DirectBuffer filterBuffer) {

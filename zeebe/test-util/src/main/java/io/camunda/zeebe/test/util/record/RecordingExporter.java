@@ -13,6 +13,7 @@ import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.AuthorizationIntent;
+import io.camunda.zeebe.protocol.record.intent.BatchOperationIntent;
 import io.camunda.zeebe.protocol.record.intent.ClockIntent;
 import io.camunda.zeebe.protocol.record.intent.CommandDistributionIntent;
 import io.camunda.zeebe.protocol.record.intent.DecisionEvaluationIntent;
@@ -46,6 +47,7 @@ import io.camunda.zeebe.protocol.record.intent.VariableDocumentIntent;
 import io.camunda.zeebe.protocol.record.intent.VariableIntent;
 import io.camunda.zeebe.protocol.record.intent.scaling.ScaleIntent;
 import io.camunda.zeebe.protocol.record.value.AuthorizationRecordValue;
+import io.camunda.zeebe.protocol.record.value.BatchOperationCreationRecordValue;
 import io.camunda.zeebe.protocol.record.value.ClockRecordValue;
 import io.camunda.zeebe.protocol.record.value.CommandDistributionRecordValue;
 import io.camunda.zeebe.protocol.record.value.CompensationSubscriptionRecordValue;
@@ -534,6 +536,16 @@ public final class RecordingExporter implements Exporter {
 
   public static IdentitySetupRecordStream identitySetupRecords(final IdentitySetupIntent intent) {
     return identitySetupRecords().withIntent(intent);
+  }
+
+  public static BatchOperationCreationRecordStream batchOperationCreationRecords() {
+    return new BatchOperationCreationRecordStream(
+        records(ValueType.BATCH_OPERATION_CREATION, BatchOperationCreationRecordValue.class));
+  }
+
+  public static BatchOperationCreationRecordStream batchOperationCreationRecords(
+      final BatchOperationIntent intent) {
+    return batchOperationCreationRecords().withIntent(intent);
   }
 
   public static void autoAcknowledge(final boolean shouldAcknowledgeRecords) {

@@ -30,13 +30,21 @@ import java.util.Optional;
 
 public class TestRestTasklistClient implements CloseableSilently {
 
-  private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
+  public static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
   private static final TaskTemplate TASK_INDEX = new TaskTemplate("", true);
 
   private final URI endpoint;
   private final HttpClient httpClient;
   private final BasicAuthentication authentication;
   private final DocumentBasedSearchClient searchClient;
+
+  public TestRestTasklistClient(final URI endpoint) {
+    this(
+        endpoint,
+        HttpClient.newHttpClient(),
+        null, // intermediate solution - search client should be removed after migration all usage
+        null);
+  }
 
   public TestRestTasklistClient(final URI endpoint, final String elasticsearchUrl) {
     this(
@@ -61,6 +69,16 @@ public class TestRestTasklistClient implements CloseableSilently {
     final var searchRequest =
         SearchQueryRequest.of(s -> s.query(query).index(TASK_INDEX.getAlias()));
     return searchClient.search(searchRequest, TaskEntity.class);
+  }
+
+  public HttpResponse<String> searchTasks(final Long processInstanceKey) {
+    final var path = String.format("%sv1/tasks/search", endpoint);
+    return sendRequest(
+        "POST",
+        path,
+        Optional.ofNullable(processInstanceKey)
+            .map(a -> mapToRequestBody("processInstanceKey", a))
+            .orElse(null));
   }
 
   public HttpResponse<String> createProcessInstanceViaPublicForm(final String processDefinitionId) {
@@ -161,7 +179,9 @@ public class TestRestTasklistClient implements CloseableSilently {
   @Override
   public void close() {
     httpClient.close();
-    searchClient.close();
+    if (searchClient != null) {
+      searchClient.close();
+    }
   }
 
   public TestRestTasklistClient withAuthentication(final String username, final String password) {

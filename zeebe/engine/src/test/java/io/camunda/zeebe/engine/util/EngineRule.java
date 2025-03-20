@@ -22,6 +22,7 @@ import io.camunda.zeebe.engine.state.ProcessingDbState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.util.TestInterPartitionCommandSender.CommandInterceptor;
 import io.camunda.zeebe.engine.util.client.AuthorizationClient;
+import io.camunda.zeebe.engine.util.client.BatchOperationClient;
 import io.camunda.zeebe.engine.util.client.ClockClient;
 import io.camunda.zeebe.engine.util.client.DecisionEvaluationClient;
 import io.camunda.zeebe.engine.util.client.DeploymentClient;
@@ -415,6 +416,10 @@ public final class EngineRule extends ExternalResource {
 
   public GroupClient group() {
     return new GroupClient(environmentRule);
+  }
+
+  public BatchOperationClient batchOperation() {
+    return new BatchOperationClient(environmentRule);
   }
 
   public Record<JobRecordValue> createJob(final String type, final String processId) {
