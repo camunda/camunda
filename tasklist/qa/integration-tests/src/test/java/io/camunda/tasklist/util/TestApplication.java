@@ -7,6 +7,7 @@
  */
 package io.camunda.tasklist.util;
 
+import io.camunda.application.commons.CommonsModuleConfiguration;
 import io.camunda.tasklist.TasklistModuleConfiguration;
 import io.camunda.tasklist.data.DataGenerator;
 import io.camunda.tasklist.data.es.DevDataGeneratorElasticSearch;
@@ -34,7 +35,7 @@ import org.springframework.context.annotation.Profile;
           value = TasklistModuleConfiguration.class),
     },
     nameGenerator = FullyQualifiedAnnotationBeanNameGenerator.class)
-@Import({WebappsModuleConfiguration.class})
+@Import({WebappsModuleConfiguration.class, CommonsModuleConfiguration.class})
 public class TestApplication {
 
   public static void main(final String[] args) throws Exception {
