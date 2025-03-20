@@ -153,8 +153,26 @@ while IFS= read -r -d '' jar_file; do
     echo "  -> Re-zipping into $jar_abs_path"
     FOUND=$(find META-INF -name "*.SF")
     if [[ "$FOUND" == "" ]]; then
-      sed -i 's/.*Digest.*//' META-INF/MANIFEST.MF
-      sed -i 's/.*Name\:.*//' META-INF/MANIFEST.MF
+awk '
+/^Name:/ {
+  in_name = 1
+  next
+}
+in_name {
+  if ($0 ~ /^[A-Za-z-]+:/) {
+    in_name = 0
+  } else {
+    next
+  }
+}
+/Digest:/ {
+  next
+}
+{
+  print
+}
+' META-INF/MANIFEST.MF > META-INF/MANIFEST.MF.tmp
+      mv META-INF/MANIFEST.MF.tmp META-INF/MANIFEST.MF
       jar -m META-INF/MANIFEST.MF -c -f "$jar_abs_path" ./
     fi
   )
