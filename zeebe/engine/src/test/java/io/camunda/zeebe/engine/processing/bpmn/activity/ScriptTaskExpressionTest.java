@@ -26,6 +26,7 @@ import io.camunda.zeebe.protocol.record.value.IncidentRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.protocol.record.value.VariableRecordValue;
+import io.camunda.zeebe.test.util.JsonUtil;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.util.Map;
@@ -57,6 +58,74 @@ public final class ScriptTaskExpressionTest {
         .scriptTask(TASK_ID, modifier)
         .endEvent()
         .done();
+  }
+
+  @Test
+  public void shouldUseCorrectlyPutContextVariables() {
+    // given
+    final var process =
+        Bpmn.createExecutableProcess(PROCESS_ID)
+            .startEvent()
+            .scriptTask(
+                TASK_ID,
+                t ->
+                    t.zeebeExpression(
+                            "=context put(mar2_links, [key_link, \"str_pe_fsz_b\"], \"test\")")
+                        .zeebeResultVariable(RESULT_VARIABLE))
+            .endEvent()
+            .done();
+    ENGINE.deployment().withXmlResource(process).deploy();
+
+    // when
+    final long processInstanceKey =
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId(PROCESS_ID)
+            .withVariables(
+                Map.of(
+                    "key_link",
+                    "4E3_5001",
+                    "mar2_links",
+                    JsonUtil.fromJsonAsMap(
+                        """
+            {
+               "4E2_5030": {
+                  "str_sd_port_a": "0/0/0/0",
+                  "str_sd_fsz_b": "7ZG0",
+                  "str_pe_fsz_b": "7ZG0"
+               },
+               "4E3_5001": {
+                  "str_sd_port_a": "0/0/0/0",
+                  "str_sd_fsz_b": "7ZP1",
+                  "str_pe_fsz_b": "7ZN1"
+               }
+            }""")))
+            .create();
+
+    // then
+    final var actualValue =
+        RecordingExporter.variableRecords(VariableIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withName(RESULT_VARIABLE)
+            .getFirst()
+            .getValue()
+            .getValue();
+    JsonUtil.assertEquality(
+        actualValue,
+        """
+                {
+                  "4E2_5030": {
+                    "str_sd_port_a": "0/0/0/0",
+                    "str_sd_fsz_b": "7ZG0",
+                    "str_pe_fsz_b": "7ZG0"
+                  },
+                  "4E3_5001": {
+                    "str_sd_port_a": "0/0/0/0",
+                    "str_sd_fsz_b": "7ZP1",
+                    "str_pe_fsz_b": "test"
+                  }
+                }
+                """);
   }
 
   @Test
