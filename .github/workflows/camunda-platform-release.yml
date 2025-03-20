@@ -136,6 +136,13 @@ jobs:
             -P-autoFormat \
             -DpreparationGoals="" \
             -Darguments=''
+      # Pushing changes manually since maven-release-plugin fails in subfolders:
+      # https://github.com/camunda/camunda/issues/28522
+      - name: Push Git changes
+        if: ${{ env.PUSH_CHANGES == 'true' }}
+        run: |
+          git push --tags
+          git push --all
 
 #      - name: Maven Perform Release
 #        id: maven-perform-release
