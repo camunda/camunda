@@ -13,15 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.camunda.client.impl.search.request;
+package io.camunda.client.impl.search.query;
 
-import static io.camunda.client.api.search.request.SearchRequestBuilders.adHocSubprocessActivityFilter;
+import static io.camunda.client.api.search.SearchRequestBuilders.adHocSubprocessActivityFilter;
 
 import io.camunda.client.api.CamundaFuture;
 import io.camunda.client.api.JsonMapper;
 import io.camunda.client.api.command.FinalCommandStep;
 import io.camunda.client.api.search.filter.AdHocSubprocessActivityFilter;
-import io.camunda.client.api.search.request.AdHocSubprocessActivitySearchRequest;
+import io.camunda.client.api.search.query.AdHocSubprocessActivityQuery;
 import io.camunda.client.api.search.response.AdHocSubprocessActivityResponse;
 import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
@@ -33,15 +33,14 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import org.apache.hc.client5.http.config.RequestConfig;
 
-public class AdHocSubprocessActivitySearchRequestImpl
-    implements AdHocSubprocessActivitySearchRequest {
+public class AdHocSubprocessActivityQueryImpl implements AdHocSubprocessActivityQuery {
 
   private final AdHocSubprocessActivitySearchQuery request;
   private final HttpClient httpClient;
   private final JsonMapper jsonMapper;
   private final RequestConfig.Builder httpRequestConfig;
 
-  public AdHocSubprocessActivitySearchRequestImpl(
+  public AdHocSubprocessActivityQueryImpl(
       final HttpClient httpClient, final JsonMapper jsonMapper) {
     request = new AdHocSubprocessActivitySearchQuery();
     this.httpClient = httpClient;
@@ -50,14 +49,15 @@ public class AdHocSubprocessActivitySearchRequestImpl
   }
 
   @Override
-  public AdHocSubprocessActivitySearchRequest filter(final AdHocSubprocessActivityFilter filter) {
-    request.setFilter(filter.getRequestFilter());
+  public AdHocSubprocessActivityQuery filter(final AdHocSubprocessActivityFilter filter) {
+    request.setFilter(
+        io.camunda.client.wrappers.AdHocSubprocessActivityFilter.toProtocolObject(
+            filter.getRequestFilter()));
     return this;
   }
 
   @Override
-  public AdHocSubprocessActivitySearchRequest filter(
-      final Consumer<AdHocSubprocessActivityFilter> fn) {
+  public AdHocSubprocessActivityQuery filter(final Consumer<AdHocSubprocessActivityFilter> fn) {
     return filter(adHocSubprocessActivityFilter(fn));
   }
 
