@@ -15,6 +15,7 @@ import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.model.bpmn.builder.AbstractBpmnModelElementBuilder;
 import io.camunda.zeebe.model.bpmn.builder.CallActivityBuilder;
+import io.camunda.zeebe.model.bpmn.builder.ServiceTaskBuilder;
 import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RejectionType;
@@ -856,5 +857,17 @@ public final class CallActivityTest {
         .withElementType(BpmnElementType.CALL_ACTIVITY)
         .getFirst()
         .getKey();
+  }
+
+  private static BpmnModelInstance childProcess(
+      final String jobType, final Consumer<ServiceTaskBuilder> consumer) {
+    final var builder =
+        Bpmn.createExecutableProcess(PROCESS_ID_CHILD)
+            .startEvent()
+            .serviceTask("child-task", t -> t.zeebeJobType(jobType));
+
+    consumer.accept(builder);
+
+    return builder.endEvent().done();
   }
 }
