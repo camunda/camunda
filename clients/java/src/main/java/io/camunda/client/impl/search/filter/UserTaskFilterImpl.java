@@ -25,10 +25,7 @@ import io.camunda.client.impl.search.filter.builder.IntegerPropertyImpl;
 import io.camunda.client.impl.search.filter.builder.StringPropertyImpl;
 import io.camunda.client.impl.search.request.TypedSearchRequestPropertyProvider;
 import io.camunda.client.impl.util.ParseUtil;
-import io.camunda.client.protocol.rest.UserTaskVariableFilterRequest;
-import io.camunda.client.wrappers.DateTimeFilterProperty;
-import io.camunda.client.wrappers.IntegerFilterProperty;
-import io.camunda.client.wrappers.StringFilterProperty;
+import io.camunda.client.wrappers.*;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Map;
@@ -145,11 +142,12 @@ public class UserTaskFilterImpl
 
   @Override
   public UserTaskFilter processInstanceVariables(
-      final List<UserTaskVariableFilterRequest> variableValueFilters) {
-    if (variableValueFilters != null) {
-      variableValueFilters.forEach(v -> variableValueNullCheck(v.getValue()));
+      final List<UserTaskVariableFilterRequest> variableFilters) {
+    if (variableFilters != null) {
+      variableFilters.forEach(v -> variableValueNullCheck(v.getValue()));
     }
-    filter.setProcessInstanceVariables(variableValueFilters);
+    filter.setProcessInstanceVariables(
+        UserTaskVariableFilterRequest.toProtocolList(variableFilters));
     return this;
   }
 
@@ -166,22 +164,22 @@ public class UserTaskFilterImpl
                     request.setName(entry.getKey());
                     final StringProperty property = new StringPropertyImpl();
                     property.eq(entry.getValue().toString());
-                    request.setValue(StringFilterProperty.toProtocolObject(property.build()));
+                    request.setValue(property.build());
                     return request;
                   })
               .collect(Collectors.toList());
-      filter.setProcessInstanceVariables(variableFilters);
+      filter.setProcessInstanceVariables(
+          UserTaskVariableFilterRequest.toProtocolList(variableFilters));
     }
     return this;
   }
 
   @Override
-  public UserTaskFilter localVariables(
-      final List<UserTaskVariableFilterRequest> variableValueFilters) {
-    if (variableValueFilters != null) {
-      variableValueFilters.forEach(v -> variableValueNullCheck(v.getValue()));
+  public UserTaskFilter localVariables(final List<UserTaskVariableFilterRequest> variableFilters) {
+    if (variableFilters != null) {
+      variableFilters.forEach(v -> variableValueNullCheck(v.getValue()));
     }
-    filter.setLocalVariables(variableValueFilters);
+    filter.setLocalVariables(UserTaskVariableFilterRequest.toProtocolList(variableFilters));
     return this;
   }
 
@@ -198,11 +196,11 @@ public class UserTaskFilterImpl
                     request.setName(entry.getKey());
                     final StringProperty property = new StringPropertyImpl();
                     property.eq(entry.getValue().toString());
-                    request.setValue(StringFilterProperty.toProtocolObject(property.build()));
+                    request.setValue(property.build());
                     return request;
                   })
               .collect(Collectors.toList());
-      filter.setLocalVariables(variableFilters);
+      filter.setLocalVariables(UserTaskVariableFilterRequest.toProtocolList(variableFilters));
     }
     return this;
   }
