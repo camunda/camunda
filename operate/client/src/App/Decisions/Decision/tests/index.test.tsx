@@ -10,7 +10,7 @@ import {render, screen, waitFor} from 'modules/testing-library';
 import {mockDmnXml} from 'modules/mocks/mockDmnXml';
 import {groupedDecisions} from 'modules/mocks/groupedDecisions';
 import {Decision} from '..';
-import {mockFetchDecisionXML} from 'modules/mocks/api/decisions/fetchDecisionXML';
+import {mockFetchDecisionDefinitionXML} from 'modules/mocks/api/v2/decisionDefinitions/fetchDecisionDefinitionXML';
 import {mockFetchGroupedDecisions} from 'modules/mocks/api/decisions/fetchGroupedDecisions';
 import {createWrapper} from './mocks';
 import {groupedDecisionsStore} from 'modules/stores/groupedDecisions';
@@ -24,7 +24,7 @@ describe('<Decision />', () => {
     const originalWindowPrompt = window.prompt;
     window.prompt = jest.fn();
 
-    mockFetchDecisionXML().withSuccess(mockDmnXml);
+    mockFetchDecisionDefinitionXML().withSuccess(mockDmnXml);
 
     const {user} = render(<Decision />, {
       wrapper: createWrapper('/decisions?name=invoiceClassification&version=1'),
@@ -48,7 +48,7 @@ describe('<Decision />', () => {
   });
 
   it('should render text when no decision is selected', async () => {
-    mockFetchDecisionXML().withSuccess(mockDmnXml);
+    mockFetchDecisionDefinitionXML().withSuccess(mockDmnXml);
 
     render(<Decision />, {
       wrapper: createWrapper('/decisions'),
@@ -70,7 +70,7 @@ describe('<Decision />', () => {
   });
 
   it('should render text when no version is selected', async () => {
-    mockFetchDecisionXML().withSuccess(mockDmnXml);
+    mockFetchDecisionDefinitionXML().withSuccess(mockDmnXml);
 
     render(<Decision />, {
       wrapper: createWrapper(
@@ -92,7 +92,7 @@ describe('<Decision />', () => {
   });
 
   it('should render text on error', async () => {
-    mockFetchDecisionXML().withServerError(404);
+    mockFetchDecisionDefinitionXML().withServerError(404);
 
     render(<Decision />, {
       wrapper: createWrapper('/decisions?name=calc-key-figures&version=1'),
