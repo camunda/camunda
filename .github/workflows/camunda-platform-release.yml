@@ -132,7 +132,7 @@ jobs:
             -DskipTests \
             -Dskip.docker \
             -X \
-            -DwaitBeforeTagging=30 \
+            -DwaitBeforeTagging=10 \
             -P-autoFormat \
             -DpreparationGoals="" \
             -Darguments=''
