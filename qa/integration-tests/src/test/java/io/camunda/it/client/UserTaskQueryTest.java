@@ -256,7 +256,12 @@ class UserTaskQueryTest {
             () ->
                 camundaClient
                     .newUserTaskQuery()
-                    .filter(f -> f.processInstanceVariables(List.of(variableValueFilter)))
+                    .filter(
+                        f ->
+                            f.processInstanceVariables(
+                                List.of(
+                                    io.camunda.client.wrappers.UserTaskVariableFilterRequest
+                                        .fromProtocolObject(variableValueFilter))))
                     .send()
                     .join());
     // then
@@ -295,7 +300,12 @@ class UserTaskQueryTest {
     final var result =
         camundaClient
             .newUserTaskQuery()
-            .filter(f -> f.localVariables(List.of(variableValueFilter1)))
+            .filter(
+                f ->
+                    f.localVariables(
+                        List.of(
+                            io.camunda.client.wrappers.UserTaskVariableFilterRequest
+                                .fromProtocolObject(variableValueFilter1))))
             .send()
             .join();
     assertThat(result.items().size()).isEqualTo(1);
@@ -311,7 +321,12 @@ class UserTaskQueryTest {
     final var result =
         camundaClient
             .newUserTaskQuery()
-            .filter(f -> f.localVariables(List.of(variableValueFilter1)))
+            .filter(
+                f ->
+                    f.localVariables(
+                        List.of(
+                            io.camunda.client.wrappers.UserTaskVariableFilterRequest
+                                .fromProtocolObject(variableValueFilter1))))
             .send()
             .join();
     assertThat(result.items().size()).isEqualTo(1);

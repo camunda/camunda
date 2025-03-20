@@ -544,8 +544,15 @@ public class ProcessInstanceAndFlowNodeInstanceQueryTest {
 
     // when
     final var result =
-        camundaClient.newProcessInstanceQuery().filter(f -> f.variables(variables)).send().join();
-
+        camundaClient
+            .newProcessInstanceQuery()
+            .filter(
+                f ->
+                    f.variables(
+                        io.camunda.client.wrappers.ProcessInstanceVariableFilterRequest
+                            .fromProtocolList(variables)))
+            .send()
+            .join();
     // then
     assertThat(result.items().size()).isEqualTo(1);
     assertThat(result.items().stream().map(ProcessInstance::getProcessDefinitionId).toList())
@@ -586,7 +593,15 @@ public class ProcessInstanceAndFlowNodeInstanceQueryTest {
 
     // when
     final var result =
-        camundaClient.newProcessInstanceQuery().filter(f -> f.variables(variables)).send().join();
+        camundaClient
+            .newProcessInstanceQuery()
+            .filter(
+                f ->
+                    f.variables(
+                        io.camunda.client.wrappers.ProcessInstanceVariableFilterRequest
+                            .fromProtocolList(variables)))
+            .send()
+            .join();
 
     // then
     assertThat(result.items().size()).isEqualTo(1);
@@ -609,7 +624,15 @@ public class ProcessInstanceAndFlowNodeInstanceQueryTest {
 
     // when
     final var result =
-        camundaClient.newProcessInstanceQuery().filter(f -> f.variables(variables)).send().join();
+        camundaClient
+            .newProcessInstanceQuery()
+            .filter(
+                f ->
+                    f.variables(
+                        io.camunda.client.wrappers.ProcessInstanceVariableFilterRequest
+                            .fromProtocolList(variables)))
+            .send()
+            .join();
 
     // then
     assertThat(result.items()).isEmpty();
@@ -626,7 +649,15 @@ public class ProcessInstanceAndFlowNodeInstanceQueryTest {
                 .value(new StringFilterProperty().add$InItem("\"foo\"").add$InItem("\"bar\"")));
     // when
     final var result =
-        camundaClient.newProcessInstanceQuery().filter(f -> f.variables(variables)).send().join();
+        camundaClient
+            .newProcessInstanceQuery()
+            .filter(
+                f ->
+                    f.variables(
+                        io.camunda.client.wrappers.ProcessInstanceVariableFilterRequest
+                            .fromProtocolList(variables)))
+            .send()
+            .join();
 
     // then
     assertThat(result.items().size()).isEqualTo(2);
@@ -645,7 +676,15 @@ public class ProcessInstanceAndFlowNodeInstanceQueryTest {
                 .value(new StringFilterProperty().$like("\"fo*\"")));
     // when
     final var result =
-        camundaClient.newProcessInstanceQuery().filter(f -> f.variables(variables)).send().join();
+        camundaClient
+            .newProcessInstanceQuery()
+            .filter(
+                f ->
+                    f.variables(
+                        io.camunda.client.wrappers.ProcessInstanceVariableFilterRequest
+                            .fromProtocolList(variables)))
+            .send()
+            .join();
 
     // then
     assertThat(result.items().size()).isEqualTo(1);

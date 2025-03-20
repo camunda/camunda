@@ -27,7 +27,6 @@ import io.camunda.client.impl.search.filter.builder.DateTimePropertyImpl;
 import io.camunda.client.impl.search.filter.builder.IntegerPropertyImpl;
 import io.camunda.client.impl.search.filter.builder.ProcessInstanceStatePropertyImpl;
 import io.camunda.client.impl.search.filter.builder.StringPropertyImpl;
-import io.camunda.client.protocol.rest.ProcessInstanceVariableFilterRequest;
 import io.camunda.client.wrappers.*;
 import java.time.OffsetDateTime;
 import java.util.List;
@@ -224,11 +223,11 @@ public class ProcessInstanceFilterImpl
 
   @Override
   public ProcessInstanceFilter variables(
-      final List<ProcessInstanceVariableFilterRequest> variableValueFilters) {
-    if (variableValueFilters != null) {
-      variableValueFilters.forEach(v -> variableValueNullCheck(v.getValue()));
+      final List<ProcessInstanceVariableFilterRequest> variableFilters) {
+    if (variableFilters != null) {
+      variableFilters.forEach(v -> variableValueNullCheck(v.getValue()));
     }
-    filter.setVariables(variableValueFilters);
+    filter.setVariables(ProcessInstanceVariableFilterRequest.toProtocolList(variableFilters));
     return this;
   }
 
@@ -245,11 +244,11 @@ public class ProcessInstanceFilterImpl
                     request.setName(entry.getKey());
                     final StringProperty property = new StringPropertyImpl();
                     property.eq(entry.getValue().toString());
-                    request.setValue(StringFilterProperty.toProtocolObject(property.build()));
+                    request.setValue(property.build());
                     return request;
                   })
               .collect(Collectors.toList());
-      filter.setVariables(variableFilters);
+      filter.setVariables(ProcessInstanceVariableFilterRequest.toProtocolList(variableFilters));
     }
     return this;
   }
