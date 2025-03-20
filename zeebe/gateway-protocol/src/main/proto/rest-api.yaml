@@ -3341,6 +3341,70 @@ paths:
                 $ref: "#/components/schemas/ProblemDetail"
         "500":
           $ref: "#/components/responses/InternalServerError"
+  /resources/{resourceKey}:
+    get:
+      tags:
+        - Resource
+      summary: Get resource
+      description: |
+        Returns a deployed resource.
+        :::info
+        Currently, this endpoint only supports RPA resources.
+        :::
+      parameters:
+        - name: resourceKey
+          in: path
+          required: true
+          description: The unique key identifying the resource.
+          schema:
+            type: string
+      responses:
+        "200":
+          description: The resource is successfully returned.
+          content:
+            application/json:
+              schema:
+                type: "#/components/schemas/ResourceResult"
+        "404":
+          description: A resource with the given key was not found.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+  /resources/{resourceKey}/content:
+    get:
+      tags:
+        - Resource
+      summary: Get resource content
+      description: |
+        Returns the content of a deployed resource.
+        :::info
+        Currently, this endpoint only supports RPA resources.
+        :::
+      parameters:
+        - name: resourceKey
+          in: path
+          required: true
+          description: The unique key identifying the resource.
+          schema:
+            type: string
+      responses:
+        "200":
+          description: The resource content is successfully returned.
+          content:
+            application/json:
+              schema:
+                type: string
+        "404":
+          description: A resource with the given key was not found.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
 
   /element-instances/{elementInstanceKey}/variables:
     put:
@@ -7361,6 +7425,28 @@ components:
           format: int64
         formKey:
           description: The assigned key, which acts as a unique identifier for this form.
+          type: string
+    ResourceResult:
+      type: object
+      properties:
+        resourceName:
+          description: The resource name from which this resource was parsed.
+          type: string
+        version:
+          description: The assigned resource version.
+          type: integer
+          format: int32
+        versionTag:
+          description: The version tag of this resource.
+          type: string
+        resourceId:
+          description: The resource ID of this resource.
+          type: string
+        tenantId:
+          description: The tenant ID of this resource.
+          type: string
+        resourceKey:
+          description: The unique key of this resource.
           type: string
     BatchOperationCreatedResult:
       type: object
