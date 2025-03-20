@@ -23,7 +23,7 @@ public class WebappEnabledCondition implements Condition {
         return webappEnabled(app, context.getEnvironment());
       }
     }
-    return context.getEnvironment().matchesProfiles("optimize | identity");
+    return context.getEnvironment().matchesProfiles("identity");
   }
 
   private boolean webappEnabled(final String app, final Environment environment) {

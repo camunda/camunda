@@ -10,10 +10,8 @@ package io.camunda.optimize.service.db.schema.index;
 import co.elastic.clients.elasticsearch._types.mapping.TypeMapping;
 import io.camunda.optimize.service.db.DatabaseConstants;
 import io.camunda.optimize.service.db.schema.DefaultIndexMappingCreator;
-import io.camunda.webapps.schema.descriptors.backup.Prio6Backup;
 
-public abstract class ReportShareIndex<TBuilder> extends DefaultIndexMappingCreator<TBuilder>
-    implements Prio6Backup {
+public abstract class ReportShareIndex<TBuilder> extends DefaultIndexMappingCreator<TBuilder> {
 
   public static final int VERSION = 3;
 

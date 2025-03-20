@@ -12,6 +12,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import io.camunda.search.filter.ProcessInstanceFilter;
 import io.camunda.security.auth.Authentication;
 import io.camunda.security.configuration.MultiTenancyConfiguration;
 import io.camunda.service.ProcessInstanceServices;
@@ -20,11 +21,13 @@ import io.camunda.service.ProcessInstanceServices.ProcessInstanceCreateRequest;
 import io.camunda.service.ProcessInstanceServices.ProcessInstanceMigrateRequest;
 import io.camunda.service.ProcessInstanceServices.ProcessInstanceModifyRequest;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
+import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationCreationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceMigrationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceModificationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceResultRecord;
+import io.camunda.zeebe.protocol.record.value.BatchOperationType;
 import java.util.concurrent.CompletableFuture;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -1295,5 +1298,44 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
         .contentType(MediaType.APPLICATION_PROBLEM_JSON)
         .expectBody()
         .json(expectedBody);
+  }
+
+  @Test
+  void shouldCancelProcessInstanceBatchOperation() throws Exception {
+    // given
+    final var record = new BatchOperationCreationRecord();
+    record.setBatchOperationKey(123L);
+    record.setBatchOperationType(BatchOperationType.PROCESS_CANCELLATION);
+
+    when(processInstanceServices.cancelProcessInstanceBatchOperationWithResult(
+            any(ProcessInstanceFilter.class)))
+        .thenReturn(CompletableFuture.completedFuture(record));
+
+    final var request =
+        """
+            {
+              "processDefinitionId": "test-process-definition-id"
+            }""";
+
+    // when / then
+    webClient
+        .post()
+        .uri("/v2/process-instances/batch-operations/cancellation")
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isCreated()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_JSON)
+        .expectBody()
+        .json(
+            """
+          {"batchOperationKey":"123","batchOperationType":"PROCESS_CANCELLATION"}
+        """);
+
+    verify(processInstanceServices)
+        .cancelProcessInstanceBatchOperationWithResult(any(ProcessInstanceFilter.class));
   }
 }

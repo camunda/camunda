@@ -5,6 +5,12 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.webapps.schema.descriptors.backup;
+package io.camunda.zeebe.engine.state.immutable;
 
-public interface Prio6Backup extends BackupPriority {}
+import io.camunda.zeebe.engine.state.batchoperation.PersistedBatchOperation;
+import java.util.Optional;
+
+public interface BatchOperationState {
+
+  Optional<PersistedBatchOperation> get(final long batchKey);
+}

@@ -24,6 +24,7 @@ import io.camunda.zeebe.protocol.record.intent.ClockIntent;
 import io.camunda.zeebe.protocol.record.intent.CommandDistributionIntent;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.Intent;
+import io.camunda.zeebe.protocol.record.value.AdHocSubProcessActivityActivationRecordValue;
 import io.camunda.zeebe.protocol.record.value.ClockRecordValue;
 import io.camunda.zeebe.protocol.record.value.CommandDistributionRecordValue;
 import io.camunda.zeebe.protocol.record.value.DecisionEvaluationRecordValue;
@@ -98,6 +99,7 @@ public class CompactRecordLogger {
           entry("PROCESS_INSTANCE_MODIFICATION", "MOD"),
           entry("PROCESS_INSTANCE", "PI"),
           entry("PROCESS", "PROC"),
+          entry("AD_HOC_SUB_PROC_ACTIVITY_ACTIVATION", "AH_ACT"),
           entry("TIMER", "TIME"),
           entry("MESSAGE", "MSG"),
           entry("SUBSCRIPTION", "SUB"),
@@ -154,6 +156,9 @@ public class CompactRecordLogger {
         ValueType.PROCESS_INSTANCE_MODIFICATION, this::summarizeProcessInstanceModification);
     valueLoggers.put(
         ValueType.PROCESS_MESSAGE_SUBSCRIPTION, this::summarizeProcessInstanceSubscription);
+    valueLoggers.put(
+        ValueType.AD_HOC_SUB_PROCESS_ACTIVITY_ACTIVATION,
+        this::summarizeAdHocSubProcessActivityActivation);
     valueLoggers.put(ValueType.VARIABLE, this::summarizeVariable);
     valueLoggers.put(ValueType.TIMER, this::summarizeTimer);
     valueLoggers.put(ValueType.ERROR, this::summarizeError);
@@ -763,6 +768,19 @@ public class CompactRecordLogger {
         .append(" (tenant: %s)".formatted(value.getTenantId()));
 
     return result.toString();
+  }
+
+  private String summarizeAdHocSubProcessActivityActivation(final Record<?> record) {
+    final var value = (AdHocSubProcessActivityActivationRecordValue) record.getValue();
+
+    final var builder = new StringBuilder();
+    builder
+        .append(String.format("ACTIVATE elements %s", value.getElements()))
+        .append(
+            String.format(
+                " in adhoc subprocess [%s]",
+                shortenKey(Long.parseLong(value.getAdHocSubProcessInstanceKey()))));
+    return builder.toString();
   }
 
   private String summarizeVariable(final Record<?> record) {

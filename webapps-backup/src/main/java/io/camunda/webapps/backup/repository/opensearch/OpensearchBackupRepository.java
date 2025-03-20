@@ -61,7 +61,6 @@ import org.slf4j.LoggerFactory;
 public class OpensearchBackupRepository implements BackupRepository {
   public static final String SNAPSHOT_MISSING_EXCEPTION_TYPE = "snapshot_missing_exception";
   public static final String REPOSITORY_MISSING_EXCEPTION_TYPE = "repository_missing_exception";
-  private static final String INDEX_MISSING_EXCEPTION_TYPE = "index_not_found_exception";
   private static final Logger LOGGER = LoggerFactory.getLogger(OpensearchBackupRepository.class);
 
   private final OpenSearchClient openSearchClient;

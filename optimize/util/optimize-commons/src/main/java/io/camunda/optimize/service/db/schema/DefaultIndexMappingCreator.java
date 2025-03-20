@@ -36,11 +36,6 @@ public abstract class DefaultIndexMappingCreator<TBuilder>
       throws IOException;
 
   @Override
-  public boolean required() {
-    return false;
-  }
-
-  @Override
   public TypeMapping getSource() {
     TypeMapping source = null;
     try {

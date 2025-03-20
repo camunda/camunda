@@ -20,7 +20,9 @@ import io.camunda.zeebe.engine.state.mutable.MutableProcessMessageSubscriptionSt
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.record.RecordValue;
+import io.camunda.zeebe.protocol.record.intent.AdHocSubProcessActivityActivationIntent;
 import io.camunda.zeebe.protocol.record.intent.AuthorizationIntent;
+import io.camunda.zeebe.protocol.record.intent.BatchOperationIntent;
 import io.camunda.zeebe.protocol.record.intent.ClockIntent;
 import io.camunda.zeebe.protocol.record.intent.CommandDistributionIntent;
 import io.camunda.zeebe.protocol.record.intent.CompensationSubscriptionIntent;
@@ -126,6 +128,8 @@ public final class EventAppliers implements EventApplier {
     registerEscalationAppliers();
     registerResourceDeletionAppliers();
 
+    registerAdHocSubProcessActivityActivationAppliers();
+
     registerUserAppliers(state);
     registerAuthorizationAppliers(state);
     registerClockAppliers(state);
@@ -134,6 +138,7 @@ public final class EventAppliers implements EventApplier {
     registerScalingAppliers(state);
     registerTenantAppliers(state);
     registerMappingAppliers(state);
+    registerBatchOperationAppliers(state);
     registerIdentitySetupAppliers();
 
     return this;
@@ -228,7 +233,13 @@ public final class EventAppliers implements EventApplier {
         new ProcessInstanceSequenceFlowTakenApplier(elementInstanceState, processState));
     register(
         ProcessInstanceIntent.ELEMENT_MIGRATED,
+        1,
         new ProcessInstanceElementMigratedApplier(elementInstanceState, processState));
+    register(
+        ProcessInstanceIntent.ELEMENT_MIGRATED,
+        2,
+        new ProcessInstanceElementMigratedV2Applier(
+            elementInstanceState, processState, state.getMessageState()));
     register(
         ProcessInstanceIntent.ANCESTOR_MIGRATED,
         new ProcessInstanceAncestorMigratedApplier(elementInstanceState));
@@ -518,6 +529,10 @@ public final class EventAppliers implements EventApplier {
     register(ResourceDeletionIntent.DELETED, NOOP_EVENT_APPLIER);
   }
 
+  private void registerAdHocSubProcessActivityActivationAppliers() {
+    register(AdHocSubProcessActivityActivationIntent.ACTIVATED, NOOP_EVENT_APPLIER);
+  }
+
   private void registerClockAppliers(final MutableProcessingState state) {
     register(ClockIntent.PINNED, new ClockPinnedApplier(state.getClockState()));
     register(ClockIntent.RESETTED, new ClockResettedApplier(state.getClockState()));
@@ -559,6 +574,12 @@ public final class EventAppliers implements EventApplier {
     register(MappingIntent.CREATED, new MappingCreatedApplier(state.getMappingState()));
     register(MappingIntent.DELETED, new MappingDeletedApplier(state.getMappingState()));
     register(MappingIntent.UPDATED, new MappingUpdatedApplier(state.getMappingState()));
+  }
+
+  private void registerBatchOperationAppliers(final MutableProcessingState state) {
+    register(
+        BatchOperationIntent.CREATED,
+        new BatchOperationCreatedApplier(state.getBatchOperationState()));
   }
 
   private void registerIdentitySetupAppliers() {

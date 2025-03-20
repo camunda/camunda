@@ -34,9 +34,7 @@ import io.camunda.optimize.service.util.BackoffCalculator;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import io.camunda.optimize.service.util.configuration.DatabaseType;
 import io.camunda.optimize.upgrade.os.OpenSearchClientBuilder;
-import io.camunda.search.clients.DocumentBasedSearchClient;
 import io.camunda.search.connect.plugin.PluginRepository;
-import io.camunda.search.os.clients.OpensearchSearchClient;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -122,7 +120,6 @@ public class OptimizeOpenSearchClient extends DatabaseClient {
       org.slf4j.LoggerFactory.getLogger(OptimizeOpenSearchClient.class);
 
   private ExtendedOpenSearchClient openSearchClient;
-  private DocumentBasedSearchClient documentBasedSearchClient;
   private OpenSearchAsyncClient openSearchAsyncClient;
   private RichOpenSearchClient richOpenSearchClient;
   private RestClient restClient;
@@ -150,7 +147,6 @@ public class OptimizeOpenSearchClient extends DatabaseClient {
         new RichOpenSearchClient(openSearchClient, openSearchAsyncClient, indexNameService);
     this.restClient = restClient;
     indexNameServiceOS = new IndexNameServiceOS(indexNameService);
-    documentBasedSearchClient = new OpensearchSearchClient(openSearchClient);
   }
 
   public OptimizeOpenSearchClient(
@@ -165,7 +161,6 @@ public class OptimizeOpenSearchClient extends DatabaseClient {
     richOpenSearchClient =
         new RichOpenSearchClient(openSearchClient, openSearchAsyncClient, indexNameService);
     indexNameServiceOS = new IndexNameServiceOS(indexNameService);
-    documentBasedSearchClient = new OpensearchSearchClient(openSearchClient);
   }
 
   public RestClient getRestClient() {
@@ -263,7 +258,6 @@ public class OptimizeOpenSearchClient extends DatabaseClient {
     restClient = OpenSearchClientBuilder.restClient(configurationService);
     transportOptionsProvider = new TransportOptionsProvider(configurationService);
     indexNameServiceOS = new IndexNameServiceOS(indexNameService);
-    documentBasedSearchClient = new OpensearchSearchClient(openSearchClient);
   }
 
   public final <T> GetResponse<T> get(
@@ -457,11 +451,6 @@ public class OptimizeOpenSearchClient extends DatabaseClient {
   @Override
   public void setDefaultRequestOptions() {
     // Do nothing, CustomerHeaderSupplier not supported for OpenSearch (see #10086)
-  }
-
-  @Override
-  public DocumentBasedSearchClient documentBasedSearchClient() {
-    return documentBasedSearchClient;
   }
 
   @Override

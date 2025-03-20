@@ -17,6 +17,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import org.agrona.LangUtil;
+import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -137,6 +138,19 @@ public final class MsgPackConverterTest {
     MsgPackConverter.convertToMsgPack("}");
   }
 
+  @Test
+  public void shouldConvertMsgPackToObject() {
+    // given
+    final var originalObject = new TestObject("test", 123);
+    final var msgPack = new UnsafeBuffer(MsgPackConverter.convertToMsgPack(originalObject));
+
+    // when
+    final var result = MsgPackConverter.convertToObject(msgPack, TestObject.class);
+
+    // then
+    assertThat(result).isEqualTo(originalObject);
+  }
+
   private static byte[] createMsgPack() {
     byte[] msgPack = null;
 
@@ -152,4 +166,6 @@ public final class MsgPackConverterTest {
     }
     return msgPack;
   }
+
+  private record TestObject(String name, int value) {}
 }

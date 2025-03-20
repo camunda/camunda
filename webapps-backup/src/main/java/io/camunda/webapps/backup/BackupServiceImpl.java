@@ -8,7 +8,6 @@
 package io.camunda.webapps.backup;
 
 import io.camunda.webapps.backup.BackupException.*;
-import io.camunda.webapps.backup.BackupService.SnapshotRequest;
 import io.camunda.webapps.backup.repository.BackupRepositoryProps;
 import io.camunda.webapps.schema.descriptors.backup.BackupPriorities;
 import io.camunda.webapps.schema.descriptors.backup.SnapshotIndexCollection;
@@ -30,21 +29,17 @@ public class BackupServiceImpl implements BackupService {
   private final BackupPriorities backupPriorities;
   private final BackupRepositoryProps backupProps;
 
-  private final DynamicIndicesProvider dynamicIndicesProvider;
-
   private final BackupRepository repository;
 
   public BackupServiceImpl(
       final Executor threadPoolTaskExecutor,
       final BackupPriorities backupPriorities,
       final BackupRepositoryProps backupProps,
-      final BackupRepository repository,
-      final DynamicIndicesProvider dynamicIndicesProvider) {
+      final BackupRepository repository) {
     this.threadPoolTaskExecutor = threadPoolTaskExecutor;
     this.backupPriorities = backupPriorities;
     this.repository = repository;
     this.backupProps = backupProps;
-    this.dynamicIndicesProvider = dynamicIndicesProvider;
   }
 
   @Override
@@ -98,15 +93,10 @@ public class BackupServiceImpl implements BackupService {
     final List<String> snapshotNames = new ArrayList<>();
     final String version = getCurrentVersion();
     for (int index = 0; index < indexPatternsOrdered.size(); index++) {
-      SnapshotIndexCollection indexCollection = indexPatternsOrdered.get(index);
+      final SnapshotIndexCollection indexCollection = indexPatternsOrdered.get(index);
       final var partNum = index + 1;
       final Metadata metadata = new Metadata(request.getBackupId(), version, partNum, count);
       final String snapshotName = repository.snapshotNameProvider().getSnapshotName(metadata);
-      // Add all the dynamic indices in the last step
-      if (partNum == count) {
-        indexCollection =
-            indexCollection.addSkippableIndices(dynamicIndicesProvider.getAllDynamicIndices());
-      }
 
       final SnapshotRequest snapshotRequest =
           new SnapshotRequest(repositoryName, snapshotName, indexCollection, metadata);

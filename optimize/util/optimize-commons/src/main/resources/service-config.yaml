@@ -327,7 +327,7 @@ opensearch:
     index:
       # the prefix prepended to all Optimize index and alias names
       # NOTE: Changing this after Optimize was already run before, will create new empty indexes
-      prefix: ${CAMUNDA_OPTIMIZE_OPENSEARCH_SETTINGS_INDEX_PREFIX:}
+      prefix: ${CAMUNDA_OPTIMIZE_OPENSEARCH_SETTINGS_INDEX_PREFIX:optimize}
       # How often should the data replicated in case of node failure.
       number_of_replicas: ${CAMUNDA_OPTIMIZE_OPENSEARCH_SETTINGS_INDEX_NUMBER_OF_REPLICAS:1}
       # How many shards should be used in the cluster for process instance and decision instance indices.
@@ -442,7 +442,7 @@ es:
     index:
       # the prefix prepended to all Optimize index and alias names
       # NOTE: Changing this after Optimize was already run before, will create new empty indexes
-      prefix: ${CAMUNDA_OPTIMIZE_ELASTICSEARCH_SETTINGS_INDEX_PREFIX:}
+      prefix: ${CAMUNDA_OPTIMIZE_ELASTICSEARCH_SETTINGS_INDEX_PREFIX:optimize}
       # How often should the data replicated in case of node failure.
       number_of_replicas: ${CAMUNDA_OPTIMIZE_ELASTICSEARCH_SETTINGS_INDEX_NUMBER_OF_REPLICAS:1}
       # How many shards should be used in the cluster for process instance and decision instance indices.

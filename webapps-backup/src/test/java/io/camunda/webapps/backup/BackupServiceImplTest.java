@@ -16,7 +16,6 @@ import io.camunda.webapps.backup.repository.BackupRepositoryProps;
 import io.camunda.webapps.backup.repository.SnapshotNameProvider;
 import io.camunda.webapps.backup.repository.TestSnapshotProvider;
 import io.camunda.webapps.schema.descriptors.backup.BackupPriorities;
-import io.camunda.webapps.schema.descriptors.backup.Prio6Backup;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
@@ -46,8 +45,7 @@ public class BackupServiceImplTest {
           List.of(() -> "prio2"),
           List.of(() -> "prio3"),
           List.of(() -> "prio4"),
-          List.of(() -> "prio5"),
-          List.of(() -> "prio6"));
+          List.of(() -> "prio5"));
   String repositoryName = "test-repository";
   MockBackupRepository backupRepository;
 
@@ -65,16 +63,10 @@ public class BackupServiceImplTest {
           return repositoryName;
         }
       };
-  private List<String> dynamicIndices = List.of();
-  private final DynamicIndicesProvider dynamicIndicesProvider = () -> dynamicIndices;
 
   public BackupServiceImpl makeBackupService(final BackupPriorities backupPriorities) {
     return new BackupServiceImpl(
-        executor,
-        backupPriorities,
-        backupRepositoryProps,
-        backupRepository,
-        dynamicIndicesProvider);
+        executor, backupPriorities, backupRepositoryProps, backupRepository);
   }
 
   @BeforeEach
@@ -91,9 +83,6 @@ public class BackupServiceImplTest {
 
   @Test
   public void shouldCreateBackupWithAllIndices() {
-    // given
-    dynamicIndices = List.of("dynamic1", "dynamic2");
-
     // when
     final var backup = backupService.takeBackup(new TakeBackupRequestDto().setBackupId(1L));
 
@@ -101,12 +90,11 @@ public class BackupServiceImplTest {
     assertThat(backup.getScheduledSnapshots())
         .isEqualTo(
             List.of(
-                "test_snapshot_1_1_6",
-                "test_snapshot_1_2_6",
-                "test_snapshot_1_3_6",
-                "test_snapshot_1_4_6",
-                "test_snapshot_1_5_6",
-                "test_snapshot_1_6_6"));
+                "test_snapshot_1_1_5",
+                "test_snapshot_1_2_5",
+                "test_snapshot_1_3_5",
+                "test_snapshot_1_4_5",
+                "test_snapshot_1_5_5"));
 
     Awaitility.await("All backups are done")
         .untilAsserted(
@@ -115,7 +103,7 @@ public class BackupServiceImplTest {
               assertThat(backupState).isNotNull();
               assertThat(backupState.getBackupId()).isEqualTo(1L);
               assertThat(backupState.getState()).isEqualTo(BackupStateDto.COMPLETED);
-              assertThat(backupState.getDetails()).hasSize(6);
+              assertThat(backupState.getDetails()).hasSize(5);
               assertThat(backupState.getDetails())
                   .allSatisfy(detail -> detail.getState().equals("COMPLETED"));
             });
@@ -126,8 +114,7 @@ public class BackupServiceImplTest {
             List.of("prio2"),
             List.of("prio3"),
             List.of("prio4"),
-            List.of("prio5"),
-            List.of("prio6", "dynamic1", "dynamic2"));
+            List.of("prio5"));
   }
 
   @Test
@@ -143,66 +130,6 @@ public class BackupServiceImplTest {
   }
 
   @Test
-  public void shouldSkipMissingNonRequiredIndicesParts() {
-    // given
-    final var backupPriorities =
-        new BackupPriorities(
-            List.of(() -> "prio1"),
-            List.of(() -> "prio2"),
-            List.of(() -> "prio3"),
-            List.of(() -> "prio4"),
-            List.of(() -> "prio5"),
-            // prio6Backups are not required
-            List.of(new Prio6BackupIndex("non-required-index", false)));
-    // the index is missing from ES
-    backupRepository.addMissingIndices("non-required-index");
-    final var backupService = makeBackupService(backupPriorities);
-    // when
-    final var validPatterns = backupService.getValidIndexPatterns();
-
-    // then
-    // prio6 backups are not included
-    assertThat(validPatterns.size()).isEqualTo(5);
-    for (int i = 0; i < 5; i++) {
-      final var indexCollection = validPatterns.get(i);
-      assertThat(indexCollection.requiredIndices()).isNotEmpty();
-      assertThat(indexCollection.requiredIndices().getFirst()).isEqualTo("prio%d".formatted(i + 1));
-    }
-  }
-
-  @Test
-  public void shouldRemoveMissingNonRequiredIndicesFromSnapshotRequest() {
-    // given
-    final var backupPriorities =
-        new BackupPriorities(
-            List.of(() -> "prio1"),
-            List.of(() -> "prio2"),
-            List.of(() -> "prio3"),
-            List.of(() -> "prio4"),
-            List.of(() -> "prio5"),
-            List.of(
-                // prio6 is required
-                new Prio6BackupIndex("prio6", true),
-                // this is not required
-                new Prio6BackupIndex("non-required-index", false)));
-    // the index is missing from ES
-    backupRepository.addMissingIndices("non-required-index");
-    final var backupService = makeBackupService(backupPriorities);
-
-    // when
-    final var validPatterns = backupService.getValidIndexPatterns();
-
-    // then
-    // only prio6 required index isincluded
-    assertThat(validPatterns.size()).isEqualTo(6);
-    for (int i = 0; i < 6; i++) {
-      final var indexCollection = validPatterns.get(i);
-      assertThat(indexCollection.requiredIndices()).isNotEmpty();
-      assertThat(indexCollection.requiredIndices().getFirst()).isEqualTo("prio%d".formatted(i + 1));
-    }
-  }
-
-  @Test
   public void shouldBeAbleToDeleteASnapshotWithADifferentNumberOfParts() {
     // given
     backupService =
@@ -211,7 +138,6 @@ public class BackupServiceImplTest {
                 List.of(() -> "prio1"),
                 List.of(() -> "prio2"),
                 List.of(() -> "prio3"),
-                List.of(),
                 List.of(),
                 List.of()));
     // backup #1 is taken with only 3 parts
@@ -235,14 +161,6 @@ public class BackupServiceImplTest {
       executor.submit(() -> {}).get();
     } catch (final Exception ex) {
       throw new RuntimeException(ex);
-    }
-  }
-
-  record Prio6BackupIndex(String name, boolean required) implements Prio6Backup {
-
-    @Override
-    public String getFullQualifiedName() {
-      return name;
     }
   }
 

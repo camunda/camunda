@@ -11,7 +11,6 @@ import io.camunda.application.commons.conditions.WebappEnabledCondition;
 import io.camunda.webapps.backup.BackupRepository;
 import io.camunda.webapps.backup.BackupService;
 import io.camunda.webapps.backup.BackupServiceImpl;
-import io.camunda.webapps.backup.DynamicIndicesProvider;
 import io.camunda.webapps.backup.repository.BackupRepositoryProps;
 import io.camunda.webapps.profiles.ProfileWebApp;
 import io.camunda.webapps.schema.descriptors.backup.BackupPriorities;
@@ -32,28 +31,21 @@ public class HistoryBackupComponent {
   private final BackupPriorities backupPriorities;
   private final BackupRepositoryProps backupRepositoryProps;
   private final BackupRepository backupRepository;
-  private final DynamicIndicesProvider dynamicIndicesProvider;
 
   public HistoryBackupComponent(
       @Qualifier("backupThreadPoolExecutor") final ThreadPoolTaskExecutor threadPoolTaskExecutor,
       final BackupPriorities backupPriorities,
       final BackupRepositoryProps backupRepositoryProps,
-      final BackupRepository backupRepository,
-      final DynamicIndicesProvider dynamicIndicesProvider) {
+      final BackupRepository backupRepository) {
     this.threadPoolTaskExecutor = threadPoolTaskExecutor;
     this.backupPriorities = backupPriorities;
     this.backupRepositoryProps = backupRepositoryProps;
     this.backupRepository = backupRepository;
-    this.dynamicIndicesProvider = dynamicIndicesProvider;
   }
 
   @Bean
   public BackupService backupService() {
     return new BackupServiceImpl(
-        threadPoolTaskExecutor,
-        backupPriorities,
-        backupRepositoryProps,
-        backupRepository,
-        dynamicIndicesProvider);
+        threadPoolTaskExecutor, backupPriorities, backupRepositoryProps, backupRepository);
   }
 }

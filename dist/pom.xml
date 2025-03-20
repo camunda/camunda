@@ -698,26 +698,6 @@
       <scope>test</scope>
     </dependency>
 
-    <!-- optimize -->
-
-    <dependency>
-      <groupId>io.camunda.optimize</groupId>
-      <artifactId>optimize-commons</artifactId>
-      <version>${project.version}</version>
-    </dependency>
-
-    <dependency>
-      <groupId>io.camunda.optimize</groupId>
-      <artifactId>optimize-backend</artifactId>
-      <version>${project.version}</version>
-    </dependency>
-
-    <dependency>
-      <groupId>io.camunda.optimize</groupId>
-      <artifactId>optimize-webjar</artifactId>
-      <version>${project.version}</version>
-    </dependency>
-
     <dependency>
       <groupId>org.mockito</groupId>
       <artifactId>mockito-junit-jupiter</artifactId>
@@ -760,10 +740,6 @@
             <program>
               <id>operate</id>
               <mainClass>io.camunda.application.StandaloneOperate</mainClass>
-            </program>
-            <program>
-              <id>optimize</id>
-              <mainClass>io.camunda.application.StandaloneOptimize</mainClass>
             </program>
             <program>
               <id>migrate</id>

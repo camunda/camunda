@@ -14,25 +14,14 @@ import io.camunda.application.commons.conditions.WebappEnabledCondition;
 import io.camunda.operate.conditions.DatabaseInfo;
 import io.camunda.operate.conditions.DatabaseType;
 import io.camunda.operate.property.OperateProperties;
-import io.camunda.optimize.service.db.es.schema.ElasticSearchSchemaManager;
-import io.camunda.optimize.service.db.es.schema.index.index.PositionBasedImportIndexES;
-import io.camunda.optimize.service.db.es.schema.index.index.TimestampBasedImportIndexES;
-import io.camunda.optimize.service.db.os.schema.OpenSearchSchemaManager;
-import io.camunda.optimize.service.db.os.schema.index.index.PositionBasedImportIndexOS;
-import io.camunda.optimize.service.db.os.schema.index.index.TimestampBasedImportIndexOS;
-import io.camunda.optimize.service.db.schema.IndexMappingCreator;
-import io.camunda.optimize.service.db.schema.OptimizeIndexNameService;
-import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.webapps.profiles.ProfileWebApp;
 import io.camunda.webapps.schema.descriptors.backup.BackupPriorities;
-import io.camunda.webapps.schema.descriptors.backup.BackupPriority;
 import io.camunda.webapps.schema.descriptors.backup.Prio1Backup;
 import io.camunda.webapps.schema.descriptors.backup.Prio2Backup;
 import io.camunda.webapps.schema.descriptors.backup.Prio3Backup;
 import io.camunda.webapps.schema.descriptors.backup.Prio4Backup;
 import io.camunda.webapps.schema.descriptors.backup.Prio5Backup;
-import io.camunda.webapps.schema.descriptors.backup.Prio6Backup;
 import io.camunda.webapps.schema.descriptors.operate.index.DecisionIndex;
 import io.camunda.webapps.schema.descriptors.operate.index.DecisionRequirementsIndex;
 import io.camunda.webapps.schema.descriptors.operate.index.ImportPositionIndex;
@@ -63,7 +52,6 @@ import io.camunda.webapps.schema.descriptors.usermanagement.index.PersistentWebS
 import io.camunda.webapps.schema.descriptors.usermanagement.index.RoleIndex;
 import io.camunda.webapps.schema.descriptors.usermanagement.index.TenantIndex;
 import io.camunda.webapps.schema.descriptors.usermanagement.index.UserIndex;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -84,19 +72,16 @@ public class BackupPriorityConfiguration {
 
   private static final Logger LOG = LoggerFactory.getLogger(BackupPriorityConfiguration.class);
   private static final String NO_CONFIG_ERROR_MESSAGE =
-      "Expected operate, tasklist or optimize to be configured, but none of them are.";
+      "Expected operate or tasklist to be configured, but neither of them are.";
 
   final String[] profiles;
   // all nullable
   final OperateProperties operateProperties;
   final TasklistProperties tasklistProperties;
-  private final OptimizeIndexNameService optimizeIndexNameService;
-  private final Boolean optimizeIsElasticSearch;
 
   public BackupPriorityConfiguration(
       @Autowired(required = false) final OperateProperties operateProperties,
       @Autowired(required = false) final TasklistProperties tasklistProperties,
-      @Autowired(required = false) final OptimizeIndexNameService optimizeIndexNameService,
       @Autowired final Environment environment) {
     profiles = environment.getActiveProfiles();
     if (environment.matchesProfiles("operate")) {
@@ -108,17 +93,6 @@ public class BackupPriorityConfiguration {
       this.tasklistProperties = tasklistProperties;
     } else {
       this.tasklistProperties = null;
-    }
-    if (environment.matchesProfiles("optimize") && optimizeIndexNameService != null) {
-      this.optimizeIndexNameService = optimizeIndexNameService;
-      optimizeIsElasticSearch =
-          ConfigurationService.getDatabaseType(environment)
-              .equals(io.camunda.optimize.service.util.configuration.DatabaseType.ELASTICSEARCH);
-    } else {
-      this.optimizeIndexNameService =
-          Optional.ofNullable(optimizeIndexNameService)
-              .orElse(new OptimizeIndexNameService(OptimizeIndexNameService.defaultIndexPrefix));
-      optimizeIsElasticSearch = null;
     }
   }
 
@@ -140,18 +114,7 @@ public class BackupPriorityConfiguration {
             // OPERATE
             new ImportPositionIndex(indexPrefix, isElasticsearch),
             // TASKLIST
-            new TasklistImportPositionIndex(indexPrefix, isElasticsearch),
-            // OPTIMIZE
-            new OptimizePrio1Delegate<>(
-                isElasticsearch
-                    ? new PositionBasedImportIndexES()
-                    : new PositionBasedImportIndexOS(),
-                optimizeIndexNameService),
-            new OptimizePrio1Delegate<>(
-                isElasticsearch
-                    ? new TimestampBasedImportIndexES()
-                    : new TimestampBasedImportIndexOS(),
-                optimizeIndexNameService));
+            new TasklistImportPositionIndex(indexPrefix, isElasticsearch));
 
     final List<Prio2Backup> prio2 =
         List.of(
@@ -201,16 +164,12 @@ public class BackupPriorityConfiguration {
             new TenantIndex(indexPrefix, isElasticsearch),
             new UserIndex(indexPrefix, isElasticsearch));
 
-    // OPTIMIZE static indices
-    final List<Prio6Backup> prio6 = getPrio6Backups(isElasticsearch);
-
     LOG.debug("Prio1 are {}", prio1);
     LOG.debug("Prio2 are {}", prio2);
     LOG.debug("Prio3 are {}", prio3);
     LOG.debug("Prio4 are {}", prio4);
     LOG.debug("Prio5 are {}", prio5);
-    LOG.debug("Prio6 are {}", prio6);
-    return new BackupPriorities(prio1, prio2, prio3, prio4, prio5, prio6);
+    return new BackupPriorities(prio1, prio2, prio3, prio4, prio5);
   }
 
   private boolean getIsElasticsearch() {
@@ -224,34 +183,12 @@ public class BackupPriorityConfiguration {
                     .map(ignored -> DatabaseInfo.isCurrent(DatabaseType.Elasticsearch)),
                 "tasklist",
                 Optional.ofNullable(tasklistProperties)
-                    .map(prop -> prop.getDatabase().equals(TasklistProperties.ELASTIC_SEARCH)),
-                "optimize",
-                Optional.ofNullable(optimizeIsElasticSearch)),
+                    .map(prop -> prop.getDatabase().equals(TasklistProperties.ELASTIC_SEARCH))),
             skipEmptyOptional());
     if (result.isEmpty()) {
       throw new IllegalArgumentException(NO_CONFIG_ERROR_MESSAGE);
     }
     return result.get();
-  }
-
-  private List<Prio6Backup> getPrio6Backups(final Boolean isElasticsearch) {
-    final List<Prio6Backup> prio6 = new ArrayList<>();
-    {
-      final var indices =
-          isElasticsearch
-              ? ElasticSearchSchemaManager.getAllNonDynamicMappings()
-              : OpenSearchSchemaManager.getAllNonDynamicMappings();
-      for (final IndexMappingCreator<?> index : indices) {
-        // Optimize only has index with Priority 1 & 6, but it only has 1 static index with
-        // Priority 1. Here we can just focus on those with Prio6
-        if (index instanceof final Prio6Backup p) {
-          prio6.add(
-              new OptimizePrio6Delegate<>(
-                  (IndexMappingCreator<?> & Prio6Backup) p, optimizeIndexNameService));
-        }
-      }
-    }
-    return prio6;
   }
 
   private String getIndexPrefix() {
@@ -264,46 +201,10 @@ public class BackupPriorityConfiguration {
                 Optional.ofNullable(operateProperties).map(OperateProperties::getIndexPrefix),
                 "tasklist",
                 Optional.ofNullable(tasklistProperties).map(TasklistProperties::getIndexPrefix)),
-            // optimize does not use the global index prefix as the other apps, so it's not included
-            // in this check.
             skipEmptyOptional());
     if (indexOptional.isEmpty()) {
       throw new IllegalArgumentException(NO_CONFIG_ERROR_MESSAGE);
     }
     return indexOptional.get();
-  }
-
-  /**
-   * Optimize indices do not return the complete index name when {@link
-   * BackupPriority#getFullQualifiedName()} is called, they only return a part of the index name.
-   * For this reason, we need {@link OptimizeIndexNameService} to get the full index name.
-   */
-  record OptimizePrio6Delegate<I extends IndexMappingCreator<?> & Prio6Backup>(
-      I index, OptimizeIndexNameService indexService) implements Prio6Backup {
-
-    @Override
-    public String getFullQualifiedName() {
-      return indexService.getOptimizeIndexNameWithVersion(index);
-    }
-
-    @Override
-    public boolean required() {
-      return index.required();
-    }
-  }
-
-  /** Same reasoning as {@link OptimizePrio1Delegate} */
-  record OptimizePrio1Delegate<I extends IndexMappingCreator<?> & Prio1Backup>(
-      I index, OptimizeIndexNameService indexService) implements Prio1Backup {
-
-    @Override
-    public String getFullQualifiedName() {
-      return indexService.getOptimizeIndexNameWithVersion(index);
-    }
-
-    @Override
-    public boolean required() {
-      return index.required();
-    }
   }
 }
