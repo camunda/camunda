@@ -197,7 +197,15 @@ public final class SearchUserTaskTest extends ClientRestTest {
 
     listFilter.add(userTaskVariableFilterRequest);
 
-    client.newUserTaskQuery().filter(f -> f.localVariables(listFilter)).send().join();
+    client
+        .newUserTaskQuery()
+        .filter(
+            f ->
+                f.localVariables(
+                    io.camunda.client.wrappers.UserTaskVariableFilterRequest.fromProtocolList(
+                        listFilter)))
+        .send()
+        .join();
 
     // then
     final UserTaskSearchQuery request = gatewayService.getLastRequest(UserTaskSearchQuery.class);

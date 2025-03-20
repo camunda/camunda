@@ -38,7 +38,7 @@ public class AdHocSubprocessActivityFilterImpl implements AdHocSubprocessActivit
   }
 
   @Override
-  public io.camunda.client.protocol.rest.AdHocSubprocessActivityFilter getRequestFilter() {
-    return filter;
+  public io.camunda.client.wrappers.AdHocSubprocessActivityFilter getRequestFilter() {
+    return io.camunda.client.wrappers.AdHocSubprocessActivityFilter.fromProtocolObject(filter);
   }
 }
