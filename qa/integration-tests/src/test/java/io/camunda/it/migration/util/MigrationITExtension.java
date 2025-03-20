@@ -9,6 +9,7 @@ package io.camunda.it.migration.util;
 
 import static io.camunda.qa.util.multidb.CamundaMultiDBExtension.DEFAULT_ES_URL;
 import static io.camunda.qa.util.multidb.CamundaMultiDBExtension.DEFAULT_OS_URL;
+import static io.camunda.qa.util.multidb.CamundaMultiDBExtension.PROP_CAMUNDA_IT_DATABASE_TYPE;
 import static io.camunda.qa.util.multidb.CamundaMultiDBExtension.TIMEOUT_DATABASE_READINESS;
 
 import io.camunda.client.CamundaClient;
@@ -42,8 +43,6 @@ import org.testcontainers.elasticsearch.ElasticsearchContainer;
 
 public class MigrationITExtension
     implements AfterAllCallback, BeforeAllCallback, ParameterResolver {
-  public static final String PROP_CAMUNDA_IT_DATABASE_TYPE =
-      "test.integration.camunda.database.type";
   private static final String TASKLIST = "tasklist";
   private static final String OPERATE = "operate";
 
