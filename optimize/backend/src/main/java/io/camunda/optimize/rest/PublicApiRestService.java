@@ -235,12 +235,6 @@ public class PublicApiRestService {
   public IdResponseDto createCollection(
       final @RequestBody PartialCollectionDefinitionRequestDto
               partialCollectionDefinitionCreationRequestDto) {
-    if (!identityService.doesIdentityExist(
-        new UserDto(partialCollectionDefinitionCreationRequestDto.getOwnerId()))) {
-      throw new OptimizeUserOrGroupIdNotFoundException(
-          "No Optimize user exists for the given ownerId.");
-    }
-
     return collectionService.createNewCollectionAndReturnId(
         partialCollectionDefinitionCreationRequestDto.getOwnerId(),
         new PartialCollectionDefinitionRequestDto(
