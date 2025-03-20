@@ -42,17 +42,6 @@
     <url>https://app.camunda.com/jira/browse/OPT/</url>
   </issueManagement>
 
-  <distributionManagement>
-    <repository>
-      <id>camunda-nexus</id>
-      <url>https://artifacts.camunda.com/artifactory/camunda-optimize/</url>
-    </repository>
-    <snapshotRepository>
-      <id>camunda-nexus</id>
-      <url>https://artifacts.camunda.com/artifactory/camunda-optimize-snapshots/</url>
-    </snapshotRepository>
-  </distributionManagement>
-
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
