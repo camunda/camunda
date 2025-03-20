@@ -11,7 +11,6 @@ import static io.camunda.optimize.service.db.DatabaseConstants.NUMBER_OF_RETRIES
 import static io.camunda.optimize.service.db.schema.index.AbstractDefinitionIndex.DATA_SOURCE;
 import static io.camunda.optimize.service.db.schema.index.AbstractDefinitionIndex.DEFINITION_DELETED;
 import static io.camunda.optimize.service.util.mapper.ObjectMapperFactory.OPTIMIZE_MAPPER;
-import static io.camunda.optimize.service.util.mapper.ObjectMapperFactory.OPTIMIZE_MAPPER_UNKNOWN_FAIL_DISABLED;
 import static java.util.stream.Collectors.groupingBy;
 
 import co.elastic.clients.elasticsearch.ElasticsearchAsyncClient;
@@ -82,6 +81,7 @@ import co.elastic.clients.elasticsearch.snapshot.GetSnapshotResponse;
 import co.elastic.clients.elasticsearch.tasks.ListRequest;
 import co.elastic.clients.elasticsearch.tasks.ListResponse;
 import co.elastic.clients.json.JsonData;
+import co.elastic.clients.json.SimpleJsonpMapper;
 import co.elastic.clients.json.jackson.JacksonJsonpGenerator;
 import co.elastic.clients.json.jackson.JacksonJsonpMapper;
 import co.elastic.clients.transport.DefaultTransportOptions;
@@ -103,6 +103,7 @@ import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import io.camunda.optimize.service.util.configuration.DatabaseType;
 import io.camunda.optimize.upgrade.es.ElasticsearchClientBuilder;
 import io.camunda.search.connect.plugin.PluginRepository;
+import jakarta.json.spi.JsonProvider;
 import java.io.IOException;
 import java.io.StringReader;
 import java.io.StringWriter;
@@ -236,11 +237,13 @@ public class OptimizeElasticsearchClient extends DatabaseClient {
         b -> {
           try {
             return b.withJson(
-                new StringReader(
-                    OPTIMIZE_MAPPER_UNKNOWN_FAIL_DISABLED.writeValueAsString(
-                        responseContentAsMap)));
+                JsonProvider.provider()
+                    .createParser(
+                        new StringReader(OPTIMIZE_MAPPER.writeValueAsString(responseContentAsMap))),
+                SimpleJsonpMapper.INSTANCE);
           } catch (final JsonProcessingException e) {
-            throw new RuntimeException(e);
+            throw new OptimizeRuntimeException(
+                "An error occurred during retrieval of old index settings.", e);
           }
         });
   }
