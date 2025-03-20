@@ -41,7 +41,8 @@ public class LongSerializer extends JsonSerializer<Long> {
 
   private boolean gatewayRestPackage(final JsonGenerator gen) {
     return gatewayRestPackage(gen.getOutputContext().getCurrentValue())
-        || gatewayRestPackage(gen.getOutputContext().getParent().getCurrentValue());
+        || (gen.getOutputContext().getParent() != null
+            && gatewayRestPackage(gen.getOutputContext().getParent().getCurrentValue()));
   }
 
   private boolean fieldNameEndsWithKey(final JsonGenerator gen) {
