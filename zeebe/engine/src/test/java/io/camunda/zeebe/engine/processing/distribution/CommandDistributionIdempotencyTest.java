@@ -24,6 +24,7 @@ import io.camunda.zeebe.engine.processing.identity.GroupUpdateProcessor;
 import io.camunda.zeebe.engine.processing.identity.IdentitySetupInitializeProcessor;
 import io.camunda.zeebe.engine.processing.identity.MappingCreateProcessor;
 import io.camunda.zeebe.engine.processing.identity.MappingDeleteProcessor;
+import io.camunda.zeebe.engine.processing.identity.MappingUpdateProcessor;
 import io.camunda.zeebe.engine.processing.identity.RoleAddEntityProcessor;
 import io.camunda.zeebe.engine.processing.identity.RoleCreateProcessor;
 import io.camunda.zeebe.engine.processing.identity.RoleDeleteProcessor;
@@ -307,13 +308,24 @@ public class CommandDistributionIdempotencyTest {
             MappingCreateProcessor.class
           },
           {
+            "Mapping.UPDATE is idempotent",
+            new Scenario(
+                ValueType.MAPPING,
+                MappingIntent.UPDATE,
+                () -> {
+                  final var mapping = createMapping();
+                  return ENGINE.mapping().updateMapping(mapping.getValue().getId()).update();
+                }),
+            MappingUpdateProcessor.class
+          },
+          {
             "Mapping.DELETE is idempotent",
             new Scenario(
                 ValueType.MAPPING,
                 MappingIntent.DELETE,
                 () -> {
                   final var mapping = createMapping();
-                  return ENGINE.mapping().deleteMapping(mapping.getKey()).delete();
+                  return ENGINE.mapping().deleteMapping(mapping.getValue().getId()).delete();
                 }),
             MappingDeleteProcessor.class
           },

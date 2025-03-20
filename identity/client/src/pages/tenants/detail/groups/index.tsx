@@ -33,7 +33,7 @@ const Groups: FC<GroupsProps> = ({ tenantId }) => {
     tenantId: tenantId,
   });
 
-  const areNoGroupsAssigned = !groups || groups.items?.length === 0;
+  const isGroupsEmpty = !groups || groups.items?.length === 0;
 
   const [assignGroups, assignGroupsModal] = useEntityModal(
     AssignGroupsModal,
@@ -60,7 +60,7 @@ const Groups: FC<GroupsProps> = ({ tenantId }) => {
       />
     );
 
-  if (success && areNoGroupsAssigned)
+  if (success && isGroupsEmpty)
     return (
       <>
         <C3EmptyState

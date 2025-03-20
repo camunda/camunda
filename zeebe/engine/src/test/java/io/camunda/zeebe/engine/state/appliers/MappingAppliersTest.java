@@ -27,6 +27,7 @@ import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.EntityType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import java.util.Set;
+import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -42,6 +43,7 @@ public class MappingAppliersTest {
   private MutableGroupState groupState;
   private MutableAuthorizationState authorizationState;
   private MappingDeletedApplier mappingDeletedApplier;
+  private MappingUpdatedApplier mappingUpdatedApplier;
 
   @BeforeEach
   public void setup() {
@@ -50,12 +52,73 @@ public class MappingAppliersTest {
     tenantState = processingState.getTenantState();
     authorizationState = processingState.getAuthorizationState();
     groupState = processingState.getGroupState();
-    mappingDeletedApplier = new MappingDeletedApplier(processingState);
+    mappingDeletedApplier = new MappingDeletedApplier(processingState.getMappingState());
+    mappingUpdatedApplier = new MappingUpdatedApplier(processingState.getMappingState());
   }
 
   @Test
   void shouldDeleteMapping() {
     // given
+    final var mappingRecord = createMapping();
+
+    // when
+    mappingDeletedApplier.applyState(mappingRecord.getMappingKey(), mappingRecord);
+
+    // then
+    assertThat(mappingState.get(mappingRecord.getId())).isEmpty();
+  }
+
+  @Test
+  public void shouldThrowExceptionWhenDeleteNotExistingMapping() {
+    // given
+    final String id = "id";
+    final var mappingRecord = new MappingRecord().setId(id);
+
+    // when + then
+    assertThatThrownBy(
+            () -> mappingDeletedApplier.applyState(mappingRecord.getMappingKey(), mappingRecord))
+        .isInstanceOf(IllegalStateException.class)
+        .hasMessageContaining(
+            "Expected to delete mapping with id 'id', but a mapping with this id does not exist.");
+  }
+
+  @Test
+  void shouldUpdateMapping() {
+    // given
+    final var mappingRecord = createMapping();
+    final var newClaimName = "new-claim";
+    final var newClaimValue = "new-claim-value";
+    final var newName = "new-name";
+    mappingRecord.setClaimName(newClaimName);
+    mappingRecord.setClaimValue(newClaimValue);
+    mappingRecord.setName(newName);
+    // when
+    mappingUpdatedApplier.applyState(mappingRecord.getMappingKey(), mappingRecord);
+
+    // then
+    assertThat(mappingState.get(mappingRecord.getId())).isNotEmpty();
+    final var updatedMapping = mappingState.get(mappingRecord.getId()).get();
+    assertThat(updatedMapping.getClaimName()).isEqualTo(newClaimName);
+    assertThat(updatedMapping.getClaimValue()).isEqualTo(newClaimValue);
+    assertThat(updatedMapping.getName()).isEqualTo(newName);
+  }
+
+  @Test
+  public void shouldThrowExceptionWhenUpdateNotExistingMappingId() {
+    // given
+    final var mappingRecord = createMapping();
+    mappingRecord.setId(UUID.randomUUID().toString());
+    // when + then
+    assertThatThrownBy(
+            () -> mappingUpdatedApplier.applyState(mappingRecord.getMappingKey(), mappingRecord))
+        .isInstanceOf(IllegalStateException.class)
+        .hasMessageContaining(
+            String.format(
+                "Expected to update mapping with id '%s', but a mapping with this id does not exist.",
+                mappingRecord.getId()));
+  }
+
+  private MappingRecord createMapping() {
     final long mappingKey = 1L;
     final String mappingId = String.valueOf(mappingKey);
     final String claimName = "foo";
@@ -66,7 +129,8 @@ public class MappingAppliersTest {
             .setId(mappingId)
             .setClaimName(claimName)
             .setClaimValue(claimValue)
-            .setName(claimName);
+            .setName(claimName)
+            .setId(UUID.randomUUID().toString());
     mappingState.create(mappingRecord);
     // create role
     final long roleKey = 2L;
@@ -109,24 +173,6 @@ public class MappingAppliersTest {
             .setResourceType(AuthorizationResourceType.PROCESS_DEFINITION)
             .setOwnerType(AuthorizationOwnerType.MAPPING)
             .setOwnerId(mappingId));
-
-    // when
-    mappingDeletedApplier.applyState(mappingKey, mappingRecord);
-
-    // then
-    assertThat(mappingState.get(mappingKey)).isEmpty();
-  }
-
-  @Test
-  public void shouldThrowExceptionIfMappingIsNotFound() {
-    // given
-    final long mappingKey = 1L;
-    final var mappingRecord = new MappingRecord().setMappingKey(mappingKey);
-
-    // when + then
-    assertThatThrownBy(() -> mappingDeletedApplier.applyState(mappingKey, mappingRecord))
-        .isInstanceOf(IllegalStateException.class)
-        .hasMessageContaining(
-            "Expected to delete mapping with key '1', but a mapping with this key does not exist.");
+    return mappingRecord;
   }
 }

@@ -31,8 +31,8 @@ public record BatchOperationSort(List<FieldSorting> orderings) implements SortOp
       return this;
     }
 
-    public Builder state() {
-      currentOrdering = new FieldSorting("state", null);
+    public Builder status() {
+      currentOrdering = new FieldSorting("status", null);
       return this;
     }
 

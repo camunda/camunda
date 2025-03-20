@@ -23,10 +23,12 @@ public enum AuthorizationResourceType {
   SYSTEM(PermissionType.READ, PermissionType.UPDATE),
   TENANT(PermissionType.CREATE, PermissionType.READ, PermissionType.UPDATE, PermissionType.DELETE),
   RESOURCE(
+      PermissionType.READ,
       PermissionType.CREATE,
       PermissionType.DELETE_FORM,
       PermissionType.DELETE_PROCESS,
-      PermissionType.DELETE_DRD),
+      PermissionType.DELETE_DRD,
+      PermissionType.DELETE_RESOURCE),
   PROCESS_DEFINITION(
       PermissionType.READ_PROCESS_DEFINITION,
       PermissionType.READ_PROCESS_INSTANCE,

@@ -66,8 +66,8 @@ const AssignRolesModal: FC<
     setLoadingAssignRole(true);
 
     const results = await Promise.all(
-      selectedRoles.map(({ key }) =>
-        callAssignRole({ key, tenantId: tenant.id }),
+      selectedRoles.map(({ roleKey }) =>
+        callAssignRole({ roleKey, tenantId: tenant.id }),
       ),
     );
 
@@ -103,7 +103,7 @@ const AssignRolesModal: FC<
         <SelectedRoles>
           {selectedRoles.map((role) => (
             <Tag
-              key={role.key}
+              key={role.roleKey}
               onClose={onUnselectRole(role)}
               size="md"
               type="blue"

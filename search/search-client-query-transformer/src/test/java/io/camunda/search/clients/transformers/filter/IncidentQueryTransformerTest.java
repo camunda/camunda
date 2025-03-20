@@ -114,6 +114,24 @@ public final class IncidentQueryTransformerTest extends AbstractTransformerTest 
   }
 
   @Test
+  public void shouldQueryByResourceNotFoundErrorType() {
+    final var filter = FilterBuilders.incident(f -> f.errorTypes(ErrorType.RESOURCE_NOT_FOUND));
+
+    // when
+    final var searchRequest = transformQuery(filter);
+
+    // then
+    final var queryVariant = searchRequest.queryOption();
+    assertThat(queryVariant)
+        .isInstanceOfSatisfying(
+            SearchTermQuery.class,
+            t -> {
+              assertThat(t.field()).isEqualTo("errorType");
+              assertThat(t.value().stringValue()).isEqualTo("RESOURCE_NOT_FOUND");
+            });
+  }
+
+  @Test
   public void shouldQueryByErrorMessage() {
     final var filter = FilterBuilders.incident(f -> f.errorMessages("No retries left."));
 

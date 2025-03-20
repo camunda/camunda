@@ -6,51 +6,42 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {
-  ApiDefinition,
-  apiDelete,
-  apiGet,
-  apiPatch,
-  apiPost,
-  pathBuilder,
-} from "src/utility/api/request";
+import { ApiDefinition, apiDelete, apiPost } from "src/utility/api/request";
 import { SearchResponse } from "src/utility/api";
+import { EntityData } from "src/components/entityList/EntityList";
 
-const path = pathBuilder("/roles");
+export const ROLES_ENDPOINT = "/roles";
 
-export type Role = {
-  key: number;
+export type Role = EntityData & {
+  roleKey: string;
   name: string;
   description: string;
   permissions: string[];
 };
 
 export const searchRoles: ApiDefinition<SearchResponse<Role>> = () =>
-  apiPost(path("search"), {});
+  apiPost(`${ROLES_ENDPOINT}/search`);
 
 type GetRoleParams = {
-  key: number;
+  roleKey?: string;
+  name?: string;
 };
+export const getRole: ApiDefinition<SearchResponse<Role>, GetRoleParams> = ({
+  roleKey,
+  name,
+}) =>
+  apiPost(`${ROLES_ENDPOINT}/search`, {
+    filter: { ...(roleKey && { roleKey }), ...(name && { name }) },
+  });
 
-export const getRole: ApiDefinition<Role, GetRoleParams> = ({ key }) =>
-  apiGet(path(key));
-
-type CreateRoleParams = Omit<Role, "key">;
-
+type CreateRoleParams = Omit<Role, "roleKey">;
 export const createRole: ApiDefinition<Role, CreateRoleParams> = (role) =>
-  apiPost(path(), role);
+  apiPost(ROLES_ENDPOINT, role);
 
-type UpdateRoleParams = Role;
-
-export const updateRole: ApiDefinition<Role, UpdateRoleParams> = ({
-  key,
-  ...role
-}) => apiPatch(path(key), { changeset: role });
-
-interface DeleteRoleParams {
-  key: number;
-}
-
-export const deleteRole: ApiDefinition<undefined, DeleteRoleParams> = ({
-  key,
-}) => apiDelete(path(key));
+export type DeleteRoleParams = {
+  roleKey: string;
+  name: string;
+};
+export const deleteRole: ApiDefinition<undefined, { roleKey: string }> = ({
+  roleKey,
+}) => apiDelete(`${ROLES_ENDPOINT}/${roleKey}`);
