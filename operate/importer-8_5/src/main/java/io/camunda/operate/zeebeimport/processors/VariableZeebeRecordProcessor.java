@@ -67,15 +67,15 @@ public class VariableZeebeRecordProcessor {
       final var scopedVariables = variableRecords.getValue();
 
       for (final var scopedVariable : scopedVariables) {
+        if (!shouldProcessVariableRecord(scopedVariable)) {
+          continue;
+        }
         final var intent = scopedVariable.getIntent();
         final var variableValue = scopedVariable.getValue();
         final var variableName = variableValue.getName();
         final var cachedVariable =
             temporaryVariableCache.computeIfAbsent(
-                variableName,
-                (k) -> {
-                  return Tuple.of(intent, new VariableEntity());
-                });
+                variableName, (k) -> Tuple.of(intent, new VariableEntity()));
         final var variableEntity = cachedVariable.getRight();
         processVariableRecord(scopedVariable, variableEntity);
       }
@@ -179,5 +179,11 @@ public class VariableZeebeRecordProcessor {
       entity.setFullValue(null);
       entity.setIsPreview(false);
     }
+  }
+
+  private boolean shouldProcessVariableRecord(final Record<VariableRecordValue> record) {
+    final var intent = record.getIntent().name();
+    // skip variable migrated record as it always has null in value field
+    return !VariableIntent.MIGRATED.name().equals(intent);
   }
 }
