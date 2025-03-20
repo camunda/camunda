@@ -232,7 +232,8 @@ public enum ZbColumnFamilies implements EnumValue {
   AUTHORIZATION_KEYS_BY_OWNER(120),
 
   BATCH_OPERATION(121),
-  PENDING_BATCH_OPERATION(122);
+  PENDING_BATCH_OPERATION(122),
+  ENTITY_BY_BATCH_OPERATION(123);
   private final int value;
 
   ZbColumnFamilies(final int value) {
