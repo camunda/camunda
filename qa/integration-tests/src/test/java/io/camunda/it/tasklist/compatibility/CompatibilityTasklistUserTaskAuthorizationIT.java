@@ -33,7 +33,7 @@ import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 
 @MultiDbTest
 @DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "rdbms")
-public class CompatibilityTasklistAssignUserTaskAuthorizationIT {
+public class CompatibilityTasklistUserTaskAuthorizationIT {
 
   @MultiDbTestApplication
   private static final TestSimpleCamundaApplication STANDALONE_CAMUNDA =
@@ -42,14 +42,18 @@ public class CompatibilityTasklistAssignUserTaskAuthorizationIT {
           .withBasicAuth()
           .withProperty("camunda.tasklist.zeebe.compatibility.enabled", true);
 
-  private static final String PROCESS_ID = "foo";
+  private static final String PROCESS_WITH_USER_TASK = "PROCESS_WITH_USER_TASK";
+  private static final String PROCESS_WITH_USER_TASK_PRE_ASSIGNED =
+      "PROCESS_WITH_USER_TASK_PRE_ASSIGNED";
   private static final String PROCESS_ID_WITH_JOB_BASED_USERTASK =
       "PROCESS_WITH_JOB_BASED_USERTASK";
+  private static final String PROCESS_ID_WITH_JOB_BASED_USERTASK_PRE_ASSIGNED =
+      "PROCESS_WITH_JOB_BASED_USERTASK_PRE_ASSIGNED";
 
   private static final String ADMIN_USER_NAME = "foo";
   private static final String ADMIN_USER_PASSWORD = "foo";
 
-  private static final String TEST_USER_NAME_NO_PERMISSION = "noPermissionUser";
+  private static final String TEST_USER_NAME_NO_PERMISSION = "bar";
   private static final String TEST_USER_NAME_WITH_PERMISSION = "withPermissionUser";
   private static final String TEST_USER_PASSWORD = "bar";
   @AutoClose private static TestRestTasklistClient tasklistRestClient;
@@ -98,35 +102,16 @@ public class CompatibilityTasklistAssignUserTaskAuthorizationIT {
                   PermissionTypeEnum.UPDATE_USER_TASK,
                   List.of(PROCESS_ID_WITH_JOB_BASED_USERTASK))));
 
-  private static long userTaskKey;
-  private static long userTaskKeyWithJobBasedUserTask;
-  private static long processInstanceKeyWithJobBasedUserTask;
-  private static long anotherUserTaskKeyWithJobBasedUserTask;
-
   @BeforeAll
   public static void beforeAll(@Authenticated(ADMIN_USER_NAME) final CamundaClient adminClient) {
     tasklistRestClient = STANDALONE_CAMUNDA.newTasklistClient();
 
     // deploy a process as admin user
     deployResource(adminClient, "process/process_public_start.bpmn");
+    deployResource(adminClient, "process/process_with_assigned_user_task.bpmn");
     // deploy process with a job based user task process
     deployResource(adminClient, "process/process_job_based_user_task.bpmn");
-
-    // create a process instance
-    final var processInstanceKey = createProcessInstance(adminClient, PROCESS_ID);
-    userTaskKey = awaitUserTaskBeingAvailable(adminClient, processInstanceKey);
-
-    // create a process instance with job based user task
-    processInstanceKeyWithJobBasedUserTask =
-        createProcessInstance(adminClient, PROCESS_ID_WITH_JOB_BASED_USERTASK);
-    userTaskKeyWithJobBasedUserTask =
-        awaitJobBasedUserTaskBeingAvailable(processInstanceKeyWithJobBasedUserTask);
-
-    // create a process instance with job based user task
-    final long anotherProcessInstanceKeyWithJobBasedUserTask =
-        createProcessInstance(adminClient, PROCESS_ID_WITH_JOB_BASED_USERTASK);
-    anotherUserTaskKeyWithJobBasedUserTask =
-        awaitJobBasedUserTaskBeingAvailable(anotherProcessInstanceKeyWithJobBasedUserTask);
+    deployResource(adminClient, "process/process_with_assigned_job_based_user_task.bpmn");
   }
 
   @Test
@@ -138,7 +123,7 @@ public class CompatibilityTasklistAssignUserTaskAuthorizationIT {
     final var response =
         tasklistRestClient
             .withAuthentication(TEST_USER_NAME_NO_PERMISSION, TEST_USER_PASSWORD)
-            .createProcessInstance(PROCESS_ID);
+            .createProcessInstance(PROCESS_WITH_USER_TASK);
 
     // then
     assertThat(response).isNotNull();
@@ -147,7 +132,11 @@ public class CompatibilityTasklistAssignUserTaskAuthorizationIT {
 
   @Test
   public void shouldNotAssignUserTaskWithUnauthorizedUser(
+      @Authenticated(ADMIN_USER_NAME) final CamundaClient adminClient,
       @Authenticated(TEST_USER_NAME_NO_PERMISSION) final CamundaClient noPermission) {
+    // given (admin) to create instance
+    final var processInstanceKey = createProcessInstance(adminClient, PROCESS_WITH_USER_TASK);
+    final var userTaskKey = awaitUserTaskBeingAvailable(adminClient, processInstanceKey);
     // given (non-admin) user without any authorizations
 
     // when
@@ -162,8 +151,37 @@ public class CompatibilityTasklistAssignUserTaskAuthorizationIT {
   }
 
   @Test
-  public void shouldNotAssignJobBasedUserTaskWithUnauthorizedUser(
+  public void shouldNotCompleteUserTaskWithUnauthorizedUser(
+      @Authenticated(ADMIN_USER_NAME) final CamundaClient adminClient,
       @Authenticated(TEST_USER_NAME_NO_PERMISSION) final CamundaClient noPermission) {
+    // given (admin) to create instance
+    // create a process instance - with pre-assigned user task
+    final var processInstanceKey =
+        createProcessInstance(adminClient, PROCESS_WITH_USER_TASK_PRE_ASSIGNED);
+    final var userTaskKeyPreAssigned = awaitUserTaskBeingAvailable(adminClient, processInstanceKey);
+    // given (non-admin) user without any authorizations
+
+    // when
+    final var response =
+        tasklistRestClient
+            .withAuthentication(TEST_USER_NAME_NO_PERMISSION, TEST_USER_PASSWORD)
+            .completeUserTask(userTaskKeyPreAssigned);
+
+    // then
+    assertThat(response).isNotNull();
+    assertThat(response.statusCode()).isEqualTo(403);
+  }
+
+  @Test
+  public void shouldNotAssignJobBasedUserTaskWithUnauthorizedUser(
+      @Authenticated(ADMIN_USER_NAME) final CamundaClient adminClient,
+      @Authenticated(TEST_USER_NAME_NO_PERMISSION) final CamundaClient noPermission) {
+    // given (admin) to create instance
+    // create a process instance with job based user task
+    final long anotherProcessInstanceKeyWithJobBasedUserTask =
+        createProcessInstance(adminClient, PROCESS_ID_WITH_JOB_BASED_USERTASK);
+    final var anotherUserTaskKeyWithJobBasedUserTask =
+        awaitJobBasedUserTaskBeingAvailable(anotherProcessInstanceKeyWithJobBasedUserTask);
     // given (non-admin) user without any authorizations
 
     // when
@@ -178,10 +196,37 @@ public class CompatibilityTasklistAssignUserTaskAuthorizationIT {
   }
 
   @Test
+  public void shouldNotCompleteJobBasedUserTaskWithUnauthorizedUser(
+      @Authenticated(ADMIN_USER_NAME) final CamundaClient adminClient,
+      @Authenticated(TEST_USER_NAME_NO_PERMISSION) final CamundaClient noPermission) {
+    // given (admin) to create instance
+    final var processInstanceKeyWithJobBasedUserTaskPreAssigned =
+        createProcessInstance(adminClient, PROCESS_ID_WITH_JOB_BASED_USERTASK_PRE_ASSIGNED);
+    final var userTaskKeyWithJobBasedUserTaskPreAssigned =
+        awaitJobBasedUserTaskBeingAvailable(processInstanceKeyWithJobBasedUserTaskPreAssigned);
+    // given (non-admin) user without any authorizations
+
+    // when
+    final var response =
+        tasklistRestClient
+            .withAuthentication(TEST_USER_NAME_NO_PERMISSION, TEST_USER_PASSWORD)
+            .completeUserTask(userTaskKeyWithJobBasedUserTaskPreAssigned);
+
+    // then
+    assertThat(response).isNotNull();
+    assertThat(response.statusCode()).isEqualTo(403);
+  }
+
+  @Test
   public void shouldBeAuthorizedToAssignJobBasedUserTask(
       @Authenticated(ADMIN_USER_NAME) final CamundaClient adminClient,
       @Authenticated(TEST_USER_NAME_WITH_PERMISSION) final CamundaClient withPermission) {
-    // given
+    // given (admin) to create instance
+    final var processInstanceKeyWithJobBasedUserTask =
+        createProcessInstance(adminClient, PROCESS_ID_WITH_JOB_BASED_USERTASK);
+    final var userTaskKeyWithJobBasedUserTask =
+        awaitJobBasedUserTaskBeingAvailable(processInstanceKeyWithJobBasedUserTask);
+    // given (non-admin) user with permissions to assign task
 
     // when
     final var response =
