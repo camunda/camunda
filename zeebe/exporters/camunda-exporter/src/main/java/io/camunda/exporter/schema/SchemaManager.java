@@ -132,15 +132,10 @@ public class SchemaManager {
       return;
     }
 
-    final var existingIndexNames = Collections.synchronizedSet(existingIndexNames());
-
-    LOG.info(
-        "Found '{}' existing indices. Create missing index templates based on '{}' descriptors.",
-        existingIndexNames.size(),
-        indexTemplateDescriptors.size());
+    final var missingIndices = getMissingIndices();
+    LOG.info("Found '{}' missing indices", missingIndices.size());
     final var futures =
-        indexDescriptors.stream()
-            .filter(descriptor -> !existingIndexNames.contains(descriptor.getFullQualifiedName()))
+        missingIndices.stream()
             .map(
                 descriptor ->
                     // run creation of indices async as virtual thread
@@ -158,12 +153,22 @@ public class SchemaManager {
     joinOnFutures(futures);
   }
 
+  private List<IndexDescriptor> getMissingIndices() {
+    if (indexDescriptors.isEmpty()) {
+      return Collections.emptyList();
+    }
+    final var existingIndexNames = existingIndexNames();
+
+    return indexDescriptors.stream()
+        .filter(descriptor -> !existingIndexNames.contains(descriptor.getFullQualifiedName()))
+        .toList();
+  }
+
   private void initialiseIndexTemplates() {
     if (indexTemplateDescriptors.isEmpty()) {
       LOG.info("Do not create any index templates, as descriptors are missing");
       return;
     }
-
     LOG.info(
         "Creating index templates based on '{}' descriptors.", indexTemplateDescriptors.size());
     final var futures =
@@ -179,6 +184,20 @@ public class SchemaManager {
     // successfully
     // Doing this in parallel is still speeding up the bootstrap time
     joinOnFutures(futures);
+  }
+
+  private List<IndexTemplateDescriptor> getMissingIndexTemplates() {
+    if (indexTemplateDescriptors.isEmpty()) {
+      return Collections.emptyList();
+    }
+    final var existingTemplateNames =
+        searchEngineClient
+            .getMappings(config.getIndex().getPrefix() + "*", MappingSource.INDEX_TEMPLATE)
+            .keySet();
+
+    return indexTemplateDescriptors.stream()
+        .filter(descriptor -> !existingTemplateNames.contains(descriptor.getTemplateName()))
+        .toList();
   }
 
   /**
@@ -344,5 +363,13 @@ public class SchemaManager {
     return indexDescriptors.stream()
         .map(descriptor -> descriptor.getFullQualifiedName() + "*")
         .collect(Collectors.joining(","));
+  }
+
+  public boolean isSchemaReadyForUse() {
+    final var schemaValidator = new IndexSchemaValidator(objectMapper);
+    return getMissingIndices().isEmpty()
+        && getMissingIndexTemplates().isEmpty()
+        && validateIndices(schemaValidator).isEmpty()
+        && validateIndexTemplates(schemaValidator).isEmpty();
   }
 }

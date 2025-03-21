@@ -17,6 +17,7 @@ public final class BackOffRetryStrategy implements RetryStrategy {
 
   private final ActorControl actor;
   private final Duration maxBackOff;
+  private final Duration initialBackOff;
 
   private Duration backOffDuration;
   private CompletableActorFuture<Boolean> currentFuture;
@@ -24,8 +25,14 @@ public final class BackOffRetryStrategy implements RetryStrategy {
   private OperationToRetry currentCallable;
 
   public BackOffRetryStrategy(final ActorControl actor, final Duration maxBackOff) {
+    this(actor, maxBackOff, Duration.ofSeconds(1));
+  }
+
+  public BackOffRetryStrategy(
+      final ActorControl actor, final Duration maxBackOff, final Duration initialBackOff) {
     this.actor = actor;
     this.maxBackOff = maxBackOff;
+    this.initialBackOff = initialBackOff;
   }
 
   @Override
@@ -39,7 +46,7 @@ public final class BackOffRetryStrategy implements RetryStrategy {
     currentFuture = new CompletableActorFuture<>();
     currentTerminateCondition = terminateCondition;
     currentCallable = callable;
-    backOffDuration = Duration.ofSeconds(1);
+    backOffDuration = initialBackOff;
 
     actor.run(this::run);
 

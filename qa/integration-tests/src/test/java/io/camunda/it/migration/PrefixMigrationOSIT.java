@@ -20,11 +20,11 @@ import static io.camunda.it.migration.util.PrefixMigrationITUtils.requestProcess
 import static io.camunda.it.migration.util.PrefixMigrationITUtils.startLatestCamunda;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.application.commons.migration.PrefixMigrationHelper;
+import io.camunda.application.commons.search.SearchEngineDatabaseConfiguration.SearchEngineConnectProperties;
 import io.camunda.client.api.response.ProcessInstanceEvent;
 import io.camunda.operate.property.OperateProperties;
-import io.camunda.search.connect.configuration.ConnectConfiguration;
 import io.camunda.tasklist.property.TasklistProperties;
+import io.camunda.zeebe.qa.util.cluster.TestPrefixMigrationApp;
 import io.camunda.zeebe.test.util.testcontainers.TestSearchContainers;
 import java.io.IOException;
 import java.net.http.HttpResponse;
@@ -84,14 +84,16 @@ public class PrefixMigrationOSIT {
   private void prefixMigration() throws IOException {
     final var operate = new OperateProperties();
     final var tasklist = new TasklistProperties();
-    final var connect = new ConnectConfiguration();
+    final var connect = new SearchEngineConnectProperties();
 
     operate.getOpensearch().setIndexPrefix(OLD_OPERATE_PREFIX);
     tasklist.getOpenSearch().setIndexPrefix(OLD_TASKLIST_PREFIX);
     connect.setType("opensearch");
     connect.setUrl(osContainer.getHttpHostAddress());
     connect.setIndexPrefix(NEW_PREFIX);
-    PrefixMigrationHelper.runPrefixMigration(operate, tasklist, connect);
+    try (final var app = new TestPrefixMigrationApp(connect, tasklist, operate)) {
+      app.start();
+    }
   }
 
   @Test

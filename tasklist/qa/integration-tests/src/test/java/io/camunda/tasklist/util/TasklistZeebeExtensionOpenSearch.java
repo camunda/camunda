@@ -75,7 +75,13 @@ public class TasklistZeebeExtensionOpenSearch extends TasklistZeebeExtension {
         "ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_INDEX_PREFIX",
         indexPrefix,
         "ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_CLASSNAME",
-        "io.camunda.exporter.CamundaExporter");
+        "io.camunda.exporter.CamundaExporter",
+        "CAMUNDA_DATABASE_TYPE",
+        "opensearch",
+        "CAMUNDA_DATABASE_URL",
+        "http://host.testcontainers.internal:9200",
+        "CAMUNDA_DATABASE_INDEX_PREFIX",
+        indexPrefix);
   }
 
   @Override

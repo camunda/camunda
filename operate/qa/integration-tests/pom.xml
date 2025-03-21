@@ -544,6 +544,7 @@
           </systemPropertyVariables>
           <environmentVariables>
             <CAMUNDA_OPERATE_DATABASE>${itDatabase}</CAMUNDA_OPERATE_DATABASE>
+            <CAMUNDA_DATABASE_TYPE>${itDatabase}</CAMUNDA_DATABASE_TYPE>
           </environmentVariables>
         </configuration>
         <executions>
