@@ -57,7 +57,7 @@ public class MappingDeletedHandlerTest {
     final var idList = underTest.generateIds(mappingRecord);
 
     // then
-    assertThat(idList).containsExactly(String.valueOf(mappingRecord.getKey()));
+    assertThat(idList).containsExactly(String.valueOf(mappingRecord.getValue().getId()));
   }
 
   @Test
