@@ -15,12 +15,10 @@
  */
 package io.camunda.client.usertask;
 
-import static io.camunda.client.api.search.response.UserTaskState.COMPLETED;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.github.tomakehurst.wiremock.http.RequestMethod;
 import com.github.tomakehurst.wiremock.verification.LoggedRequest;
-import io.camunda.client.api.search.response.UserTaskState;
 import io.camunda.client.protocol.rest.*;
 import io.camunda.client.util.ClientRestTest;
 import java.time.OffsetDateTime;
@@ -64,7 +62,11 @@ public final class SearchUserTaskTest extends ClientRestTest {
   @Test
   void shouldSearchUserTaskByState() {
     // when
-    client.newUserTaskQuery().filter(f -> f.state(COMPLETED)).send().join();
+    client
+        .newUserTaskQuery()
+        .filter(f -> f.state(io.camunda.client.wrappers.UserTaskFilter.State.COMPLETED))
+        .send()
+        .join();
 
     // then
     final UserTaskSearchQuery request = gatewayService.getLastRequest(UserTaskSearchQuery.class);
@@ -478,29 +480,5 @@ public final class SearchUserTaskTest extends ClientRestTest {
     final UserTaskSearchQuery request = gatewayService.getLastRequest(UserTaskSearchQuery.class);
     assertThat(request.getFilter().getFollowUpDate().get$Gte()).isNotNull();
     assertThat(request.getFilter().getFollowUpDate().get$Lte()).isNotNull();
-  }
-
-  @Test
-  public void shouldConvertUserTaskState() {
-
-    for (final UserTaskState value : UserTaskState.values()) {
-      final UserTaskFilter.StateEnum protocolValue = UserTaskState.toProtocolState(value);
-      assertThat(protocolValue).isNotNull();
-      if (value == UserTaskState.UNKNOWN_ENUM_VALUE) {
-        assertThat(protocolValue).isEqualTo(UserTaskFilter.StateEnum.UNKNOWN_DEFAULT_OPEN_API);
-      } else {
-        assertThat(protocolValue.name()).isEqualTo(value.name());
-      }
-    }
-
-    for (final UserTaskResult.StateEnum protocolValue : UserTaskResult.StateEnum.values()) {
-      final UserTaskState value = UserTaskState.fromProtocolState(protocolValue);
-      assertThat(value).isNotNull();
-      if (protocolValue == UserTaskResult.StateEnum.UNKNOWN_DEFAULT_OPEN_API) {
-        assertThat(value).isEqualTo(UserTaskState.UNKNOWN_ENUM_VALUE);
-      } else {
-        assertThat(value.name()).isEqualTo(protocolValue.name());
-      }
-    }
   }
 }

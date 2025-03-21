@@ -15,6 +15,7 @@
  */
 package io.camunda.client.api.search.response;
 
+import io.camunda.client.wrappers.UserTaskResult;
 import java.util.List;
 import java.util.Map;
 
@@ -26,7 +27,7 @@ public interface UserTask {
   String getName();
 
   /** State of the task */
-  UserTaskState getState();
+  UserTaskResult.State getState();
 
   /** Assignee of the task */
   String getAssignee();

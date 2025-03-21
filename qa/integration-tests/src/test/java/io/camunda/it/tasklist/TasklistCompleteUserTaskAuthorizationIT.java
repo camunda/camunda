@@ -7,12 +7,12 @@
  */
 package io.camunda.it.tasklist;
 
-import static io.camunda.client.api.search.response.UserTaskState.COMPLETED;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.protocol.rest.PermissionTypeEnum;
 import io.camunda.client.protocol.rest.ResourceTypeEnum;
+import io.camunda.client.wrappers.UserTaskFilter;
 import io.camunda.qa.util.cluster.TestRestTasklistClient;
 import io.camunda.qa.util.cluster.TestStandaloneCamunda;
 import io.camunda.search.clients.query.SearchQueryBuilders;
@@ -209,7 +209,7 @@ public class TasklistCompleteUserTaskAuthorizationIT {
             () -> {
               final var result =
                   adminCamundaClient
-                      .newProcessDefinitionSearchRequest()
+                      .newProcessDefinitionQuery()
                       .filter(f -> f.processDefinitionId(processDefinitionId))
                       .send()
                       .join();
@@ -236,7 +236,7 @@ public class TasklistCompleteUserTaskAuthorizationIT {
             () -> {
               final var result =
                   adminCamundaClient
-                      .newUserTaskSearchRequest()
+                      .newUserTaskQuery()
                       .filter(f -> f.processInstanceKey(processInstanceKey))
                       .send()
                       .join();
@@ -273,8 +273,8 @@ public class TasklistCompleteUserTaskAuthorizationIT {
             () -> {
               final var result =
                   adminCamundaClient
-                      .newUserTaskSearchRequest()
-                      .filter(f -> f.userTaskKey(userTaskKey).state(COMPLETED))
+                      .newUserTaskQuery()
+                      .filter(f -> f.userTaskKey(userTaskKey).state(UserTaskFilter.State.COMPLETED))
                       .send()
                       .join();
               assertThat(result.items()).hasSize(1);
