@@ -25,6 +25,7 @@ import io.camunda.zeebe.engine.state.instance.UserTaskTransitionTriggerRequestMe
 import io.camunda.zeebe.engine.state.mutable.MutableUserTaskState;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskListenerEventType;
 import io.camunda.zeebe.msgpack.spec.MsgpackReaderException;
+import io.camunda.zeebe.msgpack.value.DocumentValue;
 import io.camunda.zeebe.protocol.impl.record.value.variable.VariableDocumentRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.ValueType;
@@ -135,7 +136,9 @@ public final class VariableDocumentUpdateProcessor
       writers.state().appendFollowUpEvent(key, VariableDocumentIntent.UPDATING, value);
 
       final var userTaskRecord = userTaskState.getUserTask(userTaskKey);
-      userTaskRecord.setVariables(value.getVariablesBuffer()).setVariablesChanged();
+      if (hasVariables(value)) {
+        userTaskRecord.setVariables(value.getVariablesBuffer()).setVariablesChanged();
+      }
       writers.state().appendFollowUpEvent(userTaskKey, UserTaskIntent.UPDATING, userTaskRecord);
 
       final var userTaskElement =
@@ -207,6 +210,10 @@ public final class VariableDocumentUpdateProcessor
 
     writers.state().appendFollowUpEvent(key, VariableDocumentIntent.UPDATED, value);
     writers.response().writeEventOnCommand(key, VariableDocumentIntent.UPDATED, value, record);
+  }
+
+  private static boolean hasVariables(final VariableDocumentRecord record) {
+    return !DocumentValue.EMPTY_DOCUMENT.equals(record.getVariablesBuffer());
   }
 
   private static boolean isCamundaUserTask(ElementInstance elementInstance) {

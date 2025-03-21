@@ -332,13 +332,18 @@ public class TaskListenerBlockedTransitionTest {
                 listenerType,
                 listenerType + "_2",
                 listenerType + "_3"));
-    final var userTaskElementInstanceKey = helper.getUserTaskElementInstanceKey(processInstanceKey);
+    final var createdUserTask =
+        RecordingExporter.userTaskRecords(UserTaskIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst()
+            .getValue();
+    final var userTaskElementInstanceKey = createdUserTask.getElementInstanceKey();
 
     // when
     ENGINE
         .variables()
         .ofScope(userTaskElementInstanceKey)
-        .withDocument(Map.of("approvalStatus", "APPROVED"))
+        .withDocument(Map.of("status", "APPROVED"))
         .withLocalSemantic()
         .expectPartialUpdate()
         .update();
@@ -378,6 +383,61 @@ public class TaskListenerBlockedTransitionTest {
             tuple(ValueType.USER_TASK, UserTaskIntent.COMPLETE_TASK_LISTENER),
             tuple(ValueType.USER_TASK, UserTaskIntent.UPDATED),
             tuple(ValueType.VARIABLE_DOCUMENT, VariableDocumentIntent.UPDATED));
+
+    helper.assertUserTaskRecordWithIntent(
+        processInstanceKey,
+        UserTaskIntent.UPDATED,
+        userTask ->
+            Assertions.assertThat(userTask)
+                .hasAssignee(createdUserTask.getAssignee())
+                .hasCandidateGroupsList(createdUserTask.getCandidateGroupsList())
+                .hasCandidateUsersList(createdUserTask.getCandidateUsersList())
+                .hasDueDate(createdUserTask.getDueDate())
+                .hasFollowUpDate(createdUserTask.getFollowUpDate())
+                .hasPriority(createdUserTask.getPriority())
+                .hasVariables(Map.of("status", "APPROVED"))
+                .hasAction("")
+                .hasOnlyChangedAttributes(UserTaskRecord.VARIABLES));
+  }
+
+  @Test
+  public void
+      shouldUpdateUserTaskAfterAllUpdatingTaskListenersAreExecutedTriggeredByVariableUpdateWithEmptyDocument() {
+    // given
+    final long processInstanceKey =
+        helper.createProcessInstance(
+            helper.createUserTaskWithTaskListeners(
+                ZeebeTaskListenerEventType.updating, listenerType, listenerType + "_2"));
+    final var userTaskElementInstanceKey = helper.getUserTaskElementInstanceKey(processInstanceKey);
+
+    // when: empty document triggers update transition
+    ENGINE
+        .variables()
+        .ofScope(userTaskElementInstanceKey)
+        .withDocument(Map.of()) // empty document
+        .withLocalSemantic()
+        .expectPartialUpdate()
+        .update();
+
+    helper.completeJobs(processInstanceKey, listenerType, listenerType + "_2");
+
+    // then: ensure update transition completed and no variable was tracked as changed
+    assertThat(
+            RecordingExporter.userTaskRecords()
+                .onlyEvents()
+                .withProcessInstanceKey(processInstanceKey)
+                .skipUntil(r -> r.getIntent() == UserTaskIntent.UPDATING)
+                .limit(r -> r.getIntent() == UserTaskIntent.UPDATED))
+        .extracting(Record::getValue)
+        .allSatisfy(
+            userTask -> {
+              assertThat(userTask.getVariables())
+                  .describedAs("Expect no variable was added to user task record")
+                  .isEmpty();
+              assertThat(userTask.getChangedAttributes())
+                  .describedAs("Expect no attribute was marked as changed")
+                  .isEmpty();
+            });
   }
 
   @Test
