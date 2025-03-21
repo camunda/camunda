@@ -79,7 +79,7 @@ jobs:
           additional_flags: "--profile self-managed"
 
       - name: Build backend
-        run: ./mvnw -f optimize/pom.xml clean install -T1C -DskipTests -Dskip.docker -pl backend -am
+        run: mvn -f optimize/pom.xml clean install -T1C -DskipTests -Dskip.docker -pl backend -am
 
       - name: Create backend logs file
         run: mkdir -p ./optimize/client/build && touch ./optimize/client/build/backendLogs.log
