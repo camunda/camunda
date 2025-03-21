@@ -117,16 +117,26 @@ public final class UserTaskProcessor extends JobWorkerTaskSupportingProcessor<Ex
   @Override
   protected void onTerminateInternal(
       final ExecutableUserTask element, final BpmnElementContext context) {
-    final var flowScopeInstance = stateBehavior.getFlowScopeInstance(context);
 
     if (element.hasExecutionListeners() || element.hasTaskListeners()) {
       jobBehavior.cancelJob(context);
     }
 
-    userTaskBehavior.cancelUserTask(context);
+    final var elementInstance = stateBehavior.getElementInstance(context);
+    userTaskBehavior.userTaskCanceling(elementInstance);
+
     eventSubscriptionBehavior.unsubscribeFromEvents(context);
     incidentBehavior.resolveIncidents(context);
 
+    onFinalizeTerminationInternal(element, context);
+  }
+
+  private void onFinalizeTerminationInternal(
+      final ExecutableUserTask element, final BpmnElementContext context) {
+    final var elementInstance = stateBehavior.getElementInstance(context);
+    userTaskBehavior.userTaskCanceled(elementInstance);
+
+    final var flowScopeInstance = stateBehavior.getFlowScopeInstance(context);
     eventSubscriptionBehavior
         .findEventTrigger(context)
         .filter(eventTrigger -> flowScopeInstance.isActive())
