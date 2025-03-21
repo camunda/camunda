@@ -49,13 +49,13 @@ runs:
     # STEP B: Make signing script executable
     - name: Make script executable
       shell: bash
-      run: chmod +x ./.github/actions/sign-and-notarize/exclude_sign_notarize_reinject_absolute.sh.sh
+      run: chmod +x ./.github/actions/sign-and-notarize/sign_and_notarize.sh
 
     # STEP C: Sign & Notarize
     - name: Sign distribution
       shell: bash
       run: |
-        ./.github/actions/sign-and-notarize/exclude_sign_notarize_reinject_absolute.sh.sh \
+        ./.github/actions/sign-and-notarize/sign_and_notarize.sh \
           "$INPUT_PATH" \
           "$INPUT_DEVELOPER_ID_CERT_NAME" \
           "$INPUT_APPLE_ID" \
