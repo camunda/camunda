@@ -11,6 +11,7 @@ import static io.camunda.tasklist.util.assertions.CustomAssertions.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.tuple;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -115,7 +116,7 @@ public class ZeebeImportAdHocSubProcessIT extends TasklistZeebeIntegrationTest {
                         "tasks",
                         "[\"task1\",\"task2\",\"task3\"]",
                         "[\"task1\",\"task2\",\"task3\"]"));
-        default -> throw new AssertionError("Unexpected task id: " + taskId);
+        default -> fail("Unexpected task id: " + taskId);
       }
     }
   }
