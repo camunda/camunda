@@ -68,7 +68,7 @@ public class ZeebeClientConfigurationDefaultPropertiesTest {
     assertThat(client.getConfiguration().getGrpcAddress())
         .isEqualTo(new URI("http://0.0.0.0:26500"));
     assertThat(client.getConfiguration().getKeepAlive()).isEqualTo(Duration.ofSeconds(45));
-    assertThat(client.getConfiguration().getMaxMessageSize()).isEqualTo(4 * ONE_MB);
+    assertThat(client.getConfiguration().getMaxMessageSize()).isEqualTo(5 * ONE_MB);
     assertThat(client.getConfiguration().getMaxMetadataSize()).isEqualTo(16 * ONE_KB);
     assertThat(client.getConfiguration().getNumJobWorkerExecutionThreads()).isEqualTo(1);
     assertThat(client.getConfiguration().getOverrideAuthority()).isNull();
