@@ -640,6 +640,14 @@ public final class SearchQueryRequestMapper {
           .map(mapToOperations(String.class))
           .ifPresent(builder::tenantIdOperations);
       ofNullable(filter.getHasRetriesLeft()).ifPresent(builder::hasRetriesLeft);
+      ofNullable(filter.getFlowNodeId())
+          .map(mapToOperations(String.class))
+          .ifPresent(builder::flowNodeIdOperations);
+      ofNullable(filter.getHasFlowNodeInstanceIncident())
+          .ifPresent(builder::hasFlowNodeInstanceIncident);
+      ofNullable(filter.getFlowNodeInstanceState())
+          .map(mapToOperations(String.class))
+          .ifPresent(builder::flowNodeInstanceStateOperations);
       if (!CollectionUtils.isEmpty(filter.getVariables())) {
         final Either<List<String>, List<VariableValueFilter>> either =
             toVariableValueFiltersForProcessInstance(filter.getVariables());

@@ -4517,6 +4517,38 @@ components:
 
             Wildcard characters can be escaped with backslash, for instance: `\*`.
           type: string
+    AdvancedFlowNodeInstanceStateFilter:
+      title: Advanced filter
+      description: Advanced FlowNodeInstanceStateEnum filter.
+      type: object
+      properties:
+        $eq:
+          description: Checks for equality with the provided value.
+          allOf:
+            - $ref: "#/components/schemas/FlowNodeInstanceStateEnum"
+        $neq:
+          description: Checks for inequality with the provided value.
+          allOf:
+            - $ref: "#/components/schemas/FlowNodeInstanceStateEnum"
+        $exists:
+          description: Checks if the current property exists.
+          type: boolean
+        $in:
+          description: Checks if the property matches any of the provided values.
+          type: array
+          items:
+            $ref: "#/components/schemas/FlowNodeInstanceStateEnum"
+        $like:
+          description: |
+            Checks if the property matches the provided like value.
+
+            Supported wildcard characters are:
+
+            * `*`: matches zero, one, or multiple characters.
+            * `?`: matches one, single character.
+
+            Wildcard characters can be escaped with backslash, for instance: `\*`.
+          type: string
     AdvancedDateTimeFilter:
       title: Advanced filter
       description: Advanced date-time filter.
@@ -4581,6 +4613,16 @@ components:
           allOf:
             - $ref: "#/components/schemas/ProcessInstanceStateEnum"
         - $ref: "#/components/schemas/AdvancedProcessInstanceStateFilter"
+    FlowNodeInstanceStateFilterProperty:
+      description: FlowNodeInstanceStateEnum property with full advanced search capabilities.
+      type: object
+      oneOf:
+        - type: string
+          title: Exact match
+          description: Matches the value exactly.
+          allOf:
+            - $ref: "#/components/schemas/FlowNodeInstanceStateEnum"
+        - $ref: "#/components/schemas/AdvancedFlowNodeInstanceStateFilter"
     DateTimeFilterProperty:
       description: Date-time property with full advanced search capabilities.
       type: object
@@ -4667,6 +4709,19 @@ components:
         hasRetriesLeft:
           description: Whether the process has failed jobs with retries left.
           type: boolean
+        flowNodeInstanceState:
+          description: The state of the flow node instances associated with the process instance.
+          allOf:
+            - $ref: "#/components/schemas/FlowNodeInstanceStateFilterProperty"
+        flowNodeId:
+          description: The flow node ID associated with the process instance.
+          allOf:
+            - $ref: "#/components/schemas/StringFilterProperty"
+        hasFlowNodeInstanceIncident:
+          description:  Whether the flow node instance has an incident or not.
+          type: boolean
+
+
     ProcessInstanceVariableFilterRequest:
       description: Process instance variable filter.
       type: object
@@ -4738,6 +4793,12 @@ components:
           type: string
           description: The parent flow node instance key.
     ProcessInstanceStateEnum:
+      description: The state, one of ACTIVE, COMPLETED, TERMINATED.
+      enum:
+        - ACTIVE
+        - COMPLETED
+        - TERMINATED
+    FlowNodeInstanceStateEnum:
       description: The state, one of ACTIVE, COMPLETED, TERMINATED.
       enum:
         - ACTIVE

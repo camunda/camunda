@@ -9,6 +9,9 @@ package io.camunda.search.clients.transformers.filter;
 
 import static io.camunda.search.clients.query.SearchQueryBuilders.*;
 import static io.camunda.webapps.schema.descriptors.IndexDescriptor.TENANT_ID;
+import static io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate.ACTIVITIES_JOIN_RELATION;
+import static io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate.ACTIVITY_ID;
+import static io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate.ACTIVITY_STATE;
 import static io.camunda.webapps.schema.descriptors.template.ListViewTemplate.ACTIVITIES_JOIN_RELATION;
 import static io.camunda.webapps.schema.descriptors.template.ListViewTemplate.BATCH_OPERATION_IDS;
 import static io.camunda.webapps.schema.descriptors.template.ListViewTemplate.BPMN_PROCESS_ID;
@@ -101,6 +104,20 @@ public final class ProcessInstanceFilterTransformer
         .ifPresent(queries::addAll);
 
     ofNullable(geHasRetriesLeftQuery(filter.hasRetriesLeft())).ifPresent(queries::add);
+
+    if (filter.flowNodeIdOperations() != null && !filter.flowNodeIdOperations().isEmpty()) {
+
+      final var flowNodeInstanceQueries = new ArrayList<SearchQuery>();
+
+      ofNullable(stringOperations(ACTIVITY_ID, filter.flowNodeIdOperations()))
+          .ifPresent(flowNodeInstanceQueries::addAll);
+      ofNullable(stringOperations(ACTIVITY_STATE, filter.flowNodeInstanceStateOperations()))
+          .ifPresent(flowNodeInstanceQueries::addAll);
+      ofNullable(filter.hasFlowNodeInstanceIncident())
+          .ifPresent(incident -> flowNodeInstanceQueries.add((term(INCIDENT, incident))));
+
+      queries.add(hasChildQuery(ACTIVITIES_JOIN_RELATION, and(flowNodeInstanceQueries)));
+    }
 
     return and(queries);
   }

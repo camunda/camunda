@@ -15,6 +15,7 @@ import io.camunda.search.clients.query.SearchMatchQuery;
 import io.camunda.search.clients.query.SearchQueryOption;
 import io.camunda.search.clients.query.SearchRangeQuery;
 import io.camunda.search.clients.query.SearchTermQuery;
+import io.camunda.search.clients.query.SearchTermsQuery;
 import io.camunda.search.filter.FilterBuilders;
 import io.camunda.search.filter.Operation;
 import io.camunda.search.filter.ProcessInstanceFilter;
@@ -435,6 +436,148 @@ public final class ProcessInstanceQueryTransformerTest extends AbstractTransform
               assertIsSearchTermQuery(
                   searchHasChildQuery.query().queryOption(), "jobFailedWithRetriesLeft", true);
             });
+  }
+
+  @Test
+  public void shouldQueryByFlowNodeId() {
+    // when
+    final var processInstanceFilter =
+        FilterBuilders.processInstance(
+            b -> b.processDefinitionKeys(123L).flowNodeIds("activity_123"));
+
+    // when
+    final var searchRequest = transformQuery(processInstanceFilter);
+
+    // then
+    final var queryVariant = searchRequest.queryOption();
+    assertThat(queryVariant).isInstanceOf(SearchBoolQuery.class);
+    assertThat(((SearchBoolQuery) queryVariant).must()).hasSize(3);
+    assertIsSearchTermQuery(
+        ((SearchBoolQuery) queryVariant).must().get(0).queryOption(),
+        "joinRelation",
+        "processInstance");
+    assertIsSearchTermQuery(
+        ((SearchBoolQuery) queryVariant).must().get(1).queryOption(), "processDefinitionKey", 123L);
+
+    assertThat(((SearchBoolQuery) queryVariant).must().get(2).queryOption())
+        .isInstanceOfSatisfying(
+            SearchHasChildQuery.class,
+            hasChildQuery -> {
+              assertIsSearchTermQuery(
+                  (hasChildQuery.query().queryOption()), "activityId", "activity_123");
+              assertThat(hasChildQuery.type()).isEqualTo("activity");
+            });
+  }
+
+  @Test
+  public void shouldQueryByFlowNodeIdAndFlowNodeInstanceState() {
+    // when
+    final var processInstanceFilter =
+        FilterBuilders.processInstance(
+            b ->
+                b.processDefinitionKeys(123L)
+                    .flowNodeIds("activity_123")
+                    .flowNodeInstanceState("ACTIVE", "COMPLETED"));
+
+    // when
+    final var searchRequest = transformQuery(processInstanceFilter);
+
+    // then
+    final var queryVariant = searchRequest.queryOption();
+    assertThat(queryVariant).isInstanceOf(SearchBoolQuery.class);
+    assertThat(((SearchBoolQuery) queryVariant).must()).hasSize(3);
+    assertIsSearchTermQuery(
+        ((SearchBoolQuery) queryVariant).must().get(0).queryOption(),
+        "joinRelation",
+        "processInstance");
+    assertIsSearchTermQuery(
+        ((SearchBoolQuery) queryVariant).must().get(1).queryOption(), "processDefinitionKey", 123L);
+
+    assertThat(((SearchBoolQuery) queryVariant).must().get(2).queryOption())
+        .isInstanceOfSatisfying(
+            SearchHasChildQuery.class,
+            hasChildQuery -> {
+              assertThat(hasChildQuery.query().queryOption())
+                  .isInstanceOfSatisfying(
+                      SearchBoolQuery.class,
+                      boolQuery -> {
+                        assertIsSearchTermQuery(
+                            boolQuery.must().getFirst().queryOption(),
+                            "activityId",
+                            "activity_123");
+                        assertThat(boolQuery.must().get(1).queryOption())
+                            .isInstanceOfSatisfying(
+                                SearchTermsQuery.class,
+                                termsQuery -> {
+                                  assertThat(termsQuery.field()).isEqualTo("activityState");
+                                  assertThat(termsQuery.values()).hasSize(2);
+                                  assertThat(termsQuery.values())
+                                      .extracting("value")
+                                      .containsExactly("ACTIVE", "COMPLETED");
+                                });
+                      });
+
+              assertThat(hasChildQuery.type()).isEqualTo("activity");
+            });
+  }
+
+  @Test
+  public void shouldQueryByFlowNodeIdAndFlowNodeInstanceStateAndHasIncident() {
+    {
+      // when
+      final var processInstanceFilter =
+          FilterBuilders.processInstance(
+              b ->
+                  b.processDefinitionKeys(123L)
+                      .flowNodeIds("activity_123")
+                      .flowNodeInstanceState("ACTIVE", "COMPLETED")
+                      .hasFlowNodeInstanceIncident(true));
+
+      // when
+      final var searchRequest = transformQuery(processInstanceFilter);
+
+      // then
+      final var queryVariant = searchRequest.queryOption();
+      assertThat(queryVariant).isInstanceOf(SearchBoolQuery.class);
+      assertThat(((SearchBoolQuery) queryVariant).must()).hasSize(3);
+      assertIsSearchTermQuery(
+          ((SearchBoolQuery) queryVariant).must().get(0).queryOption(),
+          "joinRelation",
+          "processInstance");
+      assertIsSearchTermQuery(
+          ((SearchBoolQuery) queryVariant).must().get(1).queryOption(),
+          "processDefinitionKey",
+          123L);
+
+      assertThat(((SearchBoolQuery) queryVariant).must().get(2).queryOption())
+          .isInstanceOfSatisfying(
+              SearchHasChildQuery.class,
+              hasChildQuery -> {
+                assertThat(hasChildQuery.query().queryOption())
+                    .isInstanceOfSatisfying(
+                        SearchBoolQuery.class,
+                        boolQuery -> {
+                          assertIsSearchTermQuery(
+                              boolQuery.must().getFirst().queryOption(),
+                              "activityId",
+                              "activity_123");
+                          assertThat(boolQuery.must().get(1).queryOption())
+                              .isInstanceOfSatisfying(
+                                  SearchTermsQuery.class,
+                                  termsQuery -> {
+                                    assertThat(termsQuery.field()).isEqualTo("activityState");
+                                    assertThat(termsQuery.values()).hasSize(2);
+                                    assertThat(termsQuery.values())
+                                        .extracting("value")
+                                        .containsExactly("ACTIVE", "COMPLETED");
+                                  });
+                          assertIsSearchTermQuery(
+                              boolQuery.must().get(2).queryOption(), "incident", true);
+                        });
+
+                assertThat(hasChildQuery.type()).isEqualTo("activity");
+              });
+    }
   }
 
   @Test
