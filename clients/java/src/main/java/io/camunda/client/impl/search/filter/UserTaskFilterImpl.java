@@ -19,11 +19,10 @@ import io.camunda.client.api.search.filter.UserTaskFilter;
 import io.camunda.client.api.search.filter.builder.DateTimeProperty;
 import io.camunda.client.api.search.filter.builder.IntegerProperty;
 import io.camunda.client.api.search.filter.builder.StringProperty;
-import io.camunda.client.api.search.response.UserTaskState;
+import io.camunda.client.impl.search.TypedSearchRequestPropertyProvider;
 import io.camunda.client.impl.search.filter.builder.DateTimePropertyImpl;
 import io.camunda.client.impl.search.filter.builder.IntegerPropertyImpl;
 import io.camunda.client.impl.search.filter.builder.StringPropertyImpl;
-import io.camunda.client.impl.search.request.TypedSearchRequestPropertyProvider;
 import io.camunda.client.impl.util.ParseUtil;
 import io.camunda.client.wrappers.*;
 import java.time.OffsetDateTime;
@@ -49,8 +48,8 @@ public class UserTaskFilterImpl
   }
 
   @Override
-  public UserTaskFilter state(final UserTaskState state) {
-    filter.setState(UserTaskState.toProtocolState(state));
+  public UserTaskFilter state(final io.camunda.client.wrappers.UserTaskFilter.State state) {
+    filter.setState(io.camunda.client.wrappers.UserTaskFilter.State.toProtocolEnum(state));
     return this;
   }
 
@@ -273,7 +272,7 @@ public class UserTaskFilterImpl
     return filter;
   }
 
-  static void variableValueNullCheck(final Object value) {
+  static void variableValueNullCheck(Object value) {
     if (value == null) {
       throw new IllegalArgumentException("Variable value cannot be null");
     }
