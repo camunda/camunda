@@ -102,6 +102,9 @@ test.describe('decisions page', () => {
         },
       });
 
+      await expect(decisionsPage.fetchErrorMessage).toBeVisible();
+      await expect(decisionsPage.diagramSpinner).not.toBeVisible();
+
       await expect(page).toHaveScreenshot();
     });
 

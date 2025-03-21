@@ -12,7 +12,6 @@ import {useParams} from 'react-router-dom';
 import {VisuallyHiddenH1} from 'modules/components/VisuallyHiddenH1';
 import {decisionInstanceDetailsStore} from 'modules/stores/decisionInstanceDetails';
 import {drdDataStore} from 'modules/stores/drdData';
-import {decisionXmlStore} from 'modules/stores/decisionXml';
 import {PAGE_TITLE} from 'modules/constants';
 import {tracking} from 'modules/tracking';
 import {InstanceDetail} from '../Layout/InstanceDetail';
@@ -32,12 +31,10 @@ const DecisionInstance: React.FC = observer(() => {
 
   useEffect(() => {
     drdDataStore.init();
-    decisionXmlStore.init();
 
     return () => {
       decisionInstanceDetailsStore.reset();
       drdDataStore.reset();
-      decisionXmlStore.reset();
     };
   }, []);
 
@@ -67,7 +64,9 @@ const DecisionInstance: React.FC = observer(() => {
   }
 
   if (drdStore.state.panelState === 'maximized') {
-    return <Drd />;
+    return (
+      <Drd decisionDefinitionKey={decisionInstance?.decisionDefinitionId} />
+    );
   }
 
   return (
@@ -82,7 +81,9 @@ const DecisionInstance: React.FC = observer(() => {
           rightPanel={
             drdStore.state.panelState === 'minimized' ? (
               <DrdPanel>
-                <Drd />
+                <Drd
+                  decisionDefinitionKey={decisionInstance?.decisionDefinitionId}
+                />
               </DrdPanel>
             ) : null
           }

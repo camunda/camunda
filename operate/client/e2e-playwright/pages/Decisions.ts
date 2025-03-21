@@ -25,6 +25,8 @@ export class Decisions {
   readonly decisionViewer: Locator;
   readonly decisionInstanceKeysFilter: Locator;
   readonly deleteResourceButton: Locator;
+  readonly fetchErrorMessage: Locator;
+  readonly diagramSpinner: Locator;
   readonly deleteResourceModal: InstanceType<typeof DeleteResourceModal>;
 
   constructor(page: Page) {
@@ -47,6 +49,10 @@ export class Decisions {
     this.deleteResourceButton = page.getByRole('button', {
       name: 'Delete Decision Definition',
     });
+
+    this.diagramSpinner = page.getByTestId('diagram-spinner');
+
+    this.fetchErrorMessage = page.getByText('Data could not be fetched');
   }
 
   async selectDecision(option: string) {

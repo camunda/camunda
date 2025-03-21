@@ -15,25 +15,28 @@ import {
 import {mockDmnXml} from 'modules/mocks/mockDmnXml';
 import {decisionInstanceDetailsStore} from 'modules/stores/decisionInstanceDetails';
 import {DecisionPanel} from '.';
-import {decisionXmlStore} from 'modules/stores/decisionXml';
-import {mockFetchDecisionXML} from 'modules/mocks/api/decisions/fetchDecisionXML';
+import {mockFetchDecisionDefinitionXML} from 'modules/mocks/api/v2/decisionDefinitions/fetchDecisionDefinitionXML';
 import {mockFetchDecisionInstance} from 'modules/mocks/api/decisionInstances/fetchDecisionInstance';
 import {useEffect} from 'react';
+import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
+import {QueryClientProvider} from '@tanstack/react-query';
 
 const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
   useEffect(() => {
-    decisionXmlStore.init();
     return () => {
-      decisionXmlStore.reset();
       decisionInstanceDetailsStore.reset();
     };
   }, []);
-  return <>{children}</>;
+  return (
+    <QueryClientProvider client={getMockQueryClient()}>
+      {children}
+    </QueryClientProvider>
+  );
 };
 
 describe('<DecisionPanel />', () => {
   beforeEach(() => {
-    mockFetchDecisionXML().withSuccess(mockDmnXml);
+    mockFetchDecisionDefinitionXML().withSuccess(mockDmnXml);
   });
 
   it('should render decision table', async () => {

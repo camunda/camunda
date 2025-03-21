@@ -10,7 +10,7 @@ import {render, screen} from 'modules/testing-library';
 import {mockDmnXml} from 'modules/mocks/mockDmnXml';
 import {groupedDecisions} from 'modules/mocks/groupedDecisions';
 import {mockFetchGroupedDecisions} from 'modules/mocks/api/decisions/fetchGroupedDecisions';
-import {mockFetchDecisionXML} from 'modules/mocks/api/decisions/fetchDecisionXML';
+import {mockFetchDecisionDefinitionXML} from 'modules/mocks/api/v2/decisionDefinitions/fetchDecisionDefinitionXML';
 import {authenticationStore} from 'modules/stores/authentication';
 import {Decision} from '..';
 import {createWrapper} from './mocks';
@@ -22,7 +22,7 @@ jest.mock('modules/feature-flags', () => ({
 describe('<Decision /> - operations', () => {
   beforeEach(() => {
     mockFetchGroupedDecisions().withSuccess(groupedDecisions);
-    mockFetchDecisionXML().withSuccess(mockDmnXml);
+    mockFetchDecisionDefinitionXML().withSuccess(mockDmnXml);
   });
 
   it('should show delete button when version is selected', async () => {

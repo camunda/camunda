@@ -6,13 +6,9 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {requestAndParse} from 'modules/request';
+import {mockXmlGetRequest} from '../../mockRequest';
 
-async function fetchDecisionXML(decisionDefinitionId: string) {
-  return requestAndParse<string>({
-    url: `/api/decisions/${decisionDefinitionId}/xml`,
-    method: 'GET',
-  });
-}
+const mockFetchDecisionDefinitionXML = () =>
+  mockXmlGetRequest('/v2/decision-definitions/:decisionDefinitionId/xml');
 
-export {fetchDecisionXML};
+export {mockFetchDecisionDefinitionXML};

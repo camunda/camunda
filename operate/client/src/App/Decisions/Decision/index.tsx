@@ -16,11 +16,11 @@ import {useLocation, useNavigate} from 'react-router-dom';
 import {DecisionOperations} from './DecisionOperations';
 import {CopiableContent, PanelHeader, Section} from './styled';
 import {DiagramShell} from 'modules/components/DiagramShell';
-import {decisionXmlStore} from 'modules/stores/decisionXml';
-import {reaction} from 'mobx';
 import {deleteSearchParams} from 'modules/utils/filter';
 import {DecisionViewer} from 'modules/components/DecisionViewer';
 import {notificationsStore} from 'modules/stores/notifications';
+import {useDecisionDefinitionXmlOptions} from 'modules/queries/decisionDefinitions/useDecisionDefinitionXml';
+import {useQuery} from '@tanstack/react-query';
 
 const Decision: React.FC = observer(() => {
   const location = useLocation();
@@ -57,8 +57,6 @@ const Decision: React.FC = observer(() => {
   useEffect(() => {
     if (status === 'fetched' && isDecisionSelected) {
       if (decisionDefinitionId === null) {
-        decisionXmlStore.reset();
-
         if (
           !groupedDecisionsStore.isSelectedDecisionValid({
             decisionId,
@@ -72,8 +70,6 @@ const Decision: React.FC = observer(() => {
             isDismissable: true,
           });
         }
-      } else {
-        decisionXmlStore.fetchDiagramXml(decisionDefinitionId);
       }
     }
   }, [
@@ -86,24 +82,26 @@ const Decision: React.FC = observer(() => {
     navigate,
   ]);
 
-  useEffect(() => {
-    const disposer = reaction(
-      () => decisionXmlStore.state.status,
-      (status) => {
-        if (status === 'fetched') {
-          setCurrentDecisionId(decisionId);
-        }
-      },
-    );
+  const {
+    data: decisionDefinitionXml,
+    isFetching,
+    isFetched,
+    isError,
+  } = useQuery(
+    useDecisionDefinitionXmlOptions({
+      decisionDefinitionKey: decisionDefinitionId!,
+      enabled:
+        decisionDefinitionId !== null &&
+        status === 'fetched' &&
+        isDecisionSelected,
+    }),
+  );
 
-    return () => {
-      disposer();
-    };
-  }, [decisionId]);
-
   useEffect(() => {
-    return decisionXmlStore.reset;
-  }, []);
+    if (isFetched) {
+      setCurrentDecisionId(decisionId);
+    }
+  }, [isFetched, decisionId]);
 
   const panelHeaderRef = useRef<HTMLDivElement>(null);
 
@@ -114,7 +112,7 @@ const Decision: React.FC = observer(() => {
 
   const getStatus = () => {
     if (
-      decisionXmlStore.state.status === 'fetching' ||
+      isFetching ||
       decisionName === undefined ||
       !groupedDecisionsStore.isInitialLoadComplete ||
       (groupedDecisionsStore.state.status === 'fetching' &&
@@ -123,9 +121,10 @@ const Decision: React.FC = observer(() => {
       return 'loading';
     }
 
-    if (decisionXmlStore.state.status === 'error') {
+    if (isError) {
       return 'error';
     }
+
     if (!isVersionSelected) {
       return 'empty';
     }
@@ -179,7 +178,7 @@ const Decision: React.FC = observer(() => {
         }
       >
         <DecisionViewer
-          xml={decisionXmlStore.state.xml}
+          xml={decisionDefinitionXml ?? null}
           decisionViewId={currentDecisionId}
         />
       </DiagramShell>
