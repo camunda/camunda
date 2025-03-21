@@ -14,6 +14,7 @@ import io.camunda.document.api.DocumentError;
 import io.camunda.document.api.DocumentError.DocumentAlreadyExists;
 import io.camunda.document.api.DocumentError.DocumentHashMismatch;
 import io.camunda.document.api.DocumentError.DocumentNotFound;
+import io.camunda.document.api.DocumentError.InvalidInput;
 import io.camunda.document.api.DocumentError.OperationNotSupported;
 import io.camunda.document.api.DocumentError.UnknownDocumentError;
 import io.camunda.document.api.DocumentLink;
@@ -27,6 +28,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
@@ -37,6 +39,7 @@ public class LocalStorageDocumentStore implements DocumentStore {
   public static final String METADATA_SUFFIX = "-metadata";
   private static final Logger LOGGER =
       org.slf4j.LoggerFactory.getLogger(LocalStorageDocumentStore.class);
+  private static final List<String> INVALID_DOCUMENT_ID_CHARACTERS = List.of("..", "/", "\\");
   private final Path storagePath;
   private final FileHandler fileHandler;
   private final ExecutorService executor;
@@ -107,6 +110,9 @@ public class LocalStorageDocumentStore implements DocumentStore {
   private Either<DocumentError, DocumentReference> createDocumentInternal(
       final DocumentCreationRequest request) {
     final String documentId = getDocumentId(request);
+    if (!documentIdIsValid(documentId)) {
+      return Either.left(new InvalidInput(generateInvalidDocumentIdMessage(documentId)));
+    }
     final Path documentFilePath = storagePath.resolve(documentId);
     final Path documentMetaDataFilePath = storagePath.resolve(documentId + METADATA_SUFFIX);
 
@@ -145,6 +151,9 @@ public class LocalStorageDocumentStore implements DocumentStore {
   }
 
   private Either<DocumentError, DocumentContent> getDocumentInternal(final String documentId) {
+    if (!documentIdIsValid(documentId)) {
+      return Either.left(new InvalidInput(generateInvalidDocumentIdMessage(documentId)));
+    }
     final Path documentPath = storagePath.resolve(documentId);
     final Path documentMetadataPath = storagePath.resolve(documentId + METADATA_SUFFIX);
 
@@ -201,5 +210,16 @@ public class LocalStorageDocumentStore implements DocumentStore {
 
   private static String getDocumentId(final DocumentCreationRequest request) {
     return request.documentId() == null ? UUID.randomUUID().toString() : request.documentId();
+  }
+
+  private boolean documentIdIsValid(final String documentId) {
+    return INVALID_DOCUMENT_ID_CHARACTERS.stream().noneMatch(documentId::contains);
+  }
+
+  private String generateInvalidDocumentIdMessage(final String documentId) {
+    return "Document ID '"
+        + documentId
+        + "' cannot contain the following: "
+        + String.join(", ", INVALID_DOCUMENT_ID_CHARACTERS);
   }
 }
