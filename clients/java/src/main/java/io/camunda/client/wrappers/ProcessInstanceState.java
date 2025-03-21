@@ -13,10 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.camunda.client.api.search.response;
+package io.camunda.client.wrappers;
 
 import io.camunda.client.impl.util.EnumUtil;
-import io.camunda.client.protocol.rest.ProcessInstanceStateEnum;
 
 public enum ProcessInstanceState {
   ACTIVE,
@@ -24,18 +23,22 @@ public enum ProcessInstanceState {
   TERMINATED,
   UNKNOWN_ENUM_VALUE;
 
-  public static ProcessInstanceStateEnum toProtocolState(final ProcessInstanceState value) {
-    return (value == null) ? null : ProcessInstanceStateEnum.fromValue(value.name());
+  public static io.camunda.client.protocol.rest.ProcessInstanceStateEnum toProtocolEnum(
+      final ProcessInstanceState value) {
+    return (value == null)
+        ? null
+        : io.camunda.client.protocol.rest.ProcessInstanceStateEnum.fromValue(value.name());
   }
 
-  public static ProcessInstanceState fromProtocolState(final ProcessInstanceStateEnum value) {
+  public static ProcessInstanceState fromProtocolEnum(
+      final io.camunda.client.protocol.rest.ProcessInstanceStateEnum value) {
     if (value == null) {
       return null;
     }
     try {
       return ProcessInstanceState.valueOf(value.name());
     } catch (final IllegalArgumentException e) {
-      EnumUtil.logUnknownEnumValue(value, "process instance state", values());
+      EnumUtil.logUnknownEnumValue(value, value.getClass().getName(), values());
       return UNKNOWN_ENUM_VALUE;
     }
   }

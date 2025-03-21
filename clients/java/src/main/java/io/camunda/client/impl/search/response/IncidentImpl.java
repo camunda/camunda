@@ -16,8 +16,6 @@
 package io.camunda.client.impl.search.response;
 
 import io.camunda.client.api.search.response.Incident;
-import io.camunda.client.api.search.response.IncidentErrorType;
-import io.camunda.client.api.search.response.IncidentState;
 import io.camunda.client.impl.util.ParseUtil;
 import io.camunda.client.protocol.rest.IncidentResult;
 import java.util.Objects;
@@ -28,12 +26,12 @@ public class IncidentImpl implements Incident {
   private final Long processDefinitionKey;
   private final String processDefinitionId;
   private final Long processInstanceKey;
-  private final IncidentErrorType errorType;
+  private final io.camunda.client.wrappers.IncidentResult.ErrorType errorType;
   private final String errorMessage;
   private final String flowNodeId;
   private final Long flowNodeInstanceKey;
   private final String creationTime;
-  private final IncidentState state;
+  private final io.camunda.client.wrappers.IncidentResult.State state;
   private final Long jobKey;
   private final String tenantId;
 
@@ -42,12 +40,13 @@ public class IncidentImpl implements Incident {
     processDefinitionKey = ParseUtil.parseLongOrNull(item.getProcessDefinitionKey());
     processDefinitionId = item.getProcessDefinitionId();
     processInstanceKey = ParseUtil.parseLongOrNull(item.getProcessInstanceKey());
-    errorType = IncidentErrorType.fromProtocolErrorType(item.getErrorType());
+    errorType =
+        io.camunda.client.wrappers.IncidentResult.ErrorType.fromProtocolEnum(item.getErrorType());
     errorMessage = item.getErrorMessage();
     flowNodeId = item.getFlowNodeId();
     flowNodeInstanceKey = ParseUtil.parseLongOrNull(item.getFlowNodeInstanceKey());
     creationTime = item.getCreationTime();
-    state = IncidentState.fromProtocolState(item.getState());
+    state = io.camunda.client.wrappers.IncidentResult.State.fromProtocolEnum(item.getState());
     jobKey = ParseUtil.parseLongOrNull(item.getJobKey());
     tenantId = item.getTenantId();
   }
@@ -73,7 +72,7 @@ public class IncidentImpl implements Incident {
   }
 
   @Override
-  public IncidentErrorType getErrorType() {
+  public io.camunda.client.wrappers.IncidentResult.ErrorType getErrorType() {
     return errorType;
   }
 
@@ -98,7 +97,7 @@ public class IncidentImpl implements Incident {
   }
 
   @Override
-  public IncidentState getState() {
+  public io.camunda.client.wrappers.IncidentResult.State getState() {
     return state;
   }
 

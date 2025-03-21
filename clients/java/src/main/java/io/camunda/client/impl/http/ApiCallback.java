@@ -22,6 +22,7 @@ import io.camunda.client.api.command.MalformedResponseException;
 import io.camunda.client.api.command.ProblemException;
 import io.camunda.client.impl.HttpStatusCode;
 import io.camunda.client.impl.http.ApiResponseConsumer.ApiResponse;
+import io.camunda.client.wrappers.ProblemDetail;
 import java.nio.charset.StandardCharsets;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -110,7 +111,8 @@ final class ApiCallback<HttpT, RespT> implements FutureCallback<ApiResponse<Http
       return;
     }
 
-    response.completeExceptionally(new ProblemException(code, reason, body.problem()));
+    response.completeExceptionally(
+        new ProblemException(code, reason, ProblemDetail.fromProtocolObject(body.problem())));
   }
 
   private void handleSuccessResponse(

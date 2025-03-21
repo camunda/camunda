@@ -44,7 +44,7 @@ public class AdHocSubprocessActivityResponseImpl implements AdHocSubprocessActiv
     private final String adHocSubprocessId;
     private final String elementId;
     private final String elementName;
-    private final AdHocSubprocessActivityType type;
+    private final io.camunda.client.wrappers.AdHocSubprocessActivityResult.Type type;
     private final String documentation;
     private final String tenantId;
 
@@ -54,7 +54,9 @@ public class AdHocSubprocessActivityResponseImpl implements AdHocSubprocessActiv
       adHocSubprocessId = result.getAdHocSubprocessId();
       elementId = result.getElementId();
       elementName = result.getElementName();
-      type = AdHocSubprocessActivityType.fromProtocolType(result.getType());
+      type =
+          io.camunda.client.wrappers.AdHocSubprocessActivityResult.Type.fromProtocolEnum(
+              result.getType());
       documentation = result.getDocumentation();
       tenantId = result.getTenantId();
     }
@@ -85,7 +87,7 @@ public class AdHocSubprocessActivityResponseImpl implements AdHocSubprocessActiv
     }
 
     @Override
-    public AdHocSubprocessActivityType getType() {
+    public io.camunda.client.wrappers.AdHocSubprocessActivityResult.Type getType() {
       return type;
     }
 

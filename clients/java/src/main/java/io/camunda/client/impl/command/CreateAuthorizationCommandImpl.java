@@ -30,12 +30,13 @@ import io.camunda.client.impl.http.HttpClient;
 import io.camunda.client.impl.response.CreateAuthorizationResponseImpl;
 import io.camunda.client.protocol.rest.AuthorizationCreateResult;
 import io.camunda.client.protocol.rest.AuthorizationRequest;
-import io.camunda.client.protocol.rest.OwnerTypeEnum;
-import io.camunda.client.protocol.rest.PermissionTypeEnum;
-import io.camunda.client.protocol.rest.ResourceTypeEnum;
+import io.camunda.client.wrappers.OwnerType;
+import io.camunda.client.wrappers.PermissionType;
+import io.camunda.client.wrappers.ResourceType;
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 import org.apache.hc.client5.http.config.RequestConfig;
 
 public class CreateAuthorizationCommandImpl
@@ -67,9 +68,9 @@ public class CreateAuthorizationCommandImpl
   }
 
   @Override
-  public CreateAuthorizationCommandStep3 ownerType(final OwnerTypeEnum ownerType) {
+  public CreateAuthorizationCommandStep3 ownerType(final OwnerType ownerType) {
     ArgumentUtil.ensureNotNull("ownerType", ownerType);
-    request.setOwnerType(ownerType);
+    request.setOwnerType(OwnerType.toProtocolEnum(ownerType));
     return this;
   }
 
@@ -82,17 +83,19 @@ public class CreateAuthorizationCommandImpl
   }
 
   @Override
-  public CreateAuthorizationCommandStep5 resourceType(final ResourceTypeEnum resourceType) {
+  public CreateAuthorizationCommandStep5 resourceType(final ResourceType resourceType) {
     ArgumentUtil.ensureNotNull("resourceType", resourceType);
-    request.setResourceType(resourceType);
+    request.setResourceType(ResourceType.toProtocolEnum(resourceType));
     return this;
   }
 
   @Override
-  public CreateAuthorizationCommandStep6 permissionTypes(
-      final PermissionTypeEnum... permissionTypes) {
+  public CreateAuthorizationCommandStep6 permissionTypes(final PermissionType... permissionTypes) {
     ArgumentUtil.ensureNotNull("permissionTypes", permissionTypes);
-    request.setPermissionTypes(Arrays.asList(permissionTypes));
+    request.setPermissionTypes(
+        Arrays.stream(permissionTypes)
+            .map(PermissionType::toProtocolEnum)
+            .collect(Collectors.toList()));
     return this;
   }
 

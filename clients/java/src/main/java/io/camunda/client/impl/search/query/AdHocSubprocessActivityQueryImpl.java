@@ -50,7 +50,9 @@ public class AdHocSubprocessActivityQueryImpl implements AdHocSubprocessActivity
 
   @Override
   public AdHocSubprocessActivityQuery filter(final AdHocSubprocessActivityFilter filter) {
-    request.setFilter(filter.getRequestFilter());
+    request.setFilter(
+        io.camunda.client.wrappers.AdHocSubprocessActivityFilter.toProtocolObject(
+            filter.getRequestFilter()));
     return this;
   }
 

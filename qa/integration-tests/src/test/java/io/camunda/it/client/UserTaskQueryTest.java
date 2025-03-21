@@ -7,8 +7,6 @@
  */
 package io.camunda.it.client;
 
-import static io.camunda.client.api.search.response.UserTaskState.COMPLETED;
-import static io.camunda.client.api.search.response.UserTaskState.CREATED;
 import static io.camunda.qa.util.multidb.CamundaMultiDBExtension.TIMEOUT_DATA_AVAILABILITY;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -16,9 +14,10 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.command.ProblemException;
 import io.camunda.client.api.search.response.UserTask;
-import io.camunda.client.api.search.response.UserTaskState;
-import io.camunda.client.impl.search.filter.builder.StringPropertyImpl;
+import io.camunda.client.protocol.rest.StringFilterProperty;
 import io.camunda.client.protocol.rest.UserTaskVariableFilterRequest;
+import io.camunda.client.wrappers.UserTaskFilter;
+import io.camunda.client.wrappers.UserTaskResult;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import java.io.InputStream;
@@ -256,7 +255,12 @@ class UserTaskQueryTest {
             () ->
                 camundaClient
                     .newUserTaskQuery()
-                    .filter(f -> f.processInstanceVariables(List.of(variableValueFilter)))
+                    .filter(
+                        f ->
+                            f.processInstanceVariables(
+                                List.of(
+                                    io.camunda.client.wrappers.UserTaskVariableFilterRequest
+                                        .fromProtocolObject(variableValueFilter))))
                     .send()
                     .join());
     // then
@@ -290,12 +294,17 @@ class UserTaskQueryTest {
     final UserTaskVariableFilterRequest variableValueFilter1 =
         new UserTaskVariableFilterRequest()
             .name("task01")
-            .value(new StringPropertyImpl().like("\"te*\"").build());
+            .value(new StringFilterProperty().$like("\"te*\""));
 
     final var result =
         camundaClient
             .newUserTaskQuery()
-            .filter(f -> f.localVariables(List.of(variableValueFilter1)))
+            .filter(
+                f ->
+                    f.localVariables(
+                        List.of(
+                            io.camunda.client.wrappers.UserTaskVariableFilterRequest
+                                .fromProtocolObject(variableValueFilter1))))
             .send()
             .join();
     assertThat(result.items().size()).isEqualTo(1);
@@ -306,12 +315,17 @@ class UserTaskQueryTest {
     final UserTaskVariableFilterRequest variableValueFilter1 =
         new UserTaskVariableFilterRequest()
             .name("task01")
-            .value(new StringPropertyImpl().in("\"test\"").build());
+            .value(new StringFilterProperty().add$InItem("\"test\""));
 
     final var result =
         camundaClient
             .newUserTaskQuery()
-            .filter(f -> f.localVariables(List.of(variableValueFilter1)))
+            .filter(
+                f ->
+                    f.localVariables(
+                        List.of(
+                            io.camunda.client.wrappers.UserTaskVariableFilterRequest
+                                .fromProtocolObject(variableValueFilter1))))
             .send()
             .join();
     assertThat(result.items().size()).isEqualTo(1);
@@ -346,14 +360,26 @@ class UserTaskQueryTest {
   @Test
   public void shouldRetrieveTaskByState() {
     final var resultCreated =
-        camundaClient.newUserTaskQuery().filter(f -> f.state(CREATED)).send().join();
+        camundaClient
+            .newUserTaskQuery()
+            .filter(f -> f.state(UserTaskFilter.State.CREATED))
+            .send()
+            .join();
     assertThat(resultCreated.items().size()).isEqualTo(7);
-    resultCreated.items().forEach(item -> assertThat(item.getState()).isEqualTo(CREATED));
+    resultCreated
+        .items()
+        .forEach(item -> assertThat(item.getState()).isEqualTo(UserTaskResult.State.CREATED));
 
     final var resultCompleted =
-        camundaClient.newUserTaskQuery().filter(f -> f.state(COMPLETED)).send().join();
+        camundaClient
+            .newUserTaskQuery()
+            .filter(f -> f.state(UserTaskFilter.State.COMPLETED))
+            .send()
+            .join();
     assertThat(resultCompleted.items().size()).isEqualTo(1);
-    resultCompleted.items().forEach(item -> assertThat(item.getState()).isEqualTo(COMPLETED));
+    resultCompleted
+        .items()
+        .forEach(item -> assertThat(item.getState()).isEqualTo(UserTaskResult.State.COMPLETED));
   }
 
   @Test
@@ -840,7 +866,7 @@ class UserTaskQueryTest {
     final var userTaskListComplete =
         camundaClient
             .newUserTaskQuery()
-            .filter(f -> f.state(UserTaskState.COMPLETED))
+            .filter(f -> f.state(UserTaskFilter.State.COMPLETED))
             .page(p -> p.limit(1))
             .send()
             .join();
@@ -876,7 +902,7 @@ class UserTaskQueryTest {
     final var userTaskListComplete =
         camundaClient
             .newUserTaskQuery()
-            .filter(f -> f.state(UserTaskState.COMPLETED))
+            .filter(f -> f.state(UserTaskFilter.State.COMPLETED))
             .page(p -> p.limit(1))
             .send()
             .join();
@@ -911,7 +937,7 @@ class UserTaskQueryTest {
     final var userTaskListComplete =
         camundaClient
             .newUserTaskQuery()
-            .filter(f -> f.state(UserTaskState.COMPLETED))
+            .filter(f -> f.state(UserTaskFilter.State.COMPLETED))
             .page(p -> p.limit(1))
             .send()
             .join();
@@ -952,7 +978,7 @@ class UserTaskQueryTest {
     final var userTaskListComplete =
         camundaClient
             .newUserTaskQuery()
-            .filter(f -> f.state(UserTaskState.COMPLETED))
+            .filter(f -> f.state(UserTaskFilter.State.COMPLETED))
             .page(p -> p.limit(1))
             .send()
             .join();
@@ -1001,7 +1027,7 @@ class UserTaskQueryTest {
         .items()
         .forEach(
             item -> {
-              assertThat(item.getState()).isEqualTo(UserTaskState.COMPLETED);
+              assertThat(item.getState()).isEqualTo(UserTaskResult.State.COMPLETED);
               assertThat(item.getCompletionDate()).isNotNull();
             });
   }
@@ -1027,7 +1053,7 @@ class UserTaskQueryTest {
     final var userTaskListComplete =
         camundaClient
             .newUserTaskQuery()
-            .filter(f -> f.state(UserTaskState.COMPLETED))
+            .filter(f -> f.state(UserTaskFilter.State.COMPLETED))
             .page(p -> p.limit(1))
             .send()
             .join();
@@ -1060,7 +1086,7 @@ class UserTaskQueryTest {
     final var userTaskListComplete =
         camundaClient
             .newUserTaskQuery()
-            .filter(f -> f.state(UserTaskState.COMPLETED))
+            .filter(f -> f.state(UserTaskFilter.State.COMPLETED))
             .page(p -> p.limit(1))
             .send()
             .join();
@@ -1093,7 +1119,7 @@ class UserTaskQueryTest {
     final var userTaskListComplete =
         camundaClient
             .newUserTaskQuery()
-            .filter(f -> f.state(UserTaskState.COMPLETED))
+            .filter(f -> f.state(UserTaskFilter.State.COMPLETED))
             .page(p -> p.limit(1))
             .send()
             .join();
@@ -1342,7 +1368,11 @@ class UserTaskQueryTest {
                   camundaClient.newUserTaskQuery().filter(f -> f.assignee("demo")).send().join();
               assertThat(result.items().size()).isEqualTo(1);
               final var resultComplete =
-                  camundaClient.newUserTaskQuery().filter(f -> f.state(COMPLETED)).send().join();
+                  camundaClient
+                      .newUserTaskQuery()
+                      .filter(f -> f.state(UserTaskFilter.State.COMPLETED))
+                      .send()
+                      .join();
               assertThat(resultComplete.items().size()).isEqualTo(1);
             });
   }

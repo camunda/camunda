@@ -17,12 +17,13 @@ package io.camunda.client.impl.search.filter.builder;
 
 import io.camunda.client.api.search.filter.builder.BasicLongProperty;
 import io.camunda.client.impl.util.CollectionUtil;
-import io.camunda.client.protocol.rest.BasicStringFilterProperty;
+import io.camunda.client.wrappers.BasicStringFilterProperty;
 import java.util.List;
 import java.util.stream.Collectors;
 
 public class BasicLongPropertyImpl implements BasicLongProperty {
-  private final BasicStringFilterProperty filterProperty = new BasicStringFilterProperty();
+  private final io.camunda.client.protocol.rest.BasicStringFilterProperty filterProperty =
+      new io.camunda.client.protocol.rest.BasicStringFilterProperty();
 
   @Override
   public BasicLongProperty eq(final Long value) {
@@ -55,6 +56,6 @@ public class BasicLongPropertyImpl implements BasicLongProperty {
 
   @Override
   public BasicStringFilterProperty build() {
-    return filterProperty;
+    return BasicStringFilterProperty.fromProtocolObject(filterProperty);
   }
 }

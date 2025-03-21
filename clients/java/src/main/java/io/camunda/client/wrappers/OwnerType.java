@@ -13,31 +13,34 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.camunda.client.api.search.response;
+package io.camunda.client.wrappers;
 
 import io.camunda.client.impl.util.EnumUtil;
-import io.camunda.client.protocol.rest.UserTaskFilter;
-import io.camunda.client.protocol.rest.UserTaskResult;
 
-public enum UserTaskState {
-  CREATED,
-  COMPLETED,
-  CANCELED,
-  FAILED,
+public enum OwnerType {
+  USER,
+  ROLE,
+  GROUP,
+  MAPPING,
+  UNSPECIFIED,
   UNKNOWN_ENUM_VALUE;
 
-  public static UserTaskFilter.StateEnum toProtocolState(final UserTaskState value) {
-    return (value == null) ? null : UserTaskFilter.StateEnum.fromValue(value.name());
+  public static io.camunda.client.protocol.rest.OwnerTypeEnum toProtocolEnum(
+      final OwnerType value) {
+    return (value == null)
+        ? null
+        : io.camunda.client.protocol.rest.OwnerTypeEnum.fromValue(value.name());
   }
 
-  public static UserTaskState fromProtocolState(final UserTaskResult.StateEnum value) {
+  public static OwnerType fromProtocolEnum(
+      final io.camunda.client.protocol.rest.OwnerTypeEnum value) {
     if (value == null) {
       return null;
     }
     try {
-      return UserTaskState.valueOf(value.name());
+      return OwnerType.valueOf(value.name());
     } catch (final IllegalArgumentException e) {
-      EnumUtil.logUnknownEnumValue(value, "user task state", values());
+      EnumUtil.logUnknownEnumValue(value, value.getClass().getName(), values());
       return UNKNOWN_ENUM_VALUE;
     }
   }
