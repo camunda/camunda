@@ -7,6 +7,7 @@
  */
 package io.camunda.it.client;
 
+import static io.camunda.client.api.search.response.IncidentState.ACTIVE;
 import static io.camunda.it.client.QueryTest.deployResource;
 import static io.camunda.it.client.QueryTest.startProcessInstance;
 import static io.camunda.it.client.QueryTest.waitForProcessInstancesToStart;
@@ -71,6 +72,20 @@ class IncidentQueryTest {
   @AfterAll
   static void afterAll() {
     DEPLOYED_PROCESSES.clear();
+  }
+
+  @Test
+  void testIncidentsAreActive() {
+    // incidents are updated by background task, PENDING state is changed on ACTIVE
+    camundaClient
+        .newIncidentQuery()
+        .send()
+        .join()
+        .items()
+        .forEach(
+            incident -> {
+              assertThat(incident.getState()).isEqualTo(ACTIVE);
+            });
   }
 
   @Test
