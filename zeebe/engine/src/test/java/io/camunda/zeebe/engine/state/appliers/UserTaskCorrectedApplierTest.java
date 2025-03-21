@@ -36,13 +36,13 @@ public class UserTaskCorrectedApplierTest {
   private MutableUserTaskState userTaskState;
 
   /** For setting up the state before testing the applier. */
-  private TestSetup testSetup;
+  private AppliersTestSetupHelper testSetup;
 
   @BeforeEach
   public void setup() {
     userTaskCorrectedApplier = new UserTaskCorrectedApplier(processingState);
     userTaskState = processingState.getUserTaskState();
-    testSetup = new TestSetup(processingState);
+    testSetup = new AppliersTestSetupHelper(processingState);
   }
 
   /**
@@ -139,28 +139,5 @@ public class UserTaskCorrectedApplierTest {
           throw new IllegalArgumentException(
               "Unexpected lifecycle state %s received".formatted(state));
     };
-  }
-
-  private static final class TestSetup {
-
-    private final EventAppliers eventAppliers;
-
-    TestSetup(final MutableProcessingState processingState) {
-      eventAppliers = new EventAppliers();
-      eventAppliers.registerEventAppliers(processingState);
-    }
-
-    /**
-     * Applies the event of the given intent to the state.
-     *
-     * @implNote applies the event using the latest version of the record.
-     * @param intent the intent of the event to apply
-     * @param userTaskRecord data of the event to apply
-     */
-    private void applyEventToState(
-        final long userTaskKey, final UserTaskIntent intent, final UserTaskRecord userTaskRecord) {
-      final int latestVersion = eventAppliers.getLatestVersion(intent);
-      eventAppliers.applyState(userTaskKey, intent, userTaskRecord, latestVersion);
-    }
   }
 }

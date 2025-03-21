@@ -372,6 +372,13 @@ public class TaskListenerBlockedTransitionTest {
     assertThat(jobRecords(JobIntent.CANCELED).withProcessInstanceKey(processInstanceKey).getFirst())
         .extracting(Record::getKey)
         .isEqualTo(listenerJob.getKey());
+
+    helper.assertUserTaskIntentsSequence(
+        processInstanceKey,
+        UserTaskIntent.ASSIGNING,
+        UserTaskIntent.COMPLETE_TASK_LISTENER,
+        UserTaskIntent.CANCELING,
+        UserTaskIntent.CANCELED);
   }
 
   @Test
@@ -402,6 +409,13 @@ public class TaskListenerBlockedTransitionTest {
                 .getFirst())
         .extracting(Record::getKey)
         .isEqualTo(incident.getKey());
+
+    helper.assertUserTaskIntentsSequence(
+        processInstanceKey,
+        UserTaskIntent.ASSIGNING,
+        UserTaskIntent.COMPLETE_TASK_LISTENER,
+        UserTaskIntent.CANCELING,
+        UserTaskIntent.CANCELED);
   }
 
   @Test
