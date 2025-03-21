@@ -198,6 +198,10 @@ public class RestErrorMapper {
             "Target broker was not the leader of the partition: {}", error, rootError);
         yield createProblemDetail(HttpStatus.SERVICE_UNAVAILABLE, message, title);
       }
+      case MALFORMED_REQUEST -> {
+        REST_GATEWAY_LOGGER.debug("Malformed request: {}", error, rootError);
+        yield createProblemDetail(HttpStatus.BAD_REQUEST, message, title);
+      }
       default -> {
         // all the following are for cases where retrying (with the same gateway) is not
         // expected
