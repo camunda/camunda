@@ -35,15 +35,10 @@ runs:
       run: |
         brew install coreutils
         echo -n "$INPUT_P12_BASE64" | gbase64 --decode > dev_id.p12
-
         security create-keychain -p "" build.keychain
         security set-keychain-settings -lut 3600 build.keychain
         security unlock-keychain -p "" build.keychain
-
-        security import dev_id.p12 -k build.keychain \
-          -P $INPUT_P12_PASSWORD \
-          -T /usr/bin/codesign
-
+        security import dev_id.p12 -k build.keychain -P "$INPUT_P12_PASSWORD" -T /usr/bin/codesign
         security list-keychains -s build.keychain $(security list-keychains | sed 's/\"//g')
         security default-keychain -s build.keychain
       env:
