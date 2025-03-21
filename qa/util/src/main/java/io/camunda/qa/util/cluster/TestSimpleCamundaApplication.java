@@ -263,4 +263,8 @@ public final class TestSimpleCamundaApplication
   public TestRestTasklistClient newTasklistClient() {
     return new TestRestTasklistClient(restAddress());
   }
+
+  public TestRestOperateClient newOperateClient(final String username, final String password) {
+    return new TestRestOperateClient(restAddress(), username, password);
+  }
 }
