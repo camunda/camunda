@@ -79,7 +79,7 @@ jobs:
           JAVA_ARTIFACTS_USER: ${{ steps.secrets.outputs.NEXUS_USERNAME }}
           JAVA_ARTIFACTS_PASSWORD: ${{ steps.secrets.outputs.NEXUS_PASSWORD }}
 
-      - name: make a package
+      - name: extract package
         if: matrix.os == 'macos-latest' || matrix.os == 'macos-13'
         run: |
           mkdir tmp
