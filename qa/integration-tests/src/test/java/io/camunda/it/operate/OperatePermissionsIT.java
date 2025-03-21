@@ -7,15 +7,11 @@
  */
 package io.camunda.it.operate;
 
-import static io.camunda.client.protocol.rest.PermissionTypeEnum.CREATE;
 import static io.camunda.client.protocol.rest.PermissionTypeEnum.READ_PROCESS_DEFINITION;
 import static io.camunda.client.protocol.rest.PermissionTypeEnum.READ_PROCESS_INSTANCE;
 import static io.camunda.client.protocol.rest.ResourceTypeEnum.PROCESS_DEFINITION;
-import static io.camunda.client.protocol.rest.ResourceTypeEnum.RESOURCE;
 import static io.camunda.it.client.QueryTest.deployResource;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatException;
-import static org.assertj.core.api.Assertions.assertThatNoException;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.response.Process;
@@ -44,17 +40,13 @@ public class OperatePermissionsIT {
   static final TestSimpleCamundaApplication STANDALONE_CAMUNDA =
       new TestSimpleCamundaApplication().withAuthorizationsEnabled().withBasicAuth();
 
-  private static final String ADMIN_USERNAME = "admin";
+  private static CamundaClient camundaClient;
+
   private static final String SUPER_USER_USERNAME = "super";
   private static final String RESTRICTED_USER_USERNAME = "restricted";
   private static final String PROCESS_DEFINITION_ID_1 = "service_tasks_v1";
   private static final String PROCESS_DEFINITION_ID_2 = "incident_process_v1";
   private static final List<Process> DEPLOYED_PROCESSES = new ArrayList<>();
-
-  @UserDefinition
-  private static final User ADMIN =
-      new User(
-          ADMIN_USERNAME, "password", List.of(new Permissions(RESOURCE, CREATE, List.of("*"))));
 
   @UserDefinition
   private static final User SUPER_USER =
@@ -72,22 +64,22 @@ public class OperatePermissionsIT {
           "password",
           List.of(
               new Permissions(
-                  PROCESS_DEFINITION, READ_PROCESS_DEFINITION, List.of(PROCESS_DEFINITION_ID_1))));
+                  PROCESS_DEFINITION, READ_PROCESS_INSTANCE, List.of(PROCESS_DEFINITION_ID_1))));
 
   @BeforeAll
   public static void beforeAll(
-      @Authenticated(ADMIN_USERNAME) final CamundaClient adminClient,
-      @Authenticated(SUPER_USER_USERNAME) final CamundaClient superUserClient)
+      @Authenticated(SUPER_USER_USERNAME) final CamundaClient superUserClient,
+      @Authenticated(RESTRICTED_USER_USERNAME) final CamundaClient restrictedUserClient)
       throws Exception {
     final List<String> processes = List.of(PROCESS_DEFINITION_ID_1, PROCESS_DEFINITION_ID_2);
     processes.forEach(
         process ->
             DEPLOYED_PROCESSES.addAll(
-                deployResource(adminClient, String.format("process/%s.bpmn", process))
+                deployResource(camundaClient, String.format("process/%s.bpmn", process))
                     .getProcesses()));
     assertThat(DEPLOYED_PROCESSES).hasSize(processes.size());
 
-    waitForProcessesToBeDeployed(superUserClient, DEPLOYED_PROCESSES.size());
+    waitForProcessesToBeDeployed(camundaClient, DEPLOYED_PROCESSES.size());
   }
 
   @AfterAll
@@ -96,8 +88,7 @@ public class OperatePermissionsIT {
   }
 
   @Test
-  public void shouldGetProcessByKeyOnlyForAuthorizedProcesses(
-      @Authenticated(RESTRICTED_USER_USERNAME) final CamundaClient restrictedClient) {
+  public void shouldGetProcessByKeyOnlyForAuthorizedProcesses() {
     // super user can read all process definitions
     final var operateClient =
         STANDALONE_CAMUNDA.newOperateClient(SUPER_USER.username(), SUPER_USER.password());
@@ -105,28 +96,32 @@ public class OperatePermissionsIT {
     assertThat(
             DEPLOYED_PROCESSES.stream()
                 .map(Process::getProcessDefinitionKey)
-                .allMatch((key) -> operateClient.internalGetProcessDefinitionByKey(key).isRight()))
+                .allMatch(
+                    (key) ->
+                        operateClient.internalGetProcessDefinitionByKey(key).get().statusCode()
+                            == 200))
         .isTrue();
 
     // restricted user can read process definition 1
-    assertThatNoException()
-        .isThrownBy(
-            () ->
-                restrictedClient
-                    .newProcessDefinitionGetRequest(
-                        DEPLOYED_PROCESSES.get(0).getProcessDefinitionKey())
-                    .send()
-                    .join());
+    final var restrictedOperateClient =
+        STANDALONE_CAMUNDA.newOperateClient(RESTRICTED_USER.username(), RESTRICTED_USER.password());
+
+    assertThat(
+            restrictedOperateClient
+                .internalGetProcessDefinitionByKey(
+                    DEPLOYED_PROCESSES.get(0).getProcessDefinitionKey())
+                .get()
+                .statusCode())
+        .isEqualTo(200);
 
     // restricted user cannot read process definition 2
-    assertThatException()
-        .isThrownBy(
-            () ->
-                restrictedClient
-                    .newProcessDefinitionGetRequest(
-                        DEPLOYED_PROCESSES.get(1).getProcessDefinitionKey())
-                    .send()
-                    .join());
+    assertThat(
+            restrictedOperateClient
+                .internalGetProcessDefinitionByKey(
+                    DEPLOYED_PROCESSES.get(1).getProcessDefinitionKey())
+                .get()
+                .statusCode())
+        .isEqualTo(403);
   }
 
   private static void waitForProcessesToBeDeployed(
