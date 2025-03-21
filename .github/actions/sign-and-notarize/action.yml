@@ -34,16 +34,13 @@ runs:
       shell: bash
       run: |
         #brew install coreutils
-        echo -n "$INPUT_P12_BASE64" | base64 --decode > dev_id.p12
+        echo -n "$APPLE_CERTIFICATE" | base64 --decode > dev_id.p12
         security create-keychain -p "" build.keychain
         security unlock-keychain -p "" build.keychain
         security set-keychain-settings -t 3600 -u build.keychain
-        security import dev_id.p12 -k build.keychain -P "$INPUT_P12_PASSWORD" -T /usr/bin/codesign
+        security import dev_id.p12 -k build.keychain -P "$APPLE_CERTIFICATE_PASSWORD" -T /usr/bin/codesign
         security list-keychains -s build.keychain $(security list-keychains | sed 's/\"//g')
         security default-keychain -s build.keychain
-      env:
-        INPUT_P12_BASE64: ${{ inputs.p12-base64 }}
-        INPUT_P12_PASSWORD: ${{ inputs.p12-password }}
 
     # STEP B: Make signing script executable
     - name: Make script executable
