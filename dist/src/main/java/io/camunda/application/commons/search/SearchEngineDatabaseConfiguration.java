@@ -9,13 +9,14 @@ package io.camunda.application.commons.search;
 
 import io.camunda.application.commons.search.SearchEngineDatabaseConfiguration.SearchEngineConnectProperties;
 import io.camunda.application.commons.search.SearchEngineDatabaseConfiguration.SearchEngineIndexProperties;
-import io.camunda.application.commons.search.SearchEngineDatabaseConfiguration.SearchEngineInitializationProperties;
 import io.camunda.application.commons.search.SearchEngineDatabaseConfiguration.SearchEngineRetentionProperties;
+import io.camunda.application.commons.search.SearchEngineDatabaseConfiguration.SearchEngineSchemaManagerProperties;
 import io.camunda.exporter.config.ExporterConfiguration.IndexSettings;
 import io.camunda.exporter.config.ExporterConfiguration.RetentionConfiguration;
 import io.camunda.exporter.schema.config.SchemaManagerConfiguration;
 import io.camunda.exporter.schema.config.SearchEngineConfiguration;
 import io.camunda.search.connect.configuration.ConnectConfiguration;
+import io.camunda.zeebe.util.VisibleForTesting;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
@@ -28,7 +29,7 @@ import org.springframework.context.annotation.Configuration;
   SearchEngineConnectProperties.class,
   SearchEngineIndexProperties.class,
   SearchEngineRetentionProperties.class,
-  SearchEngineInitializationProperties.class,
+  SearchEngineSchemaManagerProperties.class,
 })
 public class SearchEngineDatabaseConfiguration {
 
@@ -43,13 +44,13 @@ public class SearchEngineDatabaseConfiguration {
       final SearchEngineConnectProperties searchEngineConnectProperties,
       final SearchEngineIndexProperties searchEngineIndexProperties,
       final SearchEngineRetentionProperties searchEngineRetentionProperties,
-      final SearchEngineInitializationProperties searchEngineInitializationProperties) {
+      final SearchEngineSchemaManagerProperties searchEngineSchemaManagerProperties) {
     return SearchEngineConfiguration.of(
         b ->
             b.connect(searchEngineConnectProperties)
                 .index(searchEngineIndexProperties)
                 .retention(searchEngineRetentionProperties)
-                .schemaManager(searchEngineInitializationProperties));
+                .schemaManager(searchEngineSchemaManagerProperties));
   }
 
   @ConfigurationProperties("camunda.database")
@@ -61,7 +62,14 @@ public class SearchEngineDatabaseConfiguration {
   @ConfigurationProperties("camunda.database.retention")
   public static final class SearchEngineRetentionProperties extends RetentionConfiguration {}
 
-  @ConfigurationProperties("camunda.database.initialization")
-  public static final class SearchEngineInitializationProperties
-      extends SchemaManagerConfiguration {}
+  @ConfigurationProperties("camunda.database.schema-manager")
+  public static final class SearchEngineSchemaManagerProperties extends SchemaManagerConfiguration {
+    @VisibleForTesting
+    public static final String CREATE_SCHEMA_PROPERTY =
+        "camunda.database.schema-manager.createSchema";
+
+    @VisibleForTesting
+    public static final String CREATE_SCHEMA_ENV_VAR =
+        "CAMUNDA_DATABASE_SCHEMA_MANAGER_CREATE_SCHEMA";
+  }
 }

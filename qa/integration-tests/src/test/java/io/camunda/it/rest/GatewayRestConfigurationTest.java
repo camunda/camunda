@@ -7,6 +7,7 @@
  */
 package io.camunda.it.rest;
 
+import static io.camunda.application.commons.search.SearchEngineDatabaseConfiguration.SearchEngineSchemaManagerProperties.CREATE_SCHEMA_PROPERTY;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.application.commons.CommonsModuleConfiguration;
@@ -19,7 +20,8 @@ import org.springframework.boot.test.context.SpringBootTest;
     classes = {CommonsModuleConfiguration.class},
     properties = {
       "camunda.rest.process-cache.max-size=1000",
-      "camunda.rest.process-cache.expiration-idle-millis=360000"
+      "camunda.rest.process-cache.expiration-idle-millis=360000",
+      CREATE_SCHEMA_PROPERTY + "=false",
     })
 public class GatewayRestConfigurationTest {
 

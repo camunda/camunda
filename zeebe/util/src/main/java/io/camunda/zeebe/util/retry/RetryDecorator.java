@@ -11,7 +11,7 @@ import io.github.resilience4j.core.IntervalBiFunction;
 import io.github.resilience4j.core.IntervalFunction;
 import io.github.resilience4j.retry.Retry;
 import io.github.resilience4j.retry.RetryConfig;
-import io.github.resilience4j.retry.RetryRegistry;
+import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.function.Predicate;
 import org.slf4j.Logger;
@@ -20,7 +20,6 @@ import org.slf4j.LoggerFactory;
 public class RetryDecorator {
 
   private static final Logger LOG = LoggerFactory.getLogger(RetryDecorator.class);
-  private static final double RETRY_DELAY_MULTIPLIER = 2;
   private final RetryConfiguration retryConfiguration;
   private final Predicate<Throwable> retryOnExceptionPredicate;
 
@@ -32,15 +31,11 @@ public class RetryDecorator {
   }
 
   public RetryDecorator(final RetryConfiguration retryConfiguration) {
-    this(retryConfiguration, e -> false);
+    this(retryConfiguration, e -> true);
   }
 
   public RetryDecorator withRetryOnException(final Predicate<Throwable> retryOnExceptionPredicate) {
     return new RetryDecorator(retryConfiguration, retryOnExceptionPredicate);
-  }
-
-  public RetryDecorator withRetryOnAllExceptions() {
-    return new RetryDecorator(retryConfiguration, e -> true);
   }
 
   public <T> T decorate(
@@ -50,9 +45,9 @@ public class RetryDecorator {
     return Retry.decorateCallable(retry, callable).call();
   }
 
-  public void decorate(final String message, final Runnable callable) {
+  public void decorate(final String message, final Runnable runnable) {
     final Retry retry = buildRetry(message, null);
-    Retry.decorateRunnable(retry, callable).run();
+    Retry.decorateRunnable(retry, runnable).run();
   }
 
   private <T> Retry buildRetry(final String message, final Predicate<T> retryPredicate) {
@@ -63,15 +58,14 @@ public class RetryDecorator {
                 IntervalBiFunction.ofIntervalFunction(
                     IntervalFunction.ofExponentialRandomBackoff(
                         retryConfiguration.getMinRetryDelay(),
-                        RETRY_DELAY_MULTIPLIER,
+                        retryConfiguration.getRetryDelayMultiplier(),
                         retryConfiguration.getMaxRetryDelay())))
             .retryOnException(retryOnExceptionPredicate);
     if (retryPredicate != null) {
       retryConfigBuilder.retryOnResult(retryPredicate);
     }
     final var config = retryConfigBuilder.build();
-    final RetryRegistry registry = RetryRegistry.of(config);
-    final Retry retry = registry.retry("operation-retry");
+    final Retry retry = Retry.of(UUID.randomUUID().toString(), config);
 
     retry
         .getEventPublisher()

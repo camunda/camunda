@@ -54,18 +54,7 @@ public class SchemaManager {
     this.indexTemplateDescriptors = indexTemplateDescriptors;
     this.config = config;
     this.objectMapper = objectMapper;
-    retryDecorator =
-        new RetryDecorator(config.schemaManager().getRetry())
-            .withRetryOnException(
-                e -> {
-                  if (e.getCause() instanceof java.net.ConnectException) {
-                    LOG.warn(
-                        "Could not connect to search engine, skipping schema creation", e); // FIXME
-                    return false;
-                  } else {
-                    return true;
-                  }
-                });
+    retryDecorator = new RetryDecorator(config.schemaManager().getRetry());
   }
 
   public void startup() {

@@ -61,16 +61,15 @@ public class StartupIT {
     final String elsHost = testContext.getInternalElsHost();
     final Integer elsPort = testContext.getInternalElsPort();
 
+    final String elasticsearchUrl = String.format("http://%s:%s", elsHost, elsPort);
     operateContainer
-        .withEnv(
-            "CAMUNDA_OPERATE_ELASTICSEARCH_URL", String.format("http://%s:%s", elsHost, elsPort))
+        .withEnv("CAMUNDA_OPERATE_ELASTICSEARCH_URL", elasticsearchUrl)
         .withEnv("CAMUNDA_OPERATE_ELASTICSEARCH_HOST", elsHost)
         .withEnv("CAMUNDA_OPERATE_ELASTICSEARCH_PORT", String.valueOf(elsPort))
-        .withEnv(
-            "CAMUNDA_OPERATE_ZEEBEELASTICSEARCH_URL",
-            String.format("http://%s:%s", elsHost, elsPort))
+        .withEnv("CAMUNDA_OPERATE_ZEEBEELASTICSEARCH_URL", elasticsearchUrl)
         .withEnv("CAMUNDA_OPERATE_ZEEBEELASTICSEARCH_HOST", elsHost)
-        .withEnv("CAMUNDA_OPERATE_ZEEBEELASTICSEARCH_PORT", String.valueOf(elsPort));
+        .withEnv("CAMUNDA_OPERATE_ZEEBEELASTICSEARCH_PORT", String.valueOf(elsPort))
+        .withEnv("CAMUNDA_DATABASE_URL", elasticsearchUrl);
 
     testContainerUtil.startOperateContainer(operateContainer, testContext);
     LOGGER.info("************ Operate started  ************");

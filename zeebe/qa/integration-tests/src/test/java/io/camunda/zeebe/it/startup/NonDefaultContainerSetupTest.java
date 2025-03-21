@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.it.startup;
 
+import static io.camunda.application.commons.search.SearchEngineDatabaseConfiguration.SearchEngineSchemaManagerProperties.CREATE_SCHEMA_ENV_VAR;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.github.dockerjava.api.command.CreateContainerCmd;
@@ -70,6 +71,7 @@ public class NonDefaultContainerSetupTest {
   void runWithContainerSetup(final Consumer<CreateContainerCmd> containerModifier) {
     try (final ZeebeBrokerContainer broker =
             new ZeebeBrokerContainer(ZeebeTestContainerDefaults.defaultTestImage())
+                .withEnv(CREATE_SCHEMA_ENV_VAR, "false")
                 .withCreateContainerCmdModifier(containerModifier);
         final ZeebeGatewayContainer gateway =
             new ZeebeGatewayContainer(ZeebeTestContainerDefaults.defaultTestImage())
@@ -78,7 +80,8 @@ public class NonDefaultContainerSetupTest {
                 .dependsOn(broker)
                 .withEnv(
                     "ZEEBE_GATEWAY_CLUSTER_INITIALCONTACTPOINTS",
-                    broker.getInternalClusterAddress())) {
+                    broker.getInternalClusterAddress())
+                .withEnv(CREATE_SCHEMA_ENV_VAR, "false")) {
       // given
       broker.start();
       gateway.start();

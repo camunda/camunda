@@ -47,6 +47,7 @@ public class ProcessMigrationProperties {
     private static final int DEFAULT_MAX_RETRIES = 3;
     private static final Duration DEFAULT_MIN_RETRY_DELAY = Duration.ofSeconds(1);
     private static final Duration DEFAULT_MAX_RETRY_DELAY = Duration.ofMinutes(1);
+    private static final double DEFAULT_MULTIPLIER = 2.0;
 
     @Override
     public int defaultMaxRetries() {
@@ -61,6 +62,11 @@ public class ProcessMigrationProperties {
     @Override
     public Duration defaultMaxRetryDelay() {
       return DEFAULT_MAX_RETRY_DELAY;
+    }
+
+    @Override
+    public double defaultRetryDelayMultiplier() {
+      return DEFAULT_MULTIPLIER;
     }
   }
 }
