@@ -22,6 +22,7 @@ import io.camunda.zeebe.engine.state.deployment.DeployedProcess;
 import io.camunda.zeebe.engine.state.immutable.DistributionState;
 import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
 import io.camunda.zeebe.engine.state.immutable.EventScopeInstanceState;
+import io.camunda.zeebe.engine.state.immutable.MessageState;
 import io.camunda.zeebe.engine.state.instance.ElementInstance;
 import io.camunda.zeebe.engine.state.instance.EventTrigger;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
@@ -69,6 +70,11 @@ public final class ProcessInstanceMigrationPreconditions {
       """
       Expected to migrate process instance to process definition \
       but no process definition found with key '%d'""";
+  private static final String ERROR_MESSAGE_PROCESS_DEFINITION_HAS_START_EVENT_INSTANCE =
+      """
+      Expected to migrate process instance '%d' \
+      but target process definition '%s' has an active instance triggered by a message start event with correlation key '%s'. \
+      Only one instance per correlation key is allowed for message start events.""";
   private static final String ERROR_MESSAGE_DUPLICATE_SOURCE_ELEMENT_IDS =
       """
       Expected to migrate process instance '%s' \
@@ -224,6 +230,58 @@ public final class ProcessInstanceMigrationPreconditions {
           String.format(ERROR_MESSAGE_PROCESS_DEFINITION_NOT_FOUND, targetProcessDefinitionKey);
       throw new ProcessInstanceMigrationPreconditionFailedException(
           reason, RejectionType.NOT_FOUND);
+    }
+  }
+
+  /**
+   * Checks whether the given target process definition has an instance triggered by a message start
+   * event with the same correlation key as the process instance. Throws exception if given target
+   * process definition already has an instance triggered by a message start event with the same
+   * correlation key as the process instance.
+   *
+   * @param processInstance process instance to do the check
+   * @param targetProcessDefinition target process definition to do the check
+   * @param messageState message state to check for existing message start event instance
+   */
+  public static void requireNoStartEventInstanceForTargetProcess(
+      final ElementInstance processInstance,
+      final DeployedProcess targetProcessDefinition,
+      final MessageState messageState) {
+    if (processInstance
+        .getValue()
+        .getBpmnProcessIdBuffer()
+        .equals(targetProcessDefinition.getBpmnProcessId())) {
+      // no need to check correlation key cardinality since bpmn process id will not change
+      return;
+    }
+
+    if (!targetProcessDefinition.getProcess().hasMessageStartEvent()) {
+      // no need to check since target process does not contain message start event
+      return;
+    }
+
+    final DirectBuffer correlationKey =
+        messageState.getProcessInstanceCorrelationKey(processInstance.getKey());
+    if (correlationKey == null) {
+      // no need to check since process instance is created without specifying correlation key
+      return;
+    }
+
+    final boolean activeProcessInstanceExistsForTarget =
+        messageState.existActiveProcessInstance(
+            processInstance.getValue().getTenantId(),
+            targetProcessDefinition.getBpmnProcessId(),
+            correlationKey);
+
+    if (activeProcessInstanceExistsForTarget) {
+      final String reason =
+          String.format(
+              ERROR_MESSAGE_PROCESS_DEFINITION_HAS_START_EVENT_INSTANCE,
+              processInstance.getKey(),
+              targetProcessDefinition.getKey(),
+              BufferUtil.bufferAsString(correlationKey));
+      throw new ProcessInstanceMigrationPreconditionFailedException(
+          reason, RejectionType.INVALID_STATE);
     }
   }
 
