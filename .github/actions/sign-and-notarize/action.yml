@@ -61,3 +61,4 @@ runs:
           "$INPUT_APPLE_ID" \
           "$INPUT_APP_PASSWORD" \
           "$INPUT_TEAM_ID"
+
