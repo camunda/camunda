@@ -21,8 +21,8 @@
   </modules>
 
   <properties>
-    <version.zeebe.docker.current>8.6.0</version.zeebe.docker.current>
-    <version.identity.docker.current>8.6.0</version.identity.docker.current>
+    <version.zeebe.docker.current>8.7.0-SNAPSHOT</version.zeebe.docker.current>
+    <version.identity.docker.current>8.7.0-alpha5</version.identity.docker.current>
   </properties>
 
 </project>
