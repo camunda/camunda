@@ -13,14 +13,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.camunda.client.api.search.filter.builder;
+package io.camunda.client.api.search.response;
 
-import io.camunda.client.api.search.response.ProcessInstanceState;
-import io.camunda.client.protocol.rest.ProcessInstanceStateFilterProperty;
+public interface ProcessDefinitionFlowNodeStatistics {
 
-public interface ProcessInstanceStateProperty
-    extends LikeProperty<
-        ProcessInstanceState,
-        String,
-        ProcessInstanceStateFilterProperty,
-        ProcessInstanceStateProperty> {}
+  String getFlowNodeId();
+
+  Long getActive();
+
+  Long getCanceled();
+
+  Long getIncidents();
+
+  Long getCompleted();
+}

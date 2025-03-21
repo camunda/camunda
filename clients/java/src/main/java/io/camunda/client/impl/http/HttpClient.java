@@ -15,6 +15,7 @@
  */
 package io.camunda.client.impl.http;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.client.CredentialsProvider;
 import io.camunda.client.api.command.ClientException;
@@ -138,6 +139,24 @@ public final class HttpClient implements AutoCloseable {
       final JsonResponseTransformer<HttpT, RespT> transformer,
       final HttpCamundaFuture<RespT> result) {
     post(path, Collections.emptyMap(), body, requestConfig, responseType, transformer, result);
+  }
+
+  public <HttpT, RespT> void post(
+      final String path,
+      final String body,
+      final RequestConfig requestConfig,
+      final TypeReference<HttpT> responseTypeReference,
+      final JsonResponseTransformer<HttpT, RespT> transformer,
+      final HttpCamundaFuture<RespT> result) {
+    sendRequest(
+        Method.POST,
+        path,
+        Collections.emptyMap(),
+        body,
+        requestConfig,
+        responseTypeReference,
+        transformer,
+        result);
   }
 
   public <HttpT, RespT> void post(
@@ -267,6 +286,26 @@ public final class HttpClient implements AutoCloseable {
       final Class<HttpT> responseType,
       final JsonResponseTransformer<HttpT, RespT> transformer,
       final HttpCamundaFuture<RespT> result) {
+    sendRequest(
+        httpMethod,
+        path,
+        queryParams,
+        body,
+        requestConfig,
+        new ClassTypeReference<>(responseType),
+        transformer,
+        result);
+  }
+
+  private <HttpT, RespT> void sendRequest(
+      final Method httpMethod,
+      final String path,
+      final Map<String, String> queryParams,
+      final Object body, // Can be a String (for JSON) or HttpEntity (for Multipart)
+      final RequestConfig requestConfig,
+      final TypeReference<HttpT> responseTypeReference,
+      final JsonResponseTransformer<HttpT, RespT> transformer,
+      final HttpCamundaFuture<RespT> result) {
 
     final URI target = buildRequestURI(path);
 
@@ -281,7 +320,7 @@ public final class HttpClient implements AutoCloseable {
               queryParams,
               body,
               requestConfig,
-              responseType,
+              responseTypeReference,
               transformer,
               result);
         };
@@ -329,10 +368,10 @@ public final class HttpClient implements AutoCloseable {
     request.setConfig(requestConfig);
 
     final AsyncEntityConsumer<ApiEntity<HttpT>> entityConsumer;
-    if (responseType == InputStream.class) {
+    if (responseTypeReference.getType() == InputStream.class) {
       entityConsumer = new DocumentDataConsumer<>(maxMessageSize, jsonMapper);
     } else {
-      entityConsumer = new ApiEntityConsumer<>(jsonMapper, responseType, maxMessageSize);
+      entityConsumer = new ApiEntityConsumer<>(jsonMapper, responseTypeReference, maxMessageSize);
     }
 
     result.transportFuture(

@@ -24,8 +24,8 @@ public enum ProcessInstanceState {
   TERMINATED,
   UNKNOWN_ENUM_VALUE;
 
-  public static ProcessInstanceStateEnum toProtocolState(final ProcessInstanceState value) {
-    return (value == null) ? null : ProcessInstanceStateEnum.fromValue(value.name());
+  public ProcessInstanceStateEnum toProtocolState() {
+    return ProcessInstanceStateEnum.fromValue(name());
   }
 
   public static ProcessInstanceState fromProtocolState(final ProcessInstanceStateEnum value) {

@@ -90,6 +90,7 @@ import io.camunda.client.api.search.query.ProcessInstanceQuery;
 import io.camunda.client.api.search.query.UserTaskQuery;
 import io.camunda.client.api.search.query.UserTaskVariableQuery;
 import io.camunda.client.api.search.query.VariableQuery;
+import io.camunda.client.api.statistics.ProcessDefinitionFlowNodeStatisticsRequest;
 import io.camunda.client.api.worker.JobClient;
 import io.camunda.client.api.worker.JobWorkerBuilderStep1;
 import io.camunda.client.impl.CamundaClientBuilderImpl;
@@ -784,6 +785,23 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    * @return a builder for the process definition query
    */
   ProcessDefinitionQuery newProcessDefinitionQuery();
+
+  /**
+   * Executes a search request to query process definition flow node statistics.
+   *
+   * <pre>
+   * long processDefinitionKey = ...;
+   *
+   * camundaClient
+   *  .newProcessDefinitionFlowNodeStatistics()
+   *  .filter((f) -> f.processDefinitionKey(processDefinitionKey))
+   *  .send();
+   * </pre>
+   *
+   * @return a builder for the process definition statistics
+   */
+  ProcessDefinitionFlowNodeStatisticsRequest newProcessDefinitionFlowNodeStatistics(
+      final long processDefinitionKey);
 
   /**
    * Retrieves a process instance by key.

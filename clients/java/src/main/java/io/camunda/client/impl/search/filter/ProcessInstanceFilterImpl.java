@@ -189,7 +189,7 @@ public class ProcessInstanceFilterImpl
 
   @Override
   public ProcessInstanceFilter state(final ProcessInstanceState state) {
-    return state(b -> b.eq(ProcessInstanceState.toProtocolState(state)));
+    return state(b -> b.eq(state));
   }
 
   @Override
@@ -271,7 +271,7 @@ public class ProcessInstanceFilterImpl
     return filter;
   }
 
-  static void variableValueNullCheck(Object value) {
+  static void variableValueNullCheck(final Object value) {
     if (value == null) {
       throw new IllegalArgumentException("Variable value cannot be null");
     }

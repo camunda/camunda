@@ -22,6 +22,7 @@ import io.camunda.client.api.search.response.DecisionRequirements;
 import io.camunda.client.api.search.response.FlowNodeInstance;
 import io.camunda.client.api.search.response.Incident;
 import io.camunda.client.api.search.response.ProcessDefinition;
+import io.camunda.client.api.search.response.ProcessDefinitionFlowNodeStatistics;
 import io.camunda.client.api.search.response.ProcessInstance;
 import io.camunda.client.api.search.response.SearchQueryResponse;
 import io.camunda.client.api.search.response.SearchResponsePage;
@@ -32,6 +33,7 @@ import io.camunda.client.impl.search.response.DecisionInstanceImpl;
 import io.camunda.client.impl.search.response.DecisionRequirementsImpl;
 import io.camunda.client.impl.search.response.FlowNodeInstanceImpl;
 import io.camunda.client.impl.search.response.IncidentImpl;
+import io.camunda.client.impl.search.response.ProcessDefinitionFlowNodeStatisticsImpl;
 import io.camunda.client.impl.search.response.ProcessDefinitionImpl;
 import io.camunda.client.impl.search.response.ProcessInstanceImpl;
 import io.camunda.client.impl.search.response.SearchQueryResponseImpl;
@@ -56,6 +58,13 @@ public final class SearchResponseMapper {
         toSearchResponseInstances(response.getItems(), ProcessDefinitionImpl::new);
 
     return new SearchQueryResponseImpl<>(instances, page);
+  }
+
+  public static List<ProcessDefinitionFlowNodeStatistics> toProcessDefinitionStatisticsResponse(
+      final List<ProcessDefinitionFlowNodeStatisticsResult> response) {
+    return response.stream()
+        .map(ProcessDefinitionFlowNodeStatisticsImpl::new)
+        .collect(Collectors.toList());
   }
 
   public static ProcessDefinition toProcessDefinitionGetResponse(

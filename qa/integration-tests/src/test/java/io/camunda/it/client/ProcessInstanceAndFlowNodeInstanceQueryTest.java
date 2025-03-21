@@ -26,8 +26,8 @@ import io.camunda.client.api.response.Process;
 import io.camunda.client.api.response.ProcessInstanceEvent;
 import io.camunda.client.api.search.response.FlowNodeInstance;
 import io.camunda.client.api.search.response.ProcessInstance;
+import io.camunda.client.api.search.response.ProcessInstanceState;
 import io.camunda.client.impl.search.filter.builder.StringPropertyImpl;
-import io.camunda.client.protocol.rest.ProcessInstanceStateEnum;
 import io.camunda.client.protocol.rest.ProcessInstanceVariableFilterRequest;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import java.time.OffsetDateTime;
@@ -440,13 +440,13 @@ public class ProcessInstanceAndFlowNodeInstanceQueryTest {
     final var result =
         camundaClient
             .newProcessInstanceQuery()
-            .filter(f -> f.state(b -> b.neq(ProcessInstanceStateEnum.ACTIVE)))
+            .filter(f -> f.state(b -> b.neq(ProcessInstanceState.ACTIVE)))
             .send()
             .join();
 
     // then
     assertThat(result.items().size()).isEqualTo(3);
-    assertThat(result.items()).extracting("state").doesNotContain(ProcessInstanceStateEnum.ACTIVE);
+    assertThat(result.items()).extracting("state").doesNotContain(ProcessInstanceState.ACTIVE);
   }
 
   @Test
