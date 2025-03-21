@@ -174,7 +174,9 @@ public final class IdentitySetupInitializeProcessor
                           createdNewEntities.set(true);
                           final long mappingKey = keyGenerator.nextKey();
                           mapping.setMappingKey(mappingKey);
-                          mapping.setId(String.valueOf(mappingKey));
+                          if (mapping.getId() == null || mapping.getId().isBlank()) {
+                            mapping.setId(String.valueOf(mappingKey));
+                          }
                           createMapping(mapping, role.getRoleKey(), tenant);
                         }));
     return createdNewEntities.get();
