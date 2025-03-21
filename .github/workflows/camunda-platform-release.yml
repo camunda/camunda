@@ -141,8 +141,8 @@ jobs:
       - name: Push Git changes
         if: ${{ env.PUSH_CHANGES == 'true' }}
         run: |
-          git push --tags
           git push --all
+          git push --tags
 
 #      - name: Maven Perform Release
 #        id: maven-perform-release
