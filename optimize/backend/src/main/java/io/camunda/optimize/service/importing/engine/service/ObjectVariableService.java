@@ -214,23 +214,20 @@ public class ObjectVariableService {
               switch (type) {
                 case STRING:
                   parseStringVariableAndSet(originList, newListVar);
-                  resultList.add(newListVar);
                   break;
                 case DATE:
                   parseDateVariableAndSet(originList, newListVar);
-                  resultList.add(newListVar);
                   break;
                 case DOUBLE:
                   parseNumberVariableAndSet(originList, newListVar);
-                  resultList.add(newListVar);
                   break;
                 case BOOLEAN:
                   parseBooleanVariableAndSet(originList, newListVar);
-                  resultList.add(newListVar);
                   break;
                 default:
               }
             });
+    resultList.add(newListVar);
   }
 
   private Optional<VariableType> determineListVariableType(
