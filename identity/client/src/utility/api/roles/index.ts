@@ -6,33 +6,31 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import { ApiDefinition, apiDelete, apiPost } from "src/utility/api/request";
+import {
+  ApiDefinition,
+  apiDelete,
+  apiGet,
+  apiPost,
+} from "src/utility/api/request";
 import { SearchResponse } from "src/utility/api";
-import { EntityData } from "src/components/entityList/EntityList";
 
 export const ROLES_ENDPOINT = "/roles";
 
-export type Role = EntityData & {
+export type Role = {
   roleKey: string;
   name: string;
   description: string;
-  permissions: string[];
 };
 
 export const searchRoles: ApiDefinition<SearchResponse<Role>> = () =>
   apiPost(`${ROLES_ENDPOINT}/search`);
 
 type GetRoleParams = {
-  roleKey?: string;
-  name?: string;
+  roleKey: string;
 };
-export const getRole: ApiDefinition<SearchResponse<Role>, GetRoleParams> = ({
+export const getRoleDetails: ApiDefinition<Role, GetRoleParams> = ({
   roleKey,
-  name,
-}) =>
-  apiPost(`${ROLES_ENDPOINT}/search`, {
-    filter: { ...(roleKey && { roleKey }), ...(name && { name }) },
-  });
+}) => apiGet(`${ROLES_ENDPOINT}/${roleKey}`);
 
 type CreateRoleParams = Omit<Role, "roleKey">;
 export const createRole: ApiDefinition<Role, CreateRoleParams> = (role) =>
