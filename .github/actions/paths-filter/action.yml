@@ -74,6 +74,7 @@ outputs:
         github.event_name == 'schedule' ||
         steps.filter-common.outputs.github-actions-change == 'true' ||
         steps.filter-tasklist.outputs.tasklist-backend-change == 'true' ||
+        steps.filter-zeebe.outputs.zeebe-change == 'true' ||
         steps.filter-common.outputs.webapps-change == 'true' ||
         steps.filter-common.outputs.maven-change == 'true' ||
         steps.filter-common.outputs.dockerfile-change == 'true'
