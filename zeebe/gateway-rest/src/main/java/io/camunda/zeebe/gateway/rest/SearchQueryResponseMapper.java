@@ -404,6 +404,7 @@ public final class SearchQueryResponseMapper {
         .mappingKey(KeyUtil.keyToString(mappingEntity.mappingKey()))
         .claimName(mappingEntity.claimName())
         .claimValue(mappingEntity.claimValue())
+        .id(mappingEntity.id())
         .name(mappingEntity.name());
   }
 
