@@ -11,7 +11,6 @@ import static io.camunda.optimize.rest.SharingRestService.SHARE_PATH;
 
 import co.elastic.clients.elasticsearch._types.ElasticsearchException;
 import io.camunda.optimize.dto.optimize.SettingsDto;
-import io.camunda.optimize.dto.optimize.UserDto;
 import io.camunda.optimize.dto.optimize.query.EntityIdResponseDto;
 import io.camunda.optimize.dto.optimize.query.IdResponseDto;
 import io.camunda.optimize.dto.optimize.query.collection.CollectionDefinitionDto;
@@ -29,7 +28,6 @@ import io.camunda.optimize.service.collection.CollectionService;
 import io.camunda.optimize.service.dashboard.DashboardService;
 import io.camunda.optimize.service.entities.EntityExportService;
 import io.camunda.optimize.service.entities.EntityImportService;
-import io.camunda.optimize.service.exceptions.OptimizeUserOrGroupIdNotFoundException;
 import io.camunda.optimize.service.export.JsonReportResultExportService;
 import io.camunda.optimize.service.identity.AbstractIdentityService;
 import io.camunda.optimize.service.report.ReportService;
@@ -258,12 +256,6 @@ public class PublicApiRestService {
   public IdResponseDto createCollection(
       final @RequestBody PartialCollectionDefinitionRequestDto
               partialCollectionDefinitionCreationRequestDto) {
-    if (!identityService.doesIdentityExist(
-        new UserDto(partialCollectionDefinitionCreationRequestDto.getOwnerId()))) {
-      throw new OptimizeUserOrGroupIdNotFoundException(
-          "No Optimize user exists for the given ownerId.");
-    }
-
     return collectionService.createNewCollectionAndReturnId(
         partialCollectionDefinitionCreationRequestDto.getOwnerId(),
         new PartialCollectionDefinitionRequestDto(
