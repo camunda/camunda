@@ -320,4 +320,6 @@ public abstract class DatabaseTestService {
   public abstract boolean isAliasReadOnly(String readOnlyAliasForIndex) throws IOException;
 
   public abstract List<String> getAllIndicesWithReadOnlyAlias(String aliasNameWithPrefix);
+
+  public abstract String[] getIndexNames();
 }

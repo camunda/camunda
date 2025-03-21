@@ -18,6 +18,7 @@ import io.camunda.optimize.service.BackupService;
 import io.camunda.optimize.service.LocalizationService;
 import io.camunda.optimize.service.exceptions.OptimizeConfigurationException;
 import io.camunda.optimize.service.exceptions.OptimizeElasticsearchConnectionException;
+import io.camunda.optimize.service.exceptions.OptimizeOpenSearchConnectionException;
 import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import io.camunda.optimize.service.exceptions.conflict.OptimizeConflictException;
 import jakarta.annotation.Nullable;
@@ -146,6 +147,15 @@ public class BackupRestService {
         .body(getErrorResponseDto(exception));
   }
 
+  @ExceptionHandler(OptimizeOpenSearchConnectionException.class)
+  public ResponseEntity<ErrorResponseDto> handleOptimizeOpenSearchConnectionException(
+      final OptimizeElasticsearchConnectionException exception) {
+    // API to return bad gateway error in case of connection issues
+    return ResponseEntity.status(HttpStatus.BAD_GATEWAY)
+        .contentType(MediaType.APPLICATION_JSON)
+        .body(getErrorResponseDto(exception));
+  }
+
   private ErrorResponseDto getErrorResponseDto(final Throwable e) {
     final Class<?> errorClass = e.getClass();
     final String errorCode;
@@ -159,6 +169,8 @@ public class BackupRestService {
       errorCode = OptimizeConflictException.ERROR_CODE;
     } else if (OptimizeElasticsearchConnectionException.class.equals(errorClass)) {
       errorCode = OptimizeElasticsearchConnectionException.ERROR_CODE;
+    } else if (OptimizeOpenSearchConnectionException.class.equals(errorClass)) {
+      errorCode = OptimizeOpenSearchConnectionException.ERROR_CODE;
     } else {
       errorCode = GENERIC_ERROR_CODE;
     }

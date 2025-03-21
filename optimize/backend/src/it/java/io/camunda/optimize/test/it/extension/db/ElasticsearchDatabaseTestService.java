@@ -1120,6 +1120,14 @@ public class ElasticsearchDatabaseTestService extends DatabaseTestService {
         .toList();
   }
 
+  @Override
+  public String[] getIndexNames() {
+    return ElasticSearchSchemaManager.getAllNonDynamicMappings().stream()
+        .filter(IndexMappingCreator::isImportIndex)
+        .map(getIndexNameService()::getOptimizeIndexAliasForIndex)
+        .toArray(String[]::new);
+  }
+
   public OptimizeIndexNameService getIndexNameService() {
     return getOptimizeElasticClient().getIndexNameService();
   }

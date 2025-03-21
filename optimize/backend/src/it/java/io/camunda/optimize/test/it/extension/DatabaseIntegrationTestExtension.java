@@ -253,4 +253,8 @@ public class DatabaseIntegrationTestExtension implements BeforeEachCallback, Aft
   public boolean isAliasReadOnly(final String readOnlyAliasForIndex) throws IOException {
     return databaseTestService.isAliasReadOnly(readOnlyAliasForIndex);
   }
+
+  public String[] getIndexNames() {
+    return databaseTestService.getIndexNames();
+  }
 }
