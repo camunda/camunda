@@ -31,8 +31,8 @@ This means the separation of the test application and MultiDb configuration in t
 
 * Make use of the `@MultiDbTest` annotation (if possible).
 * By default, it will use the `TestStandaloneBroker` class to reduce the scope to a minimum.
-* The `@MutliDbTest` annotation will ensure that your test is tagged as a test that should be executed against multiple secondary storage, such as Elasticsearch (ES), OpenSearch (OS), RDBMS, etc.
-* The `@MutliDbTest` annotation will mark your test class with `@ExtendsWith` using the `CamundaMultiDBExtension`.
+* The `@MultiDbTest` annotation will ensure that your test is tagged as a test that should be executed against multiple secondary storage, such as Elasticsearch (ES), OpenSearch (OS), RDBMS, etc.
+* The `@MultiDbTest` annotation will mark your test class with `@ExtendsWith` using the `CamundaMultiDBExtension`.
 * The execution against different secondary storage is done on our CI.yml GitHub workflow, where separate jobs exist. A specific test property is set for the database type, allowing the extension to configure the test application correctly (specific Exporter, etc.).
 
 ### For advanced cases:
