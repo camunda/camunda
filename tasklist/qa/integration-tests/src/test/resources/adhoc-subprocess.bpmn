@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:modeler="http://camunda.org/schema/modeler/1.0" id="Definitions_1" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="5.33.1" modeler:executionPlatform="Camunda Cloud" modeler:executionPlatformVersion="8.7.0">
+  <bpmn:process id="AdhocSubProcess" name="Test variable scope" isExecutable="true">
+    <bpmn:startEvent id="StartEvent_1" name="Start">
+      <bpmn:outgoing>Flow_0y10cno</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:sequenceFlow id="Flow_0y10cno" sourceRef="StartEvent_1" targetRef="Activity_0kybtvz" />
+    <bpmn:adHocSubProcess id="Activity_013n10c">
+      <bpmn:extensionElements>
+        <zeebe:adHoc activeElementsCollection="=tasks" />
+        <zeebe:ioMapping>
+          <zeebe:input source="=someText" target="someText" />
+          <zeebe:input source="=someNumber" target="someNumber" />
+        </zeebe:ioMapping>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_0dl6067</bpmn:incoming>
+      <bpmn:outgoing>Flow_0t3bts6</bpmn:outgoing>
+      <bpmn:userTask id="task1" name="Task 1">
+        <bpmn:extensionElements>
+          <zeebe:userTask />
+          <zeebe:ioMapping>
+            <zeebe:input source="=someText" target="task1var" />
+          </zeebe:ioMapping>
+        </bpmn:extensionElements>
+      </bpmn:userTask>
+      <bpmn:userTask id="task2" name="Task 2">
+        <bpmn:extensionElements>
+          <zeebe:userTask />
+          <zeebe:ioMapping>
+            <zeebe:input source="=someNumber" target="task2var" />
+          </zeebe:ioMapping>
+        </bpmn:extensionElements>
+      </bpmn:userTask>
+      <bpmn:userTask id="task3" name="Task 3">
+        <bpmn:extensionElements>
+          <zeebe:userTask />
+        </bpmn:extensionElements>
+      </bpmn:userTask>
+    </bpmn:adHocSubProcess>
+    <bpmn:sequenceFlow id="Flow_0dl6067" sourceRef="Activity_0kybtvz" targetRef="Activity_013n10c" />
+    <bpmn:scriptTask id="Activity_0kybtvz" name="Set Tasks">
+      <bpmn:extensionElements>
+        <zeebe:script expression="=[&#34;task1&#34;, &#34;task2&#34;, &#34;task3&#34;]" resultVariable="tasks" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_0y10cno</bpmn:incoming>
+      <bpmn:outgoing>Flow_0dl6067</bpmn:outgoing>
+    </bpmn:scriptTask>
+    <bpmn:endEvent id="Event_175yc08">
+      <bpmn:incoming>Flow_0t3bts6</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_0t3bts6" sourceRef="Activity_013n10c" targetRef="Event_175yc08" />
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="Process_1tyxdmx">
+      <bpmndi:BPMNShape id="_BPMNShape_StartEvent_2" bpmnElement="StartEvent_1">
+        <dc:Bounds x="152" y="162" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="158" y="205" width="24" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_1b4gcvb_di" bpmnElement="Activity_0kybtvz">
+        <dc:Bounds x="240" y="140" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_175yc08_di" bpmnElement="Event_175yc08">
+        <dc:Bounds x="982" y="227" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_013n10c_di" bpmnElement="Activity_013n10c" isExpanded="true">
+        <dc:Bounds x="395" y="80" width="525" height="330" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_16tjm58_di" bpmnElement="task1">
+        <dc:Bounds x="460" y="120" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_1mgi0qp_di" bpmnElement="task2">
+        <dc:Bounds x="740" y="120" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_1ns21cb_di" bpmnElement="task3">
+        <dc:Bounds x="600" y="250" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_0y10cno_di" bpmnElement="Flow_0y10cno">
+        <di:waypoint x="188" y="180" />
+        <di:waypoint x="240" y="180" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0dl6067_di" bpmnElement="Flow_0dl6067">
+        <di:waypoint x="340" y="180" />
+        <di:waypoint x="395" y="180" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0t3bts6_di" bpmnElement="Flow_0t3bts6">
+        <di:waypoint x="920" y="245" />
+        <di:waypoint x="982" y="245" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>
