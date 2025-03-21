@@ -14,10 +14,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.optimize.AbstractCCSMIT;
 import io.camunda.optimize.dto.optimize.rest.BackupInfoDto;
 import io.camunda.optimize.service.BackupService;
-import io.camunda.optimize.service.db.es.schema.ElasticSearchSchemaManager;
-import io.camunda.optimize.service.db.schema.IndexMappingCreator;
 import io.camunda.optimize.service.util.configuration.db.DatabaseBackup;
-import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 public class BackupServiceIT extends AbstractCCSMIT {
@@ -25,7 +22,6 @@ public class BackupServiceIT extends AbstractCCSMIT {
   private static final String VALID_REPOSITORY_NAME = "my_backup_1";
 
   @Test
-  @Tag(OPENSEARCH_SINGLE_TEST_FAIL_OK)
   public void backupApi() {
     // given
     databaseIntegrationTestExtension.cleanSnapshots(VALID_REPOSITORY_NAME);
@@ -33,18 +29,17 @@ public class BackupServiceIT extends AbstractCCSMIT {
     databaseIntegrationTestExtension.createSnapshot(
         VALID_REPOSITORY_NAME,
         getSnapshotNameForImportIndices(VALID_BACKUP_ID),
-        ElasticSearchSchemaManager.getAllNonDynamicMappings().stream()
-            .filter(IndexMappingCreator::isImportIndex)
-            .map(
-                databaseIntegrationTestExtension.getIndexNameService()
-                    ::getOptimizeIndexAliasForIndex)
-            .toArray(String[]::new));
+        databaseIntegrationTestExtension.getIndexNames());
 
     final DatabaseBackup databaseBackup = new DatabaseBackup();
     databaseBackup.setSnapshotRepositoryName(VALID_REPOSITORY_NAME);
     embeddedOptimizeExtension
         .getConfigurationService()
         .getElasticSearchConfiguration()
+        .setBackup(databaseBackup);
+    embeddedOptimizeExtension
+        .getConfigurationService()
+        .getOpenSearchConfiguration()
         .setBackup(databaseBackup);
 
     // when

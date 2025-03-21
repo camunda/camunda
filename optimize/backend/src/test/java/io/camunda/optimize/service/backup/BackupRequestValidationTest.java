@@ -17,12 +17,13 @@ import jakarta.validation.Validator;
 import jakarta.validation.ValidatorFactory;
 import java.util.Set;
 import java.util.stream.Stream;
+import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
 public class BackupRequestValidationTest {
 
-  // @ParameterizedTest
+  @ParameterizedTest
   @MethodSource("invalidBackupIds")
   public void triggerBackupWithInvalidBackupId(
       final Long invalidBackupId, final String expectedErrorMsg) {
