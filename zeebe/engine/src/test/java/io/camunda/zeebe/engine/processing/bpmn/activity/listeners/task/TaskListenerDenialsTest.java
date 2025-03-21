@@ -312,7 +312,7 @@ public class TaskListenerDenialsTest {
         .ofScope(userTaskInstanceKey)
         .withDocument(Map.of("status", "APPROVED"))
         .withLocalSemantic()
-        .expectPartialUpdate()
+        .expectUpdating()
         .update();
 
     // then: deny the update transition from the listener job
@@ -503,7 +503,7 @@ public class TaskListenerDenialsTest {
         .ofScope(userTaskInstanceKey)
         .withDocument(Map.of("status", "APPROVED"))
         .withLocalSemantic()
-        .expectPartialUpdate()
+        .expectUpdating()
         .update();
 
     // first attempt is denied
@@ -520,7 +520,7 @@ public class TaskListenerDenialsTest {
         .ofScope(userTaskInstanceKey)
         .withDocument(Map.of("status", "CONFIRMED"))
         .withLocalSemantic()
-        .expectPartialUpdate()
+        .expectUpdating()
         .update();
 
     // accept the transition this time
@@ -697,7 +697,7 @@ public class TaskListenerDenialsTest {
                 .ofScope(helper.getUserTaskElementInstanceKey(pik))
                 .withDocument(Map.of("status", "APPROVED"))
                 .withLocalSemantic()
-                .expectPartialUpdate()
+                .expectUpdating()
                 .update(),
         UserTaskIntent.UPDATE_DENIED);
   }

@@ -99,7 +99,7 @@ public class TaskListenerTaskHeadersTest {
         .ofScope(userTaskInstanceKey)
         .withDocument(Map.of("var_name", "var_value"))
         .withLocalSemantic()
-        .expectPartialUpdate()
+        .expectUpdating()
         .update();
 
     // then: verify all updating listener jobs receive "variables" as a changed attribute in headers

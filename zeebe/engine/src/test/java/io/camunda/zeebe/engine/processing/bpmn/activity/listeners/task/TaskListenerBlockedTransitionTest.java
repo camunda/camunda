@@ -345,7 +345,7 @@ public class TaskListenerBlockedTransitionTest {
         .ofScope(userTaskElementInstanceKey)
         .withDocument(Map.of("status", "APPROVED"))
         .withLocalSemantic()
-        .expectPartialUpdate()
+        .expectUpdating()
         .update();
     helper.completeJobs(processInstanceKey, listenerType, listenerType + "_2", listenerType + "_3");
 
@@ -416,7 +416,7 @@ public class TaskListenerBlockedTransitionTest {
         .ofScope(userTaskElementInstanceKey)
         .withDocument(Map.of()) // empty document
         .withLocalSemantic()
-        .expectPartialUpdate()
+        .expectUpdating()
         .update();
 
     helper.completeJobs(processInstanceKey, listenerType, listenerType + "_2");

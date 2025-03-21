@@ -103,7 +103,7 @@ public class TaskListenerIncidentsTest {
                     .ofScope(helper.getUserTaskElementInstanceKey(pik))
                     .withDocument(Map.of("status", "APPROVED"))
                     .withLocalSemantic()
-                    .expectPartialUpdate()
+                    .expectUpdating()
                     .update(),
             UserTaskIntent.UPDATED);
 
@@ -269,7 +269,7 @@ public class TaskListenerIncidentsTest {
                     .ofScope(helper.getUserTaskElementInstanceKey(pik))
                     .withDocument(Map.of("status", "APPROVED"))
                     .withLocalSemantic()
-                    .expectPartialUpdate()
+                    .expectUpdating()
                     .update(),
             UserTaskIntent.UPDATED,
             userTask ->

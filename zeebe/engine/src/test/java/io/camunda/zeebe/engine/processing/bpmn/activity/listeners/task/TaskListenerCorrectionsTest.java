@@ -110,7 +110,7 @@ public class TaskListenerCorrectionsTest {
                 .ofScope(helper.getUserTaskElementInstanceKey(pik))
                 .withDocument(Map.of())
                 .withLocalSemantic()
-                .expectPartialUpdate()
+                .expectUpdating()
                 .update(),
         ""); // action is empty as update transition was triggered by Zeebe
   }
@@ -334,7 +334,7 @@ public class TaskListenerCorrectionsTest {
                 .ofScope(helper.getUserTaskElementInstanceKey(pik))
                 .withDocument(Map.of("status", "APPROVED"))
                 .withLocalSemantic()
-                .expectPartialUpdate()
+                .expectUpdating()
                 .update(),
         List.of(
             UserTaskIntent.UPDATING,
@@ -994,7 +994,7 @@ public class TaskListenerCorrectionsTest {
         .ofScope(userTaskElementInstanceKey)
         .withDocument(Map.of("status", "APPROVED"))
         .withLocalSemantic()
-        .expectPartialUpdate()
+        .expectUpdating()
         .update();
 
     // then: first listener job should receive "variables" in changedAttributes

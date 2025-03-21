@@ -257,7 +257,7 @@ public class TaskListenerVariablesTest {
         .ofScope(userTaskElementInstanceKey)
         .withDocument(Map.of("approvalStatus", "APPROVED"))
         .withLocalSemantic()
-        .expectPartialUpdate()
+        .expectUpdating()
         .update();
 
     // then: expect a job to be activated for the first `updating` listener

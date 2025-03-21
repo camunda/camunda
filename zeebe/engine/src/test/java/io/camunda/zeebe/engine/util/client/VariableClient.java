@@ -27,13 +27,13 @@ public final class VariableClient {
   private static final long DEFAULT_KEY = -1;
 
   private static final LongFunction<Record<VariableDocumentRecordValue>>
-      SUCCESSFUL_EXPECTATION_SUPPLIER =
+      UPDATED_EXPECTATION_SUPPLIER =
           (sourceRecordPosition) ->
               RecordingExporter.variableDocumentRecords(VariableDocumentIntent.UPDATED)
                   .withSourceRecordPosition(sourceRecordPosition)
                   .getFirst();
   private static final LongFunction<Record<VariableDocumentRecordValue>>
-      PARTIAL_SUCCESS_EXPECTATION_SUPPLIER =
+      UPDATING_EXPECTATION_SUPPLIER =
           (sourceRecordPosition) ->
               RecordingExporter.variableDocumentRecords(VariableDocumentIntent.UPDATING)
                   .withSourceRecordPosition(sourceRecordPosition)
@@ -54,7 +54,7 @@ public final class VariableClient {
   private int requestStreamId = new Random().nextInt();
 
   private LongFunction<Record<VariableDocumentRecordValue>> expectation =
-      SUCCESSFUL_EXPECTATION_SUPPLIER;
+      UPDATED_EXPECTATION_SUPPLIER;
   private String[] authorizedTenants = new String[] {TenantOwned.DEFAULT_TENANT_IDENTIFIER};
 
   public VariableClient(final CommandWriter writer) {
@@ -105,8 +105,8 @@ public final class VariableClient {
     return this;
   }
 
-  public VariableClient expectPartialUpdate() {
-    expectation = PARTIAL_SUCCESS_EXPECTATION_SUPPLIER;
+  public VariableClient expectUpdating() {
+    expectation = UPDATING_EXPECTATION_SUPPLIER;
     return this;
   }
 
