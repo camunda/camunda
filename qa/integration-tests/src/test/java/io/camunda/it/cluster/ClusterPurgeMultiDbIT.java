@@ -27,6 +27,7 @@ import io.camunda.zeebe.qa.util.actuator.ClusterActuator;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneApplication;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import io.camunda.zeebe.test.util.asserts.TopologyAssert;
+import io.camunda.zeebe.test.util.junit.RegressionTest;
 import java.time.Duration;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
@@ -173,7 +174,7 @@ public class ClusterPurgeMultiDbIT {
             });
   }
 
-  @Test
+  @RegressionTest("https://github.com/camunda/camunda/issues/29733")
   void shouldPurgeProcessCache() {
     // GIVEN
     final ClusterActuator actuator = ClusterActuator.of(APPLICATION);
@@ -201,15 +202,14 @@ public class ClusterPurgeMultiDbIT {
                   .satisfies(items -> Assertions.assertThat(items).hasSize(1));
             });
 
-    // Query API so cache is filled
-    final var items1 =
-        client
-            .newFlownodeInstanceQuery()
-            .filter((f) -> f.processInstanceKey(processInstanceKey1))
-            .sort(sort -> sort.startDate().asc())
-            .send()
-            .join()
-            .items();
+    // Query API so cache is filled - we don't care about the result
+    client
+        .newFlownodeInstanceQuery()
+        .filter((f) -> f.processInstanceKey(processInstanceKey1))
+        .sort(sort -> sort.startDate().asc())
+        .send()
+        .join()
+        .items();
 
     // WHEN
     final var planChangeResponse = actuator.purge(false);
@@ -228,14 +228,9 @@ public class ClusterPurgeMultiDbIT {
     final var processDefinitionKey2 = deployProcessModel(processModel);
     final var processInstanceKey2 = startProcess(processDefinitionKey2);
 
-    final var items2 =
-        client
-            .newFlownodeInstanceQuery()
-            .filter((f) -> f.processInstanceKey(processInstanceKey1))
-            .sort(sort -> sort.startDate().asc())
-            .send()
-            .join()
-            .items();
+    // Assumption: the processInstance keys are identical. These are the keys used to
+    // query data from the ProcessCache
+    assertThat(processInstanceKey1).isEqualTo(processInstanceKey2);
 
     /*
      * This will fail if the ProcessCache is not cleared.
@@ -250,7 +245,22 @@ public class ClusterPurgeMultiDbIT {
      * - Therefore, without purging the ProcessCache, the query will not return a FlowNode of name
      *   "test-task-2"
      */
-    assertThat((items2.get(1)).getFlowNodeName()).isEqualTo("test-task-2");
+    Awaitility.await("until flownode instance query returns non-empty list with two elements")
+        .atMost(Duration.ofSeconds(2 * TIMEOUT))
+        .ignoreExceptions()
+        .untilAsserted(
+            () -> {
+              final var items2 =
+                  client
+                      .newFlownodeInstanceQuery()
+                      .filter((f) -> f.processInstanceKey(processInstanceKey1))
+                      .sort(sort -> sort.startDate().asc())
+                      .send()
+                      .join()
+                      .items();
+
+              assertThat((items2.get(1)).getFlowNodeName()).isEqualTo("test-task-2");
+            });
   }
 
   @Test
