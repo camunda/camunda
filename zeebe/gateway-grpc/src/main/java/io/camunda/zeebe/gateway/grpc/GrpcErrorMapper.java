@@ -178,6 +178,17 @@ public final class GrpcErrorMapper {
         builder.setCode(Code.UNAVAILABLE_VALUE);
       }
       case MALFORMED_REQUEST -> builder.setCode(Code.INVALID_ARGUMENT_VALUE);
+<<<<<<< HEAD
+=======
+      case PARTITION_UNAVAILABLE -> {
+        logger.debug("Partition is currently unavailable: {}", error, rootError);
+        builder.setCode(Code.UNAVAILABLE_VALUE);
+      }
+      case MAX_MESSAGE_SIZE_EXCEEDED -> {
+        logger.debug("Max message size exceeded: {}", error, rootError);
+        builder.setCode(Code.RESOURCE_EXHAUSTED_VALUE);
+      }
+>>>>>>> 0bb07983 (fix: Improve REST API response when deployResources payload is too large)
       default -> {
         // all the following are for cases where retrying (with the same gateway) is not expected
         // to solve anything

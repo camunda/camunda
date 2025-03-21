@@ -180,4 +180,43 @@ final class GrpcErrorMapperTest {
     // then
     assertThat(statusException.getStatus().getCode()).isEqualTo(Code.ABORTED);
   }
+<<<<<<< HEAD
+=======
+
+  @Test
+  void shouldLogPartitionUnavailableErrorOnDebug() {
+    // given
+    final var brokerError =
+        new BrokerError(ErrorCode.PARTITION_UNAVAILABLE, "Partition unavailable");
+    final BrokerErrorException exception = new BrokerErrorException(brokerError);
+
+    // when
+    log.setLevel(Level.DEBUG);
+    final StatusRuntimeException statusException = errorMapper.mapError(exception, logger);
+
+    // then
+    assertThat(statusException.getStatus().getCode()).isEqualTo(Code.UNAVAILABLE);
+    assertThat(recorder.getAppendedEvents()).hasSize(1);
+    final LogEvent event = recorder.getAppendedEvents().getFirst();
+    assertThat(event.getLevel()).isEqualTo(Level.DEBUG);
+  }
+
+  @Test
+  void shouldLogMaxMessageSizeExceededErrorOnDebug() {
+    // given
+    final var brokerError =
+        new BrokerError(ErrorCode.MAX_MESSAGE_SIZE_EXCEEDED, "Max message size exceeded");
+    final BrokerErrorException exception = new BrokerErrorException(brokerError);
+
+    // when
+    log.setLevel(Level.DEBUG);
+    final StatusRuntimeException statusException = errorMapper.mapError(exception, logger);
+
+    // then
+    assertThat(statusException.getStatus().getCode()).isEqualTo(Code.RESOURCE_EXHAUSTED);
+    assertThat(recorder.getAppendedEvents()).hasSize(1);
+    final LogEvent event = recorder.getAppendedEvents().getFirst();
+    assertThat(event.getLevel()).isEqualTo(Level.DEBUG);
+  }
+>>>>>>> 0bb07983 (fix: Improve REST API response when deployResources payload is too large)
 }
