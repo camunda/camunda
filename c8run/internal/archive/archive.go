@@ -270,6 +270,15 @@ func UnzipSource(source, destination string) error {
 	}
 	defer reader.Close()
 
+        // if destination does not exist, create it
+        _, err = os.Stat(destination)
+        if errors.Is(err, os.ErrNotExist) {
+                err = os.Mkdir(destination, ReadWriteMode)
+                if err != nil {
+                        return fmt.Errorf("UnzipSource: failed to create directory %s\n%w\n%s", destination, err, debug.Stack())
+                }
+        }
+
 	destinationAbsPath, err := filepath.Abs(destination)
 	if err != nil {
 		return fmt.Errorf("UnzipSource: failed to determine absolute path for %s\n%w\n%s", destination, err, debug.Stack())
