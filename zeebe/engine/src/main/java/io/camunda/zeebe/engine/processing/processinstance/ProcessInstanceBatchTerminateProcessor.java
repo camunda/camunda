@@ -9,6 +9,7 @@ package io.camunda.zeebe.engine.processing.processinstance;
 
 import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
@@ -18,10 +19,12 @@ import io.camunda.zeebe.protocol.record.intent.ProcessInstanceBatchIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
+import java.util.concurrent.atomic.AtomicReferenceArray;
 
 public final class ProcessInstanceBatchTerminateProcessor
     implements TypedRecordProcessor<ProcessInstanceBatchRecord> {
 
+  private final StateWriter stateWriter;
   private final TypedCommandWriter commandWriter;
   private final KeyGenerator keyGenerator;
   private final ElementInstanceState elementInstanceState;
@@ -31,6 +34,7 @@ public final class ProcessInstanceBatchTerminateProcessor
       final KeyGenerator keyGenerator,
       final ElementInstanceState elementInstanceState) {
     commandWriter = writers.command();
+    stateWriter = writers.state();
     this.keyGenerator = keyGenerator;
     this.elementInstanceState = elementInstanceState;
   }
@@ -39,25 +43,47 @@ public final class ProcessInstanceBatchTerminateProcessor
   public void processRecord(final TypedRecord<ProcessInstanceBatchRecord> record) {
     final var recordValue = record.getValue();
 
+    final AtomicReferenceArray<ElementInstance> elementInstanceStateArray =
+        new AtomicReferenceArray<>(2);
     elementInstanceState.forEachChild(
         recordValue.getBatchElementInstanceKey(),
         recordValue.getIndex(),
         (childKey, childInstance) -> {
-          if (canWriteCommand(record, childInstance)) {
-            terminateChildInstance(childInstance);
+          if (!childInstance.canTerminate()) {
+            return true;
+          }
+
+          if (elementInstanceStateArray.get(0) == null) {
+            elementInstanceStateArray.set(0, childInstance);
             return true;
           } else {
-            final var nextBatchRecord =
-                new ProcessInstanceBatchRecord()
-                    .setProcessInstanceKey(recordValue.getProcessInstanceKey())
-                    .setBatchElementInstanceKey(recordValue.getBatchElementInstanceKey())
-                    .setIndex(childKey);
-            final long key = keyGenerator.nextKey();
-            commandWriter.appendFollowUpCommand(
-                key, ProcessInstanceBatchIntent.TERMINATE, nextBatchRecord);
+            elementInstanceStateArray.set(1, childInstance);
             return false;
           }
         });
+
+    if (elementInstanceStateArray.get(0) != null) {
+      terminateChildInstance(elementInstanceStateArray.get(0));
+    }
+
+    if (elementInstanceStateArray.get(1) != null) {
+      appendFollowupBatchCommand(elementInstanceStateArray.get(1), recordValue);
+    } else {
+      stateWriter.appendFollowUpEvent(
+          record.getKey(), ProcessInstanceBatchIntent.TERMINATED, recordValue);
+    }
+  }
+
+  private void appendFollowupBatchCommand(
+      final ElementInstance childInstance, final ProcessInstanceBatchRecord recordValue) {
+    final var nextBatchRecord =
+        new ProcessInstanceBatchRecord()
+            .setProcessInstanceKey(recordValue.getProcessInstanceKey())
+            .setBatchElementInstanceKey(recordValue.getBatchElementInstanceKey())
+            .setIndex(childInstance.getKey());
+
+    commandWriter.appendFollowUpCommand(
+        keyGenerator.nextKey(), ProcessInstanceBatchIntent.TERMINATE, nextBatchRecord);
   }
 
   private boolean canWriteCommand(
