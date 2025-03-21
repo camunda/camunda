@@ -6575,12 +6575,22 @@ components:
           description: The sort values of the first item in the result set. Use this in the `searchBefore` field of an ensuing request.
           type: array
           items:
-            type: object
+            $ref: "#/components/schemas/SortValueResponse"
         lastSortValues:
           description: The sort values of the last item in the result set. Use this in the `searchAfter` field of an ensuing request.
           type: array
           items:
-            type: object
+            $ref: "#/components/schemas/SortValueResponse"
+    SortValueResponse:
+      description: Value and type of a sort field.
+      type: object
+      properties:
+        value:
+          type: object
+          description: The sort values of the item in the result set. .
+        type:
+            type: string
+            description: The data type of the sort value.
     DecisionRequirementsSearchQuerySortRequest:
       type: object
       properties:

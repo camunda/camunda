@@ -78,6 +78,7 @@ import io.camunda.zeebe.gateway.protocol.rest.ResourceTypeEnum;
 import io.camunda.zeebe.gateway.protocol.rest.RoleResult;
 import io.camunda.zeebe.gateway.protocol.rest.RoleSearchQueryResult;
 import io.camunda.zeebe.gateway.protocol.rest.SearchQueryPageResponse;
+import io.camunda.zeebe.gateway.protocol.rest.SortValueResponse;
 import io.camunda.zeebe.gateway.protocol.rest.TenantResult;
 import io.camunda.zeebe.gateway.protocol.rest.TenantSearchQueryResult;
 import io.camunda.zeebe.gateway.protocol.rest.UsageMetricsResponse;
@@ -285,10 +286,31 @@ public final class SearchQueryResponseMapper {
   private static SearchQueryPageResponse toSearchQueryPageResponse(
       final SearchQueryResult<?> result) {
 
-    final List<Object> firstSortValues =
-        ofNullable(result.firstSortValues()).map(Arrays::asList).orElse(emptyList());
-    final List<Object> lastSortValues =
-        ofNullable(result.lastSortValues()).map(Arrays::asList).orElse(emptyList());
+    final List<SortValueResponse> firstSortValues =
+        ofNullable(result.firstSortValues())
+            .map(
+                array ->
+                    Arrays.stream(array)
+                        .map(
+                            obj -> {
+                              final String type = determineValueType(obj);
+                              return new SortValueResponse().value(obj).type(type);
+                            })
+                        .collect(Collectors.toList()))
+            .orElse(emptyList());
+
+    final List<SortValueResponse> lastSortValues =
+        ofNullable(result.firstSortValues())
+            .map(
+                array ->
+                    Arrays.stream(array)
+                        .map(
+                            obj -> {
+                              final String type = determineValueType(obj);
+                              return new SortValueResponse().value(obj).type(type);
+                            })
+                        .collect(Collectors.toList()))
+            .orElse(emptyList());
 
     return new SearchQueryPageResponse()
         .totalItems(result.total())
@@ -746,6 +768,38 @@ public final class SearchQueryResponseMapper {
       return ProcessInstanceStateEnum.TERMINATED;
     }
     return ProcessInstanceStateEnum.fromValue(value.name());
+  }
+
+  private static String determineValueType(final Object value) {
+    if (value == null) {
+      return "null";
+    }
+
+    if (value instanceof Boolean) {
+      return "boolean";
+    }
+
+    if (value instanceof String) {
+      return "string";
+    }
+
+    if (value instanceof Integer) {
+      return "int64";
+    }
+
+    if (value instanceof Long) {
+      return "int64";
+    }
+
+    if (value instanceof Float || value instanceof Double) {
+      return "float";
+    }
+
+    if (value instanceof java.time.Instant || value instanceof java.util.Date) {
+      return "date";
+    }
+
+    return "object"; // Fallback
   }
 
   private record RuleIdentifier(String ruleId, int ruleIndex) {}
