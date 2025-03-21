@@ -21,11 +21,11 @@ import io.camunda.client.api.search.filter.UserTaskFilter;
 import io.camunda.client.api.search.filter.VariableFilter;
 import io.camunda.client.api.search.response.FlowNodeInstance;
 import io.camunda.client.api.search.response.Incident;
-import io.camunda.client.api.search.response.IncidentState;
 import io.camunda.client.api.search.response.ProcessDefinition;
 import io.camunda.client.api.search.response.ProcessInstance;
 import io.camunda.client.api.search.response.UserTask;
 import io.camunda.client.api.search.response.Variable;
+import io.camunda.client.wrappers.IncidentResult;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import java.util.List;
 import java.util.Map;
@@ -124,7 +124,7 @@ public class ProcessMigrationIT {
         i -> {
           assertThat(i.getFlowNodeId()).isEqualTo("taskB2");
           assertThat(i.getProcessDefinitionId()).isEqualTo("migration-process_v2");
-          assertThat(i.getState()).isEqualTo(IncidentState.ACTIVE);
+          assertThat(i.getState()).isEqualTo(IncidentResult.State.ACTIVE);
         });
   }
 
@@ -157,7 +157,7 @@ public class ProcessMigrationIT {
         i -> {
           assertThat(i.getFlowNodeId()).isEqualTo("taskB");
           assertThat(i.getProcessDefinitionId()).isEqualTo("migration-process_v1");
-          assertThat(i.getState()).isEqualTo(IncidentState.RESOLVED);
+          assertThat(i.getState()).isEqualTo(IncidentResult.State.RESOLVED);
         });
   }
 

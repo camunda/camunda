@@ -294,4 +294,126 @@ public class ProtocolEnumWrappersTest {
       }
     }
   }
+
+  @Test
+  public void shouldConvertIncidentResultState() {
+
+    for (final IncidentResult.State value : IncidentResult.State.values()) {
+      final io.camunda.client.protocol.rest.IncidentResult.StateEnum protocolValue =
+          IncidentResult.State.toProtocolEnum(value);
+      assertThat(protocolValue).isNotNull();
+      if (value == IncidentResult.State.UNKNOWN_ENUM_VALUE) {
+        assertThat(protocolValue)
+            .isEqualTo(
+                io.camunda.client.protocol.rest.IncidentResult.StateEnum.UNKNOWN_DEFAULT_OPEN_API);
+      } else {
+        assertThat(protocolValue.name()).isEqualTo(value.name());
+      }
+    }
+
+    for (final io.camunda.client.protocol.rest.IncidentResult.StateEnum protocolValue :
+        io.camunda.client.protocol.rest.IncidentResult.StateEnum.values()) {
+      final IncidentResult.State value = IncidentResult.State.fromProtocolEnum(protocolValue);
+      assertThat(value).isNotNull();
+      if (protocolValue
+          == io.camunda.client.protocol.rest.IncidentResult.StateEnum.UNKNOWN_DEFAULT_OPEN_API) {
+        assertThat(value).isEqualTo(IncidentResult.State.UNKNOWN_ENUM_VALUE);
+      } else {
+        assertThat(value.name()).isEqualTo(protocolValue.name());
+      }
+    }
+  }
+
+  @Test
+  public void shouldConvertIncidentResultErrorType() {
+
+    for (final IncidentResult.ErrorType value : IncidentResult.ErrorType.values()) {
+      final io.camunda.client.protocol.rest.IncidentResult.ErrorTypeEnum protocolValue =
+          IncidentResult.ErrorType.toProtocolEnum(value);
+      assertThat(protocolValue).isNotNull();
+      if (value == IncidentResult.ErrorType.UNKNOWN_ENUM_VALUE) {
+        assertThat(protocolValue)
+            .isEqualTo(
+                io.camunda.client.protocol.rest.IncidentResult.ErrorTypeEnum
+                    .UNKNOWN_DEFAULT_OPEN_API);
+      } else {
+        assertThat(protocolValue.name()).isEqualTo(value.name());
+      }
+    }
+
+    for (final io.camunda.client.protocol.rest.IncidentResult.ErrorTypeEnum protocolValue :
+        io.camunda.client.protocol.rest.IncidentResult.ErrorTypeEnum.values()) {
+      final IncidentResult.ErrorType value =
+          IncidentResult.ErrorType.fromProtocolEnum(protocolValue);
+      assertThat(value).isNotNull();
+      if (protocolValue
+          == io.camunda.client.protocol.rest.IncidentResult.ErrorTypeEnum
+              .UNKNOWN_DEFAULT_OPEN_API) {
+        assertThat(value).isEqualTo(IncidentResult.ErrorType.UNKNOWN_ENUM_VALUE);
+      } else {
+        assertThat(value.name()).isEqualTo(protocolValue.name());
+      }
+    }
+  }
+
+  @Test
+  public void shouldConvertIncidentFilterState() {
+
+    for (final IncidentFilter.State value : IncidentFilter.State.values()) {
+      final io.camunda.client.protocol.rest.IncidentFilter.StateEnum protocolValue =
+          IncidentFilter.State.toProtocolEnum(value);
+      assertThat(protocolValue).isNotNull();
+      if (value == IncidentFilter.State.UNKNOWN_ENUM_VALUE) {
+        assertThat(protocolValue)
+            .isEqualTo(
+                io.camunda.client.protocol.rest.IncidentFilter.StateEnum.UNKNOWN_DEFAULT_OPEN_API);
+      } else {
+        assertThat(protocolValue.name()).isEqualTo(value.name());
+      }
+    }
+
+    for (final io.camunda.client.protocol.rest.IncidentFilter.StateEnum protocolValue :
+        io.camunda.client.protocol.rest.IncidentFilter.StateEnum.values()) {
+      final IncidentFilter.State value = IncidentFilter.State.fromProtocolEnum(protocolValue);
+      assertThat(value).isNotNull();
+      if (protocolValue
+          == io.camunda.client.protocol.rest.IncidentFilter.StateEnum.UNKNOWN_DEFAULT_OPEN_API) {
+        assertThat(value).isEqualTo(IncidentFilter.State.UNKNOWN_ENUM_VALUE);
+      } else {
+        assertThat(value.name()).isEqualTo(protocolValue.name());
+      }
+    }
+  }
+
+  @Test
+  public void shouldConvertIncidentFilterErrorType() {
+
+    for (final IncidentFilter.ErrorType value : IncidentFilter.ErrorType.values()) {
+      final io.camunda.client.protocol.rest.IncidentFilter.ErrorTypeEnum protocolValue =
+          IncidentFilter.ErrorType.toProtocolEnum(value);
+      assertThat(protocolValue).isNotNull();
+      if (value == IncidentFilter.ErrorType.UNKNOWN_ENUM_VALUE) {
+        assertThat(protocolValue)
+            .isEqualTo(
+                io.camunda.client.protocol.rest.IncidentFilter.ErrorTypeEnum
+                    .UNKNOWN_DEFAULT_OPEN_API);
+      } else {
+        assertThat(protocolValue.name()).isEqualTo(value.name());
+      }
+    }
+
+    for (final io.camunda.client.protocol.rest.IncidentFilter.ErrorTypeEnum protocolValue :
+        io.camunda.client.protocol.rest.IncidentFilter.ErrorTypeEnum.values()) {
+      final IncidentFilter.ErrorType value =
+          IncidentFilter.ErrorType.fromProtocolEnum(protocolValue);
+      assertThat(value).isNotNull();
+      if (protocolValue
+          == io.camunda.client.protocol.rest.IncidentFilter.ErrorTypeEnum
+              .UNKNOWN_DEFAULT_OPEN_API) {
+        assertThat(value).isEqualTo(IncidentFilter.ErrorType.UNKNOWN_ENUM_VALUE);
+      } else {
+        assertThat(value.name()).isEqualTo(protocolValue.name());
+      }
+    }
+  }
 }
