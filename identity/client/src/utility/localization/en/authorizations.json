@@ -33,7 +33,6 @@
   "DELETE_PROCESS_INSTANCE": "Delete Process Instance",
   "DELETE_DECISION_INSTANCE": "Delete Decision Instance",
   "MAPPING": "Mapping",
-  "UNSPECIFIED": "Unspecified",
   "ownerType": "Owner type",
   "ownerId": "Owner ID",
   "resourceId": "Resource ID",
