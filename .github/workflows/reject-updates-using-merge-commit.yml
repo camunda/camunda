@@ -1,0 +1,62 @@
+# This workflow ensures that pull requests aren't updated using merge commits.
+# To update a pull request with the latest changes you should rebase your branch on the base branch.
+# For more information, please refer to our contributing guide's section on 'Updating a pull request':
+# https://github.com/camunda/camunda/blob/main/CONTRIBUTING.md#updating-a-pull-request
+#
+# It is allowed to have merge commits in a pull request.
+# An example is a pull request that builds upon the work of another pull request.
+
+name: Reject Merge Commits
+on: [pull_request]
+
+permissions: {}
+
+jobs:
+  check-merge-commits:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+          filter: tree:0
+
+      - name: Check for invalid merge commits
+        run: |
+          base="origin/${{ github.event.pull_request.base.ref }}"
+          head=${{ github.event.pull_request.head.sha }}
+
+          # Find the common ancestor between the base and the head
+          common_ancestor=$(git merge-base $base $head)
+
+          # Get the list of merge commits in the pull request
+          merge_commits=$(git rev-list --merges $common_ancestor..$head)
+
+          # Check each merge commit
+          for merge_commit in $merge_commits; do
+            # Get the parent commits of the merge commit
+            parents=$(git rev-list --parents -n 1 $merge_commit | cut -d' ' -f2-)
+
+            # Check if any parent commit exists in the base branch
+            for parent in $parents; do
+              if git merge-base --is-ancestor $parent $base; then
+                echo "Updating your pull request using a merge commit is not allowed."
+                echo "Please remove merge commit '$merge_commit' from your pull request,"
+                echo "and update your pull request by rebasing your branch onto '$base'."
+                echo "For more information, please refer to our contributing guide's section on 'Updating a pull request':"
+                echo "https://github.com/camunda/camunda/blob/main/CONTRIBUTING.md#updating-a-pull-request"
+
+                echo "> [!IMPORTANT]" >> $GITHUB_STEP_SUMMARY
+                echo "> Updating your pull request using a merge commit is not allowed." >> $GITHUB_STEP_SUMMARY
+                echo "> Please remove merge commit '$merge_commit' from your pull request," >> $GITHUB_STEP_SUMMARY
+                echo "> and update your pull request by rebasing your branch onto '$base'." >> $GITHUB_STEP_SUMMARY
+                echo "> For more information, please refer to our contributing guide's section on 'Updating a pull request':" >> $GITHUB_STEP_SUMMARY
+                echo "> https://github.com/camunda/camunda/blob/main/CONTRIBUTING.md#updating-a-pull-request" >> $GITHUB_STEP_SUMMARY
+
+                exit 1
+              fi
+            done
+          done
+
+          echo "No invalid merge commits found."
