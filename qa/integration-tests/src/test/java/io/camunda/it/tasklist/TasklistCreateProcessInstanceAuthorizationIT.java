@@ -30,7 +30,7 @@ import org.junit.jupiter.api.Test;
 @ZeebeIntegration
 public class TasklistCreateProcessInstanceAuthorizationIT {
 
-  private static final String PROCESS_ID = "foo";
+  private static final String PROCESS_ID = "PROCESS_WITH_USER_TASK";
 
   private static final String ADMIN_USER_NAME = "foo";
   private static final String ADMIN_USER_PASSWORD = "foo";

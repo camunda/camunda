@@ -38,8 +38,10 @@ public class HistoryCleanupIT {
     deployResource(camundaClient, RESOURCE_NAME).getProcesses().getFirst();
     waitForProcessesToBeDeployed(camundaClient, 1);
     // start two PIs
-    startProcessInstance(camundaClient, "foo", "{\"variable\":\"bud\"}");
-    startProcessInstance(camundaClient, "foo", "{\"variable\":\"bud2\"}");
+    startProcessInstance(
+        camundaClient, "PROCESS_WITH_USER_TASK_PRE_ASSIGNED", "{\"variable\":\"bud\"}");
+    startProcessInstance(
+        camundaClient, "PROCESS_WITH_USER_TASK_PRE_ASSIGNED", "{\"variable\":\"bud2\"}");
     // await them
     waitForProcessInstancesToStart(camundaClient, 2);
     waitForFlowNodeInstances(camundaClient, 4);
