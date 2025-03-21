@@ -45,6 +45,7 @@ public final class UserTaskRecord extends UnifiedRecordValue implements UserTask
   public static final String DUE_DATE = "dueDate";
   public static final String FOLLOW_UP_DATE = "followUpDate";
   public static final String PRIORITY = "priority";
+  public static final String VARIABLES = "variables";
 
   private static final String EMPTY_STRING = "";
   private static final StringValue ASSIGNEE_VALUE = new StringValue(ASSIGNEE);
@@ -53,6 +54,7 @@ public final class UserTaskRecord extends UnifiedRecordValue implements UserTask
   private static final StringValue DUE_DATE_VALUE = new StringValue(DUE_DATE);
   private static final StringValue FOLLOW_UP_DATE_VALUE = new StringValue(FOLLOW_UP_DATE);
   private static final StringValue PRIORITY_VALUE = new StringValue(PRIORITY);
+  private static final StringValue VARIABLES_VALUE = new StringValue(VARIABLES);
 
   /**
    * Defines the mapping between names of attributes that may be modified (updated or corrected) and
@@ -74,7 +76,8 @@ public final class UserTaskRecord extends UnifiedRecordValue implements UserTask
           CANDIDATE_USERS, UserTaskRecord::getCandidateUsersList,
           DUE_DATE, UserTaskRecord::getDueDateBuffer,
           FOLLOW_UP_DATE, UserTaskRecord::getFollowUpDateBuffer,
-          PRIORITY, UserTaskRecord::getPriority);
+          PRIORITY, UserTaskRecord::getPriority,
+          VARIABLES, UserTaskRecord::getVariablesBuffer);
 
   private final LongProperty userTaskKeyProp = new LongProperty("userTaskKey", -1);
   private final StringProperty assigneeProp = new StringProperty(ASSIGNEE, EMPTY_STRING);
@@ -577,6 +580,11 @@ public final class UserTaskRecord extends UnifiedRecordValue implements UserTask
 
   public UserTaskRecord setPriorityChanged() {
     changedAttributesProp.add().wrap(PRIORITY_VALUE);
+    return this;
+  }
+
+  public UserTaskRecord setVariablesChanged() {
+    changedAttributesProp.add().wrap(VARIABLES_VALUE);
     return this;
   }
 

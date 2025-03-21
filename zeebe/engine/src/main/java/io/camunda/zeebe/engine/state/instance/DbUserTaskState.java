@@ -49,10 +49,10 @@ public class DbUserTaskState implements MutableUserTaskState {
   private final ColumnFamily<DbLong, UserTaskIntermediateStateValue>
       userTasksIntermediateStatesColumnFamily;
 
-  private final UserTaskRecordRequestMetadata userTaskRecordRequestMetadata =
-      new UserTaskRecordRequestMetadata();
-  private final ColumnFamily<DbLong, UserTaskRecordRequestMetadata>
-      userTasksRecordRequestMetadataColumnFamily;
+  private final UserTaskTransitionTriggerRequestMetadata userTaskTransitionTriggerRequestMetadata =
+      new UserTaskTransitionTriggerRequestMetadata();
+  private final ColumnFamily<DbLong, UserTaskTransitionTriggerRequestMetadata>
+      userTasksTransitionTriggerRequestMetadataColumnFamily;
 
   public DbUserTaskState(
       final ZeebeDb<ZbColumnFamilies> zeebeDb, final TransactionContext transactionContext) {
@@ -75,12 +75,12 @@ public class DbUserTaskState implements MutableUserTaskState {
             userTaskIntermediateStateKey,
             userTaskIntermediateStateToRead);
 
-    userTasksRecordRequestMetadataColumnFamily =
+    userTasksTransitionTriggerRequestMetadataColumnFamily =
         zeebeDb.createColumnFamily(
-            ZbColumnFamilies.USER_TASK_RECORD_REQUEST_METADATA,
+            ZbColumnFamilies.USER_TASK_TRANSITION_TRIGGER_REQUEST_METADATA,
             transactionContext,
             userTaskKey,
-            userTaskRecordRequestMetadata);
+            userTaskTransitionTriggerRequestMetadata);
   }
 
   @Override
@@ -154,15 +154,16 @@ public class DbUserTaskState implements MutableUserTaskState {
 
   @Override
   public void storeRecordRequestMetadata(
-      final long key, final UserTaskRecordRequestMetadata recordRequestMetadata) {
+      final long key, final UserTaskTransitionTriggerRequestMetadata recordRequestMetadata) {
     userTaskKey.wrapLong(key);
-    userTasksRecordRequestMetadataColumnFamily.insert(userTaskKey, recordRequestMetadata);
+    userTasksTransitionTriggerRequestMetadataColumnFamily.insert(
+        userTaskKey, recordRequestMetadata);
   }
 
   @Override
   public void deleteRecordRequestMetadata(final long key) {
     userTaskKey.wrapLong(key);
-    userTasksRecordRequestMetadataColumnFamily.deleteIfExists(userTaskKey);
+    userTasksTransitionTriggerRequestMetadataColumnFamily.deleteIfExists(userTaskKey);
   }
 
   @Override
@@ -199,8 +200,10 @@ public class DbUserTaskState implements MutableUserTaskState {
   }
 
   @Override
-  public Optional<UserTaskRecordRequestMetadata> findRecordRequestMetadata(final long key) {
+  public Optional<UserTaskTransitionTriggerRequestMetadata> findRecordRequestMetadata(
+      final long key) {
     userTaskKey.wrapLong(key);
-    return Optional.ofNullable(userTasksRecordRequestMetadataColumnFamily.get(userTaskKey));
+    return Optional.ofNullable(
+        userTasksTransitionTriggerRequestMetadataColumnFamily.get(userTaskKey));
   }
 }

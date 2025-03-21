@@ -9,6 +9,7 @@ package io.camunda.zeebe.engine.processing.multitenancy;
 
 import static io.camunda.zeebe.protocol.record.Assertions.assertThat;
 
+import io.camunda.security.configuration.ConfiguredUser;
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.protocol.record.RejectionType;
@@ -16,7 +17,9 @@ import io.camunda.zeebe.protocol.record.intent.VariableDocumentIntent;
 import io.camunda.zeebe.protocol.record.value.EntityType;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
+import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
@@ -24,10 +27,20 @@ import org.junit.rules.TestWatcher;
 
 public class TenantAwareUpdateVariablesTest {
 
+  public static final String USERNAME = UUID.randomUUID().toString();
+  public static final ConfiguredUser DEFAULT_USER =
+      new ConfiguredUser(
+          USERNAME,
+          UUID.randomUUID().toString(),
+          UUID.randomUUID().toString(),
+          UUID.randomUUID().toString());
+
   @ClassRule
   public static final EngineRule ENGINE =
       EngineRule.singlePartition()
-          .withSecurityConfig(config -> config.getMultiTenancy().setEnabled(true));
+          .withIdentitySetup()
+          .withSecurityConfig(config -> config.getMultiTenancy().setEnabled(true))
+          .withSecurityConfig(config -> config.getInitialization().setUsers(List.of(DEFAULT_USER)));
 
   @Rule public final TestWatcher watcher = new RecordingExporterTestWatcher();
 
@@ -59,7 +72,7 @@ public class TenantAwareUpdateVariablesTest {
             .ofScope(processInstanceKey)
             .forAuthorizedTenants(TenantOwned.DEFAULT_TENANT_IDENTIFIER)
             .withDocument(Map.of("foo", "bar"))
-            .update();
+            .update(USERNAME);
 
     // then
     assertThat(updated)
@@ -116,6 +129,15 @@ public class TenantAwareUpdateVariablesTest {
   @Test
   public void shouldUpdateVariablesForSpecificTenant() {
     // given
+    final var tenantId = "custom-tenant";
+    ENGINE.tenant().newTenant().withTenantId(tenantId).create();
+    ENGINE
+        .tenant()
+        .addEntity(tenantId)
+        .withEntityId(USERNAME)
+        .withEntityType(EntityType.USER)
+        .add();
+
     ENGINE
         .deployment()
         .withXmlResource(
@@ -124,20 +146,20 @@ public class TenantAwareUpdateVariablesTest {
                 .serviceTask("task", t -> t.zeebeJobType("test"))
                 .endEvent()
                 .done())
-        .withTenantId("custom-tenant")
+        .withTenantId(tenantId)
         .deploy();
 
     final long processInstanceKey =
-        ENGINE.processInstance().ofBpmnProcessId("process").withTenantId("custom-tenant").create();
+        ENGINE.processInstance().ofBpmnProcessId("process").withTenantId(tenantId).create();
 
     // when
     final var updated =
         ENGINE
             .variables()
             .ofScope(processInstanceKey)
-            .forAuthorizedTenants("custom-tenant")
+            .forAuthorizedTenants(tenantId)
             .withDocument(Map.of("foo", "bar"))
-            .update();
+            .update(USERNAME);
 
     // then
     assertThat(updated)

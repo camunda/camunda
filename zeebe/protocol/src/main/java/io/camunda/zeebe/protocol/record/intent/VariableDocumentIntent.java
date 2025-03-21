@@ -17,7 +17,9 @@ package io.camunda.zeebe.protocol.record.intent;
 
 public enum VariableDocumentIntent implements Intent {
   UPDATE(0),
-  UPDATED(1);
+  UPDATED(1),
+  UPDATING(2),
+  UPDATE_DENIED(3);
 
   private final short value;
 
@@ -38,6 +40,8 @@ public enum VariableDocumentIntent implements Intent {
   public boolean isEvent() {
     switch (this) {
       case UPDATED:
+      case UPDATING:
+      case UPDATE_DENIED:
         return true;
       default:
         return false;
@@ -50,6 +54,10 @@ public enum VariableDocumentIntent implements Intent {
         return UPDATE;
       case 1:
         return UPDATED;
+      case 2:
+        return UPDATING;
+      case 3:
+        return UPDATE_DENIED;
       default:
         return UNKNOWN;
     }

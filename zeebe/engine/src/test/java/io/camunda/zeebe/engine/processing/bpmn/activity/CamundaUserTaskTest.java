@@ -24,6 +24,8 @@ import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
+import io.camunda.zeebe.protocol.record.intent.VariableDocumentIntent;
+import io.camunda.zeebe.protocol.record.intent.VariableIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
@@ -31,8 +33,10 @@ import io.camunda.zeebe.protocol.record.value.UserTaskRecordValue;
 import io.camunda.zeebe.test.util.Strings;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
+import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
+import org.assertj.core.groups.Tuple;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Rule;
@@ -1008,5 +1012,92 @@ public final class CamundaUserTaskTest {
             .getFirst();
 
     Assertions.assertThat(userTask.getValue()).hasPriority(50);
+  }
+
+  @Test
+  public void shouldRejectVariableUpdateWithPropagateSemanticForUserTask() {
+    // given
+    ENGINE.deployment().withXmlResource(process()).deploy();
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    final var createdUserTaskRecord =
+        RecordingExporter.userTaskRecords(UserTaskIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst();
+
+    // when: attempting to update variables with 'PROPAGATE' semantic for a user task instance
+    final var variableUpdateRejection =
+        ENGINE
+            .variables()
+            .ofScope(createdUserTaskRecord.getValue().getElementInstanceKey())
+            .withDocument(Map.of("approvalStatus", "SUBMITTED"))
+            .withPropagateSemantic()
+            .expectRejection()
+            .update();
+
+    // then
+    Assertions.assertThat(variableUpdateRejection)
+        .describedAs(
+            "Expect rejection when trying to update variables for a user task instance with 'PROPAGATE' semantic")
+        .hasRecordType(RecordType.COMMAND_REJECTION)
+        .hasValueType(ValueType.VARIABLE_DOCUMENT)
+        .hasRejectionReason(
+            "Expected to update variables for user task with key '%d', but updates with 'PROPAGATE' semantic are not supported yet."
+                .formatted(createdUserTaskRecord.getKey()));
+  }
+
+  @Test
+  public void
+      shouldUpdateVariablesAndPassUserTaskUpdateTransitionWhenUserTaskHasNoUpdatingListeners() {
+    // given
+    ENGINE.deployment().withXmlResource(process()).deploy();
+    final long processInstanceKey =
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId(PROCESS_ID)
+            .withVariables(Map.of("approvalStatus", "PENDING"))
+            .create();
+
+    final var createdUserTaskRecord =
+        RecordingExporter.userTaskRecords(UserTaskIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst();
+
+    // when: updating task-scoped variables
+    final var variableUpdateRecord =
+        ENGINE
+            .variables()
+            .ofScope(createdUserTaskRecord.getValue().getElementInstanceKey())
+            .withDocument(Map.of("approvalStatus", "SUBMITTED"))
+            .withLocalSemantic()
+            .update();
+
+    // then: variable update should be successful and trigger the user task update transition
+    Assertions.assertThat(variableUpdateRecord)
+        .describedAs("Expect variables to be successfully updated for a user task")
+        .hasRecordType(RecordType.EVENT)
+        .hasIntent(VariableDocumentIntent.UPDATED)
+        .hasValueType(ValueType.VARIABLE_DOCUMENT);
+
+    Assertions.assertThat(
+            RecordingExporter.variableRecords(VariableIntent.CREATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .withScopeKey(createdUserTaskRecord.getValue().getElementInstanceKey())
+                .getFirst()
+                .getValue())
+        .describedAs("Expect the variable to be created at the local scope of user task element")
+        .hasName("approvalStatus")
+        .hasValue("\"SUBMITTED\"");
+
+    assertThat(
+            RecordingExporter.userTaskRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .limit(r -> r.getIntent() == UserTaskIntent.UPDATED))
+        .extracting(Record::getIntent, r -> r.getValue().getChangedAttributes())
+        .describedAs(
+            "Expect the user task to pass the update transition with variables as a changed attribute")
+        .containsSequence(
+            Tuple.tuple(UserTaskIntent.UPDATING, List.of(UserTaskRecord.VARIABLES)),
+            Tuple.tuple(UserTaskIntent.UPDATED, List.of(UserTaskRecord.VARIABLES)));
   }
 }

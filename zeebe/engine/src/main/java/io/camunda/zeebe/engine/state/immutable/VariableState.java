@@ -7,9 +7,11 @@
  */
 package io.camunda.zeebe.engine.state.immutable;
 
+import io.camunda.zeebe.engine.state.instance.VariableDocumentState;
 import io.camunda.zeebe.engine.state.variable.VariableInstance;
 import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 import org.agrona.DirectBuffer;
 
 public interface VariableState {
@@ -49,6 +51,19 @@ public interface VariableState {
    *     VariableState#NO_PARENT}
    */
   long getParentScopeKey(long childScopeKey);
+
+  /**
+   * Attempts to retrieve the persisted {@link VariableDocumentState} for the given scope key.
+   *
+   * <p>This method provides access to the variable document key and its associated variable
+   * document record within the specified scope. It's particularly useful in scenarios where the
+   * original variable update request needs to be referenced, such as during the finalization of a
+   * user task update transition triggered by a {@code VariableDocumentIntent#UPDATE} command.
+   *
+   * @param scopeKey the scope key for which to retrieve the variable document
+   * @return an {@link Optional} containing the {@link VariableDocumentState} if found
+   */
+  Optional<VariableDocumentState> findVariableDocumentState(long scopeKey);
 
   /** Data wrapper for a variable. */
   record Variable(long key, long scopeKey, DirectBuffer name, DirectBuffer value) {}

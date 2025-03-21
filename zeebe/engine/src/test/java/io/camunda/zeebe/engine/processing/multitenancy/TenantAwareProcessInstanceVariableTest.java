@@ -9,25 +9,40 @@ package io.camunda.zeebe.engine.processing.multitenancy;
 
 import static org.assertj.core.api.Assertions.entry;
 
+import io.camunda.security.configuration.ConfiguredUser;
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.VariableIntent;
+import io.camunda.zeebe.protocol.record.value.EntityType;
 import io.camunda.zeebe.protocol.record.value.VariableRecordValue;
 import io.camunda.zeebe.test.util.collection.Maps;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
+import java.util.List;
+import java.util.UUID;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
 
 public class TenantAwareProcessInstanceVariableTest {
 
+  public static final String USERNAME = UUID.randomUUID().toString();
+  public static final ConfiguredUser DEFAULT_USER =
+      new ConfiguredUser(
+          USERNAME,
+          UUID.randomUUID().toString(),
+          UUID.randomUUID().toString(),
+          UUID.randomUUID().toString());
+
   @ClassRule
   public static final EngineRule ENGINE_RULE =
       EngineRule.singlePartition()
-          .withSecurityConfig(config -> config.getMultiTenancy().setEnabled(true));
+          .withIdentitySetup()
+          .withSecurityConfig(config -> config.getMultiTenancy().setEnabled(true))
+          .withSecurityConfig(config -> config.getInitialization().setUsers(List.of(DEFAULT_USER)));
 
   public static final String PROCESS_ID = "process";
   private static final String TENANT_ID = "foo";
@@ -40,6 +55,17 @@ public class TenantAwareProcessInstanceVariableTest {
           .done();
 
   private long processDefinitionKey;
+
+  @BeforeClass
+  public static void beforeClass() {
+    ENGINE_RULE.tenant().newTenant().withTenantId(TENANT_ID).create();
+    ENGINE_RULE
+        .tenant()
+        .addEntity(TENANT_ID)
+        .withEntityId(USERNAME)
+        .withEntityType(EntityType.USER)
+        .add();
+  }
 
   @Before
   public void init() {
@@ -97,7 +123,7 @@ public class TenantAwareProcessInstanceVariableTest {
         .ofScope(processInstanceKey)
         .withDocument(Maps.of(entry("x", 2)))
         .forAuthorizedTenants(TENANT_ID)
-        .update();
+        .update(USERNAME);
 
     // then
     final Record<VariableRecordValue> variableUpdated =

@@ -11,7 +11,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 
 import io.camunda.zeebe.engine.util.EngineRule;
-import io.camunda.zeebe.engine.util.client.UserTaskClient;
 import io.camunda.zeebe.model.bpmn.builder.UserTaskBuilder;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskListenerEventType;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobResult;
@@ -21,6 +20,7 @@ import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
+import io.camunda.zeebe.protocol.record.intent.VariableDocumentIntent;
 import io.camunda.zeebe.protocol.record.value.JobKind;
 import io.camunda.zeebe.protocol.record.value.JobListenerEventType;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
@@ -28,6 +28,7 @@ import io.camunda.zeebe.protocol.record.value.UserTaskRecordValue;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.function.Consumer;
 import java.util.function.UnaryOperator;
@@ -297,6 +298,48 @@ public class TaskListenerDenialsTest {
   }
 
   @Test
+  public void shouldDenyUserTaskUpdateWhenUpdatingListenerDeniesTransitionOnTaskVariablesUpdate() {
+    // given: a process instance with a user task that has an `updating` task listener
+    final long processInstanceKey =
+        helper.createProcessInstance(
+            helper.createUserTaskWithTaskListeners(
+                ZeebeTaskListenerEventType.updating, listenerType));
+
+    // when: updating task-scoped variables
+    final var userTaskInstanceKey = helper.getUserTaskElementInstanceKey(processInstanceKey);
+    ENGINE
+        .variables()
+        .ofScope(userTaskInstanceKey)
+        .withDocument(Map.of("status", "APPROVED"))
+        .withLocalSemantic()
+        .expectUpdating()
+        .update();
+
+    // then: deny the update transition from the listener job
+    ENGINE
+        .job()
+        .ofInstance(processInstanceKey)
+        .withType(listenerType)
+        .withResult(new JobResult().setDenied(true))
+        .complete();
+
+    // verify that `DENY_TASK_LISTENER` and `UPDATE_DENIED` are written after `UPDATING`
+    helper.assertUserTaskIntentsSequence(
+        processInstanceKey,
+        UserTaskIntent.UPDATING,
+        UserTaskIntent.DENY_TASK_LISTENER,
+        UserTaskIntent.UPDATE_DENIED);
+
+    assertThat(
+            RecordingExporter.variableDocumentRecords(VariableDocumentIntent.UPDATE_DENIED)
+                .withScopeKey(userTaskInstanceKey)
+                .exists())
+        .describedAs(
+            "Expect a VariableDocument.UPDATE_DENIED event when variables update was denied")
+        .isTrue();
+  }
+
+  @Test
   public void shouldRejectUserTaskCompletionWhenCompletingTaskListenerDeniesTheTransition() {
     // given
     final long processInstanceKey =
@@ -443,6 +486,65 @@ public class TaskListenerDenialsTest {
             tuple(UserTaskIntent.UPDATED, ""));
   }
 
+  @Test
+  public void
+      shouldAcceptUserTaskUpdateAfterTaskListenerRejectsTheOperationWithDeniedReasonOnTaskVariablesUpdate() {
+    // given: a process instance with a user task that has an `updating` task listener
+    final long processInstanceKey =
+        helper.createProcessInstance(
+            helper.createUserTaskWithTaskListeners(
+                ZeebeTaskListenerEventType.updating, listenerType));
+
+    final var userTaskInstanceKey = helper.getUserTaskElementInstanceKey(processInstanceKey);
+
+    // when: first update attempt with variable update
+    ENGINE
+        .variables()
+        .ofScope(userTaskInstanceKey)
+        .withDocument(Map.of("status", "APPROVED"))
+        .withLocalSemantic()
+        .expectUpdating()
+        .update();
+
+    // first attempt is denied
+    ENGINE
+        .job()
+        .ofInstance(processInstanceKey)
+        .withType(listenerType)
+        .withResult(new JobResult().setDenied(true))
+        .complete();
+
+    // when: retry the variable update
+    ENGINE
+        .variables()
+        .ofScope(userTaskInstanceKey)
+        .withDocument(Map.of("status", "CONFIRMED"))
+        .withLocalSemantic()
+        .expectUpdating()
+        .update();
+
+    // accept the transition this time
+    helper.completeRecreatedJobWithType(processInstanceKey, listenerType);
+
+    // then: verify that `UPDATING`, `COMPLETE_TASK_LISTENER`, and `UPDATED` events are present
+    helper.assertUserTaskIntentsSequence(
+        processInstanceKey,
+        UserTaskIntent.UPDATING,
+        UserTaskIntent.DENY_TASK_LISTENER,
+        UserTaskIntent.UPDATE_DENIED,
+        UserTaskIntent.UPDATING,
+        UserTaskIntent.COMPLETE_TASK_LISTENER,
+        UserTaskIntent.UPDATED);
+
+    assertThat(
+            RecordingExporter.variableDocumentRecords(VariableDocumentIntent.UPDATE_DENIED)
+                .withScopeKey(userTaskInstanceKey)
+                .exists())
+        .describedAs(
+            "Expect a VariableDocument.UPDATE_DENIED event when variables update was denied")
+        .isTrue();
+  }
+
   private String getDeniedReason(final UserTaskRecordValue record) {
     // This is to be removed when denied reason is exposed in the UserTaskRecordValue interface.
     // Currently added in order to separate processing implementation.
@@ -561,7 +663,7 @@ public class TaskListenerDenialsTest {
     testRevertCorrectedUserTaskDataWhenTaskListenerDenies(
         ZeebeTaskListenerEventType.assigning,
         u -> u,
-        userTask -> userTask.withAssignee("initial_assignee").assign(),
+        pik -> ENGINE.userTask().ofInstance(pik).withAssignee("initial_assignee").assign(),
         UserTaskIntent.ASSIGNMENT_DENIED);
   }
 
@@ -570,7 +672,7 @@ public class TaskListenerDenialsTest {
     testRevertCorrectedUserTaskDataWhenTaskListenerDenies(
         ZeebeTaskListenerEventType.assigning,
         u -> u,
-        userTask -> userTask.withAssignee("initial_assignee").claim(),
+        pik -> ENGINE.userTask().ofInstance(pik).withAssignee("initial_assignee").claim(),
         UserTaskIntent.ASSIGNMENT_DENIED);
   }
 
@@ -579,7 +681,24 @@ public class TaskListenerDenialsTest {
     testRevertCorrectedUserTaskDataWhenTaskListenerDenies(
         ZeebeTaskListenerEventType.updating,
         u -> u,
-        UserTaskClient::update,
+        pik -> ENGINE.userTask().ofInstance(pik).update(),
+        UserTaskIntent.UPDATE_DENIED);
+  }
+
+  @Test
+  public void
+      shouldRevertCorrectedUserTaskDataWhenUpdatingTaskListenerDeniesOnTaskVariablesUpdate() {
+    testRevertCorrectedUserTaskDataWhenTaskListenerDenies(
+        ZeebeTaskListenerEventType.updating,
+        u -> u,
+        pik ->
+            ENGINE
+                .variables()
+                .ofScope(helper.getUserTaskElementInstanceKey(pik))
+                .withDocument(Map.of("status", "APPROVED"))
+                .withLocalSemantic()
+                .expectUpdating()
+                .update(),
         UserTaskIntent.UPDATE_DENIED);
   }
 
@@ -588,14 +707,14 @@ public class TaskListenerDenialsTest {
     testRevertCorrectedUserTaskDataWhenTaskListenerDenies(
         ZeebeTaskListenerEventType.completing,
         u -> u,
-        UserTaskClient::complete,
+        pik -> ENGINE.userTask().ofInstance(pik).complete(),
         UserTaskIntent.COMPLETION_DENIED);
   }
 
   private void testRevertCorrectedUserTaskDataWhenTaskListenerDenies(
       final ZeebeTaskListenerEventType eventType,
       final UnaryOperator<UserTaskBuilder> userTaskBuilder,
-      final Consumer<UserTaskClient> userTaskAction,
+      final Consumer<Long> transitionTrigger,
       final UserTaskIntent expectedUserTaskIntent) {
     // given
     final long processInstanceKey =
@@ -607,7 +726,7 @@ public class TaskListenerDenialsTest {
                         .zeebeTaskListener(l -> l.eventType(eventType).type(listenerType))
                         .zeebeTaskListener(l -> l.eventType(eventType).type(listenerType + "_2"))));
 
-    userTaskAction.accept(ENGINE.userTask().ofInstance(processInstanceKey));
+    transitionTrigger.accept(processInstanceKey);
 
     // when
     ENGINE
