@@ -45,6 +45,9 @@ runs:
 
         security list-keychains -s build.keychain $(security list-keychains | sed 's/\"//g')
         security default-keychain -s build.keychain
+      env:
+        INPUT_P12_BASE64: ${{ inputs.p12-base64 }}
+        INPUT_P12_PASSWORD: ${{ inputs.p12-password }}
 
     # STEP B: Make signing script executable
     - name: Make script executable
@@ -61,4 +64,10 @@ runs:
           "$INPUT_APPLE_ID" \
           "$INPUT_APP_PASSWORD" \
           "$INPUT_TEAM_ID"
+      env:
+        INPUT_PATH: ${{ inputs.path }}
+        INPUT_DEVELOPER_ID_CERT_NAME: ${{ inputs.developer-id-cert-name }}
+        INPUT_APPLE_ID: ${{ inputs.apple-id }}
+        INPUT_APP_PASSWORD: ${{ inputs.app-password }}
+        INPUT_TEAM_ID: ${{ inputs.team-id }}
 
