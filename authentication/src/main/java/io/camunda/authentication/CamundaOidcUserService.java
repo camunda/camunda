@@ -62,6 +62,9 @@ public class CamundaOidcUserService extends OidcUserService {
     final List<MappingEntity> mappings = mappingServices.getMatchingMappings(claims);
     final Set<Long> mappingKeys =
         mappings.stream().map(MappingEntity::mappingKey).collect(Collectors.toSet());
+    // TODO remove mapping when refactoring to IDs
+    final Set<String> mappingIds =
+        mappingKeys.stream().map(String::valueOf).collect(Collectors.toSet());
     if (mappingKeys.isEmpty()) {
       LOG.debug("No mappings found for these claims: {}", claims);
     }
@@ -79,7 +82,7 @@ public class CamundaOidcUserService extends OidcUserService {
                         mappingKeys.stream()
                             .map(String::valueOf)) // TODO remove mapping when refactoring to IDs
                     .collect(Collectors.toSet())),
-            tenantServices.getTenantsByMemberKeys(mappingKeys).stream()
+            tenantServices.getTenantsByMemberIds(mappingIds).stream()
                 .map(TenantDTO::fromEntity)
                 .toList(),
             groupServices.getGroupsByMemberKeys(mappingKeys).stream()

@@ -13,17 +13,24 @@ import static org.springframework.http.HttpStatus.NOT_FOUND;
 import static org.springframework.http.HttpStatus.OK;
 
 import io.camunda.client.CamundaClient;
-import io.camunda.qa.util.cluster.TestStandaloneCamunda;
-import io.camunda.security.entity.AuthenticationMethod;
-import io.camunda.zeebe.it.util.AuthorizationsUtil;
-import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
+import io.camunda.qa.util.auth.Authenticated;
+import io.camunda.qa.util.auth.User;
+import io.camunda.qa.util.auth.UserDefinition;
+import io.camunda.qa.util.cluster.TestSimpleCamundaApplication;
+import io.camunda.qa.util.multidb.MultiDbTest;
+import io.camunda.qa.util.multidb.MultiDbTestApplication;
+import io.camunda.security.configuration.InitializationConfiguration;
 import java.time.Duration;
+import java.util.List;
 import org.awaitility.Awaitility;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 
-@ZeebeIntegration
+@MultiDbTest
+@DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "os")
+@DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "rdbms")
+@DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "AWS_OS")
 public class OperateMultiTenancyIT {
 
   public static final String PASSWORD = "password";
@@ -32,92 +39,97 @@ public class OperateMultiTenancyIT {
   private static final String USERNAME_1 = "user1";
   private static final String USERNAME_2 = "user2";
   private static final String PROCESS_DEFINITION_ID = "service_tasks_v1";
+  private static long procDefKey1;
+  private static long procDefKey2;
 
-  private long processDefinitionKey1;
-  private long processDefinitionKey2;
+  @MultiDbTestApplication
+  private static final TestSimpleCamundaApplication TEST_INSTANCE =
+      new TestSimpleCamundaApplication().withBasicAuth().withMultiTenancyEnabled();
 
-  @ZeebeIntegration.TestZeebe
-  private final TestStandaloneCamunda testInstance =
-      new TestStandaloneCamunda()
-          .withCamundaExporter()
-          .withAuthenticationMethod(AuthenticationMethod.BASIC)
-          .withMultiTenancyEnabled();
+  @UserDefinition private static final User USER1 = new User(USERNAME_1, PASSWORD, List.of());
 
-  @BeforeEach
-  public void beforeEach() {
-    try (final var authorizationsUtil =
-        AuthorizationsUtil.create(testInstance, testInstance.getElasticSearchHostAddress())) {
-      authorizationsUtil.createUser(USERNAME_1, PASSWORD);
-      authorizationsUtil.createUser(USERNAME_2, PASSWORD);
-      authorizationsUtil.createTenant(TENANT_ID_1, TENANT_ID_1, USERNAME_1);
-      authorizationsUtil.createTenant(TENANT_ID_2, TENANT_ID_2, USERNAME_2);
+  @UserDefinition private static final User USER2 = new User(USERNAME_2, PASSWORD, List.of());
 
-      final var processTenant1 =
-          deployResourceForTenant(
-                  authorizationsUtil.getDefaultClient(),
-                  String.format("process/%s.bpmn", PROCESS_DEFINITION_ID),
-                  TENANT_ID_1)
-              .getProcesses()
-              .getFirst();
-      assertThat(processTenant1.getTenantId()).isEqualTo(TENANT_ID_1);
-      processDefinitionKey1 = processTenant1.getProcessDefinitionKey();
+  @BeforeAll
+  public static void beforeAll(
+      @Authenticated(InitializationConfiguration.DEFAULT_USER_USERNAME)
+          final CamundaClient adminClient,
+      @Authenticated(USERNAME_1) final CamundaClient user1Client,
+      @Authenticated(USERNAME_2) final CamundaClient user2Client) {
+    createTenant(
+        adminClient,
+        TENANT_ID_1,
+        TENANT_ID_1,
+        InitializationConfiguration.DEFAULT_USER_USERNAME,
+        USERNAME_1);
+    createTenant(
+        adminClient,
+        TENANT_ID_2,
+        TENANT_ID_2,
+        InitializationConfiguration.DEFAULT_USER_USERNAME,
+        USERNAME_2);
 
-      final var processTenant2 =
-          deployResourceForTenant(
-                  authorizationsUtil.getDefaultClient(),
-                  String.format("process/%s.bpmn", PROCESS_DEFINITION_ID),
-                  TENANT_ID_2)
-              .getProcesses()
-              .getFirst();
-      assertThat(processTenant2.getTenantId()).isEqualTo(TENANT_ID_2);
-      processDefinitionKey2 = processTenant2.getProcessDefinitionKey();
+    final var processTenant1 =
+        deployResourceForTenant(
+                adminClient, String.format("process/%s.bpmn", PROCESS_DEFINITION_ID), TENANT_ID_1)
+            .getProcesses()
+            .getFirst();
+    assertThat(processTenant1.getTenantId()).isEqualTo(TENANT_ID_1);
+    procDefKey1 = processTenant1.getProcessDefinitionKey();
 
-      waitForProcessesToBeDeployed(authorizationsUtil.getDefaultClient(), 2);
-    }
+    final var processTenant2 =
+        deployResourceForTenant(
+                adminClient, String.format("process/%s.bpmn", PROCESS_DEFINITION_ID), TENANT_ID_2)
+            .getProcesses()
+            .getFirst();
+    assertThat(processTenant2.getTenantId()).isEqualTo(TENANT_ID_2);
+    procDefKey2 = processTenant2.getProcessDefinitionKey();
+
+    waitForProcessesToBeDeployed(adminClient, 2);
   }
 
   @Test
-  @Disabled
   public void shouldGetProcessByKeyOnlyForProcessesInAuthenticatedTenants() {
-    try (final var operateClient1 = testInstance.newOperateClient(USERNAME_1, PASSWORD);
-        final var operateClient2 = testInstance.newOperateClient(USERNAME_2, PASSWORD)) {
+    try (final var operateClient1 = TEST_INSTANCE.newOperateClient(USERNAME_1, PASSWORD);
+        final var operateClient2 = TEST_INSTANCE.newOperateClient(USERNAME_2, PASSWORD)) {
       // user 1 can read process definition 1
-      assertThat(
-              operateClient1
-                  .internalGetProcessDefinitionByKey(processDefinitionKey1)
-                  .get()
-                  .statusCode())
+      assertThat(operateClient1.internalGetProcessDefinitionByKey(procDefKey1).get().statusCode())
           .isEqualTo(OK.value());
 
       // user 1 cannot read process definition 2
-      assertThat(
-              operateClient1
-                  .internalGetProcessDefinitionByKey(processDefinitionKey2)
-                  .get()
-                  .statusCode())
+      assertThat(operateClient1.internalGetProcessDefinitionByKey(procDefKey2).get().statusCode())
           .isEqualTo(NOT_FOUND.value());
 
       // user 2 can read process definition 2
-      assertThat(
-              operateClient2
-                  .internalGetProcessDefinitionByKey(processDefinitionKey2)
-                  .get()
-                  .statusCode())
+      assertThat(operateClient2.internalGetProcessDefinitionByKey(procDefKey2).get().statusCode())
           .isEqualTo(OK.value());
 
       // user 2 cannot read process definition 1
-      assertThat(
-              operateClient2
-                  .internalGetProcessDefinitionByKey(processDefinitionKey1)
-                  .get()
-                  .statusCode())
+      assertThat(operateClient2.internalGetProcessDefinitionByKey(procDefKey1).get().statusCode())
           .isEqualTo(NOT_FOUND.value());
+    }
+  }
+
+  public static void createTenant(
+      final CamundaClient client,
+      final String tenantId,
+      final String tenantName,
+      final String... usernames) {
+    client
+        .newCreateTenantCommand()
+        .tenantId(tenantId)
+        .name(tenantName)
+        .send()
+        .join()
+        .getTenantKey();
+    for (final var username : usernames) {
+      client.newAssignUserToTenantCommand(tenantId).username(username).send().join();
     }
   }
 
   private static void waitForProcessesToBeDeployed(
       final CamundaClient camundaClient, final int expectedProcessDefinitions) {
-    Awaitility.await("Should processes be exported to Elasticsearch")
+    Awaitility.await("Should processes be exported")
         .atMost(Duration.ofSeconds(15))
         .ignoreExceptions() // Ignore exceptions and continue retrying
         .untilAsserted(

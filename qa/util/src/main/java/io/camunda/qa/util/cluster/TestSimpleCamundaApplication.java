@@ -148,6 +148,11 @@ public final class TestSimpleCamundaApplication
     return withSecurityConfig(cfg -> cfg.getAuthorizations().setEnabled(true));
   }
 
+  public TestSimpleCamundaApplication withMultiTenancyEnabled() {
+    withAuthenticatedAccess();
+    return withSecurityConfig(cfg -> cfg.getMultiTenancy().setEnabled(true));
+  }
+
   @Override
   public TestSimpleCamundaApplication self() {
     return this;
@@ -249,6 +254,10 @@ public final class TestSimpleCamundaApplication
 
   public TestRestOperateClient newOperateClient() {
     return new TestRestOperateClient(restAddress());
+  }
+
+  public TestRestOperateClient newOperateClient(final String username, final String password) {
+    return new TestRestOperateClient(restAddress(), username, password);
   }
 
   public TestRestTasklistClient newTasklistClient() {
