@@ -50,8 +50,7 @@ public class JacksonConfig {
     return builder.build();
   }
 
-  @Bean
-  @Qualifier("yamlObjectMapper")
+  @Bean("yamlObjectMapper")
   public ObjectMapper yamlObjectMapper() {
     final var builder = new Jackson2ObjectMapperBuilder().factory(new YAMLFactory());
     gatewayRestObjectMapperCustomizer().accept(builder);
