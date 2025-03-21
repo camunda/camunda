@@ -14,9 +14,9 @@ import dasniko.testcontainers.keycloak.KeycloakContainer;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.command.ProblemException;
 import io.camunda.client.impl.oauth.OAuthCredentialsProviderBuilder;
-import io.camunda.client.protocol.rest.OwnerTypeEnum;
-import io.camunda.client.protocol.rest.PermissionTypeEnum;
-import io.camunda.client.protocol.rest.ResourceTypeEnum;
+import io.camunda.client.wrappers.OwnerType;
+import io.camunda.client.wrappers.PermissionType;
+import io.camunda.client.wrappers.ResourceType;
 import io.camunda.security.configuration.ConfiguredMapping;
 import io.camunda.security.entity.AuthenticationMethod;
 import io.camunda.zeebe.model.bpmn.Bpmn;
@@ -230,10 +230,10 @@ public class OidcAuthOverRestIT {
     defaultMappingClient
         .newCreateAuthorizationCommand()
         .ownerId(RESTRICTED_USER_ID)
-        .ownerType(OwnerTypeEnum.MAPPING)
+        .ownerType(OwnerType.MAPPING)
         .resourceId("*")
-        .resourceType(ResourceTypeEnum.RESOURCE)
-        .permissionTypes(PermissionTypeEnum.CREATE)
+        .resourceType(ResourceType.RESOURCE)
+        .permissionTypes(PermissionType.CREATE)
         .send()
         .join();
 
