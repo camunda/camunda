@@ -1,4 +1,4 @@
-name: "C8Run: release"
+name: "C8Run: Release"
 on:
   workflow_dispatch:
     inputs:
@@ -18,9 +18,21 @@ on:
         required: true
         default: ""
       publishToCamundaAppsRelease:
-        description: "Publish C8Run artifact to Camunda apps GH release too (by default C8Run has its own GH release)"
+        description: "Publish C8Run artifact to Camunda apps GH release too (in addition to C8Run own GH release)"
+        type: boolean
+        default: true
+      publishToCamundaDownloadCenter:
+        description: "Publish C8Run artifact to Camunda Download Center"
+        type: boolean
+        default: true
+      typePrerelease:
+        description: "Mark the GitHub release as prerelease (used for alphas only)"
         type: boolean
         default: false
+      artifactVersionSuffix:
+        description: "Add extra suffix for release artifacts like \"-rc\" (Note: the dash should be included)"
+        type: string
+        default: ""
 
 permissions:
   actions: read
@@ -41,6 +53,10 @@ permissions:
 env:
   CAMUNDA_RUN_NAME: c8run-${{ inputs.camundaVersion }}
 
+defaults:
+  run:
+    shell: bash
+
 jobs:
   init:
     name: Create C8Run tag/release
@@ -48,7 +64,6 @@ jobs:
     timeout-minutes: 15
     steps:
       - name: ℹ️ Print workflow inputs ℹ️
-        shell: bash
         env:
           WORKFLOW_INPUTS: ${{ toJson(inputs) }}
         run: |
@@ -57,19 +72,17 @@ jobs:
       - uses: actions/checkout@v4
         with:
           ref: ${{ inputs.branch }}
-      - name: Clean up old release
+      - name: Create the release if needed
         env:
           GH_TOKEN: '${{ secrets.GITHUB_TOKEN }}'
         run: |
-          gh release view ${{ env.CAMUNDA_RUN_NAME }} &&
-            gh release delete ${{ env.CAMUNDA_RUN_NAME }} --cleanup-tag ||
-            true
-          # To avoid any race condition when the release is created again.
-          sleep 5
-      - name: Create new release
+          gh release view ${{ env.CAMUNDA_RUN_NAME }} ||
+            gh release create ${{ env.CAMUNDA_RUN_NAME }} --title ${{ env.CAMUNDA_RUN_NAME }} \
+              --target ${{ inputs.branch }} --notes "${{ env.CAMUNDA_RUN_NAME }}"
+      - name: Update release tag
         run: |
-          gh release create ${{ env.CAMUNDA_RUN_NAME }} --title ${{ env.CAMUNDA_RUN_NAME }} \
-            --target ${{ inputs.branch }} --notes "${{ env.CAMUNDA_RUN_NAME }}"
+          git tag --force ${{ env.CAMUNDA_RUN_NAME }}
+          git push --force origin ${{ env.CAMUNDA_RUN_NAME }}
         env:
           GH_TOKEN: '${{ secrets.GITHUB_TOKEN }}'
 
@@ -78,9 +91,6 @@ jobs:
     name: C8Run - ${{ matrix.os.name }}
     runs-on: ${{ matrix.os.id }}
     timeout-minutes: 15
-    env:
-      CAMUNDA_RUN_NAME_ARTIFACT_WITH_MINOR_VERSION: "camunda8-run-${{ inputs.camundaVersion }}-${{ matrix.os.artifactSuffix }}"
-      CAMUNDA_RUN_NAME_ARTIFACT_WITH_PATCH_VERSION: "camunda8-run-${{ inputs.camundaAppsRelease }}-${{ matrix.os.artifactSuffix }}"
     strategy:
       fail-fast: false
       matrix:
@@ -88,24 +98,29 @@ jobs:
         os:
           - name: Ubuntu (AMD64)
             id: ubuntu-latest
-            artifactSuffix: linux-x86_64.tar.gz
+            artifactFileSuffix: linux-x86_64.tar.gz
             workingDir: ./c8run
             command: ./c8run
           - name: MacOS (ARM64)
             id: macos-latest
-            artifactSuffix: darwin-aarch64.tar.gz
+            artifactFileSuffix: darwin-aarch64.tar.gz
             workingDir: ./c8run
             command: ./c8run
           - name: MacOS (AMD64)
             id: macos-13
-            artifactSuffix: darwin-x86_64.tar.gz
+            artifactFileSuffix: darwin-x86_64.tar.gz
             workingDir: ./c8run
             command: ./c8run
           - name: Windows (AMD64)
             id: windows-latest
-            artifactSuffix: windows-x86_64.zip
+            artifactFileSuffix: windows-x86_64.zip
             workingDir: ./c8run
             command: ./c8run.exe
+    env:
+      C8RUN_NAME_ARTIFACT_WITH_MINOR_VERSION: >-
+        camunda8-run-${{ inputs.camundaVersion }}${{ inputs.artifactVersionSuffix }}-${{ matrix.os.artifactFileSuffix }}
+      C8RUN_NAME_ARTIFACT_WITH_PATCH_VERSION: >-
+        camunda8-run-${{ inputs.camundaAppsRelease }}${{ inputs.artifactVersionSuffix }}-${{ matrix.os.artifactFileSuffix }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -128,56 +143,63 @@ jobs:
           cache: false  # disabling since not working anyways without a cache-dependency-path specified
       - name: Build artifact
         working-directory: ${{ matrix.os.workingDir }}
-        shell: bash
         run: go build
       - name: Create artifact package
         working-directory: ${{ matrix.os.workingDir }}
-        shell: bash
         run: ${{ matrix.os.command }} package
         env:
           JAVA_ARTIFACTS_USER: ${{ steps.secrets.outputs.NEXUS_USERNAME }}
           JAVA_ARTIFACTS_PASSWORD: ${{ steps.secrets.outputs.NEXUS_PASSWORD }}
-      # - name: Generate artifact checksum
-      #   uses: jmgilman/actions-generate-checksum@3ea6dc9bf8eecf28e2ecc982fab683484a1a8561 # v1
-      #   with:
-      #     method: sha1
-      #     output: "${{ env.CAMUNDA_RUN_NAME_ARTIFACT_WITH_PATCH_VERSION }}.sha1sum"
-      #     patterns: |
-      #       ${{ env.CAMUNDA_RUN_NAME_ARTIFACT_WITH_PATCH_VERSION }}
       - name: Copy artifact
         working-directory: ${{ matrix.os.workingDir }}
-        shell: bash
+        env:
+          C8RUN_NAME_ORIGINAL: "camunda8-run-${{ inputs.camundaAppsRelease }}-${{ matrix.os.artifactFileSuffix }}"
+          C8RUN_NAME_TMP: "${{ env.C8RUN_NAME_ORIGINAL }}.tmp"
         run: |
           ls -lsa
           # Artifact.
-          cp -a ${{ env.CAMUNDA_RUN_NAME_ARTIFACT_WITH_PATCH_VERSION }} \
-            ${{ env.CAMUNDA_RUN_NAME_ARTIFACT_WITH_MINOR_VERSION }}
-          # # Hash sum.
-          # cp -a ${{ env.CAMUNDA_RUN_NAME_ARTIFACT_WITH_PATCH_VERSION }}.sha1sum \
-          #   ${{ env.CAMUNDA_RUN_NAME_ARTIFACT_WITH_MINOR_VERSION }}.sha1sum
-      - name: Upload artifact to C8Run release
+          cp -a "${{ env.C8RUN_NAME_ORIGINAL }}" "${{ env.C8RUN_NAME_TMP }}"
+          cp -a "${{ env.C8RUN_NAME_TMP }}" \
+            "${{ env.C8RUN_NAME_ARTIFACT_WITH_MINOR_VERSION }}"
+          cp -a "${{ env.C8RUN_NAME_TMP }}" \
+            "${{ env.C8RUN_NAME_ARTIFACT_WITH_PATCH_VERSION }}"
+      - name: GitHub - Upload artifact to C8Run release
         working-directory: ${{ matrix.os.workingDir }}
-        shell: bash
         run: |
           gh release upload "${{ env.CAMUNDA_RUN_NAME }}" \
-            ${{ env.CAMUNDA_RUN_NAME_ARTIFACT_WITH_MINOR_VERSION }}*
+            "${{ env.C8RUN_NAME_ARTIFACT_WITH_MINOR_VERSION }}"
         env:
           GH_TOKEN: ${{ github.token }}
-      - name: Upload artifact to Camunda apps release
+      - name: GitHub - Upload artifact to Camunda apps release
         if: inputs.publishToCamundaAppsRelease
         working-directory: ${{ matrix.os.workingDir }}
-        shell: bash
         run: |
           gh release upload "${{ inputs.camundaAppsRelease }}" \
-            ${{ env.CAMUNDA_RUN_NAME_ARTIFACT_WITH_PATCH_VERSION }}*
+            "${{ env.C8RUN_NAME_ARTIFACT_WITH_PATCH_VERSION }}"
         env:
           GH_TOKEN: ${{ github.token }}
-      - name: Upload artifact to Camunda download center
+      - name: Set GitHub release type
+        if: inputs.typePrerelease
+        env:
+          GH_TOKEN: '${{ secrets.GITHUB_TOKEN }}'
+        run: |
+          gh release edit "${{ inputs.camundaAppsRelease }}" \
+            --prerelease
+      - name: Camunda Download Center - Upload artifact in own release
+        if: inputs.publishToCamundaDownloadCenter
+        uses: camunda/infra-global-github-actions/download-center-upload@main
+        with:
+          gcp_credentials: ${{ steps.secrets.outputs.GCP_CREDENTIALS_NAME }}
+          version: ${{ inputs.camundaVersion }}
+          artifact_file: ./c8run/${{ env.C8RUN_NAME_ARTIFACT_WITH_MINOR_VERSION }}
+          artifact_subpath: c8run
+      - name: Camunda Download Center - Upload artifact in Camunda apps version
+        if: inputs.publishToCamundaDownloadCenter
         uses: camunda/infra-global-github-actions/download-center-upload@main
         with:
           gcp_credentials: ${{ steps.secrets.outputs.GCP_CREDENTIALS_NAME }}
           version: ${{ inputs.camundaAppsRelease }}
-          artifact_file: ./c8run/camunda8-run-*
+          artifact_file: ./c8run/${{ env.C8RUN_NAME_ARTIFACT_WITH_PATCH_VERSION }}
           artifact_subpath: c8run
 
   post:
@@ -186,19 +208,34 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
-      - name: Camunda apps release on GitHub
+      - name: GitHub - C8Run artifacts in own release
+        run: |
+          app_release_url_gh="https://github.com/camunda/camunda/releases/tag/${{ env.CAMUNDA_RUN_NAME }}"
+          cat << EOF >> $GITHUB_STEP_SUMMARY
+          ⭐ GitHub - C8Run artifacts in own release ⭐
+          - Release URL: ${app_release_url_gh}
+          EOF
+      - name: GitHub - C8Run artifacts in Camunda apps release
         if: inputs.publishToCamundaAppsRelease
-        shell: bash
         run: |
           app_release_url_gh="https://github.com/camunda/camunda/releases/tag/${{ inputs.camundaAppsRelease }}"
-          echo "⭐ Release URL - Camunda apps release on GitHub: ${app_release_url_gh}" >> $GITHUB_STEP_SUMMARY
-      - name: C8Run release on GitHub
-        shell: bash
+          cat << EOF >> $GITHUB_STEP_SUMMARY
+          ⭐ GitHub - C8Run artifacts in Camunda apps release ⭐
+          - Release URL: ${app_release_url_gh}
+          EOF
+      - name: Camunda Download Center - C8Run artifacts in own release
+        if: inputs.publishToCamundaDownloadCenter
         run: |
-          c8run_release_url_gh="https://github.com/camunda/camunda/releases/tag/${{ env.CAMUNDA_RUN_NAME }}"
-          echo "⭐ Release URL - C8Run release on GitHub: ${c8run_release_url_gh}" >> $GITHUB_STEP_SUMMARY
-      - name: C8Run release on Camunda Download Center
-        shell: bash
+          c8run_release_url_dc="https://downloads.camunda.cloud/release/camunda/c8run/${{ inputs.camundaVersion }}/"
+          cat << EOF >> $GITHUB_STEP_SUMMARY
+          ⭐ Camunda Download Center - C8Run artifacts in own release ⭐
+          - Release URL: ${c8run_release_url_dc}
+          EOF
+      - name: Camunda Download Center - C8Run artifacts in Camunda apps release
+        if: inputs.publishToCamundaDownloadCenter
         run: |
           c8run_release_url_dc="https://downloads.camunda.cloud/release/camunda/c8run/${{ inputs.camundaAppsRelease }}/"
-          echo "⭐ Release URL - C8Run release on Camunda Download Center: ${c8run_release_url_dc}" >> $GITHUB_STEP_SUMMARY
+          cat << EOF >> $GITHUB_STEP_SUMMARY
+          ⭐ Camunda Download Center - C8Run artifacts ⭐
+          - Release URL: ${c8run_release_url_dc}
+          EOF
