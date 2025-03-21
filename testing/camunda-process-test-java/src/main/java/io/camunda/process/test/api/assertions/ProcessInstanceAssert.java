@@ -248,6 +248,29 @@ public interface ProcessInstanceAssert {
   ProcessInstanceAssert hasNoActiveElements(ElementSelector... elementSelectors);
 
   /**
+   * Verifies that only the given BPMN elements are active. The verification fails if at least one
+   * element is not active, or other elements are active.
+   *
+   * <p>The assertion waits until only the given elements are active.
+   *
+   * @param elementIds the BPMN element IDs
+   * @return the assertion object
+   */
+  ProcessInstanceAssert hasActiveElementsExactly(String... elementIds);
+
+  /**
+   * Verifies that only the given BPMN elements are active. The verification fails if at least one
+   * element is not active, or other elements are active.
+   *
+   * <p>The assertion waits until only the given elements are active.
+   *
+   * @param elementSelectors the selectors for the BPMN elements
+   * @return the assertion object
+   * @see ElementSelectors
+   */
+  ProcessInstanceAssert hasActiveElementsExactly(ElementSelector... elementSelectors);
+
+  /**
    * Verifies that the process instance has the given variables. The verification fails if at least
    * one variable doesn't exist.
    *

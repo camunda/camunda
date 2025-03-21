@@ -199,6 +199,18 @@ public class ProcessInstanceAssertj
   }
 
   @Override
+  public ProcessInstanceAssert hasActiveElementsExactly(final String... elementIds) {
+    elementAssertj.hasActiveElementsExactly(getProcessInstanceKey(), elementIds);
+    return this;
+  }
+
+  @Override
+  public ProcessInstanceAssert hasActiveElementsExactly(final ElementSelector... elementSelectors) {
+    elementAssertj.hasActiveElementsExactly(getProcessInstanceKey(), elementSelectors);
+    return this;
+  }
+
+  @Override
   public ProcessInstanceAssert hasVariableNames(final String... variableNames) {
     variableAssertj.hasVariableNames(getProcessInstanceKey(), variableNames);
     return this;

@@ -23,6 +23,7 @@ import io.camunda.client.api.search.filter.FlownodeInstanceFilter;
 import io.camunda.client.api.search.response.FlowNodeInstance;
 import io.camunda.client.api.search.response.FlowNodeInstanceState;
 import io.camunda.process.test.api.assertions.ElementSelector;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -169,6 +170,15 @@ public class ElementAssertj extends AbstractAssert<ElementAssertj, String> {
   public void hasNoActiveElements(
       final long processInstanceKey, final ElementSelector... elementSelectors) {
     hasNoActiveElements(processInstanceKey, Arrays.asList(elementSelectors));
+  }
+
+  public void hasActiveElementsExactly(final long processInstanceKey, final String... elementIds) {
+    hasActiveElementsExactly(processInstanceKey, toElementSelectors(elementIds));
+  }
+
+  public void hasActiveElementsExactly(
+      final long processInstanceKey, final ElementSelector... elementSelectors) {
+    hasActiveElementsExactly(processInstanceKey, Arrays.asList(elementSelectors));
   }
 
   private void hasElementsInState(
@@ -366,6 +376,92 @@ public class ElementAssertj extends AbstractAssert<ElementAssertj, String> {
     }
   }
 
+  private void hasActiveElementsExactly(
+      final long processInstanceKey, final List<ElementSelector> elementSelectors) {
+
+    final Consumer<FlownodeInstanceFilter> flowNodeInstanceFilter =
+        processInstanceFilter(processInstanceKey);
+
+    final AtomicReference<List<FlowNodeInstance>> reference =
+        new AtomicReference<>(Collections.emptyList());
+
+    try {
+      Awaitility.await()
+          .ignoreException(ClientException.class)
+          .untilAsserted(
+              () -> {
+                final List<FlowNodeInstance> flowNodeInstances =
+                    dataSource.findFlowNodeInstances(flowNodeInstanceFilter);
+                reference.set(flowNodeInstances);
+
+                final List<FlowNodeInstance> activeFlowNodeInstances =
+                    flowNodeInstances.stream()
+                        .filter(
+                            flowNodeInstance ->
+                                flowNodeInstance.getState() == FlowNodeInstanceState.ACTIVE)
+                        .collect(Collectors.toList());
+
+                assertThat(elementSelectors)
+                    .allMatch(
+                        elementSelector ->
+                            activeFlowNodeInstances.stream().anyMatch(elementSelector::test),
+                        "the given elements are active");
+
+                assertThat(activeFlowNodeInstances)
+                    .allMatch(
+                        flowNodeInstance ->
+                            elementSelectors.stream()
+                                .anyMatch(selector -> selector.test(flowNodeInstance)),
+                        "no other elements are active");
+              });
+
+    } catch (final ConditionTimeoutException | TerminalFailureException e) {
+
+      final List<ElementSelector> selectorsNotMatched =
+          elementSelectors.stream()
+              .filter(
+                  elementSelector ->
+                      reference.get().stream()
+                          .noneMatch(
+                              element ->
+                                  elementSelector.test(element)
+                                      && element.getState() == FlowNodeInstanceState.ACTIVE))
+              .collect(Collectors.toList());
+
+      final List<FlowNodeInstance> otherActiveElements =
+          reference.get().stream()
+              .filter(
+                  flowNodeInstance -> flowNodeInstance.getState() == FlowNodeInstanceState.ACTIVE)
+              .filter(
+                  flowNodeInstance ->
+                      elementSelectors.stream()
+                          .noneMatch(selector -> selector.test(flowNodeInstance)))
+              .collect(Collectors.toList());
+
+      final List<String> failureMessages = new ArrayList<>();
+
+      if (!selectorsNotMatched.isEmpty()) {
+        failureMessages.add(
+            String.format(
+                "%s should have active elements %s but the following elements were not active:\n%s",
+                actual,
+                formatElementSelectors(elementSelectors),
+                formatFlowNodeInstanceStates(selectorsNotMatched, reference.get())));
+      }
+
+      if (!otherActiveElements.isEmpty()) {
+        failureMessages.add(
+            String.format(
+                "%s should have no active elements except %s but the following elements were active:\n%s",
+                actual,
+                formatElementSelectors(elementSelectors),
+                formatFlowNodeInstanceStates(otherActiveElements)));
+      }
+
+      fail(String.join("\n\n", failureMessages));
+    }
+  }
+
   private static String formatFlowNodeInstanceStates(
       final List<ElementSelector> elementSelectors,
       final List<FlowNodeInstance> flowNodeInstances) {
@@ -390,6 +486,18 @@ public class ElementAssertj extends AbstractAssert<ElementAssertj, String> {
         .findFirst()
         .map(FlowNodeInstance::getState)
         .orElse(FlowNodeInstanceState.UNKNOWN_ENUM_VALUE);
+  }
+
+  private static String formatFlowNodeInstanceStates(
+      final List<FlowNodeInstance> flowNodeInstances) {
+
+    return flowNodeInstances.stream()
+        .map(
+            flowNodeInstance ->
+                String.format(
+                    "\t- '%s': %s",
+                    flowNodeInstance.getFlowNodeId(), formatState(flowNodeInstance.getState())))
+        .collect(Collectors.joining("\n"));
   }
 
   private List<ElementSelector> toElementSelectors(final String[] elementIds) {
