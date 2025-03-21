@@ -201,16 +201,17 @@ public final class OAuthCredentialsProviderTest {
   @Test
   void shouldRequestTokenWithEmptyScopeAndAddToCall() throws IOException {
     // given
+    final String scope = "";
     final OAuthCredentialsProvider provider =
         new OAuthCredentialsProviderBuilder()
             .clientId(CLIENT_ID)
             .clientSecret(SECRET)
             .audience(AUDIENCE)
-            .scope("")
+            .scope(scope)
             .authorizationServerUrl(tokenUrlString())
             .credentialsCachePath(cacheFilePath.toString())
             .build();
-    mockCredentials(ACCESS_TOKEN, "");
+    mockCredentials(ACCESS_TOKEN, scope);
 
     // when
     provider.applyCredentials(applier);
