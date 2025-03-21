@@ -48,7 +48,8 @@ public class ProcessInstanceZeebeRecordProcessorElasticSearch {
           BpmnElementType.EVENT_SUB_PROCESS,
           BpmnElementType.SERVICE_TASK,
           BpmnElementType.USER_TASK,
-          BpmnElementType.MULTI_INSTANCE_BODY);
+          BpmnElementType.MULTI_INSTANCE_BODY,
+          BpmnElementType.AD_HOC_SUB_PROCESS);
 
   static {
     FLOW_NODE_STATES.add(ELEMENT_ACTIVATING.name());
