@@ -52,6 +52,8 @@ public class CommandDistributionAcknowledgeProcessor
     final var partitionId = recordValue.getPartitionId();
 
     if (!distributionState.hasPendingDistribution(distributionKey, partitionId)) {
+      distributionState.getMetrics().noPendingDistribution(partitionId, distributionKey);
+
       rejectionWriter.appendRejection(
           record,
           RejectionType.NOT_FOUND,
