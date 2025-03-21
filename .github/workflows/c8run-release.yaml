@@ -29,9 +29,11 @@ permissions:
   security-events: none
   statuses: write
 
+concurrency:
+    cancel-in-progress: false
+
 jobs:
   release:
-    cancel-in-progress: false
     name: C8Run Release ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
     timeout-minutes: 60
