@@ -40,7 +40,6 @@ public class MigrationRunner implements Migrator {
 
   private static final Logger LOG = LoggerFactory.getLogger(MigrationRunner.class);
 
-  private static final String ELASTICSEARCH = "elasticsearch";
   private final Adapter adapter;
   private final ProcessMigrationProperties properties;
   private ScheduledFuture<?> countdownTask;
