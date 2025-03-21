@@ -25,7 +25,11 @@ import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
 import io.camunda.zeebe.engine.state.immutable.EventScopeInstanceState;
 import io.camunda.zeebe.engine.state.immutable.IncidentState;
 import io.camunda.zeebe.engine.state.immutable.JobState;
+<<<<<<< HEAD
 import io.camunda.zeebe.engine.state.immutable.ProcessMessageSubscriptionState;
+=======
+import io.camunda.zeebe.engine.state.immutable.MessageState;
+>>>>>>> 71227d8c (feat: backport of #27114)
 import io.camunda.zeebe.engine.state.immutable.ProcessState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.state.immutable.UserTaskState;
@@ -73,8 +77,13 @@ public class ProcessInstanceMigrationMigrateProcessor
   private final VariableState variableState;
   private final IncidentState incidentState;
   private final EventScopeInstanceState eventScopeInstanceState;
+<<<<<<< HEAD
   private final ProcessMessageSubscriptionState processMessageSubscriptionState;
   private final CatchEventBehavior catchEventBehavior;
+=======
+  private final MessageState messageState;
+  private final ProcessInstanceMigrationCatchEventBehaviour migrationCatchEventBehaviour;
+>>>>>>> 71227d8c (feat: backport of #27114)
 
   public ProcessInstanceMigrationMigrateProcessor(
       final Writers writers,
@@ -90,8 +99,23 @@ public class ProcessInstanceMigrationMigrateProcessor
     variableState = processingState.getVariableState();
     incidentState = processingState.getIncidentState();
     eventScopeInstanceState = processingState.getEventScopeInstanceState();
+<<<<<<< HEAD
     processMessageSubscriptionState = processingState.getProcessMessageSubscriptionState();
     catchEventBehavior = bpmnBehaviors.catchEventBehavior();
+=======
+    messageState = processingState.getMessageState();
+
+    migrationCatchEventBehaviour =
+        new ProcessInstanceMigrationCatchEventBehaviour(
+            processingState.getProcessMessageSubscriptionState(),
+            bpmnBehaviors.catchEventBehavior(),
+            writers.command(),
+            commandDistributionBehavior,
+            processingState.getDistributionState(),
+            stateWriter,
+            partitionId,
+            routingInfo);
+>>>>>>> 71227d8c (feat: backport of #27114)
   }
 
   @Override
@@ -116,6 +140,8 @@ public class ProcessInstanceMigrationMigrateProcessor
             processInstance.getValue().getTenantId());
 
     requireNonNullTargetProcessDefinition(targetProcessDefinition, targetProcessDefinitionKey);
+    requireNoStartEventInstanceForTargetProcess(
+        processInstance, targetProcessDefinition, messageState);
     requireReferredElementsExist(
         sourceProcessDefinition, targetProcessDefinition, mappingInstructions, processInstanceKey);
     requireNoEventSubprocess(sourceProcessDefinition, targetProcessDefinition);
