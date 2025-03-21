@@ -33,7 +33,8 @@ runs:
     - name: Import Developer ID .p12
       shell: bash
       run: |
-        echo "$INPUT_P12_BASE64" | base64 --decode > dev_id.p12
+        base64 --help
+        echo -n "$INPUT_P12_BASE64" | base64 --decode > dev_id.p12
 
         security create-keychain -p "" build.keychain
         security set-keychain-settings -lut 3600 build.keychain
