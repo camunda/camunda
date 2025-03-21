@@ -12,7 +12,7 @@
   <parent>
     <groupId>io.camunda</groupId>
     <artifactId>document-parent</artifactId>
-    <version>8.6.11111</version>
+    <version>8.6.11-test2-SNAPSHOT</version>
     <relativePath>../pom.xml</relativePath>
   </parent>
 

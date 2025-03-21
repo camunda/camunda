@@ -6,12 +6,12 @@
   <parent>
     <groupId>io.camunda</groupId>
     <artifactId>camunda-search</artifactId>
-    <version>8.6.11111</version>
+    <version>8.6.11-test2-SNAPSHOT</version>
     <relativePath>../pom.xml</relativePath>
   </parent>
 
   <artifactId>camunda-search-client-plugin</artifactId>
-  <version>8.6.11111</version>
+  <version>8.6.11-test2-SNAPSHOT</version>
   <packaging>jar</packaging>
 
   <name>Camunda Search Client Plugin</name>
