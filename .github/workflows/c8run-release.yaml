@@ -69,19 +69,6 @@ jobs:
         run: go build
         working-directory: ./c8run
 
-      - name: sign the package
-        if: matrix.os == 'macos-latest' || matrix.os == 'macos-13'
-        run: |
-          curl -sSfL https://raw.githubusercontent.com/anchore/quill/main/install.sh | sh -s -- -b /usr/local/bin
-          echo "$CERTIFICATE" > certificate.p12
-          quill sign --p12 certificate.p12 c8run
-          rm certificate.p12
-        working-directory: ./c8run
-        env:
-          CERTIFICATE: ${{ steps.secrets.outputs.APPLE_CERTIFICATE }}
-          QUILL_SIGN_P12: ./certificate.p12
-          QUILL_SIGN_PASSWORD: ${{ steps.secrets.outputs.APPLE_CERTIFICATE_PASSWORD }}
-
       - name: make a package
         run: |
           ./c8run package
