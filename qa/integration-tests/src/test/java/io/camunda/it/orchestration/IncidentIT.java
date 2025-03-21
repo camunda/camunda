@@ -7,17 +7,14 @@
  */
 package io.camunda.it.orchestration;
 
-import static io.camunda.client.api.search.response.IncidentState.ACTIVE;
-import static io.camunda.client.api.search.response.IncidentState.RESOLVED;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.search.filter.IncidentFilter;
 import io.camunda.client.api.search.response.FlowNodeInstance;
 import io.camunda.client.api.search.response.Incident;
-import io.camunda.client.api.search.response.IncidentErrorType;
-import io.camunda.client.api.search.response.IncidentState;
 import io.camunda.client.api.search.response.ProcessInstance;
+import io.camunda.client.wrappers.IncidentResult;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.test.util.Strings;
@@ -71,7 +68,7 @@ public class IncidentIT {
     assertThat(incidents).isNotEmpty();
     assertThat(incidents.size()).isEqualTo(1);
     assertThat(incidents.getFirst().getErrorType())
-        .isEqualTo(IncidentErrorType.UNHANDLED_ERROR_EVENT);
+        .isEqualTo(IncidentResult.ErrorType.UNHANDLED_ERROR_EVENT);
     assertThat(incidents.getFirst().getProcessInstanceKey()).isEqualTo(processInstanceKey);
   }
 
@@ -84,10 +81,14 @@ public class IncidentIT {
 
     // when
     final var incidents =
-        waitForIncident(client, f -> f.processInstanceKey(childInstanceKey).state(ACTIVE));
+        waitForIncident(
+            client,
+            f ->
+                f.processInstanceKey(childInstanceKey)
+                    .state(io.camunda.client.wrappers.IncidentFilter.State.ACTIVE));
 
     // then
-    assertIncidentState(client, incidents.getIncidentKey(), ACTIVE);
+    assertIncidentState(client, incidents.getIncidentKey(), IncidentResult.State.ACTIVE);
     assertProcessInstanceIncidentState(client, parentInstanceKey, true);
     assertProcessInstanceIncidentState(client, childInstanceKey, true);
     assertFlowNodeInstanceIncidentState(client, parentInstanceKey, CALL_ACTIVITY_ID, true);
@@ -103,11 +104,15 @@ public class IncidentIT {
 
     // when
     final var incident =
-        waitForIncident(client, f -> f.processInstanceKey(childInstanceKey).state(ACTIVE));
+        waitForIncident(
+            client,
+            f ->
+                f.processInstanceKey(childInstanceKey)
+                    .state(io.camunda.client.wrappers.IncidentFilter.State.ACTIVE));
     client.newResolveIncidentCommand(incident.getIncidentKey()).send().join();
 
     // then
-    assertIncidentState(client, incident.getIncidentKey(), RESOLVED);
+    assertIncidentState(client, incident.getIncidentKey(), IncidentResult.State.RESOLVED);
     assertProcessInstanceIncidentState(client, parentInstanceKey, false);
     assertProcessInstanceIncidentState(client, childInstanceKey, false);
     assertFlowNodeInstanceIncidentState(client, parentInstanceKey, CALL_ACTIVITY_ID, false);
@@ -115,7 +120,7 @@ public class IncidentIT {
   }
 
   private void assertIncidentState(
-      final CamundaClient client, final long key, final IncidentState expected) {
+      final CamundaClient client, final long key, final IncidentResult.State expected) {
     Awaitility.await("until incident %d state is = %s".formatted(key, expected))
         .ignoreExceptions()
         .untilAsserted(
@@ -285,7 +290,7 @@ public class IncidentIT {
     assertThat(incidents).isNotEmpty();
     assertThat(incidents.size()).isEqualTo(1);
     assertThat(incidents.getFirst().getErrorType())
-        .isEqualTo(IncidentErrorType.UNHANDLED_ERROR_EVENT);
+        .isEqualTo(IncidentResult.ErrorType.UNHANDLED_ERROR_EVENT);
     assertThat(incidents.getFirst().getProcessInstanceKey()).isEqualTo(processInstanceKey);
   }
 
