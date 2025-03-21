@@ -29,9 +29,6 @@ permissions:
   security-events: none
   statuses: write
 
-concurrency:
-    cancel-in-progress: false
-
 jobs:
   release:
     name: C8Run Release ${{ matrix.os }}
@@ -41,7 +38,8 @@ jobs:
       matrix:
         # macos-latest is ARM, mac os 13 will execute on x86 runner.
         # os: [ubuntu-latest, macos-latest, macos-13]
-        os: [macos-latest, macos-13]
+        # os: [macos-latest, macos-13]
+        os: [macos-13]
     steps:
       - uses: actions/checkout@v4
         with:
