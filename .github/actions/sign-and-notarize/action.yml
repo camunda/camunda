@@ -49,28 +49,15 @@ runs:
     # STEP B: Make signing script executable
     - name: Make script executable
       shell: bash
-      run: chmod +x ./.github/actions/sign-and-notarize/sign_all_mach_o_and_jars.sh
+      run: chmod +x ./.github/actions/sign-and-notarize/exclude_sign_notarize_reinject_absolute.sh.sh
 
-    # STEP C: Sign distribution (top-level + jar-embedded code, including .app)
+    # STEP C: Sign & Notarize
     - name: Sign distribution
       shell: bash
       run: |
-        ./.github/actions/sign-and-notarize/sign_all_mach_o_and_jars.sh \
+        ./.github/actions/sign-and-notarize/exclude_sign_notarize_reinject_absolute.sh.sh \
           "$INPUT_PATH" \
-          "$INPUT_DEVELOPER_ID_CERT_NAME"
-
-    # STEP D: Create zip
-    - name: Create zip
-      shell: bash
-      run: |
-        ditto -c -k --keepParent "$INPUT_PATH" mac_signed.zip
-
-    # STEP E: Notarize the zip
-    - name: Notarize .zip
-      shell: bash
-      run: |
-        xcrun notarytool submit mac_signed.zip \
-          --apple-id "$INPUT_APPLE_ID" \
-          --password "$INPUT_APP_PASSWORD" \
-          --team-id "$INPUT_TEAM_ID" \
-          --wait
+          "$INPUT_DEVELOPER_ID_CERT_NAME" \
+          "$INPUT_APPLE_ID" \
+          "$INPUT_APP_PASSWORD" \
+          "$INPUT_TEAM_ID"
