@@ -32,7 +32,10 @@ public record ProcessInstanceFilter(
     Boolean hasIncident,
     List<Operation<String>> tenantIdOperations,
     List<VariableValueFilter> variableFilters,
-    List<Operation<String>> batchOperationIdOperations)
+    List<Operation<String>> batchOperationIdOperations,
+    List<Operation<String>> flowNodeIdOperations,
+    Boolean hasFlowNodeInstanceIncident,
+    List<Operation<String>> flowNodeInstanceStateOperations)
     implements FilterBase {
 
   public Builder toBuilder() {
@@ -71,6 +74,9 @@ public record ProcessInstanceFilter(
     private List<Operation<String>> tenantIdOperations;
     private List<VariableValueFilter> variableFilters;
     private List<Operation<String>> batchOperationIdOperations;
+    private List<Operation<String>> flowNodeIdOperations;
+    private Boolean hasFlowNodeInstanceIncident;
+    private List<Operation<String>> flowNodeInstanceStateOperations;
 
     public Builder processInstanceKeyOperations(final List<Operation<Long>> operations) {
       processInstanceKeyOperations = addValuesToList(processInstanceKeyOperations, operations);
@@ -275,6 +281,42 @@ public record ProcessInstanceFilter(
       return batchOperationIdOperations(collectValues(operation, operations));
     }
 
+    @SafeVarargs
+    public final Builder flowNodeIdOperations(
+        final Operation<String> operation, final Operation<String>... operations) {
+      return flowNodeIdOperations(collectValues(operation, operations));
+    }
+
+    public Builder flowNodeIdOperations(final List<Operation<String>> values) {
+      flowNodeIdOperations = addValuesToList(flowNodeIdOperations, values);
+      return this;
+    }
+
+    public Builder flowNodeIds(final String value, final String... values) {
+      return flowNodeIdOperations(FilterUtil.mapDefaultToOperation(value, values));
+    }
+
+    public Builder hasFlowNodeInstanceIncident(final Boolean value) {
+      hasFlowNodeInstanceIncident = value;
+      return this;
+    }
+
+    public Builder flowNodeInstanceStateOperations(final List<Operation<String>> operations) {
+      flowNodeInstanceStateOperations =
+          addValuesToList(flowNodeInstanceStateOperations, operations);
+      return this;
+    }
+
+    public Builder flowNodeInstanceState(final String value, final String... values) {
+      return flowNodeInstanceStateOperations(FilterUtil.mapDefaultToOperation(value, values));
+    }
+
+    @SafeVarargs
+    public final Builder flowNodeInstanceStateOperations(
+        final Operation<String> operation, final Operation<String>... operations) {
+      return flowNodeInstanceStateOperations(collectValues(operation, operations));
+    }
+
     @Override
     public ProcessInstanceFilter build() {
       return new ProcessInstanceFilter(
@@ -293,7 +335,10 @@ public record ProcessInstanceFilter(
           hasIncident,
           Objects.requireNonNullElse(tenantIdOperations, Collections.emptyList()),
           Objects.requireNonNullElse(variableFilters, Collections.emptyList()),
-          Objects.requireNonNullElse(batchOperationIdOperations, Collections.emptyList()));
+          Objects.requireNonNullElse(batchOperationIdOperations, Collections.emptyList()),
+          Objects.requireNonNullElse(flowNodeIdOperations, Collections.emptyList()),
+          hasFlowNodeInstanceIncident,
+          Objects.requireNonNullElse(flowNodeInstanceStateOperations, Collections.emptyList()));
     }
   }
 }
