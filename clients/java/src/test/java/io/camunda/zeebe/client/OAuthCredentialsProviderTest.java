@@ -96,6 +96,7 @@ public final class OAuthCredentialsProviderTest {
   private final WireMockRuntimeInfo wireMockInfo;
 
   private Path cacheFilePath;
+  private final ObjectMapper jsonMapper = new ObjectMapper();
 
   public OAuthCredentialsProviderTest(final WireMockRuntimeInfo wireMockInfo) {
     this.wireMockInfo = wireMockInfo;
@@ -140,6 +141,29 @@ public final class OAuthCredentialsProviderTest {
             .credentialsCachePath(cacheFilePath.toString())
             .build();
     mockCredentials(ACCESS_TOKEN, SCOPE);
+
+    // when
+    provider.applyCredentials(applier);
+
+    // then
+    assertThat(applier.credentials)
+        .containsExactly(new Credential("Authorization", TOKEN_TYPE + " " + ACCESS_TOKEN));
+  }
+
+  @Test
+  void shouldRequestTokenWithEmptyScopeAndAddToCall() throws IOException {
+    // given
+    final String scope = "";
+    final OAuthCredentialsProvider provider =
+        new OAuthCredentialsProviderBuilder()
+            .clientId(CLIENT_ID)
+            .clientSecret(SECRET)
+            .audience(AUDIENCE)
+            .scope(scope)
+            .authorizationServerUrl(tokenUrlString())
+            .credentialsCachePath(cacheFilePath.toString())
+            .build();
+    mockCredentials(ACCESS_TOKEN, scope);
 
     // when
     provider.applyCredentials(applier);
@@ -345,7 +369,7 @@ public final class OAuthCredentialsProviderTest {
     map.put("client_id", CLIENT_ID);
     map.put("audience", AUDIENCE);
     map.put("grant_type", "client_credentials");
-    if (scope != null && !scope.isEmpty()) {
+    if (scope != null) {
       map.put("scope", scope);
     }
 
@@ -354,29 +378,30 @@ public final class OAuthCredentialsProviderTest {
             .map(e -> encode(e.getKey()) + "=" + encode(e.getValue()))
             .collect(Collectors.joining("&"));
 
-    wireMockInfo
-        .getWireMock()
-        .register(
-            WireMock.post(WireMock.urlPathEqualTo("/oauth/token"))
-                .withHeader("Content-Type", equalTo("application/x-www-form-urlencoded"))
-                .withHeader("Accept", equalTo("application/json"))
-                .withHeader("User-Agent", matching("zeebe-client-java/\\d+\\.\\d+\\.\\d+.*"))
-                .withRequestBody(equalTo(encodedBody))
-                .willReturn(
-                    WireMock.aResponse()
-                        .withBody(
-                            "{\"access_token\":\""
-                                + token
-                                + "\",\"token_type\":\""
-                                + TOKEN_TYPE
-                                + "\",\"expires_in\":"
-                                + (EXPIRY.getLong(ChronoField.INSTANT_SECONDS)
-                                    - Instant.now().getEpochSecond())
-                                + ",\"scope\": \""
-                                + AUDIENCE
-                                + "\"}")
-                        .withFixedDelay(0)
-                        .withStatus(200)));
+    map.put("access_token", token);
+    map.put("token_type", TOKEN_TYPE);
+    map.put(
+        "expires_in",
+        String.valueOf(
+            EXPIRY.getLong(ChronoField.INSTANT_SECONDS) - Instant.now().getEpochSecond()));
+
+    final String body;
+    try {
+      body = jsonMapper.writeValueAsString(map);
+      wireMockInfo
+          .getWireMock()
+          .register(
+              WireMock.post(WireMock.urlPathEqualTo("/oauth/token"))
+                  .withHeader("Content-Type", equalTo("application/x-www-form-urlencoded"))
+                  .withHeader("Accept", equalTo("application/json"))
+                  .withHeader("User-Agent", matching("zeebe-client-java/\\d+\\.\\d+\\.\\d+.*"))
+                  .withRequestBody(equalTo(encodedBody))
+                  .willReturn(
+                      WireMock.aResponse().withBody(body).withFixedDelay(0).withStatus(200)));
+    } catch (final JsonProcessingException e) {
+      // Turn into a runtime exception so we don't have to add it to all test cases.
+      throw new RuntimeException(e);
+    }
   }
 
   private static String encode(final String param) {
