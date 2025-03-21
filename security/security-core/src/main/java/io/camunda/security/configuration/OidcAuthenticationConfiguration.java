@@ -21,6 +21,7 @@ public class OidcAuthenticationConfiguration {
   private String jwkSetUri;
   private String authorizationUri;
   private Set<String> audiences;
+  private Set<TokenClaim> expectedClaims;
 
   public String getIssuerUri() {
     return issuerUri;
@@ -92,5 +93,13 @@ public class OidcAuthenticationConfiguration {
 
   public void setAudiences(final Set<String> audiences) {
     this.audiences = audiences;
+  }
+
+  public Set<TokenClaim> getExpectedClaims() {
+    return expectedClaims;
+  }
+
+  public void setExpectedClaims(final Set<TokenClaim> expectedClaims) {
+    this.expectedClaims = expectedClaims;
   }
 }
