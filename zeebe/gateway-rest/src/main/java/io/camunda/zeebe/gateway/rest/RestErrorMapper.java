@@ -196,6 +196,18 @@ public class RestErrorMapper {
             "Target broker was not the leader of the partition: {}", error, rootError);
         yield createProblemDetail(HttpStatus.SERVICE_UNAVAILABLE, message, title);
       }
+<<<<<<< HEAD
+=======
+      case PARTITION_UNAVAILABLE -> {
+        REST_GATEWAY_LOGGER.debug(
+            "Partition in target broker is currently unavailable: {}", error, rootError);
+        yield createProblemDetail(HttpStatus.SERVICE_UNAVAILABLE, message, title);
+      }
+      case MAX_MESSAGE_SIZE_EXCEEDED -> {
+        REST_GATEWAY_LOGGER.debug("Max message size exceeded: {}", error, rootError);
+        yield createProblemDetail(HttpStatus.PAYLOAD_TOO_LARGE, message, title);
+      }
+>>>>>>> 0bb07983 (fix: Improve REST API response when deployResources payload is too large)
       default -> {
         // all the following are for cases where retrying (with the same gateway) is not
         // expected
@@ -267,4 +279,53 @@ public class RestErrorMapper {
       final DocumentException e) {
     return mapProblemToResponse(mapDocumentHandlingExceptionToProblem(e));
   }
+<<<<<<< HEAD
+=======
+
+  public static ProblemDetail mapCamundaSearchExceptionToProblem(final CamundaSearchException cse) {
+    final CamundaSearchException.Reason reason = cse.getReason();
+    final String title = reason.name();
+    final String errorMessage = cse.getMessage();
+    final String logPrefix = "Expected to handle REST request, but: {}";
+    switch (reason) {
+      case NOT_FOUND:
+        {
+          REST_GATEWAY_LOGGER.debug(logPrefix, errorMessage);
+          return createProblemDetail(HttpStatus.NOT_FOUND, errorMessage, title);
+        }
+      case NOT_UNIQUE:
+        {
+          REST_GATEWAY_LOGGER.debug(logPrefix, errorMessage);
+          return createProblemDetail(HttpStatus.CONFLICT, errorMessage, title);
+        }
+      case CONNECTION_FAILED:
+        {
+          final String detail =
+              errorMessage + ". The search client could not connect to the search server.";
+          REST_GATEWAY_LOGGER.debug(logPrefix, detail);
+          return createProblemDetail(HttpStatus.SERVICE_UNAVAILABLE, detail, title);
+        }
+      case SEARCH_SERVER_FAILED:
+        {
+          final String detail =
+              errorMessage + ". The search server was unable to process the request.";
+          REST_GATEWAY_LOGGER.debug(logPrefix, detail);
+          return createProblemDetail(HttpStatus.INTERNAL_SERVER_ERROR, detail, title);
+        }
+      case SEARCH_CLIENT_FAILED:
+        {
+          final String detail =
+              errorMessage + ". The search client was unable to process the request.";
+          REST_GATEWAY_LOGGER.debug(logPrefix, detail);
+          return createProblemDetail(HttpStatus.INTERNAL_SERVER_ERROR, detail, title);
+        }
+      default:
+        {
+          REST_GATEWAY_LOGGER.debug(logPrefix, errorMessage);
+          return createProblemDetail(
+              HttpStatus.INTERNAL_SERVER_ERROR, errorMessage, "INTERNAL_ERROR");
+        }
+    }
+  }
+>>>>>>> 0bb07983 (fix: Improve REST API response when deployResources payload is too large)
 }

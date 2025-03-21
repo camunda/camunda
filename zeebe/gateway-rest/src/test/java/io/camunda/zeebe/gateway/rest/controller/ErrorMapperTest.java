@@ -520,4 +520,189 @@ public class ErrorMapperTest extends RestControllerTest {
         .expectBody(ProblemDetail.class)
         .isEqualTo(expectedBody);
   }
+<<<<<<< HEAD
+=======
+
+  @Test
+  void shouldYieldUnavailableWhenPartitionPausesProcessing() {
+    // given
+    Mockito.when(userTaskServices.completeUserTask(anyLong(), any(), anyString()))
+        .thenReturn(
+            CompletableFuture.failedFuture(
+                new CamundaBrokerException(
+                    new BrokerError(ErrorCode.PARTITION_UNAVAILABLE, "Just an error"))));
+
+    final var request = new UserTaskCompletionRequest();
+    final var expectedBody =
+        ProblemDetail.forStatusAndDetail(HttpStatus.SERVICE_UNAVAILABLE, "Just an error");
+    expectedBody.setTitle(ErrorCode.PARTITION_UNAVAILABLE.name());
+    expectedBody.setInstance(URI.create(USER_TASKS_BASE_URL + "/1/completion"));
+
+    // when / then
+    webClient
+        .post()
+        .uri(USER_TASKS_BASE_URL + "/1/completion")
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .body(Mono.just(request), UserTaskCompletionRequest.class)
+        .exchange()
+        .expectStatus()
+        .isEqualTo(HttpStatus.SERVICE_UNAVAILABLE)
+        .expectBody(ProblemDetail.class)
+        .isEqualTo(expectedBody);
+  }
+
+  @Test
+  public void shouldYieldMaxMessageSizeExceededWhenRequestIsTooLarge() {
+    // given
+    Mockito.when(userTaskServices.completeUserTask(anyLong(), any(), anyString()))
+        .thenReturn(
+            CompletableFuture.failedFuture(
+                new CamundaBrokerException(
+                    new BrokerError(ErrorCode.MAX_MESSAGE_SIZE_EXCEEDED, "max size error"))));
+
+    final var request = new UserTaskCompletionRequest();
+    final var expectedBody =
+        ProblemDetail.forStatusAndDetail(HttpStatus.PAYLOAD_TOO_LARGE, "max size error");
+    expectedBody.setTitle(ErrorCode.MAX_MESSAGE_SIZE_EXCEEDED.name());
+    expectedBody.setInstance(URI.create(USER_TASKS_BASE_URL + "/1/completion"));
+
+    // when / then
+    webClient
+        .post()
+        .uri(USER_TASKS_BASE_URL + "/1/completion")
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .body(Mono.just(request), UserTaskCompletionRequest.class)
+        .exchange()
+        .expectStatus()
+        .isEqualTo(HttpStatus.PAYLOAD_TOO_LARGE)
+        .expectBody(ProblemDetail.class)
+        .isEqualTo(expectedBody);
+  }
+
+  @Test
+  public void shouldMapCamundaSearchExceptionWhenNoReason() {
+    // given
+    final CamundaSearchException cse = new CamundaSearchException("No reason");
+
+    // when
+    final ProblemDetail problemDetail = RestErrorMapper.mapCamundaSearchExceptionToProblem(cse);
+
+    // when
+    assertThat(problemDetail.getStatus()).isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR.value());
+    assertThat(problemDetail.getDetail()).isEqualTo("No reason");
+    assertThat(problemDetail.getTitle()).isEqualTo("INTERNAL_ERROR");
+  }
+
+  @Test
+  public void shouldMapCamundaSearchExceptionWhenNotFound() {
+    // given
+    final CamundaSearchException cse =
+        new CamundaSearchException("Item not found", CamundaSearchException.Reason.NOT_FOUND);
+
+    // when
+    final ProblemDetail problemDetail = RestErrorMapper.mapCamundaSearchExceptionToProblem(cse);
+
+    // when
+    assertThat(problemDetail.getStatus()).isEqualTo(HttpStatus.NOT_FOUND.value());
+    assertThat(problemDetail.getDetail()).isEqualTo("Item not found");
+    assertThat(problemDetail.getTitle()).isEqualTo(CamundaSearchException.Reason.NOT_FOUND.name());
+  }
+
+  @Test
+  public void shouldMapCamundaSearchExceptionWhenNotUnique() {
+    // given
+    final CamundaSearchException cse =
+        new CamundaSearchException("Item not unique", CamundaSearchException.Reason.NOT_UNIQUE);
+
+    // when
+    final ProblemDetail problemDetail = RestErrorMapper.mapCamundaSearchExceptionToProblem(cse);
+
+    // when
+    assertThat(problemDetail.getStatus()).isEqualTo(HttpStatus.CONFLICT.value());
+    assertThat(problemDetail.getDetail()).isEqualTo("Item not unique");
+    assertThat(problemDetail.getTitle()).isEqualTo(CamundaSearchException.Reason.NOT_UNIQUE.name());
+  }
+
+  @Test
+  public void shouldMapCamundaSearchExceptionWhenESClientCannotConnect() {
+    // given
+    final CamundaSearchException cse =
+        new CamundaSearchException(
+            "Request failed",
+            new ConnectException("No connection"),
+            CamundaSearchException.Reason.CONNECTION_FAILED);
+
+    // when
+    final ProblemDetail problemDetail = RestErrorMapper.mapCamundaSearchExceptionToProblem(cse);
+
+    // when
+    assertThat(problemDetail.getStatus()).isEqualTo(HttpStatus.SERVICE_UNAVAILABLE.value());
+    assertThat(problemDetail.getDetail())
+        .isEqualTo("Request failed. The search client could not connect to the search server.");
+    assertThat(problemDetail.getTitle())
+        .isEqualTo(CamundaSearchException.Reason.CONNECTION_FAILED.name());
+  }
+
+  @Test
+  public void shouldMapCamundaSearchExceptionWhenESClientIOException() {
+    // given
+    final CamundaSearchException cse =
+        new CamundaSearchException(
+            "Request failed",
+            new IOException("Generic IO Error"),
+            CamundaSearchException.Reason.SEARCH_CLIENT_FAILED);
+
+    // when
+    final ProblemDetail problemDetail = RestErrorMapper.mapCamundaSearchExceptionToProblem(cse);
+
+    // when
+    assertThat(problemDetail.getStatus()).isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR.value());
+    assertThat(problemDetail.getDetail())
+        .isEqualTo("Request failed. The search client was unable to process the request.");
+    assertThat(problemDetail.getTitle())
+        .isEqualTo(CamundaSearchException.Reason.SEARCH_CLIENT_FAILED.name());
+  }
+
+  @Test
+  public void shouldMapCamundaSearchExceptionWhenOSClientCannotConnect() {
+    // given
+    final CamundaSearchException cse =
+        new CamundaSearchException(
+            "Request failed",
+            new ConnectException("No connection"),
+            CamundaSearchException.Reason.CONNECTION_FAILED);
+
+    // when
+    final ProblemDetail problemDetail = RestErrorMapper.mapCamundaSearchExceptionToProblem(cse);
+
+    // when
+    assertThat(problemDetail.getStatus()).isEqualTo(HttpStatus.SERVICE_UNAVAILABLE.value());
+    assertThat(problemDetail.getDetail())
+        .isEqualTo("Request failed. The search client could not connect to the search server.");
+    assertThat(problemDetail.getTitle())
+        .isEqualTo(CamundaSearchException.Reason.CONNECTION_FAILED.name());
+  }
+
+  @Test
+  public void shouldMapCamundaSearchExceptionWhenOSClientIOException() {
+    // given
+    final CamundaSearchException cse =
+        new CamundaSearchException(
+            "Request failed",
+            new IOException("Generic IO Error"),
+            CamundaSearchException.Reason.SEARCH_CLIENT_FAILED);
+
+    // when
+    final ProblemDetail problemDetail = RestErrorMapper.mapCamundaSearchExceptionToProblem(cse);
+
+    // when
+    assertThat(problemDetail.getStatus()).isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR.value());
+    assertThat(problemDetail.getDetail())
+        .isEqualTo("Request failed. The search client was unable to process the request.");
+    assertThat(problemDetail.getTitle())
+        .isEqualTo(CamundaSearchException.Reason.SEARCH_CLIENT_FAILED.name());
+  }
+>>>>>>> 0bb07983 (fix: Improve REST API response when deployResources payload is too large)
 }
