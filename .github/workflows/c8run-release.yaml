@@ -114,12 +114,12 @@ jobs:
           APPLE_APP_PASSWORD: ${{ steps.secrets.outputs.APPLE_DEVELOPER_PASSWORD }}
           TEAM_ID: ${{ steps.secrets.outputs.APPLE_TEAM_ID }}
 
-      - name: upload asset
-        working-directory: ./c8run
-        run: gh release upload "${{ env.CAMUNDA_RELEASE }}" camunda8-run-*
-        env:
-          GH_TOKEN: ${{ github.token }}
-          CAMUNDA_RELEASE: ${{ inputs.camundaRelease }}
+#       - name: upload asset
+#         working-directory: ./c8run
+#         run: gh release upload "${{ env.CAMUNDA_RELEASE }}" camunda8-run-*
+#         env:
+#           GH_TOKEN: ${{ github.token }}
+#           CAMUNDA_RELEASE: ${{ inputs.camundaRelease }}
 
   release_windows:
     name: C8Run Release windows
@@ -159,10 +159,10 @@ jobs:
           JAVA_ARTIFACTS_USER: ${{ steps.secrets.outputs.NEXUS_USERNAME }}
           JAVA_ARTIFACTS_PASSWORD: ${{ steps.secrets.outputs.NEXUS_PASSWORD }}
 
-      - name: upload asset
-        working-directory: .\c8run
-        run: |
-          gh release upload "${{ env.CAMUNDA_RELEASE }}" camunda8-run-${{ env.CAMUNDA_RELEASE }}-windows-x86_64.zip
-        env:
-          GH_TOKEN: ${{ github.token }}
-          CAMUNDA_RELEASE: ${{ inputs.camundaRelease }}
+#       - name: upload asset
+#         working-directory: .\c8run
+#         run: |
+#           gh release upload "${{ env.CAMUNDA_RELEASE }}" camunda8-run-${{ env.CAMUNDA_RELEASE }}-windows-x86_64.zip
+#         env:
+#           GH_TOKEN: ${{ github.token }}
+#           CAMUNDA_RELEASE: ${{ inputs.camundaRelease }}
