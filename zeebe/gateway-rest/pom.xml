@@ -394,9 +394,22 @@
       <artifactId>java-jwt</artifactId>
       <scope>test</scope>
     </dependency>
+    <dependency>
+      <groupId>com.fasterxml.jackson.dataformat</groupId>
+      <artifactId>jackson-dataformat-yaml</artifactId>
+    </dependency>
   </dependencies>
 
   <build>
+    <resources>
+      <resource>
+        <targetPath>apidoc</targetPath>
+        <directory>../gateway-protocol/src/main/proto</directory>
+        <includes>
+          <include>rest-api.yaml</include>
+        </includes>
+      </resource>
+    </resources>
     <plugins>
       <plugin>
         <groupId>org.openapitools</groupId>
