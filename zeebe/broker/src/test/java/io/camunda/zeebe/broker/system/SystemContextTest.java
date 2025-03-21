@@ -37,6 +37,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.util.unit.DataSize;
 import org.springframework.util.unit.DataUnit;
 
@@ -370,7 +371,8 @@ final class SystemContextTest {
         mock(BrokerClient.class),
         new SecurityConfiguration(),
         mock(UserServices.class),
-        mock(PasswordEncoder.class));
+        mock(PasswordEncoder.class),
+        mock(JwtDecoder.class));
   }
 
   @Test

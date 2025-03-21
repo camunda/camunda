@@ -24,6 +24,7 @@ import io.camunda.zeebe.gateway.impl.job.ActivateJobsHandler;
 import io.camunda.zeebe.gateway.impl.job.LongPollingActivateJobsHandler;
 import io.camunda.zeebe.gateway.impl.job.RoundRobinActivateJobsHandler;
 import io.camunda.zeebe.gateway.impl.stream.StreamJobsHandler;
+import io.camunda.zeebe.gateway.interceptors.impl.AuthenticationHandler;
 import io.camunda.zeebe.gateway.interceptors.impl.AuthenticationInterceptor;
 import io.camunda.zeebe.gateway.interceptors.impl.ContextInjectingInterceptor;
 import io.camunda.zeebe.gateway.interceptors.impl.DecoratedInterceptor;
@@ -66,8 +67,6 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ForkJoinPool;
-import java.util.concurrent.ForkJoinPool.ForkJoinWorkerThreadFactory;
-import java.util.concurrent.ForkJoinWorkerThread;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
@@ -75,6 +74,7 @@ import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.oauth2.jwt.JwtDecoder;
 
 public final class Gateway implements CloseableSilently {
 
@@ -98,6 +98,7 @@ public final class Gateway implements CloseableSilently {
   private final BrokerClient brokerClient;
   private final UserServices userServices;
   private final PasswordEncoder passwordEncoder;
+  private final JwtDecoder jwtDecoder;
   private final MeterRegistry meterRegistry;
 
   public Gateway(
@@ -108,7 +109,8 @@ public final class Gateway implements CloseableSilently {
       final ClientStreamer<JobActivationProperties> jobStreamer,
       final UserServices userServices,
       final PasswordEncoder passwordEncoder,
-      final MeterRegistry meterRegistry) {
+      final MeterRegistry meterRegistry,
+      final JwtDecoder jwtDecoder) {
     this(
         DEFAULT_SHUTDOWN_TIMEOUT,
         gatewayCfg,
@@ -118,6 +120,7 @@ public final class Gateway implements CloseableSilently {
         jobStreamer,
         userServices,
         passwordEncoder,
+        jwtDecoder,
         meterRegistry);
   }
 
@@ -130,6 +133,7 @@ public final class Gateway implements CloseableSilently {
       final ClientStreamer<JobActivationProperties> jobStreamer,
       final UserServices userServices,
       final PasswordEncoder passwordEncoder,
+      final JwtDecoder jwtDecoder,
       final MeterRegistry meterRegistry) {
     shutdownTimeout = shutdownDuration;
     this.gatewayCfg = gatewayCfg;
@@ -139,6 +143,7 @@ public final class Gateway implements CloseableSilently {
     this.jobStreamer = jobStreamer;
     this.userServices = userServices;
     this.passwordEncoder = passwordEncoder;
+    this.jwtDecoder = jwtDecoder;
     this.meterRegistry = meterRegistry;
 
     healthManager = new GatewayHealthManagerImpl();
@@ -399,7 +404,12 @@ public final class Gateway implements CloseableSilently {
     interceptors.add(new ContextInjectingInterceptor(queryApi));
 
     if (securityConfiguration.isApiProtected()) {
-      interceptors.add(new AuthenticationInterceptor(userServices, passwordEncoder));
+      final var handler =
+          switch (securityConfiguration.getAuthentication().getMethod()) {
+            case BASIC -> new AuthenticationHandler.BasicAuth(userServices, passwordEncoder);
+            case OIDC -> new AuthenticationHandler.Oidc(jwtDecoder);
+          };
+      interceptors.add(new AuthenticationInterceptor(handler));
     }
     return ServerInterceptors.intercept(service, interceptors);
   }
@@ -407,14 +417,5 @@ public final class Gateway implements CloseableSilently {
   private static StatusException grpcStatusException(final int code, final String msg) {
     return StatusProto.toStatusException(
         com.google.rpc.Status.newBuilder().setCode(code).setMessage(msg).build());
-  }
-
-  private static final class NamedForkJoinPoolThreadFactory implements ForkJoinWorkerThreadFactory {
-    @Override
-    public ForkJoinWorkerThread newThread(final ForkJoinPool pool) {
-      final var worker = ForkJoinPool.defaultForkJoinWorkerThreadFactory.newThread(pool);
-      worker.setName("grpc-executor-" + worker.getPoolIndex());
-      return worker;
-    }
   }
 }

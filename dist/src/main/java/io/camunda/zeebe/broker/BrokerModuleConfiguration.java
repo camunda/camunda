@@ -30,6 +30,7 @@ import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.oauth2.jwt.JwtDecoder;
 
 /**
  * Entry point for the broker modules by using the the {@link io.camunda.application.Profile#BROKER}
@@ -56,6 +57,7 @@ public class BrokerModuleConfiguration implements CloseableSilently {
   private final SecurityConfiguration securityConfiguration;
   private final UserServices userServices;
   private final PasswordEncoder passwordEncoder;
+  private final JwtDecoder jwtDecoder;
 
   private Broker broker;
 
@@ -72,7 +74,8 @@ public class BrokerModuleConfiguration implements CloseableSilently {
       final SecurityConfiguration securityConfiguration,
       // The UserServices class is not available if you want to start-up the Standalone Broker
       @Autowired(required = false) final UserServices userServices,
-      final PasswordEncoder passwordEncoder) {
+      final PasswordEncoder passwordEncoder,
+      @Autowired(required = false) final JwtDecoder jwtDecoder) {
     this.configuration = configuration;
     this.identityConfiguration = identityConfiguration;
     this.springBrokerBridge = springBrokerBridge;
@@ -84,6 +87,7 @@ public class BrokerModuleConfiguration implements CloseableSilently {
     this.securityConfiguration = securityConfiguration;
     this.userServices = userServices;
     this.passwordEncoder = passwordEncoder;
+    this.jwtDecoder = jwtDecoder;
   }
 
   @Bean
@@ -110,7 +114,8 @@ public class BrokerModuleConfiguration implements CloseableSilently {
             meterRegistry,
             securityConfiguration,
             userServices,
-            passwordEncoder);
+            passwordEncoder,
+            jwtDecoder);
     springBrokerBridge.registerShutdownHelper(
         errorCode -> shutdownHelper.initiateShutdown(errorCode));
     broker =

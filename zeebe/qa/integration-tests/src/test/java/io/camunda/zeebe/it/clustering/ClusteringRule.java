@@ -380,6 +380,7 @@ public class ClusteringRule extends ExternalResource {
             meterRegistry,
             new SecurityConfiguration(),
             null,
+            null,
             null);
 
     final Broker broker =
@@ -520,7 +521,8 @@ public class ClusteringRule extends ExternalResource {
             jobStreamClient.streamer(),
             null,
             null,
-            meterRegistry);
+            meterRegistry,
+            null);
     gateway.start().join();
 
     return new GatewayResource(

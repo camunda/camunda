@@ -45,6 +45,7 @@ import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.oauth2.jwt.JwtDecoder;
 
 final class InterceptorIT {
 
@@ -60,7 +61,7 @@ final class InterceptorIT {
   private JobStreamClient jobStreamClient;
   private Gateway gateway;
   private BrokerTopologyManagerImpl topologyManager;
-  @AutoClose private MeterRegistry meterRegistry = new SimpleMeterRegistry();
+  @AutoClose private final MeterRegistry meterRegistry = new SimpleMeterRegistry();
 
   @BeforeEach
   void beforeEach() {
@@ -104,7 +105,8 @@ final class InterceptorIT {
             jobStreamClient.streamer(),
             mock(UserServices.class),
             mock(PasswordEncoder.class),
-            new SimpleMeterRegistry());
+            new SimpleMeterRegistry(),
+            mock(JwtDecoder.class));
 
     cluster.start().join();
     scheduler.start();
