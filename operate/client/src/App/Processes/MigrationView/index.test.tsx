@@ -20,6 +20,8 @@ import {mockFetchGroupedProcesses} from 'modules/mocks/api/processes/fetchGroupe
 import {AppHeader} from 'App/Layout/AppHeader';
 import {Processes} from '../';
 import {useEffect} from 'react';
+import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
+import {QueryClientProvider} from '@tanstack/react-query';
 
 jest.mock('App/Processes/ListView', () => {
   const ListView: React.FC = () => {
@@ -39,33 +41,35 @@ function createWrapper(options?: {initialPath?: string; contextPath?: string}) {
     }, []);
 
     return (
-      <HistoryRouter
-        history={createMemoryHistory({
-          initialEntries: [initialPath],
-        })}
-        basename={contextPath ?? ''}
-      >
-        <Routes>
-          <Route
-            path={Paths.processes()}
-            element={
-              <>
-                <AppHeader />
-                {children}
-              </>
-            }
-          />
-          <Route
-            path={Paths.dashboard()}
-            element={
-              <>
-                <AppHeader />
-                dashboard page
-              </>
-            }
-          />
-        </Routes>
-      </HistoryRouter>
+      <QueryClientProvider client={getMockQueryClient()}>
+        <HistoryRouter
+          history={createMemoryHistory({
+            initialEntries: [initialPath],
+          })}
+          basename={contextPath ?? ''}
+        >
+          <Routes>
+            <Route
+              path={Paths.processes()}
+              element={
+                <>
+                  <AppHeader />
+                  {children}
+                </>
+              }
+            />
+            <Route
+              path={Paths.dashboard()}
+              element={
+                <>
+                  <AppHeader />
+                  dashboard page
+                </>
+              }
+            />
+          </Routes>
+        </HistoryRouter>
+      </QueryClientProvider>
     );
   };
   return Wrapper;

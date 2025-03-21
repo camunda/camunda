@@ -100,6 +100,21 @@ function mockResponses({
       });
     }
 
+    if (
+      route
+        .request()
+        .url()
+        .match(/\/v2\/process-definitions\/\d+\/xml/)
+    ) {
+      return route.fulfill({
+        status: processXml === undefined ? 400 : 200,
+        body: processXml,
+        headers: {
+          'content-type': 'application/text',
+        },
+      });
+    }
+
     if (route.request().url().includes('xml')) {
       return route.fulfill({
         status: processXml === undefined ? 400 : 200,
