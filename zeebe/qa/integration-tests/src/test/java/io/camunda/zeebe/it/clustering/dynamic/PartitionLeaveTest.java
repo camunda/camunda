@@ -20,6 +20,8 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
 final class PartitionLeaveTest {
+  private static final Duration LEAVE_TIMEOUT = Duration.ofSeconds(20);
+
   @ParameterizedTest
   @MethodSource("testScenarios")
   void canLeavePartition(final Scenario scenario) {
@@ -30,6 +32,7 @@ final class PartitionLeaveTest {
       // then
       assertChangeIsPlanned(response);
       Awaitility.await("Requested change is completed in time")
+          .timeout(LEAVE_TIMEOUT)
           .untilAsserted(
               () -> ClusterActuatorAssert.assertThat(cluster).hasCompletedChanges(response));
       ClusterActuatorAssert.assertThat(cluster).hasAppliedChanges(response);
@@ -48,6 +51,7 @@ final class PartitionLeaveTest {
       final var leave = runOperation(cluster, scenario.operation());
       assertChangeIsPlanned(leave);
       Awaitility.await("Leaving is completed in time")
+          .timeout(LEAVE_TIMEOUT)
           .untilAsserted(
               () -> ClusterActuatorAssert.assertThat(cluster).hasCompletedChanges(leave));
       ClusterActuatorAssert.assertThat(cluster).hasAppliedChanges(leave);
