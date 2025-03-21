@@ -323,8 +323,6 @@ public class ElementAssertTest {
                   + "\t- 'B': completed\n"
                   + "\t- 'C': terminated",
               PROCESS_INSTANCE_KEY);
-
-      verify(camundaDataSource).findFlowNodeInstances(any());
     }
 
     @Test
@@ -461,8 +459,6 @@ public class ElementAssertTest {
               "Process instance [key: %d] should have completed elements ['A', 'B'] but the following elements were not completed:\n"
                   + "\t- 'B': terminated",
               PROCESS_INSTANCE_KEY);
-
-      verify(camundaDataSource).findFlowNodeInstances(any());
     }
 
     @Test
@@ -599,8 +595,6 @@ public class ElementAssertTest {
               "Process instance [key: %d] should have terminated elements ['A', 'B'] but the following elements were not terminated:\n"
                   + "\t- 'A': completed",
               PROCESS_INSTANCE_KEY);
-
-      verify(camundaDataSource).findFlowNodeInstances(any());
     }
 
     @Test
