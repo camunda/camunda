@@ -13,8 +13,8 @@ import io.camunda.client.CamundaClient;
 import io.camunda.client.api.search.response.ProcessInstance;
 import io.camunda.client.api.search.response.SearchQueryResponse;
 import io.camunda.client.api.search.response.UserTask;
-import io.camunda.client.api.search.response.UserTaskState;
 import io.camunda.client.wrappers.ProcessInstanceState;
+import io.camunda.client.wrappers.UserTaskFilter;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import java.time.Duration;
@@ -136,7 +136,7 @@ public class DataGenerator implements AutoCloseable {
                     final var itemsFromQuery =
                         camundaClient
                             .newUserTaskQuery()
-                            .filter(f -> f.assignee(assignee).state(UserTaskState.CREATED))
+                            .filter(f -> f.assignee(assignee).state(UserTaskFilter.State.CREATED))
                             .send()
                             .join()
                             .items();

@@ -19,7 +19,6 @@ import io.camunda.client.api.search.filter.builder.DateTimeProperty;
 import io.camunda.client.api.search.filter.builder.IntegerProperty;
 import io.camunda.client.api.search.filter.builder.StringProperty;
 import io.camunda.client.api.search.query.TypedSearchQueryRequest.SearchRequestFilter;
-import io.camunda.client.api.search.response.UserTaskState;
 import io.camunda.client.wrappers.UserTaskVariableFilterRequest;
 import java.time.OffsetDateTime;
 import java.util.List;
@@ -43,7 +42,7 @@ public interface UserTaskFilter extends SearchRequestFilter {
    * @param state the state of the user task
    * @return the updated filter
    */
-  UserTaskFilter state(final UserTaskState state);
+  UserTaskFilter state(final io.camunda.client.wrappers.UserTaskFilter.State state);
 
   /**
    * Filters user tasks by the specified assignee.

@@ -416,4 +416,62 @@ public class ProtocolEnumWrappersTest {
       }
     }
   }
+
+  @Test
+  public void shouldConvertUserTaskResultState() {
+
+    for (final UserTaskResult.State value : UserTaskResult.State.values()) {
+      final io.camunda.client.protocol.rest.UserTaskResult.StateEnum protocolValue =
+          UserTaskResult.State.toProtocolEnum(value);
+      assertThat(protocolValue).isNotNull();
+      if (value == UserTaskResult.State.UNKNOWN_ENUM_VALUE) {
+        assertThat(protocolValue)
+            .isEqualTo(
+                io.camunda.client.protocol.rest.UserTaskResult.StateEnum.UNKNOWN_DEFAULT_OPEN_API);
+      } else {
+        assertThat(protocolValue.name()).isEqualTo(value.name());
+      }
+    }
+
+    for (final io.camunda.client.protocol.rest.UserTaskResult.StateEnum protocolValue :
+        io.camunda.client.protocol.rest.UserTaskResult.StateEnum.values()) {
+      final UserTaskResult.State value = UserTaskResult.State.fromProtocolEnum(protocolValue);
+      assertThat(value).isNotNull();
+      if (protocolValue
+          == io.camunda.client.protocol.rest.UserTaskResult.StateEnum.UNKNOWN_DEFAULT_OPEN_API) {
+        assertThat(value).isEqualTo(UserTaskResult.State.UNKNOWN_ENUM_VALUE);
+      } else {
+        assertThat(value.name()).isEqualTo(protocolValue.name());
+      }
+    }
+  }
+
+  @Test
+  public void shouldConvertUserTaskFilterState() {
+
+    for (final UserTaskFilter.State value : UserTaskFilter.State.values()) {
+      final io.camunda.client.protocol.rest.UserTaskFilter.StateEnum protocolValue =
+          UserTaskFilter.State.toProtocolEnum(value);
+      assertThat(protocolValue).isNotNull();
+      if (value == UserTaskFilter.State.UNKNOWN_ENUM_VALUE) {
+        assertThat(protocolValue)
+            .isEqualTo(
+                io.camunda.client.protocol.rest.UserTaskFilter.StateEnum.UNKNOWN_DEFAULT_OPEN_API);
+      } else {
+        assertThat(protocolValue.name()).isEqualTo(value.name());
+      }
+    }
+
+    for (final io.camunda.client.protocol.rest.UserTaskFilter.StateEnum protocolValue :
+        io.camunda.client.protocol.rest.UserTaskFilter.StateEnum.values()) {
+      final UserTaskFilter.State value = UserTaskFilter.State.fromProtocolEnum(protocolValue);
+      assertThat(value).isNotNull();
+      if (protocolValue
+          == io.camunda.client.protocol.rest.UserTaskFilter.StateEnum.UNKNOWN_DEFAULT_OPEN_API) {
+        assertThat(value).isEqualTo(UserTaskFilter.State.UNKNOWN_ENUM_VALUE);
+      } else {
+        assertThat(value.name()).isEqualTo(protocolValue.name());
+      }
+    }
+  }
 }

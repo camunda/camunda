@@ -10,7 +10,7 @@ package io.camunda.it.migration;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.client.CamundaClient;
-import io.camunda.client.api.search.response.UserTaskState;
+import io.camunda.client.wrappers.UserTaskResult;
 import io.camunda.it.migration.util.MigrationITInvocationProvider;
 import io.camunda.it.migration.util.MigrationITInvocationProvider.DatabaseType;
 import io.camunda.it.migration.util.TasklistMigrationHelper;
@@ -204,7 +204,7 @@ public class MigrationUserTaskUpdateIT {
                       .join()
                       .items()
                       .getFirst();
-              return task != null && UserTaskState.COMPLETED.equals(task.getState());
+              return task != null && UserTaskResult.State.COMPLETED.equals(task.getState());
             });
   }
 
@@ -237,7 +237,7 @@ public class MigrationUserTaskUpdateIT {
 
     instances.forEach(
         i -> {
-          BpmnModelInstance process = null;
+          final BpmnModelInstance process;
           if (i.contains("zeebe")) {
             process =
                 Bpmn.createExecutableProcess(i + "-process")
