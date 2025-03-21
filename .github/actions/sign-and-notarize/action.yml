@@ -41,7 +41,7 @@ runs:
         security unlock-keychain -p "" build.keychain
 
         security import dev_id.p12 -k build.keychain \
-          -P "$INPUT_P12_PASSWORD" \
+          -P $INPUT_P12_PASSWORD \
           -T /usr/bin/codesign
 
         security list-keychains -s build.keychain $(security list-keychains | sed 's/\"//g')
