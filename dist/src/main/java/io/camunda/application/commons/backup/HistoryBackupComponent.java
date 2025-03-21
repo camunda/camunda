@@ -14,6 +14,9 @@ import io.camunda.webapps.backup.BackupServiceImpl;
 import io.camunda.webapps.backup.repository.BackupRepositoryProps;
 import io.camunda.webapps.profiles.ProfileWebApp;
 import io.camunda.webapps.schema.descriptors.backup.BackupPriorities;
+import jakarta.websocket.OnClose;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Conditional;
@@ -27,6 +30,7 @@ import org.springframework.stereotype.Component;
 @ProfileWebApp
 public class HistoryBackupComponent {
 
+  private static final Logger LOGGER = LoggerFactory.getLogger(HistoryBackupComponent.class);
   private final ThreadPoolTaskExecutor threadPoolTaskExecutor;
   private final BackupPriorities backupPriorities;
   private final BackupRepositoryProps backupRepositoryProps;
@@ -47,5 +51,11 @@ public class HistoryBackupComponent {
   public BackupService backupService() {
     return new BackupServiceImpl(
         threadPoolTaskExecutor, backupPriorities, backupRepositoryProps, backupRepository);
+  }
+
+  @OnClose
+  public void shutdownExecutor() {
+    LOGGER.info("Shutting down history backup thread pool.");
+    threadPoolTaskExecutor.shutdown();
   }
 }
