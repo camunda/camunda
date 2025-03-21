@@ -28,17 +28,18 @@ public enum FlowNodeType {
   SEQUENCE_FLOW,
   MULTI_INSTANCE_BODY,
   CALL_ACTIVITY,
+  AD_HOC_SUB_PROCESS,
   UNKNOWN;
 
   private static final Logger LOGGER = LoggerFactory.getLogger(FlowNodeType.class);
 
-  public static FlowNodeType fromZeebeBpmnElementType(String bpmnElementType) {
+  public static FlowNodeType fromZeebeBpmnElementType(final String bpmnElementType) {
     if (bpmnElementType == null) {
       return UNSPECIFIED;
     }
     try {
       return FlowNodeType.valueOf(bpmnElementType);
-    } catch (IllegalArgumentException ex) {
+    } catch (final IllegalArgumentException ex) {
       LOGGER.error(
           "Flow node type not found for value [{}]. UNKNOWN type will be assigned.",
           bpmnElementType);
