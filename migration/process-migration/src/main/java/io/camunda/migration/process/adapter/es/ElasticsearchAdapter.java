@@ -11,6 +11,7 @@ import static java.util.stream.Collectors.toList;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.elasticsearch._types.Refresh;
+import co.elastic.clients.elasticsearch._types.Result;
 import co.elastic.clients.elasticsearch._types.SortOrder;
 import co.elastic.clients.elasticsearch.core.BulkRequest;
 import co.elastic.clients.elasticsearch.core.BulkResponse;
@@ -71,7 +72,10 @@ public class ElasticsearchAdapter implements Adapter {
           retryDecorator.decorate(
               "Migrate entities %s".formatted(idList),
               () -> client.bulk(bulkRequest),
-              (res) -> res == null || res.items().isEmpty());
+              (res) ->
+                  res == null
+                      || res.items().isEmpty()
+                      || res.items().stream().allMatch(i -> i.error() != null));
     } catch (final Exception e) {
       throw new MigrationException("Failed to migrate entities %s".formatted(idList), e);
     }
@@ -168,7 +172,7 @@ public class ElasticsearchAdapter implements Adapter {
       retryDecorator.decorate(
           "Update last migrated process",
           () -> client.update(updateRequest, ProcessorStep.class),
-          res -> res.result() == null);
+          res -> res.result() != Result.Created && res.result() != Result.Updated);
     } catch (final Exception e) {
       throw new MigrationException("Failed to update migrated process", e);
     }

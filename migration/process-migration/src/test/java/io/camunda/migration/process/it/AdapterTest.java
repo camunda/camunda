@@ -315,10 +315,11 @@ public abstract class AdapterTest {
     }
   }
 
-  protected <T> void awaitRecordsArePresent(final Class<T> clazz, final String indexName) {
+  protected <T> void awaitRecordsArePresent(
+      final Class<T> clazz, final String indexName, final int recordCount) {
     Awaitility.await()
         .atMost(Duration.ofSeconds(5))
-        .until(() -> !readRecords(clazz, indexName).isEmpty());
+        .until(() -> readRecords(clazz, indexName).size() == recordCount);
   }
 
   protected void assertProcessorStepContentIsStored(final String processDefinitionId)

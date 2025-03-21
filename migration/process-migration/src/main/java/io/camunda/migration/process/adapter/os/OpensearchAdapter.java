@@ -28,6 +28,7 @@ import java.util.stream.Collectors;
 import org.opensearch.client.json.JsonData;
 import org.opensearch.client.opensearch.OpenSearchClient;
 import org.opensearch.client.opensearch._types.FieldValue;
+import org.opensearch.client.opensearch._types.Result;
 import org.opensearch.client.opensearch._types.SortOrder;
 import org.opensearch.client.opensearch.core.BulkRequest;
 import org.opensearch.client.opensearch.core.BulkResponse;
@@ -71,7 +72,10 @@ public class OpensearchAdapter implements Adapter {
           retryDecorator.decorate(
               "Migrate entities %s".formatted(idList),
               () -> client.bulk(bulkRequest),
-              (res) -> res == null || res.items().isEmpty());
+              (res) ->
+                  res == null
+                      || res.items().isEmpty()
+                      || res.items().stream().allMatch(i -> i.error() != null));
     } catch (final Exception e) {
       throw new MigrationException("Failed to migrate entities %s".formatted(idList), e);
     }
@@ -167,7 +171,7 @@ public class OpensearchAdapter implements Adapter {
       retryDecorator.decorate(
           "Update last migrated process",
           () -> client.update(updateRequest, ProcessorStep.class),
-          res -> res.result() == null);
+          res -> res.result() != Result.Created && res.result() != Result.Updated);
     } catch (final Exception e) {
       throw new MigrationException("Failed to update migrated process", e);
     }
