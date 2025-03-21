@@ -12,6 +12,7 @@ import static io.camunda.zeebe.engine.processing.processinstance.ProcessInstance
 import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContextImpl;
 import io.camunda.zeebe.engine.processing.common.CatchEventBehavior;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCatchEventSupplier;
+import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableMultiInstanceBody;
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
 import io.camunda.zeebe.engine.processing.processinstance.ProcessInstanceMigrationPreconditions.ProcessInstanceMigrationPreconditionFailedException;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
@@ -34,6 +35,7 @@ import io.camunda.zeebe.protocol.record.intent.MessageSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessMessageSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.SignalSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.TimerIntent;
+import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -87,10 +89,14 @@ public class ProcessInstanceMigrationCatchEventBehaviour {
       final String elementId) {
     final var context = new BpmnElementContextImpl();
     context.init(elementInstance.getKey(), elementInstanceRecord, elementInstance.getState());
-    final var targetElement =
-        targetProcessDefinition
-            .getProcess()
-            .getElementById(targetElementId, ExecutableCatchEventSupplier.class);
+
+    // set type explicitly for multi-instance body because inner activities has the same element id
+    final var expectedType =
+        elementInstanceRecord.getBpmnElementType() == BpmnElementType.MULTI_INSTANCE_BODY
+            ? ExecutableMultiInstanceBody.class
+            : ExecutableCatchEventSupplier.class;
+    final ExecutableCatchEventSupplier targetElement =
+        targetProcessDefinition.getProcess().getElementById(targetElementId, expectedType);
 
     // UNSUBSCRIBE FROM CATCH EVENTS
     final List<ProcessMessageSubscription> processMessageSubscriptionsToMigrate =
