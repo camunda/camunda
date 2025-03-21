@@ -23,7 +23,6 @@
   "pleaseEnterValidGroupId": "Please enter a valid group ID (only alphanumeric characters and max 256 characters)",
   "groupIdHelperText": "The group ID must be unique and can not be modified",
   "openGroupContextMenu": "Open group context menu",
-  "somethingsWrong": "Something's wrong",
   "unableToLoadMembers": "We were unable to load the members. Click \"Retry\" to try again.",
   "retry": "Retry",
   "assignUser": "Assign user",

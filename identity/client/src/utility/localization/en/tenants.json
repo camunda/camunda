@@ -34,7 +34,6 @@
   "searchByUsername": "Search by username",
   "usersCouldNotLoad": "Users could not be loaded.",
   "tenantMemberRemoved": "Tenant member has been removed.",
-  "somethingsWrong": "Something's wrong",
   "unableToLoadMembers": "We were unable to load the members. Click \"Retry\" to try again.",
   "assignUsersToTenant": "Assign users to this Tenant",
   "tenantMemberAccessDisclaimer": "Members of this Tenant will be given access to the data within the Tenant.",
