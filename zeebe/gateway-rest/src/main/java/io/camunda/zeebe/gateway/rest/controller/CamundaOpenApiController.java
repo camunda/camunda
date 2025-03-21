@@ -9,14 +9,19 @@ package io.camunda.zeebe.gateway.rest.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
+import io.camunda.zeebe.gateway.rest.RestErrorMapper;
 import java.nio.charset.StandardCharsets;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.ClassPathResource;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 
 @CamundaRestController
 public class CamundaOpenApiController {
+
+  @Autowired private ObjectMapper objectMapper;
 
   @GetMapping(value = "/camunda-api-docs", produces = MediaType.APPLICATION_JSON_VALUE)
   public ResponseEntity<String> loadCamundaApiDocs() {
@@ -29,13 +34,16 @@ public class CamundaOpenApiController {
       final ObjectMapper yamlReader = new ObjectMapper(new YAMLFactory());
       final Object obj = yamlReader.readValue(yamlContent, Object.class);
 
-      final ObjectMapper jsonWriter = new ObjectMapper();
-      final String jsonContent = jsonWriter.writeValueAsString(obj);
+      final String jsonContent = objectMapper.writeValueAsString(obj);
 
       return ResponseEntity.ok(jsonContent);
     } catch (final Exception e) {
-      return ResponseEntity.internalServerError()
-          .body("{\"error\": \"Failed to load YAML: " + e.getMessage() + "\"}");
+      final var problemDetail =
+          RestErrorMapper.createProblemDetail(
+              HttpStatus.INTERNAL_SERVER_ERROR,
+              e.getMessage(),
+              "Failed to load YAML file with OpenAPI documentation.");
+      return RestErrorMapper.mapProblemToResponse(problemDetail);
     }
   }
 }
