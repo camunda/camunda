@@ -21,6 +21,7 @@ import io.camunda.zeebe.engine.state.deployment.PersistedForm;
 import io.camunda.zeebe.engine.state.immutable.FormState;
 import io.camunda.zeebe.engine.state.immutable.UserTaskState.LifecycleState;
 import io.camunda.zeebe.engine.state.instance.ElementInstance;
+import io.camunda.zeebe.engine.state.instance.UserTaskIntermediateStateValue;
 import io.camunda.zeebe.engine.state.mutable.MutableUserTaskState;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeBindingType;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebePriorityDefinition;
@@ -305,18 +306,34 @@ public final class BpmnUserTaskBehavior {
             });
   }
 
-  public void cancelUserTask(final BpmnElementContext context) {
-    final var elementInstance = stateBehavior.getElementInstance(context);
-    cancelUserTask(elementInstance);
+  public void cancelUserTask(final ElementInstance elementInstance) {
+    userTaskCanceling(elementInstance);
+    userTaskCanceled(elementInstance);
   }
 
-  public void cancelUserTask(final ElementInstance elementInstance) {
+  public void userTaskCanceling(final ElementInstance elementInstance) {
     final long userTaskKey = elementInstance.getUserTaskKey();
     if (userTaskKey > 0) {
       final LifecycleState lifecycleState = userTaskState.getLifecycleState(userTaskKey);
       if (CANCELABLE_LIFECYCLE_STATES.contains(lifecycleState)) {
         final UserTaskRecord userTask = userTaskState.getUserTask(userTaskKey);
-        stateWriter.appendFollowUpEvent(userTaskKey, UserTaskIntent.CANCELING, userTask);
+        if (userTask != null) {
+          stateWriter.appendFollowUpEvent(userTaskKey, UserTaskIntent.CANCELING, userTask);
+        }
+      }
+    }
+  }
+
+  public void userTaskCanceled(final ElementInstance elementInstance) {
+    final long userTaskKey = elementInstance.getUserTaskKey();
+    if (userTaskKey > 0) {
+      final UserTaskIntermediateStateValue intermediateState =
+          userTaskState.getIntermediateState(userTaskKey);
+      final UserTaskRecord userTask =
+          intermediateState != null
+              ? intermediateState.getRecord()
+              : userTaskState.getUserTask(userTaskKey);
+      if (userTask != null) {
         stateWriter.appendFollowUpEvent(userTaskKey, UserTaskIntent.CANCELED, userTask);
       }
     }
