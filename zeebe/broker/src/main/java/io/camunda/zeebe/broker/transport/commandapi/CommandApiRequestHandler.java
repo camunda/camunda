@@ -151,7 +151,7 @@ final class CommandApiRequestHandler
     } else {
       return Either.left(
           errorWriter
-              .errorCode(ErrorCode.MALFORMED_REQUEST)
+              .errorCode(ErrorCode.MAX_MESSAGE_SIZE_EXCEEDED)
               .errorMessage("Request size is above configured maxMessageSize."));
     }
   }
