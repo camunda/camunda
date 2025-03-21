@@ -1,6 +1,6 @@
 # Acceptance tests
 
-This module contains acceptance tests for the whole Camunda 8 platform, covering multiple or even all components at the same time in an integrated manner.
+This module contains acceptance tests (AT) for the whole Camunda 8 platform, covering multiple or even all components at the same time in an integrated manner.
 
 In the following document, we shortly highlight general recommendations and how-tos/examples of how to write them.
 This ensures we consistently write such tests and cover all necessary supported environments.
@@ -15,6 +15,18 @@ This ensures we consistently write such tests and cover all necessary supported 
 
 ## How to write acceptance tests
 
+We are providing with the `@MultiDbTest` annotation a consistent and easy way to write acceptance tests.
+ 
+* This reduces the barrier for engineers to write AT, which is less repetitive and has less boilerplate (especially regarding setup code).
+* Tests are executed against multiple supported environments, transparent to the Engineer.
+* Engineers can fully focus on business logic to test.
+* Tests using the `@MultiDbTest` annotation are normally faster to execute. As they start dependencies just once, and cleanly reuse them.
+
+While we want to make it as easy as possible to write AT for the engineers, this comes with some cost and complexity in the related extension.
+Additionally, we wanted to still make the solution composable, reusable and configurable to cover several use cases or even make it possible to support advanced use cases. For example to configure secondary storage on its own (if necessary) or handle the test application lifecycle.
+
+This means the separation of the test application and MultiDb configuration in the extension (to configure different secondary storages) is on purpose.
+
 ### For simple cases:
 
 * Make use of the `@MultiDbTest` annotation (if possible).
@@ -25,9 +37,9 @@ This ensures we consistently write such tests and cover all necessary supported 
 
 ### For advanced cases:
 
-* Advanced cases might apply when you want to run the complete platform or need to configure the broker test application.
+* Advanced cases might apply when you want to run the complete platform or need to configure the broker test application or have to control the application lifecycle on your own.
 * To run the complete platform, you can use `TestSimpleCamundaApplication`, which bundles all components together.
-* With that, you can use `@RegisterExtension` and `CamundaMultiDBExtension` directly.
+* With that, you can use `@RegisterExtension` and `CamundaMultiDBExtension` directly or annotate the test application with `@MultiDbTestApplication`
 * This might also be necessary for more sophisticated broker configurations, such as testing different or specific authentications.
 
 ### For special cases:
@@ -82,15 +94,6 @@ public class ProcessDefinitionQueryTest {
 
 * We need to configure the broker for specific authentication, for that we need to make use of `TestStandaloneBroker` or `TestSimpleCamundaApplication`
 * We need to annotate the test applications with `MultiDbTestApplication`, to mark application managed by `CamundaMultiDbExtension`
-
-> [!Note]
->
-> The separation of test application and extension (to configure different secondary storages) is on purpose.
->
-> This is for:
-> * Single responsibility: the `CamundaMultiDbExtension` only focuses on configuring the database based on various factors (e.g. CI job)
-> * KISS: to keep things light
-> * Favor composability: To make it reusable. The extension handles configuring the DB, and can be used in different occasions together with using the standalone Camunda, standalone Broker, or something different. The test applications focus on the respective application lifecycle and flexible configuration
 
 **Optional:**
 
