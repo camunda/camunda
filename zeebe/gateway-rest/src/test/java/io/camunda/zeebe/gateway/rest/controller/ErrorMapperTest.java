@@ -557,6 +557,35 @@ public class ErrorMapperTest extends RestControllerTest {
   }
 
   @Test
+  public void shouldYieldMaxMessageSizeExceededWhenRequestIsTooLarge() {
+    // given
+    Mockito.when(userTaskServices.completeUserTask(anyLong(), any(), anyString()))
+        .thenReturn(
+            CompletableFuture.failedFuture(
+                new CamundaBrokerException(
+                    new BrokerError(ErrorCode.MAX_MESSAGE_SIZE_EXCEEDED, "max size error"))));
+
+    final var request = new UserTaskCompletionRequest();
+    final var expectedBody =
+        ProblemDetail.forStatusAndDetail(HttpStatus.PAYLOAD_TOO_LARGE, "max size error");
+    expectedBody.setTitle(ErrorCode.MAX_MESSAGE_SIZE_EXCEEDED.name());
+    expectedBody.setInstance(URI.create(USER_TASKS_BASE_URL + "/1/completion"));
+
+    // when / then
+    webClient
+        .post()
+        .uri(USER_TASKS_BASE_URL + "/1/completion")
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .body(Mono.just(request), UserTaskCompletionRequest.class)
+        .exchange()
+        .expectStatus()
+        .isEqualTo(HttpStatus.PAYLOAD_TOO_LARGE)
+        .expectBody(ProblemDetail.class)
+        .isEqualTo(expectedBody);
+  }
+
+  @Test
   public void shouldMapCamundaSearchExceptionWhenNoReason() {
     // given
     final CamundaSearchException cse = new CamundaSearchException("No reason");
