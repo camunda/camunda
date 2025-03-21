@@ -5,7 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.application.commons.search;
+package io.camunda.exporter.schema.config;
 
 import static java.util.Optional.ofNullable;
 
@@ -15,7 +15,10 @@ import io.camunda.search.connect.configuration.ConnectConfiguration;
 import java.util.function.Function;
 
 public record SearchEngineConfiguration(
-    ConnectConfiguration connect, IndexSettings index, RetentionConfiguration retention) {
+    ConnectConfiguration connect,
+    IndexSettings index,
+    RetentionConfiguration retention,
+    SchemaManagerConfiguration schemaManager) {
 
   public static SearchEngineConfiguration of(final Function<Builder, Builder> fn) {
     return fn.apply(new Builder()).build();
@@ -25,6 +28,7 @@ public record SearchEngineConfiguration(
     private ConnectConfiguration connect;
     private IndexSettings index;
     private RetentionConfiguration retention;
+    private SchemaManagerConfiguration schemaManager;
 
     public Builder connect(final ConnectConfiguration value) {
       connect = value;
@@ -41,11 +45,17 @@ public record SearchEngineConfiguration(
       return this;
     }
 
+    public Builder schemaManager(final SchemaManagerConfiguration value) {
+      schemaManager = value;
+      return this;
+    }
+
     public SearchEngineConfiguration build() {
       return new SearchEngineConfiguration(
           ofNullable(connect).orElseGet(ConnectConfiguration::new),
           ofNullable(index).orElseGet(IndexSettings::new),
-          ofNullable(retention).orElseGet(RetentionConfiguration::new));
+          ofNullable(retention).orElseGet(RetentionConfiguration::new),
+          ofNullable(schemaManager).orElseGet(SchemaManagerConfiguration::new));
     }
   }
 }

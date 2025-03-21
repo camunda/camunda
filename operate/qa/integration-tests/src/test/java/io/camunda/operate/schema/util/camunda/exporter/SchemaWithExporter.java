@@ -13,6 +13,7 @@ import io.camunda.exporter.adapters.ClientAdapter;
 import io.camunda.exporter.config.ConnectionTypes;
 import io.camunda.exporter.config.ExporterConfiguration;
 import io.camunda.exporter.schema.SchemaManager;
+import io.camunda.exporter.schema.config.SearchEngineConfiguration;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 
 public class SchemaWithExporter {
@@ -21,7 +22,7 @@ public class SchemaWithExporter {
 
   public SchemaWithExporter(final String prefix, final boolean isElasticsearch) {
     final var config = new ExporterConfiguration();
-    config.getIndex().setPrefix(prefix);
+    config.getConnect().setIndexPrefix(prefix);
     config
         .getConnect()
         .setType(
@@ -43,7 +44,7 @@ public class SchemaWithExporter {
             clientAdapter.getSearchEngineClient(),
             provider.getIndexDescriptors(),
             provider.getIndexTemplateDescriptors(),
-            config,
+            SearchEngineConfiguration.of(b -> b.connect(config.getConnect())),
             clientAdapter.objectMapper());
   }
 

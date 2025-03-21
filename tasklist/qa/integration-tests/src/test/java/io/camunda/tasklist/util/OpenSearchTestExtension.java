@@ -12,6 +12,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.beans.factory.config.BeanDefinition.SCOPE_PROTOTYPE;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.camunda.exporter.schema.config.SearchEngineConfiguration;
 import io.camunda.tasklist.property.TasklistOpenSearchProperties;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.qa.util.TasklistIndexPrefixHolder;
@@ -75,6 +76,7 @@ public class OpenSearchTestExtension
   private OpenSearchClient zeebeOsClient;
 
   @Autowired private TasklistProperties tasklistProperties;
+  @Autowired private SearchEngineConfiguration searchEngineConfiguration;
   @Autowired private ZeebeImporter zeebeImporter;
   @Autowired private RecordsReaderHolder recordsReaderHolder;
   private boolean failed = false;
@@ -94,6 +96,7 @@ public class OpenSearchTestExtension
           Optional.ofNullable(indexPrefixHolder.createNewIndexPrefix()).orElse(indexPrefix);
       tasklistProperties.getOpenSearch().setIndexPrefix(indexPrefix);
       tasklistProperties.getZeebeOpenSearch().setPrefix(indexPrefix);
+      searchEngineConfiguration.connect().setIndexPrefix(indexPrefix);
     }
     /* Needed for the tasklist-user index */
     schemaManager.createSchema();
@@ -114,6 +117,9 @@ public class OpenSearchTestExtension
     }
     tasklistProperties
         .getOpenSearch()
+        .setIndexPrefix(TasklistOpenSearchProperties.DEFAULT_INDEX_PREFIX);
+    searchEngineConfiguration
+        .connect()
         .setIndexPrefix(TasklistOpenSearchProperties.DEFAULT_INDEX_PREFIX);
     assertMaxOpenScrollContexts(10);
   }
@@ -162,6 +168,45 @@ public class OpenSearchTestExtension
   @Override
   public void processAllRecordsAndWait(final TestCheck testCheck, final Object... arguments) {
     processRecordsAndWaitFor(testCheck, null, arguments);
+  }
+
+  @Override
+  public void processRecordsAndWaitFor(
+      final TestCheck testCheck, final Supplier<Object> supplier, final Object... arguments) {
+    int waitingRound = 0;
+    final int maxRounds = 50;
+    boolean found = testCheck.test(arguments);
+    final long start = System.currentTimeMillis();
+    while (!found && waitingRound < maxRounds) {
+      try {
+        if (supplier != null) {
+          supplier.get();
+        }
+        refreshIndexesInElasticsearch();
+      } catch (final Exception e) {
+        LOGGER.error(e.getMessage(), e);
+      }
+      found = testCheck.test(arguments);
+      if (!found) {
+        sleepFor(500);
+        waitingRound++;
+      }
+    }
+    final long finishedTime = System.currentTimeMillis() - start;
+
+    if (found) {
+      LOGGER.debug(
+          "Condition {} was met in round {} ({} ms).",
+          testCheck.getName(),
+          waitingRound,
+          finishedTime);
+    } else {
+      LOGGER.error(
+          "Condition {} was not met after {} rounds ({} ms).",
+          testCheck.getName(),
+          waitingRound,
+          finishedTime);
+    }
   }
 
   @Override
@@ -242,45 +287,6 @@ public class OpenSearchTestExtension
                                                     .collect(Collectors.toList())))))
                 .build())
         .deleted();
-  }
-
-  @Override
-  public void processRecordsAndWaitFor(
-      final TestCheck testCheck, final Supplier<Object> supplier, final Object... arguments) {
-    int waitingRound = 0;
-    final int maxRounds = 50;
-    boolean found = testCheck.test(arguments);
-    final long start = System.currentTimeMillis();
-    while (!found && waitingRound < maxRounds) {
-      try {
-        if (supplier != null) {
-          supplier.get();
-        }
-        refreshIndexesInElasticsearch();
-      } catch (final Exception e) {
-        LOGGER.error(e.getMessage(), e);
-      }
-      found = testCheck.test(arguments);
-      if (!found) {
-        sleepFor(500);
-        waitingRound++;
-      }
-    }
-    final long finishedTime = System.currentTimeMillis() - start;
-
-    if (found) {
-      LOGGER.debug(
-          "Condition {} was met in round {} ({} ms).",
-          testCheck.getName(),
-          waitingRound,
-          finishedTime);
-    } else {
-      LOGGER.error(
-          "Condition {} was not met after {} rounds ({} ms).",
-          testCheck.getName(),
-          waitingRound,
-          finishedTime);
-    }
   }
 
   private boolean areIndicesAreCreated(final String indexPrefix, final int minCountOfIndices)

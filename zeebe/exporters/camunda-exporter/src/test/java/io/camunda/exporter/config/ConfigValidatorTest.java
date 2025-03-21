@@ -38,7 +38,7 @@ public class ConfigValidatorTest {
   @Test
   void shouldNotAllowUnderscoreInIndexPrefix() {
     // given
-    config.getIndex().setPrefix("i_am_invalid");
+    config.getConnect().setIndexPrefix("i_am_invalid");
 
     // when - then
     assertThatCode(() -> ConfigValidator.validate(config)).isInstanceOf(ExporterException.class);

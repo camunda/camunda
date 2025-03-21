@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.qa.util.cluster;
 
+import static io.camunda.application.commons.search.SearchEngineDatabaseConfiguration.SearchEngineSchemaManagerProperties.CREATE_SCHEMA_PROPERTY;
+
 import io.camunda.application.MainSupport;
 import io.camunda.application.Profile;
 import io.camunda.application.commons.configuration.WorkingDirectoryConfiguration.WorkingDirectory;
@@ -190,6 +192,10 @@ public abstract class TestSpringApplication<T extends TestSpringApplication<T>>
 
   public final T withAuthenticatedAccess() {
     return withUnauthenticatedAccess(false);
+  }
+
+  public T withCreateSchema(final boolean createSchema) {
+    return withProperty(CREATE_SCHEMA_PROPERTY, String.valueOf(createSchema));
   }
 
   /**

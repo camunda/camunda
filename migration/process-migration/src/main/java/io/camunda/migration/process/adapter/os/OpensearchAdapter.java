@@ -12,13 +12,13 @@ import io.camunda.migration.process.adapter.Adapter;
 import io.camunda.migration.process.adapter.MigrationRepositoryIndex;
 import io.camunda.migration.process.adapter.ProcessorStep;
 import io.camunda.migration.process.config.ProcessMigrationProperties;
-import io.camunda.migration.process.util.AdapterRetryDecorator;
 import io.camunda.search.connect.configuration.ConnectConfiguration;
 import io.camunda.search.connect.os.OpensearchConnector;
 import io.camunda.webapps.schema.descriptors.operate.index.ImportPositionIndex;
 import io.camunda.webapps.schema.descriptors.operate.index.ProcessIndex;
 import io.camunda.webapps.schema.entities.operate.ImportPositionEntity;
 import io.camunda.webapps.schema.entities.operate.ProcessEntity;
+import io.camunda.zeebe.util.retry.RetryDecorator;
 import java.io.IOException;
 import java.util.Comparator;
 import java.util.List;
@@ -28,6 +28,7 @@ import java.util.stream.Collectors;
 import org.opensearch.client.json.JsonData;
 import org.opensearch.client.opensearch.OpenSearchClient;
 import org.opensearch.client.opensearch._types.FieldValue;
+import org.opensearch.client.opensearch._types.OpenSearchException;
 import org.opensearch.client.opensearch._types.Result;
 import org.opensearch.client.opensearch._types.SortOrder;
 import org.opensearch.client.opensearch.core.BulkRequest;
@@ -37,6 +38,7 @@ import org.opensearch.client.opensearch.core.SearchResponse;
 import org.opensearch.client.opensearch.core.UpdateRequest;
 import org.opensearch.client.opensearch.core.bulk.BulkResponseItem;
 import org.opensearch.client.opensearch.core.search.Hit;
+import org.opensearch.client.opensearch.generic.OpenSearchClientException;
 
 public class OpensearchAdapter implements Adapter {
 
@@ -45,7 +47,7 @@ public class OpensearchAdapter implements Adapter {
   private final MigrationRepositoryIndex migrationRepositoryIndex;
   private final ProcessIndex processIndex;
   private final ImportPositionIndex importPositionIndex;
-  private final AdapterRetryDecorator retryDecorator;
+  private final RetryDecorator retryDecorator;
 
   public OpensearchAdapter(
       final ProcessMigrationProperties properties,
@@ -56,7 +58,13 @@ public class OpensearchAdapter implements Adapter {
     processIndex = new ProcessIndex(connectConfiguration.getIndexPrefix(), false);
     importPositionIndex = new ImportPositionIndex(connectConfiguration.getIndexPrefix(), false);
     client = new OpensearchConnector(connectConfiguration).createClient();
-    retryDecorator = new AdapterRetryDecorator(properties);
+    retryDecorator =
+        new RetryDecorator(properties.getRetry())
+            .withRetryOnException(
+                e ->
+                    e instanceof IOException
+                        || e instanceof OpenSearchException
+                        || e instanceof OpenSearchClientException);
   }
 
   @Override

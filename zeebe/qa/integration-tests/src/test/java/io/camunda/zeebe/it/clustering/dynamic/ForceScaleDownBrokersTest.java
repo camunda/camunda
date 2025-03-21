@@ -82,11 +82,13 @@ class ForceScaleDownBrokersTest {
             .withGatewaysCount(1)
             .withEmbeddedGateway(false)
             .withBrokersCount(clusterSize)
+            .withBrokerConfig(broker -> broker.withCreateSchema(false))
             .withPartitionsCount(PARTITIONS_COUNT)
             .withReplicationFactor(replicationFactor)
             .withGatewayConfig(
                 g ->
-                    g.gatewayConfig()
+                    g.withCreateSchema(false)
+                        .gatewayConfig()
                         .getCluster()
                         .getMembership()
                         // Decrease the timeouts for fast convergence of gateway topology. When the

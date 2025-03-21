@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.it.backup;
 
+import static io.camunda.application.commons.search.SearchEngineDatabaseConfiguration.SearchEngineSchemaManagerProperties.CREATE_SCHEMA_ENV_VAR;
+
 import io.camunda.zeebe.qa.util.testcontainers.ZeebeTestContainerDefaults;
 import io.camunda.zeebe.test.testcontainers.MinioContainer;
 import io.camunda.zeebe.test.util.junit.RegressionTest;
@@ -43,7 +45,8 @@ final class S3BackupAuthenticationIT {
             .withEnv("ZEEBE_BROKER_DATA_BACKUP_S3_REGION", MINIO.region())
             // Set env variables discovered by the AWS SDK, not Zeebe
             .withEnv("AWS_ACCESS_KEY_ID", MINIO.accessKey())
-            .withEnv("AWS_SECRET_ACCESS_KEY", MINIO.secretKey());
+            .withEnv("AWS_SECRET_ACCESS_KEY", MINIO.secretKey())
+            .withEnv(CREATE_SCHEMA_ENV_VAR, "false");
 
     // when
     zeebe.start();
