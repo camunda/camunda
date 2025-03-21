@@ -5,7 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.exporter.cache;
+package io.camunda.zeebe.util.cache;
 
 import com.github.benmanes.caffeine.cache.RemovalCause;
 import com.github.benmanes.caffeine.cache.stats.CacheStats;
@@ -15,18 +15,20 @@ import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
 import java.util.concurrent.TimeUnit;
 
-public class ExporterCacheMetrics implements StatsCounter {
+public class CaffeineCacheStatsCounter implements StatsCounter {
 
   public static final String TAG_TYPE = "type";
-  private static final String NAMESPACE = "zeebe.camunda.exporter.cache";
   private final Timer loadSuccessDuration;
   private final Timer loadFailureDuration;
   private final Counter evictionCount;
   private final String cacheName;
+  private final String namespace;
   private final MeterRegistry meterRegistry;
 
-  public ExporterCacheMetrics(final String cacheName, final MeterRegistry meterRegistry) {
+  public CaffeineCacheStatsCounter(
+      final String namespace, final String cacheName, final MeterRegistry meterRegistry) {
     this.cacheName = cacheName;
+    this.namespace = namespace;
     this.meterRegistry = meterRegistry;
 
     Counter.builder(meterName("result"))
@@ -85,7 +87,7 @@ public class ExporterCacheMetrics implements StatsCounter {
   }
 
   private String meterName(final String name) {
-    return NAMESPACE + "." + cacheName + "." + name;
+    return namespace + "." + cacheName + "." + name;
   }
 
   enum CacheResult {
