@@ -27,6 +27,7 @@ import io.camunda.zeebe.qa.util.actuator.ClusterActuator;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneApplication;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import io.camunda.zeebe.test.util.asserts.TopologyAssert;
+import io.camunda.zeebe.test.util.junit.RegressionTest;
 import java.time.Duration;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
@@ -173,8 +174,97 @@ public class ClusterPurgeMultiDbIT {
             });
   }
 
+  @RegressionTest("https://github.com/camunda/camunda/issues/29733")
+  void shouldPurgeProcessCache() {
+    // GIVEN
+    final ClusterActuator actuator = ClusterActuator.of(APPLICATION);
+    final var processDefinitionKey1 =
+        deployProcessModel(
+            Bpmn.createExecutableProcess("test-process1")
+                .startEvent()
+                .userTask()
+                .zeebeUserTask()
+                .name("user-task-1")
+                .endEvent()
+                .done());
+    final var processInstanceKey1 = startProcess(processDefinitionKey1);
+
+    Awaitility.await("until user task is active")
+        .ignoreExceptions()
+        .atMost(Duration.ofSeconds(2 * TIMEOUT))
+        .untilAsserted(
+            () -> {
+              final Future<SearchQueryResponse<UserTask>> userTaskFuture =
+                  client.newUserTaskQuery().send();
+              Assertions.assertThat(userTaskFuture)
+                  .succeedsWithin(Duration.ofSeconds(TIMEOUT))
+                  .extracting(SearchQueryResponse::items)
+                  .satisfies(items -> Assertions.assertThat(items).hasSize(1));
+            });
+
+    // Query API so cache is filled - we don't care about the result
+    client
+        .newFlownodeInstanceQuery()
+        .filter((f) -> f.processInstanceKey(processInstanceKey1))
+        .sort(sort -> sort.startDate().asc())
+        .send()
+        .join()
+        .items();
+
+    // WHEN
+    final var planChangeResponse = actuator.purge(false);
+
+    // THEN
+    assertThatChangesAreApplied(planChangeResponse);
+
+    final var processModel =
+        Bpmn.createExecutableProcess("test-process2")
+            .startEvent()
+            .userTask()
+            .zeebeUserTask()
+            .name("test-task-2")
+            .endEvent()
+            .done();
+    final var processDefinitionKey2 = deployProcessModel(processModel);
+    final var processInstanceKey2 = startProcess(processDefinitionKey2);
+
+    // Assumption: the processInstance keys are identical. These are the keys used to
+    // query data from the ProcessCache
+    assertThat(processInstanceKey1).isEqualTo(processInstanceKey2);
+
+    /*
+     * This will fail if the ProcessCache is not cleared.
+     *
+     * Scenario:
+     * - A new cluster is started and a Process model is deployed.
+     * - We execute a flow node instance query which also populates the ProcessCache.
+     * - We purge the cluster, but don't delete the ProcessCache.
+     * - We deploy a new Process model, but this will have the same key as the old one.
+     * - We execute a flow node instance query which finds outdated data in the ProcessCache.
+     * - The outdated data is returned instead of the correct information.
+     * - Therefore, without purging the ProcessCache, the query will not return a FlowNode of name
+     *   "test-task-2"
+     */
+    Awaitility.await("until flownode instance query returns non-empty list with two elements")
+        .atMost(Duration.ofSeconds(2 * TIMEOUT))
+        .ignoreExceptions()
+        .untilAsserted(
+            () -> {
+              final var items2 =
+                  client
+                      .newFlownodeInstanceQuery()
+                      .filter((f) -> f.processInstanceKey(processInstanceKey1))
+                      .sort(sort -> sort.startDate().asc())
+                      .send()
+                      .join()
+                      .items();
+
+              assertThat((items2.get(1)).getFlowNodeName()).isEqualTo("test-task-2");
+            });
+  }
+
   @Test
-  void clusterShouldBeReusableAfterPurge() throws InterruptedException {
+  void clusterShouldBeReusableAfterPurge() {
     // GIVEN
     final ClusterActuator actuator = ClusterActuator.of(APPLICATION);
     deployProcessModel(Bpmn.createExecutableProcess("any-process").startEvent().endEvent().done());

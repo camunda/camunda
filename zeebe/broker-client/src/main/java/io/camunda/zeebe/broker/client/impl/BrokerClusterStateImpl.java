@@ -21,6 +21,7 @@ import org.agrona.collections.IntArrayList;
 public final class BrokerClusterStateImpl implements BrokerClusterState {
 
   public static final int UNINITIALIZED_CLUSTER_SIZE = -1;
+  public static final long NO_COMPLETED_LAST_CHANGE_ID = -1;
   private static final Long TERM_NONE = -1L;
   private final Int2IntHashMap partitionLeaders;
   private final Int2ObjectHashMap<Long> partitionLeaderTerms;
@@ -36,6 +37,7 @@ public final class BrokerClusterStateImpl implements BrokerClusterState {
   private int clusterSize = UNINITIALIZED_CLUSTER_SIZE;
   private int partitionsCount;
   private int replicationFactor;
+  private long lastCompletedChangeId = NO_COMPLETED_LAST_CHANGE_ID;
 
   public BrokerClusterStateImpl(final BrokerClusterStateImpl topology) {
     this();
@@ -54,6 +56,7 @@ public final class BrokerClusterStateImpl implements BrokerClusterState {
       clusterSize = topology.clusterSize;
       partitionsCount = topology.partitionsCount;
       replicationFactor = topology.replicationFactor;
+      lastCompletedChangeId = topology.lastCompletedChangeId;
     }
   }
 
@@ -275,6 +278,15 @@ public final class BrokerClusterStateImpl implements BrokerClusterState {
     } else {
       return brokerHealthyPartitions.getOrDefault(partitionId, PartitionHealthStatus.UNHEALTHY);
     }
+  }
+
+  @Override
+  public long getLastCompletedChangeId() {
+    return lastCompletedChangeId;
+  }
+
+  public void setLastCompletedChangeId(final long lastCompletedChangeId) {
+    this.lastCompletedChangeId = lastCompletedChangeId;
   }
 
   @Override
