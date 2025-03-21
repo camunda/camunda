@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.it.network;
 
+import static io.camunda.application.commons.search.SearchEngineDatabaseConfiguration.SearchEngineSchemaManagerProperties.CREATE_SCHEMA_ENV_VAR;
 import static io.camunda.zeebe.it.util.ZeebeContainerUtil.newClientBuilder;
 
 import com.github.dockerjava.api.command.CreateContainerCmd;
@@ -103,6 +104,7 @@ final class Ipv6IntegrationTest {
         .withEnv("ATOMIX_LOG_LEVEL", "INFO")
         .withEnv("ZEEBE_BROKER_NETWORK_ADVERTISEDHOST", hostName)
         .withEnv("ZEEBE_BROKER_NETWORK_HOST", INADDR6_ANY)
+        .withEnv(CREATE_SCHEMA_ENV_VAR, "false")
         .withCreateContainerCmdModifier(cmd -> configureHostForIPv6(cmd, BROKER_IP));
   }
 
@@ -125,6 +127,7 @@ final class Ipv6IntegrationTest {
         .withEnv("ZEEBE_GATEWAY_NETWORK_HOST", INADDR6_ANY)
         .withEnv("ZEEBE_GATEWAY_NETWORK_ADVERTISEDHOST", hostName)
         .withEnv("ZEEBE_GATEWAY_CLUSTER_HOST", hostName)
+        .withEnv(CREATE_SCHEMA_ENV_VAR, "false")
         .withCreateContainerCmdModifier(cmd -> configureHostForIPv6(cmd, GATEWAY_IP));
   }
 }

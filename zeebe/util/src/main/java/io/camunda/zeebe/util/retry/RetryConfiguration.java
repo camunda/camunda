@@ -7,14 +7,20 @@
  */
 package io.camunda.zeebe.util.retry;
 
+import static io.github.resilience4j.core.IntervalFunction.DEFAULT_INITIAL_INTERVAL;
+import static io.github.resilience4j.core.IntervalFunction.DEFAULT_MULTIPLIER;
+import static io.github.resilience4j.retry.RetryConfig.DEFAULT_MAX_ATTEMPTS;
 import static java.util.Optional.ofNullable;
 
 import java.time.Duration;
 
-public abstract class RetryConfiguration {
+public class RetryConfiguration {
+
+  private static final Duration DEFAULT_MAX_RETRY_DELAY = Duration.ofMillis(30_000);
   private Integer maxRetries;
   private Duration minRetryDelay;
   private Duration maxRetryDelay;
+  private Double retryDelayMultiplier;
 
   public int getMaxRetries() {
     return ofNullable(maxRetries).orElseGet(this::defaultMaxRetries);
@@ -40,9 +46,27 @@ public abstract class RetryConfiguration {
     this.maxRetryDelay = maxRetryDelay;
   }
 
-  public abstract int defaultMaxRetries();
+  public double getRetryDelayMultiplier() {
+    return ofNullable(retryDelayMultiplier).orElseGet(this::defaultRetryDelayMultiplier);
+  }
 
-  public abstract Duration defaultMinRetryDelay();
+  public void setRetryDelayMultiplier(final double retryDelayMultiplier) {
+    this.retryDelayMultiplier = retryDelayMultiplier;
+  }
 
-  public abstract Duration defaultMaxRetryDelay();
+  protected int defaultMaxRetries() {
+    return DEFAULT_MAX_ATTEMPTS;
+  }
+
+  protected Duration defaultMinRetryDelay() {
+    return Duration.ofMillis(DEFAULT_INITIAL_INTERVAL);
+  }
+
+  protected Duration defaultMaxRetryDelay() {
+    return DEFAULT_MAX_RETRY_DELAY;
+  }
+
+  protected double defaultRetryDelayMultiplier() {
+    return DEFAULT_MULTIPLIER;
+  }
 }

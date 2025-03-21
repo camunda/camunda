@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.it.network;
 
+import static io.camunda.application.commons.search.SearchEngineDatabaseConfiguration.SearchEngineSchemaManagerProperties.CREATE_SCHEMA_ENV_VAR;
+
 import io.camunda.client.CamundaClient;
 import io.camunda.zeebe.qa.util.testcontainers.ZeebeTestContainerDefaults;
 import io.camunda.zeebe.test.util.asserts.TopologyAssert;
@@ -37,11 +39,13 @@ final class DefaultAdvertisedAddressIT {
               node -> {
                 node.getEnvMap().remove("ZEEBE_BROKER_NETWORK_ADVERTISEDHOST");
                 node.getEnvMap().remove("ZEEBE_BROKER_NETWORK_HOST");
+                node.addEnv(CREATE_SCHEMA_ENV_VAR, "false");
               })
           .withGatewayConfig(
               node -> {
                 node.getEnvMap().remove("ZEEBE_GATEWAY_CLUSTER_ADVERTISEDHOST");
                 node.getEnvMap().remove("ZEEBE_GATEWAY_CLUSTER_HOST");
+                node.addEnv(CREATE_SCHEMA_ENV_VAR, "false");
               })
           .build();
 

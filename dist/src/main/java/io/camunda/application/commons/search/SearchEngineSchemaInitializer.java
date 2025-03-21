@@ -8,8 +8,6 @@
 package io.camunda.application.commons.search;
 
 import io.camunda.exporter.adapters.ClientAdapter;
-import io.camunda.exporter.exceptions.ElasticsearchExporterException;
-import io.camunda.exporter.exceptions.OpensearchExporterException;
 import io.camunda.exporter.schema.SchemaManager;
 import io.camunda.exporter.schema.config.SearchEngineConfiguration;
 import io.camunda.webapps.schema.descriptors.IndexDescriptors;
@@ -28,6 +26,7 @@ public class SearchEngineSchemaInitializer implements InitializingBean {
 
   @Override
   public void afterPropertiesSet() throws IOException {
+    LOGGER.info("Initializing search engine schema...");
     try (final var clientAdapter = ClientAdapter.of(searchEngineConfiguration.connect())) {
       final IndexDescriptors indexDescriptors =
           new IndexDescriptors(
@@ -41,12 +40,7 @@ public class SearchEngineSchemaInitializer implements InitializingBean {
               searchEngineConfiguration,
               clientAdapter.objectMapper());
       schemaManager.startup();
-    } catch (final ElasticsearchExporterException | OpensearchExporterException e) {
-      if (e.getCause() instanceof java.net.ConnectException) {
-        LOGGER.warn("Could not connect to search engine, skipping schema creation", e); // FIXME
-      } else {
-        throw e;
-      }
     }
+    LOGGER.info("Search engine schema initialization complete.");
   }
 }

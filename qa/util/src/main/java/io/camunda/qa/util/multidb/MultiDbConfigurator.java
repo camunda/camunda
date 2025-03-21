@@ -7,6 +7,8 @@
  */
 package io.camunda.qa.util.multidb;
 
+import static io.camunda.application.commons.search.SearchEngineDatabaseConfiguration.SearchEngineSchemaManagerProperties.CREATE_SCHEMA_PROPERTY;
+
 import io.camunda.exporter.CamundaExporter;
 import io.camunda.search.connect.configuration.DatabaseType;
 import io.camunda.zeebe.exporter.ElasticsearchExporter;
@@ -79,6 +81,7 @@ public class MultiDbConfigurator {
     // 0s causes ILM to move data asap - it is normally the default
     // https://www.elastic.co/guide/en/elasticsearch/reference/current/ilm-index-lifecycle.html#ilm-phase-transitions
     elasticsearchProperties.put("camunda.database.retention.minimumAge", "0s");
+    elasticsearchProperties.put(CREATE_SCHEMA_PROPERTY, true);
 
     testApplication.withAdditionalProperties(elasticsearchProperties);
 
@@ -188,6 +191,7 @@ public class MultiDbConfigurator {
         "camunda.database.retention.enabled", Boolean.toString(retentionEnabled));
     opensearchProperties.put("camunda.database.retention.policyName", indexPrefix + "-ilm");
     opensearchProperties.put("camunda.database.retention.minimumAge", "0s");
+    opensearchProperties.put(CREATE_SCHEMA_PROPERTY, true);
 
     testApplication.withAdditionalProperties(opensearchProperties);
 
