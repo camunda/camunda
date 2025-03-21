@@ -20,6 +20,8 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
 final class PartitionJoinTest {
+  private static final Duration JOIN_TIMEOUT = Duration.ofSeconds(20);
+
   @ParameterizedTest
   @MethodSource("testScenarios")
   void canJoinPartition(final Scenario scenario) {
@@ -30,6 +32,7 @@ final class PartitionJoinTest {
       // then
       assertChangeIsPlanned(response);
       Awaitility.await("Requested change is completed in time")
+          .timeout(JOIN_TIMEOUT)
           .untilAsserted(
               () -> ClusterActuatorAssert.assertThat(cluster).hasCompletedChanges(response));
       ClusterActuatorAssert.assertThat(cluster)
@@ -55,6 +58,7 @@ final class PartitionJoinTest {
       // then
       assertChangeIsPlanned(leave);
       Awaitility.await("Requested change is completed in time")
+          .timeout(JOIN_TIMEOUT)
           .untilAsserted(
               () -> ClusterActuatorAssert.assertThat(cluster).hasCompletedChanges(leave));
       ClusterActuatorAssert.assertThat(cluster).hasAppliedChanges(leave);
