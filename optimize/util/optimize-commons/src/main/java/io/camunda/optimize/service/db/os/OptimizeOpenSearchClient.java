@@ -107,6 +107,9 @@ import org.opensearch.client.opensearch.indices.RolloverResponse;
 import org.opensearch.client.opensearch.indices.rollover.RolloverConditions;
 import org.opensearch.client.opensearch.snapshot.CreateSnapshotRequest;
 import org.opensearch.client.opensearch.snapshot.CreateSnapshotResponse;
+import org.opensearch.client.opensearch.snapshot.GetRepositoryRequest;
+import org.opensearch.client.opensearch.snapshot.GetSnapshotRequest;
+import org.opensearch.client.opensearch.snapshot.GetSnapshotResponse;
 import org.opensearch.client.opensearch.tasks.GetTasksResponse;
 import org.opensearch.client.opensearch.tasks.ListRequest;
 import org.opensearch.client.opensearch.tasks.ListResponse;
@@ -1031,5 +1034,15 @@ public class OptimizeOpenSearchClient extends DatabaseClient {
 
   public RichOpenSearchClient getRichOpenSearchClient() {
     return richOpenSearchClient;
+  }
+
+  public void verifyRepositoryExists(final GetRepositoryRequest getRepositoriesRequest)
+      throws IOException, OpenSearchException {
+    openSearchClient.snapshot().getRepository(getRepositoriesRequest);
+  }
+
+  public GetSnapshotResponse getSnapshots(final GetSnapshotRequest getSnapshotRequest)
+      throws IOException {
+    return openSearchClient.getSnapshots(getSnapshotRequest);
   }
 }

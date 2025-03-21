@@ -9,6 +9,8 @@ package io.camunda.optimize.rest.constants;
 
 public final class RestConstants {
 
+  public static final String BACKUP_ENDPOINT = "/backups";
+
   public static final String X_OPTIMIZE_CLIENT_TIMEZONE = "X-Optimize-Client-Timezone";
   public static final String X_OPTIMIZE_CLIENT_LOCALE = "X-Optimize-Client-Locale";
   public static final String AUTH_COOKIE_TOKEN_VALUE_PREFIX = "Bearer ";
