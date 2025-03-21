@@ -29,6 +29,8 @@ public interface MutableUserTaskState extends UserTaskState {
 
   void deleteIntermediateState(final long userTaskKey);
 
+  void deleteIntermediateStateIfExists(final long userTaskKey);
+
   void storeRecordRequestMetadata(
       final long userTaskKey, final UserTaskRecordRequestMetadata recordRequestMetadata);
 

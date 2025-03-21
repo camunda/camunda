@@ -147,6 +147,12 @@ public class DbUserTaskState implements MutableUserTaskState {
   }
 
   @Override
+  public void deleteIntermediateStateIfExists(final long key) {
+    userTaskIntermediateStateKey.wrapLong(key);
+    userTasksIntermediateStatesColumnFamily.deleteIfExists(userTaskIntermediateStateKey);
+  }
+
+  @Override
   public void storeRecordRequestMetadata(
       final long key, final UserTaskRecordRequestMetadata recordRequestMetadata) {
     userTaskKey.wrapLong(key);
