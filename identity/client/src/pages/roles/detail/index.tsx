@@ -27,6 +27,7 @@ import {
   IS_ROLES_MAPPINGS_SUPPORTED,
 } from "src/feature-flags";
 import Members from "src/pages/roles/detail/members";
+import Mappings from "src/pages/roles/detail/mappings";
 
 const Details: FC = () => {
   const navigate = useNavigate();
@@ -100,7 +101,7 @@ const Details: FC = () => {
                       {
                         key: "mappings",
                         label: t("Mappings"),
-                        content: <div>Mappings</div>, //<Mappings roleId={role.roleKey} />,
+                        content: <Mappings roleId={role.roleKey} />,
                       },
                     ]
                   : []),

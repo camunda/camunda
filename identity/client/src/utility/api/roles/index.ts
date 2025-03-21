@@ -11,8 +11,10 @@ import {
   apiDelete,
   apiGet,
   apiPost,
+  apiPut,
 } from "src/utility/api/request";
 import { SearchResponse } from "src/utility/api";
+import { Mapping } from "src/utility/api/mappings";
 
 export const ROLES_ENDPOINT = "/roles";
 
@@ -43,3 +45,28 @@ export type DeleteRoleParams = {
 export const deleteRole: ApiDefinition<undefined, { roleKey: string }> = ({
   roleKey,
 }) => apiDelete(`${ROLES_ENDPOINT}/${roleKey}`);
+
+// ----------------- Mappings within a Role -----------------
+
+export type GetRoleMappingsParams = {
+  roleId: string;
+};
+export const getMappingsByRoleId: ApiDefinition<
+  SearchResponse<Mapping>,
+  GetRoleMappingsParams
+> = ({ roleId }) => apiPost(`${ROLES_ENDPOINT}/${roleId}/mapping-rules/search`);
+
+type AssignRoleMappingParams = GetRoleMappingsParams & { id: string };
+export const assignRoleMapping: ApiDefinition<
+  undefined,
+  AssignRoleMappingParams
+> = ({ roleId, id }) => {
+  return apiPut(`${ROLES_ENDPOINT}/${roleId}/mapping-rules/${id}`);
+};
+
+type UnassignRoleMappingParams = AssignRoleMappingParams;
+export const unassignRoleMapping: ApiDefinition<
+  undefined,
+  UnassignRoleMappingParams
+> = ({ roleId, id }) =>
+  apiDelete(`${ROLES_ENDPOINT}/${roleId}/mapping-rules/${id}`);
