@@ -101,6 +101,11 @@ jobs:
           vault-address: ${{ secrets.VAULT_ADDR }}
           vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
           vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+      - name: Push Git changes 1
+        if: ${{ env.PUSH_CHANGES == 'true' }}
+        run: |
+          git tag 8.6.11-test-SNAPSHOT-1
+          git push -v --progress origin tag 8.6.11-test-SNAPSHOT-1
       - name: Maven Prepare Release
         id: maven-prepare-release
         run: |
@@ -143,10 +148,10 @@ jobs:
         run: |
           git status
           git log -n 3
-          git push -v --progress
+          git push
           git log -n 3
-          git tag
-          git push --tags
+          git tag 8.6.11-test-SNAPSHOT-2
+          git push -v --progress origin tag 8.6.11-test-SNAPSHOT-2
 
 #      - name: Maven Perform Release
 #        id: maven-perform-release
