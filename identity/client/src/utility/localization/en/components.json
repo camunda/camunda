@@ -33,10 +33,15 @@
   "close": "Close",
   "cancel": "Cancel",
   "delete": "Delete",
+  "remove": "Remove",
   "update": "Update",
   "edit": "Edit",
   "retry": "Retry",
   "forbiddenPageTitle": "You don’t have access to this component",
   "forbiddenPageDesc": " It looks like you don’t have the necessary permissions to access this component. <strong>Please contact your cluster admin</strong> to request access.",
-  "forbiddenPageLinkLabel": "Learn more about roles and permissions"
+  "forbiddenPageLinkLabel": "Learn more about roles and permissions",
+  "somethingsWrong": "Something's wrong",
+  "name": "Name",
+  "email": "Email",
+  "description": "Description"
 }
