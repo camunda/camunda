@@ -159,6 +159,7 @@ public final class IdentitySetupInitializeProcessor
                     .ifPresentOrElse(
                         persistedMapping -> {
                           mapping.setMappingKey(persistedMapping.getMappingKey());
+                          mapping.setId(persistedMapping.getId());
                           if (assignEntityToRole(
                               role.getRoleKey(),
                               persistedMapping.getMappingKey(),
@@ -173,6 +174,9 @@ public final class IdentitySetupInitializeProcessor
                           createdNewEntities.set(true);
                           final long mappingKey = keyGenerator.nextKey();
                           mapping.setMappingKey(mappingKey);
+                          if (mapping.getId() == null || mapping.getId().isBlank()) {
+                            mapping.setId(String.valueOf(mappingKey));
+                          }
                           createMapping(mapping, role.getRoleKey(), tenant);
                         }));
     return createdNewEntities.get();

@@ -25,9 +25,11 @@ public final class MappingFixtures extends CommonFixtures {
 
   public static MappingDbModel createRandomized(
       final Function<MappingDbModelBuilder, MappingDbModelBuilder> builderFunction) {
+    final var id = nextKey();
     final var builder =
         new MappingDbModelBuilder()
-            .mappingKey(nextKey())
+            .id(String.valueOf(id))
+            .mappingKey(id)
             .claimName("claimName-" + UUID.randomUUID())
             .claimValue("claimValue-" + UUID.randomUUID())
             .name("name" + UUID.randomUUID());
