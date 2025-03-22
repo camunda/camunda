@@ -141,7 +141,11 @@ jobs:
       - name: Push Git changes
         if: ${{ env.PUSH_CHANGES == 'true' }}
         run: |
-          git push --all
+          git status
+          git log -n 3
+          git push -v --progress
+          git log -n 3
+          git tag
           git push --tags
 
 #      - name: Maven Perform Release
