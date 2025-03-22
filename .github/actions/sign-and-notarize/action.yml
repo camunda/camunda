@@ -38,7 +38,7 @@ runs:
         security create-keychain -p "" build.keychain
         security unlock-keychain -p "" build.keychain
         security set-keychain-settings -t 3600 -u build.keychain
-        security import dev_id.p12 -k ~/Library/Keychains/build.keychain -P "$APPLE_CERTIFICATE_PASSWORD" -T /usr/bin/codesign
+        security import dev_id.p12 -k ~/Library/Keychains/build.keychain -f pkcs12 -P "$APPLE_CERTIFICATE_PASSWORD" -T /usr/bin/codesign
         security list-keychains -s build.keychain $(security list-keychains | sed 's/\"//g')
         security default-keychain -s build.keychain
 
