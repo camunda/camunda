@@ -50,6 +50,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           ref: ${{ env.RELEASE_BRANCH }}
+          fetch-depth: 5
       - name: Import Secrets
         id: secrets
         uses: hashicorp/vault-action@v3.0.0
