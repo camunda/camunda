@@ -47,10 +47,17 @@ jobs:
     steps:
       - name: Output Inputs
         run: echo "${{ toJSON(github.event.inputs) }}"
+# Attempt 3
       - uses: actions/checkout@v4
         with:
           ref: ${{ env.RELEASE_BRANCH }}
-          fetch-depth: 5
+          fetch-depth: 0
+          fetch-tags: true
+      - name: Push Git changes 1
+        if: ${{ env.PUSH_CHANGES == 'true' }}
+        run: |
+          git tag 8.6.11-test-SNAPSHOT-1
+          git push -v --progress origin tag 8.6.11-test-SNAPSHOT-1
       - name: Import Secrets
         id: secrets
         uses: hashicorp/vault-action@v3.0.0
@@ -102,11 +109,6 @@ jobs:
           vault-address: ${{ secrets.VAULT_ADDR }}
           vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
           vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
-      - name: Push Git changes 1
-        if: ${{ env.PUSH_CHANGES == 'true' }}
-        run: |
-          git tag 8.6.11-test-SNAPSHOT-1
-          git push -v --progress origin tag 8.6.11-test-SNAPSHOT-1
       - name: Maven Prepare Release
         id: maven-prepare-release
         run: |
