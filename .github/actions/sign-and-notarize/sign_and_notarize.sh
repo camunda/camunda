@@ -87,6 +87,7 @@ sign_macho_in_folder() {
 
   echo "  -> Scanning for Mach-O/.app in: $folder"
   while IFS= read -r -d '' candidate; do
+    echo "Candidate $candidate"
 
     # If .app
     if [ -d "$candidate" ] && [[ "$candidate" == *.app ]]; then
