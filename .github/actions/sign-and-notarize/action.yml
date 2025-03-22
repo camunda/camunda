@@ -41,6 +41,7 @@ runs:
         security import dev_id.p12 -k ~/Library/Keychains/build.keychain -f pkcs12 -P "$APPLE_CERTIFICATE_PASSWORD" -T /usr/bin/codesign
         security list-keychains -s build.keychain $(security list-keychains | sed 's/\"//g')
         security default-keychain -s build.keychain
+        security find-identity -p codesigning -v
 
     # STEP B: Make signing script executable
     - name: Make script executable
