@@ -32,6 +32,7 @@ public record ProcessInstanceFilter(
     Boolean hasIncident,
     List<Operation<String>> tenantIdOperations,
     List<VariableValueFilter> variableFilters,
+    List<Operation<String>> errorMessageOperations,
     List<Operation<String>> batchOperationIdOperations)
     implements FilterBase {
 
@@ -70,6 +71,7 @@ public record ProcessInstanceFilter(
     private Boolean hasIncident;
     private List<Operation<String>> tenantIdOperations;
     private List<VariableValueFilter> variableFilters;
+    private List<Operation<String>> errorMessageOperations;
     private List<Operation<String>> batchOperationIdOperations;
 
     public Builder processInstanceKeyOperations(final List<Operation<Long>> operations) {
@@ -260,6 +262,21 @@ public record ProcessInstanceFilter(
       return this;
     }
 
+    public Builder errorMessages(final String value, final String... values) {
+      return errorMessageOperations(FilterUtil.mapDefaultToOperation(value, values));
+    }
+
+    @SafeVarargs
+    public final Builder errorMessageOperations(
+        final Operation<String> operation, final Operation<String>... operations) {
+      return errorMessageOperations(collectValues(operation, operations));
+    }
+
+    public Builder errorMessageOperations(final List<Operation<String>> operations) {
+      errorMessageOperations = addValuesToList(errorMessageOperations, operations);
+      return this;
+    }
+
     public Builder batchOperationIdOperations(final List<Operation<String>> operations) {
       batchOperationIdOperations = addValuesToList(batchOperationIdOperations, operations);
       return this;
@@ -293,6 +310,7 @@ public record ProcessInstanceFilter(
           hasIncident,
           Objects.requireNonNullElse(tenantIdOperations, Collections.emptyList()),
           Objects.requireNonNullElse(variableFilters, Collections.emptyList()),
+          Objects.requireNonNullElse(errorMessageOperations, Collections.emptyList()),
           Objects.requireNonNullElse(batchOperationIdOperations, Collections.emptyList()));
     }
   }
