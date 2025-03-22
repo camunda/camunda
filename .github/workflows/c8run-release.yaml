@@ -60,6 +60,7 @@ jobs:
             secret/data/products/distribution/ci APPLE_DEVELOPER_ID;
             secret/data/products/distribution/ci APPLE_DEVELOPER_PASSWORD;
             secret/data/products/distribution/ci APPLE_TEAM_ID;
+            secret/data/products/distribution/ci APPLE_COMMON_NAME;
 
       - uses: actions/setup-go@v5
         with:

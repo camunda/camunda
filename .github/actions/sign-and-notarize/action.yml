@@ -53,13 +53,12 @@ runs:
       run: |
         ./.github/actions/sign-and-notarize/sign_and_notarize.sh \
           "$INPUT_PATH" \
-          "$INPUT_DEVELOPER_ID_CERT_NAME" \
+          "$APPLE_COMMON_NAME" \
           "$INPUT_APPLE_ID" \
           "$INPUT_APP_PASSWORD" \
           "$INPUT_TEAM_ID"
       env:
         INPUT_PATH: ${{ inputs.path }}
-        INPUT_DEVELOPER_ID_CERT_NAME: ${{ inputs.developer-id-cert-name }}
         INPUT_APPLE_ID: ${{ inputs.apple-id }}
         INPUT_APP_PASSWORD: ${{ inputs.app-password }}
         INPUT_TEAM_ID: ${{ inputs.team-id }}
