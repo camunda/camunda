@@ -9,12 +9,10 @@ package io.camunda.zeebe.gateway.rest.config;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.module.SimpleModule;
-import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import io.camunda.zeebe.gateway.rest.serializer.LongSerializer;
 import java.util.function.Consumer;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Primary;
 import org.springframework.http.converter.json.Jackson2ObjectMapperBuilder;
 
 @Configuration
@@ -28,16 +26,8 @@ public class JacksonConfig {
   }
 
   @Bean("gatewayRestObjectMapper")
-  @Primary
   public ObjectMapper objectMapper() {
     final var builder = Jackson2ObjectMapperBuilder.json();
-    gatewayRestObjectMapperCustomizer().accept(builder);
-    return builder.build();
-  }
-
-  @Bean("yamlObjectMapper")
-  public ObjectMapper yamlObjectMapper() {
-    final var builder = new Jackson2ObjectMapperBuilder().factory(new YAMLFactory());
     gatewayRestObjectMapperCustomizer().accept(builder);
     return builder.build();
   }
