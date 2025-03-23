@@ -117,6 +117,19 @@
         AND pi.NUM_INCIDENTS = 0
       </if>
     </if>
+    <if test="filter.hasRetriesLeft != null">
+      AND EXISTS (
+      SELECT 1
+      FROM ${prefix}JOB j
+      WHERE j.PROCESS_INSTANCE_KEY = pi.PROCESS_INSTANCE_KEY
+      <if test="filter.hasRetriesLeft == true">
+        AND j.STATE IN ('FAILED', 'ERROR_THROWN') AND j.RETRIES > 0
+      </if>
+      <if test="filter.hasRetriesLeft == false">
+        AND j.RETRIES = 0
+      </if>
+      )
+    </if>
 
     <!-- date filters -->
     <if test="filter.startDateOperations != null and !filter.startDateOperations.isEmpty()">

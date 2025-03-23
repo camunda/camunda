@@ -36,6 +36,7 @@ import io.camunda.db.rdbms.sql.FlowNodeInstanceMapper;
 import io.camunda.db.rdbms.sql.FormMapper;
 import io.camunda.db.rdbms.sql.GroupMapper;
 import io.camunda.db.rdbms.sql.IncidentMapper;
+import io.camunda.db.rdbms.sql.JobMapper;
 import io.camunda.db.rdbms.sql.MappingMapper;
 import io.camunda.db.rdbms.sql.ProcessDefinitionMapper;
 import io.camunda.db.rdbms.sql.ProcessInstanceMapper;
@@ -173,7 +174,8 @@ public class RdbmsConfiguration {
       final UserTaskMapper userTaskMapper,
       final VariableMapper variableMapper,
       final RdbmsWriterMetrics metrics,
-      final BatchOperationReader batchOperationReader) {
+      final BatchOperationReader batchOperationReader,
+      final JobMapper jobMapper) {
     return new RdbmsWriterFactory(
         sqlSessionFactory,
         exporterPositionMapper,
@@ -186,7 +188,8 @@ public class RdbmsConfiguration {
         userTaskMapper,
         variableMapper,
         metrics,
-        batchOperationReader);
+        batchOperationReader,
+        jobMapper);
   }
 
   @Bean

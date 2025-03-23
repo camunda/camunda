@@ -35,6 +35,7 @@ class HistoryCleanupServiceTest {
   private UserTaskWriter userTaskWriter;
   private VariableWriter variableInstanceWriter;
   private DecisionInstanceWriter decisionInstanceWriter;
+  private JobWriter jobWriter;
 
   private HistoryCleanupService historyCleanupService;
 
@@ -47,6 +48,7 @@ class HistoryCleanupServiceTest {
     userTaskWriter = mock(UserTaskWriter.class);
     variableInstanceWriter = mock(VariableWriter.class);
     decisionInstanceWriter = mock(DecisionInstanceWriter.class);
+    jobWriter = mock(JobWriter.class);
 
     when(processInstanceWriter.cleanupHistory(anyInt(), any(), anyInt())).thenReturn(0);
     when(flowNodeInstanceWriter.cleanupHistory(anyInt(), any(), anyInt())).thenReturn(0);
@@ -54,6 +56,7 @@ class HistoryCleanupServiceTest {
     when(userTaskWriter.cleanupHistory(anyInt(), any(), anyInt())).thenReturn(0);
     when(variableInstanceWriter.cleanupHistory(anyInt(), any(), anyInt())).thenReturn(0);
     when(decisionInstanceWriter.cleanupHistory(anyInt(), any(), anyInt())).thenReturn(0);
+    when(jobWriter.cleanupHistory(anyInt(), any(), anyInt())).thenReturn(0);
 
     when(config.defaultHistoryTTL()).thenReturn(Duration.ofDays(30));
     when(config.minHistoryCleanupInterval()).thenReturn(Duration.ofHours(1));
@@ -69,6 +72,7 @@ class HistoryCleanupServiceTest {
             userTaskWriter,
             variableInstanceWriter,
             decisionInstanceWriter,
+            jobWriter,
             mock(RdbmsWriterMetrics.class, Mockito.RETURNS_DEEP_STUBS));
   }
 
@@ -81,6 +85,7 @@ class HistoryCleanupServiceTest {
     when(userTaskWriter.cleanupHistory(anyInt(), any(), anyInt())).thenReturn(1);
     when(variableInstanceWriter.cleanupHistory(anyInt(), any(), anyInt())).thenReturn(1);
     when(decisionInstanceWriter.cleanupHistory(anyInt(), any(), anyInt())).thenReturn(1);
+    when(jobWriter.cleanupHistory(anyInt(), any(), anyInt())).thenReturn(1);
 
     // when
     final Duration nextCleanupInterval =
@@ -94,6 +99,7 @@ class HistoryCleanupServiceTest {
     verify(userTaskWriter).cleanupHistory(PARTITION_ID, CLEANUP_DATE, 100);
     verify(variableInstanceWriter).cleanupHistory(PARTITION_ID, CLEANUP_DATE, 100);
     verify(decisionInstanceWriter).cleanupHistory(PARTITION_ID, CLEANUP_DATE, 100);
+    verify(jobWriter).cleanupHistory(PARTITION_ID, CLEANUP_DATE, 100);
   }
 
   @Test
@@ -106,7 +112,8 @@ class HistoryCleanupServiceTest {
             "incident", 0,
             "userTask", 0,
             "variable", 0,
-            "decisionInstance", 0);
+            "decisionInstance", 0,
+            "job", 0);
 
     // when
     final Duration nextDuration =
@@ -126,7 +133,8 @@ class HistoryCleanupServiceTest {
             "incident", 100,
             "userTask", 100,
             "variable", 100,
-            "decisionInstance", 100);
+            "decisionInstance", 100,
+            "job", 100);
 
     // when
     final Duration nextDuration =
@@ -146,7 +154,8 @@ class HistoryCleanupServiceTest {
             "incident", 50,
             "userTask", 50,
             "variable", 50,
-            "decisionInstance", 50);
+            "decisionInstance", 50,
+            "job", 50);
 
     // when
     final Duration nextDuration =
