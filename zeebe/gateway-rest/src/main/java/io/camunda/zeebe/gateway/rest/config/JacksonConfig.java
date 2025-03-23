@@ -14,6 +14,7 @@ import io.camunda.zeebe.gateway.rest.serializer.LongSerializer;
 import java.util.function.Consumer;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Primary;
 import org.springframework.http.converter.json.Jackson2ObjectMapperBuilder;
 
 @Configuration
@@ -27,6 +28,7 @@ public class JacksonConfig {
   }
 
   @Bean("gatewayRestObjectMapper")
+  @Primary
   public ObjectMapper objectMapper() {
     final var builder = Jackson2ObjectMapperBuilder.json();
     gatewayRestObjectMapperCustomizer().accept(builder);
