@@ -12,6 +12,7 @@ import io.camunda.db.rdbms.sql.DecisionInstanceMapper;
 import io.camunda.db.rdbms.sql.ExporterPositionMapper;
 import io.camunda.db.rdbms.sql.FlowNodeInstanceMapper;
 import io.camunda.db.rdbms.sql.IncidentMapper;
+import io.camunda.db.rdbms.sql.JobMapper;
 import io.camunda.db.rdbms.sql.ProcessInstanceMapper;
 import io.camunda.db.rdbms.sql.PurgeMapper;
 import io.camunda.db.rdbms.sql.UserTaskMapper;
@@ -33,6 +34,7 @@ public class RdbmsWriterFactory {
   private final UserTaskMapper userTaskMapper;
   private final VariableMapper variableMapper;
   private final RdbmsWriterMetrics metrics;
+  private final JobMapper jobMapper;
 
   public RdbmsWriterFactory(
       final SqlSessionFactory sqlSessionFactory,
@@ -45,6 +47,7 @@ public class RdbmsWriterFactory {
       final PurgeMapper purgeMapper,
       final UserTaskMapper userTaskMapper,
       final VariableMapper variableMapper,
+      final JobMapper jobMapper,
       final RdbmsWriterMetrics metrics) {
     this.sqlSessionFactory = sqlSessionFactory;
     this.exporterPositionMapper = exporterPositionMapper;
@@ -56,6 +59,7 @@ public class RdbmsWriterFactory {
     this.purgeMapper = purgeMapper;
     this.userTaskMapper = userTaskMapper;
     this.variableMapper = variableMapper;
+    this.jobMapper = jobMapper;
     this.metrics = metrics;
   }
 
@@ -75,6 +79,7 @@ public class RdbmsWriterFactory {
         purgeMapper,
         userTaskMapper,
         variableMapper,
+        jobMapper,
         vendorDatabaseProperties);
   }
 }

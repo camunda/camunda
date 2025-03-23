@@ -38,7 +38,8 @@ public class RdbmsPurger {
           "ROLE_MEMBER",
           "ROLES",
           "GROUP_MEMBER",
-          "GROUPS");
+          "GROUPS",
+          "JOB");
 
   private final PurgeMapper purgeMapper;
   private final VendorDatabaseProperties vendorDatabaseProperties;
