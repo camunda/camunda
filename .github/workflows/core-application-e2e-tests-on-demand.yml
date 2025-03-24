@@ -1,4 +1,7 @@
-name: Core Application E2E Tests On Demand/commit
+name: Core Application E2E Tests commit
+permissions:
+  contents: read
+  pull-requests: write
 # on:
 #   workflow_dispatch:
 #     inputs:
@@ -7,7 +10,8 @@ name: Core Application E2E Tests On Demand/commit
 #         required: true
 on:
   push:
-
+    branches:
+      - main
 jobs: # github.event.inputs.c8Version replaced
   setup-environment:
     runs-on: ubuntu-latest
@@ -18,7 +22,7 @@ jobs: # github.event.inputs.c8Version replaced
         with:
           ref: main
 
-     - name: Install Docker Compose
+      - name: Install Docker Compose
         run: |
           sudo apt-get update
           sudo apt-get install -y docker-compose
