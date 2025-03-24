@@ -149,7 +149,7 @@ public class BackupRestService {
 
   @ExceptionHandler(OptimizeOpenSearchConnectionException.class)
   public ResponseEntity<ErrorResponseDto> handleOptimizeOpenSearchConnectionException(
-      final OptimizeElasticsearchConnectionException exception) {
+      final OptimizeOpenSearchConnectionException exception) {
     // API to return bad gateway error in case of connection issues
     return ResponseEntity.status(HttpStatus.BAD_GATEWAY)
         .contentType(MediaType.APPLICATION_JSON)
