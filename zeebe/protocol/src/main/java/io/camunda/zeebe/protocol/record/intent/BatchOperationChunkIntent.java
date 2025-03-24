@@ -16,8 +16,8 @@
 package io.camunda.zeebe.protocol.record.intent;
 
 public enum BatchOperationChunkIntent implements Intent {
-  CREATE((short) 0);
-  //  CREATED((short) 1);
+  CREATE((short) 0),
+  CREATED((short) 1);
 
   private final short value;
 
@@ -47,6 +47,8 @@ public enum BatchOperationChunkIntent implements Intent {
   @Override
   public boolean isEvent() {
     switch (this) {
+      case CREATED:
+        return true;
       default:
         return false;
     }
