@@ -33,6 +33,7 @@ import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 import java.util.stream.Collectors;
 import org.assertj.core.data.TemporalUnitWithinOffset;
 import org.junit.jupiter.api.Tag;
@@ -79,9 +80,9 @@ public class BatchOperationIT {
             b -> b.status(BatchOperationStatus.ACTIVE).endDate(null).operationsTotalCount(0));
 
     // when
-    insertBatchOperationsItems(writer, batchOperation.batchOperationKey(), List.of(nextKey()));
+    insertBatchOperationsItems(writer, batchOperation.batchOperationKey(), Set.of(nextKey()));
     insertBatchOperationsItems(
-        writer, batchOperation.batchOperationKey(), List.of(nextKey(), nextKey()));
+        writer, batchOperation.batchOperationKey(), Set.of(nextKey(), nextKey()));
 
     // then
     final var updatedBatchOperation = getBatchOperation(rdbmsService, batchOperation);
