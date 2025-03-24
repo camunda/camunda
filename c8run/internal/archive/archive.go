@@ -115,9 +115,9 @@ func ExtractTarGzArchive(filename string, xpath string) error {
 	_, err = os.Stat(absPath)
 	if errors.Is(err, os.ErrNotExist) {
 		err = os.Mkdir(absPath, ReadWriteMode)
-                if err != nil {
-		        return fmt.Errorf("ExtractTarGzArchive: failed to make directory %s\n%w\n%s", absPath, err, debug.Stack())
-                }
+		if err != nil {
+			return fmt.Errorf("ExtractTarGzArchive: failed to make directory %s\n%w\n%s", absPath, err, debug.Stack())
+		}
 	}
 
 	tr := tar.NewReader(gz)
@@ -225,11 +225,8 @@ func ZipSource(sources []string, target string) error {
 
 			header.Method = zip.Deflate
 
-			header.Name, err = filepath.Rel(filepath.Dir(source), path)
+			header.Name = path
 			header.Name = strings.ReplaceAll(header.Name, "\\", "/")
-			if err != nil {
-				return fmt.Errorf("ZipSource: failed to determine relative path for %s\n%w\n%s", path, err, debug.Stack())
-			}
 			if info.IsDir() {
 				header.Name = strings.ReplaceAll(header.Name, "\\", "/")
 				header.Name += "/"
