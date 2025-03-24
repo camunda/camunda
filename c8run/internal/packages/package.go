@@ -57,18 +57,12 @@ func setOsSpecificValues() (string, string, string, func(string, string) error, 
 	var extractFunc func(string, string) error
 
 	switch osType {
-	case "windows", "darwin":
-		if runtime.GOARCH == "amd64" {
-			architecture = "x86_64"
-		} else if runtime.GOARCH == "arm64" {
-			architecture = "aarch64"
-		} else {
-			return "", "", "", nil, fmt.Errorf("unsupported architecture: %s", runtime.GOARCH)
-		}
+	case "windows":
+		architecture = "x86_64"
 		pkgName = ".zip"
 		extractFunc = archive.UnzipSource
 		return osType, architecture, pkgName, extractFunc, nil
-	case "linux":
+	case "linux", "darwin":
 		pkgName = ".tar.gz"
 		extractFunc = archive.ExtractTarGzArchive
 		if runtime.GOARCH == "amd64" {
@@ -222,7 +216,7 @@ func New(camundaVersion, elasticsearchVersion, connectorsVersion, composeTag str
 	outputFileName := "camunda8-run-" + camundaVersion + "-" + osType + "-" + architecture + pkgName
 	outputPath := filepath.Join("c8run", outputFileName)
 
-	if osType == "linux" || osType == "darwin" {
+	if osType == "linux" {
 		if err := createTarGzArchive(filesToArchive, outputPath); err != nil {
 			return fmt.Errorf("Package %s: %w", osType, err)
 		}
