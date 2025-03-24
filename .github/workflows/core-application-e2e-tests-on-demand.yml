@@ -24,7 +24,11 @@ jobs: # github.event.inputs.c8Version replaced
       - name: Install Docker Compose
         run: |
           sudo apt-get update
-          sudo apt-get install -y docker-compose
+           sudo apt-get install -y docker.io
+
+      - name: Set DATABASE environment variable
+        run: |
+          echo "DATABASE=elasticsearch" >> $GITHUB_ENV
 
       - name: Start Tasklist and Operate
         run: |
