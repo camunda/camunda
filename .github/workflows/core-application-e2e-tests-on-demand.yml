@@ -19,8 +19,14 @@ jobs: # github.event.inputs.c8Version replaced
           ref: main
 
       - name: Start Tasklist and Operate
-        run: DATABASE=elasticsearch docker compose up -d tasklist operate
-          docker-compose logs # Check the logs of the started containers
+        run: |
+          DATABASE=elasticsearch docker compose up -d tasklist operate
+        working-directory: qa/core-application-e2e-test-suite/config
+
+      - name: Check logs for Tasklist and Operate
+        run: |
+          docker-compose logs tasklist
+          docker-compose logs operate
         working-directory: qa/core-application-e2e-test-suite/config
 
       # - name: Wait for services to be ready
