@@ -12,8 +12,6 @@ jobs:
       services_ready: ${{ steps.wait-for-services.outputs.ready }}
     steps:
       - uses: actions/checkout@v4
-        with:
-          ref: main
 
       - name: Install Docker and Docker Compose
         run: |
