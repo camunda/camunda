@@ -14,6 +14,7 @@ import java.util.List;
 
 public record MappingFilter(
     Long mappingKey,
+    String id,
     String claimName,
     List<String> claimNames,
     String claimValue,
@@ -22,6 +23,7 @@ public record MappingFilter(
     implements FilterBase {
   public static final class Builder implements ObjectBuilder<MappingFilter> {
     private Long mappingKey;
+    private String id;
     private String claimName;
     private List<String> claimNames;
     private String claimValue;
@@ -30,6 +32,11 @@ public record MappingFilter(
 
     public Builder mappingKey(final Long value) {
       mappingKey = value;
+      return this;
+    }
+
+    public Builder id(final String value) {
+      id = value;
       return this;
     }
 
@@ -60,7 +67,7 @@ public record MappingFilter(
 
     @Override
     public MappingFilter build() {
-      return new MappingFilter(mappingKey, claimName, claimNames, claimValue, name, claims);
+      return new MappingFilter(mappingKey, id, claimName, claimNames, claimValue, name, claims);
     }
   }
 

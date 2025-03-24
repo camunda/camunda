@@ -66,15 +66,15 @@ public class MappingController {
                 .deleteMapping(mappingKey));
   }
 
-  @CamundaGetMapping(path = "/{mappingKey}")
-  public ResponseEntity<MappingResult> getMapping(@PathVariable final long mappingKey) {
+  @CamundaGetMapping(path = "/{mappingId}")
+  public ResponseEntity<MappingResult> getMapping(@PathVariable final String mappingId) {
     try {
       return ResponseEntity.ok()
           .body(
               SearchQueryResponseMapper.toMapping(
                   mappingServices
                       .withAuthentication(RequestMapper.getAuthentication())
-                      .getMapping(mappingKey)));
+                      .getMapping(mappingId)));
     } catch (final Exception exception) {
       return RestErrorMapper.mapErrorToResponse(exception);
     }
