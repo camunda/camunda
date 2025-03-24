@@ -38,7 +38,7 @@ jobs:
 
       - name: Start Tasklist and Operate
         run: |
-          DATABASE=elasticsearch docker compose up tasklist operate
+          DATABASE=elasticsearch docker compose up -d tasklist operate
         working-directory: qa/core-application-e2e-test-suite/config
 
       - name: List running Docker containers
