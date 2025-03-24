@@ -18,18 +18,24 @@ import '@bpmn-io/form-js-viewer/dist/assets/form-js-base.css';
 import '@bpmn-io/form-js-carbon-styles/src/carbon-styles.scss';
 import type {SuccessDocument} from 'modules/mutations/useUploadDocuments';
 import set from 'lodash/set';
+<<<<<<< HEAD:tasklist/client/src/modules/components/FormJSRenderer/index.tsx
 import {api} from 'modules/api';
+=======
+>>>>>>> 64bc50da (feat: build document preview URL via form-js module):tasklist/client/src/common/form-js/FormJSRenderer/index.tsx
 import {FormLevelErrorMessage} from './FormLevelErrorMessage';
 import {Stack} from '@carbon/react';
 import {toHumanReadableBytes} from 'modules/utils/toHumanReadableBytes';
 import {useTranslation} from 'react-i18next';
 
+<<<<<<< HEAD:tasklist/client/src/modules/components/FormJSRenderer/index.tsx
 const defaultDocumentsEndpointKey = decodeURIComponent(
   api.v2.getDocument('{documentId}').url,
 );
 
 const MAX_REQUEST_SIZE = window.clientConfig?.maxRequestSize ?? 4 * 1024 * 1024;
 
+=======
+>>>>>>> 64bc50da (feat: build document preview URL via form-js module):tasklist/client/src/common/form-js/FormJSRenderer/index.tsx
 type Props = {
   handleSubmit: (variables: Variable[]) => Promise<void>;
   handleFileUpload?: (
@@ -211,10 +217,7 @@ const FormJSRenderer: React.FC<Props> = ({
       formManager.render({
         container,
         schema,
-        data: {
-          defaultDocumentsEndpointKey,
-          ...data,
-        },
+        data,
         onImportError,
         onSubmit: async ({
           data: newData,

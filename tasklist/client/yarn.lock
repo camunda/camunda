@@ -238,29 +238,29 @@
     "@codemirror/language" "^6.8.0"
     lezer-feel "^1.2.3"
 
-"@bpmn-io/form-js-carbon-styles@1.14.0":
-  version "1.14.0"
-  resolved "https://registry.yarnpkg.com/@bpmn-io/form-js-carbon-styles/-/form-js-carbon-styles-1.14.0.tgz#ec5a8a7dac808e6f6002747f1dbfdd1dd22dc1da"
-  integrity sha512-M47HJhRXLjkgAlKfVqvt+rBbPjLu3njLI1HhtNzF7HwwhxkzTQ4NqDofe9qPJP2UePQzFG2PMXSAw+6Hkr/xvg==
+"@bpmn-io/form-js-carbon-styles@1.15.0":
+  version "1.15.0"
+  resolved "https://registry.yarnpkg.com/@bpmn-io/form-js-carbon-styles/-/form-js-carbon-styles-1.15.0.tgz#8566699ef0a905e978acaa338a5765922b3e521f"
+  integrity sha512-UeIDSll946KePzyrLibIxZ1JObEFo0qvR3GDHTlh71CAuniA5yIfkUTjuqooC3qbfrcATyHi5KQVyc6E1cYAcQ==
 
-"@bpmn-io/form-js-viewer@1.14.0":
-  version "1.14.0"
-  resolved "https://registry.yarnpkg.com/@bpmn-io/form-js-viewer/-/form-js-viewer-1.14.0.tgz#e7cf0bc6affc81ba1bdddae281c2d3615fa51b77"
-  integrity sha512-cuazq2APPk+Mj8sXwDjpjGFtnc76tou35YpIX5Gntlx+xDWZS3j2aWvielIpyajuOCufyM3ZgISYrf/04JSPTg==
+"@bpmn-io/form-js-viewer@1.15.0":
+  version "1.15.0"
+  resolved "https://registry.yarnpkg.com/@bpmn-io/form-js-viewer/-/form-js-viewer-1.15.0.tgz#367dffdefd87f129ea4b0f00c544afe89b183ef3"
+  integrity sha512-HVsewx6w+R66kAOCnSnNNGc0be0I5SMXMtjU3+cKr58aEJZpVmnZ+v/fSQRDwU2Ng5a8GgrtbL1h+Bzt17iIkQ==
   dependencies:
-    "@carbon/grid" "^11.30.0"
+    "@carbon/grid" "^11.32.2"
     big.js "^6.2.2"
     classnames "^2.5.1"
     didi "^10.2.2"
-    dompurify "^3.2.3"
+    dompurify "^3.2.4"
     feelers "^1.4.0"
     feelin "^4.3.0"
     flatpickr "^4.6.13"
     ids "^1.0.5"
     lodash "^4.17.21"
     luxon "^3.5.0"
-    marked "^15.0.6"
-    min-dash "^4.2.2"
+    marked "^15.0.7"
+    min-dash "^4.2.3"
     preact "^10.5.14"
 
 "@bundled-es-modules/cookie@^2.0.1":
@@ -322,12 +322,27 @@
   dependencies:
     "@ibm/telemetry-js" "^1.5.0"
 
+<<<<<<< HEAD
 "@carbon/grid@^11.30.0":
   version "11.31.0"
   resolved "https://registry.yarnpkg.com/@carbon/grid/-/grid-11.31.0.tgz#5415d9907bf196bef4c7cfa1ea8d9359e9dcc3ea"
   integrity sha512-6Tk5b0IA21rPLgOu49XZVnVPdpvGg6cgjztG4AM2ADeAh44hsixptshJNmdpcSmZL69GC7nkTnLXhnxJicg9NQ==
+=======
+"@carbon/grid@^11.31.0", "@carbon/grid@^11.32.0":
+  version "11.32.0"
+  resolved "https://registry.yarnpkg.com/@carbon/grid/-/grid-11.32.0.tgz#68e16df9dd19afda157331ec3d1411f0d8f7d86c"
+  integrity sha512-O8QkUoOglhmOgZ7cvxUSy9I+G+eY/k9t1BnqunHGs7xIswkXeFxOwvUPbcUbrVoNu4rMP8eXv91Eq/f3QpV/Jg==
+>>>>>>> 64bc50da (feat: build document preview URL via form-js module)
   dependencies:
     "@carbon/layout" "^11.29.0"
+    "@ibm/telemetry-js" "^1.5.0"
+
+"@carbon/grid@^11.32.2":
+  version "11.32.2"
+  resolved "https://registry.yarnpkg.com/@carbon/grid/-/grid-11.32.2.tgz#398ca69ea200ae9b64414cc40b51ea288f76a7b8"
+  integrity sha512-mcT4zCyNxvLoGAh6b72DlghzUGnG9SXqSvxJg70zSGUcHqoTLkj8JLOuSJNmXywyFZOZMpSIP5KFse/+HYv/fQ==
+  dependencies:
+    "@carbon/layout" "^11.30.2"
     "@ibm/telemetry-js" "^1.5.0"
 
 "@carbon/icon-helpers@^10.54.0":
@@ -360,10 +375,24 @@
   dependencies:
     "@ibm/telemetry-js" "^1.5.0"
 
+<<<<<<< HEAD
 "@carbon/layout@^11.29.0":
   version "11.29.0"
   resolved "https://registry.yarnpkg.com/@carbon/layout/-/layout-11.29.0.tgz#6c601d0a7172203105acbefb8504af7e8005dcce"
   integrity sha512-u6QTLmotAodw+bcr1p3gc1hIXveWQ8/INbOhR53nfRsRgAg85TcCUwg6ZoVzQGStXc/TaTn/3mk1iSBLi59bkw==
+=======
+"@carbon/layout@^11.30.2":
+  version "11.30.2"
+  resolved "https://registry.yarnpkg.com/@carbon/layout/-/layout-11.30.2.tgz#89ff0a4b36669c9fe21588f1eb11a769775232e8"
+  integrity sha512-jJuhVGiLg8cvRFZT0zfMC3aDxJStS7qEwEimUBahL+pdB5/754hB5ovh1AbwOho92ucJb11tNDBQ1JFixiW3JA==
+  dependencies:
+    "@ibm/telemetry-js" "^1.5.0"
+
+"@carbon/motion@^11.24.0", "@carbon/motion@^11.25.0":
+  version "11.25.0"
+  resolved "https://registry.yarnpkg.com/@carbon/motion/-/motion-11.25.0.tgz#854c1e906c7b35333786ebf8c8f1c83701ef09e4"
+  integrity sha512-oqrXmWmlVuXmKhHG1dUm4zy2TR8CGYqcentDcMEAJqcvlF1qhDuF/1j0JQ0X7mOl3/suGBtBsxCoC5CN8KO1IQ==
+>>>>>>> 64bc50da (feat: build document preview URL via form-js module)
   dependencies:
     "@ibm/telemetry-js" "^1.5.0"
 
@@ -3017,7 +3046,7 @@ domify@^2.0.0:
   resolved "https://registry.yarnpkg.com/domify/-/domify-2.0.0.tgz#951f0c36ff960b1cc527444f41819c765336dca8"
   integrity sha512-rmvrrmWQPD/X1A/nPBfIVg4r05792QdG9Z4Prk6oQG0F9zBMDkr0GKAdds1wjb2dq1rTz/ywc4ZxpZbgz0tttg==
 
-dompurify@^3.2.3:
+dompurify@^3.2.4:
   version "3.2.4"
   resolved "https://registry.yarnpkg.com/dompurify/-/dompurify-3.2.4.tgz#af5a5a11407524431456cf18836c55d13441cd8e"
   integrity sha512-ysFSFEDVduQpyhzAob/kkuJjf5zWkZD8/A9ywSp1byueyuCfHamrCBa14/Oc2iiB0e51B+NpxSl5gmzn+Ms/mg==
@@ -4463,7 +4492,7 @@ make-dir@^4.0.0:
   dependencies:
     semver "^7.5.3"
 
-marked@^15.0.6:
+marked@^15.0.7:
   version "15.0.7"
   resolved "https://registry.yarnpkg.com/marked/-/marked-15.0.7.tgz#f67d7e34d202ce087e6b879107b5efb04e743314"
   integrity sha512-dgLIeKGLx5FwziAnsk4ONoGwHwGPJzselimvlVskE9XLN4Orv9u2VA3GWw/lYUqjfA0rUT/6fqKwfZJapP9BEg==
@@ -4787,10 +4816,15 @@ mimic-response@^3.1.0:
   resolved "https://registry.yarnpkg.com/mimic-response/-/mimic-response-3.1.0.tgz#2d1d59af9c1b129815accc2c46a022a5ce1fa3c9"
   integrity sha512-z0yWI+4FDrrweS8Zmt4Ej5HdJmky15+L2e6Wgn3+iK5fWzb6T3fhNFq2+MeTRb064c6Wr4N/wv0DzQTjNzHNGQ==
 
-min-dash@^4.0.0, min-dash@^4.1.0, min-dash@^4.1.1, min-dash@^4.2.1, min-dash@^4.2.2:
+min-dash@^4.0.0, min-dash@^4.1.0, min-dash@^4.1.1, min-dash@^4.2.1:
   version "4.2.2"
   resolved "https://registry.yarnpkg.com/min-dash/-/min-dash-4.2.2.tgz#f9d3b6d5901e3a627f926013bcfd9efb2cad93a3"
   integrity sha512-qbhSYUxk6mBaF096B3JOQSumXbKWHenmT97cSpdNzgkWwGjhjhE/KZODCoDNhI2I4C9Cb6R/Q13S4BYkUSXoXQ==
+
+min-dash@^4.2.3:
+  version "4.2.3"
+  resolved "https://registry.yarnpkg.com/min-dash/-/min-dash-4.2.3.tgz#936f73a5e00036799134d48d807ff8a09af2835b"
+  integrity sha512-VLMYQI5+FcD9Ad24VcB08uA83B07OhueAlZ88jBK6PyupTvEJwllTMUqMy0wPGYs7pZUEtEEMWdHB63m3LtEcg==
 
 min-dom@^4.2.1:
   version "4.2.1"

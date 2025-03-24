@@ -11,8 +11,47 @@ import {
   FeelersTemplating,
   Form,
   FormFieldRegistry,
+  type CreateFormOptions,
 } from '@bpmn-io/form-js-viewer';
 import {isEqual} from 'lodash';
+import {commonApi} from 'common/api';
+
+const DOCUMENT_ID_PLACEHOLDER = '{documentId}';
+const DOCUMENT_ENDPOINT = decodeURIComponent(
+  commonApi.getDocument(DOCUMENT_ID_PLACEHOLDER).url,
+);
+
+type BuildUrlOptions = {
+  documentId: string;
+  contentHash?: string;
+};
+
+class CamundaDocumentEndpointBuilder {
+  buildUrl(options: BuildUrlOptions): string {
+    const {documentId, contentHash} = options;
+
+    const finalUrl = new URL(
+      DOCUMENT_ENDPOINT.replace(DOCUMENT_ID_PLACEHOLDER, documentId),
+    );
+
+    if (contentHash !== undefined) {
+      finalUrl.searchParams.set('contentHash', contentHash);
+    }
+
+    return decodeURI(finalUrl.toString());
+  }
+}
+
+const CamundaDocumentEndpointModule = {
+  documentEndpointBuilder: ['type', CamundaDocumentEndpointBuilder],
+};
+
+const DEFAULT_FORM_OPTIONS: Omit<CreateFormOptions, 'schema'> = {
+  properties: {
+    textLinkTarget: '_blank',
+  },
+  additionalModules: [CamundaDocumentEndpointModule],
+};
 
 type OnSubmitReturn = ReturnType<Form['submit']>;
 type FormJSData = OnSubmitReturn['data'];
@@ -25,11 +64,7 @@ type GetOptions = {
 };
 
 class FormManager {
-  #form = new Form({
-    properties: {
-      textLinkTarget: '_blank',
-    },
-  });
+  #form = new Form(DEFAULT_FORM_OPTIONS);
   #schema: string | null = null;
   #onSubmit: (result: OnSubmitReturn) => void = () => {};
   #data: FormJSData | null = null;
@@ -80,7 +115,7 @@ class FormManager {
 
   detach = () => {
     this.#form.detach();
-    this.#form = new Form();
+    this.#form = new Form(DEFAULT_FORM_OPTIONS);
     this.#schema = null;
   };
 
