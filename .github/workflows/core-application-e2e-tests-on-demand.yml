@@ -62,7 +62,7 @@ jobs:
         run: |
           echo "Checking if services are up..."
           ready=false
-          for i in {1..60}; do
+          for i in {1..90}; do
             response_8080=$(curl -s -v http://localhost:8080/health)  # Added verbose mode
             response_8081=$(curl -s -v http://localhost:8081/health)  # Added verbose mode
             
@@ -74,7 +74,7 @@ jobs:
             fi
 
             # Log responses and wait
-            echo "Waiting for services... ($i/60)"
+            echo "Waiting for services... ($i/90)"
             echo "Response from 8080: $response_8080"
             echo "Response from 8081: $response_8081"
             sleep 10
