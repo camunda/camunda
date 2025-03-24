@@ -142,4 +142,13 @@ public interface BpmnElementProcessor<T extends ExecutableFlowElement> {
    * @param context process instance-related data of the element that is executed
    */
   default void onTerminate(final T element, final BpmnElementContext context) {}
+
+  /**
+   * Finalizes the termination of the BPMN element. This method is called when the element has
+   * finished executing its main behavior and is ready to transition to a terminated state.
+   *
+   * @param element the instance of the BPMN element that is executed
+   * @param context process instance-related data of the element that is executed
+   */
+  default void finalizeTermination(final T element, final BpmnElementContext context) {}
 }
