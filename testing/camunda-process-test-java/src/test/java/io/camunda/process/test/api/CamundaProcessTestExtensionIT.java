@@ -36,7 +36,7 @@ public class CamundaProcessTestExtensionIT {
   private CamundaProcessTestContext processTestContext;
 
   @Test
-  void shouldCreateProcessInstance() throws InterruptedException {
+  void shouldCreateProcessInstance() {
     // given
     final BpmnModelInstance process =
         Bpmn.createExecutableProcess("process")

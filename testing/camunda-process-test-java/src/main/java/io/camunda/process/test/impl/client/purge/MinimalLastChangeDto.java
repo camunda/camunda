@@ -36,11 +36,6 @@ public class MinimalLastChangeDto {
   }
 
   public boolean isStatusCompleted() {
-    if ("COMPLETED".equalsIgnoreCase(status)) {
-      return true;
-    } else {
-      System.out.println("PURGE NOT READY");
-      return false;
-    }
+    return "COMPLETED".equalsIgnoreCase(status);
   }
 }

@@ -38,14 +38,12 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
   public CamundaProcessTestContextImpl(
       final CamundaContainer camundaContainer,
       final ConnectorsContainer connectorsContainer,
-      final Consumer<AutoCloseable> clientCreationCallback) {
+      final Consumer<AutoCloseable> clientCreationCallback,
+      final CamundaManagementClient camundaManagementClient) {
     this.camundaContainer = camundaContainer;
     this.connectorsContainer = connectorsContainer;
     this.clientCreationCallback = clientCreationCallback;
-
-    camundaManagementClient =
-        new CamundaManagementClient(
-            camundaContainer.getMonitoringApiAddress(), camundaContainer.getRestApiAddress());
+    this.camundaManagementClient = camundaManagementClient;
   }
 
   @Override

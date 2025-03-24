@@ -45,10 +45,11 @@ import org.junit.platform.commons.util.ReflectionUtils;
 /**
  * A JUnit extension that provides the runtime for process tests.
  *
+ * <p>The container runtime starts before any tests have run.
+ *
  * <p>Before each test method:
  *
  * <ul>
- *   <li>Start the runtime
  *   <li>Inject a {@link CamundaClient} to a field in the test class
  *   <li>Inject a {@link CamundaProcessTestContext} to a field in the test class
  * </ul>
@@ -57,8 +58,10 @@ import org.junit.platform.commons.util.ReflectionUtils;
  *
  * <ul>
  *   <li>Close created {@link CamundaClient}s
- *   <li>Stop the runtime
+ *   <li>Purge the Zeebe cluster
  * </ul>
+ *
+ * <p>The container runtime is closed once all tests have run.
  */
 public class CamundaProcessTestExtension
     implements BeforeEachCallback, BeforeAllCallback, AfterEachCallback, AfterAllCallback {
@@ -124,7 +127,8 @@ public class CamundaProcessTestExtension
         new CamundaProcessTestContextImpl(
             containerRuntime.getCamundaContainer(),
             containerRuntime.getConnectorsContainer(),
-            createdClients::add);
+            createdClients::add,
+            camundaManagementClient);
 
     // put in store
     final Store store = context.getStore(NAMESPACE);
@@ -192,6 +196,8 @@ public class CamundaProcessTestExtension
 
     // reset assertions
     CamundaAssert.reset();
+    // close all created clients
+    closeCreatedClients();
     // purge cluster
     camundaManagementClient.purgeCluster();
 
@@ -203,8 +209,6 @@ public class CamundaProcessTestExtension
 
   @Override
   public void afterAll(final ExtensionContext context) throws Exception {
-    // close all created clients
-    closeCreatedClients();
     // close the runtime
     containerRuntime.close();
   }
