@@ -21,13 +21,13 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 @ExtendWith(ProcessingStateExtension.class)
-public class UserTaskCancelingApplierTest {
+public class UserTaskCancelingV2ApplierTest {
 
   /** Injected by {@link ProcessingStateExtension} */
   private MutableProcessingState processingState;
 
   /** The class under test. */
-  private UserTaskCancelingApplier userTaskCancelingApplier;
+  private UserTaskCancelingV2Applier userTaskCancelingApplier;
 
   /** Used for state assertions. */
   private MutableUserTaskState userTaskState;
@@ -37,7 +37,7 @@ public class UserTaskCancelingApplierTest {
 
   @BeforeEach
   public void setup() {
-    userTaskCancelingApplier = new UserTaskCancelingApplier(processingState);
+    userTaskCancelingApplier = new UserTaskCancelingV2Applier(processingState);
     userTaskState = processingState.getUserTaskState();
     testSetup = new AppliersTestSetupHelper(processingState);
   }
