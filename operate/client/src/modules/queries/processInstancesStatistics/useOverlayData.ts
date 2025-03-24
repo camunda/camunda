@@ -20,13 +20,7 @@ import {
 } from 'modules/bpmn-js/badgePositions';
 import {useProcessInstancesStatisticsOptions} from './useProcessInstancesStatistics';
 import {useQuery} from '@tanstack/react-query';
-
-type FlowNodeState =
-  | 'active'
-  | 'incidents'
-  | 'canceled'
-  | 'completed'
-  | 'completedEndEvents';
+import {flowNodeStatesParser} from './useFlowNodeStates';
 
 const overlayPositions = {
   active: ACTIVE_BADGE,
@@ -39,40 +33,7 @@ const overlayPositions = {
 export function overlayParser(
   data: ProcessInstancesStatisticsDto[],
 ): OverlayData[] {
-  const flowNodeStates = data.flatMap((statistics) => {
-    const types: FlowNodeState[] = [
-      'active',
-      'incidents',
-      'canceled',
-      'completed',
-    ];
-    return types.reduce<
-      {
-        flowNodeId: string;
-        count: number;
-        flowNodeState: FlowNodeState;
-      }[]
-    >((states, flowNodeState) => {
-      const count = Number(
-        statistics[flowNodeState as keyof ProcessInstancesStatisticsDto],
-      );
-      if (count > 0) {
-        return [
-          ...states,
-          {
-            flowNodeId: statistics.flowNodeId,
-            count,
-            flowNodeState:
-              flowNodeState === 'completed'
-                ? 'completedEndEvents'
-                : flowNodeState,
-          },
-        ];
-      } else {
-        return states;
-      }
-    }, []);
-  });
+  const flowNodeStates = flowNodeStatesParser(data);
 
   return flowNodeStates.map(({flowNodeState, count, flowNodeId}) => ({
     payload: {flowNodeState, count},
