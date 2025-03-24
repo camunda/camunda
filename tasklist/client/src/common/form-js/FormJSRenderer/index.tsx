@@ -17,7 +17,6 @@ import '@bpmn-io/form-js-viewer/dist/assets/form-js-base.css';
 import '@bpmn-io/form-js-carbon-styles/src/carbon-styles.scss';
 import type {SuccessDocument} from 'common/api/useUploadDocuments.mutation';
 import set from 'lodash/set';
-import {commonApi} from 'common/api';
 import {FormLevelErrorMessage} from './FormLevelErrorMessage';
 import {Stack} from '@carbon/react';
 import {toHumanReadableBytes} from 'common/document-handling/toHumanReadableBytes';
@@ -25,10 +24,6 @@ import {useTranslation} from 'react-i18next';
 import {getClientConfig} from 'common/config/getClientConfig';
 import type {PartialVariable} from 'common/types';
 import {extractFilePath} from './extractFilePath';
-
-const defaultDocumentsEndpointKey = decodeURIComponent(
-  commonApi.getDocument('{documentId}').url,
-);
 
 type Props = {
   handleSubmit: (variables: PartialVariable[]) => Promise<void>;
@@ -168,10 +163,7 @@ const FormJSRenderer: React.FC<Props> = ({
       formManager.render({
         container,
         schema,
-        data: {
-          defaultDocumentsEndpointKey,
-          ...data,
-        },
+        data,
         onImportError,
         onSubmit: async ({
           data: newData,
