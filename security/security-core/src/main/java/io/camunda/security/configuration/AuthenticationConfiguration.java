@@ -17,6 +17,7 @@ public class AuthenticationConfiguration {
   private OidcAuthenticationConfiguration oidcAuthenticationConfiguration =
       new OidcAuthenticationConfiguration();
   private boolean unprotectedApi = DEFAULT_UNPROTECTED_API;
+  private String organizationId;
 
   public boolean getUnprotectedApi() {
     return unprotectedApi;
@@ -40,5 +41,13 @@ public class AuthenticationConfiguration {
 
   public void setOidc(final OidcAuthenticationConfiguration configuration) {
     oidcAuthenticationConfiguration = configuration;
+  }
+
+  public String getOrganizationId() {
+    return organizationId;
+  }
+
+  public void setOrganizationId(final String organizationId) {
+    this.organizationId = organizationId;
   }
 }

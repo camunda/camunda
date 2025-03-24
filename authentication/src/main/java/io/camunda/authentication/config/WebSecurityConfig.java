@@ -10,6 +10,7 @@ package io.camunda.authentication.config;
 import io.camunda.authentication.CamundaUserDetailsService;
 import io.camunda.authentication.ConditionalOnAuthenticationMethod;
 import io.camunda.authentication.ConditionalOnUnprotectedApi;
+import io.camunda.authentication.filters.OrganizationAccessCheckFilter;
 import io.camunda.authentication.filters.TenantRequestAttributeFilter;
 import io.camunda.authentication.filters.WebApplicationAuthorizationCheckFilter;
 import io.camunda.authentication.handler.AuthFailureHandler;
@@ -24,6 +25,7 @@ import io.camunda.service.UserServices;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.util.Set;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
@@ -49,6 +51,7 @@ import org.springframework.security.oauth2.jwt.JwtValidators;
 import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.access.intercept.AuthorizationFilter;
+import org.springframework.security.web.servletapi.SecurityContextHolderAwareRequestFilter;
 
 @Configuration
 @EnableWebSecurity
@@ -310,30 +313,35 @@ public class WebSecurityConfig {
     public SecurityFilterChain oidcApiSecurity(
         final HttpSecurity httpSecurity,
         final AuthFailureHandler authFailureHandler,
-        final JwtDecoder jwtDecoder)
+        final JwtDecoder jwtDecoder,
+        final SecurityConfiguration securityConfiguration)
         throws Exception {
-      return httpSecurity
-          .securityMatcher(API_PATHS.toArray(new String[0]))
-          .authorizeHttpRequests(
-              (authorizeHttpRequests) ->
-                  authorizeHttpRequests
-                      .requestMatchers(UNPROTECTED_API_PATHS.toArray(String[]::new))
-                      .permitAll()
-                      .anyRequest()
-                      .authenticated())
-          .headers(WebSecurityConfig::setupStrictTransportSecurity)
-          .exceptionHandling(
-              (exceptionHandling) -> exceptionHandling.accessDeniedHandler(authFailureHandler))
-          .csrf(AbstractHttpConfigurer::disable)
-          .cors(AbstractHttpConfigurer::disable)
-          .formLogin(AbstractHttpConfigurer::disable)
-          .anonymous(AbstractHttpConfigurer::disable)
-          .oauth2ResourceServer(
-              oauth2 -> oauth2.jwt(jwtConfigurer -> jwtConfigurer.decoder(jwtDecoder)))
-          .oauth2Login(AbstractHttpConfigurer::disable)
-          .oidcLogout(AbstractHttpConfigurer::disable)
-          .logout(AbstractHttpConfigurer::disable)
-          .build();
+      final var httpSecurityBuilder =
+          httpSecurity
+              .securityMatcher(API_PATHS.toArray(new String[0]))
+              .authorizeHttpRequests(
+                  (authorizeHttpRequests) ->
+                      authorizeHttpRequests
+                          .requestMatchers(UNPROTECTED_API_PATHS.toArray(String[]::new))
+                          .permitAll()
+                          .anyRequest()
+                          .authenticated())
+              .headers(WebSecurityConfig::setupStrictTransportSecurity)
+              .exceptionHandling(
+                  (exceptionHandling) -> exceptionHandling.accessDeniedHandler(authFailureHandler))
+              .csrf(AbstractHttpConfigurer::disable)
+              .cors(AbstractHttpConfigurer::disable)
+              .formLogin(AbstractHttpConfigurer::disable)
+              .anonymous(AbstractHttpConfigurer::disable)
+              .oauth2ResourceServer(
+                  oauth2 -> oauth2.jwt(jwtConfigurer -> jwtConfigurer.decoder(jwtDecoder)))
+              .oauth2Login(AbstractHttpConfigurer::disable)
+              .oidcLogout(AbstractHttpConfigurer::disable)
+              .logout(AbstractHttpConfigurer::disable);
+
+      applyFilters(httpSecurity, securityConfiguration);
+
+      return httpSecurityBuilder.build();
     }
 
     @Bean
@@ -343,36 +351,58 @@ public class WebSecurityConfig {
         final AuthFailureHandler authFailureHandler,
         final ClientRegistrationRepository clientRegistrationRepository,
         final WebApplicationAuthorizationCheckFilter webApplicationAuthorizationCheckFilter,
-        final JwtDecoder jwtDecoder)
+        final JwtDecoder jwtDecoder,
+        final SecurityConfiguration securityConfiguration)
         throws Exception {
-      return httpSecurity
-          .securityMatcher(WEBAPP_PATHS.toArray(new String[0]))
-          .headers(WebSecurityConfig::setupStrictTransportSecurity)
-          .exceptionHandling(
-              (exceptionHandling) -> exceptionHandling.accessDeniedHandler(authFailureHandler))
-          .csrf(AbstractHttpConfigurer::disable)
-          .cors(AbstractHttpConfigurer::disable)
-          .formLogin(AbstractHttpConfigurer::disable)
-          .anonymous(AbstractHttpConfigurer::disable)
-          .oauth2ResourceServer(
-              oauth2 -> oauth2.jwt(jwtConfigurer -> jwtConfigurer.decoder(jwtDecoder)))
-          .oauth2Login(
-              oauthLoginConfigurer -> {
-                oauthLoginConfigurer
-                    .clientRegistrationRepository(clientRegistrationRepository)
-                    .redirectionEndpoint(
-                        redirectionEndpointConfig ->
-                            redirectionEndpointConfig.baseUri("/sso-callback"));
-              })
-          .oidcLogout(httpSecurityOidcLogoutConfigurer -> {})
-          .logout(
-              (logout) ->
-                  logout
-                      .logoutUrl(LOGOUT_URL)
-                      .logoutSuccessHandler(WebSecurityConfig::noContentSuccessHandler)
-                      .deleteCookies())
-          .addFilterAfter(webApplicationAuthorizationCheckFilter, AuthorizationFilter.class)
-          .build();
+      final var httpSecurityBuilder =
+          httpSecurity
+              .securityMatcher(WEBAPP_PATHS.toArray(new String[0]))
+              .authorizeHttpRequests(
+                  (authorizeHttpRequests) ->
+                      authorizeHttpRequests
+                          .requestMatchers(UNPROTECTED_API_PATHS.toArray(String[]::new))
+                          .permitAll()
+                          .anyRequest()
+                          .authenticated())
+              .headers(WebSecurityConfig::setupStrictTransportSecurity)
+              .exceptionHandling(
+                  (exceptionHandling) -> exceptionHandling.accessDeniedHandler(authFailureHandler))
+              .csrf(AbstractHttpConfigurer::disable)
+              .cors(AbstractHttpConfigurer::disable)
+              .formLogin(AbstractHttpConfigurer::disable)
+              .anonymous(AbstractHttpConfigurer::disable)
+              .oauth2ResourceServer(
+                  oauth2 -> oauth2.jwt(jwtConfigurer -> jwtConfigurer.decoder(jwtDecoder)))
+              .oauth2Login(
+                  oauthLoginConfigurer -> {
+                    oauthLoginConfigurer
+                        .clientRegistrationRepository(clientRegistrationRepository)
+                        .redirectionEndpoint(
+                            redirectionEndpointConfig ->
+                                redirectionEndpointConfig.baseUri("/sso-callback"));
+                  })
+              .oidcLogout(httpSecurityOidcLogoutConfigurer -> {})
+              .logout(
+                  (logout) ->
+                      logout
+                          .logoutUrl(LOGOUT_URL)
+                          .logoutSuccessHandler(WebSecurityConfig::noContentSuccessHandler)
+                          .deleteCookies())
+              .addFilterAfter(webApplicationAuthorizationCheckFilter, AuthorizationFilter.class);
+
+      applyFilters(httpSecurity, securityConfiguration);
+
+      return httpSecurityBuilder.build();
+    }
+
+    private void applyFilters(
+        final HttpSecurity httpSecurity, final SecurityConfiguration securityConfiguration) {
+      if (StringUtils.isNotEmpty(securityConfiguration.getAuthentication().getOrganizationId())) {
+        httpSecurity.addFilterAfter(
+            new OrganizationAccessCheckFilter(
+                securityConfiguration.getAuthentication().getOrganizationId()),
+            SecurityContextHolderAwareRequestFilter.class);
+      }
     }
   }
 }

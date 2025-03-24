@@ -7,10 +7,14 @@
  */
 package io.camunda.authentication.entity;
 
+import java.util.Set;
+
 public interface CamundaPrincipal {
   String getEmail();
 
   String getDisplayName();
+
+  Set<String> getOrganizationIds();
 
   AuthenticationContext getAuthenticationContext();
 }

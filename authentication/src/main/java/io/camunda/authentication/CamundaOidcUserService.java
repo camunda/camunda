@@ -34,6 +34,7 @@ import org.springframework.stereotype.Service;
 @Service
 @ConditionalOnAuthenticationMethod(AuthenticationMethod.OIDC)
 public class CamundaOidcUserService extends OidcUserService {
+  public static final String ORGANIZATION_CLAIM_NAME = "https://camunda.com/orgs";
   private static final Logger LOG = LoggerFactory.getLogger(CamundaOidcUserService.class);
   private final MappingServices mappingServices;
   private final TenantServices tenantServices;
@@ -71,6 +72,7 @@ public class CamundaOidcUserService extends OidcUserService {
     return new CamundaOidcUser(
         oidcUser,
         mappingKeys,
+        getOrganizationIds(claims),
         new AuthenticationContext(
             assignedRoles,
             authorizationServices.getAuthorizedApplications(
@@ -85,5 +87,27 @@ public class CamundaOidcUserService extends OidcUserService {
             groupServices.getGroupsByMemberKeys(mappingKeys).stream()
                 .map(GroupEntity::name)
                 .toList()));
+  }
+
+  private Set<String> getOrganizationIds(final Map<String, Object> claims) {
+    final var organizationClaim = claims.get(ORGANIZATION_CLAIM_NAME);
+    if (!(organizationClaim instanceof final List<?> orgs)) {
+      return null;
+    }
+
+    /* The structure of our organization claim is a list of maps, where each map has an id field -> collection of roles.
+     * We want to extract the id field from each map and collect them into a set. */
+    return orgs.stream()
+        .flatMap(
+            org -> {
+              if (org instanceof final Map<?, ?> map) {
+                final var id = map.get("id");
+                if (id instanceof final String idString) {
+                  return Stream.of(idString);
+                }
+              }
+              return Stream.of();
+            })
+        .collect(Collectors.toSet());
   }
 }
