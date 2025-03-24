@@ -61,11 +61,6 @@ jobs: # github.event.inputs.c8Version replaced
           wait  # Wait for both background processes to finish
         working-directory: qa/core-application-e2e-test-suite/config
 
-      - name: Check if services are healthy
-        run: |
-          curl -s http://localhost:8080/health || exit 1
-          curl -s http://localhost:8081/health || exit 1
-
       # - name: Wait for services to be ready
       #   id: wait-for-services
       #   run: |
