@@ -18,15 +18,11 @@ import '@bpmn-io/form-js-viewer/dist/assets/form-js-base.css';
 import '@bpmn-io/form-js-carbon-styles/src/carbon-styles.scss';
 import type {SuccessDocument} from 'modules/mutations/useUploadDocuments';
 import set from 'lodash/set';
-import {api} from 'modules/api';
 import {FormLevelErrorMessage} from './FormLevelErrorMessage';
 import {Stack} from '@carbon/react';
 import {toHumanReadableBytes} from 'modules/utils/toHumanReadableBytes';
 import {useTranslation} from 'react-i18next';
-
-const defaultDocumentsEndpointKey = decodeURIComponent(
-  api.v2.getDocument('{documentId}').url,
-);
+import {extractFilePath} from './extractFilePath';
 
 const MAX_REQUEST_SIZE = window.clientConfig?.maxRequestSize ?? 4 * 1024 * 1024;
 
@@ -104,56 +100,13 @@ function useScrollToError(manager: FormManager) {
   );
 }
 
-function extractFilePath(data: object, path: string = ''): Map<string, string> {
-  let paths = new Map();
-
-  if (data === null || data === undefined) {
-    return paths;
-  }
-
-  for (const [key, value] of Object.entries(data)) {
-    const itemPath = path.length === 0 ? key : `${path}.${key}`;
-
-    if (typeof value === 'string' && value.startsWith('files::')) {
-      paths.set(value, itemPath);
-      continue;
-    }
-
-    if (Array.isArray(value)) {
-      const result = value
-        .map((dynamicListItem, index) =>
-          extractFilePath(dynamicListItem, `${itemPath}[${index}]`),
-        )
-        .reduce((acc, cur) => new Map([...acc, ...cur]), new Map());
-
-      paths = new Map([...paths, ...result]);
-      continue;
-    }
-
-    if (
-      typeof value === 'object' &&
-      value !== null &&
-      Object.keys(value).length > 0
-    ) {
-      const result = extractFilePath(
-        value,
-        path.length === 0 ? key : `${itemPath}.${key}`,
-      );
-      paths = new Map([...paths, ...result]);
-      continue;
-    }
-  }
-
-  return paths;
-}
-
 function injectFileMetadataIntoData(options: {
   data: Record<string, unknown>;
   fileMetadata: Map<string, SuccessDocument[]>;
   pathsToInject: Map<string, string>;
 }): Record<string, unknown> {
   const {data, fileMetadata, pathsToInject} = options;
-  let result = data;
+  let result = structuredClone(data);
 
   pathsToInject.forEach((filepickerPath, fileKey) => {
     const metadata = fileMetadata.get(fileKey);
@@ -211,10 +164,7 @@ const FormJSRenderer: React.FC<Props> = ({
       formManager.render({
         container,
         schema,
-        data: {
-          defaultDocumentsEndpointKey,
-          ...data,
-        },
+        data,
         onImportError,
         onSubmit: async ({
           data: newData,
