@@ -119,8 +119,13 @@ jobs:
           npm ci --verbose
         working-directory: qa/core-application-e2e-test-suite
 
-      - name: Debug File Structure
-        run: ls -R .github/actions
-
       - name: Run tests
         uses: ./.github/actions/core-application-e2e-test-suite
+      
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: Core Application E2E Test Results
+          path: ./test-report
+          retention-days: 10
+
