@@ -1,0 +1,23 @@
+{
+  "noMappings": "You don't have any mappings yet",
+  "mappingJWTToken": "Mapping of JWT token",
+  "createMapping": "Create a mapping",
+  "learnMoreMapping": "Learn more about mapping",
+  "mappingId": "Mapping ID",
+  "mappingName": "Mapping name",
+  "claimName": "Claim name",
+  "claimValue": "Claim value",
+  "loadMappingsError": "The list of mappings could not be loaded.",
+  "mappingCreated": "Mapping created",
+  "mappingCreatedSuccessfully": "You have successfully created mapping {{ name }}",
+  "createNewMapping": "Create new mapping",
+  "enterMappingId": "Enter mapping ID",
+  "uniqueIdForMapping": "Enter a unique ID for this mapping",
+  "enterMappingName": "Enter mapping name",
+  "uniqueNameForMapping": "Enter a unique name for this mapping",
+  "mappingRule": "Mapping Rule",
+  "enterClaimName": "Enter claim name",
+  "customClaimName": "Enter a custom claim name",
+  "enterClaimValue": "Enter claim value",
+  "valueForClaim": "Enter the value for the claim"
+}

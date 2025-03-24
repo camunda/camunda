@@ -16,11 +16,10 @@ export const MappingRuleContainer = styled.div`
 
 export const EqualSignContainer = styled.div`
   display: flex;
-  align-self: flex-end;
+  align-self: center;
   align-items: center;
   justify-content: center;
   font-size: 1.125rem;
-  height: 2.5rem;
 `;
 
 export const CustomStack = styled(Stack)`

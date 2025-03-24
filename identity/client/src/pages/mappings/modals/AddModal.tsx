@@ -22,7 +22,7 @@ import { spacing05 } from "@carbon/elements";
 import { Stack } from "@carbon/react";
 
 const AddMappingModal: FC<UseModalProps> = ({ open, onClose, onSuccess }) => {
-  const { t } = useTranslate("mappings");
+  const { t } = useTranslate("mappingRules");
   const { enqueueNotification } = useNotifications();
   const [apiCall, { loading, error }] = useApiCall(createMapping, {
     suppressErrorNotification: true,
@@ -45,10 +45,8 @@ const AddMappingModal: FC<UseModalProps> = ({ open, onClose, onSuccess }) => {
     if (success) {
       enqueueNotification({
         kind: "success",
-        title: t("Mapping created"),
-        subtitle: t("You have successfully created mapping {{ name }}", {
-          name,
-        }),
+        title: t("mappingCreated"),
+        subtitle: t("mappingCreatedSuccessfully", { name: mappingName }),
       });
       onSuccess();
     }
@@ -56,48 +54,47 @@ const AddMappingModal: FC<UseModalProps> = ({ open, onClose, onSuccess }) => {
 
   return (
     <FormModal
-      headline={t("Create new mapping")}
+      headline={t("createNewMapping")}
       open={open}
       onClose={onClose}
       loading={loading}
       submitDisabled={submitDisabled}
-      confirmLabel={t("Create mapping")}
+      confirmLabel={t("createMapping")}
       onSubmit={handleSubmit}
     >
       <TextField
-        label={t("Mapping ID")}
-        placeholder={t("Enter mapping ID")}
+        label={t("mappingId")}
+        placeholder={t("enterMappingId")}
         onChange={setMappingId}
         value={mappingId}
-        helperText={t("Enter a unique ID for this mapping")}
+        helperText={t("uniqueIdForMapping")}
         autoFocus
       />
       <TextField
-        label={t("Mapping name")}
-        placeholder={t("Enter mapping name")}
+        label={t("mappingName")}
+        placeholder={t("enterMappingName")}
         onChange={setMappingName}
         value={mappingName}
-        helperText={t("Enter a unique name for this mapping")}
-        autoFocus
+        helperText={t("uniqueNameForMapping")}
       />
       <MappingRuleContainer>
         <Stack gap={spacing05}>
-          <h3>Mapping Rule</h3>
+          <h3>{t("mappingRule")}</h3>
           <CustomStack orientation="horizontal">
             <TextField
-              label={t("Claim Name")}
-              placeholder={t("Enter claim name")}
+              label={t("claimName")}
+              placeholder={t("enterClaimName")}
               onChange={setClaimName}
               value={claimName}
-              helperText={t("Enter a custom claim name")}
+              helperText={t("customClaimName")}
             />
             <EqualSignContainer>=</EqualSignContainer>
             <TextField
-              label={t("Claim Value")}
-              placeholder={t("Enter claim value")}
+              label={t("claimValue")}
+              placeholder={t("enterClaimValue")}
               onChange={setClaimValue}
               value={claimValue}
-              helperText={t("Enter the value for the claim")}
+              helperText={t("valueForClaim")}
             />
           </CustomStack>
         </Stack>

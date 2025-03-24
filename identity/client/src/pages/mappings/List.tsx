@@ -19,7 +19,7 @@ import AddModal from "src/pages/mappings/modals/AddModal";
 import { searchMapping } from "src/utility/api/mappings";
 
 const List: FC = () => {
-  const { t } = useTranslate();
+  const { t } = useTranslate("mappingRules");
   const {
     data: mappingSearchResults,
     loading,
@@ -30,8 +30,8 @@ const List: FC = () => {
   const [addMapping, addMappingModal] = useModal(AddModal, reload);
   const pageHeader = (
     <PageHeader
-      title="Mappings"
-      linkText="mappings"
+      title={t("mappings")}
+      linkText={t("mappings")}
       linkUrl="/concepts/mappings/"
     />
   );
@@ -41,16 +41,16 @@ const List: FC = () => {
       <Page>
         {pageHeader}
         <C3EmptyState
-          heading={t("You don’t have any mappings yet")}
-          description={t("Mapping of JWT token")}
+          heading={t("noMappings")}
+          description={t("mappingJWTToken")}
           button={{
-            label: t("Create a mapping"),
+            label: t("createMapping"),
             onClick: addMapping,
             icon: Add,
           }}
           link={{
             href: documentationHref("/concepts/mapping/", ""),
-            label: t("Learn more about mapping"),
+            label: t("learnMoreMapping"),
           }}
         />
         {addMappingModal}
@@ -64,23 +64,23 @@ const List: FC = () => {
       <EntityList
         data={mappingSearchResults == null ? [] : mappingSearchResults.items}
         headers={[
-          { header: t("Mapping ID"), key: "mappingKey" },
-          { header: t("Mapping name"), key: "name" },
-          { header: t("Claim name"), key: "claimName" },
-          { header: t("Claim value"), key: "claimValue" },
+          { header: t("mappingId"), key: "mappingKey" },
+          { header: t("mappingName"), key: "name" },
+          { header: t("claimName"), key: "claimName" },
+          { header: t("claimValue"), key: "claimValue" },
         ]}
         sortProperty="claimName"
-        addEntityLabel={t("Create mapping")}
+        addEntityLabel={t("createMapping")}
         onAddEntity={addMapping}
         loading={loading}
         menuItems={[
           {
-            label: t("Edit"),
+            label: t("edit"),
             icon: Edit,
             onClick: () => {},
           },
           {
-            label: t("Delete"),
+            label: t("delete"),
             icon: TrashCan,
             isDangerous: true,
             onClick: () => {},
@@ -89,8 +89,8 @@ const List: FC = () => {
       />
       {!loading && !success && (
         <TranslatedErrorInlineNotification
-          title={t("The list of mappings could not be loaded.")}
-          actionButton={{ label: t("Retry"), onClick: reload }}
+          title={t("loadMappingsError")}
+          actionButton={{ label: t("retry"), onClick: reload }}
         />
       )}
       {addMappingModal}
