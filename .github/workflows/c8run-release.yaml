@@ -180,13 +180,6 @@ jobs:
           team-id: ${{ steps.secrets.outputs.APPLE_TEAM_ID }}
           path: ./c8run/tmp/c8run
 
-      - name: Upload camunda-dist (change before merge)
-        if: startsWith(matrix.os.name, 'MacOS')
-        uses: actions/upload-artifact@v4
-        with:
-          name: c8run-zip-${{ matrix.os.id }}
-          path: ./c8run/tmp/c8run_complete.zip
-
       - name: Replace old mac artifact with codesigned version
         if: startsWith(matrix.os.name, 'MacOS')
         run: |
