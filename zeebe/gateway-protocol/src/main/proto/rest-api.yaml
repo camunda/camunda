@@ -1904,7 +1904,7 @@ paths:
           content:
             application/json:
               schema:
-                type: "#/components/schemas/ResourceResult"
+                $ref: "#/components/schemas/ResourceResult"
         "404":
           description: A resource with the given key was not found.
           content:
