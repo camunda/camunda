@@ -31,7 +31,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.jayway.jsonpath.DocumentContext;
 import com.jayway.jsonpath.JsonPath;
 import io.camunda.exporter.config.ExporterConfiguration.IncidentNotifierConfiguration;
-import io.camunda.exporter.utils.TestObjectMapper;
+import io.camunda.search.test.utils.TestObjectMapper;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.net.http.HttpClient;

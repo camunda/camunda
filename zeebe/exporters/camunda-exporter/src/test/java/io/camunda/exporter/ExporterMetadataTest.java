@@ -9,7 +9,7 @@ package io.camunda.exporter;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.exporter.utils.TestObjectMapper;
+import io.camunda.search.test.utils.TestObjectMapper;
 import org.junit.jupiter.api.Test;
 
 final class ExporterMetadataTest {

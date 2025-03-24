@@ -12,7 +12,7 @@ import static org.assertj.core.api.Assertions.assertThatNoException;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.exporter.config.ExporterConfiguration;
-import io.camunda.exporter.exceptions.ElasticsearchExporterException;
+import io.camunda.search.schema.exceptions.SearchEngineException;
 import io.camunda.zeebe.exporter.test.ExporterTestConfiguration;
 import io.camunda.zeebe.exporter.test.ExporterTestContext;
 import io.camunda.zeebe.exporter.test.ExporterTestController;
@@ -79,7 +79,7 @@ public class CamundaExporterAuthenticationIT {
 
     // then
     assertThatThrownBy(() -> exporter.open(controller))
-        .isInstanceOf(ElasticsearchExporterException.class)
+        .isInstanceOf(SearchEngineException.class)
         .cause()
         .hasMessageContaining("unable to authenticate user");
   }

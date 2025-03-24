@@ -16,12 +16,12 @@ import io.camunda.exporter.cache.form.CachedFormEntity;
 import io.camunda.exporter.cache.form.ElasticSearchFormCacheLoader;
 import io.camunda.exporter.cache.process.CachedProcessEntity;
 import io.camunda.exporter.cache.process.ElasticSearchProcessCacheLoader;
-import io.camunda.exporter.schema.SearchEngineClient;
-import io.camunda.exporter.schema.elasticsearch.ElasticsearchEngineClient;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.exporter.store.ElasticsearchBatchRequest;
 import io.camunda.search.connect.configuration.ConnectConfiguration;
 import io.camunda.search.connect.es.ElasticsearchConnector;
+import io.camunda.search.schema.SearchEngineClient;
+import io.camunda.search.schema.elasticsearch.ElasticsearchEngineClient;
 import java.io.IOException;
 
 class ElasticsearchAdapter implements ClientAdapter {

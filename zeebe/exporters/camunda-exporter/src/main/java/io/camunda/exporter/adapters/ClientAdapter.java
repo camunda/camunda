@@ -9,10 +9,10 @@ package io.camunda.exporter.adapters;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.exporter.cache.ExporterEntityCacheProvider;
-import io.camunda.exporter.schema.SearchEngineClient;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.search.connect.configuration.ConnectConfiguration;
 import io.camunda.search.connect.configuration.DatabaseType;
+import io.camunda.search.schema.SearchEngineClient;
 import java.io.IOException;
 
 public interface ClientAdapter extends AutoCloseable {
