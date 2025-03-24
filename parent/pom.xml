@@ -1237,7 +1237,7 @@
       <dependency>
         <groupId>com.google.guava</groupId>
         <artifactId>failureaccess</artifactId>
-        <version>1.0.2</version>
+        <version>1.0.3</version>
       </dependency>
 
       <!-- needed for tests in elasticsearch-exporter -->
