@@ -455,6 +455,7 @@ camunda-platform:
         effect: "NoSchedule"
 
   connectors:
+    enabled: false
     contextPath: "/connectors"
     nodeSelector:
       cloud.google.com/gke-nodepool: previews
