@@ -1,0 +1,68 @@
+name: Core Application E2E Tests Nightly
+# on:
+#   schedule:
+#     - cron: "0 23 * * *"  # 11 PM UTC - Run 8.6 tests
+#     - cron: "0 0 * * *"   # 12 AM UTC - Run 8.7 tests
+#     - cron: "0 1 * * *"   # 1 AM UTC - Run main branch tests
+on:
+  push:
+    branches:
+      - main
+      - stable/8.6
+      - stable/8.7
+  pull_request:
+    branches:
+      - main
+      - stable/8.6
+      - stable/8.7
+    types: [opened, synchronize, reopened]
+
+jobs:
+  nightly-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Determine Branch
+        id: set-branch
+        run: |
+          case "${{ github.event.schedule }}" in
+            "0 23 * * *") echo "branch=stable/8.6" >> $GITHUB_ENV ;;
+            "0 0 * * *") echo "branch=stable/8.7" >> $GITHUB_ENV ;;
+            "0 1 * * *") echo "branch=main" >> $GITHUB_ENV ;;
+          esac
+
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.branch }}
+
+      - name: Start Tasklist and Operate
+        run: DATABASE=elasticsearch docker compose up -d tasklist operate
+        working-directory: qa/core-application-e2e-test-suite/config
+
+      - name: Wait for services to be ready
+        run: |
+          echo "Checking if services are up..."
+          for i in {1..30}; do
+            if curl -s http://localhost:8080/health | grep '"status":"UP"' && \
+               curl -s http://localhost:8081/health | grep '"status":"UP"'; then
+              echo "Services are ready!"
+              exit 0
+            fi
+            echo "Waiting for services... ($i/30)"
+            sleep 10
+          done
+          echo "Services failed to start in time."
+          exit 1
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: qa/core-application-e2e-test-suite/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+        working-directory: qa/core-application-e2e-test-suite
+
+      - name: Run tests
+        uses: ./.github/actions/core-application-e2e-test-suite

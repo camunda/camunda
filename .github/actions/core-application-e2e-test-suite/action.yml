@@ -1,0 +1,23 @@
+name: "Run Core Application E2E Test Suite"
+description: "A GitHub action to run the Core Application E2E tests"
+
+runs:
+  using: composite
+  steps:
+    - name: Install Playwright Browsers
+      shell: bash
+      run: npx playwright install --with-deps chromium
+      working-directory: qa/core-application-e2e-test-suite
+
+    - name: Run tests
+      shell: bash
+      env:
+        LOCAL_TEST: 'false'
+        CORE_APPLICATION_TASKLIST_URL: http://localhost:8080
+        CORE_APPLICATION_OPERATE_URL: http://localhost:8081
+        CAMUNDA_AUTH_STRATEGY: 'BASIC'
+        CAMUNDA_BASIC_AUTH_USERNAME: 'demo'
+        CAMUNDA_BASIC_AUTH_PASSWORD: 'demo'
+        ZEEBE_REST_ADDRESS: 'http://localhost:8089'
+      run: npm run test -- --project=chromium
+      working-directory: qa/core-application-e2e-test-suite
