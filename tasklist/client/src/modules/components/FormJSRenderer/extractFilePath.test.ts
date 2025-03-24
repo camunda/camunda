@@ -15,22 +15,26 @@ describe('extractFilePath', () => {
       b: {
         c: 'files::456',
         d: 'not a file',
+        e: {
+          f: 'files::789',
+        },
       },
-      e: [
-        'files::789',
+      g: [
+        'files::012',
         {
-          f: 'files::012',
+          h: 'files::345',
         },
       ],
     };
 
     const result = extractFilePath(mock);
 
-    expect(result.size).toBe(4);
+    expect(result.size).toBe(5);
     expect(result.get('files::123')).toBe('a');
     expect(result.get('files::456')).toBe('b.c');
-    expect(result.get('files::789')).toBe('e[0]');
-    expect(result.get('files::012')).toBe('e[1].f');
+    expect(result.get('files::789')).toBe('b.e.f');
+    expect(result.get('files::012')).toBe('g[0]');
+    expect(result.get('files::345')).toBe('g[1].h');
   });
 
   it('should handle objects with no file paths', () => {
