@@ -90,7 +90,7 @@ jobs:
     needs: init
     name: C8Run - ${{ matrix.os.name }}
     runs-on: ${{ matrix.os.id }}
-    timeout-minutes: 15
+    timeout-minutes: 60
     strategy:
       fail-fast: false
       matrix:
@@ -136,6 +136,12 @@ jobs:
           secrets: |
             secret/data/products/distribution/ci NEXUS_USERNAME;
             secret/data/products/distribution/ci NEXUS_PASSWORD;
+            secret/data/products/distribution/ci APPLE_CERTIFICATE;
+            secret/data/products/distribution/ci APPLE_CERTIFICATE_PASSWORD;
+            secret/data/products/distribution/ci APPLE_DEVELOPER_ID;
+            secret/data/products/distribution/ci APPLE_DEVELOPER_PASSWORD;
+            secret/data/products/distribution/ci APPLE_TEAM_ID;
+            secret/data/products/distribution/ci APPLE_COMMON_NAME;
             secret/data/common/jenkins/downloads-camunda-cloud_google_sa_key DOWNLOAD_CENTER_GCLOUD_KEY_BYTES | GCP_CREDENTIALS_NAME;
       - uses: actions/setup-go@v5
         with:
@@ -144,12 +150,50 @@ jobs:
       - name: Build artifact
         working-directory: ${{ matrix.os.workingDir }}
         run: go build
+
       - name: Create artifact package
         working-directory: ${{ matrix.os.workingDir }}
         run: ${{ matrix.os.command }} package
         env:
           JAVA_ARTIFACTS_USER: ${{ steps.secrets.outputs.NEXUS_USERNAME }}
           JAVA_ARTIFACTS_PASSWORD: ${{ steps.secrets.outputs.NEXUS_PASSWORD }}
+
+      - name: extract package
+        if: startsWith(matrix.os.name, 'MacOS')
+        run: |
+          mkdir tmp
+          mv camunda8-run-*.tar.gz tmp
+          cd tmp
+          tar -xzvf camunda8-run-*.tar.gz
+        shell: bash
+        working-directory: ./c8run
+
+      - name: Sign and notarize
+        if: startsWith(matrix.os.name, 'MacOS')
+        uses: ./.github/actions/sign-and-notarize
+        with:
+          p12-base64: ${{ steps.secrets.outputs.APPLE_CERTIFICATE }}
+          p12-password: ${{ steps.secrets.outputs.APPLE_CERTIFICATE_PASSWORD }}
+          developer-id-cert-name: ${{ steps.secrets.outputs.APPLE_DEVELOPER_ID }}
+          apple-id: ${{ steps.secrets.outputs.APPLE_DEVELOPER_ID }}
+          app-password: ${{ steps.secrets.outputs.APPLE_DEVELOPER_PASSWORD }}
+          team-id: ${{ steps.secrets.outputs.APPLE_TEAM_ID }}
+          path: ./c8run/tmp/c8run
+
+      - name: Upload camunda-dist (change before merge)
+        if: startsWith(matrix.os.name, 'MacOS')
+        uses: actions/upload-artifact@v4
+        with:
+          name: c8run-zip-${{ matrix.os.id }}
+          path: ./c8run/tmp/c8run_complete.zip
+
+      - name: Replace old mac artifact with codesigned version
+        if: startsWith(matrix.os.name, 'MacOS')
+        run: |
+          mv ./c8run/tmp/c8run_complete.zip ./c8run/$C8RUN_NAME_ORIGINAL
+        env:
+          C8RUN_NAME_ORIGINAL: "camunda8-run-${{ inputs.camundaAppsRelease }}-${{ matrix.os.artifactFileSuffix }}"
+
       - name: Copy artifact
         working-directory: ${{ matrix.os.workingDir }}
         env:
