@@ -10,8 +10,7 @@ permissions:
 #         required: true
 on:
   push:
-    branches:
-      - main
+
 jobs: # github.event.inputs.c8Version replaced
   setup-environment:
     runs-on: ubuntu-latest
