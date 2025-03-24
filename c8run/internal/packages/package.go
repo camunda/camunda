@@ -50,31 +50,38 @@ func downloadAndExtract(filePath, url, extractDir string, authToken string, extr
 	return nil
 }
 
-func setOsSpecificValues() (string, string, string, func(string, string) error, error) {
+func setOsSpecificValues() (string, string, string, string, func(string, string) error, error) {
 	var architecture string
 	var osType string = runtime.GOOS
 	var pkgName string
+        var finalOutputExtension string
 	var extractFunc func(string, string) error
 
 	switch osType {
 	case "windows":
 		architecture = "x86_64"
 		pkgName = ".zip"
+                finalOutputExtension = ".zip"
 		extractFunc = archive.UnzipSource
-		return osType, architecture, pkgName, extractFunc, nil
+		return osType, architecture, pkgName, finalOutputExtension, extractFunc, nil
 	case "linux", "darwin":
 		pkgName = ".tar.gz"
+                if osType == "linux" {
+                        finalOutputExtension = ".tar.gz"
+                } else {
+                        finalOutputExtension = ".zip"
+                }
 		extractFunc = archive.ExtractTarGzArchive
 		if runtime.GOARCH == "amd64" {
 			architecture = "x86_64"
 		} else if runtime.GOARCH == "arm64" {
 			architecture = "aarch64"
 		} else {
-			return "", "", "", nil, fmt.Errorf("unsupported architecture: %s", runtime.GOARCH)
+			return "", "", "", "", nil, fmt.Errorf("unsupported architecture: %s", runtime.GOARCH)
 		}
-		return osType, architecture, pkgName, extractFunc, nil
+		return osType, architecture, pkgName, finalOutputExtension, extractFunc, nil
 	default:
-		return "", "", "", nil, fmt.Errorf("unsupported operating system: %s", osType)
+		return "", "", "", "", nil, fmt.Errorf("unsupported operating system: %s", osType)
 	}
 }
 
@@ -155,7 +162,7 @@ func BuildJavaScripts() error {
 }
 
 func New(camundaVersion string, elasticsearchVersion string, connectorsVersion string, composeTag string) error {
-	var osType, architecture, pkgName, extractFunc, err = setOsSpecificValues()
+	var osType, architecture, pkgName, finalOutputExtension, extractFunc, err = setOsSpecificValues()
 	if err != nil {
 		fmt.Printf("%+v", err)
 		os.Exit(1)
@@ -213,10 +220,10 @@ func New(camundaVersion string, elasticsearchVersion string, connectorsVersion s
 	}
 
 	filesToArchive := getFilesToArchive(osType, elasticsearchVersion, connectorsFilePath, camundaVersion, composeExtractionPath)
-	outputFileName := "camunda8-run-" + camundaVersion + "-" + osType + "-" + architecture + pkgName
+	outputFileName := "camunda8-run-" + camundaVersion + "-" + osType + "-" + architecture + finalOutputExtension
 	outputPath := filepath.Join("c8run", outputFileName)
 
-	if osType == "linux" || osType == "darwin" {
+	if osType == "linux" {
 		if err := createTarGzArchive(filesToArchive, outputPath); err != nil {
 			return fmt.Errorf("Package %s: %w", osType, err)
 		}
