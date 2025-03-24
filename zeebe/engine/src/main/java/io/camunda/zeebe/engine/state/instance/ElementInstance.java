@@ -288,7 +288,7 @@ public final class ElementInstance extends UnpackedObject implements DbValue {
     executionListenerIndexProp.reset();
   }
 
-  public Integer getTaskListenerIndex(final ZeebeTaskListenerEventType eventType) {
+  public int getTaskListenerIndex(final ZeebeTaskListenerEventType eventType) {
     return taskListenerIndicesRecordProp.getValue().getTaskListenerIndex(eventType);
   }
 

@@ -30,34 +30,16 @@ public final class TaskListenerIndicesRecord extends UnpackedObject implements D
         .declareProperty(completingTaskListenerIndexProp);
   }
 
-  public Integer getTaskListenerIndex(final ZeebeTaskListenerEventType eventType) {
-    return switch (eventType) {
-      case assigning -> assigningTaskListenerIndexProp.getValue();
-      case updating -> updatingTaskListenerIndexProp.getValue();
-      case completing -> completingTaskListenerIndexProp.getValue();
-      default ->
-          throw new IllegalArgumentException("Unsupported ZeebeTaskListenerEventType " + eventType);
-    };
+  public int getTaskListenerIndex(final ZeebeTaskListenerEventType eventType) {
+    return getTaskListenerIndexProp(eventType).getValue();
   }
 
   public void incrementTaskListenerIndex(final ZeebeTaskListenerEventType eventType) {
-    switch (eventType) {
-      case assigning -> assigningTaskListenerIndexProp.increment();
-      case updating -> updatingTaskListenerIndexProp.increment();
-      case completing -> completingTaskListenerIndexProp.increment();
-      default ->
-          throw new IllegalArgumentException("Unsupported ZeebeTaskListenerEventType " + eventType);
-    }
+    getTaskListenerIndexProp(eventType).increment();
   }
 
   public void resetTaskListenerIndex(final ZeebeTaskListenerEventType eventType) {
-    switch (eventType) {
-      case assigning -> assigningTaskListenerIndexProp.reset();
-      case updating -> updatingTaskListenerIndexProp.reset();
-      case completing -> completingTaskListenerIndexProp.reset();
-      default ->
-          throw new IllegalArgumentException("Unsupported ZeebeTaskListenerEventType " + eventType);
-    }
+    getTaskListenerIndexProp(eventType).reset();
   }
 
   @Override
@@ -66,5 +48,15 @@ public final class TaskListenerIndicesRecord extends UnpackedObject implements D
     final UnsafeBuffer mutableBuffer = new UnsafeBuffer(bytes);
     buffer.getBytes(offset, bytes, 0, length);
     super.wrap(mutableBuffer, 0, length);
+  }
+
+  private IntegerProperty getTaskListenerIndexProp(final ZeebeTaskListenerEventType eventType) {
+    return switch (eventType) {
+      case assigning -> assigningTaskListenerIndexProp;
+      case updating -> updatingTaskListenerIndexProp;
+      case completing -> completingTaskListenerIndexProp;
+      default ->
+          throw new IllegalArgumentException("Unsupported ZeebeTaskListenerEventType " + eventType);
+    };
   }
 }
