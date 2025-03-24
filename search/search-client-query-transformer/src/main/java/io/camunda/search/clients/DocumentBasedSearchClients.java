@@ -213,12 +213,10 @@ public class DocumentBasedSearchClients implements SearchClientsProxy, Closeable
         incidentResult.items().stream().map(IncidentEntity::processInstanceKey).toList();
 
     final var updatedFilter =
-        FilterBuilders.processInstance(
-            f ->
-                Builder.from(originalFilter)
-                    .processInstanceKeyOperations(Operation.in(processInstanceKeys))
-                    .endDateOperations(Operation.exists(false))
-                    .hasIncident(true));
+        Builder.from(originalFilter)
+            .processInstanceKeyOperations(Operation.in(processInstanceKeys))
+            .hasIncident(true)
+            .build();
 
     final var updatedQuery =
         ProcessInstanceQuery.of(
