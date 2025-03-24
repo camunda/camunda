@@ -176,7 +176,10 @@ function useTasks(
     return newData === undefined ? [] : newData.pages[newData.pages.length - 1];
   }
 
-  return {...result, fetchPreviousTasks, fetchNextTasks};
+  return Object.assign(result, {
+    fetchPreviousTasks,
+    fetchNextTasks,
+  });
 }
 
 export {useTasks};

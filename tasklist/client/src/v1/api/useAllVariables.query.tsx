@@ -96,11 +96,10 @@ function useAllVariables(params: Param, options: Options = {}) {
     variablesLoading: variablesLoadingFullValue,
   } = useFetchFullVariable(variablesQueryKey);
 
-  return {
-    ...queryResult,
+  return Object.assign(queryResult, {
     fetchFullVariable,
     variablesLoadingFullValue,
-  };
+  });
 }
 
 export {useAllVariables};
