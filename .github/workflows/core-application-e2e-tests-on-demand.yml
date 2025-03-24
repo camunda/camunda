@@ -126,6 +126,6 @@ jobs:
         if: failure()
         with:
           name: Core Application E2E Test Results
-          path: ./test-report
+          path: ./html-report
           retention-days: 10
 
