@@ -48,16 +48,17 @@ jobs: # github.event.inputs.c8Version replaced
           DATABASE=elasticsearch docker compose up -d tasklist operate
         working-directory: qa/core-application-e2e-test-suite/config
 
-      - name: Check logs for Tasklist service
-        run: |
-          echo "== Tasklist Logs =="
-          docker-compose logs -f tasklist
-        working-directory: qa/core-application-e2e-test-suite/config
+      # - name: Check logs for Tasklist service
+      #   run: |
+      #     echo "== Tasklist Logs =="
+      #     docker-compose logs -f tasklist
+      #   working-directory: qa/core-application-e2e-test-suite/config
 
-      - name: Check logs for Operate service
+      - name: Check logs for Tasklist and Operate in the background
         run: |
-          echo "== Operate Logs =="
-          docker-compose logs -f operate
+          docker-compose logs tasklist &  # Run tasklist logs in the background
+          docker-compose logs operate &   # Run operate logs in the background
+          wait  # Wait for both background processes to finish
         working-directory: qa/core-application-e2e-test-suite/config
 
       - name: Check if services are healthy
