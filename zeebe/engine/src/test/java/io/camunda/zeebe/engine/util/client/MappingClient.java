@@ -136,7 +136,7 @@ public class MappingClient {
                 .withIntent(MappingIntent.UPDATED)
                 .filter(
                     mappingRecordValueRecord ->
-                        mappingRecordValueRecord.getValue().getId().equals(position))
+                        mappingRecordValueRecord.getValue().getMappingId().equals(position))
                 .getFirst();
 
     private static final Function<String, Record<MappingRecordValue>> REJECTION_SUPPLIER =
@@ -146,7 +146,7 @@ public class MappingClient {
                 .withIntent(MappingIntent.UPDATE)
                 .filter(
                     mappingRecordValueRecord ->
-                        mappingRecordValueRecord.getValue().getId().equals(position))
+                        mappingRecordValueRecord.getValue().getMappingId().equals(position))
                 .getFirst();
     private final CommandWriter writer;
     private final MappingRecord mappingRecord;
@@ -160,12 +160,12 @@ public class MappingClient {
 
     public Record<MappingRecordValue> update() {
       writer.writeCommand(MappingIntent.UPDATE, mappingRecord);
-      return expectation.apply(mappingRecord.getId());
+      return expectation.apply(mappingRecord.getMappingId());
     }
 
     public Record<MappingRecordValue> update(final String username) {
       writer.writeCommand(MappingIntent.UPDATE, username, mappingRecord);
-      return expectation.apply(mappingRecord.getId());
+      return expectation.apply(mappingRecord.getMappingId());
     }
 
     public MappingUpdateClient withClaimName(final String claimName) {

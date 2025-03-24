@@ -63,7 +63,7 @@ public class DbMappingState implements MutableMappingState {
   @Override
   public void create(final MappingRecord mappingRecord) {
     final var key = mappingRecord.getMappingKey();
-    final var id = mappingRecord.getId();
+    final var id = mappingRecord.getMappingId();
     final var name = mappingRecord.getName();
     final var claimName = mappingRecord.getClaimName();
     final var value = mappingRecord.getClaimValue();
@@ -85,8 +85,8 @@ public class DbMappingState implements MutableMappingState {
 
   @Override
   public void update(final MappingRecord mappingRecord) {
-    mappingId.wrapString(mappingRecord.getId());
-    get(mappingRecord.getId())
+    mappingId.wrapString(mappingRecord.getMappingId());
+    get(mappingRecord.getMappingId())
         .ifPresentOrElse(
             persistedMapping -> {
               mappingKey.wrapLong(persistedMapping.getMappingKey());
@@ -110,7 +110,7 @@ public class DbMappingState implements MutableMappingState {
               throw new IllegalStateException(
                   String.format(
                       "Expected to update mapping with id '%s', but a mapping with this id does not exist.",
-                      mappingRecord.getId()));
+                      mappingRecord.getMappingId()));
             });
   }
 

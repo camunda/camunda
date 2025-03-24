@@ -166,7 +166,8 @@ public final class IdentitySetupInitializeProcessor
                               EntityType.MAPPING)) {
                             createdNewEntities.set(true);
                           }
-                          if (assignEntityToTenant(tenant, mapping.getId(), EntityType.MAPPING)) {
+                          if (assignEntityToTenant(
+                              tenant, mapping.getMappingId(), EntityType.MAPPING)) {
                             createdNewEntities.set(true);
                           }
                         },
@@ -221,7 +222,7 @@ public final class IdentitySetupInitializeProcessor
                               role.getRoleKey(),
                               persistedMapping.getMappingKey(),
                               EntityType.MAPPING);
-                          assignEntityToTenant(tenant, mapping.getId(), EntityType.MAPPING);
+                          assignEntityToTenant(tenant, mapping.getMappingId(), EntityType.MAPPING);
                         },
                         () -> createMapping(mapping, role.getRoleKey(), tenant)));
   }
@@ -244,7 +245,7 @@ public final class IdentitySetupInitializeProcessor
       final MappingRecord mapping, final long roleKey, final TenantRecord tenant) {
     stateWriter.appendFollowUpEvent(mapping.getMappingKey(), MappingIntent.CREATED, mapping);
     assignEntityToRole(roleKey, mapping.getMappingKey(), EntityType.MAPPING);
-    assignEntityToTenant(tenant, mapping.getId(), EntityType.MAPPING);
+    assignEntityToTenant(tenant, mapping.getMappingId(), EntityType.MAPPING);
   }
 
   private boolean assignEntityToRole(

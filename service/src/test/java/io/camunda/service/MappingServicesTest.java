@@ -183,7 +183,7 @@ public class MappingServicesTest {
 
     final var mappingDTO =
         new MappingDTO(
-            "newClaimName", "newClaimValue", "newMappingRuleName", mappingRecord.getId());
+            "newClaimName", "newClaimValue", "newMappingRuleName", mappingRecord.getMappingId());
 
     //  when
     testMappingServices.updateMapping(mappingDTO);
@@ -191,7 +191,7 @@ public class MappingServicesTest {
     // then
     verify(mockBrokerClient).sendRequest(mappingUpdateRequestArgumentCaptor.capture());
     final var request = mappingUpdateRequestArgumentCaptor.getValue();
-    assertThat(request.getRequestWriter().getId()).isEqualTo(mappingDTO.id());
+    assertThat(request.getRequestWriter().getMappingId()).isEqualTo(mappingDTO.id());
     assertThat(request.getRequestWriter().getClaimName()).isEqualTo(mappingDTO.claimName());
     assertThat(request.getRequestWriter().getClaimValue()).isEqualTo(mappingDTO.claimValue());
     assertThat(request.getRequestWriter().getName()).isEqualTo(mappingDTO.name());
