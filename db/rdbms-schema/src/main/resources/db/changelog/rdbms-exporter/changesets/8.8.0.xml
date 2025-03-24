@@ -468,4 +468,37 @@
     </createIndex>
   </changeSet>
 
+  <changeSet id="create_batch_operation_table" author="pwunderlich">
+    <createTable tableName="${prefix}BATCH_OPERATION">
+      <column name="BATCH_OPERATION_KEY" type="BIGINT">
+        <constraints primaryKey="true" nullable="false"/>
+      </column>
+      <column name="STATUS" type="VARCHAR(255)"/>
+      <column name="OPERATION_TYPE" type="VARCHAR(255)"/>
+      <column name="START_DATE" type="TIMESTAMP WITH TIME ZONE(3)"/>
+      <column name="END_DATE" type="TIMESTAMP WITH TIME ZONE(3)"/>
+      <column name="OPERATIONS_TOTAL_COUNT" type="INT"/>
+      <column name="OPERATIONS_FAILED_COUNT" type="INT"/>
+      <column name="OPERATIONS_COMPLETED_COUNT" type="INT"/>
+    </createTable>
+
+    <createTable tableName="${prefix}BATCH_OPERATION_ITEM">
+      <column name="BATCH_OPERATION_KEY" type="BIGINT">
+        <constraints
+          foreignKeyName="${prefix}FK_BATCH_OPERATION_ITEM_BATCH_OPERATION"
+          referencedTableName="${prefix}BATCH_OPERATION"
+          referencedColumnNames="BATCH_OPERATION_KEY"
+          deleteCascade="true"/>
+        />
+      </column>
+      <column name="ITEM_KEY" type="BIGINT"/>
+      <column name="STATUS" type="VARCHAR(20)" defaultValue="ACTIVE"/>
+    </createTable>
+
+    <modifySql dbms="mariadb">
+      <!-- MariaDB doesn't support TIMESTAMP WITH TIME ZONE, but its TIMESTAMP type has already a time zone -->
+      <replace replace="TIMESTAMP WITH TIME ZONE" with="TIMESTAMP"/>
+    </modifySql>
+  </changeSet>
+
 </databaseChangeLog>
