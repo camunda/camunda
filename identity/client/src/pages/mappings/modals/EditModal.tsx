@@ -25,7 +25,7 @@ const EditModal: FC<UseEntityModalProps<Mapping>> = ({
   onSuccess,
   entity,
 }) => {
-  const { t } = useTranslate("mappings");
+  const { t } = useTranslate("mappingRules");
   const [callUpdateMapping, { loading }] = useApiCall(updateMapping);
   const [mapping, setMapping] = useState<Mapping>(entity);
 
@@ -39,49 +39,49 @@ const EditModal: FC<UseEntityModalProps<Mapping>> = ({
   return (
     <FormModal
       open={open}
-      headline={t("Edit Mapping")}
+      headline={t("editMapping")}
       onClose={onClose}
       onSubmit={handleSubmit}
       loading={loading}
-      loadingDescription={t("Updating mapping")}
-      confirmLabel={t("Update Mapping")}
+      loadingDescription={t("updatingMapping")}
+      confirmLabel={t("updateMapping")}
     >
       <TextField
-        label={t("Mapping key")}
+        label={t("mappingId")}
         onChange={(id) => setMapping((mapping) => ({ ...mapping, id }))}
         value={mapping.mappingKey}
         readOnly
       />
       <TextField
-        label={t("Mapping name")}
-        placeholder={t("Enter mapping name")}
+        label={t("mappingName")}
+        placeholder={t("enterMappingName")}
         onChange={(name) => setMapping((mapping) => ({ ...mapping, name }))}
         value={mapping.name}
-        helperText={t("Enter a unique name for this mapping")}
+        helperText={t("uniqueNameForMapping")}
         autoFocus
       />
       <MappingRuleContainer>
         <Stack gap={spacing05}>
-          <h3>Mapping Rule</h3>
+          <h3>{t("mappingRule")}</h3>
           <CustomStack orientation="horizontal">
             <TextField
-              label={t("Claim Name")}
-              placeholder={t("Enter claim name")}
+              label={t("claimName")}
+              placeholder={t("enterClaimName")}
               onChange={(claimName) =>
                 setMapping((mapping) => ({ ...mapping, claimName }))
               }
               value={mapping.claimName}
-              helperText={t("Enter a custom claim name")}
+              helperText={t("customClaimName")}
             />
             <EqualSignContainer>=</EqualSignContainer>
             <TextField
-              label={t("Claim Value")}
-              placeholder={t("Enter claim value")}
+              label={t("claimValue")}
+              placeholder={t("enterClaimValue")}
               onChange={(claimValue) =>
                 setMapping((mapping) => ({ ...mapping, claimValue }))
               }
               value={mapping.claimValue}
-              helperText={t("Enter the value for the claim")}
+              helperText={t("valueForClaim")}
             />
           </CustomStack>
         </Stack>

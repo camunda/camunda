@@ -5,8 +5,6 @@
  * Licensed under the Camunda License 1.0. You may not use this file except in compliance with the Camunda License 1.0.
  */
 import { FC } from "react";
-import { UnorderedList, ListItem, Stack } from "@carbon/react";
-import { spacing04 } from "@carbon/elements";
 import { useApiCall } from "src/utility/api";
 import { deleteMapping, DeleteMappingParams } from "src/utility/api/mappings";
 import useTranslate from "src/utility/localization";
@@ -20,9 +18,9 @@ const DeleteMappingsModal: FC<UseEntityModalProps<DeleteMappingParams>> = ({
   open,
   onClose,
   onSuccess,
-  entity: { mappingKey, name, claimName, claimValue },
+  entity: { mappingKey, name },
 }) => {
-  const { t } = useTranslate("mappings");
+  const { t, Translate } = useTranslate("mappingRules");
   const { enqueueNotification } = useNotifications();
   const [apiCall, { loading }] = useApiCall(deleteMapping);
 
@@ -32,8 +30,8 @@ const DeleteMappingsModal: FC<UseEntityModalProps<DeleteMappingParams>> = ({
     if (success) {
       enqueueNotification({
         kind: "success",
-        title: t("MappingsDeleted"),
-        subtitle: t("deleteMappingsSuccess", {
+        title: t("mappingDeleted"),
+        subtitle: t("deleteMappingSuccess", {
           name,
         }),
       });
@@ -44,30 +42,22 @@ const DeleteMappingsModal: FC<UseEntityModalProps<DeleteMappingParams>> = ({
   return (
     <Modal
       open={open}
-      headline={t("deleteMappings")}
+      headline={t("deleteMapping")}
       onSubmit={handleSubmit}
       loading={loading}
-      loadingDescription={t("deletingMappings")}
+      loadingDescription={t("deletingMapping")}
       onClose={onClose}
-      confirmLabel={t("deleteMappings")}
+      confirmLabel={t("deleteMapping")}
     >
-      <Stack gap={spacing04}>
-        {t("Are you sure you want to delete the following Mapping:")}
-        <UnorderedList>
-          <ListItem>
-            <strong>{t("Key")}</strong>: {mappingKey}
-          </ListItem>
-          <ListItem>
-            <strong>{t("Name")}</strong>: {name}
-          </ListItem>
-          <ListItem>
-            <strong>{t("Claim name")}</strong>: {claimName}
-          </ListItem>
-          <ListItem>
-            <strong>{t("Claim value")}</strong>: {claimValue}
-          </ListItem>
-        </UnorderedList>
-      </Stack>
+      <p>
+        <Translate
+          i18nKey="deleteMappingConfirmation"
+          values={{ mappingName: name || mappingKey }}
+        >
+          Are you sure you want to delete <strong>{name || mappingKey}</strong>?
+          This action cannot be undone.
+        </Translate>
+      </p>
     </Modal>
   );
 };
