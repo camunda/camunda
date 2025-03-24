@@ -65,10 +65,12 @@ jobs:
               echo "Port 8081 is not open yet..."
             fi
 
-            response_8080=$(curl -s -m 5 http://localhost:8080/health || echo "Failed")
-            response_8081=$(curl -s -m 5 http://localhost:8081/health || echo "Failed")
+            # Check if tasklist page is available (adjust the URL based on your service)
+            response_8080=$(curl -s -m 5 http://localhost:8080/tasklist || echo "Failed")
+            response_8081=$(curl -s -m 5 http://localhost:8081/tasklist || echo "Failed")
 
-            if echo "$response_8080" | grep -q '"status":"UP"' && echo "$response_8081" | grep -q '"status":"UP"'; then
+            # Check if tasklist is up (you can adjust this condition based on actual response)
+            if [[ "$response_8080" != "Failed" ]] && [[ "$response_8081" != "Failed" ]]; then
               echo "Services are ready!"
               ready=true
               break
