@@ -39,8 +39,6 @@ public class ObjectMapperFactory {
           new OptimizeDateTimeFormatterFactory().getObject(),
           ConfigurationServiceBuilder.createDefaultConfiguration());
   public static final ObjectMapper OPTIMIZE_MAPPER = FACTORY.createOptimizeMapper();
-  public static final ObjectMapper OPTIMIZE_MAPPER_UNKNOWN_FAIL_DISABLED =
-      FACTORY.createOptimizeMapper(false);
 
   private final DateTimeFormatter optimizeDateTimeFormatter;
   private final ConfigurationService configurationService;
