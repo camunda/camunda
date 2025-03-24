@@ -7,13 +7,13 @@
  */
 
 import { FC, useEffect, useState } from "react";
+import styled from "styled-components";
 import { Tag } from "@carbon/react";
 import { UseEntityModalCustomProps } from "src/components/modal";
 import useTranslate from "src/utility/localization";
 import { useApi, useApiCall } from "src/utility/api/hooks";
 import { searchMapping, Mapping } from "src/utility/api/mappings";
 import { TranslatedErrorInlineNotification } from "src/components/notifications/InlineNotification";
-import styled from "styled-components";
 import DropdownSearch from "src/components/form/DropdownSearch";
 import FormModal from "src/components/modal/FormModal";
 import { assignRoleMapping, Role } from "src/utility/api/roles";
