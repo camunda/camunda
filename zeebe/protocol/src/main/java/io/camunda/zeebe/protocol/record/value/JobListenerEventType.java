@@ -56,5 +56,22 @@ public enum JobListenerEventType {
    * `priority`. It allows executing custom logic before the task is updated, to correct user task
    * data, and to deny the update.
    */
-  UPDATING
+  UPDATING,
+
+  /**
+   * Represents the `creating` event for a task listener. This event type is used to indicate that
+   * the listener should be triggered during the creation of a user task. It allows executing custom
+   * logic before the task becomes available to users, including setting or correcting task
+   * attributes. The user task creation can't be denied by a listener of this type.
+   */
+  CREATING,
+
+  /**
+   * Represents the `canceling` event for a task listener. This event type is used to indicate that
+   * the listener should be triggered when a user task is being canceled, such as due to an
+   * interrupting boundary event, event sub-process, or process instance termination. It allows
+   * executing custom logic before the task is fully canceled. The user task cancellation can't be
+   * denied by a listener of this type.
+   */
+  CANCELING
 }
