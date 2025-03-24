@@ -162,11 +162,13 @@ jobs:
         if: startsWith(matrix.os.name, 'MacOS')
         run: |
           mkdir tmp
-          mv camunda8-run-*.zip tmp
+          mv "$C8RUN_NAME_ORIGINAL" tmp
           cd tmp
-          unzip camunda8-run-*.zip
+          unzip "$C8RUN_NAME_ORIGINAL"
         shell: bash
         working-directory: ./c8run
+        env:
+          C8RUN_NAME_ORIGINAL: "camunda8-run-${{ inputs.camundaAppsRelease }}-${{ matrix.os.artifactFileSuffix }}"
 
       - name: Sign and notarize
         if: startsWith(matrix.os.name, 'MacOS')
