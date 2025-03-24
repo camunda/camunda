@@ -16,6 +16,7 @@ import io.camunda.db.rdbms.write.domain.BatchOperationDbModel.Builder;
 import io.camunda.search.entities.BatchOperationEntity.BatchOperationStatus;
 import java.time.OffsetDateTime;
 import java.util.List;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -53,12 +54,12 @@ public final class BatchOperationFixtures {
 
   public static List<Long> createAndSaveRandomBatchOperationItems(
       final RdbmsWriter rdbmsWriter, final Long batchOperationKey, final int count) {
-    final List<Long> items =
+    final Set<Long> items =
         IntStream.range(0, count)
             .mapToObj(i -> CommonFixtures.nextKey())
-            .collect(Collectors.toList());
+            .collect(Collectors.toSet());
     insertBatchOperationsItems(rdbmsWriter, batchOperationKey, items);
-    return items;
+    return items.stream().toList();
   }
 
   public static BatchOperationDbModel createAndSaveBatchOperation(
@@ -77,7 +78,7 @@ public final class BatchOperationFixtures {
   }
 
   public static void insertBatchOperationsItems(
-      final RdbmsWriter rdbmsWriter, final Long batchOperationKey, final List<Long> items) {
+      final RdbmsWriter rdbmsWriter, final Long batchOperationKey, final Set<Long> items) {
     rdbmsWriter.getBatchOperationWriter().updateBatchAndInsertItems(batchOperationKey, items);
     rdbmsWriter.flush();
   }
