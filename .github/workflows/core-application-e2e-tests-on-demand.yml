@@ -49,14 +49,19 @@ jobs:
           wait  # Wait for both background processes to finish
         working-directory: qa/core-application-e2e-test-suite/config
 
+      - name: Check Docker container logs
+        run: |
+          docker-compose logs tasklist
+          docker-compose logs operate
+
       - name: Wait for services to be ready
         id: wait-for-services
         run: |
           echo "Checking if services are up..."
           ready=false
           for i in {1..60}; do
-            response_8080=$(curl -s http://localhost:8080/health)
-            response_8081=$(curl -s http://localhost:8081/health)
+            response_8080=$(curl -s -v http://localhost:8080/health)  # Added verbose mode
+            response_8081=$(curl -s -v http://localhost:8081/health)  # Added verbose mode
             
             # Check if both responses contain '"status":"UP"'
             if echo "$response_8080" | grep -q '"status":"UP"' && echo "$response_8081" | grep -q '"status":"UP"'; then
