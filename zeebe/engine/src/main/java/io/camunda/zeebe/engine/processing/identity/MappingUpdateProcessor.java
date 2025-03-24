@@ -58,7 +58,7 @@ public class MappingUpdateProcessor implements DistributedTypedRecordProcessor<M
   public void processNewCommand(final TypedRecord<MappingRecord> command) {
 
     final var record = command.getValue();
-    final var mappingId = record.getId();
+    final var mappingId = record.getMappingId();
     final var persistedRecord = mappingState.get(mappingId);
     if (persistedRecord.isEmpty()) {
       final var errorMessage = MAPPING_ID_DOES_NOT_EXIST_ERROR_MESSAGE.formatted(mappingId);

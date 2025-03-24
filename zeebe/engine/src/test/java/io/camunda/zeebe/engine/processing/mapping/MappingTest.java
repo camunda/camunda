@@ -49,7 +49,7 @@ public class MappingTest {
         .hasFieldOrPropertyWithValue("claimName", claimName)
         .hasFieldOrPropertyWithValue("claimValue", claimValue)
         .hasFieldOrPropertyWithValue("name", name)
-        .hasFieldOrPropertyWithValue("id", id);
+        .hasFieldOrPropertyWithValue("mappingId", id);
   }
 
   @Test
@@ -133,7 +133,7 @@ public class MappingTest {
     // then
     Assertions.assertThat(updatedMapping)
         .isNotNull()
-        .hasFieldOrPropertyWithValue("id", id)
+        .hasFieldOrPropertyWithValue("mappingId", id)
         .hasFieldOrPropertyWithValue("name", name + "New")
         .hasFieldOrPropertyWithValue("claimName", claimName + "New")
         .hasFieldOrPropertyWithValue("claimValue", claimValue + "New");
@@ -226,7 +226,7 @@ public class MappingTest {
     final var deletedMapping = engine.mapping().deleteMapping(id).delete().getValue();
 
     // then
-    Assertions.assertThat(deletedMapping).isNotNull().hasFieldOrPropertyWithValue("id", id);
+    Assertions.assertThat(deletedMapping).isNotNull().hasFieldOrPropertyWithValue("mappingId", id);
   }
 
   @Test
@@ -251,7 +251,7 @@ public class MappingTest {
         .add();
 
     // when
-    engine.mapping().deleteMapping(mappingRecord.getValue().getId()).delete();
+    engine.mapping().deleteMapping(mappingRecord.getValue().getMappingId()).delete();
 
     // then
     Assertions.assertThat(

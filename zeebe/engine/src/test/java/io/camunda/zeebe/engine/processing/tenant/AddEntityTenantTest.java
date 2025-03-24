@@ -236,6 +236,6 @@ public class AddEntityTenantTest {
         .withId(Strings.newRandomValidIdentityId())
         .create()
         .getValue()
-        .getId();
+        .getMappingId();
   }
 }
