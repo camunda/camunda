@@ -11,6 +11,7 @@ import io.camunda.db.rdbms.write.RdbmsWriter;
 import io.camunda.db.rdbms.write.domain.ExporterPositionModel;
 import io.camunda.zeebe.exporter.api.context.Controller;
 import io.camunda.zeebe.exporter.api.context.ScheduledTask;
+import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.util.VisibleForTesting;
@@ -139,7 +140,11 @@ public class RdbmsExporter {
     }
 
     if (!exported) {
-      LOG.trace("[RDBMS Exporter] Record could not be exported {}", record);
+      LOG.trace(
+          "[RDBMS Exporter] Record with key {} and original partitionId {} could not be exported {}.",
+          record.getKey(),
+          Protocol.decodePartitionId(record.getKey()),
+          record);
     }
   }
 
