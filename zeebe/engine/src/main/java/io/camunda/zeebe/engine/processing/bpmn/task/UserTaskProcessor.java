@@ -25,6 +25,7 @@ import io.camunda.zeebe.engine.state.immutable.UserTaskState.LifecycleState;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskListenerEventType;
 import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
 import io.camunda.zeebe.util.Either;
+import java.util.Optional;
 import org.apache.commons.lang3.StringUtils;
 
 public final class UserTaskProcessor extends JobWorkerTaskSupportingProcessor<ExecutableUserTask> {
@@ -122,16 +123,22 @@ public final class UserTaskProcessor extends JobWorkerTaskSupportingProcessor<Ex
       jobBehavior.cancelJob(context);
     }
 
-    final var elementInstance = stateBehavior.getElementInstance(context);
-    userTaskBehavior.userTaskCanceling(elementInstance);
-
     eventSubscriptionBehavior.unsubscribeFromEvents(context);
     incidentBehavior.resolveIncidents(context);
 
-    onFinalizeTerminationInternal(element, context);
+    final var elementInstance = stateBehavior.getElementInstance(context);
+    final Optional<UserTaskRecord> userTaskRecord =
+        userTaskBehavior.userTaskCanceling(elementInstance);
+    if (userTaskRecord.isPresent()) {
+      // Placeholder for calling task listeners and then finalizing
+      onFinalizeTerminationInternal(element, context);
+    } else {
+      onFinalizeTerminationInternal(element, context);
+    }
   }
 
-  private void onFinalizeTerminationInternal(
+  @Override
+  public void onFinalizeTerminationInternal(
       final ExecutableUserTask element, final BpmnElementContext context) {
     final var elementInstance = stateBehavior.getElementInstance(context);
     userTaskBehavior.userTaskCanceled(elementInstance);
