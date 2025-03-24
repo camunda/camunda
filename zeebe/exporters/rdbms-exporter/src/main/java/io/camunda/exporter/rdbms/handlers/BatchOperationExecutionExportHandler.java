@@ -12,6 +12,7 @@ import io.camunda.exporter.rdbms.RdbmsExportHandler;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationExecutionIntent;
+import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.value.BatchOperationExecutionRecordValue;
 import io.camunda.zeebe.util.DateUtil;
 import java.util.Set;
@@ -20,7 +21,7 @@ import java.util.Set;
 public class BatchOperationExecutionExportHandler
     implements RdbmsExportHandler<BatchOperationExecutionRecordValue> {
 
-  private static final Set<BatchOperationExecutionIntent> EXPORTABLE_INTENTS =
+  private static final Set<Intent> EXPORTABLE_INTENTS =
       Set.of(
           BatchOperationExecutionIntent.EXECUTING,
           BatchOperationExecutionIntent.EXECUTED,
@@ -34,12 +35,8 @@ public class BatchOperationExecutionExportHandler
 
   @Override
   public boolean canExport(final Record<BatchOperationExecutionRecordValue> record) {
-    if (record.getValueType() == ValueType.BATCH_OPERATION_EXECUTION
-        && record.getIntent() instanceof final BatchOperationExecutionIntent intent) {
-      return EXPORTABLE_INTENTS.contains(intent);
-    }
-
-    return false;
+    return record.getValueType() == ValueType.BATCH_OPERATION_EXECUTION
+        && EXPORTABLE_INTENTS.contains(record.getIntent());
   }
 
   @Override
