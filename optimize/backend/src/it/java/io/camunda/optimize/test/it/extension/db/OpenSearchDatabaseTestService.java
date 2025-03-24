@@ -892,6 +892,14 @@ public class OpenSearchDatabaseTestService extends DatabaseTestService {
         .toList();
   }
 
+  @Override
+  public String[] getIndexNames() {
+    return OpenSearchSchemaManager.getAllNonDynamicMappings().stream()
+        .filter(IndexMappingCreator::isImportIndex)
+        .map(getIndexNameService()::getOptimizeIndexAliasForIndex)
+        .toArray(String[]::new);
+  }
+
   private IndexSettings createIndexSettings(
       final IndexMappingCreator indexMappingCreator,
       final ConfigurationService configurationService) {

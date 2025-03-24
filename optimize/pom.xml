@@ -235,6 +235,18 @@
       <groupId>io.netty</groupId>
       <artifactId>netty-codec-http</artifactId>
     </dependency>
+
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-validation</artifactId>
+      <version>${version.spring-boot}</version>
+      <exclusions>
+        <exclusion>
+          <groupId>org.springframework.boot</groupId>
+          <artifactId>spring-boot-starter-logging</artifactId>
+        </exclusion>
+      </exclusions>
+    </dependency>
   </dependencies>
 
   <build>
@@ -262,6 +274,7 @@
               <dep>software.amazon.awssdk:sdk-core</dep>
               <dep>software.amazon.awssdk:sts</dep>
               <dep>org.javassist:javassist</dep>
+              <dep>org.springframework.boot:spring-boot-starter-validation</dep>
 
               <!-- test dependencies -->
               <dep>com.sun.mail:jakarta.mail</dep>
