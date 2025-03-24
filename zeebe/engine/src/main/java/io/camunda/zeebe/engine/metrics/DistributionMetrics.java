@@ -55,21 +55,6 @@ public final class DistributionMetrics {
     getPartitionMetrics(partitionId).removePendingDistribution(distributionKey);
   }
 
-  /**
-   * This method is called when a pending distribution is not found for a received acknowledgement.
-   * This may happen if a distribution has been retried, but in the meantime an acknowledgement was
-   * already received - thus this was duplicate acknowledgement.
-   *
-   * <p>TBD if this metrics brings additional value, compared to the retryInflightDistribution
-   * metric as it also represents any delay/issues between origin and target partition.
-   *
-   * @param partitionId the partition id of the distribution
-   * @param distributionKey the key of the distribution
-   */
-  public void noPendingDistribution(final int partitionId, final long distributionKey) {
-    getPartitionMetrics(partitionId).noPendingDistribution(distributionKey);
-  }
-
   public void addInflightDistribution(final int partitionId, final long distributionKey) {
     getPartitionMetrics(partitionId).addInflightDistribution(distributionKey);
   }
@@ -105,7 +90,7 @@ public final class DistributionMetrics {
   }
 
   public void timedRedistribution(final Runnable redistribution) {
-    // timer
+    // wrap with a long task timer
     redistribution.run();
   }
 
@@ -138,10 +123,6 @@ public final class DistributionMetrics {
     }
 
     public void retryInflightDistribution(final long distributionKey) {
-      // counter
-    }
-
-    public void noPendingDistribution(final long distributionKey) {
       // counter
     }
 
