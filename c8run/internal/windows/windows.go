@@ -34,7 +34,7 @@ func (w *WindowsC8Run) VersionCmd(javaBinaryPath string) *exec.Cmd {
 }
 
 func (w *WindowsC8Run) ElasticsearchCmd(elasticsearchVersion string, parentDir string) *exec.Cmd {
-	elasticsearchCmd := exec.Command(filepath.Join(parentDir, "elasticsearch-"+elasticsearchVersion, "bin", "elasticsearch.bat"), "-E", "xpack.ml.enabled=false", "-E", "xpack.security.enabled=false")
+	elasticsearchCmd := exec.Command(filepath.Join(parentDir, "elasticsearch-"+elasticsearchVersion, "bin", "elasticsearch.bat"), "-E", "xpack.ml.enabled=false", "-E", "xpack.security.enabled=false", "-E", "discovery.type=single-node")
 
 	elasticsearchCmd.SysProcAttr = &syscall.SysProcAttr{
 		CreationFlags: 0x08000000 | 0x00000200, // CREATE_NO_WINDOW, CREATE_NEW_PROCESS_GROUP : https://learn.microsoft.com/en-us/windows/win32/procthread/process-creation-flags
