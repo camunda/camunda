@@ -18,7 +18,12 @@ type Props =
       variant?: 'composed-modal';
     });
 
-const Modal: React.FC<Props> = ({children, variant = 'modal', ...props}) => {
+const Modal: React.FC<Props> = ({
+  children,
+  variant = 'modal',
+  launcherButtonRef,
+  ...props
+}) => {
   if (variant === 'composed-modal') {
     return createPortal(
       <ThemeProvider>
@@ -30,7 +35,9 @@ const Modal: React.FC<Props> = ({children, variant = 'modal', ...props}) => {
 
   return createPortal(
     <ThemeProvider>
-      <BaseModal {...props}>{children}</BaseModal>
+      <BaseModal launcherButtonRef={launcherButtonRef} {...props}>
+        {children}
+      </BaseModal>
     </ThemeProvider>,
     document.body,
   );
