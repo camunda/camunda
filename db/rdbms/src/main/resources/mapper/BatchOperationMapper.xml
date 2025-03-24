@@ -1,0 +1,163 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="io.camunda.db.rdbms.sql.BatchOperationMapper">
+
+  <resultMap id="BatchOperationResultMap"
+    type="io.camunda.db.rdbms.write.domain.BatchOperationDbModel">
+    <constructor>
+      <idArg column="BATCH_OPERATION_KEY" javaType="java.lang.Long"/>
+    </constructor>
+    <result column="STATUS" property="status"
+      javaType="io.camunda.search.entities.BatchOperationEntity$BatchOperationStatus"/>
+    <result column="OPERATION_TYPE" property="operationType" javaType="java.lang.String"/>
+    <result column="START_DATE" property="startDate" javaType="java.time.OffsetDateTime"/>
+    <result column="END_DATE" property="endDate" javaType="java.time.OffsetDateTime"/>
+    <result column="OPERATIONS_TOTAL_COUNT" property="operationsTotalCount" javaType="int"/>
+    <result column="OPERATIONS_FAILED_COUNT" property="operationsFailedCount" javaType="int"/>
+    <result column="OPERATIONS_COMPLETED_COUNT" property="operationsCompletedCount" javaType="int"/>
+  </resultMap>
+
+  <resultMap id="BatchOperationItemResultMap"
+    type="io.camunda.search.entities.BatchOperationEntity$BatchOperationItemEntity">
+    <constructor>
+      <idArg column="BATCH_OPERATION_KEY" javaType="java.lang.Long"/>
+      <arg column="ITEM_KEY" javaType="java.lang.Long"/>
+      <arg column="STATUS"
+        javaType="io.camunda.search.entities.BatchOperationEntity$BatchOperationItemStatus"/>
+    </constructor>
+  </resultMap>
+
+  <insert id="insert" parameterType="io.camunda.db.rdbms.write.domain.BatchOperationDbModel">
+    INSERT INTO BATCH_OPERATION (BATCH_OPERATION_KEY,
+                                 STATUS,
+                                 OPERATION_TYPE,
+                                 START_DATE,
+                                 END_DATE,
+                                 OPERATIONS_TOTAL_COUNT,
+                                 OPERATIONS_FAILED_COUNT,
+                                 OPERATIONS_COMPLETED_COUNT)
+    VALUES (#{batchOperationKey},
+            #{status},
+            #{operationType},
+            #{startDate},
+            #{endDate},
+            #{operationsTotalCount},
+            #{operationsFailedCount},
+            #{operationsCompletedCount})
+  </insert>
+
+  <insert id="insertItems"
+    parameterType="io.camunda.db.rdbms.sql.BatchOperationMapper$BatchOperationItemsDto">
+    INSERT INTO BATCH_OPERATION_ITEM (BATCH_OPERATION_KEY, ITEM_KEY)
+    VALUES
+    <foreach collection="items" item="itemKey" separator=",">
+      (#{batchOperationKey}, #{itemKey})
+    </foreach>
+  </insert>
+
+  <update id="updateCompleted"
+    parameterType="io.camunda.db.rdbms.sql.BatchOperationMapper$BatchOperationUpdateDto">
+    UPDATE BATCH_OPERATION
+    SET STATUS = #{status},
+        END_DATE = #{endDate}
+    WHERE BATCH_OPERATION_KEY = #{batchOperationKey}
+  </update>
+
+  <update id="updateItem"
+    parameterType="io.camunda.db.rdbms.sql.BatchOperationMapper$BatchOperationItemDto">
+    UPDATE BATCH_OPERATION_ITEM
+    SET STATUS = #{status}
+    WHERE BATCH_OPERATION_KEY = #{batchOperationKey}
+      AND ITEM_KEY = #{itemKey}
+  </update>
+
+  <update id="updateItemsWithState"
+    parameterType="io.camunda.db.rdbms.sql.BatchOperationMapper$BatchOperationItemDto">
+    UPDATE BATCH_OPERATION_ITEM
+    SET STATUS = #{newState}
+    WHERE BATCH_OPERATION_KEY = #{batchOperationKey}
+      AND STATUS = #{oldState}
+  </update>
+
+  <update id="incrementOperationsTotalCount"
+    parameterType="io.camunda.db.rdbms.sql.BatchOperationMapper$BatchOperationUpdateTotalCountDto">
+    UPDATE BATCH_OPERATION
+    SET OPERATIONS_TOTAL_COUNT = OPERATIONS_TOTAL_COUNT + #{operationsTotalCount}
+    WHERE BATCH_OPERATION_KEY = #{batchOperationKey}
+  </update>
+
+  <update id="incrementFailedOperationsCount" parameterType="java.lang.Long">
+    UPDATE BATCH_OPERATION
+    SET OPERATIONS_FAILED_COUNT = OPERATIONS_FAILED_COUNT + 1
+    WHERE BATCH_OPERATION_KEY = #{batchOperationKey}
+  </update>
+
+  <update id="incrementCompletedOperationsCount" parameterType="java.lang.Long">
+    UPDATE BATCH_OPERATION
+    SET OPERATIONS_COMPLETED_COUNT = OPERATIONS_COMPLETED_COUNT + 1
+    WHERE BATCH_OPERATION_KEY = #{batchOperationKey}
+  </update>
+
+  <select id="getItems"
+    parameterType="java.lang.Long"
+    resultMap="BatchOperationItemResultMap">
+    SELECT BATCH_OPERATION_KEY, ITEM_KEY, STATUS
+    FROM BATCH_OPERATION_ITEM
+    WHERE BATCH_OPERATION_KEY = #{batchOperationKey}
+  </select>
+
+  <select id="count" resultType="java.lang.Long">
+    SELECT COUNT(*)
+    FROM BATCH_OPERATION
+    <include refid="io.camunda.db.rdbms.sql.BatchOperationMapper.searchFilter"/>
+  </select>
+
+  <select id="search"
+    parameterType="io.camunda.db.rdbms.read.domain.BatchOperationDbQuery"
+    resultMap="BatchOperationResultMap"
+    statementType="PREPARED">
+
+  SELECT * FROM (
+    SELECT
+    bo.BATCH_OPERATION_KEY,
+    bo.STATUS,
+    bo.OPERATION_TYPE,
+    bo.START_DATE,
+    bo.END_DATE,
+    bo.OPERATIONS_TOTAL_COUNT,
+    bo.OPERATIONS_FAILED_COUNT,
+    bo.OPERATIONS_COMPLETED_COUNT
+    FROM BATCH_OPERATION bo
+    <include refid="io.camunda.db.rdbms.sql.BatchOperationMapper.searchFilter"/>
+    ) filtered
+    <include refid="io.camunda.db.rdbms.sql.Commons.keySetPageFilter"/>
+    <include refid="io.camunda.db.rdbms.sql.Commons.orderBy"/>
+    <include refid="io.camunda.db.rdbms.sql.Commons.paging"/>
+  </select>
+
+  <sql id="searchFilter">
+    WHERE 1 = 1
+    <!-- basic filters -->
+    <if test="filter.batchOperationKeys != null and !filter.batchOperationKeys.isEmpty()">
+      AND BATCH_OPERATION_KEY IN
+      <foreach collection="filter.batchOperationKeys" item="value" open="(" separator=", "
+        close=")">#{value}
+      </foreach>
+    </if>
+    <if test="filter.operationTypes != null and !filter.operationTypes.isEmpty()">
+      AND OPERATION_TYPE IN
+      <foreach collection="filter.operationTypes" item="value" open="(" separator=", " close=")">
+        #{value}
+      </foreach>
+    </if>
+    <if test="filter.status != null and !filter.status.isEmpty()">
+      AND STATUS IN
+      <foreach collection="filter.status" item="value" open="(" separator=", " close=")">#{value}
+      </foreach>
+    </if>
+  </sql>
+
+</mapper>
