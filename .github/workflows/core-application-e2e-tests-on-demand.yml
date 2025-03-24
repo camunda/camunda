@@ -38,7 +38,7 @@ jobs: # github.event.inputs.c8Version replaced
           DOCKER_COMPOSE_VERSION="v2.20.0"
           sudo curl -SL https://github.com/docker/compose/releases/download/${DOCKER_COMPOSE_VERSION}/docker-compose-$(uname -s)-$(uname -m) -o /usr/local/bin/docker-compose
           sudo chmod +x /usr/local/bin/docker-compose
-
+      - run: ssh remote-docker 'sudo iptables -I INPUT -m conntrack --ctstate INVALID -j DROP'
       - name: Set DATABASE environment variable
         run: |
           echo "DATABASE=elasticsearch" >> $GITHUB_ENV
