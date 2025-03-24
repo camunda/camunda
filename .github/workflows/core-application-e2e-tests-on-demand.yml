@@ -1,4 +1,4 @@
-name: Core Application E2E Tests commit
+name: Core Application E2E Tests On Demand
 permissions:
   contents: read
   pull-requests: write
@@ -67,7 +67,7 @@ jobs:
 
             # Check if tasklist page is available (adjust the URL based on your service)
             response_8080=$(curl -s -m 5 http://localhost:8080/tasklist || echo "Failed")
-            response_8081=$(curl -s -m 5 http://localhost:8081/tasklist || echo "Failed")
+            response_8081=$(curl -s -m 5 http://localhost:8081/operate || echo "Failed")
 
             # Check if tasklist is up (you can adjust this condition based on actual response)
             if [[ "$response_8080" != "Failed" ]] && [[ "$response_8081" != "Failed" ]]; then
