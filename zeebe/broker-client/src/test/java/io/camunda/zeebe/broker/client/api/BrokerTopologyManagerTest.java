@@ -16,7 +16,9 @@ import io.atomix.cluster.Member;
 import io.atomix.cluster.MemberConfig;
 import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.broker.client.impl.BrokerTopologyManagerImpl;
+import io.camunda.zeebe.dynamic.config.state.ClusterChangePlan.Status;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
+import io.camunda.zeebe.dynamic.config.state.CompletedChange;
 import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
 import io.camunda.zeebe.dynamic.config.state.MemberState;
 import io.camunda.zeebe.dynamic.config.state.PartitionState;
@@ -24,8 +26,10 @@ import io.camunda.zeebe.protocol.impl.encoding.BrokerInfo;
 import io.camunda.zeebe.protocol.record.PartitionHealthStatus;
 import io.camunda.zeebe.scheduler.testing.ControlledActorSchedulerExtension;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
+import java.time.Instant;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArraySet;
 import org.awaitility.Awaitility;
@@ -364,6 +368,28 @@ final class BrokerTopologyManagerTest {
   }
 
   @Test
+  void shouldNotifyListenerWhenClusterChangeCompleted() {
+    // given
+    final ClusterCompletedChangeListener listener = new ClusterCompletedChangeListener();
+    addTopologyListener(listener);
+
+    // when
+    final ClusterConfiguration clusterTopology =
+        new ClusterConfiguration(
+            1,
+            Map.of(),
+            Optional.of(new CompletedChange(1, Status.COMPLETED, Instant.now(), Instant.now())),
+            Optional.empty(),
+            Optional.empty());
+
+    topologyManager.onClusterConfigurationUpdated(clusterTopology);
+    actorSchedulerRule.workUntilDone();
+
+    // then
+    assertThat(listener.wasExecutedAfterClusterChange()).isTrue();
+  }
+
+  @Test
   void shouldRemoveListener() {
     // given
     final RecordingTopologyListener topology = new RecordingTopologyListener();
@@ -493,7 +519,7 @@ final class BrokerTopologyManagerTest {
     assertThat(topologyManager.getTopology().getPartitionsCount()).isEqualTo(2);
   }
 
-  private void addTopologyListener(final RecordingTopologyListener listener) {
+  private void addTopologyListener(final BrokerTopologyListener listener) {
     topologyManager.addTopologyListener(listener);
     actorSchedulerRule.workUntilDone();
   }
@@ -555,6 +581,19 @@ final class BrokerTopologyManagerTest {
 
     Set<Integer> getBrokers() {
       return brokers;
+    }
+  }
+
+  private static final class ClusterCompletedChangeListener implements BrokerTopologyListener {
+    private boolean wasExecutedAfterClusterChange = false;
+
+    @Override
+    public void completedClusterChange() {
+      wasExecutedAfterClusterChange = true;
+    }
+
+    public boolean wasExecutedAfterClusterChange() {
+      return wasExecutedAfterClusterChange;
     }
   }
 }
