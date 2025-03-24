@@ -17,12 +17,15 @@ import io.camunda.zeebe.engine.util.client.UserTaskClient;
 import io.camunda.zeebe.model.bpmn.builder.UserTaskBuilder;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskListenerEventType;
 import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
+import io.camunda.zeebe.protocol.impl.record.value.variable.VariableDocumentRecord;
 import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.Record;
+import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
+import io.camunda.zeebe.protocol.record.intent.VariableDocumentIntent;
 import io.camunda.zeebe.protocol.record.value.JobKind;
 import io.camunda.zeebe.protocol.record.value.JobListenerEventType;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
@@ -31,6 +34,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.function.Consumer;
+import java.util.function.Predicate;
 import java.util.function.UnaryOperator;
 import org.apache.commons.lang3.StringUtils;
 import org.junit.Before;
@@ -87,6 +91,44 @@ public class TaskListenerBlockedTransitionTest {
   }
 
   @Test
+  public void shouldRejectTaskVariableUpdateWhenUserTaskIsNotInCreatedState() {
+    // given: a process instance with a user task having an assignee and task listeners
+    final long processInstanceKey =
+        helper.createProcessInstance(
+            helper.createProcessWithZeebeUserTask(
+                t ->
+                    t.zeebeAssignee("initial_assignee")
+                        .zeebeTaskListener(l -> l.assigning().type(listenerType + "_assigning"))
+                        .zeebeTaskListener(l -> l.updating().type(listenerType + "_updating"))));
+
+    // since the user task has an initial assignee, the assignment transition is triggered
+    final var assigningUserTaskRecord =
+        RecordingExporter.userTaskRecords(UserTaskIntent.ASSIGNING)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst();
+
+    // when: attempting to update variables while the user task is in the 'ASSIGNING' state
+    final var variableUpdateRejection =
+        ENGINE
+            .variables()
+            .ofScope(assigningUserTaskRecord.getValue().getElementInstanceKey())
+            .withDocument(Map.of("employeeId", "E12345"))
+            .withLocalSemantic()
+            .expectRejection()
+            .update();
+
+    // then
+    Assertions.assertThat(variableUpdateRejection)
+        .describedAs(
+            "Expect rejection when trying to update variables for a user task that is currently in the 'ASSIGNING' state")
+        .hasRecordType(RecordType.COMMAND_REJECTION)
+        .hasValueType(ValueType.VARIABLE_DOCUMENT)
+        .hasRejectionReason(
+            "Expected to trigger update transition for user task with key '%d', but it is in state 'ASSIGNING'"
+                .formatted(assigningUserTaskRecord.getKey()));
+  }
+
+  @Test
   public void shouldCompleteUserTaskAfterAllCompleteTaskListenersAreExecuted() {
     // given
     final long processInstanceKey =
@@ -128,7 +170,7 @@ public class TaskListenerBlockedTransitionTest {
             Assertions.assertThat(userTask)
                 .hasAction("my_custom_action")
                 .hasVariables(Map.of("foo_var", "bar"))
-                .hasNoChangedAttributes());
+                .hasOnlyChangedAttributes(UserTaskRecord.VARIABLES));
     helper.assertThatProcessInstanceCompleted(processInstanceKey);
   }
 
@@ -277,6 +319,125 @@ public class TaskListenerBlockedTransitionTest {
                 .hasPriority(88) // updated
                 .hasAction("my_update_action")
                 .hasOnlyChangedAttributes(UserTaskRecord.CANDIDATE_USERS, UserTaskRecord.PRIORITY));
+  }
+
+  @Test
+  public void
+      shouldUpdateUserTaskAfterAllUpdatingTaskListenersAreExecutedTriggeredByVariableUpdate() {
+    // given
+    final long processInstanceKey =
+        helper.createProcessInstance(
+            helper.createUserTaskWithTaskListeners(
+                ZeebeTaskListenerEventType.updating,
+                listenerType,
+                listenerType + "_2",
+                listenerType + "_3"));
+    final var createdUserTask =
+        RecordingExporter.userTaskRecords(UserTaskIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst()
+            .getValue();
+    final var userTaskElementInstanceKey = createdUserTask.getElementInstanceKey();
+
+    // when
+    ENGINE
+        .variables()
+        .ofScope(userTaskElementInstanceKey)
+        .withDocument(Map.of("status", "APPROVED"))
+        .withLocalSemantic()
+        .expectUpdating()
+        .update();
+    helper.completeJobs(processInstanceKey, listenerType, listenerType + "_2", listenerType + "_3");
+
+    // then
+    helper.assertTaskListenerJobsCompletionSequence(
+        processInstanceKey,
+        JobListenerEventType.UPDATING,
+        listenerType,
+        listenerType + "_2",
+        listenerType + "_3");
+
+    final Predicate<Record<?>> isUserTaskOrVariableDocumentWithElementInstanceKey =
+        r -> {
+          if (r.getValue() instanceof UserTaskRecord utr) {
+            return utr.getElementInstanceKey() == userTaskElementInstanceKey;
+          } else if (r.getValue() instanceof VariableDocumentRecord vdr) {
+            return vdr.getScopeKey() == userTaskElementInstanceKey;
+          }
+          return false;
+        };
+
+    assertThat(
+            RecordingExporter.records()
+                .filter(isUserTaskOrVariableDocumentWithElementInstanceKey)
+                .skipUntil(r -> r.getIntent() == VariableDocumentIntent.UPDATE)
+                .limit(r -> r.getIntent() == VariableDocumentIntent.UPDATED))
+        .extracting(Record::getValueType, Record::getIntent)
+        .describedAs("Verify the expected sequence of UserTask and VariableDocument intents")
+        .containsExactly(
+            tuple(ValueType.VARIABLE_DOCUMENT, VariableDocumentIntent.UPDATE),
+            tuple(ValueType.VARIABLE_DOCUMENT, VariableDocumentIntent.UPDATING),
+            tuple(ValueType.USER_TASK, UserTaskIntent.UPDATING),
+            tuple(ValueType.USER_TASK, UserTaskIntent.COMPLETE_TASK_LISTENER),
+            tuple(ValueType.USER_TASK, UserTaskIntent.COMPLETE_TASK_LISTENER),
+            tuple(ValueType.USER_TASK, UserTaskIntent.COMPLETE_TASK_LISTENER),
+            tuple(ValueType.USER_TASK, UserTaskIntent.UPDATED),
+            tuple(ValueType.VARIABLE_DOCUMENT, VariableDocumentIntent.UPDATED));
+
+    helper.assertUserTaskRecordWithIntent(
+        processInstanceKey,
+        UserTaskIntent.UPDATED,
+        userTask ->
+            Assertions.assertThat(userTask)
+                .hasAssignee(createdUserTask.getAssignee())
+                .hasCandidateGroupsList(createdUserTask.getCandidateGroupsList())
+                .hasCandidateUsersList(createdUserTask.getCandidateUsersList())
+                .hasDueDate(createdUserTask.getDueDate())
+                .hasFollowUpDate(createdUserTask.getFollowUpDate())
+                .hasPriority(createdUserTask.getPriority())
+                .hasVariables(Map.of("status", "APPROVED"))
+                .hasAction("")
+                .hasOnlyChangedAttributes(UserTaskRecord.VARIABLES));
+  }
+
+  @Test
+  public void
+      shouldUpdateUserTaskAfterAllUpdatingTaskListenersAreExecutedTriggeredByVariableUpdateWithEmptyDocument() {
+    // given
+    final long processInstanceKey =
+        helper.createProcessInstance(
+            helper.createUserTaskWithTaskListeners(
+                ZeebeTaskListenerEventType.updating, listenerType, listenerType + "_2"));
+    final var userTaskElementInstanceKey = helper.getUserTaskElementInstanceKey(processInstanceKey);
+
+    // when: empty document triggers update transition
+    ENGINE
+        .variables()
+        .ofScope(userTaskElementInstanceKey)
+        .withDocument(Map.of()) // empty document
+        .withLocalSemantic()
+        .expectUpdating()
+        .update();
+
+    helper.completeJobs(processInstanceKey, listenerType, listenerType + "_2");
+
+    // then: ensure update transition completed and no variable was tracked as changed
+    assertThat(
+            RecordingExporter.userTaskRecords()
+                .onlyEvents()
+                .withProcessInstanceKey(processInstanceKey)
+                .skipUntil(r -> r.getIntent() == UserTaskIntent.UPDATING)
+                .limit(r -> r.getIntent() == UserTaskIntent.UPDATED))
+        .extracting(Record::getValue)
+        .allSatisfy(
+            userTask -> {
+              assertThat(userTask.getVariables())
+                  .describedAs("Expect no variable was added to user task record")
+                  .isEmpty();
+              assertThat(userTask.getChangedAttributes())
+                  .describedAs("Expect no attribute was marked as changed")
+                  .isEmpty();
+            });
   }
 
   @Test

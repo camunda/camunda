@@ -51,7 +51,8 @@ public final class UserTaskCommandProcessors {
                 UserTaskIntent.CLAIM,
                 new UserTaskClaimProcessor(processingState, writers, authCheckBehavior),
                 UserTaskIntent.UPDATE,
-                new UserTaskUpdateProcessor(processingState, writers, authCheckBehavior),
+                new UserTaskUpdateProcessor(
+                    processingState, writers, bpmnBehaviors.variableBehavior(), authCheckBehavior),
                 UserTaskIntent.COMPLETE,
                 new UserTaskCompleteProcessor(
                     processingState, eventHandle, writers, authCheckBehavior)));

@@ -8,6 +8,7 @@
 package io.camunda.zeebe.engine.state.mutable;
 
 import io.camunda.zeebe.engine.state.immutable.VariableState;
+import io.camunda.zeebe.protocol.impl.record.value.variable.VariableDocumentRecord;
 import org.agrona.DirectBuffer;
 
 public interface MutableVariableState extends VariableState {
@@ -61,4 +62,25 @@ public interface MutableVariableState extends VariableState {
   void removeScope(long scopeKey);
 
   void removeAllVariables(long scopeKey);
+
+  /**
+   * Stores the given variable document record in the state, associating it with the provided key.
+   *
+   * <p>This method is expected to be called directly ONLY from an {@link
+   * io.camunda.zeebe.engine.state.EventApplier} or from tests.
+   *
+   * @param key the unique key identifying the variable document
+   * @param value the variable document record containing the updated variables within a given scope
+   */
+  void storeVariableDocumentState(long key, VariableDocumentRecord value);
+
+  /**
+   * Removes the variable document record from the state, associated with the provided scope key.
+   *
+   * <p>This method is expected to be called directly ONLY from an {@link
+   * io.camunda.zeebe.engine.state.EventApplier} or from tests.
+   *
+   * @param scopeKey the key identifying the scope for which the variable document is stored
+   */
+  void removeVariableDocumentState(long scopeKey);
 }

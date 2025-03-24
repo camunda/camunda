@@ -17,16 +17,25 @@ import io.camunda.zeebe.protocol.record.value.VariableDocumentUpdateSemantic;
 import io.camunda.zeebe.test.util.MsgPackUtil;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import java.util.Map;
+import java.util.Random;
 import java.util.function.LongFunction;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
 public final class VariableClient {
 
+  private static final long DEFAULT_KEY = -1;
+
   private static final LongFunction<Record<VariableDocumentRecordValue>>
-      SUCCESSFUL_EXPECTATION_SUPPLIER =
+      UPDATED_EXPECTATION_SUPPLIER =
           (sourceRecordPosition) ->
               RecordingExporter.variableDocumentRecords(VariableDocumentIntent.UPDATED)
+                  .withSourceRecordPosition(sourceRecordPosition)
+                  .getFirst();
+  private static final LongFunction<Record<VariableDocumentRecordValue>>
+      UPDATING_EXPECTATION_SUPPLIER =
+          (sourceRecordPosition) ->
+              RecordingExporter.variableDocumentRecords(VariableDocumentIntent.UPDATING)
                   .withSourceRecordPosition(sourceRecordPosition)
                   .getFirst();
 
@@ -41,8 +50,11 @@ public final class VariableClient {
   private final VariableDocumentRecord variableDocumentRecord;
   private final CommandWriter writer;
 
+  private long requestId = new Random().nextLong();
+  private int requestStreamId = new Random().nextInt();
+
   private LongFunction<Record<VariableDocumentRecordValue>> expectation =
-      SUCCESSFUL_EXPECTATION_SUPPLIER;
+      UPDATED_EXPECTATION_SUPPLIER;
   private String[] authorizedTenants = new String[] {TenantOwned.DEFAULT_TENANT_IDENTIFIER};
 
   public VariableClient(final CommandWriter writer) {
@@ -70,6 +82,14 @@ public final class VariableClient {
     return withDocument(new UnsafeBuffer(MsgPackConverter.convertToMsgPack(variables)));
   }
 
+  public VariableClient withLocalSemantic() {
+    return withUpdateSemantic(VariableDocumentUpdateSemantic.LOCAL);
+  }
+
+  public VariableClient withPropagateSemantic() {
+    return withUpdateSemantic(VariableDocumentUpdateSemantic.PROPAGATE);
+  }
+
   public VariableClient withUpdateSemantic(final VariableDocumentUpdateSemantic semantic) {
     variableDocumentRecord.setUpdateSemantics(semantic);
     return this;
@@ -85,17 +105,33 @@ public final class VariableClient {
     return this;
   }
 
+  public VariableClient expectUpdating() {
+    expectation = UPDATING_EXPECTATION_SUPPLIER;
+    return this;
+  }
+
   public Record<VariableDocumentRecordValue> update() {
     final long position =
         writer.writeCommand(
-            VariableDocumentIntent.UPDATE, variableDocumentRecord, authorizedTenants);
+            DEFAULT_KEY,
+            requestStreamId,
+            requestId,
+            VariableDocumentIntent.UPDATE,
+            variableDocumentRecord,
+            authorizedTenants);
     return expectation.apply(position);
   }
 
   public Record<VariableDocumentRecordValue> update(final String username) {
     final long position =
         writer.writeCommand(
-            VariableDocumentIntent.UPDATE, username, variableDocumentRecord, authorizedTenants);
+            DEFAULT_KEY,
+            requestStreamId,
+            requestId,
+            VariableDocumentIntent.UPDATE,
+            username,
+            variableDocumentRecord,
+            authorizedTenants);
     return expectation.apply(position);
   }
 }

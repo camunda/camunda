@@ -219,7 +219,7 @@ public enum ZbColumnFamilies implements EnumValue {
   MAPPINGS(111),
   CLAIM_BY_KEY(112),
 
-  USER_TASK_RECORD_REQUEST_METADATA(113),
+  USER_TASK_TRANSITION_TRIGGER_REQUEST_METADATA(113),
 
   GROUPS(114),
   ENTITY_BY_GROUP(115),
@@ -232,7 +232,10 @@ public enum ZbColumnFamilies implements EnumValue {
   AUTHORIZATION_KEYS_BY_OWNER(120),
 
   BATCH_OPERATION(121),
-  PENDING_BATCH_OPERATION(122);
+  PENDING_BATCH_OPERATION(122),
+
+  VARIABLE_DOCUMENT_STATE_BY_SCOPE_KEY(123);
+
   private final int value;
 
   ZbColumnFamilies(final int value) {
