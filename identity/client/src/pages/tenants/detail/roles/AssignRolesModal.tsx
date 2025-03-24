@@ -43,9 +43,9 @@ const AssignRolesModal: FC<
 
   const unassignedRoles =
     roleSearchResults?.items.filter(
-      ({ key }) =>
-        !assignedRoles.some((role) => role.key === key) &&
-        !selectedRoles.some((role) => role.key === key),
+      ({ roleKey }) =>
+        !assignedRoles.some((role) => role.roleKey === roleKey) &&
+        !selectedRoles.some((role) => role.roleKey === roleKey),
     ) || [];
 
   const onSelectRole = (role: Role) => {
@@ -53,9 +53,11 @@ const AssignRolesModal: FC<
   };
 
   const onUnselectRole =
-    ({ key }: Role) =>
+    ({ roleKey }: Role) =>
     () => {
-      setSelectedRoles(selectedRoles.filter((role) => role.key !== key));
+      setSelectedRoles(
+        selectedRoles.filter((role) => role.roleKey !== roleKey),
+      );
     };
 
   const canSubmit = tenant && selectedRoles.length;
@@ -109,7 +111,7 @@ const AssignRolesModal: FC<
               type="blue"
               filter
             >
-              {role.key}
+              {role.roleKey}
             </Tag>
           ))}
         </SelectedRoles>
@@ -117,7 +119,7 @@ const AssignRolesModal: FC<
       <DropdownSearch
         autoFocus
         items={unassignedRoles}
-        itemTitle={({ key }) => String(key)}
+        itemTitle={({ roleKey }) => roleKey}
         itemSubTitle={({ name }) => name}
         placeholder={t("searchByRoleId")}
         onSelect={onSelectRole}

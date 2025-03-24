@@ -6,33 +6,33 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import { ApiDefinition, apiDelete, apiPost } from "src/utility/api/request";
+import {
+  ApiDefinition,
+  apiDelete,
+  apiGet,
+  apiPost,
+  apiPut,
+} from "src/utility/api/request";
 import { SearchResponse } from "src/utility/api";
-import { EntityData } from "src/components/entityList/EntityList";
+import { Mapping } from "src/utility/api/mappings";
 
 export const ROLES_ENDPOINT = "/roles";
 
-export type Role = EntityData & {
+export type Role = {
   roleKey: string;
   name: string;
   description: string;
-  permissions: string[];
 };
 
 export const searchRoles: ApiDefinition<SearchResponse<Role>> = () =>
   apiPost(`${ROLES_ENDPOINT}/search`);
 
 type GetRoleParams = {
-  roleKey?: string;
-  name?: string;
+  roleKey: string;
 };
-export const getRole: ApiDefinition<SearchResponse<Role>, GetRoleParams> = ({
+export const getRoleDetails: ApiDefinition<Role, GetRoleParams> = ({
   roleKey,
-  name,
-}) =>
-  apiPost(`${ROLES_ENDPOINT}/search`, {
-    filter: { ...(roleKey && { roleKey }), ...(name && { name }) },
-  });
+}) => apiGet(`${ROLES_ENDPOINT}/${roleKey}`);
 
 type CreateRoleParams = Omit<Role, "roleKey">;
 export const createRole: ApiDefinition<Role, CreateRoleParams> = (role) =>
@@ -45,3 +45,28 @@ export type DeleteRoleParams = {
 export const deleteRole: ApiDefinition<undefined, { roleKey: string }> = ({
   roleKey,
 }) => apiDelete(`${ROLES_ENDPOINT}/${roleKey}`);
+
+// ----------------- Mappings within a Role -----------------
+
+export type GetRoleMappingsParams = {
+  roleId: string;
+};
+export const getMappingsByRoleId: ApiDefinition<
+  SearchResponse<Mapping>,
+  GetRoleMappingsParams
+> = ({ roleId }) => apiPost(`${ROLES_ENDPOINT}/${roleId}/mapping-rules/search`);
+
+type AssignRoleMappingParams = GetRoleMappingsParams & { id: string };
+export const assignRoleMapping: ApiDefinition<
+  undefined,
+  AssignRoleMappingParams
+> = ({ roleId, id }) => {
+  return apiPut(`${ROLES_ENDPOINT}/${roleId}/mapping-rules/${id}`);
+};
+
+type UnassignRoleMappingParams = AssignRoleMappingParams;
+export const unassignRoleMapping: ApiDefinition<
+  undefined,
+  UnassignRoleMappingParams
+> = ({ roleId, id }) =>
+  apiDelete(`${ROLES_ENDPOINT}/${roleId}/mapping-rules/${id}`);

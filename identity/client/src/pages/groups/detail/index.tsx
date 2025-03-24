@@ -22,7 +22,7 @@ import { getGroupDetails } from "src/utility/api/groups";
 import { useEntityModal } from "src/components/modal";
 import EditModal from "src/pages/groups/modals/EditModal";
 import DeleteModal from "src/pages/groups/modals/DeleteModal";
-import { Description } from "src/pages/groups/detail/components";
+import { Description } from "src/components/layout/DetailsPageDescription";
 import {
   IS_GROUP_USERS_SUPPORTED,
   IS_GROUP_ROLES_SUPPORTED,
