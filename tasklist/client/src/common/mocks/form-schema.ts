@@ -95,7 +95,6 @@ const documentPreview = JSON.stringify({
   components: [
     {
       label: 'My documents',
-      endpointKey: '=defaultDocumentsEndpointKey',
       type: 'documentPreview',
       id: 'myDocuments',
       dataSource: '=myDocuments',
