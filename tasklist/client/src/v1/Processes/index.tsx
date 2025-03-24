@@ -43,6 +43,7 @@ import {useIsMultitenancyEnabled} from 'common/multitenancy/useIsMultitenancyEna
 import {MultitenancyDropdown} from 'common/multitenancy/MultitenancyDropdown';
 import styles from './styles.module.scss';
 import cn from 'classnames';
+import {getClientConfig} from 'common/config/getClientConfig';
 
 type UseProcessesFilterParams = Omit<
   Parameters<typeof useProcesses>[0],
@@ -210,7 +211,11 @@ const Processes: React.FC = observer(() => {
   }, [match, data, isLoading, navigate, location, t]);
 
   useEffect(() => {
-    if (searchParams.get('tenantId') === null && initialTenantId !== null) {
+    if (
+      searchParams.get('tenantId') === null &&
+      initialTenantId !== null &&
+      getClientConfig().isMultiTenancyEnabled
+    ) {
       searchParams.set('tenantId', initialTenantId);
       setSearchParams(searchParams, {replace: true});
     }
