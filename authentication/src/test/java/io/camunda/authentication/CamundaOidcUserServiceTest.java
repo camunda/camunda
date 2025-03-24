@@ -7,6 +7,7 @@
  */
 package io.camunda.authentication;
 
+import static io.camunda.authentication.CamundaOidcUserService.ORGANIZATION_CLAIM_NAME;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
 
@@ -25,6 +26,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
@@ -92,6 +94,56 @@ public class CamundaOidcUserServiceTest {
     assertThat(authenticationContext.groups()).isEmpty();
     assertThat(authenticationContext.tenants()).isEmpty();
     assertThat(authenticationContext.authorizedApplications()).containsAll(Set.of("*"));
+  }
+
+  @Test
+  @DisplayName("User has null organization ids when organization claim is not present")
+  public void getOrganizationIdsReturnsNullWhenOrganizationClaimIsNotAList() {
+    // given
+    final Map<String, Object> claims =
+        Map.of(
+            "sub", "test|foo@camunda.test",
+            "email", "foo@camunda.test",
+            "role", "R1",
+            "group", "G1");
+
+    // when
+    final var oidcUser = camundaOidcUserService.loadUser(createOidcUserRequest(claims));
+
+    // then
+    assertThat(oidcUser).isNotNull();
+    assertThat(oidcUser).isInstanceOf(CamundaOidcUser.class);
+    final var camundaUser = (CamundaOidcUser) oidcUser;
+    assertThat(camundaUser.getOrganizationIds()).isNull();
+  }
+
+  @Test
+  @DisplayName("User has organization ids when organization claim is present")
+  public void getOrganizationIdsReturnsOrganizationIdsWhenOrganizationClaimIsPresent() {
+    // given
+    final Map<String, Object> claims =
+        Map.of(
+            "sub",
+            "test|foo@camunda.test",
+            "email",
+            "foo@camunda.test",
+            "role",
+            "R1",
+            "group",
+            "G1",
+            ORGANIZATION_CLAIM_NAME,
+            List.of(
+                Map.of("id", "org1", "roles", List.of("role1")),
+                Map.of("id", "org2", "roles", List.of("role2"))));
+
+    // when
+    final var oidcUser = camundaOidcUserService.loadUser(createOidcUserRequest(claims));
+
+    // then
+    assertThat(oidcUser).isNotNull();
+    assertThat(oidcUser).isInstanceOf(CamundaOidcUser.class);
+    final var camundaUser = (CamundaOidcUser) oidcUser;
+    assertThat(camundaUser.getOrganizationIds()).containsExactly("org1", "org2");
   }
 
   private static OidcUserRequest createOidcUserRequest(final Map<String, Object> claims) {
