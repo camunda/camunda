@@ -8,8 +8,8 @@
 package io.camunda.exporter.tasks.batchoperations;
 
 import co.elastic.clients.elasticsearch.ElasticsearchAsyncClient;
-import io.camunda.exporter.utils.SearchDBExtension;
 import io.camunda.search.connect.es.ElasticsearchConnector;
+import io.camunda.search.test.utils.SearchDBExtension;
 import io.camunda.webapps.schema.entities.operation.BatchOperationEntity;
 import java.util.concurrent.ExecutionException;
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty;

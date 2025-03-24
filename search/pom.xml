@@ -23,6 +23,8 @@
     <module>search-client-query-transformer</module>
     <module>search-client-plugin</module>
     <module>search-domain</module>
+    <module>search-schema-manager</module>
+    <module>search-test-utils</module>
   </modules>
 
 </project>

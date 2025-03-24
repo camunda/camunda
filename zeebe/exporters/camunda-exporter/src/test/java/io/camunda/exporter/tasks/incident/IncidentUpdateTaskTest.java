@@ -17,7 +17,7 @@ import io.camunda.exporter.tasks.incident.IncidentUpdateRepository.IncidentDocum
 import io.camunda.exporter.tasks.incident.IncidentUpdateRepository.NoopIncidentUpdateRepository;
 import io.camunda.exporter.tasks.incident.IncidentUpdateRepository.PendingIncidentUpdateBatch;
 import io.camunda.exporter.tasks.incident.IncidentUpdateRepository.ProcessInstanceDocument;
-import io.camunda.exporter.utils.TestObjectMapper;
+import io.camunda.search.test.utils.TestObjectMapper;
 import io.camunda.webapps.operate.TreePath;
 import io.camunda.webapps.schema.descriptors.operate.template.FlowNodeInstanceTemplate;
 import io.camunda.webapps.schema.descriptors.operate.template.IncidentTemplate;

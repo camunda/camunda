@@ -12,7 +12,7 @@ import static org.mockito.Mockito.mock;
 
 import io.camunda.exporter.cache.ExporterEntityCacheProvider;
 import io.camunda.exporter.config.ExporterConfiguration;
-import io.camunda.exporter.utils.TestObjectMapper;
+import io.camunda.search.test.utils.TestObjectMapper;
 import io.camunda.webapps.schema.descriptors.ComponentNames;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;

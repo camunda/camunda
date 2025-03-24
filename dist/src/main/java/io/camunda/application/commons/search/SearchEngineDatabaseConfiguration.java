@@ -11,11 +11,11 @@ import io.camunda.application.commons.search.SearchEngineDatabaseConfiguration.S
 import io.camunda.application.commons.search.SearchEngineDatabaseConfiguration.SearchEngineIndexProperties;
 import io.camunda.application.commons.search.SearchEngineDatabaseConfiguration.SearchEngineRetentionProperties;
 import io.camunda.application.commons.search.SearchEngineDatabaseConfiguration.SearchEngineSchemaManagerProperties;
-import io.camunda.exporter.config.ExporterConfiguration.IndexSettings;
-import io.camunda.exporter.config.ExporterConfiguration.RetentionConfiguration;
-import io.camunda.exporter.schema.config.SchemaManagerConfiguration;
-import io.camunda.exporter.schema.config.SearchEngineConfiguration;
 import io.camunda.search.connect.configuration.ConnectConfiguration;
+import io.camunda.search.schema.config.IndexConfiguration;
+import io.camunda.search.schema.config.RetentionConfiguration;
+import io.camunda.search.schema.config.SchemaManagerConfiguration;
+import io.camunda.search.schema.config.SearchEngineConfiguration;
 import io.camunda.zeebe.util.VisibleForTesting;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
@@ -57,7 +57,7 @@ public class SearchEngineDatabaseConfiguration {
   public static final class SearchEngineConnectProperties extends ConnectConfiguration {}
 
   @ConfigurationProperties("camunda.database.index")
-  public static final class SearchEngineIndexProperties extends IndexSettings {}
+  public static final class SearchEngineIndexProperties extends IndexConfiguration {}
 
   @ConfigurationProperties("camunda.database.retention")
   public static final class SearchEngineRetentionProperties extends RetentionConfiguration {}
