@@ -77,25 +77,30 @@ jobs: # github.event.inputs.c8Version replaced
       #     done
       #     echo "Services failed to start in time."
       #     exit 1
+
       - name: Wait for services to be ready
         id: wait-for-services
         run: |
-          echo "Checking if services are up..."
-          for i in {1..60}; do
-            response_8080=$(curl -s http://localhost:8080/health)
-            response_8081=$(curl -s http://localhost:8081/health)
-            if echo "$response_8080" | grep '"status":"UP"' && echo "$response_8081" | grep '"status":"UP"'; then
-              echo "Services are ready!"
-              echo "ready=true" >> $GITHUB_OUTPUT
-              exit 0
-            fi
-            echo "Waiting for services... ($i/60)"
-            echo "Response from 8080: $response_8080"
-            echo "Response from 8081: $response_8081"
+        echo "Checking if services are up..."
+        for i in {1..60}; do
+          response_8080=$(curl -s http://localhost:8080/health)
+          response_8081=$(curl -s http://localhost:8081/health)
+          
+          # Check if both responses contain '"status":"UP"'
+          if echo "$response_8080" | grep -q '"status":"UP"' && echo "$response_8081" | grep -q '"status":"UP"'; then
+            echo "Services are ready!"
+            echo "ready=true" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+          
+          # Log responses and wait
+          echo "Waiting for services... ($i/60)"
+          echo "Response from 8080: $response_8080"
+          echo "Response from 8081: $response_8081"
           sleep 10
-           done
-          echo "Services failed to start in time."
-          exit 1
+        done
+        echo "Services failed to start in time."
+        exit 1
 
   core-component-tests:
     needs: setup-environment
