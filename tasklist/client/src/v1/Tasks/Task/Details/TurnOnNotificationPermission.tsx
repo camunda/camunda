@@ -6,10 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {
-  ActionableNotification,
-  unstable_FeatureFlags as FeatureFlags,
-} from '@carbon/react';
+import {ActionableNotification} from '@carbon/react';
 import {requestPermission} from 'common/os-notifications/requestPermission';
 import {getStateLocally, storeStateLocally} from 'common/local-storage';
 import {useState} from 'react';
@@ -33,34 +30,27 @@ const TurnOnNotificationPermission: React.FC = () => {
 
   return (
     <div>
-      {/* This is a temporary fix, it should be removed once this feature is implemented on Carbon: https://github.com/camunda/camunda/issues/26648 */}
-      <FeatureFlags
-        flags={{
-          'enable-experimental-focus-wrap-without-sentinels': true,
-        }}
-      >
-        <ActionableNotification
-          inline
-          kind="info"
-          role="status"
-          aria-live="polite"
-          title={t('turnOnNotificationTitle')}
-          subtitle={t('turnOnNotificationSubtitle')}
-          actionButtonLabel={t('turnOnNotificationsActionButton')}
-          onActionButtonClick={async () => {
-            const result = await requestPermission();
-            if (result !== 'default') {
-              setIsEnabled(false);
-            }
-          }}
-          onClose={() => {
+      <ActionableNotification
+        inline
+        kind="info"
+        role="status"
+        aria-live="polite"
+        title={t('turnOnNotificationTitle')}
+        subtitle={t('turnOnNotificationSubtitle')}
+        actionButtonLabel={t('turnOnNotificationsActionButton')}
+        onActionButtonClick={async () => {
+          const result = await requestPermission();
+          if (result !== 'default') {
             setIsEnabled(false);
-            storeStateLocally('areNativeNotificationsEnabled', false);
-          }}
-          className={styles.actionableNotification}
-          lowContrast
-        />
-      </FeatureFlags>
+          }
+        }}
+        onClose={() => {
+          setIsEnabled(false);
+          storeStateLocally('areNativeNotificationsEnabled', false);
+        }}
+        className={styles.actionableNotification}
+        lowContrast
+      />
     </div>
   );
 };

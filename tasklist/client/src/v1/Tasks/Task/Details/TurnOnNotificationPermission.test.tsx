@@ -88,38 +88,4 @@ describe('<TurnOnNotificationPermission/>', () => {
       }),
     ).not.toBeInTheDocument();
   });
-
-  it('should disable the focus trap when the dialog is open', async () => {
-    vi.stubGlobal('Notification', {permission: 'default'});
-
-    const {unmount} = render(
-      <>
-        <TurnOnNotificationPermission />
-        <input type="text" aria-label="Mock input" />
-      </>,
-    );
-
-    expect(
-      screen.getByRole('button', {
-        name: /turn on notifications/i,
-      }),
-    ).toHaveFocus();
-    expect(screen.getByLabelText(/mock input/i)).not.toHaveFocus();
-
-    unmount();
-
-    render(
-      <>
-        <TurnOnNotificationPermission />
-        <input type="text" aria-label="Mock input" autoFocus />
-      </>,
-    );
-
-    expect(
-      screen.getByRole('button', {
-        name: /turn on notifications/i,
-      }),
-    ).not.toHaveFocus();
-    expect(screen.getByLabelText(/mock input/i)).toHaveFocus();
-  });
 });

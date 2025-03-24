@@ -8,7 +8,7 @@ jobs:
     name: Type check
     runs-on: ubuntu-latest
     timeout-minutes: 3
-    permissions: {}  # GITHUB_TOKEN unused in this job
+    permissions: {} # GITHUB_TOKEN unused in this job
     defaults:
       run:
         working-directory: tasklist/client
@@ -38,7 +38,7 @@ jobs:
     name: ESLint
     runs-on: ubuntu-latest
     timeout-minutes: 3
-    permissions: {}  # GITHUB_TOKEN unused in this job
+    permissions: {} # GITHUB_TOKEN unused in this job
     defaults:
       run:
         working-directory: tasklist/client
@@ -68,7 +68,7 @@ jobs:
     name: Stylelint
     runs-on: ubuntu-latest
     timeout-minutes: 3
-    permissions: {}  # GITHUB_TOKEN unused in this job
+    permissions: {} # GITHUB_TOKEN unused in this job
     defaults:
       run:
         working-directory: tasklist/client
@@ -98,7 +98,7 @@ jobs:
     name: Tests
     runs-on: ubuntu-latest
     timeout-minutes: 5
-    permissions: {}  # GITHUB_TOKEN unused in this job
+    permissions: {} # GITHUB_TOKEN unused in this job
     defaults:
       run:
         working-directory: tasklist/client
@@ -128,9 +128,9 @@ jobs:
     name: Visual regression tests
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    permissions: {}  # GITHUB_TOKEN unused in this job
+    permissions: {} # GITHUB_TOKEN unused in this job
     container:
-      image: mcr.microsoft.com/playwright:v1.49.1
+      image: mcr.microsoft.com/playwright:v1.51.1
       options: --user 1001:1000
     defaults:
       run:
@@ -173,9 +173,9 @@ jobs:
     name: a11y tests
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    permissions: {}  # GITHUB_TOKEN unused in this job
+    permissions: {} # GITHUB_TOKEN unused in this job
     container:
-      image: mcr.microsoft.com/playwright:v1.49.1
+      image: mcr.microsoft.com/playwright:v1.51.1
       options: --user 1001:1000
     defaults:
       run:
