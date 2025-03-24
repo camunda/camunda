@@ -1,0 +1,68 @@
+name: Core Application E2E Tests On Demand/commit
+# on:
+#   workflow_dispatch:
+#     inputs:
+#       c8Version:
+#         description: "C8 Version"
+#         required: true
+on:
+  push:
+
+jobs: # github.event.inputs.c8Version replaced
+  setup-environment:
+    runs-on: ubuntu-latest
+    outputs:
+      services_ready: ${{ steps.wait-for-services.outputs.ready }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: Start Tasklist and Operate
+        run: DATABASE=elasticsearch docker compose up -d tasklist operate
+        working-directory: qa/core-application-e2e-test-suite/config
+
+      - name: Wait for services to be ready
+        id: wait-for-services
+        run: |
+          echo "Checking if services are up..."
+          for i in {1..30}; do
+            if curl -s http://localhost:8080/health | grep '"status":"UP"' && \
+               curl -s http://localhost:8081/health | grep '"status":"UP"'; then
+              echo "Services are ready!"
+              echo "ready=true" >> $GITHUB_OUTPUT
+              exit 0
+            fi
+            echo "Waiting for services... ($i/30)"
+            sleep 10
+          done
+          echo "Services failed to start in time."
+          exit 1
+
+  core-component-tests:
+    needs: setup-environment
+    runs-on: ubuntu-latest
+    if: needs.setup-environment.outputs.services_ready == 'true'
+    strategy:
+      max-parallel: 1
+      fail-fast: false
+      matrix:
+        project: ["chromium"]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: qa/core-application-e2e-test-suite/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+        working-directory: qa/core-application-e2e-test-suite
+
+      - name: Run tests
+        uses: ./.github/actions/core-application-e2e-test-suite
