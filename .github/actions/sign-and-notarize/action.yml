@@ -1,7 +1,6 @@
 name: "Sign & Notarize macOS code"
 description: "Signs with Developer ID App certificate and notarizes the resulting zip file."
 
-# We define inputs for everything needed to sign and notarize:
 inputs:
   p12-base64:
     description: "Base64-encoded .p12 Developer ID cert"
@@ -29,7 +28,6 @@ runs:
   using: "composite"
 
   steps:
-    # STEP A: Import Developer ID cert into a temporary keychain
     - name: Import Developer ID .p12
       shell: bash
       run: |
@@ -44,13 +42,8 @@ runs:
         security list-keychains -s build.keychain $(security list-keychains | sed 's/\"//g')
         security default-keychain -s build.keychain
         security find-identity -p codesigning -v
+        chmod +x ./.github/actions/sign-and-notarize/sign_and_notarize.sh
 
-    # STEP B: Make signing script executable
-    - name: Make script executable
-      shell: bash
-      run: chmod +x ./.github/actions/sign-and-notarize/sign_and_notarize.sh
-
-    # STEP C: Sign & Notarize
     - name: Sign distribution
       shell: bash
       run: |
