@@ -378,6 +378,8 @@ camunda-platform:
       - key: "previews"
         operator: "Exists"
         effect: "NoSchedule"
+    migration:
+      enabled: false
 
   optimize:
     image:
