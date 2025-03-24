@@ -33,12 +33,6 @@
   },
   "packageRules": [
     {
-      "description": "Temporary rule to prevent issue introduced in v5.3.3 (see issue #29004)",
-      "matchManagers": ["maven"],
-      "matchPackageNames": ["org.apache.httpcomponents.core5:httpcore5"],
-      "allowedVersions": "<=5.3.2"
-    },
-    {
       "description": "Only patch updates for our maintenance branches to avoid breaking changes.",
       "matchBaseBranches": [
         "/^stable\\/8\\..*/",
