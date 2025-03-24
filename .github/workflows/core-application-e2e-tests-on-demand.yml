@@ -2,16 +2,10 @@ name: Core Application E2E Tests commit
 permissions:
   contents: read
   pull-requests: write
-# on:
-#   workflow_dispatch:
-#     inputs:
-#       c8Version:
-#         description: "C8 Version"
-#         required: true
 on:
   push:
 
-jobs: # github.event.inputs.c8Version replaced
+jobs:
   setup-environment:
     runs-on: ubuntu-latest
     outputs:
@@ -48,12 +42,6 @@ jobs: # github.event.inputs.c8Version replaced
           DATABASE=elasticsearch docker compose up -d tasklist operate
         working-directory: qa/core-application-e2e-test-suite/config
 
-      # - name: Check logs for Tasklist service
-      #   run: |
-      #     echo "== Tasklist Logs =="
-      #     docker-compose logs -f tasklist
-      #   working-directory: qa/core-application-e2e-test-suite/config
-
       - name: Check logs for Tasklist and Operate in the background
         run: |
           docker-compose logs tasklist &  # Run tasklist logs in the background
@@ -61,46 +49,36 @@ jobs: # github.event.inputs.c8Version replaced
           wait  # Wait for both background processes to finish
         working-directory: qa/core-application-e2e-test-suite/config
 
-      # - name: Wait for services to be ready
-      #   id: wait-for-services
-      #   run: |
-      #     echo "Checking if services are up..."
-      #     for i in {1..30}; do
-      #       if curl -s http://localhost:8080/health | grep '"status":"UP"' && \
-      #          curl -s http://localhost:8081/health | grep '"status":"UP"'; then
-      #         echo "Services are ready!"
-      #         echo "ready=true" >> $GITHUB_OUTPUT
-      #         exit 0
-      #       fi
-      #       echo "Waiting for services... ($i/30)"
-      #       sleep 10
-      #     done
-      #     echo "Services failed to start in time."
-      #     exit 1
-
       - name: Wait for services to be ready
         id: wait-for-services
         run: |
-        echo "Checking if services are up..."
-        for i in {1..60}; do
-          response_8080=$(curl -s http://localhost:8080/health)
-          response_8081=$(curl -s http://localhost:8081/health)
-          
-          # Check if both responses contain '"status":"UP"'
-          if echo "$response_8080" | grep -q '"status":"UP"' && echo "$response_8081" | grep -q '"status":"UP"'; then
+          echo "Checking if services are up..."
+          ready=false
+          for i in {1..60}; do
+            response_8080=$(curl -s http://localhost:8080/health)
+            response_8081=$(curl -s http://localhost:8081/health)
+            
+            # Check if both responses contain '"status":"UP"'
+            if echo "$response_8080" | grep -q '"status":"UP"' && echo "$response_8081" | grep -q '"status":"UP"'; then
+              echo "Services are ready!"
+              ready=true
+              break  # Exit loop once services are up
+            fi
+
+            # Log responses and wait
+            echo "Waiting for services... ($i/60)"
+            echo "Response from 8080: $response_8080"
+            echo "Response from 8081: $response_8081"
+            sleep 10
+          done
+
+          if [ "$ready" == "true" ]; then
             echo "Services are ready!"
             echo "ready=true" >> $GITHUB_OUTPUT
-            exit 0
+          else
+            echo "Services failed to start in time."
+            exit 1
           fi
-          
-          # Log responses and wait
-          echo "Waiting for services... ($i/60)"
-          echo "Response from 8080: $response_8080"
-          echo "Response from 8081: $response_8081"
-          sleep 10
-        done
-        echo "Services failed to start in time."
-        exit 1
 
   core-component-tests:
     needs: setup-environment
