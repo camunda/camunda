@@ -24,7 +24,6 @@ import io.camunda.client.api.search.response.FlowNodeInstance;
 import io.camunda.client.api.search.response.FlowNodeInstanceState;
 import io.camunda.process.test.api.assertions.ElementSelector;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
@@ -39,126 +38,25 @@ import org.awaitility.core.ConditionTimeoutException;
 public class ElementAssertj extends AbstractAssert<ElementAssertj, String> {
 
   private final CamundaDataSource dataSource;
-  private final Function<String, ElementSelector> elementSelector;
 
-  protected ElementAssertj(
-      final CamundaDataSource dataSource,
-      final String failureMessagePrefix,
-      final Function<String, ElementSelector> elementSelector) {
+  protected ElementAssertj(final CamundaDataSource dataSource, final String failureMessagePrefix) {
     super(failureMessagePrefix, ElementAssertj.class);
     this.dataSource = dataSource;
-    this.elementSelector = elementSelector;
-  }
-
-  public void hasActiveElements(final long processInstanceKey, final String... elementIds) {
-    hasElementsInState(
-        processInstanceKey, toElementSelectors(elementIds), FlowNodeInstanceState.ACTIVE);
   }
 
   public void hasActiveElements(
-      final long processInstanceKey, final ElementSelector... elementSelectors) {
-    hasElementsInState(
-        processInstanceKey, Arrays.asList(elementSelectors), FlowNodeInstanceState.ACTIVE);
-  }
-
-  public void hasCompletedElements(final long processInstanceKey, final String... elementIds) {
-    hasElementsInState(
-        processInstanceKey, toElementSelectors(elementIds), FlowNodeInstanceState.COMPLETED);
+      final long processInstanceKey, final List<ElementSelector> elementSelectors) {
+    hasElementsInState(processInstanceKey, elementSelectors, FlowNodeInstanceState.ACTIVE);
   }
 
   public void hasCompletedElements(
-      final long processInstanceKey, final ElementSelector... elementSelectors) {
-    hasElementsInState(
-        processInstanceKey, Arrays.asList(elementSelectors), FlowNodeInstanceState.COMPLETED);
-  }
-
-  public void hasTerminatedElements(final long processInstanceKey, final String... elementIds) {
-    hasElementsInState(
-        processInstanceKey, toElementSelectors(elementIds), FlowNodeInstanceState.TERMINATED);
+      final long processInstanceKey, final List<ElementSelector> elementSelectors) {
+    hasElementsInState(processInstanceKey, elementSelectors, FlowNodeInstanceState.COMPLETED);
   }
 
   public void hasTerminatedElements(
-      final long processInstanceKey, final ElementSelector... elementSelectors) {
-    hasElementsInState(
-        processInstanceKey, Arrays.asList(elementSelectors), FlowNodeInstanceState.TERMINATED);
-  }
-
-  public void hasActiveElement(
-      final long processInstanceKey, final String elementId, final int expectedTimes) {
-    hasElementInState(
-        processInstanceKey,
-        elementSelector.apply(elementId),
-        FlowNodeInstanceState.ACTIVE,
-        expectedTimes);
-  }
-
-  public void hasActiveElement(
-      final long processInstanceKey,
-      final ElementSelector elementSelector,
-      final int expectedTimes) {
-    hasElementInState(
-        processInstanceKey, elementSelector, FlowNodeInstanceState.ACTIVE, expectedTimes);
-  }
-
-  public void hasCompletedElement(
-      final long processInstanceKey, final String elementId, final int expectedTimes) {
-    hasElementInState(
-        processInstanceKey,
-        elementSelector.apply(elementId),
-        FlowNodeInstanceState.COMPLETED,
-        expectedTimes);
-  }
-
-  public void hasCompletedElement(
-      final long processInstanceKey,
-      final ElementSelector elementSelector,
-      final int expectedTimes) {
-    hasElementInState(
-        processInstanceKey, elementSelector, FlowNodeInstanceState.COMPLETED, expectedTimes);
-  }
-
-  public void hasTerminatedElement(
-      final long processInstanceKey, final String elementId, final int expectedTimes) {
-    hasElementInState(
-        processInstanceKey,
-        elementSelector.apply(elementId),
-        FlowNodeInstanceState.TERMINATED,
-        expectedTimes);
-  }
-
-  public void hasTerminatedElement(
-      final long processInstanceKey,
-      final ElementSelector elementSelector,
-      final int expectedTimes) {
-    hasElementInState(
-        processInstanceKey, elementSelector, FlowNodeInstanceState.TERMINATED, expectedTimes);
-  }
-
-  public void hasNotActivatedElements(final long processInstanceKey, final String... elementIds) {
-    hasNotActivatedElements(processInstanceKey, toElementSelectors(elementIds));
-  }
-
-  public void hasNotActivatedElements(
-      final long processInstanceKey, final ElementSelector... elementSelectors) {
-    hasNotActivatedElements(processInstanceKey, Arrays.asList(elementSelectors));
-  }
-
-  public void hasNoActiveElements(final long processInstanceKey, final String... elementIds) {
-    hasNoActiveElements(processInstanceKey, toElementSelectors(elementIds));
-  }
-
-  public void hasNoActiveElements(
-      final long processInstanceKey, final ElementSelector... elementSelectors) {
-    hasNoActiveElements(processInstanceKey, Arrays.asList(elementSelectors));
-  }
-
-  public void hasActiveElementsExactly(final long processInstanceKey, final String... elementIds) {
-    hasActiveElementsExactly(processInstanceKey, toElementSelectors(elementIds));
-  }
-
-  public void hasActiveElementsExactly(
-      final long processInstanceKey, final ElementSelector... elementSelectors) {
-    hasActiveElementsExactly(processInstanceKey, Arrays.asList(elementSelectors));
+      final long processInstanceKey, final List<ElementSelector> elementSelectors) {
+    hasElementsInState(processInstanceKey, elementSelectors, FlowNodeInstanceState.TERMINATED);
   }
 
   private void hasElementsInState(
@@ -187,6 +85,30 @@ public class ElementAssertj extends AbstractAssert<ElementAssertj, String> {
                           formatFlowNodeInstanceStates(selectorsNotMatched, flowNodeInstances)))
               .isEmpty();
         });
+  }
+
+  public void hasActiveElement(
+      final long processInstanceKey,
+      final ElementSelector elementSelector,
+      final int expectedTimes) {
+    hasElementInState(
+        processInstanceKey, elementSelector, FlowNodeInstanceState.ACTIVE, expectedTimes);
+  }
+
+  public void hasCompletedElement(
+      final long processInstanceKey,
+      final ElementSelector elementSelector,
+      final int expectedTimes) {
+    hasElementInState(
+        processInstanceKey, elementSelector, FlowNodeInstanceState.COMPLETED, expectedTimes);
+  }
+
+  public void hasTerminatedElement(
+      final long processInstanceKey,
+      final ElementSelector elementSelector,
+      final int expectedTimes) {
+    hasElementInState(
+        processInstanceKey, elementSelector, FlowNodeInstanceState.TERMINATED, expectedTimes);
   }
 
   private void hasElementInState(
@@ -225,7 +147,7 @@ public class ElementAssertj extends AbstractAssert<ElementAssertj, String> {
         });
   }
 
-  private void hasNotActivatedElements(
+  public void hasNotActivatedElements(
       final long processInstanceKey, final List<ElementSelector> elementSelectors) {
 
     final List<FlowNodeInstance> flowNodeInstances =
@@ -246,7 +168,7 @@ public class ElementAssertj extends AbstractAssert<ElementAssertj, String> {
         .isEmpty();
   }
 
-  private void hasNoActiveElements(
+  public void hasNoActiveElements(
       final long processInstanceKey, final List<ElementSelector> elementSelectors) {
 
     final Consumer<FlownodeInstanceFilter> flowNodeInstanceFilter =
@@ -271,7 +193,7 @@ public class ElementAssertj extends AbstractAssert<ElementAssertj, String> {
         });
   }
 
-  private void hasActiveElementsExactly(
+  public void hasActiveElementsExactly(
       final long processInstanceKey, final List<ElementSelector> elementSelectors) {
 
     awaitFlowNodeInstanceAssertion(
@@ -408,10 +330,6 @@ public class ElementAssertj extends AbstractAssert<ElementAssertj, String> {
                     flowNodeDescriptor.apply(flowNodeInstance),
                     formatState(flowNodeInstance.getState())))
         .collect(Collectors.joining("\n"));
-  }
-
-  private List<ElementSelector> toElementSelectors(final String[] elementIds) {
-    return Arrays.stream(elementIds).map(elementSelector).collect(Collectors.toList());
   }
 
   private static String formatState(final FlowNodeInstanceState state) {
