@@ -122,4 +122,4 @@ jobs:
         working-directory: qa/core-application-e2e-test-suite
 
       - name: Run tests
-        uses: ./.github/actions/core-application-e2e-test-suite
+        uses: ./.github/actions/core-application-e2e-test-suite/action.yml
