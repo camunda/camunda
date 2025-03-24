@@ -16,6 +16,7 @@ import io.camunda.search.entities.BatchOperationEntity.BatchOperationItemEntity;
 import io.camunda.search.query.BatchOperationQuery;
 import io.camunda.search.query.SearchQueryResult;
 import java.util.List;
+import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -37,6 +38,12 @@ public class BatchOperationReader extends AbstractEntityReader<BatchOperationEnt
             .build();
 
     return batchOperationMapper.count(query) == 1;
+  }
+
+  public Optional<BatchOperationEntity> findOne(final long batchOperationKey) {
+    final var result =
+        search(BatchOperationQuery.of(b -> b.filter(f -> f.batchOperationKeys(batchOperationKey))));
+    return Optional.ofNullable(result.items()).flatMap(it -> it.stream().findFirst());
   }
 
   public SearchQueryResult<BatchOperationEntity> search(final BatchOperationQuery query) {
