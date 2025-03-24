@@ -53,6 +53,9 @@ jobs:
         run: |
           docker-compose logs tasklist
           docker-compose logs operate
+        working-directory: qa/core-application-e2e-test-suite/config # Ensure this is the correct directory where docker-compose.yml is located
+        env:
+          DATABASE: elasticsearch
 
       - name: Wait for services to be ready
         id: wait-for-services
