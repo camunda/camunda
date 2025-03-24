@@ -125,7 +125,8 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: failure()
         with:
-          name: Core Application E2E Test Results
+          name: Core Application E2E Test Result
+          working-directory: qa/core-application-e2e-test-suite
           path: ./html-report
           retention-days: 10
 
