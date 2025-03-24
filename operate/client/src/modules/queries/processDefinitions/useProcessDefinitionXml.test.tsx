@@ -13,7 +13,7 @@ import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
 jest.mock('modules/hooks/useProcessInstancesFilters');
 
-describe('useBatchModificationOverlayData', () => {
+describe('useProcessDefinitionXml', () => {
   const wrapper = ({children}: {children: React.ReactNode}) => {
     return (
       <QueryClientProvider client={getMockQueryClient()}>
