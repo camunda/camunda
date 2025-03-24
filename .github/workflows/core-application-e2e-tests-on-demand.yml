@@ -34,28 +34,22 @@ jobs:
           sudo chmod +x /usr/local/bin/docker-compose
 
       - name: Set DATABASE environment variable
-        run: |
-          echo "DATABASE=elasticsearch" >> $GITHUB_ENV
+        run: echo "DATABASE=elasticsearch" >> $GITHUB_ENV
 
       - name: Start Tasklist and Operate
         run: |
-          DATABASE=elasticsearch docker compose up -d tasklist operate
+          DATABASE=elasticsearch docker compose up tasklist operate
         working-directory: qa/core-application-e2e-test-suite/config
 
-      - name: Check logs for Tasklist and Operate in the background
-        run: |
-          docker-compose logs tasklist &  # Run tasklist logs in the background
-          docker-compose logs operate &   # Run operate logs in the background
-          wait  # Wait for both background processes to finish
+      - name: List running Docker containers
+        run: docker ps -a
         working-directory: qa/core-application-e2e-test-suite/config
 
-      - name: Check Docker container logs
+      - name: Capture logs for debugging
         run: |
-          docker-compose logs tasklist
-          docker-compose logs operate
-        working-directory: qa/core-application-e2e-test-suite/config # Ensure this is the correct directory where docker-compose.yml is located
-        env:
-          DATABASE: elasticsearch
+          docker-compose logs --tail=50 tasklist
+          docker-compose logs --tail=50 operate
+        working-directory: qa/core-application-e2e-test-suite/config
 
       - name: Wait for services to be ready
         id: wait-for-services
@@ -63,17 +57,23 @@ jobs:
           echo "Checking if services are up..."
           ready=false
           for i in {1..90}; do
-            response_8080=$(curl -s -v http://localhost:8080/health)  # Added verbose mode
-            response_8081=$(curl -s -v http://localhost:8081/health)  # Added verbose mode
-            
-            # Check if both responses contain '"status":"UP"'
+            if ! nc -zv localhost 8080; then
+              echo "Port 8080 is not open yet..."
+            fi
+
+            if ! nc -zv localhost 8081; then
+              echo "Port 8081 is not open yet..."
+            fi
+
+            response_8080=$(curl -s -m 5 http://localhost:8080/health || echo "Failed")
+            response_8081=$(curl -s -m 5 http://localhost:8081/health || echo "Failed")
+
             if echo "$response_8080" | grep -q '"status":"UP"' && echo "$response_8081" | grep -q '"status":"UP"'; then
               echo "Services are ready!"
               ready=true
-              break  # Exit loop once services are up
+              break
             fi
 
-            # Log responses and wait
             echo "Waiting for services... ($i/90)"
             echo "Response from 8080: $response_8080"
             echo "Response from 8081: $response_8081"
@@ -81,12 +81,18 @@ jobs:
           done
 
           if [ "$ready" == "true" ]; then
-            echo "Services are ready!"
             echo "ready=true" >> $GITHUB_OUTPUT
           else
             echo "Services failed to start in time."
             exit 1
           fi
+
+      - name: Print Docker logs before failing
+        if: failure()
+        run: |
+          docker-compose logs tasklist
+          docker-compose logs operate
+        working-directory: qa/core-application-e2e-test-suite/config
 
   core-component-tests:
     needs: setup-environment
@@ -112,7 +118,7 @@ jobs:
       - name: Install dependencies
         run: |
           echo "Installing dependencies..."
-          npm ci --verbose  # Adding verbose flag to show more detailed logs
+          npm ci --verbose
         working-directory: qa/core-application-e2e-test-suite
 
       - name: Run tests
