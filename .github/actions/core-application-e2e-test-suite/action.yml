@@ -9,15 +9,20 @@ runs:
       run: npx playwright install --with-deps chromium
       working-directory: qa/core-application-e2e-test-suite
 
+    - name: Debug File Structure
+      shell: bash
+      run: ls -R .github/actions
+      working-directory: qa/core-application-e2e-test-suite
+
     - name: Run tests
       shell: bash
       env:
-        LOCAL_TEST: 'false'
+        LOCAL_TEST: "false"
         CORE_APPLICATION_TASKLIST_URL: http://localhost:8080
         CORE_APPLICATION_OPERATE_URL: http://localhost:8081
-        CAMUNDA_AUTH_STRATEGY: 'BASIC'
-        CAMUNDA_BASIC_AUTH_USERNAME: 'demo'
-        CAMUNDA_BASIC_AUTH_PASSWORD: 'demo'
-        ZEEBE_REST_ADDRESS: 'http://localhost:8089'
+        CAMUNDA_AUTH_STRATEGY: "BASIC"
+        CAMUNDA_BASIC_AUTH_USERNAME: "demo"
+        CAMUNDA_BASIC_AUTH_PASSWORD: "demo"
+        ZEEBE_REST_ADDRESS: "http://localhost:8089"
       run: npm run test -- --project=chromium
       working-directory: qa/core-application-e2e-test-suite
