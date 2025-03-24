@@ -10,6 +10,9 @@ package io.camunda.exporter.rdbms;
 import io.camunda.db.rdbms.RdbmsService;
 import io.camunda.db.rdbms.write.RdbmsWriter;
 import io.camunda.db.rdbms.write.RdbmsWriterConfig;
+import io.camunda.exporter.rdbms.handlers.BatchOperationChunkExportHandler;
+import io.camunda.exporter.rdbms.handlers.BatchOperationCreatedExportHandler;
+import io.camunda.exporter.rdbms.handlers.BatchOperationExecutionExportHandler;
 import io.camunda.exporter.rdbms.handlers.DecisionDefinitionExportHandler;
 import io.camunda.exporter.rdbms.handlers.DecisionInstanceExportHandler;
 import io.camunda.exporter.rdbms.handlers.DecisionRequirementsExportHandler;
@@ -20,6 +23,7 @@ import io.camunda.exporter.rdbms.handlers.GroupExportHandler;
 import io.camunda.exporter.rdbms.handlers.IncidentExportHandler;
 import io.camunda.exporter.rdbms.handlers.MappingExportHandler;
 import io.camunda.exporter.rdbms.handlers.ProcessExportHandler;
+import io.camunda.exporter.rdbms.handlers.ProcessInstanceBatchOperationExportHandler;
 import io.camunda.exporter.rdbms.handlers.ProcessInstanceExportHandler;
 import io.camunda.exporter.rdbms.handlers.ProcessInstanceIncidentExportHandler;
 import io.camunda.exporter.rdbms.handlers.RoleExportHandler;
@@ -73,7 +77,9 @@ public class RdbmsExporterWrapper implements Exporter {
             .flushInterval(readFlushInterval(context))
             .maxQueueSize(maxQueueSize)
             .rdbmsWriter(rdbmsWriter);
+
     createHandlers(partitionId, rdbmsWriter, builder);
+    createBatchOperationHandlers(rdbmsWriter, builder);
 
     exporter = new RdbmsExporter(builder.build());
   }
@@ -193,5 +199,23 @@ public class RdbmsExporterWrapper implements Exporter {
     builder.withHandler(
         ValueType.USER_TASK, new UserTaskExportHandler(rdbmsWriter.getUserTaskWriter()));
     builder.withHandler(ValueType.FORM, new FormExportHandler(rdbmsWriter.getFormWriter()));
+  }
+
+  private static void createBatchOperationHandlers(
+      final RdbmsWriter rdbmsWriter, final RdbmsExporterConfig.Builder builder) {
+    builder.withHandler(
+        ValueType.BATCH_OPERATION_CREATION,
+        new BatchOperationCreatedExportHandler(rdbmsWriter.getBatchOperationWriter()));
+    builder.withHandler(
+        ValueType.BATCH_OPERATION_CHUNK,
+        new BatchOperationChunkExportHandler(rdbmsWriter.getBatchOperationWriter()));
+    builder.withHandler(
+        ValueType.BATCH_OPERATION_EXECUTION,
+        new BatchOperationExecutionExportHandler(rdbmsWriter.getBatchOperationWriter()));
+
+    // Handlers per batch operation to track status
+    builder.withHandler(
+        ValueType.PROCESS_INSTANCE,
+        new ProcessInstanceBatchOperationExportHandler(rdbmsWriter.getBatchOperationWriter()));
   }
 }
