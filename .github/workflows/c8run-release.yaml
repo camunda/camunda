@@ -103,12 +103,12 @@ jobs:
             command: ./c8run
           - name: MacOS (ARM64)
             id: macos-latest
-            artifactFileSuffix: darwin-aarch64.tar.gz
+            artifactFileSuffix: darwin-aarch64.zip
             workingDir: ./c8run
             command: ./c8run
           - name: MacOS (AMD64)
             id: macos-13
-            artifactFileSuffix: darwin-x86_64.tar.gz
+            artifactFileSuffix: darwin-x86_64.zip
             workingDir: ./c8run
             command: ./c8run
           - name: Windows (AMD64)
@@ -162,9 +162,9 @@ jobs:
         if: startsWith(matrix.os.name, 'MacOS')
         run: |
           mkdir tmp
-          mv camunda8-run-*.tar.gz tmp
+          mv camunda8-run-*.zip tmp
           cd tmp
-          tar -xzvf camunda8-run-*.tar.gz
+          unzip camunda8-run-*.zip
         shell: bash
         working-directory: ./c8run
 

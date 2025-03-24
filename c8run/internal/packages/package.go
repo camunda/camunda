@@ -57,12 +57,18 @@ func setOsSpecificValues() (string, string, string, func(string, string) error, 
 	var extractFunc func(string, string) error
 
 	switch osType {
-	case "windows":
-		architecture = "x86_64"
+	case "windows", "darwin":
+		if runtime.GOARCH == "amd64" {
+			architecture = "x86_64"
+		} else if runtime.GOARCH == "arm64" {
+			architecture = "aarch64"
+		} else {
+			return "", "", "", nil, fmt.Errorf("unsupported architecture: %s", runtime.GOARCH)
+		}
 		pkgName = ".zip"
 		extractFunc = archive.UnzipSource
 		return osType, architecture, pkgName, extractFunc, nil
-	case "linux", "darwin":
+	case "linux":
 		pkgName = ".tar.gz"
 		extractFunc = archive.ExtractTarGzArchive
 		if runtime.GOARCH == "amd64" {
