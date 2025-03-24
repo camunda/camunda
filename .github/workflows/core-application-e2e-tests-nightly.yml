@@ -1,21 +1,9 @@
 name: Core Application E2E Tests Nightly
-# on:
-#   schedule:
-#     - cron: "0 23 * * *"  # 11 PM UTC - Run 8.6 tests
-#     - cron: "0 0 * * *"   # 12 AM UTC - Run 8.7 tests
-#     - cron: "0 1 * * *"   # 1 AM UTC - Run main branch tests
 on:
-  push:
-    branches:
-      - main
-      - stable/8.6
-      - stable/8.7
-  pull_request:
-    branches:
-      - main
-      - stable/8.6
-      - stable/8.7
-    types: [opened, synchronize, reopened]
+  schedule:
+    - cron: "0 23 * * *" # 11 PM UTC - Run 8.6 tests
+    - cron: "0 0 * * *" # 12 AM UTC - Run 8.7 tests
+    - cron: "0 1 * * *" # 1 AM UTC - Run main branch tests
 
 jobs:
   nightly-tests:
@@ -41,13 +29,13 @@ jobs:
       - name: Wait for services to be ready
         run: |
           echo "Checking if services are up..."
-          for i in {1..30}; do
+          for i in {1..90}; do
             if curl -s http://localhost:8080/health | grep '"status":"UP"' && \
                curl -s http://localhost:8081/health | grep '"status":"UP"'; then
               echo "Services are ready!"
               exit 0
             fi
-            echo "Waiting for services... ($i/30)"
+            echo "Waiting for services... ($i/90)"
             sleep 10
           done
           echo "Services failed to start in time."
