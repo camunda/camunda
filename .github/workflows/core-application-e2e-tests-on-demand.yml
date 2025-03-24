@@ -1,9 +1,7 @@
 name: Core Application E2E Tests On Demand
-permissions:
-  contents: read
-  pull-requests: write
+
 on:
-  pull_request:
+  workflow_dispatch:
 
 jobs:
   setup-environment:
