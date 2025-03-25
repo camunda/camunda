@@ -57,26 +57,7 @@ import io.camunda.zeebe.util.CloseableSilently;
 import java.util.List;
 import java.util.stream.Collectors;
 
-public class SearchClients
-    implements AuthorizationSearchClient,
-        DecisionDefinitionSearchClient,
-        DecisionInstanceSearchClient,
-        DecisionRequirementSearchClient,
-        FlowNodeInstanceSearchClient,
-        FormSearchClient,
-        IncidentSearchClient,
-        ProcessDefinitionSearchClient,
-        ProcessInstanceSearchClient,
-        RoleSearchClient,
-        TenantSearchClient,
-        UserTaskSearchClient,
-        UserSearchClient,
-        VariableSearchClient,
-        MappingSearchClient,
-        GroupSearchClient,
-        UsageMetricsSearchClient,
-        BatchOperationSearchClient,
-        CloseableSilently {
+public class SearchClients implements SearchClientsProxy, CloseableSilently {
 
   private final DocumentBasedSearchClient searchClient;
   private final ServiceTransformers transformers;

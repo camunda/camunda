@@ -8,24 +8,7 @@
 package io.camunda.search.rdbms;
 
 import io.camunda.db.rdbms.RdbmsService;
-import io.camunda.search.clients.AuthorizationSearchClient;
-import io.camunda.search.clients.BatchOperationSearchClient;
-import io.camunda.search.clients.DecisionDefinitionSearchClient;
-import io.camunda.search.clients.DecisionInstanceSearchClient;
-import io.camunda.search.clients.DecisionRequirementSearchClient;
-import io.camunda.search.clients.FlowNodeInstanceSearchClient;
-import io.camunda.search.clients.FormSearchClient;
-import io.camunda.search.clients.GroupSearchClient;
-import io.camunda.search.clients.IncidentSearchClient;
-import io.camunda.search.clients.MappingSearchClient;
-import io.camunda.search.clients.ProcessDefinitionSearchClient;
-import io.camunda.search.clients.ProcessInstanceSearchClient;
-import io.camunda.search.clients.RoleSearchClient;
-import io.camunda.search.clients.TenantSearchClient;
-import io.camunda.search.clients.UsageMetricsSearchClient;
-import io.camunda.search.clients.UserSearchClient;
-import io.camunda.search.clients.UserTaskSearchClient;
-import io.camunda.search.clients.VariableSearchClient;
+import io.camunda.search.clients.SearchClientsProxy;
 import io.camunda.search.entities.AuthorizationEntity;
 import io.camunda.search.entities.BatchOperationEntity;
 import io.camunda.search.entities.BatchOperationEntity.BatchOperationItemEntity;
@@ -70,25 +53,7 @@ import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class RdbmsSearchClient
-    implements AuthorizationSearchClient,
-        DecisionDefinitionSearchClient,
-        DecisionInstanceSearchClient,
-        DecisionRequirementSearchClient,
-        FlowNodeInstanceSearchClient,
-        FormSearchClient,
-        IncidentSearchClient,
-        ProcessInstanceSearchClient,
-        ProcessDefinitionSearchClient,
-        UserTaskSearchClient,
-        UserSearchClient,
-        VariableSearchClient,
-        RoleSearchClient,
-        TenantSearchClient,
-        MappingSearchClient,
-        GroupSearchClient,
-        UsageMetricsSearchClient,
-        BatchOperationSearchClient {
+public class RdbmsSearchClient implements SearchClientsProxy {
 
   private static final Logger LOG = LoggerFactory.getLogger(RdbmsSearchClient.class);
 
@@ -307,6 +272,13 @@ public class RdbmsSearchClient
   }
 
   @Override
+  public List<ProcessDefinitionFlowNodeStatisticsEntity> processDefinitionFlowNodeStatistics(
+      final ProcessDefinitionStatisticsFilter filter) {
+    LOG.debug("[RDBMS Search Client] Query processDefinition statistics: {}", filter);
+    return rdbmsService.getProcessDefinitionReader().flowNodeStatistics(filter);
+  }
+
+  @Override
   public SearchQueryResult<BatchOperationEntity> searchBatchOperations(
       final BatchOperationQuery query) {
     LOG.debug("[RDBMS Search Client] Search for batch operations: {}", query);
@@ -325,12 +297,5 @@ public class RdbmsSearchClient
     // return rdbmsService.getBatchOperationReader().getItems(batchOperationKey);
     throw new UnsupportedOperationException(
         "BatchOperationSearchClient getBatchOperationItems not implemented yet.");
-  }
-
-  @Override
-  public List<ProcessDefinitionFlowNodeStatisticsEntity> processDefinitionFlowNodeStatistics(
-      final ProcessDefinitionStatisticsFilter filter) {
-    LOG.debug("[RDBMS Search Client] Query processDefinition statistics: {}", filter);
-    return rdbmsService.getProcessDefinitionReader().flowNodeStatistics(filter);
   }
 }
