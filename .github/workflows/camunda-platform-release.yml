@@ -157,7 +157,7 @@ jobs:
           IFS='\n' readarray -t files <<< $(find . -name 'ignored-changes.json')
           for file in "${files[@]}"; do
             if [ '${{ inputs.dryRun }}' = 'false' ]; then
-              "[DRY RUN] rm -f ${file}"
+              echo "[DRY RUN] rm -f ${file}"
             else
               rm -f "${file}"
             fi
