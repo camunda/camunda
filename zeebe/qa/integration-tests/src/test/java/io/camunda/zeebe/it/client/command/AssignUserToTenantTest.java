@@ -113,7 +113,70 @@ class AssignUserToTenantTest {
         .isInstanceOf(ProblemException.class)
         .hasMessageContaining("Failed with code 404: 'Not Found'")
         .hasMessageContaining(
-            "Expected to add user '%s' to tenant '%s', but the user doesn't exist."
+            "Expected to add user with id '%s' to tenant with id '%s', but the user doesn't exist."
                 .formatted(invalidUserName, TENANT_ID));
+  }
+
+  @Test
+  void shouldRejectAssignIfTenantAlreadyAssignedToUser() {
+    // Given
+    client.newAssignUserToTenantCommand(TENANT_ID).username(USERNAME).send().join();
+
+    // When / Then
+    assertThatThrownBy(
+            () -> client.newAssignUserToTenantCommand(TENANT_ID).username(USERNAME).send().join())
+        .isInstanceOf(ProblemException.class)
+        .hasMessageContaining("Failed with code 409: 'Conflict'")
+        .hasMessageContaining(
+            "Expected to add user with id '%s' to tenant with id '%s', but the user is already assigned to the tenant."
+                .formatted(USERNAME, TENANT_ID));
+  }
+
+  @Test
+  void shouldRejectAssignIfTenantAlreadyAssignedToMapping() {
+    // Given
+    final var mappingId = "mappingId";
+    final var mappingKey =
+        client
+            .newCreateMappingCommand()
+            .id(mappingId)
+            .name("mappingName")
+            .claimName("claimName")
+            .claimValue("claimValue")
+            .send()
+            .join()
+            .getMappingKey();
+    client.newAssignMappingToTenantCommand(TENANT_ID).mappingKey(mappingKey).send().join();
+
+    // When / Then
+    assertThatThrownBy(
+            () ->
+                client
+                    .newAssignMappingToTenantCommand(TENANT_ID)
+                    .mappingKey(mappingKey)
+                    .send()
+                    .join())
+        .isInstanceOf(ProblemException.class)
+        .hasMessageContaining("Failed with code 409: 'Conflict'")
+        .hasMessageContaining(
+            "Expected to add mapping with id '%s' to tenant with id '%s', but the mapping is already assigned to the tenant."
+                .formatted(mappingKey, TENANT_ID));
+  }
+
+  @Test
+  void shouldRejectAssignIfTenantAlreadyAssignedToGroup() {
+    // Given
+    final var groupKey =
+        client.newCreateGroupCommand().name("groupName").send().join().getGroupKey();
+    client.newAssignGroupToTenantCommand(TENANT_ID).groupKey(groupKey).send().join();
+
+    // When / Then
+    assertThatThrownBy(
+            () -> client.newAssignGroupToTenantCommand(TENANT_ID).groupKey(groupKey).send().join())
+        .isInstanceOf(ProblemException.class)
+        .hasMessageContaining("Failed with code 409: 'Conflict'")
+        .hasMessageContaining(
+            "Expected to add group with id '%s' to tenant with id '%s', but the group is already assigned to the tenant."
+                .formatted(groupKey, TENANT_ID));
   }
 }
