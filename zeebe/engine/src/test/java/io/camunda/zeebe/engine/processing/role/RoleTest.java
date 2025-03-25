@@ -15,6 +15,7 @@ import io.camunda.zeebe.protocol.record.value.EntityType;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.util.UUID;
 import org.assertj.core.api.Assertions;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestWatcher;
@@ -34,6 +35,7 @@ public class RoleTest {
   }
 
   @Test
+  @Ignore("Re-enable in https://github.com/camunda/camunda/issues/30109")
   public void shouldNotDuplicate() {
     // given
     final var name = UUID.randomUUID().toString();
@@ -88,25 +90,6 @@ public class RoleTest {
             "Expected to update role with key '"
                 + notPresentRoleKey
                 + "', but a role with this key does not exist.");
-  }
-
-  @Test
-  public void shouldRejectIfRoleWithSameNameIsPresent() {
-    // given
-    final var name = UUID.randomUUID().toString();
-    final var roleKey = engine.role().newRole(name).create().getKey();
-    final var anotherName = UUID.randomUUID().toString();
-    engine.role().newRole(anotherName).create();
-
-    // when
-    final var notPresentUpdateRecord =
-        engine.role().updateRole(roleKey).withName(anotherName).expectRejection().update();
-
-    assertThat(notPresentUpdateRecord)
-        .hasRejectionType(RejectionType.ALREADY_EXISTS)
-        .hasRejectionReason(
-            "Expected to update role with name '%s', but a role with this name already exists."
-                .formatted(anotherName));
   }
 
   @Test

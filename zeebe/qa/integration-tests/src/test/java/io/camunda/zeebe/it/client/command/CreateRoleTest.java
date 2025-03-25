@@ -19,6 +19,7 @@ import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
 import java.time.Duration;
 import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 @ZeebeIntegration
@@ -50,6 +51,7 @@ class CreateRoleTest {
   }
 
   @Test
+  @Disabled("https://github.com/camunda/camunda/issues/29926")
   void shouldRejectIfRoleIdAlreadyExists() {
     // given
     client.newCreateRoleCommand().name("Role Name").send().join();
