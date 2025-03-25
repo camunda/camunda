@@ -12,7 +12,7 @@
   <parent>
     <groupId>io.camunda</groupId>
     <artifactId>identity-parent</artifactId>
-    <version>8.8.0-alpha4-rc1-SNAPSHOT</version>
+    <version>8.8.0-SNAPSHOT</version>
     <relativePath>../pom.xml</relativePath>
   </parent>
   <artifactId>identity-webjar</artifactId>
