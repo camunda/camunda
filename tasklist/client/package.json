@@ -93,7 +93,7 @@
     "eslint": "9.19.0",
     "eslint-config-prettier": "10.0.2",
     "eslint-plugin-license-header": "0.6.1",
-    "eslint-plugin-prettier": "5.2.4",
+    "eslint-plugin-prettier": "5.2.5",
     "eslint-plugin-react-hooks": "5.1.0",
     "eslint-plugin-react-refresh": "0.4.19",
     "eslint-plugin-testing-library": "7.1.1",
