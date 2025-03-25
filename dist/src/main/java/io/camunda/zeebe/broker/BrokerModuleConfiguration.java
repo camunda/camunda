@@ -78,7 +78,7 @@ public class BrokerModuleConfiguration implements CloseableSilently {
       @Autowired(required = false) final UserServices userServices,
       final PasswordEncoder passwordEncoder,
       @Autowired(required = false) final JwtDecoder jwtDecoder,
-      final SearchClientsProxy searchClientsProxy) {
+      @Autowired(required = false) final SearchClientsProxy searchClientsProxy) {
     this.configuration = configuration;
     this.identityConfiguration = identityConfiguration;
     this.springBrokerBridge = springBrokerBridge;
