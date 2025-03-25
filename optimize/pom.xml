@@ -143,6 +143,12 @@
   <dependencies>
     <!-- Common test dependencies-->
     <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>zeebe-build-tools</artifactId>
+      <version>${project.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
       <groupId>org.junit.jupiter</groupId>
       <artifactId>junit-jupiter-api</artifactId>
       <version>${junit.jupiter.version}</version>
