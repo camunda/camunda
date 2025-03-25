@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.broker;
 
+import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.broker.bootstrap.BrokerContext;
 import io.camunda.zeebe.broker.bootstrap.BrokerStartupContextImpl;
 import io.camunda.zeebe.broker.bootstrap.BrokerStartupProcess;
@@ -64,10 +65,11 @@ public final class Broker implements AutoCloseable {
 
     final ActorScheduler scheduler = this.systemContext.getScheduler();
     final BrokerInfo localBroker = createBrokerInfo(getConfig());
+    final var nodeId = MemberId.from(String.valueOf(getConfig().getCluster().getNodeId()));
 
     healthCheckService =
         new BrokerHealthCheckService(
-            localBroker,
+            nodeId,
             new HealthTreeMetrics(systemContext.getMeterRegistry(), Tag.of("partition", "none")));
 
     final var startupContext =
@@ -131,6 +133,10 @@ public final class Broker implements AutoCloseable {
     }
   }
 
+  /**
+   * Create an instance of BrokerInfo with the fields that can be initialized from the
+   * configuration. It does not initialize fields that are part of the ClusterConfiguration.
+   */
   private BrokerInfo createBrokerInfo(final BrokerCfg brokerCfg) {
     final var clusterCfg = brokerCfg.getCluster();
 
@@ -139,11 +145,6 @@ public final class Broker implements AutoCloseable {
             clusterCfg.getNodeId(),
             NetUtil.toSocketAddressString(
                 brokerCfg.getNetwork().getCommandApi().getAdvertisedAddress()));
-
-    result
-        .setClusterSize(clusterCfg.getClusterSize())
-        .setPartitionsCount(clusterCfg.getPartitionsCount())
-        .setReplicationFactor(clusterCfg.getReplicationFactor());
 
     final String version = VersionUtil.getVersion();
     if (version != null && !version.isBlank()) {

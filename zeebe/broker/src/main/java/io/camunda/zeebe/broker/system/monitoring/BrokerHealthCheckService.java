@@ -12,7 +12,6 @@ import io.atomix.primitive.partition.PartitionMetadata;
 import io.camunda.zeebe.broker.Loggers;
 import io.camunda.zeebe.broker.PartitionRaftListener;
 import io.camunda.zeebe.broker.system.partitions.ZeebePartition;
-import io.camunda.zeebe.protocol.impl.encoding.BrokerInfo;
 import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.health.CriticalComponentsHealthMonitor;
@@ -101,11 +100,9 @@ public final class BrokerHealthCheckService extends Actor implements PartitionRa
   private volatile boolean allPartitionsInstalled = false;
   private volatile boolean brokerStarted = false;
   private final HealthMonitor healthMonitor;
-  private final MemberId nodeId;
 
   public BrokerHealthCheckService(
-      final BrokerInfo localBroker, final HealthTreeMetrics healthGraphMetrics) {
-    nodeId = MemberId.from(String.valueOf(localBroker.getNodeId()));
+      final MemberId nodeId, final HealthTreeMetrics healthGraphMetrics) {
     healthMonitor =
         new CriticalComponentsHealthMonitor(
             "Broker-" + nodeId, actor, healthGraphMetrics, Optional.empty(), LOG);
