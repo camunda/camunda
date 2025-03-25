@@ -141,7 +141,17 @@ public interface BpmnElementProcessor<T extends ExecutableFlowElement> {
    * @param element the instance of the BPMN element that is executed
    * @param context process instance-related data of the element that is executed
    */
-  default void onTerminate(final T element, final BpmnElementContext context) {}
+  default TransitionState onTerminate(final T element, final BpmnElementContext context) {
+    return TransitionState.CONTINUE;
+  }
 
-  default void finalizeTerminate(final T element, final BpmnElementContext context) {}
+  default void finalizeTermination(final T element, final BpmnElementContext context) {}
+
+  enum TransitionState {
+    /** Continue processing by invoking the related `finalize****` transition method */
+    CONTINUE,
+
+    /** The transition should stop and wait for the trigger to finalize the transition. */
+    AWAIT
+  }
 }

@@ -175,7 +175,10 @@ public final class BpmnStreamProcessor implements TypedRecordProcessor<ProcessIn
         break;
       case TERMINATE_ELEMENT:
         final var terminatingContext = stateTransitionBehavior.transitionToTerminating(context);
-        processor.onTerminate(element, terminatingContext);
+        switch (processor.onTerminate(element, terminatingContext)) {
+          case CONTINUE -> processor.finalizeTermination(element, terminatingContext);
+          case AWAIT -> System.out.println("Awaiting termination");
+        }
         break;
       case COMPLETE_EXECUTION_LISTENER:
         final ProcessInstanceIntent elementState =
