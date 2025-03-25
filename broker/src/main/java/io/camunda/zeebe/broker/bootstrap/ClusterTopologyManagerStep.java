@@ -34,7 +34,22 @@ public class ClusterTopologyManagerStep
         .onComplete(
             (ignore, error) -> {
               if (error == null) {
+<<<<<<< HEAD:broker/src/main/java/io/camunda/zeebe/broker/bootstrap/ClusterTopologyManagerStep.java
                 brokerStartupContext.setClusterTopology(clusterTopologyService);
+=======
+                brokerStartupContext.setClusterConfigurationService(clusterConfigurationService);
+                final var brokerInfo = brokerStartupContext.getBrokerInfo();
+                final var clusterConfiguration =
+                    brokerStartupContext
+                        .getBrokerClient()
+                        .getTopologyManager()
+                        .getClusterConfiguration();
+                brokerInfo
+                    .setClusterSize(clusterConfiguration.clusterSize())
+                    .setPartitionsCount(clusterConfiguration.partitionCount())
+                    .setReplicationFactor(clusterConfiguration.minReplicationFactor());
+
+>>>>>>> 9f146675 (fix: initialize BrokerInfo from ClusterConfiguration instead of configuration):zeebe/broker/src/main/java/io/camunda/zeebe/broker/bootstrap/ClusterConfigurationManagerStep.java
                 started.complete(brokerStartupContext);
               } else {
                 started.completeExceptionally(error);
