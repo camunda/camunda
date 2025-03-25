@@ -18,8 +18,11 @@ package io.camunda.client.impl.search.filter.builder;
 import io.camunda.client.api.search.enums.ProcessInstanceState;
 import io.camunda.client.api.search.filter.ProcessInstanceStateFilterProperty;
 import io.camunda.client.api.search.filter.builder.ProcessInstanceStateProperty;
+import io.camunda.client.api.search.response.ProcessInstanceState;
 import io.camunda.client.impl.util.CollectionUtil;
+import io.camunda.client.protocol.rest.ProcessInstanceStateFilterProperty;
 import java.util.List;
+import java.util.stream.Collectors;
 
 public class ProcessInstanceStatePropertyImpl implements ProcessInstanceStateProperty {
   private final ProcessInstanceStateFilterProperty filterProperty =
@@ -27,13 +30,13 @@ public class ProcessInstanceStatePropertyImpl implements ProcessInstanceStatePro
 
   @Override
   public ProcessInstanceStateProperty eq(final ProcessInstanceState value) {
-    filterProperty.setEq(value);
+    filterProperty.setEq(ProcessInstanceState.toProtocolState(value));
     return this;
   }
 
   @Override
   public ProcessInstanceStateProperty neq(final ProcessInstanceState value) {
-    filterProperty.setNeq(value);
+    filterProperty.setNeq(ProcessInstanceState.toProtocolState(value));
     return this;
   }
 
@@ -44,19 +47,20 @@ public class ProcessInstanceStatePropertyImpl implements ProcessInstanceStatePro
   }
 
   @Override
-  public ProcessInstanceStateFilterProperty build() {
-    return filterProperty;
-  }
-
-  @Override
   public ProcessInstanceStateProperty in(final List<ProcessInstanceState> values) {
-    filterProperty.setIn(values);
+    filterProperty.setIn(
+        values.stream().map(ProcessInstanceState::toProtocolState).collect(Collectors.toList()));
     return this;
   }
 
   @Override
   public ProcessInstanceStateProperty in(final ProcessInstanceState... values) {
     return in(CollectionUtil.toList(values));
+  }
+
+  @Override
+  public ProcessInstanceStateFilterProperty build() {
+    return filterProperty;
   }
 
   @Override

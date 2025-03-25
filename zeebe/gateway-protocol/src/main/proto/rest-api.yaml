@@ -4901,11 +4901,8 @@ components:
           type: string
         state:
           description: State of flow node instance as defined set of values.
-          type: string
-          enum:
-            - ACTIVE
-            - COMPLETED
-            - TERMINATED
+          allOf:
+            - $ref: "#/components/schemas/FlowNodeInstanceStateFilterProperty"
         type:
           description: Type of flow node as defined set of values.
           type: string
@@ -5022,11 +5019,8 @@ components:
             - UNKNOWN
         state:
           description: State of flow node instance as defined set of values.
-          type: string
-          enum:
-            - ACTIVE
-            - COMPLETED
-            - TERMINATED
+          allOf:
+            - "$ref": "#/components/schemas/FlowNodeInstanceStateEnum"
         hasIncident:
           description: Shows whether this flow node instance has an incident. If true also an incidentKey is provided.
           type: boolean
