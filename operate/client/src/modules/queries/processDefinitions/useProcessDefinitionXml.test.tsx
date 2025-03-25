@@ -11,6 +11,7 @@ import {QueryClientProvider} from '@tanstack/react-query';
 import {useProcessDefinitionXml} from './useProcessDefinitionXml';
 import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
+
 jest.mock('modules/hooks/useProcessInstancesFilters');
 
 describe('useProcessDefinitionXml', () => {
@@ -22,7 +23,7 @@ describe('useProcessDefinitionXml', () => {
     );
   };
 
-  it('should fetch and parse process definition xml successfully', async () => {
+  it('should fetch and parse process definition XML successfully', async () => {
     const mockXml = `<?xml version="1.0" encoding="UTF-8"?>
       <bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:modeler="http://camunda.org/schema/modeler/1.0" id="Definitions_0lflhvc" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="5.31.0" modeler:executionPlatform="Camunda Cloud" modeler:executionPlatformVersion="8.6.0">
         <bpmn:process id="Process_1uk8sj2" isExecutable="true">
@@ -76,8 +77,7 @@ describe('useProcessDefinitionXml', () => {
       },
     );
 
-    await waitFor(() => expect(result.current.data).resolves.not.toBeNull());
-
+    await waitFor(() => expect(result.current.data).toBeDefined());
     const resolvedData = await result.current.data;
 
     expect(resolvedData?.xml).toBe(mockXml);

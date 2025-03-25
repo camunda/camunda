@@ -10,16 +10,23 @@ import {
   fetchProcessDefinitionXml,
   ProcessDefinitionKey,
 } from 'modules/api/v2/processDefinitions/fetchProcessDefinitionXml';
-import {genericQueryOptions} from '../genericQuery';
+import {useQuery} from '@tanstack/react-query';
 import {parseDiagramXML} from 'modules/utils/bpmn';
 import {getFlowNodes} from 'modules/utils/flowNodes';
-import {useQuery} from '@tanstack/react-query';
+import {DiagramModel} from 'bpmn-moddle';
+import {BusinessObject} from 'bpmn-js/lib/NavigatedViewer';
+
+type ParsedXmlData = {
+  xml: string;
+  diagramModel: DiagramModel;
+  selectableFlowNodes: BusinessObject[];
+};
 
 function getQueryKey(processDefinitionKey: ProcessDefinitionKey) {
   return ['processDefinitionXml', processDefinitionKey];
 }
 
-async function processDefinitionParser(data: string) {
+async function processDefinitionParser(data: string): Promise<ParsedXmlData> {
   const diagramModel = await parseDiagramXML(data);
   const selectableFlowNodes = getFlowNodes(diagramModel?.elementsById);
 
@@ -28,26 +35,31 @@ async function processDefinitionParser(data: string) {
 
 function useProcessDefinitionXml({
   processDefinitionKey,
+  select,
   enabled,
 }: {
   processDefinitionKey: ProcessDefinitionKey;
+  select?: (data: ParsedXmlData) => ParsedXmlData;
   enabled?: boolean;
 }) {
   const queryKey = getQueryKey(processDefinitionKey);
 
-  const queryResults = useQuery(
-    genericQueryOptions(
-      queryKey,
-      () => fetchProcessDefinitionXml(processDefinitionKey),
-      {
-        queryKey,
-        enabled,
-        select: processDefinitionParser,
-      },
-    ),
-  );
+  return useQuery<ParsedXmlData, Error>({
+    queryKey,
+    queryFn: async () => {
+      const {response, error} =
+        await fetchProcessDefinitionXml(processDefinitionKey);
 
-  return queryResults;
+      if (response !== null) {
+        return processDefinitionParser(response);
+      }
+
+      throw error;
+    },
+    enabled,
+    select,
+  });
 }
 
 export {useProcessDefinitionXml};
+export type {ParsedXmlData};
