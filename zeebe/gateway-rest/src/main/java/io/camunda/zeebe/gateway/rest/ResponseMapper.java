@@ -519,7 +519,9 @@ public final class ResponseMapper {
 
   public static ResponseEntity<Object> toGroupCreateResponse(final GroupRecord groupRecord) {
     final var response =
-        new GroupCreateResult().groupKey(KeyUtil.keyToString(groupRecord.getGroupKey()));
+        new GroupCreateResult().groupKey(KeyUtil.keyToString(groupRecord.getGroupKey())).name(groupRecord.getName());
+          // TODO: uncommend this line when implementing https://github.com/camunda/camunda/issues/30021
+          // .groupId(groupRecord.getGroupId());
     return new ResponseEntity<>(response, HttpStatus.CREATED);
   }
 
