@@ -47,8 +47,9 @@ public class GroupControllerTest extends RestControllerTest {
   @Test
   void shouldAcceptCreateGroupRequest() {
     // given
+    final var groupId = "groupId";
     final var groupName = "testGroup";
-    when(groupServices.createGroup(groupName))
+    when(groupServices.createGroup(groupId, groupName))
         .thenReturn(
             CompletableFuture.completedFuture(
                 new GroupRecord().setEntityKey(1L).setName(groupName)));
@@ -59,13 +60,13 @@ public class GroupControllerTest extends RestControllerTest {
         .uri(GROUP_BASE_URL)
         .accept(MediaType.APPLICATION_JSON)
         .contentType(MediaType.APPLICATION_JSON)
-        .bodyValue(new GroupCreateRequest().name(groupName))
+        .bodyValue(new GroupCreateRequest().name(groupName).groupId(groupId))
         .exchange()
         .expectStatus()
         .isCreated();
 
     // then
-    verify(groupServices, times(1)).createGroup(groupName);
+    verify(groupServices, times(1)).createGroup(groupId, groupName);
   }
 
   @Test
@@ -76,7 +77,7 @@ public class GroupControllerTest extends RestControllerTest {
         .uri(GROUP_BASE_URL)
         .accept(MediaType.APPLICATION_JSON)
         .contentType(MediaType.APPLICATION_JSON)
-        .bodyValue(new GroupCreateRequest().name(""))
+        .bodyValue(new GroupCreateRequest().name("").groupId("groupId"))
         .exchange()
         .expectStatus()
         .isBadRequest()
@@ -88,6 +89,124 @@ public class GroupControllerTest extends RestControllerTest {
               "status": 400,
               "title": "INVALID_ARGUMENT",
               "detail": "No name provided.",
+              "instance": "%s"
+            }"""
+                .formatted(GROUP_BASE_URL));
+
+    // then
+    verifyNoInteractions(groupServices);
+  }
+
+  @Test
+  void shouldFailOnCreateGroupWithNoGroupId() {
+    // when
+    webClient
+        .post()
+        .uri(GROUP_BASE_URL)
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(new GroupCreateRequest().name("name"))
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectBody()
+        .json(
+            """
+            {
+              "type": "about:blank",
+              "status": 400,
+              "title": "INVALID_ARGUMENT",
+              "detail": "No groupId provided.",
+              "instance": "%s"
+            }"""
+                .formatted(GROUP_BASE_URL));
+
+    // then
+    verifyNoInteractions(groupServices);
+  }
+
+  @Test
+  void shouldFailOnCreateGroupWithEmptyGroupId() {
+    // when
+    webClient
+        .post()
+        .uri(GROUP_BASE_URL)
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(new GroupCreateRequest().name("name").groupId(""))
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectBody()
+        .json(
+            """
+            {
+              "type": "about:blank",
+              "status": 400,
+              "title": "INVALID_ARGUMENT",
+              "detail": "No groupId provided.",
+              "instance": "%s"
+            }"""
+                .formatted(GROUP_BASE_URL));
+
+    // then
+    verifyNoInteractions(groupServices);
+  }
+
+  @Test
+  void shouldFailOnCreateGroupWithTooLongGroupId() {
+    // given
+    final var groupId = "x".repeat(257);
+
+    // when
+    webClient
+        .post()
+        .uri(GROUP_BASE_URL)
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(new GroupCreateRequest().name("name").groupId(groupId))
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectBody()
+        .json(
+            """
+            {
+              "type": "about:blank",
+              "status": 400,
+              "title": "INVALID_ARGUMENT",
+              "detail": "The value for groupId is '%s' but must be less than 256 characters.",
+              "instance": "%s"
+            }"""
+                .formatted(groupId, GROUP_BASE_URL));
+
+    // then
+    verifyNoInteractions(groupServices);
+  }
+
+  @Test
+  void shouldFailOnCreateGroupWithNonAlphanumericGroupId() {
+    // given
+    final var groupId = "groupId123@";
+
+    // when
+    webClient
+        .post()
+        .uri(GROUP_BASE_URL)
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(new GroupCreateRequest().name("name").groupId(groupId))
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectBody()
+        .json(
+            """
+            {
+              "type": "about:blank",
+              "status": 400,
+              "title": "INVALID_ARGUMENT",
+              "detail": "The value for groupId is 'groupId123@' but must be alphanumeric.",
               "instance": "%s"
             }"""
                 .formatted(GROUP_BASE_URL));
