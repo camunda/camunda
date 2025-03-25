@@ -441,7 +441,8 @@ public final class EventAppliers implements EventApplier {
   private void registerUserTaskAppliers(final MutableProcessingState state) {
     register(UserTaskIntent.CREATING, new UserTaskCreatingApplier(state));
     register(UserTaskIntent.CREATED, new UserTaskCreatedApplier(state));
-    register(UserTaskIntent.CANCELING, new UserTaskCancelingApplier(state));
+    register(UserTaskIntent.CANCELING, 1, new UserTaskCancelingV1Applier(state));
+    register(UserTaskIntent.CANCELING, 2, new UserTaskCancelingV2Applier(state));
     register(UserTaskIntent.CANCELED, new UserTaskCanceledApplier(state));
     register(UserTaskIntent.COMPLETING, 1, new UserTaskCompletingV1Applier(state));
     register(UserTaskIntent.COMPLETING, 2, new UserTaskCompletingV2Applier(state));

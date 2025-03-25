@@ -14,12 +14,12 @@ import io.camunda.zeebe.engine.state.mutable.MutableUserTaskState;
 import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 
-public final class UserTaskCancelingApplier
+public final class UserTaskCancelingV1Applier
     implements TypedEventApplier<UserTaskIntent, UserTaskRecord> {
 
   private final MutableUserTaskState userTaskState;
 
-  public UserTaskCancelingApplier(final MutableProcessingState processingState) {
+  public UserTaskCancelingV1Applier(final MutableProcessingState processingState) {
     userTaskState = processingState.getUserTaskState();
   }
 
