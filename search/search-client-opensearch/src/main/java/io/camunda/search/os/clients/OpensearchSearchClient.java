@@ -17,9 +17,11 @@ import io.camunda.search.clients.core.SearchQueryRequest;
 import io.camunda.search.clients.core.SearchQueryResponse;
 import io.camunda.search.clients.core.SearchWriteResponse;
 import io.camunda.search.clients.transformers.SearchTransfomer;
+import io.camunda.search.clients.transformers.aggregate.SearchAggregationResult;
 import io.camunda.search.exception.CamundaSearchException;
 import io.camunda.search.exception.ErrorMessages;
 import io.camunda.search.os.transformers.OpensearchTransformers;
+import io.camunda.search.os.transformers.aggregator.SearchAggregationResultTransformer;
 import io.camunda.search.os.transformers.search.SearchDeleteRequestTransformer;
 import io.camunda.search.os.transformers.search.SearchGetRequestTransformer;
 import io.camunda.search.os.transformers.search.SearchGetResponseTransformer;
@@ -130,14 +132,12 @@ public class OpensearchSearchClient implements DocumentBasedSearchClient, Docume
   }
 
   @Override
-  public <T> T aggregate(final SearchQueryRequest searchRequest, final Class<T> aggregationClass) {
+  public SearchAggregationResult aggregate(final SearchQueryRequest searchRequest) {
     try {
       final var requestTransformer = getSearchRequestTransformer();
       final var request = requestTransformer.apply(searchRequest);
       final SearchResponse<?> rawSearchResponse = client.search(request, Object.class);
-      final SearchTransfomer<SearchResponse<?>, T> resultTransformer =
-          transformers.getTransformer(aggregationClass);
-      return resultTransformer.apply(rawSearchResponse);
+      return getSearchAggregationResultTransformer().apply(rawSearchResponse);
     } catch (final IOException | OpenSearchException e) {
       throw new CamundaSearchException(ErrorMessages.ERROR_FAILED_AGGREGATE_QUERY, e);
     }
@@ -228,6 +228,12 @@ public class OpensearchSearchClient implements DocumentBasedSearchClient, Docume
     final SearchTransfomer<WriteResponseBase, SearchWriteResponse> transformer =
         transformers.getTransformer(SearchWriteResponse.class);
     return (SearchWriteResponseTransformer) transformer;
+  }
+
+  private SearchAggregationResultTransformer getSearchAggregationResultTransformer() {
+    final SearchTransfomer<SearchResponse<?>, SearchAggregationResult> transformer =
+        transformers.getTransformer(SearchAggregationResult.class);
+    return (SearchAggregationResultTransformer) transformer;
   }
 
   @Override

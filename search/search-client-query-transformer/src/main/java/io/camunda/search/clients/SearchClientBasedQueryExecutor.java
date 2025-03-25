@@ -71,7 +71,10 @@ public final class SearchClientBasedQueryExecutor {
 
   public <T extends FilterBase, R> R aggregate(
       final TypedSearchAggregationQuery<T> query, final Class<R> documentClass) {
-    return executeSearch(query, q -> searchClient.aggregate(q, documentClass));
+    final var searchAggregationResult = executeSearch(query, searchClient::aggregate);
+    return transformers
+        .getSearchAggregationResultTransformer(documentClass)
+        .apply(searchAggregationResult);
   }
 
   @VisibleForTesting

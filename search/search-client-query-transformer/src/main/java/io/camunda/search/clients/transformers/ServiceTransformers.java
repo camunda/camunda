@@ -7,8 +7,12 @@
  */
 package io.camunda.search.clients.transformers;
 
+import io.camunda.search.aggregation.ProcessDefinitionFlowNodeStatisticsAggregation;
 import io.camunda.search.clients.core.SearchQueryRequest;
 import io.camunda.search.clients.query.SearchQuery;
+import io.camunda.search.clients.transformers.aggregate.ProcessDefinitionFlowNodeStatisticsAggregationTransformer;
+import io.camunda.search.clients.transformers.aggregate.SearchAggregationResult;
+import io.camunda.search.clients.transformers.aggregate.SearchAggregationResultTransformer;
 import io.camunda.search.clients.transformers.entity.AuthorizationEntityTransformer;
 import io.camunda.search.clients.transformers.entity.DecisionDefinitionEntityTransformer;
 import io.camunda.search.clients.transformers.entity.DecisionInstanceEntityTransformer;
@@ -197,6 +201,12 @@ public final class ServiceTransformers {
     return (FilterTransformer<F>) transformer;
   }
 
+  public <R> SearchAggregationResultTransformer<R> getSearchAggregationResultTransformer(
+      final Class<R> cls) {
+    final ServiceTransformer<R, SearchAggregationResult> transformer = getTransformer(cls);
+    return (SearchAggregationResultTransformer<R>) transformer;
+  }
+
   public FieldSortingTransformer getFieldSortingTransformer(final Class<?> cls) {
     final ServiceTransformer<String, String> fieldSortingTransformer = getTransformer(cls);
     return (FieldSortingTransformer) fieldSortingTransformer;
@@ -348,5 +358,10 @@ public final class ServiceTransformers {
         new DecisionRequirementsResultConfigTransformer());
     mappers.put(
         ProcessInstanceQueryResultConfig.class, new ProcessInstanceResultConfigTransformer());
+
+    // aggregation
+    mappers.put(
+        ProcessDefinitionFlowNodeStatisticsAggregation.class,
+        new ProcessDefinitionFlowNodeStatisticsAggregationTransformer());
   }
 }
