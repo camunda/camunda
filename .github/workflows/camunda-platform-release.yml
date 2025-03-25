@@ -132,7 +132,7 @@ jobs:
             -DskipTests \
             -Dskip.docker \
             -X \
-            -DwaitBeforeTagging=10 \
+            -DwaitBeforeTagging=0 \
             -P-autoFormat \
             -DpreparationGoals="" \
             -Darguments=''
@@ -141,8 +141,9 @@ jobs:
       - name: Push Git changes
         if: ${{ env.PUSH_CHANGES == 'true' }}
         run: |
-          git push --tags
           git push --all
+          git push --tags
+# Attempt 1
 
 #      - name: Maven Perform Release
 #        id: maven-perform-release
