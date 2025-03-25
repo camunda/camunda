@@ -117,4 +117,7 @@ public interface ProcessInstanceFilter extends SearchRequestFilter {
 
   /** Filter by batchOperationId using {@link StringProperty} */
   ProcessInstanceFilter batchOperationId(final Consumer<StringProperty> fn);
+
+  /** Filter by hasRetriesLeft */
+  ProcessInstanceFilter hasRetriesLeft(final Boolean hasRetriesLeft);
 }

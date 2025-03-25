@@ -11,6 +11,7 @@ import io.camunda.db.rdbms.config.VendorDatabaseProperties;
 import io.camunda.db.rdbms.sql.DecisionInstanceMapper;
 import io.camunda.db.rdbms.sql.FlowNodeInstanceMapper;
 import io.camunda.db.rdbms.sql.IncidentMapper;
+import io.camunda.db.rdbms.sql.JobMapper;
 import io.camunda.db.rdbms.sql.ProcessInstanceMapper;
 import io.camunda.db.rdbms.sql.PurgeMapper;
 import io.camunda.db.rdbms.sql.UserTaskMapper;
@@ -26,6 +27,7 @@ import io.camunda.db.rdbms.write.service.FormWriter;
 import io.camunda.db.rdbms.write.service.GroupWriter;
 import io.camunda.db.rdbms.write.service.HistoryCleanupService;
 import io.camunda.db.rdbms.write.service.IncidentWriter;
+import io.camunda.db.rdbms.write.service.JobWriter;
 import io.camunda.db.rdbms.write.service.MappingWriter;
 import io.camunda.db.rdbms.write.service.ProcessDefinitionWriter;
 import io.camunda.db.rdbms.write.service.ProcessInstanceWriter;
@@ -57,6 +59,7 @@ public class RdbmsWriter {
   private final UserTaskWriter userTaskWriter;
   private final FormWriter formWriter;
   private final MappingWriter mappingWriter;
+  private final JobWriter jobWriter;
 
   private final HistoryCleanupService historyCleanupService;
 
@@ -72,6 +75,7 @@ public class RdbmsWriter {
       final PurgeMapper purgeMapper,
       final UserTaskMapper userTaskMapper,
       final VariableMapper variableMapper,
+      final JobMapper jobMapper,
       final VendorDatabaseProperties vendorDatabaseProperties) {
     this.executionQueue = executionQueue;
     this.exporterPositionService = exporterPositionService;
@@ -92,6 +96,7 @@ public class RdbmsWriter {
     userTaskWriter = new UserTaskWriter(executionQueue, userTaskMapper);
     formWriter = new FormWriter(executionQueue);
     mappingWriter = new MappingWriter(executionQueue);
+    jobWriter = new JobWriter(executionQueue, jobMapper);
 
     historyCleanupService =
         new HistoryCleanupService(
@@ -102,6 +107,7 @@ public class RdbmsWriter {
             userTaskWriter,
             variableWriter,
             decisionInstanceWriter,
+            jobWriter,
             metrics);
   }
 
@@ -167,6 +173,10 @@ public class RdbmsWriter {
 
   public MappingWriter getMappingWriter() {
     return mappingWriter;
+  }
+
+  public JobWriter getJobWriter() {
+    return jobWriter;
   }
 
   public ExporterPositionService getExporterPositionService() {

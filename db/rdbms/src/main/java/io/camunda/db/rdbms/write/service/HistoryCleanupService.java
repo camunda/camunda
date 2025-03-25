@@ -34,6 +34,7 @@ public class HistoryCleanupService {
   private final UserTaskWriter userTaskWriter;
   private final VariableWriter variableInstanceWriter;
   private final DecisionInstanceWriter decisionInstanceWriter;
+  private final JobWriter jobWriter;
 
   private final Map<Integer, Duration> lastCleanupInterval = new HashMap<>();
 
@@ -45,6 +46,7 @@ public class HistoryCleanupService {
       final UserTaskWriter userTaskWriter,
       final VariableWriter variableInstanceWriter,
       final DecisionInstanceWriter decisionInstanceWriter,
+      final JobWriter jobWriter,
       final RdbmsWriterMetrics metrics) {
     LOG.info(
         "Creating HistoryCleanupService with default history ttl {}", config.defaultHistoryTTL());
@@ -59,6 +61,7 @@ public class HistoryCleanupService {
     this.userTaskWriter = userTaskWriter;
     this.variableInstanceWriter = variableInstanceWriter;
     this.decisionInstanceWriter = decisionInstanceWriter;
+    this.jobWriter = jobWriter;
     this.metrics = metrics;
   }
 
@@ -76,6 +79,7 @@ public class HistoryCleanupService {
     userTaskWriter.scheduleForHistoryCleanup(processInstanceKey, historyCleanupDate);
     variableInstanceWriter.scheduleForHistoryCleanup(processInstanceKey, historyCleanupDate);
     decisionInstanceWriter.scheduleForHistoryCleanup(processInstanceKey, historyCleanupDate);
+    jobWriter.scheduleForHistoryCleanup(processInstanceKey, historyCleanupDate);
   }
 
   public Duration cleanupHistory(final int partitionId, final OffsetDateTime cleanupDate) {
@@ -101,6 +105,8 @@ public class HistoryCleanupService {
     numDeletedRecords.put(
         "decisionInstance",
         decisionInstanceWriter.cleanupHistory(partitionId, cleanupDate, cleanupBatchSize));
+    numDeletedRecords.put(
+        "job", jobWriter.cleanupHistory(partitionId, cleanupDate, cleanupBatchSize));
     final long end = System.currentTimeMillis();
     sample.close();
 

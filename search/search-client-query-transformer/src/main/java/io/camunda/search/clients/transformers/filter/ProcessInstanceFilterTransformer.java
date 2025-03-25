@@ -9,10 +9,12 @@ package io.camunda.search.clients.transformers.filter;
 
 import static io.camunda.search.clients.query.SearchQueryBuilders.*;
 import static io.camunda.webapps.schema.descriptors.IndexDescriptor.TENANT_ID;
+import static io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate.ACTIVITIES_JOIN_RELATION;
 import static io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate.BATCH_OPERATION_IDS;
 import static io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate.BPMN_PROCESS_ID;
 import static io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate.END_DATE;
 import static io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate.INCIDENT;
+import static io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate.JOB_FAILED_WITH_RETRIES_LEFT;
 import static io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate.JOIN_RELATION;
 import static io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate.KEY;
 import static io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate.PARENT_FLOW_NODE_INSTANCE_KEY;
@@ -86,7 +88,17 @@ public final class ProcessInstanceFilterTransformer
     ofNullable(stringOperations(BATCH_OPERATION_IDS, filter.batchOperationIdOperations()))
         .ifPresent(queries::addAll);
 
+    ofNullable(geHasRetriesLeftQuery(filter.hasRetriesLeft())).ifPresent(queries::add);
+
     return and(queries);
+  }
+
+  private SearchQuery geHasRetriesLeftQuery(final Boolean hasRetriesLeft) {
+    if (hasRetriesLeft != null) {
+      return hasChildQuery(
+          ACTIVITIES_JOIN_RELATION, term(JOB_FAILED_WITH_RETRIES_LEFT, hasRetriesLeft));
+    }
+    return null;
   }
 
   private SearchQuery getIsProcessInstanceQuery() {

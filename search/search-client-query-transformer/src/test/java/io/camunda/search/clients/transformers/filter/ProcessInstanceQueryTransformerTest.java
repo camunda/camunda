@@ -10,6 +10,7 @@ package io.camunda.search.clients.transformers.filter;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.search.clients.query.SearchBoolQuery;
+import io.camunda.search.clients.query.SearchHasChildQuery;
 import io.camunda.search.clients.query.SearchQueryOption;
 import io.camunda.search.clients.query.SearchRangeQuery;
 import io.camunda.search.clients.query.SearchTermQuery;
@@ -363,6 +364,33 @@ public final class ProcessInstanceQueryTransformerTest extends AbstractTransform
         ((SearchBoolQuery) queryVariant).must().get(1).queryOption(),
         "batchOperationIds",
         "ab1db89e-4822-4330-90b5-b98346f8f83a");
+  }
+
+  @Test
+  public void shouldQueryByHasRetriesLeft() {
+    // given
+    final var processInstanceFilter = FilterBuilders.processInstance(f -> f.hasRetriesLeft(true));
+
+    // when
+    final var searchRequest = transformQuery(processInstanceFilter);
+
+    // then
+    final var queryVariant = searchRequest.queryOption();
+    assertThat(queryVariant).isInstanceOf(SearchBoolQuery.class);
+    assertThat(((SearchBoolQuery) queryVariant).must()).hasSize(2);
+
+    assertIsSearchTermQuery(
+        ((SearchBoolQuery) queryVariant).must().getFirst().queryOption(),
+        "joinRelation",
+        "processInstance");
+
+    assertThat(((SearchBoolQuery) queryVariant).must().get(1).queryOption())
+        .isInstanceOfSatisfying(
+            SearchHasChildQuery.class,
+            (searchHasChildQuery) -> {
+              assertIsSearchTermQuery(
+                  searchHasChildQuery.query().queryOption(), "jobFailedWithRetriesLeft", true);
+            });
   }
 
   @Test

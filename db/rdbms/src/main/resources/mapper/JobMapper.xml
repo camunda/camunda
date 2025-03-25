@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!--
+  ~ Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+  ~ one or more contributor license agreements. See the NOTICE file distributed
+  ~ with this work for additional information regarding copyright ownership.
+  ~ Licensed under the Camunda License 1.0. You may not use this file
+  ~ except in compliance with the Camunda License 1.0.
+  -->
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="io.camunda.db.rdbms.sql.JobMapper">
+
+  <insert id="insert" parameterType="io.camunda.db.rdbms.write.domain.JobDbModel">
+    INSERT INTO ${prefix}JOB (JOB_KEY, PROCESS_INSTANCE_KEY, RETRIES, STATE, PARTITION_ID,  HISTORY_CLEANUP_DATE)
+    VALUES (#{jobKey}, #{processInstanceKey}, #{retries}, #{state}, #{partitionId}, #{historyCleanupDate, jdbcType=TIMESTAMP})
+  </insert>
+
+  <update id="update" parameterType="io.camunda.db.rdbms.write.domain.JobDbModel">
+    UPDATE ${prefix}JOB
+    SET JOB_KEY = #{jobKey},
+        PROCESS_INSTANCE_KEY = #{processInstanceKey},
+        RETRIES = #{retries},
+        STATE  = #{state},
+        HISTORY_CLEANUP_DATE = #{historyCleanupDate, jdbcType=TIMESTAMP}
+    WHERE JOB_KEY = #{jobKey}
+  </update>
+
+  <update
+    flushCache="true"
+    id="updateHistoryCleanupDate"
+    statementType="PREPARED">
+    UPDATE ${prefix}JOB SET
+      HISTORY_CLEANUP_DATE = #{historyCleanupDate, jdbcType=TIMESTAMP}
+    WHERE PROCESS_INSTANCE_KEY = #{processInstanceKey}
+  </update>
+
+  <delete
+    flushCache="true"
+    id="cleanupHistory"
+    statementType="PREPARED">
+    <bind name="tableName" value="'JOB'"/>
+    <include refid="io.camunda.db.rdbms.sql.Commons.historyCleanup"/>
+  </delete>
+
+</mapper>
