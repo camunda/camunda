@@ -231,9 +231,9 @@ jobs:
     if: needs.detect-changes.outputs.java-code-changes == 'true'
     needs: [ detect-changes ]
     name: "[IT] Elasticsearch"
-    timeout-minutes: 15
+    timeout-minutes: 10
     permissions: {}  # GITHUB_TOKEN unused in this job
-    runs-on: gcp-perf-core-8-default
+    runs-on: gcp-perf-core-16-default
     env:
       ZEEBE_TEST_DOCKER_IMAGE: localhost:5000/camunda/zeebe:current-test
     services:
@@ -275,7 +275,7 @@ jobs:
       - uses: ./.github/actions/build-zeebe
         id: build-zeebe
         with:
-          maven-extra-args: -T1C -PskipFrontendBuild
+          maven-extra-args: -T1C -Dquickly
       - name: Create build output log file
         run: echo "BUILD_OUTPUT_FILE_PATH=$(mktemp)" >> $GITHUB_ENV
       # Run specific integration tests with ES service container
@@ -286,7 +286,7 @@ jobs:
       - name: Run integration test with externalized ES
         run: >
           ./mvnw -B -T 1 --no-snapshot-updates
-          -D forkCount=1
+          -D forkCount=4
           -D maven.javadoc.skip=true
           -D skipUTs -D skipChecks
           -D failsafe.rerunFailingTestsCount=3 -D flaky.test.reportDir=failsafe-reports
@@ -322,9 +322,9 @@ jobs:
     if: needs.detect-changes.outputs.java-code-changes == 'true'
     needs: [ detect-changes ]
     name: "[IT] OpenSearch"
-    timeout-minutes: 15
+    timeout-minutes: 10
     permissions: {}  # GITHUB_TOKEN unused in this job
-    runs-on: gcp-perf-core-8-default
+    runs-on: gcp-perf-core-16-default
     env:
       ZEEBE_TEST_DOCKER_IMAGE: localhost:5000/camunda/zeebe:current-test
     services:
@@ -372,7 +372,7 @@ jobs:
       - uses: ./.github/actions/build-zeebe
         id: build-zeebe
         with:
-          maven-extra-args: -T1C -PskipFrontendBuild
+          maven-extra-args: -T1C -Dquickly
       - name: Create build output log file
         run: echo "BUILD_OUTPUT_FILE_PATH=$(mktemp)" >> $GITHUB_ENV
       # Run specific integration tests with OS service container
@@ -383,7 +383,7 @@ jobs:
       - name: Run integration test with externalized OS
         run: >
           ./mvnw -B -T 1 --no-snapshot-updates
-          -D forkCount=2
+          -D forkCount=4
           -D maven.javadoc.skip=true
           -D skipUTs -D skipChecks
           -D failsafe.rerunFailingTestsCount=3 -D flaky.test.reportDir=failsafe-reports
