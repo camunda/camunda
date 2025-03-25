@@ -15,8 +15,6 @@
  */
 package io.camunda.client.wrappers;
 
-import io.camunda.client.impl.util.EnumUtil;
-
 public enum OwnerType {
   USER,
   ROLE,
@@ -24,24 +22,4 @@ public enum OwnerType {
   MAPPING,
   UNSPECIFIED,
   UNKNOWN_ENUM_VALUE;
-
-  public static io.camunda.client.protocol.rest.OwnerTypeEnum toProtocolEnum(
-      final OwnerType value) {
-    return (value == null)
-        ? null
-        : io.camunda.client.protocol.rest.OwnerTypeEnum.fromValue(value.name());
-  }
-
-  public static OwnerType fromProtocolEnum(
-      final io.camunda.client.protocol.rest.OwnerTypeEnum value) {
-    if (value == null) {
-      return null;
-    }
-    try {
-      return OwnerType.valueOf(value.name());
-    } catch (final IllegalArgumentException e) {
-      EnumUtil.logUnknownEnumValue(value, value.getClass().getName(), values());
-      return UNKNOWN_ENUM_VALUE;
-    }
-  }
 }

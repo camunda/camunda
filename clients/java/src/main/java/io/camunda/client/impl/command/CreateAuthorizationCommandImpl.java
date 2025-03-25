@@ -28,8 +28,8 @@ import io.camunda.client.api.response.CreateAuthorizationResponse;
 import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
 import io.camunda.client.impl.response.CreateAuthorizationResponseImpl;
-import io.camunda.client.protocol.rest.AuthorizationCreateResult;
-import io.camunda.client.protocol.rest.AuthorizationRequest;
+import io.camunda.client.impl.util.EnumUtil;
+import io.camunda.client.protocol.rest.*;
 import io.camunda.client.wrappers.OwnerType;
 import io.camunda.client.wrappers.PermissionType;
 import io.camunda.client.wrappers.ResourceType;
@@ -70,7 +70,7 @@ public class CreateAuthorizationCommandImpl
   @Override
   public CreateAuthorizationCommandStep3 ownerType(final OwnerType ownerType) {
     ArgumentUtil.ensureNotNull("ownerType", ownerType);
-    request.setOwnerType(OwnerType.toProtocolEnum(ownerType));
+    request.setOwnerType(EnumUtil.convert(ownerType, OwnerTypeEnum.class));
     return this;
   }
 
@@ -85,7 +85,7 @@ public class CreateAuthorizationCommandImpl
   @Override
   public CreateAuthorizationCommandStep5 resourceType(final ResourceType resourceType) {
     ArgumentUtil.ensureNotNull("resourceType", resourceType);
-    request.setResourceType(ResourceType.toProtocolEnum(resourceType));
+    request.setResourceType(EnumUtil.convert(resourceType, ResourceTypeEnum.class));
     return this;
   }
 
@@ -94,7 +94,7 @@ public class CreateAuthorizationCommandImpl
     ArgumentUtil.ensureNotNull("permissionTypes", permissionTypes);
     request.setPermissionTypes(
         Arrays.stream(permissionTypes)
-            .map(PermissionType::toProtocolEnum)
+            .map(permissionType -> EnumUtil.convert(permissionType, PermissionTypeEnum.class))
             .collect(Collectors.toList()));
     return this;
   }

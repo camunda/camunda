@@ -15,8 +15,6 @@
  */
 package io.camunda.client.wrappers;
 
-import io.camunda.client.impl.util.EnumUtil;
-
 public class FlowNodeInstanceResult {
 
   public enum State {
@@ -24,27 +22,6 @@ public class FlowNodeInstanceResult {
     COMPLETED,
     TERMINATED,
     UNKNOWN_ENUM_VALUE;
-
-    public static io.camunda.client.protocol.rest.FlowNodeInstanceResult.StateEnum toProtocolEnum(
-        final State value) {
-      return (value == null)
-          ? null
-          : io.camunda.client.protocol.rest.FlowNodeInstanceResult.StateEnum.fromValue(
-              value.name());
-    }
-
-    public static State fromProtocolEnum(
-        final io.camunda.client.protocol.rest.FlowNodeInstanceResult.StateEnum value) {
-      if (value == null) {
-        return null;
-      }
-      try {
-        return State.valueOf(value.name());
-      } catch (final IllegalArgumentException e) {
-        EnumUtil.logUnknownEnumValue(value, value.getClass().getName(), values());
-        return UNKNOWN_ENUM_VALUE;
-      }
-    }
   }
 
   public enum Type {
@@ -75,25 +52,5 @@ public class FlowNodeInstanceResult {
     SEND_TASK,
     UNKNOWN,
     UNKNOWN_ENUM_VALUE;
-
-    public static io.camunda.client.protocol.rest.FlowNodeInstanceResult.TypeEnum toProtocolEnum(
-        final Type value) {
-      return (value == null)
-          ? null
-          : io.camunda.client.protocol.rest.FlowNodeInstanceResult.TypeEnum.fromValue(value.name());
-    }
-
-    public static Type fromProtocolEnum(
-        final io.camunda.client.protocol.rest.FlowNodeInstanceResult.TypeEnum value) {
-      if (value == null) {
-        return null;
-      }
-      try {
-        return Type.valueOf(value.name());
-      } catch (final IllegalArgumentException e) {
-        EnumUtil.logUnknownEnumValue(value, value.getClass().getName(), values());
-        return UNKNOWN_ENUM_VALUE;
-      }
-    }
   }
 }

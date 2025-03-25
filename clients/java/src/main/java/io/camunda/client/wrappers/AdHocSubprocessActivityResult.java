@@ -15,8 +15,6 @@
  */
 package io.camunda.client.wrappers;
 
-import io.camunda.client.impl.util.EnumUtil;
-
 public class AdHocSubprocessActivityResult {
 
   public enum Type {
@@ -39,26 +37,5 @@ public class AdHocSubprocessActivityResult {
     SEND_TASK,
     UNKNOWN,
     UNKNOWN_ENUM_VALUE;
-
-    public static io.camunda.client.protocol.rest.AdHocSubprocessActivityResult.TypeEnum
-        toProtocolEnum(final Type value) {
-      return (value == null)
-          ? null
-          : io.camunda.client.protocol.rest.AdHocSubprocessActivityResult.TypeEnum.fromValue(
-              value.name());
-    }
-
-    public static Type fromProtocolEnum(
-        final io.camunda.client.protocol.rest.AdHocSubprocessActivityResult.TypeEnum value) {
-      if (value == null) {
-        return null;
-      }
-      try {
-        return Type.valueOf(value.name());
-      } catch (final IllegalArgumentException e) {
-        EnumUtil.logUnknownEnumValue(value, value.getClass().getName(), values());
-        return UNKNOWN_ENUM_VALUE;
-      }
-    }
   }
 }

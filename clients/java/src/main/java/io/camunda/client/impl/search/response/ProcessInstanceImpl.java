@@ -16,6 +16,7 @@
 package io.camunda.client.impl.search.response;
 
 import io.camunda.client.api.search.response.ProcessInstance;
+import io.camunda.client.impl.util.EnumUtil;
 import io.camunda.client.impl.util.ParseUtil;
 import io.camunda.client.protocol.rest.ProcessInstanceResult;
 import io.camunda.client.wrappers.ProcessInstanceState;
@@ -47,7 +48,7 @@ public class ProcessInstanceImpl implements ProcessInstance {
     parentFlowNodeInstanceKey = ParseUtil.parseLongOrNull(item.getParentFlowNodeInstanceKey());
     startDate = item.getStartDate();
     endDate = item.getEndDate();
-    state = ProcessInstanceState.fromProtocolEnum(item.getState());
+    state = EnumUtil.convert(item.getState(), ProcessInstanceState.class);
     hasIncident = item.getHasIncident();
     tenantId = item.getTenantId();
   }

@@ -23,6 +23,7 @@ import io.camunda.client.impl.search.TypedSearchRequestPropertyProvider;
 import io.camunda.client.impl.search.filter.builder.DateTimePropertyImpl;
 import io.camunda.client.impl.search.filter.builder.IntegerPropertyImpl;
 import io.camunda.client.impl.search.filter.builder.StringPropertyImpl;
+import io.camunda.client.impl.util.EnumUtil;
 import io.camunda.client.impl.util.ParseUtil;
 import io.camunda.client.wrappers.*;
 import java.time.OffsetDateTime;
@@ -49,7 +50,8 @@ public class UserTaskFilterImpl
 
   @Override
   public UserTaskFilter state(final io.camunda.client.wrappers.UserTaskFilter.State state) {
-    filter.setState(io.camunda.client.wrappers.UserTaskFilter.State.toProtocolEnum(state));
+    filter.setState(
+        EnumUtil.convert(state, io.camunda.client.protocol.rest.UserTaskFilter.StateEnum.class));
     return this;
   }
 
