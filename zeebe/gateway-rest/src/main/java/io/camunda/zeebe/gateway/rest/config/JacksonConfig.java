@@ -12,6 +12,7 @@ import com.fasterxml.jackson.databind.module.SimpleModule;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import io.camunda.zeebe.gateway.rest.serializer.LongSerializer;
 import java.util.function.Consumer;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.converter.json.Jackson2ObjectMapperBuilder;
@@ -45,7 +46,7 @@ public class JacksonConfig {
   // To avoid conflict between the default ObjectMapper and the custom one (yamlObjectMapper)
   @Bean
   public MappingJackson2HttpMessageConverter gatewayRestMessageConverter(
-      final ObjectMapper gatewayRestObjectMapper) {
+      final @Qualifier("gatewayRestObjectMapper") ObjectMapper gatewayRestObjectMapper) {
     return new MappingJackson2HttpMessageConverter(gatewayRestObjectMapper);
   }
 }
