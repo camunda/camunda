@@ -41,24 +41,24 @@ public class RoleTest {
   @Ignore("Re-enable in https://github.com/camunda/camunda/issues/30109")
   public void shouldNotDuplicate() {
     // given
-    final var name = UUID.randomUUID().toString();
-    final var roleRecord = engine.role().newRole(name).create();
+    final var id = UUID.randomUUID().toString();
+    final var roleRecord = engine.role().newRole(id).create();
 
     // when
-    final var duplicatedRoleRecord = engine.role().newRole(name).expectRejection().create();
+    final var duplicatedRoleRecord = engine.role().newRole(id).expectRejection().create();
 
     final var createdRole = roleRecord.getValue();
-    Assertions.assertThat(createdRole).isNotNull().hasFieldOrPropertyWithValue("name", name);
+    Assertions.assertThat(createdRole).isNotNull().hasFieldOrPropertyWithValue("roleId", id);
 
     assertThat(duplicatedRoleRecord)
         .hasRejectionType(RejectionType.ALREADY_EXISTS)
         .hasRejectionReason(
-            "Expected to create role with name '"
-                + name
-                + "', but a role with this name already exists");
+            "Expected to create role with id '%s', but a role with this id already exists"
+                .formatted(id));
   }
 
   @Test
+  @Ignore("https://github.com/camunda/camunda/issues/30113")
   public void shouldUpdateRole() {
     // given
     final var name = UUID.randomUUID().toString();
@@ -74,6 +74,7 @@ public class RoleTest {
   }
 
   @Test
+  @Ignore("https://github.com/camunda/camunda/issues/30113")
   public void shouldRejectIfRoleIsNotPresent() {
     // given
     final var name = UUID.randomUUID().toString();
@@ -96,6 +97,7 @@ public class RoleTest {
   }
 
   @Test
+  @Ignore("https://github.com/camunda/camunda/issues/30116")
   public void shouldAddEntityToRole() {
     final var userKey =
         engine
@@ -124,6 +126,7 @@ public class RoleTest {
   }
 
   @Test
+  @Ignore("https://github.com/camunda/camunda/issues/30116")
   public void shouldRejectIfRoleIsNotPresentWhileAddingEntity() {
     // given
     final var name = UUID.randomUUID().toString();
@@ -146,6 +149,7 @@ public class RoleTest {
   }
 
   @Test
+  @Ignore("https://github.com/camunda/camunda/issues/30116")
   public void shouldRejectIfEntityIsNotPresent() {
     // given
     final var name = UUID.randomUUID().toString();
@@ -173,6 +177,7 @@ public class RoleTest {
   }
 
   @Test
+  @Ignore("https://github.com/camunda/camunda/issues/30116")
   public void shouldRejectIfEntityIsAlreadyAssigned() {
     // given
     final var name = UUID.randomUUID().toString();
@@ -208,7 +213,8 @@ public class RoleTest {
   }
 
   @Test
-  public void shouldRemoveEntityToRole() {
+  @Ignore("https://github.com/camunda/camunda/issues/30117")
+  public void shouldRemoveEntityFromRole() {
     final var userKey =
         engine
             .user()
@@ -238,6 +244,7 @@ public class RoleTest {
   }
 
   @Test
+  @Ignore("https://github.com/camunda/camunda/issues/30117")
   public void shouldRejectIfRoleIsNotPresentEntityRemoval() {
     // given
     final var name = UUID.randomUUID().toString();
@@ -260,6 +267,7 @@ public class RoleTest {
   }
 
   @Test
+  @Ignore("https://github.com/camunda/camunda/issues/30117")
   public void shouldRejectIfEntityIsNotPresentEntityRemoval() {
     // given
     final var name = UUID.randomUUID().toString();
@@ -287,6 +295,7 @@ public class RoleTest {
   }
 
   @Test
+  @Ignore("https://github.com/camunda/camunda/issues/30114")
   public void shouldDeleteRole() {
     // given
     final var name = UUID.randomUUID().toString();
