@@ -13,7 +13,7 @@
   <parent>
     <groupId>io.camunda</groupId>
     <artifactId>zeebe-qa</artifactId>
-    <version>8.8.0-alpha3-rc2</version>
+    <version>8.8.0-SNAPSHOT</version>
   </parent>
 
   <artifactId>zeebe-qa-integration-tests</artifactId>
