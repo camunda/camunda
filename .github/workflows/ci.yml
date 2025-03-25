@@ -233,7 +233,7 @@ jobs:
     name: "[IT] Elasticsearch"
     timeout-minutes: 15
     permissions: {}  # GITHUB_TOKEN unused in this job
-    runs-on: gcp-perf-core-8-default
+    runs-on: gcp-perf-core-16-default
     env:
       ZEEBE_TEST_DOCKER_IMAGE: localhost:5000/camunda/zeebe:current-test
     services:
@@ -286,7 +286,7 @@ jobs:
       - name: Run integration test with externalized ES
         run: >
           ./mvnw -B -T 1 --no-snapshot-updates
-          -D forkCount=1
+          -D forkCount=4
           -D maven.javadoc.skip=true
           -D skipUTs -D skipChecks
           -D failsafe.rerunFailingTestsCount=3 -D flaky.test.reportDir=failsafe-reports
@@ -324,7 +324,7 @@ jobs:
     name: "[IT] OpenSearch"
     timeout-minutes: 15
     permissions: {}  # GITHUB_TOKEN unused in this job
-    runs-on: gcp-perf-core-8-default
+    runs-on: gcp-perf-core-16-default
     env:
       ZEEBE_TEST_DOCKER_IMAGE: localhost:5000/camunda/zeebe:current-test
     services:
@@ -383,7 +383,7 @@ jobs:
       - name: Run integration test with externalized OS
         run: >
           ./mvnw -B -T 1 --no-snapshot-updates
-          -D forkCount=2
+          -D forkCount=4
           -D maven.javadoc.skip=true
           -D skipUTs -D skipChecks
           -D failsafe.rerunFailingTestsCount=3 -D flaky.test.reportDir=failsafe-reports
