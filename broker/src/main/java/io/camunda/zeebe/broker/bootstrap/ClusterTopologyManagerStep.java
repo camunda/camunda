@@ -35,6 +35,14 @@ public class ClusterTopologyManagerStep
             (ignore, error) -> {
               if (error == null) {
                 brokerStartupContext.setClusterTopology(clusterTopologyService);
+                final var brokerInfo = brokerStartupContext.getBrokerInfo();
+                final var clusterConfiguration =
+                    brokerStartupContext.getBrokerClient().getTopologyManager().getTopology();
+                brokerInfo
+                    .setClusterSize(clusterConfiguration.getClusterSize())
+                    .setPartitionsCount(clusterConfiguration.getPartitionsCount())
+                    .setReplicationFactor(clusterConfiguration.getReplicationFactor());
+
                 started.complete(brokerStartupContext);
               } else {
                 started.completeExceptionally(error);
