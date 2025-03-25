@@ -14,13 +14,18 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import org.springframework.core.io.Resource;
+import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.resource.ResourceTransformer;
 import org.springframework.web.servlet.resource.ResourceTransformerChain;
 import org.springframework.web.servlet.resource.TransformedResource;
 
+@Component
 public class YamlToJsonResourceTransformer implements ResourceTransformer {
-  private final ObjectMapper yamlMapper = new ObjectMapper(new YAMLFactory());
-  private final ObjectMapper jsonMapper = new ObjectMapper();
+  private final ObjectMapper jsonMapper;
+
+  public YamlToJsonResourceTransformer(final ObjectMapper jsonMapper) {
+    this.jsonMapper = jsonMapper;
+  }
 
   @Override
   public Resource transform(
@@ -29,6 +34,7 @@ public class YamlToJsonResourceTransformer implements ResourceTransformer {
       final ResourceTransformerChain transformerChain)
       throws IOException {
     try (final InputStream is = resource.getInputStream()) {
+      final ObjectMapper yamlMapper = new ObjectMapper(new YAMLFactory());
       final Object yamlObject = yamlMapper.readValue(is, Object.class);
       final String json = jsonMapper.writeValueAsString(yamlObject);
       final byte[] jsonBytes = json.getBytes(StandardCharsets.UTF_8);
