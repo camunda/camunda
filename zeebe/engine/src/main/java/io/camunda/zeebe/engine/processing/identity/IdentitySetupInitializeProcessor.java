@@ -102,9 +102,9 @@ public final class IdentitySetupInitializeProcessor
     final var createdNewEntities = new MutableBoolean(false);
     final var role = record.getDefaultRole();
     roleState
-        .getRoleKeyByName(role.getName())
+        .getRole(role.getRoleId())
         .ifPresentOrElse(
-            role::setRoleKey,
+            persistedRole -> role.setRoleKey(persistedRole.getRoleKey()),
             () -> {
               createdNewEntities.set(true);
               final long roleKey = keyGenerator.nextKey();
