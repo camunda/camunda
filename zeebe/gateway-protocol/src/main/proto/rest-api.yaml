@@ -2181,7 +2181,7 @@ paths:
       description: |
         Create a new role.
 
-        This API is in a Work-in-Progress state and will undergo potential breaking changes till
+        This API is in a Work-in-Progress state and will undergo potential breaking changes until
         its release with an upcoming minor release.
       requestBody:
         content:
@@ -2213,7 +2213,7 @@ paths:
       description: |
         Get a role by its key.
 
-        This API is in a Work-in-Progress state and will undergo potential breaking changes till
+        This API is in a Work-in-Progress state and will undergo potential breaking changes until
         its release with an upcoming minor release.
       parameters:
         - name: roleKey
@@ -2249,7 +2249,7 @@ paths:
       description: |
         Update a role with the given key.
 
-        This API is in a Work-in-Progress state and will undergo potential breaking changes till
+        This API is in a Work-in-Progress state and will undergo potential breaking changes until
         its release with an upcoming minor release.
       parameters:
         - name: roleKey
@@ -2287,7 +2287,7 @@ paths:
       description: |
         Deletes the role with the given key.
 
-        This API is in a Work-in-Progress state and will undergo potential breaking changes till
+        This API is in a Work-in-Progress state and will undergo potential breaking changes until
         its release with an upcoming minor release.
       parameters:
         - name: roleKey
@@ -2318,7 +2318,7 @@ paths:
       description: |
         Search for roles based on given criteria.
 
-        This API is in a Work-in-Progress state and will undergo potential breaking changes till
+        This API is in a Work-in-Progress state and will undergo potential breaking changes until
         its release with an upcoming minor release.
       requestBody:
         required: false
@@ -2355,7 +2355,7 @@ paths:
       description: |
         Create a new group.
 
-        This API is in a Work-in-Progress state and will undergo potential breaking changes till
+        This API is in a Work-in-Progress state and will undergo potential breaking changes until
         its release with an upcoming minor release.
       requestBody:
         content:
@@ -2386,7 +2386,7 @@ paths:
       description: |
         Get a group by its key.
 
-        This API is in a Work-in-Progress state and will undergo potential breaking changes till
+        This API is in a Work-in-Progress state and will undergo potential breaking changes until
         its release with an upcoming minor release.
       parameters:
         - name: groupKey
@@ -2422,7 +2422,7 @@ paths:
       description: |
         Update a group with the given key.
 
-        This API is in a Work-in-Progress state and will undergo potential breaking changes till
+        This API is in a Work-in-Progress state and will undergo potential breaking changes until
         its release with an upcoming minor release.
       parameters:
         - name: groupKey
@@ -2460,7 +2460,7 @@ paths:
       description: |
         Deletes the group with the given key.
 
-        This API is in a Work-in-Progress state and will undergo potential breaking changes till
+        This API is in a Work-in-Progress state and will undergo potential breaking changes until
         its release with an upcoming minor release.
       parameters:
         - name: groupKey
@@ -2491,7 +2491,7 @@ paths:
       description: |
         Assigns a user to a group.
 
-        This API is in a Work-in-Progress state and will undergo potential breaking changes till
+        This API is in a Work-in-Progress state and will undergo potential breaking changes until
         its release with an upcoming minor release.
       parameters:
         - name: groupKey
@@ -2535,7 +2535,7 @@ paths:
       description: |
         Unassigns a user from a group.
 
-        This API is in a Work-in-Progress state and will undergo potential breaking changes till
+        This API is in a Work-in-Progress state and will undergo potential breaking changes until
         its release with an upcoming minor release.
       parameters:
         - name: groupKey
@@ -2574,7 +2574,7 @@ paths:
       description: |
         Search for groups based on given criteria.
 
-        This API is in a Work-in-Progress state and will undergo potential breaking changes till
+        This API is in a Work-in-Progress state and will undergo potential breaking changes until
         its release with an upcoming minor release.
       requestBody:
         required: false
@@ -2649,7 +2649,7 @@ paths:
       description: |
         Deletes the mapping rule with the given key.
 
-        This API is in a Work-in-Progress state and will undergo potential breaking changes till
+        This API is in a Work-in-Progress state and will undergo potential breaking changes until
         its release with an upcoming minor release.
       parameters:
         - name: mappingKey
@@ -2681,7 +2681,7 @@ paths:
       description: |
         Search for mapping rules based on given criteria.
 
-        This API is in a Work-in-Progress state and will undergo potential breaking changes till
+        This API is in a Work-in-Progress state and will undergo potential breaking changes until
         its release with an upcoming minor release.
       requestBody:
         content:
@@ -5293,7 +5293,7 @@ components:
           items:
             type: string
             allOf:
-             - $ref: "#/components/schemas/PermissionTypeEnum"
+              - $ref: "#/components/schemas/PermissionTypeEnum"
       required:
         - ownerId
         - ownerType
@@ -7619,4 +7619,3 @@ components:
       type: http
       scheme: bearer
       bearerFormat: JWT
-
