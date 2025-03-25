@@ -44,6 +44,7 @@ import java.net.SocketTimeoutException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import org.apache.hc.core5.http.ConnectionClosedException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -76,7 +77,7 @@ public class ElasticsearchSearchClient
       final SearchResponseTransformer<T> searchResponseTransformer = getSearchResponseTransformer();
       return searchResponseTransformer.apply(rawSearchResponse);
     } catch (final IOException | ElasticsearchException e) {
-      logException(ErrorMessages.ERROR_FAILED_SEARCH_QUERY, e);
+      LOGGER.warn(ErrorMessages.ERROR_FAILED_SEARCH_QUERY, e);
       throw new CamundaSearchException(
           ErrorMessages.ERROR_FAILED_SEARCH_QUERY, e, searchExceptionToReason(e));
     }
@@ -104,7 +105,7 @@ public class ElasticsearchSearchClient
         result.addAll(items);
       }
     } catch (final IOException | ElasticsearchException e) {
-      logException(ErrorMessages.ERROR_FAILED_FIND_ALL_QUERY, e);
+      LOGGER.warn(ErrorMessages.ERROR_FAILED_FIND_ALL_QUERY, e);
       throw new CamundaSearchException(
           ErrorMessages.ERROR_FAILED_FIND_ALL_QUERY, e, searchExceptionToReason(e));
     } finally {
@@ -124,7 +125,7 @@ public class ElasticsearchSearchClient
           getSearchGetResponseTransformer();
       return getResponseTransformer.apply(rawGetResponse);
     } catch (final IOException | ElasticsearchException e) {
-      logException(ErrorMessages.ERROR_FAILED_GET_REQUEST, e);
+      LOGGER.warn(ErrorMessages.ERROR_FAILED_GET_REQUEST, e);
       throw new CamundaSearchException(
           ErrorMessages.ERROR_FAILED_GET_REQUEST, e, searchExceptionToReason(e));
     }
@@ -140,7 +141,7 @@ public class ElasticsearchSearchClient
       final var indexResponseTransformer = getSearchWriteResponseTransformer();
       return indexResponseTransformer.apply(rawIndexResponse);
     } catch (final IOException | ElasticsearchException e) {
-      logException(ErrorMessages.ERROR_FAILED_INDEX_REQUEST, e);
+      LOGGER.warn(ErrorMessages.ERROR_FAILED_INDEX_REQUEST, e);
       throw new CamundaSearchException(
           ErrorMessages.ERROR_FAILED_INDEX_REQUEST, e, searchExceptionToReason(e));
     }
@@ -155,7 +156,7 @@ public class ElasticsearchSearchClient
       final var deleteResponseTransformer = getSearchWriteResponseTransformer();
       return deleteResponseTransformer.apply(rawDeleteRequest);
     } catch (final IOException | ElasticsearchException e) {
-      logException(ErrorMessages.ERROR_FAILED_DELETE_REQUEST, e);
+      LOGGER.warn(ErrorMessages.ERROR_FAILED_DELETE_REQUEST, e);
       throw new CamundaSearchException(
           ErrorMessages.ERROR_FAILED_DELETE_REQUEST, e, searchExceptionToReason(e));
     }
@@ -172,7 +173,7 @@ public class ElasticsearchSearchClient
       try {
         client.clearScroll(r -> r.scrollId(scrollId));
       } catch (final IOException | ElasticsearchException e) {
-        logException("Failed to clear scroll.", e);
+        LOGGER.warn("Failed to clear scroll.", e);
       }
     }
   }
@@ -231,20 +232,15 @@ public class ElasticsearchSearchClient
   }
 
   private static CamundaSearchException.Reason searchExceptionToReason(final Exception e) {
-    if (e instanceof ConnectException) {
+    if (e instanceof ConnectException
+        || e instanceof SocketTimeoutException
+        || e instanceof ConnectionClosedException
+        || e instanceof org.apache.http.ConnectionClosedException) {
       return CamundaSearchException.Reason.CONNECTION_FAILED;
     }
     if (e instanceof ElasticsearchException) {
       return CamundaSearchException.Reason.SEARCH_SERVER_FAILED;
     }
     return CamundaSearchException.Reason.SEARCH_CLIENT_FAILED;
-  }
-
-  static void logException(String msg, Exception exception) {
-    if (exception instanceof SocketTimeoutException) {
-      LOGGER.warn("{}: {}", msg, exception.getMessage());
-    } else {
-      LOGGER.error(msg, exception);
-    }
   }
 }
