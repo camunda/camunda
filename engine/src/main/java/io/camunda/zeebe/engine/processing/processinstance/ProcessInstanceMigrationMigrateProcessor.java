@@ -21,6 +21,7 @@ import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
 import io.camunda.zeebe.engine.state.immutable.EventScopeInstanceState;
 import io.camunda.zeebe.engine.state.immutable.IncidentState;
 import io.camunda.zeebe.engine.state.immutable.JobState;
+import io.camunda.zeebe.engine.state.immutable.MessageState;
 import io.camunda.zeebe.engine.state.immutable.ProcessState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.state.immutable.VariableState;
@@ -80,7 +81,10 @@ public class ProcessInstanceMigrationMigrateProcessor
           Map.entry(NonExistingElementException.class, RejectionType.INVALID_ARGUMENT),
           Map.entry(
               EventSubscriptionMigrationNotSupportedException.class, RejectionType.INVALID_STATE),
-          Map.entry(ConcurrentCommandException.class, RejectionType.INVALID_STATE));
+          Map.entry(ConcurrentCommandException.class, RejectionType.INVALID_STATE),
+          Map.entry(
+              ProcessInstanceMigrationPreconditionFailedException.class,
+              RejectionType.INVALID_STATE));
 
   private static final UnsafeBuffer NIL_VALUE = new UnsafeBuffer(MsgPackHelper.NIL);
   private final VariableRecord variableRecord = new VariableRecord().setValue(NIL_VALUE);
@@ -94,6 +98,7 @@ public class ProcessInstanceMigrationMigrateProcessor
   private final VariableState variableState;
   private final IncidentState incidentState;
   private final EventScopeInstanceState eventScopeInstanceState;
+  private final MessageState messageState;
 
   public ProcessInstanceMigrationMigrateProcessor(
       final Writers writers, final ProcessingState processingState) {
@@ -106,6 +111,7 @@ public class ProcessInstanceMigrationMigrateProcessor
     variableState = processingState.getVariableState();
     incidentState = processingState.getIncidentState();
     eventScopeInstanceState = processingState.getEventScopeInstanceState();
+    messageState = processingState.getMessageState();
   }
 
   @Override
@@ -383,6 +389,9 @@ public class ProcessInstanceMigrationMigrateProcessor
       throw new ConcurrentCommandException(processInstanceKey);
     }
 
+    requireNoStartEventInstanceForTargetProcess(
+        elementInstance, targetProcessDefinition, messageState);
+
     stateWriter.appendFollowUpEvent(
         elementInstance.getKey(),
         ProcessInstanceIntent.ELEMENT_MIGRATED,
@@ -419,6 +428,60 @@ public class ProcessInstanceMigrationMigrateProcessor
                         .setProcessDefinitionKey(targetProcessDefinition.getKey())
                         .setBpmnProcessId(targetProcessDefinition.getBpmnProcessId())
                         .setTenantId(elementInstance.getValue().getTenantId())));
+  }
+
+  /**
+   * Checks whether the given target process definition has an instance triggered by a message start
+   * event with the same correlation key as the process instance. Throws exception if given target
+   * process definition already has an instance triggered by a message start event with the same
+   * correlation key as the process instance.
+   *
+   * @param processInstance process instance to do the check
+   * @param targetProcessDefinition target process definition to do the check
+   * @param messageState message state to check for existing message start event instance
+   */
+  public static void requireNoStartEventInstanceForTargetProcess(
+      final ElementInstance processInstance,
+      final DeployedProcess targetProcessDefinition,
+      final MessageState messageState) {
+    if (processInstance
+        .getValue()
+        .getBpmnProcessIdBuffer()
+        .equals(targetProcessDefinition.getBpmnProcessId())) {
+      // no need to check correlation key cardinality since bpmn process id will not change
+      return;
+    }
+
+    if (!targetProcessDefinition.getProcess().hasMessageStartEvent()) {
+      // no need to check since target process does not contain message start event
+      return;
+    }
+
+    final DirectBuffer correlationKey =
+        messageState.getProcessInstanceCorrelationKey(processInstance.getKey());
+    if (correlationKey == null) {
+      // no need to check since process instance is created without specifying correlation key
+      return;
+    }
+
+    final boolean activeProcessInstanceExistsForTarget =
+        messageState.existActiveProcessInstance(
+            processInstance.getValue().getTenantId(),
+            targetProcessDefinition.getBpmnProcessId(),
+            correlationKey);
+
+    if (activeProcessInstanceExistsForTarget) {
+      final String reason =
+          String.format(
+              """
+              Expected to migrate process instance '%d' \
+              but target process definition '%s' has an active instance triggered by a message start event with correlation key '%s'. \
+              Only one instance per correlation key is allowed for message start events.""",
+              processInstance.getKey(),
+              targetProcessDefinition.getKey(),
+              BufferUtil.bufferAsString(correlationKey));
+      throw new ProcessInstanceMigrationPreconditionFailedException(reason);
+    }
   }
 
   /**
@@ -606,6 +669,13 @@ public class ProcessInstanceMigrationMigrateProcessor
               but a concurrent command was executed on the process instance. \
               Please retry the migration.""",
               processInstanceKey));
+    }
+  }
+
+  private static final class ProcessInstanceMigrationPreconditionFailedException
+      extends RuntimeException {
+    ProcessInstanceMigrationPreconditionFailedException(final String message) {
+      super(message);
     }
   }
 }
