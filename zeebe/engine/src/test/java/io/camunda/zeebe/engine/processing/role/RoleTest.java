@@ -27,11 +27,14 @@ public class RoleTest {
 
   @Test
   public void shouldCreateRole() {
-    final var name = UUID.randomUUID().toString();
-    final var roleRecord = engine.role().newRole(name).create();
+    final var id = UUID.randomUUID().toString();
+    final var name = "name";
+    final var description = "description";
+    final var roleRecord =
+        engine.role().newRole(id).withName(name).withDescription(description).create();
 
     final var createdRole = roleRecord.getValue();
-    Assertions.assertThat(createdRole).isNotNull().hasFieldOrPropertyWithValue("name", name);
+    assertThat(createdRole).hasRoleId(id).hasName(name).hasDescription(description);
   }
 
   @Test
