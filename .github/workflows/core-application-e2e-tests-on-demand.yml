@@ -4,12 +4,12 @@ on:
   workflow_dispatch:
 
 jobs:
-  setup-environment:
+  core-e2e-component-tests:
     runs-on: ubuntu-latest
-    outputs:
-      services_ready: ${{ steps.wait-for-services.outputs.ready }}
     steps:
       - uses: actions/checkout@v4
+        with:
+            ref: ${{ github.head_ref }}
 
       - name: Install Docker and Docker Compose
         run: |
@@ -91,20 +91,6 @@ jobs:
           docker-compose logs tasklist
           docker-compose logs operate
         working-directory: qa/core-application-e2e-test-suite/config
-
-  core-component-tests:
-    needs: setup-environment
-    runs-on: ubuntu-latest
-    if: needs.setup-environment.outputs.services_ready == 'true'
-    strategy:
-      max-parallel: 1
-      fail-fast: false
-      matrix:
-        project: ["chromium"]
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          ref: ${{ github.head_ref }}
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
