@@ -22,7 +22,7 @@ jobs:
     name: Maven Release
     runs-on: gcp-core-16-release
     steps:
-# Attempt 4
+# Attempt 1
       - uses: actions/checkout@v4
         with:
           ref: ${{ env.RELEASE_BRANCH }}
@@ -30,5 +30,6 @@ jobs:
           fetch-tags: true
       - name: Push Git changes
         run: |
+          git fsck --strict --progress
           git tag 8.6.11-test-SNAPSHOT-1
           git push -v --progress origin tag 8.6.11-test-SNAPSHOT-1
