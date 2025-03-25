@@ -7,8 +7,6 @@
  */
 package io.camunda.zeebe.engine.processing.bpmn.task;
 
-import static io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnUserTaskBehavior.CANCELABLE_LIFECYCLE_STATES;
-
 import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContext;
 import io.camunda.zeebe.engine.processing.bpmn.BpmnProcessingException;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
@@ -26,11 +24,10 @@ import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableUse
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.immutable.UserTaskState;
-import io.camunda.zeebe.engine.state.immutable.UserTaskState.LifecycleState;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskListenerEventType;
 import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
-import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import io.camunda.zeebe.util.Either;
+import java.util.Optional;
 import org.apache.commons.lang3.StringUtils;
 
 public final class UserTaskProcessor extends JobWorkerTaskSupportingProcessor<ExecutableUserTask> {
@@ -138,20 +135,16 @@ public final class UserTaskProcessor extends JobWorkerTaskSupportingProcessor<Ex
     incidentBehavior.resolveIncidents(context);
 
     final var elementInstance = stateBehavior.getElementInstance(context);
-    final long userTaskKey = elementInstance.getUserTaskKey();
 
-    if (userTaskKey > 0) {
-      final LifecycleState lifecycleState = userTaskState.getLifecycleState(userTaskKey);
-
-      if (CANCELABLE_LIFECYCLE_STATES.contains(lifecycleState)) {
-        final UserTaskRecord userTask = userTaskState.getUserTask(userTaskKey);
-        stateWriter.appendFollowUpEvent(userTaskKey, UserTaskIntent.CANCELING, userTask);
-
-        element.getTaskListeners(ZeebeTaskListenerEventType.canceling).stream()
-            .findFirst()
-            .ifPresentOrElse(
-                listener -> jobBehavior.createNewTaskListenerJob(context, userTask, listener),
-                () -> onFinalizeTerminateInternal(element, context));
+    final Optional<UserTaskRecord> userTaskRecord = userTaskBehavior
+        .userTaskCanceling(elementInstance);
+    if (userTaskRecord.isPresent()) {
+      if (element.hasTaskListeners(ZeebeTaskListenerEventType.canceling)) {
+        final var firstListener = element.getTaskListeners(ZeebeTaskListenerEventType.canceling)
+            .getFirst();
+        jobBehavior.createNewTaskListenerJob(context, userTaskRecord.get(), firstListener);
+      } else {
+        onFinalizeTerminateInternal(element, context);
       }
     } else {
       onFinalizeTerminateInternal(element, context);
@@ -163,16 +156,7 @@ public final class UserTaskProcessor extends JobWorkerTaskSupportingProcessor<Ex
       final ExecutableUserTask element, final BpmnElementContext context) {
 
     final var elementInstance = stateBehavior.getElementInstance(context);
-    final long userTaskKey = elementInstance.getUserTaskKey();
-    if (userTaskKey > 0) {
-      final LifecycleState lifecycleState = userTaskState.getLifecycleState(userTaskKey);
-      if (LifecycleState.CANCELING == lifecycleState) {
-        final var intermediateRecord = userTaskState.getIntermediateState(userTaskKey).getRecord();
-        final var currentUserTask = userTaskState.getUserTask(userTaskKey);
-        intermediateRecord.setDiffAsChangedAttributes(currentUserTask);
-        stateWriter.appendFollowUpEvent(userTaskKey, UserTaskIntent.CANCELED, intermediateRecord);
-      }
-    }
+    userTaskBehavior.userTaskCanceled(elementInstance);
 
     final var flowScopeInstance = stateBehavior.getFlowScopeInstance(context);
     eventSubscriptionBehavior
