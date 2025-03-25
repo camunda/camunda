@@ -84,7 +84,8 @@ public final class ReceiveTaskProcessor implements BpmnElementProcessor<Executab
   }
 
   @Override
-  public void onTerminate(final ExecutableReceiveTask element, final BpmnElementContext context) {
+  public TransitionState onTerminate(
+      final ExecutableReceiveTask element, final BpmnElementContext context) {
     final var flowScopeInstance = stateBehavior.getFlowScopeInstance(context);
 
     if (element.hasExecutionListeners()) {
@@ -113,5 +114,6 @@ public final class ReceiveTaskProcessor implements BpmnElementProcessor<Executab
                   stateTransitionBehavior.transitionToTerminated(context, element.getEventType());
               stateTransitionBehavior.onElementTerminated(element, terminated);
             });
+    return TransitionState.CONTINUE;
   }
 }

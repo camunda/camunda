@@ -78,7 +78,8 @@ public class StartEventProcessor implements BpmnElementProcessor<ExecutableStart
   }
 
   @Override
-  public void onTerminate(final ExecutableStartEvent element, final BpmnElementContext context) {
+  public TransitionState onTerminate(
+      final ExecutableStartEvent element, final BpmnElementContext context) {
     if (element.hasExecutionListeners()) {
       jobBehavior.cancelJob(context);
     }
@@ -88,6 +89,7 @@ public class StartEventProcessor implements BpmnElementProcessor<ExecutableStart
 
     incidentBehavior.resolveIncidents(terminated);
     stateTransitionBehavior.onElementTerminated(element, terminated);
+    return TransitionState.CONTINUE;
   }
 
   private BpmnElementContextImpl buildContextForFlowScopeInstance(

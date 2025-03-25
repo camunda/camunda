@@ -83,7 +83,7 @@ public final class EventBasedGatewayProcessor
   }
 
   @Override
-  public void onTerminate(
+  public TransitionState onTerminate(
       final ExecutableEventBasedGateway element, final BpmnElementContext context) {
     if (element.hasExecutionListeners()) {
       jobBehavior.cancelJob(context);
@@ -95,5 +95,6 @@ public final class EventBasedGatewayProcessor
     final var terminated =
         stateTransitionBehavior.transitionToTerminated(context, element.getEventType());
     stateTransitionBehavior.onElementTerminated(element, terminated);
+    return TransitionState.CONTINUE;
   }
 }

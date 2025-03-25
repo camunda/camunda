@@ -61,7 +61,8 @@ public final class ParallelGatewayProcessor implements BpmnElementProcessor<Exec
   }
 
   @Override
-  public void onTerminate(final ExecutableFlowNode element, final BpmnElementContext context) {
+  public TransitionState onTerminate(
+      final ExecutableFlowNode element, final BpmnElementContext context) {
     if (element.hasExecutionListeners()) {
       jobBehavior.cancelJob(context);
     }
@@ -69,5 +70,6 @@ public final class ParallelGatewayProcessor implements BpmnElementProcessor<Exec
     final var terminated =
         stateTransitionBehavior.transitionToTerminated(context, element.getEventType());
     stateTransitionBehavior.onElementTerminated(element, terminated);
+    return TransitionState.CONTINUE;
   }
 }

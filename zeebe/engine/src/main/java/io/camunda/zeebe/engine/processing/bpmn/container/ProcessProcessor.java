@@ -91,7 +91,7 @@ public final class ProcessProcessor
   }
 
   @Override
-  public void onTerminate(
+  public TransitionState onTerminate(
       final ExecutableFlowElementContainer element, final BpmnElementContext context) {
     if (element.hasExecutionListeners()) {
       jobBehavior.cancelJob(context);
@@ -112,6 +112,7 @@ public final class ProcessProcessor
                   stateTransitionBehavior.transitionToTerminated(
                       terminating, element.getEventType())));
     }
+    return TransitionState.CONTINUE;
   }
 
   private void activateStartEvent(

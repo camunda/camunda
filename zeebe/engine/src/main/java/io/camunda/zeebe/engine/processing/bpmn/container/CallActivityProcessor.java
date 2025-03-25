@@ -129,7 +129,8 @@ public final class CallActivityProcessor
   }
 
   @Override
-  public void onTerminate(final ExecutableCallActivity element, final BpmnElementContext context) {
+  public TransitionState onTerminate(
+      final ExecutableCallActivity element, final BpmnElementContext context) {
     if (element.hasExecutionListeners()) {
       jobBehavior.cancelJob(context);
     }
@@ -137,6 +138,7 @@ public final class CallActivityProcessor
     eventSubscriptionBehavior.unsubscribeFromEvents(context);
     incidentBehavior.resolveIncidents(context);
     stateTransitionBehavior.terminateChildProcessInstance(this, element, context);
+    return TransitionState.CONTINUE;
   }
 
   @Override

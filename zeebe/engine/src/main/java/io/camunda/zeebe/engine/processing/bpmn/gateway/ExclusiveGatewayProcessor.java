@@ -77,7 +77,7 @@ public final class ExclusiveGatewayProcessor
   }
 
   @Override
-  public void onTerminate(
+  public TransitionState onTerminate(
       final ExecutableExclusiveGateway element, final BpmnElementContext context) {
     if (element.hasExecutionListeners()) {
       jobBehavior.cancelJob(context);
@@ -87,6 +87,7 @@ public final class ExclusiveGatewayProcessor
     final var terminated =
         stateTransitionBehavior.transitionToTerminated(context, element.getEventType());
     stateTransitionBehavior.onElementTerminated(element, terminated);
+    return TransitionState.CONTINUE;
   }
 
   private Either<Failure, Optional<ExecutableSequenceFlow>> findSequenceFlowToTake(
