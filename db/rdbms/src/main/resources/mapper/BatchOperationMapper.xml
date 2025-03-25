@@ -9,15 +9,15 @@
     type="io.camunda.db.rdbms.write.domain.BatchOperationDbModel">
     <constructor>
       <idArg column="BATCH_OPERATION_KEY" javaType="java.lang.Long"/>
+      <arg column="STATUS"
+        javaType="io.camunda.search.entities.BatchOperationEntity$BatchOperationStatus"/>
+      <arg column="OPERATION_TYPE" javaType="java.lang.String"/>
+      <arg column="START_DATE" javaType="java.time.OffsetDateTime"/>
+      <arg column="END_DATE" javaType="java.time.OffsetDateTime"/>
+      <arg column="OPERATIONS_TOTAL_COUNT" javaType="int"/>
+      <arg column="OPERATIONS_FAILED_COUNT" javaType="int"/>
+      <arg column="OPERATIONS_COMPLETED_COUNT" javaType="int"/>
     </constructor>
-    <result column="STATUS" property="status"
-      javaType="io.camunda.search.entities.BatchOperationEntity$BatchOperationStatus"/>
-    <result column="OPERATION_TYPE" property="operationType" javaType="java.lang.String"/>
-    <result column="START_DATE" property="startDate" javaType="java.time.OffsetDateTime"/>
-    <result column="END_DATE" property="endDate" javaType="java.time.OffsetDateTime"/>
-    <result column="OPERATIONS_TOTAL_COUNT" property="operationsTotalCount" javaType="int"/>
-    <result column="OPERATIONS_FAILED_COUNT" property="operationsFailedCount" javaType="int"/>
-    <result column="OPERATIONS_COMPLETED_COUNT" property="operationsCompletedCount" javaType="int"/>
   </resultMap>
 
   <resultMap id="BatchOperationItemResultMap"

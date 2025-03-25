@@ -17,9 +17,9 @@ public record BatchOperationDbModel(
     String operationType,
     OffsetDateTime startDate,
     OffsetDateTime endDate,
-    int operationsTotalCount,
-    int operationsFailedCount,
-    int operationsCompletedCount) {
+    Integer operationsTotalCount,
+    Integer operationsFailedCount,
+    Integer operationsCompletedCount) {
 
   // Builder class
   public static class Builder implements ObjectBuilder<BatchOperationDbModel> {
@@ -29,9 +29,9 @@ public record BatchOperationDbModel(
     private String operationType;
     private OffsetDateTime startDate;
     private OffsetDateTime endDate;
-    private int operationsTotalCount;
-    private int operationsFailedCount;
-    private int operationsCompletedCount;
+    private Integer operationsTotalCount;
+    private Integer operationsFailedCount;
+    private Integer operationsCompletedCount;
 
     public Builder() {}
 
@@ -60,17 +60,17 @@ public record BatchOperationDbModel(
       return this;
     }
 
-    public Builder operationsTotalCount(final int operationsTotalCount) {
+    public Builder operationsTotalCount(final Integer operationsTotalCount) {
       this.operationsTotalCount = operationsTotalCount;
       return this;
     }
 
-    public Builder operationsFailedCount(final int operationsFailedCount) {
+    public Builder operationsFailedCount(final Integer operationsFailedCount) {
       this.operationsFailedCount = operationsFailedCount;
       return this;
     }
 
-    public Builder operationsCompletedCount(final int operationsCompletedCount) {
+    public Builder operationsCompletedCount(final Integer operationsCompletedCount) {
       this.operationsCompletedCount = operationsCompletedCount;
       return this;
     }
