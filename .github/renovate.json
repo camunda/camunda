@@ -42,7 +42,7 @@
       "enabled": false
     },
     {
-      "description": "Allow minor and patch updates for Spring and Spring-boot for our maintenance branches.",
+      "description": "Allow minor and patch updates for Spring and Spring-boot for our maintenance branches. Since Spring has a 1-year support cycle while C8 is supported for 18 months, we allow minor updates to help mitigate security risks.",
       "matchBaseBranches": [
         "/^stable\\/8\\..*/",
         "stable/operate-8.5"
