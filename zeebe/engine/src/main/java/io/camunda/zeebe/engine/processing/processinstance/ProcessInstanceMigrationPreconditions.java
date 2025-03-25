@@ -600,7 +600,7 @@ public final class ProcessInstanceMigrationPreconditions {
       final String messageNameString = BufferUtil.bufferAsString(messageName);
 
       throw new ProcessInstanceMigrationPreconditionFailedException(
-          """
+              """
           Expected to migrate process instance '%s' but active element with id '%s' \
           attempts to subscribe to a message it is already subscribed to with name '%s'. \
           Migrating active elements that subscribe to a message they are already \
@@ -628,7 +628,7 @@ public final class ProcessInstanceMigrationPreconditions {
       final String elementId) {
     if (sourceElementIdToTargetElementId.containsKey(sourceCatchEventId)) {
       throw new ProcessInstanceMigrationPreconditionFailedException(
-          """
+              """
           Expected to migrate process instance '%s' \
           but active element with id '%s' is subscribed to mapped catch event with id '%s'. \
           Migrating active elements with mapped catch events is not possible yet."""
@@ -654,7 +654,7 @@ public final class ProcessInstanceMigrationPreconditions {
       final String targetElementId) {
     if (sourceElementIdToTargetElementId.containsValue(targetCatchEventId)) {
       throw new ProcessInstanceMigrationPreconditionFailedException(
-          """
+              """
           Expected to migrate process instance '%s' \
           but active element with id '%s' is mapped to element with id '%s' \
           that must be subscribed to mapped catch event with id '%s'. \

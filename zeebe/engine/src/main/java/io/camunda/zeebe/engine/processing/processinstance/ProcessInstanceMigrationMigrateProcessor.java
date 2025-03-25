@@ -354,7 +354,7 @@ public class ProcessInstanceMigrationMigrateProcessor
         .ifLeft(
             failure -> {
               throw new ProcessInstanceMigrationPreconditionFailedException(
-                  """
+                      """
                   Expected to migrate process instance '%s' \
                   but active element with id '%s' is mapped to element with id '%s' \
                   that must be subscribed to a message catch event. %s"""
