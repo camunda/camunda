@@ -56,10 +56,11 @@ public class GroupServiceTest {
   @Test
   public void shouldCreateGroup() {
     // given
+    final var groupId = "groupId";
     final var groupName = "testGroup";
 
     // when
-    services.createGroup(groupName);
+    services.createGroup(groupId, groupName);
 
     // then
     final BrokerGroupCreateRequest request = stubbedBrokerClient.getSingleBrokerRequest();
@@ -68,6 +69,8 @@ public class GroupServiceTest {
     assertThat(request.getIntent()).isEqualTo(GroupIntent.CREATE);
     assertThat(request.getKey()).isEqualTo(-1L);
     assertThat(record).hasName(groupName);
+    // TODO: uncomment this with https://github.com/camunda/camunda/issues/30021
+    // assertThat(record).hasGroupId(groupId);
   }
 
   @Test

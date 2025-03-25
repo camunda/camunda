@@ -23,6 +23,12 @@ public class BrokerGroupCreateRequest extends BrokerExecuteCommand<GroupRecord> 
     setPartitionId(Protocol.DEPLOYMENT_PARTITION);
   }
 
+  public BrokerGroupCreateRequest setGroupId(final String groupId) {
+    // TODO: uncomment this with https://github.com/camunda/camunda/issues/30021
+    // requestDto.setGroupId(groupId);
+    return this;
+  }
+
   public BrokerGroupCreateRequest setName(final String name) {
     requestDto.setName(name);
     return this;

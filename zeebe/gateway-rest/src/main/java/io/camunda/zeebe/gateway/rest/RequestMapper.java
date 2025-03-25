@@ -319,7 +319,7 @@ public class RequestMapper {
       final GroupCreateRequest groupCreateRequest) {
     return getResult(
         GroupRequestValidator.validateCreateRequest(groupCreateRequest),
-        () -> new CreateGroupRequest(groupCreateRequest.getName()));
+        () -> new CreateGroupRequest(groupCreateRequest.getGroupId(), groupCreateRequest.getName()));
   }
 
   public static Either<ProblemDetail, UpdateGroupRequest> toGroupUpdateRequest(
@@ -1001,7 +1001,7 @@ public class RequestMapper {
 
   public record UpdateRoleRequest(long roleKey, String name) {}
 
-  public record CreateGroupRequest(String name) {}
+  public record CreateGroupRequest(String groupId, String name) {}
 
   public record UpdateGroupRequest(long groupKey, String name) {}
 }

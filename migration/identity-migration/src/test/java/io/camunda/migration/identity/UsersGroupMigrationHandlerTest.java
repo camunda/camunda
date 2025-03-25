@@ -58,7 +58,7 @@ final class UsersGroupMigrationHandlerTest {
       @Mock final ManagementIdentityClient managementIdentityClient,
       @Mock(answer = Answers.RETURNS_SELF) final GroupServices groupServices,
       @Mock(answer = Answers.RETURNS_SELF) final MappingServices mappingServices) {
-    when(groupServices.createGroup(any()))
+    when(groupServices.createGroup(any(), any()))
         .thenReturn(
             CompletableFuture.completedFuture(
                 new GroupRecord().setGroupKey(UUID.randomUUID().getMostSignificantBits())));

@@ -66,8 +66,8 @@ public class GroupServices extends SearchQueryService<GroupServices, GroupQuery,
         brokerClient, securityContextProvider, groupSearchClient, authentication);
   }
 
-  public CompletableFuture<GroupRecord> createGroup(final String name) {
-    return sendBrokerRequest(new BrokerGroupCreateRequest().setName(name));
+  public CompletableFuture<GroupRecord> createGroup(final String groupId, final String name) {
+    return sendBrokerRequest(new BrokerGroupCreateRequest().setGroupId(groupId).setName(name));
   }
 
   public GroupEntity getGroup(final Long groupKey) {
