@@ -103,7 +103,7 @@ public class TenantController {
             userQuery -> searchUsersInTenant(tenantId, userQuery));
   }
 
-  @CamundaPutMapping(path = "/{tenantId}/mapping-rules/{mappingId}")
+  @CamundaPutMapping(path = "/{tenantId}/mappings/{mappingId}")
   public CompletableFuture<ResponseEntity<Object>> assignMappingToTenant(
       @PathVariable final String tenantId, @PathVariable final String mappingId) {
     return RequestMapper.executeServiceMethodWithNoContentResult(
@@ -143,7 +143,7 @@ public class TenantController {
                 .removeMember(tenantId, EntityType.USER, username));
   }
 
-  @CamundaDeleteMapping(path = "/{tenantId}/mapping-rules/{mappingId}")
+  @CamundaDeleteMapping(path = "/{tenantId}/mappings/{mappingId}")
   public CompletableFuture<ResponseEntity<Object>> removeMappingFromTenant(
       @PathVariable final String tenantId, @PathVariable final String mappingId) {
     return RequestMapper.executeServiceMethodWithNoContentResult(
