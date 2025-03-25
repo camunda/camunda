@@ -7,9 +7,13 @@
  */
 package io.camunda.zeebe.it.clustering.dynamic;
 
+import static io.camunda.zeebe.dynamic.config.gossip.ClusterConfigurationGossiperConfig.DEFAULT_SYNC_REQUEST_TIMEOUT;
 import static io.camunda.zeebe.it.clustering.dynamic.Utils.assertChangeIsPlanned;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.zeebe.broker.system.configuration.ClusterCfg;
+import io.camunda.zeebe.broker.system.configuration.ConfigManagerCfg;
+import io.camunda.zeebe.dynamic.config.gossip.ClusterConfigurationGossiperConfig;
 import io.camunda.zeebe.protocol.record.intent.MessageIntent;
 import io.camunda.zeebe.qa.util.actuator.ClusterActuator;
 import io.camunda.zeebe.qa.util.actuator.PartitionsActuator;
@@ -35,6 +39,15 @@ final class SnapshotAfterScalingTest {
           .withReplicationFactor(1)
           .withPartitionsCount(2)
           .withGatewaysCount(1)
+          .withBrokerConfig(
+              broker -> {
+                final ConfigManagerCfg configManagerCfg =
+                    new ConfigManagerCfg(
+                        new ClusterConfigurationGossiperConfig(
+                            Duration.ofSeconds(1), DEFAULT_SYNC_REQUEST_TIMEOUT, 3));
+                final ClusterCfg clusterCfg = broker.brokerConfig().getCluster();
+                clusterCfg.setConfigManager(configManagerCfg);
+              })
           .build()
           .start()
           .awaitCompleteTopology();
