@@ -10,7 +10,7 @@ package io.camunda.application.commons.search;
 import io.camunda.application.commons.search.SearchClientDatabaseConfiguration.SearchClientProperties;
 import io.camunda.db.rdbms.RdbmsService;
 import io.camunda.search.clients.DocumentBasedSearchClient;
-import io.camunda.search.clients.SearchClients;
+import io.camunda.search.clients.DocumentBasedSearchClients;
 import io.camunda.search.connect.configuration.ConnectConfiguration;
 import io.camunda.search.connect.configuration.DatabaseConfig;
 import io.camunda.search.connect.es.ElasticsearchConnector;
@@ -67,14 +67,14 @@ public class SearchClientDatabaseConfiguration {
 
   @Bean
   @ConditionalOnBean(DocumentBasedSearchClient.class)
-  public SearchClients searchClients(
+  public DocumentBasedSearchClients documentBasedSearchClients(
       final DocumentBasedSearchClient searchClient,
       final ConnectConfiguration connectConfiguration) {
     final IndexDescriptors indexDescriptors =
         new IndexDescriptors(
             connectConfiguration.getIndexPrefix(),
             connectConfiguration.getTypeEnum().isElasticSearch());
-    return new SearchClients(searchClient, indexDescriptors);
+    return new DocumentBasedSearchClients(searchClient, indexDescriptors);
   }
 
   @ConfigurationProperties("camunda.database")

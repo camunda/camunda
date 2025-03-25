@@ -57,13 +57,13 @@ import io.camunda.zeebe.util.CloseableSilently;
 import java.util.List;
 import java.util.stream.Collectors;
 
-public class SearchClients implements SearchClientsProxy, CloseableSilently {
+public class DocumentBasedSearchClients implements SearchClientsProxy, CloseableSilently {
 
   private final DocumentBasedSearchClient searchClient;
   private final ServiceTransformers transformers;
   private final SecurityContext securityContext;
 
-  public SearchClients(
+  public DocumentBasedSearchClients(
       final DocumentBasedSearchClient searchClient, final IndexDescriptors indexDescriptors) {
     this(
         searchClient,
@@ -71,7 +71,7 @@ public class SearchClients implements SearchClientsProxy, CloseableSilently {
         SecurityContext.withoutAuthentication());
   }
 
-  private SearchClients(
+  private DocumentBasedSearchClients(
       final DocumentBasedSearchClient searchClient,
       final ServiceTransformers transformers,
       final SecurityContext securityContext) {
@@ -96,8 +96,8 @@ public class SearchClients implements SearchClientsProxy, CloseableSilently {
   }
 
   @Override
-  public SearchClients withSecurityContext(final SecurityContext securityContext) {
-    return new SearchClients(searchClient, transformers, securityContext);
+  public DocumentBasedSearchClients withSecurityContext(final SecurityContext securityContext) {
+    return new DocumentBasedSearchClients(searchClient, transformers, securityContext);
   }
 
   @Override
