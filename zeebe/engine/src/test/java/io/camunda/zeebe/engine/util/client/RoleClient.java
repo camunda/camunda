@@ -23,8 +23,8 @@ public class RoleClient {
     this.writer = writer;
   }
 
-  public RoleCreateClient newRole(final String name) {
-    return new RoleCreateClient(writer, name);
+  public RoleCreateClient newRole(final String id) {
+    return new RoleCreateClient(writer, id);
   }
 
   public RoleUpdateClient updateRole(final long roleKey) {
@@ -63,10 +63,20 @@ public class RoleClient {
     private final RoleRecord roleRecord;
     private Function<Long, Record<RoleRecordValue>> expectation = SUCCESS_SUPPLIER;
 
-    public RoleCreateClient(final CommandWriter writer, final String name) {
+    public RoleCreateClient(final CommandWriter writer, final String id) {
       this.writer = writer;
       roleRecord = new RoleRecord();
+      roleRecord.setRoleId(id);
+    }
+
+    public RoleCreateClient withName(final String name) {
       roleRecord.setName(name);
+      return this;
+    }
+
+    public RoleCreateClient withDescription(final String description) {
+      roleRecord.setDescription(description);
+      return this;
     }
 
     public Record<RoleRecordValue> create() {
