@@ -5,6 +5,7 @@ import tenants from "./tenants.json";
 import users from "./users.json";
 import groups from "./groups.json";
 import roles from "./roles.json";
+import mappingRules from "./mappingRules.json";
 
 export default {
   components,
@@ -14,4 +15,5 @@ export default {
   users,
   groups,
   roles,
+  mappingRules,
 };

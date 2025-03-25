@@ -6,25 +6,20 @@
  * except in compliance with the Camunda License 1.0.
  */
 import { FC } from "react";
-import { Edit, TrashCan } from "@carbon/react/icons";
+import { Edit, TrashCan, Add } from "@carbon/react/icons";
+import { C3EmptyState } from "@camunda/camunda-composite-components";
 import useTranslate from "src/utility/localization";
 import { useApi } from "src/utility/api/hooks";
 import Page, { PageHeader } from "src/components/layout/Page";
-import EntityList, {
-  DocumentationDescription,
-} from "src/components/entityList";
-import {
-  documentationHref,
-  DocumentationLink,
-} from "src/components/documentation";
+import EntityList from "src/components/entityList";
+import { documentationHref } from "src/components/documentation";
 import { TranslatedErrorInlineNotification } from "src/components/notifications/InlineNotification";
 import useModal from "src/components/modal/useModal";
 import AddModal from "src/pages/mappings/modals/AddModal";
-import { C3EmptyState } from "@camunda/camunda-composite-components";
 import { searchMapping } from "src/utility/api/mappings";
 
 const List: FC = () => {
-  const { t, Translate } = useTranslate();
+  const { t } = useTranslate("mappingRules");
   const {
     data: mappingSearchResults,
     loading,
@@ -35,8 +30,8 @@ const List: FC = () => {
   const [addMapping, addMappingModal] = useModal(AddModal, reload);
   const pageHeader = (
     <PageHeader
-      title="Mappings"
-      linkText="mappings"
+      title={t("mappings")}
+      linkText={t("mappings")}
       linkUrl="/concepts/mappings/"
     />
   );
@@ -46,15 +41,16 @@ const List: FC = () => {
       <Page>
         {pageHeader}
         <C3EmptyState
-          heading={t("You don’t have any mappings yet")}
-          description={t("Mapping of JWT token")}
+          heading={t("noMappings")}
+          description={t("mappingJWTToken")}
           button={{
-            label: t("Create a mapping"),
+            label: t("createMapping"),
             onClick: addMapping,
+            icon: Add,
           }}
           link={{
             href: documentationHref("/concepts/mapping/", ""),
-            label: t("Learn more about mapping"),
+            label: t("learnMoreMapping"),
           }}
         />
         {addMappingModal}
@@ -68,38 +64,33 @@ const List: FC = () => {
       <EntityList
         data={mappingSearchResults == null ? [] : mappingSearchResults.items}
         headers={[
-          { header: t("Mapping Key"), key: "mappingKey" },
-          { header: t("Claim Name"), key: "claimName" },
-          { header: t("Claim Value"), key: "claimValue" },
+          { header: t("mappingId"), key: "mappingKey" },
+          { header: t("mappingName"), key: "name" },
+          { header: t("claimName"), key: "claimName" },
+          { header: t("claimValue"), key: "claimValue" },
         ]}
         sortProperty="claimName"
-        addEntityLabel={t("Create mapping")}
+        addEntityLabel={t("createMapping")}
         onAddEntity={addMapping}
         loading={loading}
         menuItems={[
           {
-            label: t("Edit"),
+            label: t("edit"),
             icon: Edit,
             onClick: () => {},
           },
           {
-            label: t("Delete"),
+            label: t("delete"),
             icon: TrashCan,
             isDangerous: true,
             onClick: () => {},
           },
         ]}
       />
-      {success && (
-        <DocumentationDescription>
-          <Translate>Learn more about mapping in our</Translate>{" "}
-          <DocumentationLink path="/concepts/mapping/" />.
-        </DocumentationDescription>
-      )}
       {!loading && !success && (
         <TranslatedErrorInlineNotification
-          title={t("The list of mappings could not be loaded.")}
-          actionButton={{ label: t("Retry"), onClick: reload }}
+          title={t("loadMappingsError")}
+          actionButton={{ label: t("retry"), onClick: reload }}
         />
       )}
       {addMappingModal}
