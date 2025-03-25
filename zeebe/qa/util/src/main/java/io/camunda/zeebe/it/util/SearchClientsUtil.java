@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.it.util;
 
-import io.camunda.search.clients.SearchClients;
+import io.camunda.search.clients.DocumentBasedSearchClients;
 import io.camunda.search.connect.configuration.ConnectConfiguration;
 import io.camunda.search.connect.es.ElasticsearchConnector;
 import io.camunda.search.connect.os.OpensearchConnector;
@@ -25,9 +25,9 @@ public class SearchClientsUtil {
     return new ElasticsearchSearchClient(elasticsearchClient);
   }
 
-  public static SearchClients createSearchClients(final String elasticsearchUrl) {
+  public static DocumentBasedSearchClients createSearchClients(final String elasticsearchUrl) {
     final var lowLevelSearchClient = createLowLevelSearchClient(elasticsearchUrl);
-    return new SearchClients(lowLevelSearchClient, new IndexDescriptors("", true));
+    return new DocumentBasedSearchClients(lowLevelSearchClient, new IndexDescriptors("", true));
   }
 
   public static OpensearchSearchClient createLowLevelOpensearchSearchClient(
