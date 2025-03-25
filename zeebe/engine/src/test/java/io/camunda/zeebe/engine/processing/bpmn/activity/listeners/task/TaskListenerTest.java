@@ -25,6 +25,7 @@ import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskListenerEventType;
 import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobResult;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobResultCorrections;
+import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
 import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.Record;
@@ -359,6 +360,71 @@ public class TaskListenerTest {
                 99,
                 "escalate",
                 List.of(UserTaskRecord.CANDIDATE_USERS, UserTaskRecord.PRIORITY)));
+  }
+
+  @Test
+  public void
+      shouldCancelUserTaskAfterAllUpdatingTaskListenersAreExecutedAndTerminateUserTaskElement() {
+    // given
+    final long processInstanceKey =
+        createProcessInstance(
+            createUserTaskWithTaskListeners(
+                ZeebeTaskListenerEventType.canceling,
+                listenerType,
+                listenerType + "_2",
+                listenerType + "_3"));
+    final var userTaskInstanceKey =
+        RecordingExporter.userTaskRecords(UserTaskIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst()
+            .getValue()
+            .getElementInstanceKey();
+
+    // when
+    ENGINE.processInstance().withInstanceKey(processInstanceKey).expectTerminating().cancel();
+
+    completeJobs(processInstanceKey, listenerType, listenerType + "_2", listenerType + "_3");
+
+    // then
+    assertTaskListenerJobsCompletionSequence(
+        processInstanceKey,
+        JobListenerEventType.CANCELING,
+        listenerType,
+        listenerType + "_2",
+        listenerType + "_3");
+
+    assertUserTaskRecordWithIntent(
+        processInstanceKey,
+        UserTaskIntent.CANCELED,
+        userTask -> assertThat(userTask.getAction()).isEmpty());
+
+    final Predicate<Record<?>> isUserTaskOrProcessInstanceRecordWithUserTaskInstanceKey =
+        r -> {
+          if (r.getValue() instanceof UserTaskRecord utr) {
+            return utr.getElementInstanceKey() == userTaskInstanceKey;
+          } else if (r.getValue() instanceof ProcessInstanceRecord) {
+            return r.getKey() == userTaskInstanceKey;
+          }
+          return false;
+        };
+
+    assertThat(
+            RecordingExporter.records()
+                .limitToProcessInstance(processInstanceKey)
+                .filter(isUserTaskOrProcessInstanceRecordWithUserTaskInstanceKey))
+        .extracting(Record::getValueType, Record::getIntent)
+        .containsSequence(
+            tuple(ValueType.PROCESS_INSTANCE, ProcessInstanceIntent.TERMINATE_ELEMENT),
+            tuple(ValueType.PROCESS_INSTANCE, ProcessInstanceIntent.ELEMENT_TERMINATING),
+            tuple(ValueType.USER_TASK, UserTaskIntent.CANCELING),
+            tuple(ValueType.USER_TASK, UserTaskIntent.COMPLETE_TASK_LISTENER),
+            tuple(ValueType.USER_TASK, UserTaskIntent.COMPLETE_TASK_LISTENER),
+            tuple(ValueType.USER_TASK, UserTaskIntent.COMPLETE_TASK_LISTENER),
+            tuple(ValueType.USER_TASK, UserTaskIntent.CANCELED),
+            tuple(ValueType.PROCESS_INSTANCE, ProcessInstanceIntent.CONTINUE_TERMINATING_ELEMENT),
+            tuple(ValueType.PROCESS_INSTANCE, ProcessInstanceIntent.ELEMENT_TERMINATED));
+
+    // RecordingExporter.processInstanceRecords().withProcessInstanceKey()
   }
 
   @Test
@@ -851,7 +917,7 @@ public class TaskListenerTest {
             .withElementType(BpmnElementType.PROCESS)
             .getFirst()
             .getKey();
-    ENGINE.processInstance().withInstanceKey(processInstanceKey).expectPartialSuccess().cancel();
+    ENGINE.processInstance().withInstanceKey(processInstanceKey).expectTerminating().cancel();
   }
 
   private void verifyIncidentCreationOnListenerJobWithoutRetriesAndResolution(
@@ -2959,7 +3025,7 @@ public class TaskListenerTest {
         .await();
 
     // when
-    ENGINE.processInstance().withInstanceKey(processInstanceKey).expectPartialSuccess().cancel();
+    ENGINE.processInstance().withInstanceKey(processInstanceKey).expectTerminating().cancel();
     completeJobs(processInstanceKey, listenerType, listenerType + "_2", listenerType + "_3");
 
     // then
@@ -3056,7 +3122,7 @@ public class TaskListenerTest {
     completeJobs(processInstanceKey, listenerType);
 
     // cancel a process instance
-    ENGINE.processInstance().withInstanceKey(processInstanceKey).expectPartialSuccess().cancel();
+    ENGINE.processInstance().withInstanceKey(processInstanceKey).expectTerminating().cancel();
 
     completeJobs(processInstanceKey, listenerType + "_2", listenerType + "_3");
 
@@ -3143,7 +3209,7 @@ public class TaskListenerTest {
             createUserTaskWithTaskListeners(
                 ZeebeTaskListenerEventType.canceling, listenerType, listenerType + "_2"));
 
-    ENGINE.processInstance().withInstanceKey(processInstanceKey).expectPartialSuccess().cancel();
+    ENGINE.processInstance().withInstanceKey(processInstanceKey).expectTerminating().cancel();
 
     // when
     final var rejection =

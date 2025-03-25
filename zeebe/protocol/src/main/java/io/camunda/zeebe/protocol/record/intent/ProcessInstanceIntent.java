@@ -45,12 +45,18 @@ public enum ProcessInstanceIntent implements ProcessInstanceRelatedIntent {
    * all operations defined by the listener are fully executed before proceeding with the element's
    * activation or completion.
    */
-  COMPLETE_EXECUTION_LISTENER((short) 12);
+  COMPLETE_EXECUTION_LISTENER((short) 12),
+  // alternatives: CONTINUE_TERMINATION, CONTINUE_ELEMENT_TERMINATION
+  CONTINUE_TERMINATING_ELEMENT((short) 13);
 
   private static final Set<ProcessInstanceIntent> PROCESS_INSTANCE_COMMANDS = EnumSet.of(CANCEL);
   private static final Set<ProcessInstanceIntent> BPMN_ELEMENT_COMMANDS =
       EnumSet.of(
-          ACTIVATE_ELEMENT, COMPLETE_ELEMENT, TERMINATE_ELEMENT, COMPLETE_EXECUTION_LISTENER);
+          ACTIVATE_ELEMENT,
+          COMPLETE_ELEMENT,
+          TERMINATE_ELEMENT,
+          COMPLETE_EXECUTION_LISTENER,
+          CONTINUE_TERMINATING_ELEMENT);
 
   private final short value;
   private final boolean shouldBanInstance;
@@ -96,6 +102,8 @@ public enum ProcessInstanceIntent implements ProcessInstanceRelatedIntent {
         return ELEMENT_MIGRATED;
       case 12:
         return COMPLETE_EXECUTION_LISTENER;
+      case 13:
+        return CONTINUE_TERMINATING_ELEMENT;
       default:
         return Intent.UNKNOWN;
     }

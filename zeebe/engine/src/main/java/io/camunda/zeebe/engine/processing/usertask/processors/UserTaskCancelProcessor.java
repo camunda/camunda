@@ -9,33 +9,29 @@ package io.camunda.zeebe.engine.processing.usertask.processors;
 
 import io.camunda.zeebe.engine.processing.ExcludeAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.Rejection;
-import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContext;
-import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContextImpl;
-import io.camunda.zeebe.engine.processing.bpmn.BpmnElementProcessor;
-import io.camunda.zeebe.engine.processing.bpmn.BpmnStreamProcessor;
-import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateBehavior;
-import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowElement;
-import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableUserTask;
-import io.camunda.zeebe.engine.state.immutable.ProcessState;
+import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
+import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnUserTaskBehavior;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
+import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
+import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
-import io.camunda.zeebe.protocol.record.value.BpmnElementType;
+import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.util.Either;
 
 @ExcludeAuthorizationCheck
 public class UserTaskCancelProcessor implements UserTaskCommandProcessor {
 
-  private BpmnStateBehavior stateBehavior;
-  private ProcessState processState;
-  private BpmnElementProcessor<ExecutableFlowElement> userTaskProcessor;
+  private final ElementInstanceState elementInstanceState;
+  private final TypedCommandWriter commandWriter;
+  private final BpmnUserTaskBehavior userTaskBehavior;
 
   public UserTaskCancelProcessor(
-      final BpmnStateBehavior stateBehavior,
-      final ProcessState processState,
-      final BpmnStreamProcessor bpmnStreamProcessor) {
-    this.stateBehavior = stateBehavior;
-    this.processState = processState;
-    userTaskProcessor = bpmnStreamProcessor.getProcessor(BpmnElementType.USER_TASK);
+      final ProcessingState state, final Writers writers, final BpmnBehaviors bpmnBehaviors) {
+    elementInstanceState = state.getElementInstanceState();
+    commandWriter = writers.command();
+    userTaskBehavior = bpmnBehaviors.userTaskBehavior();
   }
 
   @Override
@@ -53,23 +49,13 @@ public class UserTaskCancelProcessor implements UserTaskCommandProcessor {
   @Override
   public void onFinalizeCommand(
       final TypedRecord<UserTaskRecord> command, final UserTaskRecord userTaskRecord) {
-    final var context = buildContext(userTaskRecord.getElementInstanceKey());
-    final var element = getUserTaskElement(userTaskRecord);
-    userTaskProcessor.finalizeTermination(element, context);
-  }
+    userTaskBehavior.userTaskCanceled(command.getKey());
 
-  private BpmnElementContext buildContext(final long elementInstanceKey) {
-    final var elementInstance = stateBehavior.getElementInstance(elementInstanceKey);
-    final var context = new BpmnElementContextImpl();
-    context.init(elementInstance.getKey(), elementInstance.getValue(), elementInstance.getState());
-    return context;
-  }
-
-  private ExecutableUserTask getUserTaskElement(final UserTaskRecord userTaskRecord) {
-    return processState.getFlowElement(
-        userTaskRecord.getProcessDefinitionKey(),
-        userTaskRecord.getTenantId(),
-        userTaskRecord.getElementIdBuffer(),
-        ExecutableUserTask.class);
+    final var userTaskInstanceKey = userTaskRecord.getElementInstanceKey();
+    final var userTaskInstance = elementInstanceState.getInstance(userTaskInstanceKey);
+    commandWriter.appendFollowUpCommand(
+        userTaskInstanceKey,
+        ProcessInstanceIntent.CONTINUE_TERMINATING_ELEMENT,
+        userTaskInstance.getValue());
   }
 }

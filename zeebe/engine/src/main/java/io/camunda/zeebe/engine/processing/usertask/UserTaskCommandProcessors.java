@@ -59,10 +59,7 @@ public final class UserTaskCommandProcessors {
                 new UserTaskCompleteProcessor(
                     processingState, eventHandle, writers, authCheckBehavior),
                 UserTaskIntent.CANCEL,
-                new UserTaskCancelProcessor(
-                    bpmnBehaviors.stateBehavior(),
-                    processingState.getProcessState(),
-                    bpmnStreamProcessor)));
+                new UserTaskCancelProcessor(processingState, writers, bpmnBehaviors)));
     validateProcessorsSetup(commandToProcessor);
   }
 

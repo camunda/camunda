@@ -71,6 +71,8 @@ public final class ProcessInstanceStateTransitionGuard {
               ProcessInstanceIntent.ELEMENT_ACTIVATING,
               ProcessInstanceIntent.ELEMENT_ACTIVATED,
               ProcessInstanceIntent.ELEMENT_COMPLETING);
+      case CONTINUE_TERMINATING_ELEMENT ->
+          hasElementInstanceWithState(context, ProcessInstanceIntent.ELEMENT_TERMINATING);
       case COMPLETE_EXECUTION_LISTENER ->
           hasElementInstanceWithState(
               context,

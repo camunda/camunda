@@ -331,7 +331,10 @@ public final class BpmnUserTaskBehavior {
   }
 
   public void userTaskCanceled(final ElementInstance elementInstance) {
-    final long userTaskKey = elementInstance.getUserTaskKey();
+    userTaskCanceled(elementInstance.getUserTaskKey());
+  }
+
+  public void userTaskCanceled(final long userTaskKey) {
     if (userTaskKey <= 0) {
       return;
     }

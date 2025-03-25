@@ -254,14 +254,13 @@ public final class ProcessInstanceClient {
                 .withProcessInstanceKey(processInstanceKey)
                 .getFirst();
 
-    public static final Function<Long, Record<ProcessInstanceRecordValue>>
-        PARTIAL_SUCCESS_EXPECTATION =
-            (processInstanceKey) ->
-                RecordingExporter.processInstanceRecords()
-                    .withRecordKey(processInstanceKey)
-                    .withIntent(ProcessInstanceIntent.ELEMENT_TERMINATING)
-                    .withProcessInstanceKey(processInstanceKey)
-                    .getFirst();
+    public static final Function<Long, Record<ProcessInstanceRecordValue>> TERMINATING_EXPECTATION =
+        (processInstanceKey) ->
+            RecordingExporter.processInstanceRecords()
+                .withRecordKey(processInstanceKey)
+                .withIntent(ProcessInstanceIntent.ELEMENT_TERMINATING)
+                .withProcessInstanceKey(processInstanceKey)
+                .getFirst();
 
     public static final Function<Long, Record<ProcessInstanceRecordValue>> REJECTION_EXPECTATION =
         (processInstanceKey) ->
@@ -300,8 +299,8 @@ public final class ProcessInstanceClient {
       return this;
     }
 
-    public ExistingInstanceClient expectPartialSuccess() {
-      expectation = PARTIAL_SUCCESS_EXPECTATION;
+    public ExistingInstanceClient expectTerminating() {
+      expectation = TERMINATING_EXPECTATION;
       return this;
     }
 
