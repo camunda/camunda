@@ -542,7 +542,7 @@ paths:
       tags:
         - Tenant
       operationId: searchUsersForTenant
-      summary: Query users for tenant
+      summary: Search users for tenant
       description: Retrieves a filtered and sorted list of users for a specified tenant.
       parameters:
         - name: tenantId
@@ -712,7 +712,7 @@ paths:
       tags:
         - Tenant
       operationId: searchTenants
-      summary: Query tenants
+      summary: Search tenants
       description: Retrieves a filtered and sorted list of tenants.
       requestBody:
         required: false
@@ -988,8 +988,8 @@ paths:
     post:
       tags:
         - User task
-      operationId: findUserTasks
-      summary: Query user tasks
+      operationId: searchUserTasks
+      summary: Search user tasks
       description: |
         Search for user tasks based on given criteria.
       requestBody:
@@ -1019,8 +1019,8 @@ paths:
     post:
       tags:
         - User task
-      operationId: findUserTaskVariables
-      summary: Query user task variables
+      operationId: searchUserTaskVariables
+      summary: Search user task variables
       description: |
         Search for user task variables based on given criteria.
       parameters:
@@ -1053,8 +1053,8 @@ paths:
     post:
       tags:
         - Variable
-      operationId: findVariables
-      summary: Query variables
+      operationId: searchVariables
+      summary: Search variables
       description: |
         Search for process and local variables based on given criteria.
       requestBody:
@@ -1169,8 +1169,8 @@ paths:
     post:
       tags:
         - Process definition
-      operationId: findProcessDefinitions
-      summary: Query process definitions
+      operationId: searchProcessDefinitions
+      summary: Search process definitions
       description: |
         Search for process definitions based on given criteria.
       requestBody:
@@ -1460,8 +1460,8 @@ paths:
     post:
       tags:
         - Process instance
-      operationId: findProcessInstances
-      summary: Query process instances
+      operationId: searchProcessInstances
+      summary: Search process instances
       description: |
         Search for process instances based on given criteria.
       requestBody:
@@ -1641,8 +1641,8 @@ paths:
     post:
       tags:
         - Flow node instance
-      operationId: findFlowNodeInstances
-      summary: Query flow node instances
+      operationId: searchFlowNodeInstances
+      summary: Search flow node instances
       description: |
         Search for flow node instances based on given criteria.
       requestBody:
@@ -1712,8 +1712,8 @@ paths:
     post:
       tags:
         - Decision definition
-      operationId: findDecisionDefinitions
-      summary: Query decision definitions
+      operationId: searchDecisionDefinitions
+      summary: Search decision definitions
       description: |
         Search for decision definitions based on given criteria.
       requestBody:
@@ -1823,8 +1823,8 @@ paths:
     post:
       tags:
         - Decision requirements
-      operationId: findDecisionRequirements
-      summary: Query decision requirements
+      operationId: searchDecisionRequirements
+      summary: Search decision requirements
       description: |
         Search for decision requirements based on given criteria.
       requestBody:
@@ -1934,8 +1934,8 @@ paths:
     post:
       tags:
         - Decision instance
-      operationId: findDecisionInstances
-      summary: Query decision instances
+      operationId: searchDecisionInstances
+      summary: Search decision instances
       description: |
         Search for decision instances based on given criteria.
       requestBody:
@@ -2146,10 +2146,10 @@ paths:
     post:
       tags:
         - Authorization
-      summary: Query authorizations
+      summary: Search authorizations
       description: |
         Search for authorizations based on given criteria.
-      operationId: findAuthorizations
+      operationId: searchAuthorizations
       requestBody:
         content:
           application/json:
@@ -2314,7 +2314,7 @@ paths:
       tags:
         - Role
       operationId: searchRoles
-      summary: Query roles (Work-in-Progress)
+      summary: Search roles (Work-in-Progress)
       description: |
         Search for roles based on given criteria.
 
@@ -2570,7 +2570,7 @@ paths:
       tags:
         - Group
       operationId: searchGroups
-      summary: Query groups (Work-in-Progress)
+      summary: Search groups (Work-in-Progress)
       description: |
         Search for groups based on given criteria.
 
@@ -2676,8 +2676,8 @@ paths:
     post:
       tags:
         - Mapping rule
-      operationId: findMappings
-      summary: Query mappings (Work-in-Progress)
+      operationId: searchMappings
+      summary: Search mappings (Work-in-Progress)
       description: |
         Search for mapping rules based on given criteria.
 
@@ -3063,8 +3063,8 @@ paths:
     post:
       tags:
         - User
-      operationId: findUsers
-      summary: Query users
+      operationId: searchUsers
+      summary: Search users
       description: |
         Search for users based on given criteria.
       requestBody:
@@ -3157,8 +3157,8 @@ paths:
     post:
       tags:
         - Incident
-      operationId: findIncidents
-      summary: Query incidents
+      operationId: searchIncidents
+      summary: Search incidents
       description: |
         Search for incidents based on given criteria.
       requestBody:
@@ -3441,8 +3441,8 @@ paths:
     post:
       tags:
         - Ad-hoc subprocess
-      operationId: findAdHocSubprocessActivities
-      summary: Query activatable activities (alpha)
+      operationId: searchAdHocSubprocessActivities
+      summary: Search activatable activities (alpha)
       description: |
         Search for activatable activities within ad-hoc subprocesses based on given criteria.
 
