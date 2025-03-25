@@ -93,6 +93,10 @@ function convertToRawData(report) {
         type: 'none',
         value: null,
       },
+      distributedBy: {
+        type: 'none',
+        value: null,
+      },
       visualization: 'table',
     },
   };
