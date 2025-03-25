@@ -8,10 +8,11 @@
 package io.camunda.search.filter;
 
 import static io.camunda.util.CollectionUtil.addValuesToList;
+import static io.camunda.util.CollectionUtil.collectValues;
 import static io.camunda.util.CollectionUtil.collectValuesAsList;
 
-import io.camunda.search.entities.FlowNodeInstanceEntity.FlowNodeState;
 import io.camunda.search.entities.FlowNodeInstanceEntity.FlowNodeType;
+import io.camunda.util.FilterUtil;
 import io.camunda.util.ObjectBuilder;
 import java.util.Collections;
 import java.util.List;
@@ -23,7 +24,7 @@ public record FlowNodeInstanceFilter(
     List<Long> processInstanceKeys,
     List<Long> processDefinitionKeys,
     List<String> processDefinitionIds,
-    List<FlowNodeState> states,
+    List<Operation<String>> stateOperations,
     List<FlowNodeType> types,
     List<String> flowNodeIds,
     List<String> treePaths,
@@ -43,7 +44,7 @@ public record FlowNodeInstanceFilter(
     private List<Long> processInstanceKeys;
     private List<Long> processDefinitionKeys;
     private List<String> processDefinitionIds;
-    private List<FlowNodeState> states;
+    private List<Operation<String>> stateOperations;
     private List<FlowNodeType> types;
     private List<String> flowNodeIds;
     private List<String> treePaths;
@@ -87,13 +88,20 @@ public record FlowNodeInstanceFilter(
       return processDefinitionIds(collectValuesAsList(values));
     }
 
-    public FlowNodeInstanceFilter.Builder states(final List<FlowNodeState> values) {
-      states = addValuesToList(states, values);
+    public FlowNodeInstanceFilter.Builder stateOperations(
+        final List<Operation<String>> operations) {
+      stateOperations = addValuesToList(stateOperations, operations);
       return this;
     }
 
-    public FlowNodeInstanceFilter.Builder states(final FlowNodeState... values) {
-      return states(collectValuesAsList(values));
+    public FlowNodeInstanceFilter.Builder states(final String value, final String... values) {
+      return stateOperations(FilterUtil.mapDefaultToOperation(value, values));
+    }
+
+    @SafeVarargs
+    public final FlowNodeInstanceFilter.Builder stateOperations(
+        final Operation<String> operation, final Operation<String>... operations) {
+      return stateOperations(collectValues(operation, operations));
     }
 
     public FlowNodeInstanceFilter.Builder types(final List<FlowNodeType> values) {
@@ -153,7 +161,7 @@ public record FlowNodeInstanceFilter(
           Objects.requireNonNullElse(processInstanceKeys, Collections.emptyList()),
           Objects.requireNonNullElse(processDefinitionKeys, Collections.emptyList()),
           Objects.requireNonNullElse(processDefinitionIds, Collections.emptyList()),
-          Objects.requireNonNullElse(states, Collections.emptyList()),
+          Objects.requireNonNullElse(stateOperations, Collections.emptyList()),
           Objects.requireNonNullElse(types, Collections.emptyList()),
           Objects.requireNonNullElse(flowNodeIds, Collections.emptyList()),
           Objects.requireNonNullElse(treePaths, Collections.emptyList()),

@@ -16,7 +16,6 @@ import static java.util.Optional.ofNullable;
 
 import io.camunda.search.entities.DecisionInstanceEntity.DecisionDefinitionType;
 import io.camunda.search.entities.DecisionInstanceEntity.DecisionInstanceState;
-import io.camunda.search.entities.FlowNodeInstanceEntity.FlowNodeState;
 import io.camunda.search.entities.FlowNodeInstanceEntity.FlowNodeType;
 import io.camunda.search.entities.IncidentEntity;
 import io.camunda.search.entities.IncidentEntity.IncidentState;
@@ -745,7 +744,8 @@ public final class SearchQueryRequestMapper {
               Optional.ofNullable(f.getProcessDefinitionId())
                   .ifPresent(builder::processDefinitionIds);
               Optional.ofNullable(f.getState())
-                  .ifPresent(s -> builder.states(FlowNodeState.valueOf(s.getValue())));
+                  .map(mapToOperations(String.class))
+                  .ifPresent(builder::stateOperations);
               Optional.ofNullable(f.getType())
                   .ifPresent(
                       t -> builder.types(FlowNodeType.fromZeebeBpmnElementType(t.getValue())));

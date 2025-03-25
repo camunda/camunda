@@ -95,7 +95,7 @@ public class FlowNodeInstanceSpecificFilterIT {
         FlowNodeInstanceFilter.of(b -> b.processInstanceKeys(123L)),
         FlowNodeInstanceFilter.of(b -> b.processDefinitionKeys(124L)),
         FlowNodeInstanceFilter.of(b -> b.processDefinitionIds("unique-process-124")),
-        FlowNodeInstanceFilter.of(b -> b.states(FlowNodeState.ACTIVE)),
+        FlowNodeInstanceFilter.of(b -> b.states(FlowNodeState.ACTIVE.name())),
         FlowNodeInstanceFilter.of(b -> b.types(FlowNodeType.SERVICE_TASK)),
         FlowNodeInstanceFilter.of(b -> b.tenantIds("unique-tenant-1")),
         FlowNodeInstanceFilter.of(b -> b.hasIncident(true)),

@@ -173,7 +173,7 @@ public class FlowNodeInstanceIT {
                     .processDefinitionKeys(instance.processDefinitionKey())
                     .flowNodeIds(instance.flowNodeId())
                     .types(instance.type())
-                    .states(instance.state())
+                    .states(instance.state().name())
                     .tenantIds(instance.tenantId())
                     .treePaths(instance.treePath())
                     .incidentKeys(instance.incidentKey())
