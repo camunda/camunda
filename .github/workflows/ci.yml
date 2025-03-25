@@ -231,7 +231,7 @@ jobs:
     if: needs.detect-changes.outputs.java-code-changes == 'true'
     needs: [ detect-changes ]
     name: "[IT] Elasticsearch"
-    timeout-minutes: 15
+    timeout-minutes: 10
     permissions: {}  # GITHUB_TOKEN unused in this job
     runs-on: gcp-perf-core-16-default
     env:
@@ -322,7 +322,7 @@ jobs:
     if: needs.detect-changes.outputs.java-code-changes == 'true'
     needs: [ detect-changes ]
     name: "[IT] OpenSearch"
-    timeout-minutes: 15
+    timeout-minutes: 10
     permissions: {}  # GITHUB_TOKEN unused in this job
     runs-on: gcp-perf-core-16-default
     env:
