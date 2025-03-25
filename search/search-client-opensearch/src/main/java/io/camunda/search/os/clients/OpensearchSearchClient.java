@@ -29,6 +29,7 @@ import io.camunda.search.os.transformers.search.SearchResponseTransformer;
 import io.camunda.search.os.transformers.search.SearchWriteResponseTransformer;
 import java.io.IOException;
 import java.net.ConnectException;
+import java.net.SocketTimeoutException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -74,7 +75,7 @@ public class OpensearchSearchClient implements DocumentBasedSearchClient, Docume
       final SearchResponseTransformer<T> searchResponseTransformer = getSearchResponseTransformer();
       return searchResponseTransformer.apply(rawSearchResponse);
     } catch (final IOException | OpenSearchException e) {
-      LOGGER.error(ErrorMessages.ERROR_FAILED_SEARCH_QUERY, e);
+      LOGGER.warn(ErrorMessages.ERROR_FAILED_SEARCH_QUERY, e);
       throw new CamundaSearchException(
           ErrorMessages.ERROR_FAILED_SEARCH_QUERY, e, searchExceptionToReason(e));
     }
@@ -102,7 +103,7 @@ public class OpensearchSearchClient implements DocumentBasedSearchClient, Docume
         result.addAll(items);
       }
     } catch (final IOException | OpenSearchException e) {
-      LOGGER.error(ErrorMessages.ERROR_FAILED_FIND_ALL_QUERY, e);
+      LOGGER.warn(ErrorMessages.ERROR_FAILED_FIND_ALL_QUERY, e);
       throw new CamundaSearchException(
           ErrorMessages.ERROR_FAILED_FIND_ALL_QUERY, e, searchExceptionToReason(e));
     } finally {
@@ -122,7 +123,7 @@ public class OpensearchSearchClient implements DocumentBasedSearchClient, Docume
           getSearchGetResponseTransformer();
       return searchResponseTransformer.apply(rawSearchResponse);
     } catch (final IOException | OpenSearchException e) {
-      LOGGER.error(ErrorMessages.ERROR_FAILED_GET_REQUEST, e);
+      LOGGER.warn(ErrorMessages.ERROR_FAILED_GET_REQUEST, e);
       throw new CamundaSearchException(
           ErrorMessages.ERROR_FAILED_GET_REQUEST, e, searchExceptionToReason(e));
     }
@@ -138,7 +139,7 @@ public class OpensearchSearchClient implements DocumentBasedSearchClient, Docume
       final var indexResponseTransformer = getSearchWriteResponseTransformer();
       return indexResponseTransformer.apply(rawIndexResponse);
     } catch (final IOException | OpenSearchException e) {
-      LOGGER.error(ErrorMessages.ERROR_FAILED_INDEX_REQUEST, e);
+      LOGGER.warn(ErrorMessages.ERROR_FAILED_INDEX_REQUEST, e);
       throw new CamundaSearchException(
           ErrorMessages.ERROR_FAILED_INDEX_REQUEST, e, searchExceptionToReason(e));
     }
@@ -153,7 +154,7 @@ public class OpensearchSearchClient implements DocumentBasedSearchClient, Docume
       final var deleteResponseTransformer = getSearchWriteResponseTransformer();
       return deleteResponseTransformer.apply(rawDeleteRequest);
     } catch (final IOException | OpenSearchException e) {
-      LOGGER.error(ErrorMessages.ERROR_FAILED_DELETE_REQUEST, e);
+      LOGGER.warn(ErrorMessages.ERROR_FAILED_DELETE_REQUEST, e);
       throw new CamundaSearchException(
           ErrorMessages.ERROR_FAILED_DELETE_REQUEST, e, searchExceptionToReason(e));
     }
@@ -170,7 +171,7 @@ public class OpensearchSearchClient implements DocumentBasedSearchClient, Docume
       try {
         client.clearScroll(r -> r.scrollId(scrollId));
       } catch (final IOException | OpenSearchException e) {
-        LOGGER.error("Failed to clear scroll.", e);
+        LOGGER.warn("Failed to clear scroll.", e);
       }
     }
   }
@@ -227,7 +228,9 @@ public class OpensearchSearchClient implements DocumentBasedSearchClient, Docume
   }
 
   private static CamundaSearchException.Reason searchExceptionToReason(final Exception e) {
-    if (e instanceof ConnectException) {
+    if (e instanceof ConnectException
+        || e instanceof SocketTimeoutException
+        || e.getClass().getSimpleName().equals("ConnectionClosedException")) {
       return CamundaSearchException.Reason.CONNECTION_FAILED;
     }
     if (e instanceof OpenSearchException) {
