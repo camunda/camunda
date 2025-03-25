@@ -20,7 +20,9 @@ import io.camunda.zeebe.broker.client.api.dto.BrokerRejection;
 import io.camunda.zeebe.gateway.protocol.rest.GroupChangeset;
 import io.camunda.zeebe.gateway.protocol.rest.GroupCreateRequest;
 import io.camunda.zeebe.gateway.protocol.rest.GroupUpdateRequest;
+import io.camunda.zeebe.gateway.protocol.rest.MappingRuleCreateRequest;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
+import io.camunda.zeebe.gateway.rest.validator.IdentifierPatterns;
 import io.camunda.zeebe.protocol.impl.record.value.group.GroupRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.GroupIntent;
@@ -28,6 +30,8 @@ import io.camunda.zeebe.protocol.record.value.EntityType;
 import java.util.concurrent.CompletableFuture;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
@@ -175,21 +179,24 @@ public class GroupControllerTest extends RestControllerTest {
               "type": "about:blank",
               "status": 400,
               "title": "INVALID_ARGUMENT",
-              "detail": "The value for groupId is '%s' but must be less than 256 characters.",
+              "detail": "The provided id exceeds the limit of 256 characters.",
               "instance": "%s"
             }"""
-                .formatted(groupId, GROUP_BASE_URL));
+                .formatted(GROUP_BASE_URL));
 
     // then
     verifyNoInteractions(groupServices);
   }
 
-  @Test
-  void shouldFailOnCreateGroupWithNonAlphanumericGroupId() {
-    // given
-    final var groupId = "groupId123@";
-
-    // when
+  @ParameterizedTest
+  @ValueSource(
+      strings = {
+          "foo~", "foo!", "foo#", "foo$", "foo%", "foo^", "foo&", "foo*", "foo(", "foo)", "foo=",
+          "foo+", "foo{", "foo[", "foo}", "foo]", "foo|", "foo\\", "foo:", "foo;", "foo\"", "foo'",
+          "foo<", "foo>", "foo,", "foo?", "foo/", "foo ", "foo\t", "foo\n", "foo\r"
+      })
+  void shouldRejectGroupCreationWithIllegalCharactersInId(final String groupId) {
+    // when then
     webClient
         .post()
         .uri(GROUP_BASE_URL)
@@ -202,16 +209,14 @@ public class GroupControllerTest extends RestControllerTest {
         .expectBody()
         .json(
             """
-            {
-              "type": "about:blank",
-              "status": 400,
-              "title": "INVALID_ARGUMENT",
-              "detail": "The value for groupId is 'groupId123@' but must be alphanumeric.",
-              "instance": "%s"
-            }"""
-                .formatted(GROUP_BASE_URL));
-
-    // then
+              {
+                "type": "about:blank",
+                "status": 400,
+                "title": "INVALID_ARGUMENT",
+                "detail": "The provided id contains illegal characters. It must match the pattern '%s'.",
+                "instance": "%s"
+              }"""
+                .formatted(IdentifierPatterns.ID_PATTERN, GROUP_BASE_URL));
     verifyNoInteractions(groupServices);
   }
 

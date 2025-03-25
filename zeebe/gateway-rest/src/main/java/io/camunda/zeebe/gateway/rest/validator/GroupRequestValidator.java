@@ -8,7 +8,12 @@
 package io.camunda.zeebe.gateway.rest.validator;
 
 import static io.camunda.zeebe.gateway.rest.validator.ErrorMessages.ERROR_MESSAGE_EMPTY_ATTRIBUTE;
+import static io.camunda.zeebe.gateway.rest.validator.ErrorMessages.ERROR_MESSAGE_ILLEGAL_CHARACTER;
 import static io.camunda.zeebe.gateway.rest.validator.ErrorMessages.ERROR_MESSAGE_INVALID_ATTRIBUTE_VALUE;
+import static io.camunda.zeebe.gateway.rest.validator.ErrorMessages.ERROR_MESSAGE_TOO_MANY_CHARACTERS;
+import static io.camunda.zeebe.gateway.rest.validator.IdentifierPatterns.ID_PATTERN;
+import static io.camunda.zeebe.gateway.rest.validator.IdentifierPatterns.ID_REGEX;
+import static io.camunda.zeebe.gateway.rest.validator.IdentifierPatterns.MAX_LENGTH;
 import static io.camunda.zeebe.gateway.rest.validator.RequestValidator.validate;
 
 import io.camunda.zeebe.gateway.protocol.rest.GroupCreateRequest;
@@ -24,13 +29,10 @@ public final class GroupRequestValidator {
   private static void validateGroupId(final String groupId, final List<String> violations) {
     if (groupId == null || groupId.isBlank()) {
       violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("groupId"));
-    } else if (groupId.length() > 256) {
-      violations.add(
-          ERROR_MESSAGE_INVALID_ATTRIBUTE_VALUE.formatted(
-              "groupId", groupId, "less than 256 characters"));
-    } else if (!groupId.matches("[a-zA-Z0-9]+")) {
-      violations.add(
-          ERROR_MESSAGE_INVALID_ATTRIBUTE_VALUE.formatted("groupId", groupId, "alphanumeric"));
+    } else if (groupId.length() > MAX_LENGTH) {
+      violations.add(ERROR_MESSAGE_TOO_MANY_CHARACTERS.formatted("id", MAX_LENGTH));
+    } else if (!ID_PATTERN.matcher(groupId).matches()) {
+      violations.add(ERROR_MESSAGE_ILLEGAL_CHARACTER.formatted("id", ID_REGEX));
     }
   }
 
