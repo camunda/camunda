@@ -54,7 +54,7 @@ public final class AssignMappingToTenantCommandImpl implements AssignMappingToTe
   @Override
   public CamundaFuture<AssignMappingToTenantResponse> send() {
     final HttpCamundaFuture<AssignMappingToTenantResponse> result = new HttpCamundaFuture<>();
-    final String endpoint = String.format("/tenants/%s/mapping-rules/%s", tenantId, mappingId);
+    final String endpoint = String.format("/tenants/%s/mappings/%s", tenantId, mappingId);
     httpClient.put(endpoint, null, httpRequestConfig.build(), result);
     return result;
   }

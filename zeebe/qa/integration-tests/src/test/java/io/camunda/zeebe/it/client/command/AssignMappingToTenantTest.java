@@ -29,13 +29,15 @@ class AssignMappingToTenantTest {
   private static final String CLAIM_NAME = "claimName";
   private static final String CLAIM_VALUE = "claimValue";
   private static final String NAME = "name";
-  private static final String ID = "123456789";
+  private static final String ID = "mapping-id";
 
   @TestZeebe
   private final TestStandaloneBroker zeebe =
       new TestStandaloneBroker().withRecordingExporter(true).withUnauthenticatedAccess();
 
   @AutoClose private CamundaClient client;
+
+  private String mappingId;
 
   @BeforeEach
   void initClientAndInstances() {
@@ -45,6 +47,7 @@ class AssignMappingToTenantTest {
     client.newCreateTenantCommand().tenantId(TENANT_ID).name("Initial Tenant Name").send().join();
 
     // Create Mapping
+
     client
         .newCreateMappingCommand()
         .claimName(CLAIM_NAME)
@@ -53,6 +56,7 @@ class AssignMappingToTenantTest {
         .id(ID)
         .send()
         .join();
+    mappingId = ID;
   }
 
   @Test
@@ -78,7 +82,11 @@ class AssignMappingToTenantTest {
     // When / Then
     assertThatThrownBy(
             () ->
-                client.newAssignMappingToTenantCommand(invalidTenantId).mappingId(ID).send().join())
+                client
+                    .newAssignMappingToTenantCommand(invalidTenantId)
+                    .mappingId(mappingId)
+                    .send()
+                    .join())
         .isInstanceOf(ProblemException.class)
         .hasMessageContaining("Failed with code 404: 'Not Found'")
         .hasMessageContaining(
@@ -89,7 +97,7 @@ class AssignMappingToTenantTest {
   @Test
   void shouldRejectAssignIfMappingDoesNotExist() {
     // Given
-    final String invalidMappingId = "99999L";
+    final String invalidMappingId = "invalid-id";
 
     // When / Then
     assertThatThrownBy(
@@ -102,9 +110,9 @@ class AssignMappingToTenantTest {
         .isInstanceOf(ProblemException.class)
         .hasMessageContaining("Failed with code 404: 'Not Found'")
         .hasMessageContaining(
-            "Expected to add mapping with id '%s' to tenant with id '%s', but the mapping doesn't exist."
+            "Expected to add entity with id '%s' to tenant with tenantId '%s', but the entity doesn't exist."
                 .formatted(invalidMappingId, TENANT_ID));
-  }
+   }
 
   @Test
   void shouldRejectAssignIfTenantAlreadyAssignedToMapping() {
