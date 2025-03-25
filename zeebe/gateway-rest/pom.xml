@@ -190,6 +190,11 @@
       <artifactId>camunda-authentication</artifactId>
     </dependency>
 
+    <dependency>
+      <groupId>io.micrometer</groupId>
+      <artifactId>micrometer-core</artifactId>
+    </dependency>
+
     <!-- dependencies required for OpenAPI model generation -->
     <dependency>
       <groupId>jakarta.validation</groupId>
