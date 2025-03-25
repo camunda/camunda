@@ -15,8 +15,6 @@
  */
 package io.camunda.client.wrappers;
 
-import io.camunda.client.impl.util.EnumUtil;
-
 public enum PermissionType {
   ACCESS,
   CREATE,
@@ -39,24 +37,4 @@ public enum PermissionType {
   DELETE_PROCESS_INSTANCE,
   DELETE_DECISION_INSTANCE,
   UNKNOWN_ENUM_VALUE;
-
-  public static io.camunda.client.protocol.rest.PermissionTypeEnum toProtocolEnum(
-      final PermissionType value) {
-    return (value == null)
-        ? null
-        : io.camunda.client.protocol.rest.PermissionTypeEnum.fromValue(value.name());
-  }
-
-  public static PermissionType fromProtocolEnum(
-      final io.camunda.client.protocol.rest.PermissionTypeEnum value) {
-    if (value == null) {
-      return null;
-    }
-    try {
-      return PermissionType.valueOf(value.name());
-    } catch (final IllegalArgumentException e) {
-      EnumUtil.logUnknownEnumValue(value, value.getClass().getName(), values());
-      return UNKNOWN_ENUM_VALUE;
-    }
-  }
 }

@@ -16,6 +16,7 @@
 package io.camunda.client.impl.search.response;
 
 import io.camunda.client.api.search.response.UserTask;
+import io.camunda.client.impl.util.EnumUtil;
 import io.camunda.client.impl.util.ParseUtil;
 import io.camunda.client.protocol.rest.UserTaskResult;
 import java.util.List;
@@ -48,7 +49,8 @@ public class UserTaskImpl implements UserTask {
   public UserTaskImpl(final UserTaskResult item) {
     userTaskKey = ParseUtil.parseLongOrNull(item.getUserTaskKey());
     name = item.getName();
-    state = io.camunda.client.wrappers.UserTaskResult.State.fromProtocolEnum(item.getState());
+    state =
+        EnumUtil.convert(item.getState(), io.camunda.client.wrappers.UserTaskResult.State.class);
     assignee = item.getAssignee();
     elementId = item.getElementId();
     elementInstanceKey = ParseUtil.parseLongOrNull(item.getElementInstanceKey());

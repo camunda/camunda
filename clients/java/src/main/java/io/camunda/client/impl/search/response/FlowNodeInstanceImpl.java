@@ -16,6 +16,7 @@
 package io.camunda.client.impl.search.response;
 
 import io.camunda.client.api.search.response.FlowNodeInstance;
+import io.camunda.client.impl.util.EnumUtil;
 import io.camunda.client.impl.util.ParseUtil;
 import io.camunda.client.protocol.rest.FlowNodeInstanceResult;
 import java.util.Objects;
@@ -48,9 +49,12 @@ public final class FlowNodeInstanceImpl implements FlowNodeInstance {
     incident = item.getHasIncident();
     incidentKey = ParseUtil.parseLongOrNull(item.getIncidentKey());
     state =
-        io.camunda.client.wrappers.FlowNodeInstanceResult.State.fromProtocolEnum(item.getState());
+        EnumUtil.convert(
+            item.getState(), io.camunda.client.wrappers.FlowNodeInstanceResult.State.class);
     tenantId = item.getTenantId();
-    type = io.camunda.client.wrappers.FlowNodeInstanceResult.Type.fromProtocolEnum(item.getType());
+    type =
+        EnumUtil.convert(
+            item.getType(), io.camunda.client.wrappers.FlowNodeInstanceResult.Type.class);
   }
 
   @Override

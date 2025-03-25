@@ -15,8 +15,6 @@
  */
 package io.camunda.client.wrappers;
 
-import io.camunda.client.impl.util.EnumUtil;
-
 public class UserTaskFilter {
 
   public enum State {
@@ -25,25 +23,5 @@ public class UserTaskFilter {
     CANCELED,
     FAILED,
     UNKNOWN_ENUM_VALUE;
-
-    public static io.camunda.client.protocol.rest.UserTaskFilter.StateEnum toProtocolEnum(
-        final State value) {
-      return (value == null)
-          ? null
-          : io.camunda.client.protocol.rest.UserTaskFilter.StateEnum.fromValue(value.name());
-    }
-
-    public static State fromProtocolEnum(
-        final io.camunda.client.protocol.rest.UserTaskFilter.StateEnum value) {
-      if (value == null) {
-        return null;
-      }
-      try {
-        return State.valueOf(value.name());
-      } catch (final IllegalArgumentException e) {
-        EnumUtil.logUnknownEnumValue(value, value.getClass().getName(), values());
-        return UNKNOWN_ENUM_VALUE;
-      }
-    }
   }
 }

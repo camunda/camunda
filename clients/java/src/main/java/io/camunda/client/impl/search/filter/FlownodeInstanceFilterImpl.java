@@ -17,6 +17,7 @@ package io.camunda.client.impl.search.filter;
 
 import io.camunda.client.api.search.filter.FlownodeInstanceFilter;
 import io.camunda.client.impl.search.TypedSearchRequestPropertyProvider;
+import io.camunda.client.impl.util.EnumUtil;
 import io.camunda.client.impl.util.ParseUtil;
 import io.camunda.client.wrappers.FlowNodeInstanceFilter;
 
@@ -63,13 +64,17 @@ public class FlownodeInstanceFilterImpl
 
   @Override
   public FlownodeInstanceFilter state(final FlowNodeInstanceFilter.State value) {
-    filter.setState(FlowNodeInstanceFilter.State.toProtocolEnum(value));
+    filter.setState(
+        EnumUtil.convert(
+            value, io.camunda.client.protocol.rest.FlowNodeInstanceFilter.StateEnum.class));
     return this;
   }
 
   @Override
   public FlownodeInstanceFilter type(final FlowNodeInstanceFilter.Type value) {
-    filter.setType(FlowNodeInstanceFilter.Type.toProtocolEnum(value));
+    filter.setType(
+        EnumUtil.convert(
+            value, io.camunda.client.protocol.rest.FlowNodeInstanceFilter.TypeEnum.class));
     return this;
   }
 

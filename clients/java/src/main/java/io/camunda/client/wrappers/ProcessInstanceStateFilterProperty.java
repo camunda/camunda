@@ -15,6 +15,8 @@
  */
 package io.camunda.client.wrappers;
 
+import io.camunda.client.impl.util.EnumUtil;
+import io.camunda.client.protocol.rest.ProcessInstanceStateEnum;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -74,17 +76,18 @@ public class ProcessInstanceStateFilterProperty {
 
     final io.camunda.client.protocol.rest.ProcessInstanceStateFilterProperty protocolObject =
         new io.camunda.client.protocol.rest.ProcessInstanceStateFilterProperty();
-    protocolObject.set$Eq(ProcessInstanceState.toProtocolEnum(object.eq));
+    protocolObject.set$Eq(EnumUtil.convert(object.eq, ProcessInstanceStateEnum.class));
     protocolObject.set$Exists(object.exists);
     if (object.in == null) {
       protocolObject.set$In(null);
     } else {
       protocolObject.set$In(new ArrayList<>());
       object.in.forEach(
-          item -> protocolObject.add$InItem(ProcessInstanceState.toProtocolEnum(item)));
+          item ->
+              protocolObject.add$InItem(EnumUtil.convert(item, ProcessInstanceStateEnum.class)));
     }
     protocolObject.set$Like(object.like);
-    protocolObject.set$Neq(ProcessInstanceState.toProtocolEnum(object.neq));
+    protocolObject.set$Neq(EnumUtil.convert(object.neq, ProcessInstanceStateEnum.class));
 
     return protocolObject;
   }
@@ -96,7 +99,7 @@ public class ProcessInstanceStateFilterProperty {
     }
 
     final ProcessInstanceStateFilterProperty object = new ProcessInstanceStateFilterProperty();
-    object.eq = ProcessInstanceState.fromProtocolEnum(protocolObject.get$Eq());
+    object.eq = EnumUtil.convert(protocolObject.get$Eq(), ProcessInstanceState.class);
     object.exists = protocolObject.get$Exists();
     if (protocolObject.get$In() == null) {
       object.in = null;
@@ -104,10 +107,10 @@ public class ProcessInstanceStateFilterProperty {
       object.in = new ArrayList<>();
       protocolObject
           .get$In()
-          .forEach(item -> object.in.add(ProcessInstanceState.fromProtocolEnum(item)));
+          .forEach(item -> object.in.add(EnumUtil.convert(item, ProcessInstanceState.class)));
     }
     object.like = protocolObject.get$Like();
-    object.neq = ProcessInstanceState.fromProtocolEnum(protocolObject.get$Neq());
+    object.neq = EnumUtil.convert(protocolObject.get$Neq(), ProcessInstanceState.class);
 
     return object;
   }

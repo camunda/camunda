@@ -15,8 +15,6 @@
  */
 package io.camunda.client.wrappers;
 
-import io.camunda.client.impl.util.EnumUtil;
-
 public class IncidentFilter {
 
   public enum State {
@@ -25,26 +23,6 @@ public class IncidentFilter {
     RESOLVED,
     PENDING,
     UNKNOWN_ENUM_VALUE;
-
-    public static io.camunda.client.protocol.rest.IncidentFilter.StateEnum toProtocolEnum(
-        final State value) {
-      return (value == null)
-          ? null
-          : io.camunda.client.protocol.rest.IncidentFilter.StateEnum.fromValue(value.name());
-    }
-
-    public static State fromProtocolEnum(
-        final io.camunda.client.protocol.rest.IncidentFilter.StateEnum value) {
-      if (value == null) {
-        return null;
-      }
-      try {
-        return State.valueOf(value.name());
-      } catch (final IllegalArgumentException e) {
-        EnumUtil.logUnknownEnumValue(value, value.getClass().getName(), values());
-        return UNKNOWN_ENUM_VALUE;
-      }
-    }
   }
 
   public enum ErrorType {
@@ -64,25 +42,5 @@ public class IncidentFilter {
     FORM_NOT_FOUND,
     RESOURCE_NOT_FOUND,
     UNKNOWN_ENUM_VALUE;
-
-    public static io.camunda.client.protocol.rest.IncidentFilter.ErrorTypeEnum toProtocolEnum(
-        final ErrorType value) {
-      return (value == null)
-          ? null
-          : io.camunda.client.protocol.rest.IncidentFilter.ErrorTypeEnum.fromValue(value.name());
-    }
-
-    public static ErrorType fromProtocolEnum(
-        final io.camunda.client.protocol.rest.IncidentFilter.ErrorTypeEnum value) {
-      if (value == null) {
-        return null;
-      }
-      try {
-        return ErrorType.valueOf(value.name());
-      } catch (final IllegalArgumentException e) {
-        EnumUtil.logUnknownEnumValue(value, value.getClass().getName(), values());
-        return UNKNOWN_ENUM_VALUE;
-      }
-    }
   }
 }
