@@ -1,7 +1,8 @@
 name: Core Application E2E Tests On Demand
 
 on:
-  workflow_dispatch:
+  # workflow_dispatch:
+  pull_request:
 
 jobs:
   core-e2e-component-tests:
@@ -9,28 +10,28 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-            ref: ${{ github.head_ref }}
+          ref: ${{ github.head_ref }}
 
-      - name: Install Docker and Docker Compose
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y \
-            apt-transport-https \
-            ca-certificates \
-            curl \
-            software-properties-common
+      # - name: Install Docker and Docker Compose
+      #   run: |
+      #     sudo apt-get update
+      #     sudo apt-get install -y \
+      #       apt-transport-https \
+      #       ca-certificates \
+      #       curl \
+      #       software-properties-common
 
-          curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg
-          echo "deb [arch=amd64 signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
-          sudo apt-get update
-          sudo apt-get install -y docker-ce docker-ce-cli containerd.io
+      #     curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg
+      #     echo "deb [arch=amd64 signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+      #     sudo apt-get update
+      #     sudo apt-get install -y docker-ce docker-ce-cli containerd.io
 
-          DOCKER_COMPOSE_VERSION="v2.20.0"
-          sudo curl -SL https://github.com/docker/compose/releases/download/${DOCKER_COMPOSE_VERSION}/docker-compose-$(uname -s)-$(uname -m) -o /usr/local/bin/docker-compose
-          sudo chmod +x /usr/local/bin/docker-compose
+      #     DOCKER_COMPOSE_VERSION="v2.20.0"
+      #     sudo curl -SL https://github.com/docker/compose/releases/download/${DOCKER_COMPOSE_VERSION}/docker-compose-$(uname -s)-$(uname -m) -o /usr/local/bin/docker-compose
+      #     sudo chmod +x /usr/local/bin/docker-compose
 
-      - name: Set DATABASE environment variable
-        run: echo "DATABASE=elasticsearch" >> $GITHUB_ENV
+      # - name: Set DATABASE environment variable
+      #   run: echo "DATABASE=elasticsearch" >> $GITHUB_ENV
 
       - name: Start Tasklist and Operate
         run: |
@@ -41,11 +42,11 @@ jobs:
         run: docker ps -a
         working-directory: qa/core-application-e2e-test-suite/config
 
-      - name: Capture logs for debugging
-        run: |
-          docker-compose logs --tail=50 tasklist
-          docker-compose logs --tail=50 operate
-        working-directory: qa/core-application-e2e-test-suite/config
+      # - name: Capture logs for debugging
+      #   run: |
+      #     docker-compose logs --tail=50 tasklist
+      #     docker-compose logs --tail=50 operate
+      #   working-directory: qa/core-application-e2e-test-suite/config
 
       - name: Wait for services to be ready
         id: wait-for-services
@@ -113,20 +114,19 @@ jobs:
       - name: Run tests
         shell: bash
         env:
-          LOCAL_TEST: 'false'
+          LOCAL_TEST: "false"
           CORE_APPLICATION_TASKLIST_URL: http://localhost:8080
           CORE_APPLICATION_OPERATE_URL: http://localhost:8081
-          CAMUNDA_AUTH_STRATEGY: 'BASIC'
-          CAMUNDA_BASIC_AUTH_USERNAME: 'demo'
-          CAMUNDA_BASIC_AUTH_PASSWORD: 'demo'
-          ZEEBE_REST_ADDRESS: 'http://localhost:8089'
+          CAMUNDA_AUTH_STRATEGY: "BASIC"
+          CAMUNDA_BASIC_AUTH_USERNAME: "demo"
+          CAMUNDA_BASIC_AUTH_PASSWORD: "demo"
+          ZEEBE_REST_ADDRESS: "http://localhost:8089"
         run: npm run test -- --project=chromium
         working-directory: qa/core-application-e2e-test-suite
-      
+
       - uses: actions/upload-artifact@v4
         if: failure()
         with:
           name: Core Application E2E Test Result
           path: qa/core-application-e2e-test-suite/html-report
           retention-days: 10
-
