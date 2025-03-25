@@ -27,7 +27,7 @@ import io.camunda.zeebe.stream.api.state.KeyGenerator;
 public class RoleCreateProcessor implements DistributedTypedRecordProcessor<RoleRecord> {
 
   private static final String ROLE_ALREADY_EXISTS_ERROR_MESSAGE =
-      "Expected to create role with name '%s', but a role with this name already exists";
+      "Expected to create role with id '%s', but a role with this id already exists";
   private final RoleState roleState;
   private final AuthorizationCheckBehavior authCheckBehavior;
   private final KeyGenerator keyGenerator;
@@ -66,7 +66,7 @@ public class RoleCreateProcessor implements DistributedTypedRecordProcessor<Role
     final var record = command.getValue();
     final var persistedRole = roleState.getRole(record.getRoleId());
     if (persistedRole.isPresent()) {
-      final var errorMessage = ROLE_ALREADY_EXISTS_ERROR_MESSAGE.formatted(record.getName());
+      final var errorMessage = ROLE_ALREADY_EXISTS_ERROR_MESSAGE.formatted(record.getRoleId());
       rejectionWriter.appendRejection(command, RejectionType.ALREADY_EXISTS, errorMessage);
       responseWriter.writeRejectionOnCommand(command, RejectionType.ALREADY_EXISTS, errorMessage);
       return;
@@ -87,11 +87,11 @@ public class RoleCreateProcessor implements DistributedTypedRecordProcessor<Role
   public void processDistributedCommand(final TypedRecord<RoleRecord> command) {
     final var record = command.getValue();
     roleState
-        .getRole(record.getRoleKey())
+        .getRole(record.getRoleId())
         .ifPresentOrElse(
             persistedRole -> {
               final var errorMessage =
-                  ROLE_ALREADY_EXISTS_ERROR_MESSAGE.formatted(record.getName());
+                  ROLE_ALREADY_EXISTS_ERROR_MESSAGE.formatted(record.getRoleId());
               rejectionWriter.appendRejection(command, RejectionType.ALREADY_EXISTS, errorMessage);
             },
             () -> stateWriter.appendFollowUpEvent(command.getKey(), RoleIntent.CREATED, record));
