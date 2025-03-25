@@ -24,6 +24,7 @@ import jakarta.servlet.http.Part;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.InvalidMediaTypeException;
 import org.springframework.http.MediaType;
@@ -44,7 +45,8 @@ public class DocumentController {
   private final ObjectMapper objectMapper;
 
   public DocumentController(
-      final DocumentServices documentServices, final ObjectMapper objectMapper) {
+      final DocumentServices documentServices,
+      @Qualifier("gatewayRestObjectMapper") final ObjectMapper objectMapper) {
     this.documentServices = documentServices;
     this.objectMapper = objectMapper;
   }
