@@ -1,4 +1,6 @@
 name: Core Application E2E Tests Nightly
+permissions:
+  contents: read
 on:
   schedule:
     - cron: "0 23 * * *" # 11 PM UTC - Run 8.6 tests
@@ -23,23 +25,58 @@ jobs:
           ref: ${{ env.branch }}
 
       - name: Start Tasklist and Operate
-        run: DATABASE=elasticsearch docker compose up -d tasklist operate
+        run: |
+          DATABASE=elasticsearch docker compose up -d tasklist operate
+        working-directory: qa/core-application-e2e-test-suite/config
+
+      - name: List running Docker containers
+        run: docker ps -a
         working-directory: qa/core-application-e2e-test-suite/config
 
       - name: Wait for services to be ready
+        id: wait-for-services
         run: |
           echo "Checking if services are up..."
+          ready=false
           for i in {1..90}; do
-            if curl -s http://localhost:8080/health | grep '"status":"UP"' && \
-               curl -s http://localhost:8081/health | grep '"status":"UP"'; then
-              echo "Services are ready!"
-              exit 0
+            if ! nc -zv localhost 8080; then
+              echo "Port 8080 is not open yet..."
             fi
+
+            if ! nc -zv localhost 8081; then
+              echo "Port 8081 is not open yet..."
+            fi
+
+            # Check if tasklist page is available (adjust the URL based on your service)
+            response_8080=$(curl -s -m 5 http://localhost:8080/tasklist || echo "Failed")
+            response_8081=$(curl -s -m 5 http://localhost:8081/operate || echo "Failed")
+
+            # Check if tasklist is up (you can adjust this condition based on actual response)
+            if [[ "$response_8080" != "Failed" ]] && [[ "$response_8081" != "Failed" ]]; then
+              echo "Services are ready!"
+              ready=true
+              break
+            fi
+
             echo "Waiting for services... ($i/90)"
+            echo "Response from 8080: $response_8080"
+            echo "Response from 8081: $response_8081"
             sleep 10
           done
-          echo "Services failed to start in time."
-          exit 1
+
+          if [ "$ready" == "true" ]; then
+            echo "ready=true" >> $GITHUB_OUTPUT
+          else
+            echo "Services failed to start in time."
+            exit 1
+          fi
+
+      - name: Print Docker logs before failing
+        if: failure()
+        run: |
+          docker-compose logs tasklist
+          docker-compose logs operate
+        working-directory: qa/core-application-e2e-test-suite/config
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -53,4 +90,20 @@ jobs:
         working-directory: qa/core-application-e2e-test-suite
 
       - name: Run tests
-        uses: ./.github/actions/core-application-e2e-test-suite
+        shell: bash
+        env:
+          LOCAL_TEST: "false"
+          CORE_APPLICATION_TASKLIST_URL: http://localhost:8080
+          CORE_APPLICATION_OPERATE_URL: http://localhost:8081
+          CAMUNDA_AUTH_STRATEGY: "BASIC"
+          CAMUNDA_BASIC_AUTH_USERNAME: "demo"
+          CAMUNDA_BASIC_AUTH_PASSWORD: "demo"
+          ZEEBE_REST_ADDRESS: "http://localhost:8089"
+        run: npm run test -- --project=chromium
+        working-directory: qa/core-application-e2e-test-suite
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Core Application E2E Test Result
+          path: qa/core-application-e2e-test-suite/html-report
+          retention-days: 10
