@@ -38,7 +38,7 @@ public class MappingExportHandler implements RdbmsExportHandler<MappingRecordVal
     if (record.getIntent().equals(MappingIntent.CREATED)) {
       mappingWriter.create(map(record));
     } else if (record.getIntent().equals(MappingIntent.DELETED)) {
-      mappingWriter.delete(record.getValue().getMappingKey());
+      mappingWriter.delete(record.getValue().getId());
     }
   }
 

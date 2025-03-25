@@ -27,7 +27,7 @@
     VALUES (#{id}, #{mappingKey}, #{claimName}, #{claimValue}, #{name})
   </insert>
 
-  <delete id="delete" parameterType="long">
+  <delete id="delete" parameterType="string">
     DELETE
     FROM ${prefix}MAPPINGS
     WHERE ID = #{id}
@@ -60,7 +60,7 @@
   <sql id="searchFilter">
     WHERE 1 = 1
     <if test="filter.id != null">
-      AND ID = #{id}
+      AND ID = #{filter.id}
     </if>
     <if test="filter.mappingKey != null">
       AND MAPPING_KEY = #{filter.mappingKey}
