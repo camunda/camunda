@@ -40,7 +40,7 @@ public final class ZeebeRuntimeValidators {
     return List.of(
         // ----------------------------------------
         ZeebeExpressionValidator.verifyThat(ZeebeInput.class)
-            .hasValidExpression(ZeebeInput::getSource, ExpressionVerification::isMandatory)
+            .hasValidExpression(ZeebeInput::getSource, ExpressionVerification::isOptional)
             .hasValidPath(ZeebeInput::getTarget)
             .build(expressionLanguage),
         // ----------------------------------------
