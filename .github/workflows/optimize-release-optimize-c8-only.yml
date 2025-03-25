@@ -157,6 +157,11 @@ jobs:
           git config --global user.name "github-actions[release]"
           git config --global user.email "github-actions[release]@users.noreply.github.com"
 
+      - name: Build zeebe-build-tools
+        uses: ./.github/actions/run-maven
+        with:
+          parameters: -f build-tools/pom.xml install
+
       - name: Prepare release
         run: |
           mvn -f optimize \
