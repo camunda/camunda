@@ -108,7 +108,7 @@
       "additionalBranchPrefix": "fe-"
     },
     {
-      "description": "Exclude frontend deps until Optimize migrates to react-router v6",
+      "description": "Exclude frontend deps until Optimize migrates to react-router v6 & remove enzyme",
       "matchManagers": ["npm", "nvm"],
       "matchFileNames": ["optimize/**"],
       "matchPackagePatterns": [
@@ -116,7 +116,9 @@
         "old-bpmn-js",
         "react-router",
         "react-router-dom",
-        "@types/react-router-dom"
+        "@types/react-router-dom",
+        "react-18",
+        "react-dom-18"
       ],
       "enabled": false
     },
