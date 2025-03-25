@@ -101,19 +101,17 @@ public class DbRoleState implements MutableRoleState {
     roleColumnFamily.deleteExisting(roleId);
   }
 
+  // TODO remove this method after the key > id refactoring
   @Override
   public Optional<PersistedRole> getRole(final long roleKey) {
-    roleId.wrapString(String.valueOf(roleKey));
-    final var persistedRole = roleColumnFamily.get(roleId);
-    return Optional.ofNullable(persistedRole);
+    return getRole(String.valueOf(roleKey));
   }
 
-  // TODO remove this method
   @Override
-  public Optional<Long> getRoleKeyByName(final String roleName) {
-    this.roleName.wrapString(roleName);
-    final var fkRoleKey = roleByNameColumnFamily.get(this.roleName);
-    return fkRoleKey != null ? Optional.of(fkRoleKey.inner().getValue()) : Optional.empty();
+  public Optional<PersistedRole> getRole(final String roleId) {
+    this.roleId.wrapString(roleId);
+    final var persistedRole = roleColumnFamily.get(this.roleId);
+    return Optional.ofNullable(persistedRole);
   }
 
   @Override
