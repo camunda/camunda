@@ -44,7 +44,6 @@ import java.net.SocketTimeoutException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-import org.apache.hc.core5.http.ConnectionClosedException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -234,8 +233,7 @@ public class ElasticsearchSearchClient
   private static CamundaSearchException.Reason searchExceptionToReason(final Exception e) {
     if (e instanceof ConnectException
         || e instanceof SocketTimeoutException
-        || e instanceof ConnectionClosedException
-        || e instanceof org.apache.http.ConnectionClosedException) {
+        || e.getClass().getSimpleName().equals("ConnectionClosedException")) {
       return CamundaSearchException.Reason.CONNECTION_FAILED;
     }
     if (e instanceof ElasticsearchException) {
