@@ -225,7 +225,7 @@ func ZipSource(sources []string, target string) error {
 
 			header.Method = zip.Deflate
 
-			header.Name = filepath.Join(filepath.Dir(source), path)
+			header.Name = path
 			header.Name = strings.ReplaceAll(header.Name, "\\", "/")
 			if info.IsDir() {
 				header.Name = strings.ReplaceAll(header.Name, "\\", "/")
