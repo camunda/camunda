@@ -86,7 +86,7 @@ public final class TestCluster implements CloseableSilently {
   private final Map<MemberId, TestStandaloneGateway> gateways;
   private final Map<MemberId, TestStandaloneBroker> brokers;
   private final int replicationFactor;
-  private final int partitionsCount;
+  private int partitionsCount;
 
   /**
    * Creates a new cluster from the given parameters.
@@ -438,5 +438,10 @@ public final class TestCluster implements CloseableSilently {
         .filter(TestApplication::isGateway)
         .filter(TestGateway.class::isInstance)
         .map(node -> (TestGateway<?>) node);
+  }
+
+  public void setPartitionCount(final int count) {
+    partitionsCount = count;
+    brokers.forEach((id, b) -> b.brokerConfig().getCluster().setPartitionsCount(partitionsCount));
   }
 }
