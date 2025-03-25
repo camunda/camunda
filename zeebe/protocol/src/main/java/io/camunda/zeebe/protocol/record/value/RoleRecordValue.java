@@ -23,8 +23,11 @@ import org.immutables.value.Value;
 @ImmutableProtocol(builder = ImmutableRoleRecordValue.Builder.class)
 public interface RoleRecordValue extends RecordValue {
 
-  /** The unique identifier of the role within our system. */
+  /** The internal key of a role */
   long getRoleKey();
+
+  /** The unique identifier of the role within our system. */
+  String getRoleId();
 
   /** The name of the role. */
   String getName();

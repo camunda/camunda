@@ -18,14 +18,17 @@ import io.camunda.zeebe.util.buffer.BufferUtil;
 public class RoleRecord extends UnifiedRecordValue implements RoleRecordValue {
 
   private final LongProperty roleKeyProp = new LongProperty("roleKey", -1L);
+  // TODO remove default empty string https://github.com/camunda/camunda/issues/30140
+  private final StringProperty roleIdProp = new StringProperty("roleId", "");
   private final StringProperty nameProp = new StringProperty("name", "");
   private final LongProperty entityKeyProp = new LongProperty("entityKey", -1L);
   private final EnumProperty<EntityType> entityTypeProp =
       new EnumProperty<>("entityType", EntityType.class, EntityType.UNSPECIFIED);
 
   public RoleRecord() {
-    super(4);
+    super(5);
     declareProperty(roleKeyProp)
+        .declareProperty(roleIdProp)
         .declareProperty(nameProp)
         .declareProperty(entityKeyProp)
         .declareProperty(entityTypeProp);
@@ -38,6 +41,16 @@ public class RoleRecord extends UnifiedRecordValue implements RoleRecordValue {
 
   public RoleRecord setRoleKey(final long roleKey) {
     roleKeyProp.setValue(roleKey);
+    return this;
+  }
+
+  @Override
+  public String getRoleId() {
+    return BufferUtil.bufferAsString(roleIdProp.getValue());
+  }
+
+  public RoleRecord setRoleId(final String roleId) {
+    roleIdProp.setValue(roleId);
     return this;
   }
 
