@@ -10,6 +10,7 @@ package io.camunda.zeebe.broker;
 import io.atomix.cluster.AtomixCluster;
 import io.camunda.application.commons.configuration.BrokerBasedConfiguration;
 import io.camunda.identity.sdk.IdentityConfiguration;
+import io.camunda.search.clients.SearchClientsProxy;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.service.UserServices;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
@@ -58,6 +59,7 @@ public class BrokerModuleConfiguration implements CloseableSilently {
   private final UserServices userServices;
   private final PasswordEncoder passwordEncoder;
   private final JwtDecoder jwtDecoder;
+  private final SearchClientsProxy searchClientsProxy;
 
   private Broker broker;
 
@@ -75,7 +77,8 @@ public class BrokerModuleConfiguration implements CloseableSilently {
       // The UserServices class is not available if you want to start-up the Standalone Broker
       @Autowired(required = false) final UserServices userServices,
       final PasswordEncoder passwordEncoder,
-      @Autowired(required = false) final JwtDecoder jwtDecoder) {
+      @Autowired(required = false) final JwtDecoder jwtDecoder,
+      final SearchClientsProxy searchClientsProxy) {
     this.configuration = configuration;
     this.identityConfiguration = identityConfiguration;
     this.springBrokerBridge = springBrokerBridge;
@@ -88,6 +91,7 @@ public class BrokerModuleConfiguration implements CloseableSilently {
     this.userServices = userServices;
     this.passwordEncoder = passwordEncoder;
     this.jwtDecoder = jwtDecoder;
+    this.searchClientsProxy = searchClientsProxy;
   }
 
   @Bean
@@ -115,7 +119,8 @@ public class BrokerModuleConfiguration implements CloseableSilently {
             securityConfiguration,
             userServices,
             passwordEncoder,
-            jwtDecoder);
+            jwtDecoder,
+            searchClientsProxy);
     springBrokerBridge.registerShutdownHelper(
         errorCode -> shutdownHelper.initiateShutdown(errorCode));
     broker =

@@ -9,6 +9,7 @@ package io.camunda.zeebe.engine.processing;
 
 import static io.camunda.zeebe.protocol.record.intent.DeploymentIntent.CREATE;
 
+import io.camunda.search.clients.SearchClientsProxy;
 import io.camunda.zeebe.dmn.DecisionEngineFactory;
 import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.metrics.JobProcessingMetrics;
@@ -88,7 +89,8 @@ public final class EngineProcessors {
       final SubscriptionCommandSender subscriptionCommandSender,
       final InterPartitionCommandSender interPartitionCommandSender,
       final FeatureFlags featureFlags,
-      final JobStreamer jobStreamer) {
+      final JobStreamer jobStreamer,
+      final SearchClientsProxy searchClientsProxy) {
 
     final var processingState = typedRecordProcessorContext.getProcessingState();
     final var keyGenerator = processingState.getKeyGenerator();

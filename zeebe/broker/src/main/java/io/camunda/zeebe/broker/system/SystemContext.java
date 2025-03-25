@@ -11,6 +11,7 @@ import static io.camunda.zeebe.broker.system.partitions.impl.AsyncSnapshotDirect
 
 import io.atomix.cluster.AtomixCluster;
 import io.camunda.identity.sdk.IdentityConfiguration;
+import io.camunda.search.clients.SearchClientsProxy;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.service.UserServices;
 import io.camunda.zeebe.backup.azure.AzureBackupStore;
@@ -72,6 +73,7 @@ public final class SystemContext {
   private final UserServices userServices;
   private final PasswordEncoder passwordEncoder;
   private final JwtDecoder jwtDecoder;
+  private final SearchClientsProxy searchClientsProxy;
 
   public SystemContext(
       final Duration shutdownTimeout,
@@ -84,7 +86,8 @@ public final class SystemContext {
       final SecurityConfiguration securityConfiguration,
       final UserServices userServices,
       final PasswordEncoder passwordEncoder,
-      final JwtDecoder jwtDecoder) {
+      final JwtDecoder jwtDecoder,
+      final SearchClientsProxy searchClientsProxy) {
     this.shutdownTimeout = shutdownTimeout;
     this.brokerCfg = brokerCfg;
     this.identityConfiguration = identityConfiguration;
@@ -96,6 +99,7 @@ public final class SystemContext {
     this.userServices = userServices;
     this.passwordEncoder = passwordEncoder;
     this.jwtDecoder = jwtDecoder;
+    this.searchClientsProxy = searchClientsProxy;
     initSystemContext();
   }
 
@@ -120,7 +124,8 @@ public final class SystemContext {
         securityConfiguration,
         userServices,
         passwordEncoder,
-        jwtDecoder);
+        jwtDecoder,
+        null);
   }
 
   private void initSystemContext() {
@@ -377,5 +382,9 @@ public final class SystemContext {
 
   public JwtDecoder getJwtDecoder() {
     return jwtDecoder;
+  }
+
+  public SearchClientsProxy getSearchClientsProxy() {
+    return searchClientsProxy;
   }
 }

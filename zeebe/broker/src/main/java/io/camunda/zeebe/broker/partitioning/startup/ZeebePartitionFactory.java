@@ -8,6 +8,7 @@
 package io.camunda.zeebe.broker.partitioning.startup;
 
 import io.atomix.raft.partition.RaftPartition;
+import io.camunda.search.clients.SearchClientsProxy;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.zeebe.broker.PartitionListener;
 import io.camunda.zeebe.broker.PartitionRaftListener;
@@ -107,6 +108,7 @@ public final class ZeebePartitionFactory {
   private final FeatureFlags featureFlags;
   private final List<PartitionRaftListener> partitionRaftListeners;
   private final SecurityConfiguration securityConfig;
+  private final SearchClientsProxy searchClientsProxy;
 
   public ZeebePartitionFactory(
       final ActorSchedulingService actorSchedulingService,
@@ -122,7 +124,8 @@ public final class ZeebePartitionFactory {
       final List<PartitionRaftListener> partitionRaftListeners,
       final TopologyManagerImpl topologyManager,
       final FeatureFlags featureFlags,
-      final SecurityConfiguration securityConfig) {
+      final SecurityConfiguration securityConfig,
+      final SearchClientsProxy searchClientsProxy) {
     this.actorSchedulingService = actorSchedulingService;
     this.brokerCfg = brokerCfg;
     this.localBroker = localBroker;
@@ -137,6 +140,7 @@ public final class ZeebePartitionFactory {
     this.topologyManager = topologyManager;
     this.featureFlags = featureFlags;
     this.securityConfig = securityConfig;
+    this.searchClientsProxy = searchClientsProxy;
   }
 
   public ZeebePartition constructPartition(
@@ -232,7 +236,8 @@ public final class ZeebePartitionFactory {
           subscriptionCommandSender,
           partitionCommandSender,
           featureFlags,
-          jobStreamer);
+          jobStreamer,
+          searchClientsProxy);
     };
   }
 }
