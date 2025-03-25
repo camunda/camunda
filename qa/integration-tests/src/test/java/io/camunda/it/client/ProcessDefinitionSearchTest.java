@@ -16,6 +16,7 @@ import io.camunda.client.api.command.ProblemException;
 import io.camunda.client.api.response.DeploymentEvent;
 import io.camunda.client.api.response.Process;
 import io.camunda.client.api.search.response.ProcessDefinition;
+import io.camunda.client.protocol.rest.SortValueResponse;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import java.time.Duration;
 import java.util.ArrayList;
@@ -23,6 +24,7 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
+import java.util.stream.Collectors;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -92,11 +94,17 @@ public class ProcessDefinitionSearchTest {
             .page(p -> p.limit(1))
             .send()
             .join();
+
+    final List<Object> lastSortValuesFirstPage =
+        firstPage.page().lastSortValues().stream()
+            .map(SortValueResponse::getValue)
+            .collect(Collectors.toList());
+
     final var secondPage =
         camundaClient
             .newProcessDefinitionSearchRequest()
             .sort(s -> s.processDefinitionKey().desc())
-            .page(p -> p.limit(1).searchAfter(firstPage.page().lastSortValues()))
+            .page(p -> p.limit(1).searchAfter(lastSortValuesFirstPage))
             .send()
             .join();
 
@@ -127,11 +135,15 @@ public class ProcessDefinitionSearchTest {
             .page(p -> p.limit(2))
             .send()
             .join();
+    final List<Object> firstPageLastSortValues =
+        firstPage.page().lastSortValues().stream()
+            .map(SortValueResponse::getValue)
+            .collect(Collectors.toList());
     final var secondPage =
         camundaClient
             .newProcessDefinitionSearchRequest()
             .sort(s -> s.processDefinitionId().desc())
-            .page(p -> p.limit(1).searchAfter(firstPage.page().lastSortValues()))
+            .page(p -> p.limit(1).searchAfter(firstPageLastSortValues))
             .send()
             .join();
 
@@ -156,19 +168,27 @@ public class ProcessDefinitionSearchTest {
             .page(p -> p.limit(2))
             .send()
             .join();
+    final List<Object> firstPageLastSortValues =
+        firstPage.page().lastSortValues().stream()
+            .map(SortValueResponse::getValue)
+            .collect(Collectors.toList());
     final var secondPage =
         camundaClient
             .newProcessDefinitionSearchRequest()
             .sort(s -> s.processDefinitionId().desc())
-            .page(p -> p.limit(1).searchAfter(firstPage.page().lastSortValues()))
+            .page(p -> p.limit(1).searchAfter(firstPageLastSortValues))
             .send()
             .join();
     // when
+    final List<Object> secondPageFirstSortValue =
+        secondPage.page().firstSortValues().stream()
+            .map(SortValueResponse::getValue)
+            .collect(Collectors.toList());
     final var firstPageAgain =
         camundaClient
             .newProcessDefinitionSearchRequest()
             .sort(s -> s.processDefinitionId().desc())
-            .page(p -> p.limit(2).searchBefore(secondPage.page().firstSortValues()))
+            .page(p -> p.limit(2).searchBefore(secondPageFirstSortValue))
             .send()
             .join();
 

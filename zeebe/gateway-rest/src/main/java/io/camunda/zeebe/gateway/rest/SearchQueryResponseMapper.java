@@ -79,6 +79,7 @@ import io.camunda.zeebe.gateway.protocol.rest.RoleResult;
 import io.camunda.zeebe.gateway.protocol.rest.RoleSearchQueryResult;
 import io.camunda.zeebe.gateway.protocol.rest.SearchQueryPageResponse;
 import io.camunda.zeebe.gateway.protocol.rest.SortValueResponse;
+import io.camunda.zeebe.gateway.protocol.rest.SortValueResponse.TypeEnum;
 import io.camunda.zeebe.gateway.protocol.rest.TenantResult;
 import io.camunda.zeebe.gateway.protocol.rest.TenantSearchQueryResult;
 import io.camunda.zeebe.gateway.protocol.rest.UsageMetricsResponse;
@@ -294,20 +295,24 @@ public final class SearchQueryResponseMapper {
                         .map(
                             obj -> {
                               final String type = determineValueType(obj);
-                              return new SortValueResponse().value(obj).type(type);
+                              return new SortValueResponse()
+                                  .value(obj)
+                                  .type(TypeEnum.valueOf(type));
                             })
                         .collect(Collectors.toList()))
             .orElse(emptyList());
 
     final List<SortValueResponse> lastSortValues =
-        ofNullable(result.firstSortValues())
+        ofNullable(result.lastSortValues())
             .map(
                 array ->
                     Arrays.stream(array)
                         .map(
                             obj -> {
                               final String type = determineValueType(obj);
-                              return new SortValueResponse().value(obj).type(type);
+                              return new SortValueResponse()
+                                  .value(obj)
+                                  .type(TypeEnum.valueOf(type));
                             })
                         .collect(Collectors.toList()))
             .orElse(emptyList());
@@ -771,35 +776,23 @@ public final class SearchQueryResponseMapper {
   }
 
   private static String determineValueType(final Object value) {
-    if (value == null) {
-      return "null";
-    }
-
     if (value instanceof Boolean) {
-      return "boolean";
+      return TypeEnum.BOOLEAN.name();
     }
-
     if (value instanceof String) {
-      return "string";
+      return TypeEnum.STRING.name();
     }
-
-    if (value instanceof Integer) {
-      return "int64";
+    if (value instanceof Integer || value instanceof Long) {
+      return TypeEnum.INT64.name();
     }
-
-    if (value instanceof Long) {
-      return "int64";
-    }
-
     if (value instanceof Float || value instanceof Double) {
-      return "float";
+      return TypeEnum.FLOAT.name();
     }
-
     if (value instanceof java.time.Instant || value instanceof java.util.Date) {
-      return "date";
+      return TypeEnum.DATE.name();
     }
 
-    return "object"; // Fallback
+    return TypeEnum.OBJECT.name(); // Fallback
   }
 
   private record RuleIdentifier(String ruleId, int ruleIndex) {}

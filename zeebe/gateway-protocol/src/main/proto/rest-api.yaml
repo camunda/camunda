@@ -6591,6 +6591,13 @@ components:
         type:
             type: string
             description: The data type of the sort value.
+            enum:
+                - string
+                - int64
+                - float
+                - boolean
+                - date
+                - object
     DecisionRequirementsSearchQuerySortRequest:
       type: object
       properties:
