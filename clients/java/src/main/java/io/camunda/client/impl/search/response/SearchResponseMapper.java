@@ -116,7 +116,10 @@ public final class SearchResponseMapper {
 
   private static SearchResponsePage toSearchResponsePage(
       final SearchQueryPageResponse pageResponse) {
-    return new SearchResponsePageImpl(pageResponse.getTotalItems(), null, null);
+    return new SearchResponsePageImpl(
+        pageResponse.getTotalItems(),
+        pageResponse.getFirstSortValues(),
+        pageResponse.getLastSortValues());
   }
 
   public static SearchResponse<DecisionRequirements> toDecisionRequirementsSearchResponse(
@@ -141,43 +144,5 @@ public final class SearchResponseMapper {
     return Optional.ofNullable(items)
         .map(i -> i.stream().map(mapper).collect(Collectors.toList()))
         .orElse(Collections.emptyList());
-  }
-
-  private static String determineValueType(final Object rawObj) {
-    if (rawObj == null) return "null";
-
-    String rawValue = rawObj.toString().trim();
-
-    // Boolean detection
-    if ("true".equalsIgnoreCase(rawValue) || "false".equalsIgnoreCase(rawValue)) {
-      return "boolean";
-    }
-
-    // Integer (int64) detection
-    try {
-      Long.parseLong(rawValue);
-      return "int64";
-    } catch (NumberFormatException ignored) {
-    }
-
-    // Float detection
-    try {
-      Double.parseDouble(rawValue);
-      return "float";
-    } catch (NumberFormatException ignored) {
-    }
-
-    // Date detection (optional – simplified ISO8601 check)
-    if (rawValue.matches("\\d{4}-\\d{2}-\\d{2}T.*Z")) {
-      return "date";
-    }
-
-    // Quoted string: remove quotes if present
-    if (rawValue.startsWith("\"") && rawValue.endsWith("\"")) {
-      return "string";
-    }
-
-    // Fallback: treat everything else as string
-    return "string";
   }
 }
