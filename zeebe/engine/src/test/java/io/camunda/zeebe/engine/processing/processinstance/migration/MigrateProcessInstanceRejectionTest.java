@@ -20,6 +20,7 @@ import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.MessageSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceMigrationIntent;
+import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.DeploymentRecordValue;
 import io.camunda.zeebe.test.util.BrokerClassRuleHelper;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
@@ -602,7 +603,7 @@ public class MigrateProcessInstanceRejectionTest {
         .hasIntent(ProcessInstanceMigrationIntent.MIGRATE)
         .hasRejectionType(RejectionType.INVALID_STATE)
         .hasRejectionReason(
-                """
+            """
             Expected to migrate process instance '%s' \
             but target element with id 'A' has one or more boundary events of types 'TIMER'. \
             Migrating target elements with boundary events of these types is not possible yet."""
@@ -726,7 +727,7 @@ public class MigrateProcessInstanceRejectionTest {
         .hasIntent(ProcessInstanceMigrationIntent.MIGRATE)
         .hasRejectionType(RejectionType.INVALID_STATE)
         .hasRejectionReason(
-                """
+            """
             Expected to migrate process instance '%s' but active element with id 'A' attempts to \
             subscribe to a message it is already subscribed to with name 'message'. Migrating \
             active elements that subscribe to a message they are already subscribed to is not \
@@ -793,7 +794,7 @@ public class MigrateProcessInstanceRejectionTest {
         .hasIntent(ProcessInstanceMigrationIntent.MIGRATE)
         .hasRejectionType(RejectionType.INVALID_STATE)
         .hasRejectionReason(
-                """
+            """
             Expected to migrate process instance '%s' but active element with id 'A' is mapped to \
             element with id 'A' that must be subscribed to mapped catch event with id 'boundary'. \
             Migrating active elements with mapped catch events is not possible yet."""
@@ -1026,7 +1027,7 @@ public class MigrateProcessInstanceRejectionTest {
         .describedAs("Expect that the message boundary event could not be subscribed")
         .hasRejectionType(RejectionType.INVALID_STATE)
         .hasRejectionReason(
-                """
+            """
             Expected to migrate process instance '%s' but active element with id 'A' \
             is mapped to element with id 'B' that must be subscribed to a message catch event. \
             Failed to extract the correlation key for 'key': The value must be either a string or \
@@ -1163,6 +1164,73 @@ public class MigrateProcessInstanceRejectionTest {
               fail("Encountered a pending process message subscription.");
               return true;
             });
+  }
+
+  @Test
+  public void shouldRejectMigrationIfItBreaksMessageCardinality() {
+    final var deployment =
+        ENGINE
+            .deployment()
+            .withXmlResource(
+                Bpmn.createExecutableProcess("process1")
+                    .startEvent("msg_start")
+                    .message("msg")
+                    .serviceTask("task1", t -> t.zeebeJobType("task"))
+                    .done())
+            .withXmlResource(
+                Bpmn.createExecutableProcess("process2")
+                    .startEvent("msg_start")
+                    .message("msg")
+                    .serviceTask("task2", t -> t.zeebeJobType("task"))
+                    .done())
+            .deploy();
+    ENGINE.message().withName("msg").withCorrelationKey("cardinality").publish();
+    final var processInstanceKey =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withElementType(BpmnElementType.START_EVENT)
+            .withElementId("msg_start")
+            .withBpmnProcessId("process1")
+            .getFirst()
+            .getValue()
+            .getProcessInstanceKey();
+
+    RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+        .withElementType(BpmnElementType.START_EVENT)
+        .withElementId("msg_start")
+        .withBpmnProcessId("process2")
+        .getFirst()
+        .getValue()
+        .getProcessInstanceKey();
+
+    final long targetProcessDefinitionKey =
+        extractTargetProcessDefinitionKey(deployment, "process2");
+
+    ENGINE
+        .processInstance()
+        .withInstanceKey(processInstanceKey)
+        .migration()
+        .withTargetProcessDefinitionKey(targetProcessDefinitionKey)
+        .addMappingInstruction("task1", "task2")
+        .expectRejection()
+        .migrate();
+
+    // then
+    final var rejectionRecord =
+        RecordingExporter.processInstanceMigrationRecords().onlyCommandRejections().getFirst();
+
+    assertThat(rejectionRecord)
+        .hasIntent(ProcessInstanceMigrationIntent.MIGRATE)
+        .hasRejectionType(RejectionType.INVALID_STATE)
+        .describedAs(
+            "Should be rejected since an instance with id 'process2' and correlation key 'cardinality' already exist")
+        .hasRejectionReason(
+            String.format(
+                """
+                Expected to migrate process instance '%d' \
+                but target process definition '%s' has an active instance triggered by a message start event with correlation key '%s'. \
+                Only one instance per correlation key is allowed for message start events.""",
+                processInstanceKey, targetProcessDefinitionKey, "cardinality"))
+        .hasKey(processInstanceKey);
   }
 
   private static long extractTargetProcessDefinitionKey(
