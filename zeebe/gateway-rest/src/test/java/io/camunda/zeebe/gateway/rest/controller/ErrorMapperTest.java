@@ -563,12 +563,12 @@ public class ErrorMapperTest extends RestControllerTest {
         .thenReturn(
             CompletableFuture.failedFuture(
                 new CamundaBrokerException(
-                    new BrokerError(ErrorCode.MAX_MESSAGE_SIZE_EXCEEDED, "max size error"))));
+                    new BrokerError(ErrorCode.MALFORMED_REQUEST, "max size error"))));
 
     final var request = new UserTaskCompletionRequest();
     final var expectedBody =
-        ProblemDetail.forStatusAndDetail(HttpStatus.PAYLOAD_TOO_LARGE, "max size error");
-    expectedBody.setTitle(ErrorCode.MAX_MESSAGE_SIZE_EXCEEDED.name());
+        ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, "max size error");
+    expectedBody.setTitle(ErrorCode.MALFORMED_REQUEST.name());
     expectedBody.setInstance(URI.create(USER_TASKS_BASE_URL + "/1/completion"));
 
     // when / then
@@ -580,7 +580,7 @@ public class ErrorMapperTest extends RestControllerTest {
         .body(Mono.just(request), UserTaskCompletionRequest.class)
         .exchange()
         .expectStatus()
-        .isEqualTo(HttpStatus.PAYLOAD_TOO_LARGE)
+        .isEqualTo(HttpStatus.BAD_REQUEST)
         .expectBody(ProblemDetail.class)
         .isEqualTo(expectedBody);
   }

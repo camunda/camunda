@@ -203,7 +203,7 @@ final class GrpcErrorMapperTest {
   void shouldLogMaxMessageSizeExceededErrorOnDebug() {
     // given
     final var brokerError =
-        new BrokerError(ErrorCode.MAX_MESSAGE_SIZE_EXCEEDED, "Max message size exceeded");
+        new BrokerError(ErrorCode.MALFORMED_REQUEST, "Max message size exceeded");
     final BrokerErrorException exception = new BrokerErrorException(brokerError);
 
     // when
@@ -211,7 +211,7 @@ final class GrpcErrorMapperTest {
     final StatusRuntimeException statusException = errorMapper.mapError(exception, logger);
 
     // then
-    assertThat(statusException.getStatus().getCode()).isEqualTo(Code.RESOURCE_EXHAUSTED);
+    assertThat(statusException.getStatus().getCode()).isEqualTo(Code.INVALID_ARGUMENT);
     assertThat(recorder.getAppendedEvents()).hasSize(1);
     final LogEvent event = recorder.getAppendedEvents().getFirst();
     assertThat(event.getLevel()).isEqualTo(Level.DEBUG);

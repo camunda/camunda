@@ -222,9 +222,9 @@ public class RestErrorMapper {
             "Partition in target broker is currently unavailable: {}", error, rootError);
         yield createProblemDetail(HttpStatus.SERVICE_UNAVAILABLE, message, title);
       }
-      case MAX_MESSAGE_SIZE_EXCEEDED -> {
-        REST_GATEWAY_LOGGER.debug("Max message size exceeded: {}", error, rootError);
-        yield createProblemDetail(HttpStatus.PAYLOAD_TOO_LARGE, message, title);
+      case MALFORMED_REQUEST -> {
+        REST_GATEWAY_LOGGER.debug("Malformed request: {}", error, rootError);
+        yield createProblemDetail(HttpStatus.BAD_REQUEST, message, title);
       }
       default -> {
         // all the following are for cases where retrying (with the same gateway) is not

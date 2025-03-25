@@ -19,7 +19,6 @@
       <validValue name="PROCESS_NOT_FOUND">7</validValue>
       <validValue name="RESOURCE_EXHAUSTED">8</validValue>
       <validValue name="PARTITION_UNAVAILABLE">9</validValue>
-      <validValue name="MAX_MESSAGE_SIZE_EXCEEDED">10</validValue>
     </enum>
 
     <enum name="ValueType" encodingType="uint8" description="The type of a record value">

@@ -177,14 +177,13 @@ public final class GrpcErrorMapper {
         logger.trace("Target broker was not the leader of the partition: {}", error, rootError);
         builder.setCode(Code.UNAVAILABLE_VALUE);
       }
-      case MALFORMED_REQUEST -> builder.setCode(Code.INVALID_ARGUMENT_VALUE);
+      case MALFORMED_REQUEST -> {
+        logger.debug("Malformed request: {}", message, rootError);
+        builder.setCode(Code.INVALID_ARGUMENT_VALUE);
+      }
       case PARTITION_UNAVAILABLE -> {
         logger.debug("Partition is currently unavailable: {}", error, rootError);
         builder.setCode(Code.UNAVAILABLE_VALUE);
-      }
-      case MAX_MESSAGE_SIZE_EXCEEDED -> {
-        logger.debug("Max message size exceeded: {}", error, rootError);
-        builder.setCode(Code.RESOURCE_EXHAUSTED_VALUE);
       }
       default -> {
         // all the following are for cases where retrying (with the same gateway) is not expected
