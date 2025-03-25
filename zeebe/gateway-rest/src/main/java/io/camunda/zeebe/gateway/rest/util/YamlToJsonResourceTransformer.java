@@ -8,25 +8,21 @@
 package io.camunda.zeebe.gateway.rest.util;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import jakarta.servlet.http.HttpServletRequest;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import org.springframework.core.io.Resource;
-import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.resource.ResourceTransformer;
 import org.springframework.web.servlet.resource.ResourceTransformerChain;
 import org.springframework.web.servlet.resource.TransformedResource;
 
-@Component
 public class YamlToJsonResourceTransformer implements ResourceTransformer {
-  private final ObjectMapper yamlMapper;
   private final ObjectMapper jsonMapper;
 
-  public YamlToJsonResourceTransformer(
-      final ObjectMapper jsonMapper, final ObjectMapper yamlMapper) {
+  public YamlToJsonResourceTransformer(final ObjectMapper jsonMapper) {
     this.jsonMapper = jsonMapper;
-    this.yamlMapper = yamlMapper;
   }
 
   @Override
@@ -36,6 +32,7 @@ public class YamlToJsonResourceTransformer implements ResourceTransformer {
       final ResourceTransformerChain transformerChain)
       throws IOException {
     try (final InputStream is = resource.getInputStream()) {
+      final ObjectMapper yamlMapper = new ObjectMapper(new YAMLFactory());
       final Object yamlObject = yamlMapper.readValue(is, Object.class);
       final String json = jsonMapper.writeValueAsString(yamlObject);
       final byte[] jsonBytes = json.getBytes(StandardCharsets.UTF_8);

@@ -10,7 +10,6 @@ package io.camunda.zeebe.gateway.rest.config;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.zeebe.gateway.rest.util.YamlToJsonResourceTransformer;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
@@ -18,13 +17,7 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 @Configuration
 public class OpenApiResourceConfig implements WebMvcConfigurer {
 
-  @Autowired
-  @Qualifier("gatewayRestObjectMapper")
-  private ObjectMapper objectMapper;
-
-  @Autowired
-  @Qualifier("yamlObjectMapper")
-  private ObjectMapper yamlMapper;
+  @Autowired private ObjectMapper objectMapper;
 
   @Override
   public void addResourceHandlers(final ResourceHandlerRegistry registry) {
@@ -32,6 +25,6 @@ public class OpenApiResourceConfig implements WebMvcConfigurer {
         .addResourceHandler("/rest-api.yaml")
         .addResourceLocations("classpath:/apidoc/")
         .resourceChain(true)
-        .addTransformer(new YamlToJsonResourceTransformer(objectMapper, yamlMapper));
+        .addTransformer(new YamlToJsonResourceTransformer(objectMapper));
   }
 }
