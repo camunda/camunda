@@ -21,6 +21,12 @@ import io.camunda.application.commons.search.SearchEngineDatabaseConfiguration.S
 import io.camunda.client.api.response.ProcessInstanceEvent;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.qa.util.cluster.TestSimpleCamundaApplication;
+import io.camunda.qa.util.multidb.CamundaMultiDBExtension;
+import io.camunda.qa.util.multidb.CamundaMultiDBExtension.DatabaseType;
+import io.camunda.qa.util.multidb.MultiDbTest;
+import io.camunda.qa.util.multidb.MultiDbTestApplication;
+import io.camunda.search.connect.configuration.ConnectConfiguration;
+import io.camunda.qa.util.cluster.TestSimpleCamundaApplication;
 import io.camunda.qa.util.multidb.CamundaMultiDBExtension.DatabaseType;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.qa.util.multidb.MultiDbTestApplication;
@@ -53,7 +59,13 @@ public class PrefixMigrationIT {
   public static void beforeAll() {
     // The container from createCamundaContainer needs access to the ES/OS instances on the host
     // machine
-    Testcontainers.exposeHostPorts(9200);
+    Testcontainers.exposeHostPorts(9200); // elasticsearch
+  }
+
+  private DatabaseType currentMultiDbDatabaseType() {
+    final String property =
+        System.getProperty(CamundaMultiDBExtension.PROP_CAMUNDA_IT_DATABASE_TYPE);
+    return property == null ? DatabaseType.LOCAL : DatabaseType.valueOf(property.toUpperCase());
   }
 
   private GenericContainer<?> createCamundaContainer() {
@@ -73,8 +85,7 @@ public class PrefixMigrationIT {
 
     if (currentMultiDbDatabaseType() == DatabaseType.ES) {
       addElasticsearchConnectionDetails(container);
-    } else if (currentMultiDbDatabaseType() == DatabaseType.OS
-        || currentMultiDbDatabaseType() == DatabaseType.AWS_OS) {
+    } else if (currentMultiDbDatabaseType() == DatabaseType.OS) {
       addOpensearchConnectionDetails(container);
     }
 
