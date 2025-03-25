@@ -69,12 +69,24 @@ find "$C8RUN_DIR" -maxdepth 1 \( -type f -o -type d \) -print0 | while IFS= read
     continue
   fi
 
+
   for prefix in "${EXCLUDE_PREFIXES[@]}"; do
     if [[ "$base" == "$prefix"* ]]; then
+
+      # find the dylibs in the excluded folder and create a tmp fs for them
+      for dylib in $( find $base -name "*.dylib" ); do
+        zip -r "$TMP_EXCLUDE_DIR/$base-dylibs.zip" "$dylib"
+      done
+
       echo "  -> Excluding $base -> $TMP_EXCLUDE_DIR"
       mv "$item" "$TMP_EXCLUDE_DIR"
       break
     fi
+  done
+
+  for dylibzip in $( find "$TMP_EXCLUDE_DIR" -name "*-dylibs.zip" ); do
+    unzip $dylibzip
+    rm $dylibzip
   done
 done
 
@@ -192,7 +204,7 @@ echo "  -> Re-inserting excluded items into c8run"
 find "$TMP_EXCLUDE_DIR" -mindepth 1 -maxdepth 1 -print0 | while IFS= read -r -d '' excluded; do
   base="$(basename "$excluded")"
   echo "    -> $base"
-  mv "$excluded" "$TMP_NOTARIZE_DIR/notarized/c8run/"
+  mv -n "$excluded" "$TMP_NOTARIZE_DIR/notarized/c8run/"
 done
 
 # Build c8run_complete.zip
