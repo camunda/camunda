@@ -18,7 +18,9 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 @Configuration
 public class OpenApiResourceConfig implements WebMvcConfigurer {
 
-  @Autowired private ObjectMapper objectMapper;
+  @Autowired
+  @Qualifier("gatewayRestObjectMapper")
+  private ObjectMapper objectMapper;
 
   @Autowired
   @Qualifier("yamlObjectMapper")
