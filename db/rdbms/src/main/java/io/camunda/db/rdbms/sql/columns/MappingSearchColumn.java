@@ -11,6 +11,7 @@ import io.camunda.search.entities.MappingEntity;
 import java.util.function.Function;
 
 public enum MappingSearchColumn implements SearchColumn<MappingEntity> {
+  ID("id", MappingEntity::id),
   MAPPING_KEY("mappingKey", MappingEntity::mappingKey),
   CLAIM_NAME("claimName", MappingEntity::claimName),
   CLAIM_VALUE("claimValue", MappingEntity::claimValue),
