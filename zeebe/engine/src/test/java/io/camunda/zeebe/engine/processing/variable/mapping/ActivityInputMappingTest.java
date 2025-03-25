@@ -123,7 +123,8 @@ public final class ActivityInputMappingTest {
         "{'x': %s}".formatted(A_YEAR_MONTH_DURATION_VALUE),
         mapping(b -> b.zeebeInputExpression("duration(x)", "y")),
         activityVariables(variable("y", A_YEAR_MONTH_DURATION_VALUE))
-      }
+      },
+      {"{'x': 1}", mapping(b -> b.zeebeInput("x")), activityVariables(variable("x", "null"))}
     };
   }
 

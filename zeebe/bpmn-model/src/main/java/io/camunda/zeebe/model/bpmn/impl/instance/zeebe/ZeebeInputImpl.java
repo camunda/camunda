@@ -64,7 +64,6 @@ public class ZeebeInputImpl extends BpmnModelElementInstanceImpl implements Zeeb
         typeBuilder
             .stringAttribute(ZeebeConstants.ATTRIBUTE_SOURCE)
             .namespace(BpmnModelConstants.ZEEBE_NS)
-            .required()
             .build();
 
     targetAttribute =

@@ -24,5 +24,9 @@ public interface ZeebeVariablesMappingBuilder<B> {
 
   B zeebeInput(String source, String target);
 
+  default B zeebeInput(final String target) {
+    return zeebeInput(null, target);
+  }
+
   B zeebeOutput(String source, String target);
 }

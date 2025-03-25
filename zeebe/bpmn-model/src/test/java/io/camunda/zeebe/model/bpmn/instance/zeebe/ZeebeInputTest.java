@@ -36,7 +36,7 @@ public class ZeebeInputTest extends BpmnModelElementInstanceTest {
   @Override
   public Collection<AttributeAssumption> getAttributesAssumptions() {
     return Arrays.asList(
-        new AttributeAssumption(BpmnModelConstants.ZEEBE_NS, "source", false, true),
+        new AttributeAssumption(BpmnModelConstants.ZEEBE_NS, "source", false, false),
         new AttributeAssumption(BpmnModelConstants.ZEEBE_NS, "target", false, true));
   }
 }
