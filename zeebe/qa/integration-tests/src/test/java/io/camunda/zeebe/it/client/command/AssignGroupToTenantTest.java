@@ -104,7 +104,7 @@ class AssignGroupToTenantTest {
         .isInstanceOf(ProblemException.class)
         .hasMessageContaining("Failed with code 404: 'Not Found'")
         .hasMessageContaining(
-            "Expected to add entity with id '%d' to tenant with tenantId '%s', but the entity doesn't exist."
+            "Expected to add group with id '%d' to tenant with id '%s', but the group doesn't exist."
                 .formatted(nonExistentGroupKey, TENANT_ID));
   }
 
@@ -117,9 +117,9 @@ class AssignGroupToTenantTest {
     assertThatThrownBy(
             () -> client.newAssignGroupToTenantCommand(TENANT_ID).groupKey(groupKey).send().join())
         .isInstanceOf(ProblemException.class)
-        .hasMessageContaining("Failed with code 400: 'Bad Request'")
+        .hasMessageContaining("Failed with code 409: 'Conflict'")
         .hasMessageContaining(
-            "Expected to add entity with id '%d' to tenant with tenantId '%s', but the entity is already assigned to the tenant."
+            "Expected to add group with id '%d' to tenant with id '%s', but the group is already assigned to the tenant."
                 .formatted(groupKey, TENANT_ID));
   }
 }
