@@ -13,7 +13,7 @@ import io.camunda.util.ObjectBuilder;
 import java.util.List;
 
 public record MappingFilter(
-    String id,
+    String mappingId,
     Long mappingKey,
     String claimName,
     List<String> claimNames,
@@ -22,7 +22,7 @@ public record MappingFilter(
     List<Claim> claims)
     implements FilterBase {
   public static final class Builder implements ObjectBuilder<MappingFilter> {
-    private String id;
+    private String mappingId;
     private Long mappingKey;
     private String claimName;
     private List<String> claimNames;
@@ -30,8 +30,8 @@ public record MappingFilter(
     private String name;
     private List<Claim> claims;
 
-    public Builder id(final String value) {
-      id = value;
+    public Builder mappingId(final String value) {
+      mappingId = value;
       return this;
     }
 
@@ -67,7 +67,8 @@ public record MappingFilter(
 
     @Override
     public MappingFilter build() {
-      return new MappingFilter(id, mappingKey, claimName, claimNames, claimValue, name, claims);
+      return new MappingFilter(
+          mappingId, mappingKey, claimName, claimNames, claimValue, name, claims);
     }
   }
 

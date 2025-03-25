@@ -66,7 +66,7 @@ public class CamundaOidcUserService extends OidcUserService {
     final Set<String> mappingKeysAsString =
         mappingKeys.stream().map(String::valueOf).collect(Collectors.toSet());
     final Set<String> mappingIds =
-        mappings.stream().map(MappingEntity::id).collect(Collectors.toSet());
+        mappings.stream().map(MappingEntity::mappingId).collect(Collectors.toSet());
     if (mappingKeys.isEmpty()) {
       LOG.debug("No mappings found for these claims: {}", claims);
     }

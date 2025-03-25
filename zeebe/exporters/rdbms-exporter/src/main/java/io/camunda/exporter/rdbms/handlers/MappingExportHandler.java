@@ -45,7 +45,7 @@ public class MappingExportHandler implements RdbmsExportHandler<MappingRecordVal
   private MappingDbModel map(final Record<MappingRecordValue> record) {
     final var value = record.getValue();
     return new MappingDbModelBuilder()
-        .id(value.getId())
+        .mappingId(value.getId())
         .mappingKey(value.getMappingKey())
         .claimName(value.getClaimName())
         .claimValue(value.getClaimValue())

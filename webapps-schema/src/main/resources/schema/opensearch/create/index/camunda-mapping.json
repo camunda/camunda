@@ -5,6 +5,9 @@
       "id": {
         "type": "keyword"
       },
+      "mappingId": {
+        "type": "keyword"
+      },
       "key": {
         "type": "long"
       },

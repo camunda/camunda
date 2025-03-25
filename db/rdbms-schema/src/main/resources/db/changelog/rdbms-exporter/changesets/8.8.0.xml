@@ -504,24 +504,24 @@
   <changeSet id="migrate_mapping_id_from_key" author="Oleksii Ivanov">
     <!-- Step 1: Add ID column -->
     <addColumn tableName="${prefix}MAPPINGS">
-      <column name="ID" type="VARCHAR(255)">
+      <column name="MAPPING_ID" type="VARCHAR(255)">
         <constraints nullable="true"/>
       </column>
     </addColumn>
 
     <!-- Step 2: Copy values from MAPPING_KEY to ID as string -->
     <update tableName="${prefix}MAPPINGS">
-      <column name="ID" valueComputed="CAST(MAPPING_KEY AS CHAR(255))"/>
+      <column name="MAPPING_ID" valueComputed="CAST(MAPPING_KEY AS CHAR(255))"/>
     </update>
 
     <!-- Step 3: Set ID as NOT NULL (after it's populated) -->
-    <addNotNullConstraint tableName="${prefix}MAPPINGS" columnName="ID" columnDataType="VARCHAR(255)"/>
+    <addNotNullConstraint tableName="${prefix}MAPPINGS" columnName="MAPPING_ID" columnDataType="VARCHAR(255)"/>
 
     <!-- Step 4: Drop old PK on MAPPING_KEY -->
     <dropPrimaryKey tableName="${prefix}MAPPINGS"/>
 
     <!-- Step 5: Make ID the new PK -->
-    <addPrimaryKey tableName="${prefix}MAPPINGS" columnNames="ID" constraintName="${prefix}PK_MAPPINGS_ID"/>
+    <addPrimaryKey tableName="${prefix}MAPPINGS" columnNames="MAPPING_ID" constraintName="${prefix}PK_MAPPINGS_ID"/>
   </changeSet>
 
 </databaseChangeLog>

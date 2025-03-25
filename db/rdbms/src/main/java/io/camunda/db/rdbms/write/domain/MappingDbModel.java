@@ -11,7 +11,7 @@ import io.camunda.util.ObjectBuilder;
 import java.util.function.Function;
 
 public record MappingDbModel(
-    String id, Long mappingKey, String claimName, String claimValue, String name)
+    String mappingId, Long mappingKey, String claimName, String claimValue, String name)
     implements DbModel<MappingDbModel> {
 
   @Override
@@ -21,7 +21,7 @@ public record MappingDbModel(
     return builderFunction
         .apply(
             new MappingDbModelBuilder()
-                .id(id)
+                .mappingId(mappingId)
                 .mappingKey(mappingKey)
                 .claimName(claimName)
                 .claimValue(claimValue)
@@ -31,7 +31,7 @@ public record MappingDbModel(
 
   public static class MappingDbModelBuilder implements ObjectBuilder<MappingDbModel> {
 
-    private String id;
+    private String mappingId;
     private Long mappingKey;
     private String claimName;
     private String claimValue;
@@ -39,8 +39,8 @@ public record MappingDbModel(
 
     public MappingDbModelBuilder() {}
 
-    public MappingDbModelBuilder id(final String id) {
-      this.id = id;
+    public MappingDbModelBuilder mappingId(final String mappingId) {
+      this.mappingId = mappingId;
       return this;
     }
 
@@ -66,7 +66,7 @@ public record MappingDbModel(
 
     @Override
     public MappingDbModel build() {
-      return new MappingDbModel(id, mappingKey, claimName, claimValue, name);
+      return new MappingDbModel(mappingId, mappingKey, claimName, claimValue, name);
     }
   }
 }

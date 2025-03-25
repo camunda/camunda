@@ -38,7 +38,7 @@ public class MappingIT {
     createAndSaveMapping(rdbmsService, randomizedMapping);
 
     final var mapping =
-        rdbmsService.getMappingReader().findOne(randomizedMapping.id()).orElse(null);
+        rdbmsService.getMappingReader().findOne(randomizedMapping.mappingId()).orElse(null);
     assertThat(mapping).isNotNull();
     assertThat(mapping).usingRecursiveComparison().isEqualTo(randomizedMapping);
   }
@@ -52,7 +52,7 @@ public class MappingIT {
     createAndSaveMapping(rdbmsService, randomizedMapping);
 
     // Verify the mapping is saved
-    final var mappingId = randomizedMapping.id();
+    final var mappingId = randomizedMapping.mappingId();
     final var mapping = rdbmsService.getMappingReader().findOne(mappingId).orElse(null);
     assertThat(mapping).isNotNull();
     assertThat(mapping).usingRecursiveComparison().isEqualTo(randomizedMapping);

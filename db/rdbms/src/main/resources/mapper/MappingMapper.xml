@@ -14,7 +14,7 @@
 
   <resultMap id="searchResultMap" type="io.camunda.search.entities.MappingEntity">
     <constructor>
-      <idArg column="ID" javaType="string"/>
+      <idArg column="MAPPING_ID" javaType="string"/>
       <arg column="MAPPING_KEY" javaType="long"/>
       <arg column="CLAIM_NAME" javaType="string"/>
       <arg column="CLAIM_VALUE" javaType="string"/>
@@ -23,14 +23,14 @@
   </resultMap>
 
   <insert id="insert" parameterType="io.camunda.db.rdbms.write.domain.MappingDbModel">
-    INSERT INTO ${prefix}MAPPINGS (ID, MAPPING_KEY, CLAIM_NAME, CLAIM_VALUE, NAME)
-    VALUES (#{id}, #{mappingKey}, #{claimName}, #{claimValue}, #{name})
+    INSERT INTO ${prefix}MAPPINGS (MAPPING_ID, MAPPING_KEY, CLAIM_NAME, CLAIM_VALUE, NAME)
+    VALUES (#{mappingId}, #{mappingKey}, #{claimName}, #{claimValue}, #{name})
   </insert>
 
   <delete id="delete" parameterType="string">
     DELETE
     FROM ${prefix}MAPPINGS
-    WHERE ID = #{id}
+    WHERE MAPPING_ID = #{mappingId}
   </delete>
 
   <select id="count" parameterType="io.camunda.db.rdbms.read.domain.MappingDbQuery"
@@ -44,7 +44,7 @@
     resultMap="io.camunda.db.rdbms.sql.MappingMapper.searchResultMap">
     SELECT * FROM (
     SELECT
-    ID,
+    MAPPING_ID,
     MAPPING_KEY,
     CLAIM_NAME,
     CLAIM_VALUE,
@@ -59,8 +59,8 @@
 
   <sql id="searchFilter">
     WHERE 1 = 1
-    <if test="filter.id != null">
-      AND ID = #{filter.id}
+    <if test="filter.mappingId != null">
+      AND MAPPING_ID = #{filter.mappingId}
     </if>
     <if test="filter.mappingKey != null">
       AND MAPPING_KEY = #{filter.mappingKey}
