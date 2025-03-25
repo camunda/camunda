@@ -156,7 +156,6 @@ public class ErrorMapperTest extends RestControllerTest {
         "INTERNAL_ERROR",
         "UNSUPPORTED_MESSAGE",
         "INVALID_CLIENT_VERSION",
-        "MALFORMED_REQUEST",
         "INVALID_MESSAGE_TEMPLATE",
         "INVALID_DEPLOYMENT_PARTITION",
         "SBE_UNKNOWN",
