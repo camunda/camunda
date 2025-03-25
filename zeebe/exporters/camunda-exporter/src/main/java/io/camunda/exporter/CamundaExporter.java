@@ -133,7 +133,7 @@ public class CamundaExporter implements Exporter {
       throw new IllegalStateException("Schema is not ready for use");
     }
 
-    writer = createBatchWriter(); // move before schemaManager.isSchemaReadyForUse()?
+    writer = createBatchWriter();
 
     checkImportersCompletedAndReschedule();
     controller.readMetadata().ifPresent(metadata::deserialize);

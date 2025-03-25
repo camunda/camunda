@@ -123,6 +123,7 @@ public class OpensearchTestRuleProvider implements SearchTestRuleProvider {
 
   @Override
   public void finished(final Description description) {
+    TestUtil.removeIlmPolicy(richOpenSearchClient);
     final String indexPrefix = operateProperties.getOpensearch().getIndexPrefix();
     TestUtil.removeAllIndices(
         richOpenSearchClient.index(), richOpenSearchClient.template(), indexPrefix);
