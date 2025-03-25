@@ -20,7 +20,7 @@ import org.agrona.DirectBuffer;
 public class GroupRecord extends UnifiedRecordValue implements GroupRecordValue {
 
   private final LongProperty groupKeyProp = new LongProperty("groupKey", -1L);
-  // TODO remove default empty string https://github.com/camunda/camunda/issues/30019
+  // TODO remove default empty string https://github.com/camunda/camunda/issues/30139
   private final StringProperty groupId = new StringProperty("groupId", "");
   private final StringProperty nameProp = new StringProperty("name", "");
   private final StringProperty descriptionProp = new StringProperty("description", "");
