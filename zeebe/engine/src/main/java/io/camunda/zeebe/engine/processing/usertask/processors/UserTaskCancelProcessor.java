@@ -55,7 +55,7 @@ public class UserTaskCancelProcessor implements UserTaskCommandProcessor {
       final TypedRecord<UserTaskRecord> command, final UserTaskRecord userTaskRecord) {
     final var context = buildContext(userTaskRecord.getElementInstanceKey());
     final var element = getUserTaskElement(userTaskRecord);
-    userTaskProcessor.onFinalizeTerminate(element, context);
+    userTaskProcessor.finalizeTerminate(element, context);
   }
 
   private BpmnElementContext buildContext(final long elementInstanceKey) {

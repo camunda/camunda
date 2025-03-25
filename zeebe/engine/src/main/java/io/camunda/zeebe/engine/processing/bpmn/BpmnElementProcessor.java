@@ -143,5 +143,5 @@ public interface BpmnElementProcessor<T extends ExecutableFlowElement> {
    */
   default void onTerminate(final T element, final BpmnElementContext context) {}
 
-  default void onFinalizeTerminate(final T element, final BpmnElementContext context) {}
+  default void finalizeTerminate(final T element, final BpmnElementContext context) {}
 }

@@ -64,9 +64,9 @@ public abstract class JobWorkerTaskSupportingProcessor<T extends ExecutableJobWo
   }
 
   @Override
-  public void onFinalizeTerminate(final T element, final BpmnElementContext context) {
+  public void finalizeTerminate(final T element, final BpmnElementContext context) {
     if (isJobBehavior(element, context)) {
-      delegate.onFinalizeTerminate(element, context);
+      delegate.finalizeTerminate(element, context);
     } else {
       onFinalizeTerminateInternal(element, context);
     }
