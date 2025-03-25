@@ -381,6 +381,7 @@ public class ClusteringRule extends ExternalResource {
             new SecurityConfiguration(),
             null,
             null,
+            null,
             null);
 
     final Broker broker =

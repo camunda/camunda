@@ -11,6 +11,7 @@ import static io.camunda.zeebe.broker.system.partitions.impl.AsyncSnapshotDirect
 
 import io.atomix.cluster.AtomixCluster;
 import io.camunda.identity.sdk.IdentityConfiguration;
+import io.camunda.search.clients.SecondaryDbQueryService;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.service.UserServices;
 import io.camunda.zeebe.backup.azure.AzureBackupStore;
@@ -33,7 +34,6 @@ import io.camunda.zeebe.broker.system.configuration.backup.GcsBackupStoreConfig;
 import io.camunda.zeebe.broker.system.configuration.backup.S3BackupStoreConfig;
 import io.camunda.zeebe.broker.system.configuration.partitioning.FixedPartitionCfg;
 import io.camunda.zeebe.broker.system.configuration.partitioning.Scheme;
-import io.camunda.zeebe.engine.secondarydb.SecondaryDbQueryService;
 import io.camunda.zeebe.scheduler.ActorScheduler;
 import io.camunda.zeebe.util.TlsConfigUtil;
 import io.camunda.zeebe.util.VisibleForTesting;

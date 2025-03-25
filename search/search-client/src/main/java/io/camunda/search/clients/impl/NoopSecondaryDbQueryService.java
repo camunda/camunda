@@ -5,8 +5,9 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.zeebe.engine.secondarydb;
+package io.camunda.search.clients.impl;
 
+import io.camunda.search.clients.SecondaryDbQueryService;
 import io.camunda.search.filter.ProcessInstanceFilter;
 import io.camunda.search.page.SearchQueryPage;
 import io.camunda.search.query.SearchQueryResult;

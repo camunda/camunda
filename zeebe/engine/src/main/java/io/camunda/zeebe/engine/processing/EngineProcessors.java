@@ -9,6 +9,7 @@ package io.camunda.zeebe.engine.processing;
 
 import static io.camunda.zeebe.protocol.record.intent.DeploymentIntent.CREATE;
 
+import io.camunda.search.clients.SecondaryDbQueryService;
 import io.camunda.zeebe.dmn.DecisionEngineFactory;
 import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.metrics.JobProcessingMetrics;
@@ -56,7 +57,6 @@ import io.camunda.zeebe.engine.processing.user.UserProcessors;
 import io.camunda.zeebe.engine.processing.usertask.UserTaskProcessor;
 import io.camunda.zeebe.engine.scaling.ScalingProcessors;
 import io.camunda.zeebe.engine.scaling.redistribution.RedistributionBehavior;
-import io.camunda.zeebe.engine.secondarydb.SecondaryDbQueryService;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.state.immutable.ScheduledTaskState;
 import io.camunda.zeebe.engine.state.message.TransientPendingSubscriptionState;

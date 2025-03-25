@@ -7,10 +7,10 @@
  */
 package io.camunda.zeebe.engine.perf;
 
+import io.camunda.search.clients.impl.NoopSecondaryDbQueryService;
 import io.camunda.zeebe.engine.processing.EngineProcessors;
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
 import io.camunda.zeebe.engine.processing.streamprocessor.JobStreamer;
-import io.camunda.zeebe.engine.secondarydb.NoopSecondaryDbQueryService;
 import io.camunda.zeebe.engine.state.DefaultZeebeDbFactory;
 import io.camunda.zeebe.engine.util.ProcessingExporterTransistor;
 import io.camunda.zeebe.engine.util.StreamProcessingComposite;

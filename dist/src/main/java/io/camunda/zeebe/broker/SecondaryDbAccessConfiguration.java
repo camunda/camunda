@@ -8,9 +8,9 @@
 package io.camunda.zeebe.broker;
 
 import io.camunda.search.clients.ProcessInstanceSearchClient;
-import io.camunda.zeebe.engine.secondarydb.NoopSecondaryDbQueryService;
-import io.camunda.zeebe.engine.secondarydb.SecondaryDbQueryService;
-import io.camunda.zeebe.engine.secondarydb.SecondaryDbQueryServiceImpl;
+import io.camunda.search.clients.SecondaryDbQueryService;
+import io.camunda.search.clients.impl.NoopSecondaryDbQueryService;
+import io.camunda.search.clients.impl.SecondaryDbQueryServiceImpl;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
