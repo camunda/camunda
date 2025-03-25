@@ -141,7 +141,6 @@ jobs:
         if: failure()
         with:
           name: Core Application E2E Test Result
-          working-directory: qa/core-application-e2e-test-suite
-          path: ./html-report
+          path: qa/core-application-e2e-test-suite/html-report
           retention-days: 10
 
