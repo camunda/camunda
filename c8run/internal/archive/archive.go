@@ -12,6 +12,7 @@ import (
 	"path/filepath"
 	"runtime/debug"
 	"strings"
+	"time"
 )
 
 const OpenFlagsForWriting = os.O_RDWR | os.O_CREATE | os.O_TRUNC
@@ -115,9 +116,9 @@ func ExtractTarGzArchive(filename string, xpath string) error {
 	_, err = os.Stat(absPath)
 	if errors.Is(err, os.ErrNotExist) {
 		err = os.Mkdir(absPath, ReadWriteMode)
-                if err != nil {
-		        return fmt.Errorf("ExtractTarGzArchive: failed to make directory %s\n%w\n%s", absPath, err, debug.Stack())
-                }
+		if err != nil {
+			return fmt.Errorf("ExtractTarGzArchive: failed to make directory %s\n%w\n%s", absPath, err, debug.Stack())
+		}
 	}
 
 	tr := tar.NewReader(gz)
@@ -211,6 +212,16 @@ func ZipSource(sources []string, target string) error {
 
 	writer := zip.NewWriter(f)
 	defer writer.Close()
+
+	fh := &zip.FileHeader{
+		Name:     "c8run/",
+		Method:   zip.Store,
+		Modified: time.Now(),
+	}
+	_, err = writer.CreateHeader(fh)
+	if err != nil {
+		return fmt.Errorf("ZipSource: failed to create initial dir c8run %w\n%s", err, debug.Stack())
+	}
 
 	for _, source := range sources {
 		err = filepath.Walk(source, func(path string, info os.FileInfo, err error) error {
