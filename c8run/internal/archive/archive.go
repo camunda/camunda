@@ -12,7 +12,6 @@ import (
 	"path/filepath"
 	"runtime/debug"
 	"strings"
-	"time"
 )
 
 const OpenFlagsForWriting = os.O_RDWR | os.O_CREATE | os.O_TRUNC
@@ -213,16 +212,6 @@ func ZipSource(sources []string, target string) error {
 	writer := zip.NewWriter(f)
 	defer writer.Close()
 
-	fh := &zip.FileHeader{
-		Name:     "c8run/",
-		Method:   zip.Store,
-		Modified: time.Now(),
-	}
-	_, err = writer.CreateHeader(fh)
-	if err != nil {
-		return fmt.Errorf("ZipSource: failed to create initial dir c8run %w\n%s", err, debug.Stack())
-	}
-
 	for _, source := range sources {
 		err = filepath.Walk(source, func(path string, info os.FileInfo, err error) error {
 			if err != nil {
@@ -236,11 +225,8 @@ func ZipSource(sources []string, target string) error {
 
 			header.Method = zip.Deflate
 
-			header.Name, err = filepath.Rel(filepath.Dir(source), path)
+			header.Name = filepath.Join(filepath.Dir(source), path)
 			header.Name = strings.ReplaceAll(header.Name, "\\", "/")
-			if err != nil {
-				return fmt.Errorf("ZipSource: failed to determine relative path for %s\n%w\n%s", path, err, debug.Stack())
-			}
 			if info.IsDir() {
 				header.Name = strings.ReplaceAll(header.Name, "\\", "/")
 				header.Name += "/"
