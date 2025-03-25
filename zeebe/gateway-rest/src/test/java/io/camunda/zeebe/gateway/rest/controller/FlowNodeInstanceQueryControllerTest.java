@@ -236,7 +236,7 @@ public class FlowNodeInstanceQueryControllerTest extends RestControllerTest {
                         .processInstanceKeys(2251799813685989L)
                         .processDefinitionKeys(3L)
                         .processDefinitionIds("complexProcess")
-                        .states(FlowNodeState.ACTIVE)
+                        .states(FlowNodeState.ACTIVE.name())
                         .types(FlowNodeType.SERVICE_TASK)
                         .flowNodeIds("StartEvent_1")
                         .hasIncident(true)
