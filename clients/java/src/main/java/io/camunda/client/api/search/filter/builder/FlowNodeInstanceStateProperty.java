@@ -15,12 +15,12 @@
  */
 package io.camunda.client.api.search.filter.builder;
 
-import io.camunda.client.protocol.rest.FlowNodeInstanceStateEnum;
+import io.camunda.client.api.search.response.FlowNodeInstanceState;
 import io.camunda.client.protocol.rest.FlowNodeInstanceStateFilterProperty;
 
 public interface FlowNodeInstanceStateProperty
     extends LikeProperty<
-        FlowNodeInstanceStateEnum,
+        FlowNodeInstanceState,
         String,
         FlowNodeInstanceStateFilterProperty,
         FlowNodeInstanceStateProperty> {}

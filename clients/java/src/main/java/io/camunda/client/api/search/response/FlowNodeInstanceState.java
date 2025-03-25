@@ -16,8 +16,7 @@
 package io.camunda.client.api.search.response;
 
 import io.camunda.client.impl.util.EnumUtil;
-import io.camunda.client.protocol.rest.FlowNodeInstanceFilter;
-import io.camunda.client.protocol.rest.FlowNodeInstanceResult;
+import io.camunda.client.protocol.rest.FlowNodeInstanceStateEnum;
 
 public enum FlowNodeInstanceState {
   ACTIVE,
@@ -25,13 +24,11 @@ public enum FlowNodeInstanceState {
   TERMINATED,
   UNKNOWN_ENUM_VALUE;
 
-  public static FlowNodeInstanceFilter.StateEnum toProtocolState(
-      final FlowNodeInstanceState value) {
-    return (value == null) ? null : FlowNodeInstanceFilter.StateEnum.fromValue(value.name());
+  public static FlowNodeInstanceStateEnum toProtocolState(final FlowNodeInstanceState value) {
+    return (value == null) ? null : FlowNodeInstanceStateEnum.fromValue(value.name());
   }
 
-  public static FlowNodeInstanceState fromProtocolState(
-      final FlowNodeInstanceResult.StateEnum value) {
+  public static FlowNodeInstanceState fromProtocolState(final FlowNodeInstanceStateEnum value) {
     if (value == null) {
       return null;
     }

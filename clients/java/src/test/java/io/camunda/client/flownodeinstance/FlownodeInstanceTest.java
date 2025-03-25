@@ -68,7 +68,7 @@ public class FlownodeInstanceTest extends ClientRestTest {
     final FlowNodeInstanceFilter filter = Objects.requireNonNull(request.getFilter());
     assertThat(filter.getFlowNodeInstanceKey()).isEqualTo("1");
     assertThat(filter.getType()).isEqualTo(FlowNodeInstanceFilter.TypeEnum.SERVICE_TASK);
-    assertThat(filter.getState()).isEqualTo(FlowNodeInstanceFilter.StateEnum.ACTIVE);
+    assertThat(filter.getState()).isEqualTo(FlowNodeInstanceStateEnum.ACTIVE);
     assertThat(filter.getProcessDefinitionKey()).isEqualTo("2");
     assertThat(filter.getProcessDefinitionId()).isEqualTo("complexProcess");
     assertThat(filter.getProcessInstanceKey()).isEqualTo("3");
@@ -168,22 +168,19 @@ public class FlownodeInstanceTest extends ClientRestTest {
   public void shouldConvertFlowNodeInstanceState() {
 
     for (final FlowNodeInstanceState value : FlowNodeInstanceState.values()) {
-      final FlowNodeInstanceFilter.StateEnum protocolValue =
-          FlowNodeInstanceState.toProtocolState(value);
+      final FlowNodeInstanceStateEnum protocolValue = FlowNodeInstanceState.toProtocolState(value);
       assertThat(protocolValue).isNotNull();
       if (value == FlowNodeInstanceState.UNKNOWN_ENUM_VALUE) {
-        assertThat(protocolValue)
-            .isEqualTo(FlowNodeInstanceFilter.StateEnum.UNKNOWN_DEFAULT_OPEN_API);
+        assertThat(protocolValue).isEqualTo(FlowNodeInstanceStateEnum.UNKNOWN_DEFAULT_OPEN_API);
       } else {
         assertThat(protocolValue.name()).isEqualTo(value.name());
       }
     }
 
-    for (final FlowNodeInstanceResult.StateEnum protocolValue :
-        FlowNodeInstanceResult.StateEnum.values()) {
+    for (final FlowNodeInstanceStateEnum protocolValue : FlowNodeInstanceStateEnum.values()) {
       final FlowNodeInstanceState value = FlowNodeInstanceState.fromProtocolState(protocolValue);
       assertThat(value).isNotNull();
-      if (protocolValue == FlowNodeInstanceResult.StateEnum.UNKNOWN_DEFAULT_OPEN_API) {
+      if (protocolValue == FlowNodeInstanceStateEnum.UNKNOWN_DEFAULT_OPEN_API) {
         assertThat(value).isEqualTo(FlowNodeInstanceState.UNKNOWN_ENUM_VALUE);
       } else {
         assertThat(value.name()).isEqualTo(protocolValue.name());

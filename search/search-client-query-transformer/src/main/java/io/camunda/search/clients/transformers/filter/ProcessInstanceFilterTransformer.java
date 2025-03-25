@@ -90,20 +90,25 @@ public final class ProcessInstanceFilterTransformer
         .ifPresent(queries::addAll);
 
     if (filter.flowNodeIdOperations() != null && !filter.flowNodeIdOperations().isEmpty()) {
-
-      final var flowNodeInstanceQueries = new ArrayList<SearchQuery>();
-
-      ofNullable(stringOperations(ACTIVITY_ID, filter.flowNodeIdOperations()))
-          .ifPresent(flowNodeInstanceQueries::addAll);
-      ofNullable(stringOperations(ACTIVITY_STATE, filter.flowNodeInstanceStateOperations()))
-          .ifPresent(flowNodeInstanceQueries::addAll);
-      ofNullable(filter.hasFlowNodeInstanceIncident())
-          .ifPresent(incident -> flowNodeInstanceQueries.add((term(INCIDENT, incident))));
-
-      queries.add(hasChildQuery(ACTIVITIES_JOIN_RELATION, and(flowNodeInstanceQueries)));
+      final var flowNodeInstanceQuery = getFlowNodeInstanceQuery(filter, queries);
+      queries.add(flowNodeInstanceQuery);
     }
 
     return and(queries);
+  }
+
+  private static SearchQuery getFlowNodeInstanceQuery(
+      final ProcessInstanceFilter filter, final ArrayList<SearchQuery> queries) {
+    final var flowNodeInstanceQueries = new ArrayList<SearchQuery>();
+
+    ofNullable(stringOperations(ACTIVITY_ID, filter.flowNodeIdOperations()))
+        .ifPresent(flowNodeInstanceQueries::addAll);
+    ofNullable(stringOperations(ACTIVITY_STATE, filter.flowNodeInstanceStateOperations()))
+        .ifPresent(flowNodeInstanceQueries::addAll);
+    ofNullable(filter.hasFlowNodeInstanceIncident())
+        .ifPresent(incident -> flowNodeInstanceQueries.add((term(INCIDENT, incident))));
+
+    return hasChildQuery(ACTIVITIES_JOIN_RELATION, and(flowNodeInstanceQueries));
   }
 
   private SearchQuery getIsProcessInstanceQuery() {

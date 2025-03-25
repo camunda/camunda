@@ -17,10 +17,12 @@ package io.camunda.client.api.search.filter;
 
 import io.camunda.client.api.search.filter.builder.BasicLongProperty;
 import io.camunda.client.api.search.filter.builder.DateTimeProperty;
+import io.camunda.client.api.search.filter.builder.FlowNodeInstanceStateProperty;
 import io.camunda.client.api.search.filter.builder.IntegerProperty;
 import io.camunda.client.api.search.filter.builder.ProcessInstanceStateProperty;
 import io.camunda.client.api.search.filter.builder.StringProperty;
 import io.camunda.client.api.search.query.TypedSearchQueryRequest.SearchRequestFilter;
+import io.camunda.client.api.search.response.FlowNodeInstanceState;
 import io.camunda.client.api.search.response.ProcessInstanceState;
 import io.camunda.client.protocol.rest.ProcessInstanceVariableFilterRequest;
 import java.time.OffsetDateTime;
@@ -117,4 +119,19 @@ public interface ProcessInstanceFilter extends SearchRequestFilter {
 
   /** Filter by batchOperationId using {@link StringProperty} */
   ProcessInstanceFilter batchOperationId(final Consumer<StringProperty> fn);
+
+  /** Filter by flowNodeId */
+  ProcessInstanceFilter flowNodeId(final String flowNodeId);
+
+  /** Filter by flowNodeId using {@link StringProperty} */
+  ProcessInstanceFilter flowNodeId(final Consumer<StringProperty> fn);
+
+  /** Filter by flowNodeInstanceState */
+  ProcessInstanceFilter flowNodeInstanceState(final FlowNodeInstanceState flowNodeInstanceState);
+
+  /** Filter by flowNodeInstanceState using {@link FlowNodeInstanceStateProperty} */
+  ProcessInstanceFilter flowNodeInstanceState(final Consumer<FlowNodeInstanceStateProperty> fn);
+
+  /** Filter by hasFlowNodeInstanceIncident */
+  ProcessInstanceFilter hasFlowNodeInstanceIncident(final Boolean hasFlowNodeInstanceIncident);
 }

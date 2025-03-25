@@ -16,23 +16,25 @@
 package io.camunda.client.impl.search.filter.builder;
 
 import io.camunda.client.api.search.filter.builder.FlowNodeInstanceStateProperty;
+import io.camunda.client.api.search.response.FlowNodeInstanceState;
 import io.camunda.client.impl.util.CollectionUtil;
-import io.camunda.client.protocol.rest.FlowNodeInstanceStateEnum;
 import io.camunda.client.protocol.rest.FlowNodeInstanceStateFilterProperty;
 import java.util.List;
+import java.util.stream.Collectors;
 
 public class FlowNodeInstanceStatePropertyImpl implements FlowNodeInstanceStateProperty {
-  private final FlowNodeInstanceStateFilterProperty filterProperty = new FlowNodeInstanceStateFilterProperty();
+  private final FlowNodeInstanceStateFilterProperty filterProperty =
+      new FlowNodeInstanceStateFilterProperty();
 
   @Override
-  public FlowNodeInstanceStateProperty eq(final FlowNodeInstanceStateEnum value) {
-    filterProperty.set$Eq(value);
+  public FlowNodeInstanceStateProperty eq(final FlowNodeInstanceState value) {
+    filterProperty.set$Eq(FlowNodeInstanceState.toProtocolState(value));
     return this;
   }
 
   @Override
-  public FlowNodeInstanceStateProperty neq(final FlowNodeInstanceStateEnum value) {
-    filterProperty.set$Neq(value);
+  public FlowNodeInstanceStateProperty neq(final FlowNodeInstanceState value) {
+    filterProperty.set$Neq(FlowNodeInstanceState.toProtocolState(value));
     return this;
   }
 
@@ -43,13 +45,14 @@ public class FlowNodeInstanceStatePropertyImpl implements FlowNodeInstanceStateP
   }
 
   @Override
-  public FlowNodeInstanceStateProperty in(final List<FlowNodeInstanceStateEnum> values) {
-    filterProperty.set$In(values);
+  public FlowNodeInstanceStateProperty in(final List<FlowNodeInstanceState> values) {
+    filterProperty.set$In(
+        values.stream().map(FlowNodeInstanceState::toProtocolState).collect(Collectors.toList()));
     return this;
   }
 
   @Override
-  public FlowNodeInstanceStateProperty in(final FlowNodeInstanceStateEnum... values) {
+  public FlowNodeInstanceStateProperty in(final FlowNodeInstanceState... values) {
     return in(CollectionUtil.toList(values));
   }
 
