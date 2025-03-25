@@ -68,7 +68,7 @@ public class HistoryCleanupIT {
             () -> {
               final var result =
                   camundaClient
-                      .newProcessInstanceQuery()
+                      .newProcessInstanceSearchRequest()
                       .filter(f -> f.processInstanceKey(processInstanceKey))
                       .send()
                       .join();
@@ -86,7 +86,7 @@ public class HistoryCleanupIT {
             });
 
     // the other should still exist
-    final var result = camundaClient.newProcessInstanceQuery().send().join();
+    final var result = camundaClient.newProcessInstanceSearchRequest().send().join();
     assertThat(result.page().totalItems()).isEqualTo(1);
     assertThat(result.items().getFirst().getProcessInstanceKey()).isNotEqualTo(processInstanceKey);
   }

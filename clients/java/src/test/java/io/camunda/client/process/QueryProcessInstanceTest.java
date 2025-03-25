@@ -48,7 +48,7 @@ public class QueryProcessInstanceTest extends ClientRestTest {
   @Test
   public void shouldSearchProcessInstanceWithEmptyQuery() {
     // when
-    client.newProcessInstanceQuery().send().join();
+    client.newProcessInstanceSearchRequest().send().join();
 
     // then
     final ProcessInstanceSearchQuery request =
@@ -73,7 +73,7 @@ public class QueryProcessInstanceTest extends ClientRestTest {
                 .name("n2")
                 .value(new StringPropertyImpl().eq("v2").build()));
     client
-        .newProcessInstanceQuery()
+        .newProcessInstanceSearchRequest()
         .filter(
             f ->
                 f.processInstanceKey(123L)
@@ -117,7 +117,7 @@ public class QueryProcessInstanceTest extends ClientRestTest {
   void shouldSearchProcessInstanceByProcessInstanceKeyLongFilter() {
     // when
     client
-        .newProcessInstanceQuery()
+        .newProcessInstanceSearchRequest()
         .filter(f -> f.processInstanceKey(b -> b.in(1L, 10L)))
         .send()
         .join();
@@ -136,7 +136,7 @@ public class QueryProcessInstanceTest extends ClientRestTest {
   void shouldSearchProcessInstanceByProcessDefinitionIdStringFilter() {
     // when
     client
-        .newProcessInstanceQuery()
+        .newProcessInstanceSearchRequest()
         .filter(f -> f.processDefinitionId(b -> b.like("string")))
         .send()
         .join();
@@ -155,7 +155,7 @@ public class QueryProcessInstanceTest extends ClientRestTest {
   void shouldSearchProcessInstanceByStartDateDateTimeFilter() {
     // when
     final OffsetDateTime now = OffsetDateTime.now();
-    client.newProcessInstanceQuery().filter(f -> f.startDate(b -> b.gt(now))).send().join();
+    client.newProcessInstanceSearchRequest().filter(f -> f.startDate(b -> b.gt(now))).send().join();
 
     // then
     final ProcessInstanceSearchQuery request =
@@ -183,7 +183,7 @@ public class QueryProcessInstanceTest extends ClientRestTest {
                 .value(new StringPropertyImpl().eq("v2").build()));
 
     // when
-    client.newProcessInstanceQuery().filter(f -> f.variables(variablesMap)).send().join();
+    client.newProcessInstanceSearchRequest().filter(f -> f.variables(variablesMap)).send().join();
 
     // then
     final ProcessInstanceSearchQuery request =
@@ -197,7 +197,7 @@ public class QueryProcessInstanceTest extends ClientRestTest {
   void shouldSearchProcessInstanceWithFullSorting() {
     // when
     client
-        .newProcessInstanceQuery()
+        .newProcessInstanceSearchRequest()
         .sort(
             s ->
                 s.processInstanceKey()
@@ -255,7 +255,7 @@ public class QueryProcessInstanceTest extends ClientRestTest {
   void shouldSearchWithFullPagination() {
     // when
     client
-        .newProcessInstanceQuery()
+        .newProcessInstanceSearchRequest()
         .page(
             p ->
                 p.from(23)

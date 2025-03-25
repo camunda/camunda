@@ -171,7 +171,7 @@ public class IncidentIT {
   private ProcessInstance getProcessInstance(
       final CamundaClient client, final long childInstanceKey) {
     return client
-        .newProcessInstanceQuery()
+        .newProcessInstanceSearchRequest()
         .filter(p -> p.processInstanceKey(childInstanceKey))
         .send()
         .join()

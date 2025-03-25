@@ -173,7 +173,7 @@ public class TasklistCreateProcessInstanceAuthorizationIT {
             () -> {
               final var result =
                   adminCamundaClient
-                      .newProcessInstanceQuery()
+                      .newProcessInstanceSearchRequest()
                       .filter(f -> f.processDefinitionId(processDefinitionId))
                       .send()
                       .join();

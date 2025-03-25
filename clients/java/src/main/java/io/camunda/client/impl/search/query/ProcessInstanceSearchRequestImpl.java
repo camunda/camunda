@@ -24,7 +24,7 @@ import io.camunda.client.api.JsonMapper;
 import io.camunda.client.api.search.SearchRequestPage;
 import io.camunda.client.api.search.filter.ProcessInstanceFilter;
 import io.camunda.client.api.search.query.FinalSearchQueryStep;
-import io.camunda.client.api.search.query.ProcessInstanceQuery;
+import io.camunda.client.api.search.query.ProcessInstanceSearchRequest;
 import io.camunda.client.api.search.response.ProcessInstance;
 import io.camunda.client.api.search.response.SearchQueryResponse;
 import io.camunda.client.api.search.sort.ProcessInstanceSort;
@@ -43,16 +43,17 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import org.apache.hc.client5.http.config.RequestConfig;
 
-public class ProcessInstanceQueryImpl
+public class ProcessInstanceSearchRequestImpl
     extends TypedSearchRequestPropertyProvider<ProcessInstanceSearchQuery>
-    implements ProcessInstanceQuery {
+    implements ProcessInstanceSearchRequest {
 
   private final ProcessInstanceSearchQuery request;
   private final JsonMapper jsonMapper;
   private final HttpClient httpClient;
   private final RequestConfig.Builder httpRequestConfig;
 
-  public ProcessInstanceQueryImpl(final HttpClient httpClient, final JsonMapper jsonMapper) {
+  public ProcessInstanceSearchRequestImpl(
+      final HttpClient httpClient, final JsonMapper jsonMapper) {
     request = new ProcessInstanceSearchQuery();
     this.jsonMapper = jsonMapper;
     this.httpClient = httpClient;
@@ -80,7 +81,7 @@ public class ProcessInstanceQueryImpl
   }
 
   @Override
-  public ProcessInstanceQuery filter(final ProcessInstanceFilter value) {
+  public ProcessInstanceSearchRequest filter(final ProcessInstanceFilter value) {
     final io.camunda.client.protocol.rest.ProcessInstanceFilter filter =
         provideSearchRequestProperty(value);
     request.setFilter(filter);
@@ -88,31 +89,31 @@ public class ProcessInstanceQueryImpl
   }
 
   @Override
-  public ProcessInstanceQuery filter(final Consumer<ProcessInstanceFilter> fn) {
+  public ProcessInstanceSearchRequest filter(final Consumer<ProcessInstanceFilter> fn) {
     return filter(processInstanceFilter(fn));
   }
 
   @Override
-  public ProcessInstanceQuery sort(final ProcessInstanceSort value) {
+  public ProcessInstanceSearchRequest sort(final ProcessInstanceSort value) {
     final List<SearchQuerySortRequest> sorting = provideSearchRequestProperty(value);
     request.setSort(SearchQuerySortRequestMapper.toProcessInstanceSearchQuerySortRequest(sorting));
     return this;
   }
 
   @Override
-  public ProcessInstanceQuery sort(final Consumer<ProcessInstanceSort> fn) {
+  public ProcessInstanceSearchRequest sort(final Consumer<ProcessInstanceSort> fn) {
     return sort(processInstanceSort(fn));
   }
 
   @Override
-  public ProcessInstanceQuery page(final SearchRequestPage value) {
+  public ProcessInstanceSearchRequest page(final SearchRequestPage value) {
     final SearchQueryPageRequest page = provideSearchRequestProperty(value);
     request.setPage(page);
     return this;
   }
 
   @Override
-  public ProcessInstanceQuery page(final Consumer<SearchRequestPage> fn) {
+  public ProcessInstanceSearchRequest page(final Consumer<SearchRequestPage> fn) {
     return page(searchRequestPage(fn));
   }
 

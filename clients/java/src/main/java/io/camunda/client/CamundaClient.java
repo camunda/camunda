@@ -87,7 +87,7 @@ import io.camunda.client.api.search.query.DecisionRequirementsQuery;
 import io.camunda.client.api.search.query.FlownodeInstanceQuery;
 import io.camunda.client.api.search.query.IncidentQuery;
 import io.camunda.client.api.search.query.ProcessDefinitionQuery;
-import io.camunda.client.api.search.query.ProcessInstanceQuery;
+import io.camunda.client.api.search.query.ProcessInstanceSearchRequest;
 import io.camunda.client.api.search.query.UserTaskQuery;
 import io.camunda.client.api.search.query.UserTaskVariableQuery;
 import io.camunda.client.api.search.query.VariableQuery;
@@ -808,7 +808,7 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    * long processInstanceKey = ...;
    *
    * camundaClient
-   *  .newProcessInstanceQuery()
+   *  .newProcessInstanceSearchRequest()
    *  .filter((f) -> f.processInstanceKeys(processInstanceKey))
    *  .sort((s) -> s.startDate().asc())
    *  .page((p) -> p.limit(100))
@@ -817,7 +817,7 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    *
    * @return a builder for the process instance query
    */
-  ProcessInstanceQuery newProcessInstanceQuery();
+  ProcessInstanceSearchRequest newProcessInstanceSearchRequest();
 
   /**
    * Executes a search request to query flow node instances.

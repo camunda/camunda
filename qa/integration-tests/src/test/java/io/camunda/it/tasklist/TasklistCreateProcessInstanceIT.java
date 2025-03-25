@@ -97,7 +97,7 @@ public class TasklistCreateProcessInstanceIT {
             () -> {
               final var result =
                   camundaClient
-                      .newProcessDefinitionQuery()
+                      .newProcessDefinitionSearchRequest()
                       .filter(f -> f.processDefinitionId(processDefinitionId))
                       .send()
                       .join();
@@ -115,7 +115,7 @@ public class TasklistCreateProcessInstanceIT {
             () -> {
               final var result =
                   camundaClient
-                      .newProcessInstanceQuery()
+                      .newProcessInstanceSearchRequest()
                       .filter(f -> f.processDefinitionId(processDefinitionId))
                       .send()
                       .join();

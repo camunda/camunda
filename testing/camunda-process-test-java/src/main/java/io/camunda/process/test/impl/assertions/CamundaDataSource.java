@@ -70,7 +70,7 @@ public class CamundaDataSource {
 
   public List<ProcessInstance> findProcessInstances(final Consumer<ProcessInstanceFilter> filter) {
     return client
-        .newProcessInstanceQuery()
+        .newProcessInstanceSearchRequest()
         .filter(filter)
         .sort(sort -> sort.startDate().asc())
         .page(DEFAULT_PAGE_REQUEST)

@@ -361,7 +361,7 @@ public class ProcessMigrationIT {
         .untilAsserted(
             () -> {
               final var result =
-                  client.newProcessInstanceQuery().filter(filter).send().join().items();
+                  client.newProcessInstanceSearchRequest().filter(filter).send().join().items();
               asserter.accept(result);
             });
   }

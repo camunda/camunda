@@ -98,7 +98,7 @@ import io.camunda.client.api.search.query.DecisionRequirementsQuery;
 import io.camunda.client.api.search.query.FlownodeInstanceQuery;
 import io.camunda.client.api.search.query.IncidentQuery;
 import io.camunda.client.api.search.query.ProcessDefinitionQuery;
-import io.camunda.client.api.search.query.ProcessInstanceQuery;
+import io.camunda.client.api.search.query.ProcessInstanceSearchRequest;
 import io.camunda.client.api.search.query.UserTaskQuery;
 import io.camunda.client.api.search.query.UserTaskVariableQuery;
 import io.camunda.client.api.search.query.VariableQuery;
@@ -176,7 +176,7 @@ import io.camunda.client.impl.search.query.DecisionRequirementsQueryImpl;
 import io.camunda.client.impl.search.query.FlowNodeInstanceQueryImpl;
 import io.camunda.client.impl.search.query.IncidentQueryImpl;
 import io.camunda.client.impl.search.query.ProcessDefinitionQueryImpl;
-import io.camunda.client.impl.search.query.ProcessInstanceQueryImpl;
+import io.camunda.client.impl.search.query.ProcessInstanceSearchRequestImpl;
 import io.camunda.client.impl.search.query.UserTaskQueryImpl;
 import io.camunda.client.impl.search.query.UserTaskVariableQueryImpl;
 import io.camunda.client.impl.search.query.VariableQueryImpl;
@@ -663,8 +663,8 @@ public final class CamundaClientImpl implements CamundaClient {
   }
 
   @Override
-  public ProcessInstanceQuery newProcessInstanceQuery() {
-    return new ProcessInstanceQueryImpl(httpClient, jsonMapper);
+  public ProcessInstanceSearchRequest newProcessInstanceSearchRequest() {
+    return new ProcessInstanceSearchRequestImpl(httpClient, jsonMapper);
   }
 
   @Override

@@ -79,7 +79,7 @@ public class DataGenerator implements AutoCloseable {
             () -> {
               final Future<SearchQueryResponse<ProcessInstance>> response =
                   camundaClient
-                      .newProcessInstanceQuery()
+                      .newProcessInstanceSearchRequest()
                       .filter(
                           b ->
                               b.processInstanceKey(p -> p.in(instanceKeys.stream().toList()))

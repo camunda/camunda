@@ -91,7 +91,7 @@ public class QueryTest {
         .ignoreExceptions() // Ignore exceptions and continue retrying
         .untilAsserted(
             () -> {
-              final var result = camundaClient.newProcessInstanceQuery().send().join();
+              final var result = camundaClient.newProcessInstanceSearchRequest().send().join();
               assertThat(result.page().totalItems()).isEqualTo(expectedProcessInstances);
             });
   }
@@ -129,7 +129,7 @@ public class QueryTest {
             () -> {
               final var result =
                   camundaClient
-                      .newProcessInstanceQuery()
+                      .newProcessInstanceSearchRequest()
                       .filter(f -> f.hasIncident(true))
                       .send()
                       .join();
@@ -146,7 +146,7 @@ public class QueryTest {
             () -> {
               final var result =
                   camundaClient
-                      .newProcessInstanceQuery()
+                      .newProcessInstanceSearchRequest()
                       .filter(f -> f.processInstanceKey(processInstanceKey))
                       .send()
                       .join();
