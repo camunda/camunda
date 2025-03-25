@@ -198,4 +198,22 @@ final class GrpcErrorMapperTest {
     final LogEvent event = recorder.getAppendedEvents().getFirst();
     assertThat(event.getLevel()).isEqualTo(Level.DEBUG);
   }
+
+  @Test
+  void shouldLogMaxMessageSizeExceededErrorOnDebug() {
+    // given
+    final var brokerError =
+        new BrokerError(ErrorCode.MALFORMED_REQUEST, "Max message size exceeded");
+    final BrokerErrorException exception = new BrokerErrorException(brokerError);
+
+    // when
+    log.setLevel(Level.DEBUG);
+    final StatusRuntimeException statusException = errorMapper.mapError(exception, logger);
+
+    // then
+    assertThat(statusException.getStatus().getCode()).isEqualTo(Code.INVALID_ARGUMENT);
+    assertThat(recorder.getAppendedEvents()).hasSize(1);
+    final LogEvent event = recorder.getAppendedEvents().getFirst();
+    assertThat(event.getLevel()).isEqualTo(Level.DEBUG);
+  }
 }
