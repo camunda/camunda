@@ -1818,7 +1818,7 @@
       <dependency>
         <groupId>com.google.guava</groupId>
         <artifactId>failureaccess</artifactId>
-        <version>1.0.2</version>
+        <version>1.0.3</version>
       </dependency>
 
       <!-- required to converge between com.microsoft.azure:msal4j and com.nimbusds:oauth2-oidc-sdk -->
