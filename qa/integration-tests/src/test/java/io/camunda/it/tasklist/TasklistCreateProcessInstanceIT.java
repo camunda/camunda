@@ -12,40 +12,37 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.client.CamundaClient;
 import io.camunda.qa.util.cluster.TestRestTasklistClient;
 import io.camunda.qa.util.cluster.TestRestTasklistClient.CreateProcessInstanceVariable;
-import io.camunda.qa.util.cluster.TestStandaloneCamunda;
-import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
-import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
+import io.camunda.qa.util.cluster.TestSimpleCamundaApplication;
+import io.camunda.qa.util.multidb.MultiDbTest;
+import io.camunda.qa.util.multidb.MultiDbTestApplication;
 import java.time.Duration;
 import java.util.List;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AutoClose;
-import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 
-@ZeebeIntegration
+@MultiDbTest
+@DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "rdbms")
 public class TasklistCreateProcessInstanceIT {
 
   private static final String PROCESS_ID = "startedByForm";
-  @AutoClose private static CamundaClient defaultCamundaClient;
   @AutoClose private static TestRestTasklistClient tasklistRestClient;
 
-  @TestZeebe
-  private TestStandaloneCamunda standaloneCamunda =
-      new TestStandaloneCamunda().withCamundaExporter().withUnauthenticatedAccess();
+  private static CamundaClient camundaClient;
 
-  @BeforeEach
-  public void beforeAll() {
-    tasklistRestClient = standaloneCamunda.newTasklistClient();
-    defaultCamundaClient =
-        standaloneCamunda
-            .newClientBuilder()
-            .preferRestOverGrpc(true)
-            .defaultRequestTimeout(Duration.ofSeconds(15))
-            .build();
+  @MultiDbTestApplication
+  private static final TestSimpleCamundaApplication CAMUNDA_APPLICATION =
+      new TestSimpleCamundaApplication().withUnauthenticatedAccess();
+
+  @BeforeAll
+  public static void beforeAll() {
+    tasklistRestClient = CAMUNDA_APPLICATION.newTasklistClient();
 
     // deploy a process with admin user
-    deployResource(defaultCamundaClient);
-    waitForProcessToBeDeployed(PROCESS_ID);
+    deployResource(camundaClient);
+    waitForProcessToBeDeployed(camundaClient, PROCESS_ID);
   }
 
   @Test
@@ -62,7 +59,7 @@ public class TasklistCreateProcessInstanceIT {
     // then
     assertThat(response).isNotNull();
     assertThat(response.statusCode()).isEqualTo(200);
-    ensureProcessInstanceCreated(PROCESS_ID);
+    ensureProcessInstanceCreated(camundaClient, PROCESS_ID);
   }
 
   @Test
@@ -80,10 +77,10 @@ public class TasklistCreateProcessInstanceIT {
     // then
     assertThat(response).isNotNull();
     assertThat(response.statusCode()).isEqualTo(200);
-    ensureProcessInstanceCreated(PROCESS_ID);
+    ensureProcessInstanceCreated(camundaClient, PROCESS_ID);
   }
 
-  private void deployResource(final CamundaClient camundaClient) {
+  private static void deployResource(final CamundaClient camundaClient) {
     camundaClient
         .newDeployResourceCommand()
         .addResourceFromClasspath("process/startedByFormProcess.bpmn")
@@ -91,14 +88,15 @@ public class TasklistCreateProcessInstanceIT {
         .join();
   }
 
-  private void waitForProcessToBeDeployed(final String processDefinitionId) {
+  private static void waitForProcessToBeDeployed(
+      final CamundaClient camundaClient, final String processDefinitionId) {
     Awaitility.await("should deploy process and export")
         .atMost(Duration.ofSeconds(15))
         .ignoreExceptions() // Ignore exceptions and continue retrying
         .untilAsserted(
             () -> {
               final var result =
-                  defaultCamundaClient
+                  camundaClient
                       .newProcessDefinitionQuery()
                       .filter(f -> f.processDefinitionId(processDefinitionId))
                       .send()
@@ -107,13 +105,8 @@ public class TasklistCreateProcessInstanceIT {
             });
   }
 
-  private void ensureProcessInstanceCreated(final String processDefinitionId) {
-    final var queryResponse =
-        defaultCamundaClient
-            .newProcessInstanceQuery()
-            .filter(f -> f.processDefinitionId(processDefinitionId))
-            .send()
-            .join();
+  private void ensureProcessInstanceCreated(
+      final CamundaClient camundaClient, final String processDefinitionId) {
     Awaitility.await(
             "should have started process instance with id %s".formatted(processDefinitionId))
         .atMost(Duration.ofSeconds(15))
@@ -121,7 +114,7 @@ public class TasklistCreateProcessInstanceIT {
         .untilAsserted(
             () -> {
               final var result =
-                  defaultCamundaClient
+                  camundaClient
                       .newProcessInstanceQuery()
                       .filter(f -> f.processDefinitionId(processDefinitionId))
                       .send()
