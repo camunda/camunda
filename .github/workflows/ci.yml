@@ -275,7 +275,7 @@ jobs:
       - uses: ./.github/actions/build-zeebe
         id: build-zeebe
         with:
-          maven-extra-args: -T1C -PskipFrontendBuild
+          maven-extra-args: -T1C -Dquickly
       - name: Create build output log file
         run: echo "BUILD_OUTPUT_FILE_PATH=$(mktemp)" >> $GITHUB_ENV
       # Run specific integration tests with ES service container
@@ -372,7 +372,7 @@ jobs:
       - uses: ./.github/actions/build-zeebe
         id: build-zeebe
         with:
-          maven-extra-args: -T1C -PskipFrontendBuild
+          maven-extra-args: -T1C -Dquickly
       - name: Create build output log file
         run: echo "BUILD_OUTPUT_FILE_PATH=$(mktemp)" >> $GITHUB_ENV
       # Run specific integration tests with OS service container
