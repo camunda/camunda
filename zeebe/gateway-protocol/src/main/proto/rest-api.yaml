@@ -5693,6 +5693,9 @@ components:
         name:
           type: "string"
           description: The display name of the new group.
+        description:
+          type: "string"
+          description: The description of the new group.
       required:
         - groupId
         - name
@@ -5707,6 +5710,9 @@ components:
           type: string
         name:
           description: The display name of the created group.
+          type: string
+        description:
+          description: The description of the created group.
           type: string
     GroupUpdateRequest:
       type: object

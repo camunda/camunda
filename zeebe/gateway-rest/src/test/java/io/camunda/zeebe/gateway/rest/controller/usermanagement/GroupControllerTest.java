@@ -52,7 +52,8 @@ public class GroupControllerTest extends RestControllerTest {
     // given
     final var groupId = "groupId";
     final var groupName = "testGroup";
-    when(groupServices.createGroup(groupId, groupName))
+    final var description = "description";
+    when(groupServices.createGroup(groupId, groupName, description))
         .thenReturn(
             CompletableFuture.completedFuture(
                 new GroupRecord().setEntityKey(1L).setName(groupName)));
@@ -63,13 +64,14 @@ public class GroupControllerTest extends RestControllerTest {
         .uri(GROUP_BASE_URL)
         .accept(MediaType.APPLICATION_JSON)
         .contentType(MediaType.APPLICATION_JSON)
-        .bodyValue(new GroupCreateRequest().name(groupName).groupId(groupId))
+        .bodyValue(
+            new GroupCreateRequest().name(groupName).groupId(groupId).description(description))
         .exchange()
         .expectStatus()
         .isCreated();
 
     // then
-    verify(groupServices, times(1)).createGroup(groupId, groupName);
+    verify(groupServices, times(1)).createGroup(groupId, groupName, description);
   }
 
   @Test

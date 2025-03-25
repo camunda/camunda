@@ -143,7 +143,10 @@ public class GroupController {
         () ->
             groupServices
                 .withAuthentication(RequestMapper.getAuthentication())
-                .createGroup(createGroupRequest.groupId(), createGroupRequest.name()),
+                .createGroup(
+                    createGroupRequest.groupId(),
+                    createGroupRequest.name(),
+                    createGroupRequest.description()),
         ResponseMapper::toGroupCreateResponse);
   }
 

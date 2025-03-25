@@ -58,9 +58,10 @@ public class GroupServiceTest {
     // given
     final var groupId = "groupId";
     final var groupName = "testGroup";
+    final var description = "description";
 
     // when
-    services.createGroup(groupId, groupName);
+    services.createGroup(groupId, groupName, description);
 
     // then
     final BrokerGroupCreateRequest request = stubbedBrokerClient.getSingleBrokerRequest();

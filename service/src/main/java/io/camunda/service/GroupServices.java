@@ -66,8 +66,13 @@ public class GroupServices extends SearchQueryService<GroupServices, GroupQuery,
         brokerClient, securityContextProvider, groupSearchClient, authentication);
   }
 
-  public CompletableFuture<GroupRecord> createGroup(final String groupId, final String name) {
-    return sendBrokerRequest(new BrokerGroupCreateRequest().setGroupId(groupId).setName(name));
+  public CompletableFuture<GroupRecord> createGroup(
+      final String groupId, final String name, final String description) {
+    return sendBrokerRequest(
+        new BrokerGroupCreateRequest()
+            .setGroupId(groupId)
+            .setName(name)
+            .setDescription(description));
   }
 
   public GroupEntity getGroup(final Long groupKey) {
