@@ -190,12 +190,17 @@ function mockResponses({
       });
     }
 
-    if (route.request().url().includes('xml')) {
+    if (
+      route
+        .request()
+        .url()
+        .match(/\/v2\/decision-definitions\/\d+\/xml/)
+    ) {
       return route.fulfill({
         status: xml === undefined ? 400 : 200,
-        body: JSON.stringify(xml),
+        body: xml,
         headers: {
-          'content-type': 'application/json',
+          'content-type': 'application/text',
         },
       });
     }

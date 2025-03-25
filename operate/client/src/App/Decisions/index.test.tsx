@@ -19,14 +19,15 @@ import {LocationLog} from 'modules/utils/LocationLog';
 import {groupedDecisionsStore} from 'modules/stores/groupedDecisions';
 import {notificationsStore} from 'modules/stores/notifications';
 import {decisionInstancesStore} from 'modules/stores/decisionInstances';
-import {decisionXmlStore} from 'modules/stores/decisionXml';
 import {mockDmnXml} from 'modules/mocks/mockDmnXml';
-import {mockFetchDecisionXML} from 'modules/mocks/api/decisions/fetchDecisionXML';
+import {mockFetchDecisionDefinitionXML} from 'modules/mocks/api/v2/decisionDefinitions/fetchDecisionDefinitionXML';
 import {mockFetchGroupedDecisions} from 'modules/mocks/api/decisions/fetchGroupedDecisions';
 import {mockFetchDecisionInstances} from 'modules/mocks/api/decisionInstances/fetchDecisionInstances';
 import {useEffect} from 'react';
 import {mockFetchBatchOperations} from 'modules/mocks/api/fetchBatchOperations';
 import {Paths} from 'modules/Routes';
+import {QueryClientProvider} from '@tanstack/react-query';
+import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
 
 const handleRefetchSpy = jest.spyOn(groupedDecisionsStore, 'handleRefetch');
 
@@ -42,14 +43,15 @@ function createWrapper(initialPath: string = Paths.decisions()) {
       return () => {
         decisionInstancesStore.reset();
         groupedDecisionsStore.reset();
-        decisionXmlStore.reset();
       };
     }, []);
     return (
-      <MemoryRouter initialEntries={[initialPath]}>
-        {children}
-        <LocationLog />
-      </MemoryRouter>
+      <QueryClientProvider client={getMockQueryClient()}>
+        <MemoryRouter initialEntries={[initialPath]}>
+          {children}
+          <LocationLog />
+        </MemoryRouter>
+      </QueryClientProvider>
     );
   };
 
@@ -64,7 +66,7 @@ describe('<Decisions />', () => {
     });
     mockFetchBatchOperations().withSuccess([]);
     mockFetchGroupedDecisions().withSuccess([]);
-    mockFetchDecisionXML().withSuccess(mockDmnXml);
+    mockFetchDecisionDefinitionXML().withSuccess(mockDmnXml);
 
     render(<Decisions />, {wrapper: createWrapper()});
 
@@ -99,7 +101,7 @@ describe('<Decisions />', () => {
       decisionInstances: [],
       totalCount: 0,
     });
-    mockFetchDecisionXML().withSuccess(mockDmnXml);
+    mockFetchDecisionDefinitionXML().withSuccess(mockDmnXml);
 
     render(<Decisions />, {
       wrapper: createWrapper(`/decisions${queryString}`),
