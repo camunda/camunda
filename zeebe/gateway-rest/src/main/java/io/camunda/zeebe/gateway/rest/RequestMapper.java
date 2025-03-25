@@ -319,7 +319,8 @@ public class RequestMapper {
       final GroupCreateRequest groupCreateRequest) {
     return getResult(
         GroupRequestValidator.validateCreateRequest(groupCreateRequest),
-        () -> new CreateGroupRequest(groupCreateRequest.getGroupId(), groupCreateRequest.getName()));
+        () ->
+            new CreateGroupRequest(groupCreateRequest.getGroupId(), groupCreateRequest.getName()));
   }
 
   public static Either<ProblemDetail, UpdateGroupRequest> toGroupUpdateRequest(

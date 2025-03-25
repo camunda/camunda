@@ -25,9 +25,12 @@ public final class GroupRequestValidator {
     if (groupId == null || groupId.isBlank()) {
       violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("groupId"));
     } else if (groupId.length() > 256) {
-      violations.add(ERROR_MESSAGE_INVALID_ATTRIBUTE_VALUE.formatted("groupId", groupId, "less than 256 characters"));
+      violations.add(
+          ERROR_MESSAGE_INVALID_ATTRIBUTE_VALUE.formatted(
+              "groupId", groupId, "less than 256 characters"));
     } else if (!groupId.matches("[a-zA-Z0-9]+")) {
-      violations.add(ERROR_MESSAGE_INVALID_ATTRIBUTE_VALUE.formatted("groupId", groupId, "alphanumeric"));
+      violations.add(
+          ERROR_MESSAGE_INVALID_ATTRIBUTE_VALUE.formatted("groupId", groupId, "alphanumeric"));
     }
   }
 
