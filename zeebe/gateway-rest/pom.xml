@@ -456,6 +456,8 @@
             <!-- Needed to run tests -->
             <dependency>org.springframework.boot:spring-boot-starter-web</dependency>
             <dependency>org.xmlunit:xmlunit-core</dependency>
+            <!-- Used for OpenAPI generation -->
+            <dependency>jakarta.annotation:jakarta.annotation-api</dependency>
           </usedDependencies>
         </configuration>
       </plugin>
