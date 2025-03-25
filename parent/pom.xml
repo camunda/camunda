@@ -150,7 +150,7 @@
     <version.thymeleaf>3.1.3.RELEASE</version.thymeleaf>
     <version.unboundid-ldapsdk>7.0.2</version.unboundid-ldapsdk>
     <version.parsson>1.1.7</version.parsson>
-    <version.springdoc>2.8.5</version.springdoc>
+    <version.springdoc>2.8.6</version.springdoc>
     <version.jakarta.json>2.0.1</version.jakarta.json>
 
     <version.node>v20.12.2</version.node>
