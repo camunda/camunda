@@ -14,6 +14,8 @@ import static io.camunda.optimize.rest.providers.GenericExceptionMapper.NOT_FOUN
 import io.camunda.optimize.dto.optimize.rest.BackupInfoDto;
 import io.camunda.optimize.dto.optimize.rest.BackupRequestDto;
 import io.camunda.optimize.dto.optimize.rest.ErrorResponseDto;
+import io.camunda.optimize.rest.exceptions.BadRequestException;
+import io.camunda.optimize.rest.exceptions.NotFoundException;
 import io.camunda.optimize.service.BackupService;
 import io.camunda.optimize.service.LocalizationService;
 import io.camunda.optimize.service.exceptions.OptimizeConfigurationException;
@@ -23,8 +25,6 @@ import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import io.camunda.optimize.service.exceptions.conflict.OptimizeConflictException;
 import jakarta.annotation.Nullable;
 import jakarta.validation.Valid;
-import jakarta.ws.rs.BadRequestException;
-import jakarta.ws.rs.NotFoundException;
 import jakarta.xml.bind.ValidationException;
 import java.util.List;
 import java.util.Optional;
