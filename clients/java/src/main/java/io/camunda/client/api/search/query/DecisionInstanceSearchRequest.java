@@ -19,7 +19,7 @@ import io.camunda.client.api.search.filter.DecisionInstanceFilter;
 import io.camunda.client.api.search.response.DecisionInstance;
 import io.camunda.client.api.search.sort.DecisionInstanceSort;
 
-public interface DecisionInstanceQuery
+public interface DecisionInstanceSearchRequest
     extends TypedSearchQueryRequest<
-            DecisionInstanceFilter, DecisionInstanceSort, DecisionInstanceQuery>,
+            DecisionInstanceFilter, DecisionInstanceSort, DecisionInstanceSearchRequest>,
         FinalSearchQueryStep<DecisionInstance> {}

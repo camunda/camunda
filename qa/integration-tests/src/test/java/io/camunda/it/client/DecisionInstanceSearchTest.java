@@ -29,7 +29,7 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 @MultiDbTest
-class DecisionInstanceQueryTest {
+class DecisionInstanceSearchTest {
 
   private static final String DECISION_DEFINITION_ID_1 = "decision_1";
   private static final String DECISION_DEFINITION_ID_2 = "invoiceAssignApprover";
@@ -67,7 +67,7 @@ class DecisionInstanceQueryTest {
     // when
     final var result =
         camundaClient
-            .newDecisionInstanceQuery()
+            .newDecisionInstanceSearchRequest()
             .sort(b -> b.decisionInstanceKey().asc())
             .send()
             .join();
@@ -88,16 +88,20 @@ class DecisionInstanceQueryTest {
   @Test
   void shouldSearchByFromWithLimit() {
     // when
-    final var resultAll = camundaClient.newDecisionInstanceQuery().send().join();
+    final var resultAll = camundaClient.newDecisionInstanceSearchRequest().send().join();
 
     final var resultWithLimit =
-        camundaClient.newDecisionInstanceQuery().page(p -> p.limit(2)).send().join();
+        camundaClient.newDecisionInstanceSearchRequest().page(p -> p.limit(2)).send().join();
     assertThat(resultWithLimit.items().size()).isEqualTo(2);
 
     final var thirdKey = resultAll.items().get(2).getDecisionInstanceKey();
 
     final var resultSearchFrom =
-        camundaClient.newDecisionInstanceQuery().page(p -> p.limit(2).from(2)).send().join();
+        camundaClient
+            .newDecisionInstanceSearchRequest()
+            .page(p -> p.limit(2).from(2))
+            .send()
+            .join();
 
     // then
     assertThat(resultSearchFrom.items().stream().findFirst().get().getDecisionInstanceKey())
@@ -112,7 +116,7 @@ class DecisionInstanceQueryTest {
         EVALUATED_DECISIONS.get(DECISION_DEFINITION_ID_1).getDecisionKey();
     final var result =
         camundaClient
-            .newDecisionInstanceQuery()
+            .newDecisionInstanceSearchRequest()
             .filter(f -> f.decisionDefinitionKey(decisionDefinitionKey))
             .send()
             .join();
@@ -133,7 +137,7 @@ class DecisionInstanceQueryTest {
         EVALUATED_DECISIONS.get(DECISION_DEFINITION_ID_1).getDecisionKey();
     final var result =
         camundaClient
-            .newDecisionInstanceQuery()
+            .newDecisionInstanceSearchRequest()
             .filter(f -> f.decisionDefinitionKey(b -> b.in(Long.MAX_VALUE, decisionDefinitionKey)))
             .send()
             .join();
@@ -154,7 +158,7 @@ class DecisionInstanceQueryTest {
         EVALUATED_DECISIONS.get(DECISION_DEFINITION_ID_2).getDecisionInstanceKey();
     final var result =
         camundaClient
-            .newDecisionInstanceQuery()
+            .newDecisionInstanceSearchRequest()
             .filter(f -> f.decisionInstanceKey(decisionInstanceKey))
             .send()
             .join();
@@ -172,7 +176,7 @@ class DecisionInstanceQueryTest {
     final DecisionDefinitionType type = DecisionDefinitionType.DECISION_TABLE;
     final var result =
         camundaClient
-            .newDecisionInstanceQuery()
+            .newDecisionInstanceSearchRequest()
             .filter(f -> f.state(state).decisionDefinitionType(type))
             .send()
             .join();
@@ -185,13 +189,13 @@ class DecisionInstanceQueryTest {
   public void shouldRetrieveDecisionInstanceByEvaluationDate() {
     // given
     final var allResult =
-        camundaClient.newDecisionInstanceQuery().page(p -> p.limit(1)).send().join();
+        camundaClient.newDecisionInstanceSearchRequest().page(p -> p.limit(1)).send().join();
     final var di = allResult.items().getFirst();
 
     // when
     final var result =
         camundaClient
-            .newDecisionInstanceQuery()
+            .newDecisionInstanceSearchRequest()
             .filter(f -> f.evaluationDate(OffsetDateTime.parse(di.getEvaluationDate())))
             .send()
             .join();
@@ -208,7 +212,7 @@ class DecisionInstanceQueryTest {
     // given
     final var allResult =
         camundaClient
-            .newDecisionInstanceQuery()
+            .newDecisionInstanceSearchRequest()
             .sort(s -> s.evaluationDate().asc())
             .page(p -> p.limit(1))
             .send()
@@ -219,7 +223,7 @@ class DecisionInstanceQueryTest {
     // when
     final var result =
         camundaClient
-            .newDecisionInstanceQuery()
+            .newDecisionInstanceSearchRequest()
             .filter(f -> f.evaluationDate(b -> b.gt(requestDate)))
             .send()
             .join();
@@ -240,7 +244,7 @@ class DecisionInstanceQueryTest {
     // given
     final var allResult =
         camundaClient
-            .newDecisionInstanceQuery()
+            .newDecisionInstanceSearchRequest()
             .sort(s -> s.evaluationDate().asc())
             .page(p -> p.limit(1))
             .send()
@@ -251,7 +255,7 @@ class DecisionInstanceQueryTest {
     // when
     final var result =
         camundaClient
-            .newDecisionInstanceQuery()
+            .newDecisionInstanceSearchRequest()
             .filter(f -> f.evaluationDate(b -> b.gte(requestDate)))
             .send()
             .join();
@@ -275,7 +279,7 @@ class DecisionInstanceQueryTest {
         EVALUATED_DECISIONS.get(DECISION_DEFINITION_ID_1).getDecisionVersion();
     final var result =
         camundaClient
-            .newDecisionInstanceQuery()
+            .newDecisionInstanceSearchRequest()
             .filter(
                 f ->
                     f.decisionDefinitionId(dmnDecisionId)
@@ -345,7 +349,7 @@ class DecisionInstanceQueryTest {
         .ignoreExceptions() // Ignore exceptions and continue retrying
         .untilAsserted(
             () -> {
-              final var result = camundaClient.newDecisionInstanceQuery().send().join();
+              final var result = camundaClient.newDecisionInstanceSearchRequest().send().join();
               assertThat(result.items().size()).isEqualTo(expectedCount);
             });
   }

@@ -85,7 +85,8 @@ class DecisionInstanceAuthorizationIT {
   void searchShouldReturnAuthorizedDecisionInstances(
       @Authenticated(RESTRICTED) final CamundaClient userClient) {
     // when
-    final var decisionInstances = userClient.newDecisionInstanceQuery().send().join().items();
+    final var decisionInstances =
+        userClient.newDecisionInstanceSearchRequest().send().join().items();
 
     // then
     assertThat(decisionInstances).hasSize(1);
@@ -131,7 +132,7 @@ class DecisionInstanceAuthorizationIT {
   private String getDecisionInstanceId(
       final CamundaClient client, final String decisionDefinitionId) {
     return client
-        .newDecisionInstanceQuery()
+        .newDecisionInstanceSearchRequest()
         .filter(f -> f.decisionDefinitionId(decisionDefinitionId))
         .send()
         .join()
@@ -166,7 +167,7 @@ class DecisionInstanceAuthorizationIT {
         .ignoreExceptions() // Ignore exceptions and continue retrying
         .untilAsserted(
             () -> {
-              final var result = camundaClient.newDecisionInstanceQuery().send().join();
+              final var result = camundaClient.newDecisionInstanceSearchRequest().send().join();
               assertThat(result.items().size()).isEqualTo(expectedCount);
             });
   }

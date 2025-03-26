@@ -82,7 +82,7 @@ import io.camunda.client.api.response.ActivatedJob;
 import io.camunda.client.api.response.DocumentReferenceResponse;
 import io.camunda.client.api.search.query.AdHocSubprocessActivitySearchRequest;
 import io.camunda.client.api.search.query.DecisionDefinitionSearchRequest;
-import io.camunda.client.api.search.query.DecisionInstanceQuery;
+import io.camunda.client.api.search.query.DecisionInstanceSearchRequest;
 import io.camunda.client.api.search.query.DecisionRequirementsSearchRequest;
 import io.camunda.client.api.search.query.FlownodeInstanceSearchRequest;
 import io.camunda.client.api.search.query.IncidentQuery;
@@ -1009,16 +1009,16 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    * long decisionInstanceKey = ...;
    *
    * camundaClient
-   *  .newDecisionInstanceQuery()
+   *  .newDecisionInstanceSearchRequest()
    *  .filter((f) -> f.decisionInstanceKey(decisionInstanceKey))
    *  .sort((s) -> s.decisionInstanceKey().asc())
    *  .page((p) -> p.limit(100))
    *  .send();
    * </pre>
    *
-   * @return a builder for the decision instance query
+   * @return a builder for the decision instance search request
    */
-  DecisionInstanceQuery newDecisionInstanceQuery();
+  DecisionInstanceSearchRequest newDecisionInstanceSearchRequest();
 
   /**
    * Retrieves a decision instance by id.
