@@ -7,8 +7,9 @@
  */
 
 // @ts-expect-error
-export * from 'react';
-export {default} from 'react';
+export * from 'react-18';
+// @ts-expect-error
+export {default} from 'react-18';
 
 const outstandingEffects: (() => void)[] = [];
 const outstandingCleanups: (() => void)[] = [];

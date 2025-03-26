@@ -7,10 +7,10 @@
  */
 
 import {
-  BaseSyntheticEvent,
   Children,
   cloneElement,
   ComponentProps,
+  ReactElement,
   ReactNode,
   useLayoutEffect,
   useRef,
@@ -33,12 +33,12 @@ export interface SelectProps<T extends object | string | number = string>
 }
 
 export default function Select<T extends object | string | number>(props: SelectProps<T>) {
-  const {labelText, helperText, ...rest} = props;
+  const {labelText, helperText, onChange, ...rest} = props;
   const renderChildrenWithProps = (children: ReactNode) => {
     return Children.toArray(children)
-      .filter(isReactElement<SubmenuProps | OptionProps>)
+      .filter(isReactElement<SubmenuProps | OptionProps<T>>)
       .map((child) => {
-        const newProps: SubmenuProps | OptionProps = {
+        const newProps: SubmenuProps | OptionProps<T> = {
           ...child.props,
           label: child.props.label?.toString() || '',
         };
@@ -49,8 +49,13 @@ export default function Select<T extends object | string | number>(props: Select
           );
 
           newProps.children = renderChildrenWithProps(child.props.children);
-        } else if (child.type === Select.Option) {
-          newProps.onChange = onChange;
+        } else if (isOptionElement<T>(child)) {
+          newProps.onChange = () => {
+            const value = child.props.value;
+            if (value) {
+              onChange?.(value);
+            }
+          };
           newProps.selected = child.props.value === props.value;
         } else {
           console.error('Select `children` should be either an `Submenu` or `Option` component.');
@@ -78,15 +83,6 @@ export default function Select<T extends object | string | number>(props: Select
     return label;
   };
 
-  const onChange = (evt: BaseSyntheticEvent) => {
-    const value = (evt.target as HTMLElement | null)
-      ?.closest('[value]')
-      ?.getAttribute('value') as T | null;
-    if (value) {
-      props.onChange?.(value);
-    }
-  };
-
   const children = ignoreFragments(props.children);
 
   return (
@@ -100,7 +96,6 @@ export default function Select<T extends object | string | number>(props: Select
       )}
       <MenuDropdown
         {...rest}
-        onChange={(e: BaseSyntheticEvent) => onChange(e)}
         label={props.placeholder || getLabel() || t('common.select').toString()}
         menuTarget={document.querySelector<HTMLElement>('.fullscreen')}
       >
@@ -158,3 +153,9 @@ Select.Option = function Option<T extends object | string | number = string>(
     </MenuItemSelectable>
   );
 };
+
+function isOptionElement<T extends object | string | number = string>(
+  child: ReactElement
+): child is ReactElement<OptionProps<T>> {
+  return child.type === Select.Option;
+}

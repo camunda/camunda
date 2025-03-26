@@ -28,7 +28,7 @@ jest.mock('services', () => ({
 }));
 
 jest.mock('hooks', () => ({
-  useChangedState: jest.requireActual('react').useState,
+  useChangedState: jest.requireActual('react-18').useState,
   useErrorHandling: jest.fn(() => ({
     mightFail: jest.fn((data, cb) => cb(data)),
   })),

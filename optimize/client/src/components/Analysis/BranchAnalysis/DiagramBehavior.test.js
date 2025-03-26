@@ -10,7 +10,7 @@ import React from 'react';
 import {shallow} from 'enzyme';
 
 import DiagramBehavior from './DiagramBehavior';
-jest.mock('react', () => ({...jest.requireActual('react'), useEffect: (fn) => fn()}));
+jest.mock('react', () => ({...jest.requireActual('react-18'), useEffect: (fn) => fn()}));
 
 const viewer = {
   get: jest.fn().mockReturnThis(),
