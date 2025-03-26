@@ -210,7 +210,7 @@ class DecisionQueryTest {
   @Test
   void shouldRetrieveDecisionRequirements() {
     // when
-    final var result = camundaClient.newDecisionRequirementsQuery().send().join();
+    final var result = camundaClient.newDecisionRequirementsSearchRequest().send().join();
 
     // then
     assertThat(result.items().size()).isEqualTo(3);
@@ -225,7 +225,7 @@ class DecisionQueryTest {
     // when
     final var result =
         camundaClient
-            .newDecisionRequirementsQuery()
+            .newDecisionRequirementsSearchRequest()
             .filter(f -> f.decisionRequirementsKey(decisionRequirementKey))
             .send()
             .join();
@@ -265,7 +265,7 @@ class DecisionQueryTest {
     // when
     final var result =
         camundaClient
-            .newDecisionRequirementsQuery()
+            .newDecisionRequirementsSearchRequest()
             .filter(f -> f.decisionRequirementsId(decisionRequirementId))
             .send()
             .join();
@@ -285,7 +285,7 @@ class DecisionQueryTest {
     // when
     final var result =
         camundaClient
-            .newDecisionRequirementsQuery()
+            .newDecisionRequirementsSearchRequest()
             .filter(f -> f.decisionRequirementsName(decisionRequirementName))
             .send()
             .join();
@@ -301,13 +301,17 @@ class DecisionQueryTest {
     // when
     final var result =
         camundaClient
-            .newDecisionRequirementsQuery()
+            .newDecisionRequirementsSearchRequest()
             .filter(f -> f.tenantId("<default>"))
             .send()
             .join();
 
     final var resultWithNoTenant =
-        camundaClient.newDecisionRequirementsQuery().filter(f -> f.tenantId("Test")).send().join();
+        camundaClient
+            .newDecisionRequirementsSearchRequest()
+            .filter(f -> f.tenantId("Test"))
+            .send()
+            .join();
 
     // then
     assertThat(result.items().size()).isEqualTo(3);
@@ -320,13 +324,13 @@ class DecisionQueryTest {
     // when
     final var resultAsc =
         camundaClient
-            .newDecisionRequirementsQuery()
+            .newDecisionRequirementsSearchRequest()
             .sort(s -> s.decisionRequirementsKey().asc())
             .send()
             .join();
     final var resultDesc =
         camundaClient
-            .newDecisionRequirementsQuery()
+            .newDecisionRequirementsSearchRequest()
             .sort(s -> s.decisionRequirementsKey().desc())
             .send()
             .join();
@@ -345,13 +349,13 @@ class DecisionQueryTest {
     // when
     final var resultAsc =
         camundaClient
-            .newDecisionRequirementsQuery()
+            .newDecisionRequirementsSearchRequest()
             .sort(s -> s.decisionRequirementsId().asc())
             .send()
             .join();
     final var resultDesc =
         camundaClient
-            .newDecisionRequirementsQuery()
+            .newDecisionRequirementsSearchRequest()
             .sort(s -> s.decisionRequirementsId().desc())
             .send()
             .join();
@@ -386,13 +390,13 @@ class DecisionQueryTest {
     // when
     final var resultAsc =
         camundaClient
-            .newDecisionRequirementsQuery()
+            .newDecisionRequirementsSearchRequest()
             .sort(s -> s.decisionRequirementsName().asc())
             .send()
             .join();
     final var resultDesc =
         camundaClient
-            .newDecisionRequirementsQuery()
+            .newDecisionRequirementsSearchRequest()
             .sort(s -> s.decisionRequirementsName().desc())
             .send()
             .join();
@@ -425,9 +429,17 @@ class DecisionQueryTest {
   void shouldSortByDecisionRequirementsVersion() {
     // when
     final var resultAsc =
-        camundaClient.newDecisionRequirementsQuery().sort(s -> s.version().asc()).send().join();
+        camundaClient
+            .newDecisionRequirementsSearchRequest()
+            .sort(s -> s.version().asc())
+            .send()
+            .join();
     final var resultDesc =
-        camundaClient.newDecisionRequirementsQuery().sort(s -> s.version().desc()).send().join();
+        camundaClient
+            .newDecisionRequirementsSearchRequest()
+            .sort(s -> s.version().desc())
+            .send()
+            .join();
 
     // Extract unique names from the results
     final List<Integer> uniqueAscVersions =
@@ -456,13 +468,13 @@ class DecisionQueryTest {
   @Test
   public void shouldValidatePagination() {
     final var result =
-        camundaClient.newDecisionRequirementsQuery().page(p -> p.limit(1)).send().join();
+        camundaClient.newDecisionRequirementsSearchRequest().page(p -> p.limit(1)).send().join();
     assertThat(result.items().size()).isEqualTo(1);
     final var key = result.items().getFirst().getDecisionRequirementsKey();
     // apply searchAfter
     final var resultAfter =
         camundaClient
-            .newDecisionRequirementsQuery()
+            .newDecisionRequirementsSearchRequest()
             .page(p -> p.searchAfter(Collections.singletonList(key)))
             .send()
             .join();
@@ -472,7 +484,7 @@ class DecisionQueryTest {
     // apply searchBefore
     final var resultBefore =
         camundaClient
-            .newDecisionRequirementsQuery()
+            .newDecisionRequirementsSearchRequest()
             .page(p -> p.searchBefore(Collections.singletonList(keyAfter)))
             .send()
             .join();
@@ -488,7 +500,13 @@ class DecisionQueryTest {
             () -> {
               assertThat(camundaClient.newDecisionDefinitionQuery().send().join().items().size())
                   .isEqualTo(DEPLOYED_DECISIONS.size());
-              assertThat(camundaClient.newDecisionRequirementsQuery().send().join().items().size())
+              assertThat(
+                      camundaClient
+                          .newDecisionRequirementsSearchRequest()
+                          .send()
+                          .join()
+                          .items()
+                          .size())
                   .isEqualTo(DEPLOYED_DECISION_REQUIREMENTS.size());
             });
   }
@@ -546,16 +564,20 @@ class DecisionQueryTest {
   @Test
   void shouldSearchByFromWithLimit() {
     // when
-    final var resultAll = camundaClient.newDecisionRequirementsQuery().send().join();
+    final var resultAll = camundaClient.newDecisionRequirementsSearchRequest().send().join();
 
     final var resultWithLimit =
-        camundaClient.newDecisionRequirementsQuery().page(p -> p.limit(2)).send().join();
+        camundaClient.newDecisionRequirementsSearchRequest().page(p -> p.limit(2)).send().join();
     assertThat(resultWithLimit.items().size()).isEqualTo(2);
 
     final var thirdKey = resultAll.items().get(2).getDecisionRequirementsKey();
 
     final var resultSearchFrom =
-        camundaClient.newDecisionRequirementsQuery().page(p -> p.limit(2).from(2)).send().join();
+        camundaClient
+            .newDecisionRequirementsSearchRequest()
+            .page(p -> p.limit(2).from(2))
+            .send()
+            .join();
 
     // then
     assertThat(resultSearchFrom.items().stream().findFirst().get().getDecisionRequirementsKey())

@@ -19,7 +19,9 @@ import io.camunda.client.api.search.filter.DecisionRequirementsFilter;
 import io.camunda.client.api.search.response.DecisionRequirements;
 import io.camunda.client.api.search.sort.DecisionRequirementsSort;
 
-public interface DecisionRequirementsQuery
+public interface DecisionRequirementsSearchRequest
     extends TypedSearchQueryRequest<
-            DecisionRequirementsFilter, DecisionRequirementsSort, DecisionRequirementsQuery>,
+            DecisionRequirementsFilter,
+            DecisionRequirementsSort,
+            DecisionRequirementsSearchRequest>,
         FinalSearchQueryStep<DecisionRequirements> {}

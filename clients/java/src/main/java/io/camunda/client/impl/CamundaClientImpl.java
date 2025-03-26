@@ -94,7 +94,7 @@ import io.camunda.client.api.response.DocumentReferenceResponse;
 import io.camunda.client.api.search.query.AdHocSubprocessActivitySearchRequest;
 import io.camunda.client.api.search.query.DecisionDefinitionQuery;
 import io.camunda.client.api.search.query.DecisionInstanceQuery;
-import io.camunda.client.api.search.query.DecisionRequirementsQuery;
+import io.camunda.client.api.search.query.DecisionRequirementsSearchRequest;
 import io.camunda.client.api.search.query.FlownodeInstanceSearchRequest;
 import io.camunda.client.api.search.query.IncidentQuery;
 import io.camunda.client.api.search.query.ProcessDefinitionSearchRequest;
@@ -172,7 +172,7 @@ import io.camunda.client.impl.http.HttpClientFactory;
 import io.camunda.client.impl.search.query.AdHocSubprocessActivitySearchRequestImpl;
 import io.camunda.client.impl.search.query.DecisionDefinitionQueryImpl;
 import io.camunda.client.impl.search.query.DecisionInstanceQueryImpl;
-import io.camunda.client.impl.search.query.DecisionRequirementsQueryImpl;
+import io.camunda.client.impl.search.query.DecisionRequirementsSearchRequestImpl;
 import io.camunda.client.impl.search.query.FlowNodeInstanceSearchRequestImpl;
 import io.camunda.client.impl.search.query.IncidentQueryImpl;
 import io.camunda.client.impl.search.query.ProcessDefinitionSearchRequestImpl;
@@ -706,8 +706,8 @@ public final class CamundaClientImpl implements CamundaClient {
   }
 
   @Override
-  public DecisionRequirementsQuery newDecisionRequirementsQuery() {
-    return new DecisionRequirementsQueryImpl(httpClient, jsonMapper);
+  public DecisionRequirementsSearchRequest newDecisionRequirementsSearchRequest() {
+    return new DecisionRequirementsSearchRequestImpl(httpClient, jsonMapper);
   }
 
   @Override

@@ -16,13 +16,13 @@
 
 package io.camunda.zeebe.client.api.search.query;
 
+import io.camunda.client.api.search.query.DecisionRequirementsSearchRequest;
 import io.camunda.zeebe.client.api.search.filter.DecisionRequirementsFilter;
 import io.camunda.zeebe.client.api.search.response.DecisionRequirements;
 import io.camunda.zeebe.client.api.search.sort.DecisionRequirementsSort;
 
 /**
- * @deprecated since 8.8 for removal in 8.9, replaced by {@link
- *     io.camunda.client.api.search.query.DecisionRequirementsQuery}
+ * @deprecated since 8.8 for removal in 8.9, replaced by {@link DecisionRequirementsSearchRequest}
  */
 @Deprecated
 public interface DecisionRequirementsQuery
