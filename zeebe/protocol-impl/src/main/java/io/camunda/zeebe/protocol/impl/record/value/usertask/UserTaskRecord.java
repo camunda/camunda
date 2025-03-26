@@ -729,4 +729,11 @@ public final class UserTaskRecord extends UnifiedRecordValue implements UserTask
     processInstanceKeyProp.setValue(key);
     return this;
   }
+
+  public void unsetAssignee() {
+    assigneeProp.setValue(EMPTY_STRING);
+    final var changedAttributes = getChangedAttributes();
+    changedAttributes.remove(ASSIGNEE);
+    setChangedAttributes(changedAttributes);
+  }
 }
