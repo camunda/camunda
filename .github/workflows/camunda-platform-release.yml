@@ -101,38 +101,6 @@ jobs:
           vault-address: ${{ secrets.VAULT_ADDR }}
           vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
           vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
-      - name: Maven Prepare Release
-        id: maven-prepare-release
-        run: |
-          # Preparing the maven release
-          # https://maven.apache.org/maven-release/maven-release-plugin/prepare-mojo.html
-          # https://maven.apache.org/maven-release/maven-release-plugin/usage/prepare-release.html
-          #
-          # -DcompletionGoals
-          #   Goals to run on completion of the preparation step, after transformation back to the next development
-          #   version but before committing. Space delimited.
-          #   We apply spotless to make sure that pom format is correct before committing.
-          #
-          # -DpreparationGoals
-          #   Goals to run as part of the preparation step, after transformation but before committing. Space delimited.
-          #   Default is 'clean verify'; We want to skip all the checks and packaging (as it will be done again later) so we set it to empty
-          #
-          # -Darguments
-          #   Additional arguments to pass to the Maven executions, separated by spaces.
-          #   Per default it is not required, but the release plugin is configured in the camunda release plugin (and this property is used)
-          #   This is the reason why we have to set it at least as empty string.
-          ./mvnw release:prepare -B \
-            -Dresume=false \
-            -Dtag=${RELEASE_VERSION} \
-            -DreleaseVersion=${RELEASE_VERSION} \
-            -DdevelopmentVersion=${DEVELOPMENT_VERSION} \
-            -DpushChanges=${PUSH_CHANGES} \
-            -DremoteTagging=${PUSH_CHANGES} \
-            -DcompletionGoals="spotless:apply" \
-            -D skipOptimize \
-            -P-autoFormat \
-            -DpreparationGoals="" \
-            -Darguments=''
 
       - name: Maven Perform Release
         id: maven-perform-release
