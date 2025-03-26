@@ -302,7 +302,8 @@ public class ProcessInstanceFilterImpl
   @Override
   public ProcessInstanceFilter hasFlowNodeInstanceIncident(
       final Boolean hasFlowNodeInstanceIncident) {
-    return null;
+    filter.hasFlowNodeInstanceIncident(hasFlowNodeInstanceIncident);
+    return this;
   }
 
   @Override
