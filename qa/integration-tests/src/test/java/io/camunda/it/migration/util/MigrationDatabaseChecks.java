@@ -43,13 +43,17 @@ public class MigrationDatabaseChecks extends ElasticOpenSearchSetupHelper {
               }
             }
         """;
+  private final String indexPrefix;
 
   public MigrationDatabaseChecks(
-      final String endpoint, final Collection<IndexDescriptor> expectedDescriptors) {
+      final String endpoint,
+      final Collection<IndexDescriptor> expectedDescriptors,
+      final String indexPrefix) {
     super(endpoint, expectedDescriptors);
+    this.indexPrefix = indexPrefix;
   }
 
-  public boolean checkImportersFinished(final String indexPrefix, final String component)
+  public boolean checkImportersFinished(final String component)
       throws IOException, InterruptedException {
     final String targetUrl =
         String.format("%s/%s-%s-import-position*/_search", endpoint, indexPrefix, component);
@@ -73,7 +77,7 @@ public class MigrationDatabaseChecks extends ElasticOpenSearchSetupHelper {
     return totalDocs == trueDocs;
   }
 
-  public boolean checkImportPositionsFlushed(final String indexPrefix, final String component)
+  public boolean checkImportPositionsFlushed(final String component)
       throws IOException, InterruptedException {
     final String targetUrl =
         String.format("%s/%s-%s-import-position*/_search", endpoint, indexPrefix, component);
@@ -93,5 +97,15 @@ public class MigrationDatabaseChecks extends ElasticOpenSearchSetupHelper {
     final JsonNode jsonResponse = OBJECT_MAPPER.readTree(response.body());
     final int totalDocs = jsonResponse.at("/hits/total/value").asInt();
     return totalDocs > 0;
+  }
+
+  @Override
+  public void close() {
+    cleanup(indexPrefix);
+    super.close();
+  }
+
+  public boolean validateSchema() {
+    return super.validateSchemaCreation(indexPrefix);
   }
 }
