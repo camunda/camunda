@@ -17,7 +17,9 @@ import io.camunda.zeebe.engine.state.batchoperation.PersistedBatchOperation;
 import io.camunda.zeebe.engine.state.immutable.BatchOperationState;
 import io.camunda.zeebe.engine.state.immutable.ScheduledTaskState;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationChunkRecord;
+import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationExecutionRecord;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationChunkIntent;
+import io.camunda.zeebe.protocol.record.intent.BatchOperationExecutionIntent;
 import io.camunda.zeebe.stream.api.ReadonlyStreamProcessorContext;
 import io.camunda.zeebe.stream.api.StreamProcessorLifecycleAware;
 import io.camunda.zeebe.stream.api.scheduling.AsyncTaskGroup;
@@ -99,6 +101,8 @@ public class BatchOperationExecutionScheduler implements StreamProcessorLifecycl
 
     Lists.partition(new ArrayList<>(keys), CHUNK_SIZE_IN_RECORD)
         .forEach(partition -> appendChunk(batchOperation, taskResultBuilder, partition));
+
+    appendExecution(batchOperation, taskResultBuilder);
   }
 
   private void appendChunk(
@@ -114,6 +118,17 @@ public class BatchOperationExecutionScheduler implements StreamProcessorLifecycl
     LOG.debug(
         "Appending batch operation {} subbatch with key {}", batchOperation.getKey(), chunkKey);
     taskResultBuilder.appendCommandRecord(chunkKey, BatchOperationChunkIntent.CREATE, command);
+  }
+
+  private void appendExecution(
+      final PersistedBatchOperation batchOperation, final TaskResultBuilder taskResultBuilder) {
+    final var command = new BatchOperationExecutionRecord();
+    command.setBatchOperationKey(batchOperation.getKey());
+
+    LOG.debug("Appending batch operation execution {}", batchOperation.getKey());
+    // TODO add something like operationReference to keep track about the batch operation
+    taskResultBuilder.appendCommandRecord(
+        batchOperation.getKey(), BatchOperationExecutionIntent.EXECUTE, command);
   }
 
   private List<Long> queryAllKeys(final PersistedBatchOperation batchOperation) {
