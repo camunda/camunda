@@ -7,7 +7,7 @@
  */
 package io.camunda.exporter.handlers;
 
-import static io.camunda.webapps.schema.descriptors.operate.template.IncidentTemplate.*;
+import static io.camunda.webapps.schema.descriptors.template.IncidentTemplate.*;
 
 import io.camunda.exporter.cache.ExporterEntityCache;
 import io.camunda.exporter.cache.process.CachedProcessEntity;

@@ -9,12 +9,12 @@ package io.camunda.operate.zeebeimport.v8_7.processors.processors;
 
 import static io.camunda.operate.util.LambdaExceptionUtil.rethrowConsumer;
 import static io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor.POSITION;
-import static io.camunda.webapps.schema.descriptors.operate.template.JobTemplate.*;
+import static io.camunda.webapps.schema.descriptors.template.JobTemplate.*;
 
 import io.camunda.operate.exceptions.PersistenceException;
 import io.camunda.operate.store.BatchRequest;
 import io.camunda.operate.util.DateUtil;
-import io.camunda.webapps.schema.descriptors.operate.template.JobTemplate;
+import io.camunda.webapps.schema.descriptors.template.JobTemplate;
 import io.camunda.webapps.schema.entities.JobEntity;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordValue;

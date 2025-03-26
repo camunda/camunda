@@ -5,7 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.webapps.schema.descriptors.operate.index;
+package io.camunda.webapps.schema.descriptors.index;
 
 import static io.camunda.webapps.schema.descriptors.ComponentNames.OPERATE;
 
@@ -13,15 +13,26 @@ import io.camunda.webapps.schema.descriptors.AbstractIndexDescriptor;
 import io.camunda.webapps.schema.descriptors.backup.Prio5Backup;
 import java.util.Optional;
 
-public class MetricIndex extends AbstractIndexDescriptor implements Prio5Backup {
+public class ProcessIndex extends AbstractIndexDescriptor implements Prio5Backup {
 
-  public static final String INDEX_NAME = "metric";
+  public static final String INDEX_NAME = "process";
   public static final String ID = "id";
-  public static final String EVENT = "event";
-  public static final String VALUE = "value";
-  public static final String EVENT_TIME = "eventTime";
+  public static final String KEY = "key";
+  public static final String BPMN_PROCESS_ID = "bpmnProcessId";
+  public static final String NAME = "name";
+  public static final String VERSION = "version";
+  public static final String VERSION_TAG = "versionTag";
+  public static final String BPMN_XML = "bpmnXml";
+  public static final String RESOURCE_NAME = "resourceName";
+  public static final String FLOWNODES = "flowNodes";
+  public static final String FLOWNODE_ID = "id";
+  public static final String FLOWNODE_NAME = "name";
+  public static final String FORM_ID = "formId";
+  public static final String FORM_KEY = "formKey";
+  public static final String IS_FORM_EMBEDDED = "isFormEmbedded";
+  public static final String IS_PUBLIC = "isPublic";
 
-  public MetricIndex(final String indexPrefix, final boolean isElasticsearch) {
+  public ProcessIndex(final String indexPrefix, final boolean isElasticsearch) {
     super(indexPrefix, isElasticsearch);
   }
 

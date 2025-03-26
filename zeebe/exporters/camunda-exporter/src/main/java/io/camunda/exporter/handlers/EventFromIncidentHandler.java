@@ -9,7 +9,7 @@ package io.camunda.exporter.handlers;
 
 import static io.camunda.exporter.utils.ExporterUtil.tenantOrDefault;
 import static io.camunda.exporter.utils.ExporterUtil.trimWhitespace;
-import static io.camunda.webapps.schema.descriptors.operate.template.EventTemplate.*;
+import static io.camunda.webapps.schema.descriptors.template.EventTemplate.*;
 
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.webapps.schema.entities.event.EventEntity;

@@ -10,7 +10,7 @@ package io.camunda.operate.schema.templates;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.operate.schema.migration.SemanticVersion;
-import io.camunda.webapps.schema.descriptors.operate.template.OperationTemplate;
+import io.camunda.webapps.schema.descriptors.template.OperationTemplate;
 import org.junit.jupiter.api.Test;
 
 class OperationTemplateTest {

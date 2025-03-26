@@ -20,7 +20,7 @@ import io.camunda.operate.zeebe.PartitionHolder;
 import io.camunda.operate.zeebeimport.cache.FlowNodeInstanceTreePathCache;
 import io.camunda.operate.zeebeimport.cache.TreePathCacheMetricsImpl;
 import io.camunda.operate.zeebeimport.v8_7.processors.processors.fni.FNITransformer;
-import io.camunda.webapps.schema.descriptors.operate.template.FlowNodeInstanceTemplate;
+import io.camunda.webapps.schema.descriptors.template.FlowNodeInstanceTemplate;
 import io.camunda.webapps.schema.entities.flownode.FlowNodeInstanceEntity;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;

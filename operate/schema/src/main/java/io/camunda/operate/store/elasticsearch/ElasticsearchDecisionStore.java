@@ -13,7 +13,7 @@ import io.camunda.operate.conditions.ElasticsearchCondition;
 import io.camunda.operate.store.BatchRequest;
 import io.camunda.operate.store.DecisionStore;
 import io.camunda.operate.tenant.TenantAwareElasticsearchClient;
-import io.camunda.webapps.schema.descriptors.operate.index.DecisionIndex;
+import io.camunda.webapps.schema.descriptors.index.DecisionIndex;
 import java.io.IOException;
 import java.util.Optional;
 import org.elasticsearch.action.search.SearchRequest;

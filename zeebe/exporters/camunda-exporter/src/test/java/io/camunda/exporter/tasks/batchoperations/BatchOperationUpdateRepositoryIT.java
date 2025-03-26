@@ -22,8 +22,8 @@ import io.camunda.exporter.tasks.batchoperations.BatchOperationUpdateRepository.
 import io.camunda.exporter.tasks.batchoperations.BatchOperationUpdateRepository.OperationsAggData;
 import io.camunda.exporter.utils.SearchDBExtension;
 import io.camunda.search.connect.es.ElasticsearchConnector;
-import io.camunda.webapps.schema.descriptors.operate.template.BatchOperationTemplate;
-import io.camunda.webapps.schema.descriptors.operate.template.OperationTemplate;
+import io.camunda.webapps.schema.descriptors.template.BatchOperationTemplate;
+import io.camunda.webapps.schema.descriptors.template.OperationTemplate;
 import io.camunda.webapps.schema.entities.operation.BatchOperationEntity;
 import io.camunda.webapps.schema.entities.operation.OperationEntity;
 import io.camunda.webapps.schema.entities.operation.OperationState;
