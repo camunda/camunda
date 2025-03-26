@@ -89,7 +89,6 @@ public class CamundaContainerRuntimeTest {
     runtime.start();
 
     // then
-    // verifyNoInteractions(elasticsearchContainer).start();
     verify(camundaContainer).start();
     verify(connectorsContainer, never()).start();
 
@@ -97,7 +96,6 @@ public class CamundaContainerRuntimeTest {
     runtime.close();
 
     // then
-    // verify(elasticsearchContainer).stop();
     verify(camundaContainer).stop();
     verify(connectorsContainer, never()).stop();
   }
