@@ -31,8 +31,14 @@ export default defineConfig(({mode}) => ({
       '/api': 'http://localhost:8080',
       '/v1': 'http://localhost:8080',
       '/v2': 'http://localhost:8080',
-      '/login': 'http://localhost:8080',
-      '/logout': 'http://localhost:8080',
+      '/login': {
+        target: 'http://localhost:8080',
+        bypass: (req) => (req.method !== 'POST' ? '/' : undefined),
+      },
+      '/logout': {
+        target: 'http://localhost:8080',
+        bypass: (req) => (req.method !== 'POST' ? '/' : undefined),
+      },
       '/client-config.js': 'http://localhost:8080/tasklist',
     },
   },
