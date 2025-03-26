@@ -7,13 +7,17 @@
  */
 package io.camunda.zeebe.gateway.rest.util;
 
+<<<<<<< HEAD
 import java.util.Optional;
 
+=======
+>>>>>>> 0b906ae6 (fix: adjust remaining number types to strings in the API)
 public class KeyUtil {
 
   public static Long keyToLong(final String key) {
     return key != null ? Long.parseLong(key) : null;
   }
+<<<<<<< HEAD
 
   public static String keyToString(final Long value) {
     return value != null ? String.valueOf(value) : null;
@@ -26,4 +30,6 @@ public class KeyUtil {
       return Optional.empty();
     }
   }
+=======
+>>>>>>> 0b906ae6 (fix: adjust remaining number types to strings in the API)
 }

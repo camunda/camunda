@@ -28,6 +28,11 @@ import io.camunda.zeebe.client.impl.http.HttpClient;
 import io.camunda.zeebe.client.impl.http.HttpZeebeFuture;
 import io.camunda.zeebe.client.impl.response.DocumentReferenceResponseImpl;
 import io.camunda.zeebe.client.impl.util.DocumentBuilder;
+<<<<<<< HEAD
+=======
+import io.camunda.zeebe.client.impl.util.ParseUtil;
+import io.camunda.zeebe.client.protocol.rest.DocumentReference;
+>>>>>>> 0b906ae6 (fix: adjust remaining number types to strings in the API)
 import java.io.InputStream;
 import java.time.Duration;
 import java.util.HashMap;

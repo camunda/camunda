@@ -103,7 +103,10 @@ import io.camunda.zeebe.gateway.protocol.rest.UserRequest;
 import io.camunda.zeebe.gateway.protocol.rest.UserTaskAssignmentRequest;
 import io.camunda.zeebe.gateway.protocol.rest.UserTaskCompletionRequest;
 import io.camunda.zeebe.gateway.protocol.rest.UserTaskUpdateRequest;
+<<<<<<< HEAD
 import io.camunda.zeebe.gateway.protocol.rest.UserUpdateRequest;
+=======
+>>>>>>> 0b906ae6 (fix: adjust remaining number types to strings in the API)
 import io.camunda.zeebe.gateway.rest.util.KeyUtil;
 import io.camunda.zeebe.gateway.rest.validator.DocumentValidator;
 import io.camunda.zeebe.gateway.rest.validator.GroupRequestValidator;

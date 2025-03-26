@@ -2821,6 +2821,12 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/DocumentReference"
+            application/vnd.camunda.api.keys.number+json:
+              schema:
+                $ref: "#/components/schemas/DocumentReferenceResult"
+            application/vnd.camunda.api.keys.string+json:
+              schema:
+                $ref: "#/components/schemas/DocumentReference"
         "400":
           $ref: "#/components/responses/InvalidData"
   /documents/batch:
@@ -2879,14 +2885,24 @@ paths:
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/DocumentCreationBatchResponse"
+                $ref: "#/components/schemas/DocumentCreationBatchResponse"
+            application/vnd.camunda.api.keys.number+json:
+              schema:
+                $ref: "#/components/schemas/DocumentCreationBatchResult"
+            application/vnd.camunda.api.keys.string+json:
+              schema:
+                $ref: "#/components/schemas/DocumentCreationBatchResponse"
         "207":
           description: >
             Not all documents were uploaded successfully. More details are provided in the response body.
           content:
             application/json:
+              schema:
+                $ref: "#/components/schemas/DocumentCreationBatchResponse"
+            application/vnd.camunda.api.keys.number+json:
+              schema:
+                $ref: "#/components/schemas/DocumentCreationBatchResult"
+            application/vnd.camunda.api.keys.string+json:
               schema:
                 $ref: "#/components/schemas/DocumentCreationBatchResponse"
         "400":
@@ -6885,7 +6901,7 @@ components:
           description: The key of the message
           type: string
 
-    DocumentReference:
+    DocumentReferenceBase:
       type: object
       properties:
         camunda.document.type:
@@ -6902,8 +6918,21 @@ components:
         contentHash:
           type: string
           description: The hash of the document.
+    DocumentReference:
+      type: object
+      allOf:
+        - $ref: "#/components/schemas/DocumentReferenceBase"
+      properties:
         metadata:
           $ref: "#/components/schemas/DocumentMetadata"
+    DocumentReferenceResult:
+      deprecated: true
+      type: object
+      allOf:
+        - $ref: "#/components/schemas/DocumentReferenceBase"
+      properties:
+        metadata:
+          $ref: "#/components/schemas/DocumentDetails"
 
     DocumentCreationFailureDetail:
       type: object
@@ -6915,22 +6944,37 @@ components:
           type: string
           description: The detail of the failure.
 
+    DocumentCreationBatchResponseBase:
+      type: object
+      properties:
+        failedDocuments:
+          type: array
+          description: Documents that failed creation.
+          items:
+            $ref: "#/components/schemas/DocumentCreationFailureDetail"
     DocumentCreationBatchResponse:
+      type: object
       allOf:
-        - type: object
-          properties:
-            createdDocuments:
-              type: array
-              description: Documents that were successfully created.
-              items:
-                $ref: "#/components/schemas/DocumentReference"
-            failedDocuments:
-              type: array
-              description: Documents that failed creation.
-              items:
-                $ref: "#/components/schemas/DocumentCreationFailureDetail"
+        - $ref: "#/components/schemas/DocumentCreationBatchResponseBase"
+      properties:
+        createdDocuments:
+          type: array
+          description: Documents that were successfully created.
+          items:
+            $ref: "#/components/schemas/DocumentReference"
+    DocumentCreationBatchResult:
+      deprecated: true
+      type: object
+      allOf:
+        - $ref: "#/components/schemas/DocumentCreationBatchResponseBase"
+      properties:
+        createdDocuments:
+          type: array
+          description: Documents that were successfully created.
+          items:
+            $ref: "#/components/schemas/DocumentReferenceResult"
 
-    DocumentMetadata:
+    DocumentMetadataBase:
       description: Information about the document.
       type: object
       properties:
@@ -6951,13 +6995,36 @@ components:
         processDefinitionId:
           type: string
           description: The ID of the process definition that created the document.
+<<<<<<< HEAD
         processInstanceKey:
           type: string
           description: The key of the process instance that created the document.
+=======
+>>>>>>> 0b906ae6 (fix: adjust remaining number types to strings in the API)
         customProperties:
           type: object
           description: Custom properties of the document.
           additionalProperties: true
+    DocumentMetadata:
+      description: Information about the document.
+      type: object
+      allOf:
+        - $ref: "#/components/schemas/DocumentMetadataBase"
+      properties:
+        processInstanceKey:
+          type: string
+          description: The key of the process instance that created the document.
+    DocumentDetails:
+      deprecated: true
+      description: Information about the document.
+      type: object
+      allOf:
+        - $ref: "#/components/schemas/DocumentMetadataBase"
+      properties:
+        processInstanceKey:
+          type: integer
+          format: int64
+          description: The key of the process instance that created the document.
 
     DocumentLinkRequest:
       type: object
