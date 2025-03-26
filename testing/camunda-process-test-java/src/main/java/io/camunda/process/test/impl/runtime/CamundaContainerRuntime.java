@@ -68,8 +68,12 @@ public class CamundaContainerRuntime implements AutoCloseable {
     connectorsContainer = createConnectorsContainer(network, builder);
   }
 
-  // The ES container has been removed in favor of a H2 database solution. However, in the future ES
-  // is going to be configurable as part of {@see https://github.com/camunda/camunda/issues/29854}
+  /*
+   * The ES container has been removed in favor of an H2 database solution. However, the secondary
+   * storage implementation is going to become configurable in the near future so we're keeping
+   * this unused method in the code for now.
+   * {@see https://github.com/camunda/camunda/issues/29854}
+   */
   private ElasticsearchContainer createElasticsearchContainer(
       final Network network, final CamundaContainerRuntimeBuilder builder) {
     final ElasticsearchContainer container =
