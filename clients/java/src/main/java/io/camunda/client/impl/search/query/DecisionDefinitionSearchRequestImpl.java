@@ -23,7 +23,7 @@ import io.camunda.client.api.CamundaFuture;
 import io.camunda.client.api.JsonMapper;
 import io.camunda.client.api.search.SearchRequestPage;
 import io.camunda.client.api.search.filter.DecisionDefinitionFilter;
-import io.camunda.client.api.search.query.DecisionDefinitionQuery;
+import io.camunda.client.api.search.query.DecisionDefinitionSearchRequest;
 import io.camunda.client.api.search.query.FinalSearchQueryStep;
 import io.camunda.client.api.search.response.DecisionDefinition;
 import io.camunda.client.api.search.response.SearchQueryResponse;
@@ -42,17 +42,18 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import org.apache.hc.client5.http.config.RequestConfig;
 
-public class DecisionDefinitionQueryImpl
+public class DecisionDefinitionSearchRequestImpl
     extends TypedSearchRequestPropertyProvider<
         io.camunda.client.protocol.rest.DecisionDefinitionSearchQuery>
-    implements DecisionDefinitionQuery {
+    implements DecisionDefinitionSearchRequest {
 
   private final io.camunda.client.protocol.rest.DecisionDefinitionSearchQuery request;
   private final JsonMapper jsonMapper;
   private final HttpClient httpClient;
   private final RequestConfig.Builder httpRequestConfig;
 
-  public DecisionDefinitionQueryImpl(final HttpClient httpClient, final JsonMapper jsonMapper) {
+  public DecisionDefinitionSearchRequestImpl(
+      final HttpClient httpClient, final JsonMapper jsonMapper) {
     request = new io.camunda.client.protocol.rest.DecisionDefinitionSearchQuery();
     this.jsonMapper = jsonMapper;
     this.httpClient = httpClient;
@@ -60,7 +61,7 @@ public class DecisionDefinitionQueryImpl
   }
 
   @Override
-  public DecisionDefinitionQuery filter(final DecisionDefinitionFilter value) {
+  public DecisionDefinitionSearchRequest filter(final DecisionDefinitionFilter value) {
     final io.camunda.client.protocol.rest.DecisionDefinitionFilter filter =
         provideSearchRequestProperty(value);
     request.setFilter(filter);
@@ -68,12 +69,12 @@ public class DecisionDefinitionQueryImpl
   }
 
   @Override
-  public DecisionDefinitionQuery filter(final Consumer<DecisionDefinitionFilter> fn) {
+  public DecisionDefinitionSearchRequest filter(final Consumer<DecisionDefinitionFilter> fn) {
     return filter(decisionDefinitionFilter(fn));
   }
 
   @Override
-  public DecisionDefinitionQuery sort(final DecisionDefinitionSort value) {
+  public DecisionDefinitionSearchRequest sort(final DecisionDefinitionSort value) {
     final List<SearchQuerySortRequest> sorting = provideSearchRequestProperty(value);
     request.setSort(
         SearchQuerySortRequestMapper.toDecisionDefinitionSearchQuerySortRequest(sorting));
@@ -81,19 +82,19 @@ public class DecisionDefinitionQueryImpl
   }
 
   @Override
-  public DecisionDefinitionQuery sort(final Consumer<DecisionDefinitionSort> fn) {
+  public DecisionDefinitionSearchRequest sort(final Consumer<DecisionDefinitionSort> fn) {
     return sort(decisionDefinitionSort(fn));
   }
 
   @Override
-  public DecisionDefinitionQuery page(final SearchRequestPage value) {
+  public DecisionDefinitionSearchRequest page(final SearchRequestPage value) {
     final SearchQueryPageRequest page = provideSearchRequestProperty(value);
     request.setPage(page);
     return this;
   }
 
   @Override
-  public DecisionDefinitionQuery page(final Consumer<SearchRequestPage> fn) {
+  public DecisionDefinitionSearchRequest page(final Consumer<SearchRequestPage> fn) {
     return page(searchRequestPage(fn));
   }
 

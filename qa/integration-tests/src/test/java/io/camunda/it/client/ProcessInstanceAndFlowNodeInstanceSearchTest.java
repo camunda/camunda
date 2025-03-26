@@ -40,7 +40,7 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 @MultiDbTest
-public class ProcessInstanceAndFlowNodeInstanceQueryTest {
+public class ProcessInstanceAndFlowNodeInstanceSearchTest {
 
   static final List<Process> DEPLOYED_PROCESSES = new ArrayList<>();
   static final List<ProcessInstanceEvent> PROCESS_INSTANCES = new ArrayList<>();

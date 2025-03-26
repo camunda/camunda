@@ -36,7 +36,7 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 @MultiDbTest
-class DecisionQueryTest {
+class DecisionSearchTest {
   private static final List<Decision> DEPLOYED_DECISIONS = new ArrayList<>();
   private static final List<DecisionRequirements> DEPLOYED_DECISION_REQUIREMENTS =
       new ArrayList<>();
@@ -70,7 +70,7 @@ class DecisionQueryTest {
     // when
     final var result =
         camundaClient
-            .newDecisionDefinitionQuery()
+            .newDecisionDefinitionSearchRequest()
             .sort(b -> b.decisionDefinitionKey().asc())
             .send()
             .join();
@@ -91,7 +91,7 @@ class DecisionQueryTest {
     final long decisionKey = DEPLOYED_DECISIONS.get(0).getDecisionKey();
     final var result =
         camundaClient
-            .newDecisionDefinitionQuery()
+            .newDecisionDefinitionSearchRequest()
             .filter(f -> f.decisionDefinitionKey(decisionKey))
             .send()
             .join();
@@ -114,7 +114,7 @@ class DecisionQueryTest {
     final String tenantId = decisionDef.getTenantId();
     final var result =
         camundaClient
-            .newDecisionDefinitionQuery()
+            .newDecisionDefinitionSearchRequest()
             .filter(
                 f ->
                     f.decisionDefinitionKey(decisionKey)
@@ -140,7 +140,7 @@ class DecisionQueryTest {
     final String dmnDecisionId = decisionDefV1.getDmnDecisionId();
     final var result =
         camundaClient
-            .newDecisionDefinitionQuery()
+            .newDecisionDefinitionSearchRequest()
             .filter(f -> f.decisionDefinitionId(dmnDecisionId))
             .sort(s -> s.version().desc())
             .send()
@@ -498,7 +498,13 @@ class DecisionQueryTest {
         .ignoreExceptions() // Ignore exceptions and continue retrying
         .untilAsserted(
             () -> {
-              assertThat(camundaClient.newDecisionDefinitionQuery().send().join().items().size())
+              assertThat(
+                      camundaClient
+                          .newDecisionDefinitionSearchRequest()
+                          .send()
+                          .join()
+                          .items()
+                          .size())
                   .isEqualTo(DEPLOYED_DECISIONS.size());
               assertThat(
                       camundaClient
