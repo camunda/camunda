@@ -54,7 +54,7 @@ public class SearchIncidentTest extends ClientRestTest {
   @Test
   public void shouldSearchIncidentWithEmptyQuery() {
     // when
-    client.newIncidentQuery().send().join();
+    client.newIncidentSearchRequest().send().join();
 
     // then
     final IncidentSearchQuery request = gatewayService.getLastRequest(IncidentSearchQuery.class);
@@ -65,7 +65,7 @@ public class SearchIncidentTest extends ClientRestTest {
   public void shouldSearchIncidentWithFullFilters() {
     // when
     client
-        .newIncidentQuery()
+        .newIncidentSearchRequest()
         .filter(
             f ->
                 f.incidentKey(1L)
@@ -103,7 +103,7 @@ public class SearchIncidentTest extends ClientRestTest {
   void shouldSearchIncidentWithFullSorting() {
     // when
     client
-        .newIncidentQuery()
+        .newIncidentSearchRequest()
         .sort(
             s ->
                 s.incidentKey()
@@ -151,7 +151,7 @@ public class SearchIncidentTest extends ClientRestTest {
   void shouldSearchWithFullPagination() {
     // when
     client
-        .newIncidentQuery()
+        .newIncidentSearchRequest()
         .page(
             p ->
                 p.from(23)
@@ -231,7 +231,7 @@ public class SearchIncidentTest extends ClientRestTest {
 
     // when
     client
-        .newIncidentQuery()
+        .newIncidentSearchRequest()
         .filter(f -> f.incidentKey(1L).errorType(incidentErrorType))
         .send()
         .join();

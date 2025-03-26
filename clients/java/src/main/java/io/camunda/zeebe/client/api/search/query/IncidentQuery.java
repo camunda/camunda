@@ -15,13 +15,13 @@
  */
 package io.camunda.zeebe.client.api.search.query;
 
+import io.camunda.client.api.search.query.IncidentSearchRequest;
 import io.camunda.zeebe.client.api.search.filter.IncidentFilter;
 import io.camunda.zeebe.client.api.search.response.Incident;
 import io.camunda.zeebe.client.api.search.sort.IncidentSort;
 
 /**
- * @deprecated since 8.8 for removal in 8.9, replaced by {@link
- *     io.camunda.client.api.search.query.IncidentQuery}
+ * @deprecated since 8.8 for removal in 8.9, replaced by {@link IncidentSearchRequest}
  */
 @Deprecated
 public interface IncidentQuery

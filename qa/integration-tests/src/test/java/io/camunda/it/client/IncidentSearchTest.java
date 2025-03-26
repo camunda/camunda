@@ -35,7 +35,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 
 @MultiDbTest
-class IncidentQueryTest {
+class IncidentSearchTest {
 
   private static final List<Process> DEPLOYED_PROCESSES = new ArrayList<>();
 
@@ -65,7 +65,7 @@ class IncidentQueryTest {
     waitForProcessInstancesToStart(camundaClient, 5);
     waitUntilProcessInstanceHasIncidents(camundaClient, 3);
 
-    incident = camundaClient.newIncidentQuery().send().join().items().getFirst();
+    incident = camundaClient.newIncidentSearchRequest().send().join().items().getFirst();
   }
 
   @AfterAll
@@ -109,7 +109,11 @@ class IncidentQueryTest {
 
     // when
     final var result =
-        camundaClient.newIncidentQuery().filter(f -> f.incidentKey(incidentKey)).send().join();
+        camundaClient
+            .newIncidentSearchRequest()
+            .filter(f -> f.incidentKey(incidentKey))
+            .send()
+            .join();
 
     // then
     assertThat(result.items().size()).isEqualTo(1);
@@ -124,7 +128,7 @@ class IncidentQueryTest {
     // when
     final var result =
         camundaClient
-            .newIncidentQuery()
+            .newIncidentSearchRequest()
             .filter(f -> f.processInstanceKey(processInstanceKey))
             .send()
             .join();
@@ -140,7 +144,8 @@ class IncidentQueryTest {
     final var state = incident.getState();
 
     // when
-    final var result = camundaClient.newIncidentQuery().filter(f -> f.state(state)).send().join();
+    final var result =
+        camundaClient.newIncidentSearchRequest().filter(f -> f.state(state)).send().join();
 
     // then
     assertThat(result.items().size()).isEqualTo(3);
@@ -155,7 +160,7 @@ class IncidentQueryTest {
     // when
     final var result =
         camundaClient
-            .newIncidentQuery()
+            .newIncidentSearchRequest()
             .filter(f -> f.flowNodeInstanceKey(flowNodeInstanceKey))
             .send()
             .join();
@@ -173,7 +178,7 @@ class IncidentQueryTest {
     // when
     final var result =
         camundaClient
-            .newIncidentQuery()
+            .newIncidentSearchRequest()
             .filter(f -> f.processDefinitionKey(processDefinitionKey))
             .send()
             .join();
@@ -191,7 +196,7 @@ class IncidentQueryTest {
     // when
     final var result =
         camundaClient
-            .newIncidentQuery()
+            .newIncidentSearchRequest()
             .filter(f -> f.processDefinitionId(processDefinitionId))
             .send()
             .join();
@@ -208,7 +213,7 @@ class IncidentQueryTest {
 
     // when
     final var result =
-        camundaClient.newIncidentQuery().filter(f -> f.errorType(errorType)).send().join();
+        camundaClient.newIncidentSearchRequest().filter(f -> f.errorType(errorType)).send().join();
 
     // then
     assertThat(result.items().size()).isEqualTo(3);
@@ -221,7 +226,7 @@ class IncidentQueryTest {
     assertThatCode(
             () ->
                 camundaClient
-                    .newIncidentQuery()
+                    .newIncidentSearchRequest()
                     .filter(f -> f.errorType(IncidentErrorType.valueOf(errorType.name())))
                     .send()
                     .join())
@@ -243,7 +248,11 @@ class IncidentQueryTest {
 
     // when
     final var result =
-        camundaClient.newIncidentQuery().filter(f -> f.flowNodeId(flowNodeId)).send().join();
+        camundaClient
+            .newIncidentSearchRequest()
+            .filter(f -> f.flowNodeId(flowNodeId))
+            .send()
+            .join();
 
     // then
     assertThat(result.items().size()).isEqualTo(3);
@@ -256,7 +265,8 @@ class IncidentQueryTest {
     final var jobKey = incident.getJobKey();
 
     // when
-    final var result = camundaClient.newIncidentQuery().filter(f -> f.jobKey(jobKey)).send().join();
+    final var result =
+        camundaClient.newIncidentSearchRequest().filter(f -> f.jobKey(jobKey)).send().join();
 
     // then
     assertThat(result.items().size()).isEqualTo(3);
@@ -270,7 +280,7 @@ class IncidentQueryTest {
 
     // when
     final var result =
-        camundaClient.newIncidentQuery().filter(f -> f.tenantId(tenantId)).send().join();
+        camundaClient.newIncidentSearchRequest().filter(f -> f.tenantId(tenantId)).send().join();
 
     // then
     assertThat(result.items().size()).isEqualTo(3);
@@ -280,9 +290,17 @@ class IncidentQueryTest {
   @Test
   void shouldSortByIncidentKey() {
     final var resultAsc =
-        camundaClient.newIncidentQuery().sort(s -> s.processInstanceKey().asc()).send().join();
+        camundaClient
+            .newIncidentSearchRequest()
+            .sort(s -> s.processInstanceKey().asc())
+            .send()
+            .join();
     final var resultDesc =
-        camundaClient.newIncidentQuery().sort(s -> s.processInstanceKey().desc()).send().join();
+        camundaClient
+            .newIncidentSearchRequest()
+            .sort(s -> s.processInstanceKey().desc())
+            .send()
+            .join();
 
     final var all = resultAsc.items().stream().map(Incident::getIncidentKey).toList();
     final var sortedAsc = all.stream().sorted(Comparator.naturalOrder()).toList();
@@ -298,9 +316,9 @@ class IncidentQueryTest {
   @Test
   void shouldSortByErrorType() {
     final var resultAsc =
-        camundaClient.newIncidentQuery().sort(s -> s.errorType().asc()).send().join();
+        camundaClient.newIncidentSearchRequest().sort(s -> s.errorType().asc()).send().join();
     final var resultDesc =
-        camundaClient.newIncidentQuery().sort(s -> s.errorType().desc()).send().join();
+        camundaClient.newIncidentSearchRequest().sort(s -> s.errorType().desc()).send().join();
 
     final var all = resultAsc.items().stream().map(Incident::getErrorType).toList();
     final var sortedAsc = all.stream().sorted().toList();
@@ -315,9 +333,17 @@ class IncidentQueryTest {
   @Test
   void shouldSortByProcessDefinitionKey() {
     final var resultAsc =
-        camundaClient.newIncidentQuery().sort(s -> s.processDefinitionKey().asc()).send().join();
+        camundaClient
+            .newIncidentSearchRequest()
+            .sort(s -> s.processDefinitionKey().asc())
+            .send()
+            .join();
     final var resultDesc =
-        camundaClient.newIncidentQuery().sort(s -> s.processDefinitionKey().desc()).send().join();
+        camundaClient
+            .newIncidentSearchRequest()
+            .sort(s -> s.processDefinitionKey().desc())
+            .send()
+            .join();
 
     final var all = resultAsc.items().stream().map(Incident::getProcessDefinitionKey).toList();
     final var sortedAsc = all.stream().sorted().toList();
@@ -332,9 +358,17 @@ class IncidentQueryTest {
   @Test
   void shouldSortByProcessInstanceKey() {
     final var resultAsc =
-        camundaClient.newIncidentQuery().sort(s -> s.processInstanceKey().asc()).send().join();
+        camundaClient
+            .newIncidentSearchRequest()
+            .sort(s -> s.processInstanceKey().asc())
+            .send()
+            .join();
     final var resultDesc =
-        camundaClient.newIncidentQuery().sort(s -> s.processInstanceKey().desc()).send().join();
+        camundaClient
+            .newIncidentSearchRequest()
+            .sort(s -> s.processInstanceKey().desc())
+            .send()
+            .join();
 
     final var all = resultAsc.items().stream().map(Incident::getProcessInstanceKey).toList();
     final var sortedAsc = all.stream().sorted().toList();
@@ -349,9 +383,9 @@ class IncidentQueryTest {
   @Test
   void shouldSortByTenantId() {
     final var resultAsc =
-        camundaClient.newIncidentQuery().sort(s -> s.tenantId().asc()).send().join();
+        camundaClient.newIncidentSearchRequest().sort(s -> s.tenantId().asc()).send().join();
     final var resultDesc =
-        camundaClient.newIncidentQuery().sort(s -> s.tenantId().desc()).send().join();
+        camundaClient.newIncidentSearchRequest().sort(s -> s.tenantId().desc()).send().join();
 
     final var all = resultAsc.items().stream().map(Incident::getTenantId).toList();
     final var sortedAsc = all.stream().sorted().toList();
@@ -366,9 +400,17 @@ class IncidentQueryTest {
   @Test
   void shouldSortByFlowNodeInstanceId() {
     final var resultAsc =
-        camundaClient.newIncidentQuery().sort(s -> s.flowNodeInstanceKey().asc()).send().join();
+        camundaClient
+            .newIncidentSearchRequest()
+            .sort(s -> s.flowNodeInstanceKey().asc())
+            .send()
+            .join();
     final var resultDesc =
-        camundaClient.newIncidentQuery().sort(s -> s.flowNodeInstanceKey().desc()).send().join();
+        camundaClient
+            .newIncidentSearchRequest()
+            .sort(s -> s.flowNodeInstanceKey().desc())
+            .send()
+            .join();
 
     final var all = resultAsc.items().stream().map(Incident::getFlowNodeInstanceKey).toList();
     final var sortedAsc = all.stream().sorted().toList();
@@ -383,9 +425,9 @@ class IncidentQueryTest {
   @Test
   void shouldSortByFlowNodeId() {
     final var resultAsc =
-        camundaClient.newIncidentQuery().sort(s -> s.flowNodeId().asc()).send().join();
+        camundaClient.newIncidentSearchRequest().sort(s -> s.flowNodeId().asc()).send().join();
     final var resultDesc =
-        camundaClient.newIncidentQuery().sort(s -> s.flowNodeId().desc()).send().join();
+        camundaClient.newIncidentSearchRequest().sort(s -> s.flowNodeId().desc()).send().join();
 
     final var all = resultAsc.items().stream().map(Incident::getFlowNodeId).toList();
     final var sortedAsc = all.stream().sorted().toList();
@@ -399,9 +441,10 @@ class IncidentQueryTest {
 
   @Test
   void shouldSortByState() {
-    final var resultAsc = camundaClient.newIncidentQuery().sort(s -> s.state().asc()).send().join();
+    final var resultAsc =
+        camundaClient.newIncidentSearchRequest().sort(s -> s.state().asc()).send().join();
     final var resultDesc =
-        camundaClient.newIncidentQuery().sort(s -> s.state().desc()).send().join();
+        camundaClient.newIncidentSearchRequest().sort(s -> s.state().desc()).send().join();
 
     final var all = resultAsc.items().stream().map(Incident::getState).toList();
     final var sortedAsc = all.stream().sorted().toList();
@@ -419,9 +462,9 @@ class IncidentQueryTest {
   void shouldSortByJobKey() {
     // when
     final var resultAsc =
-        camundaClient.newIncidentQuery().sort(s -> s.jobKey().asc()).send().join();
+        camundaClient.newIncidentSearchRequest().sort(s -> s.jobKey().asc()).send().join();
     final var resultDesc =
-        camundaClient.newIncidentQuery().sort(s -> s.jobKey().desc()).send().join();
+        camundaClient.newIncidentSearchRequest().sort(s -> s.jobKey().desc()).send().join();
 
     final var ascJobKeys =
         resultAsc.items().stream().map(Incident::getJobKey).filter(Objects::nonNull).toList();
@@ -443,9 +486,9 @@ class IncidentQueryTest {
   @Test
   void shouldSortByCreationTime() {
     final var resultAsc =
-        camundaClient.newIncidentQuery().sort(s -> s.creationTime().asc()).send().join();
+        camundaClient.newIncidentSearchRequest().sort(s -> s.creationTime().asc()).send().join();
     final var resultDesc =
-        camundaClient.newIncidentQuery().sort(s -> s.creationTime().desc()).send().join();
+        camundaClient.newIncidentSearchRequest().sort(s -> s.creationTime().desc()).send().join();
 
     final var all = resultAsc.items().stream().map(Incident::getCreationTime).toList();
     final var sortedAsc = all.stream().sorted().toList();
@@ -460,14 +503,14 @@ class IncidentQueryTest {
   @Test
   void shouldSearchAfterSecondItem() {
     // when
-    final var resultAll = camundaClient.newIncidentQuery().send().join();
+    final var resultAll = camundaClient.newIncidentSearchRequest().send().join();
 
     final var secondIncidentKey = resultAll.items().get(1).getIncidentKey();
     final var thirdIncidentKey = resultAll.items().get(2).getIncidentKey();
 
     final var resultSearchAfter =
         camundaClient
-            .newIncidentQuery()
+            .newIncidentSearchRequest()
             .page(p -> p.limit(2).searchAfter(Collections.singletonList(secondIncidentKey)))
             .send()
             .join();
@@ -480,14 +523,14 @@ class IncidentQueryTest {
   @Test
   void shouldSearchBeforeSecondItem() {
     // when
-    final var resultAll = camundaClient.newIncidentQuery().send().join();
+    final var resultAll = camundaClient.newIncidentSearchRequest().send().join();
 
     final var secondIncidentKey = resultAll.items().get(1).getIncidentKey();
     final var firstIncidentKey = resultAll.items().get(0).getIncidentKey();
 
     final var resultSearchBefore =
         camundaClient
-            .newIncidentQuery()
+            .newIncidentSearchRequest()
             .page(p -> p.limit(2).searchBefore(Collections.singletonList(secondIncidentKey)))
             .send()
             .join();
@@ -500,16 +543,16 @@ class IncidentQueryTest {
   @Test
   void shouldSearchByFromWithLimit() {
     // when
-    final var resultAll = camundaClient.newIncidentQuery().send().join();
+    final var resultAll = camundaClient.newIncidentSearchRequest().send().join();
 
     final var resultWithLimit =
-        camundaClient.newIncidentQuery().page(p -> p.limit(2)).send().join();
+        camundaClient.newIncidentSearchRequest().page(p -> p.limit(2)).send().join();
     assertThat(resultWithLimit.items().size()).isEqualTo(2);
 
     final var thirdKey = resultAll.items().get(2).getIncidentKey();
 
     final var resultSearchFrom =
-        camundaClient.newIncidentQuery().page(p -> p.limit(2).from(2)).send().join();
+        camundaClient.newIncidentSearchRequest().page(p -> p.limit(2).from(2)).send().join();
 
     // then
     assertThat(resultSearchFrom.items().stream().findFirst().get().getIncidentKey())

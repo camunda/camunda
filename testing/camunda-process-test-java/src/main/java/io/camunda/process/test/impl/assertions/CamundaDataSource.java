@@ -81,7 +81,7 @@ public class CamundaDataSource {
 
   public List<Incident> findIncidents(final Consumer<IncidentFilter> filter) {
     return client
-        .newIncidentQuery()
+        .newIncidentSearchRequest()
         .filter(filter)
         .sort(sort -> sort.creationTime().asc())
         .page(DEFAULT_PAGE_REQUEST)

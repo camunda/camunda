@@ -24,7 +24,7 @@ import io.camunda.client.api.JsonMapper;
 import io.camunda.client.api.search.SearchRequestPage;
 import io.camunda.client.api.search.filter.IncidentFilter;
 import io.camunda.client.api.search.query.FinalSearchQueryStep;
-import io.camunda.client.api.search.query.IncidentQuery;
+import io.camunda.client.api.search.query.IncidentSearchRequest;
 import io.camunda.client.api.search.response.Incident;
 import io.camunda.client.api.search.response.SearchQueryResponse;
 import io.camunda.client.api.search.sort.IncidentSort;
@@ -43,15 +43,16 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import org.apache.hc.client5.http.config.RequestConfig;
 
-public class IncidentQueryImpl extends TypedSearchRequestPropertyProvider<IncidentSearchQuery>
-    implements IncidentQuery {
+public class IncidentSearchRequestImpl
+    extends TypedSearchRequestPropertyProvider<IncidentSearchQuery>
+    implements IncidentSearchRequest {
 
   private final IncidentSearchQuery request;
   private final JsonMapper jsonMapper;
   private final HttpClient httpClient;
   private final RequestConfig.Builder httpRequestConfig;
 
-  public IncidentQueryImpl(final HttpClient httpClient, final JsonMapper jsonMapper) {
+  public IncidentSearchRequestImpl(final HttpClient httpClient, final JsonMapper jsonMapper) {
     request = new IncidentSearchQuery();
     this.jsonMapper = jsonMapper;
     this.httpClient = httpClient;
@@ -78,7 +79,7 @@ public class IncidentQueryImpl extends TypedSearchRequestPropertyProvider<Incide
   }
 
   @Override
-  public IncidentQuery filter(final IncidentFilter value) {
+  public IncidentSearchRequest filter(final IncidentFilter value) {
     final io.camunda.client.protocol.rest.IncidentFilter filter =
         provideSearchRequestProperty(value);
     request.setFilter(filter);
@@ -86,31 +87,31 @@ public class IncidentQueryImpl extends TypedSearchRequestPropertyProvider<Incide
   }
 
   @Override
-  public IncidentQuery filter(final Consumer<IncidentFilter> fn) {
+  public IncidentSearchRequest filter(final Consumer<IncidentFilter> fn) {
     return filter(incidentFilter(fn));
   }
 
   @Override
-  public IncidentQuery sort(final IncidentSort value) {
+  public IncidentSearchRequest sort(final IncidentSort value) {
     final List<SearchQuerySortRequest> sorting = provideSearchRequestProperty(value);
     request.setSort(SearchQuerySortRequestMapper.toIncidentSearchQuerySortRequest(sorting));
     return this;
   }
 
   @Override
-  public IncidentQuery sort(final Consumer<IncidentSort> fn) {
+  public IncidentSearchRequest sort(final Consumer<IncidentSort> fn) {
     return sort(incidentSort(fn));
   }
 
   @Override
-  public IncidentQuery page(final SearchRequestPage value) {
+  public IncidentSearchRequest page(final SearchRequestPage value) {
     final SearchRequestPageImpl page = (SearchRequestPageImpl) value;
     request.setPage(page.getSearchRequestProperty());
     return this;
   }
 
   @Override
-  public IncidentQuery page(final Consumer<SearchRequestPage> fn) {
+  public IncidentSearchRequest page(final Consumer<SearchRequestPage> fn) {
     return page(searchRequestPage(fn));
   }
 

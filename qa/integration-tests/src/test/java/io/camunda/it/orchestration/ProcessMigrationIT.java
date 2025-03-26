@@ -220,7 +220,7 @@ public class ProcessMigrationIT {
 
   public void resolveIncidents(final CamundaClient client, final Long processInstanceKey) {
     client
-        .newIncidentQuery()
+        .newIncidentSearchRequest()
         .filter(f -> f.processInstanceKey(processInstanceKey))
         .send()
         .join()
@@ -240,7 +240,8 @@ public class ProcessMigrationIT {
         .atMost(TIMEOUT_DATA_AVAILABILITY)
         .untilAsserted(
             () -> {
-              final var incidents = client.newIncidentQuery().filter(filter).send().join().items();
+              final var incidents =
+                  client.newIncidentSearchRequest().filter(filter).send().join().items();
               asserter.accept(incidents);
             });
   }

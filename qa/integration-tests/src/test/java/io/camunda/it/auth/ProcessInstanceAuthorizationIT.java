@@ -176,7 +176,7 @@ class ProcessInstanceAuthorizationIT {
   public void searchShouldReturnAuthorizedIncidents(
       @Authenticated(USER1) final CamundaClient camundaClient) {
     // when
-    final var result = camundaClient.newIncidentQuery().send().join();
+    final var result = camundaClient.newIncidentSearchRequest().send().join();
     // then
     assertThat(result.items()).hasSize(1);
     assertThat(result.items().getFirst().getProcessDefinitionId()).isEqualTo(PROCESS_ID_1);
@@ -283,7 +283,7 @@ class ProcessInstanceAuthorizationIT {
 
   private long getAnyIncidentKey(final CamundaClient camundaClient, final String processId) {
     return camundaClient
-        .newIncidentQuery()
+        .newIncidentSearchRequest()
         .filter(f -> f.processDefinitionId(processId))
         .send()
         .join()
