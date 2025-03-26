@@ -33,7 +33,7 @@ import io.camunda.operate.util.Convertable;
 import io.camunda.operate.util.MapPath;
 import io.camunda.webapps.schema.descriptors.operate.template.VariableTemplate;
 import io.camunda.webapps.schema.entities.listview.ProcessInstanceForListViewEntity;
-import io.camunda.webapps.schema.entities.operate.VariableEntity;
+import io.camunda.webapps.schema.entities.VariableEntity;
 import io.camunda.webapps.schema.entities.operation.BatchOperationEntity;
 import java.io.IOException;
 import java.util.Arrays;

@@ -153,9 +153,9 @@ import io.camunda.webapps.schema.entities.dmn.definition.DecisionRequirementsEnt
 import io.camunda.webapps.schema.entities.flownode.FlowNodeInstanceEntity;
 import io.camunda.webapps.schema.entities.incident.IncidentEntity;
 import io.camunda.webapps.schema.entities.listview.ProcessInstanceForListViewEntity;
-import io.camunda.webapps.schema.entities.operate.ProcessEntity;
-import io.camunda.webapps.schema.entities.operate.UsageMetricsEntity;
-import io.camunda.webapps.schema.entities.operate.VariableEntity;
+import io.camunda.webapps.schema.entities.ProcessEntity;
+import io.camunda.webapps.schema.entities.UsageMetricsEntity;
+import io.camunda.webapps.schema.entities.VariableEntity;
 import io.camunda.webapps.schema.entities.tasklist.FormEntity;
 import io.camunda.webapps.schema.entities.tasklist.TaskEntity;
 import io.camunda.webapps.schema.entities.usermanagement.AuthorizationEntity;

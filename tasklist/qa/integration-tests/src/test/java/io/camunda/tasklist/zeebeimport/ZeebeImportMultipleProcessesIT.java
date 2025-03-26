@@ -16,7 +16,7 @@ import io.camunda.tasklist.util.MockMvcHelper;
 import io.camunda.tasklist.util.TasklistZeebeIntegrationTest;
 import io.camunda.tasklist.webapp.api.rest.v1.entities.ProcessResponse;
 import io.camunda.tasklist.webapp.security.TasklistURIs;
-import io.camunda.webapps.schema.entities.operate.ProcessEntity;
+import io.camunda.webapps.schema.entities.ProcessEntity;
 import java.time.Duration;
 import java.util.List;
 import org.assertj.core.api.Assertions;

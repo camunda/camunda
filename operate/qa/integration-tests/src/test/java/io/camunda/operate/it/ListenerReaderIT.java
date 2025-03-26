@@ -26,7 +26,7 @@ import io.camunda.webapps.schema.descriptors.operate.template.JobTemplate;
 import io.camunda.webapps.schema.entities.listener.ListenerEventType;
 import io.camunda.webapps.schema.entities.listener.ListenerState;
 import io.camunda.webapps.schema.entities.listener.ListenerType;
-import io.camunda.webapps.schema.entities.operate.JobEntity;
+import io.camunda.webapps.schema.entities.JobEntity;
 import java.io.IOException;
 import java.time.OffsetDateTime;
 import java.util.List;

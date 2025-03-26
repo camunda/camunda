@@ -11,7 +11,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.tasklist.Metrics;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.webapps.schema.descriptors.tasklist.index.TasklistImportPositionIndex;
-import io.camunda.webapps.schema.entities.operate.ImportPositionEntity;
+import io.camunda.webapps.schema.entities.ImportPositionEntity;
 import jakarta.annotation.PostConstruct;
 import java.io.IOException;
 import java.time.OffsetDateTime;

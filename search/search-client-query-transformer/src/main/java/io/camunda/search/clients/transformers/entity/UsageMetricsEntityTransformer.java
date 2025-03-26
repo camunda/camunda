@@ -12,11 +12,11 @@ import io.camunda.search.entities.UsageMetricsEntity;
 
 public class UsageMetricsEntityTransformer
     implements ServiceTransformer<
-        io.camunda.webapps.schema.entities.operate.UsageMetricsEntity, UsageMetricsEntity> {
+    io.camunda.webapps.schema.entities.UsageMetricsEntity, UsageMetricsEntity> {
 
   @Override
   public UsageMetricsEntity apply(
-      final io.camunda.webapps.schema.entities.operate.UsageMetricsEntity value) {
+      final io.camunda.webapps.schema.entities.UsageMetricsEntity value) {
     return new UsageMetricsEntity(
         value.getId(), value.getEventTime(), value.getEvent(), value.getValue());
   }

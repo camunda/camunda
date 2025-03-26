@@ -26,7 +26,7 @@ import io.camunda.operate.util.NoBeansIT;
 import io.camunda.operate.util.apps.nobeans.TestApplicationWithNoBeans;
 import io.camunda.operate.zeebe.ImportValueType;
 import io.camunda.operate.zeebeimport.v8_7.processors.processors.ImportBulkProcessor;
-import io.camunda.webapps.schema.entities.operate.ImportPositionEntity;
+import io.camunda.webapps.schema.entities.ImportPositionEntity;
 import java.util.ArrayList;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.junit.Before;

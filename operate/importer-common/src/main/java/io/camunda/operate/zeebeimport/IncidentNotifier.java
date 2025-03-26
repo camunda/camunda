@@ -15,7 +15,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.operate.cache.ProcessCache;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.webapps.schema.entities.incident.IncidentEntity;
-import io.camunda.webapps.schema.entities.operate.ProcessEntity;
+import io.camunda.webapps.schema.entities.ProcessEntity;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;

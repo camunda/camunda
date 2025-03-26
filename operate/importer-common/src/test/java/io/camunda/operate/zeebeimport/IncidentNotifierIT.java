@@ -47,7 +47,7 @@ import io.camunda.operate.zeebeimport.util.TestApplicationWithNoBeans;
 import io.camunda.webapps.schema.entities.incident.ErrorType;
 import io.camunda.webapps.schema.entities.incident.IncidentEntity;
 import io.camunda.webapps.schema.entities.incident.IncidentState;
-import io.camunda.webapps.schema.entities.operate.ProcessEntity;
+import io.camunda.webapps.schema.entities.ProcessEntity;
 import java.time.OffsetDateTime;
 import java.util.HashMap;
 import java.util.List;
