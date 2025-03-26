@@ -13,7 +13,7 @@ import java.util.List;
 
 public class ConnectConfiguration {
 
-  private static final DatabaseType DATABASE_TYPE_DEFAULT = DatabaseType.ELASTICSEARCH;
+  public static final DatabaseType DATABASE_TYPE_DEFAULT = DatabaseType.ELASTICSEARCH;
   private static final String CLUSTER_NAME_DEFAULT = "elasticsearch";
   private static final String DATE_FORMAT_FIELD = "yyyy-MM-dd'T'HH:mm:ss.SSSZZ";
   private static final String FIELD_DATE_FORMAT_DEFAULT = "date_time";
@@ -28,7 +28,7 @@ public class ConnectConfiguration {
   private String username;
   private String password;
   private SecurityConfiguration security = new SecurityConfiguration();
-  private String indexPrefix;
+  private String indexPrefix = "";
   private List<PluginConfiguration> interceptorPlugins = new ArrayList<>();
 
   /** Use {@link ConnectConfiguration#getTypeEnum()} */

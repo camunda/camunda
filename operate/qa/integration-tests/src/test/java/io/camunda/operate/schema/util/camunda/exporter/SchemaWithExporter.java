@@ -29,7 +29,7 @@ public class SchemaWithExporter {
                 ? ConnectionTypes.ELASTICSEARCH.getType()
                 : ConnectionTypes.OPENSEARCH.getType());
 
-    final var clientAdapter = ClientAdapter.of(config);
+    final var clientAdapter = ClientAdapter.of(config.getConnect());
     final var provider = new DefaultExporterResourceProvider();
     provider.init(
         config,
