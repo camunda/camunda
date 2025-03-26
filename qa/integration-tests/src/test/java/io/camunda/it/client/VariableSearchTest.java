@@ -26,7 +26,7 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 @MultiDbTest
-class VariableQueryTest {
+class VariableSearchTest {
 
   private static CamundaClient camundaClient;
 
@@ -40,13 +40,13 @@ class VariableQueryTest {
 
     waitForTasksBeingExported();
 
-    variable = camundaClient.newVariableQuery().send().join().items().get(0);
+    variable = camundaClient.newVariableSearchRequest().send().join().items().get(0);
   }
 
   @Test
   void shouldQueryVariables() {
     // when
-    final var result = camundaClient.newVariableQuery().send().join();
+    final var result = camundaClient.newVariableSearchRequest().send().join();
 
     // then
     assertThat(result.items().size()).isEqualTo(5);
@@ -57,7 +57,7 @@ class VariableQueryTest {
     // when
     final var result =
         camundaClient
-            .newVariableQuery()
+            .newVariableSearchRequest()
             .filter(f -> f.variableKey(variable.getVariableKey()))
             .send()
             .join();
@@ -72,7 +72,7 @@ class VariableQueryTest {
     // when
     final var result =
         camundaClient
-            .newVariableQuery()
+            .newVariableSearchRequest()
             .filter(f -> f.scopeKey(variable.getScopeKey()))
             .send()
             .join();
@@ -87,7 +87,11 @@ class VariableQueryTest {
   void shouldQueryByName() {
     // when
     final var result =
-        camundaClient.newVariableQuery().filter(f -> f.name(variable.getName())).send().join();
+        camundaClient
+            .newVariableSearchRequest()
+            .filter(f -> f.name(variable.getName()))
+            .send()
+            .join();
 
     // then
     assertThat(result.items().size()).isEqualTo(2);
@@ -100,7 +104,7 @@ class VariableQueryTest {
     // when
     final var result =
         camundaClient
-            .newVariableQuery()
+            .newVariableSearchRequest()
             .filter(f -> f.name(b -> b.in("not-found", variable.getName())))
             .send()
             .join();
@@ -115,7 +119,7 @@ class VariableQueryTest {
     // when
     final var result =
         camundaClient
-            .newVariableQuery()
+            .newVariableSearchRequest()
             .filter(f -> f.name(b -> b.like(variable.getName().replace("proc", "*"))))
             .send()
             .join();
@@ -130,7 +134,7 @@ class VariableQueryTest {
     // when
     final var result =
         camundaClient
-            .newVariableQuery()
+            .newVariableSearchRequest()
             .filter(f -> f.name(variable.getName()).value(variable.getValue()))
             .send()
             .join();
@@ -146,7 +150,7 @@ class VariableQueryTest {
     // when
     final var result =
         camundaClient
-            .newVariableQuery()
+            .newVariableSearchRequest()
             .filter(f -> f.value(b -> b.in("not-found", variable.getValue())))
             .send()
             .join();
@@ -163,7 +167,7 @@ class VariableQueryTest {
     // when
     final var result =
         camundaClient
-            .newVariableQuery()
+            .newVariableSearchRequest()
             .filter(f -> f.value(b -> b.like(variable.getValue().replace("p", "?"))))
             .send()
             .join();
@@ -180,7 +184,7 @@ class VariableQueryTest {
     // when
     final var result =
         camundaClient
-            .newVariableQuery()
+            .newVariableSearchRequest()
             .filter(f -> f.processInstanceKey(variable.getProcessInstanceKey()))
             .send()
             .join();
@@ -198,7 +202,7 @@ class VariableQueryTest {
     // when
     final var result =
         camundaClient
-            .newVariableQuery()
+            .newVariableSearchRequest()
             .filter(f -> f.processInstanceKey(b -> b.in(variable.getProcessInstanceKey())))
             .send()
             .join();
@@ -216,7 +220,7 @@ class VariableQueryTest {
     // when
     final var result =
         camundaClient
-            .newVariableQuery()
+            .newVariableSearchRequest()
             .filter(f -> f.tenantId(variable.getTenantId()))
             .send()
             .join();
@@ -233,7 +237,7 @@ class VariableQueryTest {
     // when
     final var result =
         camundaClient
-            .newVariableQuery()
+            .newVariableSearchRequest()
             .filter(f -> f.isTruncated(variable.isTruncated()))
             .send()
             .join();
@@ -244,7 +248,7 @@ class VariableQueryTest {
 
     // when
     final var resultTruncatedTrue =
-        camundaClient.newVariableQuery().filter(f -> f.isTruncated(true)).send().join();
+        camundaClient.newVariableSearchRequest().filter(f -> f.isTruncated(true)).send().join();
 
     // then
     assertThat(resultTruncatedTrue.items().size()).isEqualTo(0);
@@ -265,7 +269,8 @@ class VariableQueryTest {
   void shouldSortByNameASC() {
     // when
 
-    final var result = camundaClient.newVariableQuery().sort(s -> s.name().asc()).send().join();
+    final var result =
+        camundaClient.newVariableSearchRequest().sort(s -> s.name().asc()).send().join();
 
     assertThat(result.items().size()).isEqualTo(5);
 
@@ -302,7 +307,8 @@ class VariableQueryTest {
   @Test
   void shouldSortByValueDESC() {
     // when
-    final var result = camundaClient.newVariableQuery().sort(s -> s.value().desc()).send().join();
+    final var result =
+        camundaClient.newVariableSearchRequest().sort(s -> s.value().desc()).send().join();
 
     // then
     assertThat(result.items().size()).isEqualTo(5);
@@ -316,11 +322,11 @@ class VariableQueryTest {
   @Test
   void shouldSearchByFromWithLimit() {
     // when
-    final var resultAll = camundaClient.newVariableQuery().send().join();
+    final var resultAll = camundaClient.newVariableSearchRequest().send().join();
     final var thirdKey = resultAll.items().get(2).getVariableKey();
 
     final var resultSearchFrom =
-        camundaClient.newVariableQuery().page(p -> p.limit(2).from(2)).send().join();
+        camundaClient.newVariableSearchRequest().page(p -> p.limit(2).from(2)).send().join();
 
     // then
     assertThat(resultSearchFrom.items().size()).isEqualTo(2);
@@ -337,7 +343,7 @@ class VariableQueryTest {
               final var result = camundaClient.newUserTaskSearchRequest().send().join();
               assertThat(result.items().size()).isEqualTo(2);
 
-              final var resultVariable = camundaClient.newVariableQuery().send().join();
+              final var resultVariable = camundaClient.newVariableSearchRequest().send().join();
               assertThat(resultVariable.items().size()).isEqualTo(5);
             });
   }

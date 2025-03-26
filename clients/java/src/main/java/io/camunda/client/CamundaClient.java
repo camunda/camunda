@@ -90,7 +90,7 @@ import io.camunda.client.api.search.query.ProcessDefinitionSearchRequest;
 import io.camunda.client.api.search.query.ProcessInstanceSearchRequest;
 import io.camunda.client.api.search.query.UserTaskSearchRequest;
 import io.camunda.client.api.search.query.UserTaskVariableQuery;
-import io.camunda.client.api.search.query.VariableQuery;
+import io.camunda.client.api.search.query.VariableSearchRequest;
 import io.camunda.client.api.worker.JobClient;
 import io.camunda.client.api.worker.JobWorkerBuilderStep1;
 import io.camunda.client.impl.CamundaClientBuilderImpl;
@@ -1286,15 +1286,15 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    *
    * <pre>
    * camundaClient
-   *  .newVariableQuery()
+   *  .newVariableSearchRequest()
    *  .filter((f) -> f.variableKey(variableKey))
    *  .sort((s) -> s.value().asc())
    *  .page((p) -> p.limit(100))
    *  .send();
    *
-   * @return a builder for the variable query
+   * @return a builder for the variable search request
    */
-  VariableQuery newVariableQuery();
+  VariableSearchRequest newVariableSearchRequest();
 
   /**
    * Gets a variable by key.

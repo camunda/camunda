@@ -220,7 +220,7 @@ class ProcessInstanceAuthorizationIT {
     // given
     final var processInstanceKey = getProcessInstanceKey(adminClient, PROCESS_ID_1);
     // when
-    final var result = camundaClient.newVariableQuery().send().join();
+    final var result = camundaClient.newVariableSearchRequest().send().join();
     // then
     assertThat(result.items()).hasSize(1);
     assertThat(result.items().getFirst().getProcessInstanceKey()).isEqualTo(processInstanceKey);
@@ -294,7 +294,7 @@ class ProcessInstanceAuthorizationIT {
 
   private long getAnyVariableKey(final CamundaClient camundaClient, final long processInstanceKey) {
     return camundaClient
-        .newVariableQuery()
+        .newVariableSearchRequest()
         .filter(f -> f.processInstanceKey(processInstanceKey))
         .send()
         .join()

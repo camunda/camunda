@@ -56,7 +56,7 @@ public class CamundaDataSource {
 
   public List<Variable> findVariablesByProcessInstanceKey(final long processInstanceKey) {
     return client
-        .newVariableQuery()
+        .newVariableSearchRequest()
         .filter(filter -> filter.processInstanceKey(processInstanceKey))
         .page(DEFAULT_PAGE_REQUEST)
         .send()

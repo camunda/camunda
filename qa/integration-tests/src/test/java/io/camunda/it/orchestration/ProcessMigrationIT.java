@@ -332,7 +332,8 @@ public class ProcessMigrationIT {
         .atMost(TIMEOUT_DATA_AVAILABILITY)
         .untilAsserted(
             () -> {
-              final var result = client.newVariableQuery().filter(filter).send().join().items();
+              final var result =
+                  client.newVariableSearchRequest().filter(filter).send().join().items();
               asserter.accept(result);
             });
   }

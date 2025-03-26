@@ -101,7 +101,7 @@ import io.camunda.client.api.search.query.ProcessDefinitionSearchRequest;
 import io.camunda.client.api.search.query.ProcessInstanceSearchRequest;
 import io.camunda.client.api.search.query.UserTaskSearchRequest;
 import io.camunda.client.api.search.query.UserTaskVariableQuery;
-import io.camunda.client.api.search.query.VariableQuery;
+import io.camunda.client.api.search.query.VariableSearchRequest;
 import io.camunda.client.api.worker.JobClient;
 import io.camunda.client.api.worker.JobWorkerBuilderStep1;
 import io.camunda.client.impl.command.ActivateAdHocSubprocessActivitiesCommandImpl;
@@ -179,7 +179,7 @@ import io.camunda.client.impl.search.query.ProcessDefinitionSearchRequestImpl;
 import io.camunda.client.impl.search.query.ProcessInstanceSearchRequestImpl;
 import io.camunda.client.impl.search.query.UserTaskSearchRequestImpl;
 import io.camunda.client.impl.search.query.UserTaskVariableQueryImpl;
-import io.camunda.client.impl.search.query.VariableQueryImpl;
+import io.camunda.client.impl.search.query.VariableSearchRequestImpl;
 import io.camunda.client.impl.util.ExecutorResource;
 import io.camunda.client.impl.util.VersionUtil;
 import io.camunda.client.impl.worker.JobClientImpl;
@@ -810,8 +810,8 @@ public final class CamundaClientImpl implements CamundaClient {
   }
 
   @Override
-  public VariableQuery newVariableQuery() {
-    return new VariableQueryImpl(httpClient, jsonMapper);
+  public VariableSearchRequest newVariableSearchRequest() {
+    return new VariableSearchRequestImpl(httpClient, jsonMapper);
   }
 
   @Override
