@@ -235,7 +235,7 @@ public class TasklistUnassignUserTaskAuthorizationIT {
             () -> {
               final var result =
                   adminCamundaClient
-                      .newUserTaskQuery()
+                      .newUserTaskSearchRequest()
                       .filter(f -> f.processInstanceKey(processInstanceKey))
                       .send()
                       .join();
@@ -272,7 +272,7 @@ public class TasklistUnassignUserTaskAuthorizationIT {
             () -> {
               final var result =
                   adminCamundaClient
-                      .newUserTaskQuery()
+                      .newUserTaskSearchRequest()
                       .filter(f -> f.userTaskKey(userTaskKey).assignee(c -> c.exists(false)))
                       .send()
                       .join();

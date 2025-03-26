@@ -375,7 +375,8 @@ public class ProcessMigrationIT {
         .ignoreExceptions()
         .untilAsserted(
             () -> {
-              final var result = client.newUserTaskQuery().filter(filter).send().join().items();
+              final var result =
+                  client.newUserTaskSearchRequest().filter(filter).send().join().items();
               asserter.accept(result);
             });
   }

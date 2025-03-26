@@ -252,7 +252,7 @@ class VariableQueryTest {
 
   private static void delpoyProcessFromResourcePath(
       final String resource, final String resourceName) {
-    final InputStream process = UserTaskQueryTest.class.getResourceAsStream(resource);
+    final InputStream process = UserTaskSearchTest.class.getResourceAsStream(resource);
 
     camundaClient
         .newDeployResourceCommand()
@@ -334,7 +334,7 @@ class VariableQueryTest {
         .ignoreExceptions() // Ignore exceptions and continue retrying
         .untilAsserted(
             () -> {
-              final var result = camundaClient.newUserTaskQuery().send().join();
+              final var result = camundaClient.newUserTaskSearchRequest().send().join();
               assertThat(result.items().size()).isEqualTo(2);
 
               final var resultVariable = camundaClient.newVariableQuery().send().join();

@@ -35,7 +35,7 @@ public final class SearchUserTaskTest extends ClientRestTest {
   @Test
   void shouldSearchUserTask() {
     // when
-    client.newUserTaskQuery().send().join();
+    client.newUserTaskSearchRequest().send().join();
 
     // then
     final UserTaskSearchQuery request = gatewayService.getLastRequest(UserTaskSearchQuery.class);
@@ -45,7 +45,7 @@ public final class SearchUserTaskTest extends ClientRestTest {
   @Test
   void shouldSearchUserTaskByAssignee() {
     // when
-    client.newUserTaskQuery().filter(f -> f.assignee("demo")).send().join();
+    client.newUserTaskSearchRequest().filter(f -> f.assignee("demo")).send().join();
 
     // then
     final UserTaskSearchQuery request = gatewayService.getLastRequest(UserTaskSearchQuery.class);
@@ -55,7 +55,7 @@ public final class SearchUserTaskTest extends ClientRestTest {
   @Test
   void shouldSearchUserTaskByAssigneeStringFilter() {
     // when
-    client.newUserTaskQuery().filter(f -> f.assignee(b -> b.neq("that"))).send().join();
+    client.newUserTaskSearchRequest().filter(f -> f.assignee(b -> b.neq("that"))).send().join();
 
     // then
     final UserTaskSearchQuery request = gatewayService.getLastRequest(UserTaskSearchQuery.class);
@@ -65,7 +65,7 @@ public final class SearchUserTaskTest extends ClientRestTest {
   @Test
   void shouldSearchUserTaskByState() {
     // when
-    client.newUserTaskQuery().filter(f -> f.state(COMPLETED)).send().join();
+    client.newUserTaskSearchRequest().filter(f -> f.state(COMPLETED)).send().join();
 
     // then
     final UserTaskSearchQuery request = gatewayService.getLastRequest(UserTaskSearchQuery.class);
@@ -75,7 +75,7 @@ public final class SearchUserTaskTest extends ClientRestTest {
   @Test
   void shouldSearchUserTaskByKey() {
     // when
-    client.newUserTaskQuery().filter(f -> f.userTaskKey(12345L)).send().join();
+    client.newUserTaskSearchRequest().filter(f -> f.userTaskKey(12345L)).send().join();
 
     // then
     final UserTaskSearchQuery request = gatewayService.getLastRequest(UserTaskSearchQuery.class);
@@ -85,7 +85,7 @@ public final class SearchUserTaskTest extends ClientRestTest {
   @Test
   void shouldSearchUserTaskByTaskDefinitionId() {
     // when
-    client.newUserTaskQuery().filter(f -> f.elementId("task-def-id")).send().join();
+    client.newUserTaskSearchRequest().filter(f -> f.elementId("task-def-id")).send().join();
 
     // then
     final UserTaskSearchQuery request = gatewayService.getLastRequest(UserTaskSearchQuery.class);
@@ -95,7 +95,7 @@ public final class SearchUserTaskTest extends ClientRestTest {
   @Test
   void shouldSearchUserTaskByCandidateGroup() {
     // when
-    client.newUserTaskQuery().filter(f -> f.candidateGroup("group1")).send().join();
+    client.newUserTaskSearchRequest().filter(f -> f.candidateGroup("group1")).send().join();
 
     // then
     final UserTaskSearchQuery request = gatewayService.getLastRequest(UserTaskSearchQuery.class);
@@ -105,7 +105,7 @@ public final class SearchUserTaskTest extends ClientRestTest {
   @Test
   void shouldSearchUserTaskByCandidateUser() {
     // when
-    client.newUserTaskQuery().filter(f -> f.candidateUser("user1")).send().join();
+    client.newUserTaskSearchRequest().filter(f -> f.candidateUser("user1")).send().join();
 
     // then
     final UserTaskSearchQuery request = gatewayService.getLastRequest(UserTaskSearchQuery.class);
@@ -115,7 +115,7 @@ public final class SearchUserTaskTest extends ClientRestTest {
   @Test
   void shouldSearchUserTaskByProcessDefinitionKey() {
     // when
-    client.newUserTaskQuery().filter(f -> f.processDefinitionKey(123L)).send().join();
+    client.newUserTaskSearchRequest().filter(f -> f.processDefinitionKey(123L)).send().join();
 
     // then
     final UserTaskSearchQuery request = gatewayService.getLastRequest(UserTaskSearchQuery.class);
@@ -125,7 +125,7 @@ public final class SearchUserTaskTest extends ClientRestTest {
   @Test
   void shouldSearchUserTaskByProcessInstanceKey() {
     // when
-    client.newUserTaskQuery().filter(f -> f.processInstanceKey(456L)).send().join();
+    client.newUserTaskSearchRequest().filter(f -> f.processInstanceKey(456L)).send().join();
 
     // then
     final UserTaskSearchQuery request = gatewayService.getLastRequest(UserTaskSearchQuery.class);
@@ -135,7 +135,7 @@ public final class SearchUserTaskTest extends ClientRestTest {
   @Test
   void shouldSearchUserTaskByTenantId() {
     // when
-    client.newUserTaskQuery().filter(f -> f.tenantId("tenant1")).send().join();
+    client.newUserTaskSearchRequest().filter(f -> f.tenantId("tenant1")).send().join();
 
     // then
     final UserTaskSearchQuery request = gatewayService.getLastRequest(UserTaskSearchQuery.class);
@@ -145,7 +145,7 @@ public final class SearchUserTaskTest extends ClientRestTest {
   @Test
   void shouldSearchUserTaskByPriority() {
     // when
-    client.newUserTaskQuery().filter(f -> f.priority(10)).send().join();
+    client.newUserTaskSearchRequest().filter(f -> f.priority(10)).send().join();
 
     // then
     final UserTaskSearchQuery request = gatewayService.getLastRequest(UserTaskSearchQuery.class);
@@ -155,7 +155,7 @@ public final class SearchUserTaskTest extends ClientRestTest {
   @Test
   void shouldSearchUserTaskByPriorityLongFilter() {
     // when
-    client.newUserTaskQuery().filter(f -> f.priority(b -> b.gt(1).lt(10))).send().join();
+    client.newUserTaskSearchRequest().filter(f -> f.priority(b -> b.gt(1).lt(10))).send().join();
 
     // then
     final UserTaskSearchQuery request = gatewayService.getLastRequest(UserTaskSearchQuery.class);
@@ -180,7 +180,7 @@ public final class SearchUserTaskTest extends ClientRestTest {
 
     listFilter.add(userTaskVariableFilterRequest);
 
-    client.newUserTaskQuery().filter(f -> f.processInstanceVariables(map)).send().join();
+    client.newUserTaskSearchRequest().filter(f -> f.processInstanceVariables(map)).send().join();
 
     // then
     final UserTaskSearchQuery request = gatewayService.getLastRequest(UserTaskSearchQuery.class);
@@ -198,7 +198,7 @@ public final class SearchUserTaskTest extends ClientRestTest {
 
     listFilter.add(userTaskVariableFilterRequest);
 
-    client.newUserTaskQuery().filter(f -> f.localVariables(listFilter)).send().join();
+    client.newUserTaskSearchRequest().filter(f -> f.localVariables(listFilter)).send().join();
 
     // then
     final UserTaskSearchQuery request = gatewayService.getLastRequest(UserTaskSearchQuery.class);
@@ -220,7 +220,11 @@ public final class SearchUserTaskTest extends ClientRestTest {
   @Test
   void shouldReturnUserTaskByCreationDateExists() {
     // when
-    client.newUserTaskQuery().filter(f -> f.creationDate(b -> b.exists(true))).send().join();
+    client
+        .newUserTaskSearchRequest()
+        .filter(f -> f.creationDate(b -> b.exists(true)))
+        .send()
+        .join();
 
     // then
     final UserTaskSearchQuery request = gatewayService.getLastRequest(UserTaskSearchQuery.class);
@@ -230,7 +234,11 @@ public final class SearchUserTaskTest extends ClientRestTest {
   @Test
   void shouldReturnUserTaskByCreationDateNotExists() {
     // when
-    client.newUserTaskQuery().filter(f -> f.creationDate(b -> b.exists(false))).send().join();
+    client
+        .newUserTaskSearchRequest()
+        .filter(f -> f.creationDate(b -> b.exists(false)))
+        .send()
+        .join();
 
     // then
     final UserTaskSearchQuery request = gatewayService.getLastRequest(UserTaskSearchQuery.class);
@@ -241,7 +249,7 @@ public final class SearchUserTaskTest extends ClientRestTest {
   void shouldReturnUserTaskByCreationDateGt() {
     // when
     client
-        .newUserTaskQuery()
+        .newUserTaskSearchRequest()
         .filter(f -> f.creationDate(b -> b.gt(OffsetDateTime.now())))
         .send()
         .join();
@@ -255,7 +263,7 @@ public final class SearchUserTaskTest extends ClientRestTest {
   void shouldReturnUserTaskByCreationDateLt() {
     // when
     client
-        .newUserTaskQuery()
+        .newUserTaskSearchRequest()
         .filter(f -> f.creationDate(b -> b.lt(OffsetDateTime.now())))
         .send()
         .join();
@@ -269,7 +277,7 @@ public final class SearchUserTaskTest extends ClientRestTest {
   void shouldReturnUserTaskByCreationDateGte() {
     // when
     client
-        .newUserTaskQuery()
+        .newUserTaskSearchRequest()
         .filter(f -> f.creationDate(b -> b.gte(OffsetDateTime.now())))
         .send()
         .join();
@@ -283,7 +291,7 @@ public final class SearchUserTaskTest extends ClientRestTest {
   void shouldReturnUserTaskByCreationDateLte() {
     // when
     client
-        .newUserTaskQuery()
+        .newUserTaskSearchRequest()
         .filter(f -> f.creationDate(b -> b.lte(OffsetDateTime.now())))
         .send()
         .join();
@@ -297,7 +305,7 @@ public final class SearchUserTaskTest extends ClientRestTest {
   void shouldReturnUserTaskByCreationDateEq() {
     // when
     client
-        .newUserTaskQuery()
+        .newUserTaskSearchRequest()
         .filter(f -> f.creationDate(b -> b.eq(OffsetDateTime.now())))
         .send()
         .join();
@@ -311,7 +319,7 @@ public final class SearchUserTaskTest extends ClientRestTest {
   void shouldReturnUserTaskByCompletionDateGte() {
     // when
     client
-        .newUserTaskQuery()
+        .newUserTaskSearchRequest()
         .filter(f -> f.completionDate(b -> b.gte(OffsetDateTime.now())))
         .send()
         .join();
@@ -325,7 +333,7 @@ public final class SearchUserTaskTest extends ClientRestTest {
   void shouldReturnUserTaskByCompletionDateLte() {
     // when
     client
-        .newUserTaskQuery()
+        .newUserTaskSearchRequest()
         .filter(f -> f.completionDate(b -> b.lte(OffsetDateTime.now())))
         .send()
         .join();
@@ -339,7 +347,7 @@ public final class SearchUserTaskTest extends ClientRestTest {
   void shouldReturnUserTaskByCompletionDateGteLte() {
     // when
     client
-        .newUserTaskQuery()
+        .newUserTaskSearchRequest()
         .filter(
             f ->
                 f.completionDate(
@@ -357,7 +365,7 @@ public final class SearchUserTaskTest extends ClientRestTest {
   void shouldReturnUserTaskByCompletionDateGtLt() {
     // when
     client
-        .newUserTaskQuery()
+        .newUserTaskSearchRequest()
         .filter(
             f ->
                 f.completionDate(
@@ -374,7 +382,7 @@ public final class SearchUserTaskTest extends ClientRestTest {
   @Test
   void shouldReturnUserTaskByDueDateExists() {
     // when
-    client.newUserTaskQuery().filter(f -> f.dueDate(b -> b.exists(true))).send().join();
+    client.newUserTaskSearchRequest().filter(f -> f.dueDate(b -> b.exists(true))).send().join();
 
     // then
     final UserTaskSearchQuery request = gatewayService.getLastRequest(UserTaskSearchQuery.class);
@@ -384,7 +392,11 @@ public final class SearchUserTaskTest extends ClientRestTest {
   @Test
   void shouldReturnUserTaskByDueDateGt() {
     // when
-    client.newUserTaskQuery().filter(f -> f.dueDate(b -> b.gt(OffsetDateTime.now()))).send().join();
+    client
+        .newUserTaskSearchRequest()
+        .filter(f -> f.dueDate(b -> b.gt(OffsetDateTime.now())))
+        .send()
+        .join();
 
     // then
     final UserTaskSearchQuery request = gatewayService.getLastRequest(UserTaskSearchQuery.class);
@@ -394,7 +406,11 @@ public final class SearchUserTaskTest extends ClientRestTest {
   @Test
   void shouldReturnUserTaskByDueDateLt() {
     // when
-    client.newUserTaskQuery().filter(f -> f.dueDate(b -> b.lt(OffsetDateTime.now()))).send().join();
+    client
+        .newUserTaskSearchRequest()
+        .filter(f -> f.dueDate(b -> b.lt(OffsetDateTime.now())))
+        .send()
+        .join();
 
     // then
     final UserTaskSearchQuery request = gatewayService.getLastRequest(UserTaskSearchQuery.class);
@@ -405,7 +421,7 @@ public final class SearchUserTaskTest extends ClientRestTest {
   void shouldReturnUserTaskByDueDateGteLte() {
     // when
     client
-        .newUserTaskQuery()
+        .newUserTaskSearchRequest()
         .filter(
             f -> f.dueDate(b -> b.gte(OffsetDateTime.now().minusDays(5)).lte(OffsetDateTime.now())))
         .send()
@@ -420,7 +436,11 @@ public final class SearchUserTaskTest extends ClientRestTest {
   @Test
   void shouldReturnUserTaskByFollowUpDateExists() {
     // when
-    client.newUserTaskQuery().filter(f -> f.followUpDate(b -> b.exists(true))).send().join();
+    client
+        .newUserTaskSearchRequest()
+        .filter(f -> f.followUpDate(b -> b.exists(true)))
+        .send()
+        .join();
 
     // then
     final UserTaskSearchQuery request = gatewayService.getLastRequest(UserTaskSearchQuery.class);
@@ -431,7 +451,7 @@ public final class SearchUserTaskTest extends ClientRestTest {
   void shouldReturnUserTaskByFollowUpDateGt() {
     // when
     client
-        .newUserTaskQuery()
+        .newUserTaskSearchRequest()
         .filter(f -> f.followUpDate(b -> b.gt(OffsetDateTime.now())))
         .send()
         .join();
@@ -445,7 +465,7 @@ public final class SearchUserTaskTest extends ClientRestTest {
   void shouldReturnUserTaskByFollowUpDateLt() {
     // when
     client
-        .newUserTaskQuery()
+        .newUserTaskSearchRequest()
         .filter(f -> f.followUpDate(b -> b.lt(OffsetDateTime.now())))
         .send()
         .join();
@@ -459,7 +479,7 @@ public final class SearchUserTaskTest extends ClientRestTest {
   void shouldReturnUserTaskByFollowUpDateGteLte() {
     // when
     client
-        .newUserTaskQuery()
+        .newUserTaskSearchRequest()
         .filter(
             f ->
                 f.followUpDate(

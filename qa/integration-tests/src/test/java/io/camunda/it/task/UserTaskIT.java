@@ -188,7 +188,7 @@ public class UserTaskIT {
             () -> {
               final var tasks =
                   client
-                      .newUserTaskQuery()
+                      .newUserTaskSearchRequest()
                       .filter(f -> f.processInstanceKey(processInstanceId))
                       .send()
                       .join()
@@ -226,7 +226,7 @@ public class UserTaskIT {
     // then
     var tasks =
         client
-            .newUserTaskQuery()
+            .newUserTaskSearchRequest()
             .filter(f -> f.processInstanceVariables(Map.of("stringVariable", "\"value\"")))
             .send()
             .join()
@@ -236,7 +236,7 @@ public class UserTaskIT {
 
     tasks =
         client
-            .newUserTaskQuery()
+            .newUserTaskSearchRequest()
             .filter(f -> f.processInstanceVariables(Map.of("intVariable", "13")))
             .send()
             .join()
@@ -246,7 +246,7 @@ public class UserTaskIT {
 
     tasks =
         client
-            .newUserTaskQuery()
+            .newUserTaskSearchRequest()
             .filter(f -> f.processInstanceVariables(Map.of("boolVariable", "true")))
             .send()
             .join()
@@ -256,7 +256,7 @@ public class UserTaskIT {
 
     tasks =
         client
-            .newUserTaskQuery()
+            .newUserTaskSearchRequest()
             .filter(
                 f ->
                     f.processInstanceVariables(
@@ -269,7 +269,7 @@ public class UserTaskIT {
 
     tasks =
         client
-            .newUserTaskQuery()
+            .newUserTaskSearchRequest()
             .filter(f -> f.processInstanceVariables(Map.of("stringVariable", "wrong-value")))
             .send()
             .join()
@@ -334,7 +334,7 @@ public class UserTaskIT {
   public static List<UserTask> fetchUserTasks(
       final CamundaClient client, final long processInstanceId) {
     return client
-        .newUserTaskQuery()
+        .newUserTaskSearchRequest()
         .filter(f -> f.processInstanceKey(processInstanceId))
         .send()
         .join()
@@ -390,7 +390,7 @@ public class UserTaskIT {
         .until(
             () ->
                 !client
-                    .newUserTaskQuery()
+                    .newUserTaskSearchRequest()
                     .filter(f -> f.processInstanceKey(processInstanceKey))
                     .send()
                     .join()
@@ -421,6 +421,12 @@ public class UserTaskIT {
         .timeout(Duration.ofSeconds(30))
         .until(
             () ->
-                !client.newUserTaskQuery().filter(filterConsumer).send().join().items().isEmpty());
+                !client
+                    .newUserTaskSearchRequest()
+                    .filter(filterConsumer)
+                    .send()
+                    .join()
+                    .items()
+                    .isEmpty());
   }
 }

@@ -16,13 +16,13 @@
 
 package io.camunda.zeebe.client.api.search.query;
 
+import io.camunda.client.api.search.query.UserTaskSearchRequest;
 import io.camunda.zeebe.client.api.search.filter.UserTaskFilter;
 import io.camunda.zeebe.client.api.search.response.UserTask;
 import io.camunda.zeebe.client.api.search.sort.UserTaskSort;
 
 /**
- * @deprecated since 8.8 for removal in 8.9, replaced by {@link
- *     io.camunda.client.api.search.query.UserTaskQuery}
+ * @deprecated since 8.8 for removal in 8.9, replaced by {@link UserTaskSearchRequest}
  */
 @Deprecated
 public interface UserTaskQuery

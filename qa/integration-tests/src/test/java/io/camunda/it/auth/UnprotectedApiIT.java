@@ -45,7 +45,7 @@ public class UnprotectedApiIT {
   @Test
   void anonymousRestUserTaskApiAccess() {
     // when
-    final var tasks = camundaClient.newUserTaskQuery().send().join();
+    final var tasks = camundaClient.newUserTaskSearchRequest().send().join();
 
     // then
     assertThat(tasks.items()).hasSize(0);

@@ -143,7 +143,7 @@ public class ClusterPurgeMultiDbIT {
         .untilAsserted(
             () -> {
               final Future<SearchQueryResponse<UserTask>> userTaskFuture =
-                  client.newUserTaskQuery().send();
+                  client.newUserTaskSearchRequest().send();
               Assertions.assertThat(userTaskFuture)
                   .succeedsWithin(Duration.ofSeconds(TIMEOUT))
                   .extracting(SearchQueryResponse::items)
@@ -166,7 +166,7 @@ public class ClusterPurgeMultiDbIT {
         .untilAsserted(
             () -> {
               final Future<SearchQueryResponse<UserTask>> userTaskFuture =
-                  client.newUserTaskQuery().send();
+                  client.newUserTaskSearchRequest().send();
               Assertions.assertThat(userTaskFuture)
                   .succeedsWithin(Duration.ofSeconds(TIMEOUT))
                   .extracting(SearchQueryResponse::items)
@@ -195,7 +195,7 @@ public class ClusterPurgeMultiDbIT {
         .untilAsserted(
             () -> {
               final Future<SearchQueryResponse<UserTask>> userTaskFuture =
-                  client.newUserTaskQuery().send();
+                  client.newUserTaskSearchRequest().send();
               Assertions.assertThat(userTaskFuture)
                   .succeedsWithin(Duration.ofSeconds(TIMEOUT))
                   .extracting(SearchQueryResponse::items)

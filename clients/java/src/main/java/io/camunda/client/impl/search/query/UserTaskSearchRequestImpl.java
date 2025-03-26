@@ -23,7 +23,7 @@ import io.camunda.client.api.JsonMapper;
 import io.camunda.client.api.search.SearchRequestPage;
 import io.camunda.client.api.search.filter.UserTaskFilter;
 import io.camunda.client.api.search.query.FinalSearchQueryStep;
-import io.camunda.client.api.search.query.UserTaskQuery;
+import io.camunda.client.api.search.query.UserTaskSearchRequest;
 import io.camunda.client.api.search.response.SearchQueryResponse;
 import io.camunda.client.api.search.response.UserTask;
 import io.camunda.client.api.search.sort.UserTaskSort;
@@ -41,15 +41,16 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import org.apache.hc.client5.http.config.RequestConfig;
 
-public class UserTaskQueryImpl extends TypedSearchRequestPropertyProvider<UserTaskSearchQuery>
-    implements UserTaskQuery {
+public class UserTaskSearchRequestImpl
+    extends TypedSearchRequestPropertyProvider<UserTaskSearchQuery>
+    implements UserTaskSearchRequest {
 
   private final UserTaskSearchQuery request;
   private final JsonMapper jsonMapper;
   private final HttpClient httpClient;
   private final RequestConfig.Builder httpRequestConfig;
 
-  public UserTaskQueryImpl(final HttpClient httpClient, final JsonMapper jsonMapper) {
+  public UserTaskSearchRequestImpl(final HttpClient httpClient, final JsonMapper jsonMapper) {
     request = new UserTaskSearchQuery();
     this.jsonMapper = jsonMapper;
     this.httpClient = httpClient;
@@ -76,7 +77,7 @@ public class UserTaskQueryImpl extends TypedSearchRequestPropertyProvider<UserTa
   }
 
   @Override
-  public UserTaskQuery filter(final UserTaskFilter value) {
+  public UserTaskSearchRequest filter(final UserTaskFilter value) {
     final io.camunda.client.protocol.rest.UserTaskFilter filter =
         provideSearchRequestProperty(value);
     request.setFilter(filter);
@@ -84,12 +85,12 @@ public class UserTaskQueryImpl extends TypedSearchRequestPropertyProvider<UserTa
   }
 
   @Override
-  public UserTaskQuery filter(final Consumer<UserTaskFilter> fn) {
+  public UserTaskSearchRequest filter(final Consumer<UserTaskFilter> fn) {
     return filter(userTaskFilter(fn));
   }
 
   @Override
-  public UserTaskQuery sort(final UserTaskSort value) {
+  public UserTaskSearchRequest sort(final UserTaskSort value) {
     final UserTaskSortImpl sorting = (UserTaskSortImpl) value;
     request.setSort(
         SearchQuerySortRequestMapper.toUserTaskSearchQuerySortRequest(
@@ -98,19 +99,19 @@ public class UserTaskQueryImpl extends TypedSearchRequestPropertyProvider<UserTa
   }
 
   @Override
-  public UserTaskQuery sort(final Consumer<UserTaskSort> fn) {
+  public UserTaskSearchRequest sort(final Consumer<UserTaskSort> fn) {
     return sort(userTaskSort(fn));
   }
 
   @Override
-  public UserTaskQuery page(final SearchRequestPage value) {
+  public UserTaskSearchRequest page(final SearchRequestPage value) {
     final SearchRequestPageImpl page = (SearchRequestPageImpl) value;
     request.setPage(page.getSearchRequestProperty());
     return this;
   }
 
   @Override
-  public UserTaskQuery page(final Consumer<SearchRequestPage> fn) {
+  public UserTaskSearchRequest page(final Consumer<SearchRequestPage> fn) {
     return page(searchRequestPage(fn));
   }
 

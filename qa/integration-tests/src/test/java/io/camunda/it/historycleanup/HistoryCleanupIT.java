@@ -52,7 +52,7 @@ public class HistoryCleanupIT {
             .atMost(TIMEOUT_DATA_AVAILABILITY)
             .ignoreExceptions() // Ignore exceptions and continue retrying
             .until(
-                () -> camundaClient.newUserTaskQuery().send().join().items().getFirst(),
+                () -> camundaClient.newUserTaskSearchRequest().send().join().items().getFirst(),
                 Objects::nonNull);
     camundaClient.newUserTaskCompleteCommand(userTask.getUserTaskKey()).send().join();
 
@@ -76,7 +76,7 @@ public class HistoryCleanupIT {
 
               final var taskAmount =
                   camundaClient
-                      .newUserTaskQuery()
+                      .newUserTaskSearchRequest()
                       .filter(b -> b.userTaskKey(userTask.getUserTaskKey()))
                       .send()
                       .join()

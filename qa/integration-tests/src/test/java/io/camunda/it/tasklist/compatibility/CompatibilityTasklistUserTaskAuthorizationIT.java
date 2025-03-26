@@ -310,7 +310,7 @@ public class CompatibilityTasklistUserTaskAuthorizationIT {
             () -> {
               final var result =
                   camundaClient
-                      .newUserTaskQuery()
+                      .newUserTaskSearchRequest()
                       .filter(f -> f.processInstanceKey(processInstanceKey))
                       .send()
                       .join();

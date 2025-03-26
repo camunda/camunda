@@ -135,7 +135,7 @@ public class DataGenerator implements AutoCloseable {
                   try {
                     final var itemsFromQuery =
                         camundaClient
-                            .newUserTaskQuery()
+                            .newUserTaskSearchRequest()
                             .filter(f -> f.assignee(assignee).state(UserTaskState.CREATED))
                             .send()
                             .join()

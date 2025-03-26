@@ -236,7 +236,7 @@ public class TasklistCompleteUserTaskAuthorizationIT {
             () -> {
               final var result =
                   adminCamundaClient
-                      .newUserTaskQuery()
+                      .newUserTaskSearchRequest()
                       .filter(f -> f.processInstanceKey(processInstanceKey))
                       .send()
                       .join();
@@ -273,7 +273,7 @@ public class TasklistCompleteUserTaskAuthorizationIT {
             () -> {
               final var result =
                   adminCamundaClient
-                      .newUserTaskQuery()
+                      .newUserTaskSearchRequest()
                       .filter(f -> f.userTaskKey(userTaskKey).state(COMPLETED))
                       .send()
                       .join();

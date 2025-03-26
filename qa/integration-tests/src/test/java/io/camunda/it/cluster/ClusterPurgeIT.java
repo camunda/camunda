@@ -181,7 +181,7 @@ public class ClusterPurgeIT {
         .untilAsserted(
             () -> {
               final Future<SearchQueryResponse<UserTask>> userTaskFuture =
-                  client.newUserTaskQuery().send();
+                  client.newUserTaskSearchRequest().send();
               Assertions.assertThat(userTaskFuture)
                   .succeedsWithin(Duration.ofSeconds(10))
                   .extracting(SearchQueryResponse::items)
@@ -206,7 +206,7 @@ public class ClusterPurgeIT {
         .untilAsserted(
             () -> {
               final Future<SearchQueryResponse<UserTask>> userTaskFuture =
-                  client.newUserTaskQuery().send();
+                  client.newUserTaskSearchRequest().send();
               Assertions.assertThat(userTaskFuture)
                   .succeedsWithin(Duration.ofSeconds(10))
                   .extracting(SearchQueryResponse::items)

@@ -88,7 +88,7 @@ import io.camunda.client.api.search.query.FlownodeInstanceSearchRequest;
 import io.camunda.client.api.search.query.IncidentQuery;
 import io.camunda.client.api.search.query.ProcessDefinitionSearchRequest;
 import io.camunda.client.api.search.query.ProcessInstanceSearchRequest;
-import io.camunda.client.api.search.query.UserTaskQuery;
+import io.camunda.client.api.search.query.UserTaskSearchRequest;
 import io.camunda.client.api.search.query.UserTaskVariableQuery;
 import io.camunda.client.api.search.query.VariableQuery;
 import io.camunda.client.api.worker.JobClient;
@@ -925,16 +925,16 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    *
    * <pre>
    * camundaClient
-   *  .newUserTaskQuery()
+   *  .newUserTaskSearchRequest()
    *  .filter((f) -> f.userTaskKey(userTaskKey))
    *  .sort((s) -> s.creationDate().asc())
    *  .page((p) -> p.limit(100))
    *  .send();
    * </pre>
    *
-   * @return a builder for the user task query
+   * @return a builder for the user task search request
    */
-  UserTaskQuery newUserTaskQuery();
+  UserTaskSearchRequest newUserTaskSearchRequest();
 
   /**
    * Executes a search request to query Decision Requirements.
