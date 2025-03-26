@@ -64,9 +64,10 @@
       AND PROCESS_DEFINITION_KEY IN
       <foreach collection="filter.processDefinitionKeys" item="value" open="(" separator=", " close=")">#{value}</foreach>
     </if>
-    <if test="filter.states != null and !filter.states.isEmpty()">
-      AND STATE IN
-      <foreach collection="filter.states" item="value" open="(" separator=", " close=")">#{value}</foreach>
+    <if test="filter.stateOperations != null and !filter.stateOperations.isEmpty()">
+      <foreach collection="filter.stateOperations" item="operation">
+        AND STATE <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+      </foreach>
     </if>
     <if test="filter.types != null and !filter.types.isEmpty()">
       AND TYPE IN

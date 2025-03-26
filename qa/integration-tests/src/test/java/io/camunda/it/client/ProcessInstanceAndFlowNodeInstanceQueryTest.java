@@ -1156,7 +1156,10 @@ public class ProcessInstanceAndFlowNodeInstanceQueryTest {
     final var result =
         camundaClient
             .newProcessInstanceQuery()
-            .filter(f -> f.flowNodeId(flowNodeInstance.getFlowNodeId()))
+            .filter(
+                f ->
+                    f.processInstanceKey(flowNodeInstance.getProcessInstanceKey())
+                        .flowNodeId(flowNodeInstance.getFlowNodeId()))
             .send()
             .join();
 
