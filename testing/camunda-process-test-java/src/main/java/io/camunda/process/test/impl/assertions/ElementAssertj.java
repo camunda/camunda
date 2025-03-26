@@ -239,10 +239,8 @@ public class ElementAssertj extends AbstractAssert<ElementAssertj, String> {
       Awaitility.await()
           .ignoreException(ClientException.class)
           .untilAsserted(
-              () -> {
-                final List<FlowNodeInstance> flowNodeInstances =
-                    dataSource.findFlowNodeInstances(filter);
-
+              () -> dataSource.findFlowNodeInstances(filter),
+              flowNodeInstances -> {
                 try {
                   assertion.accept(flowNodeInstances);
                 } catch (final AssertionError e) {
