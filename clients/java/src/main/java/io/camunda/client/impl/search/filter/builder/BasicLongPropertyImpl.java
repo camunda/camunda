@@ -15,6 +15,7 @@
  */
 package io.camunda.client.impl.search.filter.builder;
 
+import io.camunda.client.ResponseMapper;
 import io.camunda.client.api.search.filter.builder.BasicLongProperty;
 import io.camunda.client.impl.util.CollectionUtil;
 import io.camunda.client.wrappers.BasicStringFilterProperty;
@@ -56,6 +57,6 @@ public class BasicLongPropertyImpl implements BasicLongProperty {
 
   @Override
   public BasicStringFilterProperty build() {
-    return BasicStringFilterProperty.fromProtocolObject(filterProperty);
+    return ResponseMapper.fromProtocolObject(filterProperty);
   }
 }

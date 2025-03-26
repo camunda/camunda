@@ -65,46 +65,4 @@ public class StringFilterProperty {
   public void setLike(String like) {
     this.like = like;
   }
-
-  public static io.camunda.client.protocol.rest.StringFilterProperty toProtocolObject(
-      StringFilterProperty object) {
-    if (object == null) {
-      return null;
-    }
-
-    final io.camunda.client.protocol.rest.StringFilterProperty protocolObject =
-        new io.camunda.client.protocol.rest.StringFilterProperty();
-    protocolObject.set$Eq(object.eq);
-    protocolObject.set$Neq(object.neq);
-    protocolObject.set$Exists(object.exists);
-    if (object.in == null) {
-      protocolObject.set$In(null);
-    } else {
-      protocolObject.set$In(new ArrayList<>());
-      object.in.forEach(protocolObject::add$InItem);
-    }
-    protocolObject.set$Like(object.like);
-
-    return protocolObject;
-  }
-
-  public static StringFilterProperty fromProtocolObject(
-      io.camunda.client.protocol.rest.StringFilterProperty protocolObject) {
-    if (protocolObject == null) {
-      return null;
-    }
-
-    final StringFilterProperty object = new StringFilterProperty();
-    object.eq = protocolObject.get$Eq();
-    object.neq = protocolObject.get$Neq();
-    object.exists = protocolObject.get$Exists();
-    if (protocolObject.get$In() == null) {
-      object.in = null;
-    } else {
-      object.in = new ArrayList<>();
-      object.in.addAll(protocolObject.get$In());
-    }
-    object.like = protocolObject.get$Like();
-    return object;
-  }
 }

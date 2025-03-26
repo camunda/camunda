@@ -70,37 +70,6 @@ public class ProblemDetail {
     return this;
   }
 
-  public static io.camunda.client.protocol.rest.ProblemDetail toProtocolObject(
-      ProblemDetail object) {
-    if (object == null) {
-      return null;
-    }
-
-    final io.camunda.client.protocol.rest.ProblemDetail protocolObject =
-        new io.camunda.client.protocol.rest.ProblemDetail();
-    protocolObject.setType(object.type);
-    protocolObject.setTitle(object.title);
-    protocolObject.setStatus(object.status);
-    protocolObject.setDetail(object.detail);
-    protocolObject.setInstance(object.instance);
-    return protocolObject;
-  }
-
-  public static ProblemDetail fromProtocolObject(
-      io.camunda.client.protocol.rest.ProblemDetail protocolObject) {
-    if (protocolObject == null) {
-      return null;
-    }
-
-    final ProblemDetail object = new ProblemDetail();
-    object.type = protocolObject.getType();
-    object.title = protocolObject.getTitle();
-    object.status = protocolObject.getStatus();
-    object.detail = protocolObject.getDetail();
-    object.instance = protocolObject.getInstance();
-    return object;
-  }
-
   @Override
   public String toString() {
     final StringBuilder sb = new StringBuilder();

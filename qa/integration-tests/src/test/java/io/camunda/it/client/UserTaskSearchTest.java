@@ -12,6 +12,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import io.camunda.client.CamundaClient;
+import io.camunda.client.ResponseMapper;
 import io.camunda.client.api.command.ProblemException;
 import io.camunda.client.api.search.response.UserTask;
 import io.camunda.client.protocol.rest.StringFilterProperty;
@@ -258,9 +259,7 @@ class UserTaskQueryTest {
                     .filter(
                         f ->
                             f.processInstanceVariables(
-                                List.of(
-                                    io.camunda.client.wrappers.UserTaskVariableFilterRequest
-                                        .fromProtocolObject(variableValueFilter))))
+                                List.of(ResponseMapper.fromProtocolObject(variableValueFilter))))
                     .send()
                     .join());
     // then
@@ -302,9 +301,7 @@ class UserTaskQueryTest {
             .filter(
                 f ->
                     f.localVariables(
-                        List.of(
-                            io.camunda.client.wrappers.UserTaskVariableFilterRequest
-                                .fromProtocolObject(variableValueFilter1))))
+                        List.of(ResponseMapper.fromProtocolObject(variableValueFilter1))))
             .send()
             .join();
     assertThat(result.items().size()).isEqualTo(1);
@@ -323,9 +320,7 @@ class UserTaskQueryTest {
             .filter(
                 f ->
                     f.localVariables(
-                        List.of(
-                            io.camunda.client.wrappers.UserTaskVariableFilterRequest
-                                .fromProtocolObject(variableValueFilter1))))
+                        List.of(ResponseMapper.fromProtocolObject(variableValueFilter1))))
             .send()
             .join();
     assertThat(result.items().size()).isEqualTo(1);

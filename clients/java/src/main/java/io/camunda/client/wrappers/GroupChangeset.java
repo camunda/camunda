@@ -26,27 +26,4 @@ public class GroupChangeset {
   public void setName(String name) {
     this.name = name;
   }
-
-  public static io.camunda.client.protocol.rest.GroupChangeset toProtocolObject(
-      GroupChangeset object) {
-    if (object == null) {
-      return null;
-    }
-
-    final io.camunda.client.protocol.rest.GroupChangeset protocolObject =
-        new io.camunda.client.protocol.rest.GroupChangeset();
-    protocolObject.setName(object.name);
-    return protocolObject;
-  }
-
-  public static GroupChangeset fromProtocolObject(
-      io.camunda.client.protocol.rest.GroupChangeset protocolObject) {
-    if (protocolObject == null) {
-      return null;
-    }
-
-    final GroupChangeset object = new GroupChangeset();
-    object.name = protocolObject.getName();
-    return object;
-  }
 }

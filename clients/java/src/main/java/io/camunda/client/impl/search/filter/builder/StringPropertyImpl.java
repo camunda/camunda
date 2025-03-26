@@ -15,6 +15,7 @@
  */
 package io.camunda.client.impl.search.filter.builder;
 
+import io.camunda.client.ResponseMapper;
 import io.camunda.client.api.search.filter.builder.StringProperty;
 import io.camunda.client.impl.util.CollectionUtil;
 import io.camunda.client.wrappers.StringFilterProperty;
@@ -55,7 +56,7 @@ public class StringPropertyImpl implements StringProperty {
 
   @Override
   public StringFilterProperty build() {
-    return StringFilterProperty.fromProtocolObject(filterProperty);
+    return ResponseMapper.fromProtocolObject(filterProperty);
   }
 
   @Override

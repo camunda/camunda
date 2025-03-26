@@ -21,6 +21,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrowsExactly;
 
 import io.camunda.client.CamundaClient;
+import io.camunda.client.ResponseMapper;
 import io.camunda.client.api.command.ProblemException;
 import io.camunda.client.api.response.Process;
 import io.camunda.client.api.response.ProcessInstanceEvent;
@@ -548,11 +549,7 @@ public class ProcessInstanceAndFlowNodeInstanceQueryTest {
     final var result =
         camundaClient
             .newProcessInstanceQuery()
-            .filter(
-                f ->
-                    f.variables(
-                        io.camunda.client.wrappers.ProcessInstanceVariableFilterRequest
-                            .fromProtocolList(variables)))
+            .filter(f -> f.variables(ResponseMapper.fromProtocolList(variables)))
             .send()
             .join();
     // then
@@ -597,11 +594,7 @@ public class ProcessInstanceAndFlowNodeInstanceQueryTest {
     final var result =
         camundaClient
             .newProcessInstanceQuery()
-            .filter(
-                f ->
-                    f.variables(
-                        io.camunda.client.wrappers.ProcessInstanceVariableFilterRequest
-                            .fromProtocolList(variables)))
+            .filter(f -> f.variables(ResponseMapper.fromProtocolList(variables)))
             .send()
             .join();
 
@@ -628,11 +621,7 @@ public class ProcessInstanceAndFlowNodeInstanceQueryTest {
     final var result =
         camundaClient
             .newProcessInstanceQuery()
-            .filter(
-                f ->
-                    f.variables(
-                        io.camunda.client.wrappers.ProcessInstanceVariableFilterRequest
-                            .fromProtocolList(variables)))
+            .filter(f -> f.variables(ResponseMapper.fromProtocolList(variables)))
             .send()
             .join();
 
@@ -653,11 +642,7 @@ public class ProcessInstanceAndFlowNodeInstanceQueryTest {
     final var result =
         camundaClient
             .newProcessInstanceQuery()
-            .filter(
-                f ->
-                    f.variables(
-                        io.camunda.client.wrappers.ProcessInstanceVariableFilterRequest
-                            .fromProtocolList(variables)))
+            .filter(f -> f.variables(ResponseMapper.fromProtocolList(variables)))
             .send()
             .join();
 
@@ -680,11 +665,7 @@ public class ProcessInstanceAndFlowNodeInstanceQueryTest {
     final var result =
         camundaClient
             .newProcessInstanceQuery()
-            .filter(
-                f ->
-                    f.variables(
-                        io.camunda.client.wrappers.ProcessInstanceVariableFilterRequest
-                            .fromProtocolList(variables)))
+            .filter(f -> f.variables(ResponseMapper.fromProtocolList(variables)))
             .send()
             .join();
 

@@ -15,6 +15,7 @@
  */
 package io.camunda.client.impl.search.filter;
 
+import io.camunda.client.ResponseMapper;
 import io.camunda.client.api.search.filter.AdHocSubprocessActivityFilter;
 
 public class AdHocSubprocessActivityFilterImpl implements AdHocSubprocessActivityFilter {
@@ -39,6 +40,6 @@ public class AdHocSubprocessActivityFilterImpl implements AdHocSubprocessActivit
 
   @Override
   public io.camunda.client.wrappers.AdHocSubprocessActivityFilter getRequestFilter() {
-    return io.camunda.client.wrappers.AdHocSubprocessActivityFilter.fromProtocolObject(filter);
+    return ResponseMapper.fromProtocolObject(filter);
   }
 }

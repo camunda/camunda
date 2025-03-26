@@ -15,9 +15,6 @@
  */
 package io.camunda.client.wrappers;
 
-import java.util.ArrayList;
-import java.util.List;
-
 public class UserTaskVariableFilterRequest {
 
   private String name;
@@ -37,53 +34,5 @@ public class UserTaskVariableFilterRequest {
 
   public void setValue(StringFilterProperty value) {
     this.value = value;
-  }
-
-  public static io.camunda.client.protocol.rest.UserTaskVariableFilterRequest toProtocolObject(
-      UserTaskVariableFilterRequest object) {
-    if (object == null) {
-      return null;
-    }
-
-    final io.camunda.client.protocol.rest.UserTaskVariableFilterRequest protocolObject =
-        new io.camunda.client.protocol.rest.UserTaskVariableFilterRequest();
-    protocolObject.setName(object.name);
-    protocolObject.setValue(StringFilterProperty.toProtocolObject(object.value));
-    return protocolObject;
-  }
-
-  public static List<io.camunda.client.protocol.rest.UserTaskVariableFilterRequest> toProtocolList(
-      List<UserTaskVariableFilterRequest> list) {
-    if (list == null) {
-      return null;
-    }
-
-    final List<io.camunda.client.protocol.rest.UserTaskVariableFilterRequest> protocolList =
-        new ArrayList<>();
-    list.forEach(item -> protocolList.add(toProtocolObject(item)));
-    return protocolList;
-  }
-
-  public static UserTaskVariableFilterRequest fromProtocolObject(
-      io.camunda.client.protocol.rest.UserTaskVariableFilterRequest protocolObject) {
-    if (protocolObject == null) {
-      return null;
-    }
-
-    final UserTaskVariableFilterRequest object = new UserTaskVariableFilterRequest();
-    object.name = protocolObject.getName();
-    object.value = StringFilterProperty.fromProtocolObject(protocolObject.getValue());
-    return object;
-  }
-
-  public static List<UserTaskVariableFilterRequest> fromProtocolList(
-      List<io.camunda.client.protocol.rest.UserTaskVariableFilterRequest> protocolList) {
-    if (protocolList == null) {
-      return null;
-    }
-
-    final List<UserTaskVariableFilterRequest> list = new ArrayList<>();
-    protocolList.forEach(item -> list.add(fromProtocolObject(item)));
-    return list;
   }
 }

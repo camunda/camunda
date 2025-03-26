@@ -15,6 +15,7 @@
  */
 package io.camunda.client.impl.search.filter.builder;
 
+import io.camunda.client.ResponseMapper;
 import io.camunda.client.api.search.filter.builder.IntegerProperty;
 import io.camunda.client.impl.util.CollectionUtil;
 import io.camunda.client.wrappers.IntegerFilterProperty;
@@ -55,7 +56,7 @@ public class IntegerPropertyImpl implements IntegerProperty {
 
   @Override
   public IntegerFilterProperty build() {
-    return IntegerFilterProperty.fromProtocolObject(filterProperty);
+    return ResponseMapper.fromProtocolObject(filterProperty);
   }
 
   @Override
