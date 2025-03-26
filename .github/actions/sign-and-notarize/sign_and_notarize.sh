@@ -74,7 +74,7 @@ find "$C8RUN_DIR" -maxdepth 1 \( -type f -o -type d \) -print0 | while IFS= read
     if [[ "$base" == "$prefix"* ]]; then
 
       # find the dylibs in the excluded folder and create a tmp fs for them
-      for dylib in $( find $base -name "*.dylib" ); do
+      for dylib in $( find $item -name "*.dylib" ); do
         zip -r "$TMP_EXCLUDE_DIR/$base-dylibs.zip" "$dylib"
       done
 
