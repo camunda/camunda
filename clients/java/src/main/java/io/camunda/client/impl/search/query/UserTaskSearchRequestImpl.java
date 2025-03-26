@@ -22,7 +22,7 @@ import static io.camunda.client.api.search.SearchRequestBuilders.userTaskSort;
 import io.camunda.client.api.JsonMapper;
 import io.camunda.client.api.search.SearchRequestPage;
 import io.camunda.client.api.search.filter.UserTaskFilter;
-import io.camunda.client.api.search.query.FinalSearchQueryStep;
+import io.camunda.client.api.search.query.FinalSearchRequestStep;
 import io.camunda.client.api.search.query.UserTaskSearchRequest;
 import io.camunda.client.api.search.response.SearchQueryResponse;
 import io.camunda.client.api.search.response.UserTask;
@@ -58,7 +58,7 @@ public class UserTaskSearchRequestImpl
   }
 
   @Override
-  public FinalSearchQueryStep<UserTask> requestTimeout(final Duration requestTimeout) {
+  public FinalSearchRequestStep<UserTask> requestTimeout(final Duration requestTimeout) {
     httpRequestConfig.setResponseTimeout(requestTimeout.toMillis(), TimeUnit.MILLISECONDS);
     return this;
   }

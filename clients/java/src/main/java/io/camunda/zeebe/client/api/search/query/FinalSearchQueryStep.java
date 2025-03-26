@@ -15,13 +15,13 @@
  */
 package io.camunda.zeebe.client.api.search.query;
 
+import io.camunda.client.api.search.query.FinalSearchRequestStep;
 import io.camunda.zeebe.client.api.command.FinalCommandStep;
 import io.camunda.zeebe.client.api.search.response.SearchQueryResponse;
 import java.time.Duration;
 
 /**
- * @deprecated since 8.8 for removal in 8.9, replaced by {@link
- *     io.camunda.client.api.search.query.FinalSearchQueryStep}
+ * @deprecated since 8.8 for removal in 8.9, replaced by {@link FinalSearchRequestStep}
  */
 @Deprecated
 public interface FinalSearchQueryStep<T> extends FinalCommandStep<SearchQueryResponse<T>> {

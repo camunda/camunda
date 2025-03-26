@@ -23,7 +23,7 @@ import io.camunda.client.api.CamundaFuture;
 import io.camunda.client.api.JsonMapper;
 import io.camunda.client.api.search.SearchRequestPage;
 import io.camunda.client.api.search.filter.FlownodeInstanceFilter;
-import io.camunda.client.api.search.query.FinalSearchQueryStep;
+import io.camunda.client.api.search.query.FinalSearchRequestStep;
 import io.camunda.client.api.search.query.FlownodeInstanceSearchRequest;
 import io.camunda.client.api.search.response.FlowNodeInstance;
 import io.camunda.client.api.search.response.SearchQueryResponse;
@@ -61,7 +61,7 @@ public class FlowNodeInstanceSearchRequestImpl
   }
 
   @Override
-  public FinalSearchQueryStep<FlowNodeInstance> requestTimeout(final Duration requestTimeout) {
+  public FinalSearchRequestStep<FlowNodeInstance> requestTimeout(final Duration requestTimeout) {
     httpRequestConfig.setResponseTimeout(requestTimeout.toMillis(), TimeUnit.MILLISECONDS);
     return this;
   }

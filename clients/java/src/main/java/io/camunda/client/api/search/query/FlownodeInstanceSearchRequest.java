@@ -22,4 +22,4 @@ import io.camunda.client.api.search.sort.FlownodeInstanceSort;
 public interface FlownodeInstanceSearchRequest
     extends TypedSearchRequest<
             FlownodeInstanceFilter, FlownodeInstanceSort, FlownodeInstanceSearchRequest>,
-        FinalSearchQueryStep<FlowNodeInstance> {}
+        FinalSearchRequestStep<FlowNodeInstance> {}

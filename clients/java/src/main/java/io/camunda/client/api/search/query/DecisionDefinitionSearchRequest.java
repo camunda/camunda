@@ -22,4 +22,4 @@ import io.camunda.client.api.search.sort.DecisionDefinitionSort;
 public interface DecisionDefinitionSearchRequest
     extends TypedSearchRequest<
             DecisionDefinitionFilter, DecisionDefinitionSort, DecisionDefinitionSearchRequest>,
-        FinalSearchQueryStep<DecisionDefinition> {}
+        FinalSearchRequestStep<DecisionDefinition> {}

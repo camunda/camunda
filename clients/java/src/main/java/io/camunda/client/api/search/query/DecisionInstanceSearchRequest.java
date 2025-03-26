@@ -22,4 +22,4 @@ import io.camunda.client.api.search.sort.DecisionInstanceSort;
 public interface DecisionInstanceSearchRequest
     extends TypedSearchRequest<
             DecisionInstanceFilter, DecisionInstanceSort, DecisionInstanceSearchRequest>,
-        FinalSearchQueryStep<DecisionInstance> {}
+        FinalSearchRequestStep<DecisionInstance> {}

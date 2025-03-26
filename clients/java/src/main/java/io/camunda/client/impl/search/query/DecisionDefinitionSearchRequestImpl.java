@@ -24,7 +24,7 @@ import io.camunda.client.api.JsonMapper;
 import io.camunda.client.api.search.SearchRequestPage;
 import io.camunda.client.api.search.filter.DecisionDefinitionFilter;
 import io.camunda.client.api.search.query.DecisionDefinitionSearchRequest;
-import io.camunda.client.api.search.query.FinalSearchQueryStep;
+import io.camunda.client.api.search.query.FinalSearchRequestStep;
 import io.camunda.client.api.search.response.DecisionDefinition;
 import io.camunda.client.api.search.response.SearchQueryResponse;
 import io.camunda.client.api.search.sort.DecisionDefinitionSort;
@@ -105,7 +105,7 @@ public class DecisionDefinitionSearchRequestImpl
   }
 
   @Override
-  public FinalSearchQueryStep<DecisionDefinition> requestTimeout(final Duration requestTimeout) {
+  public FinalSearchRequestStep<DecisionDefinition> requestTimeout(final Duration requestTimeout) {
     httpRequestConfig.setResponseTimeout(requestTimeout.toMillis(), TimeUnit.MILLISECONDS);
     return this;
   }

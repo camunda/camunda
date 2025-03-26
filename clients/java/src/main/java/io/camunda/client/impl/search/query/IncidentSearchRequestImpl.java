@@ -23,7 +23,7 @@ import io.camunda.client.api.CamundaFuture;
 import io.camunda.client.api.JsonMapper;
 import io.camunda.client.api.search.SearchRequestPage;
 import io.camunda.client.api.search.filter.IncidentFilter;
-import io.camunda.client.api.search.query.FinalSearchQueryStep;
+import io.camunda.client.api.search.query.FinalSearchRequestStep;
 import io.camunda.client.api.search.query.IncidentSearchRequest;
 import io.camunda.client.api.search.response.Incident;
 import io.camunda.client.api.search.response.SearchQueryResponse;
@@ -60,7 +60,7 @@ public class IncidentSearchRequestImpl
   }
 
   @Override
-  public FinalSearchQueryStep<Incident> requestTimeout(final Duration requestTimeout) {
+  public FinalSearchRequestStep<Incident> requestTimeout(final Duration requestTimeout) {
     httpRequestConfig.setResponseTimeout(requestTimeout.toMillis(), TimeUnit.MILLISECONDS);
     return this;
   }

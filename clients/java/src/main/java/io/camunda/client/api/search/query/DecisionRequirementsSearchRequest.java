@@ -24,4 +24,4 @@ public interface DecisionRequirementsSearchRequest
             DecisionRequirementsFilter,
             DecisionRequirementsSort,
             DecisionRequirementsSearchRequest>,
-        FinalSearchQueryStep<DecisionRequirements> {}
+        FinalSearchRequestStep<DecisionRequirements> {}

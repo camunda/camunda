@@ -23,7 +23,7 @@ import io.camunda.client.api.CamundaFuture;
 import io.camunda.client.api.JsonMapper;
 import io.camunda.client.api.search.SearchRequestPage;
 import io.camunda.client.api.search.filter.ProcessDefinitionFilter;
-import io.camunda.client.api.search.query.FinalSearchQueryStep;
+import io.camunda.client.api.search.query.FinalSearchRequestStep;
 import io.camunda.client.api.search.query.ProcessDefinitionSearchRequest;
 import io.camunda.client.api.search.response.ProcessDefinition;
 import io.camunda.client.api.search.response.SearchQueryResponse;
@@ -61,7 +61,7 @@ public class ProcessDefinitionSearchRequestImpl
   }
 
   @Override
-  public FinalSearchQueryStep<ProcessDefinition> requestTimeout(final Duration requestTimeout) {
+  public FinalSearchRequestStep<ProcessDefinition> requestTimeout(final Duration requestTimeout) {
     httpRequestConfig.setResponseTimeout(requestTimeout.toMillis(), TimeUnit.MILLISECONDS);
     return this;
   }

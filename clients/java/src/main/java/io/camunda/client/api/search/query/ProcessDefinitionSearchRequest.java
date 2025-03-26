@@ -22,4 +22,4 @@ import io.camunda.client.api.search.sort.ProcessDefinitionSort;
 public interface ProcessDefinitionSearchRequest
     extends TypedSearchRequest<
             ProcessDefinitionFilter, ProcessDefinitionSort, ProcessDefinitionSearchRequest>,
-        FinalSearchQueryStep<ProcessDefinition> {}
+        FinalSearchRequestStep<ProcessDefinition> {}

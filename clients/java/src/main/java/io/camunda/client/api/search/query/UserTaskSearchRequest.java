@@ -21,4 +21,4 @@ import io.camunda.client.api.search.sort.UserTaskSort;
 
 public interface UserTaskSearchRequest
     extends TypedSearchRequest<UserTaskFilter, UserTaskSort, UserTaskSearchRequest>,
-        FinalSearchQueryStep<UserTask> {}
+        FinalSearchRequestStep<UserTask> {}
