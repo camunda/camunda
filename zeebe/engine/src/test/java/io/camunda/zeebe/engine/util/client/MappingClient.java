@@ -26,12 +26,12 @@ public class MappingClient {
     return new MappingCreateClient(writer, name);
   }
 
-  public MappingDeleteClient deleteMapping(final String id) {
-    return new MappingDeleteClient(writer, id);
+  public MappingDeleteClient deleteMapping(final String mappingId) {
+    return new MappingDeleteClient(writer, mappingId);
   }
 
-  public MappingUpdateClient updateMapping(final String id) {
-    return new MappingUpdateClient(writer, id);
+  public MappingUpdateClient updateMapping(final String mappingId) {
+    return new MappingUpdateClient(writer, mappingId);
   }
 
   public static class MappingCreateClient {
@@ -65,8 +65,8 @@ public class MappingClient {
       return this;
     }
 
-    public MappingCreateClient withMappingId(final String id) {
-      mappingRecord.setMappingId(id);
+    public MappingCreateClient withMappingId(final String mappingId) {
+      mappingRecord.setMappingId(mappingId);
       return this;
     }
 
@@ -111,10 +111,10 @@ public class MappingClient {
     private final MappingRecord mappingRecord;
     private Function<Long, Record<MappingRecordValue>> expectation = SUCCESS_SUPPLIER;
 
-    public MappingDeleteClient(final CommandWriter writer, final String id) {
+    public MappingDeleteClient(final CommandWriter writer, final String mappingId) {
       this.writer = writer;
       mappingRecord = new MappingRecord();
-      mappingRecord.setMappingId(id);
+      mappingRecord.setMappingId(mappingId);
     }
 
     public Record<MappingRecordValue> delete() {
@@ -152,10 +152,10 @@ public class MappingClient {
     private final MappingRecord mappingRecord;
     private Function<String, Record<MappingRecordValue>> expectation = SUCCESS_SUPPLIER;
 
-    public MappingUpdateClient(final CommandWriter writer, final String id) {
+    public MappingUpdateClient(final CommandWriter writer, final String mappingId) {
       this.writer = writer;
       mappingRecord = new MappingRecord();
-      mappingRecord.setMappingId(id);
+      mappingRecord.setMappingId(mappingId);
     }
 
     public Record<MappingRecordValue> update() {

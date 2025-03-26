@@ -47,7 +47,7 @@ public class MappingCreatedUpdatedHandler
 
   @Override
   public List<String> generateIds(final Record<MappingRecordValue> record) {
-    return List.of(String.valueOf(record.getValue().getMappingId()));
+    return List.of(record.getValue().getMappingId());
   }
 
   @Override

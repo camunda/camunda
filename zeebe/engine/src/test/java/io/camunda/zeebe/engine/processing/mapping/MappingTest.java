@@ -211,22 +211,24 @@ public class MappingTest {
     final var claimName = UUID.randomUUID().toString();
     final var claimValue = UUID.randomUUID().toString();
     final var name = UUID.randomUUID().toString();
-    final var id = UUID.randomUUID().toString();
+    final var mappingId = UUID.randomUUID().toString();
 
     engine
         .mapping()
         .newMapping(claimName)
         .withClaimValue(claimValue)
         .withName(name)
-        .withMappingId(id)
+        .withMappingId(mappingId)
         .create()
         .getValue();
 
     // when
-    final var deletedMapping = engine.mapping().deleteMapping(id).delete().getValue();
+    final var deletedMapping = engine.mapping().deleteMapping(mappingId).delete().getValue();
 
     // then
-    Assertions.assertThat(deletedMapping).isNotNull().hasFieldOrPropertyWithValue("mappingId", id);
+    Assertions.assertThat(deletedMapping)
+        .isNotNull()
+        .hasFieldOrPropertyWithValue("mappingId", mappingId);
   }
 
   @Test
