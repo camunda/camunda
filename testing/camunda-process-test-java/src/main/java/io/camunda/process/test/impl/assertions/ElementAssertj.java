@@ -114,8 +114,8 @@ public class ElementAssertj extends AbstractAssert<ElementAssertj, String> {
       final FlowNodeInstanceState expectedState,
       final int expectedTimes) {
 
-    if (expectedTimes < 1) {
-      throw new IllegalArgumentException("The amount must be greater than zero.");
+    if (expectedTimes < 0) {
+      throw new IllegalArgumentException("The amount must be greater than or equal to zero.");
     }
 
     awaitFlowNodeInstanceAssertion(
