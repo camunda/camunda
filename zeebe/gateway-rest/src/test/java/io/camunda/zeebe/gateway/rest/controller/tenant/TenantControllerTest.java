@@ -489,22 +489,20 @@ public class TenantControllerTest extends RestControllerTest {
   }
 
   private static Stream<Arguments> provideAddMemberByKeyTestCases() {
-    return Stream.of(
-        Arguments.of(EntityType.MAPPING, "mapping-rules"),
-        Arguments.of(EntityType.GROUP, "groups"));
+    return Stream.of(Arguments.of(EntityType.GROUP, "groups"));
   }
 
   private static Stream<Arguments> provideAddMemberByIdTestCases() {
-    return Stream.of(Arguments.of(EntityType.USER, "users"));
+    return Stream.of(
+        Arguments.of(EntityType.USER, "users"), Arguments.of(EntityType.MAPPING, "mapping-rules"));
   }
 
   private static Stream<Arguments> provideRemoveMemberByKeyTestCases() {
-    return Stream.of(
-        Arguments.of(EntityType.MAPPING, "mapping-rules"),
-        Arguments.of(EntityType.GROUP, "groups"));
+    return Stream.of(Arguments.of(EntityType.GROUP, "groups"));
   }
 
   private static Stream<Arguments> provideRemoveMemberByIdTestCases() {
-    return Stream.of(Arguments.of(EntityType.USER, "users"));
+    return Stream.of(
+        Arguments.of(EntityType.USER, "users"), Arguments.of(EntityType.MAPPING, "mapping-rules"));
   }
 }
