@@ -24,7 +24,7 @@ import io.camunda.client.api.JsonMapper;
 import io.camunda.client.api.search.SearchRequestPage;
 import io.camunda.client.api.search.filter.UserTaskVariableFilter;
 import io.camunda.client.api.search.query.FinalSearchQueryStep;
-import io.camunda.client.api.search.query.UserTaskVariableQuery;
+import io.camunda.client.api.search.query.UserTaskVariableSearchRequest;
 import io.camunda.client.api.search.response.SearchQueryResponse;
 import io.camunda.client.api.search.response.Variable;
 import io.camunda.client.api.search.sort.VariableSort;
@@ -43,9 +43,9 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import org.apache.hc.client5.http.config.RequestConfig;
 
-public class UserTaskVariableQueryImpl
+public class UserTaskVariableSearchRequestImpl
     extends TypedSearchRequestPropertyProvider<UserTaskVariableSearchQueryRequest>
-    implements UserTaskVariableQuery {
+    implements UserTaskVariableSearchRequest {
 
   private final UserTaskVariableSearchQueryRequest request;
   private final HttpClient httpClient;
@@ -53,7 +53,7 @@ public class UserTaskVariableQueryImpl
   private final JsonMapper jsonMapper;
   private final long userTaskKey;
 
-  public UserTaskVariableQueryImpl(
+  public UserTaskVariableSearchRequestImpl(
       final HttpClient httpClient, final JsonMapper jsonMapper, final long userTaskKey) {
     this.httpClient = httpClient;
     this.jsonMapper = jsonMapper;
@@ -82,19 +82,19 @@ public class UserTaskVariableQueryImpl
   }
 
   @Override
-  public UserTaskVariableQuery filter(final UserTaskVariableFilter value) {
+  public UserTaskVariableSearchRequest filter(final UserTaskVariableFilter value) {
     final VariableUserTaskFilterRequest filter = provideSearchRequestProperty(value);
     request.setFilter(filter);
     return this;
   }
 
   @Override
-  public UserTaskVariableQuery filter(final Consumer<UserTaskVariableFilter> fn) {
+  public UserTaskVariableSearchRequest filter(final Consumer<UserTaskVariableFilter> fn) {
     return filter(userTaskVariableFilter(fn));
   }
 
   @Override
-  public UserTaskVariableQuery sort(final VariableSort value) {
+  public UserTaskVariableSearchRequest sort(final VariableSort value) {
     final VariableSortImpl sorting = (VariableSortImpl) value;
     request.setSort(
         SearchQuerySortRequestMapper.toUserTaskVariableSearchQuerySortRequest(
@@ -103,19 +103,19 @@ public class UserTaskVariableQueryImpl
   }
 
   @Override
-  public UserTaskVariableQuery sort(final Consumer<VariableSort> fn) {
+  public UserTaskVariableSearchRequest sort(final Consumer<VariableSort> fn) {
     return sort(variableSort(fn));
   }
 
   @Override
-  public UserTaskVariableQuery page(final SearchRequestPage value) {
+  public UserTaskVariableSearchRequest page(final SearchRequestPage value) {
     final SearchRequestPageImpl page = (SearchRequestPageImpl) value;
     request.setPage(page.getSearchRequestProperty());
     return this;
   }
 
   @Override
-  public UserTaskVariableQuery page(final Consumer<SearchRequestPage> fn) {
+  public UserTaskVariableSearchRequest page(final Consumer<SearchRequestPage> fn) {
     return page(searchRequestPage(fn));
   }
 

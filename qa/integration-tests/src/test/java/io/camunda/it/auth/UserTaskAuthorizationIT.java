@@ -161,7 +161,7 @@ class UserTaskAuthorizationIT {
     // given
     final var userTaskKey = getUserTaskKey(adminClient, PROCESS_ID_1);
     // when
-    final var result = camundaClient.newUserTaskVariableQuery(userTaskKey).send().join();
+    final var result = camundaClient.newUserTaskVariableSearchRequest(userTaskKey).send().join();
     // then
     assertThat(result.items()).isNotEmpty();
   }
@@ -174,7 +174,7 @@ class UserTaskAuthorizationIT {
     final var userTaskKey = getUserTaskKey(adminClient, PROCESS_ID_1);
     // when
     final Executable executeSearchVariables =
-        () -> camundaClient.newUserTaskVariableQuery(userTaskKey).send().join();
+        () -> camundaClient.newUserTaskVariableSearchRequest(userTaskKey).send().join();
     // then
     final var problemException = assertThrows(ProblemException.class, executeSearchVariables);
     assertThat(problemException.code()).isEqualTo(403);

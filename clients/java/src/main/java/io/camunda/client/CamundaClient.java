@@ -89,7 +89,7 @@ import io.camunda.client.api.search.query.IncidentSearchRequest;
 import io.camunda.client.api.search.query.ProcessDefinitionSearchRequest;
 import io.camunda.client.api.search.query.ProcessInstanceSearchRequest;
 import io.camunda.client.api.search.query.UserTaskSearchRequest;
-import io.camunda.client.api.search.query.UserTaskVariableQuery;
+import io.camunda.client.api.search.query.UserTaskVariableSearchRequest;
 import io.camunda.client.api.search.query.VariableSearchRequest;
 import io.camunda.client.api.worker.JobClient;
 import io.camunda.client.api.worker.JobWorkerBuilderStep1;
@@ -1312,21 +1312,21 @@ public interface CamundaClient extends AutoCloseable, JobClient {
   VariableGetRequest newVariableGetRequest(long variableKey);
 
   /**
-   * Gets a variabes associated to a User Task key.
+   * Executes a search request to query variables related to a user task.
    *
    * <pre>
    *   long variableKey = ...;
    *
    *  camundaClient
-   * .newUserTaskVariableQuery(variableKey)
-   *  .sort((s) -> s.value().asc())
-   *  .page((p) -> p.limit(100))
-   * .send();
+   *   .newUserTaskVariableSearchRequest(variableKey)
+   *   .sort((s) -> s.value().asc())
+   *   .page((p) -> p.limit(100))
+   *   .send();
    *
    *  @param userTaskKey the key of the user task
-   *  @return a builder for the request to get the variables
+   *  @return a builder for the user task variable search request
    */
-  UserTaskVariableQuery newUserTaskVariableQuery(long userTaskKey);
+  UserTaskVariableSearchRequest newUserTaskVariableSearchRequest(long userTaskKey);
 
   /**
    * <strong>Experimental: This method is under development. The respective API on compatible

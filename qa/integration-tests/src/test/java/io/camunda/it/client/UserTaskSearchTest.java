@@ -191,7 +191,7 @@ class UserTaskSearchTest {
     final var userTaskKey = resultUserTaskQuery.items().getFirst().getUserTaskKey();
 
     final var resultVariableQuery =
-        camundaClient.newUserTaskVariableQuery(userTaskKey).send().join();
+        camundaClient.newUserTaskVariableSearchRequest(userTaskKey).send().join();
     assertThat(resultVariableQuery.items().size()).isEqualTo(2);
   }
 
@@ -640,7 +640,11 @@ class UserTaskSearchTest {
     final var userTaskKey = userTaskList.items().stream().findFirst().get().getUserTaskKey();
 
     final var result =
-        camundaClient.newUserTaskVariableQuery(userTaskKey).sort(s -> s.name().asc()).send().join();
+        camundaClient
+            .newUserTaskVariableSearchRequest(userTaskKey)
+            .sort(s -> s.name().asc())
+            .send()
+            .join();
     // then
     assertThat(result.items().size()).isEqualTo(3);
     assertThat(result.items().get(0).getName()).isEqualTo("localVariable");
@@ -658,7 +662,7 @@ class UserTaskSearchTest {
 
     final var result =
         camundaClient
-            .newUserTaskVariableQuery(userTaskKey)
+            .newUserTaskVariableSearchRequest(userTaskKey)
             .filter(f -> f.name(b -> b.eq("localVariable")))
             .send()
             .join();
@@ -678,7 +682,7 @@ class UserTaskSearchTest {
 
     final var result =
         camundaClient
-            .newUserTaskVariableQuery(userTaskKey)
+            .newUserTaskVariableSearchRequest(userTaskKey)
             .filter(f -> f.name(b -> b.like("*rocess*")))
             .send()
             .join();
@@ -700,7 +704,7 @@ class UserTaskSearchTest {
 
     final var result =
         camundaClient
-            .newUserTaskVariableQuery(userTaskKey)
+            .newUserTaskVariableSearchRequest(userTaskKey)
             .filter(f -> f.name(b -> b.in(List.of("processVariable", "subProcessVariable"))))
             .send()
             .join();

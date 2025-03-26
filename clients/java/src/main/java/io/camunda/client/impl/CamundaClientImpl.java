@@ -100,7 +100,7 @@ import io.camunda.client.api.search.query.IncidentSearchRequest;
 import io.camunda.client.api.search.query.ProcessDefinitionSearchRequest;
 import io.camunda.client.api.search.query.ProcessInstanceSearchRequest;
 import io.camunda.client.api.search.query.UserTaskSearchRequest;
-import io.camunda.client.api.search.query.UserTaskVariableQuery;
+import io.camunda.client.api.search.query.UserTaskVariableSearchRequest;
 import io.camunda.client.api.search.query.VariableSearchRequest;
 import io.camunda.client.api.worker.JobClient;
 import io.camunda.client.api.worker.JobWorkerBuilderStep1;
@@ -178,7 +178,7 @@ import io.camunda.client.impl.search.query.IncidentSearchRequestImpl;
 import io.camunda.client.impl.search.query.ProcessDefinitionSearchRequestImpl;
 import io.camunda.client.impl.search.query.ProcessInstanceSearchRequestImpl;
 import io.camunda.client.impl.search.query.UserTaskSearchRequestImpl;
-import io.camunda.client.impl.search.query.UserTaskVariableQueryImpl;
+import io.camunda.client.impl.search.query.UserTaskVariableSearchRequestImpl;
 import io.camunda.client.impl.search.query.VariableSearchRequestImpl;
 import io.camunda.client.impl.util.ExecutorResource;
 import io.camunda.client.impl.util.VersionUtil;
@@ -820,8 +820,8 @@ public final class CamundaClientImpl implements CamundaClient {
   }
 
   @Override
-  public UserTaskVariableQuery newUserTaskVariableQuery(final long userTaskKey) {
-    return new UserTaskVariableQueryImpl(httpClient, jsonMapper, userTaskKey);
+  public UserTaskVariableSearchRequest newUserTaskVariableSearchRequest(final long userTaskKey) {
+    return new UserTaskVariableSearchRequestImpl(httpClient, jsonMapper, userTaskKey);
   }
 
   @Override
