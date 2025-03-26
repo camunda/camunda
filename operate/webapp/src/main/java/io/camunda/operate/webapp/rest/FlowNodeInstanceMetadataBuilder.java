@@ -17,7 +17,7 @@ import io.camunda.operate.webapp.rest.dto.metadata.FlowNodeInstanceMetadata;
 import io.camunda.operate.webapp.rest.dto.metadata.FlowNodeInstanceMetadataDto;
 import io.camunda.operate.webapp.rest.dto.metadata.ServiceTaskInstanceMetadataDto;
 import io.camunda.operate.webapp.rest.dto.metadata.UserTaskInstanceMetadataDto;
-import io.camunda.webapps.schema.entities.operate.EventEntity;
+import io.camunda.webapps.schema.entities.event.EventEntity;
 import io.camunda.webapps.schema.entities.operate.FlowNodeInstanceEntity;
 import io.camunda.webapps.schema.entities.operate.FlowNodeType;
 import java.util.Arrays;

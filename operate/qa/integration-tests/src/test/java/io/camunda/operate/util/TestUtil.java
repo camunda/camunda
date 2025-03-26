@@ -17,7 +17,7 @@ import io.camunda.operate.store.opensearch.client.sync.OpenSearchIndexOperations
 import io.camunda.operate.store.opensearch.client.sync.OpenSearchTemplateOperations;
 import io.camunda.operate.store.opensearch.client.sync.RichOpenSearchClient;
 import io.camunda.webapps.operate.TreePath;
-import io.camunda.webapps.schema.entities.operate.EventEntity;
+import io.camunda.webapps.schema.entities.event.EventEntity;
 import io.camunda.webapps.schema.entities.operate.FlowNodeState;
 import io.camunda.webapps.schema.entities.operate.FlowNodeType;
 import io.camunda.webapps.schema.entities.operate.IncidentEntity;
