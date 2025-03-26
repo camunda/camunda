@@ -392,11 +392,10 @@ public class TestContainerUtil {
   // for newer versions
   private void applyConfiguration(
       final GenericContainer<?> operateContainer, final TestContext testContext) {
-    final String elsHost = testContext.getInternalElsHost();
-    final Integer elsPort = testContext.getInternalElsPort();
     operateContainer
         .withEnv("CAMUNDA_OPERATE_ELASTICSEARCH_URL", getElasticURL(testContext))
         .withEnv("CAMUNDA_OPERATE_ZEEBEELASTICSEARCH_URL", getElasticURL(testContext))
+        .withEnv("CAMUNDA_DATABASE_URL", getElasticURL(testContext))
         .withEnv("SPRING_PROFILES_ACTIVE", "dev");
     final Map<String, String> customEnvs = testContext.getOperateContainerEnvs();
     customEnvs.forEach(operateContainer::withEnv);
