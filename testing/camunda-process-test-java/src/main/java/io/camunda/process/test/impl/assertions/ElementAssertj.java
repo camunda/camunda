@@ -171,15 +171,15 @@ public class ElementAssertj extends AbstractAssert<ElementAssertj, String> {
     awaitFlowNodeInstanceAssertion(
         flowNodeInstanceFilter,
         flowNodeInstances -> {
-          final List<ElementSelector> selectorsNotMatched =
+          final List<ElementSelector> selectorsWithActiveElements =
               getSelectorsWithInstances(elementSelectors, flowNodeInstances);
 
-          assertThat(selectorsNotMatched)
+          assertThat(selectorsWithActiveElements)
               .withFailMessage(
                   "%s should have no active elements %s but the following elements were active:\n%s",
                   actual,
                   formatElementSelectors(elementSelectors),
-                  formatFlowNodeInstanceStates(selectorsNotMatched, flowNodeInstances))
+                  formatFlowNodeInstanceStates(selectorsWithActiveElements, flowNodeInstances))
               .isEmpty();
         });
   }
