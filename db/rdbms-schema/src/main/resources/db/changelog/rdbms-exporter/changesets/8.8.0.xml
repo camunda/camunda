@@ -495,6 +495,11 @@
       <column name="STATUS" type="VARCHAR(20)" defaultValue="ACTIVE"/>
     </createTable>
 
+    <createIndex tableName="${prefix}BATCH_OPERATION_ITEM"
+      indexName="${prefix}IDX_BATCH_OPERATION_ITEM_KEY">
+      <column name="BATCH_OPERATION_KEY"/>
+    </createIndex>
+
     <modifySql dbms="mariadb">
       <!-- MariaDB doesn't support TIMESTAMP WITH TIME ZONE, but its TIMESTAMP type has already a time zone -->
       <replace replace="TIMESTAMP WITH TIME ZONE" with="TIMESTAMP"/>
