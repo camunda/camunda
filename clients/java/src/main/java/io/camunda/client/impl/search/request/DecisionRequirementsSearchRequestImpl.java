@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.camunda.client.impl.search.query;
+package io.camunda.client.impl.search.request;
 
 import static io.camunda.client.api.search.request.SearchRequestBuilders.decisionRequirementsSort;
 import static io.camunda.client.api.search.request.SearchRequestBuilders.searchRequestPage;
@@ -29,10 +29,7 @@ import io.camunda.client.api.search.response.SearchResponse;
 import io.camunda.client.api.search.sort.DecisionRequirementsSort;
 import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
-import io.camunda.client.impl.search.SearchRequestPageImpl;
-import io.camunda.client.impl.search.SearchRequestSortMapper;
-import io.camunda.client.impl.search.SearchResponseMapper;
-import io.camunda.client.impl.search.TypedSearchRequestPropertyProvider;
+import io.camunda.client.impl.search.response.SearchResponseMapper;
 import io.camunda.client.impl.search.sort.DecisionRequirementsSortImpl;
 import io.camunda.client.protocol.rest.DecisionRequirementsSearchQuery;
 import io.camunda.client.protocol.rest.DecisionRequirementsSearchQueryResult;

@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.camunda.client.impl.search.query;
+package io.camunda.client.impl.search.request;
 
 import static io.camunda.client.api.search.request.SearchRequestBuilders.processDefinitionFilter;
 import static io.camunda.client.api.search.request.SearchRequestBuilders.processDefinitionSort;
@@ -30,9 +30,7 @@ import io.camunda.client.api.search.response.SearchResponse;
 import io.camunda.client.api.search.sort.ProcessDefinitionSort;
 import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
-import io.camunda.client.impl.search.SearchRequestSortMapper;
-import io.camunda.client.impl.search.SearchResponseMapper;
-import io.camunda.client.impl.search.TypedSearchRequestPropertyProvider;
+import io.camunda.client.impl.search.response.SearchResponseMapper;
 import io.camunda.client.protocol.rest.ProcessDefinitionSearchQuery;
 import io.camunda.client.protocol.rest.ProcessDefinitionSearchQueryResult;
 import io.camunda.client.protocol.rest.SearchQueryPageRequest;
@@ -93,7 +91,7 @@ public class ProcessDefinitionSearchRequestImpl
 
   @Override
   public ProcessDefinitionSearchRequest sort(final ProcessDefinitionSort value) {
-    final List<io.camunda.client.impl.search.SearchRequestSort> sorting =
+    final List<io.camunda.client.impl.search.request.SearchRequestSort> sorting =
         provideSearchRequestProperty(value);
     request.setSort(SearchRequestSortMapper.toProcessDefinitionSearchQuerySortRequest(sorting));
     return this;

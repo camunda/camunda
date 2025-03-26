@@ -16,7 +16,7 @@
 package io.camunda.client.impl.search.sort;
 
 import io.camunda.client.api.search.sort.DecisionInstanceSort;
-import io.camunda.client.impl.search.query.SearchRequestSortBase;
+import io.camunda.client.impl.search.request.SearchRequestSortBase;
 
 public class DecisionInstanceSortImpl extends SearchRequestSortBase<DecisionInstanceSort>
     implements DecisionInstanceSort {

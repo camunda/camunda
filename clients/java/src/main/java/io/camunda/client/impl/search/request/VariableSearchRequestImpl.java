@@ -13,53 +13,46 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.camunda.client.impl.search.query;
+package io.camunda.client.impl.search.request;
 
 import static io.camunda.client.api.search.request.SearchRequestBuilders.searchRequestPage;
-import static io.camunda.client.api.search.request.SearchRequestBuilders.userTaskVariableFilter;
+import static io.camunda.client.api.search.request.SearchRequestBuilders.variableFilter;
 import static io.camunda.client.api.search.request.SearchRequestBuilders.variableSort;
 
 import io.camunda.client.api.CamundaFuture;
 import io.camunda.client.api.JsonMapper;
-import io.camunda.client.api.search.filter.UserTaskVariableFilter;
+import io.camunda.client.api.search.filter.VariableFilter;
 import io.camunda.client.api.search.request.FinalSearchRequestStep;
 import io.camunda.client.api.search.request.SearchRequestPage;
-import io.camunda.client.api.search.request.UserTaskVariableSearchRequest;
+import io.camunda.client.api.search.request.VariableSearchRequest;
 import io.camunda.client.api.search.response.SearchResponse;
 import io.camunda.client.api.search.response.Variable;
 import io.camunda.client.api.search.sort.VariableSort;
 import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
-import io.camunda.client.impl.search.SearchRequestPageImpl;
-import io.camunda.client.impl.search.SearchRequestSortMapper;
-import io.camunda.client.impl.search.SearchResponseMapper;
-import io.camunda.client.impl.search.TypedSearchRequestPropertyProvider;
+import io.camunda.client.impl.search.response.SearchResponseMapper;
 import io.camunda.client.impl.search.sort.VariableSortImpl;
-import io.camunda.client.protocol.rest.UserTaskVariableSearchQueryRequest;
+import io.camunda.client.protocol.rest.VariableSearchQuery;
 import io.camunda.client.protocol.rest.VariableSearchQueryResult;
-import io.camunda.client.protocol.rest.VariableUserTaskFilterRequest;
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import org.apache.hc.client5.http.config.RequestConfig;
 
-public class UserTaskVariableSearchRequestImpl
-    extends TypedSearchRequestPropertyProvider<UserTaskVariableSearchQueryRequest>
-    implements UserTaskVariableSearchRequest {
+public class VariableSearchRequestImpl
+    extends TypedSearchRequestPropertyProvider<VariableSearchQuery>
+    implements VariableSearchRequest {
 
-  private final UserTaskVariableSearchQueryRequest request;
+  private final VariableSearchQuery request;
+  private final JsonMapper jsonMapper;
   private final HttpClient httpClient;
   private final RequestConfig.Builder httpRequestConfig;
-  private final JsonMapper jsonMapper;
-  private final long userTaskKey;
 
-  public UserTaskVariableSearchRequestImpl(
-      final HttpClient httpClient, final JsonMapper jsonMapper, final long userTaskKey) {
-    this.httpClient = httpClient;
+  public VariableSearchRequestImpl(final HttpClient httpClient, final JsonMapper jsonMapper) {
+    request = new VariableSearchQuery();
     this.jsonMapper = jsonMapper;
-    this.userTaskKey = userTaskKey;
+    this.httpClient = httpClient;
     httpRequestConfig = httpClient.newRequestConfig();
-    request = new UserTaskVariableSearchQueryRequest();
   }
 
   @Override
@@ -72,7 +65,7 @@ public class UserTaskVariableSearchRequestImpl
   public CamundaFuture<SearchResponse<Variable>> send() {
     final HttpCamundaFuture<SearchResponse<Variable>> result = new HttpCamundaFuture<>();
     httpClient.post(
-        String.format("/user-tasks/%d/variables/search", userTaskKey),
+        "/variables/search",
         jsonMapper.toJson(request),
         httpRequestConfig.build(),
         VariableSearchQueryResult.class,
@@ -82,45 +75,46 @@ public class UserTaskVariableSearchRequestImpl
   }
 
   @Override
-  public UserTaskVariableSearchRequest filter(final UserTaskVariableFilter value) {
-    final VariableUserTaskFilterRequest filter = provideSearchRequestProperty(value);
+  public VariableSearchRequest filter(final VariableFilter value) {
+    final io.camunda.client.protocol.rest.VariableFilter filter =
+        provideSearchRequestProperty(value);
     request.setFilter(filter);
     return this;
   }
 
   @Override
-  public UserTaskVariableSearchRequest filter(final Consumer<UserTaskVariableFilter> fn) {
-    return filter(userTaskVariableFilter(fn));
+  public VariableSearchRequest filter(final Consumer<VariableFilter> fn) {
+    return filter(variableFilter(fn));
   }
 
   @Override
-  public UserTaskVariableSearchRequest sort(final VariableSort value) {
+  public VariableSearchRequest sort(final VariableSort value) {
     final VariableSortImpl sorting = (VariableSortImpl) value;
     request.setSort(
-        SearchRequestSortMapper.toUserTaskVariableSearchQuerySortRequest(
+        SearchRequestSortMapper.toVariableSearchQuerySortRequest(
             sorting.getSearchRequestProperty()));
     return this;
   }
 
   @Override
-  public UserTaskVariableSearchRequest sort(final Consumer<VariableSort> fn) {
+  public VariableSearchRequest sort(final Consumer<VariableSort> fn) {
     return sort(variableSort(fn));
   }
 
   @Override
-  public UserTaskVariableSearchRequest page(final SearchRequestPage value) {
+  public VariableSearchRequest page(final SearchRequestPage value) {
     final SearchRequestPageImpl page = (SearchRequestPageImpl) value;
     request.setPage(page.getSearchRequestProperty());
     return this;
   }
 
   @Override
-  public UserTaskVariableSearchRequest page(final Consumer<SearchRequestPage> fn) {
+  public VariableSearchRequest page(final Consumer<SearchRequestPage> fn) {
     return page(searchRequestPage(fn));
   }
 
   @Override
-  protected UserTaskVariableSearchQueryRequest getSearchRequestProperty() {
+  protected VariableSearchQuery getSearchRequestProperty() {
     return request;
   }
 }

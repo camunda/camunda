@@ -13,10 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.camunda.client.impl.search.query;
+package io.camunda.client.impl.search.request;
 
-import io.camunda.client.impl.search.SearchRequestSort;
-import io.camunda.client.impl.search.TypedSearchRequestPropertyProvider;
 import io.camunda.client.protocol.rest.SortOrderEnum;
 import java.util.ArrayList;
 import java.util.List;

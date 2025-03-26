@@ -16,7 +16,7 @@
 package io.camunda.client.impl.search.sort;
 
 import io.camunda.client.api.search.sort.ProcessInstanceSort;
-import io.camunda.client.impl.search.query.SearchRequestSortBase;
+import io.camunda.client.impl.search.request.SearchRequestSortBase;
 
 public class ProcessInstanceSortImpl extends SearchRequestSortBase<ProcessInstanceSort>
     implements ProcessInstanceSort {

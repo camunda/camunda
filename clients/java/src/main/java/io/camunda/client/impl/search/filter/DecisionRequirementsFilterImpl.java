@@ -16,7 +16,7 @@
 package io.camunda.client.impl.search.filter;
 
 import io.camunda.client.api.search.filter.DecisionRequirementsFilter;
-import io.camunda.client.impl.search.TypedSearchRequestPropertyProvider;
+import io.camunda.client.impl.search.request.TypedSearchRequestPropertyProvider;
 import io.camunda.client.impl.util.ParseUtil;
 
 public class DecisionRequirementsFilterImpl

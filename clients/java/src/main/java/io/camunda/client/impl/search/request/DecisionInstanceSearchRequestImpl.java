@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.camunda.client.impl.search.query;
+package io.camunda.client.impl.search.request;
 
 import static io.camunda.client.api.search.request.SearchRequestBuilders.decisionInstanceFilter;
 import static io.camunda.client.api.search.request.SearchRequestBuilders.decisionInstanceSort;
@@ -30,9 +30,7 @@ import io.camunda.client.api.search.response.SearchResponse;
 import io.camunda.client.api.search.sort.DecisionInstanceSort;
 import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
-import io.camunda.client.impl.search.SearchRequestSortMapper;
-import io.camunda.client.impl.search.SearchResponseMapper;
-import io.camunda.client.impl.search.TypedSearchRequestPropertyProvider;
+import io.camunda.client.impl.search.response.SearchResponseMapper;
 import io.camunda.client.protocol.rest.DecisionInstanceSearchQueryResult;
 import io.camunda.client.protocol.rest.SearchQueryPageRequest;
 import java.time.Duration;
@@ -74,7 +72,7 @@ public class DecisionInstanceSearchRequestImpl
 
   @Override
   public DecisionInstanceSearchRequest sort(final DecisionInstanceSort value) {
-    final List<io.camunda.client.impl.search.SearchRequestSort> sorting =
+    final List<io.camunda.client.impl.search.request.SearchRequestSort> sorting =
         provideSearchRequestProperty(value);
     request.setSort(SearchRequestSortMapper.toDecisionInstanceSearchQuerySortRequest(sorting));
     return this;
