@@ -209,7 +209,7 @@ public class TasklistCompleteUserTaskAuthorizationIT {
             () -> {
               final var result =
                   adminCamundaClient
-                      .newProcessDefinitionQuery()
+                      .newProcessDefinitionSearchRequest()
                       .filter(f -> f.processDefinitionId(processDefinitionId))
                       .send()
                       .join();

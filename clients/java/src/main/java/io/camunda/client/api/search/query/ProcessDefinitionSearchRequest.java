@@ -19,7 +19,7 @@ import io.camunda.client.api.search.filter.ProcessDefinitionFilter;
 import io.camunda.client.api.search.response.ProcessDefinition;
 import io.camunda.client.api.search.sort.ProcessDefinitionSort;
 
-public interface ProcessDefinitionQuery
+public interface ProcessDefinitionSearchRequest
     extends TypedSearchQueryRequest<
-            ProcessDefinitionFilter, ProcessDefinitionSort, ProcessDefinitionQuery>,
+            ProcessDefinitionFilter, ProcessDefinitionSort, ProcessDefinitionSearchRequest>,
         FinalSearchQueryStep<ProcessDefinition> {}

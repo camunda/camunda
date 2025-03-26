@@ -75,11 +75,11 @@ public class ProcessDefinitionQueryTest {
   @Test
   void shouldSearchByFromWithLimit() {
     // when
-    final var resultAll = camundaClient.newProcessDefinitionQuery().send().join();
+    final var resultAll = camundaClient.newProcessDefinitionSearchRequest().send().join();
     final var thirdKey = resultAll.items().get(2).getProcessDefinitionKey();
 
     final var resultSearchFrom =
-        camundaClient.newProcessDefinitionQuery().page(p -> p.limit(2).from(2)).send().join();
+        camundaClient.newProcessDefinitionSearchRequest().page(p -> p.limit(2).from(2)).send().join();
 
     // then
     assertThat(resultSearchFrom.items().size()).isEqualTo(2);
@@ -115,7 +115,7 @@ class SomeIT {
   @Test
   void someTest() {
     // when
-    final var processDefinitions = client.newProcessDefinitionQuery().send().join().items();
+    final var processDefinitions = client.newProcessDefinitionSearchRequest().send().join().items();
 
     // then
     assertThat(processDefinitions).hasSize(2);
@@ -179,7 +179,7 @@ class ProcessAuthorizationIT {
   void searchShouldReturnAuthorizedProcessDefinitions(
       @Authenticated(RESTRICTED) final CamundaClient userClient) {
     // when
-    final var processDefinitions = userClient.newProcessDefinitionQuery().send().join().items();
+    final var processDefinitions = userClient.newProcessDefinitionSearchRequest().send().join().items();
 
     // then
     assertThat(processDefinitions).hasSize(2);

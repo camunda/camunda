@@ -115,7 +115,7 @@ public class QueryTest {
         .ignoreExceptions() // Ignore exceptions and continue retrying
         .untilAsserted(
             () -> {
-              final var result = camundaClient.newProcessDefinitionQuery().send().join();
+              final var result = camundaClient.newProcessDefinitionSearchRequest().send().join();
               assertThat(result.page().totalItems()).isEqualTo(expectedProcessDefinitions);
             });
   }

@@ -24,7 +24,7 @@ import io.camunda.client.api.JsonMapper;
 import io.camunda.client.api.search.SearchRequestPage;
 import io.camunda.client.api.search.filter.ProcessDefinitionFilter;
 import io.camunda.client.api.search.query.FinalSearchQueryStep;
-import io.camunda.client.api.search.query.ProcessDefinitionQuery;
+import io.camunda.client.api.search.query.ProcessDefinitionSearchRequest;
 import io.camunda.client.api.search.response.ProcessDefinition;
 import io.camunda.client.api.search.response.SearchQueryResponse;
 import io.camunda.client.api.search.sort.ProcessDefinitionSort;
@@ -43,16 +43,17 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import org.apache.hc.client5.http.config.RequestConfig;
 
-public class ProcessDefinitionQueryImpl
+public class ProcessDefinitionSearchRequestImpl
     extends TypedSearchRequestPropertyProvider<ProcessDefinitionSearchQuery>
-    implements ProcessDefinitionQuery {
+    implements ProcessDefinitionSearchRequest {
 
   private final ProcessDefinitionSearchQuery request;
   private final JsonMapper jsonMapper;
   private final HttpClient httpClient;
   private final RequestConfig.Builder httpRequestConfig;
 
-  public ProcessDefinitionQueryImpl(final HttpClient httpClient, final JsonMapper jsonMapper) {
+  public ProcessDefinitionSearchRequestImpl(
+      final HttpClient httpClient, final JsonMapper jsonMapper) {
     request = new ProcessDefinitionSearchQuery();
     this.jsonMapper = jsonMapper;
     this.httpClient = httpClient;
@@ -80,7 +81,7 @@ public class ProcessDefinitionQueryImpl
   }
 
   @Override
-  public ProcessDefinitionQuery filter(final ProcessDefinitionFilter value) {
+  public ProcessDefinitionSearchRequest filter(final ProcessDefinitionFilter value) {
     final io.camunda.client.protocol.rest.ProcessDefinitionFilter filter =
         provideSearchRequestProperty(value);
     request.setFilter(filter);
@@ -88,12 +89,12 @@ public class ProcessDefinitionQueryImpl
   }
 
   @Override
-  public ProcessDefinitionQuery filter(final Consumer<ProcessDefinitionFilter> fn) {
+  public ProcessDefinitionSearchRequest filter(final Consumer<ProcessDefinitionFilter> fn) {
     return filter(processDefinitionFilter(fn));
   }
 
   @Override
-  public ProcessDefinitionQuery sort(final ProcessDefinitionSort value) {
+  public ProcessDefinitionSearchRequest sort(final ProcessDefinitionSort value) {
     final List<SearchQuerySortRequest> sorting = provideSearchRequestProperty(value);
     request.setSort(
         SearchQuerySortRequestMapper.toProcessDefinitionSearchQuerySortRequest(sorting));
@@ -101,19 +102,19 @@ public class ProcessDefinitionQueryImpl
   }
 
   @Override
-  public ProcessDefinitionQuery sort(final Consumer<ProcessDefinitionSort> fn) {
+  public ProcessDefinitionSearchRequest sort(final Consumer<ProcessDefinitionSort> fn) {
     return sort(processDefinitionSort(fn));
   }
 
   @Override
-  public ProcessDefinitionQuery page(final SearchRequestPage value) {
+  public ProcessDefinitionSearchRequest page(final SearchRequestPage value) {
     final SearchQueryPageRequest page = provideSearchRequestProperty(value);
     request.setPage(page);
     return this;
   }
 
   @Override
-  public ProcessDefinitionQuery page(final Consumer<SearchRequestPage> fn) {
+  public ProcessDefinitionSearchRequest page(final Consumer<SearchRequestPage> fn) {
     return page(searchRequestPage(fn));
   }
 

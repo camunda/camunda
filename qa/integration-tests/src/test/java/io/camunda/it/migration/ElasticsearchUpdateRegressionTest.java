@@ -103,7 +103,7 @@ public class ElasticsearchUpdateRegressionTest {
         .untilAsserted(
             () -> {
               final SearchQueryResponse<ProcessDefinition> searchQueryResponse =
-                  camundaClient.newProcessDefinitionQuery().send().join();
+                  camundaClient.newProcessDefinitionSearchRequest().send().join();
               assertThat(searchQueryResponse.items().size()).isNotZero();
             });
   }

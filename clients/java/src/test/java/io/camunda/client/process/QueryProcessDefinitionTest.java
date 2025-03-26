@@ -75,7 +75,7 @@ public class QueryProcessDefinitionTest extends ClientRestTest {
   @Test
   public void shouldSearchProcessDefinitionWithEmptyQuery() {
     // when
-    client.newProcessDefinitionQuery().send().join();
+    client.newProcessDefinitionSearchRequest().send().join();
 
     // then
     final ProcessDefinitionSearchQuery request =
@@ -87,7 +87,7 @@ public class QueryProcessDefinitionTest extends ClientRestTest {
   public void shouldSearchProcessDefinitionWithFullFilters() {
     // when
     client
-        .newProcessDefinitionQuery()
+        .newProcessDefinitionSearchRequest()
         .filter(
             f ->
                 f.processDefinitionKey(5L)
@@ -117,7 +117,7 @@ public class QueryProcessDefinitionTest extends ClientRestTest {
   void shouldSearchProcessDefinitionWithFullSorting() {
     // when
     client
-        .newProcessDefinitionQuery()
+        .newProcessDefinitionSearchRequest()
         .sort(
             s ->
                 s.processDefinitionKey()
@@ -157,7 +157,7 @@ public class QueryProcessDefinitionTest extends ClientRestTest {
   void shouldSearchWithFullPagination() {
     // when
     client
-        .newProcessDefinitionQuery()
+        .newProcessDefinitionSearchRequest()
         .page(
             p ->
                 p.from(23)

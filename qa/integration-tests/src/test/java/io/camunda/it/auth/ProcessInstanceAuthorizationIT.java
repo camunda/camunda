@@ -305,7 +305,7 @@ class ProcessInstanceAuthorizationIT {
 
   private long getProcessDefinitionKey(final CamundaClient adminClient, final String processId) {
     return adminClient
-        .newProcessDefinitionQuery()
+        .newProcessDefinitionSearchRequest()
         .filter(f -> f.processDefinitionId(processId))
         .send()
         .join()

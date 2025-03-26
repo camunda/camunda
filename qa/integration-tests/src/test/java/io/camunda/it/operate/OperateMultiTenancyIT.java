@@ -134,7 +134,7 @@ public class OperateMultiTenancyIT {
         .ignoreExceptions() // Ignore exceptions and continue retrying
         .untilAsserted(
             () ->
-                assertThat(camundaClient.newProcessDefinitionQuery().send().join().items())
+                assertThat(camundaClient.newProcessDefinitionSearchRequest().send().join().items())
                     .hasSize(expectedProcessDefinitions));
   }
 }

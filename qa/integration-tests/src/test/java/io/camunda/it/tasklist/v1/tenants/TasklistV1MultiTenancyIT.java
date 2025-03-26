@@ -115,7 +115,7 @@ public class TasklistV1MultiTenancyIT {
         .ignoreExceptions() // Ignore exceptions and continue retrying
         .untilAsserted(
             () ->
-                assertThat(camundaClient.newProcessDefinitionQuery().send().join().items())
+                assertThat(camundaClient.newProcessDefinitionSearchRequest().send().join().items())
                     .hasSize(expectedProcessDefinitions));
   }
 }
