@@ -2414,7 +2414,7 @@ paths:
                 $ref: "#/components/schemas/ProblemDetail"
         "500":
           $ref: "#/components/responses/InternalServerError"
-    patch:
+    put:
       tags:
         - Group
       operationId: updateGroup
@@ -2438,8 +2438,12 @@ paths:
             schema:
               $ref: "#/components/schemas/GroupUpdateRequest"
       responses:
-        "204":
+        "200":
           description: The group was updated successfully.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GroupUpdateResult"
         "400":
           $ref: "#/components/responses/InvalidData"
         "401":
@@ -5731,6 +5735,21 @@ components:
         description:
           type: string
           description: The updated description of the group.
+    GroupUpdateResult:
+      type: object
+      properties:
+        groupId:
+          type: string
+          description: The unique external group ID
+        name:
+          type: string
+          description: The name of the group.
+        description:
+          type: string
+          description: The description of the group.
+        groupKey:
+          type: string
+          description: The unique system-generated internal group key.
     GroupResult:
       description: Group search response item.
       type: object

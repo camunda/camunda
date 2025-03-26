@@ -45,6 +45,7 @@ import io.camunda.zeebe.gateway.protocol.rest.EvaluatedDecisionInputItem;
 import io.camunda.zeebe.gateway.protocol.rest.EvaluatedDecisionOutputItem;
 import io.camunda.zeebe.gateway.protocol.rest.EvaluatedDecisionResult;
 import io.camunda.zeebe.gateway.protocol.rest.GroupCreateResult;
+import io.camunda.zeebe.gateway.protocol.rest.GroupUpdateResult;
 import io.camunda.zeebe.gateway.protocol.rest.MappingRuleCreateResult;
 import io.camunda.zeebe.gateway.protocol.rest.MatchedDecisionRuleItem;
 import io.camunda.zeebe.gateway.protocol.rest.MessageCorrelationResult;
@@ -525,6 +526,12 @@ public final class ResponseMapper {
             .groupId(groupRecord.getGroupId())
             .description(groupRecord.getDescription());
     return new ResponseEntity<>(response, HttpStatus.CREATED);
+  }
+
+  public static ResponseEntity<Object> toGroupUpdateResponse(final GroupRecord groupRecord) {
+    final var response =
+        new GroupUpdateResult().groupKey(KeyUtil.keyToString(groupRecord.getGroupKey())).groupId(groupRecord.getGroupId()).description(groupRecord.getDescription()).name(groupRecord.getName());
+    return new ResponseEntity<>(response, HttpStatus.OK);
   }
 
   public static ResponseEntity<Object> toTenantCreateResponse(final TenantRecord record) {

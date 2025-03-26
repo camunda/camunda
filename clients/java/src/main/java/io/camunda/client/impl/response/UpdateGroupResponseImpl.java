@@ -16,5 +16,39 @@
 package io.camunda.client.impl.response;
 
 import io.camunda.client.api.response.UpdateGroupResponse;
+import io.camunda.client.protocol.rest.GroupUpdateResult;
 
-public class UpdateGroupResponseImpl implements UpdateGroupResponse {}
+public class UpdateGroupResponseImpl implements UpdateGroupResponse {
+  private long groupKey;
+  private String groupId;
+  private String name;
+  private String description;
+
+  @Override
+  public long getGroupKey() {
+    return groupKey;
+  }
+
+  @Override
+  public String getGroupId() {
+    return groupId;
+  }
+
+  @Override
+  public String getName() {
+    return name;
+  }
+
+  @Override
+  public String getDescription() {
+    return description;
+  }
+
+  public UpdateGroupResponseImpl setResponse(final GroupUpdateResult response) {
+    groupKey = Long.parseLong(response.getGroupKey());
+    groupId = response.getGroupId();
+    name = response.getName();
+    description = response.getDescription();
+    return this;
+  }
+}
