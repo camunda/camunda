@@ -14,6 +14,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.User;
@@ -24,6 +25,7 @@ public final class CamundaUser extends User implements CamundaPrincipal {
   private final String displayName;
   private final String salesPlanType;
   private final Map<ClusterMetadata.AppName, String> c8Links;
+  private final Set<String> organizationIds;
   private final boolean canLogout;
   private final String email;
   private final AuthenticationContext authentication;
@@ -38,6 +40,7 @@ public final class CamundaUser extends User implements CamundaPrincipal {
       final AuthenticationContext authentication,
       final String salesPlanType,
       final Map<ClusterMetadata.AppName, String> c8Links,
+      final Set<String> organizationIds,
       final boolean canLogout) {
     super(username, password, authorities);
     this.userKey = userKey;
@@ -45,6 +48,7 @@ public final class CamundaUser extends User implements CamundaPrincipal {
     this.salesPlanType = salesPlanType;
     this.authentication = authentication;
     this.c8Links = Objects.requireNonNullElse(c8Links, Collections.emptyMap());
+    this.organizationIds = organizationIds;
     this.canLogout = canLogout;
     this.email = email;
   }
@@ -89,6 +93,11 @@ public final class CamundaUser extends User implements CamundaPrincipal {
   }
 
   @Override
+  public Set<String> getOrganizationIds() {
+    return organizationIds;
+  }
+
+  @Override
   public AuthenticationContext getAuthenticationContext() {
     return authentication;
   }
@@ -106,6 +115,7 @@ public final class CamundaUser extends User implements CamundaPrincipal {
     private List<String> groups = List.of();
     private String salesPlanType;
     private Map<ClusterMetadata.AppName, String> c8Links = Map.of();
+    private Set<String> organizationIds;
     private boolean canLogout;
 
     private CamundaUserBuilder() {}
@@ -175,6 +185,11 @@ public final class CamundaUser extends User implements CamundaPrincipal {
       return this;
     }
 
+    public CamundaUserBuilder withOrganizationIds(final Set<String> organizationIds) {
+      this.organizationIds = organizationIds;
+      return this;
+    }
+
     public CamundaUserBuilder withCanLogout(final boolean canLogout) {
       this.canLogout = canLogout;
       return this;
@@ -191,6 +206,7 @@ public final class CamundaUser extends User implements CamundaPrincipal {
           new AuthenticationContext(roles, authorizedApplications, tenants, groups),
           salesPlanType,
           c8Links,
+          organizationIds,
           canLogout);
     }
   }

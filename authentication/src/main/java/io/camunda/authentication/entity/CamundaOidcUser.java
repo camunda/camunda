@@ -20,13 +20,16 @@ public class CamundaOidcUser implements OidcUser, CamundaPrincipal, Serializable
   private final OidcUser user;
   private final AuthenticationContext authentication;
   private final Set<Long> mappingKeys;
+  private final Set<String> organizationIds;
 
   public CamundaOidcUser(
       final OidcUser oidcUser,
       final Set<Long> mappingKeys,
+      final Set<String> organizationIds,
       final AuthenticationContext authentication) {
     user = oidcUser;
     this.mappingKeys = mappingKeys;
+    this.organizationIds = organizationIds;
     this.authentication = authentication;
   }
 
@@ -38,6 +41,11 @@ public class CamundaOidcUser implements OidcUser, CamundaPrincipal, Serializable
   @Override
   public String getDisplayName() {
     return user.getPreferredUsername();
+  }
+
+  @Override
+  public Set<String> getOrganizationIds() {
+    return organizationIds;
   }
 
   @Override
