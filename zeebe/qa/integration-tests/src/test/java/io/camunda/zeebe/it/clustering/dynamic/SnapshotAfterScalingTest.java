@@ -13,6 +13,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.broker.system.configuration.ClusterCfg;
 import io.camunda.zeebe.broker.system.configuration.ConfigManagerCfg;
+import io.camunda.zeebe.broker.system.configuration.ExportingCfg;
 import io.camunda.zeebe.dynamic.config.gossip.ClusterConfigurationGossiperConfig;
 import io.camunda.zeebe.protocol.record.intent.MessageIntent;
 import io.camunda.zeebe.qa.util.actuator.ClusterActuator;
@@ -26,6 +27,7 @@ import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotId;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import java.time.Duration;
 import java.util.Objects;
+import java.util.Set;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Test;
 
@@ -41,6 +43,10 @@ final class SnapshotAfterScalingTest {
           .withGatewaysCount(1)
           .withBrokerConfig(
               broker -> {
+                broker
+                    .brokerConfig()
+                    .setExporting(new ExportingCfg(Set.of(), Duration.ofMillis(100)));
+
                 final ConfigManagerCfg configManagerCfg =
                     new ConfigManagerCfg(
                         new ClusterConfigurationGossiperConfig(
@@ -76,7 +82,10 @@ final class SnapshotAfterScalingTest {
     Awaitility.await()
         .until(
             () ->
-                RecordingExporter.messageRecords(MessageIntent.PUBLISHED).withPartitionId(1).count()
+                RecordingExporter.messageRecords(MessageIntent.PUBLISHED)
+                        .withPartitionId(1)
+                        .limit(1)
+                        .count()
                     == 1);
 
     // then
