@@ -29,7 +29,6 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.function.Function;
-import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import org.assertj.core.api.AbstractAssert;
 import org.awaitility.Awaitility;
@@ -75,14 +74,12 @@ public class ElementAssertj extends AbstractAssert<ElementAssertj, String> {
 
           assertThat(selectorsNotMatched)
               .withFailMessage(
-                  () ->
-                      String.format(
-                          "%s should have %s elements %s but the following elements were not %s:\n%s",
-                          actual,
-                          formatState(expectedState),
-                          formatElementSelectors(elementSelectors),
-                          formatState(expectedState),
-                          formatFlowNodeInstanceStates(selectorsNotMatched, flowNodeInstances)))
+                  "%s should have %s elements %s but the following elements were not %s:\n%s",
+                  actual,
+                  formatState(expectedState),
+                  formatElementSelectors(elementSelectors),
+                  formatState(expectedState),
+                  formatFlowNodeInstanceStates(selectorsNotMatched, flowNodeInstances))
               .isEmpty();
         });
   }
@@ -131,18 +128,16 @@ public class ElementAssertj extends AbstractAssert<ElementAssertj, String> {
 
           assertThat(actualTimes)
               .withFailMessage(
-                  () ->
-                      String.format(
-                          "%s should have %s element '%s' %d times but was %d. Element instances:\n%s",
-                          actual,
-                          formatState(expectedState),
-                          elementSelector.describe(),
-                          expectedTimes,
-                          actualTimes,
-                          elementInstances.isEmpty()
-                              ? "<None>"
-                              : formatFlowNodeInstanceStates(
-                                  elementInstances, elementInstance -> elementSelector.describe())))
+                  "%s should have %s element '%s' %d times but was %d. Element instances:\n%s",
+                  actual,
+                  formatState(expectedState),
+                  elementSelector.describe(),
+                  expectedTimes,
+                  actualTimes,
+                  elementInstances.isEmpty()
+                      ? "<None>"
+                      : formatFlowNodeInstanceStates(
+                          elementInstances, elementInstance -> elementSelector.describe()))
               .isEqualTo(expectedTimes);
         });
   }
@@ -159,12 +154,10 @@ public class ElementAssertj extends AbstractAssert<ElementAssertj, String> {
 
     assertThat(activatedElements)
         .withFailMessage(
-            () ->
-                String.format(
-                    "%s should have not activated elements %s but the following elements were activated:\n%s",
-                    actual,
-                    formatElementSelectors(elementSelectors),
-                    formatFlowNodeInstanceStates(activatedElements, flowNodeInstances)))
+            "%s should have not activated elements %s but the following elements were activated:\n%s",
+            actual,
+            formatElementSelectors(elementSelectors),
+            formatFlowNodeInstanceStates(activatedElements, flowNodeInstances))
         .isEmpty();
   }
 
@@ -183,12 +176,10 @@ public class ElementAssertj extends AbstractAssert<ElementAssertj, String> {
 
           assertThat(selectorsNotMatched)
               .withFailMessage(
-                  () ->
-                      String.format(
-                          "%s should have no active elements %s but the following elements were active:\n%s",
-                          actual,
-                          formatElementSelectors(elementSelectors),
-                          formatFlowNodeInstanceStates(selectorsNotMatched, flowNodeInstances)))
+                  "%s should have no active elements %s but the following elements were active:\n%s",
+                  actual,
+                  formatElementSelectors(elementSelectors),
+                  formatFlowNodeInstanceStates(selectorsNotMatched, flowNodeInstances))
               .isEmpty();
         });
   }
@@ -213,32 +204,28 @@ public class ElementAssertj extends AbstractAssert<ElementAssertj, String> {
                               .noneMatch(selector -> selector.test(flowNodeInstance)))
                   .collect(Collectors.toList());
 
-          final Supplier<String> failureMessage =
-              () -> {
-                final List<String> failureMessages = new ArrayList<>();
+          final List<String> failureMessages = new ArrayList<>();
+          if (!selectorsNotMatched.isEmpty()) {
+            failureMessages.add(
+                String.format(
+                    "%s should have active elements %s but the following elements were not active:\n%s",
+                    actual,
+                    formatElementSelectors(elementSelectors),
+                    formatFlowNodeInstanceStates(selectorsNotMatched, flowNodeInstances)));
+          }
+          if (!otherActiveElements.isEmpty()) {
+            failureMessages.add(
+                String.format(
+                    "%s should have no active elements except %s but the following elements were active:\n%s",
+                    actual,
+                    formatElementSelectors(elementSelectors),
+                    formatFlowNodeInstanceStates(
+                        otherActiveElements, FlowNodeInstance::getFlowNodeId)));
+          }
+          final String combinedFailureMessage = String.join("\n\n", failureMessages);
 
-                if (!selectorsNotMatched.isEmpty()) {
-                  failureMessages.add(
-                      String.format(
-                          "%s should have active elements %s but the following elements were not active:\n%s",
-                          actual,
-                          formatElementSelectors(elementSelectors),
-                          formatFlowNodeInstanceStates(selectorsNotMatched, flowNodeInstances)));
-                }
-                if (!otherActiveElements.isEmpty()) {
-                  failureMessages.add(
-                      String.format(
-                          "%s should have no active elements except %s but the following elements were active:\n%s",
-                          actual,
-                          formatElementSelectors(elementSelectors),
-                          formatFlowNodeInstanceStates(
-                              otherActiveElements, FlowNodeInstance::getFlowNodeId)));
-                }
-                return String.join("\n\n", failureMessages);
-              };
-
-          assertThat(selectorsNotMatched).withFailMessage(failureMessage).isEmpty();
-          assertThat(otherActiveElements).withFailMessage(failureMessage).isEmpty();
+          assertThat(selectorsNotMatched).withFailMessage(combinedFailureMessage).isEmpty();
+          assertThat(otherActiveElements).withFailMessage(combinedFailureMessage).isEmpty();
         });
   }
 
