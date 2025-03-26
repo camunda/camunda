@@ -71,8 +71,12 @@ public class UpdateGroupCommandImpl implements UpdateGroupCommandStep1 {
     final UpdateGroupResponseImpl response = new UpdateGroupResponseImpl();
 
     httpClient.put(
-        "/groups/" + groupKey, jsonMapper.toJson(request), httpRequestConfig.build(),
-        GroupUpdateResult.class, response::setResponse, result);
+        "/groups/" + groupKey,
+        jsonMapper.toJson(request),
+        httpRequestConfig.build(),
+        GroupUpdateResult.class,
+        response::setResponse,
+        result);
     return result;
   }
 

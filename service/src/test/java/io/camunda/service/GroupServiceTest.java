@@ -160,7 +160,7 @@ public class GroupServiceTest {
     final GroupRecord record = request.getRequestWriter();
     assertThat(record).hasName(name);
     assertThat(record).hasGroupKey(groupKey);
-    //    assertThat(record).hasDescription(description);
+    assertThat(record).hasDescription(description);
   }
 
   @Test

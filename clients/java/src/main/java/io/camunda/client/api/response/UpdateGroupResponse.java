@@ -29,8 +29,8 @@ public interface UpdateGroupResponse {
   /**
    * Returns the unique identifier (ID) of the updated group.
    *
-   * <p>The group ID is a user-defined identifier for the group. It is specified when the group
-   * is created and is often used for human-readable identification or external references.
+   * <p>The group ID is a user-defined identifier for the group. It is specified when the group is
+   * created and is often used for human-readable identification or external references.
    *
    * @return the user-defined group ID.
    */

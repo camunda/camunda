@@ -233,7 +233,11 @@ public class GroupControllerTest extends RestControllerTest {
     when(groupServices.updateGroup(groupId, groupName, description))
         .thenReturn(
             CompletableFuture.completedFuture(
-                new GroupRecord().setGroupKey(groupKey).setGroupId(groupId).setName(groupName).setDescription(description)));
+                new GroupRecord()
+                    .setGroupKey(groupKey)
+                    .setGroupId(groupId)
+                    .setName(groupName)
+                    .setDescription(description)));
 
     // when
     webClient
@@ -241,7 +245,9 @@ public class GroupControllerTest extends RestControllerTest {
         .uri("%s/%s".formatted(GROUP_BASE_URL, groupId))
         .accept(MediaType.APPLICATION_JSON)
         .contentType(MediaType.APPLICATION_JSON)
-        .bodyValue(new GroupUpdateRequest().changeset(new GroupChangeset().name(groupName).description(description)))
+        .bodyValue(
+            new GroupUpdateRequest()
+                .changeset(new GroupChangeset().name(groupName).description(description)))
         .exchange()
         .expectStatus()
         .isOk()
@@ -274,7 +280,9 @@ public class GroupControllerTest extends RestControllerTest {
         .uri(uri)
         .accept(MediaType.APPLICATION_JSON)
         .contentType(MediaType.APPLICATION_JSON)
-        .bodyValue(new GroupUpdateRequest().changeset(new GroupChangeset().name(emptyGroupName).description("description")))
+        .bodyValue(
+            new GroupUpdateRequest()
+                .changeset(new GroupChangeset().name(emptyGroupName).description("description")))
         .exchange()
         .expectStatus()
         .isBadRequest()
@@ -345,7 +353,9 @@ public class GroupControllerTest extends RestControllerTest {
         .uri(path)
         .accept(MediaType.APPLICATION_JSON)
         .contentType(MediaType.APPLICATION_JSON)
-        .bodyValue(new GroupUpdateRequest().changeset(new GroupChangeset().name(groupName).description(description)))
+        .bodyValue(
+            new GroupUpdateRequest()
+                .changeset(new GroupChangeset().name(groupName).description(description)))
         .exchange()
         .expectStatus()
         .isNotFound();

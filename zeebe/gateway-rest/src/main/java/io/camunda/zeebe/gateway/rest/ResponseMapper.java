@@ -530,7 +530,11 @@ public final class ResponseMapper {
 
   public static ResponseEntity<Object> toGroupUpdateResponse(final GroupRecord groupRecord) {
     final var response =
-        new GroupUpdateResult().groupKey(KeyUtil.keyToString(groupRecord.getGroupKey())).groupId(groupRecord.getGroupId()).description(groupRecord.getDescription()).name(groupRecord.getName());
+        new GroupUpdateResult()
+            .groupKey(KeyUtil.keyToString(groupRecord.getGroupKey()))
+            .groupId(groupRecord.getGroupId())
+            .description(groupRecord.getDescription())
+            .name(groupRecord.getName());
     return new ResponseEntity<>(response, HttpStatus.OK);
   }
 
