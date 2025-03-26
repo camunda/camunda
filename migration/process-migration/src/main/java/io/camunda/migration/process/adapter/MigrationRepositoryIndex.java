@@ -7,10 +7,12 @@
  */
 package io.camunda.migration.process.adapter;
 
-import io.camunda.webapps.schema.descriptors.operate.OperateIndexDescriptor;
+import static io.camunda.webapps.schema.descriptors.ComponentNames.OPERATE;
+
+import io.camunda.webapps.schema.descriptors.AbstractIndexDescriptor;
 
 /* Fork of Operate's MigrationRepositoryIndex descriptor for correct prefixing */
-public class MigrationRepositoryIndex extends OperateIndexDescriptor {
+public class MigrationRepositoryIndex extends AbstractIndexDescriptor {
 
   public static final String INDEX_NAME = "migration-steps-repository";
   public static final String VERSION = "1.1.0";
@@ -29,5 +31,10 @@ public class MigrationRepositoryIndex extends OperateIndexDescriptor {
   @Override
   public String getVersion() {
     return VERSION;
+  }
+
+  @Override
+  public String getComponentName() {
+    return OPERATE.toString();
   }
 }

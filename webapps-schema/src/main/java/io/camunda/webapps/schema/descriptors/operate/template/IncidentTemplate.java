@@ -7,12 +7,14 @@
  */
 package io.camunda.webapps.schema.descriptors.operate.template;
 
+import static io.camunda.webapps.schema.descriptors.ComponentNames.OPERATE;
+
+import io.camunda.webapps.schema.descriptors.AbstractTemplateDescriptor;
 import io.camunda.webapps.schema.descriptors.backup.Prio4Backup;
-import io.camunda.webapps.schema.descriptors.operate.OperateTemplateDescriptor;
 import io.camunda.webapps.schema.descriptors.operate.ProcessInstanceDependant;
 import java.util.Optional;
 
-public class IncidentTemplate extends OperateTemplateDescriptor
+public class IncidentTemplate extends AbstractTemplateDescriptor
     implements ProcessInstanceDependant, Prio4Backup {
 
   public static final String INDEX_NAME = "incident";
@@ -51,5 +53,10 @@ public class IncidentTemplate extends OperateTemplateDescriptor
   // 8.2.6
   public String getVersion() {
     return "8.3.1";
+  }
+
+  @Override
+  public String getComponentName() {
+    return OPERATE.toString();
   }
 }

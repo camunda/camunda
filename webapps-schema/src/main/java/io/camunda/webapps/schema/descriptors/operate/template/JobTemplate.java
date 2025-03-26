@@ -7,12 +7,14 @@
  */
 package io.camunda.webapps.schema.descriptors.operate.template;
 
+import static io.camunda.webapps.schema.descriptors.ComponentNames.OPERATE;
+
+import io.camunda.webapps.schema.descriptors.AbstractTemplateDescriptor;
 import io.camunda.webapps.schema.descriptors.backup.Prio4Backup;
-import io.camunda.webapps.schema.descriptors.operate.OperateTemplateDescriptor;
 import io.camunda.webapps.schema.descriptors.operate.ProcessInstanceDependant;
 import java.util.Optional;
 
-public class JobTemplate extends OperateTemplateDescriptor
+public class JobTemplate extends AbstractTemplateDescriptor
     implements ProcessInstanceDependant, Prio4Backup {
 
   public static final String INDEX_NAME = "job";
@@ -58,5 +60,10 @@ public class JobTemplate extends OperateTemplateDescriptor
   @Override
   public String getVersion() {
     return "8.6.0";
+  }
+
+  @Override
+  public String getComponentName() {
+    return OPERATE.toString();
   }
 }
