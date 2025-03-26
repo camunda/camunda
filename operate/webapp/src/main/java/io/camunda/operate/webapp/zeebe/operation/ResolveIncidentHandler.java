@@ -11,8 +11,8 @@ import static io.camunda.webapps.schema.entities.operation.OperationType.RESOLVE
 
 import io.camunda.operate.webapp.reader.IncidentReader;
 import io.camunda.operate.webapp.rest.exception.NotFoundException;
-import io.camunda.webapps.schema.entities.operate.ErrorType;
-import io.camunda.webapps.schema.entities.operate.IncidentEntity;
+import io.camunda.webapps.schema.entities.incident.ErrorType;
+import io.camunda.webapps.schema.entities.incident.IncidentEntity;
 import io.camunda.webapps.schema.entities.operation.OperationEntity;
 import io.camunda.webapps.schema.entities.operation.OperationType;
 import java.util.Set;

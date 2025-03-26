@@ -7,7 +7,7 @@
  */
 package io.camunda.webapps.schema.entities.event;
 
-import io.camunda.webapps.schema.entities.operate.ErrorType;
+import io.camunda.webapps.schema.entities.incident.ErrorType;
 import java.time.OffsetDateTime;
 import java.util.Map;
 import java.util.Objects;

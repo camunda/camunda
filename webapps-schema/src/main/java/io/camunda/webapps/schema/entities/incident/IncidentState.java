@@ -5,7 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.webapps.schema.entities.operate;
+package io.camunda.webapps.schema.entities.incident;
 
 import java.util.Arrays;
 import java.util.HashMap;
@@ -17,19 +17,19 @@ public enum IncidentState {
   RESOLVED("RESOLVED"),
   PENDING(null);
 
-  private static Map<String, IncidentState> intentMap = new HashMap<>();
+  private static final Map<String, IncidentState> intentMap = new HashMap<>();
 
   static {
     Arrays.stream(IncidentState.values()).forEach(is -> intentMap.put(is.getZeebeIntent(), is));
   }
 
-  private String zeebeIntent;
+  private final String zeebeIntent;
 
-  IncidentState(String zeebeIntent) {
+  IncidentState(final String zeebeIntent) {
     this.zeebeIntent = zeebeIntent;
   }
 
-  public static IncidentState createFrom(String zeebeIntent) {
+  public static IncidentState createFrom(final String zeebeIntent) {
     return intentMap.get(zeebeIntent);
   }
 

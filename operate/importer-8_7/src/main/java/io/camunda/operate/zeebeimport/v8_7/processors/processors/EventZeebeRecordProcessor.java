@@ -38,7 +38,7 @@ import io.camunda.webapps.schema.entities.event.EventEntity;
 import io.camunda.webapps.schema.entities.event.EventMetadataEntity;
 import io.camunda.webapps.schema.entities.event.EventSourceType;
 import io.camunda.webapps.schema.entities.event.EventType;
-import io.camunda.webapps.schema.entities.operate.ErrorType;
+import io.camunda.webapps.schema.entities.incident.ErrorType;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;

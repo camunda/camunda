@@ -8,7 +8,7 @@
 package io.camunda.operate.zeebeimport;
 
 import static io.camunda.operate.webapp.rest.ProcessInstanceRestService.PROCESS_INSTANCE_URL;
-import static io.camunda.webapps.schema.entities.operate.ErrorType.JOB_NO_RETRIES;
+import static io.camunda.webapps.schema.entities.incident.ErrorType.JOB_NO_RETRIES;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
@@ -24,7 +24,7 @@ import io.camunda.operate.webapp.rest.dto.incidents.IncidentDto;
 import io.camunda.operate.webapp.rest.dto.incidents.IncidentResponseDto;
 import io.camunda.operate.webapp.rest.dto.operation.CreateOperationRequestDto;
 import io.camunda.operate.webapp.zeebe.operation.ResolveIncidentHandler;
-import io.camunda.webapps.schema.entities.operate.ErrorType;
+import io.camunda.webapps.schema.entities.incident.ErrorType;
 import io.camunda.webapps.schema.entities.operation.OperationType;
 import java.util.Map;
 import java.util.Optional;

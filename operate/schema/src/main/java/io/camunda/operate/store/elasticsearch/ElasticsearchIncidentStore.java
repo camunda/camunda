@@ -24,9 +24,9 @@ import io.camunda.operate.tenant.TenantAwareElasticsearchClient;
 import io.camunda.operate.util.CollectionUtil;
 import io.camunda.operate.util.ElasticsearchUtil;
 import io.camunda.webapps.schema.descriptors.operate.template.IncidentTemplate;
-import io.camunda.webapps.schema.entities.operate.ErrorType;
-import io.camunda.webapps.schema.entities.operate.IncidentEntity;
-import io.camunda.webapps.schema.entities.operate.IncidentState;
+import io.camunda.webapps.schema.entities.incident.ErrorType;
+import io.camunda.webapps.schema.entities.incident.IncidentEntity;
+import io.camunda.webapps.schema.entities.incident.IncidentState;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
@@ -199,7 +199,7 @@ public class ElasticsearchIncidentStore implements IncidentStore {
             return ElasticsearchUtil.scroll(
                 searchRequest, IncidentEntity.class, objectMapper, esClient);
           });
-    } catch (IOException e) {
+    } catch (final IOException e) {
       final String message =
           String.format("Exception occurred, while obtaining all incidents: %s", e.getMessage());
       LOGGER.error(message, e);

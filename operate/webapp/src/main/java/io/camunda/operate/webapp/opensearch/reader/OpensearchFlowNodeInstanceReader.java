@@ -65,7 +65,7 @@ import io.camunda.webapps.schema.entities.dmn.DecisionInstanceState;
 import io.camunda.webapps.schema.entities.flownode.FlowNodeInstanceEntity;
 import io.camunda.webapps.schema.entities.flownode.FlowNodeState;
 import io.camunda.webapps.schema.entities.flownode.FlowNodeType;
-import io.camunda.webapps.schema.entities.operate.IncidentEntity;
+import io.camunda.webapps.schema.entities.incident.IncidentEntity;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;

@@ -154,7 +154,7 @@ public class DocumentBasedSearchClients implements SearchClientsProxy, Closeable
   @Override
   public SearchQueryResult<IncidentEntity> searchIncidents(final IncidentQuery filter) {
     return getSearchExecutor()
-        .search(filter, io.camunda.webapps.schema.entities.operate.IncidentEntity.class);
+        .search(filter, io.camunda.webapps.schema.entities.incident.IncidentEntity.class);
   }
 
   @Override
