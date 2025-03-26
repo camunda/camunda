@@ -182,7 +182,7 @@ public class AddEntityTenantTest {
     assertThat(notPresentUpdateRecord)
         .hasRejectionType(RejectionType.NOT_FOUND)
         .hasRejectionReason(
-            "Expected to add user 'does-not-exist' to tenant '%s', but the user doesn't exist."
+            "Expected to add user with id 'does-not-exist' to tenant with id '%s', but the user doesn't exist."
                 .formatted(tenantId));
   }
 
@@ -207,9 +207,9 @@ public class AddEntityTenantTest {
 
     // then assert that the rejection is for entity not found
     assertThat(alreadyAssignedRecord)
-        .hasRejectionType(RejectionType.INVALID_ARGUMENT)
+        .hasRejectionType(RejectionType.ALREADY_EXISTS)
         .hasRejectionReason(
-            "Expected to add user '%s' to tenant '%s', but the user is already assigned to the tenant."
+            "Expected to add user with id '%s' to tenant with id '%s', but the user is already assigned to the tenant."
                 .formatted(username, tenantId));
   }
 
