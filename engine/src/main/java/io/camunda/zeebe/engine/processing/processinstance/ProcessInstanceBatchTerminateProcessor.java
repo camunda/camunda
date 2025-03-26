@@ -46,7 +46,7 @@ public final class ProcessInstanceBatchTerminateProcessor
     final List<ElementInstance> children = getChildInstances(recordValue, 2);
 
     if (!children.isEmpty()) {
-      final ElementInstance childInstance = children.getFirst();
+      final ElementInstance childInstance = children.get(0);
       commandWriter.appendFollowUpCommand(
           childInstance.getKey(),
           ProcessInstanceIntent.TERMINATE_ELEMENT,
@@ -54,7 +54,7 @@ public final class ProcessInstanceBatchTerminateProcessor
     }
 
     if (children.size() > 1) {
-      appendFollowupBatchCommand(children.getLast(), recordValue);
+      appendFollowupBatchCommand(children.get(children.size() - 1), recordValue);
     } else {
       stateWriter.appendFollowUpEvent(
           record.getKey(), ProcessInstanceBatchIntent.TERMINATED, recordValue);
