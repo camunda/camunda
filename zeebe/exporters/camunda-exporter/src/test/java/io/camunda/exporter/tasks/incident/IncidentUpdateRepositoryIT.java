@@ -36,11 +36,11 @@ import io.camunda.webapps.schema.entities.listview.ProcessInstanceForListViewEnt
 import io.camunda.webapps.schema.entities.operate.FlowNodeInstanceEntity;
 import io.camunda.webapps.schema.entities.operate.IncidentEntity;
 import io.camunda.webapps.schema.entities.operate.IncidentState;
-import io.camunda.webapps.schema.entities.operate.post.PostImporterActionType;
-import io.camunda.webapps.schema.entities.operate.post.PostImporterQueueEntity;
 import io.camunda.webapps.schema.entities.operation.OperationEntity;
 import io.camunda.webapps.schema.entities.operation.OperationState;
 import io.camunda.webapps.schema.entities.operation.OperationType;
+import io.camunda.webapps.schema.entities.post.PostImporterActionType;
+import io.camunda.webapps.schema.entities.post.PostImporterQueueEntity;
 import io.camunda.zeebe.exporter.api.ExporterException;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.test.util.junit.RegressionTest;

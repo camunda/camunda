@@ -8,8 +8,8 @@
 package io.camunda.exporter.handlers;
 
 import io.camunda.exporter.store.BatchRequest;
-import io.camunda.webapps.schema.entities.operate.post.PostImporterActionType;
-import io.camunda.webapps.schema.entities.operate.post.PostImporterQueueEntity;
+import io.camunda.webapps.schema.entities.post.PostImporterActionType;
+import io.camunda.webapps.schema.entities.post.PostImporterQueueEntity;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;

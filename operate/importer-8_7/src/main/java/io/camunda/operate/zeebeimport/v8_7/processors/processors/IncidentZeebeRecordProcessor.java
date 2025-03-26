@@ -23,9 +23,9 @@ import io.camunda.webapps.schema.descriptors.operate.template.PostImporterQueueT
 import io.camunda.webapps.schema.entities.operate.ErrorType;
 import io.camunda.webapps.schema.entities.operate.IncidentEntity;
 import io.camunda.webapps.schema.entities.operate.IncidentState;
-import io.camunda.webapps.schema.entities.operate.post.PostImporterActionType;
-import io.camunda.webapps.schema.entities.operate.post.PostImporterQueueEntity;
 import io.camunda.webapps.schema.entities.operation.OperationType;
+import io.camunda.webapps.schema.entities.post.PostImporterActionType;
+import io.camunda.webapps.schema.entities.post.PostImporterQueueEntity;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.value.IncidentRecordValue;

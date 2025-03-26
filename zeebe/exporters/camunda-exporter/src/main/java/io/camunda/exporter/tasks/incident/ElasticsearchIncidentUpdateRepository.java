@@ -30,9 +30,9 @@ import io.camunda.webapps.schema.descriptors.operate.template.PostImporterQueueT
 import io.camunda.webapps.schema.entities.listview.ProcessInstanceForListViewEntity;
 import io.camunda.webapps.schema.entities.operate.IncidentEntity;
 import io.camunda.webapps.schema.entities.operate.IncidentState;
-import io.camunda.webapps.schema.entities.operate.post.PostImporterActionType;
 import io.camunda.webapps.schema.entities.operation.OperationState;
 import io.camunda.webapps.schema.entities.operation.OperationType;
+import io.camunda.webapps.schema.entities.post.PostImporterActionType;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
