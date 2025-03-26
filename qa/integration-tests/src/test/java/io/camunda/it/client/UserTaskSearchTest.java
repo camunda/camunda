@@ -508,7 +508,20 @@ class UserTaskSearchTest {
     // Assert First and Last Sort Value matches the first and last item
     // We need to make use of toString, such the test work with ES/OS
     final List<String> firstSortValues =
-        result.page().firstSortValues().stream().map(PageObject::getValue).toList();
+        result.page().firstSortValues().stream()
+            .map(
+                pageObject -> {
+                  final String raw = pageObject.getValue();
+                  final TypeEnum type = pageObject.getType();
+
+                  // To extract the case when it is already String (OpenSearch)
+                  if (type == TypeEnum.STRING) {
+                    return raw.substring(1, raw.length() - 1);
+                  }
+
+                  return raw;
+                })
+            .toList();
     String creationDateMillis = convertDateIfNeeded(firstSortValues.getFirst());
     String userTaskKey = firstSortValues.getLast();
 
@@ -519,7 +532,20 @@ class UserTaskSearchTest {
     assertThat(userTaskKey).isEqualTo(Long.toString(firstItem.getUserTaskKey()));
 
     final List<String> lastSortValues =
-        result.page().lastSortValues().stream().map(PageObject::getValue).toList();
+        result.page().lastSortValues().stream()
+            .map(
+                pageObject -> {
+                  final String raw = pageObject.getValue();
+                  final TypeEnum type = pageObject.getType();
+
+                  // To extract the case when it is already String (OpenSearch)
+                  if (type == TypeEnum.STRING) {
+                    return raw.substring(1, raw.length() - 1);
+                  }
+
+                  return raw;
+                })
+            .toList();
     creationDateMillis = convertDateIfNeeded(lastSortValues.getFirst());
     userTaskKey = lastSortValues.getLast();
 

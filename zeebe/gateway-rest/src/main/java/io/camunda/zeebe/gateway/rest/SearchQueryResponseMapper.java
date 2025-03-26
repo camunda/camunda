@@ -793,6 +793,11 @@ public final class SearchQueryResponseMapper {
   }
 
   private static String serializeValue(final Object value) {
+    // Add value check for null
+    if (value == null) {
+      return null;
+    }
+
     // OpenSearch already is returning String for Sorted Values
     if (value instanceof String
         && !(value.toString().startsWith("\"") && value.toString().endsWith("\""))) {
