@@ -21,7 +21,7 @@ import io.camunda.client.api.CamundaFuture;
 import io.camunda.client.api.JsonMapper;
 import io.camunda.client.api.command.FinalCommandStep;
 import io.camunda.client.api.search.filter.AdHocSubprocessActivityFilter;
-import io.camunda.client.api.search.query.AdHocSubprocessActivityQuery;
+import io.camunda.client.api.search.query.AdHocSubprocessActivitySearchRequest;
 import io.camunda.client.api.search.response.AdHocSubprocessActivityResponse;
 import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
@@ -33,14 +33,15 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import org.apache.hc.client5.http.config.RequestConfig;
 
-public class AdHocSubprocessActivityQueryImpl implements AdHocSubprocessActivityQuery {
+public class AdHocSubprocessActivitySearchRequestImpl
+    implements AdHocSubprocessActivitySearchRequest {
 
   private final AdHocSubprocessActivitySearchQuery request;
   private final HttpClient httpClient;
   private final JsonMapper jsonMapper;
   private final RequestConfig.Builder httpRequestConfig;
 
-  public AdHocSubprocessActivityQueryImpl(
+  public AdHocSubprocessActivitySearchRequestImpl(
       final HttpClient httpClient, final JsonMapper jsonMapper) {
     request = new AdHocSubprocessActivitySearchQuery();
     this.httpClient = httpClient;
@@ -49,13 +50,14 @@ public class AdHocSubprocessActivityQueryImpl implements AdHocSubprocessActivity
   }
 
   @Override
-  public AdHocSubprocessActivityQuery filter(final AdHocSubprocessActivityFilter filter) {
+  public AdHocSubprocessActivitySearchRequest filter(final AdHocSubprocessActivityFilter filter) {
     request.setFilter(filter.getRequestFilter());
     return this;
   }
 
   @Override
-  public AdHocSubprocessActivityQuery filter(final Consumer<AdHocSubprocessActivityFilter> fn) {
+  public AdHocSubprocessActivitySearchRequest filter(
+      final Consumer<AdHocSubprocessActivityFilter> fn) {
     return filter(adHocSubprocessActivityFilter(fn));
   }
 

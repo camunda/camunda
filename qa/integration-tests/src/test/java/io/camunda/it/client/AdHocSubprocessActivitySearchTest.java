@@ -20,7 +20,7 @@ import io.camunda.qa.util.multidb.MultiDbTest;
 import org.junit.jupiter.api.Test;
 
 @MultiDbTest
-public class AdHocSubprocessActivityQueryTest {
+public class AdHocSubprocessActivitySearchTest {
 
   private static CamundaClient camundaClient;
 
@@ -29,7 +29,7 @@ public class AdHocSubprocessActivityQueryTest {
     final var process = deployAdHocSubprocessProcess();
     final var response =
         camundaClient
-            .newAdHocSubprocessActivityQuery(
+            .newAdHocSubprocessActivitySearchRequest(
                 process.getProcessDefinitionKey(), "TestAdHocSubprocess")
             .send()
             .join();

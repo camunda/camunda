@@ -20,7 +20,7 @@ import io.camunda.client.api.search.filter.AdHocSubprocessActivityFilter;
 import io.camunda.client.api.search.response.AdHocSubprocessActivityResponse;
 import java.util.function.Consumer;
 
-public interface AdHocSubprocessActivityQuery
+public interface AdHocSubprocessActivitySearchRequest
     extends FinalCommandStep<AdHocSubprocessActivityResponse> {
   /**
    * Sets the filter to be included in the search request.
@@ -28,7 +28,7 @@ public interface AdHocSubprocessActivityQuery
    * @param filter the filter
    * @return the builder for the search request
    */
-  AdHocSubprocessActivityQuery filter(final AdHocSubprocessActivityFilter filter);
+  AdHocSubprocessActivitySearchRequest filter(final AdHocSubprocessActivityFilter filter);
 
   /**
    * Provides a fluent builder to create a filter to be included in the search request.
@@ -36,5 +36,5 @@ public interface AdHocSubprocessActivityQuery
    * @param fn consumer to create the filter
    * @return the builder for the search request
    */
-  AdHocSubprocessActivityQuery filter(final Consumer<AdHocSubprocessActivityFilter> fn);
+  AdHocSubprocessActivitySearchRequest filter(final Consumer<AdHocSubprocessActivityFilter> fn);
 }

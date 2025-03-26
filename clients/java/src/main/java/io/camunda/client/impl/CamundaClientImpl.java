@@ -91,7 +91,7 @@ import io.camunda.client.api.fetch.UserTaskGetRequest;
 import io.camunda.client.api.fetch.VariableGetRequest;
 import io.camunda.client.api.response.ActivatedJob;
 import io.camunda.client.api.response.DocumentReferenceResponse;
-import io.camunda.client.api.search.query.AdHocSubprocessActivityQuery;
+import io.camunda.client.api.search.query.AdHocSubprocessActivitySearchRequest;
 import io.camunda.client.api.search.query.DecisionDefinitionQuery;
 import io.camunda.client.api.search.query.DecisionInstanceQuery;
 import io.camunda.client.api.search.query.DecisionRequirementsQuery;
@@ -169,7 +169,7 @@ import io.camunda.client.impl.fetch.UserTaskGetRequestImpl;
 import io.camunda.client.impl.fetch.VariableGetRequestImpl;
 import io.camunda.client.impl.http.HttpClient;
 import io.camunda.client.impl.http.HttpClientFactory;
-import io.camunda.client.impl.search.query.AdHocSubprocessActivityQueryImpl;
+import io.camunda.client.impl.search.query.AdHocSubprocessActivitySearchRequestImpl;
 import io.camunda.client.impl.search.query.DecisionDefinitionQueryImpl;
 import io.camunda.client.impl.search.query.DecisionInstanceQueryImpl;
 import io.camunda.client.impl.search.query.DecisionRequirementsQueryImpl;
@@ -678,14 +678,14 @@ public final class CamundaClientImpl implements CamundaClient {
   }
 
   @Override
-  public AdHocSubprocessActivityQuery newAdHocSubprocessActivityQuery() {
-    return new AdHocSubprocessActivityQueryImpl(httpClient, jsonMapper);
+  public AdHocSubprocessActivitySearchRequest newAdHocSubprocessActivitySearchRequest() {
+    return new AdHocSubprocessActivitySearchRequestImpl(httpClient, jsonMapper);
   }
 
   @Override
-  public AdHocSubprocessActivityQuery newAdHocSubprocessActivityQuery(
+  public AdHocSubprocessActivitySearchRequest newAdHocSubprocessActivitySearchRequest(
       final long processDefinitionKey, final String adHocSubprocessId) {
-    return newAdHocSubprocessActivityQuery()
+    return newAdHocSubprocessActivitySearchRequest()
         .filter(
             filter ->
                 filter

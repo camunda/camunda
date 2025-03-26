@@ -80,7 +80,7 @@ import io.camunda.client.api.fetch.UserTaskGetRequest;
 import io.camunda.client.api.fetch.VariableGetRequest;
 import io.camunda.client.api.response.ActivatedJob;
 import io.camunda.client.api.response.DocumentReferenceResponse;
-import io.camunda.client.api.search.query.AdHocSubprocessActivityQuery;
+import io.camunda.client.api.search.query.AdHocSubprocessActivitySearchRequest;
 import io.camunda.client.api.search.query.DecisionDefinitionQuery;
 import io.camunda.client.api.search.query.DecisionInstanceQuery;
 import io.camunda.client.api.search.query.DecisionRequirementsQuery;
@@ -864,7 +864,7 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    * String adHocSubprocessId = ...;
    *
    * camundaClient
-   *  .newAdHocSubprocessActivityQuery()
+   *  .newAdHocSubprocessActivitySearchRequest()
    *  .filter((f) -> f
    *     .processDefinitionKey(processDefinitionKey)
    *     .adHocSubprocessId(adHocSubprocessId)
@@ -872,10 +872,10 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    *  .send();
    * </pre>
    *
-   * @return a builder for the ad-hoc subprocess activity query
+   * @return a builder for the ad-hoc subprocess activity search request
    */
   @ExperimentalApi("https://github.com/camunda/camunda/issues/27930")
-  AdHocSubprocessActivityQuery newAdHocSubprocessActivityQuery();
+  AdHocSubprocessActivitySearchRequest newAdHocSubprocessActivitySearchRequest();
 
   /**
    * Executes a search request to query activities within ad-hoc subprocesses.
@@ -888,17 +888,17 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    * String adHocSubprocessId = ...;
    *
    * camundaClient
-   *  .newAdHocSubprocessActivityQuery(
+   *  .newAdHocSubprocessActivitySearchRequest(
    *    processDefinitionKey,
    *    adHocSubprocessId
    *  )
    *  .send();
    * </pre>
    *
-   * @return a builder for the ad-hoc subprocess activity query
+   * @return a builder for the ad-hoc subprocess activity search request
    */
   @ExperimentalApi("https://github.com/camunda/camunda/issues/27930")
-  AdHocSubprocessActivityQuery newAdHocSubprocessActivityQuery(
+  AdHocSubprocessActivitySearchRequest newAdHocSubprocessActivitySearchRequest(
       long processDefinitionKey, String adHocSubprocessId);
 
   /**
