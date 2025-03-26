@@ -121,7 +121,7 @@ public class GroupServices extends SearchQueryService<GroupServices, GroupQuery,
   public CompletableFuture<GroupRecord> updateGroup(
       final String groupId, final String name, final String description) {
     return sendBrokerRequest(
-        new BrokerGroupUpdateRequest(Long.getLong(groupId))
+        new BrokerGroupUpdateRequest(Long.parseLong(groupId))
             .setGroupId(groupId)
             .setName(name)
             .setDescription(description));
