@@ -63,53 +63,9 @@ public class ZeebeTaskListenersValidationTest {
         expect(ZeebeTaskListener.class, "Attribute 'eventType' must be present and not empty"));
   }
 
-  @DisplayName("task listener with unsupported `eventType` property")
-  @ParameterizedTest(name = "unsupported event type: ''{0}''")
-  @EnumSource(
-      value = ZeebeTaskListenerEventType.class,
-      mode = EnumSource.Mode.EXCLUDE,
-      // supported event types
-      names = {
-        "assigning", "updating", "completing",
-        // deprecated event types
-        "assignment", "update", "complete"
-      })
-  void testEventTypeNotSupported(final ZeebeTaskListenerEventType unsupportedEventType) {
-    // given
-    final BpmnModelInstance process =
-        Bpmn.createExecutableProcess("process")
-            .startEvent()
-            .userTask(
-                "user_task",
-                ut ->
-                    ut.zeebeUserTask()
-                        .zeebeTaskListener(
-                            l -> l.eventType(unsupportedEventType).type("not_supported_listener")))
-            .endEvent()
-            .done();
-
-    // when/then
-    ProcessValidationUtil.assertThatProcessHasViolations(
-        process,
-        expect(
-            ZeebeTaskListener.class,
-            String.format(
-                "Task listener event type '%s' is not supported. "
-                    + "Currently, only 'assigning', 'updating', 'completing' event types "
-                    + "and 'assignment', 'update', 'complete' deprecated event types are supported.",
-                unsupportedEventType)));
-  }
-
   @DisplayName("task listener with supported `eventType` property")
   @ParameterizedTest(name = "supported event type: ''{0}''")
-  @EnumSource(
-      value = ZeebeTaskListenerEventType.class,
-      // supported event types
-      names = {
-        "assigning", "updating", "completing",
-        // deprecated event types
-        "assignment", "update", "complete"
-      })
+  @EnumSource(value = ZeebeTaskListenerEventType.class)
   void testEventTypeSupported(final ZeebeTaskListenerEventType supportedEventType) {
     // given
     final BpmnModelInstance process =
