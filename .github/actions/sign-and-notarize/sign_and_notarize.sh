@@ -204,7 +204,7 @@ echo "  -> Re-inserting excluded items into c8run"
 find "$TMP_EXCLUDE_DIR" -mindepth 1 -maxdepth 1 -print0 | while IFS= read -r -d '' excluded; do
   base="$(basename "$excluded")"
   echo "    -> $base"
-  mv -n "$excluded" "$TMP_NOTARIZE_DIR/notarized/c8run/"
+  rsync -ar "$excluded" "$TMP_NOTARIZE_DIR/notarized/c8run/"
 done
 
 # Build c8run_complete.zip
