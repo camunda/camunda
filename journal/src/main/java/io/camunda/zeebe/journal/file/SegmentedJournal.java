@@ -150,7 +150,7 @@ public final class SegmentedJournal implements Journal {
 
   @Override
   public boolean isEmpty() {
-    return writer.getNextIndex() - getFirstSegment().index() == 0;
+    return writer.getNextIndex() - getFirstIndex() == 0;
   }
 
   @Override
