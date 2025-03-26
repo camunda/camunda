@@ -195,7 +195,7 @@ public class DocumentControllerTest extends RestControllerTest {
   }
 
   @Test
-  void shouldCreateDocumentsBatchWithMetadataNumberKeys() throws JsonProcessingException {
+  void shouldCreateDocumentsBatchWithMetadata() throws JsonProcessingException {
     // given
     final var filename1 = "file.txt";
     final var contentType = MediaType.APPLICATION_OCTET_STREAM;
@@ -253,8 +253,7 @@ public class DocumentControllerTest extends RestControllerTest {
         .isCreated()
         .expectBody()
         .json(
-            String.format(
-                """
+            """
                     {
                       "createdDocuments": [
                         {
@@ -289,8 +288,7 @@ public class DocumentControllerTest extends RestControllerTest {
                       "failedDocuments": []
                     }
                     """
-                    .formatted(timestamp, timestamp),
-                timestamp));
+                .formatted(timestamp, timestamp));
 
     verify(documentServices).createDocumentBatch(requestCaptor.capture());
 
