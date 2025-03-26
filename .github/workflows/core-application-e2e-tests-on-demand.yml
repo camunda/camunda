@@ -21,6 +21,16 @@ jobs:
         run: docker ps -a
         working-directory: qa/core-application-e2e-test-suite/config
 
+      - name: Retrieve secrets from Vault
+        run: |
+          export VAULT_RESPONSE=$(curl -s \
+            --header "X-Vault-Token: ${{ secrets.VAULT_TOKEN }}" \
+            --request GET \
+            https://vault.example.com/v1/secret/data/github.com/organizations/camunda)
+
+          export TESTRAIL_USERNAME=$(echo $VAULT_RESPONSE | jq -r '.data.data.TESTRAIL_USERNAME')
+          export TESTRAIL_KEY=$(echo $VAULT_RESPONSE | jq -r '.data.data.TESTRAIL_KEY')
+
       - name: Wait for services to be ready
         id: wait-for-services
         run: |
