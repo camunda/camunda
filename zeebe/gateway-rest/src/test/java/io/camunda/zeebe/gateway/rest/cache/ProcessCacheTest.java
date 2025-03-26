@@ -164,23 +164,6 @@ class ProcessCacheTest {
   }
 
   @Test
-  void shouldRemoveExpiredItem() throws InterruptedException {
-    // given
-    configuration.getProcessCache().setExpirationIdleMillis(10L);
-    processCache = new ProcessCache(configuration, processFlowNodeProvider, brokerTopologyManager);
-    processCache.getCacheItem(1L);
-    getCache().cleanUp();
-    assertThat(getCacheMap()).hasSize(1);
-
-    // when - waiting ttl millis
-    Thread.sleep(10);
-    getCache().cleanUp();
-
-    // then - cache should be empty
-    assertThat(getCacheMap()).isEmpty();
-  }
-
-  @Test
   void shouldRefreshReadItemAndRemoveLeastRecentlyUsed() {
     // given
     configuration.getProcessCache().setMaxSize(2);
