@@ -35,29 +35,4 @@ public class AdHocSubprocessActivityFilter {
   public void setAdHocSubprocessId(String adHocSubprocessId) {
     this.adHocSubprocessId = adHocSubprocessId;
   }
-
-  public static io.camunda.client.protocol.rest.AdHocSubprocessActivityFilter toProtocolObject(
-      AdHocSubprocessActivityFilter object) {
-    if (object == null) {
-      return null;
-    }
-
-    final io.camunda.client.protocol.rest.AdHocSubprocessActivityFilter protocolObject =
-        new io.camunda.client.protocol.rest.AdHocSubprocessActivityFilter();
-    protocolObject.setProcessDefinitionKey(object.processDefinitionKey);
-    protocolObject.setAdHocSubprocessId(object.adHocSubprocessId);
-    return protocolObject;
-  }
-
-  public static AdHocSubprocessActivityFilter fromProtocolObject(
-      io.camunda.client.protocol.rest.AdHocSubprocessActivityFilter protocolObject) {
-    if (protocolObject == null) {
-      return null;
-    }
-
-    final AdHocSubprocessActivityFilter object = new AdHocSubprocessActivityFilter();
-    object.processDefinitionKey = protocolObject.getProcessDefinitionKey();
-    object.adHocSubprocessId = protocolObject.getAdHocSubprocessId();
-    return object;
-  }
 }

@@ -15,6 +15,7 @@
  */
 package io.camunda.client.impl.search.filter;
 
+import io.camunda.client.RequestMapper;
 import io.camunda.client.api.search.filter.DecisionInstanceFilter;
 import io.camunda.client.api.search.filter.builder.BasicLongProperty;
 import io.camunda.client.api.search.filter.builder.DateTimeProperty;
@@ -26,8 +27,6 @@ import io.camunda.client.impl.search.request.TypedSearchRequestPropertyProvider;
 import io.camunda.client.impl.util.ParseUtil;
 import io.camunda.client.protocol.rest.DecisionDefinitionTypeEnum;
 import io.camunda.client.protocol.rest.DecisionInstanceStateEnum;
-import io.camunda.client.wrappers.BasicStringFilterProperty;
-import io.camunda.client.wrappers.DateTimeFilterProperty;
 import java.time.OffsetDateTime;
 import java.util.function.Consumer;
 
@@ -93,7 +92,7 @@ public class DecisionInstanceFilterImpl
   public DecisionInstanceFilter evaluationDate(final Consumer<DateTimeProperty> fn) {
     final DateTimePropertyImpl property = new DateTimePropertyImpl();
     fn.accept(property);
-    filter.setEvaluationDate(DateTimeFilterProperty.toProtocolObject(property.build()));
+    filter.setEvaluationDate(RequestMapper.toProtocolObject(property.build()));
     return null;
   }
 
@@ -119,7 +118,7 @@ public class DecisionInstanceFilterImpl
   public DecisionInstanceFilter decisionDefinitionKey(final Consumer<BasicLongProperty> fn) {
     final BasicLongPropertyImpl property = new BasicLongPropertyImpl();
     fn.accept(property);
-    filter.setDecisionDefinitionKey(BasicStringFilterProperty.toProtocolObject(property.build()));
+    filter.setDecisionDefinitionKey(RequestMapper.toProtocolObject(property.build()));
     return this;
   }
 

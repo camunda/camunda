@@ -56,44 +56,4 @@ public class BasicStringFilterProperty {
   public void setIn(List<String> in) {
     this.in = in;
   }
-
-  public static io.camunda.client.protocol.rest.BasicStringFilterProperty toProtocolObject(
-      BasicStringFilterProperty object) {
-    if (object == null) {
-      return null;
-    }
-
-    final io.camunda.client.protocol.rest.BasicStringFilterProperty protocolObject =
-        new io.camunda.client.protocol.rest.BasicStringFilterProperty();
-    protocolObject.set$Eq(object.eq);
-    protocolObject.set$Neq(object.neq);
-    protocolObject.set$Exists(object.exists);
-    if (object.in == null) {
-      protocolObject.set$In(null);
-    } else {
-      protocolObject.set$In(new ArrayList<>());
-      object.in.forEach(protocolObject::add$InItem);
-    }
-
-    return protocolObject;
-  }
-
-  public static BasicStringFilterProperty fromProtocolObject(
-      io.camunda.client.protocol.rest.BasicStringFilterProperty protocolObject) {
-    if (protocolObject == null) {
-      return null;
-    }
-
-    final BasicStringFilterProperty object = new BasicStringFilterProperty();
-    object.eq = protocolObject.get$Eq();
-    object.neq = protocolObject.get$Neq();
-    object.exists = protocolObject.get$Exists();
-    if (protocolObject.get$In() == null) {
-      object.in = null;
-    } else {
-      object.in = new ArrayList<>();
-      object.in.addAll(protocolObject.get$In());
-    }
-    return object;
-  }
 }

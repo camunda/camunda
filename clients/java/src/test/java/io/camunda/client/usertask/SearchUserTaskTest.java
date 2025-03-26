@@ -19,6 +19,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.github.tomakehurst.wiremock.http.RequestMethod;
 import com.github.tomakehurst.wiremock.verification.LoggedRequest;
+import io.camunda.client.ResponseMapper;
 import io.camunda.client.protocol.rest.*;
 import io.camunda.client.util.ClientRestTest;
 import java.time.OffsetDateTime;
@@ -202,10 +203,7 @@ public final class SearchUserTaskTest extends ClientRestTest {
     client
         .newUserTaskQuery()
         .filter(
-            f ->
-                f.localVariables(
-                    io.camunda.client.wrappers.UserTaskVariableFilterRequest.fromProtocolList(
-                        listFilter)))
+            f -> f.localVariables(ResponseMapper.fromUserTaskVariableFilterRequestList(listFilter)))
         .send()
         .join();
 

@@ -17,6 +17,7 @@ package io.camunda.client.job.rest;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.client.ResponseMapper;
 import io.camunda.client.api.response.ActivatedJob;
 import io.camunda.client.protocol.rest.JobChangeset;
 import io.camunda.client.protocol.rest.JobUpdateRequest;
@@ -125,7 +126,7 @@ public class JobUpdateRestTest extends ClientRestTest {
     // when
     client
         .newUpdateJobCommand(jobKey)
-        .update(io.camunda.client.wrappers.JobChangeset.fromProtocolObject(changeset))
+        .update(ResponseMapper.fromProtocolObject(changeset))
         .send()
         .join();
 
@@ -145,7 +146,7 @@ public class JobUpdateRestTest extends ClientRestTest {
     // when
     client
         .newUpdateJobCommand(jobKey)
-        .update(io.camunda.client.wrappers.JobChangeset.fromProtocolObject(changeset))
+        .update(ResponseMapper.fromProtocolObject(changeset))
         .send()
         .join();
 
@@ -165,7 +166,7 @@ public class JobUpdateRestTest extends ClientRestTest {
     // when
     client
         .newUpdateJobCommand(jobKey)
-        .update(io.camunda.client.wrappers.JobChangeset.fromProtocolObject(changeset))
+        .update(ResponseMapper.fromProtocolObject(changeset))
         .send()
         .join();
 
@@ -279,7 +280,7 @@ public class JobUpdateRestTest extends ClientRestTest {
     // when
     client
         .newUpdateJobCommand(job)
-        .update(io.camunda.client.wrappers.JobChangeset.fromProtocolObject(changeset))
+        .update(ResponseMapper.fromProtocolObject(changeset))
         .send()
         .join();
 
@@ -298,7 +299,7 @@ public class JobUpdateRestTest extends ClientRestTest {
     // when
     client
         .newUpdateJobCommand(jobKey)
-        .update(io.camunda.client.wrappers.JobChangeset.fromProtocolObject(changeset))
+        .update(ResponseMapper.fromProtocolObject(changeset))
         .send()
         .join();
 
@@ -318,7 +319,7 @@ public class JobUpdateRestTest extends ClientRestTest {
     // when
     client
         .newUpdateJobCommand(job)
-        .update(io.camunda.client.wrappers.JobChangeset.fromProtocolObject(changeset))
+        .update(ResponseMapper.fromProtocolObject(changeset))
         .send()
         .join();
 

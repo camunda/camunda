@@ -15,9 +15,6 @@
  */
 package io.camunda.client.wrappers;
 
-import java.util.ArrayList;
-import java.util.List;
-
 public class ProcessInstanceVariableFilterRequest {
 
   private String name;
@@ -37,53 +34,5 @@ public class ProcessInstanceVariableFilterRequest {
 
   public void setValue(StringFilterProperty value) {
     this.value = value;
-  }
-
-  public static io.camunda.client.protocol.rest.ProcessInstanceVariableFilterRequest
-      toProtocolObject(ProcessInstanceVariableFilterRequest object) {
-    if (object == null) {
-      return null;
-    }
-
-    final io.camunda.client.protocol.rest.ProcessInstanceVariableFilterRequest protocolObject =
-        new io.camunda.client.protocol.rest.ProcessInstanceVariableFilterRequest();
-    protocolObject.setName(object.name);
-    protocolObject.setValue(StringFilterProperty.toProtocolObject(object.value));
-    return protocolObject;
-  }
-
-  public static List<io.camunda.client.protocol.rest.ProcessInstanceVariableFilterRequest>
-      toProtocolList(List<ProcessInstanceVariableFilterRequest> list) {
-    if (list == null) {
-      return null;
-    }
-
-    final List<io.camunda.client.protocol.rest.ProcessInstanceVariableFilterRequest> protocolList =
-        new ArrayList<>();
-    list.forEach(item -> protocolList.add(toProtocolObject(item)));
-    return protocolList;
-  }
-
-  public static ProcessInstanceVariableFilterRequest fromProtocolObject(
-      io.camunda.client.protocol.rest.ProcessInstanceVariableFilterRequest protocolObject) {
-    if (protocolObject == null) {
-      return null;
-    }
-
-    final ProcessInstanceVariableFilterRequest object = new ProcessInstanceVariableFilterRequest();
-    object.name = protocolObject.getName();
-    object.value = StringFilterProperty.fromProtocolObject(protocolObject.getValue());
-    return object;
-  }
-
-  public static List<ProcessInstanceVariableFilterRequest> fromProtocolList(
-      List<io.camunda.client.protocol.rest.ProcessInstanceVariableFilterRequest> protocolList) {
-    if (protocolList == null) {
-      return null;
-    }
-
-    final List<ProcessInstanceVariableFilterRequest> list = new ArrayList<>();
-    protocolList.forEach(item -> list.add(fromProtocolObject(item)));
-    return list;
   }
 }

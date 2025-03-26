@@ -12,6 +12,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.client.CamundaClient;
+import io.camunda.client.ResponseMapper;
 import io.camunda.client.api.command.ActivateJobsCommandStep1;
 import io.camunda.client.api.command.UpdateRetriesJobCommandStep1;
 import io.camunda.client.api.command.UpdateTimeoutJobCommandStep1;
@@ -152,7 +153,7 @@ public class UpdateJobTest {
     // when
     client
         .newUpdateJobCommand(jobKey)
-        .update(io.camunda.client.wrappers.JobChangeset.fromProtocolObject(changeset))
+        .update(ResponseMapper.fromProtocolObject(changeset))
         .send()
         .join();
 
@@ -175,7 +176,7 @@ public class UpdateJobTest {
     // when
     client
         .newUpdateJobCommand(jobKey)
-        .update(io.camunda.client.wrappers.JobChangeset.fromProtocolObject(changeset))
+        .update(ResponseMapper.fromProtocolObject(changeset))
         .send()
         .join();
 
@@ -200,7 +201,7 @@ public class UpdateJobTest {
     // when
     client
         .newUpdateJobCommand(jobKey)
-        .update(io.camunda.client.wrappers.JobChangeset.fromProtocolObject(changeset))
+        .update(ResponseMapper.fromProtocolObject(changeset))
         .send()
         .join();
 

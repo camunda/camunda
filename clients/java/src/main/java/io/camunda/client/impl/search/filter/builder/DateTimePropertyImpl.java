@@ -15,6 +15,7 @@
  */
 package io.camunda.client.impl.search.filter.builder;
 
+import io.camunda.client.ResponseMapper;
 import io.camunda.client.api.search.filter.builder.DateTimeProperty;
 import io.camunda.client.impl.util.CollectionUtil;
 import io.camunda.client.wrappers.DateTimeFilterProperty;
@@ -82,6 +83,6 @@ public class DateTimePropertyImpl implements DateTimeProperty {
 
   @Override
   public DateTimeFilterProperty build() {
-    return DateTimeFilterProperty.fromProtocolObject(filterProperty);
+    return ResponseMapper.fromProtocolObject(filterProperty);
   }
 }

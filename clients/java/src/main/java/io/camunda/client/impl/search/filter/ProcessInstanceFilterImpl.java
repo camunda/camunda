@@ -15,6 +15,7 @@
  */
 package io.camunda.client.impl.search.filter;
 
+import io.camunda.client.RequestMapper;
 import io.camunda.client.api.search.filter.ProcessInstanceFilter;
 import io.camunda.client.api.search.filter.builder.BasicLongProperty;
 import io.camunda.client.api.search.filter.builder.DateTimeProperty;
@@ -55,7 +56,7 @@ public class ProcessInstanceFilterImpl
   public ProcessInstanceFilter processInstanceKey(final Consumer<BasicLongProperty> fn) {
     final BasicLongProperty property = new BasicLongPropertyImpl();
     fn.accept(property);
-    filter.setProcessInstanceKey(BasicStringFilterProperty.toProtocolObject(property.build()));
+    filter.setProcessInstanceKey(RequestMapper.toProtocolObject(property.build()));
     return this;
   }
 
@@ -69,7 +70,7 @@ public class ProcessInstanceFilterImpl
   public ProcessInstanceFilter processDefinitionId(final Consumer<StringProperty> fn) {
     final StringProperty property = new StringPropertyImpl();
     fn.accept(property);
-    filter.processDefinitionId(StringFilterProperty.toProtocolObject(property.build()));
+    filter.processDefinitionId(RequestMapper.toProtocolObject(property.build()));
     return this;
   }
 
@@ -83,7 +84,7 @@ public class ProcessInstanceFilterImpl
   public ProcessInstanceFilter processDefinitionName(final Consumer<StringProperty> fn) {
     final StringProperty property = new StringPropertyImpl();
     fn.accept(property);
-    filter.setProcessDefinitionName(StringFilterProperty.toProtocolObject(property.build()));
+    filter.setProcessDefinitionName(RequestMapper.toProtocolObject(property.build()));
     return this;
   }
 
@@ -97,7 +98,7 @@ public class ProcessInstanceFilterImpl
   public ProcessInstanceFilter processDefinitionVersion(final Consumer<IntegerProperty> fn) {
     final IntegerPropertyImpl property = new IntegerPropertyImpl();
     fn.accept(property);
-    filter.setProcessDefinitionVersion(IntegerFilterProperty.toProtocolObject(property.build()));
+    filter.setProcessDefinitionVersion(RequestMapper.toProtocolObject(property.build()));
     return this;
   }
 
@@ -112,7 +113,7 @@ public class ProcessInstanceFilterImpl
   public ProcessInstanceFilter processDefinitionVersionTag(final Consumer<StringProperty> fn) {
     final StringProperty property = new StringPropertyImpl();
     fn.accept(property);
-    filter.setProcessDefinitionVersionTag(StringFilterProperty.toProtocolObject(property.build()));
+    filter.setProcessDefinitionVersionTag(RequestMapper.toProtocolObject(property.build()));
     return this;
   }
 
@@ -126,7 +127,7 @@ public class ProcessInstanceFilterImpl
   public ProcessInstanceFilter processDefinitionKey(final Consumer<BasicLongProperty> fn) {
     final BasicLongProperty property = new BasicLongPropertyImpl();
     fn.accept(property);
-    filter.setProcessDefinitionKey(BasicStringFilterProperty.toProtocolObject(property.build()));
+    filter.setProcessDefinitionKey(RequestMapper.toProtocolObject(property.build()));
     return this;
   }
 
@@ -140,8 +141,7 @@ public class ProcessInstanceFilterImpl
   public ProcessInstanceFilter parentProcessInstanceKey(final Consumer<BasicLongProperty> fn) {
     final BasicLongProperty property = new BasicLongPropertyImpl();
     fn.accept(property);
-    filter.setParentProcessInstanceKey(
-        BasicStringFilterProperty.toProtocolObject(property.build()));
+    filter.setParentProcessInstanceKey(RequestMapper.toProtocolObject(property.build()));
     return this;
   }
 
@@ -155,8 +155,7 @@ public class ProcessInstanceFilterImpl
   public ProcessInstanceFilter parentFlowNodeInstanceKey(final Consumer<BasicLongProperty> fn) {
     final BasicLongProperty property = new BasicLongPropertyImpl();
     fn.accept(property);
-    filter.setParentFlowNodeInstanceKey(
-        BasicStringFilterProperty.toProtocolObject(property.build()));
+    filter.setParentFlowNodeInstanceKey(RequestMapper.toProtocolObject(property.build()));
     return this;
   }
 
@@ -170,7 +169,7 @@ public class ProcessInstanceFilterImpl
   public ProcessInstanceFilter startDate(final Consumer<DateTimeProperty> fn) {
     final DateTimeProperty property = new DateTimePropertyImpl();
     fn.accept(property);
-    filter.setStartDate(DateTimeFilterProperty.toProtocolObject(property.build()));
+    filter.setStartDate(RequestMapper.toProtocolObject(property.build()));
     return this;
   }
 
@@ -184,7 +183,7 @@ public class ProcessInstanceFilterImpl
   public ProcessInstanceFilter endDate(final Consumer<DateTimeProperty> fn) {
     final DateTimeProperty property = new DateTimePropertyImpl();
     fn.accept(property);
-    filter.setEndDate(DateTimeFilterProperty.toProtocolObject(property.build()));
+    filter.setEndDate(RequestMapper.toProtocolObject(property.build()));
     return this;
   }
 
@@ -197,7 +196,7 @@ public class ProcessInstanceFilterImpl
   public ProcessInstanceFilter state(final Consumer<ProcessInstanceStateProperty> fn) {
     final ProcessInstanceStateProperty property = new ProcessInstanceStatePropertyImpl();
     fn.accept(property);
-    filter.setState(ProcessInstanceStateFilterProperty.toProtocolObject(property.build()));
+    filter.setState(RequestMapper.toProtocolObject(property.build()));
     return this;
   }
 
@@ -217,7 +216,7 @@ public class ProcessInstanceFilterImpl
   public ProcessInstanceFilter tenantId(final Consumer<StringProperty> fn) {
     final StringProperty property = new StringPropertyImpl();
     fn.accept(property);
-    filter.setTenantId(StringFilterProperty.toProtocolObject(property.build()));
+    filter.setTenantId(RequestMapper.toProtocolObject(property.build()));
     return this;
   }
 
@@ -227,7 +226,7 @@ public class ProcessInstanceFilterImpl
     if (variableFilters != null) {
       variableFilters.forEach(v -> variableValueNullCheck(v.getValue()));
     }
-    filter.setVariables(ProcessInstanceVariableFilterRequest.toProtocolList(variableFilters));
+    filter.setVariables(RequestMapper.toProtocolList(variableFilters));
     return this;
   }
 
@@ -248,7 +247,7 @@ public class ProcessInstanceFilterImpl
                     return request;
                   })
               .collect(Collectors.toList());
-      filter.setVariables(ProcessInstanceVariableFilterRequest.toProtocolList(variableFilters));
+      filter.setVariables(RequestMapper.toProtocolList(variableFilters));
     }
     return this;
   }
@@ -263,7 +262,7 @@ public class ProcessInstanceFilterImpl
   public ProcessInstanceFilter batchOperationId(final Consumer<StringProperty> fn) {
     final StringProperty property = new StringPropertyImpl();
     fn.accept(property);
-    filter.setBatchOperationId(StringFilterProperty.toProtocolObject(property.build()));
+    filter.setBatchOperationId(RequestMapper.toProtocolObject(property.build()));
     return this;
   }
 
