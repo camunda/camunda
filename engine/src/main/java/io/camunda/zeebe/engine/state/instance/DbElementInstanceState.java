@@ -28,6 +28,7 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
+import java.util.function.Predicate;
 import org.agrona.DirectBuffer;
 import org.agrona.collections.MutableInteger;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -303,6 +304,15 @@ public final class DbElementInstanceState implements MutableElementInstanceState
       final long parentKey,
       final long startAtKey,
       final BiFunction<Long, ElementInstance, Boolean> visitor) {
+    forEachChild(parentKey, startAtKey, visitor, (elementInstance) -> true);
+  }
+
+  @Override
+  public void forEachChild(
+      final long parentKey,
+      final long startAtKey,
+      final BiFunction<Long, ElementInstance, Boolean> visitor,
+      final Predicate<ElementInstance> filter) {
     this.parentKey.inner().wrapLong(parentKey);
     elementInstanceKey.wrapLong(startAtKey);
 
@@ -316,7 +326,11 @@ public final class DbElementInstanceState implements MutableElementInstanceState
         (key, value) -> {
           final DbLong childKey = key.second().inner();
           final ElementInstance childInstance = getInstance(childKey.getValue());
-          return visitor.apply(childKey.getValue(), childInstance);
+
+          if (filter.test(childInstance)) {
+            return visitor.apply(childKey.getValue(), childInstance);
+          }
+          return true;
         });
   }
 
