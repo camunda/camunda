@@ -66,7 +66,7 @@ public class FlownodeInstanceTest extends ClientRestTest {
     final FlowNodeInstanceFilter filter = Objects.requireNonNull(request.getFilter());
     assertThat(filter.getFlowNodeInstanceKey()).isEqualTo("1");
     assertThat(filter.getType()).isEqualTo(FlowNodeInstanceFilter.TypeEnum.SERVICE_TASK);
-    assertThat(filter.getState()).isEqualTo(FlowNodeInstanceStateEnum.ACTIVE);
+    assertThat(filter.getState().get$Eq()).isEqualTo(FlowNodeInstanceStateEnum.ACTIVE);
     assertThat(filter.getProcessDefinitionKey()).isEqualTo("2");
     assertThat(filter.getProcessDefinitionId()).isEqualTo("complexProcess");
     assertThat(filter.getProcessInstanceKey()).isEqualTo("3");
