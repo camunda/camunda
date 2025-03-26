@@ -113,7 +113,22 @@ class AssignUserToTenantTest {
         .isInstanceOf(ProblemException.class)
         .hasMessageContaining("Failed with code 404: 'Not Found'")
         .hasMessageContaining(
-            "Expected to add user '%s' to tenant '%s', but the user doesn't exist."
+            "Expected to add user with id '%s' to tenant with id '%s', but the user doesn't exist."
                 .formatted(invalidUserName, TENANT_ID));
+  }
+
+  @Test
+  void shouldRejectAssignIfTenantAlreadyAssignedToUser() {
+    // Given
+    client.newAssignUserToTenantCommand(TENANT_ID).username(USERNAME).send().join();
+
+    // When / Then
+    assertThatThrownBy(
+            () -> client.newAssignUserToTenantCommand(TENANT_ID).username(USERNAME).send().join())
+        .isInstanceOf(ProblemException.class)
+        .hasMessageContaining("Failed with code 409: 'Conflict'")
+        .hasMessageContaining(
+            "Expected to add user with id '%s' to tenant with id '%s', but the user is already assigned to the tenant."
+                .formatted(USERNAME, TENANT_ID));
   }
 }

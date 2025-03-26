@@ -37,8 +37,6 @@ class AssignMappingToTenantTest {
 
   @AutoClose private CamundaClient client;
 
-  private long mappingKey;
-
   @BeforeEach
   void initClientAndInstances() {
     client = zeebe.newClientBuilder().defaultRequestTimeout(Duration.ofSeconds(15)).build();
@@ -47,23 +45,20 @@ class AssignMappingToTenantTest {
     client.newCreateTenantCommand().tenantId(TENANT_ID).name("Initial Tenant Name").send().join();
 
     // Create Mapping
-    mappingKey =
-        client
-            .newCreateMappingCommand()
-            .claimName(CLAIM_NAME)
-            .claimValue(CLAIM_VALUE)
-            .name(NAME)
-            .id(ID)
-            .send()
-            .join()
-            .getMappingKey();
+    client
+        .newCreateMappingCommand()
+        .claimName(CLAIM_NAME)
+        .claimValue(CLAIM_VALUE)
+        .name(NAME)
+        .id(ID)
+        .send()
+        .join();
   }
 
   @Test
   void shouldAssignMappingToTenant() {
     // When
-    // TODO remove the Long parsing once Mappings are migrated to work with ids instead of keys
-    client.newAssignMappingToTenantCommand(TENANT_ID).mappingKey(Long.parseLong(ID)).send().join();
+    client.newAssignMappingToTenantCommand(TENANT_ID).mappingId(ID).send().join();
 
     // Then
     ZeebeAssertHelper.assertEntityAssignedToTenant(
@@ -83,11 +78,7 @@ class AssignMappingToTenantTest {
     // When / Then
     assertThatThrownBy(
             () ->
-                client
-                    .newAssignMappingToTenantCommand(invalidTenantId)
-                    .mappingKey(mappingKey)
-                    .send()
-                    .join())
+                client.newAssignMappingToTenantCommand(invalidTenantId).mappingId(ID).send().join())
         .isInstanceOf(ProblemException.class)
         .hasMessageContaining("Failed with code 404: 'Not Found'")
         .hasMessageContaining(
@@ -98,20 +89,35 @@ class AssignMappingToTenantTest {
   @Test
   void shouldRejectAssignIfMappingDoesNotExist() {
     // Given
-    final long invalidMappingKey = 99999L;
+    final String invalidMappingId = "99999L";
 
     // When / Then
     assertThatThrownBy(
             () ->
                 client
                     .newAssignMappingToTenantCommand(TENANT_ID)
-                    .mappingKey(invalidMappingKey)
+                    .mappingId(invalidMappingId)
                     .send()
                     .join())
         .isInstanceOf(ProblemException.class)
         .hasMessageContaining("Failed with code 404: 'Not Found'")
         .hasMessageContaining(
-            "Expected to add entity with id '%d' to tenant with tenantId '%s', but the entity doesn't exist."
-                .formatted(invalidMappingKey, TENANT_ID));
+            "Expected to add mapping with id '%s' to tenant with id '%s', but the mapping doesn't exist."
+                .formatted(invalidMappingId, TENANT_ID));
+  }
+
+  @Test
+  void shouldRejectAssignIfTenantAlreadyAssignedToMapping() {
+    // given
+    client.newAssignMappingToTenantCommand(TENANT_ID).mappingId(ID).send().join();
+
+    // When / Then
+    assertThatThrownBy(
+            () -> client.newAssignMappingToTenantCommand(TENANT_ID).mappingId(ID).send().join())
+        .isInstanceOf(ProblemException.class)
+        .hasMessageContaining("Failed with code 409: 'Conflict'")
+        .hasMessageContaining(
+            "Expected to add mapping with id '%s' to tenant with id '%s', but the mapping is already assigned to the tenant."
+                .formatted(ID, TENANT_ID));
   }
 }
