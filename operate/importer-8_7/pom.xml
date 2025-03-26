@@ -4,7 +4,7 @@
   <parent>
     <groupId>io.camunda</groupId>
     <artifactId>operate-parent</artifactId>
-    <version>8.8.0-SNAPSHOT</version>
+    <version>8.8.0-alpha3-rc3</version>
     <relativePath>../pom.xml</relativePath>
   </parent>
   <artifactId>operate-importer-8_7</artifactId>
