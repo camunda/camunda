@@ -18,6 +18,8 @@ import io.camunda.client.api.command.ProblemException;
 import io.camunda.client.api.search.response.UserTask;
 import io.camunda.client.api.search.response.UserTaskState;
 import io.camunda.client.impl.search.filter.builder.StringPropertyImpl;
+import io.camunda.client.protocol.rest.PageObject;
+import io.camunda.client.protocol.rest.PageObject.TypeEnum;
 import io.camunda.client.protocol.rest.UserTaskVariableFilterRequest;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.zeebe.model.bpmn.Bpmn;
@@ -440,11 +442,16 @@ class UserTaskSearchTest {
     final var result = camundaClient.newUserTaskSearchRequest().page(p -> p.limit(1)).send().join();
     assertThat(result.items().size()).isEqualTo(1);
     final var key = result.items().getFirst().getUserTaskKey();
+
     // apply searchAfter
     final var resultAfter =
         camundaClient
             .newUserTaskSearchRequest()
-            .page(p -> p.searchAfter(Collections.singletonList(key)))
+            .page(
+                p ->
+                    p.searchAfter(
+                        Collections.singletonList(
+                            new PageObject().type(TypeEnum.INT64).value(key.toString()))))
             .send()
             .join();
 
@@ -454,7 +461,11 @@ class UserTaskSearchTest {
     final var resultBefore =
         camundaClient
             .newUserTaskSearchRequest()
-            .page(p -> p.searchBefore(Collections.singletonList(keyAfter)))
+            .page(
+                p ->
+                    p.searchBefore(
+                        Collections.singletonList(
+                            new PageObject().type(TypeEnum.INT64).value(String.valueOf(keyAfter)))))
             .send()
             .join();
     assertThat(result.items().size()).isEqualTo(1);
@@ -478,7 +489,7 @@ class UserTaskSearchTest {
     // Assert First and Last Sort Value matches the first and last item
     // We need to make use of toString, such the test work with ES/OS
     final List<String> firstSortValues =
-        result.page().firstSortValues().stream().map(Object::toString).toList();
+        result.page().firstSortValues().stream().map(PageObject::getValue).toList();
     String creationDateMillis = convertDateIfNeeded(firstSortValues.getFirst());
     String userTaskKey = firstSortValues.getLast();
 
@@ -489,7 +500,7 @@ class UserTaskSearchTest {
     assertThat(userTaskKey).isEqualTo(Long.toString(firstItem.getUserTaskKey()));
 
     final List<String> lastSortValues =
-        result.page().lastSortValues().stream().map(Object::toString).toList();
+        result.page().lastSortValues().stream().map(PageObject::getValue).toList();
     creationDateMillis = convertDateIfNeeded(lastSortValues.getFirst());
     userTaskKey = lastSortValues.getLast();
 
