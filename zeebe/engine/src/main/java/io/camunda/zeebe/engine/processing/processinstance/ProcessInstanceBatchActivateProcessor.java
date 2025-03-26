@@ -7,9 +7,9 @@
  */
 package io.camunda.zeebe.engine.processing.processinstance;
 
-import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableMultiInstanceBody;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
@@ -23,6 +23,7 @@ import io.camunda.zeebe.stream.api.state.KeyGenerator;
 
 public final class ProcessInstanceBatchActivateProcessor
     implements TypedRecordProcessor<ProcessInstanceBatchRecord> {
+  private final StateWriter stateWriter;
   private final TypedCommandWriter commandWriter;
   private final KeyGenerator keyGenerator;
   private final ElementInstanceState elementInstanceState;
@@ -34,6 +35,7 @@ public final class ProcessInstanceBatchActivateProcessor
       final ElementInstanceState elementInstanceState,
       final ProcessState processState) {
     commandWriter = writers.command();
+    stateWriter = writers.state();
     this.keyGenerator = keyGenerator;
     this.elementInstanceState = elementInstanceState;
     this.processState = processState;
@@ -42,20 +44,46 @@ public final class ProcessInstanceBatchActivateProcessor
   @Override
   public void processRecord(final TypedRecord<ProcessInstanceBatchRecord> record) {
     final var recordValue = record.getValue();
+    final var remainingChildrenToActivate = recordValue.getIndex();
 
-    final ProcessInstanceRecord childInstanceRecord = createChildInstanceRecord(recordValue);
-    var amountOfChildInstancesToActivate = recordValue.getIndex();
-    while (amountOfChildInstancesToActivate > 0) {
-      if (canWriteCommands(record, childInstanceRecord)) {
-        final long childInstanceKey = keyGenerator.nextKey();
-        commandWriter.appendFollowUpCommand(
-            childInstanceKey, ProcessInstanceIntent.ACTIVATE_ELEMENT, childInstanceRecord);
-        amountOfChildInstancesToActivate--;
-      } else {
-        writeFollowupBatchCommand(recordValue, amountOfChildInstancesToActivate);
-        break;
-      }
+    if (remainingChildrenToActivate > 0) {
+      writeActivateChildCommand(recordValue);
     }
+
+    writeNextBatchCommand(remainingChildrenToActivate - 1, record);
+  }
+
+  private void writeActivateChildCommand(final ProcessInstanceBatchRecord record) {
+    final ProcessInstanceRecord childInstanceRecord = createChildInstanceRecord(record);
+
+    commandWriter.appendFollowUpCommand(
+        keyGenerator.nextKey(), ProcessInstanceIntent.ACTIVATE_ELEMENT, childInstanceRecord);
+  }
+
+  private void writeNextBatchCommand(
+      final long remainingChildrenToActivate,
+      final TypedRecord<ProcessInstanceBatchRecord> record) {
+    final var recordValue = record.getValue();
+    // schedule the next batch command or finish the batch
+    if (remainingChildrenToActivate > 0) {
+      writeFollowupBatchCommand(recordValue, remainingChildrenToActivate);
+    } else {
+      stateWriter.appendFollowUpEvent(
+          record.getKey(), ProcessInstanceBatchIntent.ACTIVATED, recordValue);
+    }
+  }
+
+  private void writeFollowupBatchCommand(
+      final ProcessInstanceBatchRecord recordValue, final long remainingChildrenToActivate) {
+
+    final var nextBatchRecord =
+        new ProcessInstanceBatchRecord()
+            .setProcessInstanceKey(recordValue.getProcessInstanceKey())
+            .setBatchElementInstanceKey(recordValue.getBatchElementInstanceKey())
+            .setIndex(remainingChildrenToActivate);
+
+    commandWriter.appendFollowUpCommand(
+        keyGenerator.nextKey(), ProcessInstanceBatchIntent.ACTIVATE, nextBatchRecord);
   }
 
   private ProcessInstanceRecord createChildInstanceRecord(
@@ -81,29 +109,5 @@ public final class ProcessInstanceBatchActivateProcessor
         .setBpmnElementType(childElement.getElementType())
         .setBpmnEventType(childElement.getEventType());
     return childInstanceRecord;
-  }
-
-  private void writeFollowupBatchCommand(
-      final ProcessInstanceBatchRecord recordValue, final long index) {
-    final var nextBatchRecord =
-        new ProcessInstanceBatchRecord()
-            .setProcessInstanceKey(recordValue.getProcessInstanceKey())
-            .setBatchElementInstanceKey(recordValue.getBatchElementInstanceKey())
-            .setIndex(index);
-    final long key = keyGenerator.nextKey();
-    commandWriter.appendFollowUpCommand(key, ProcessInstanceBatchIntent.ACTIVATE, nextBatchRecord);
-  }
-
-  private boolean canWriteCommands(
-      final TypedRecord<ProcessInstanceBatchRecord> record,
-      final ProcessInstanceRecord childInstanceRecord) {
-    // We must have space in the batch to write both the ACTIVATE command as the potential
-    // follow-up batch command. An excessive 8Kb is added to account for metadata. This is way
-    // more than will be necessary.
-    final var expectedCommandLength =
-        record.getLength()
-            + childInstanceRecord.getLength()
-            + EngineConfiguration.BATCH_SIZE_CALCULATION_BUFFER;
-    return commandWriter.canWriteCommandOfLength(expectedCommandLength);
   }
 }
