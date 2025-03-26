@@ -2879,9 +2879,7 @@ paths:
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/DocumentCreationBatchResponse"
+                $ref: "#/components/schemas/DocumentCreationBatchResponse"
         "207":
           description: >
             Not all documents were uploaded successfully. More details are provided in the response body.
