@@ -23,6 +23,7 @@ import com.github.tomakehurst.wiremock.verification.LoggedRequest;
 import io.camunda.client.impl.search.request.SearchRequestSort;
 import io.camunda.client.impl.search.request.SearchRequestSortMapper;
 import io.camunda.client.protocol.rest.*;
+import io.camunda.client.protocol.rest.PageObject.TypeEnum;
 import io.camunda.client.util.ClientRestTest;
 import io.camunda.client.util.RestGatewayService;
 import java.time.OffsetDateTime;
@@ -257,14 +258,22 @@ public class QueryProcessInstanceTest extends ClientRestTest {
   @Test
   void shouldSearchWithFullPagination() {
     // when
+    final PageObject pageObjectB = new PageObject();
+    pageObjectB.value("\"a\"");
+    pageObjectB.type(TypeEnum.STRING);
+
+    final PageObject pageObjectA = new PageObject();
+    pageObjectA.value("\"a\"");
+    pageObjectA.type(TypeEnum.STRING);
+
     client
         .newProcessInstanceSearchRequest()
         .page(
             p ->
                 p.from(23)
                     .limit(5)
-                    .searchBefore(Collections.singletonList("b"))
-                    .searchAfter(Collections.singletonList("a")))
+                    .searchBefore(Collections.singletonList(pageObjectB))
+                    .searchAfter(Collections.singletonList(pageObjectA)))
         .send()
         .join();
 
@@ -275,8 +284,8 @@ public class QueryProcessInstanceTest extends ClientRestTest {
     assertThat(pageRequest).isNotNull();
     assertThat(pageRequest.getFrom()).isEqualTo(23);
     assertThat(pageRequest.getLimit()).isEqualTo(5);
-    assertThat(pageRequest.getSearchBefore()).isEqualTo(Collections.singletonList("b"));
-    assertThat(pageRequest.getSearchAfter()).isEqualTo(Collections.singletonList("a"));
+    assertThat(pageRequest.getSearchBefore()).isEqualTo(Collections.singletonList(pageObjectB));
+    assertThat(pageRequest.getSearchAfter()).isEqualTo(Collections.singletonList(pageObjectA));
   }
 
   private void assertSort(

@@ -18,6 +18,8 @@ import io.camunda.client.api.response.DecisionRequirements;
 import io.camunda.client.api.response.DeploymentEvent;
 import io.camunda.client.api.search.response.DecisionDefinition;
 import io.camunda.client.impl.search.response.DecisionDefinitionImpl;
+import io.camunda.client.protocol.rest.PageObject;
+import io.camunda.client.protocol.rest.PageObject.TypeEnum;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -475,7 +477,11 @@ class DecisionSearchTest {
     final var resultAfter =
         camundaClient
             .newDecisionRequirementsSearchRequest()
-            .page(p -> p.searchAfter(Collections.singletonList(key)))
+            .page(
+                p ->
+                    p.searchAfter(
+                        Collections.singletonList(
+                            new PageObject().value(String.valueOf(key)).type(TypeEnum.INT64))))
             .send()
             .join();
 
@@ -485,7 +491,11 @@ class DecisionSearchTest {
     final var resultBefore =
         camundaClient
             .newDecisionRequirementsSearchRequest()
-            .page(p -> p.searchBefore(Collections.singletonList(keyAfter)))
+            .page(
+                p ->
+                    p.searchBefore(
+                        Collections.singletonList(
+                            new PageObject().value(String.valueOf(keyAfter)).type(TypeEnum.INT64))))
             .send()
             .join();
     assertThat(result.items().size()).isEqualTo(1);

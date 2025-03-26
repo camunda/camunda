@@ -34,6 +34,8 @@ import io.camunda.client.api.search.filter.StringFilterProperty;
 import io.camunda.client.api.search.response.FlowNodeInstance;
 import io.camunda.client.api.search.response.ProcessInstance;
 import io.camunda.client.api.worker.JobWorker;
+import io.camunda.client.protocol.rest.PageObject;
+import io.camunda.client.protocol.rest.PageObject.TypeEnum;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
@@ -812,7 +814,11 @@ public class ProcessInstanceAndFlowNodeInstanceSearchTest {
     final var resultAfter =
         camundaClient
             .newProcessInstanceSearchRequest()
-            .page(p -> p.searchAfter(Collections.singletonList(key)))
+            .page(
+                p ->
+                    p.searchAfter(
+                        Collections.singletonList(
+                            new PageObject().type(TypeEnum.INT64).value(String.valueOf(key)))))
             .send()
             .join();
 
@@ -822,7 +828,11 @@ public class ProcessInstanceAndFlowNodeInstanceSearchTest {
     final var resultBefore =
         camundaClient
             .newProcessInstanceSearchRequest()
-            .page(p -> p.searchBefore(Collections.singletonList(keyAfter)))
+            .page(
+                p ->
+                    p.searchBefore(
+                        Collections.singletonList(
+                            new PageObject().type(TypeEnum.INT64).value(String.valueOf(keyAfter)))))
             .send()
             .join();
     assertThat(result.items().size()).isEqualTo(2);
@@ -839,7 +849,11 @@ public class ProcessInstanceAndFlowNodeInstanceSearchTest {
     final var resultAfter =
         camundaClient
             .newFlownodeInstanceSearchRequest()
-            .page(p -> p.searchAfter(Collections.singletonList(key)))
+            .page(
+                p ->
+                    p.searchAfter(
+                        Collections.singletonList(
+                            new PageObject().type(TypeEnum.INT64).value(String.valueOf(key)))))
             .send()
             .join();
 
@@ -849,7 +863,11 @@ public class ProcessInstanceAndFlowNodeInstanceSearchTest {
     final var resultBefore =
         camundaClient
             .newFlownodeInstanceSearchRequest()
-            .page(p -> p.searchBefore(Collections.singletonList(keyAfter)))
+            .page(
+                p ->
+                    p.searchBefore(
+                        Collections.singletonList(
+                            new PageObject().type(TypeEnum.INT64).value(String.valueOf(keyAfter)))))
             .send()
             .join();
     assertThat(result.items().size()).isEqualTo(2);
@@ -1194,7 +1212,11 @@ public class ProcessInstanceAndFlowNodeInstanceSearchTest {
     final var resultAfter =
         camundaClient
             .newFlownodeInstanceSearchRequest()
-            .page(p -> p.searchAfter(Collections.singletonList(key)))
+            .page(
+                p ->
+                    p.searchAfter(
+                        Collections.singletonList(
+                            new PageObject().type(TypeEnum.INT64).value(String.valueOf(key)))))
             .send()
             .join();
 
@@ -1204,7 +1226,11 @@ public class ProcessInstanceAndFlowNodeInstanceSearchTest {
     final var resultBefore =
         camundaClient
             .newFlownodeInstanceSearchRequest()
-            .page(p -> p.searchBefore(Collections.singletonList(keyAfter)))
+            .page(
+                p ->
+                    p.searchBefore(
+                        Collections.singletonList(
+                            new PageObject().type(TypeEnum.INT64).value(String.valueOf(keyAfter)))))
             .send()
             .join();
     assertThat(result.items().size()).isEqualTo(2);

@@ -26,6 +26,7 @@ import io.camunda.client.impl.search.request.SearchRequestSortMapper;
 import io.camunda.client.protocol.rest.*;
 import io.camunda.client.protocol.rest.IncidentFilter.ErrorTypeEnum;
 import io.camunda.client.protocol.rest.IncidentFilter.StateEnum;
+import io.camunda.client.protocol.rest.PageObject.TypeEnum;
 import io.camunda.client.util.ClientRestTest;
 import io.camunda.zeebe.protocol.record.value.ErrorType;
 import java.util.Arrays;
@@ -148,14 +149,22 @@ public class SearchIncidentTest extends ClientRestTest {
   @Test
   void shouldSearchWithFullPagination() {
     // when
+    final PageObject pageObjectB = new PageObject();
+    pageObjectB.value("\"a\"");
+    pageObjectB.type(TypeEnum.STRING);
+
+    final PageObject pageObjectA = new PageObject();
+    pageObjectA.value("\"a\"");
+    pageObjectA.type(TypeEnum.STRING);
+
     client
         .newIncidentSearchRequest()
         .page(
             p ->
                 p.from(23)
                     .limit(5)
-                    .searchBefore(Arrays.asList("b"))
-                    .searchAfter(Arrays.asList("a")))
+                    .searchBefore(Arrays.asList(pageObjectB))
+                    .searchAfter(Arrays.asList(pageObjectA)))
         .send()
         .join();
 
@@ -164,8 +173,8 @@ public class SearchIncidentTest extends ClientRestTest {
     final SearchQueryPageRequest pageRequest = request.getPage();
     assertThat(pageRequest.getFrom()).isEqualTo(23);
     assertThat(pageRequest.getLimit()).isEqualTo(5);
-    assertThat(pageRequest.getSearchBefore()).isEqualTo(Arrays.asList("b"));
-    assertThat(pageRequest.getSearchAfter()).isEqualTo(Arrays.asList("a"));
+    assertThat(pageRequest.getSearchBefore()).isEqualTo(Arrays.asList(pageObjectB));
+    assertThat(pageRequest.getSearchAfter()).isEqualTo(Arrays.asList(pageObjectA));
   }
 
   /*
