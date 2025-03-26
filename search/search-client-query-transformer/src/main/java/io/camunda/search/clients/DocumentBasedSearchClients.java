@@ -219,8 +219,7 @@ public class DocumentBasedSearchClients implements SearchClientsProxy, Closeable
 
   @Override
   public SearchQueryResult<UserTaskEntity> searchUserTasks(final UserTaskQuery filter) {
-    return getSearchExecutor()
-        .search(filter, TaskEntity.class);
+    return getSearchExecutor().search(filter, TaskEntity.class);
   }
 
   @Override

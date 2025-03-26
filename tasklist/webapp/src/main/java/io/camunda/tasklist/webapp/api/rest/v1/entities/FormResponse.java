@@ -154,7 +154,8 @@ public class FormResponse {
         .setIsDeleted(form.getIsDeleted());
   }
 
-  public static FormResponse fromFormEntity(final FormEntity form, final ProcessEntity processEntity) {
+  public static FormResponse fromFormEntity(
+      final FormEntity form, final ProcessEntity processEntity) {
     return new FormResponse()
         .setId(form.getFormId())
         .setProcessDefinitionKey(form.getProcessDefinitionId())
