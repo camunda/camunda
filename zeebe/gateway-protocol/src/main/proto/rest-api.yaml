@@ -2377,7 +2377,7 @@ paths:
           $ref: "#/components/responses/Forbidden"
         "500":
           $ref: "#/components/responses/InternalServerError"
-  /groups/{groupKey}:
+  /groups/{groupId}:
     get:
       tags:
         - Group
@@ -2389,7 +2389,7 @@ paths:
         This API is in a Work-in-Progress state and will undergo potential breaking changes until
         its release with an upcoming minor release.
       parameters:
-        - name: groupKey
+        - name: groupId
           in: path
           required: true
           description: The group key.
@@ -2425,7 +2425,7 @@ paths:
         This API is in a Work-in-Progress state and will undergo potential breaking changes until
         its release with an upcoming minor release.
       parameters:
-        - name: groupKey
+        - name: groupId
           in: path
           required: true
           description: The key of the group to update.
@@ -2458,15 +2458,15 @@ paths:
       operationId: deleteGroup
       summary: Delete group (Work-in-Progress)
       description: |
-        Deletes the group with the given key.
+        Deletes the group with the given ID.
 
         This API is in a Work-in-Progress state and will undergo potential breaking changes until
         its release with an upcoming minor release.
       parameters:
-        - name: groupKey
+        - name: groupId
           in: path
           required: true
-          description: The key of the group to delete.
+          description: The ID of the group to delete.
           schema:
             type: string
       responses:
@@ -2475,7 +2475,7 @@ paths:
         "401":
           $ref: "#/components/responses/Unauthorized"
         "404":
-          description: The group with the groupKey was not found.
+          description: The group with the provided ID was not found.
           content:
             application/problem+json:
               schema:

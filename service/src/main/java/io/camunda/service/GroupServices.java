@@ -118,8 +118,9 @@ public class GroupServices extends SearchQueryService<GroupServices, GroupQuery,
     return sendBrokerRequest(new BrokerGroupUpdateRequest(groupKey).setName(name));
   }
 
-  public CompletableFuture<GroupRecord> deleteGroup(final long groupKey) {
-    return sendBrokerRequest(new BrokerGroupDeleteRequest(groupKey));
+  public CompletableFuture<GroupRecord> deleteGroup(final String groupId) {
+    return sendBrokerRequest(
+        new BrokerGroupDeleteRequest(Long.parseLong(groupId)).setGroupId(groupId));
   }
 
   public CompletableFuture<GroupRecord> assignMember(
