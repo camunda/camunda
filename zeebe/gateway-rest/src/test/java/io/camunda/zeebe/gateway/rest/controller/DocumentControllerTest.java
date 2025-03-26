@@ -336,8 +336,7 @@ public class DocumentControllerTest extends RestControllerTest {
         .isCreated()
         .expectBody()
         .json(
-            String.format(
-                """
+            """
                     {
                       "createdDocuments": [
                         {
@@ -372,8 +371,7 @@ public class DocumentControllerTest extends RestControllerTest {
                       "failedDocuments": []
                     }
                     """
-                    .formatted(timestamp, timestamp),
-                timestamp));
+                .formatted(timestamp, timestamp));
 
     verify(documentServices).createDocumentBatch(requestCaptor.capture());
 
@@ -459,8 +457,7 @@ public class DocumentControllerTest extends RestControllerTest {
         .isCreated()
         .expectBody()
         .json(
-            String.format(
-                """
+            """
                     {
                       "createdDocuments": [
                         {
@@ -495,8 +492,7 @@ public class DocumentControllerTest extends RestControllerTest {
                       "failedDocuments": []
                     }
                     """
-                    .formatted(timestamp, timestamp),
-                timestamp));
+                .formatted(timestamp, timestamp));
 
     verify(documentServices).createDocumentBatch(requestCaptor.capture());
 
