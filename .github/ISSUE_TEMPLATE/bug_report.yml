@@ -8,20 +8,46 @@ body:
       label: Component
       description: In which component did the issue occur?
       options:
-        - Not sure*
-        - Operate*
-        - Optimize*
-        - Tasklist*
-        - Identity*
-        - Zeebe*
-        - C8Run*
+        - Not sure-
+        - Operate-
+        - Optimize-
+        - Tasklist-
+        - Identity-
+        - Zeebe-
+        - C8Run-
+      default: 0
+    validations:
+      required: true
+  - type: dropdown
+    id: severity
+    attributes:
+      label: Severity
+      description: What is the severity of the bug?
+      options:
+        - Low-
+        - Medium-
+        - High-
+        - Critical-
+      default: 0
+    validations:
+      required: true
+  - type: dropdown
+    id: likelihood
+    attributes:
+      label: Likelihood
+      description: How likely is it to occur?
+      options:
+        - Unknown_
+        - Low_
+        - Medium_
+        - High_
       default: 0
     validations:
       required: true
   - type: textarea
     id: description
     attributes:
-      label: Describe the bug
+      label: Description
       description: A clear and concise description of what the bug is.
     validations:
       required: true
@@ -34,6 +60,13 @@ body:
              1. do this
              2. do that
              3. now this happens
+    validations:
+      required: true
+  - type: textarea
+    id: current-behavior
+    attributes:
+      label: Current behavior
+      description: A clear and concise description of what is currently happening. 
     validations:
       required: true
   - type: textarea
@@ -52,37 +85,38 @@ body:
              - OS: [e.g. MacOS 10.2, Windows 10]
              - Component Version: [e.g. 2.0.0]
              - Execution Platform: [e.g. Camunda 8 SaaS or SM]
+             - Database: [ES/OS, relational]
     validations:
       required: true
   - type: textarea
-    id: additional-context
+    id: rootcause
     attributes:
-      label: Additional context
-      description: Anything else that might help us to evaluate the error.
+      label: Rootcause
+      description: Required on prioritization
+    validations:
+      required: false
+  - type: textarea
+    id: solution-ideas
+    attributes:
+      label: Solution ideas
+      description:
+    validations:
+      required: false
+  - type: textarea
+    id: dev-qa-handover
+    attributes:
+      label: Dev -> QA handover
+      description:
+      value: |
+             - Resources:
+             - Versions to validate:
+             - Release version (in which version this feature will be released):
     validations:
       required: false
   - type: textarea
     id: links
     attributes:
-      label: Support ticket link
-      description: Add link to the support ticket here if applicable.
+      label: Links
+      description: Add the support ticket- or other links here if applicable.
     validations:
       required: false
-  - type: markdown
-    attributes:
-      value: |
-        ## To be filled out by the engineer:
-  - type: checkboxes
-    id: DOR
-    attributes:
-      label: Definition of Ready
-      description: 
-      options:
-        - label: The bug has been reproduced by the assignee. Otherwise the issue has been closed with a comment.
-          required: false
-        - label: The issue has a meaningful title, description and testable acceptance criteria.
-          required: false
-        - label: Necessary screenshots, screen recordings or files has been attached to the bug report.
-          required: false
-        - label: Environment details are checked and complete.
-          required: false
