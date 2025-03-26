@@ -48,7 +48,7 @@ import io.camunda.webapps.schema.entities.incident.IncidentState;
 import io.camunda.webapps.schema.entities.listview.ProcessInstanceForListViewEntity;
 import io.camunda.webapps.schema.entities.listview.ProcessInstanceState;
 import io.camunda.webapps.schema.entities.operation.OperationState;
-import io.camunda.webapps.schema.entities.tasklist.TaskEntity;
+import io.camunda.webapps.schema.entities.usertask.TaskEntity;
 import java.util.List;
 import java.util.Objects;
 import java.util.function.Predicate;

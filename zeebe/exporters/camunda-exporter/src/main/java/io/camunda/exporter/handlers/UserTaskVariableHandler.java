@@ -11,9 +11,9 @@ import io.camunda.exporter.handlers.UserTaskVariableHandler.UserTaskVariableBatc
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.webapps.schema.descriptors.tasklist.template.TaskTemplate;
 import io.camunda.webapps.schema.entities.AbstractExporterEntity;
-import io.camunda.webapps.schema.entities.tasklist.TaskJoinRelationship;
-import io.camunda.webapps.schema.entities.tasklist.TaskJoinRelationship.TaskJoinRelationshipType;
-import io.camunda.webapps.schema.entities.tasklist.TaskVariableEntity;
+import io.camunda.webapps.schema.entities.usertask.TaskJoinRelationship;
+import io.camunda.webapps.schema.entities.usertask.TaskJoinRelationship.TaskJoinRelationshipType;
+import io.camunda.webapps.schema.entities.usertask.TaskVariableEntity;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.VariableIntent;

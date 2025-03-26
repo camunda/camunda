@@ -55,6 +55,7 @@ import io.camunda.security.auth.SecurityContext;
 import io.camunda.webapps.schema.descriptors.IndexDescriptors;
 import io.camunda.webapps.schema.entities.ProcessEntity;
 import io.camunda.webapps.schema.entities.listview.ProcessInstanceForListViewEntity;
+import io.camunda.webapps.schema.entities.usertask.TaskEntity;
 import io.camunda.zeebe.util.CloseableSilently;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -149,7 +150,7 @@ public class DocumentBasedSearchClients implements SearchClientsProxy, Closeable
   @Override
   public SearchQueryResult<FormEntity> searchForms(final FormQuery filter) {
     return getSearchExecutor()
-        .search(filter, io.camunda.webapps.schema.entities.tasklist.FormEntity.class);
+        .search(filter, io.camunda.webapps.schema.entities.form.FormEntity.class);
   }
 
   @Override
@@ -219,7 +220,7 @@ public class DocumentBasedSearchClients implements SearchClientsProxy, Closeable
   @Override
   public SearchQueryResult<UserTaskEntity> searchUserTasks(final UserTaskQuery filter) {
     return getSearchExecutor()
-        .search(filter, io.camunda.webapps.schema.entities.tasklist.TaskEntity.class);
+        .search(filter, TaskEntity.class);
   }
 
   @Override

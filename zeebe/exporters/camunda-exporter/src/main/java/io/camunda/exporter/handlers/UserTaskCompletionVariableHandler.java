@@ -14,7 +14,7 @@ import io.camunda.exporter.handlers.UserTaskCompletionVariableHandler.SnapshotTa
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.webapps.schema.descriptors.tasklist.template.SnapshotTaskVariableTemplate;
 import io.camunda.webapps.schema.entities.ExporterEntity;
-import io.camunda.webapps.schema.entities.tasklist.SnapshotTaskVariableEntity;
+import io.camunda.webapps.schema.entities.usertask.SnapshotTaskVariableEntity;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
