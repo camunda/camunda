@@ -2,7 +2,17 @@ name: Core Application E2E Tests On Demand
 permissions:
   contents: read
 on:
-  pull_request:
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: "Select the branch to test"
+        required: true
+        default: "main"
+        type: choice
+        options:
+          - main
+          - stable/8.6
+          - stable/8.7
 
 jobs:
   core-e2e-component-tests:
@@ -10,7 +20,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: ${{ github.head_ref }}
+          ref: ${{ github.event.inputs.branch }} # Use the branch selected by the user
 
       - name: Start Tasklist and Operate
         run: |
@@ -20,19 +30,6 @@ jobs:
       - name: List running Docker containers
         run: docker ps -a
         working-directory: qa/core-application-e2e-test-suite/config
-
-      - name: Import Secrets
-        id: secrets # important to refer to it in later steps
-        uses: hashicorp/vault-action@7709c609789c5e27b757a85817483caadbb5939a
-        with:
-          url: ${{ secrets.VAULT_ADDR }}
-          method: approle
-          roleId: ${{ secrets.VAULT_ROLE_ID }}
-          secretId: ${{ secrets.VAULT_SECRET_ID }}
-          exportEnv: false # we rely on step outputs, no need for environment variables
-          secrets: |
-            secret/data/github.com/organizations/camunda TESTRAIL_QA_EMAIL;
-            secret/data/github.com/organizations/camunda TESTRAIL_QA_PSW;
 
       - name: Wait for services to be ready
         id: wait-for-services
@@ -91,6 +88,19 @@ jobs:
           echo "Installing dependencies..."
           npm ci --verbose
         working-directory: qa/core-application-e2e-test-suite
+
+      - name: Import Secrets
+        id: secrets
+        uses: hashicorp/vault-action@7709c609789c5e27b757a85817483caadbb5939a
+        with:
+          url: ${{ secrets.VAULT_ADDR }}
+          method: approle
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          exportEnv: false # we rely on step outputs, no need for environment variables
+          secrets: |
+            secret/data/github.com/organizations/camunda TESTRAIL_QA_EMAIL;
+            secret/data/github.com/organizations/camunda TESTRAIL_QA_PSW;
 
       - name: Install Playwright Browsers
         shell: bash
