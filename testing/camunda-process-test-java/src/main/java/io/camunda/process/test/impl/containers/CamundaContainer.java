@@ -63,7 +63,7 @@ public class CamundaContainer extends GenericContainer<CamundaContainer> {
     withEnv("CAMUNDA_DATABASE_TYPE", "rdbms")
         .withEnv(
             "SPRING_DATASOURCE_URL",
-            "jdbc:h2:mem:testdb+" + UUID.randomUUID() + ";DB_CLOSE_DELAY=-1;MODE=PostgreSQL")
+            "jdbc:h2:mem:cpt+" + UUID.randomUUID() + ";DB_CLOSE_DELAY=-1;MODE=PostgreSQL")
         .withEnv("SPRING_DATASOURCE_DRIVER_CLASS_NAME", "org.h2.Driver")
         .withEnv("SPRING_DATASOURCE_USERNAME", "sa")
         .withEnv("SPRING_DATASOURCE_PASSWORD", "")
