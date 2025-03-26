@@ -5,7 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.it.client;
+package io.camunda.it.util;
 
 import static io.camunda.qa.util.multidb.CamundaMultiDBExtension.TIMEOUT_DATA_AVAILABILITY;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -47,7 +47,7 @@ import org.awaitility.Awaitility;
  * assertSorted(resultAsc, resultDesc, Incident::getCreationTime);
  * }</pre>
  */
-public class QueryTest {
+public final class TestHelper {
 
   public static DeploymentEvent deployResource(
       final CamundaClient camundaClient, final String resourceName) {

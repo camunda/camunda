@@ -7,7 +7,7 @@
  */
 package io.camunda.it.operate;
 
-import static io.camunda.it.client.QueryTest.deployResourceForTenant;
+import static io.camunda.it.util.TestHelper.deployResourceForTenant;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.http.HttpStatus.NOT_FOUND;
 import static org.springframework.http.HttpStatus.OK;
