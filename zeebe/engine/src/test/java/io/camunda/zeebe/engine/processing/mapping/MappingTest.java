@@ -38,7 +38,7 @@ public class MappingTest {
             .mapping()
             .newMapping(claimName)
             .withClaimValue(claimValue)
-            .withId(id)
+            .withMappingId(id)
             .withName(name)
             .create();
 
@@ -49,7 +49,7 @@ public class MappingTest {
         .hasFieldOrPropertyWithValue("claimName", claimName)
         .hasFieldOrPropertyWithValue("claimValue", claimValue)
         .hasFieldOrPropertyWithValue("name", name)
-        .hasFieldOrPropertyWithValue("id", id);
+        .hasFieldOrPropertyWithValue("mappingId", id);
   }
 
   @Test
@@ -82,7 +82,7 @@ public class MappingTest {
     final var claimName = UUID.randomUUID().toString();
     final var claimValue = UUID.randomUUID().toString();
     final var id = UUID.randomUUID().toString();
-    engine.mapping().newMapping(claimName).withClaimValue(claimValue).withId(id).create();
+    engine.mapping().newMapping(claimName).withClaimValue(claimValue).withMappingId(id).create();
 
     // when
     final var duplicatedMappingRecord =
@@ -90,7 +90,7 @@ public class MappingTest {
             .mapping()
             .newMapping(UUID.randomUUID().toString())
             .withClaimValue(UUID.randomUUID().toString())
-            .withId(id)
+            .withMappingId(id)
             .expectRejection()
             .create();
 
@@ -115,7 +115,7 @@ public class MappingTest {
             .newMapping(claimName)
             .withClaimValue(claimValue)
             .withName(name)
-            .withId(id)
+            .withMappingId(id)
             .create()
             .getKey();
 
@@ -133,7 +133,7 @@ public class MappingTest {
     // then
     Assertions.assertThat(updatedMapping)
         .isNotNull()
-        .hasFieldOrPropertyWithValue("id", id)
+        .hasFieldOrPropertyWithValue("mappingId", id)
         .hasFieldOrPropertyWithValue("name", name + "New")
         .hasFieldOrPropertyWithValue("claimName", claimName + "New")
         .hasFieldOrPropertyWithValue("claimValue", claimValue + "New");
@@ -183,7 +183,7 @@ public class MappingTest {
             .newMapping(claimName)
             .withClaimValue(claimValue)
             .withName(name)
-            .withId(id)
+            .withMappingId(id)
             .create();
 
     // when
@@ -211,22 +211,24 @@ public class MappingTest {
     final var claimName = UUID.randomUUID().toString();
     final var claimValue = UUID.randomUUID().toString();
     final var name = UUID.randomUUID().toString();
-    final var id = UUID.randomUUID().toString();
+    final var mappingId = UUID.randomUUID().toString();
 
     engine
         .mapping()
         .newMapping(claimName)
         .withClaimValue(claimValue)
         .withName(name)
-        .withId(id)
+        .withMappingId(mappingId)
         .create()
         .getValue();
 
     // when
-    final var deletedMapping = engine.mapping().deleteMapping(id).delete().getValue();
+    final var deletedMapping = engine.mapping().deleteMapping(mappingId).delete().getValue();
 
     // then
-    Assertions.assertThat(deletedMapping).isNotNull().hasFieldOrPropertyWithValue("id", id);
+    Assertions.assertThat(deletedMapping)
+        .isNotNull()
+        .hasFieldOrPropertyWithValue("mappingId", mappingId);
   }
 
   @Test
@@ -251,7 +253,7 @@ public class MappingTest {
         .add();
 
     // when
-    engine.mapping().deleteMapping(mappingRecord.getValue().getId()).delete();
+    engine.mapping().deleteMapping(mappingRecord.getValue().getMappingId()).delete();
 
     // then
     Assertions.assertThat(

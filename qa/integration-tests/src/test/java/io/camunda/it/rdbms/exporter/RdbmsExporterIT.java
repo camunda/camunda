@@ -559,7 +559,7 @@ class RdbmsExporterIT {
     exporter.export(mappingCreatedRecord);
 
     // then
-    final var mappingId = ((MappingRecordValue) mappingCreatedRecord.getValue()).getId();
+    final var mappingId = ((MappingRecordValue) mappingCreatedRecord.getValue()).getMappingId();
     final var mapping = rdbmsService.getMappingReader().findOne(mappingId);
     assertThat(mapping).isNotNull();
 

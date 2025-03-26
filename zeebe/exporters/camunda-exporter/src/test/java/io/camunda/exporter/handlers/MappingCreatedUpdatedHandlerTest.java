@@ -70,7 +70,7 @@ public class MappingCreatedUpdatedHandlerTest {
     final var idList = underTest.generateIds(mappingRecord);
 
     // then
-    assertThat(idList).containsExactly(String.valueOf(mappingRecord.getValue().getId()));
+    assertThat(idList).containsExactly(String.valueOf(mappingRecord.getValue().getMappingId()));
   }
 
   @Test
@@ -92,7 +92,7 @@ public class MappingCreatedUpdatedHandlerTest {
             .withClaimName("updated-claim")
             .withClaimValue("updated-value")
             .withName("updated-name")
-            .withId("updated-id")
+            .withMappingId("updated-id")
             .build();
 
     final Record<MappingRecordValue> mappingRecord =

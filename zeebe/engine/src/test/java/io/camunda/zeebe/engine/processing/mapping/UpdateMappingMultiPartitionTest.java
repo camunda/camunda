@@ -44,7 +44,7 @@ public class UpdateMappingMultiPartitionTest {
         .newMapping(claimName)
         .withClaimValue(claimValue)
         .withName(name)
-        .withId(id)
+        .withMappingId(id)
         .create();
 
     // when
@@ -80,7 +80,7 @@ public class UpdateMappingMultiPartitionTest {
         .newMapping(claimName)
         .withClaimValue(claimValue)
         .withName(name)
-        .withId(id)
+        .withMappingId(id)
         .create();
 
     // when
@@ -116,7 +116,7 @@ public class UpdateMappingMultiPartitionTest {
         .newMapping(claimName)
         .withClaimValue(claimValue)
         .withName(name)
-        .withId(id)
+        .withMappingId(id)
         .create();
     engine
         .mapping()
