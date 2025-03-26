@@ -53,6 +53,7 @@ import io.camunda.search.query.UserTaskQuery;
 import io.camunda.search.query.VariableQuery;
 import io.camunda.security.auth.SecurityContext;
 import io.camunda.webapps.schema.descriptors.IndexDescriptors;
+import io.camunda.webapps.schema.entities.listview.ProcessInstanceForListViewEntity;
 import io.camunda.zeebe.util.CloseableSilently;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -166,11 +167,7 @@ public class DocumentBasedSearchClients implements SearchClientsProxy, Closeable
   @Override
   public SearchQueryResult<ProcessInstanceEntity> searchProcessInstances(
       final ProcessInstanceQuery filter) {
-    return getSearchExecutor()
-        .search(
-            filter,
-            io.camunda.webapps.schema.entities.operate.listview.ProcessInstanceForListViewEntity
-                .class);
+    return getSearchExecutor().search(filter, ProcessInstanceForListViewEntity.class);
   }
 
   @Override

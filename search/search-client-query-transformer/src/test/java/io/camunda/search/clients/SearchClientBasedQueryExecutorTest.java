@@ -7,7 +7,7 @@
  */
 package io.camunda.search.clients;
 
-import static io.camunda.webapps.schema.entities.operate.listview.ProcessInstanceState.ACTIVE;
+import static io.camunda.webapps.schema.entities.listview.ProcessInstanceState.ACTIVE;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -34,7 +34,7 @@ import io.camunda.security.auth.SecurityContext;
 import io.camunda.webapps.schema.descriptors.IndexDescriptors;
 import io.camunda.webapps.schema.descriptors.operate.index.ProcessIndex;
 import io.camunda.webapps.schema.descriptors.usermanagement.index.UserIndex;
-import io.camunda.webapps.schema.entities.operate.listview.ProcessInstanceForListViewEntity;
+import io.camunda.webapps.schema.entities.listview.ProcessInstanceForListViewEntity;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.function.Function;

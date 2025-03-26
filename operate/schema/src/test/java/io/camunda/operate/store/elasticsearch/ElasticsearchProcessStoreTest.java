@@ -22,7 +22,7 @@ import io.camunda.operate.tenant.TenantAwareElasticsearchClient;
 import io.camunda.webapps.schema.descriptors.operate.ProcessInstanceDependant;
 import io.camunda.webapps.schema.descriptors.operate.index.ProcessIndex;
 import io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate;
-import io.camunda.webapps.schema.entities.operate.listview.ProcessInstanceState;
+import io.camunda.webapps.schema.entities.listview.ProcessInstanceState;
 import java.io.IOException;
 import java.util.LinkedList;
 import java.util.List;
