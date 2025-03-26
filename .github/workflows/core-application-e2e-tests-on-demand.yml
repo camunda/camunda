@@ -2,7 +2,7 @@ name: Core Application E2E Tests On Demand
 permissions:
   contents: read
 on:
-  workflow_dispatch:
+  pull_request:
 
 jobs:
   core-e2e-component-tests:
@@ -84,6 +84,12 @@ jobs:
         run: npx playwright install --with-deps chromium
         working-directory: qa/core-application-e2e-test-suite
 
+      - name: Python setup
+        if: always()
+        uses: actions/setup-python@v3
+        with:
+          python-version: "3.x"
+
       - name: Run tests
         shell: bash
         env:
@@ -96,6 +102,24 @@ jobs:
           ZEEBE_REST_ADDRESS: "http://localhost:8089"
         run: npm run test -- --project=chromium
         working-directory: qa/core-application-e2e-test-suite
+
+      - name: Publish test results to TestRail
+        if: always()
+        shell: bash
+        env:
+          TESTRAIL_HOST: "https://camunda.testrail.com/"
+          TESTRAIL_USERNAME: ${{ secrets.TESTRAIL_QA_EMAIL }}
+          TESTRAIL_KEY: ${{ secrets.TESTRAIL_QA_PSW }}
+          JUNIT_RESULTS_FILE: "./test-results/junit-report.xml"
+        run: |
+          pip install trcli
+          trcli -y -h $TESTRAIL_HOST \
+            --project 'Core Application' \
+            --username $TESTRAIL_USERNAME \
+            --key $TESTRAIL_KEY \
+            parse_junit --title "PR #${{ github.event.number }} - Core Application E2E Test Results" \
+            --close-run \
+            -f $JUNIT_RESULTS_FILE
 
       - uses: actions/upload-artifact@v4
         if: failure()
