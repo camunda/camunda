@@ -31,8 +31,5 @@ const getEnv = <R>(
   return defaultValue;
 };
 
-export const getEnvString: GetEnv<string> = (key, defaultValue = "") =>
-  getEnv(key, defaultValue, (value) => value);
-
 export const getEnvBoolean: GetEnv<boolean> = (key, defaultValue = false) =>
   getEnv(key, defaultValue, (value) => value === "true");
