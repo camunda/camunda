@@ -12,8 +12,8 @@ import io.camunda.service.DocumentServices;
 import io.camunda.service.DocumentServices.DocumentContentResponse;
 import io.camunda.service.DocumentServices.DocumentException;
 import io.camunda.service.DocumentServices.DocumentLinkParams;
+import io.camunda.zeebe.gateway.protocol.rest.DocumentDetails;
 import io.camunda.zeebe.gateway.protocol.rest.DocumentLinkRequest;
-import io.camunda.zeebe.gateway.protocol.rest.DocumentMetadata;
 import io.camunda.zeebe.gateway.rest.RequestMapper;
 import io.camunda.zeebe.gateway.rest.ResponseMapper;
 import io.camunda.zeebe.gateway.rest.RestErrorMapper;
@@ -54,7 +54,7 @@ public class DocumentController {
       @RequestParam(required = false) final String documentId,
       @RequestParam(required = false) final String storeId,
       @RequestPart(value = "file") final Part file,
-      @RequestPart(value = "metadata", required = false) final DocumentMetadata metadata) {
+      @RequestPart(value = "metadata", required = false) final DocumentDetails metadata) {
 
     return RequestMapper.toDocumentCreateRequest(documentId, storeId, file, metadata)
         .fold(RestErrorMapper::mapProblemToCompletedResponse, this::createDocument);

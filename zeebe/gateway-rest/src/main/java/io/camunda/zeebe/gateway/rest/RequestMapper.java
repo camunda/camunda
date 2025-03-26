@@ -59,8 +59,8 @@ import io.camunda.zeebe.gateway.protocol.rest.Changeset;
 import io.camunda.zeebe.gateway.protocol.rest.ClockPinRequest;
 import io.camunda.zeebe.gateway.protocol.rest.CreateProcessInstanceRequest;
 import io.camunda.zeebe.gateway.protocol.rest.DeleteResourceRequest;
+import io.camunda.zeebe.gateway.protocol.rest.DocumentDetails;
 import io.camunda.zeebe.gateway.protocol.rest.DocumentLinkRequest;
-import io.camunda.zeebe.gateway.protocol.rest.DocumentMetadata;
 import io.camunda.zeebe.gateway.protocol.rest.EvaluateDecisionRequest;
 import io.camunda.zeebe.gateway.protocol.rest.JobActivationRequest;
 import io.camunda.zeebe.gateway.protocol.rest.JobCompletionRequest;
@@ -301,7 +301,7 @@ public class RequestMapper {
       final String documentId,
       final String storeId,
       final Part file,
-      final DocumentMetadata metadata) {
+      final DocumentDetails metadata) {
     final InputStream inputStream;
     try {
       inputStream = file.getInputStream();
@@ -317,7 +317,7 @@ public class RequestMapper {
 
   public static Either<ProblemDetail, List<DocumentCreateRequest>> toDocumentCreateRequestBatch(
       final List<Part> parts, final String storeId, final ObjectMapper objectMapper) {
-    final Map<Part, DocumentMetadata> metadataMap =
+    final Map<Part, DocumentDetails> metadataMap =
         parts.stream()
             .collect(
                 Collectors.toMap(
@@ -327,12 +327,12 @@ public class RequestMapper {
                             .map(
                                 header -> {
                                   try {
-                                    return objectMapper.readValue(header, DocumentMetadata.class);
+                                    return objectMapper.readValue(header, DocumentDetails.class);
                                   } catch (final IOException e) {
                                     throw new RuntimeException(e);
                                   }
                                 })
-                            .orElse(new DocumentMetadata())));
+                            .orElse(new DocumentDetails())));
 
     final ProblemDetail validationErrors =
         metadataMap.values().stream()
@@ -556,7 +556,7 @@ public class RequestMapper {
   }
 
   private static DocumentMetadataModel toInternalDocumentMetadata(
-      final DocumentMetadata metadata, final Part file) {
+      final DocumentDetails metadata, final Part file) {
 
     if (metadata == null) {
       return new DocumentMetadataModel(

@@ -17,7 +17,7 @@ package io.camunda.zeebe.client.impl.response;
 
 import io.camunda.zeebe.client.api.response.DocumentReferenceBatchResponse;
 import io.camunda.zeebe.client.api.response.DocumentReferenceResponse;
-import io.camunda.zeebe.client.protocol.rest.DocumentCreationBatchResponse;
+import io.camunda.zeebe.client.protocol.rest.DocumentCreationBatchResult;
 import io.camunda.zeebe.client.protocol.rest.DocumentCreationFailureDetail;
 import java.util.Collections;
 import java.util.List;
@@ -25,9 +25,9 @@ import java.util.stream.Collectors;
 
 public class DocumentReferenceBatchResponseImpl implements DocumentReferenceBatchResponse {
 
-  private final DocumentCreationBatchResponse response;
+  private final DocumentCreationBatchResult response;
 
-  public DocumentReferenceBatchResponseImpl(final DocumentCreationBatchResponse response) {
+  public DocumentReferenceBatchResponseImpl(final DocumentCreationBatchResult response) {
     this.response = response;
   }
 

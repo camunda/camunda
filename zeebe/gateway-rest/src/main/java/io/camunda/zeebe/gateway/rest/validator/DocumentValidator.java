@@ -11,14 +11,14 @@ import static io.camunda.zeebe.gateway.rest.validator.ErrorMessages.ERROR_MESSAG
 import static io.camunda.zeebe.gateway.rest.validator.RequestValidator.validate;
 import static io.camunda.zeebe.gateway.rest.validator.RequestValidator.validateDate;
 
+import io.camunda.zeebe.gateway.protocol.rest.DocumentDetails;
 import io.camunda.zeebe.gateway.protocol.rest.DocumentLinkRequest;
-import io.camunda.zeebe.gateway.protocol.rest.DocumentMetadata;
 import java.util.Optional;
 import org.springframework.http.ProblemDetail;
 
 public class DocumentValidator {
 
-  public static Optional<ProblemDetail> validateDocumentMetadata(final DocumentMetadata metadata) {
+  public static Optional<ProblemDetail> validateDocumentMetadata(final DocumentDetails metadata) {
     if (metadata == null) {
       return Optional.empty();
     }

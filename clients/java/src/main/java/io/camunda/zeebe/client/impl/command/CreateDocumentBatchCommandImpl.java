@@ -27,7 +27,7 @@ import io.camunda.zeebe.client.impl.http.HttpClient;
 import io.camunda.zeebe.client.impl.http.HttpZeebeFuture;
 import io.camunda.zeebe.client.impl.response.DocumentReferenceBatchResponseImpl;
 import io.camunda.zeebe.client.impl.util.DocumentBuilder;
-import io.camunda.zeebe.client.protocol.rest.DocumentCreationBatchResponse;
+import io.camunda.zeebe.client.protocol.rest.DocumentCreationBatchResult;
 import java.io.InputStream;
 import java.time.Duration;
 import java.util.ArrayList;
@@ -110,7 +110,7 @@ public class CreateDocumentBatchCommandImpl implements CreateDocumentBatchComman
           queryParams,
           entityBuilder,
           httpRequestConfig.build(),
-          DocumentCreationBatchResponse.class,
+          DocumentCreationBatchResult.class,
           DocumentReferenceBatchResponseImpl::new,
           result);
       return result;
