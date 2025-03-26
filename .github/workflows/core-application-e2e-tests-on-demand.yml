@@ -23,13 +23,21 @@ jobs:
 
       - name: Retrieve secrets from Vault
         run: |
+          # Retrieve secrets from Vault
           export VAULT_RESPONSE=$(curl -s \
             --header "X-Vault-Token: ${{ secrets.VAULT_TOKEN }}" \
             --request GET \
-            https://vault.example.com/v1/secret/data/github.com/organizations/camunda)
+            https://vault.int.camunda.com/v1/secret/data/github.com/organizations/camunda)
 
+          # Extract values
           export TESTRAIL_USERNAME=$(echo $VAULT_RESPONSE | jq -r '.data.data.TESTRAIL_USERNAME')
           export TESTRAIL_KEY=$(echo $VAULT_RESPONSE | jq -r '.data.data.TESTRAIL_KEY')
+
+          # Log the results
+          echo "TestRail Username: $TESTRAIL_USERNAME"
+          echo "TestRail Key: $TESTRAIL_KEY"
+        env:
+          VAULT_TOKEN: ${{ secrets.VAULT_TOKEN }}
 
       - name: Wait for services to be ready
         id: wait-for-services
