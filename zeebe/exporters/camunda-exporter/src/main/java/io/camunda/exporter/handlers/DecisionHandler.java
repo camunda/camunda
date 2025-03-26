@@ -10,7 +10,7 @@ package io.camunda.exporter.handlers;
 import static io.camunda.exporter.utils.ExporterUtil.tenantOrDefault;
 
 import io.camunda.exporter.store.BatchRequest;
-import io.camunda.webapps.schema.entities.operate.dmn.definition.DecisionDefinitionEntity;
+import io.camunda.webapps.schema.entities.dmn.definition.DecisionDefinitionEntity;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.ProcessIntent;

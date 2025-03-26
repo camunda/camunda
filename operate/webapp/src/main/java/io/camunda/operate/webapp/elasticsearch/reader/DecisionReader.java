@@ -23,7 +23,7 @@ import io.camunda.operate.webapp.security.permission.PermissionsService;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.webapps.schema.descriptors.operate.index.DecisionIndex;
 import io.camunda.webapps.schema.descriptors.operate.index.DecisionRequirementsIndex;
-import io.camunda.webapps.schema.entities.operate.dmn.definition.DecisionDefinitionEntity;
+import io.camunda.webapps.schema.entities.dmn.definition.DecisionDefinitionEntity;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import java.io.IOException;
 import java.util.ArrayList;

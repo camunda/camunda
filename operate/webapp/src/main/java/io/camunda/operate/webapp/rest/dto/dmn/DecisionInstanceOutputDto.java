@@ -8,7 +8,7 @@
 package io.camunda.operate.webapp.rest.dto.dmn;
 
 import io.camunda.operate.webapp.rest.dto.CreatableFromEntity;
-import io.camunda.webapps.schema.entities.operate.dmn.DecisionInstanceOutputEntity;
+import io.camunda.webapps.schema.entities.dmn.DecisionInstanceOutputEntity;
 import java.util.Objects;
 
 public class DecisionInstanceOutputDto
@@ -67,7 +67,7 @@ public class DecisionInstanceOutputDto
 
   @Override
   public DecisionInstanceOutputDto fillFrom(final DecisionInstanceOutputEntity outputEntity) {
-    return this.setId(outputEntity.getId())
+    return setId(outputEntity.getId())
         .setName(outputEntity.getName())
         .setValue(outputEntity.getValue())
         .setRuleId(outputEntity.getRuleId())

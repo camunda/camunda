@@ -25,8 +25,8 @@ import io.camunda.operate.webapp.api.v1.entities.Query;
 import io.camunda.operate.webapp.api.v1.entities.Results;
 import io.camunda.operate.webapp.api.v1.exceptions.ResourceNotFoundException;
 import io.camunda.webapps.schema.descriptors.operate.template.DecisionInstanceTemplate;
-import io.camunda.webapps.schema.entities.operate.dmn.DecisionInstanceEntity;
-import io.camunda.webapps.schema.entities.operate.dmn.DecisionType;
+import io.camunda.webapps.schema.entities.dmn.DecisionInstanceEntity;
+import io.camunda.webapps.schema.entities.dmn.DecisionType;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
@@ -47,8 +47,7 @@ public class DecisionInstanceDaoIT extends OperateSearchAbstractIT {
         new DecisionInstanceEntity()
             .setId("2251799813685262-1")
             .setKey(2251799813685262L)
-            .setState(
-                io.camunda.webapps.schema.entities.operate.dmn.DecisionInstanceState.EVALUATED)
+            .setState(io.camunda.webapps.schema.entities.dmn.DecisionInstanceState.EVALUATED)
             .setEvaluationDate(dateTimeFormatter.parseGeneralDateTime(firstDecisionEvaluationDate))
             .setProcessDefinitionKey(FAKE_PROCESS_DEFINITION_KEY)
             .setProcessInstanceKey(FAKE_PROCESS_INSTANCE_KEY)
@@ -65,8 +64,7 @@ public class DecisionInstanceDaoIT extends OperateSearchAbstractIT {
         new DecisionInstanceEntity()
             .setId("2251799813685262-2")
             .setKey(2251799813685262L)
-            .setState(
-                io.camunda.webapps.schema.entities.operate.dmn.DecisionInstanceState.EVALUATED)
+            .setState(io.camunda.webapps.schema.entities.dmn.DecisionInstanceState.EVALUATED)
             .setEvaluationDate(dateTimeFormatter.parseGeneralDateTime(secondDecisionEvaluationDate))
             .setProcessDefinitionKey(FAKE_PROCESS_DEFINITION_KEY)
             .setProcessInstanceKey(FAKE_PROCESS_INSTANCE_KEY)

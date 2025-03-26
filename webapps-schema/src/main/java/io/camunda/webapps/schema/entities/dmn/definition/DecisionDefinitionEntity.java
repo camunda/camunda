@@ -5,22 +5,22 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.webapps.schema.entities.operate.dmn.definition;
+package io.camunda.webapps.schema.entities.dmn.definition;
 
 import io.camunda.webapps.schema.entities.ExporterEntity;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import java.util.Objects;
 
-public class DecisionRequirementsEntity
-    implements ExporterEntity<DecisionRequirementsEntity>, TenantOwned {
+public class DecisionDefinitionEntity
+    implements ExporterEntity<DecisionDefinitionEntity>, TenantOwned {
 
   private String id;
   private long key;
-  private String decisionRequirementsId;
+  private String decisionId;
   private String name;
   private int version;
-  private String xml;
-  private String resourceName;
+  private String decisionRequirementsId;
+  private long decisionRequirementsKey;
   private String tenantId = DEFAULT_TENANT_IDENTIFIER;
 
   @Override
@@ -29,7 +29,7 @@ public class DecisionRequirementsEntity
   }
 
   @Override
-  public DecisionRequirementsEntity setId(final String id) {
+  public DecisionDefinitionEntity setId(final String id) {
     this.id = id;
     return this;
   }
@@ -38,17 +38,17 @@ public class DecisionRequirementsEntity
     return key;
   }
 
-  public DecisionRequirementsEntity setKey(final long key) {
+  public DecisionDefinitionEntity setKey(final long key) {
     this.key = key;
     return this;
   }
 
-  public String getDecisionRequirementsId() {
-    return decisionRequirementsId;
+  public String getDecisionId() {
+    return decisionId;
   }
 
-  public DecisionRequirementsEntity setDecisionRequirementsId(final String decisionRequirementsId) {
-    this.decisionRequirementsId = decisionRequirementsId;
+  public DecisionDefinitionEntity setDecisionId(final String decisionId) {
+    this.decisionId = decisionId;
     return this;
   }
 
@@ -56,7 +56,7 @@ public class DecisionRequirementsEntity
     return name;
   }
 
-  public DecisionRequirementsEntity setName(final String name) {
+  public DecisionDefinitionEntity setName(final String name) {
     this.name = name;
     return this;
   }
@@ -65,26 +65,26 @@ public class DecisionRequirementsEntity
     return version;
   }
 
-  public DecisionRequirementsEntity setVersion(final int version) {
+  public DecisionDefinitionEntity setVersion(final int version) {
     this.version = version;
     return this;
   }
 
-  public String getXml() {
-    return xml;
+  public String getDecisionRequirementsId() {
+    return decisionRequirementsId;
   }
 
-  public DecisionRequirementsEntity setXml(final String xml) {
-    this.xml = xml;
+  public DecisionDefinitionEntity setDecisionRequirementsId(final String decisionRequirementsId) {
+    this.decisionRequirementsId = decisionRequirementsId;
     return this;
   }
 
-  public String getResourceName() {
-    return resourceName;
+  public long getDecisionRequirementsKey() {
+    return decisionRequirementsKey;
   }
 
-  public DecisionRequirementsEntity setResourceName(final String resourceName) {
-    this.resourceName = resourceName;
+  public DecisionDefinitionEntity setDecisionRequirementsKey(final long decisionRequirementsKey) {
+    this.decisionRequirementsKey = decisionRequirementsKey;
     return this;
   }
 
@@ -93,7 +93,7 @@ public class DecisionRequirementsEntity
     return tenantId;
   }
 
-  public DecisionRequirementsEntity setTenantId(final String tenantId) {
+  public DecisionDefinitionEntity setTenantId(final String tenantId) {
     this.tenantId = tenantId;
     return this;
   }
@@ -101,7 +101,14 @@ public class DecisionRequirementsEntity
   @Override
   public int hashCode() {
     return Objects.hash(
-        id, key, decisionRequirementsId, name, version, xml, resourceName, tenantId);
+        id,
+        key,
+        decisionId,
+        name,
+        version,
+        decisionRequirementsId,
+        decisionRequirementsKey,
+        tenantId);
   }
 
   @Override
@@ -112,14 +119,14 @@ public class DecisionRequirementsEntity
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    final DecisionRequirementsEntity that = (DecisionRequirementsEntity) o;
+    final DecisionDefinitionEntity that = (DecisionDefinitionEntity) o;
     return Objects.equals(id, that.id)
         && key == that.key
         && version == that.version
-        && Objects.equals(decisionRequirementsId, that.decisionRequirementsId)
+        && decisionRequirementsKey == that.decisionRequirementsKey
+        && Objects.equals(decisionId, that.decisionId)
         && Objects.equals(name, that.name)
-        && Objects.equals(xml, that.xml)
-        && Objects.equals(resourceName, that.resourceName)
+        && Objects.equals(decisionRequirementsId, that.decisionRequirementsId)
         && Objects.equals(tenantId, that.tenantId);
   }
 }
