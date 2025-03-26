@@ -15,14 +15,14 @@
  */
 package io.camunda.zeebe.client.api.search.query;
 
-import io.camunda.client.api.search.request.TypedSearchRequest;
 import io.camunda.zeebe.client.api.search.SearchRequestPage;
 import io.camunda.zeebe.client.api.search.query.TypedSearchQueryRequest.SearchRequestFilter;
 import io.camunda.zeebe.client.api.search.query.TypedSearchQueryRequest.SearchRequestSort;
 import java.util.function.Consumer;
 
 /**
- * @deprecated since 8.8 for removal in 8.9, replaced by {@link TypedSearchRequest}
+ * @deprecated since 8.8 for removal in 8.9, replaced by {@link
+ *     io.camunda.client.api.search.request.TypedSearchRequest}
  */
 @Deprecated
 public interface TypedSearchQueryRequest<

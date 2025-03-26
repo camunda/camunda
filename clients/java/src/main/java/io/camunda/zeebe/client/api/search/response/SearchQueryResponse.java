@@ -15,11 +15,11 @@
  */
 package io.camunda.zeebe.client.api.search.response;
 
-import io.camunda.client.api.search.response.SearchResponse;
 import java.util.List;
 
 /**
- * @deprecated since 8.8 for removal in 8.9, replaced by {@link SearchResponse}
+ * @deprecated since 8.8 for removal in 8.9, replaced by {@link
+ *     io.camunda.client.api.search.response.SearchResponse}
  */
 @Deprecated
 public interface SearchQueryResponse<T> {

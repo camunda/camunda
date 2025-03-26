@@ -15,13 +15,13 @@
  */
 package io.camunda.zeebe.client.api.search.query;
 
-import io.camunda.client.api.search.request.DecisionDefinitionSearchRequest;
 import io.camunda.zeebe.client.api.search.filter.DecisionDefinitionFilter;
 import io.camunda.zeebe.client.api.search.response.DecisionDefinition;
 import io.camunda.zeebe.client.api.search.sort.DecisionDefinitionSort;
 
 /**
- * @deprecated since 8.8 for removal in 8.9, replaced by {@link DecisionDefinitionSearchRequest}
+ * @deprecated since 8.8 for removal in 8.9, replaced by {@link
+ *     io.camunda.client.api.search.request.DecisionDefinitionSearchRequest}
  */
 @Deprecated
 public interface DecisionDefinitionQuery

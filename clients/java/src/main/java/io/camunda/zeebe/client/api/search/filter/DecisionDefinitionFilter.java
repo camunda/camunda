@@ -19,7 +19,7 @@ import io.camunda.zeebe.client.api.search.query.TypedSearchQueryRequest.SearchRe
 
 /**
  * @deprecated since 8.8 for removal in 8.9, replaced by {@link
- *     io.camunda.client.api.search.DecisionDefinitionFilter}
+ *     io.camunda.client.api.search.filter.DecisionDefinitionFilter}
  */
 @Deprecated
 public interface DecisionDefinitionFilter extends SearchRequestFilter {
