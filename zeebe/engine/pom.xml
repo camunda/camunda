@@ -302,7 +302,6 @@
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>camunda-search-domain</artifactId>
-      <scope>test</scope>
     </dependency>
   </dependencies>
 
