@@ -20,6 +20,5 @@ import io.camunda.client.api.search.response.Variable;
 import io.camunda.client.api.search.sort.VariableSort;
 
 public interface UserTaskVariableSearchRequest
-    extends TypedSearchQueryRequest<
-            UserTaskVariableFilter, VariableSort, UserTaskVariableSearchRequest>,
+    extends TypedSearchRequest<UserTaskVariableFilter, VariableSort, UserTaskVariableSearchRequest>,
         FinalSearchQueryStep<Variable> {}

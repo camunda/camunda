@@ -16,14 +16,14 @@
 package io.camunda.client.api.search.query;
 
 import io.camunda.client.api.search.SearchRequestPage;
-import io.camunda.client.api.search.query.TypedSearchQueryRequest.SearchRequestFilter;
-import io.camunda.client.api.search.query.TypedSearchQueryRequest.SearchRequestSort;
+import io.camunda.client.api.search.query.TypedSearchRequest.SearchRequestFilter;
+import io.camunda.client.api.search.query.TypedSearchRequest.SearchRequestSort;
 import java.util.function.Consumer;
 
-public interface TypedSearchQueryRequest<
+public interface TypedSearchRequest<
     F extends SearchRequestFilter,
     S extends SearchRequestSort<S>,
-    SELF extends TypedSearchQueryRequest<F, S, SELF>> {
+    SELF extends TypedSearchRequest<F, S, SELF>> {
 
   /**
    * Sets the filter to be included in the search request.
@@ -36,7 +36,7 @@ public interface TypedSearchQueryRequest<
   /**
    * Provides a fluent builder to create a filter to be included in the search request.
    *
-   * @param value consumer to create the filter
+   * @param fn consumer to create the filter
    * @return the builder for the search request
    */
   SELF filter(final Consumer<F> fn);
@@ -52,7 +52,7 @@ public interface TypedSearchQueryRequest<
   /**
    * Provides a fluent builder to provide sorting options the returned entites should sorted by
    *
-   * @param value consumer to create the sort options
+   * @param fn consumer to create the sort options
    * @return the builder for the search request
    */
   SELF sort(final Consumer<S> fn);
@@ -68,7 +68,7 @@ public interface TypedSearchQueryRequest<
   /**
    * Provides a fluent builder to support pagination.
    *
-   * @param value consumer to support pagination
+   * @param fn consumer to support pagination
    * @return the builder for the search request
    */
   SELF page(final Consumer<SearchRequestPage> fn);

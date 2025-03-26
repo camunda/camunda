@@ -20,7 +20,7 @@ import io.camunda.client.api.search.filter.builder.DateTimeProperty;
 import io.camunda.client.api.search.filter.builder.IntegerProperty;
 import io.camunda.client.api.search.filter.builder.ProcessInstanceStateProperty;
 import io.camunda.client.api.search.filter.builder.StringProperty;
-import io.camunda.client.api.search.query.TypedSearchQueryRequest.SearchRequestFilter;
+import io.camunda.client.api.search.query.TypedSearchRequest.SearchRequestFilter;
 import io.camunda.client.api.search.response.ProcessInstanceState;
 import io.camunda.client.protocol.rest.ProcessInstanceVariableFilterRequest;
 import java.time.OffsetDateTime;

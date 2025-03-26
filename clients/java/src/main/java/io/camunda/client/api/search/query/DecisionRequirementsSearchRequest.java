@@ -20,7 +20,7 @@ import io.camunda.client.api.search.response.DecisionRequirements;
 import io.camunda.client.api.search.sort.DecisionRequirementsSort;
 
 public interface DecisionRequirementsSearchRequest
-    extends TypedSearchQueryRequest<
+    extends TypedSearchRequest<
             DecisionRequirementsFilter,
             DecisionRequirementsSort,
             DecisionRequirementsSearchRequest>,

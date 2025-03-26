@@ -20,6 +20,6 @@ import io.camunda.client.api.search.response.ProcessInstance;
 import io.camunda.client.api.search.sort.ProcessInstanceSort;
 
 public interface ProcessInstanceSearchRequest
-    extends TypedSearchQueryRequest<
+    extends TypedSearchRequest<
             ProcessInstanceFilter, ProcessInstanceSort, ProcessInstanceSearchRequest>,
         FinalSearchQueryStep<ProcessInstance> {}

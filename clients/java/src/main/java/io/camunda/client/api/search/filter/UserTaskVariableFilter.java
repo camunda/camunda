@@ -16,7 +16,7 @@
 package io.camunda.client.api.search.filter;
 
 import io.camunda.client.api.search.filter.builder.StringProperty;
-import io.camunda.client.api.search.query.TypedSearchQueryRequest.SearchRequestFilter;
+import io.camunda.client.api.search.query.TypedSearchRequest.SearchRequestFilter;
 import java.util.function.Consumer;
 
 public interface UserTaskVariableFilter extends SearchRequestFilter {

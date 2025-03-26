@@ -18,7 +18,7 @@ package io.camunda.client.api.search.filter;
 import io.camunda.client.api.search.filter.builder.DateTimeProperty;
 import io.camunda.client.api.search.filter.builder.IntegerProperty;
 import io.camunda.client.api.search.filter.builder.StringProperty;
-import io.camunda.client.api.search.query.TypedSearchQueryRequest.SearchRequestFilter;
+import io.camunda.client.api.search.query.TypedSearchRequest.SearchRequestFilter;
 import io.camunda.client.api.search.response.UserTaskState;
 import io.camunda.client.protocol.rest.UserTaskVariableFilterRequest;
 import java.time.OffsetDateTime;

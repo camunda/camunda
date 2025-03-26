@@ -20,6 +20,6 @@ import io.camunda.client.api.search.response.FlowNodeInstance;
 import io.camunda.client.api.search.sort.FlownodeInstanceSort;
 
 public interface FlownodeInstanceSearchRequest
-    extends TypedSearchQueryRequest<
+    extends TypedSearchRequest<
             FlownodeInstanceFilter, FlownodeInstanceSort, FlownodeInstanceSearchRequest>,
         FinalSearchQueryStep<FlowNodeInstance> {}

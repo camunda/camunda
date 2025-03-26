@@ -20,6 +20,6 @@ import io.camunda.client.api.search.response.DecisionDefinition;
 import io.camunda.client.api.search.sort.DecisionDefinitionSort;
 
 public interface DecisionDefinitionSearchRequest
-    extends TypedSearchQueryRequest<
+    extends TypedSearchRequest<
             DecisionDefinitionFilter, DecisionDefinitionSort, DecisionDefinitionSearchRequest>,
         FinalSearchQueryStep<DecisionDefinition> {}
