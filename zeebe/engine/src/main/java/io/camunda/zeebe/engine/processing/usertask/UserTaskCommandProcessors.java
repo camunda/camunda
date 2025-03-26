@@ -59,7 +59,7 @@ public final class UserTaskCommandProcessors {
                 new UserTaskCompleteProcessor(
                     processingState, eventHandle, writers, authCheckBehavior),
                 UserTaskIntent.CANCEL,
-                new UserTaskCancelProcessor(processingState, writers, bpmnBehaviors)));
+                new UserTaskCancelProcessor(processingState, writers)));
     validateProcessorsSetup(commandToProcessor);
   }
 
