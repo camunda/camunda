@@ -433,13 +433,15 @@ public class TestContainerUtil {
     if (TestUtil.isOpenSearch()) {
       final String osHost = testContext.getInternalOsHost();
       final Integer osPort = testContext.getInternalOsPort();
+      final String osUrl = String.format("http://%s:%s", osHost, osPort);
       tasklistContainer
-          .withEnv("CAMUNDA_TASKLIST_OPENSEARCH_URL", String.format("http://%s:%s", osHost, osPort))
+          .withEnv("CAMUNDA_DATABASE_URL", osUrl)
+          .withEnv("CAMUNDA_DATABASE_TYPE", "opensearch")
+          .withEnv("CAMUNDA_TASKLIST_OPENSEARCH_URL", osUrl)
           .withEnv("CAMUNDA_TASKLIST_OPENSEARCH_HOST", osHost)
           .withEnv("CAMUNDA_TASKLIST_OPENSEARCH_PORT", String.valueOf(osPort))
-          .withEnv(
-              "CAMUNDA_TASKLIST_ZEEBEOPENSEARCH_URL", String.format("http://%s:%s", osHost, osPort))
-          .withEnv("CAMUNDA_TASKLIST_ZEEBEOPENSEARCH_UHOST", osHost)
+          .withEnv("CAMUNDA_TASKLIST_ZEEBEOPENSEARCH_URL", osUrl)
+          .withEnv("CAMUNDA_TASKLIST_ZEEBEOPENSEARCH_HOST", osHost)
           .withEnv("CAMUNDA_TASKLIST_ZEEBEOPENSEARCH_PORT", String.valueOf(osPort));
       if (testContext.getZeebeIndexPrefix() != null) {
         tasklistContainer.withEnv(
@@ -448,15 +450,15 @@ public class TestContainerUtil {
     } else {
       final String elsHost = testContext.getInternalElsHost();
       final Integer elsPort = testContext.getInternalElsPort();
+      final String esUrl = String.format("http://%s:%s", elsHost, elsPort);
       tasklistContainer
-          .withEnv(
-              "CAMUNDA_TASKLIST_ELASTICSEARCH_URL", String.format("http://%s:%s", elsHost, elsPort))
+          .withEnv("CAMUNDA_DATABASE_URL", esUrl)
+          .withEnv("CAMUNDA_DATABASE_TYPE", "elasticsearch")
+          .withEnv("CAMUNDA_TASKLIST_ELASTICSEARCH_URL", esUrl)
           .withEnv("CAMUNDA_TASKLIST_ELASTICSEARCH_HOST", elsHost)
           .withEnv("CAMUNDA_TASKLIST_ELASTICSEARCH_PORT", String.valueOf(elsPort))
-          .withEnv(
-              "CAMUNDA_TASKLIST_ZEEBEELASTICSEARCH_URL",
-              String.format("http://%s:%s", elsHost, elsPort))
-          .withEnv("CAMUNDA_TASKLIST_ZEEBEELASTICSEARCH_UHOST", elsHost)
+          .withEnv("CAMUNDA_TASKLIST_ZEEBEELASTICSEARCH_URL", esUrl)
+          .withEnv("CAMUNDA_TASKLIST_ZEEBEELASTICSEARCH_HOST", elsHost)
           .withEnv("CAMUNDA_TASKLIST_ZEEBEELASTICSEARCH_PORT", String.valueOf(elsPort));
       if (testContext.getZeebeIndexPrefix() != null) {
         tasklistContainer.withEnv(
@@ -506,11 +508,16 @@ public class TestContainerUtil {
 
   protected void addConfig(final ZeebeContainer zeebeBroker, final TestContext testContext) {
     if (TestUtil.isOpenSearch()) {
+      final String osHost = testContext.getInternalOsHost();
+      final Integer osPort = testContext.getInternalOsPort();
+      final String osUrl = String.format("http://%s:%s", osHost, osPort);
       zeebeBroker
+          .withEnv("CAMUNDA_DATABASE_URL", osUrl)
+          .withEnv("CAMUNDA_DATABASE_TYPE", "opensearch")
           .withEnv(
               "ZEEBE_BROKER_EXPORTERS_OPENSEARCH_CLASSNAME",
               "io.camunda.zeebe.exporter.opensearch.OpensearchExporter")
-          .withEnv("ZEEBE_BROKER_EXPORTERS_OPENSEARCH_ARGS_URL", "http://opensearch:" + OS_PORT)
+          .withEnv("ZEEBE_BROKER_EXPORTERS_OPENSEARCH_ARGS_URL", osUrl)
           .withEnv("ZEEBE_BROKER_EXPORTERS_OPENSEARCH_ARGS_BULK_SIZE", "1");
       if (testContext.getZeebeIndexPrefix() != null) {
         zeebeBroker.withEnv(
@@ -518,12 +525,16 @@ public class TestContainerUtil {
             testContext.getZeebeIndexPrefix());
       }
     } else {
+      final String elsHost = testContext.getInternalElsHost();
+      final Integer elsPort = testContext.getInternalElsPort();
+      final String esUrl = String.format("http://%s:%s", elsHost, elsPort);
       zeebeBroker
+          .withEnv("CAMUNDA_DATABASE_URL", esUrl)
+          .withEnv("CAMUNDA_DATABASE_TYPE", "elasticsearch")
           .withEnv(
               "ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_CLASSNAME",
               "io.camunda.zeebe.exporter.ElasticsearchExporter")
-          .withEnv(
-              "ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_URL", "http://elasticsearch:" + ELS_PORT)
+          .withEnv("ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_URL", esUrl)
           .withEnv("ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_BULK_SIZE", "1");
       if (testContext.getZeebeIndexPrefix() != null) {
         zeebeBroker.withEnv(
