@@ -296,7 +296,7 @@ public final class SearchQueryResponseMapper {
                             obj -> {
                               final String type = determineValueType(obj);
                               return new PageObject()
-                                  .value(serializeValue(obj))
+                                  .value(serializeValueToString(obj))
                                   .type(TypeEnum.valueOf(type));
                             })
                         .collect(Collectors.toList()))
@@ -311,7 +311,7 @@ public final class SearchQueryResponseMapper {
                             obj -> {
                               final String type = determineValueType(obj);
                               return new PageObject()
-                                  .value(serializeValue(obj))
+                                  .value(serializeValueToString(obj))
                                   .type(TypeEnum.valueOf(type));
                             })
                         .collect(Collectors.toList()))
@@ -792,15 +792,12 @@ public final class SearchQueryResponseMapper {
     return TypeEnum.OBJECT.name(); // Fallback
   }
 
-  private static String serializeValue(final Object value) {
-    // Add value check for null
+  private static String serializeValueToString(final Object value) {
     if (value == null) {
       return null;
     }
 
-    // OpenSearch already is returning String for Sorted Values
-    if (value instanceof String
-        && !(value.toString().startsWith("\"") && value.toString().endsWith("\""))) {
+    if (value instanceof String) {
       return "\"" + value + "\"";
     }
 
