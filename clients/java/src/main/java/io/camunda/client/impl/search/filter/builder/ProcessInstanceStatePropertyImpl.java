@@ -16,24 +16,25 @@
 package io.camunda.client.impl.search.filter.builder;
 
 import io.camunda.client.api.search.filter.builder.ProcessInstanceStateProperty;
+import io.camunda.client.api.search.response.ProcessInstanceState;
 import io.camunda.client.impl.util.CollectionUtil;
-import io.camunda.client.protocol.rest.ProcessInstanceStateEnum;
 import io.camunda.client.protocol.rest.ProcessInstanceStateFilterProperty;
 import java.util.List;
+import java.util.stream.Collectors;
 
 public class ProcessInstanceStatePropertyImpl implements ProcessInstanceStateProperty {
   private final ProcessInstanceStateFilterProperty filterProperty =
       new ProcessInstanceStateFilterProperty();
 
   @Override
-  public ProcessInstanceStateProperty eq(final ProcessInstanceStateEnum value) {
-    filterProperty.set$Eq(value);
+  public ProcessInstanceStateProperty eq(final ProcessInstanceState value) {
+    filterProperty.set$Eq(ProcessInstanceState.toProtocolState(value));
     return this;
   }
 
   @Override
-  public ProcessInstanceStateProperty neq(final ProcessInstanceStateEnum value) {
-    filterProperty.set$Neq(value);
+  public ProcessInstanceStateProperty neq(final ProcessInstanceState value) {
+    filterProperty.set$Neq(ProcessInstanceState.toProtocolState(value));
     return this;
   }
 
@@ -44,19 +45,20 @@ public class ProcessInstanceStatePropertyImpl implements ProcessInstanceStatePro
   }
 
   @Override
-  public ProcessInstanceStateFilterProperty build() {
-    return filterProperty;
-  }
-
-  @Override
-  public ProcessInstanceStateProperty in(final List<ProcessInstanceStateEnum> values) {
-    filterProperty.set$In(values);
+  public ProcessInstanceStateProperty in(final List<ProcessInstanceState> values) {
+    filterProperty.set$In(
+        values.stream().map(ProcessInstanceState::toProtocolState).collect(Collectors.toList()));
     return this;
   }
 
   @Override
-  public ProcessInstanceStateProperty in(final ProcessInstanceStateEnum... values) {
+  public ProcessInstanceStateProperty in(final ProcessInstanceState... values) {
     return in(CollectionUtil.toList(values));
+  }
+
+  @Override
+  public ProcessInstanceStateFilterProperty build() {
+    return filterProperty;
   }
 
   @Override

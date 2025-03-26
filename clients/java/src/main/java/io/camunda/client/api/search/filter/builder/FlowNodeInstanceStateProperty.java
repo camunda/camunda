@@ -15,12 +15,12 @@
  */
 package io.camunda.client.api.search.filter.builder;
 
-import io.camunda.client.api.search.response.ProcessInstanceState;
-import io.camunda.client.protocol.rest.ProcessInstanceStateFilterProperty;
+import io.camunda.client.api.search.response.FlowNodeInstanceState;
+import io.camunda.client.protocol.rest.FlowNodeInstanceStateFilterProperty;
 
-public interface ProcessInstanceStateProperty
+public interface FlowNodeInstanceStateProperty
     extends LikeProperty<
-        ProcessInstanceState,
+        FlowNodeInstanceState,
         String,
-        ProcessInstanceStateFilterProperty,
-        ProcessInstanceStateProperty> {}
+        FlowNodeInstanceStateFilterProperty,
+        FlowNodeInstanceStateProperty> {}

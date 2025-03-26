@@ -18,13 +18,16 @@ package io.camunda.client.impl.search.filter;
 import io.camunda.client.api.search.filter.ProcessInstanceFilter;
 import io.camunda.client.api.search.filter.builder.BasicLongProperty;
 import io.camunda.client.api.search.filter.builder.DateTimeProperty;
+import io.camunda.client.api.search.filter.builder.FlowNodeInstanceStateProperty;
 import io.camunda.client.api.search.filter.builder.IntegerProperty;
 import io.camunda.client.api.search.filter.builder.ProcessInstanceStateProperty;
 import io.camunda.client.api.search.filter.builder.StringProperty;
+import io.camunda.client.api.search.response.FlowNodeInstanceState;
 import io.camunda.client.api.search.response.ProcessInstanceState;
 import io.camunda.client.impl.search.TypedSearchRequestPropertyProvider;
 import io.camunda.client.impl.search.filter.builder.BasicLongPropertyImpl;
 import io.camunda.client.impl.search.filter.builder.DateTimePropertyImpl;
+import io.camunda.client.impl.search.filter.builder.FlowNodeInstanceStatePropertyImpl;
 import io.camunda.client.impl.search.filter.builder.IntegerPropertyImpl;
 import io.camunda.client.impl.search.filter.builder.ProcessInstanceStatePropertyImpl;
 import io.camunda.client.impl.search.filter.builder.StringPropertyImpl;
@@ -189,7 +192,7 @@ public class ProcessInstanceFilterImpl
 
   @Override
   public ProcessInstanceFilter state(final ProcessInstanceState state) {
-    return state(b -> b.eq(ProcessInstanceState.toProtocolState(state)));
+    return state(b -> b.eq(state));
   }
 
   @Override
@@ -267,11 +270,48 @@ public class ProcessInstanceFilterImpl
   }
 
   @Override
+  public ProcessInstanceFilter flowNodeId(final String flowNodeId) {
+    flowNodeId(b -> b.eq(flowNodeId));
+    return this;
+  }
+
+  @Override
+  public ProcessInstanceFilter flowNodeId(final Consumer<StringProperty> fn) {
+    final StringProperty property = new StringPropertyImpl();
+    fn.accept(property);
+    filter.setFlowNodeId(property.build());
+    return this;
+  }
+
+  @Override
+  public ProcessInstanceFilter flowNodeInstanceState(
+      final FlowNodeInstanceState flowNodeInstanceState) {
+    flowNodeInstanceState(b -> b.eq(flowNodeInstanceState));
+    return this;
+  }
+
+  @Override
+  public ProcessInstanceFilter flowNodeInstanceState(
+      final Consumer<FlowNodeInstanceStateProperty> fn) {
+    final FlowNodeInstanceStateProperty property = new FlowNodeInstanceStatePropertyImpl();
+    fn.accept(property);
+    filter.setFlowNodeInstanceState(property.build());
+    return this;
+  }
+
+  @Override
+  public ProcessInstanceFilter hasFlowNodeInstanceIncident(
+      final Boolean hasFlowNodeInstanceIncident) {
+    filter.hasFlowNodeInstanceIncident(hasFlowNodeInstanceIncident);
+    return this;
+  }
+
+  @Override
   protected io.camunda.client.protocol.rest.ProcessInstanceFilter getSearchRequestProperty() {
     return filter;
   }
 
-  static void variableValueNullCheck(Object value) {
+  static void variableValueNullCheck(final Object value) {
     if (value == null) {
       throw new IllegalArgumentException("Variable value cannot be null");
     }
