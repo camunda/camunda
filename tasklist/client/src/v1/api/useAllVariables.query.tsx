@@ -40,7 +40,7 @@ function useFetchFullVariable(variablesQueryKey: QueryKey) {
     >({
       queryKey: ['variable', id],
       queryFn: async () => {
-        const {response, error} = await request(api.v1.getFullVariable(id));
+        const {response, error} = await request(api.getFullVariable(id));
 
         if (response !== null) {
           return response.json();
@@ -82,7 +82,7 @@ function useAllVariables(params: Param, options: Options = {}) {
     ...options,
     queryKey: variablesQueryKey,
     queryFn: async () => {
-      const {response, error} = await request(api.v1.getAllVariables({taskId}));
+      const {response, error} = await request(api.getAllVariables({taskId}));
 
       if (response !== null) {
         return response.json();

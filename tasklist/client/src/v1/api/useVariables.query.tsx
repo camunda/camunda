@@ -29,7 +29,7 @@ function useVariables(params: Params, options: Options = {}) {
     queryKey: variablesQueryKey,
     queryFn: async () => {
       const {response, error} = await request(
-        api.v1.searchVariables({taskId, variableNames}),
+        api.searchVariables({taskId, variableNames}),
       );
 
       if (response !== null) {

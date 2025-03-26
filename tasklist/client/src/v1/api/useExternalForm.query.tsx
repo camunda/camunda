@@ -16,7 +16,7 @@ function useExternalForm(bpmnProcessId: string) {
     queryKey: ['externalForm', bpmnProcessId],
     queryFn: async () => {
       const {response, error} = await request(
-        api.v1.getExternalForm(bpmnProcessId),
+        api.getExternalForm(bpmnProcessId),
       );
 
       if (response !== null) {
