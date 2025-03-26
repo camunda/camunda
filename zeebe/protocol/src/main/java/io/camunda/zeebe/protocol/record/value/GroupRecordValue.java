@@ -23,11 +23,17 @@ import org.immutables.value.Value;
 @ImmutableProtocol(builder = ImmutableGroupRecordValue.Builder.class)
 public interface GroupRecordValue extends RecordValue {
 
-  /** The unique identifier of the group within our system. */
+  /** The internal key of a group. */
   long getGroupKey();
+
+  /** The unique identifier of the group within our system. */
+  String getGroupId();
 
   /** The name of the group. */
   String getName();
+
+  /** The description of the group. */
+  String getDescription();
 
   /** The key of a user/mapping to assign/remove from a group. */
   long getEntityKey();
