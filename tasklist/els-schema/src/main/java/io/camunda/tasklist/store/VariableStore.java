@@ -13,8 +13,8 @@ import static java.util.Optional.of;
 import io.camunda.tasklist.views.TaskSearchView;
 import io.camunda.webapps.schema.descriptors.operate.template.VariableTemplate;
 import io.camunda.webapps.schema.descriptors.tasklist.template.SnapshotTaskVariableTemplate;
-import io.camunda.webapps.schema.entities.flownode.FlowNodeInstanceEntity;
 import io.camunda.webapps.schema.entities.VariableEntity;
+import io.camunda.webapps.schema.entities.flownode.FlowNodeInstanceEntity;
 import io.camunda.webapps.schema.entities.tasklist.SnapshotTaskVariableEntity;
 import io.camunda.webapps.schema.entities.tasklist.TaskEntity;
 import io.camunda.webapps.schema.entities.tasklist.TaskState;
@@ -113,7 +113,8 @@ public interface VariableStore {
       return super.get(currentFlowNodeInstanceId);
     }
 
-    public void setParent(final String currentFlowNodeInstanceId, final String parentFlowNodeInstanceId) {
+    public void setParent(
+        final String currentFlowNodeInstanceId, final String parentFlowNodeInstanceId) {
       super.put(currentFlowNodeInstanceId, parentFlowNodeInstanceId);
     }
 
@@ -148,7 +149,8 @@ public interface VariableStore {
     private List<String> varNames;
     private Set<String> fieldNames = new HashSet<>();
 
-    public static GetVariablesRequest createFrom(final TaskEntity taskEntity, final Set<String> fieldNames) {
+    public static GetVariablesRequest createFrom(
+        final TaskEntity taskEntity, final Set<String> fieldNames) {
       return new GetVariablesRequest()
           .setTaskId(String.valueOf(taskEntity.getKey()))
           .setFlowNodeInstanceId(taskEntity.getFlowNodeInstanceId())
@@ -166,7 +168,9 @@ public interface VariableStore {
     }
 
     public static GetVariablesRequest createFrom(
-        final TaskSearchView taskSearchView, final List<String> varNames, final Set<String> fieldNames) {
+        final TaskSearchView taskSearchView,
+        final List<String> varNames,
+        final Set<String> fieldNames) {
       return new GetVariablesRequest()
           .setTaskId(taskSearchView.getId())
           .setFlowNodeInstanceId(taskSearchView.getFlowNodeInstanceId())
