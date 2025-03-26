@@ -11,7 +11,6 @@ import static io.camunda.zeebe.gateway.rest.ResponseMapper.formatDate;
 import static java.util.Collections.emptyList;
 import static java.util.Optional.ofNullable;
 
-import com.google.gson.Gson;
 import io.camunda.search.entities.AdHocSubprocessActivityEntity;
 import io.camunda.search.entities.AuthorizationEntity;
 import io.camunda.search.entities.BatchOperationEntity;
@@ -100,8 +99,6 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 public final class SearchQueryResponseMapper {
-
-  private static final Gson gson = new Gson();
 
   private SearchQueryResponseMapper() {}
 
@@ -796,7 +793,13 @@ public final class SearchQueryResponseMapper {
   }
 
   private static String serializeValue(final Object value) {
-    return gson.toJson(value);
+    // OpenSearch already is returning String for Sorted Values
+    if (value instanceof String
+        && !(value.toString().startsWith("\"") && value.toString().endsWith("\""))) {
+      return "\"" + value + "\"";
+    }
+
+    return value.toString();
   }
 
   private record RuleIdentifier(String ruleId, int ruleIndex) {}

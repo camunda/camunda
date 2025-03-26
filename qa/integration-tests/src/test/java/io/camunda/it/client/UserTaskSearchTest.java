@@ -43,7 +43,6 @@ class UserTaskSearchTest {
 
   @BeforeAll
   static void beforeAll() {
-
     deployProcess("process", "simple.bpmn", "test", "", "");
     deployProcess("process-2", "simple-2.bpmn", "test-2", "group", "user");
     deployProcess("process-3", "simple-3.bpmn", "test-3", "", "", "30");
