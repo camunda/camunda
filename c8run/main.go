@@ -3,6 +3,13 @@ package main
 import (
 	"flag"
 	"fmt"
+	"os"
+	"os/exec"
+	"path/filepath"
+	"runtime"
+	"strconv"
+	"strings"
+
 	"github.com/camunda/camunda/c8run/internal/health"
 	"github.com/camunda/camunda/c8run/internal/overrides"
 	"github.com/camunda/camunda/c8run/internal/packages"
@@ -10,12 +17,6 @@ import (
 	"github.com/camunda/camunda/c8run/internal/unix"
 	"github.com/camunda/camunda/c8run/internal/windows"
 	"github.com/joho/godotenv"
-	"os"
-	"os/exec"
-	"path/filepath"
-	"runtime"
-	"strconv"
-	"strings"
 )
 
 func stopProcess(c8 types.C8Run, pidfile string) error {
@@ -188,33 +189,32 @@ func createStopFlagSet(settings *types.C8RunSettings) *flag.FlagSet {
 }
 
 func GetJavaVersion(javaBinary string) (string, error) {
-        javaVersionCmd := exec.Command(javaBinary, "JavaVersion")
-        var out strings.Builder
-        var stderr strings.Builder
-        javaVersionCmd.Stdout = &out
-        javaVersionCmd.Stderr = &stderr
-        err := javaVersionCmd.Run()
-        if err != nil {
-                return "", fmt.Errorf("failed to run java version command: %w", err)
-        }
-        javaVersionOutput := out.String()
-        return javaVersionOutput, nil
+	javaVersionCmd := exec.Command(javaBinary, "JavaVersion")
+	var out strings.Builder
+	var stderr strings.Builder
+	javaVersionCmd.Stdout = &out
+	javaVersionCmd.Stderr = &stderr
+	err := javaVersionCmd.Run()
+	if err != nil {
+		return "", fmt.Errorf("failed to run java version command: %w", err)
+	}
+	javaVersionOutput := out.String()
+	return javaVersionOutput, nil
 }
 
 func GetJavaHome(javaBinary string) (string, error) {
-        javaHomeCmd := exec.Command(javaBinary, "JavaHome")
-        var out strings.Builder
-        var stderr strings.Builder
-        javaHomeCmd.Stdout = &out
-        javaHomeCmd.Stderr = &stderr
-        err := javaHomeCmd.Run()
-        if err != nil {
-                return "", fmt.Errorf("failed to run java version command: %w", err)
-        }
-        javaHomeOutput := out.String()
-        return javaHomeOutput, nil
+	javaHomeCmd := exec.Command(javaBinary, "JavaHome")
+	var out strings.Builder
+	var stderr strings.Builder
+	javaHomeCmd.Stdout = &out
+	javaHomeCmd.Stderr = &stderr
+	err := javaHomeCmd.Run()
+	if err != nil {
+		return "", fmt.Errorf("failed to run java version command: %w", err)
+	}
+	javaHomeOutput := out.String()
+	return javaHomeOutput, nil
 }
-
 
 func main() {
 	c8 := getC8RunPlatform()
@@ -267,23 +267,23 @@ func main() {
 
 	javaHome := os.Getenv("JAVA_HOME")
 	javaBinary := "java"
-        var javaHomeAfterSymlink string
-        if javaHome != "" {
-                javaHomeAfterSymlink, err = filepath.EvalSymlinks(javaHome)
-                if err != nil {
-                        fmt.Println("JAVA_HOME is not a valid path, obtaining JAVA_HOME from java binary")
-                        javaHome = ""
-                } else {
-                        javaHome = javaHomeAfterSymlink
-                }
-        }
-        if javaHome == "" {
-                javaHome, err = GetJavaHome(javaBinary)
-                if err != nil {
-                        fmt.Println("Failed to get JAVA_HOME")
-                        os.Exit(1)
-                }
-        }
+	var javaHomeAfterSymlink string
+	if javaHome != "" {
+		javaHomeAfterSymlink, err = filepath.EvalSymlinks(javaHome)
+		if err != nil {
+			fmt.Println("JAVA_HOME is not a valid path, obtaining JAVA_HOME from java binary")
+			javaHome = ""
+		} else {
+			javaHome = javaHomeAfterSymlink
+		}
+	}
+	if javaHome == "" {
+		javaHome, err = GetJavaHome(javaBinary)
+		if err != nil {
+			fmt.Println("Failed to get JAVA_HOME")
+			os.Exit(1)
+		}
+	}
 
 	if javaHome != "" {
 		err = filepath.Walk(javaHome, func(path string, info os.FileInfo, err error) error {
@@ -352,20 +352,32 @@ func main() {
 	case "clean":
 		cleanCommand(camundaVersion, elasticsearchVersion)
 	}
+}
 
+func printSystemInformation(javaVersion string) {
+	fmt.Println("")
+	fmt.Println("System Version Information")
+	fmt.Println("--------------------------")
+	fmt.Println("Camunda Details:")
+	fmt.Printf("  Version: %s\n", os.Getenv("CAMUNDA_VERSION"))
+	fmt.Println("Java Details:")
+	fmt.Printf("  Version: %s\n", javaVersion)
+	fmt.Println("--------------------------")
+	fmt.Println("")
 }
 
 func startCommand(c8 types.C8Run, settings types.C8RunSettings, processInfo processes, parentDir, javaBinary string, expectedJavaVersion int) {
 	javaVersion := os.Getenv("JAVA_VERSION")
-        var err error
+	var err error
 	if javaVersion == "" {
-                javaVersion, err = GetJavaVersion(javaBinary)
-                if err != nil {
-                        fmt.Println("Failed to get Java version")
-                        os.Exit(1)
-                }
+		javaVersion, err = GetJavaVersion(javaBinary)
+		if err != nil {
+			fmt.Println("Failed to get Java version")
+			os.Exit(1)
+		}
 	}
-	fmt.Print("Java version is " + javaVersion + "\n")
+
+	printSystemInformation(javaVersion)
 
 	versionSplit := strings.Split(javaVersion, ".")
 	if len(versionSplit) == 0 {
@@ -429,7 +441,6 @@ func startCommand(c8 types.C8Run, settings types.C8RunSettings, processInfo proc
 		fmt.Printf("%+v", err)
 		os.Exit(1)
 	}
-
 }
 
 type processes struct {
