@@ -24,8 +24,7 @@ public class BrokerGroupCreateRequest extends BrokerExecuteCommand<GroupRecord> 
   }
 
   public BrokerGroupCreateRequest setGroupId(final String groupId) {
-    // TODO: uncomment this with https://github.com/camunda/camunda/issues/30021
-    // requestDto.setGroupId(groupId);
+    requestDto.setGroupId(groupId);
     return this;
   }
 
@@ -35,8 +34,7 @@ public class BrokerGroupCreateRequest extends BrokerExecuteCommand<GroupRecord> 
   }
 
   public BrokerGroupCreateRequest setDescription(final String description) {
-    // TODO: uncomment this with https://github.com/camunda/camunda/issues/30021
-    // requestDto.setDescription(groupId);
+    requestDto.setDescription(description);
     return this;
   }
 

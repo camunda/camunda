@@ -70,8 +70,7 @@ public class GroupServiceTest {
     assertThat(request.getIntent()).isEqualTo(GroupIntent.CREATE);
     assertThat(request.getKey()).isEqualTo(-1L);
     assertThat(record).hasName(groupName);
-    // TODO: uncomment this with https://github.com/camunda/camunda/issues/30021
-    // assertThat(record).hasGroupId(groupId);
+    assertThat(record).hasGroupId(groupId);
   }
 
   @Test
