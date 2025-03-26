@@ -1,0 +1,78 @@
+name: Check Licenses
+
+on:
+  push:
+    branches:
+    - main
+
+jobs:
+  analyze:
+    name: Analyze dependencies
+    permissions: {}
+    runs-on: ubuntu-latest
+    strategy:
+      # The matrix is needed to run separate analyses for the Single-App and Optimize
+      matrix:
+        project:
+        - name: single-app
+          path: ./
+          maven-config: |
+            -DskipQaBuild=true
+        # To be uncommented when Optimize is fully seperated
+        # Dedicated configs already exist, see optimize/.fossa.yml
+        # - name: optimize
+        #   path: ./optimize
+    timeout-minutes: 15
+    steps:
+    - uses: actions/checkout@v4
+    # Import FOSSA_API_KEY secret from Vault
+    - name: Import Secrets
+      id: secrets
+      uses: hashicorp/vault-action@v3.0.0
+      with:
+        url: ${{ secrets.VAULT_ADDR }}
+        method: approle
+        roleId: ${{ secrets.VAULT_ROLE_ID }}
+        secretId: ${{ secrets.VAULT_SECRET_ID }}
+        secrets: |
+          secret/data/products/camunda/ci/camunda FOSSA_API_KEY;
+    - uses: ./.github/actions/setup-build
+      with:
+        vault-address: ${{ secrets.VAULT_ADDR }}
+        vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
+        vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+    - uses: actions/setup-go@v5
+      with:
+        go-version: '>=1.23.1'
+        cache: false  # disabling since not working anyways without a cache-dependency-path specified
+    - name: Update Maven configs
+      if: matrix.project.maven-config != ''
+      env:
+        MAVEN_CONFIG: ${{ matrix.project.maven-config }}
+      run: |
+        echo "${MAVEN_CONFIG}" | tee ./.mvn/maven.config
+    - name: Setup fossa-cli
+      # TODO: use main branch
+      uses: camunda/infra-global-github-actions/fossa/setup@32470949e549396aa5f2c5def890de831b8ca107
+    - name: Adjust pom.xml files for FOSSA
+      if: matrix.project.name == 'single-app'
+      run: |
+        # The bom/pom.xml must be the actual root, otherwise, FOSSA won't detect the hierarchy correctly
+        yq -i \
+          '.project.modules.module += "./.."' \
+          parent/pom.xml
+        yq -i \
+          '.project.modules.module += "./../parent"' \
+          bom/pom.xml
+        # Remove bom and parent from the list of modules of ./pom.xml
+        yq -i \
+          'del(.project.modules.module[] | select(. == "bom" or . == "parent"))' \
+          pom.xml
+    - name: Analyze project
+      # TODO: use main branch
+      uses: camunda/infra-global-github-actions/fossa/analyze@32470949e549396aa5f2c5def890de831b8ca107
+      with:
+        api-key: ${{ steps.secrets.outputs.FOSSA_API_KEY }}
+        branch: ${{ github.ref_name }}
+        path: ${{ matrix.project.path }}
+        revision-id: ${{ github.sha }}
