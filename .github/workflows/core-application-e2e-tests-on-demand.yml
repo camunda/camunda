@@ -21,6 +21,24 @@ jobs:
         run: docker ps -a
         working-directory: qa/core-application-e2e-test-suite/config
 
+      - name: Import Secrets
+        id: secrets # important to refer to it in later steps
+        uses: hashicorp/vault-action@7709c609789c5e27b757a85817483caadbb5939a
+        with:
+          url: ${{ secrets.VAULT_ADDR }}
+          method: approle
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          exportEnv: false # we rely on step outputs, no need for environment variables
+          secrets: |
+            secret/data/github.com/organizations/camunda TESTRAIL_QA_EMAIL;
+            secret/data/github.com/organizations/camunda TESTRAIL_QA_PSW;
+
+      - name: Log Imported Secrets
+        run: |
+          echo "TestRail QA Email: ${{ steps.secrets.outputs.TESTRAIL_QA_EMAIL }}"
+          echo "TestRail QA Password: ${{ steps.secrets.outputs.TESTRAIL_QA_PSW }}"
+
       - name: Retrieve secrets from Vault
         run: |
           # Retrieve secrets from Vault
@@ -30,8 +48,8 @@ jobs:
             https://vault.int.camunda.com/v1/secret/data/github.com/organizations/camunda)
 
           # Extract values
-          export TESTRAIL_USERNAME=$(echo $VAULT_RESPONSE | jq -r '.data.data.TESTRAIL_USERNAME')
-          export TESTRAIL_KEY=$(echo $VAULT_RESPONSE | jq -r '.data.data.TESTRAIL_KEY')
+          export TESTRAIL_USERNAME=$(echo $VAULT_RESPONSE | jq -r '.data.data.TESTRAIL_QA_EMAIL')
+          export TESTRAIL_KEY=$(echo $VAULT_RESPONSE | jq -r '.data.data.TESTRAIL_QA_PSW')
 
           # Log the results
           echo "TestRail Username: $TESTRAIL_USERNAME"
