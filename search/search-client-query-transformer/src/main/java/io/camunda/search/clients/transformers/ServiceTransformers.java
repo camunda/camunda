@@ -140,7 +140,7 @@ import io.camunda.webapps.schema.descriptors.operate.template.FlowNodeInstanceTe
 import io.camunda.webapps.schema.descriptors.operate.template.IncidentTemplate;
 import io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate;
 import io.camunda.webapps.schema.descriptors.operate.template.VariableTemplate;
-import io.camunda.webapps.schema.descriptors.tasklist.template.TaskTemplate;
+import io.camunda.webapps.schema.descriptors.template.TaskTemplate;
 import io.camunda.webapps.schema.descriptors.usermanagement.index.AuthorizationIndex;
 import io.camunda.webapps.schema.descriptors.usermanagement.index.GroupIndex;
 import io.camunda.webapps.schema.descriptors.usermanagement.index.MappingIndex;

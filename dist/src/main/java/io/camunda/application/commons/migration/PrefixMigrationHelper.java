@@ -37,7 +37,7 @@ import io.camunda.webapps.schema.descriptors.operate.template.OperationTemplate;
 import io.camunda.webapps.schema.descriptors.operate.template.PostImporterQueueTemplate;
 import io.camunda.webapps.schema.descriptors.operate.template.SequenceFlowTemplate;
 import io.camunda.webapps.schema.descriptors.operate.template.VariableTemplate;
-import io.camunda.webapps.schema.descriptors.tasklist.template.TaskTemplate;
+import io.camunda.webapps.schema.descriptors.template.TaskTemplate;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;

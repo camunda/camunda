@@ -18,7 +18,7 @@ import io.camunda.tasklist.schema.indices.UserIndex;
 import io.camunda.tasklist.util.PayloadUtil;
 import io.camunda.tasklist.zeebe.TasklistServicesAdapter;
 import io.camunda.webapps.schema.descriptors.index.FormIndex;
-import io.camunda.webapps.schema.descriptors.tasklist.template.TaskTemplate;
+import io.camunda.webapps.schema.descriptors.template.TaskTemplate;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
 import java.text.SimpleDateFormat;

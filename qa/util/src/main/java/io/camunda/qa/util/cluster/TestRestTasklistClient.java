@@ -13,7 +13,7 @@ import io.camunda.search.clients.DocumentBasedSearchClient;
 import io.camunda.search.clients.core.SearchQueryRequest;
 import io.camunda.search.clients.core.SearchQueryResponse;
 import io.camunda.search.clients.query.SearchQuery;
-import io.camunda.webapps.schema.descriptors.tasklist.template.TaskTemplate;
+import io.camunda.webapps.schema.descriptors.template.TaskTemplate;
 import io.camunda.webapps.schema.entities.usertask.TaskEntity;
 import io.camunda.zeebe.it.util.SearchClientsUtil;
 import io.camunda.zeebe.util.CloseableSilently;

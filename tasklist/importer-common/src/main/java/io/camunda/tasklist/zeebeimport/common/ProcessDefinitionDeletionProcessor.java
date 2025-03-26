@@ -13,7 +13,7 @@ import io.camunda.tasklist.store.TaskStore;
 import io.camunda.tasklist.store.VariableStore;
 import io.camunda.webapps.schema.descriptors.index.FormIndex;
 import io.camunda.webapps.schema.descriptors.operate.index.ProcessIndex;
-import io.camunda.webapps.schema.descriptors.tasklist.template.DraftTaskVariableTemplate;
+import io.camunda.webapps.schema.descriptors.template.DraftTaskVariableTemplate;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedList;

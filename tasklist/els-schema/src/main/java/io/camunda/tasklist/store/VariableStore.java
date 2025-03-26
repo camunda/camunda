@@ -12,7 +12,7 @@ import static java.util.Optional.of;
 
 import io.camunda.tasklist.views.TaskSearchView;
 import io.camunda.webapps.schema.descriptors.operate.template.VariableTemplate;
-import io.camunda.webapps.schema.descriptors.tasklist.template.SnapshotTaskVariableTemplate;
+import io.camunda.webapps.schema.descriptors.template.SnapshotTaskVariableTemplate;
 import io.camunda.webapps.schema.entities.VariableEntity;
 import io.camunda.webapps.schema.entities.flownode.FlowNodeInstanceEntity;
 import io.camunda.webapps.schema.entities.usertask.SnapshotTaskVariableEntity;

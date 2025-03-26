@@ -20,7 +20,7 @@ import io.camunda.tasklist.CommonUtils;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.webapps.schema.descriptors.operate.template.FlowNodeInstanceTemplate;
 import io.camunda.webapps.schema.descriptors.operate.template.VariableTemplate;
-import io.camunda.webapps.schema.descriptors.tasklist.template.SnapshotTaskVariableTemplate;
+import io.camunda.webapps.schema.descriptors.template.SnapshotTaskVariableTemplate;
 import io.camunda.webapps.schema.entities.flownode.FlowNodeInstanceEntity;
 import java.util.List;
 import org.elasticsearch.action.search.SearchRequest;
