@@ -58,7 +58,7 @@ import org.junit.platform.commons.util.ReflectionUtils;
  *
  * <ul>
  *   <li>Close created {@link CamundaClient}s
- *   <li>Purge the Zeebe cluster
+ *   <li>Purge the runtime (i.e. delete all data)
  * </ul>
  *
  * <p>The container runtime is closed once all tests have run.
