@@ -31,9 +31,9 @@ import static io.camunda.webapps.schema.descriptors.operate.template.FlowNodeIns
 import static io.camunda.webapps.schema.descriptors.operate.template.FlowNodeInstanceTemplate.STATE;
 import static io.camunda.webapps.schema.descriptors.operate.template.FlowNodeInstanceTemplate.TREE_PATH;
 import static io.camunda.webapps.schema.descriptors.operate.template.FlowNodeInstanceTemplate.TYPE;
-import static io.camunda.webapps.schema.entities.operate.FlowNodeState.ACTIVE;
-import static io.camunda.webapps.schema.entities.operate.FlowNodeState.COMPLETED;
-import static io.camunda.webapps.schema.entities.operate.FlowNodeState.TERMINATED;
+import static io.camunda.webapps.schema.entities.flownode.FlowNodeState.ACTIVE;
+import static io.camunda.webapps.schema.entities.flownode.FlowNodeState.COMPLETED;
+import static io.camunda.webapps.schema.entities.flownode.FlowNodeState.TERMINATED;
 import static org.opensearch.client.opensearch._types.SortOrder.Asc;
 import static org.opensearch.client.opensearch._types.SortOrder.Desc;
 
@@ -62,9 +62,9 @@ import io.camunda.webapps.schema.descriptors.operate.template.DecisionInstanceTe
 import io.camunda.webapps.schema.descriptors.operate.template.FlowNodeInstanceTemplate;
 import io.camunda.webapps.schema.descriptors.operate.template.IncidentTemplate;
 import io.camunda.webapps.schema.entities.dmn.DecisionInstanceState;
-import io.camunda.webapps.schema.entities.operate.FlowNodeInstanceEntity;
-import io.camunda.webapps.schema.entities.operate.FlowNodeState;
-import io.camunda.webapps.schema.entities.operate.FlowNodeType;
+import io.camunda.webapps.schema.entities.flownode.FlowNodeInstanceEntity;
+import io.camunda.webapps.schema.entities.flownode.FlowNodeState;
+import io.camunda.webapps.schema.entities.flownode.FlowNodeType;
 import io.camunda.webapps.schema.entities.operate.IncidentEntity;
 import java.io.IOException;
 import java.util.ArrayList;

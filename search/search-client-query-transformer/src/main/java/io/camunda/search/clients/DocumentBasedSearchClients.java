@@ -142,7 +142,7 @@ public class DocumentBasedSearchClients implements SearchClientsProxy, Closeable
   public SearchQueryResult<FlowNodeInstanceEntity> searchFlowNodeInstances(
       final FlowNodeInstanceQuery filter) {
     return getSearchExecutor()
-        .search(filter, io.camunda.webapps.schema.entities.operate.FlowNodeInstanceEntity.class);
+        .search(filter, io.camunda.webapps.schema.entities.flownode.FlowNodeInstanceEntity.class);
   }
 
   @Override

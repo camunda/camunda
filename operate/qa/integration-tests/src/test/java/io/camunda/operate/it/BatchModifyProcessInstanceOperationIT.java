@@ -18,8 +18,8 @@ import io.camunda.operate.webapp.rest.dto.operation.ModifyProcessInstanceRequest
 import io.camunda.operate.webapp.zeebe.operation.process.modify.ModifyProcessInstanceHandler;
 import io.camunda.webapps.schema.descriptors.operate.template.FlowNodeInstanceTemplate;
 import io.camunda.webapps.schema.descriptors.operate.template.VariableTemplate;
-import io.camunda.webapps.schema.entities.operate.FlowNodeInstanceEntity;
-import io.camunda.webapps.schema.entities.operate.FlowNodeState;
+import io.camunda.webapps.schema.entities.flownode.FlowNodeInstanceEntity;
+import io.camunda.webapps.schema.entities.flownode.FlowNodeState;
 import io.camunda.webapps.schema.entities.operate.VariableEntity;
 import io.camunda.webapps.schema.entities.operation.OperationType;
 import java.io.IOException;

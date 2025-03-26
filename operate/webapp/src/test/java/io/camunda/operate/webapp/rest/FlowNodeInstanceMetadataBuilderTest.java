@@ -24,8 +24,8 @@ import io.camunda.operate.webapp.rest.dto.metadata.ServiceTaskInstanceMetadataDt
 import io.camunda.operate.webapp.rest.dto.metadata.UserTaskInstanceMetadataDto;
 import io.camunda.webapps.schema.entities.event.EventEntity;
 import io.camunda.webapps.schema.entities.event.EventMetadataEntity;
-import io.camunda.webapps.schema.entities.operate.FlowNodeInstanceEntity;
-import io.camunda.webapps.schema.entities.operate.FlowNodeType;
+import io.camunda.webapps.schema.entities.flownode.FlowNodeInstanceEntity;
+import io.camunda.webapps.schema.entities.flownode.FlowNodeType;
 import io.camunda.webapps.schema.entities.tasklist.SnapshotTaskVariableEntity;
 import io.camunda.webapps.schema.entities.tasklist.TaskEntity;
 import java.time.OffsetDateTime;

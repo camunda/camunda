@@ -10,8 +10,8 @@ package io.camunda.operate.webapp.api.v1.entities;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import io.camunda.webapps.schema.descriptors.operate.template.FlowNodeInstanceTemplate;
-import io.camunda.webapps.schema.entities.operate.FlowNodeState;
-import io.camunda.webapps.schema.entities.operate.FlowNodeType;
+import io.camunda.webapps.schema.entities.flownode.FlowNodeState;
+import io.camunda.webapps.schema.entities.flownode.FlowNodeType;
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.util.Objects;
 
@@ -97,7 +97,7 @@ public class FlowNodeInstance {
     return flowNodeId;
   }
 
-  public FlowNodeInstance setFlowNodeId(String flowNodeId) {
+  public FlowNodeInstance setFlowNodeId(final String flowNodeId) {
     this.flowNodeId = flowNodeId;
     return this;
   }
@@ -106,7 +106,7 @@ public class FlowNodeInstance {
     return flowNodeName;
   }
 
-  public FlowNodeInstance setFlowNodeName(String flowNodeName) {
+  public FlowNodeInstance setFlowNodeName(final String flowNodeName) {
     this.flowNodeName = flowNodeName;
     return this;
   }
@@ -151,7 +151,7 @@ public class FlowNodeInstance {
     return tenantId;
   }
 
-  public FlowNodeInstance setTenantId(String tenantId) {
+  public FlowNodeInstance setTenantId(final String tenantId) {
     this.tenantId = tenantId;
     return this;
   }
@@ -174,7 +174,7 @@ public class FlowNodeInstance {
   }
 
   @Override
-  public boolean equals(Object o) {
+  public boolean equals(final Object o) {
     if (this == o) {
       return true;
     }
