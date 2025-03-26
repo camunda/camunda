@@ -34,29 +34,6 @@ jobs:
             secret/data/github.com/organizations/camunda TESTRAIL_QA_EMAIL;
             secret/data/github.com/organizations/camunda TESTRAIL_QA_PSW;
 
-      - name: Log Imported Secrets
-        run: |
-          echo "TestRail QA Email: ${{ steps.secrets.outputs.TESTRAIL_QA_EMAIL }}"
-          echo "TestRail QA Password: ${{ steps.secrets.outputs.TESTRAIL_QA_PSW }}"
-
-      # - name: Retrieve secrets from Vault
-      #   run: |
-      #     # Retrieve secrets from Vault
-      #     export VAULT_RESPONSE=$(curl -s \
-      #       --header "X-Vault-Token: ${{ secrets.VAULT_TOKEN }}" \
-      #       --request GET \
-      #       https://vault.int.camunda.com/v1/secret/data/github.com/organizations/camunda)
-
-      #     # Extract values
-      #     export TESTRAIL_USERNAME=$(echo $VAULT_RESPONSE | jq -r '.data.data.TESTRAIL_QA_EMAIL')
-      #     export TESTRAIL_KEY=$(echo $VAULT_RESPONSE | jq -r '.data.data.TESTRAIL_QA_PSW')
-
-      #     # Log the results
-      #     echo "TestRail Username: $TESTRAIL_USERNAME"
-      #     echo "TestRail Key: $TESTRAIL_KEY"
-      #   env:
-      #     VAULT_TOKEN: ${{ secrets.VAULT_TOKEN }}
-
       - name: Wait for services to be ready
         id: wait-for-services
         run: |
@@ -146,7 +123,7 @@ jobs:
           TESTRAIL_HOST: "https://camunda.testrail.com/"
           TESTRAIL_USERNAME: ${{ steps.secrets.outputs.TESTRAIL_QA_EMAIL }} # Use the imported secret
           TESTRAIL_KEY: ${{ steps.secrets.outputs.TESTRAIL_QA_PSW }} # Use the imported secret
-          JUNIT_RESULTS_FILE: "./test-results/junit-report.xml"
+          JUNIT_RESULTS_FILE: "qa/core-application-e2e-test-suite/test-results/junit-report.xml"
         run: |
           pip install trcli
           trcli -y -h $TESTRAIL_HOST \
@@ -156,19 +133,6 @@ jobs:
             parse_junit --title "PR #${{ github.event.number }} - Core Application E2E Test Results" \
             --close-run \
             -f $JUNIT_RESULTS_FILE
-
-      - name: Debug TestRail credentials
-        if: always()
-        run: |
-          echo "TestRail Host: $TESTRAIL_HOST"
-          echo "TestRail Username: $TESTRAIL_USERNAME"
-          echo "TestRail Username Length: ${#TESTRAIL_USERNAME}"
-          echo "TestRail Key Length: ${#TESTRAIL_KEY}"
-        shell: bash
-        env:
-          TESTRAIL_HOST: "https://camunda.testrail.com/"
-          TESTRAIL_USERNAME: ${{ steps.secrets.outputs.TESTRAIL_QA_EMAIL }} # Use the imported secret
-          TESTRAIL_KEY: ${{ steps.secrets.outputs.TESTRAIL_QA_PSW }} # Use the imported secret
 
       - uses: actions/upload-artifact@v4
         if: failure()
