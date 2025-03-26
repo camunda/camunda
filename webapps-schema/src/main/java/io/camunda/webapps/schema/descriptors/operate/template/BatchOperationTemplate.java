@@ -7,10 +7,12 @@
  */
 package io.camunda.webapps.schema.descriptors.operate.template;
 
-import io.camunda.webapps.schema.descriptors.backup.Prio3Backup;
-import io.camunda.webapps.schema.descriptors.operate.OperateTemplateDescriptor;
+import static io.camunda.webapps.schema.descriptors.ComponentNames.OPERATE;
 
-public class BatchOperationTemplate extends OperateTemplateDescriptor implements Prio3Backup {
+import io.camunda.webapps.schema.descriptors.AbstractTemplateDescriptor;
+import io.camunda.webapps.schema.descriptors.backup.Prio3Backup;
+
+public class BatchOperationTemplate extends AbstractTemplateDescriptor implements Prio3Backup {
 
   public static final String INDEX_NAME = "batch-operation";
 
@@ -33,5 +35,10 @@ public class BatchOperationTemplate extends OperateTemplateDescriptor implements
   @Override
   public String getIndexName() {
     return INDEX_NAME;
+  }
+
+  @Override
+  public String getComponentName() {
+    return OPERATE.toString();
   }
 }

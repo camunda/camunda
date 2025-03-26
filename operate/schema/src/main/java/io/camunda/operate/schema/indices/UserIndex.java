@@ -7,16 +7,18 @@
  */
 package io.camunda.operate.schema.indices;
 
+import static io.camunda.webapps.schema.descriptors.ComponentNames.OPERATE;
+
 import io.camunda.operate.conditions.DatabaseInfo;
 import io.camunda.operate.property.OperateProperties;
+import io.camunda.webapps.schema.descriptors.AbstractIndexDescriptor;
 import io.camunda.webapps.schema.descriptors.backup.Prio5Backup;
-import io.camunda.webapps.schema.descriptors.operate.OperateIndexDescriptor;
 import jakarta.annotation.PostConstruct;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 @Component
-public class UserIndex extends OperateIndexDescriptor implements Prio5Backup {
+public class UserIndex extends AbstractIndexDescriptor implements Prio5Backup {
 
   public static final String INDEX_NAME = "user";
   public static final String ID = "id";
@@ -50,5 +52,10 @@ public class UserIndex extends OperateIndexDescriptor implements Prio5Backup {
   @Override
   public String getIndexPrefix() {
     return properties.getIndexPrefix();
+  }
+
+  @Override
+  public String getComponentName() {
+    return OPERATE.toString();
   }
 }

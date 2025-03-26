@@ -7,11 +7,13 @@
  */
 package io.camunda.webapps.schema.descriptors.operate.index;
 
+import static io.camunda.webapps.schema.descriptors.ComponentNames.OPERATE;
+
+import io.camunda.webapps.schema.descriptors.AbstractIndexDescriptor;
 import io.camunda.webapps.schema.descriptors.backup.Prio5Backup;
-import io.camunda.webapps.schema.descriptors.operate.OperateIndexDescriptor;
 import java.util.Optional;
 
-public class DecisionRequirementsIndex extends OperateIndexDescriptor implements Prio5Backup {
+public class DecisionRequirementsIndex extends AbstractIndexDescriptor implements Prio5Backup {
 
   public static final String INDEX_NAME = "decision-requirements";
   public static final String ID = "id";
@@ -40,5 +42,10 @@ public class DecisionRequirementsIndex extends OperateIndexDescriptor implements
   @Override
   public String getVersion() {
     return "8.3.0";
+  }
+
+  @Override
+  public String getComponentName() {
+    return OPERATE.toString();
   }
 }
