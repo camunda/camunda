@@ -45,7 +45,7 @@ public class CamundaDataSource {
   public List<FlowNodeInstance> findFlowNodeInstances(
       final Consumer<FlownodeInstanceFilter> filter) {
     return client
-        .newFlownodeInstanceQuery()
+        .newFlownodeInstanceSearchRequest()
         .filter(filter)
         .sort(sort -> sort.startDate().asc())
         .page(DEFAULT_PAGE_REQUEST)

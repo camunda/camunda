@@ -160,7 +160,7 @@ public class IncidentIT {
   private FlowNodeInstance getFlowNodeInstance(
       final CamundaClient client, final long parentInstanceKey, final String callActivityId) {
     return client
-        .newFlownodeInstanceQuery()
+        .newFlownodeInstanceSearchRequest()
         .filter(f -> f.processInstanceKey(parentInstanceKey).flowNodeId(callActivityId))
         .send()
         .join()
@@ -186,7 +186,7 @@ public class IncidentIT {
         .until(
             () ->
                 client
-                    .newFlownodeInstanceQuery()
+                    .newFlownodeInstanceSearchRequest()
                     .filter(f -> f.processDefinitionId(childProcessId))
                     .send()
                     .join()

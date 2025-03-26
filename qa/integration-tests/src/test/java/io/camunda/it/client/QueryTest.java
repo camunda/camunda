@@ -103,7 +103,7 @@ public class QueryTest {
         .ignoreExceptions() // Ignore exceptions and continue retrying
         .untilAsserted(
             () -> {
-              final var result = camundaClient.newFlownodeInstanceQuery().send().join();
+              final var result = camundaClient.newFlownodeInstanceSearchRequest().send().join();
               assertThat(result.page().totalItems()).isEqualTo(expectedFlowNodeInstances);
             });
   }
@@ -163,7 +163,7 @@ public class QueryTest {
             () -> {
               final var result =
                   camundaClient
-                      .newFlownodeInstanceQuery()
+                      .newFlownodeInstanceSearchRequest()
                       .filter(f -> f.hasIncident(true))
                       .send()
                       .join();

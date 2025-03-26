@@ -133,7 +133,7 @@ class ProcessInstanceAuthorizationIT {
     // given
     final long processDefinitionKey = getProcessDefinitionKey(adminClient, PROCESS_ID_1);
     // when
-    final var result = camundaClient.newFlownodeInstanceQuery().send().join();
+    final var result = camundaClient.newFlownodeInstanceSearchRequest().send().join();
     // then
     assertThat(result.items()).hasSize(2);
     assertThat(result.items().getFirst().getProcessDefinitionKey()).isEqualTo(processDefinitionKey);
@@ -272,7 +272,7 @@ class ProcessInstanceAuthorizationIT {
   private long getAnyFlowNodeInstanceKey(
       final CamundaClient camundaClient, final String processId) {
     return camundaClient
-        .newFlownodeInstanceQuery()
+        .newFlownodeInstanceSearchRequest()
         .filter(f -> f.processDefinitionId(processId))
         .send()
         .join()
@@ -330,7 +330,7 @@ class ProcessInstanceAuthorizationIT {
         .ignoreExceptions() // Ignore exceptions and continue retrying
         .untilAsserted(
             () ->
-                assertThat(camundaClient.newFlownodeInstanceQuery().send().join().items())
+                assertThat(camundaClient.newFlownodeInstanceSearchRequest().send().join().items())
                     .hasSize(expectedCount));
   }
 }

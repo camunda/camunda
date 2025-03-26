@@ -35,7 +35,7 @@ public class FlownodeInstanceTest extends ClientRestTest {
   @Test
   void shouldSearchFlownodeInstance() {
     // when
-    client.newFlownodeInstanceQuery().send().join();
+    client.newFlownodeInstanceSearchRequest().send().join();
 
     // then
     final FlowNodeInstanceSearchQuery request =
@@ -47,7 +47,7 @@ public class FlownodeInstanceTest extends ClientRestTest {
   void shouldSearchFlownodeInstanceWithFullFilters() {
     // when
     client
-        .newFlownodeInstanceQuery()
+        .newFlownodeInstanceSearchRequest()
         .filter(
             f ->
                 f.flowNodeInstanceKey(1L)
@@ -82,7 +82,7 @@ public class FlownodeInstanceTest extends ClientRestTest {
   void shouldSearchFlownodeInstanceWithFullSorting() {
     // when
     client
-        .newFlownodeInstanceQuery()
+        .newFlownodeInstanceSearchRequest()
         .sort(
             s ->
                 s.flowNodeInstanceKey()

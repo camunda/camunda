@@ -24,7 +24,7 @@ import io.camunda.client.api.JsonMapper;
 import io.camunda.client.api.search.SearchRequestPage;
 import io.camunda.client.api.search.filter.FlownodeInstanceFilter;
 import io.camunda.client.api.search.query.FinalSearchQueryStep;
-import io.camunda.client.api.search.query.FlownodeInstanceQuery;
+import io.camunda.client.api.search.query.FlownodeInstanceSearchRequest;
 import io.camunda.client.api.search.response.FlowNodeInstance;
 import io.camunda.client.api.search.response.SearchQueryResponse;
 import io.camunda.client.api.search.sort.FlownodeInstanceSort;
@@ -43,16 +43,17 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import org.apache.hc.client5.http.config.RequestConfig;
 
-public class FlowNodeInstanceQueryImpl
+public class FlowNodeInstanceSearchRequestImpl
     extends TypedSearchRequestPropertyProvider<FlowNodeInstanceSearchQuery>
-    implements FlownodeInstanceQuery {
+    implements FlownodeInstanceSearchRequest {
 
   private final HttpClient httpClient;
   private final JsonMapper jsonMapper;
   private final FlowNodeInstanceSearchQuery request;
   private final RequestConfig.Builder httpRequestConfig;
 
-  public FlowNodeInstanceQueryImpl(final HttpClient httpClient, final JsonMapper jsonMapper) {
+  public FlowNodeInstanceSearchRequestImpl(
+      final HttpClient httpClient, final JsonMapper jsonMapper) {
     request = new FlowNodeInstanceSearchQuery();
     this.jsonMapper = jsonMapper;
     this.httpClient = httpClient;
@@ -80,19 +81,19 @@ public class FlowNodeInstanceQueryImpl
   }
 
   @Override
-  public FlownodeInstanceQuery filter(final FlownodeInstanceFilter value) {
+  public FlownodeInstanceSearchRequest filter(final FlownodeInstanceFilter value) {
     final FlowNodeInstanceFilter filter = provideSearchRequestProperty(value);
     request.setFilter(filter);
     return this;
   }
 
   @Override
-  public FlownodeInstanceQuery filter(final Consumer<FlownodeInstanceFilter> fn) {
+  public FlownodeInstanceSearchRequest filter(final Consumer<FlownodeInstanceFilter> fn) {
     return filter(flowNodeInstanceFilter(fn));
   }
 
   @Override
-  public FlownodeInstanceQuery sort(final FlownodeInstanceSort value) {
+  public FlownodeInstanceSearchRequest sort(final FlownodeInstanceSort value) {
     final FlownodeInstanceSortImpl sorting = (FlownodeInstanceSortImpl) value;
     request.setSort(
         SearchQuerySortRequestMapper.toFlowNodeInstanceSearchQuerySortRequest(
@@ -101,19 +102,19 @@ public class FlowNodeInstanceQueryImpl
   }
 
   @Override
-  public FlownodeInstanceQuery sort(final Consumer<FlownodeInstanceSort> fn) {
+  public FlownodeInstanceSearchRequest sort(final Consumer<FlownodeInstanceSort> fn) {
     return sort(flowNodeInstanceSort(fn));
   }
 
   @Override
-  public FlownodeInstanceQuery page(final SearchRequestPage value) {
+  public FlownodeInstanceSearchRequest page(final SearchRequestPage value) {
     final SearchRequestPageImpl page = (SearchRequestPageImpl) value;
     request.setPage(page.getSearchRequestProperty());
     return this;
   }
 
   @Override
-  public FlownodeInstanceQuery page(final Consumer<SearchRequestPage> fn) {
+  public FlownodeInstanceSearchRequest page(final Consumer<SearchRequestPage> fn) {
     return page(searchRequestPage(fn));
   }
 

@@ -318,7 +318,7 @@ public class ProcessMigrationIT {
         .untilAsserted(
             () -> {
               final var result =
-                  client.newFlownodeInstanceQuery().filter(filter).send().join().items();
+                  client.newFlownodeInstanceSearchRequest().filter(filter).send().join().items();
               asserter.accept(result);
             });
   }

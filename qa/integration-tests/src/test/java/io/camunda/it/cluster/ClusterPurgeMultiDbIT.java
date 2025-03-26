@@ -204,7 +204,7 @@ public class ClusterPurgeMultiDbIT {
 
     // Query API so cache is filled - we don't care about the result
     client
-        .newFlownodeInstanceQuery()
+        .newFlownodeInstanceSearchRequest()
         .filter((f) -> f.processInstanceKey(processInstanceKey1))
         .sort(sort -> sort.startDate().asc())
         .send()
@@ -252,7 +252,7 @@ public class ClusterPurgeMultiDbIT {
             () -> {
               final var items2 =
                   client
-                      .newFlownodeInstanceQuery()
+                      .newFlownodeInstanceSearchRequest()
                       .filter((f) -> f.processInstanceKey(processInstanceKey1))
                       .sort(sort -> sort.startDate().asc())
                       .send()
