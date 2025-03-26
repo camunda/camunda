@@ -328,10 +328,14 @@ public class RequestMapper {
   }
 
   public static Either<ProblemDetail, UpdateGroupRequest> toGroupUpdateRequest(
-      final GroupUpdateRequest groupUpdateRequest, final long groupKey) {
+      final GroupUpdateRequest groupUpdateRequest, final String groupId) {
     return getResult(
         GroupRequestValidator.validateUpdateRequest(groupUpdateRequest),
-        () -> new UpdateGroupRequest(groupKey, groupUpdateRequest.getChangeset().getName()));
+        () ->
+            new UpdateGroupRequest(
+                groupId,
+                groupUpdateRequest.getChangeset().getName(),
+                groupUpdateRequest.getChangeset().getDescription()));
   }
 
   public static Either<ProblemDetail, CreateAuthorizationRequest> toCreateAuthorizationRequest(
@@ -1006,5 +1010,5 @@ public class RequestMapper {
 
   public record UpdateRoleRequest(long roleKey, String name) {}
 
-  public record UpdateGroupRequest(long groupKey, String name) {}
+  public record UpdateGroupRequest(String groupId, String name, String description) {}
 }

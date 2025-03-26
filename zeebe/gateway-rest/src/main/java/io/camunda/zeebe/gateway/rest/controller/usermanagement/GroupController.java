@@ -52,10 +52,11 @@ public class GroupController {
         .fold(RestErrorMapper::mapProblemToCompletedResponse, this::createGroup);
   }
 
-  @CamundaPatchMapping(path = "/{groupKey}")
+  @CamundaPatchMapping(path = "/{groupId}")
   public CompletableFuture<ResponseEntity<Object>> updateGroup(
-      @PathVariable final long groupKey, @RequestBody final GroupUpdateRequest groupUpdateRequest) {
-    return RequestMapper.toGroupUpdateRequest(groupUpdateRequest, groupKey)
+      @PathVariable final String groupId,
+      @RequestBody final GroupUpdateRequest groupUpdateRequest) {
+    return RequestMapper.toGroupUpdateRequest(groupUpdateRequest, groupId)
         .fold(RestErrorMapper::mapProblemToCompletedResponse, this::updateGroup);
   }
 
@@ -153,6 +154,9 @@ public class GroupController {
         () ->
             groupServices
                 .withAuthentication(RequestMapper.getAuthentication())
-                .updateGroup(updateGroupRequest.groupKey(), updateGroupRequest.name()));
+                .updateGroup(
+                    updateGroupRequest.groupId(),
+                    updateGroupRequest.name(),
+                    updateGroupRequest.description()));
   }
 }
