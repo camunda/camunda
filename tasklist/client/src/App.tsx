@@ -30,6 +30,7 @@ import {
 import {tracking} from 'common/tracking';
 import {getClientConfig} from 'common/config/getClientConfig';
 import {Forbidden} from 'common/error-handling/Forbidden';
+import {IS_V2_ENABLED} from 'common/featureFlags';
 
 const Wrapper: React.FC = () => {
   return (
@@ -91,7 +92,7 @@ const v2Routes = createRoutesFromElements(
 );
 
 const router = createBrowserRouter(
-  getClientConfig().clientMode === 'v1' ? v1Routes : v2Routes,
+  getClientConfig().clientMode === 'v1' && !IS_V2_ENABLED ? v1Routes : v2Routes,
   {
     basename: import.meta.env.DEV ? '/' : getClientConfig().baseName,
   },
