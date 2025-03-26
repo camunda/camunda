@@ -53,7 +53,7 @@ class AssignMappingToTenantTest {
         .claimName(CLAIM_NAME)
         .claimValue(CLAIM_VALUE)
         .name(NAME)
-        .id(ID)
+        .mappingId(ID)
         .send()
         .join();
     mappingId = ID;

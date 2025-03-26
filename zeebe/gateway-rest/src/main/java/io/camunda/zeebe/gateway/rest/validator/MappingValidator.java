@@ -39,18 +39,18 @@ public class MappingValidator {
         violations -> {
           violations.addAll(validateClaims(request.getClaimName(), request.getClaimValue()));
           violations.addAll(validateName(request.getName()));
-          violations.addAll(validateId(request.getId()));
+          violations.addAll(validateId(request.getMappingId()));
         });
   }
 
-  private static List<String> validateId(final String id) {
+  private static List<String> validateId(final String mappingId) {
     final List<String> violations = new ArrayList<>();
-    if (id == null || id.isBlank()) {
-      violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("id"));
-    } else if (id.length() > MAX_LENGTH) {
-      violations.add(ERROR_MESSAGE_TOO_MANY_CHARACTERS.formatted("id", MAX_LENGTH));
-    } else if (!ID_PATTERN.matcher(id).matches()) {
-      violations.add(ERROR_MESSAGE_ILLEGAL_CHARACTER.formatted("id", ID_REGEX));
+    if (mappingId == null || mappingId.isBlank()) {
+      violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("mappingId"));
+    } else if (mappingId.length() > MAX_LENGTH) {
+      violations.add(ERROR_MESSAGE_TOO_MANY_CHARACTERS.formatted("mappingId", MAX_LENGTH));
+    } else if (!ID_PATTERN.matcher(mappingId).matches()) {
+      violations.add(ERROR_MESSAGE_ILLEGAL_CHARACTER.formatted("mappingId", ID_REGEX));
     }
     return violations;
   }
