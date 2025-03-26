@@ -89,7 +89,7 @@ public class CamundaProcessTestExecutionListener implements TestExecutionListene
   }
 
   @Override
-  public void beforeTestClass(final TestContext testContext) throws Exception {
+  public void beforeTestClass(final TestContext testContext) {
     // create runtime
     containerRuntime = buildRuntime(testContext);
     containerRuntime.start();
@@ -108,7 +108,7 @@ public class CamundaProcessTestExecutionListener implements TestExecutionListene
   }
 
   @Override
-  public void beforeTestMethod(final TestContext testContext) throws Exception {
+  public void beforeTestMethod(final TestContext testContext) {
     client = createClient(testContext, camundaProcessTestContext);
     zeebeClient = createZeebeClient(testContext, camundaProcessTestContext);
 

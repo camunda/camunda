@@ -357,6 +357,25 @@ public class JunitExtensionTest {
     assertThat(outputBuilder.toString()).isEmpty();
   }
 
+  @Test
+  void shouldPurgeTheClusterInBetweenTests() throws Exception {
+    // given
+    final CamundaProcessTestExtension extension =
+        new CamundaProcessTestExtension(camundaContainerRuntimeBuilder, NOOP);
+
+    // when
+    extension.beforeAll(extensionContext);
+    extension.beforeEach(extensionContext);
+
+    // CamundaManagementClient will attempt to call purgeCluster() and we need to prevent
+    // it from trying to execute real code (the HTTP call will fail).
+    setManagementClientDummy(extension);
+    extension.afterEach(extensionContext);
+
+    // then
+    verify(camundaManagementClient).purgeCluster();
+  }
+
   private void setManagementClientDummy(final CamundaProcessTestExtension extension) {
     try {
       final Field cmcField = extension.getClass().getDeclaredField("camundaManagementClient");

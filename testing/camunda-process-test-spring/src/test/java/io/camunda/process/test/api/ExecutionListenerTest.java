@@ -23,6 +23,7 @@ import static org.mockito.Mockito.when;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.CamundaClientConfiguration;
 import io.camunda.client.api.JsonMapper;
+import io.camunda.process.test.impl.client.CamundaManagementClient;
 import io.camunda.process.test.impl.configuration.CamundaContainerRuntimeConfiguration;
 import io.camunda.process.test.impl.containers.CamundaContainer;
 import io.camunda.process.test.impl.containers.ConnectorsContainer;
@@ -37,6 +38,7 @@ import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.client.ZeebeClientConfiguration;
 import io.camunda.zeebe.spring.client.event.ZeebeClientClosingEvent;
 import io.camunda.zeebe.spring.client.event.ZeebeClientCreatedEvent;
+import java.lang.reflect.Field;
 import java.net.URI;
 import java.util.List;
 import java.util.Map;
@@ -70,6 +72,7 @@ public class ExecutionListenerTest {
   @Mock private CamundaClientProxy camundaClientProxy;
   @Mock private ZeebeClientProxy zeebeClientProxy;
   @Mock private CamundaProcessTestContextProxy camundaProcessTestContextProxy;
+  @Mock private CamundaManagementClient camundaManagementClient;
 
   @Mock private TestContext testContext;
 
@@ -112,6 +115,7 @@ public class ExecutionListenerTest {
         new CamundaProcessTestExecutionListener(camundaContainerRuntimeBuilder, NOOP);
 
     // when
+    listener.beforeTestClass(testContext);
     listener.beforeTestMethod(testContext);
 
     // then
@@ -151,6 +155,7 @@ public class ExecutionListenerTest {
         new CamundaProcessTestExecutionListener(camundaContainerRuntimeBuilder, NOOP);
 
     // when
+    listener.beforeTestClass(testContext);
     listener.beforeTestMethod(testContext);
 
     // then
@@ -185,6 +190,7 @@ public class ExecutionListenerTest {
     when(applicationContext.getBean(JsonMapper.class)).thenReturn(jsonMapper);
 
     // when
+    listener.beforeTestClass(testContext);
     listener.beforeTestMethod(testContext);
 
     // then
@@ -211,6 +217,7 @@ public class ExecutionListenerTest {
         .thenReturn(zeebeClientJsonMapper);
 
     // when
+    listener.beforeTestClass(testContext);
     listener.beforeTestMethod(testContext);
 
     // then
@@ -230,8 +237,9 @@ public class ExecutionListenerTest {
         new CamundaProcessTestExecutionListener(camundaContainerRuntimeBuilder, NOOP);
 
     // when
+    listener.beforeTestClass(testContext);
     listener.beforeTestMethod(testContext);
-    listener.afterTestMethod(testContext);
+    listener.afterTestClass(testContext);
 
     // then
     verify(camundaContainerRuntime).start();
@@ -245,7 +253,12 @@ public class ExecutionListenerTest {
         new CamundaProcessTestExecutionListener(camundaContainerRuntimeBuilder, NOOP);
 
     // when
+    listener.beforeTestClass(testContext);
     listener.beforeTestMethod(testContext);
+
+    // CamundaManagementClient will attempt to call purgeCluster() and we need to prevent
+    // it from trying to execute real code (the HTTP call will fail).
+    setManagementClientDummy(listener);
     listener.afterTestMethod(testContext);
 
     // then
@@ -292,6 +305,7 @@ public class ExecutionListenerTest {
         .thenReturn(runtimeConfiguration);
 
     // when
+    listener.beforeTestClass(testContext);
     listener.beforeTestMethod(testContext);
 
     // then
@@ -326,6 +340,7 @@ public class ExecutionListenerTest {
         .thenReturn(runtimeConfiguration);
 
     // when
+    listener.beforeTestClass(testContext);
     listener.beforeTestMethod(testContext);
 
     // then
@@ -345,8 +360,12 @@ public class ExecutionListenerTest {
             camundaContainerRuntimeBuilder, outputBuilder::append);
 
     // when
+    listener.beforeTestClass(testContext);
     listener.beforeTestMethod(testContext);
 
+    // CamundaManagementClient will attempt to call purgeCluster() and we need to prevent
+    // it from trying to execute real code (the HTTP call will fail).
+    setManagementClientDummy(listener);
     when(testContext.getTestException()).thenReturn(new AssertionError("test failure (expected)"));
     listener.afterTestMethod(testContext);
 
@@ -363,12 +382,45 @@ public class ExecutionListenerTest {
             camundaContainerRuntimeBuilder, outputBuilder::append);
 
     // when
+    listener.beforeTestClass(testContext);
     listener.beforeTestMethod(testContext);
 
+    // CamundaManagementClient will attempt to call purgeCluster() and we need to prevent
+    // it from trying to execute real code (the HTTP call will fail).
+    setManagementClientDummy(listener);
     when(testContext.getTestException()).thenReturn(null);
     listener.afterTestMethod(testContext);
 
     // then
     assertThat(outputBuilder.toString()).isEmpty();
+  }
+
+  @Test
+  void shouldPurgeTheClusterInBetweenTests() throws Exception {
+    // given
+    final CamundaProcessTestExecutionListener listener =
+        new CamundaProcessTestExecutionListener(camundaContainerRuntimeBuilder, NOOP);
+
+    // when
+    listener.beforeTestClass(testContext);
+    listener.beforeTestMethod(testContext);
+
+    // CamundaManagementClient will attempt to call purgeCluster() and we need to prevent
+    // it from trying to execute real code (the HTTP call will fail).
+    setManagementClientDummy(listener);
+    listener.afterTestMethod(testContext);
+
+    // then
+    verify(camundaManagementClient).purgeCluster();
+  }
+
+  private void setManagementClientDummy(final CamundaProcessTestExecutionListener listener) {
+    try {
+      final Field cmcField = listener.getClass().getDeclaredField("camundaManagementClient");
+      cmcField.setAccessible(true);
+      cmcField.set(listener, camundaManagementClient);
+    } catch (final Throwable t) {
+      throw new RuntimeException(t);
+    }
   }
 }
