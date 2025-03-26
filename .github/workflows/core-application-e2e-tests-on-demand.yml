@@ -121,6 +121,17 @@ jobs:
             --close-run \
             -f $JUNIT_RESULTS_FILE
 
+      - name: Debug TestRail credentials
+        run: |
+          echo "TestRail Host: $TESTRAIL_HOST"
+          echo "TestRail Username Length: ${#TESTRAIL_USERNAME}"
+          echo "TestRail Key Length: ${#TESTRAIL_KEY}"
+        shell: bash
+        env:
+          TESTRAIL_HOST: "https://camunda.testrail.com/"
+          TESTRAIL_USERNAME: ${{ secrets.TESTRAIL_QA_EMAIL }}
+          TESTRAIL_KEY: ${{ secrets.TESTRAIL_QA_PSW }}
+
       - uses: actions/upload-artifact@v4
         if: failure()
         with:
