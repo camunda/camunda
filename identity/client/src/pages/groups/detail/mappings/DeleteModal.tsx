@@ -38,7 +38,7 @@ const DeleteModal: FC<RemoveGroupMappingModalProps> = ({
     if (groupId && mapping) {
       const { success } = await callUnassignMapping({
         groupId,
-        id: mapping.id,
+        mappingId: mapping.mappingId,
       });
 
       if (success) {

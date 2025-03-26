@@ -38,7 +38,7 @@ const DeleteModal: FC<RemoveRoleMappingModalProps> = ({
     if (roleId && mapping) {
       const { success } = await callUnassignMapping({
         roleId,
-        id: mapping.id,
+        mappingId: mapping.mappingId,
       });
 
       if (success) {
