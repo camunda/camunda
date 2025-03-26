@@ -645,8 +645,8 @@ public final class AdHocSubProcessTest {
             tuple(
                 "A", BpmnElementType.MULTI_INSTANCE_BODY, ProcessInstanceIntent.ELEMENT_ACTIVATED),
             tuple("A", BpmnElementType.TASK, ProcessInstanceIntent.ELEMENT_ACTIVATED),
-            tuple("A", BpmnElementType.TASK, ProcessInstanceIntent.ELEMENT_ACTIVATED),
             tuple("A", BpmnElementType.TASK, ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple("A", BpmnElementType.TASK, ProcessInstanceIntent.ELEMENT_ACTIVATED),
             tuple("A", BpmnElementType.TASK, ProcessInstanceIntent.ELEMENT_COMPLETED),
             tuple(
                 "A", BpmnElementType.MULTI_INSTANCE_BODY, ProcessInstanceIntent.ELEMENT_COMPLETED),
