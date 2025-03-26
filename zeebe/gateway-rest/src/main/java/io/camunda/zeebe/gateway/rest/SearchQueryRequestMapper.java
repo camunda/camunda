@@ -648,9 +648,6 @@ public final class SearchQueryRequestMapper {
           builder.variables(either.get());
         }
       }
-      ofNullable(filter.getVariables())
-          .filter(variables -> !variables.isEmpty())
-          .ifPresent(vars -> builder.variables(toVariableValueFiltersForProcessInstance(vars)));
       ofNullable(filter.getErrorMessage())
           .map(mapToOperations(String.class))
           .ifPresent(builder::errorMessageOperations);

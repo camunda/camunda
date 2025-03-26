@@ -170,32 +170,12 @@
     <!-- Error message filters -->
     <if test="filter.errorMessageOperations != null and !filter.errorMessageOperations.isEmpty()">
       <foreach collection="filter.errorMessageOperations" item="operation">
-        <choose>
-          <when test="operation.operator == @io.camunda.search.filter.Operator@NOT_EQUALS">
-            AND NOT EXISTS (
-            SELECT 1
-            FROM INCIDENT i
-            WHERE i.PROCESS_INSTANCE_KEY = pi.PROCESS_INSTANCE_KEY
-            AND i.ERROR_MESSAGE = #{operation.value}
-            )
-          </when>
-          <when test="operation.operator == @io.camunda.search.filter.Operator@NOT_EXISTS">
-            AND NOT EXISTS (
-            SELECT 1
-            FROM INCIDENT i
-            WHERE i.PROCESS_INSTANCE_KEY = pi.PROCESS_INSTANCE_KEY
-            AND i.ERROR_MESSAGE IS NOT NULL
-            )
-          </when>
-          <otherwise>
-            AND EXISTS (
-            SELECT 1
-            FROM INCIDENT i
-            WHERE i.PROCESS_INSTANCE_KEY = pi.PROCESS_INSTANCE_KEY
-            AND i.ERROR_MESSAGE <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
-            )
-          </otherwise>
-        </choose>
+        AND EXISTS (
+        SELECT 1
+        FROM INCIDENT i
+        WHERE i.PROCESS_INSTANCE_KEY = pi.PROCESS_INSTANCE_KEY
+        AND i.ERROR_MESSAGE <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+        )
       </foreach>
     </if>
   </sql>

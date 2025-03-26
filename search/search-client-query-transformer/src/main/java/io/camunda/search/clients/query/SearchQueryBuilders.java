@@ -428,42 +428,59 @@ public final class SearchQueryBuilders {
     }
   }
 
-  public static <C extends List<Operation<String>>> List<SearchQuery> stringMatchHasChildOperations(
-      final String field,
-      final C operations,
-      final String childType,
-      final SearchMatchQueryOperator matchQueryOperator) {
+  public static <C extends List<Operation<String>>>
+      List<SearchQuery> stringMatchWithHasChildOperations(
+          final String field,
+          final C operations,
+          final String childType,
+          final SearchMatchQueryOperator matchQueryOperator) {
+
     if (operations == null || operations.isEmpty()) {
       return null;
-    } else {
-      final var searchQueries = new ArrayList<SearchQuery>();
-      operations.forEach(
-          op -> {
-            searchQueries.add(
+    }
+
+    return operations.stream()
+        .map(
+            op ->
                 switch (op.operator()) {
                   case EQUALS ->
                       hasChildQuery(childType, match(field, op.value(), matchQueryOperator));
+
                   case NOT_EQUALS ->
-                      mustNot(
-                          hasChildQuery(childType, match(field, op.value(), matchQueryOperator)));
-                  case EXISTS -> hasChildQuery(childType, exists(field));
-                  case NOT_EXISTS -> mustNot(hasChildQuery(childType, exists(field)));
+                      hasChildQuery(
+                          childType,
+                          bool(b ->
+                                  b.must(List.of(exists(field)))
+                                      .mustNot(
+                                          List.of(match(field, op.value(), matchQueryOperator))))
+                              .toSearchQuery());
+
+                  case EXISTS ->
+                      hasChildQuery(
+                          childType, bool(b -> b.must(List.of(exists(field)))).toSearchQuery());
+
+                  case NOT_EXISTS ->
+                      hasChildQuery(
+                          childType,
+                          bool(b -> b.must(List.of(exists(field))).mustNot(List.of(exists(field))))
+                              .toSearchQuery());
+
                   case IN ->
                       hasChildQuery(
                           childType,
                           or(
                               op.values().stream()
                                   .map(value -> match(field, value, matchQueryOperator))
-                                  .collect(Collectors.toList())));
+                                  .toList()));
+
                   case LIKE ->
                       hasChildQuery(
                           childType,
                           wildcardQuery(field, Objects.requireNonNull(op.value()).toLowerCase()));
+
                   default -> throw unexpectedOperation("String", op.operator());
-                });
-          });
-      return searchQueries;
-    }
+                })
+        .toList();
   }
 
   private static String formatDate(final OffsetDateTime dateTime) {
