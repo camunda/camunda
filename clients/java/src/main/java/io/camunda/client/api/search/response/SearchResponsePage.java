@@ -15,7 +15,7 @@
  */
 package io.camunda.client.api.search.response;
 
-import io.camunda.client.protocol.rest.SortValueResponse;
+import io.camunda.client.protocol.rest.PageObject;
 import java.util.List;
 
 public interface SearchResponsePage {
@@ -24,8 +24,8 @@ public interface SearchResponsePage {
   Long totalItems();
 
   /** The sort values of the first item in the returned page. */
-  List<SortValueResponse> firstSortValues();
+  List<PageObject> firstSortValues();
 
   /** The sort values of the last item in the returned page. */
-  List<SortValueResponse> lastSortValues();
+  List<PageObject> lastSortValues();
 }

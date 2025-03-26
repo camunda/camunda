@@ -6550,12 +6550,12 @@ components:
           description: Items to search after. Correlates to the `lastSortValues` property of a previous search response.
           type: array
           items:
-            type: object
+            $ref: "#/components/schemas/PageObject"
         searchBefore:
           description: Items to search before. Correlates to the `firstSortValues` property of a previous search response.
           type: array
           items:
-            type: object
+            $ref: "#/components/schemas/PageObject"
     SearchQueryResponse:
       type: object
       properties:
@@ -6575,18 +6575,18 @@ components:
           description: The sort values of the first item in the result set. Use this in the `searchBefore` field of an ensuing request.
           type: array
           items:
-            $ref: "#/components/schemas/SortValueResponse"
+            $ref: "#/components/schemas/PageObject"
         lastSortValues:
           description: The sort values of the last item in the result set. Use this in the `searchAfter` field of an ensuing request.
           type: array
           items:
-            $ref: "#/components/schemas/SortValueResponse"
-    SortValueResponse:
+            $ref: "#/components/schemas/PageObject"
+    PageObject:
       description: Value and type of a sort field.
       type: object
       properties:
         value:
-          type: object
+          type: string
           description: The sort values of the item in the result set. .
         type:
             type: string
@@ -6596,7 +6596,6 @@ components:
                 - int64
                 - float
                 - boolean
-                - date
                 - object
     DecisionRequirementsSearchQuerySortRequest:
       type: object

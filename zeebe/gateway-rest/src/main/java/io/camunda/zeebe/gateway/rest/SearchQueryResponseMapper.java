@@ -11,6 +11,7 @@ import static io.camunda.zeebe.gateway.rest.ResponseMapper.formatDate;
 import static java.util.Collections.emptyList;
 import static java.util.Optional.ofNullable;
 
+import com.google.gson.Gson;
 import io.camunda.search.entities.AdHocSubprocessActivityEntity;
 import io.camunda.search.entities.AuthorizationEntity;
 import io.camunda.search.entities.BatchOperationEntity;
@@ -66,6 +67,8 @@ import io.camunda.zeebe.gateway.protocol.rest.MappingResult;
 import io.camunda.zeebe.gateway.protocol.rest.MappingSearchQueryResult;
 import io.camunda.zeebe.gateway.protocol.rest.MatchedDecisionRuleItem;
 import io.camunda.zeebe.gateway.protocol.rest.OwnerTypeEnum;
+import io.camunda.zeebe.gateway.protocol.rest.PageObject;
+import io.camunda.zeebe.gateway.protocol.rest.PageObject.TypeEnum;
 import io.camunda.zeebe.gateway.protocol.rest.PermissionTypeEnum;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessDefinitionFlowNodeStatisticsQueryResult;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessDefinitionFlowNodeStatisticsResult;
@@ -78,8 +81,6 @@ import io.camunda.zeebe.gateway.protocol.rest.ResourceTypeEnum;
 import io.camunda.zeebe.gateway.protocol.rest.RoleResult;
 import io.camunda.zeebe.gateway.protocol.rest.RoleSearchQueryResult;
 import io.camunda.zeebe.gateway.protocol.rest.SearchQueryPageResponse;
-import io.camunda.zeebe.gateway.protocol.rest.SortValueResponse;
-import io.camunda.zeebe.gateway.protocol.rest.SortValueResponse.TypeEnum;
 import io.camunda.zeebe.gateway.protocol.rest.TenantResult;
 import io.camunda.zeebe.gateway.protocol.rest.TenantSearchQueryResult;
 import io.camunda.zeebe.gateway.protocol.rest.UsageMetricsResponse;
@@ -99,6 +100,8 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 public final class SearchQueryResponseMapper {
+
+  private static final Gson gson = new Gson();
 
   private SearchQueryResponseMapper() {}
 
@@ -287,7 +290,7 @@ public final class SearchQueryResponseMapper {
   private static SearchQueryPageResponse toSearchQueryPageResponse(
       final SearchQueryResult<?> result) {
 
-    final List<SortValueResponse> firstSortValues =
+    final List<PageObject> firstSortValues =
         ofNullable(result.firstSortValues())
             .map(
                 array ->
@@ -295,14 +298,14 @@ public final class SearchQueryResponseMapper {
                         .map(
                             obj -> {
                               final String type = determineValueType(obj);
-                              return new SortValueResponse()
-                                  .value(obj)
+                              return new PageObject()
+                                  .value(serializeValue(obj))
                                   .type(TypeEnum.valueOf(type));
                             })
                         .collect(Collectors.toList()))
             .orElse(emptyList());
 
-    final List<SortValueResponse> lastSortValues =
+    final List<PageObject> lastSortValues =
         ofNullable(result.lastSortValues())
             .map(
                 array ->
@@ -310,8 +313,8 @@ public final class SearchQueryResponseMapper {
                         .map(
                             obj -> {
                               final String type = determineValueType(obj);
-                              return new SortValueResponse()
-                                  .value(obj)
+                              return new PageObject()
+                                  .value(serializeValue(obj))
                                   .type(TypeEnum.valueOf(type));
                             })
                         .collect(Collectors.toList()))
@@ -788,11 +791,12 @@ public final class SearchQueryResponseMapper {
     if (value instanceof Float || value instanceof Double) {
       return TypeEnum.FLOAT.name();
     }
-    if (value instanceof java.time.Instant || value instanceof java.util.Date) {
-      return TypeEnum.DATE.name();
-    }
 
     return TypeEnum.OBJECT.name(); // Fallback
+  }
+
+  private static String serializeValue(final Object value) {
+    return gson.toJson(value);
   }
 
   private record RuleIdentifier(String ruleId, int ruleIndex) {}

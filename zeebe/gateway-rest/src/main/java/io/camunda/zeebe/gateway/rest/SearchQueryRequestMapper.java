@@ -12,6 +12,7 @@ import static io.camunda.zeebe.gateway.rest.util.AdvancedSearchFilterUtil.mapToO
 import static io.camunda.zeebe.gateway.rest.validator.ErrorMessages.*;
 import static io.camunda.zeebe.gateway.rest.validator.RequestValidator.validate;
 import static io.camunda.zeebe.gateway.rest.validator.RequestValidator.validateDate;
+import static java.util.Collections.emptyList;
 import static java.util.Optional.ofNullable;
 
 import io.camunda.search.entities.DecisionInstanceEntity.DecisionDefinitionType;
@@ -76,6 +77,7 @@ import io.camunda.util.ObjectBuilder;
 import io.camunda.zeebe.gateway.protocol.rest.*;
 import io.camunda.zeebe.gateway.protocol.rest.BatchOperationFilter.OperationTypeEnum;
 import io.camunda.zeebe.gateway.protocol.rest.BatchOperationFilter.StatusEnum;
+import io.camunda.zeebe.gateway.protocol.rest.PageObject.TypeEnum;
 import io.camunda.zeebe.gateway.rest.util.GenericVariable;
 import io.camunda.zeebe.gateway.rest.util.KeyUtil;
 import io.camunda.zeebe.gateway.rest.util.ProcessInstanceStateConverter;
@@ -88,6 +90,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.function.BiFunction;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.http.ProblemDetail;
 import org.springframework.util.CollectionUtils;
@@ -1202,8 +1205,26 @@ public final class SearchQueryRequestMapper {
       return Either.right(null);
     }
 
-    final Object[] searchAfter = toArrayOrNull(requestedPage.getSearchAfter());
-    final Object[] searchBefore = toArrayOrNull(requestedPage.getSearchBefore());
+    final List<Object> searchBeforeValues =
+        ofNullable(requestedPage.getSearchBefore())
+            .map(
+                pageObjects ->
+                    pageObjects.stream()
+                        .map(SearchQueryRequestMapper::deserializePageObject)
+                        .collect(Collectors.toList()))
+            .orElse(emptyList());
+
+    final List<Object> searchAfterValues =
+        ofNullable(requestedPage.getSearchAfter())
+            .map(
+                pageObjects ->
+                    pageObjects.stream()
+                        .map(SearchQueryRequestMapper::deserializePageObject)
+                        .collect(Collectors.toList()))
+            .orElse(emptyList());
+
+    final Object[] searchAfter = toArrayOrNull(searchAfterValues);
+    final Object[] searchBefore = toArrayOrNull(searchBeforeValues);
 
     if (searchAfter != null && searchBefore != null) {
       return Either.left(List.of(ERROR_SEARCH_BEFORE_AND_AFTER));
@@ -1381,5 +1402,19 @@ public final class SearchQueryRequestMapper {
                         f.getResourceType() == null ? null : f.getResourceType().getValue())
                     .build())
         .orElse(null);
+  }
+
+  private static Object deserializePageObject(final PageObject pageObject) {
+    final String rawValue = pageObject.getValue();
+    final TypeEnum type = pageObject.getType();
+
+    return switch (type) {
+      case STRING ->
+          rawValue.substring(1, rawValue.length() - 1).replace("\\\"", "\""); // remove outer quotes
+      case BOOLEAN -> Boolean.parseBoolean(rawValue);
+      case INT64 -> Long.parseLong(rawValue);
+      case FLOAT -> Double.parseDouble(rawValue);
+      default -> rawValue;
+    };
   }
 }
