@@ -49,7 +49,7 @@ public class CreateMappingTest {
             .claimName(CLAIM_NAME)
             .claimValue(CLAIM_VALUE)
             .name(NAME)
-            .id(ID)
+            .mappingId(ID)
             .send()
             .join();
 
@@ -91,7 +91,7 @@ public class CreateMappingTest {
                     .send()
                     .join())
         .isInstanceOf(IllegalArgumentException.class)
-        .hasMessageContaining("id");
+        .hasMessageContaining("mappingId");
   }
 
   @Test
@@ -117,7 +117,7 @@ public class CreateMappingTest {
         .claimName(CLAIM_NAME)
         .claimValue(CLAIM_VALUE)
         .name(NAME)
-        .id(Strings.newRandomValidIdentityId())
+        .mappingId(Strings.newRandomValidIdentityId())
         .send()
         .join();
 
@@ -129,7 +129,7 @@ public class CreateMappingTest {
                     .claimName(CLAIM_NAME)
                     .claimValue(CLAIM_VALUE)
                     .name(NAME)
-                    .id(Strings.newRandomValidIdentityId())
+                    .mappingId(Strings.newRandomValidIdentityId())
                     .send()
                     .join())
         .isInstanceOf(RuntimeException.class)
@@ -146,7 +146,7 @@ public class CreateMappingTest {
         .claimName("c1")
         .claimValue(CLAIM_VALUE)
         .name(NAME)
-        .id(ID)
+        .mappingId(ID)
         .send()
         .join();
 
@@ -158,7 +158,7 @@ public class CreateMappingTest {
                     .claimName("c2")
                     .claimValue(CLAIM_VALUE)
                     .name(NAME)
-                    .id(ID)
+                    .mappingId(ID)
                     .send()
                     .join())
         .isInstanceOf(RuntimeException.class)

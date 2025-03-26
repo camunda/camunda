@@ -87,7 +87,7 @@ public class MappingControllerTest extends RestControllerTest {
               "type": "about:blank",
               "status": 400,
               "title": "INVALID_ARGUMENT",
-              "detail": "No id provided.",
+              "detail": "No mappingId provided.",
               "instance": "%s"
             }"""
             .formatted(MAPPING_RULES_PATH));
@@ -102,7 +102,7 @@ public class MappingControllerTest extends RestControllerTest {
             .claimName("claim")
             .claimValue("claimValue")
             .name("name")
-            .id("");
+            .mappingId("");
 
     // when then
     assertRequestRejectedExceptionally(
@@ -112,7 +112,7 @@ public class MappingControllerTest extends RestControllerTest {
               "type": "about:blank",
               "status": 400,
               "title": "INVALID_ARGUMENT",
-              "detail": "No id provided.",
+              "detail": "No mappingId provided.",
               "instance": "%s"
             }"""
             .formatted(MAPPING_RULES_PATH));
@@ -123,7 +123,7 @@ public class MappingControllerTest extends RestControllerTest {
   void shouldRejectMappingCreationWithMissingClaimName() {
     // given
     final var request =
-        new MappingRuleCreateRequest().claimValue("claimValue").name("name").id("id");
+        new MappingRuleCreateRequest().claimValue("claimValue").name("name").mappingId("id");
 
     // when then
     assertRequestRejectedExceptionally(
@@ -144,7 +144,11 @@ public class MappingControllerTest extends RestControllerTest {
   void shouldRejectMappingCreationWitBlankClaimName() {
     // given
     final var request =
-        new MappingRuleCreateRequest().claimName("").claimValue("claimValue").name("name").id("id");
+        new MappingRuleCreateRequest()
+            .claimName("")
+            .claimValue("claimValue")
+            .name("name")
+            .mappingId("id");
 
     // when then
     assertRequestRejectedExceptionally(
@@ -164,7 +168,8 @@ public class MappingControllerTest extends RestControllerTest {
   @Test
   void shouldRejectMappingCreationWithMissingClaimValue() {
     // given
-    final var request = new MappingRuleCreateRequest().claimName("claimName").name("name").id("id");
+    final var request =
+        new MappingRuleCreateRequest().claimName("claimName").name("name").mappingId("id");
 
     // when then
     assertRequestRejectedExceptionally(
@@ -185,7 +190,11 @@ public class MappingControllerTest extends RestControllerTest {
   void shouldRejectMappingCreationWitBlankClaimValue() {
     // given
     final var request =
-        new MappingRuleCreateRequest().claimName("claimName").claimValue("").name("name").id("id");
+        new MappingRuleCreateRequest()
+            .claimName("claimName")
+            .claimValue("")
+            .name("name")
+            .mappingId("id");
 
     // when then
     assertRequestRejectedExceptionally(
@@ -206,7 +215,10 @@ public class MappingControllerTest extends RestControllerTest {
   void shouldRejectMappingCreationWithMissingName() {
     // given
     final var request =
-        new MappingRuleCreateRequest().claimName("claimName").claimValue("claimValue").id("id");
+        new MappingRuleCreateRequest()
+            .claimName("claimName")
+            .claimValue("claimValue")
+            .mappingId("id");
 
     // when then
     assertRequestRejectedExceptionally(
@@ -234,7 +246,7 @@ public class MappingControllerTest extends RestControllerTest {
     // given
     final var request =
         new MappingRuleCreateRequest()
-            .id(id)
+            .mappingId(id)
             .claimName("claimName")
             .claimValue("claimValue")
             .name("name");
@@ -247,7 +259,7 @@ public class MappingControllerTest extends RestControllerTest {
               "type": "about:blank",
               "status": 400,
               "title": "INVALID_ARGUMENT",
-              "detail": "The provided id contains illegal characters. It must match the pattern '%s'.",
+              "detail": "The provided mappingId contains illegal characters. It must match the pattern '%s'.",
               "instance": "%s"
             }"""
             .formatted(IdentifierPatterns.ID_PATTERN, MAPPING_RULES_PATH));
@@ -260,7 +272,7 @@ public class MappingControllerTest extends RestControllerTest {
     final var id = "x".repeat(257);
     final var request =
         new MappingRuleCreateRequest()
-            .id(id)
+            .mappingId(id)
             .claimName("claimName")
             .claimValue("claimValue")
             .name("name");
@@ -273,7 +285,7 @@ public class MappingControllerTest extends RestControllerTest {
               "type": "about:blank",
               "status": 400,
               "title": "INVALID_ARGUMENT",
-              "detail": "The provided id exceeds the limit of 256 characters.",
+              "detail": "The provided mappingId exceeds the limit of 256 characters.",
               "instance": "%s"
             }"""
             .formatted(MAPPING_RULES_PATH));
