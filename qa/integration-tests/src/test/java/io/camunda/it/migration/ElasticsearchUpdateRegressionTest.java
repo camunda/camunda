@@ -88,6 +88,7 @@ public class ElasticsearchUpdateRegressionTest {
 
     // when
     testStandaloneBroker.start();
+    testStandaloneBroker.awaitCompleteTopology();
     final CamundaClient camundaClient = testStandaloneBroker.newClientBuilder().build();
     camundaClient
         .newDeployResourceCommand()
