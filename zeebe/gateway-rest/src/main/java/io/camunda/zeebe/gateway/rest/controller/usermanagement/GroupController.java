@@ -69,25 +69,25 @@ public class GroupController {
   }
 
   @CamundaPostMapping(
-      path = "/{groupKey}/users/{userKey}",
+      path = "/{groupId}/users/{username}",
       consumes = {})
   public CompletableFuture<ResponseEntity<Object>> assignUserToGroup(
-      @PathVariable final long groupKey, @PathVariable final long userKey) {
+      @PathVariable final String groupId, @PathVariable final String username) {
     return RequestMapper.executeServiceMethodWithAcceptedResult(
         () ->
             groupServices
                 .withAuthentication(RequestMapper.getAuthentication())
-                .assignMember(groupKey, userKey, EntityType.USER));
+                .assignMember(groupId, username, EntityType.USER));
   }
 
-  @CamundaDeleteMapping(path = "/{groupKey}/users/{userKey}")
+  @CamundaDeleteMapping(path = "/{groupId}/users/{username}")
   public CompletableFuture<ResponseEntity<Object>> unassignUserFromGroup(
-      @PathVariable final long groupKey, @PathVariable final long userKey) {
+      @PathVariable final String groupId, @PathVariable final String username) {
     return RequestMapper.executeServiceMethodWithAcceptedResult(
         () ->
             groupServices
                 .withAuthentication(RequestMapper.getAuthentication())
-                .removeMember(groupKey, userKey, EntityType.USER));
+                .removeMember(groupId, username, EntityType.USER));
   }
 
   @CamundaGetMapping(path = "/{groupKey}/users")

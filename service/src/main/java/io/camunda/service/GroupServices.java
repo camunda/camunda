@@ -128,18 +128,18 @@ public class GroupServices extends SearchQueryService<GroupServices, GroupQuery,
   }
 
   public CompletableFuture<GroupRecord> assignMember(
-      final long groupKey, final long memberKey, final EntityType memberType) {
+      final String groupId, final String username, final EntityType memberType) {
     return sendBrokerRequest(
-        BrokerGroupMemberRequest.createAddRequest(groupKey)
-            .setMemberKey(memberKey)
+        BrokerGroupMemberRequest.createAddRequest(groupId)
+            .setMemberId(username)
             .setMemberType(memberType));
   }
 
   public CompletableFuture<GroupRecord> removeMember(
-      final long groupKey, final long memberKey, final EntityType memberType) {
+      final String groupId, final String username, final EntityType memberType) {
     return sendBrokerRequest(
-        BrokerGroupMemberRequest.createRemoveRequest(groupKey)
-            .setMemberKey(memberKey)
+        BrokerGroupMemberRequest.createRemoveRequest(groupId)
+            .setMemberId(username)
             .setMemberType(memberType));
   }
 
