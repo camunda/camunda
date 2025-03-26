@@ -15,7 +15,7 @@
  */
 package io.camunda.client.impl.search.query;
 
-import static io.camunda.client.api.search.SearchRequestBuilders.adHocSubprocessActivityFilter;
+import static io.camunda.client.api.search.request.SearchRequestBuilders.adHocSubprocessActivityFilter;
 
 import io.camunda.client.api.CamundaFuture;
 import io.camunda.client.api.JsonMapper;

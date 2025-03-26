@@ -21,8 +21,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.github.tomakehurst.wiremock.http.RequestMethod;
 import com.github.tomakehurst.wiremock.verification.LoggedRequest;
 import io.camunda.client.api.search.response.ProcessInstanceState;
-import io.camunda.client.impl.search.SearchQuerySortRequest;
-import io.camunda.client.impl.search.SearchQuerySortRequestMapper;
+import io.camunda.client.impl.search.SearchRequestSort;
+import io.camunda.client.impl.search.SearchRequestSortMapper;
 import io.camunda.client.impl.search.filter.builder.StringPropertyImpl;
 import io.camunda.client.protocol.rest.*;
 import io.camunda.client.util.ClientRestTest;
@@ -232,8 +232,8 @@ public class QueryProcessInstanceTest extends ClientRestTest {
     // then
     final ProcessInstanceSearchQuery request =
         gatewayService.getLastRequest(ProcessInstanceSearchQuery.class);
-    final List<SearchQuerySortRequest> sorts =
-        SearchQuerySortRequestMapper.fromProcessInstanceSearchQuerySortRequest(
+    final List<SearchRequestSort> sorts =
+        SearchRequestSortMapper.fromProcessInstanceSearchQuerySortRequest(
             Objects.requireNonNull(request.getSort()));
     assertThat(sorts).hasSize(13);
     assertSort(sorts.get(0), "processInstanceKey", SortOrderEnum.ASC);
@@ -301,7 +301,7 @@ public class QueryProcessInstanceTest extends ClientRestTest {
   }
 
   private void assertSort(
-      final SearchQuerySortRequest sort, final String name, final SortOrderEnum order) {
+      final SearchRequestSort sort, final String name, final SortOrderEnum order) {
     assertThat(sort.getField()).isEqualTo(name);
     assertThat(sort.getOrder()).isEqualTo(order);
   }

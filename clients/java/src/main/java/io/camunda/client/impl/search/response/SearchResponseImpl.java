@@ -13,21 +13,29 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.camunda.client.api.search;
+package io.camunda.client.impl.search.response;
 
+import io.camunda.client.api.search.response.SearchResponse;
+import io.camunda.client.api.search.response.SearchResponsePage;
 import java.util.List;
 
-public interface SearchRequestPage {
+public final class SearchResponseImpl<T> implements SearchResponse<T> {
 
-  /** Start the page from. */
-  SearchRequestPage from(final Integer value);
+  private final List<T> items;
+  private final SearchResponsePage page;
 
-  /** Limit the the number of returned entities. */
-  SearchRequestPage limit(final Integer value);
+  public SearchResponseImpl(final List<T> items, final SearchResponsePage page) {
+    this.items = items;
+    this.page = page;
+  }
 
-  /** Get previous page before the set of values. */
-  SearchRequestPage searchBefore(final List<Object> values);
+  @Override
+  public List<T> items() {
+    return items;
+  }
 
-  /** Get next page after the set of values. */
-  SearchRequestPage searchAfter(final List<Object> values);
+  @Override
+  public SearchResponsePage page() {
+    return page;
+  }
 }

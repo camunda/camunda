@@ -12,7 +12,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.search.response.ProcessInstance;
 import io.camunda.client.api.search.response.ProcessInstanceState;
-import io.camunda.client.api.search.response.SearchQueryResponse;
+import io.camunda.client.api.search.response.SearchResponse;
 import io.camunda.client.api.search.response.UserTask;
 import io.camunda.client.api.search.response.UserTaskState;
 import io.camunda.zeebe.model.bpmn.Bpmn;
@@ -77,7 +77,7 @@ public class DataGenerator implements AutoCloseable {
         .atMost(timeout)
         .untilAsserted(
             () -> {
-              final Future<SearchQueryResponse<ProcessInstance>> response =
+              final Future<SearchResponse<ProcessInstance>> response =
                   camundaClient
                       .newProcessInstanceSearchRequest()
                       .filter(
@@ -88,7 +88,7 @@ public class DataGenerator implements AutoCloseable {
                       .send();
               assertThat(response)
                   .succeedsWithin(timeout)
-                  .extracting(SearchQueryResponse::items)
+                  .extracting(SearchResponse::items)
                   .asInstanceOf(InstanceOfAssertFactories.LIST)
                   .hasSameSizeAs(instanceKeys);
 

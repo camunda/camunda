@@ -12,7 +12,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.github.dockerjava.api.command.CreateContainerCmd;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.search.response.ProcessDefinition;
-import io.camunda.client.api.search.response.SearchQueryResponse;
+import io.camunda.client.api.search.response.SearchResponse;
 import io.camunda.qa.util.multidb.ElasticOpenSearchSetupHelper;
 import io.camunda.qa.util.multidb.MultiDbConfigurator;
 import io.camunda.webapps.schema.descriptors.IndexDescriptors;
@@ -102,9 +102,9 @@ public class ElasticsearchUpdateRegressionTest {
         .atMost(Duration.ofMinutes(1))
         .untilAsserted(
             () -> {
-              final SearchQueryResponse<ProcessDefinition> searchQueryResponse =
+              final SearchResponse<ProcessDefinition> searchResponse =
                   camundaClient.newProcessDefinitionSearchRequest().send().join();
-              assertThat(searchQueryResponse.items().size()).isNotZero();
+              assertThat(searchResponse.items().size()).isNotZero();
             });
   }
 }

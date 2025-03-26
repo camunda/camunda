@@ -15,23 +15,22 @@
  */
 package io.camunda.client.impl.search.query;
 
-import static io.camunda.client.api.search.SearchRequestBuilders.decisionInstanceFilter;
-import static io.camunda.client.api.search.SearchRequestBuilders.decisionInstanceSort;
-import static io.camunda.client.api.search.SearchRequestBuilders.searchRequestPage;
+import static io.camunda.client.api.search.request.SearchRequestBuilders.decisionInstanceFilter;
+import static io.camunda.client.api.search.request.SearchRequestBuilders.decisionInstanceSort;
+import static io.camunda.client.api.search.request.SearchRequestBuilders.searchRequestPage;
 
 import io.camunda.client.api.CamundaFuture;
 import io.camunda.client.api.JsonMapper;
-import io.camunda.client.api.search.SearchRequestPage;
 import io.camunda.client.api.search.filter.DecisionInstanceFilter;
 import io.camunda.client.api.search.request.DecisionInstanceSearchRequest;
 import io.camunda.client.api.search.request.FinalSearchRequestStep;
+import io.camunda.client.api.search.request.SearchRequestPage;
 import io.camunda.client.api.search.response.DecisionInstance;
-import io.camunda.client.api.search.response.SearchQueryResponse;
+import io.camunda.client.api.search.response.SearchResponse;
 import io.camunda.client.api.search.sort.DecisionInstanceSort;
 import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
-import io.camunda.client.impl.search.SearchQuerySortRequest;
-import io.camunda.client.impl.search.SearchQuerySortRequestMapper;
+import io.camunda.client.impl.search.SearchRequestSortMapper;
 import io.camunda.client.impl.search.SearchResponseMapper;
 import io.camunda.client.impl.search.TypedSearchRequestPropertyProvider;
 import io.camunda.client.protocol.rest.DecisionInstanceSearchQueryResult;
@@ -75,8 +74,9 @@ public class DecisionInstanceSearchRequestImpl
 
   @Override
   public DecisionInstanceSearchRequest sort(final DecisionInstanceSort value) {
-    final List<SearchQuerySortRequest> sorting = provideSearchRequestProperty(value);
-    request.setSort(SearchQuerySortRequestMapper.toDecisionInstanceSearchQuerySortRequest(sorting));
+    final List<io.camunda.client.impl.search.SearchRequestSort> sorting =
+        provideSearchRequestProperty(value);
+    request.setSort(SearchRequestSortMapper.toDecisionInstanceSearchQuerySortRequest(sorting));
     return this;
   }
 
@@ -109,9 +109,8 @@ public class DecisionInstanceSearchRequestImpl
   }
 
   @Override
-  public CamundaFuture<SearchQueryResponse<DecisionInstance>> send() {
-    final HttpCamundaFuture<SearchQueryResponse<DecisionInstance>> result =
-        new HttpCamundaFuture<>();
+  public CamundaFuture<SearchResponse<DecisionInstance>> send() {
+    final HttpCamundaFuture<SearchResponse<DecisionInstance>> result = new HttpCamundaFuture<>();
     httpClient.post(
         "/decision-instances/search",
         jsonMapper.toJson(request),

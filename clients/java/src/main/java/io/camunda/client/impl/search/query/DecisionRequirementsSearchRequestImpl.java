@@ -15,22 +15,22 @@
  */
 package io.camunda.client.impl.search.query;
 
-import static io.camunda.client.api.search.SearchRequestBuilders.decisionRequirementsSort;
-import static io.camunda.client.api.search.SearchRequestBuilders.searchRequestPage;
+import static io.camunda.client.api.search.request.SearchRequestBuilders.decisionRequirementsSort;
+import static io.camunda.client.api.search.request.SearchRequestBuilders.searchRequestPage;
 
 import io.camunda.client.api.JsonMapper;
-import io.camunda.client.api.search.SearchRequestBuilders;
-import io.camunda.client.api.search.SearchRequestPage;
 import io.camunda.client.api.search.filter.DecisionRequirementsFilter;
 import io.camunda.client.api.search.request.DecisionRequirementsSearchRequest;
 import io.camunda.client.api.search.request.FinalSearchRequestStep;
+import io.camunda.client.api.search.request.SearchRequestBuilders;
+import io.camunda.client.api.search.request.SearchRequestPage;
 import io.camunda.client.api.search.response.DecisionRequirements;
-import io.camunda.client.api.search.response.SearchQueryResponse;
+import io.camunda.client.api.search.response.SearchResponse;
 import io.camunda.client.api.search.sort.DecisionRequirementsSort;
 import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
-import io.camunda.client.impl.search.SearchQuerySortRequestMapper;
 import io.camunda.client.impl.search.SearchRequestPageImpl;
+import io.camunda.client.impl.search.SearchRequestSortMapper;
 import io.camunda.client.impl.search.SearchResponseMapper;
 import io.camunda.client.impl.search.TypedSearchRequestPropertyProvider;
 import io.camunda.client.impl.search.sort.DecisionRequirementsSortImpl;
@@ -66,8 +66,8 @@ public class DecisionRequirementsSearchRequestImpl
   }
 
   @Override
-  public HttpCamundaFuture<SearchQueryResponse<DecisionRequirements>> send() {
-    final HttpCamundaFuture<SearchQueryResponse<DecisionRequirements>> result =
+  public HttpCamundaFuture<SearchResponse<DecisionRequirements>> send() {
+    final HttpCamundaFuture<SearchResponse<DecisionRequirements>> result =
         new HttpCamundaFuture<>();
     httpClient.post(
         "/decision-requirements/search",
@@ -96,7 +96,7 @@ public class DecisionRequirementsSearchRequestImpl
   public DecisionRequirementsSearchRequest sort(final DecisionRequirementsSort value) {
     final DecisionRequirementsSortImpl sorting = (DecisionRequirementsSortImpl) value;
     request.setSort(
-        SearchQuerySortRequestMapper.toDecisionRequirementsSearchQuerySortRequest(
+        SearchRequestSortMapper.toDecisionRequirementsSearchQuerySortRequest(
             sorting.getSearchRequestProperty()));
     return this;
   }

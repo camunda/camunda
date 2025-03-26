@@ -15,24 +15,23 @@
  */
 package io.camunda.client.impl.search.query;
 
-import static io.camunda.client.api.search.SearchRequestBuilders.incidentFilter;
-import static io.camunda.client.api.search.SearchRequestBuilders.incidentSort;
-import static io.camunda.client.api.search.SearchRequestBuilders.searchRequestPage;
+import static io.camunda.client.api.search.request.SearchRequestBuilders.incidentFilter;
+import static io.camunda.client.api.search.request.SearchRequestBuilders.incidentSort;
+import static io.camunda.client.api.search.request.SearchRequestBuilders.searchRequestPage;
 
 import io.camunda.client.api.CamundaFuture;
 import io.camunda.client.api.JsonMapper;
-import io.camunda.client.api.search.SearchRequestPage;
 import io.camunda.client.api.search.filter.IncidentFilter;
 import io.camunda.client.api.search.request.FinalSearchRequestStep;
 import io.camunda.client.api.search.request.IncidentSearchRequest;
+import io.camunda.client.api.search.request.SearchRequestPage;
 import io.camunda.client.api.search.response.Incident;
-import io.camunda.client.api.search.response.SearchQueryResponse;
+import io.camunda.client.api.search.response.SearchResponse;
 import io.camunda.client.api.search.sort.IncidentSort;
 import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
-import io.camunda.client.impl.search.SearchQuerySortRequest;
-import io.camunda.client.impl.search.SearchQuerySortRequestMapper;
 import io.camunda.client.impl.search.SearchRequestPageImpl;
+import io.camunda.client.impl.search.SearchRequestSortMapper;
 import io.camunda.client.impl.search.SearchResponseMapper;
 import io.camunda.client.impl.search.TypedSearchRequestPropertyProvider;
 import io.camunda.client.protocol.rest.IncidentSearchQuery;
@@ -66,8 +65,8 @@ public class IncidentSearchRequestImpl
   }
 
   @Override
-  public CamundaFuture<SearchQueryResponse<Incident>> send() {
-    final HttpCamundaFuture<SearchQueryResponse<Incident>> result = new HttpCamundaFuture<>();
+  public CamundaFuture<SearchResponse<Incident>> send() {
+    final HttpCamundaFuture<SearchResponse<Incident>> result = new HttpCamundaFuture<>();
     httpClient.post(
         "/incidents/search",
         jsonMapper.toJson(request),
@@ -93,8 +92,9 @@ public class IncidentSearchRequestImpl
 
   @Override
   public IncidentSearchRequest sort(final IncidentSort value) {
-    final List<SearchQuerySortRequest> sorting = provideSearchRequestProperty(value);
-    request.setSort(SearchQuerySortRequestMapper.toIncidentSearchQuerySortRequest(sorting));
+    final List<io.camunda.client.impl.search.SearchRequestSort> sorting =
+        provideSearchRequestProperty(value);
+    request.setSort(SearchRequestSortMapper.toIncidentSearchQuerySortRequest(sorting));
     return this;
   }
 

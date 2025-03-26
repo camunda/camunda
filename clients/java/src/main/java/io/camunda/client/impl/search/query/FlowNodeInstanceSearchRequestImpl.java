@@ -15,23 +15,23 @@
  */
 package io.camunda.client.impl.search.query;
 
-import static io.camunda.client.api.search.SearchRequestBuilders.flowNodeInstanceFilter;
-import static io.camunda.client.api.search.SearchRequestBuilders.flowNodeInstanceSort;
-import static io.camunda.client.api.search.SearchRequestBuilders.searchRequestPage;
+import static io.camunda.client.api.search.request.SearchRequestBuilders.flowNodeInstanceFilter;
+import static io.camunda.client.api.search.request.SearchRequestBuilders.flowNodeInstanceSort;
+import static io.camunda.client.api.search.request.SearchRequestBuilders.searchRequestPage;
 
 import io.camunda.client.api.CamundaFuture;
 import io.camunda.client.api.JsonMapper;
-import io.camunda.client.api.search.SearchRequestPage;
 import io.camunda.client.api.search.filter.FlownodeInstanceFilter;
 import io.camunda.client.api.search.request.FinalSearchRequestStep;
 import io.camunda.client.api.search.request.FlownodeInstanceSearchRequest;
+import io.camunda.client.api.search.request.SearchRequestPage;
 import io.camunda.client.api.search.response.FlowNodeInstance;
-import io.camunda.client.api.search.response.SearchQueryResponse;
+import io.camunda.client.api.search.response.SearchResponse;
 import io.camunda.client.api.search.sort.FlownodeInstanceSort;
 import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
-import io.camunda.client.impl.search.SearchQuerySortRequestMapper;
 import io.camunda.client.impl.search.SearchRequestPageImpl;
+import io.camunda.client.impl.search.SearchRequestSortMapper;
 import io.camunda.client.impl.search.SearchResponseMapper;
 import io.camunda.client.impl.search.TypedSearchRequestPropertyProvider;
 import io.camunda.client.impl.search.sort.FlownodeInstanceSortImpl;
@@ -67,9 +67,8 @@ public class FlowNodeInstanceSearchRequestImpl
   }
 
   @Override
-  public CamundaFuture<SearchQueryResponse<FlowNodeInstance>> send() {
-    final HttpCamundaFuture<SearchQueryResponse<FlowNodeInstance>> result =
-        new HttpCamundaFuture<>();
+  public CamundaFuture<SearchResponse<FlowNodeInstance>> send() {
+    final HttpCamundaFuture<SearchResponse<FlowNodeInstance>> result = new HttpCamundaFuture<>();
     httpClient.post(
         "/flownode-instances/search",
         jsonMapper.toJson(request),
@@ -96,7 +95,7 @@ public class FlowNodeInstanceSearchRequestImpl
   public FlownodeInstanceSearchRequest sort(final FlownodeInstanceSort value) {
     final FlownodeInstanceSortImpl sorting = (FlownodeInstanceSortImpl) value;
     request.setSort(
-        SearchQuerySortRequestMapper.toFlowNodeInstanceSearchQuerySortRequest(
+        SearchRequestSortMapper.toFlowNodeInstanceSearchQuerySortRequest(
             sorting.getSearchRequestProperty()));
     return this;
   }

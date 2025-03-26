@@ -16,9 +16,9 @@
 package io.camunda.client.impl.search.sort;
 
 import io.camunda.client.api.search.sort.VariableSort;
-import io.camunda.client.impl.search.query.SearchQuerySortBase;
+import io.camunda.client.impl.search.query.SearchRequestSortBase;
 
-public class VariableSortImpl extends SearchQuerySortBase<VariableSort> implements VariableSort {
+public class VariableSortImpl extends SearchRequestSortBase<VariableSort> implements VariableSort {
 
   @Override
   public VariableSort variableKey() {

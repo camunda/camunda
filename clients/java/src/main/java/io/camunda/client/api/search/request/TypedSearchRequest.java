@@ -15,7 +15,6 @@
  */
 package io.camunda.client.api.search.request;
 
-import io.camunda.client.api.search.SearchRequestPage;
 import io.camunda.client.api.search.request.TypedSearchRequest.SearchRequestFilter;
 import io.camunda.client.api.search.request.TypedSearchRequest.SearchRequestSort;
 import java.util.function.Consumer;

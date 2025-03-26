@@ -17,14 +17,14 @@ package io.camunda.client.impl.search;
 
 import io.camunda.client.protocol.rest.SortOrderEnum;
 
-public class SearchQuerySortRequest {
+public class SearchRequestSort {
 
   private String field;
   private SortOrderEnum order = SortOrderEnum.ASC;
 
-  public SearchQuerySortRequest() {}
+  public SearchRequestSort() {}
 
-  public SearchQuerySortRequest field(String field) {
+  public SearchRequestSort field(final String field) {
     this.field = field;
     return this;
   }
@@ -33,11 +33,11 @@ public class SearchQuerySortRequest {
     return field;
   }
 
-  public void setField(String field) {
+  public void setField(final String field) {
     this.field = field;
   }
 
-  public SearchQuerySortRequest order(SortOrderEnum order) {
+  public SearchRequestSort order(final SortOrderEnum order) {
     this.order = order;
     return this;
   }
@@ -46,7 +46,7 @@ public class SearchQuerySortRequest {
     return order;
   }
 
-  public void setOrder(SortOrderEnum order) {
+  public void setOrder(final SortOrderEnum order) {
     this.order = order;
   }
 }

@@ -16,10 +16,10 @@
 package io.camunda.process.test.impl.assertions;
 
 import io.camunda.client.CamundaClient;
-import io.camunda.client.api.search.SearchRequestPage;
 import io.camunda.client.api.search.filter.FlownodeInstanceFilter;
 import io.camunda.client.api.search.filter.IncidentFilter;
 import io.camunda.client.api.search.filter.ProcessInstanceFilter;
+import io.camunda.client.api.search.request.SearchRequestPage;
 import io.camunda.client.api.search.response.FlowNodeInstance;
 import io.camunda.client.api.search.response.Incident;
 import io.camunda.client.api.search.response.ProcessInstance;

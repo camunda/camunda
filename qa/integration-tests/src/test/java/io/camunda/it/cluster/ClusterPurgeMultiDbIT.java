@@ -14,7 +14,7 @@ import io.camunda.client.CamundaClient;
 import io.camunda.client.api.command.ProblemException;
 import io.camunda.client.api.search.response.ProcessInstance;
 import io.camunda.client.api.search.response.ProcessInstanceState;
-import io.camunda.client.api.search.response.SearchQueryResponse;
+import io.camunda.client.api.search.response.SearchResponse;
 import io.camunda.client.api.search.response.UserTask;
 import io.camunda.client.protocol.rest.ProblemDetail;
 import io.camunda.qa.util.multidb.MultiDbTest;
@@ -142,11 +142,11 @@ public class ClusterPurgeMultiDbIT {
         .atMost(Duration.ofSeconds(2 * TIMEOUT))
         .untilAsserted(
             () -> {
-              final Future<SearchQueryResponse<UserTask>> userTaskFuture =
+              final Future<SearchResponse<UserTask>> userTaskFuture =
                   client.newUserTaskSearchRequest().send();
               Assertions.assertThat(userTaskFuture)
                   .succeedsWithin(Duration.ofSeconds(TIMEOUT))
-                  .extracting(SearchQueryResponse::items)
+                  .extracting(SearchResponse::items)
                   .satisfies(
                       items -> {
                         Assertions.assertThat(items).hasSize(1);
@@ -165,11 +165,11 @@ public class ClusterPurgeMultiDbIT {
         .atMost(Duration.ofSeconds(2 * TIMEOUT))
         .untilAsserted(
             () -> {
-              final Future<SearchQueryResponse<UserTask>> userTaskFuture =
+              final Future<SearchResponse<UserTask>> userTaskFuture =
                   client.newUserTaskSearchRequest().send();
               Assertions.assertThat(userTaskFuture)
                   .succeedsWithin(Duration.ofSeconds(TIMEOUT))
-                  .extracting(SearchQueryResponse::items)
+                  .extracting(SearchResponse::items)
                   .satisfies(items -> Assertions.assertThat(items).isEmpty());
             });
   }
@@ -194,11 +194,11 @@ public class ClusterPurgeMultiDbIT {
         .atMost(Duration.ofSeconds(2 * TIMEOUT))
         .untilAsserted(
             () -> {
-              final Future<SearchQueryResponse<UserTask>> userTaskFuture =
+              final Future<SearchResponse<UserTask>> userTaskFuture =
                   client.newUserTaskSearchRequest().send();
               Assertions.assertThat(userTaskFuture)
                   .succeedsWithin(Duration.ofSeconds(TIMEOUT))
-                  .extracting(SearchQueryResponse::items)
+                  .extracting(SearchResponse::items)
                   .satisfies(items -> Assertions.assertThat(items).hasSize(1));
             });
 

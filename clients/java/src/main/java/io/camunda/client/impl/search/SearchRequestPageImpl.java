@@ -15,7 +15,7 @@
  */
 package io.camunda.client.impl.search;
 
-import io.camunda.client.api.search.SearchRequestPage;
+import io.camunda.client.api.search.request.SearchRequestPage;
 import io.camunda.client.protocol.rest.SearchQueryPageRequest;
 import java.util.List;
 

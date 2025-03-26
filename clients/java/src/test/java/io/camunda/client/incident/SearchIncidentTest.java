@@ -23,8 +23,8 @@ import com.github.tomakehurst.wiremock.http.RequestMethod;
 import com.github.tomakehurst.wiremock.verification.LoggedRequest;
 import io.camunda.client.api.search.response.IncidentErrorType;
 import io.camunda.client.api.search.response.IncidentState;
-import io.camunda.client.impl.search.SearchQuerySortRequest;
-import io.camunda.client.impl.search.SearchQuerySortRequestMapper;
+import io.camunda.client.impl.search.SearchRequestSort;
+import io.camunda.client.impl.search.SearchRequestSortMapper;
 import io.camunda.client.protocol.rest.*;
 import io.camunda.client.protocol.rest.IncidentFilter.ErrorTypeEnum;
 import io.camunda.client.protocol.rest.IncidentFilter.StateEnum;
@@ -131,8 +131,8 @@ public class SearchIncidentTest extends ClientRestTest {
 
     // then
     final IncidentSearchQuery request = gatewayService.getLastRequest(IncidentSearchQuery.class);
-    final List<SearchQuerySortRequest> sorts =
-        SearchQuerySortRequestMapper.fromIncidentSearchQuerySortRequest(
+    final List<SearchRequestSort> sorts =
+        SearchRequestSortMapper.fromIncidentSearchQuerySortRequest(
             Objects.requireNonNull(request.getSort()));
     assertThat(sorts).hasSize(10);
     assertSort(sorts.get(0), "incidentKey", SortOrderEnum.ASC);
@@ -244,7 +244,7 @@ public class SearchIncidentTest extends ClientRestTest {
   }
 
   private void assertSort(
-      final SearchQuerySortRequest sort, final String name, final SortOrderEnum order) {
+      final SearchRequestSort sort, final String name, final SortOrderEnum order) {
     assertThat(sort.getField()).isEqualTo(name);
     assertThat(sort.getOrder()).isEqualTo(order);
   }

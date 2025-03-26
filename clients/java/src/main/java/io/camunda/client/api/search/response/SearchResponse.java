@@ -17,7 +17,7 @@ package io.camunda.client.api.search.response;
 
 import java.util.List;
 
-public interface SearchQueryResponse<T> {
+public interface SearchResponse<T> {
 
   /** Returns the list of items */
   List<T> items();

@@ -14,7 +14,7 @@ import io.camunda.client.CamundaClient;
 import io.camunda.client.api.command.CreateProcessInstanceCommandStep1;
 import io.camunda.client.api.response.DeploymentEvent;
 import io.camunda.client.api.response.ProcessInstanceEvent;
-import io.camunda.client.api.search.response.SearchQueryResponse;
+import io.camunda.client.api.search.response.SearchResponse;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
@@ -172,8 +172,8 @@ public final class TestHelper {
   }
 
   public static <T, U extends Comparable<U>> void assertSorted(
-      final SearchQueryResponse<T> resultAsc,
-      final SearchQueryResponse<T> resultDesc,
+      final SearchResponse<T> resultAsc,
+      final SearchResponse<T> resultDesc,
       final Function<T, U> propertyExtractor) {
     assertThatIsAscSorted(resultAsc.items(), propertyExtractor);
     assertThatIsDescSorted(resultDesc.items(), propertyExtractor);

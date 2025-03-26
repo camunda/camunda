@@ -15,22 +15,22 @@
  */
 package io.camunda.client.impl.search.query;
 
-import static io.camunda.client.api.search.SearchRequestBuilders.searchRequestPage;
-import static io.camunda.client.api.search.SearchRequestBuilders.userTaskFilter;
-import static io.camunda.client.api.search.SearchRequestBuilders.userTaskSort;
+import static io.camunda.client.api.search.request.SearchRequestBuilders.searchRequestPage;
+import static io.camunda.client.api.search.request.SearchRequestBuilders.userTaskFilter;
+import static io.camunda.client.api.search.request.SearchRequestBuilders.userTaskSort;
 
 import io.camunda.client.api.JsonMapper;
-import io.camunda.client.api.search.SearchRequestPage;
 import io.camunda.client.api.search.filter.UserTaskFilter;
 import io.camunda.client.api.search.request.FinalSearchRequestStep;
+import io.camunda.client.api.search.request.SearchRequestPage;
 import io.camunda.client.api.search.request.UserTaskSearchRequest;
-import io.camunda.client.api.search.response.SearchQueryResponse;
+import io.camunda.client.api.search.response.SearchResponse;
 import io.camunda.client.api.search.response.UserTask;
 import io.camunda.client.api.search.sort.UserTaskSort;
 import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
-import io.camunda.client.impl.search.SearchQuerySortRequestMapper;
 import io.camunda.client.impl.search.SearchRequestPageImpl;
+import io.camunda.client.impl.search.SearchRequestSortMapper;
 import io.camunda.client.impl.search.SearchResponseMapper;
 import io.camunda.client.impl.search.TypedSearchRequestPropertyProvider;
 import io.camunda.client.impl.search.sort.UserTaskSortImpl;
@@ -64,8 +64,8 @@ public class UserTaskSearchRequestImpl
   }
 
   @Override
-  public HttpCamundaFuture<SearchQueryResponse<UserTask>> send() {
-    final HttpCamundaFuture<SearchQueryResponse<UserTask>> result = new HttpCamundaFuture<>();
+  public HttpCamundaFuture<SearchResponse<UserTask>> send() {
+    final HttpCamundaFuture<SearchResponse<UserTask>> result = new HttpCamundaFuture<>();
     httpClient.post(
         "/user-tasks/search",
         jsonMapper.toJson(request),
@@ -93,7 +93,7 @@ public class UserTaskSearchRequestImpl
   public UserTaskSearchRequest sort(final UserTaskSort value) {
     final UserTaskSortImpl sorting = (UserTaskSortImpl) value;
     request.setSort(
-        SearchQuerySortRequestMapper.toUserTaskSearchQuerySortRequest(
+        SearchRequestSortMapper.toUserTaskSearchQuerySortRequest(
             sorting.getSearchRequestProperty()));
     return this;
   }

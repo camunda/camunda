@@ -15,23 +15,22 @@
  */
 package io.camunda.client.impl.search.query;
 
-import static io.camunda.client.api.search.SearchRequestBuilders.processDefinitionFilter;
-import static io.camunda.client.api.search.SearchRequestBuilders.processDefinitionSort;
-import static io.camunda.client.api.search.SearchRequestBuilders.searchRequestPage;
+import static io.camunda.client.api.search.request.SearchRequestBuilders.processDefinitionFilter;
+import static io.camunda.client.api.search.request.SearchRequestBuilders.processDefinitionSort;
+import static io.camunda.client.api.search.request.SearchRequestBuilders.searchRequestPage;
 
 import io.camunda.client.api.CamundaFuture;
 import io.camunda.client.api.JsonMapper;
-import io.camunda.client.api.search.SearchRequestPage;
 import io.camunda.client.api.search.filter.ProcessDefinitionFilter;
 import io.camunda.client.api.search.request.FinalSearchRequestStep;
 import io.camunda.client.api.search.request.ProcessDefinitionSearchRequest;
+import io.camunda.client.api.search.request.SearchRequestPage;
 import io.camunda.client.api.search.response.ProcessDefinition;
-import io.camunda.client.api.search.response.SearchQueryResponse;
+import io.camunda.client.api.search.response.SearchResponse;
 import io.camunda.client.api.search.sort.ProcessDefinitionSort;
 import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
-import io.camunda.client.impl.search.SearchQuerySortRequest;
-import io.camunda.client.impl.search.SearchQuerySortRequestMapper;
+import io.camunda.client.impl.search.SearchRequestSortMapper;
 import io.camunda.client.impl.search.SearchResponseMapper;
 import io.camunda.client.impl.search.TypedSearchRequestPropertyProvider;
 import io.camunda.client.protocol.rest.ProcessDefinitionSearchQuery;
@@ -67,9 +66,8 @@ public class ProcessDefinitionSearchRequestImpl
   }
 
   @Override
-  public CamundaFuture<SearchQueryResponse<ProcessDefinition>> send() {
-    final HttpCamundaFuture<SearchQueryResponse<ProcessDefinition>> result =
-        new HttpCamundaFuture<>();
+  public CamundaFuture<SearchResponse<ProcessDefinition>> send() {
+    final HttpCamundaFuture<SearchResponse<ProcessDefinition>> result = new HttpCamundaFuture<>();
     httpClient.post(
         "/process-definitions/search",
         jsonMapper.toJson(request),
@@ -95,9 +93,9 @@ public class ProcessDefinitionSearchRequestImpl
 
   @Override
   public ProcessDefinitionSearchRequest sort(final ProcessDefinitionSort value) {
-    final List<SearchQuerySortRequest> sorting = provideSearchRequestProperty(value);
-    request.setSort(
-        SearchQuerySortRequestMapper.toProcessDefinitionSearchQuerySortRequest(sorting));
+    final List<io.camunda.client.impl.search.SearchRequestSort> sorting =
+        provideSearchRequestProperty(value);
+    request.setSort(SearchRequestSortMapper.toProcessDefinitionSearchQuerySortRequest(sorting));
     return this;
   }
 

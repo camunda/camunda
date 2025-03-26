@@ -16,9 +16,9 @@
 package io.camunda.client.impl.search.sort;
 
 import io.camunda.client.api.search.sort.IncidentSort;
-import io.camunda.client.impl.search.query.SearchQuerySortBase;
+import io.camunda.client.impl.search.query.SearchRequestSortBase;
 
-public class IncidentSortImpl extends SearchQuerySortBase<IncidentSort> implements IncidentSort {
+public class IncidentSortImpl extends SearchRequestSortBase<IncidentSort> implements IncidentSort {
 
   @Override
   public IncidentSort incidentKey() {

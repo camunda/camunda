@@ -15,20 +15,20 @@
  */
 package io.camunda.client.impl.search.query;
 
-import io.camunda.client.impl.search.SearchQuerySortRequest;
+import io.camunda.client.impl.search.SearchRequestSort;
 import io.camunda.client.impl.search.TypedSearchRequestPropertyProvider;
 import io.camunda.client.protocol.rest.SortOrderEnum;
 import java.util.ArrayList;
 import java.util.List;
 
-public abstract class SearchQuerySortBase<T>
-    extends TypedSearchRequestPropertyProvider<List<SearchQuerySortRequest>> {
+public abstract class SearchRequestSortBase<T>
+    extends TypedSearchRequestPropertyProvider<List<SearchRequestSort>> {
 
-  private final List<SearchQuerySortRequest> sorting = new ArrayList<>();
-  private SearchQuerySortRequest current;
+  private final List<SearchRequestSort> sorting = new ArrayList<>();
+  private SearchRequestSort current;
 
   protected T field(final String value) {
-    current = new SearchQuerySortRequest();
+    current = new SearchRequestSort();
     current.field(value);
     return self();
   }
@@ -53,7 +53,7 @@ public abstract class SearchQuerySortBase<T>
   protected abstract T self();
 
   @Override
-  protected List<SearchQuerySortRequest> getSearchRequestProperty() {
+  protected List<SearchRequestSort> getSearchRequestProperty() {
     return sorting;
   }
 }

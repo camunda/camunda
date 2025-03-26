@@ -15,23 +15,23 @@
  */
 package io.camunda.client.impl.search.query;
 
-import static io.camunda.client.api.search.SearchRequestBuilders.searchRequestPage;
-import static io.camunda.client.api.search.SearchRequestBuilders.variableFilter;
-import static io.camunda.client.api.search.SearchRequestBuilders.variableSort;
+import static io.camunda.client.api.search.request.SearchRequestBuilders.searchRequestPage;
+import static io.camunda.client.api.search.request.SearchRequestBuilders.variableFilter;
+import static io.camunda.client.api.search.request.SearchRequestBuilders.variableSort;
 
 import io.camunda.client.api.CamundaFuture;
 import io.camunda.client.api.JsonMapper;
-import io.camunda.client.api.search.SearchRequestPage;
 import io.camunda.client.api.search.filter.VariableFilter;
 import io.camunda.client.api.search.request.FinalSearchRequestStep;
+import io.camunda.client.api.search.request.SearchRequestPage;
 import io.camunda.client.api.search.request.VariableSearchRequest;
-import io.camunda.client.api.search.response.SearchQueryResponse;
+import io.camunda.client.api.search.response.SearchResponse;
 import io.camunda.client.api.search.response.Variable;
 import io.camunda.client.api.search.sort.VariableSort;
 import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
-import io.camunda.client.impl.search.SearchQuerySortRequestMapper;
 import io.camunda.client.impl.search.SearchRequestPageImpl;
+import io.camunda.client.impl.search.SearchRequestSortMapper;
 import io.camunda.client.impl.search.SearchResponseMapper;
 import io.camunda.client.impl.search.TypedSearchRequestPropertyProvider;
 import io.camunda.client.impl.search.sort.VariableSortImpl;
@@ -65,8 +65,8 @@ public class VariableSearchRequestImpl
   }
 
   @Override
-  public CamundaFuture<SearchQueryResponse<Variable>> send() {
-    final HttpCamundaFuture<SearchQueryResponse<Variable>> result = new HttpCamundaFuture<>();
+  public CamundaFuture<SearchResponse<Variable>> send() {
+    final HttpCamundaFuture<SearchResponse<Variable>> result = new HttpCamundaFuture<>();
     httpClient.post(
         "/variables/search",
         jsonMapper.toJson(request),
@@ -94,7 +94,7 @@ public class VariableSearchRequestImpl
   public VariableSearchRequest sort(final VariableSort value) {
     final VariableSortImpl sorting = (VariableSortImpl) value;
     request.setSort(
-        SearchQuerySortRequestMapper.toVariableSearchQuerySortRequest(
+        SearchRequestSortMapper.toVariableSearchQuerySortRequest(
             sorting.getSearchRequestProperty()));
     return this;
   }

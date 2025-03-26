@@ -15,23 +15,22 @@
  */
 package io.camunda.client.impl.search.query;
 
-import static io.camunda.client.api.search.SearchRequestBuilders.processInstanceFilter;
-import static io.camunda.client.api.search.SearchRequestBuilders.processInstanceSort;
-import static io.camunda.client.api.search.SearchRequestBuilders.searchRequestPage;
+import static io.camunda.client.api.search.request.SearchRequestBuilders.processInstanceFilter;
+import static io.camunda.client.api.search.request.SearchRequestBuilders.processInstanceSort;
+import static io.camunda.client.api.search.request.SearchRequestBuilders.searchRequestPage;
 
 import io.camunda.client.api.CamundaFuture;
 import io.camunda.client.api.JsonMapper;
-import io.camunda.client.api.search.SearchRequestPage;
 import io.camunda.client.api.search.filter.ProcessInstanceFilter;
 import io.camunda.client.api.search.request.FinalSearchRequestStep;
 import io.camunda.client.api.search.request.ProcessInstanceSearchRequest;
+import io.camunda.client.api.search.request.SearchRequestPage;
 import io.camunda.client.api.search.response.ProcessInstance;
-import io.camunda.client.api.search.response.SearchQueryResponse;
+import io.camunda.client.api.search.response.SearchResponse;
 import io.camunda.client.api.search.sort.ProcessInstanceSort;
 import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
-import io.camunda.client.impl.search.SearchQuerySortRequest;
-import io.camunda.client.impl.search.SearchQuerySortRequestMapper;
+import io.camunda.client.impl.search.SearchRequestSortMapper;
 import io.camunda.client.impl.search.SearchResponseMapper;
 import io.camunda.client.impl.search.TypedSearchRequestPropertyProvider;
 import io.camunda.client.protocol.rest.ProcessInstanceSearchQuery;
@@ -67,9 +66,8 @@ public class ProcessInstanceSearchRequestImpl
   }
 
   @Override
-  public CamundaFuture<SearchQueryResponse<ProcessInstance>> send() {
-    final HttpCamundaFuture<SearchQueryResponse<ProcessInstance>> result =
-        new HttpCamundaFuture<>();
+  public CamundaFuture<SearchResponse<ProcessInstance>> send() {
+    final HttpCamundaFuture<SearchResponse<ProcessInstance>> result = new HttpCamundaFuture<>();
     httpClient.post(
         "/process-instances/search",
         jsonMapper.toJson(request),
@@ -95,8 +93,9 @@ public class ProcessInstanceSearchRequestImpl
 
   @Override
   public ProcessInstanceSearchRequest sort(final ProcessInstanceSort value) {
-    final List<SearchQuerySortRequest> sorting = provideSearchRequestProperty(value);
-    request.setSort(SearchQuerySortRequestMapper.toProcessInstanceSearchQuerySortRequest(sorting));
+    final List<io.camunda.client.impl.search.SearchRequestSort> sorting =
+        provideSearchRequestProperty(value);
+    request.setSort(SearchRequestSortMapper.toProcessInstanceSearchQuerySortRequest(sorting));
     return this;
   }
 
