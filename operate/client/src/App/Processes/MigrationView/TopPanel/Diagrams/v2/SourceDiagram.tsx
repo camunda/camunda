@@ -19,6 +19,7 @@ import {StateOverlay} from 'modules/components/StateOverlay';
 import {useProcessInstancesOverlayData} from 'modules/queries/processInstancesStatistics/useOverlayData';
 import {useProcessInstanceFilters} from 'modules/hooks/useProcessInstancesFilters';
 import {processInstancesSelectionStore} from 'modules/stores/processInstancesSelection';
+import {getProcessInstanceKey} from 'modules/utils/statistics/processInstances';
 
 const SourceDiagram: React.FC = observer(() => {
   const {processName, version} = processesStore.getSelectedProcessDetails();
@@ -33,9 +34,7 @@ const SourceDiagram: React.FC = observer(() => {
   const {data: overlayData} = useProcessInstancesOverlayData(
     {
       ...processInstanceFilters,
-      processInstanceKey: {
-        $in: processInstancesSelectionStore.selectedProcessInstanceIds,
-      },
+      processInstanceKey: getProcessInstanceKey(),
     },
     processInstancesSelectionStore.selectedProcessInstanceIds.length > 0,
   );
