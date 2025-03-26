@@ -18,13 +18,13 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import io.camunda.optimize.dto.optimize.rest.SnapshotInfoDto;
+import io.camunda.optimize.rest.exceptions.NotFoundException;
 import io.camunda.optimize.service.BackupService;
 import io.camunda.optimize.service.db.reader.BackupReader;
 import io.camunda.optimize.service.exceptions.OptimizeConfigurationException;
 import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import io.camunda.optimize.service.exceptions.OptimizeSnapshotRepositoryNotFoundException;
 import io.camunda.optimize.service.exceptions.conflict.OptimizeConflictException;
-import jakarta.ws.rs.NotFoundException;
 import java.util.Collections;
 import java.util.List;
 import org.apache.commons.lang3.StringUtils;

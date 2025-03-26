@@ -86,7 +86,6 @@
     <jsonpath.version>2.9.0</jsonpath.version>
     <apache.http5-client.version>5.4</apache.http5-client.version>
     <quartz.version>2.5.0</quartz.version>
-    <jakarta.rs-api.version>4.0.0</jakarta.rs-api.version>
 
     <!-- remove these versions.anything properties once we inherit from zeebe-parent -->
     <version.node>v20.9.0</version.node>
@@ -306,7 +305,6 @@
               <dep>org.mockito:mockito-inline</dep>
               <dep>org.mockito:mockito-junit-jupiter</dep>
               <dep>org.springframework.boot:spring-boot-starter-test</dep>
-              <dep>org.glassfish.jersey.core:jersey-client</dep>
               <dep>org.glassfish.jersey.media:jersey-media-json-jackson</dep>
             </ignoredUnusedDeclaredDependencies>
             <ignoredNonTestScopedDependencies combine.children="append">

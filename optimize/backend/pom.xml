@@ -94,6 +94,7 @@
     <dependency>
       <groupId>jakarta.ws.rs</groupId>
       <artifactId>jakarta.ws.rs-api</artifactId>
+      <scope>test</scope>
     </dependency>
 
     <!-- IDENTITY-->
@@ -620,7 +621,6 @@
       <artifactId>spring-core</artifactId>
     </dependency>
 
-    <!-- scope here is wider than test. Dependency:analyze error suppressed -->
     <dependency>
       <groupId>org.glassfish.jersey.core</groupId>
       <artifactId>jersey-client</artifactId>
