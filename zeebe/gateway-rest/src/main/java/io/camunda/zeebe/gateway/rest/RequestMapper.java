@@ -78,6 +78,7 @@ import io.camunda.zeebe.gateway.protocol.rest.UserRequest;
 import io.camunda.zeebe.gateway.protocol.rest.UserTaskAssignmentRequest;
 import io.camunda.zeebe.gateway.protocol.rest.UserTaskCompletionRequest;
 import io.camunda.zeebe.gateway.protocol.rest.UserTaskUpdateRequest;
+import io.camunda.zeebe.gateway.rest.util.KeyUtil;
 import io.camunda.zeebe.gateway.rest.validator.DocumentValidator;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceMigrationMappingInstruction;
@@ -585,7 +586,7 @@ public class RequestMapper {
         expiresAt,
         file.getSize(),
         metadata.getProcessDefinitionId(),
-        metadata.getProcessInstanceKey(),
+        KeyUtil.keyToLong(metadata.getProcessInstanceKey()),
         metadata.getCustomProperties());
   }
 

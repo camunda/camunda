@@ -29,11 +29,11 @@ import io.camunda.zeebe.gateway.protocol.rest.DeploymentMetadata;
 import io.camunda.zeebe.gateway.protocol.rest.DeploymentProcess;
 import io.camunda.zeebe.gateway.protocol.rest.DeploymentResource;
 import io.camunda.zeebe.gateway.protocol.rest.DeploymentResponse;
-import io.camunda.zeebe.gateway.protocol.rest.DocumentCreationBatchResponse;
+import io.camunda.zeebe.gateway.protocol.rest.DocumentCreationBatchResult;
 import io.camunda.zeebe.gateway.protocol.rest.DocumentCreationFailureDetail;
-import io.camunda.zeebe.gateway.protocol.rest.DocumentMetadata;
-import io.camunda.zeebe.gateway.protocol.rest.DocumentReference;
-import io.camunda.zeebe.gateway.protocol.rest.DocumentReference.CamundaDocumentTypeEnum;
+import io.camunda.zeebe.gateway.protocol.rest.DocumentDetails;
+import io.camunda.zeebe.gateway.protocol.rest.DocumentReferenceResult;
+import io.camunda.zeebe.gateway.protocol.rest.DocumentReferenceResult.CamundaDocumentTypeEnum;
 import io.camunda.zeebe.gateway.protocol.rest.EvaluateDecisionResponse;
 import io.camunda.zeebe.gateway.protocol.rest.EvaluatedDecisionInputItem;
 import io.camunda.zeebe.gateway.protocol.rest.EvaluatedDecisionItem;
@@ -153,10 +153,10 @@ public final class ResponseMapper {
     final List<DocumentReferenceResponse> successful =
         responses.stream().filter(Either::isRight).map(Either::get).toList();
 
-    final var response = new DocumentCreationBatchResponse();
+    final var response = new DocumentCreationBatchResult();
 
     if (successful.size() == responses.size()) {
-      final List<DocumentReference> references =
+      final List<DocumentReferenceResult> references =
           successful.stream().map(ResponseMapper::transformDocumentReferenceResponse).toList();
       response.setCreatedDocuments(references);
       return ResponseEntity.status(HttpStatus.CREATED).body(response);
@@ -218,11 +218,11 @@ public final class ResponseMapper {
     return RestErrorMapper.createProblemDetail(status, detail, e.getClass().getSimpleName());
   }
 
-  private static DocumentReference transformDocumentReferenceResponse(
+  private static DocumentReferenceResult transformDocumentReferenceResponse(
       final DocumentReferenceResponse response) {
     final var internalMetadata = response.metadata();
     final var externalMetadata =
-        new DocumentMetadata()
+        new DocumentDetails()
             .expiresAt(
                 Optional.ofNullable(internalMetadata.expiresAt())
                     .map(Object::toString)
@@ -234,7 +234,7 @@ public final class ResponseMapper {
             .processInstanceKey(internalMetadata.processInstanceKey());
     Optional.ofNullable(internalMetadata.customProperties())
         .ifPresent(map -> map.forEach(externalMetadata::putCustomPropertiesItem));
-    return new DocumentReference()
+    return new DocumentReferenceResult()
         .camundaDocumentType(CamundaDocumentTypeEnum.CAMUNDA)
         .documentId(response.documentId())
         .storeId(response.storeId())

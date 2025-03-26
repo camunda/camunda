@@ -26,6 +26,7 @@ import io.camunda.zeebe.client.impl.http.HttpClient;
 import io.camunda.zeebe.client.impl.http.HttpZeebeFuture;
 import io.camunda.zeebe.client.impl.response.DocumentReferenceResponseImpl;
 import io.camunda.zeebe.client.impl.util.DocumentBuilder;
+import io.camunda.zeebe.client.impl.util.ParseUtil;
 import io.camunda.zeebe.client.protocol.rest.DocumentReference;
 import java.io.InputStream;
 import java.time.Duration;
@@ -175,7 +176,7 @@ public class CreateDocumentCommandImpl extends DocumentBuilder
 
   @Override
   public CreateDocumentCommandStep2 processInstanceKey(final long processInstanceKey) {
-    super.getMetadata().setProcessInstanceKey(processInstanceKey);
+    super.getMetadata().setProcessInstanceKey(ParseUtil.keyToString(processInstanceKey));
     return this;
   }
 }
