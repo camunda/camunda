@@ -122,6 +122,7 @@ jobs:
             -f $JUNIT_RESULTS_FILE
 
       - name: Debug TestRail credentials
+        if: always()
         run: |
           echo "TestRail Host: $TESTRAIL_HOST"
           echo "TestRail Username Length: ${#TESTRAIL_USERNAME}"
