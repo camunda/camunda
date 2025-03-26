@@ -17,7 +17,7 @@ package io.camunda.zeebe.client.impl.response;
 
 import io.camunda.zeebe.client.api.response.DocumentMetadata;
 import io.camunda.zeebe.client.api.response.DocumentReferenceResponse;
-import io.camunda.zeebe.client.protocol.rest.DocumentReference;
+import io.camunda.zeebe.client.protocol.rest.DocumentReferenceResult;
 
 public class DocumentReferenceResponseImpl implements DocumentReferenceResponse {
 
@@ -26,7 +26,7 @@ public class DocumentReferenceResponseImpl implements DocumentReferenceResponse 
   private final String contentHash;
   private final DocumentMetadata metadata;
 
-  public DocumentReferenceResponseImpl(final DocumentReference documentReference) {
+  public DocumentReferenceResponseImpl(final DocumentReferenceResult documentReference) {
     documentId = documentReference.getDocumentId();
     storeId = documentReference.getStoreId();
     contentHash = documentReference.getContentHash();

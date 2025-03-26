@@ -16,16 +16,15 @@
 package io.camunda.zeebe.client.impl.response;
 
 import io.camunda.zeebe.client.api.response.DocumentMetadata;
-import io.camunda.zeebe.client.impl.util.ParseUtil;
 import java.time.OffsetDateTime;
 import java.util.Map;
 
 public class DocumentMetadataImpl implements DocumentMetadata {
 
-  private final io.camunda.zeebe.client.protocol.rest.DocumentMetadata response;
+  private final io.camunda.zeebe.client.protocol.rest.DocumentDetails response;
 
   public DocumentMetadataImpl(
-      final io.camunda.zeebe.client.protocol.rest.DocumentMetadata response) {
+      final io.camunda.zeebe.client.protocol.rest.DocumentDetails response) {
     this.response = response;
   }
 
@@ -65,7 +64,7 @@ public class DocumentMetadataImpl implements DocumentMetadata {
 
   @Override
   public Long getProcessInstanceKey() {
-    return ParseUtil.parseLongOrNull(response.getProcessInstanceKey());
+    return response.getProcessInstanceKey();
   }
 
   @Override
