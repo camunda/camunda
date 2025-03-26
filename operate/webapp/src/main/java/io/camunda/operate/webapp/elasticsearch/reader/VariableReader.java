@@ -10,7 +10,7 @@ package io.camunda.operate.webapp.elasticsearch.reader;
 import static io.camunda.operate.util.ElasticsearchUtil.QueryType.ALL;
 import static io.camunda.operate.util.ElasticsearchUtil.fromSearchHit;
 import static io.camunda.operate.util.ElasticsearchUtil.joinWithAnd;
-import static io.camunda.webapps.schema.descriptors.operate.ProcessInstanceDependant.PROCESS_INSTANCE_KEY;
+import static io.camunda.webapps.schema.descriptors.ProcessInstanceDependant.PROCESS_INSTANCE_KEY;
 import static io.camunda.webapps.schema.descriptors.template.VariableTemplate.FULL_VALUE;
 import static io.camunda.webapps.schema.descriptors.template.VariableTemplate.NAME;
 import static io.camunda.webapps.schema.descriptors.template.VariableTemplate.SCOPE_KEY;
