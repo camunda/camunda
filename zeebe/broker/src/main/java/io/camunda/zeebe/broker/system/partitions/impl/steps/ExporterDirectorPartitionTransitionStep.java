@@ -14,6 +14,8 @@ import io.camunda.zeebe.broker.exporter.stream.ExporterDirector.ExporterInitiali
 import io.camunda.zeebe.broker.exporter.stream.ExporterDirectorContext;
 import io.camunda.zeebe.broker.exporter.stream.ExporterDirectorContext.ExporterMode;
 import io.camunda.zeebe.broker.exporter.stream.ExporterPhase;
+import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
+import io.camunda.zeebe.broker.system.configuration.ExportingCfg;
 import io.camunda.zeebe.broker.system.partitions.PartitionTransitionContext;
 import io.camunda.zeebe.broker.system.partitions.PartitionTransitionStep;
 import io.camunda.zeebe.dynamic.config.state.ExporterState;
@@ -25,7 +27,6 @@ import io.camunda.zeebe.stream.impl.SkipPositionsFilter;
 import io.camunda.zeebe.util.VisibleForTesting;
 import java.util.Collection;
 import java.util.Map;
-import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -106,11 +107,9 @@ public final class ExporterDirectorPartitionTransitionStep implements PartitionT
   private ActorFuture<Void> openExporter(
       final PartitionTransitionContext context, final Role targetRole) {
     final var exporterDescriptors = getEnabledExporterDescriptors(context);
-    final var exporterFilter =
-        SkipPositionsFilter.of(
-            context.getBrokerCfg() != null
-                ? context.getBrokerCfg().getExporting().getSkipRecords()
-                : Set.of());
+    final BrokerCfg brokerCfg = context.getBrokerCfg();
+    final ExportingCfg exportingCfg = brokerCfg.getExporting();
+    final var exporterFilter = SkipPositionsFilter.of(exportingCfg.skipRecords());
     final ExporterMode exporterMode =
         targetRole == Role.LEADER ? ExporterMode.ACTIVE : ExporterMode.PASSIVE;
     final ExporterDirectorContext exporterCtx =
@@ -120,6 +119,7 @@ public final class ExporterDirectorPartitionTransitionStep implements PartitionT
             .clock(context.getStreamClock())
             .logStream(context.getLogStream())
             .zeebeDb(context.getZeebeDb())
+            .distributionInterval(exportingCfg.distributionInterval())
             .partitionMessagingService(context.getMessagingService())
             .descriptors(exporterDescriptors)
             .exporterMode(exporterMode)

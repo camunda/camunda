@@ -23,7 +23,7 @@ public class BrokerCfg {
   private ThreadsCfg threads = new ThreadsCfg();
   private DataCfg data = new DataCfg();
   private Map<String, ExporterCfg> exporters = new HashMap<>();
-  private ExportingCfg exporting = new ExportingCfg();
+  private ExportingCfg exporting = ExportingCfg.defaultExportingCfg();
   private EmbeddedGatewayCfg gateway = new EmbeddedGatewayCfg();
   private FlowControlCfg flowControl = new FlowControlCfg();
   private LimitCfg backpressure = new LimitCfg();

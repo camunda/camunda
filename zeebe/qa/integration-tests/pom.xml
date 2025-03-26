@@ -27,6 +27,11 @@
       <artifactId>camunda-authentication</artifactId>
       <scope>test</scope>
     </dependency>
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>zeebe-cluster-config</artifactId>
+      <scope>test</scope>
+    </dependency>
 
     <dependency>
       <groupId>io.camunda</groupId>
