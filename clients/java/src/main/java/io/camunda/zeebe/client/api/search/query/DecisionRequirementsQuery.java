@@ -16,7 +16,7 @@
 
 package io.camunda.zeebe.client.api.search.query;
 
-import io.camunda.client.api.search.query.DecisionRequirementsSearchRequest;
+import io.camunda.client.api.search.request.DecisionRequirementsSearchRequest;
 import io.camunda.zeebe.client.api.search.filter.DecisionRequirementsFilter;
 import io.camunda.zeebe.client.api.search.response.DecisionRequirements;
 import io.camunda.zeebe.client.api.search.sort.DecisionRequirementsSort;

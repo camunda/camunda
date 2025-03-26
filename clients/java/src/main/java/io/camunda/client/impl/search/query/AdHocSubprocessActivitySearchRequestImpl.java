@@ -21,7 +21,7 @@ import io.camunda.client.api.CamundaFuture;
 import io.camunda.client.api.JsonMapper;
 import io.camunda.client.api.command.FinalCommandStep;
 import io.camunda.client.api.search.filter.AdHocSubprocessActivityFilter;
-import io.camunda.client.api.search.query.AdHocSubprocessActivitySearchRequest;
+import io.camunda.client.api.search.request.AdHocSubprocessActivitySearchRequest;
 import io.camunda.client.api.search.response.AdHocSubprocessActivityResponse;
 import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;

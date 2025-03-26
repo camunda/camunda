@@ -13,13 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.camunda.client.api.search.query;
+package io.camunda.client.api.search.request;
 
-import io.camunda.client.api.search.filter.FlownodeInstanceFilter;
-import io.camunda.client.api.search.response.FlowNodeInstance;
-import io.camunda.client.api.search.sort.FlownodeInstanceSort;
+import io.camunda.client.api.search.filter.UserTaskVariableFilter;
+import io.camunda.client.api.search.response.Variable;
+import io.camunda.client.api.search.sort.VariableSort;
 
-public interface FlownodeInstanceSearchRequest
-    extends TypedSearchRequest<
-            FlownodeInstanceFilter, FlownodeInstanceSort, FlownodeInstanceSearchRequest>,
-        FinalSearchRequestStep<FlowNodeInstance> {}
+public interface UserTaskVariableSearchRequest
+    extends TypedSearchRequest<UserTaskVariableFilter, VariableSort, UserTaskVariableSearchRequest>,
+        FinalSearchRequestStep<Variable> {}

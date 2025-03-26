@@ -16,7 +16,7 @@
 
 package io.camunda.zeebe.client.api.search.query;
 
-import io.camunda.client.api.search.query.UserTaskSearchRequest;
+import io.camunda.client.api.search.request.UserTaskSearchRequest;
 import io.camunda.zeebe.client.api.search.filter.UserTaskFilter;
 import io.camunda.zeebe.client.api.search.response.UserTask;
 import io.camunda.zeebe.client.api.search.sort.UserTaskSort;

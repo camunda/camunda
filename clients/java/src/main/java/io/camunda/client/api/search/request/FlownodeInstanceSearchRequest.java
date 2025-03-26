@@ -13,13 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.camunda.client.api.search.query;
+package io.camunda.client.api.search.request;
 
-import io.camunda.client.api.search.filter.ProcessDefinitionFilter;
-import io.camunda.client.api.search.response.ProcessDefinition;
-import io.camunda.client.api.search.sort.ProcessDefinitionSort;
+import io.camunda.client.api.search.filter.FlownodeInstanceFilter;
+import io.camunda.client.api.search.response.FlowNodeInstance;
+import io.camunda.client.api.search.sort.FlownodeInstanceSort;
 
-public interface ProcessDefinitionSearchRequest
+public interface FlownodeInstanceSearchRequest
     extends TypedSearchRequest<
-            ProcessDefinitionFilter, ProcessDefinitionSort, ProcessDefinitionSearchRequest>,
-        FinalSearchRequestStep<ProcessDefinition> {}
+            FlownodeInstanceFilter, FlownodeInstanceSort, FlownodeInstanceSearchRequest>,
+        FinalSearchRequestStep<FlowNodeInstance> {}

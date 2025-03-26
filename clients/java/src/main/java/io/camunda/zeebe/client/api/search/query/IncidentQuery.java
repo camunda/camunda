@@ -15,7 +15,7 @@
  */
 package io.camunda.zeebe.client.api.search.query;
 
-import io.camunda.client.api.search.query.IncidentSearchRequest;
+import io.camunda.client.api.search.request.IncidentSearchRequest;
 import io.camunda.zeebe.client.api.search.filter.IncidentFilter;
 import io.camunda.zeebe.client.api.search.response.Incident;
 import io.camunda.zeebe.client.api.search.sort.IncidentSort;

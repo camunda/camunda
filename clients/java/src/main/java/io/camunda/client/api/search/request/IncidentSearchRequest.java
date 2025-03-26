@@ -13,14 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.camunda.client.api.search.query;
+package io.camunda.client.api.search.request;
 
-import io.camunda.client.api.command.FinalCommandStep;
-import io.camunda.client.api.search.response.SearchQueryResponse;
-import java.time.Duration;
+import io.camunda.client.api.search.filter.IncidentFilter;
+import io.camunda.client.api.search.response.Incident;
+import io.camunda.client.api.search.sort.IncidentSort;
 
-public interface FinalSearchRequestStep<T> extends FinalCommandStep<SearchQueryResponse<T>> {
-
-  @Override
-  FinalSearchRequestStep<T> requestTimeout(Duration requestTimeout);
-}
+public interface IncidentSearchRequest
+    extends TypedSearchRequest<IncidentFilter, IncidentSort, IncidentSearchRequest>,
+        FinalSearchRequestStep<Incident> {}

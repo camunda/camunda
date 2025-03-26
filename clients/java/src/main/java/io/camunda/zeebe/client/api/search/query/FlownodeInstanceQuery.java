@@ -15,7 +15,7 @@
  */
 package io.camunda.zeebe.client.api.search.query;
 
-import io.camunda.client.api.search.query.FlownodeInstanceSearchRequest;
+import io.camunda.client.api.search.request.FlownodeInstanceSearchRequest;
 import io.camunda.zeebe.client.api.search.filter.FlownodeInstanceFilter;
 import io.camunda.zeebe.client.api.search.response.FlowNodeInstance;
 import io.camunda.zeebe.client.api.search.sort.FlownodeInstanceSort;

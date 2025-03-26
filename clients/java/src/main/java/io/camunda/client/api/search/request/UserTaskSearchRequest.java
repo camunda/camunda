@@ -13,12 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.camunda.client.api.search.query;
+package io.camunda.client.api.search.request;
 
-import io.camunda.client.api.search.filter.IncidentFilter;
-import io.camunda.client.api.search.response.Incident;
-import io.camunda.client.api.search.sort.IncidentSort;
+import io.camunda.client.api.search.filter.UserTaskFilter;
+import io.camunda.client.api.search.response.UserTask;
+import io.camunda.client.api.search.sort.UserTaskSort;
 
-public interface IncidentSearchRequest
-    extends TypedSearchRequest<IncidentFilter, IncidentSort, IncidentSearchRequest>,
-        FinalSearchRequestStep<Incident> {}
+public interface UserTaskSearchRequest
+    extends TypedSearchRequest<UserTaskFilter, UserTaskSort, UserTaskSearchRequest>,
+        FinalSearchRequestStep<UserTask> {}

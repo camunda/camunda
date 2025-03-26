@@ -13,12 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.camunda.client.api.search.query;
+package io.camunda.client.api.search.request;
 
-import io.camunda.client.api.search.filter.VariableFilter;
-import io.camunda.client.api.search.response.Variable;
-import io.camunda.client.api.search.sort.VariableSort;
+import io.camunda.client.api.command.FinalCommandStep;
+import io.camunda.client.api.search.response.SearchQueryResponse;
+import java.time.Duration;
 
-public interface VariableSearchRequest
-    extends TypedSearchRequest<VariableFilter, VariableSort, VariableSearchRequest>,
-        FinalSearchRequestStep<Variable> {}
+public interface FinalSearchRequestStep<T> extends FinalCommandStep<SearchQueryResponse<T>> {
+
+  @Override
+  FinalSearchRequestStep<T> requestTimeout(Duration requestTimeout);
+}

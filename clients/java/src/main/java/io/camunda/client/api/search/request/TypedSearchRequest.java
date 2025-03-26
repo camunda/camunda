@@ -13,11 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.camunda.client.api.search.query;
+package io.camunda.client.api.search.request;
 
 import io.camunda.client.api.search.SearchRequestPage;
-import io.camunda.client.api.search.query.TypedSearchRequest.SearchRequestFilter;
-import io.camunda.client.api.search.query.TypedSearchRequest.SearchRequestSort;
+import io.camunda.client.api.search.request.TypedSearchRequest.SearchRequestFilter;
+import io.camunda.client.api.search.request.TypedSearchRequest.SearchRequestSort;
 import java.util.function.Consumer;
 
 public interface TypedSearchRequest<

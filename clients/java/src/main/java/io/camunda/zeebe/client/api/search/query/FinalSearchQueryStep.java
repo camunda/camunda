@@ -15,7 +15,7 @@
  */
 package io.camunda.zeebe.client.api.search.query;
 
-import io.camunda.client.api.search.query.FinalSearchRequestStep;
+import io.camunda.client.api.search.request.FinalSearchRequestStep;
 import io.camunda.zeebe.client.api.command.FinalCommandStep;
 import io.camunda.zeebe.client.api.search.response.SearchQueryResponse;
 import java.time.Duration;
