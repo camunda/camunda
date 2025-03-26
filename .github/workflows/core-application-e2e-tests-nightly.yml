@@ -89,6 +89,25 @@ jobs:
         run: npm ci
         working-directory: qa/core-application-e2e-test-suite
 
+      - name: Import Secrets
+        id: secrets
+        uses: hashicorp/vault-action@7709c609789c5e27b757a85817483caadbb5939a
+        with:
+          url: ${{ secrets.VAULT_ADDR }}
+          method: approle
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          exportEnv: false # we rely on step outputs, no need for environment variables
+          secrets: |
+            secret/data/github.com/organizations/camunda TESTRAIL_QA_EMAIL;
+            secret/data/github.com/organizations/camunda TESTRAIL_QA_PSW;
+
+      - name: Python setup
+        if: always()
+        uses: actions/setup-python@v3
+        with:
+          python-version: "3.x"
+
       - name: Run tests
         shell: bash
         env:
@@ -101,6 +120,25 @@ jobs:
           ZEEBE_REST_ADDRESS: "http://localhost:8089"
         run: npm run test -- --project=chromium
         working-directory: qa/core-application-e2e-test-suite
+
+      - name: Publish test results to TestRail
+        if: always()
+        shell: bash
+        env:
+          TESTRAIL_HOST: "https://camunda.testrail.com/"
+          TESTRAIL_USERNAME: ${{ steps.secrets.outputs.TESTRAIL_QA_EMAIL }} # Use the imported secret
+          TESTRAIL_KEY: ${{ steps.secrets.outputs.TESTRAIL_QA_PSW }} # Use the imported secret
+          JUNIT_RESULTS_FILE: "qa/core-application-e2e-test-suite/test-results/junit-report.xml"
+          BRANCH_NAME: ${{ env.branch }}
+        run: |
+          pip install trcli
+          trcli -y -h $TESTRAIL_HOST \
+            --project 'Core Application' \
+            --username $TESTRAIL_USERNAME \
+            --key $TESTRAIL_KEY \
+            parse_junit --title "Nightly Core Application Run Test Results - $BRANCH_NAME - $(date '+%Y-%m-%d %H:%M:%S')" \
+            --close-run \
+            -f $JUNIT_RESULTS_FILE
 
       - uses: actions/upload-artifact@v4
         with:
