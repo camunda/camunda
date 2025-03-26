@@ -7,6 +7,7 @@
  */
 package io.camunda.operate.opensearch.client;
 
+import io.camunda.exporter.schema.config.SearchEngineConfiguration;
 import io.camunda.operate.conditions.DatabaseCondition;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.schema.SchemaManager;
@@ -27,6 +28,7 @@ public abstract class AbstractOpenSearchOperationIT extends OpensearchOperateAbs
   @Autowired protected RichOpenSearchClient richOpenSearchClient;
   @Autowired protected SchemaManager schemaManager;
   @Autowired protected OperateProperties operateProperties;
+  @Autowired protected SearchEngineConfiguration searchEngineConfiguration;
   @Autowired protected OpensearchTestDataHelper opensearchTestDataHelper;
   protected String indexPrefix;
 
@@ -37,6 +39,7 @@ public abstract class AbstractOpenSearchOperationIT extends OpensearchOperateAbs
   public void setUp() {
     final var indexPrefix = "test-opensearch-operation-" + TestUtil.createRandomString(5);
     operateProperties.getOpensearch().setIndexPrefix(indexPrefix);
+    searchEngineConfiguration.connect().setIndexPrefix(indexPrefix);
     final var schemaExporterHelper = new SchemaWithExporter(indexPrefix, false);
     schemaExporterHelper.createSchema();
   }

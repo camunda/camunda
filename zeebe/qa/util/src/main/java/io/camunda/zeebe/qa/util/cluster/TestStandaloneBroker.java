@@ -75,6 +75,9 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
                 InitializationConfiguration.DEFAULT_USER_NAME,
                 InitializationConfiguration.DEFAULT_USER_EMAIL));
     withBean("securityConfig", securityConfig, CamundaSecurityProperties.class);
+    // by default, we don't want to create the schema as ES/OS containers may not be used in the
+    // current test
+    withCreateSchema(false);
   }
 
   @Override
@@ -264,6 +267,8 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
         "searchEngineConnectProperties",
         searchEngineConnectProperties,
         SearchEngineConnectProperties.class);
+    // enable schema creation as ES is used in the current tests
+    withCreateSchema(true);
     return this;
   }
 

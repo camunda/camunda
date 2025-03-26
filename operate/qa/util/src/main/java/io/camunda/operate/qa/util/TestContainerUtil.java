@@ -574,9 +574,9 @@ public class TestContainerUtil {
     if (testContext.getZeebeIndexPrefix() != null) {
       broker
           .withEnv(
-              "ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_INDEX_PREFIX",
+              "ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_CONNECT_INDEXPREFIX",
               testContext.getZeebeIndexPrefix())
-          .withEnv("CAMUNDA_DATABASE_INDEX_PREFIX", testContext.getZeebeIndexPrefix());
+          .withEnv("CAMUNDA_DATABASE_INDEXPREFIX", testContext.getZeebeIndexPrefix());
     }
   }
 

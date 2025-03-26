@@ -126,7 +126,8 @@ public class MigrationRunner implements Migrator {
   private void delayNextRound() {
     try {
       scheduler
-          .schedule(() -> {}, properties.getMinRetryDelay().toSeconds(), TimeUnit.SECONDS)
+          .schedule(
+              () -> {}, properties.getRetry().getMinRetryDelay().toSeconds(), TimeUnit.SECONDS)
           .get();
     } catch (final InterruptedException | ExecutionException ex) {
       Thread.currentThread().interrupt();

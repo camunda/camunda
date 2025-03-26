@@ -34,6 +34,7 @@ import io.camunda.exporter.metrics.CamundaExporterMetrics;
 import io.camunda.exporter.schema.MappingSource;
 import io.camunda.exporter.schema.SchemaManager;
 import io.camunda.exporter.schema.SearchEngineClient;
+import io.camunda.exporter.schema.config.SearchEngineConfiguration;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.exporter.store.ExporterBatchWriter;
 import io.camunda.exporter.tasks.BackgroundTaskManager;
@@ -133,7 +134,7 @@ public class CamundaExporter implements Exporter {
       throw new IllegalStateException("Schema is not ready for use");
     }
 
-    writer = createBatchWriter();
+    writer = createBatchWriter(); // move before schemaManager.isSchemaReadyForUse()?
 
     checkImportersCompletedAndReschedule();
     controller.readMetadata().ifPresent(metadata::deserialize);
@@ -263,7 +264,11 @@ public class CamundaExporter implements Exporter {
         searchEngineClient,
         provider.getIndexDescriptors(),
         provider.getIndexTemplateDescriptors(),
-        configuration,
+        SearchEngineConfiguration.of(
+            b ->
+                b.connect(configuration.getConnect())
+                    .index(configuration.getIndex())
+                    .retention(configuration.getHistory().getRetention())),
         clientAdapter.objectMapper());
   }
 
@@ -274,7 +279,7 @@ public class CamundaExporter implements Exporter {
 
   private List<String> prefixedNames(final String... names) {
     final var indexPrefix =
-        AbstractIndexDescriptor.formatIndexPrefix(configuration.getIndex().getPrefix());
+        AbstractIndexDescriptor.formatIndexPrefix(configuration.getConnect().getIndexPrefix());
     return Arrays.stream(names).map(s -> indexPrefix + s).toList();
   }
 

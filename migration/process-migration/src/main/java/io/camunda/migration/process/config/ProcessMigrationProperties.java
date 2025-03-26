@@ -7,6 +7,7 @@
  */
 package io.camunda.migration.process.config;
 
+import io.camunda.zeebe.util.retry.RetryConfiguration;
 import java.time.Duration;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
@@ -14,10 +15,8 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 public class ProcessMigrationProperties {
 
   private int batchSize = 20;
-  private int maxRetries = 3;
-  private Duration minRetryDelay = Duration.ofSeconds(1);
-  private Duration maxRetryDelay = Duration.ofMinutes(1);
   private Duration importerFinishedTimeout = Duration.ofMinutes(1);
+  private ProcessMigrationRetryConfiguration retry = new ProcessMigrationRetryConfiguration();
 
   public int getBatchSize() {
     return batchSize;
@@ -27,35 +26,47 @@ public class ProcessMigrationProperties {
     this.batchSize = batchSize;
   }
 
-  public int getMaxRetries() {
-    return maxRetries;
-  }
-
-  public void setMaxRetries(final int maxRetries) {
-    this.maxRetries = maxRetries;
-  }
-
-  public Duration getMinRetryDelay() {
-    return minRetryDelay;
-  }
-
-  public void setMinRetryDelay(final Duration minRetryDelay) {
-    this.minRetryDelay = minRetryDelay;
-  }
-
-  public Duration getMaxRetryDelay() {
-    return maxRetryDelay;
-  }
-
-  public void setMaxRetryDelay(final Duration maxRetryDelay) {
-    this.maxRetryDelay = maxRetryDelay;
-  }
-
   public Duration getImporterFinishedTimeout() {
     return importerFinishedTimeout;
   }
 
   public void setImporterFinishedTimeout(final Duration importerFinishedTimeout) {
     this.importerFinishedTimeout = importerFinishedTimeout;
+  }
+
+  public ProcessMigrationRetryConfiguration getRetry() {
+    return retry;
+  }
+
+  public void setRetry(final ProcessMigrationRetryConfiguration retry) {
+    this.retry = retry;
+  }
+
+  public static class ProcessMigrationRetryConfiguration extends RetryConfiguration {
+
+    private static final int DEFAULT_MAX_RETRIES = 3;
+    private static final Duration DEFAULT_MIN_RETRY_DELAY = Duration.ofSeconds(1);
+    private static final Duration DEFAULT_MAX_RETRY_DELAY = Duration.ofMinutes(1);
+    private static final double DEFAULT_MULTIPLIER = 2.0;
+
+    @Override
+    public int defaultMaxRetries() {
+      return DEFAULT_MAX_RETRIES;
+    }
+
+    @Override
+    public Duration defaultMinRetryDelay() {
+      return DEFAULT_MIN_RETRY_DELAY;
+    }
+
+    @Override
+    public Duration defaultMaxRetryDelay() {
+      return DEFAULT_MAX_RETRY_DELAY;
+    }
+
+    @Override
+    public double defaultRetryDelayMultiplier() {
+      return DEFAULT_MULTIPLIER;
+    }
   }
 }
