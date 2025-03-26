@@ -50,7 +50,7 @@ function useUnassignTask() {
   return useMutation<Task, UnassignmentError, Task['id']>({
     mutationFn: async (taskId) => {
       const {response, error: errorResponse} = await request(
-        api.v1.unassignTask(taskId),
+        api.unassignTask(taskId),
       );
 
       if (response !== null) {
