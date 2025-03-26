@@ -9,14 +9,14 @@ package io.camunda.exporter.handlers;
 
 import static io.camunda.exporter.handlers.EventFromIncidentHandler.ID_PATTERN;
 import static io.camunda.exporter.utils.ExporterUtil.toOffsetDateTime;
-import static io.camunda.webapps.schema.descriptors.operate.template.EventTemplate.INCIDENT_ERROR_MSG;
-import static io.camunda.webapps.schema.descriptors.operate.template.EventTemplate.INCIDENT_ERROR_TYPE;
+import static io.camunda.webapps.schema.descriptors.template.EventTemplate.INCIDENT_ERROR_MSG;
+import static io.camunda.webapps.schema.descriptors.template.EventTemplate.INCIDENT_ERROR_TYPE;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 import io.camunda.exporter.store.BatchRequest;
-import io.camunda.webapps.schema.descriptors.operate.template.EventTemplate;
+import io.camunda.webapps.schema.descriptors.template.EventTemplate;
 import io.camunda.webapps.schema.entities.event.EventEntity;
 import io.camunda.webapps.schema.entities.event.EventMetadataEntity;
 import io.camunda.webapps.schema.entities.event.EventSourceType;

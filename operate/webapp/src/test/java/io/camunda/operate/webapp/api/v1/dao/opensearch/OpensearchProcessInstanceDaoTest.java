@@ -21,7 +21,7 @@ import io.camunda.operate.webapp.api.v1.entities.Query;
 import io.camunda.operate.webapp.opensearch.OpensearchQueryDSLWrapper;
 import io.camunda.operate.webapp.opensearch.OpensearchRequestDSLWrapper;
 import io.camunda.operate.webapp.writer.ProcessInstanceWriter;
-import io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate;
+import io.camunda.webapps.schema.descriptors.template.ListViewTemplate;
 import java.util.Collections;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;

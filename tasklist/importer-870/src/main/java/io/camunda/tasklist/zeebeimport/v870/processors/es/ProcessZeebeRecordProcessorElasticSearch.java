@@ -16,7 +16,7 @@ import io.camunda.tasklist.zeebeimport.common.ProcessDefinitionDeletionProcessor
 import io.camunda.tasklist.zeebeimport.util.XMLUtil;
 import io.camunda.tasklist.zeebeimport.v870.record.value.deployment.DeployedProcessImpl;
 import io.camunda.webapps.schema.descriptors.index.FormIndex;
-import io.camunda.webapps.schema.descriptors.operate.index.ProcessIndex;
+import io.camunda.webapps.schema.descriptors.index.ProcessIndex;
 import io.camunda.webapps.schema.entities.ProcessEntity;
 import io.camunda.webapps.schema.entities.form.FormEntity;
 import io.camunda.zeebe.protocol.record.Record;

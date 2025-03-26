@@ -11,7 +11,7 @@ import static io.camunda.exporter.utils.ExporterUtil.tenantOrDefault;
 import static io.camunda.exporter.utils.ExporterUtil.toOffsetDateTime;
 
 import io.camunda.exporter.store.BatchRequest;
-import io.camunda.webapps.schema.descriptors.operate.template.EventTemplate;
+import io.camunda.webapps.schema.descriptors.template.EventTemplate;
 import io.camunda.webapps.schema.entities.event.EventEntity;
 import io.camunda.webapps.schema.entities.event.EventMetadataEntity;
 import io.camunda.zeebe.protocol.record.Record;

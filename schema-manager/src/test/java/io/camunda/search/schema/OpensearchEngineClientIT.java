@@ -18,7 +18,7 @@ import io.camunda.search.schema.opensearch.OpensearchEngineClient;
 import io.camunda.search.test.utils.SearchDBExtension;
 import io.camunda.search.test.utils.TestObjectMapper;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
-import io.camunda.webapps.schema.descriptors.operate.index.ImportPositionIndex;
+import io.camunda.webapps.schema.descriptors.index.ImportPositionIndex;
 import io.camunda.webapps.schema.entities.ImportPositionEntity;
 import java.io.IOException;
 import java.util.Collections;

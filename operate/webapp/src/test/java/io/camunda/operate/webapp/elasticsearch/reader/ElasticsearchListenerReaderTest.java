@@ -15,7 +15,7 @@ import static org.mockito.Mockito.when;
 import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.webapp.rest.dto.ListenerRequestDto;
 import io.camunda.operate.webapp.rest.dto.SortingDto;
-import io.camunda.webapps.schema.descriptors.operate.template.JobTemplate;
+import io.camunda.webapps.schema.descriptors.template.JobTemplate;
 import java.io.IOException;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.client.RequestOptions;

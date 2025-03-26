@@ -5,37 +5,34 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.webapps.schema.descriptors.operate.index;
+package io.camunda.webapps.schema.descriptors.template;
 
 import static io.camunda.webapps.schema.descriptors.ComponentNames.OPERATE;
 
-import io.camunda.webapps.schema.descriptors.AbstractIndexDescriptor;
+import io.camunda.webapps.schema.descriptors.AbstractTemplateDescriptor;
 import io.camunda.webapps.schema.descriptors.backup.Prio4Backup;
-import java.util.Optional;
+import io.camunda.webapps.schema.descriptors.operate.ProcessInstanceDependant;
 
-public class DecisionIndex extends AbstractIndexDescriptor implements Prio4Backup {
+public class PostImporterQueueTemplate extends AbstractTemplateDescriptor
+    implements ProcessInstanceDependant, Prio4Backup {
 
-  public static final String INDEX_NAME = "decision";
+  public static final String INDEX_NAME = "post-importer-queue";
+
   public static final String ID = "id";
   public static final String KEY = "key";
-  public static final String DECISION_ID = "decisionId";
-  public static final String NAME = "name";
-  public static final String VERSION = "version";
-  public static final String DECISION_REQUIREMENTS_ID = "decisionRequirementsId";
-  public static final String DECISION_REQUIREMENTS_KEY = "decisionRequirementsKey";
+  public static final String PROCESS_INSTANCE_KEY = "processInstanceKey";
+  public static final String ACTION_TYPE = "actionType";
+  public static final String CREATION_TIME = "creationTime";
+  public static final String INTENT = "intent";
+  public static final String PARTITION_ID = "partitionId";
 
-  public DecisionIndex(final String indexPrefix, final boolean isElasticsearch) {
+  public PostImporterQueueTemplate(final String indexPrefix, final boolean isElasticsearch) {
     super(indexPrefix, isElasticsearch);
   }
 
   @Override
   public String getIndexName() {
     return INDEX_NAME;
-  }
-
-  @Override
-  public Optional<String> getTenantIdField() {
-    return Optional.of(TENANT_ID);
   }
 
   @Override

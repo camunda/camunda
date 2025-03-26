@@ -5,33 +5,34 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.webapps.schema.descriptors.operate.index;
+package io.camunda.webapps.schema.descriptors.index;
 
 import static io.camunda.webapps.schema.descriptors.ComponentNames.OPERATE;
 
 import io.camunda.webapps.schema.descriptors.AbstractIndexDescriptor;
-import io.camunda.webapps.schema.descriptors.backup.Prio1Backup;
+import io.camunda.webapps.schema.descriptors.backup.Prio5Backup;
+import java.util.Optional;
 
-public class ImportPositionIndex extends AbstractIndexDescriptor implements Prio1Backup {
+public class MetricIndex extends AbstractIndexDescriptor implements Prio5Backup {
 
-  public static final String INDEX_NAME = "import-position";
-
-  public static final String ALIAS_NAME = "aliasName";
+  public static final String INDEX_NAME = "metric";
   public static final String ID = "id";
-  public static final String PARTITION_ID = "partitionId";
-  public static final String POSITION = "position";
-  public static final String SEQUENCE = "sequence";
-  public static final String POST_IMPORTER_POSITION = "postImporterPosition";
-  public static final String FIELD_INDEX_NAME = "indexName";
-  public static final String COMPLETED = "completed";
+  public static final String EVENT = "event";
+  public static final String VALUE = "value";
+  public static final String EVENT_TIME = "eventTime";
 
-  public ImportPositionIndex(final String indexPrefix, final boolean isElasticsearch) {
+  public MetricIndex(final String indexPrefix, final boolean isElasticsearch) {
     super(indexPrefix, isElasticsearch);
   }
 
   @Override
   public String getIndexName() {
     return INDEX_NAME;
+  }
+
+  @Override
+  public Optional<String> getTenantIdField() {
+    return Optional.of(TENANT_ID);
   }
 
   @Override

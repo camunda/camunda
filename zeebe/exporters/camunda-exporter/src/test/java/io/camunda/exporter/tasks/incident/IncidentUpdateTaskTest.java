@@ -19,9 +19,9 @@ import io.camunda.exporter.tasks.incident.IncidentUpdateRepository.PendingIncide
 import io.camunda.exporter.tasks.incident.IncidentUpdateRepository.ProcessInstanceDocument;
 import io.camunda.search.test.utils.TestObjectMapper;
 import io.camunda.webapps.operate.TreePath;
-import io.camunda.webapps.schema.descriptors.operate.template.FlowNodeInstanceTemplate;
-import io.camunda.webapps.schema.descriptors.operate.template.IncidentTemplate;
-import io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate;
+import io.camunda.webapps.schema.descriptors.template.FlowNodeInstanceTemplate;
+import io.camunda.webapps.schema.descriptors.template.IncidentTemplate;
+import io.camunda.webapps.schema.descriptors.template.ListViewTemplate;
 import io.camunda.webapps.schema.entities.incident.IncidentEntity;
 import io.camunda.webapps.schema.entities.incident.IncidentState;
 import io.camunda.zeebe.exporter.api.ExporterException;

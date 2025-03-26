@@ -14,7 +14,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 import io.camunda.exporter.store.BatchRequest;
-import io.camunda.webapps.schema.descriptors.operate.template.EventTemplate;
+import io.camunda.webapps.schema.descriptors.template.EventTemplate;
 import io.camunda.webapps.schema.entities.event.EventEntity;
 import io.camunda.webapps.schema.entities.event.EventSourceType;
 import io.camunda.webapps.schema.entities.event.EventType;

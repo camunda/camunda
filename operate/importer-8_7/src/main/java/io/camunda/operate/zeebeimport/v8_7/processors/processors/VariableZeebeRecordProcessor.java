@@ -9,17 +9,17 @@ package io.camunda.operate.zeebeimport.v8_7.processors.processors;
 
 import static io.camunda.operate.zeebeimport.util.ImportUtil.tenantOrDefault;
 import static io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor.POSITION;
-import static io.camunda.webapps.schema.descriptors.operate.template.VariableTemplate.BPMN_PROCESS_ID;
-import static io.camunda.webapps.schema.descriptors.operate.template.VariableTemplate.FULL_VALUE;
-import static io.camunda.webapps.schema.descriptors.operate.template.VariableTemplate.IS_PREVIEW;
-import static io.camunda.webapps.schema.descriptors.operate.template.VariableTemplate.PROCESS_DEFINITION_KEY;
-import static io.camunda.webapps.schema.descriptors.operate.template.VariableTemplate.VALUE;
+import static io.camunda.webapps.schema.descriptors.template.VariableTemplate.BPMN_PROCESS_ID;
+import static io.camunda.webapps.schema.descriptors.template.VariableTemplate.FULL_VALUE;
+import static io.camunda.webapps.schema.descriptors.template.VariableTemplate.IS_PREVIEW;
+import static io.camunda.webapps.schema.descriptors.template.VariableTemplate.PROCESS_DEFINITION_KEY;
+import static io.camunda.webapps.schema.descriptors.template.VariableTemplate.VALUE;
 
 import io.camunda.operate.exceptions.PersistenceException;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.store.BatchRequest;
 import io.camunda.operate.util.Tuple;
-import io.camunda.webapps.schema.descriptors.operate.template.VariableTemplate;
+import io.camunda.webapps.schema.descriptors.template.VariableTemplate;
 import io.camunda.webapps.schema.entities.VariableEntity;
 import io.camunda.webapps.schema.entities.listview.VariableForListViewEntity;
 import io.camunda.zeebe.protocol.record.Record;

@@ -20,10 +20,10 @@ import io.camunda.operate.webapp.rest.dto.operation.CreateBatchOperationRequestD
 import io.camunda.operate.webapp.rest.dto.operation.MigrationPlanDto;
 import io.camunda.operate.webapp.rest.dto.operation.MigrationPlanDto.MappingInstruction;
 import io.camunda.operate.webapp.zeebe.operation.*;
-import io.camunda.webapps.schema.descriptors.operate.template.FlowNodeInstanceTemplate;
-import io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate;
-import io.camunda.webapps.schema.descriptors.operate.template.OperationTemplate;
-import io.camunda.webapps.schema.descriptors.operate.template.VariableTemplate;
+import io.camunda.webapps.schema.descriptors.template.FlowNodeInstanceTemplate;
+import io.camunda.webapps.schema.descriptors.template.ListViewTemplate;
+import io.camunda.webapps.schema.descriptors.template.OperationTemplate;
+import io.camunda.webapps.schema.descriptors.template.VariableTemplate;
 import io.camunda.webapps.schema.entities.VariableEntity;
 import io.camunda.webapps.schema.entities.flownode.FlowNodeInstanceEntity;
 import io.camunda.webapps.schema.entities.flownode.FlowNodeType;

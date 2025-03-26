@@ -10,8 +10,8 @@ package io.camunda.operate.webapp.elasticsearch.reader;
 import static io.camunda.operate.store.elasticsearch.ElasticsearchIncidentStore.ACTIVE_INCIDENT_QUERY;
 import static io.camunda.operate.util.ElasticsearchUtil.QueryType.ONLY_RUNTIME;
 import static io.camunda.operate.util.ElasticsearchUtil.joinWithAnd;
-import static io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate.JOIN_RELATION;
-import static io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate.PROCESS_INSTANCE_JOIN_RELATION;
+import static io.camunda.webapps.schema.descriptors.template.ListViewTemplate.JOIN_RELATION;
+import static io.camunda.webapps.schema.descriptors.template.ListViewTemplate.PROCESS_INSTANCE_JOIN_RELATION;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 import static org.elasticsearch.search.aggregations.AggregationBuilders.*;
 
@@ -25,9 +25,9 @@ import io.camunda.operate.webapp.rest.dto.incidents.IncidentByProcessStatisticsD
 import io.camunda.operate.webapp.rest.dto.incidents.IncidentsByErrorMsgStatisticsDto;
 import io.camunda.operate.webapp.rest.dto.incidents.IncidentsByProcessGroupStatisticsDto;
 import io.camunda.operate.webapp.security.permission.PermissionsService;
-import io.camunda.webapps.schema.descriptors.operate.index.ProcessIndex;
-import io.camunda.webapps.schema.descriptors.operate.template.IncidentTemplate;
-import io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate;
+import io.camunda.webapps.schema.descriptors.index.ProcessIndex;
+import io.camunda.webapps.schema.descriptors.template.IncidentTemplate;
+import io.camunda.webapps.schema.descriptors.template.ListViewTemplate;
 import io.camunda.webapps.schema.entities.ProcessEntity;
 import io.camunda.webapps.schema.entities.listview.ProcessInstanceState;
 import io.camunda.zeebe.protocol.record.value.PermissionType;

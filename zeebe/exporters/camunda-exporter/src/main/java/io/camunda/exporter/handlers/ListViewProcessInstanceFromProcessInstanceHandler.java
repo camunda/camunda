@@ -8,7 +8,7 @@
 package io.camunda.exporter.handlers;
 
 import static io.camunda.exporter.utils.ExporterUtil.tenantOrDefault;
-import static io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate.*;
+import static io.camunda.webapps.schema.descriptors.template.ListViewTemplate.*;
 import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.*;
 
 import io.camunda.exporter.cache.ExporterEntityCache;
@@ -16,7 +16,7 @@ import io.camunda.exporter.cache.process.CachedProcessEntity;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.exporter.utils.ProcessCacheUtil;
 import io.camunda.webapps.operate.TreePath;
-import io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate;
+import io.camunda.webapps.schema.descriptors.template.ListViewTemplate;
 import io.camunda.webapps.schema.entities.listview.ProcessInstanceForListViewEntity;
 import io.camunda.webapps.schema.entities.listview.ProcessInstanceState;
 import io.camunda.zeebe.protocol.record.Record;

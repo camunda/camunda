@@ -14,7 +14,7 @@ import io.camunda.operate.webapp.api.v1.entities.Query;
 import io.camunda.operate.webapp.api.v1.entities.SequenceFlow;
 import io.camunda.operate.webapp.opensearch.OpensearchQueryDSLWrapper;
 import io.camunda.operate.webapp.opensearch.OpensearchRequestDSLWrapper;
-import io.camunda.webapps.schema.descriptors.operate.template.SequenceFlowTemplate;
+import io.camunda.webapps.schema.descriptors.template.SequenceFlowTemplate;
 import java.util.Objects;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;

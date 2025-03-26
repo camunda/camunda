@@ -16,11 +16,11 @@ import static io.camunda.operate.store.opensearch.dsl.AggregationDSL.withSubaggr
 import static io.camunda.operate.store.opensearch.dsl.QueryDSL.*;
 import static io.camunda.operate.store.opensearch.dsl.RequestDSL.QueryType.ONLY_RUNTIME;
 import static io.camunda.operate.store.opensearch.dsl.RequestDSL.searchRequestBuilder;
-import static io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate.INCIDENT;
-import static io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate.JOIN_RELATION;
-import static io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate.PROCESS_INSTANCE_JOIN_RELATION;
-import static io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate.PROCESS_KEY;
-import static io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate.STATE;
+import static io.camunda.webapps.schema.descriptors.template.ListViewTemplate.INCIDENT;
+import static io.camunda.webapps.schema.descriptors.template.ListViewTemplate.JOIN_RELATION;
+import static io.camunda.webapps.schema.descriptors.template.ListViewTemplate.PROCESS_INSTANCE_JOIN_RELATION;
+import static io.camunda.webapps.schema.descriptors.template.ListViewTemplate.PROCESS_KEY;
+import static io.camunda.webapps.schema.descriptors.template.ListViewTemplate.STATE;
 
 import io.camunda.operate.conditions.OpensearchCondition;
 import io.camunda.operate.store.ProcessStore;
@@ -33,9 +33,9 @@ import io.camunda.operate.webapp.rest.dto.incidents.IncidentByProcessStatisticsD
 import io.camunda.operate.webapp.rest.dto.incidents.IncidentsByErrorMsgStatisticsDto;
 import io.camunda.operate.webapp.rest.dto.incidents.IncidentsByProcessGroupStatisticsDto;
 import io.camunda.operate.webapp.security.permission.PermissionsService;
-import io.camunda.webapps.schema.descriptors.operate.index.ProcessIndex;
-import io.camunda.webapps.schema.descriptors.operate.template.IncidentTemplate;
-import io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate;
+import io.camunda.webapps.schema.descriptors.index.ProcessIndex;
+import io.camunda.webapps.schema.descriptors.template.IncidentTemplate;
+import io.camunda.webapps.schema.descriptors.template.ListViewTemplate;
 import io.camunda.webapps.schema.entities.ProcessEntity;
 import io.camunda.webapps.schema.entities.listview.ProcessInstanceState;
 import io.camunda.zeebe.protocol.record.value.PermissionType;

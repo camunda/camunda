@@ -5,7 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.webapps.schema.descriptors.operate.template;
+package io.camunda.webapps.schema.descriptors.template;
 
 import static io.camunda.webapps.schema.descriptors.ComponentNames.OPERATE;
 
@@ -14,27 +14,23 @@ import io.camunda.webapps.schema.descriptors.backup.Prio4Backup;
 import io.camunda.webapps.schema.descriptors.operate.ProcessInstanceDependant;
 import java.util.Optional;
 
-public class IncidentTemplate extends AbstractTemplateDescriptor
+public class VariableTemplate extends AbstractTemplateDescriptor
     implements ProcessInstanceDependant, Prio4Backup {
 
-  public static final String INDEX_NAME = "incident";
+  public static final String INDEX_NAME = "variable";
 
   public static final String ID = "id";
   public static final String KEY = "key";
+  public static final String SCOPE_KEY = "scopeKey";
+  public static final String NAME = "name";
+  public static final String VALUE = "value";
+  public static final String FULL_VALUE = "fullValue";
+  public static final String IS_PREVIEW = "isPreview";
   public static final String PROCESS_INSTANCE_KEY = "processInstanceKey";
   public static final String PROCESS_DEFINITION_KEY = "processDefinitionKey";
   public static final String BPMN_PROCESS_ID = "bpmnProcessId";
-  public static final String FLOW_NODE_ID = "flowNodeId";
-  public static final String FLOW_NODE_INSTANCE_KEY = "flowNodeInstanceKey";
-  public static final String JOB_KEY = "jobKey";
-  public static final String ERROR_TYPE = "errorType";
-  public static final String ERROR_MSG = "errorMessage";
-  public static final String ERROR_MSG_HASH = "errorMessageHash";
-  public static final String STATE = "state";
-  public static final String CREATION_TIME = "creationTime";
-  public static final String TREE_PATH = "treePath";
 
-  public IncidentTemplate(final String indexPrefix, final boolean isElasticsearch) {
+  public VariableTemplate(final String indexPrefix, final boolean isElasticsearch) {
     super(indexPrefix, isElasticsearch);
   }
 
@@ -49,10 +45,8 @@ public class IncidentTemplate extends AbstractTemplateDescriptor
   }
 
   @Override
-  // we have to use version 8.3.1 here, as we mistakenly released 8.3.0 index version in Operate
-  // 8.2.6
   public String getVersion() {
-    return "8.3.1";
+    return "8.3.0";
   }
 
   @Override

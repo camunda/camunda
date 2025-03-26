@@ -19,7 +19,7 @@ import static io.camunda.operate.store.opensearch.dsl.QueryDSL.or;
 import static io.camunda.operate.store.opensearch.dsl.QueryDSL.stringTerms;
 import static io.camunda.operate.store.opensearch.dsl.QueryDSL.term;
 import static io.camunda.operate.store.opensearch.dsl.QueryDSL.wildcardQuery;
-import static io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate.*;
+import static io.camunda.webapps.schema.descriptors.template.ListViewTemplate.*;
 
 import io.camunda.operate.conditions.OpensearchCondition;
 import io.camunda.operate.property.OperateProperties;
@@ -31,7 +31,7 @@ import io.camunda.operate.webapp.rest.dto.listview.ListViewQueryDto;
 import io.camunda.operate.webapp.rest.dto.listview.VariablesQueryDto;
 import io.camunda.operate.webapp.rest.exception.InvalidRequestException;
 import io.camunda.operate.webapp.security.permission.PermissionsService;
-import io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate;
+import io.camunda.webapps.schema.descriptors.template.ListViewTemplate;
 import io.camunda.webapps.schema.entities.flownode.FlowNodeState;
 import io.camunda.webapps.schema.entities.flownode.FlowNodeType;
 import io.camunda.webapps.schema.entities.incident.IncidentEntity;

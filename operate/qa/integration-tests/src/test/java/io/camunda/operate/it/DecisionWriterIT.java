@@ -12,9 +12,9 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
 import io.camunda.operate.util.j5templates.OperateSearchAbstractIT;
 import io.camunda.operate.webapp.writer.DecisionWriter;
-import io.camunda.webapps.schema.descriptors.operate.index.DecisionIndex;
-import io.camunda.webapps.schema.descriptors.operate.index.DecisionRequirementsIndex;
-import io.camunda.webapps.schema.descriptors.operate.template.DecisionInstanceTemplate;
+import io.camunda.webapps.schema.descriptors.index.DecisionIndex;
+import io.camunda.webapps.schema.descriptors.index.DecisionRequirementsIndex;
+import io.camunda.webapps.schema.descriptors.template.DecisionInstanceTemplate;
 import io.camunda.webapps.schema.entities.dmn.DecisionInstanceEntity;
 import io.camunda.webapps.schema.entities.dmn.DecisionInstanceState;
 import io.camunda.webapps.schema.entities.dmn.definition.DecisionDefinitionEntity;

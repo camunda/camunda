@@ -7,8 +7,8 @@
  */
 package io.camunda.exporter.handlers;
 
-import static io.camunda.webapps.schema.descriptors.operate.template.JobTemplate.ERROR_MESSAGE;
-import static io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate.INCIDENT_POSITION;
+import static io.camunda.webapps.schema.descriptors.template.JobTemplate.ERROR_MESSAGE;
+import static io.camunda.webapps.schema.descriptors.template.ListViewTemplate.INCIDENT_POSITION;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.*;
 
