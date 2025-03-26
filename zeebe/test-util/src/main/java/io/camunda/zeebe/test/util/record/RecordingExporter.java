@@ -13,6 +13,7 @@ import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.AuthorizationIntent;
+import io.camunda.zeebe.protocol.record.intent.BatchOperationChunkIntent;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationIntent;
 import io.camunda.zeebe.protocol.record.intent.ClockIntent;
 import io.camunda.zeebe.protocol.record.intent.CommandDistributionIntent;
@@ -48,6 +49,7 @@ import io.camunda.zeebe.protocol.record.intent.VariableIntent;
 import io.camunda.zeebe.protocol.record.intent.scaling.ScaleIntent;
 import io.camunda.zeebe.protocol.record.value.AdHocSubProcessActivityActivationRecordValue;
 import io.camunda.zeebe.protocol.record.value.AuthorizationRecordValue;
+import io.camunda.zeebe.protocol.record.value.BatchOperationChunkRecordValue;
 import io.camunda.zeebe.protocol.record.value.BatchOperationCreationRecordValue;
 import io.camunda.zeebe.protocol.record.value.ClockRecordValue;
 import io.camunda.zeebe.protocol.record.value.CommandDistributionRecordValue;
@@ -555,6 +557,16 @@ public final class RecordingExporter implements Exporter {
   public static BatchOperationCreationRecordStream batchOperationCreationRecords(
       final BatchOperationIntent intent) {
     return batchOperationCreationRecords().withIntent(intent);
+  }
+
+  public static BatchOperationChunkRecordStream batchOperationChunkRecords() {
+    return new BatchOperationChunkRecordStream(
+        records(ValueType.BATCH_OPERATION_CHUNK, BatchOperationChunkRecordValue.class));
+  }
+
+  public static BatchOperationChunkRecordStream batchOperationChunkRecords(
+      final BatchOperationChunkIntent intent) {
+    return batchOperationChunkRecords().withIntent(intent);
   }
 
   public static void autoAcknowledge(final boolean shouldAcknowledgeRecords) {
