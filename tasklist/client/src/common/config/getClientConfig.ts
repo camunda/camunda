@@ -29,7 +29,7 @@ const ClientConfigSchema = z.object({
 });
 
 const DEFAULT_CLIENT_CONFIG = ClientConfigSchema.safeParse({
-  clientMode: IS_V2_ENABLED ? 'v2' : 'v1',
+  clientMode: IS_V2_ENABLED ? 'v2' : undefined,
 }).data!;
 
 function getClientConfig() {
@@ -44,7 +44,7 @@ function getClientConfig() {
   if (success) {
     return {
       ...data,
-      clientMode: IS_V2_ENABLED ? 'v2' : 'v1',
+      clientMode: IS_V2_ENABLED ? 'v2' : data.clientMode,
     };
   }
 
