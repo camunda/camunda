@@ -7,6 +7,7 @@
  */
 package io.camunda.authentication.config;
 
+import io.camunda.authentication.CamundaJwtAuthenticationConverter;
 import io.camunda.authentication.CamundaUserDetailsService;
 import io.camunda.authentication.ConditionalOnAuthenticationMethod;
 import io.camunda.authentication.ConditionalOnUnprotectedApi;
@@ -314,7 +315,8 @@ public class WebSecurityConfig {
     public SecurityFilterChain oidcApiSecurity(
         final HttpSecurity httpSecurity,
         final AuthFailureHandler authFailureHandler,
-        final JwtDecoder jwtDecoder)
+        final JwtDecoder jwtDecoder,
+        final CamundaJwtAuthenticationConverter converter)
         throws Exception {
       return httpSecurity
           .securityMatcher(API_PATHS.toArray(new String[0]))
@@ -333,7 +335,10 @@ public class WebSecurityConfig {
           .formLogin(AbstractHttpConfigurer::disable)
           .anonymous(AbstractHttpConfigurer::disable)
           .oauth2ResourceServer(
-              oauth2 -> oauth2.jwt(jwtConfigurer -> jwtConfigurer.decoder(jwtDecoder)))
+              oauth2 ->
+                  oauth2.jwt(
+                      jwtConfigurer ->
+                          jwtConfigurer.decoder(jwtDecoder).jwtAuthenticationConverter(converter)))
           .oauth2Login(AbstractHttpConfigurer::disable)
           .oidcLogout(AbstractHttpConfigurer::disable)
           .logout(AbstractHttpConfigurer::disable)
@@ -347,7 +352,8 @@ public class WebSecurityConfig {
         final AuthFailureHandler authFailureHandler,
         final ClientRegistrationRepository clientRegistrationRepository,
         final WebApplicationAuthorizationCheckFilter webApplicationAuthorizationCheckFilter,
-        final JwtDecoder jwtDecoder)
+        final JwtDecoder jwtDecoder,
+        final CamundaJwtAuthenticationConverter converter)
         throws Exception {
       return httpSecurity
           .securityMatcher(WEBAPP_PATHS.toArray(new String[0]))
@@ -359,7 +365,10 @@ public class WebSecurityConfig {
           .formLogin(AbstractHttpConfigurer::disable)
           .anonymous(AbstractHttpConfigurer::disable)
           .oauth2ResourceServer(
-              oauth2 -> oauth2.jwt(jwtConfigurer -> jwtConfigurer.decoder(jwtDecoder)))
+              oauth2 ->
+                  oauth2.jwt(
+                      jwtConfigurer ->
+                          jwtConfigurer.decoder(jwtDecoder).jwtAuthenticationConverter(converter)))
           .oauth2Login(
               oauthLoginConfigurer -> {
                 oauthLoginConfigurer

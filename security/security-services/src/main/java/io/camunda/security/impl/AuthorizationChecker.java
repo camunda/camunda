@@ -126,6 +126,7 @@ public class AuthorizationChecker {
 
   private List<String> collectOwnerIds(final Authentication authentication) {
     final List<String> ownerIds = new ArrayList<>();
+
     ownerIds.add(authentication.authenticatedUsername());
     ownerIds.addAll(
         // TODO remove this mapping when refactoring Groups to IDs

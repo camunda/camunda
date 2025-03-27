@@ -38,6 +38,7 @@ import static io.camunda.zeebe.gateway.rest.validator.UserValidator.validateUser
 import static io.camunda.zeebe.gateway.rest.validator.UserValidator.validateUserUpdateRequest;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.camunda.authentication.entity.CamundaOAuthPrincipal;
 import io.camunda.authentication.entity.CamundaPrincipal;
 import io.camunda.authentication.entity.CamundaUser;
 import io.camunda.authentication.tenant.TenantAttributeHolder;
@@ -578,9 +579,14 @@ public class RequestMapper {
             authenticatedPrincipal.getAuthenticationContext().roles().stream()
                 .map(RoleEntity::roleKey)
                 .toList());
-        if (authenticatedPrincipal instanceof final CamundaUser user) {
-          authenticatedUsername = user.getUsername();
+        if (authenticatedPrincipal instanceof final CamundaUser principal) {
+          authenticatedUsername = principal.getUsername();
           claims.put(Authorization.AUTHORIZED_USERNAME, authenticatedUsername);
+        }
+        if (authenticatedPrincipal instanceof final CamundaOAuthPrincipal principal) {
+          principal
+              .getClaims()
+              .forEach((key, value) -> ClaimTransformer.applyUserClaim(claims, key, value));
         }
       }
 
