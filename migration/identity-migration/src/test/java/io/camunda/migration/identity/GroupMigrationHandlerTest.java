@@ -37,7 +37,7 @@ import org.mockito.Answers;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-@Disabled
+@Disabled("https://github.com/camunda/camunda/issues/26973")
 @ExtendWith(MockitoExtension.class)
 public class GroupMigrationHandlerTest {
   private final ManagementIdentityClient managementIdentityClient;
