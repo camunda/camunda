@@ -19,6 +19,7 @@ import io.camunda.search.entities.RoleEntity;
 import io.camunda.security.configuration.AuthorizationsConfiguration;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.security.impl.AuthorizationChecker;
+import io.camunda.service.TenantServices.TenantDTO;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import java.util.List;
@@ -52,14 +53,16 @@ public class PermissionsServiceTest {
 
     when(mockSecurityConfiguration.getAuthorizations()).thenReturn(mockAuthorizationsConfiguration);
     when(mockAuthorizationsConfiguration.isEnabled()).thenReturn(true);
-    when(mockTenantService.tenantIds()).thenReturn(List.of(tenantId));
 
     final CamundaUser camundaUser = mock(CamundaUser.class);
     when(camundaUser.getUsername()).thenReturn(username);
     when(camundaUser.getAuthenticationContext())
         .thenReturn(
             new AuthenticationContext(
-                List.of(new RoleEntity(roleKey, "roleName")), List.of(), List.of(), List.of()));
+                List.of(new RoleEntity(roleKey, "roleName")),
+                List.of(),
+                List.of(new TenantDTO(123L, tenantId, "tenantName", "")),
+                List.of()));
     when(mockAuthentication.getPrincipal()).thenReturn(camundaUser);
     final SecurityContext securityContext = mock(SecurityContext.class);
     when(securityContext.getAuthentication()).thenReturn(mockAuthentication);
