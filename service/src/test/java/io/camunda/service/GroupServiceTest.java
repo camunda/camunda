@@ -71,6 +71,7 @@ public class GroupServiceTest {
     assertThat(request.getKey()).isEqualTo(-1L);
     assertThat(record).hasName(groupName);
     assertThat(record).hasGroupId(groupId);
+    assertThat(record).hasDescription(description);
   }
 
   @Test

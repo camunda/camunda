@@ -47,10 +47,10 @@ public class GroupControllerTest extends RestControllerTest {
     when(groupServices.withAuthentication(any(Authentication.class))).thenReturn(groupServices);
   }
 
-  @Test
-  void shouldAcceptCreateGroupRequest() {
+  @ParameterizedTest
+  @ValueSource(strings = {"foo", "Foo", "foo123", "foo_", "foo.", "foo@"})
+  void shouldAcceptCreateGroupRequest(final String groupId) {
     // given
-    final var groupId = "groupId";
     final var groupName = "testGroup";
     final var description = "description";
     when(groupServices.createGroup(groupId, groupName, description))
