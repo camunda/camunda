@@ -40,7 +40,6 @@ import static io.camunda.zeebe.gateway.rest.validator.UserValidator.validateUser
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.authentication.entity.CamundaPrincipal;
 import io.camunda.authentication.entity.CamundaUser;
-import io.camunda.authentication.tenant.TenantAttributeHolder;
 import io.camunda.document.api.DocumentMetadataModel;
 import io.camunda.search.entities.RoleEntity;
 import io.camunda.search.filter.AdHocSubprocessActivityFilter;
@@ -583,20 +582,25 @@ public class RequestMapper {
 
   public static Authentication getAuthentication() {
     String authenticatedUsername = null;
+    final Map<String, Object> claims = new HashMap<>();
     final List<Long> authenticatedRoleKeys = new ArrayList<>();
-    final List<String> authorizedTenants = TenantAttributeHolder.getTenantIds();
+    final List<String> authenticatedTenantIds = new ArrayList<>();
 
     final var requestAuthentication = SecurityContextHolder.getContext().getAuthentication();
-
-    final Map<String, Object> claims = new HashMap<>();
-
     if (requestAuthentication != null) {
       if (requestAuthentication.getPrincipal()
           instanceof final CamundaPrincipal authenticatedPrincipal) {
+
         authenticatedRoleKeys.addAll(
             authenticatedPrincipal.getAuthenticationContext().roles().stream()
                 .map(RoleEntity::roleKey)
                 .toList());
+
+        authenticatedTenantIds.addAll(
+            authenticatedPrincipal.getAuthenticationContext().tenants().stream()
+                .map(TenantDTO::tenantId)
+                .toList());
+
         if (authenticatedPrincipal instanceof final CamundaUser user) {
           authenticatedUsername = user.getUsername();
           claims.put(Authorization.AUTHORIZED_USERNAME, authenticatedUsername);
@@ -614,7 +618,7 @@ public class RequestMapper {
         .claims(claims)
         .user(authenticatedUsername)
         .roleKeys(authenticatedRoleKeys)
-        .tenants(authorizedTenants)
+        .tenants(authenticatedTenantIds)
         .build();
   }
 
