@@ -232,11 +232,9 @@ public enum ZbColumnFamilies implements EnumValue {
 
   BATCH_OPERATION(120),
   PENDING_BATCH_OPERATION(121),
+  BATCH_OPERATION_CHUNKS(122),
 
-  VARIABLE_DOCUMENT_STATE_BY_SCOPE_KEY(122),
-
-  ENTITY_BY_BATCH_OPERATION(
-      123); // TODO can we change the value of this with VARIABLE_DOCUMENT_STATE_BY_SCOPE_KEY?
+  VARIABLE_DOCUMENT_STATE_BY_SCOPE_KEY(123);
 
   private final int value;
 
