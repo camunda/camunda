@@ -104,10 +104,12 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
               ],
               "page": {
                   "totalItems": 1,
-                  "firstSortValues": ["f"],
-                  "lastSortValues": [
-                      "v"
-                  ]
+              "firstSortValues": [
+                { "value": "\\"f\\"", "type": "string" }
+              ],
+              "lastSortValues": [
+                { "value": "\\"v\\"", "type": "string" }
+              ]
               }
           }
           """;
@@ -353,8 +355,8 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
         """
             {
                 "page": {
-                    "searchAfter": ["a"],
-                    "searchBefore": ["b"]
+                    "searchAfter": [{"value": "\\"a\\"", "type": "string"}],
+                    "searchBefore": [{"value": "\\"b\\"", "type": "string"}]
                 }
             }""";
     final var expectedResponse =
@@ -544,7 +546,7 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
 
   @ParameterizedTest
   @EnumSource(ProcessInstanceStateEnum.class)
-  void shouldSearchProcessInstancesByState(ProcessInstanceStateEnum state) {
+  void shouldSearchProcessInstancesByState(final ProcessInstanceStateEnum state) {
     // given
     final var request =
         """
