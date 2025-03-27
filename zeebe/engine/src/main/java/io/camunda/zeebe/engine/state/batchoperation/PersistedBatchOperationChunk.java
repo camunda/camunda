@@ -58,8 +58,8 @@ public class PersistedBatchOperationChunk extends UnpackedObject implements DbVa
     final var newKeys =
         itemKeysProp.stream().map(LongValue::getValue).filter(k -> !itemKeys.contains(k)).toList();
 
+    // This is needed since ArrayProperty does not support removing items
     itemKeysProp.reset();
-
     for (final var key : newKeys) {
       itemKeysProp.add().setValue(key);
     }
