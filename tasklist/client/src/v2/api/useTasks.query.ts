@@ -16,7 +16,6 @@ import {
   type QueryUserTasksRequestBody,
   type QueryUserTasksResponseBody,
 } from '@vzeta/camunda-api-zod-schemas/tasklist';
-import {useCallback, useMemo} from 'react';
 
 const POLLING_INTERVAL = 5000;
 const MAX_TASKS_PER_REQUEST = 50;
@@ -68,6 +67,9 @@ function useTasks(
 
       throw error;
     },
+    select(data) {
+      return {pages: data.pages.map((page) => page.items)};
+    },
     initialPageParam: 0,
     placeholderData: (previousData) => previousData,
     refetchInterval,
@@ -92,32 +94,7 @@ function useTasks(
     },
   });
 
-  const data = useMemo(() => {
-    return result.data?.pages.flatMap(({items}) => items) ?? [];
-  }, [result.data]);
-
-  const {
-    fetchNextPage: originalFetchNextPage,
-    fetchPreviousPage: originalFetchPreviousPage,
-  } = result;
-
-  const fetchNextPage = useCallback(async () => {
-    const {data} = await originalFetchNextPage();
-
-    return data?.pages.flatMap(({items}) => items) ?? [];
-  }, [originalFetchNextPage]);
-
-  const fetchPreviousPage = useCallback(async () => {
-    const {data} = await originalFetchPreviousPage();
-
-    return data?.pages.flatMap(({items}) => items) ?? [];
-  }, [originalFetchPreviousPage]);
-
-  return Object.assign({}, result, {
-    fetchNextPage,
-    fetchPreviousPage,
-    data,
-  });
+  return result;
 }
 
 export {useTasks};

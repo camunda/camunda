@@ -66,7 +66,7 @@ function useTasks(
         return response.json();
       }
 
-      throw error ?? new Error('Could not fetch tasks');
+      throw error;
     },
     initialPageParam: undefined,
     placeholderData: (previousData) => previousData,
