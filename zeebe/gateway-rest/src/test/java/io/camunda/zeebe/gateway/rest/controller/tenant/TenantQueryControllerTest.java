@@ -21,8 +21,6 @@ import io.camunda.search.sort.TenantSort;
 import io.camunda.security.auth.Authentication;
 import io.camunda.service.TenantServices;
 import io.camunda.service.UserServices;
-import io.camunda.zeebe.gateway.protocol.rest.PageObject;
-import io.camunda.zeebe.gateway.protocol.rest.PageObject.TypeEnum;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import java.util.List;
 import java.util.Set;
@@ -221,10 +219,8 @@ public class TenantQueryControllerTest extends RestControllerTest {
             new SearchQueryResult.Builder<TenantEntity>()
                 .total(TENANT_ENTITIES.size())
                 .items(TENANT_ENTITIES)
-                .firstSortValues(
-                    new PageObject[] {new PageObject().value("\"f\"").type(TypeEnum.STRING)})
-                .lastSortValues(
-                    new PageObject[] {new PageObject().value("\"v\"").type(TypeEnum.STRING)})
+                .firstSortValues(new Object[] {"f"})
+                .lastSortValues(new Object[] {"v"})
                 .build());
 
     // when / then
