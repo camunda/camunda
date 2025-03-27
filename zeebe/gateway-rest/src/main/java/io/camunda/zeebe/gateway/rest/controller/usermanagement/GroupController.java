@@ -59,13 +59,13 @@ public class GroupController {
         .fold(RestErrorMapper::mapProblemToCompletedResponse, this::updateGroup);
   }
 
-  @CamundaDeleteMapping(path = "/{groupKey}")
-  public CompletableFuture<ResponseEntity<Object>> deleteGroup(@PathVariable final long groupKey) {
+  @CamundaDeleteMapping(path = "/{groupId}")
+  public CompletableFuture<ResponseEntity<Object>> deleteGroup(@PathVariable final String groupId) {
     return RequestMapper.executeServiceMethodWithNoContentResult(
         () ->
             groupServices
                 .withAuthentication(RequestMapper.getAuthentication())
-                .deleteGroup(groupKey));
+                .deleteGroup(groupId));
   }
 
   @CamundaPostMapping(

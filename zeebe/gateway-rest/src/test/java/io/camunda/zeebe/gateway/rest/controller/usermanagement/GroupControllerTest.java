@@ -313,24 +313,24 @@ public class GroupControllerTest extends RestControllerTest {
   @Test
   void deleteGroupShouldReturnNoContent() {
     // given
-    final long groupKey = 111L;
+    final String groupId = "111";
 
-    final var groupRecord = new GroupRecord().setGroupKey(groupKey);
+    final var groupRecord = new GroupRecord().setGroupId(groupId);
 
-    when(groupServices.deleteGroup(groupKey))
+    when(groupServices.deleteGroup(groupId))
         .thenReturn(CompletableFuture.completedFuture(groupRecord));
 
     // when
     webClient
         .delete()
-        .uri("%s/%s".formatted(GROUP_BASE_URL, groupKey))
+        .uri("%s/%s".formatted(GROUP_BASE_URL, groupId))
         .accept(MediaType.APPLICATION_JSON)
         .exchange()
         .expectStatus()
         .isNoContent();
 
     // then
-    verify(groupServices, times(1)).deleteGroup(groupKey);
+    verify(groupServices, times(1)).deleteGroup(groupId);
   }
 
   @Test

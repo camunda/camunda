@@ -164,9 +164,10 @@ public class GroupServiceTest {
   public void shouldDeleteGroup() {
     // given
     final var groupKey = Protocol.encodePartitionId(1, 123L);
+    final var groupId = String.valueOf(groupKey);
 
     // when
-    services.deleteGroup(groupKey);
+    services.deleteGroup(groupId);
 
     // then
     final BrokerGroupDeleteRequest request = stubbedBrokerClient.getSingleBrokerRequest();
@@ -176,6 +177,7 @@ public class GroupServiceTest {
     assertThat(request.getKey()).isEqualTo(groupKey);
     final GroupRecord record = request.getRequestWriter();
     assertThat(record).hasGroupKey(groupKey);
+    assertThat(record).hasGroupId(groupId);
   }
 
   @Test
