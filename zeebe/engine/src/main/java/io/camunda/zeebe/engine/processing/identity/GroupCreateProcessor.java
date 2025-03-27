@@ -88,7 +88,7 @@ public class GroupCreateProcessor implements DistributedTypedRecordProcessor<Gro
   public void processDistributedCommand(final TypedRecord<GroupRecord> command) {
     final var record = command.getValue();
     groupState
-        .get(record.getGroupId())
+        .get(record.getGroupKey())
         .ifPresentOrElse(
             persistedGroup -> {
               final var errorMessage =
