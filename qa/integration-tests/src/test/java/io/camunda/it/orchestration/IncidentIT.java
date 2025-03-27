@@ -61,7 +61,7 @@ public class IncidentIT {
 
     final var incidents =
         client
-            .newIncidentQuery()
+            .newIncidentSearchRequest()
             .filter(f -> f.processInstanceKey(processInstanceKey))
             .send()
             .join()
@@ -121,7 +121,12 @@ public class IncidentIT {
         .untilAsserted(
             () -> {
               final var incident =
-                  client.newIncidentQuery().filter(f -> f.incidentKey(key)).send().join().items();
+                  client
+                      .newIncidentSearchRequest()
+                      .filter(f -> f.incidentKey(key))
+                      .send()
+                      .join()
+                      .items();
               assertThat(incident).hasSize(1).first().returns(expected, Incident::getState);
             });
   }
@@ -160,7 +165,7 @@ public class IncidentIT {
   private FlowNodeInstance getFlowNodeInstance(
       final CamundaClient client, final long parentInstanceKey, final String callActivityId) {
     return client
-        .newFlownodeInstanceQuery()
+        .newFlownodeInstanceSearchRequest()
         .filter(f -> f.processInstanceKey(parentInstanceKey).flowNodeId(callActivityId))
         .send()
         .join()
@@ -171,7 +176,7 @@ public class IncidentIT {
   private ProcessInstance getProcessInstance(
       final CamundaClient client, final long childInstanceKey) {
     return client
-        .newProcessInstanceQuery()
+        .newProcessInstanceSearchRequest()
         .filter(p -> p.processInstanceKey(childInstanceKey))
         .send()
         .join()
@@ -186,7 +191,7 @@ public class IncidentIT {
         .until(
             () ->
                 client
-                    .newFlownodeInstanceQuery()
+                    .newFlownodeInstanceSearchRequest()
                     .filter(f -> f.processDefinitionId(childProcessId))
                     .send()
                     .join()
@@ -270,7 +275,7 @@ public class IncidentIT {
 
     final var incidents =
         client
-            .newIncidentQuery()
+            .newIncidentSearchRequest()
             .filter(f -> f.processInstanceKey(processInstanceKey))
             .send()
             .join()
@@ -290,7 +295,7 @@ public class IncidentIT {
         .ignoreExceptions()
         .timeout(Duration.ofSeconds(30))
         .until(
-            () -> client.newIncidentQuery().filter(filterFn).send().join().items(),
+            () -> client.newIncidentSearchRequest().filter(filterFn).send().join().items(),
             Predicate.not(List::isEmpty))
         .getFirst();
   }

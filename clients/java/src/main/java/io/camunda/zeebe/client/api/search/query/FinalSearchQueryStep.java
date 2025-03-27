@@ -21,7 +21,7 @@ import java.time.Duration;
 
 /**
  * @deprecated since 8.8 for removal in 8.9, replaced by {@link
- *     io.camunda.client.api.search.query.FinalSearchQueryStep}
+ *     io.camunda.client.api.search.request.FinalSearchRequestStep}
  */
 @Deprecated
 public interface FinalSearchQueryStep<T> extends FinalCommandStep<SearchQueryResponse<T>> {

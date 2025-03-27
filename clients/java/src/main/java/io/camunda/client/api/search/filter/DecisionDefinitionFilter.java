@@ -15,7 +15,7 @@
  */
 package io.camunda.client.api.search.filter;
 
-import io.camunda.client.api.search.query.TypedSearchQueryRequest.SearchRequestFilter;
+import io.camunda.client.api.search.request.TypedSearchRequest.SearchRequestFilter;
 
 public interface DecisionDefinitionFilter extends SearchRequestFilter {
 

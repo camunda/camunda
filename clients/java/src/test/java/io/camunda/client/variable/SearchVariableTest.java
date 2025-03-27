@@ -29,7 +29,7 @@ public class SearchVariableTest extends ClientRestTest {
   @Test
   void shouldSearchVariables() {
     // when
-    client.newVariableQuery().send().join();
+    client.newVariableSearchRequest().send().join();
 
     // then
     final VariableSearchQuery request = gatewayService.getLastRequest(VariableSearchQuery.class);
@@ -39,7 +39,7 @@ public class SearchVariableTest extends ClientRestTest {
   @Test
   void shouldSearchVariablesByValue() {
     // when
-    client.newVariableQuery().filter(f -> f.value("demo")).send().join();
+    client.newVariableSearchRequest().filter(f -> f.value("demo")).send().join();
 
     // then
     final VariableSearchQuery request = gatewayService.getLastRequest(VariableSearchQuery.class);
@@ -49,7 +49,7 @@ public class SearchVariableTest extends ClientRestTest {
   @Test
   void shouldSearchVariablesByName() {
     // when
-    client.newVariableQuery().filter(f -> f.name("demo")).send().join();
+    client.newVariableSearchRequest().filter(f -> f.name("demo")).send().join();
 
     // then
     final VariableSearchQuery request = gatewayService.getLastRequest(VariableSearchQuery.class);
@@ -59,7 +59,7 @@ public class SearchVariableTest extends ClientRestTest {
   @Test
   void shouldSearchVariablesByNameStringFilter() {
     // when
-    client.newVariableQuery().filter(f -> f.name(b -> b.in("this", "that"))).send().join();
+    client.newVariableSearchRequest().filter(f -> f.name(b -> b.in("this", "that"))).send().join();
 
     // then
     final VariableSearchQuery request = gatewayService.getLastRequest(VariableSearchQuery.class);
@@ -69,7 +69,7 @@ public class SearchVariableTest extends ClientRestTest {
   @Test
   void shouldSearchVariablesByScopeKey() {
     // when
-    client.newVariableQuery().filter(f -> f.scopeKey(1L)).send().join();
+    client.newVariableSearchRequest().filter(f -> f.scopeKey(1L)).send().join();
 
     // then
     final VariableSearchQuery request = gatewayService.getLastRequest(VariableSearchQuery.class);
@@ -79,7 +79,7 @@ public class SearchVariableTest extends ClientRestTest {
   @Test
   void shouldSearchVariablesByProcessInstanceKey() {
     // when
-    client.newVariableQuery().filter(f -> f.processInstanceKey(1L)).send().join();
+    client.newVariableSearchRequest().filter(f -> f.processInstanceKey(1L)).send().join();
 
     // then
     final VariableSearchQuery request = gatewayService.getLastRequest(VariableSearchQuery.class);
@@ -90,7 +90,7 @@ public class SearchVariableTest extends ClientRestTest {
   void shouldSearchVariablesByProcessInstanceKeyLongFilter() {
     // when
     client
-        .newVariableQuery()
+        .newVariableSearchRequest()
         .sort(s -> s.processInstanceKey().asc().variableKey())
         .filter(f -> f.processInstanceKey(b -> b.in(1L, 10L)))
         .send()
@@ -108,7 +108,7 @@ public class SearchVariableTest extends ClientRestTest {
   @Test
   void shouldSearchVariablesByTenantId() {
     // when
-    client.newVariableQuery().filter(f -> f.tenantId("tenant1")).send().join();
+    client.newVariableSearchRequest().filter(f -> f.tenantId("tenant1")).send().join();
 
     // then
     final VariableSearchQuery request = gatewayService.getLastRequest(VariableSearchQuery.class);
@@ -118,7 +118,7 @@ public class SearchVariableTest extends ClientRestTest {
   @Test
   void shouldSearchVariablesByIsTruncated() {
     // when
-    client.newVariableQuery().filter(f -> f.isTruncated(true)).send().join();
+    client.newVariableSearchRequest().filter(f -> f.isTruncated(true)).send().join();
 
     // then
     final VariableSearchQuery request = gatewayService.getLastRequest(VariableSearchQuery.class);
@@ -128,7 +128,7 @@ public class SearchVariableTest extends ClientRestTest {
   @Test
   void shouldSearchVariablesByVariableKey() {
     // when
-    client.newVariableQuery().filter(f -> f.variableKey(1L)).send().join();
+    client.newVariableSearchRequest().filter(f -> f.variableKey(1L)).send().join();
 
     // then
     final VariableSearchQuery request = gatewayService.getLastRequest(VariableSearchQuery.class);

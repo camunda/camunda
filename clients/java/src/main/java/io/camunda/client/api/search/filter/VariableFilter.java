@@ -17,7 +17,7 @@ package io.camunda.client.api.search.filter;
 
 import io.camunda.client.api.search.filter.builder.BasicLongProperty;
 import io.camunda.client.api.search.filter.builder.StringProperty;
-import io.camunda.client.api.search.query.TypedSearchQueryRequest.SearchRequestFilter;
+import io.camunda.client.api.search.request.TypedSearchRequest.SearchRequestFilter;
 import java.util.function.Consumer;
 
 public interface VariableFilter extends SearchRequestFilter {

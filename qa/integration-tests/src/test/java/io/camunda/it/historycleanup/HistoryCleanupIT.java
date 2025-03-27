@@ -7,12 +7,12 @@
  */
 package io.camunda.it.historycleanup;
 
-import static io.camunda.it.client.QueryTest.deployResource;
-import static io.camunda.it.client.QueryTest.startProcessInstance;
-import static io.camunda.it.client.QueryTest.waitForFlowNodeInstances;
-import static io.camunda.it.client.QueryTest.waitForProcessInstancesToStart;
-import static io.camunda.it.client.QueryTest.waitForProcessesToBeDeployed;
-import static io.camunda.it.client.QueryTest.waitUntilProcessInstanceIsEnded;
+import static io.camunda.it.util.TestHelper.deployResource;
+import static io.camunda.it.util.TestHelper.startProcessInstance;
+import static io.camunda.it.util.TestHelper.waitForFlowNodeInstances;
+import static io.camunda.it.util.TestHelper.waitForProcessInstancesToStart;
+import static io.camunda.it.util.TestHelper.waitForProcessesToBeDeployed;
+import static io.camunda.it.util.TestHelper.waitUntilProcessInstanceIsEnded;
 import static io.camunda.qa.util.multidb.CamundaMultiDBExtension.TIMEOUT_DATA_AVAILABILITY;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -52,7 +52,7 @@ public class HistoryCleanupIT {
             .atMost(TIMEOUT_DATA_AVAILABILITY)
             .ignoreExceptions() // Ignore exceptions and continue retrying
             .until(
-                () -> camundaClient.newUserTaskQuery().send().join().items().getFirst(),
+                () -> camundaClient.newUserTaskSearchRequest().send().join().items().getFirst(),
                 Objects::nonNull);
     camundaClient.newUserTaskCompleteCommand(userTask.getUserTaskKey()).send().join();
 
@@ -68,7 +68,7 @@ public class HistoryCleanupIT {
             () -> {
               final var result =
                   camundaClient
-                      .newProcessInstanceQuery()
+                      .newProcessInstanceSearchRequest()
                       .filter(f -> f.processInstanceKey(processInstanceKey))
                       .send()
                       .join();
@@ -76,7 +76,7 @@ public class HistoryCleanupIT {
 
               final var taskAmount =
                   camundaClient
-                      .newUserTaskQuery()
+                      .newUserTaskSearchRequest()
                       .filter(b -> b.userTaskKey(userTask.getUserTaskKey()))
                       .send()
                       .join()
@@ -86,7 +86,7 @@ public class HistoryCleanupIT {
             });
 
     // the other should still exist
-    final var result = camundaClient.newProcessInstanceQuery().send().join();
+    final var result = camundaClient.newProcessInstanceSearchRequest().send().join();
     assertThat(result.page().totalItems()).isEqualTo(1);
     assertThat(result.items().getFirst().getProcessInstanceKey()).isNotEqualTo(processInstanceKey);
   }

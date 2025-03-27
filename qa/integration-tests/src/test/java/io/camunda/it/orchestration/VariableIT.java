@@ -49,7 +49,7 @@ public class VariableIT {
 
     final var variables =
         client
-            .newVariableQuery()
+            .newVariableSearchRequest()
             .filter(f -> f.processInstanceKey(processInstanceKey).name("smallVariable"))
             .send()
             .join();
@@ -93,7 +93,7 @@ public class VariableIT {
 
     final var variables =
         client
-            .newVariableQuery()
+            .newVariableSearchRequest()
             .filter(
                 f ->
                     f.processInstanceKey(processInstanceKey)
@@ -143,7 +143,7 @@ public class VariableIT {
 
     final var variables =
         client
-            .newVariableQuery()
+            .newVariableSearchRequest()
             .filter(
                 f ->
                     f.processInstanceKey(processInstanceKey)
@@ -174,7 +174,7 @@ public class VariableIT {
 
     final var updatedVariables =
         client
-            .newVariableQuery()
+            .newVariableSearchRequest()
             .filter(f -> f.processInstanceKey(processInstanceKey).name("largeVariable"))
             .send()
             .join();
@@ -200,6 +200,14 @@ public class VariableIT {
     Awaitility.await()
         .ignoreExceptions()
         .timeout(Duration.ofSeconds(30))
-        .until(() -> !client.newVariableQuery().filter(filterFn).send().join().items().isEmpty());
+        .until(
+            () ->
+                !client
+                    .newVariableSearchRequest()
+                    .filter(filterFn)
+                    .send()
+                    .join()
+                    .items()
+                    .isEmpty());
   }
 }

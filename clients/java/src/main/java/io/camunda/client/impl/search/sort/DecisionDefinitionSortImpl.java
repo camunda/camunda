@@ -16,9 +16,9 @@
 package io.camunda.client.impl.search.sort;
 
 import io.camunda.client.api.search.sort.DecisionDefinitionSort;
-import io.camunda.client.impl.search.query.SearchQuerySortBase;
+import io.camunda.client.impl.search.request.SearchRequestSortBase;
 
-public class DecisionDefinitionSortImpl extends SearchQuerySortBase<DecisionDefinitionSort>
+public class DecisionDefinitionSortImpl extends SearchRequestSortBase<DecisionDefinitionSort>
     implements DecisionDefinitionSort {
 
   @Override

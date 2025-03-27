@@ -70,7 +70,7 @@ public class AdHocSubprocessActivitySearchTest extends ClientRestTest {
     // when
     final AdHocSubprocessActivityResponse response =
         client
-            .newAdHocSubprocessActivityQuery(PROCESS_DEFINITION_KEY, AD_HOC_SUBPROCESS_ID)
+            .newAdHocSubprocessActivitySearchRequest(PROCESS_DEFINITION_KEY, AD_HOC_SUBPROCESS_ID)
             .send()
             .join();
 
@@ -136,7 +136,7 @@ public class AdHocSubprocessActivitySearchTest extends ClientRestTest {
     // when
     final AdHocSubprocessActivityResponse response =
         client
-            .newAdHocSubprocessActivityQuery(PROCESS_DEFINITION_KEY, AD_HOC_SUBPROCESS_ID)
+            .newAdHocSubprocessActivitySearchRequest(PROCESS_DEFINITION_KEY, AD_HOC_SUBPROCESS_ID)
             .send()
             .join();
 

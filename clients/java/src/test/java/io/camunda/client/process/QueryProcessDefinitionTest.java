@@ -19,8 +19,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.github.tomakehurst.wiremock.http.RequestMethod;
 import com.github.tomakehurst.wiremock.verification.LoggedRequest;
-import io.camunda.client.impl.search.SearchQuerySortRequest;
-import io.camunda.client.impl.search.SearchQuerySortRequestMapper;
+import io.camunda.client.impl.search.request.SearchRequestSort;
+import io.camunda.client.impl.search.request.SearchRequestSortMapper;
 import io.camunda.client.protocol.rest.ProcessDefinitionFilter;
 import io.camunda.client.protocol.rest.ProcessDefinitionSearchQuery;
 import io.camunda.client.protocol.rest.SearchQueryPageRequest;
@@ -75,7 +75,7 @@ public class QueryProcessDefinitionTest extends ClientRestTest {
   @Test
   public void shouldSearchProcessDefinitionWithEmptyQuery() {
     // when
-    client.newProcessDefinitionQuery().send().join();
+    client.newProcessDefinitionSearchRequest().send().join();
 
     // then
     final ProcessDefinitionSearchQuery request =
@@ -87,7 +87,7 @@ public class QueryProcessDefinitionTest extends ClientRestTest {
   public void shouldSearchProcessDefinitionWithFullFilters() {
     // when
     client
-        .newProcessDefinitionQuery()
+        .newProcessDefinitionSearchRequest()
         .filter(
             f ->
                 f.processDefinitionKey(5L)
@@ -117,7 +117,7 @@ public class QueryProcessDefinitionTest extends ClientRestTest {
   void shouldSearchProcessDefinitionWithFullSorting() {
     // when
     client
-        .newProcessDefinitionQuery()
+        .newProcessDefinitionSearchRequest()
         .sort(
             s ->
                 s.processDefinitionKey()
@@ -140,8 +140,8 @@ public class QueryProcessDefinitionTest extends ClientRestTest {
     // then
     final ProcessDefinitionSearchQuery request =
         gatewayService.getLastRequest(ProcessDefinitionSearchQuery.class);
-    final List<SearchQuerySortRequest> sorts =
-        SearchQuerySortRequestMapper.fromProcessDefinitionSearchQuerySortRequest(
+    final List<SearchRequestSort> sorts =
+        SearchRequestSortMapper.fromProcessDefinitionSearchQuerySortRequest(
             Objects.requireNonNull(request.getSort()));
     assertThat(sorts).hasSize(7);
     assertSort(sorts.get(0), "processDefinitionKey", SortOrderEnum.ASC);
@@ -157,7 +157,7 @@ public class QueryProcessDefinitionTest extends ClientRestTest {
   void shouldSearchWithFullPagination() {
     // when
     client
-        .newProcessDefinitionQuery()
+        .newProcessDefinitionSearchRequest()
         .page(
             p ->
                 p.from(23)
@@ -179,7 +179,7 @@ public class QueryProcessDefinitionTest extends ClientRestTest {
   }
 
   private void assertSort(
-      final SearchQuerySortRequest sort, final String name, final SortOrderEnum order) {
+      final SearchRequestSort sort, final String name, final SortOrderEnum order) {
     assertThat(sort.getField()).isEqualTo(name);
     assertThat(sort.getOrder()).isEqualTo(order);
   }

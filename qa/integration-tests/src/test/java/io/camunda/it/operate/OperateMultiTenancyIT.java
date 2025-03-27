@@ -7,7 +7,7 @@
  */
 package io.camunda.it.operate;
 
-import static io.camunda.it.client.QueryTest.deployResourceForTenant;
+import static io.camunda.it.util.TestHelper.deployResourceForTenant;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.http.HttpStatus.NOT_FOUND;
 import static org.springframework.http.HttpStatus.OK;
@@ -134,7 +134,7 @@ public class OperateMultiTenancyIT {
         .ignoreExceptions() // Ignore exceptions and continue retrying
         .untilAsserted(
             () ->
-                assertThat(camundaClient.newProcessDefinitionQuery().send().join().items())
+                assertThat(camundaClient.newProcessDefinitionSearchRequest().send().join().items())
                     .hasSize(expectedProcessDefinitions));
   }
 }

@@ -21,7 +21,7 @@ import io.camunda.client.api.fetch.FlowNodeInstanceGetRequest;
 import io.camunda.client.api.search.response.FlowNodeInstance;
 import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
-import io.camunda.client.impl.search.SearchResponseMapper;
+import io.camunda.client.impl.search.response.SearchResponseMapper;
 import io.camunda.client.protocol.rest.FlowNodeInstanceResult;
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;

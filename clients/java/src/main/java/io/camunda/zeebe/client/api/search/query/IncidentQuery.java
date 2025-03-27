@@ -21,7 +21,7 @@ import io.camunda.zeebe.client.api.search.sort.IncidentSort;
 
 /**
  * @deprecated since 8.8 for removal in 8.9, replaced by {@link
- *     io.camunda.client.api.search.query.IncidentQuery}
+ *     io.camunda.client.api.search.request.IncidentSearchRequest}
  */
 @Deprecated
 public interface IncidentQuery

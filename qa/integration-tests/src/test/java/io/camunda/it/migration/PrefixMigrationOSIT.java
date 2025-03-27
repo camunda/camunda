@@ -142,7 +142,8 @@ public class PrefixMigrationOSIT {
     // then
     try (final var currentCamundaClient =
         startLatestCamunda(osContainer.getHttpHostAddress(), NEW_PREFIX, false)) {
-      final var processDefinitions = currentCamundaClient.newProcessDefinitionQuery().send().join();
+      final var processDefinitions =
+          currentCamundaClient.newProcessDefinitionSearchRequest().send().join();
       Assertions.assertThat(processDefinitions.items().size()).isEqualTo(1);
       Assertions.assertThat(processDefinitions.items().getFirst().getProcessDefinitionKey())
           .isEqualTo(event.getProcesses().getFirst().getProcessDefinitionKey());

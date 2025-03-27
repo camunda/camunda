@@ -131,7 +131,7 @@ public class CamundaProcessTestExtensionIT {
         .atMost(Duration.ofSeconds(10))
         .untilAsserted(
             () ->
-                assertThat(client.newProcessInstanceQuery().send().join().items())
+                assertThat(client.newProcessInstanceSearchRequest().send().join().items())
                     .hasSize(1)
                     .extracting(ProcessInstance::getProcessInstanceKey)
                     .contains(processInstance.getProcessInstanceKey()));

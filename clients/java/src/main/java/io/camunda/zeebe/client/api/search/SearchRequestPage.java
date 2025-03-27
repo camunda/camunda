@@ -19,7 +19,7 @@ import java.util.List;
 
 /**
  * @deprecated since 8.8 for removal in 8.9, replaced by {@link
- *     io.camunda.client.api.search.SearchRequestPage}
+ *     io.camunda.client.api.search.request.SearchRequestPage}
  */
 @Deprecated
 public interface SearchRequestPage {

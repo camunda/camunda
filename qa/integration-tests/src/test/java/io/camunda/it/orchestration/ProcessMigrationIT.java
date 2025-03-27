@@ -220,7 +220,7 @@ public class ProcessMigrationIT {
 
   public void resolveIncidents(final CamundaClient client, final Long processInstanceKey) {
     client
-        .newIncidentQuery()
+        .newIncidentSearchRequest()
         .filter(f -> f.processInstanceKey(processInstanceKey))
         .send()
         .join()
@@ -240,7 +240,8 @@ public class ProcessMigrationIT {
         .atMost(TIMEOUT_DATA_AVAILABILITY)
         .untilAsserted(
             () -> {
-              final var incidents = client.newIncidentQuery().filter(filter).send().join().items();
+              final var incidents =
+                  client.newIncidentSearchRequest().filter(filter).send().join().items();
               asserter.accept(incidents);
             });
   }
@@ -318,7 +319,7 @@ public class ProcessMigrationIT {
         .untilAsserted(
             () -> {
               final var result =
-                  client.newFlownodeInstanceQuery().filter(filter).send().join().items();
+                  client.newFlownodeInstanceSearchRequest().filter(filter).send().join().items();
               asserter.accept(result);
             });
   }
@@ -331,7 +332,8 @@ public class ProcessMigrationIT {
         .atMost(TIMEOUT_DATA_AVAILABILITY)
         .untilAsserted(
             () -> {
-              final var result = client.newVariableQuery().filter(filter).send().join().items();
+              final var result =
+                  client.newVariableSearchRequest().filter(filter).send().join().items();
               asserter.accept(result);
             });
   }
@@ -346,7 +348,7 @@ public class ProcessMigrationIT {
         .untilAsserted(
             () -> {
               final var result =
-                  client.newProcessDefinitionQuery().filter(filter).send().join().items();
+                  client.newProcessDefinitionSearchRequest().filter(filter).send().join().items();
               asserter.accept(result);
             });
   }
@@ -361,7 +363,7 @@ public class ProcessMigrationIT {
         .untilAsserted(
             () -> {
               final var result =
-                  client.newProcessInstanceQuery().filter(filter).send().join().items();
+                  client.newProcessInstanceSearchRequest().filter(filter).send().join().items();
               asserter.accept(result);
             });
   }
@@ -375,7 +377,8 @@ public class ProcessMigrationIT {
         .ignoreExceptions()
         .untilAsserted(
             () -> {
-              final var result = client.newUserTaskQuery().filter(filter).send().join().items();
+              final var result =
+                  client.newUserTaskSearchRequest().filter(filter).send().join().items();
               asserter.accept(result);
             });
   }

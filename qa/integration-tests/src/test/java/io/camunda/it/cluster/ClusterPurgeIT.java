@@ -9,7 +9,7 @@ package io.camunda.it.cluster;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.command.ProblemException;
-import io.camunda.client.api.search.response.SearchQueryResponse;
+import io.camunda.client.api.search.response.SearchResponse;
 import io.camunda.client.api.search.response.UserTask;
 import io.camunda.client.protocol.rest.ProblemDetail;
 import io.camunda.zeebe.management.cluster.PlannedOperationsResponse;
@@ -180,11 +180,11 @@ public class ClusterPurgeIT {
         .atMost(Duration.ofSeconds(20))
         .untilAsserted(
             () -> {
-              final Future<SearchQueryResponse<UserTask>> userTaskFuture =
-                  client.newUserTaskQuery().send();
+              final Future<SearchResponse<UserTask>> userTaskFuture =
+                  client.newUserTaskSearchRequest().send();
               Assertions.assertThat(userTaskFuture)
                   .succeedsWithin(Duration.ofSeconds(10))
-                  .extracting(SearchQueryResponse::items)
+                  .extracting(SearchResponse::items)
                   .satisfies(
                       items -> {
                         Assertions.assertThat(items).hasSize(1);
@@ -205,11 +205,11 @@ public class ClusterPurgeIT {
         .atMost(Duration.ofSeconds(20))
         .untilAsserted(
             () -> {
-              final Future<SearchQueryResponse<UserTask>> userTaskFuture =
-                  client.newUserTaskQuery().send();
+              final Future<SearchResponse<UserTask>> userTaskFuture =
+                  client.newUserTaskSearchRequest().send();
               Assertions.assertThat(userTaskFuture)
                   .succeedsWithin(Duration.ofSeconds(10))
-                  .extracting(SearchQueryResponse::items)
+                  .extracting(SearchResponse::items)
                   .satisfies(items -> Assertions.assertThat(items).isEmpty());
             });
   }

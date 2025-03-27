@@ -91,17 +91,17 @@ import io.camunda.client.api.fetch.UserTaskGetRequest;
 import io.camunda.client.api.fetch.VariableGetRequest;
 import io.camunda.client.api.response.ActivatedJob;
 import io.camunda.client.api.response.DocumentReferenceResponse;
-import io.camunda.client.api.search.query.AdHocSubprocessActivityQuery;
-import io.camunda.client.api.search.query.DecisionDefinitionQuery;
-import io.camunda.client.api.search.query.DecisionInstanceQuery;
-import io.camunda.client.api.search.query.DecisionRequirementsQuery;
-import io.camunda.client.api.search.query.FlownodeInstanceQuery;
-import io.camunda.client.api.search.query.IncidentQuery;
-import io.camunda.client.api.search.query.ProcessDefinitionQuery;
-import io.camunda.client.api.search.query.ProcessInstanceQuery;
-import io.camunda.client.api.search.query.UserTaskQuery;
-import io.camunda.client.api.search.query.UserTaskVariableQuery;
-import io.camunda.client.api.search.query.VariableQuery;
+import io.camunda.client.api.search.request.AdHocSubprocessActivitySearchRequest;
+import io.camunda.client.api.search.request.DecisionDefinitionSearchRequest;
+import io.camunda.client.api.search.request.DecisionInstanceSearchRequest;
+import io.camunda.client.api.search.request.DecisionRequirementsSearchRequest;
+import io.camunda.client.api.search.request.FlownodeInstanceSearchRequest;
+import io.camunda.client.api.search.request.IncidentSearchRequest;
+import io.camunda.client.api.search.request.ProcessDefinitionSearchRequest;
+import io.camunda.client.api.search.request.ProcessInstanceSearchRequest;
+import io.camunda.client.api.search.request.UserTaskSearchRequest;
+import io.camunda.client.api.search.request.UserTaskVariableSearchRequest;
+import io.camunda.client.api.search.request.VariableSearchRequest;
 import io.camunda.client.api.worker.JobClient;
 import io.camunda.client.api.worker.JobWorkerBuilderStep1;
 import io.camunda.client.impl.command.ActivateAdHocSubprocessActivitiesCommandImpl;
@@ -169,17 +169,17 @@ import io.camunda.client.impl.fetch.UserTaskGetRequestImpl;
 import io.camunda.client.impl.fetch.VariableGetRequestImpl;
 import io.camunda.client.impl.http.HttpClient;
 import io.camunda.client.impl.http.HttpClientFactory;
-import io.camunda.client.impl.search.query.AdHocSubprocessActivityQueryImpl;
-import io.camunda.client.impl.search.query.DecisionDefinitionQueryImpl;
-import io.camunda.client.impl.search.query.DecisionInstanceQueryImpl;
-import io.camunda.client.impl.search.query.DecisionRequirementsQueryImpl;
-import io.camunda.client.impl.search.query.FlowNodeInstanceQueryImpl;
-import io.camunda.client.impl.search.query.IncidentQueryImpl;
-import io.camunda.client.impl.search.query.ProcessDefinitionQueryImpl;
-import io.camunda.client.impl.search.query.ProcessInstanceQueryImpl;
-import io.camunda.client.impl.search.query.UserTaskQueryImpl;
-import io.camunda.client.impl.search.query.UserTaskVariableQueryImpl;
-import io.camunda.client.impl.search.query.VariableQueryImpl;
+import io.camunda.client.impl.search.request.AdHocSubprocessActivitySearchRequestImpl;
+import io.camunda.client.impl.search.request.DecisionDefinitionSearchRequestImpl;
+import io.camunda.client.impl.search.request.DecisionInstanceSearchRequestImpl;
+import io.camunda.client.impl.search.request.DecisionRequirementsSearchRequestImpl;
+import io.camunda.client.impl.search.request.FlowNodeInstanceSearchRequestImpl;
+import io.camunda.client.impl.search.request.IncidentSearchRequestImpl;
+import io.camunda.client.impl.search.request.ProcessDefinitionSearchRequestImpl;
+import io.camunda.client.impl.search.request.ProcessInstanceSearchRequestImpl;
+import io.camunda.client.impl.search.request.UserTaskSearchRequestImpl;
+import io.camunda.client.impl.search.request.UserTaskVariableSearchRequestImpl;
+import io.camunda.client.impl.search.request.VariableSearchRequestImpl;
 import io.camunda.client.impl.util.ExecutorResource;
 import io.camunda.client.impl.util.VersionUtil;
 import io.camunda.client.impl.worker.JobClientImpl;
@@ -653,8 +653,8 @@ public final class CamundaClientImpl implements CamundaClient {
   }
 
   @Override
-  public ProcessDefinitionQuery newProcessDefinitionQuery() {
-    return new ProcessDefinitionQueryImpl(httpClient, jsonMapper);
+  public ProcessDefinitionSearchRequest newProcessDefinitionSearchRequest() {
+    return new ProcessDefinitionSearchRequestImpl(httpClient, jsonMapper);
   }
 
   @Override
@@ -663,13 +663,13 @@ public final class CamundaClientImpl implements CamundaClient {
   }
 
   @Override
-  public ProcessInstanceQuery newProcessInstanceQuery() {
-    return new ProcessInstanceQueryImpl(httpClient, jsonMapper);
+  public ProcessInstanceSearchRequest newProcessInstanceSearchRequest() {
+    return new ProcessInstanceSearchRequestImpl(httpClient, jsonMapper);
   }
 
   @Override
-  public FlownodeInstanceQuery newFlownodeInstanceQuery() {
-    return new FlowNodeInstanceQueryImpl(httpClient, jsonMapper);
+  public FlownodeInstanceSearchRequest newFlownodeInstanceSearchRequest() {
+    return new FlowNodeInstanceSearchRequestImpl(httpClient, jsonMapper);
   }
 
   @Override
@@ -678,14 +678,14 @@ public final class CamundaClientImpl implements CamundaClient {
   }
 
   @Override
-  public AdHocSubprocessActivityQuery newAdHocSubprocessActivityQuery() {
-    return new AdHocSubprocessActivityQueryImpl(httpClient, jsonMapper);
+  public AdHocSubprocessActivitySearchRequest newAdHocSubprocessActivitySearchRequest() {
+    return new AdHocSubprocessActivitySearchRequestImpl(httpClient, jsonMapper);
   }
 
   @Override
-  public AdHocSubprocessActivityQuery newAdHocSubprocessActivityQuery(
+  public AdHocSubprocessActivitySearchRequest newAdHocSubprocessActivitySearchRequest(
       final long processDefinitionKey, final String adHocSubprocessId) {
-    return newAdHocSubprocessActivityQuery()
+    return newAdHocSubprocessActivitySearchRequest()
         .filter(
             filter ->
                 filter
@@ -701,18 +701,18 @@ public final class CamundaClientImpl implements CamundaClient {
   }
 
   @Override
-  public UserTaskQuery newUserTaskQuery() {
-    return new UserTaskQueryImpl(httpClient, jsonMapper);
+  public UserTaskSearchRequest newUserTaskSearchRequest() {
+    return new UserTaskSearchRequestImpl(httpClient, jsonMapper);
   }
 
   @Override
-  public DecisionRequirementsQuery newDecisionRequirementsQuery() {
-    return new DecisionRequirementsQueryImpl(httpClient, jsonMapper);
+  public DecisionRequirementsSearchRequest newDecisionRequirementsSearchRequest() {
+    return new DecisionRequirementsSearchRequestImpl(httpClient, jsonMapper);
   }
 
   @Override
-  public DecisionDefinitionQuery newDecisionDefinitionQuery() {
-    return new DecisionDefinitionQueryImpl(httpClient, jsonMapper);
+  public DecisionDefinitionSearchRequest newDecisionDefinitionSearchRequest() {
+    return new DecisionDefinitionSearchRequestImpl(httpClient, jsonMapper);
   }
 
   @Override
@@ -728,8 +728,8 @@ public final class CamundaClientImpl implements CamundaClient {
   }
 
   @Override
-  public DecisionInstanceQuery newDecisionInstanceQuery() {
-    return new DecisionInstanceQueryImpl(httpClient, jsonMapper);
+  public DecisionInstanceSearchRequest newDecisionInstanceSearchRequest() {
+    return new DecisionInstanceSearchRequestImpl(httpClient, jsonMapper);
   }
 
   @Override
@@ -738,8 +738,8 @@ public final class CamundaClientImpl implements CamundaClient {
   }
 
   @Override
-  public IncidentQuery newIncidentQuery() {
-    return new IncidentQueryImpl(httpClient, jsonMapper);
+  public IncidentSearchRequest newIncidentSearchRequest() {
+    return new IncidentSearchRequestImpl(httpClient, jsonMapper);
   }
 
   @Override
@@ -810,8 +810,8 @@ public final class CamundaClientImpl implements CamundaClient {
   }
 
   @Override
-  public VariableQuery newVariableQuery() {
-    return new VariableQueryImpl(httpClient, jsonMapper);
+  public VariableSearchRequest newVariableSearchRequest() {
+    return new VariableSearchRequestImpl(httpClient, jsonMapper);
   }
 
   @Override
@@ -820,8 +820,8 @@ public final class CamundaClientImpl implements CamundaClient {
   }
 
   @Override
-  public UserTaskVariableQuery newUserTaskVariableQuery(final long userTaskKey) {
-    return new UserTaskVariableQueryImpl(httpClient, jsonMapper, userTaskKey);
+  public UserTaskVariableSearchRequest newUserTaskVariableSearchRequest(final long userTaskKey) {
+    return new UserTaskVariableSearchRequestImpl(httpClient, jsonMapper, userTaskKey);
   }
 
   @Override

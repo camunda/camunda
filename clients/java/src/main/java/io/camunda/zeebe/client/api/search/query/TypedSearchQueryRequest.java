@@ -22,7 +22,7 @@ import java.util.function.Consumer;
 
 /**
  * @deprecated since 8.8 for removal in 8.9, replaced by {@link
- *     io.camunda.client.api.search.query.TypedSearchQueryRequest}
+ *     io.camunda.client.api.search.request.TypedSearchRequest}
  */
 @Deprecated
 public interface TypedSearchQueryRequest<

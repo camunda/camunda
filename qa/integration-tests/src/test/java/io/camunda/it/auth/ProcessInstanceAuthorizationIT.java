@@ -90,7 +90,7 @@ class ProcessInstanceAuthorizationIT {
   public void searchShouldReturnAuthorizedProcessInstances(
       @Authenticated(USER1) final CamundaClient camundaClient) {
     // when
-    final var result = camundaClient.newProcessInstanceQuery().send().join();
+    final var result = camundaClient.newProcessInstanceSearchRequest().send().join();
     // then
     assertThat(result.items()).hasSize(1);
     assertThat(result.items().getFirst().getProcessDefinitionId()).isEqualTo(PROCESS_ID_1);
@@ -133,7 +133,7 @@ class ProcessInstanceAuthorizationIT {
     // given
     final long processDefinitionKey = getProcessDefinitionKey(adminClient, PROCESS_ID_1);
     // when
-    final var result = camundaClient.newFlownodeInstanceQuery().send().join();
+    final var result = camundaClient.newFlownodeInstanceSearchRequest().send().join();
     // then
     assertThat(result.items()).hasSize(2);
     assertThat(result.items().getFirst().getProcessDefinitionKey()).isEqualTo(processDefinitionKey);
@@ -176,7 +176,7 @@ class ProcessInstanceAuthorizationIT {
   public void searchShouldReturnAuthorizedIncidents(
       @Authenticated(USER1) final CamundaClient camundaClient) {
     // when
-    final var result = camundaClient.newIncidentQuery().send().join();
+    final var result = camundaClient.newIncidentSearchRequest().send().join();
     // then
     assertThat(result.items()).hasSize(1);
     assertThat(result.items().getFirst().getProcessDefinitionId()).isEqualTo(PROCESS_ID_1);
@@ -220,7 +220,7 @@ class ProcessInstanceAuthorizationIT {
     // given
     final var processInstanceKey = getProcessInstanceKey(adminClient, PROCESS_ID_1);
     // when
-    final var result = camundaClient.newVariableQuery().send().join();
+    final var result = camundaClient.newVariableSearchRequest().send().join();
     // then
     assertThat(result.items()).hasSize(1);
     assertThat(result.items().getFirst().getProcessInstanceKey()).isEqualTo(processInstanceKey);
@@ -260,7 +260,7 @@ class ProcessInstanceAuthorizationIT {
 
   private long getProcessInstanceKey(final CamundaClient camundaClient, final String processId) {
     return camundaClient
-        .newProcessInstanceQuery()
+        .newProcessInstanceSearchRequest()
         .filter(f -> f.processDefinitionId(processId))
         .send()
         .join()
@@ -272,7 +272,7 @@ class ProcessInstanceAuthorizationIT {
   private long getAnyFlowNodeInstanceKey(
       final CamundaClient camundaClient, final String processId) {
     return camundaClient
-        .newFlownodeInstanceQuery()
+        .newFlownodeInstanceSearchRequest()
         .filter(f -> f.processDefinitionId(processId))
         .send()
         .join()
@@ -283,7 +283,7 @@ class ProcessInstanceAuthorizationIT {
 
   private long getAnyIncidentKey(final CamundaClient camundaClient, final String processId) {
     return camundaClient
-        .newIncidentQuery()
+        .newIncidentSearchRequest()
         .filter(f -> f.processDefinitionId(processId))
         .send()
         .join()
@@ -294,7 +294,7 @@ class ProcessInstanceAuthorizationIT {
 
   private long getAnyVariableKey(final CamundaClient camundaClient, final long processInstanceKey) {
     return camundaClient
-        .newVariableQuery()
+        .newVariableSearchRequest()
         .filter(f -> f.processInstanceKey(processInstanceKey))
         .send()
         .join()
@@ -305,7 +305,7 @@ class ProcessInstanceAuthorizationIT {
 
   private long getProcessDefinitionKey(final CamundaClient adminClient, final String processId) {
     return adminClient
-        .newProcessDefinitionQuery()
+        .newProcessDefinitionSearchRequest()
         .filter(f -> f.processDefinitionId(processId))
         .send()
         .join()
@@ -330,7 +330,7 @@ class ProcessInstanceAuthorizationIT {
         .ignoreExceptions() // Ignore exceptions and continue retrying
         .untilAsserted(
             () ->
-                assertThat(camundaClient.newFlownodeInstanceQuery().send().join().items())
+                assertThat(camundaClient.newFlownodeInstanceSearchRequest().send().join().items())
                     .hasSize(expectedCount));
   }
 }

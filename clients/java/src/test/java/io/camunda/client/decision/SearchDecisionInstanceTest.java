@@ -30,7 +30,7 @@ class SearchDecisionInstanceTest extends ClientRestTest {
   @Test
   void shouldSearchDecisionInstance() {
     // when
-    client.newDecisionInstanceQuery().send().join();
+    client.newDecisionInstanceSearchRequest().send().join();
 
     // then
     final DecisionInstanceSearchQuery request =
@@ -42,7 +42,7 @@ class SearchDecisionInstanceTest extends ClientRestTest {
   void shouldSearchDecisionInstanceWithFullFilters() {
     // when
     client
-        .newDecisionInstanceQuery()
+        .newDecisionInstanceSearchRequest()
         .filter(
             f ->
                 f.decisionInstanceKey(1L)
@@ -80,7 +80,7 @@ class SearchDecisionInstanceTest extends ClientRestTest {
   void shouldSearchDecisionInstanceByDecisionDefinitionKeyLongProperty() {
     // when
     client
-        .newDecisionInstanceQuery()
+        .newDecisionInstanceSearchRequest()
         .filter(f -> f.decisionDefinitionKey(b -> b.in(1L, 10L)))
         .send()
         .join();
@@ -99,7 +99,11 @@ class SearchDecisionInstanceTest extends ClientRestTest {
   void shouldSearchDecisionInstanceByEvaluationDateDateTimeProperty() {
     // when
     final OffsetDateTime now = OffsetDateTime.now();
-    client.newDecisionInstanceQuery().filter(f -> f.evaluationDate(b -> b.neq(now))).send().join();
+    client
+        .newDecisionInstanceSearchRequest()
+        .filter(f -> f.evaluationDate(b -> b.neq(now)))
+        .send()
+        .join();
 
     // then
     final DecisionInstanceSearchQuery request =
@@ -115,7 +119,7 @@ class SearchDecisionInstanceTest extends ClientRestTest {
   void shouldSearchDecisionInstanceWithFullSorting() {
     // when
     client
-        .newDecisionInstanceQuery()
+        .newDecisionInstanceSearchRequest()
         .sort(
             s ->
                 s.decisionDefinitionKey()

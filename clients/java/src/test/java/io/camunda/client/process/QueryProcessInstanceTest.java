@@ -21,9 +21,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.github.tomakehurst.wiremock.http.RequestMethod;
 import com.github.tomakehurst.wiremock.verification.LoggedRequest;
 import io.camunda.client.api.search.response.ProcessInstanceState;
-import io.camunda.client.impl.search.SearchQuerySortRequest;
-import io.camunda.client.impl.search.SearchQuerySortRequestMapper;
 import io.camunda.client.impl.search.filter.builder.StringPropertyImpl;
+import io.camunda.client.impl.search.request.SearchRequestSort;
+import io.camunda.client.impl.search.request.SearchRequestSortMapper;
 import io.camunda.client.protocol.rest.*;
 import io.camunda.client.util.ClientRestTest;
 import io.camunda.client.util.RestGatewayService;
@@ -48,7 +48,7 @@ public class QueryProcessInstanceTest extends ClientRestTest {
   @Test
   public void shouldSearchProcessInstanceWithEmptyQuery() {
     // when
-    client.newProcessInstanceQuery().send().join();
+    client.newProcessInstanceSearchRequest().send().join();
 
     // then
     final ProcessInstanceSearchQuery request =
@@ -73,7 +73,7 @@ public class QueryProcessInstanceTest extends ClientRestTest {
                 .name("n2")
                 .value(new StringPropertyImpl().eq("v2").build()));
     client
-        .newProcessInstanceQuery()
+        .newProcessInstanceSearchRequest()
         .filter(
             f ->
                 f.processInstanceKey(123L)
@@ -117,7 +117,7 @@ public class QueryProcessInstanceTest extends ClientRestTest {
   void shouldSearchProcessInstanceByProcessInstanceKeyLongFilter() {
     // when
     client
-        .newProcessInstanceQuery()
+        .newProcessInstanceSearchRequest()
         .filter(f -> f.processInstanceKey(b -> b.in(1L, 10L)))
         .send()
         .join();
@@ -136,7 +136,7 @@ public class QueryProcessInstanceTest extends ClientRestTest {
   void shouldSearchProcessInstanceByProcessDefinitionIdStringFilter() {
     // when
     client
-        .newProcessInstanceQuery()
+        .newProcessInstanceSearchRequest()
         .filter(f -> f.processDefinitionId(b -> b.like("string")))
         .send()
         .join();
@@ -155,7 +155,7 @@ public class QueryProcessInstanceTest extends ClientRestTest {
   void shouldSearchProcessInstanceByStartDateDateTimeFilter() {
     // when
     final OffsetDateTime now = OffsetDateTime.now();
-    client.newProcessInstanceQuery().filter(f -> f.startDate(b -> b.gt(now))).send().join();
+    client.newProcessInstanceSearchRequest().filter(f -> f.startDate(b -> b.gt(now))).send().join();
 
     // then
     final ProcessInstanceSearchQuery request =
@@ -183,7 +183,7 @@ public class QueryProcessInstanceTest extends ClientRestTest {
                 .value(new StringPropertyImpl().eq("v2").build()));
 
     // when
-    client.newProcessInstanceQuery().filter(f -> f.variables(variablesMap)).send().join();
+    client.newProcessInstanceSearchRequest().filter(f -> f.variables(variablesMap)).send().join();
 
     // then
     final ProcessInstanceSearchQuery request =
@@ -197,7 +197,7 @@ public class QueryProcessInstanceTest extends ClientRestTest {
   void shouldSearchProcessInstanceWithFullSorting() {
     // when
     client
-        .newProcessInstanceQuery()
+        .newProcessInstanceSearchRequest()
         .sort(
             s ->
                 s.processInstanceKey()
@@ -232,8 +232,8 @@ public class QueryProcessInstanceTest extends ClientRestTest {
     // then
     final ProcessInstanceSearchQuery request =
         gatewayService.getLastRequest(ProcessInstanceSearchQuery.class);
-    final List<SearchQuerySortRequest> sorts =
-        SearchQuerySortRequestMapper.fromProcessInstanceSearchQuerySortRequest(
+    final List<SearchRequestSort> sorts =
+        SearchRequestSortMapper.fromProcessInstanceSearchQuerySortRequest(
             Objects.requireNonNull(request.getSort()));
     assertThat(sorts).hasSize(13);
     assertSort(sorts.get(0), "processInstanceKey", SortOrderEnum.ASC);
@@ -255,7 +255,7 @@ public class QueryProcessInstanceTest extends ClientRestTest {
   void shouldSearchWithFullPagination() {
     // when
     client
-        .newProcessInstanceQuery()
+        .newProcessInstanceSearchRequest()
         .page(
             p ->
                 p.from(23)
@@ -301,7 +301,7 @@ public class QueryProcessInstanceTest extends ClientRestTest {
   }
 
   private void assertSort(
-      final SearchQuerySortRequest sort, final String name, final SortOrderEnum order) {
+      final SearchRequestSort sort, final String name, final SortOrderEnum order) {
     assertThat(sort.getField()).isEqualTo(name);
     assertThat(sort.getOrder()).isEqualTo(order);
   }

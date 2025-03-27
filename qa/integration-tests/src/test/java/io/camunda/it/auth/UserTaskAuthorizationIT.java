@@ -86,7 +86,7 @@ class UserTaskAuthorizationIT {
   public void searchShouldReturnAuthorizedUserTasks(
       @Authenticated(USER1) final CamundaClient camundaClient) {
     // when
-    final var result = camundaClient.newUserTaskQuery().send().join();
+    final var result = camundaClient.newUserTaskSearchRequest().send().join();
 
     // then return only user tasks from process with id PROCESS_ID_1
     assertThat(result.items()).hasSize(2);
@@ -161,7 +161,7 @@ class UserTaskAuthorizationIT {
     // given
     final var userTaskKey = getUserTaskKey(adminClient, PROCESS_ID_1);
     // when
-    final var result = camundaClient.newUserTaskVariableQuery(userTaskKey).send().join();
+    final var result = camundaClient.newUserTaskVariableSearchRequest(userTaskKey).send().join();
     // then
     assertThat(result.items()).isNotEmpty();
   }
@@ -174,7 +174,7 @@ class UserTaskAuthorizationIT {
     final var userTaskKey = getUserTaskKey(adminClient, PROCESS_ID_1);
     // when
     final Executable executeSearchVariables =
-        () -> camundaClient.newUserTaskVariableQuery(userTaskKey).send().join();
+        () -> camundaClient.newUserTaskVariableSearchRequest(userTaskKey).send().join();
     // then
     final var problemException = assertThrows(ProblemException.class, executeSearchVariables);
     assertThat(problemException.code()).isEqualTo(403);
@@ -185,7 +185,7 @@ class UserTaskAuthorizationIT {
 
   private long getUserTaskKey(final CamundaClient camundaClient, final String processId) {
     return camundaClient
-        .newUserTaskQuery()
+        .newUserTaskSearchRequest()
         .filter(f -> f.bpmnProcessId(processId))
         .send()
         .join()
@@ -210,7 +210,7 @@ class UserTaskAuthorizationIT {
         .ignoreExceptions() // Ignore exceptions and continue retrying
         .untilAsserted(
             () ->
-                assertThat(camundaClient.newUserTaskQuery().send().join().items())
+                assertThat(camundaClient.newUserTaskSearchRequest().send().join().items())
                     .hasSize(expectedCount));
   }
 }

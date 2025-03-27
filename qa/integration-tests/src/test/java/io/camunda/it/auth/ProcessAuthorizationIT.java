@@ -76,7 +76,8 @@ class ProcessAuthorizationIT {
   void searchShouldReturnAuthorizedProcessDefinitions(
       @Authenticated(RESTRICTED) final CamundaClient userClient) {
     // when
-    final var processDefinitions = userClient.newProcessDefinitionQuery().send().join().items();
+    final var processDefinitions =
+        userClient.newProcessDefinitionSearchRequest().send().join().items();
 
     // then
     assertThat(processDefinitions).hasSize(2);
@@ -122,7 +123,7 @@ class ProcessAuthorizationIT {
   private long getProcessDefinitionKey(
       final CamundaClient client, final String processDefinitionId) {
     return client
-        .newProcessDefinitionQuery()
+        .newProcessDefinitionSearchRequest()
         .filter(f -> f.processDefinitionId(processDefinitionId))
         .send()
         .join()
@@ -147,7 +148,7 @@ class ProcessAuthorizationIT {
         .ignoreExceptions() // Ignore exceptions and continue retrying
         .untilAsserted(
             () -> {
-              final var result = camundaClient.newProcessDefinitionQuery().send().join();
+              final var result = camundaClient.newProcessDefinitionSearchRequest().send().join();
               assertThat(result.items().size()).isEqualTo(expectedCount);
             });
   }

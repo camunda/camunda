@@ -16,10 +16,10 @@
 package io.camunda.process.test.impl.assertions;
 
 import io.camunda.client.CamundaClient;
-import io.camunda.client.api.search.SearchRequestPage;
 import io.camunda.client.api.search.filter.FlownodeInstanceFilter;
 import io.camunda.client.api.search.filter.IncidentFilter;
 import io.camunda.client.api.search.filter.ProcessInstanceFilter;
+import io.camunda.client.api.search.request.SearchRequestPage;
 import io.camunda.client.api.search.response.FlowNodeInstance;
 import io.camunda.client.api.search.response.Incident;
 import io.camunda.client.api.search.response.ProcessInstance;
@@ -45,7 +45,7 @@ public class CamundaDataSource {
   public List<FlowNodeInstance> findFlowNodeInstances(
       final Consumer<FlownodeInstanceFilter> filter) {
     return client
-        .newFlownodeInstanceQuery()
+        .newFlownodeInstanceSearchRequest()
         .filter(filter)
         .sort(sort -> sort.startDate().asc())
         .page(DEFAULT_PAGE_REQUEST)
@@ -56,7 +56,7 @@ public class CamundaDataSource {
 
   public List<Variable> findVariablesByProcessInstanceKey(final long processInstanceKey) {
     return client
-        .newVariableQuery()
+        .newVariableSearchRequest()
         .filter(filter -> filter.processInstanceKey(processInstanceKey))
         .page(DEFAULT_PAGE_REQUEST)
         .send()
@@ -70,7 +70,7 @@ public class CamundaDataSource {
 
   public List<ProcessInstance> findProcessInstances(final Consumer<ProcessInstanceFilter> filter) {
     return client
-        .newProcessInstanceQuery()
+        .newProcessInstanceSearchRequest()
         .filter(filter)
         .sort(sort -> sort.startDate().asc())
         .page(DEFAULT_PAGE_REQUEST)
@@ -81,7 +81,7 @@ public class CamundaDataSource {
 
   public List<Incident> findIncidents(final Consumer<IncidentFilter> filter) {
     return client
-        .newIncidentQuery()
+        .newIncidentSearchRequest()
         .filter(filter)
         .sort(sort -> sort.creationTime().asc())
         .page(DEFAULT_PAGE_REQUEST)

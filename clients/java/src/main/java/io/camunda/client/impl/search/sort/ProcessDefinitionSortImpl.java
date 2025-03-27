@@ -16,9 +16,9 @@
 package io.camunda.client.impl.search.sort;
 
 import io.camunda.client.api.search.sort.ProcessDefinitionSort;
-import io.camunda.client.impl.search.query.SearchQuerySortBase;
+import io.camunda.client.impl.search.request.SearchRequestSortBase;
 
-public class ProcessDefinitionSortImpl extends SearchQuerySortBase<ProcessDefinitionSort>
+public class ProcessDefinitionSortImpl extends SearchRequestSortBase<ProcessDefinitionSort>
     implements ProcessDefinitionSort {
 
   @Override
