@@ -19,6 +19,7 @@ import io.camunda.search.filter.GroupFilter;
 import io.camunda.search.query.SearchQueryBuilders;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.auth.Authentication;
+import io.camunda.service.GroupServices.CreateGroupRequest;
 import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.gateway.api.util.StubbedBrokerClient;
 import io.camunda.zeebe.gateway.impl.broker.request.group.BrokerGroupCreateRequest;
@@ -61,7 +62,8 @@ public class GroupServiceTest {
     final var description = "description";
 
     // when
-    services.createGroup(groupId, groupName, description);
+    final var createGroupRequest = new CreateGroupRequest(groupId, groupName, description);
+    services.createGroup(createGroupRequest);
 
     // then
     final BrokerGroupCreateRequest request = stubbedBrokerClient.getSingleBrokerRequest();

@@ -83,14 +83,14 @@ public class GroupMigrationHandlerTest {
 
     // then
     verify(managementIdentityClient, times(2)).fetchGroups(anyInt());
-    verify(groupService, times(2)).createGroup(any(), any(), any());
+    verify(groupService, times(2)).createGroup(any());
   }
 
   @Test
   void ignoreWhenGroupAlreadyExists() {
     // given
 
-    when(groupService.createGroup(any(), any(), any()))
+    when(groupService.createGroup(any()))
         .thenReturn(
             CompletableFuture.failedFuture(
                 new BrokerRejectionException(
@@ -108,7 +108,7 @@ public class GroupMigrationHandlerTest {
 
     // then
     verify(managementIdentityClient, times(2)).fetchGroups(anyInt());
-    verify(groupService, times(2)).createGroup(any(), any(), any());
+    verify(groupService, times(2)).createGroup(any());
     verify(managementIdentityClient, times(2))
         .updateMigrationStatus(
             assertArg(
@@ -122,7 +122,7 @@ public class GroupMigrationHandlerTest {
   @Test
   void setErrorWhenGroupCreationHasError() {
     // given
-    when(groupService.createGroup(any(), any(), any())).thenThrow(new RuntimeException());
+    when(groupService.createGroup(any())).thenThrow(new RuntimeException());
     when(managementIdentityClient.fetchGroups(anyInt()))
         .thenReturn(List.of(new Group("id1", "t1"), new Group("id2", "t2")))
         .thenReturn(List.of());
@@ -140,6 +140,6 @@ public class GroupMigrationHandlerTest {
                       .noneMatch(MigrationStatusUpdateRequest::success);
                 }));
     verify(managementIdentityClient, times(2)).fetchGroups(anyInt());
-    verify(groupService, times(2)).createGroup(any(), any(), any());
+    verify(groupService, times(2)).createGroup(any());
   }
 }

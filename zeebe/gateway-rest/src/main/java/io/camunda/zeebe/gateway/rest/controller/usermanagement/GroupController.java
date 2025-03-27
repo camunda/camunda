@@ -11,13 +11,13 @@ import io.camunda.search.query.GroupQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.query.SearchQueryResult.Builder;
 import io.camunda.service.GroupServices;
+import io.camunda.service.GroupServices.CreateGroupRequest;
 import io.camunda.zeebe.gateway.protocol.rest.GroupCreateRequest;
 import io.camunda.zeebe.gateway.protocol.rest.GroupSearchQueryRequest;
 import io.camunda.zeebe.gateway.protocol.rest.GroupSearchQueryResult;
 import io.camunda.zeebe.gateway.protocol.rest.GroupUpdateRequest;
 import io.camunda.zeebe.gateway.protocol.rest.UserSearchResult;
 import io.camunda.zeebe.gateway.rest.RequestMapper;
-import io.camunda.zeebe.gateway.rest.RequestMapper.CreateGroupRequest;
 import io.camunda.zeebe.gateway.rest.RequestMapper.UpdateGroupRequest;
 import io.camunda.zeebe.gateway.rest.ResponseMapper;
 import io.camunda.zeebe.gateway.rest.RestErrorMapper;
@@ -143,10 +143,7 @@ public class GroupController {
         () ->
             groupServices
                 .withAuthentication(RequestMapper.getAuthentication())
-                .createGroup(
-                    createGroupRequest.groupId(),
-                    createGroupRequest.name(),
-                    createGroupRequest.description()),
+                .createGroup(createGroupRequest),
         ResponseMapper::toGroupCreateResponse);
   }
 
