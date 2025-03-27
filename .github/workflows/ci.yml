@@ -500,32 +500,52 @@ jobs:
             maven-build-threads: 2
             maven-test-fork-count: 3
             runs-on: gcp-perf-core-8-default
+            docker-repository: localhost:5000/camunda/zeebe
+            docker-file: Dockerfile
           - group: modules
             name: "Zeebe Module Integration Tests"
             maven-modules: "'!qa/integration-tests,!qa/update-tests' -f zeebe"
             maven-build-threads: 2
             maven-test-fork-count: 7
             runs-on: gcp-perf-core-16-longrunning
+            docker-repository: localhost:5000/camunda/zeebe
+            docker-file: Dockerfile
           - group: qa-integration
             name: "Zeebe QA - Integration Tests"
             maven-modules: "zeebe/qa/integration-tests"
             maven-build-threads: 1
             maven-test-fork-count: 10
             runs-on: gcp-perf-core-16-default
+            docker-repository: localhost:5000/camunda/zeebe
+            docker-file: Dockerfile
           - group: qa-migration-integration
             name: "Migration QA - Integration Tests"
             maven-modules: "migration/process-migration"
             maven-build-threads: 1
             maven-test-fork-count: 10
             runs-on: gcp-perf-core-8-default
+            docker-repository: localhost:5000/camunda/zeebe
+            docker-file: Dockerfile
           - group: qa-update
             name: "Zeebe QA - Update Tests"
             maven-modules: "zeebe/qa/update-tests"
             maven-build-threads: 1
             maven-test-fork-count: 10
             runs-on: gcp-perf-core-8-default
+            docker-repository: localhost:5000/camunda/zeebe
+            docker-file: Dockerfile
+          - group: qa-camunda-process-test
+            name: "Camunda Process Test"
+            maven-modules: "testing/camunda-process-test-java,testing/camunda-process-test-spring,testing/camunda-process-test-example"
+            maven-build-threads: 1
+            maven-test-fork-count: 3
+            runs-on: gcp-perf-core-8-default
+            docker-repository: localhost:5000/camunda/camunda
+            docker-file: camunda.Dockerfile
     env:
       ZEEBE_TEST_DOCKER_IMAGE: localhost:5000/camunda/zeebe:current-test
+      CAMUNDA_DOCKER_IMAGE_NAME: localhost:5000/camunda/camunda
+      DOCKER_IMAGE_TAG: current-test
     services:
       registry:
         image: registry:2
@@ -545,8 +565,9 @@ jobs:
           maven-extra-args: -T1C -PskipFrontendBuild
       - uses: ./.github/actions/build-platform-docker
         with:
-          repository: localhost:5000/camunda/zeebe
-          version: current-test
+          repository: ${{ matrix.docker-repository }}
+          version: ${{ env.DOCKER_IMAGE_TAG }}
+          dockerfile: ${{ matrix.docker-file }}
           push: true
           distball: ${{ steps.build-zeebe.outputs.distball }}
       - name: Create build output log file
@@ -558,6 +579,9 @@ jobs:
           -D maven.javadoc.skip=true
           -D skipUTs -D skipChecks
           -D failsafe.rerunFailingTestsCount=3 -D flaky.test.reportDir=failsafe-reports
+          -Dio.camunda.process.test.camundaDockerImageName="${{ env.CAMUNDA_DOCKER_IMAGE_NAME }}"
+          -Dio.camunda.process.test.camundaDockerImageVersion="${{ env.DOCKER_IMAGE_TAG }}"
+          -Dio.camunda.process.test.camundaVersion="${{ env.DOCKER_IMAGE_TAG }}"
           -P parallel-tests,extract-flaky-tests,skipFrontendBuild
           -pl ${{ matrix.maven-modules }}
           verify
