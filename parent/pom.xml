@@ -892,7 +892,7 @@
 
       <dependency>
         <groupId>io.camunda</groupId>
-        <artifactId>camunda-search-schema-manager</artifactId>
+        <artifactId>camunda-schema-manager</artifactId>
         <version>${project.version}</version>
       </dependency>
 

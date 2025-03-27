@@ -29,6 +29,7 @@
     <module>webapps-backup</module>
     <module>authentication</module>
     <module>db</module>
+    <module>schema-manager</module>
     <module>search</module>
     <module>service</module>
     <module>clients/java</module>
