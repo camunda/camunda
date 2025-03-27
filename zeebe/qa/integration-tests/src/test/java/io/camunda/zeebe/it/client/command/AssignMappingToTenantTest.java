@@ -110,9 +110,9 @@ class AssignMappingToTenantTest {
         .isInstanceOf(ProblemException.class)
         .hasMessageContaining("Failed with code 404: 'Not Found'")
         .hasMessageContaining(
-            "Expected to add entity with id '%s' to tenant with tenantId '%s', but the entity doesn't exist."
+            "Expected to add mapping with id '%s' to tenant with id '%s', but the mapping doesn't exist."
                 .formatted(invalidMappingId, TENANT_ID));
-   }
+  }
 
   @Test
   void shouldRejectAssignIfTenantAlreadyAssignedToMapping() {

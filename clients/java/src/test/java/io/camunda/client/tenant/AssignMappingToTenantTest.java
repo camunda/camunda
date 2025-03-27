@@ -72,7 +72,7 @@ public class AssignMappingToTenantTest extends ClientRestTest {
             () ->
                 client
                     .newAssignMappingToTenantCommand(TENANT_ID)
-                    .mappingKey(MAPPING_KEY)
+                    .mappingId(MAPPING_ID)
                     .send()
                     .join())
         .isInstanceOf(ProblemException.class)
