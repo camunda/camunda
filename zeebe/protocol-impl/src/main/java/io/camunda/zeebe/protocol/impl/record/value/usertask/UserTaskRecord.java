@@ -730,10 +730,11 @@ public final class UserTaskRecord extends UnifiedRecordValue implements UserTask
     return this;
   }
 
-  public void unsetAssignee() {
+  public UserTaskRecord unsetAssignee() {
     assigneeProp.setValue(EMPTY_STRING);
     final var changedAttributes = getChangedAttributes();
     changedAttributes.remove(ASSIGNEE);
     setChangedAttributes(changedAttributes);
+    return this;
   }
 }
