@@ -7,10 +7,10 @@
  */
 package io.camunda.search.clients.transformers.sort;
 
-import static io.camunda.webapps.schema.descriptors.usermanagement.index.MappingIndex.CLAIM_NAME;
-import static io.camunda.webapps.schema.descriptors.usermanagement.index.MappingIndex.CLAIM_VALUE;
-import static io.camunda.webapps.schema.descriptors.usermanagement.index.MappingIndex.MAPPING_KEY;
-import static io.camunda.webapps.schema.descriptors.usermanagement.index.MappingIndex.NAME;
+import static io.camunda.webapps.schema.descriptors.index.MappingIndex.CLAIM_NAME;
+import static io.camunda.webapps.schema.descriptors.index.MappingIndex.CLAIM_VALUE;
+import static io.camunda.webapps.schema.descriptors.index.MappingIndex.MAPPING_KEY;
+import static io.camunda.webapps.schema.descriptors.index.MappingIndex.NAME;
 
 public class MappingFieldSortingTransformer implements FieldSortingTransformer {
 

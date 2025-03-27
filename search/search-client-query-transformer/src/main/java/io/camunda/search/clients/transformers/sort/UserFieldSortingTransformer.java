@@ -7,10 +7,10 @@
  */
 package io.camunda.search.clients.transformers.sort;
 
-import static io.camunda.webapps.schema.descriptors.usermanagement.index.UserIndex.EMAIL;
-import static io.camunda.webapps.schema.descriptors.usermanagement.index.UserIndex.KEY;
-import static io.camunda.webapps.schema.descriptors.usermanagement.index.UserIndex.NAME;
-import static io.camunda.webapps.schema.descriptors.usermanagement.index.UserIndex.USERNAME;
+import static io.camunda.webapps.schema.descriptors.index.UserIndex.EMAIL;
+import static io.camunda.webapps.schema.descriptors.index.UserIndex.KEY;
+import static io.camunda.webapps.schema.descriptors.index.UserIndex.NAME;
+import static io.camunda.webapps.schema.descriptors.index.UserIndex.USERNAME;
 
 public class UserFieldSortingTransformer implements FieldSortingTransformer {
 

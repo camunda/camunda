@@ -7,11 +7,11 @@
  */
 package io.camunda.search.clients.transformers.sort;
 
-import static io.camunda.webapps.schema.descriptors.usermanagement.index.AuthorizationIndex.ID;
-import static io.camunda.webapps.schema.descriptors.usermanagement.index.AuthorizationIndex.OWNER_ID;
-import static io.camunda.webapps.schema.descriptors.usermanagement.index.AuthorizationIndex.OWNER_TYPE;
-import static io.camunda.webapps.schema.descriptors.usermanagement.index.AuthorizationIndex.RESOURCE_ID;
-import static io.camunda.webapps.schema.descriptors.usermanagement.index.AuthorizationIndex.RESOURCE_TYPE;
+import static io.camunda.webapps.schema.descriptors.index.AuthorizationIndex.ID;
+import static io.camunda.webapps.schema.descriptors.index.AuthorizationIndex.OWNER_ID;
+import static io.camunda.webapps.schema.descriptors.index.AuthorizationIndex.OWNER_TYPE;
+import static io.camunda.webapps.schema.descriptors.index.AuthorizationIndex.RESOURCE_ID;
+import static io.camunda.webapps.schema.descriptors.index.AuthorizationIndex.RESOURCE_TYPE;
 
 public class AuthorizationFieldSortingTransformer implements FieldSortingTransformer {
 

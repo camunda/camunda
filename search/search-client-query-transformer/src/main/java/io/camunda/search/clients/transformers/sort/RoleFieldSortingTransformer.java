@@ -7,8 +7,8 @@
  */
 package io.camunda.search.clients.transformers.sort;
 
-import static io.camunda.webapps.schema.descriptors.usermanagement.index.RoleIndex.KEY;
-import static io.camunda.webapps.schema.descriptors.usermanagement.index.RoleIndex.NAME;
+import static io.camunda.webapps.schema.descriptors.index.RoleIndex.KEY;
+import static io.camunda.webapps.schema.descriptors.index.RoleIndex.NAME;
 
 public class RoleFieldSortingTransformer implements FieldSortingTransformer {
 
