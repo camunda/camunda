@@ -31,12 +31,10 @@ jobs:
           run: |
             echo "project_id=33" >> "$GITHUB_OUTPUT"
             echo "now=$(date +'%Y-%m-%d')" >> "$GITHUB_OUTPUT"
-        
+
             labels=$(jq -r '.issue.labels[].name' "$GITHUB_EVENT_PATH")
             if echo "$labels" | grep -q  "^component/c8run$"; then
               echo "match=true" >> "$GITHUB_OUTPUT"
-            else
-              exit 1
             fi
 
         - name: Generate GitHub token
