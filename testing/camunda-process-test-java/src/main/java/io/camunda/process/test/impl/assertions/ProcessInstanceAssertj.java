@@ -47,6 +47,7 @@ public class ProcessInstanceAssertj
 
   private final ElementAssertj elementAssertj;
   private final VariableAssertj variableAssertj;
+  private final IncidentAssertj incidentAssertj;
   private final String failureMessagePrefix;
   private final Function<String, ElementSelector> elementSelector;
 
@@ -70,6 +71,7 @@ public class ProcessInstanceAssertj
     this.elementSelector = elementSelector;
     elementAssertj = new ElementAssertj(dataSource, failureMessagePrefix);
     variableAssertj = new VariableAssertj(dataSource, failureMessagePrefix);
+    incidentAssertj = new IncidentAssertj(dataSource, failureMessagePrefix);
   }
 
   @Override
@@ -236,6 +238,18 @@ public class ProcessInstanceAssertj
   @Override
   public ProcessInstanceAssert hasVariables(final Map<String, Object> variables) {
     variableAssertj.hasVariables(getProcessInstanceKey(), variables);
+    return this;
+  }
+
+  @Override
+  public ProcessInstanceAssert hasNoIncidents() {
+    incidentAssertj.hasNoIncidents(getProcessInstanceKey());
+    return this;
+  }
+
+  @Override
+  public ProcessInstanceAssert hasAnyIncidents() {
+    incidentAssertj.hasAnyIncidents(getProcessInstanceKey());
     return this;
   }
 
