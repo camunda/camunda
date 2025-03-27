@@ -54,7 +54,6 @@ public final class ProcessExecutionCleanStateTest {
           ZbColumnFamilies.OWNER_TYPE_BY_OWNER_KEY,
           ZbColumnFamilies.ROLES,
           ZbColumnFamilies.ENTITY_BY_ROLE,
-          ZbColumnFamilies.ROLE_BY_NAME,
           ZbColumnFamilies.TENANTS,
           ZbColumnFamilies.AUTHORIZATIONS,
           ZbColumnFamilies.AUTHORIZATION_KEYS_BY_OWNER);

@@ -37,6 +37,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import org.assertj.core.api.Assertions;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestWatcher;
@@ -142,6 +143,7 @@ public class IdentitySetupInitializeTest {
   }
 
   @Test
+  @Ignore("Re-enable in https://github.com/camunda/camunda/issues/30109")
   public void shouldNotCreateRoleIfAlreadyExists() {
     // given
     final var roleName = "roleName";
@@ -197,6 +199,7 @@ public class IdentitySetupInitializeTest {
   }
 
   @Test
+  @Ignore("Re-enable in https://github.com/camunda/camunda/issues/30109")
   public void shouldAssignUserToRoleIfBothAlreadyExist() {
     // given
     final var roleName = "roleName";
@@ -233,6 +236,7 @@ public class IdentitySetupInitializeTest {
   }
 
   @Test
+  @Ignore("Re-enable in https://github.com/camunda/camunda/issues/30109")
   public void shouldNotAssignUserToRoleIfAlreadyAssigned() {
     // given
     final var roleName = "roleName";

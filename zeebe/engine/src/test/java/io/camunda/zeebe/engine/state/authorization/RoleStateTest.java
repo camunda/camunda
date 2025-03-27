@@ -43,9 +43,6 @@ public class RoleStateTest {
     final var persistedRole = roleState.getRole(roleKey).get();
     assertThat(persistedRole.getRoleKey()).isEqualTo(roleKey);
     assertThat(persistedRole.getName()).isEqualTo(roleName);
-
-    final var roleKeyByName = roleState.getRoleKeyByName(roleName).get();
-    assertThat(roleKeyByName).isEqualTo(roleKey);
   }
 
   @Test
@@ -55,15 +52,6 @@ public class RoleStateTest {
 
     // then
     assertThat(role).isEmpty();
-  }
-
-  @Test
-  void shouldReturnNegativeOneIfRoleKeyByNameDoesNotExist() {
-    // when
-    final var roleKey = roleState.getRoleKeyByName("foo");
-
-    // then
-    assertThat(roleKey).isEmpty();
   }
 
   @Test
@@ -82,9 +70,6 @@ public class RoleStateTest {
     final var persistedRole = roleState.getRole(roleKey).get();
     assertThat(persistedRole.getRoleKey()).isEqualTo(roleKey);
     assertThat(persistedRole.getName()).isEqualTo(updatedName);
-
-    final var roleKeyByName = roleState.getRoleKeyByName(updatedName).get();
-    assertThat(roleKeyByName).isEqualTo(roleKey);
   }
 
   @Test
@@ -144,8 +129,6 @@ public class RoleStateTest {
     assertThat(deletedRole).isEmpty();
     final var deletedEntity = roleState.getEntityType(roleKey, 1L);
     assertThat(deletedEntity).isEmpty();
-    final var deletedRoleKeyByName = roleState.getRoleKeyByName(roleName);
-    assertThat(deletedRoleKeyByName).isEmpty();
   }
 
   @Test

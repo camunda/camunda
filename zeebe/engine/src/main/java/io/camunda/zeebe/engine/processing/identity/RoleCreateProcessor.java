@@ -64,8 +64,8 @@ public class RoleCreateProcessor implements DistributedTypedRecordProcessor<Role
     }
 
     final var record = command.getValue();
-    final var roleKey = roleState.getRoleKeyByName(record.getName());
-    if (roleKey.isPresent()) {
+    final var persistedRole = roleState.getRole(record.getRoleId());
+    if (persistedRole.isPresent()) {
       final var errorMessage = ROLE_ALREADY_EXISTS_ERROR_MESSAGE.formatted(record.getName());
       rejectionWriter.appendRejection(command, RejectionType.ALREADY_EXISTS, errorMessage);
       responseWriter.writeRejectionOnCommand(command, RejectionType.ALREADY_EXISTS, errorMessage);
