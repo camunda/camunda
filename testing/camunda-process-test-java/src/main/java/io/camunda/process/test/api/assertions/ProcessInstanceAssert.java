@@ -303,4 +303,18 @@ public interface ProcessInstanceAssert {
    * @return the assertion object
    */
   ProcessInstanceAssert hasVariables(Map<String, Object> variables);
+
+  /**
+   * Asserts whether no incidents were raised for this process instance
+   *
+   * @return the assertion object
+   */
+  ProcessInstanceAssert hasNoIncidents();
+
+  /**
+   * Asserts whether any incidents were raised for this process instance
+   *
+   * @return the assertion object
+   */
+  ProcessInstanceAssert hasAnyIncidents();
 }
