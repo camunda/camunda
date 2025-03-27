@@ -27,6 +27,7 @@ import io.camunda.zeebe.gateway.rest.annotation.CamundaDeleteMapping;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaGetMapping;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaPatchMapping;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaPostMapping;
+import io.camunda.zeebe.gateway.rest.annotation.CamundaPutMapping;
 import io.camunda.zeebe.gateway.rest.controller.CamundaRestController;
 import io.camunda.zeebe.protocol.record.value.EntityType;
 import java.util.concurrent.CompletableFuture;
@@ -68,7 +69,7 @@ public class GroupController {
                 .deleteGroup(groupId));
   }
 
-  @CamundaPostMapping(
+  @CamundaPutMapping(
       path = "/{groupId}/users/{username}",
       consumes = {})
   public CompletableFuture<ResponseEntity<Object>> assignUserToGroup(

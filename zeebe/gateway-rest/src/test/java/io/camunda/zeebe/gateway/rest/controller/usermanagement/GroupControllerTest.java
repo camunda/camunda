@@ -344,7 +344,7 @@ public class GroupControllerTest extends RestControllerTest {
 
     // when
     webClient
-        .post()
+        .put()
         .uri("%s/%s/users/%s".formatted(GROUP_BASE_URL, groupId, username))
         .accept(MediaType.APPLICATION_JSON)
         .exchange()
@@ -370,7 +370,7 @@ public class GroupControllerTest extends RestControllerTest {
 
     // when
     webClient
-        .post()
+        .put()
         .uri(path)
         .accept(MediaType.APPLICATION_PROBLEM_JSON)
         .exchange()
@@ -399,7 +399,7 @@ public class GroupControllerTest extends RestControllerTest {
 
     // when
     webClient
-        .post()
+        .put()
         .uri(path)
         .accept(MediaType.APPLICATION_PROBLEM_JSON)
         .exchange()

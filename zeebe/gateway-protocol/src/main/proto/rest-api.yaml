@@ -2483,7 +2483,7 @@ paths:
         "500":
           $ref: "#/components/responses/InternalServerError"
   /groups/{groupId}/users/{username}:
-    post:
+    put:
       tags:
         - Group
       operationId: addUserToGroup
