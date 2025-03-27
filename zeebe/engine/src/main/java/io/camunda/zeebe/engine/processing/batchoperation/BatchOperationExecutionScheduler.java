@@ -35,8 +35,10 @@ import org.slf4j.LoggerFactory;
 
 public class BatchOperationExecutionScheduler implements StreamProcessorLifecycleAware {
 
+  public static final int CHUNK_SIZE_IN_RECORD = 10;
+
   private static final Logger LOG = LoggerFactory.getLogger(BatchOperationExecutionScheduler.class);
-  private static final int BATCH_SIZE = 10;
+  private static final int QUERY_SIZE = 10000;
   private final Duration pollingInterval;
   private final KeyGenerator keyGenerator;
 
@@ -96,7 +98,7 @@ public class BatchOperationExecutionScheduler implements StreamProcessorLifecycl
       final PersistedBatchOperation batchOperation, final TaskResultBuilder taskResultBuilder) {
     final var keys = queryAllKeys(batchOperation);
 
-    Lists.partition(new ArrayList<>(keys), BATCH_SIZE)
+    Lists.partition(new ArrayList<>(keys), CHUNK_SIZE_IN_RECORD)
         .forEach(partition -> appendChunk(batchOperation, taskResultBuilder, partition));
   }
 
@@ -131,11 +133,10 @@ public class BatchOperationExecutionScheduler implements StreamProcessorLifecycl
     final var itemKeys = new ArrayList<Long>();
 
     Object[] searchValues = null;
-    final int batchSize = 400000;
     while (true) {
 
       final var page =
-          SearchQueryPageBuilders.page().size(batchSize).searchAfter(searchValues).build();
+          SearchQueryPageBuilders.page().size(QUERY_SIZE).searchAfter(searchValues).build();
       final var query =
           SearchQueryBuilders.processInstanceSearchQuery()
               .filter(filter)

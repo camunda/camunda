@@ -27,7 +27,7 @@ import org.slf4j.LoggerFactory;
 
 public class DbBatchOperationState implements MutableBatchOperationState {
 
-  public static final long MAX_CHUNK_SIZE = 3500;
+  public static final long MAX_DB_CHUNK_SIZE = 3500;
 
   private static final Logger LOGGER = LoggerFactory.getLogger(DbBatchOperationState.class);
 
@@ -66,84 +66,133 @@ public class DbBatchOperationState implements MutableBatchOperationState {
   }
 
   @Override
-  public void create(final long batchKey, final BatchOperationCreationRecord record) {
+  public void create(final long batchOperationKey, final BatchOperationCreationRecord record) {
     LOGGER.debug("Creating batch operation with key {}", record.getBatchOperationKey());
-    this.batchKey.wrapLong(record.getBatchOperationKey());
+    batchKey.wrapLong(record.getBatchOperationKey());
     final var batchOperation = new PersistedBatchOperation();
     batchOperation
         .setKey(record.getBatchOperationKey())
         .setStatus(BatchOperationStatus.CREATED)
         .setBatchOperationType(record.getBatchOperationType())
         .setEntityFilter(record.getEntityFilterBuffer());
-    batchOperationColumnFamily.upsert(this.batchKey, batchOperation);
-    pendingBatchOperationColumnFamily.upsert(this.batchKey, DbNil.INSTANCE);
+    batchOperationColumnFamily.upsert(batchKey, batchOperation);
+    pendingBatchOperationColumnFamily.upsert(batchKey, DbNil.INSTANCE);
   }
 
   @Override
-  public void appendItemKeys(final long batchKey, final BatchOperationChunkRecord record) {
+  public void appendItemKeys(final long batchOperationKey, final BatchOperationChunkRecord record) {
     LOGGER.trace(
         "Appending {} item keys to batch operation with key {}",
         record.getItemKeys().size(),
         record.getBatchOperationKey());
-    this.batchKey.wrapLong(batchKey);
-    final var batch = batchOperationColumnFamily.get(this.batchKey);
 
-    pendingBatchOperationColumnFamily.deleteIfExists(this.batchKey);
+    // First, get the batch operation
+    final var batch = getBatchOperation(record.getBatchOperationKey());
 
-    PersistedBatchOperationChunk chunk = null;
+    // Second, delete it from the pendingBatchOperationColumnFamily since we are already working on
+    // it
+    pendingBatchOperationColumnFamily.deleteIfExists(batchKey);
+
+    // Third, get the chunk to append the keys to
+    var chunk = getOrCreateChunk(batch);
+
+    // Fourth, append the keys to the chunk, if the chunk is full, a new one is returned
     for (final long key : record.getItemKeys()) {
-      final var currentChunkKey = batch.getMinChunkKey();
-      if (currentChunkKey == -1) {
-        chunk = createNewChunk(batch);
-        LOGGER.trace(
-            "Creating new chunk with key {} for batch operation with key {}",
-            chunk.getKey(),
-            record.getBatchOperationKey());
-      } else if (chunk == null) {
-        LOGGER.trace(
-            "Loading chunk with key {} for batch operation with key {}",
-            currentChunkKey,
-            record.getBatchOperationKey());
-        chunk = batchOperationChunksColumnFamily.get(fkBatchKeyAndChunkKey);
-        chunkKey.wrapLong(chunk.getKey());
-      }
-      if (chunk.getItemKeys().size() >= MAX_CHUNK_SIZE) {
-        LOGGER.trace(
-            "Chunk with key {} is full, inserting it and creating new chunk for batch operation with key {}",
-            chunk.getKey(),
-            record.getBatchOperationKey());
-        batchOperationChunksColumnFamily.update(fkBatchKeyAndChunkKey, chunk);
-        chunk = createNewChunk(batch);
-      }
-      chunk.appendItemKey(key);
-    }
-    if (chunk != null) {
-      batchOperationChunksColumnFamily.update(fkBatchKeyAndChunkKey, chunk);
+      chunk = appendKeyToChunk(batch, chunk, key);
     }
 
-    batchOperationColumnFamily.update(this.batchKey, batch);
+    // Finally, update the batch and the chunk in the column family
+    updateChunkAndBatch(chunk, batch);
   }
 
   @Override
-  public void removeItemKeys(final long batchKey, final BatchOperationExecutionRecord record) {
+  public void removeItemKeys(
+      final long batchOperationKey, final BatchOperationExecutionRecord record) {
     LOGGER.trace(
         "Removing item keys {} from batch operation with key {}",
         record.getItemKeys().size(),
         record.getBatchOperationKey());
-    this.batchKey.wrapLong(batchKey);
-    final var batch = batchOperationColumnFamily.get(this.batchKey);
 
-    chunkKey.wrapLong(batch.getMinChunkKey());
-    final var chunk = batchOperationChunksColumnFamily.get(fkBatchKeyAndChunkKey);
+    // First, get the batch operation
+    final var batch = getBatchOperation(record.getBatchOperationKey());
+
+    // Second, delete the keys from chunk
+    final var chunk = getChunk(batch);
     chunk.removeItemKeys(record.getItemKeys());
 
+    // Finally, update the chunk and batch in the column family
+    updateBatchAndChunkAfterRemoval(batch, chunk);
+  }
+
+  private PersistedBatchOperation getBatchOperation(final long batchOperationKey) {
+    batchKey.wrapLong(batchOperationKey);
+    return batchOperationColumnFamily.get(batchKey);
+  }
+
+  private PersistedBatchOperationChunk getChunk(final PersistedBatchOperation batch) {
+    chunkKey.wrapLong(batch.getMinChunkKey());
+    return batchOperationChunksColumnFamily.get(fkBatchKeyAndChunkKey);
+  }
+
+  /**
+   * Updates the batch and chunk after removing keys from the chunk. If the chunk is empty, it is
+   * deleted from the column family and the batch operation is updated.
+   *
+   * @param chunk the chunk to update
+   * @param batch the batch operation to update
+   */
+  private void updateBatchAndChunkAfterRemoval(
+      final PersistedBatchOperation batch, final PersistedBatchOperationChunk chunk) {
     if (chunk.getItemKeys().isEmpty()) {
       batchOperationChunksColumnFamily.deleteExisting(fkBatchKeyAndChunkKey);
       batch.removeChunkKey(chunk.getKey());
-      batchOperationColumnFamily.update(this.batchKey, batch);
+      batchOperationColumnFamily.update(batchKey, batch);
     } else {
       batchOperationChunksColumnFamily.update(fkBatchKeyAndChunkKey, chunk);
     }
+  }
+
+  /**
+   * Gets the chunk for the batch operation. If the batch operation has no chunk (currentChunkKey =
+   * -1), a new one is created.
+   *
+   * @param batch the batch operation to get the chunk for
+   * @return the chunk for the batch operation
+   */
+  private PersistedBatchOperationChunk getOrCreateChunk(final PersistedBatchOperation batch) {
+    final var currentChunkKey = batch.getMinChunkKey();
+    if (currentChunkKey == -1) {
+      return createNewChunk(batch);
+    } else {
+      chunkKey.wrapLong(currentChunkKey);
+      return batchOperationChunksColumnFamily.get(fkBatchKeyAndChunkKey);
+    }
+  }
+
+  /**
+   * Appends the key to the chunk. If the chunk is full, a new one is created.
+   *
+   * @param chunk the current chunk to append the keys to, if it is full, a new one is created
+   * @param key the key to append
+   * @return the current updated chunk
+   */
+  private PersistedBatchOperationChunk appendKeyToChunk(
+      final PersistedBatchOperation batch, PersistedBatchOperationChunk chunk, final long key) {
+    if (chunk.getItemKeys().size() >= MAX_DB_CHUNK_SIZE) {
+      batchOperationChunksColumnFamily.update(fkBatchKeyAndChunkKey, chunk);
+      chunk = createNewChunk(batch);
+    }
+
+    chunk.appendItemKey(key);
+    return chunk;
+  }
+
+  private void updateChunkAndBatch(
+      final PersistedBatchOperationChunk chunk, final PersistedBatchOperation batch) {
+    if (chunk != null) {
+      batchOperationChunksColumnFamily.update(fkBatchKeyAndChunkKey, chunk);
+    }
+    batchOperationColumnFamily.update(batchKey, batch);
   }
 
   @Override

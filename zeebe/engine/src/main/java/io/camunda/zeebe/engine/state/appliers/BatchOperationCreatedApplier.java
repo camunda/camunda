@@ -22,7 +22,7 @@ public class BatchOperationCreatedApplier
   }
 
   @Override
-  public void applyState(final long key, final BatchOperationCreationRecord value) {
-    batchOperationState.create(key, value);
+  public void applyState(final long batchOperationKey, final BatchOperationCreationRecord value) {
+    batchOperationState.create(batchOperationKey, value);
   }
 }

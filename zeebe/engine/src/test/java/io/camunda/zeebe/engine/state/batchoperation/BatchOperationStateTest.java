@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.engine.state.batchoperation;
 
-import static io.camunda.zeebe.engine.state.batchoperation.DbBatchOperationState.MAX_CHUNK_SIZE;
+import static io.camunda.zeebe.engine.state.batchoperation.DbBatchOperationState.MAX_DB_CHUNK_SIZE;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -205,7 +205,7 @@ public class BatchOperationStateTest {
 
     // when
     final var subbatchKey = 2L;
-    final var keys = LongStream.range(0, MAX_CHUNK_SIZE * 3 + 1).boxed().toList();
+    final var keys = LongStream.range(0, MAX_DB_CHUNK_SIZE * 3 + 1).boxed().toList();
     final var subbatchRecord =
         new BatchOperationChunkRecord()
             .setBatchOperationKey(batchOperationKey)
@@ -237,21 +237,23 @@ public class BatchOperationStateTest {
         new BatchOperationChunkRecord()
             .setBatchOperationKey(batchOperationKey)
             .setChunkKey(2L)
-            .setItemKeys(LongStream.range(0, MAX_CHUNK_SIZE - 1).boxed().toList()));
+            .setItemKeys(LongStream.range(0, MAX_DB_CHUNK_SIZE - 1).boxed().toList()));
     state.appendItemKeys(
         batchOperationKey,
         new BatchOperationChunkRecord()
             .setBatchOperationKey(batchOperationKey)
             .setChunkKey(3L)
             .setItemKeys(
-                LongStream.range(MAX_CHUNK_SIZE, MAX_CHUNK_SIZE * 2 - 1).boxed().toList()));
+                LongStream.range(MAX_DB_CHUNK_SIZE, MAX_DB_CHUNK_SIZE * 2 - 1).boxed().toList()));
     state.appendItemKeys(
         batchOperationKey,
         new BatchOperationChunkRecord()
             .setBatchOperationKey(batchOperationKey)
             .setChunkKey(4L)
             .setItemKeys(
-                LongStream.range(MAX_CHUNK_SIZE * 2, MAX_CHUNK_SIZE * 3 - 1).boxed().toList()));
+                LongStream.range(MAX_DB_CHUNK_SIZE * 2, MAX_DB_CHUNK_SIZE * 3 - 1)
+                    .boxed()
+                    .toList()));
 
     // then
     final var persistedBatchOperation = state.get(batchOperationKey).get();
@@ -263,7 +265,7 @@ public class BatchOperationStateTest {
   @Test
   void shouldReturnNextNonRemovedItems() {
     // given
-    final var batchOperationKey = createDefaultBatch(1, MAX_CHUNK_SIZE * 3);
+    final var batchOperationKey = createDefaultBatch(1, MAX_DB_CHUNK_SIZE * 3);
 
     // when
     state.removeItemKeys(
@@ -286,14 +288,15 @@ public class BatchOperationStateTest {
   @Test
   void shouldRemoveChunkWhenAllItemsHasBeenRemoved() {
     // given
-    final var batchOperationKey = createDefaultBatch(1, MAX_CHUNK_SIZE * 3);
+    final var batchOperationKey = createDefaultBatch(1, MAX_DB_CHUNK_SIZE * 3);
 
     // when
     state.removeItemKeys(
         batchOperationKey,
         new BatchOperationExecutionRecord()
             .setBatchOperationKey(batchOperationKey)
-            .setItemKeys(LongStream.range(0, MAX_CHUNK_SIZE).boxed().collect(Collectors.toSet())));
+            .setItemKeys(
+                LongStream.range(0, MAX_DB_CHUNK_SIZE).boxed().collect(Collectors.toSet())));
 
     // then
     final var persistedBatchOperation = state.get(batchOperationKey).get();
@@ -303,7 +306,8 @@ public class BatchOperationStateTest {
 
     final var nextItemKeys = state.getNextItemKeys(batchOperationKey, 3);
     assertThat(nextItemKeys)
-        .containsSequence(List.of(MAX_CHUNK_SIZE, MAX_CHUNK_SIZE + 1L, MAX_CHUNK_SIZE + 2L));
+        .containsSequence(
+            List.of(MAX_DB_CHUNK_SIZE, MAX_DB_CHUNK_SIZE + 1L, MAX_DB_CHUNK_SIZE + 2L));
   }
 
   private long createDefaultBatch(final long batchOperationKey, final long numKeys) {
