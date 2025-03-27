@@ -23,6 +23,6 @@ public class BatchOperationChunkCreatedApplier
 
   @Override
   public void applyState(final long key, final BatchOperationChunkRecord value) {
-    batchOperationState.appendKeys(key, value);
+    batchOperationState.appendItemKeys(key, value);
   }
 }

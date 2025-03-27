@@ -27,5 +27,5 @@ public interface BatchOperationExecutionRecordValue extends BatchOperationRelate
   /**
    * @return subset of entity keys for the batch operation which are being or were processed
    */
-  Set<Long> getEntityKeys();
+  Set<Long> getItemKeys();
 }

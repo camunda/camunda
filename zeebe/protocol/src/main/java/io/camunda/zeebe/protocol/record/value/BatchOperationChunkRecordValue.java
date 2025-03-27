@@ -25,9 +25,9 @@ import org.immutables.value.Value;
 public interface BatchOperationChunkRecordValue extends BatchOperationRelated, RecordValue {
 
   /**
-   * @return subset of entity keys for the batch operation
+   * @return subset of item keys for the batch operation
    */
-  List<Long> getEntityKeys();
+  List<Long> getItemKeys();
 
   /**
    * @return the key of this chunk of entity keys
