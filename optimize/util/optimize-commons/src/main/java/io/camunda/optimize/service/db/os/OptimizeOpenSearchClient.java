@@ -37,6 +37,7 @@ import jakarta.ws.rs.NotSupportedException;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -815,23 +816,31 @@ public class OptimizeOpenSearchClient extends DatabaseClient {
       final BulkResponse bulkResponse =
           bulk(bulkReqBuilderSupplier.get().operations(operations), errorMessage);
       if (bulkResponse.errors()) {
-        final Set<String> failedNestedDocLimitItemIds =
+        final Map<String, List<String>> failedNestedDocLimitItemIdsByIndexName =
             bulkResponse.items().stream()
                 .filter(operation -> Objects.nonNull(operation.error()))
+                .filter(operation -> Objects.nonNull(operation.error().reason()))
+                .filter(operation -> Objects.nonNull(operation.id()))
                 .filter(operation -> operation.error().reason().contains(NESTED_DOC_LIMIT_MESSAGE))
-                .map(BulkResponseItem::id)
-                .collect(Collectors.toSet());
-        if (!failedNestedDocLimitItemIds.isEmpty()) {
+                .collect(
+                    Collectors.groupingBy(
+                        BulkResponseItem::index,
+                        Collectors.mapping(BulkResponseItem::id, Collectors.toList())));
+        if (!failedNestedDocLimitItemIdsByIndexName.isEmpty()) {
+          final Set<String> failedOperationIds =
+              failedNestedDocLimitItemIdsByIndexName.values().stream()
+                  .flatMap(Collection::stream)
+                  .collect(Collectors.toSet());
           log.warn(
               "There were failures while performing bulk on {} due to the nested document limit being reached."
                   + " Removing {} failed items and retrying",
               itemName,
-              failedNestedDocLimitItemIds.size());
+              failedOperationIds.size());
+          log.debug("Failed operation IDs by Index: {}", failedNestedDocLimitItemIdsByIndexName);
           final List<BulkOperation> nonFailedOperations =
               operations.stream()
                   .filter(
-                      request ->
-                          !failedNestedDocLimitItemIds.contains(typeByBulkOperation(request).id()))
+                      request -> !failedOperationIds.contains(typeByBulkOperation(request).id()))
                   .toList();
           if (!nonFailedOperations.isEmpty()) {
             doBulkRequestWithNestedDocHandling(

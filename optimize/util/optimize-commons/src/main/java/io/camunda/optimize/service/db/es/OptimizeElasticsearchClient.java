@@ -207,11 +207,12 @@ public class OptimizeElasticsearchClient extends DatabaseClient {
         if (index != null) {
           final Map analysis = (Map) index.get("analysis");
           if (analysis != null) {
-            Map analyzer = (Map) ((Map) analysis.get("analyzer")).get("is_present_analyzer");
+            final Map analyzer = (Map) ((Map) analysis.get("analyzer")).get("is_present_analyzer");
             if (!List.class.isInstance(analyzer.get("filter"))) {
               analyzer.put("filter", List.of(analyzer.get("filter")));
             }
-            Map lowercaseNgram = (Map) ((Map) analysis.get("analyzer")).get("lowercase_ngram");
+            final Map lowercaseNgram =
+                (Map) ((Map) analysis.get("analyzer")).get("lowercase_ngram");
             if (!List.class.isInstance(lowercaseNgram.get("filter"))) {
               lowercaseNgram.put("filter", List.of(lowercaseNgram.get("filter")));
             }
@@ -318,11 +319,6 @@ public class OptimizeElasticsearchClient extends DatabaseClient {
     return esWithTransportOptions().get(getRequest, tClass);
   }
 
-  @Override
-  public final boolean exists(final String indexName) throws IOException {
-    return exists(ExistsRequest.of(b -> b.index(List.of(convertToPrefixedAliasName(indexName)))));
-  }
-
   public final boolean exists(final IndexMappingCreator indexMappingCreator) throws IOException {
     return exists(
         GetIndexRequest.of(
@@ -370,12 +366,6 @@ public class OptimizeElasticsearchClient extends DatabaseClient {
 
   public void createIndex(final CreateIndexRequest request) throws IOException {
     esWithTransportOptions().indices().create(request);
-  }
-
-  @Override
-  @SneakyThrows
-  public long countWithoutPrefix(final String unprefixedIndex) {
-    return countWithoutPrefix(CountRequest.of(c -> c.index(unprefixedIndex)));
   }
 
   public long countWithoutPrefix(final CountRequest request)
@@ -454,6 +444,11 @@ public class OptimizeElasticsearchClient extends DatabaseClient {
   }
 
   @Override
+  public final boolean exists(final String indexName) throws IOException {
+    return exists(ExistsRequest.of(b -> b.index(List.of(convertToPrefixedAliasName(indexName)))));
+  }
+
+  @Override
   public boolean triggerRollover(final String indexAliasName, final int maxIndexSizeGB) {
     final RolloverRequest rolloverRequest =
         RolloverRequest.of(
@@ -483,6 +478,12 @@ public class OptimizeElasticsearchClient extends DatabaseClient {
   public void deleteIndex(final String indexAlias) {
     final String[] allIndicesForAlias = getAllIndicesForAlias(indexAlias).toArray(String[]::new);
     deleteIndexByRawIndexNames(allIndicesForAlias);
+  }
+
+  @Override
+  @SneakyThrows
+  public long countWithoutPrefix(final String unprefixedIndex) {
+    return countWithoutPrefix(CountRequest.of(c -> c.index(unprefixedIndex)));
   }
 
   @Override
@@ -697,6 +698,11 @@ public class OptimizeElasticsearchClient extends DatabaseClient {
     log.debug("Successfully deleted index [{}].", indexNamesString);
   }
 
+  @Override
+  public void deleteAllIndexes() {
+    deleteIndexByRawIndexNames("_all");
+  }
+
   public final GetAliasResponse getAlias(final GetAliasRequest getAliasesRequest)
       throws IOException {
     return esWithTransportOptions().indices().getAlias(getAliasesRequest);
@@ -723,11 +729,6 @@ public class OptimizeElasticsearchClient extends DatabaseClient {
   public <T> void deleteIndex(final IndexMappingCreator<T> indexMappingCreator) {
     final String indexAlias = indexNameService.getOptimizeIndexAliasForIndex(indexMappingCreator);
     deleteIndex(indexAlias);
-  }
-
-  @Override
-  public void deleteAllIndexes() {
-    deleteIndexByRawIndexNames("_all");
   }
 
   public final CountResponse count(final CountRequest countRequest) throws IOException {
@@ -970,42 +971,48 @@ public class OptimizeElasticsearchClient extends DatabaseClient {
           "Executing bulk request on {} items of {}", bulkRequest.operations().size(), itemName);
       try {
         final BulkResponse bulkResponse = bulk(bulkRequest);
-        if (bulkResponse.errors()) {
-          if (containsNestedDocumentLimitErrorMessage(bulkResponse)) {
-            final Set<String> failedItemIds =
-                bulkResponse.items().stream()
-                    .filter(b -> b.error() != null && b.error().reason() != null)
-                    .filter(
-                        responseItem ->
-                            responseItem.error().reason().contains(NESTED_DOC_LIMIT_MESSAGE))
-                    .map(BulkResponseItem::id)
-                    .collect(Collectors.toSet());
-            log.warn(
-                "There were failures while performing bulk on {} due to the nested document limit being reached."
-                    + " Removing {} failed items and retrying",
-                itemName,
-                failedItemIds.size());
-            final List<BulkOperation> bulkOperations = new ArrayList<>(bulkRequest.operations());
-            bulkOperations.removeIf(
-                request -> {
-                  if (request.isCreate()) {
-                    return failedItemIds.contains(request.create().id());
-                  } else if (request.isUpdate()) {
-                    return failedItemIds.contains(request.update().id());
-                  } else if (request.isDelete()) {
-                    return failedItemIds.contains(request.delete().id());
-                  } else if (request.isIndex()) {
-                    return failedItemIds.contains(request.index().id());
-                  }
-                  return false;
-                });
-            if (!bulkOperations.isEmpty()) {
-              doBulkRequestWithNestedDocHandling(
-                  BulkRequest.of(b -> b.operations(bulkOperations)), itemName);
-            }
-          } else {
-            throw new OptimizeRuntimeException(
-                String.format("There were failures while performing bulk on %s", itemName));
+        if (!bulkResponse.errors()) {
+          return;
+        }
+        if (containsNestedDocumentLimitErrorMessage(bulkResponse)) {
+          final Map<String, List<String>> failedNestedDocLimitItemIdsByIndexName =
+              bulkResponse.items().stream()
+                  .filter(b -> b.error() != null && b.error().reason() != null && b.id() != null)
+                  .filter(
+                      responseItem ->
+                          responseItem.error().reason().contains(NESTED_DOC_LIMIT_MESSAGE))
+                  .collect(
+                      Collectors.groupingBy(
+                          BulkResponseItem::index,
+                          Collectors.mapping(BulkResponseItem::id, Collectors.toList())));
+
+          final Set<String> failedOperationIds =
+              failedNestedDocLimitItemIdsByIndexName.values().stream()
+                  .flatMap(Collection::stream)
+                  .collect(Collectors.toSet());
+          log.warn(
+              "There were failures while performing bulk on {} due to the nested document limit being reached."
+                  + " Removing {} failed items and retrying",
+              itemName,
+              failedOperationIds.size());
+          log.debug("Failed operation IDs by Index: {}", failedNestedDocLimitItemIdsByIndexName);
+          final List<BulkOperation> bulkOperations = new ArrayList<>(bulkRequest.operations());
+          bulkOperations.removeIf(
+              request -> {
+                if (request.isCreate()) {
+                  return failedOperationIds.contains(request.create().id());
+                } else if (request.isUpdate()) {
+                  return failedOperationIds.contains(request.update().id());
+                } else if (request.isDelete()) {
+                  return failedOperationIds.contains(request.delete().id());
+                } else if (request.isIndex()) {
+                  return failedOperationIds.contains(request.index().id());
+                }
+                return false;
+              });
+          if (!bulkOperations.isEmpty()) {
+            doBulkRequestWithNestedDocHandling(
+                BulkRequest.of(b -> b.operations(bulkOperations)), itemName);
           }
         }
       } catch (final IOException e) {
