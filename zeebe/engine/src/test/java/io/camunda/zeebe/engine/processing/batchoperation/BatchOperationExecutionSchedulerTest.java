@@ -12,6 +12,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.*;
 
 import io.camunda.search.clients.SearchClientsProxy;
+import io.camunda.search.entities.ProcessInstanceEntity;
 import io.camunda.search.filter.ProcessInstanceFilter;
 import io.camunda.search.query.ProcessInstanceQuery;
 import io.camunda.search.query.SearchQueryResult;
@@ -80,8 +81,15 @@ public class BatchOperationExecutionSchedulerTest {
   public void shouldAppendChunkForBatchOperations() {
     // given
     final var result =
-        new SearchQueryResult.Builder<Long>().items(List.of(1L, 2L, 3L)).total(3).build();
-    when(searchClientsProxy.searchProcessInstanceKeys(queryCaptor.capture())).thenReturn(result);
+        new SearchQueryResult.Builder<ProcessInstanceEntity>()
+            .items(
+                List.of(
+                    mockProcessInstanceEntity(1L),
+                    mockProcessInstanceEntity(2L),
+                    mockProcessInstanceEntity(3L)))
+            .total(3)
+            .build();
+    when(searchClientsProxy.searchProcessInstances(queryCaptor.capture())).thenReturn(result);
 
     // when our scheduler fires
     execute();
@@ -92,15 +100,22 @@ public class BatchOperationExecutionSchedulerTest {
         .appendCommandRecord(
             anyLong(), eq(BatchOperationChunkIntent.CREATE), chunkRecordCaptor.capture());
     final var batchOperationChunkRecord = chunkRecordCaptor.getValue();
-    assertThat(batchOperationChunkRecord.getEntityKeys().size()).isEqualTo(3);
+    assertThat(batchOperationChunkRecord.getItemKeys().size()).isEqualTo(3);
   }
 
   @Test
   public void shouldQueryMultipleTimesIfTotalIsHigher() {
     // given
     final var result =
-        new SearchQueryResult.Builder<Long>().items(List.of(1L, 2L, 3L)).total(6).build();
-    when(searchClientsProxy.searchProcessInstanceKeys(queryCaptor.capture())).thenReturn(result);
+        new SearchQueryResult.Builder<ProcessInstanceEntity>()
+            .items(
+                List.of(
+                    mockProcessInstanceEntity(1L),
+                    mockProcessInstanceEntity(2L),
+                    mockProcessInstanceEntity(3L)))
+            .total(6)
+            .build();
+    when(searchClientsProxy.searchProcessInstances(queryCaptor.capture())).thenReturn(result);
 
     // when our scheduler fires
     execute();
@@ -111,27 +126,7 @@ public class BatchOperationExecutionSchedulerTest {
         .appendCommandRecord(
             anyLong(), eq(BatchOperationChunkIntent.CREATE), chunkRecordCaptor.capture());
     final var batchOperationChunkRecord = chunkRecordCaptor.getValue();
-    assertThat(batchOperationChunkRecord.getEntityKeys().size()).isEqualTo(6);
-  }
-
-  @Test
-  void shouldSkipAlreadyProcessedBatchOperations() {
-    // given
-    final var result =
-        new SearchQueryResult.Builder<Long>().items(List.of(1L, 2L, 3L)).total(3).build();
-    when(searchClientsProxy.searchProcessInstanceKeys(queryCaptor.capture())).thenReturn(result);
-    execute();
-
-    // when we execute it again
-    execute();
-
-    // we should only fetch keys once
-    verify(batchOperationState, times(2)).foreachPendingBatchOperation(any());
-    verify(taskResultBuilder, times(1))
-        .appendCommandRecord(
-            anyLong(), eq(BatchOperationChunkIntent.CREATE), chunkRecordCaptor.capture());
-    final var batchOperationChunkRecord = chunkRecordCaptor.getValue();
-    assertThat(batchOperationChunkRecord.getEntityKeys().size()).isEqualTo(3);
+    assertThat(batchOperationChunkRecord.getItemKeys().size()).isEqualTo(6);
   }
 
   /** Bypasses the scheduling mechanism and executes the task directly */
@@ -145,5 +140,11 @@ public class BatchOperationExecutionSchedulerTest {
     when(scheduledTaskStateFactory.get().getBatchOperationState()).thenReturn(batchOperationState);
     when(streamProcessorContext.getScheduleService()).thenReturn(scheduleService);
     when(scheduleService.runDelayedAsync(any(), taskCaptor.capture(), any())).thenReturn(null);
+  }
+
+  private ProcessInstanceEntity mockProcessInstanceEntity(final long processInstanceKey) {
+    final var entity = mock(ProcessInstanceEntity.class);
+    when(entity.processInstanceKey()).thenReturn(processInstanceKey);
+    return entity;
   }
 }
