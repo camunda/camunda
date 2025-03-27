@@ -14,6 +14,13 @@ on:
       - "c8run/**"
       - ".github/workflows/c8run-build.yaml"
   workflow_dispatch:
+    inputs:
+      alert_slack:
+        description: Set this to force a message on the slack channel. Useful to debug alert issues on slack. NOTE.. This will always say it failed in the channel
+        required: true
+        default: false
+        type: boolean
+
   schedule:
     # Run at 23:30 UTC every day
     - cron: "30 23 * * *"
@@ -166,7 +173,7 @@ jobs:
             secret/data/products/distribution/ci SLACK_DISTRO_BOT_WEBHOOK;
 
       - name: Upload message to Slack on failure
-        if: failure()
+        if: ${{ failure() || github.event.inputs.alert_slack == true }}
         env:
           SLACK_WEBHOOK_URL: ${{ steps.secrets.output.SLACK_DISTRO_BOT_WEBHOOK }}
         run: |
@@ -301,7 +308,7 @@ jobs:
           retention-days: 10
 
       - name: Upload message to Slack on failure
-        if: failure()
+        if: ${{ failure() || github.event.inputs.alert_slack == true }}
         env:
           SLACK_WEBHOOK_URL: ${{ steps.secrets.output.SLACK_DISTRO_BOT_WEBHOOK }}
         run: |
