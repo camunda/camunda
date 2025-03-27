@@ -7,12 +7,7 @@
  */
 package io.camunda.zeebe.shared.security;
 
-import io.camunda.authentication.tenant.TenantAttributeHolder;
 import io.camunda.zeebe.gateway.rest.ConditionalOnRestGatewayEnabled;
-import jakarta.servlet.ServletException;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
-import java.io.IOException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.actuate.autoconfigure.security.servlet.EndpointRequest;
@@ -35,7 +30,6 @@ import org.springframework.security.config.annotation.web.configurers.CsrfConfig
 import org.springframework.security.config.annotation.web.configurers.FormLoginConfigurer;
 import org.springframework.security.config.annotation.web.configurers.HttpBasicConfigurer;
 import org.springframework.security.config.annotation.web.configurers.LogoutConfigurer;
-import org.springframework.security.core.Authentication;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.AuthenticationFilter;
 import org.springframework.security.web.servletapi.SecurityContextHolderAwareRequestFilter;
@@ -79,7 +73,6 @@ public class SecurityConfiguration {
       throws Exception {
     final var authFilter = new AuthenticationFilter(authManager, converter);
     authFilter.setFailureHandler(authFailureHandler);
-    authFilter.setSuccessHandler(SecurityConfiguration::injectTenantIds);
 
     return configureSecurity(http)
         .authenticationManager(authManager)
@@ -90,16 +83,6 @@ public class SecurityConfiguration {
                     .accessDeniedHandler(authFailureHandler))
         .authorizeHttpRequests(spec -> spec.anyRequest().authenticated())
         .build();
-  }
-
-  private static void injectTenantIds(
-      final HttpServletRequest request,
-      final HttpServletResponse response,
-      final Authentication authentication)
-      throws IOException, ServletException {
-    if (authentication instanceof final IdentityAuthentication identity) {
-      TenantAttributeHolder.setTenantIds(identity.tenantIds());
-    }
   }
 
   private HttpSecurity configureSecurity(final HttpSecurity http) throws Exception {
