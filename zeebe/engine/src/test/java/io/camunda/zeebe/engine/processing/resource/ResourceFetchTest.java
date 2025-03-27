@@ -9,6 +9,7 @@ package io.camunda.zeebe.engine.processing.resource;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
 
 import io.camunda.zeebe.engine.util.EngineRule;
@@ -21,6 +22,7 @@ import io.camunda.zeebe.protocol.record.value.deployment.ResourceAssert;
 import io.camunda.zeebe.stream.api.CommandResponseWriter;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Duration;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -69,10 +71,11 @@ public class ResourceFetchTest {
         .hasVersionTag("v1.0")
         .hasDeploymentKey(deployment.getKey())
         .hasChecksum(resourceMetadata.getChecksum());
-    verify(mockCommandResponseWriter).intent(ResourceIntent.FETCHED);
-    verify(mockCommandResponseWriter).valueType(ValueType.RESOURCE);
-    verify(mockCommandResponseWriter).key(resourceKey);
-    verify(mockCommandResponseWriter).tryWriteResponse(10, 123456789L);
+    final var timeout = timeout(Duration.ofSeconds(1).toMillis());
+    verify(mockCommandResponseWriter, timeout).intent(ResourceIntent.FETCHED);
+    verify(mockCommandResponseWriter, timeout).valueType(ValueType.RESOURCE);
+    verify(mockCommandResponseWriter, timeout).key(resourceKey);
+    verify(mockCommandResponseWriter, timeout).tryWriteResponse(10, 123456789L);
     ResourceAssert.assertThat(resourceResponse)
         .isNotNull()
         .hasResourceProp(new String(resourceBytes))
