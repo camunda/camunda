@@ -155,21 +155,20 @@ public final class UserTaskProcessor extends JobWorkerTaskSupportingProcessor<Ex
     final var userTaskRecord =
         userTaskBehavior.createNewUserTask(context, element, userTaskProperties);
 
-    final var lifecycleState =
-        element.getTaskListeners(ZeebeTaskListenerEventType.creating).stream()
-            .findFirst()
-            .map(
-                listener -> {
-                  jobBehavior.createNewTaskListenerJob(
-                      context, userTaskRecord, listener, userTaskRecord.getChangedAttributes());
-                  return LifecycleState.CREATING;
-                })
-            .orElseGet(
-                () -> {
-                  userTaskRecord.unsetAssignee();
-                  userTaskBehavior.userTaskCreated(userTaskRecord);
-                  return LifecycleState.CREATED;
-                });
+    final LifecycleState lifecycleState;
+    final var creatingListeners = element.getTaskListeners(ZeebeTaskListenerEventType.creating);
+    if (!creatingListeners.isEmpty()) {
+      jobBehavior.createNewTaskListenerJob(
+          context,
+          userTaskRecord,
+          creatingListeners.getFirst(),
+          userTaskRecord.getChangedAttributes());
+      lifecycleState = LifecycleState.CREATING;
+    } else {
+      userTaskRecord.unsetAssignee();
+      userTaskBehavior.userTaskCreated(userTaskRecord);
+      lifecycleState = LifecycleState.CREATED;
+    }
 
     return new UserTaskCreationResult(userTaskProperties, userTaskRecord, lifecycleState);
   }
