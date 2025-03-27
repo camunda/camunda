@@ -10,7 +10,7 @@ package io.camunda.search.clients.transformers.entity;
 import io.camunda.search.clients.transformers.ServiceTransformer;
 import io.camunda.search.entities.ProcessInstanceEntity;
 import io.camunda.search.entities.ProcessInstanceEntity.ProcessInstanceState;
-import io.camunda.webapps.schema.entities.operate.listview.ProcessInstanceForListViewEntity;
+import io.camunda.webapps.schema.entities.listview.ProcessInstanceForListViewEntity;
 
 public class ProcessInstanceEntityTransformer
     implements ServiceTransformer<ProcessInstanceForListViewEntity, ProcessInstanceEntity> {
@@ -34,7 +34,7 @@ public class ProcessInstanceEntityTransformer
   }
 
   private ProcessInstanceState toState(
-      final io.camunda.webapps.schema.entities.operate.listview.ProcessInstanceState source) {
+      final io.camunda.webapps.schema.entities.listview.ProcessInstanceState source) {
     if (source == null) {
       return null;
     }

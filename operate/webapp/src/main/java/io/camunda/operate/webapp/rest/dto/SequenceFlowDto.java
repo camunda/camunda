@@ -8,7 +8,7 @@
 package io.camunda.operate.webapp.rest.dto;
 
 import io.camunda.operate.util.ConversionUtils;
-import io.camunda.webapps.schema.entities.operate.SequenceFlowEntity;
+import io.camunda.webapps.schema.entities.SequenceFlowEntity;
 
 public class SequenceFlowDto implements CreatableFromEntity<SequenceFlowDto, SequenceFlowEntity> {
 

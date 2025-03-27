@@ -8,7 +8,7 @@
 package io.camunda.operate.webapp.rest.dto.dmn;
 
 import io.camunda.operate.webapp.rest.dto.CreatableFromEntity;
-import io.camunda.webapps.schema.entities.operate.dmn.definition.DecisionDefinitionEntity;
+import io.camunda.webapps.schema.entities.dmn.definition.DecisionDefinitionEntity;
 import io.swagger.v3.oas.annotations.media.Schema;
 
 @Schema(name = "Decision object")
@@ -61,7 +61,7 @@ public class DecisionDto implements CreatableFromEntity<DecisionDto, DecisionDef
 
   @Override
   public DecisionDto fillFrom(final DecisionDefinitionEntity decisionEntity) {
-    return this.setId(decisionEntity.getId())
+    return setId(decisionEntity.getId())
         .setDecisionId(decisionEntity.getDecisionId())
         .setName(decisionEntity.getName())
         .setVersion(decisionEntity.getVersion());
@@ -77,7 +77,7 @@ public class DecisionDto implements CreatableFromEntity<DecisionDto, DecisionDef
   }
 
   @Override
-  public boolean equals(Object o) {
+  public boolean equals(final Object o) {
     if (this == o) {
       return true;
     }

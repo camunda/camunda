@@ -9,7 +9,7 @@ package io.camunda.operate.webapp.reader;
 
 import io.camunda.operate.webapp.data.IncidentDataHolder;
 import io.camunda.operate.webapp.rest.dto.incidents.IncidentResponseDto;
-import io.camunda.webapps.schema.entities.operate.IncidentEntity;
+import io.camunda.webapps.schema.entities.incident.IncidentEntity;
 import java.util.List;
 import java.util.Map;
 

@@ -32,10 +32,10 @@ import io.camunda.operate.webapp.rest.dto.listview.VariablesQueryDto;
 import io.camunda.operate.webapp.rest.exception.InvalidRequestException;
 import io.camunda.operate.webapp.security.permission.PermissionsService;
 import io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate;
-import io.camunda.webapps.schema.entities.operate.FlowNodeState;
-import io.camunda.webapps.schema.entities.operate.FlowNodeType;
-import io.camunda.webapps.schema.entities.operate.IncidentEntity;
-import io.camunda.webapps.schema.entities.operate.listview.ProcessInstanceState;
+import io.camunda.webapps.schema.entities.flownode.FlowNodeState;
+import io.camunda.webapps.schema.entities.flownode.FlowNodeType;
+import io.camunda.webapps.schema.entities.incident.IncidentEntity;
+import io.camunda.webapps.schema.entities.listview.ProcessInstanceState;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
@@ -227,7 +227,7 @@ public class OpenSearchQueryHelper {
     return null;
   }
 
-  private Query incidentErrorHashCodeQuery(ListViewQueryDto query) {
+  private Query incidentErrorHashCodeQuery(final ListViewQueryDto query) {
     final Integer incidentErrorHashCode = query.getIncidentErrorHashCode();
     if (incidentErrorHashCode == null) {
       return null;
@@ -244,7 +244,7 @@ public class OpenSearchQueryHelper {
     }
 
     final List<Query> shouldQueries = new ArrayList<>();
-    for (String error : errors) {
+    for (final String error : errors) {
       final Query matchPhraseQuery =
           new MatchPhraseQuery.Builder().field(ERROR_MSG).query(error).build().toQuery();
       shouldQueries.add(matchPhraseQuery);

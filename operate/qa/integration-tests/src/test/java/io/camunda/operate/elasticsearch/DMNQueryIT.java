@@ -14,7 +14,7 @@ import io.camunda.operate.util.OperateAbstractIT;
 import io.camunda.operate.util.SearchTestRule;
 import io.camunda.operate.util.searchrepository.TestSearchRepository;
 import io.camunda.webapps.schema.descriptors.operate.template.DecisionInstanceTemplate;
-import io.camunda.webapps.schema.entities.operate.dmn.DecisionInstanceEntity;
+import io.camunda.webapps.schema.entities.dmn.DecisionInstanceEntity;
 import java.util.List;
 import org.junit.Rule;
 import org.junit.Test;

@@ -7,7 +7,7 @@
  */
 package io.camunda.operate.webapp.rest.dto.dmn;
 
-import io.camunda.webapps.schema.entities.operate.dmn.DecisionInstanceState;
+import io.camunda.webapps.schema.entities.dmn.DecisionInstanceState;
 
 public enum DecisionInstanceStateDto {
   FAILED,
@@ -15,7 +15,7 @@ public enum DecisionInstanceStateDto {
   UNKNOWN,
   UNSPECIFIED;
 
-  public static DecisionInstanceStateDto getState(DecisionInstanceState state) {
+  public static DecisionInstanceStateDto getState(final DecisionInstanceState state) {
     if (state == null) {
       return UNSPECIFIED;
     }

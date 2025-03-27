@@ -9,6 +9,7 @@ package io.camunda.webapps.schema.entities.operate;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.webapps.schema.entities.flownode.FlowNodeType;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;

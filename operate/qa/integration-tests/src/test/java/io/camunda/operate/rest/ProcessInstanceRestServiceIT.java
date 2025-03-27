@@ -16,7 +16,7 @@ import io.camunda.operate.util.TestApplication;
 import io.camunda.operate.util.j5templates.MockMvcManager;
 import io.camunda.operate.webapp.rest.ProcessInstanceRestService;
 import io.camunda.operate.webapp.rest.dto.ListenerRequestDto;
-import io.camunda.webapps.schema.entities.operate.ListenerType;
+import io.camunda.webapps.schema.entities.listener.ListenerType;
 import jakarta.validation.ConstraintViolationException;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;

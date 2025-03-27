@@ -9,8 +9,8 @@ package io.camunda.operate.webapp.rest.dto.dmn;
 
 import io.camunda.operate.webapp.rest.dto.CreatableFromEntity;
 import io.camunda.operate.webapp.rest.dto.DtoCreator;
-import io.camunda.webapps.schema.entities.operate.dmn.DecisionInstanceEntity;
-import io.camunda.webapps.schema.entities.operate.dmn.DecisionType;
+import io.camunda.webapps.schema.entities.dmn.DecisionInstanceEntity;
+import io.camunda.webapps.schema.entities.dmn.DecisionType;
 import java.time.OffsetDateTime;
 import java.util.Collections;
 import java.util.Comparator;
@@ -91,7 +91,7 @@ public class DecisionInstanceDto
     return tenantId;
   }
 
-  public DecisionInstanceDto setTenantId(String tenantId) {
+  public DecisionInstanceDto setTenantId(final String tenantId) {
     this.tenantId = tenantId;
     return this;
   }
@@ -180,7 +180,7 @@ public class DecisionInstanceDto
         DtoCreator.create(entity.getEvaluatedOutputs(), DecisionInstanceOutputDto.class);
     Collections.sort(outputs, DECISION_INSTANCE_OUTPUT_DTO_COMPARATOR);
 
-    this.setId(entity.getId())
+    setId(entity.getId())
         .setDecisionDefinitionId(entity.getDecisionDefinitionId())
         .setDecisionId(entity.getDecisionId())
         .setTenantId(entity.getTenantId())
@@ -217,7 +217,7 @@ public class DecisionInstanceDto
   }
 
   @Override
-  public boolean equals(Object o) {
+  public boolean equals(final Object o) {
     if (this == o) {
       return true;
     }

@@ -7,8 +7,8 @@
  */
 package io.camunda.exporter.tasks.incident;
 
-import io.camunda.webapps.schema.entities.operate.IncidentEntity;
-import io.camunda.webapps.schema.entities.operate.IncidentState;
+import io.camunda.webapps.schema.entities.incident.IncidentEntity;
+import io.camunda.webapps.schema.entities.incident.IncidentState;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;

@@ -7,7 +7,7 @@
  */
 package io.camunda.operate.webapp.rest.dto;
 
-import io.camunda.webapps.schema.entities.operate.ProcessEntity;
+import io.camunda.webapps.schema.entities.ProcessEntity;
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.util.Objects;
 

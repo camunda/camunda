@@ -16,7 +16,7 @@ import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.schema.migration.SemanticVersion;
 import io.camunda.operate.store.ZeebeStore;
-import io.camunda.webapps.schema.entities.operate.ImportPositionEntity;
+import io.camunda.webapps.schema.entities.ImportPositionEntity;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;

@@ -7,7 +7,7 @@
  */
 package io.camunda.operate.webapp.writer;
 
-import io.camunda.webapps.schema.entities.operate.listview.ProcessInstanceState;
+import io.camunda.webapps.schema.entities.listview.ProcessInstanceState;
 import java.io.IOException;
 import java.util.List;
 

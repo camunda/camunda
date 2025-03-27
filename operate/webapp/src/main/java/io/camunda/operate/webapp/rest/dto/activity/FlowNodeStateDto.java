@@ -7,7 +7,7 @@
  */
 package io.camunda.operate.webapp.rest.dto.activity;
 
-import io.camunda.webapps.schema.entities.operate.FlowNodeState;
+import io.camunda.webapps.schema.entities.flownode.FlowNodeState;
 
 public enum FlowNodeStateDto {
   ACTIVE,
@@ -17,7 +17,7 @@ public enum FlowNodeStateDto {
   UNSPECIFIED,
   UNKNOWN;
 
-  public static FlowNodeStateDto getState(FlowNodeState state) {
+  public static FlowNodeStateDto getState(final FlowNodeState state) {
     if (state == null) {
       return UNSPECIFIED;
     }

@@ -7,7 +7,7 @@
  */
 package io.camunda.operate.webapp.rest.dto.metadata;
 
-import io.camunda.webapps.schema.entities.operate.FlowNodeType;
+import io.camunda.webapps.schema.entities.flownode.FlowNodeType;
 import java.util.Objects;
 
 public class FlowNodeMetadataRequestDto {

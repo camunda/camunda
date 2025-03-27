@@ -9,7 +9,7 @@ package io.camunda.tasklist.webapp.es.cache;
 
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
 import io.camunda.tasklist.store.ProcessStore;
-import io.camunda.webapps.schema.entities.operate.ProcessEntity;
+import io.camunda.webapps.schema.entities.ProcessEntity;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Optional;

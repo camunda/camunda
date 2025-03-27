@@ -7,7 +7,7 @@
  */
 package io.camunda.tasklist.zeebeimport;
 
-import io.camunda.webapps.schema.entities.operate.ImportPositionEntity;
+import io.camunda.webapps.schema.entities.ImportPositionEntity;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.concurrent.Callable;

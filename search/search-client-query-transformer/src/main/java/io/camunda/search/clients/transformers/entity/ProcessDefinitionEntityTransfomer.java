@@ -9,7 +9,7 @@ package io.camunda.search.clients.transformers.entity;
 
 import io.camunda.search.clients.transformers.ServiceTransformer;
 import io.camunda.search.entities.ProcessDefinitionEntity;
-import io.camunda.webapps.schema.entities.operate.ProcessEntity;
+import io.camunda.webapps.schema.entities.ProcessEntity;
 
 public class ProcessDefinitionEntityTransfomer
     implements ServiceTransformer<ProcessEntity, ProcessDefinitionEntity> {

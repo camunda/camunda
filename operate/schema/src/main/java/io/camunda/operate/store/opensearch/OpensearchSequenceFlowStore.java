@@ -16,7 +16,7 @@ import io.camunda.operate.store.SequenceFlowStore;
 import io.camunda.operate.store.opensearch.client.sync.RichOpenSearchClient;
 import io.camunda.operate.store.opensearch.dsl.RequestDSL;
 import io.camunda.webapps.schema.descriptors.operate.template.SequenceFlowTemplate;
-import io.camunda.webapps.schema.entities.operate.SequenceFlowEntity;
+import io.camunda.webapps.schema.entities.SequenceFlowEntity;
 import java.util.List;
 import org.opensearch.client.opensearch._types.SortOrder;
 import org.slf4j.Logger;

@@ -27,8 +27,8 @@ import io.camunda.operate.util.SearchTestRule;
 import io.camunda.operate.webapp.rest.dto.dmn.DRDDataEntryDto;
 import io.camunda.operate.webapp.rest.dto.dmn.DecisionInstanceDto;
 import io.camunda.operate.webapp.rest.exception.NotFoundException;
-import io.camunda.webapps.schema.entities.operate.dmn.DecisionInstanceEntity;
-import io.camunda.webapps.schema.entities.operate.dmn.DecisionInstanceState;
+import io.camunda.webapps.schema.entities.dmn.DecisionInstanceEntity;
+import io.camunda.webapps.schema.entities.dmn.DecisionInstanceState;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Map;
@@ -144,11 +144,11 @@ public class DecisionInstanceReaderIT extends OperateAbstractIT {
     return decisionInstances.get(0);
   }
 
-  private String getQuery(String decisionInstanceId) {
+  private String getQuery(final String decisionInstanceId) {
     return String.format(QUERY_DECISION_INSTANCES_URL, decisionInstanceId);
   }
 
-  private String getDrdDataQuery(String decisionInstanceId) {
+  private String getDrdDataQuery(final String decisionInstanceId) {
     return String.format(QUERY_DECISION_INSTANCES_URL + "/drd-data", decisionInstanceId);
   }
 }

@@ -8,7 +8,7 @@
 package io.camunda.operate.webapp.rest.dto.dmn;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import io.camunda.webapps.schema.entities.operate.dmn.DecisionInstanceState;
+import io.camunda.webapps.schema.entities.dmn.DecisionInstanceState;
 import java.util.Objects;
 
 public class DRDDataEntryDto {

@@ -34,11 +34,11 @@ import io.camunda.search.entities.IncidentEntity.IncidentState;
 
 public class IncidentEntityTransformer
     implements ServiceTransformer<
-        io.camunda.webapps.schema.entities.operate.IncidentEntity, IncidentEntity> {
+        io.camunda.webapps.schema.entities.incident.IncidentEntity, IncidentEntity> {
 
   @Override
   public IncidentEntity apply(
-      final io.camunda.webapps.schema.entities.operate.IncidentEntity value) {
+      final io.camunda.webapps.schema.entities.incident.IncidentEntity value) {
     return new IncidentEntity(
         value.getKey(),
         value.getProcessDefinitionKey(),
@@ -55,7 +55,7 @@ public class IncidentEntityTransformer
   }
 
   private IncidentState toState(
-      final io.camunda.webapps.schema.entities.operate.IncidentState value) {
+      final io.camunda.webapps.schema.entities.incident.IncidentState value) {
     if (value == null) {
       return null;
     }
@@ -68,7 +68,7 @@ public class IncidentEntityTransformer
     };
   }
 
-  private ErrorType toErrorType(final io.camunda.webapps.schema.entities.operate.ErrorType value) {
+  private ErrorType toErrorType(final io.camunda.webapps.schema.entities.incident.ErrorType value) {
     if (value == null) {
       return null;
     }
