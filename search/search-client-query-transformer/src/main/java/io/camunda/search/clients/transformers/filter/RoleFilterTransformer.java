@@ -9,8 +9,8 @@ package io.camunda.search.clients.transformers.filter;
 
 import static io.camunda.search.clients.query.SearchQueryBuilders.and;
 import static io.camunda.search.clients.query.SearchQueryBuilders.hasChildQuery;
-import static io.camunda.search.clients.query.SearchQueryBuilders.longTerms;
 import static io.camunda.search.clients.query.SearchQueryBuilders.matchNone;
+import static io.camunda.search.clients.query.SearchQueryBuilders.stringTerms;
 import static io.camunda.search.clients.query.SearchQueryBuilders.term;
 
 import io.camunda.search.clients.query.SearchQuery;
@@ -30,12 +30,12 @@ public class RoleFilterTransformer extends IndexFilterTransformer<RoleFilter> {
         term(RoleIndex.JOIN, IdentityJoinRelationshipType.ROLE.getType()),
         filter.roleKey() == null ? null : term(RoleIndex.KEY, filter.roleKey()),
         filter.name() == null ? null : term(RoleIndex.NAME, filter.name()),
-        filter.memberKeys() == null
+        filter.memberIds() == null
             ? null
-            : filter.memberKeys().isEmpty()
+            : filter.memberIds().isEmpty()
                 ? matchNone()
                 : hasChildQuery(
                     IdentityJoinRelationshipType.MEMBER.getType(),
-                    longTerms(RoleIndex.MEMBER_KEY, filter.memberKeys())));
+                    stringTerms(RoleIndex.MEMBER_ID, filter.memberIds())));
   }
 }

@@ -12,7 +12,7 @@ import java.io.Serializable;
 import java.util.Set;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
-public record RoleEntity(Long roleKey, String name, Set<Long> assignedMemberKeys)
+public record RoleEntity(Long roleKey, String name, Set<String> assignedMemberKeys)
     implements Serializable {
   public RoleEntity(final Long roleKey, final String name) {
     this(roleKey, name, Set.of());

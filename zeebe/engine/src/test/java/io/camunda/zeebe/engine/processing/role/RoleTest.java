@@ -94,7 +94,7 @@ public class RoleTest {
 
   @Test
   public void shouldAddEntityToRole() {
-    final var userKey =
+    final var username =
         engine
             .user()
             .newUser("foo")
@@ -102,21 +102,22 @@ public class RoleTest {
             .withName("Foo Bar")
             .withPassword("zabraboof")
             .create()
-            .getKey();
+            .getValue()
+            .getUsername();
     final var name = UUID.randomUUID().toString();
     final var roleKey = engine.role().newRole(name).create().getValue().getRoleKey();
     final var updatedRole =
         engine
             .role()
             .addEntity(roleKey)
-            .withEntityKey(userKey)
+            .withEntityId(username)
             .withEntityType(EntityType.USER)
             .add()
             .getValue();
 
     Assertions.assertThat(updatedRole)
         .isNotNull()
-        .hasFieldOrPropertyWithValue("entityKey", userKey)
+        .hasFieldOrPropertyWithValue("entityId", username)
         .hasFieldOrPropertyWithValue("entityType", EntityType.USER);
   }
 
@@ -155,7 +156,7 @@ public class RoleTest {
         engine
             .role()
             .addEntity(roleKey)
-            .withEntityKey(1L)
+            .withEntityId("entityId")
             .withEntityType(EntityType.USER)
             .expectRejection()
             .add();
@@ -165,8 +166,8 @@ public class RoleTest {
     assertThat(notPresentUpdateRecord)
         .hasRejectionType(RejectionType.NOT_FOUND)
         .hasRejectionReason(
-            "Expected to add an entity with key '%s' and type '%s' to role with key '%s', but the entity doesn't exist."
-                .formatted(1L, EntityType.USER, roleKey));
+            "Expected to add an entity with id '%s' and type '%s' to role with key '%s', but the entity doesn't exist."
+                .formatted("entityId", EntityType.USER, roleKey));
   }
 
   @Test
@@ -175,7 +176,7 @@ public class RoleTest {
     final var name = UUID.randomUUID().toString();
     final var roleRecord = engine.role().newRole(name).create();
     final var roleKey = roleRecord.getValue().getRoleKey();
-    final var userKey =
+    final var username =
         engine
             .user()
             .newUser("foo")
@@ -183,15 +184,16 @@ public class RoleTest {
             .withName("Foo Bar")
             .withPassword("zabraboof")
             .create()
-            .getKey();
-    engine.role().addEntity(roleKey).withEntityKey(userKey).withEntityType(EntityType.USER).add();
+            .getValue()
+            .getUsername();
+    engine.role().addEntity(roleKey).withEntityId(username).withEntityType(EntityType.USER).add();
 
     // when
     final var notPresentUpdateRecord =
         engine
             .role()
             .addEntity(roleKey)
-            .withEntityKey(userKey)
+            .withEntityId(username)
             .withEntityType(EntityType.USER)
             .expectRejection()
             .add();
@@ -200,13 +202,13 @@ public class RoleTest {
     assertThat(notPresentUpdateRecord)
         .hasRejectionType(RejectionType.ALREADY_EXISTS)
         .hasRejectionReason(
-            "Expected to add entity with key '%d' to role with key '%d', but the entity is already assigned to this role."
-                .formatted(userKey, roleKey));
+            "Expected to add entity with id '%s' to role with key '%d', but the entity is already assigned to this role."
+                .formatted(username, roleKey));
   }
 
   @Test
   public void shouldRemoveEntityToRole() {
-    final var userKey =
+    final var username =
         engine
             .user()
             .newUser("foo")
@@ -214,15 +216,16 @@ public class RoleTest {
             .withName("Foo Bar")
             .withPassword("zabraboof")
             .create()
-            .getKey();
+            .getValue()
+            .getUsername();
     final var name = UUID.randomUUID().toString();
     final var roleKey = engine.role().newRole(name).create().getValue().getRoleKey();
-    engine.role().addEntity(roleKey).withEntityKey(userKey).withEntityType(EntityType.USER).add();
+    engine.role().addEntity(roleKey).withEntityId(username).withEntityType(EntityType.USER).add();
     final var removedEntity =
         engine
             .role()
             .removeEntity(roleKey)
-            .withEntityKey(userKey)
+            .withEntityId(username)
             .withEntityType(EntityType.USER)
             .remove()
             .getValue();
@@ -230,7 +233,7 @@ public class RoleTest {
     Assertions.assertThat(removedEntity)
         .isNotNull()
         .hasFieldOrPropertyWithValue("roleKey", roleKey)
-        .hasFieldOrPropertyWithValue("entityKey", userKey)
+        .hasFieldOrPropertyWithValue("entityId", username)
         .hasFieldOrPropertyWithValue("entityType", EntityType.USER);
   }
 
@@ -269,7 +272,7 @@ public class RoleTest {
         engine
             .role()
             .removeEntity(roleKey)
-            .withEntityKey(1L)
+            .withEntityId("entityId")
             .withEntityType(EntityType.USER)
             .expectRejection()
             .remove();
@@ -279,8 +282,8 @@ public class RoleTest {
     assertThat(notPresentUpdateRecord)
         .hasRejectionType(RejectionType.NOT_FOUND)
         .hasRejectionReason(
-            "Expected to remove an entity with key '%s' and type '%s' from role with key '%s', but the entity doesn't exist."
-                .formatted(1L, EntityType.USER, roleKey));
+            "Expected to remove an entity with id '%s' and type '%s' from role with key '%s', but the entity doesn't exist."
+                .formatted("entityId", EntityType.USER, roleKey));
   }
 
   @Test

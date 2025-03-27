@@ -29,7 +29,7 @@ import io.camunda.zeebe.stream.api.state.KeyGenerator;
 
 public class RoleRemoveEntityProcessor implements DistributedTypedRecordProcessor<RoleRecord> {
   private static final String ENTITY_NOT_ASSIGNED_ERROR_MESSAGE =
-      "Expected to remove entity with key '%s' from role with key '%s', but the entity is not assigned to this role.";
+      "Expected to remove entity with id '%s' from role with key '%s', but the entity is not assigned to this role.";
   private final RoleState roleState;
   private final UserState userState;
   private final MappingState mappingState;
@@ -83,12 +83,12 @@ public class RoleRemoveEntityProcessor implements DistributedTypedRecordProcesso
       return;
     }
 
-    final var entityKey = record.getEntityKey();
+    final var entityId = record.getEntityId();
     final var entityType = record.getEntityType();
-    if (!isEntityPresent(entityKey, entityType)) {
+    if (!isEntityPresent(entityId, entityType)) {
       final var errorMessage =
-          "Expected to remove an entity with key '%s' and type '%s' from role with key '%s', but the entity doesn't exist."
-              .formatted(entityKey, entityType, record.getRoleKey());
+          "Expected to remove an entity with id '%s' and type '%s' from role with key '%s', but the entity doesn't exist."
+              .formatted(entityId, entityType, record.getRoleKey());
       rejectionWriter.appendRejection(command, RejectionType.NOT_FOUND, errorMessage);
       responseWriter.writeRejectionOnCommand(command, RejectionType.NOT_FOUND, errorMessage);
       return;
@@ -109,7 +109,7 @@ public class RoleRemoveEntityProcessor implements DistributedTypedRecordProcesso
   public void processDistributedCommand(final TypedRecord<RoleRecord> command) {
     final var record = command.getValue();
     roleState
-        .getEntityType(record.getRoleKey(), record.getEntityKey())
+        .getEntityType(record.getRoleKey(), record.getEntityId())
         .ifPresentOrElse(
             entityType ->
                 stateWriter.appendFollowUpEvent(
@@ -117,17 +117,17 @@ public class RoleRemoveEntityProcessor implements DistributedTypedRecordProcesso
             () -> {
               final var errorMessage =
                   ENTITY_NOT_ASSIGNED_ERROR_MESSAGE.formatted(
-                      record.getEntityKey(), record.getRoleKey());
+                      record.getEntityId(), record.getRoleKey());
               rejectionWriter.appendRejection(command, RejectionType.NOT_FOUND, errorMessage);
             });
 
     commandDistributionBehavior.acknowledgeCommand(command);
   }
 
-  private boolean isEntityPresent(final long entityKey, final EntityType entityType) {
+  private boolean isEntityPresent(final String entityId, final EntityType entityType) {
     return switch (entityType) {
-      case USER -> userState.getUser(entityKey).isPresent();
-      case MAPPING -> mappingState.get(entityKey).isPresent();
+      case USER -> userState.getUser(entityId).isPresent();
+      case MAPPING -> mappingState.get(entityId).isPresent();
       default -> false;
     };
   }
