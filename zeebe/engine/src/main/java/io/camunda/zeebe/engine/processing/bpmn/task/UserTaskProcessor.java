@@ -25,6 +25,7 @@ import io.camunda.zeebe.engine.state.immutable.UserTaskState.LifecycleState;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskListenerEventType;
 import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
 import io.camunda.zeebe.util.Either;
+import java.util.Optional;
 import org.apache.commons.lang3.StringUtils;
 
 public final class UserTaskProcessor extends JobWorkerTaskSupportingProcessor<ExecutableUserTask> {
@@ -115,18 +116,37 @@ public final class UserTaskProcessor extends JobWorkerTaskSupportingProcessor<Ex
   }
 
   @Override
-  protected void onTerminateInternal(
+  protected TransitionOutcome onTerminateInternal(
       final ExecutableUserTask element, final BpmnElementContext context) {
-    final var flowScopeInstance = stateBehavior.getFlowScopeInstance(context);
 
     if (element.hasExecutionListeners() || element.hasTaskListeners()) {
       jobBehavior.cancelJob(context);
     }
 
-    userTaskBehavior.cancelUserTask(context);
     eventSubscriptionBehavior.unsubscribeFromEvents(context);
     incidentBehavior.resolveIncidents(context);
 
+    final var elementInstance = stateBehavior.getElementInstance(context);
+    final Optional<UserTaskRecord> userTaskRecord =
+        userTaskBehavior.userTaskCanceling(elementInstance);
+    if (userTaskRecord.isPresent()) {
+      if (element.hasTaskListeners(ZeebeTaskListenerEventType.canceling)) {
+        // Placeholder for calling task listeners and then finalizing
+        return TransitionOutcome.AWAIT;
+      } else {
+        userTaskBehavior.userTaskCanceled(userTaskRecord.get());
+        return TransitionOutcome.CONTINUE;
+      }
+    } else {
+      return TransitionOutcome.CONTINUE;
+    }
+  }
+
+  @Override
+  public void onFinalizeTerminationInternal(
+      final ExecutableUserTask element, final BpmnElementContext context) {
+
+    final var flowScopeInstance = stateBehavior.getFlowScopeInstance(context);
     eventSubscriptionBehavior
         .findEventTrigger(context)
         .filter(eventTrigger -> flowScopeInstance.isActive())

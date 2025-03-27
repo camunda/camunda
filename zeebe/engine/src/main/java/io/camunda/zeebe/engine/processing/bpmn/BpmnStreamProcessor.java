@@ -11,6 +11,7 @@ import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.Loggers;
 import io.camunda.zeebe.engine.metrics.ProcessEngineMetrics;
 import io.camunda.zeebe.engine.processing.ExcludeAuthorizationCheck;
+import io.camunda.zeebe.engine.processing.bpmn.BpmnElementProcessor.TransitionOutcome;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnIncidentBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnJobBehavior;
@@ -175,7 +176,10 @@ public final class BpmnStreamProcessor implements TypedRecordProcessor<ProcessIn
         break;
       case TERMINATE_ELEMENT:
         final var terminatingContext = stateTransitionBehavior.transitionToTerminating(context);
-        processor.onTerminate(element, terminatingContext);
+        final var transitionOutcome = processor.onTerminate(element, terminatingContext);
+        if (transitionOutcome == TransitionOutcome.CONTINUE) {
+          processor.finalizeTermination(element, terminatingContext);
+        }
         break;
       case COMPLETE_EXECUTION_LISTENER:
         final ProcessInstanceIntent elementState =

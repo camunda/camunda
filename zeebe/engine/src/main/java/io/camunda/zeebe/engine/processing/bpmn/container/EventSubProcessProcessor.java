@@ -72,7 +72,7 @@ public final class EventSubProcessProcessor
   }
 
   @Override
-  public void onTerminate(
+  public TransitionOutcome onTerminate(
       final ExecutableFlowElementContainer element, final BpmnElementContext terminating) {
     if (element.hasExecutionListeners()) {
       jobBehavior.cancelJob(terminating);
@@ -84,6 +84,7 @@ public final class EventSubProcessProcessor
     if (noActiveChildInstances) {
       onChildTerminated(element, terminating, null);
     }
+    return TransitionOutcome.CONTINUE;
   }
 
   @Override

@@ -35,6 +35,7 @@ import java.time.ZonedDateTime;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
@@ -305,21 +306,31 @@ public final class BpmnUserTaskBehavior {
             });
   }
 
-  public void cancelUserTask(final BpmnElementContext context) {
-    final var elementInstance = stateBehavior.getElementInstance(context);
-    cancelUserTask(elementInstance);
+  public void cancelUserTask(final ElementInstance elementInstance) {
+    userTaskCanceling(elementInstance).ifPresent(this::userTaskCanceled);
   }
 
-  public void cancelUserTask(final ElementInstance elementInstance) {
+  public Optional<UserTaskRecord> userTaskCanceling(final ElementInstance elementInstance) {
     final long userTaskKey = elementInstance.getUserTaskKey();
-    if (userTaskKey > 0) {
-      final LifecycleState lifecycleState = userTaskState.getLifecycleState(userTaskKey);
-      if (CANCELABLE_LIFECYCLE_STATES.contains(lifecycleState)) {
-        final UserTaskRecord userTask = userTaskState.getUserTask(userTaskKey);
-        stateWriter.appendFollowUpEvent(userTaskKey, UserTaskIntent.CANCELING, userTask);
-        stateWriter.appendFollowUpEvent(userTaskKey, UserTaskIntent.CANCELED, userTask);
-      }
+    if (userTaskKey <= 0) {
+      return Optional.empty();
     }
+    final LifecycleState lifecycleState = userTaskState.getLifecycleState(userTaskKey);
+    if (!CANCELABLE_LIFECYCLE_STATES.contains(lifecycleState)) {
+      return Optional.empty();
+    }
+    final UserTaskRecord userTask = userTaskState.getUserTask(userTaskKey);
+    if (userTask == null) {
+      return Optional.empty();
+    }
+
+    stateWriter.appendFollowUpEvent(userTaskKey, UserTaskIntent.CANCELING, userTask);
+    return Optional.of(userTask);
+  }
+
+  public void userTaskCanceled(final UserTaskRecord userTaskRecord) {
+    final long userTaskKey = userTaskRecord.getUserTaskKey();
+    stateWriter.appendFollowUpEvent(userTaskKey, UserTaskIntent.CANCELED, userTaskRecord);
   }
 
   public void userTaskCreated(final UserTaskRecord userTaskRecord) {
