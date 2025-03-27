@@ -44,7 +44,7 @@ func (w *UnixC8Run) VersionCmd(javaBinaryPath string) *exec.Cmd {
 
 func (w *UnixC8Run) ElasticsearchCmd(elasticsearchVersion string, parentDir string) *exec.Cmd {
 	elasticsearchCmdString := filepath.Join(parentDir, "elasticsearch-"+elasticsearchVersion, "bin", "elasticsearch")
-	elasticsearchCmd := exec.Command(elasticsearchCmdString, "-E", "xpack.ml.enabled=false", "-E", "xpack.security.enabled=false")
+	elasticsearchCmd := exec.Command(elasticsearchCmdString, "-E", "xpack.ml.enabled=false", "-E", "xpack.security.enabled=false", "-E", "discovery.type=single-node")
 	elasticsearchCmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
 	return elasticsearchCmd
 }
