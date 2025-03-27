@@ -27,15 +27,10 @@ import io.camunda.exporter.schema.SchemaManager;
 import io.camunda.exporter.schema.config.SearchEngineConfiguration;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.qa.util.cluster.TestSimpleCamundaApplication;
-import io.camunda.qa.util.multidb.CamundaMultiDBExtension;
 import io.camunda.qa.util.multidb.CamundaMultiDBExtension.DatabaseType;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.qa.util.multidb.MultiDbTestApplication;
 import io.camunda.search.connect.configuration.ConnectConfiguration;
-import io.camunda.qa.util.cluster.TestSimpleCamundaApplication;
-import io.camunda.qa.util.multidb.CamundaMultiDBExtension.DatabaseType;
-import io.camunda.qa.util.multidb.MultiDbTest;
-import io.camunda.qa.util.multidb.MultiDbTestApplication;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.webapps.schema.descriptors.IndexDescriptors;
 import io.camunda.zeebe.qa.util.cluster.TestPrefixMigrationApp;
@@ -56,7 +51,8 @@ import org.testcontainers.utility.DockerImageName;
 @MultiDbTest
 @DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "rdbms")
 public class PrefixMigrationIT {
-  private static final String DEFAULT_ES_OS_URL_FOR_MULTI_DB = "http://host.docker.internal:9200";
+  private static final String DEFAULT_ES_OS_URL_FOR_MULTI_DB =
+      "http://host.testcontainers.internal:9200";
 
   @MultiDbTestApplication(managedLifecycle = false)
   private static final TestSimpleCamundaApplication STANDALONE_CAMUNDA =
@@ -67,12 +63,6 @@ public class PrefixMigrationIT {
     // The container from createCamundaContainer needs access to the ES/OS instances on the host
     // machine
     Testcontainers.exposeHostPorts(9200); // elasticsearch
-  }
-
-  private DatabaseType currentMultiDbDatabaseType() {
-    final String property =
-        System.getProperty(CamundaMultiDBExtension.PROP_CAMUNDA_IT_DATABASE_TYPE);
-    return property == null ? DatabaseType.LOCAL : DatabaseType.valueOf(property.toUpperCase());
   }
 
   private GenericContainer<?> createCamundaContainer() {
