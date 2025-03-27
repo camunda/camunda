@@ -77,6 +77,7 @@ public class UsersGroupMigrationHandler extends MigrationHandler<UserGroups> {
   private void assignMemberToGroup(final long groupKey, final long mappingKey) {
     try {
       // TODO: revisit this while implementing the migration
+      // https://github.com/camunda/camunda/issues/26973
       // groupServices.assignMember(groupKey, mappingKey, EntityType.MAPPING).join();
     } catch (final Exception e) {
       if (!isConflictError(e)) {
