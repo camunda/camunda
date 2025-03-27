@@ -14,6 +14,7 @@ import io.camunda.search.os.transformers.OpensearchTransformers;
 import io.camunda.search.sort.SearchSortOptions;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 import org.opensearch.client.opensearch._types.SortOptions;
 import org.opensearch.client.opensearch.core.SearchRequest;
@@ -56,6 +57,21 @@ public final class SearchRequestTransformer
     if (value.source() != null) {
       builder.source(of(value.source()));
     }
+
+    final var aggregations = value.aggregations();
+    if (aggregations != null && !aggregations.isEmpty()) {
+      builder.aggregations(
+          aggregations.stream()
+              .map(
+                  aggregation ->
+                      Map.entry(
+                          aggregation.getName(),
+                          transformers
+                              .getSearchAggregationTransformer(aggregation.getClass())
+                              .apply(aggregation)))
+              .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue)));
+    }
+
     return builder;
   }
 

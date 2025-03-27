@@ -39,6 +39,7 @@ import io.camunda.search.clients.transformers.filter.GroupFilterTransformer;
 import io.camunda.search.clients.transformers.filter.IncidentFilterTransformer;
 import io.camunda.search.clients.transformers.filter.MappingFilterTransformer;
 import io.camunda.search.clients.transformers.filter.ProcessDefinitionFilterTransformer;
+import io.camunda.search.clients.transformers.filter.ProcessDefinitionStatisticsFilterTransformer;
 import io.camunda.search.clients.transformers.filter.ProcessInstanceFilterTransformer;
 import io.camunda.search.clients.transformers.filter.RoleFilterTransformer;
 import io.camunda.search.clients.transformers.filter.TenantFilterTransformer;
@@ -47,6 +48,7 @@ import io.camunda.search.clients.transformers.filter.UserFilterTransformer;
 import io.camunda.search.clients.transformers.filter.UserTaskFilterTransformer;
 import io.camunda.search.clients.transformers.filter.VariableFilterTransformer;
 import io.camunda.search.clients.transformers.filter.VariableValueFilterTransformer;
+import io.camunda.search.clients.transformers.query.ProcessDefinitionFlowNodeStatisticsQueryTransformer;
 import io.camunda.search.clients.transformers.query.TypedSearchQueryTransformer;
 import io.camunda.search.clients.transformers.result.DecisionInstanceResultConfigTransformer;
 import io.camunda.search.clients.transformers.result.DecisionRequirementsResultConfigTransformer;
@@ -81,6 +83,7 @@ import io.camunda.search.filter.GroupFilter;
 import io.camunda.search.filter.IncidentFilter;
 import io.camunda.search.filter.MappingFilter;
 import io.camunda.search.filter.ProcessDefinitionFilter;
+import io.camunda.search.filter.ProcessDefinitionStatisticsFilter;
 import io.camunda.search.filter.ProcessInstanceFilter;
 import io.camunda.search.filter.RoleFilter;
 import io.camunda.search.filter.TenantFilter;
@@ -98,6 +101,7 @@ import io.camunda.search.query.FormQuery;
 import io.camunda.search.query.GroupQuery;
 import io.camunda.search.query.IncidentQuery;
 import io.camunda.search.query.MappingQuery;
+import io.camunda.search.query.ProcessDefinitionFlowNodeStatisticsQuery;
 import io.camunda.search.query.ProcessDefinitionQuery;
 import io.camunda.search.query.ProcessInstanceQuery;
 import io.camunda.search.query.RoleQuery;
@@ -328,6 +332,13 @@ public final class ServiceTransformers {
         new UsageMetricsFilterTransformer(
             indexDescriptors.get(TasklistMetricIndex.class),
             indexDescriptors.get(MetricIndex.class)));
+    mappers.put(
+        ProcessDefinitionFlowNodeStatisticsQuery.class,
+        new ProcessDefinitionFlowNodeStatisticsQueryTransformer(mappers));
+    mappers.put(
+        ProcessDefinitionStatisticsFilter.class,
+        new ProcessDefinitionStatisticsFilterTransformer(
+            mappers, indexDescriptors.get(ListViewTemplate.class)));
 
     // result config -> source config
     mappers.put(

@@ -15,6 +15,7 @@ public class ErrorMessages {
   public static final String ERROR_FAILED_GET_REQUEST = "Failed to execute get request";
   public static final String ERROR_FAILED_INDEX_REQUEST = "Failed to execute index request";
   public static final String ERROR_FAILED_SEARCH_QUERY = "Failed to execute search query";
+  public static final String ERROR_FAILED_AGGREGATE_QUERY = "Failed to execute aggregate query";
 
   public static final String ERROR_NOT_FOUND_AD_HOC_SUBPROCESS =
       "Failed to find Ad-Hoc Subprocess with ID '%s'";

@@ -20,12 +20,13 @@ import io.camunda.search.clients.transformers.sort.SortingTransformer;
 import io.camunda.search.filter.FilterBase;
 import io.camunda.search.query.TypedSearchQuery;
 import io.camunda.search.result.QueryResultConfig;
+import io.camunda.search.sort.NoSort;
 import io.camunda.search.sort.SearchSortOptions;
 import io.camunda.search.sort.SortOption;
 import io.camunda.zeebe.util.collection.Tuple;
 import java.util.List;
 
-public final class TypedSearchQueryTransformer<F extends FilterBase, S extends SortOption>
+public class TypedSearchQueryTransformer<F extends FilterBase, S extends SortOption>
     implements ServiceTransformer<TypedSearchQuery<F, S>, SearchQueryRequest> {
 
   private final ServiceTransformers transformers;
@@ -47,9 +48,11 @@ public final class TypedSearchQueryTransformer<F extends FilterBase, S extends S
         searchRequest().index(indices).query(searchQueryFilter).from(page.from()).size(page.size());
 
     final var sort = query.sort();
-    final var sorting = toSearchSortOptions(sort, reverse);
-    if (!sorting.isEmpty()) {
-      builder.sort(query.retainValidSortings(sorting));
+    if (!(sort instanceof NoSort)) {
+      final var sorting = toSearchSortOptions(sort, reverse);
+      if (!sorting.isEmpty()) {
+        builder.sort(query.retainValidSortings(sorting));
+      }
     }
 
     final var searchAfter = page.startNextPageAfter();

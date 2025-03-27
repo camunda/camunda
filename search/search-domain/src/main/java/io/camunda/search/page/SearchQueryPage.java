@@ -17,6 +17,8 @@ public record SearchQueryPage(
   public static final Integer DEFAULT_SIZE = 100;
 
   public static final SearchQueryPage DEFAULT = new Builder().build();
+  public static final SearchQueryPage NO_ENTITIES_QUERY =
+      new SearchQueryPage(0, 0, new Object[] {}, new Object[] {});
 
   public boolean isNextPage() {
     return searchAfter != null || !isPreviousPage();
