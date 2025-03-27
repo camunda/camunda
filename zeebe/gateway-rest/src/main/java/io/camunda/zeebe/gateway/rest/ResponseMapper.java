@@ -519,7 +519,11 @@ public final class ResponseMapper {
 
   public static ResponseEntity<Object> toGroupCreateResponse(final GroupRecord groupRecord) {
     final var response =
-        new GroupCreateResult().groupKey(KeyUtil.keyToString(groupRecord.getGroupKey()));
+        new GroupCreateResult()
+            .groupKey(KeyUtil.keyToString(groupRecord.getGroupKey()))
+            .name(groupRecord.getName())
+            .groupId(groupRecord.getGroupId())
+            .description(groupRecord.getDescription());
     return new ResponseEntity<>(response, HttpStatus.CREATED);
   }
 

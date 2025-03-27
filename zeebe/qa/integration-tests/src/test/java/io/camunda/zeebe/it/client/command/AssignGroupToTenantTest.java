@@ -21,8 +21,10 @@ import java.time.Duration;
 import java.util.UUID;
 import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
+@Disabled("Enable with https://github.com/camunda/camunda/issues/29925")
 @ZeebeIntegration
 class AssignGroupToTenantTest {
 

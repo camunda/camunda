@@ -23,8 +23,18 @@ public class BrokerGroupCreateRequest extends BrokerExecuteCommand<GroupRecord> 
     setPartitionId(Protocol.DEPLOYMENT_PARTITION);
   }
 
+  public BrokerGroupCreateRequest setGroupId(final String groupId) {
+    requestDto.setGroupId(groupId);
+    return this;
+  }
+
   public BrokerGroupCreateRequest setName(final String name) {
     requestDto.setName(name);
+    return this;
+  }
+
+  public BrokerGroupCreateRequest setDescription(final String description) {
+    requestDto.setDescription(description);
     return this;
   }
 

@@ -15,12 +15,14 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.security.auth.Authentication;
 import io.camunda.service.GroupServices;
+import io.camunda.service.GroupServices.CreateGroupRequest;
 import io.camunda.service.exception.CamundaBrokerException;
 import io.camunda.zeebe.broker.client.api.dto.BrokerRejection;
 import io.camunda.zeebe.gateway.protocol.rest.GroupChangeset;
 import io.camunda.zeebe.gateway.protocol.rest.GroupCreateRequest;
 import io.camunda.zeebe.gateway.protocol.rest.GroupUpdateRequest;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
+import io.camunda.zeebe.gateway.rest.validator.IdentifierPatterns;
 import io.camunda.zeebe.protocol.impl.record.value.group.GroupRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.GroupIntent;
@@ -28,6 +30,8 @@ import io.camunda.zeebe.protocol.record.value.EntityType;
 import java.util.concurrent.CompletableFuture;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
@@ -44,11 +48,14 @@ public class GroupControllerTest extends RestControllerTest {
     when(groupServices.withAuthentication(any(Authentication.class))).thenReturn(groupServices);
   }
 
-  @Test
-  void shouldAcceptCreateGroupRequest() {
+  @ParameterizedTest
+  @ValueSource(strings = {"foo", "Foo", "foo123", "foo_", "foo.", "foo@"})
+  void shouldAcceptCreateGroupRequest(final String groupId) {
     // given
     final var groupName = "testGroup";
-    when(groupServices.createGroup(groupName))
+    final var description = "description";
+    final var createGroupRequest = new CreateGroupRequest(groupId, groupName, description);
+    when(groupServices.createGroup(createGroupRequest))
         .thenReturn(
             CompletableFuture.completedFuture(
                 new GroupRecord().setEntityKey(1L).setName(groupName)));
@@ -59,13 +66,14 @@ public class GroupControllerTest extends RestControllerTest {
         .uri(GROUP_BASE_URL)
         .accept(MediaType.APPLICATION_JSON)
         .contentType(MediaType.APPLICATION_JSON)
-        .bodyValue(new GroupCreateRequest().name(groupName))
+        .bodyValue(
+            new GroupCreateRequest().name(groupName).groupId(groupId).description(description))
         .exchange()
         .expectStatus()
         .isCreated();
 
     // then
-    verify(groupServices, times(1)).createGroup(groupName);
+    verify(groupServices, times(1)).createGroup(createGroupRequest);
   }
 
   @Test
@@ -76,7 +84,7 @@ public class GroupControllerTest extends RestControllerTest {
         .uri(GROUP_BASE_URL)
         .accept(MediaType.APPLICATION_JSON)
         .contentType(MediaType.APPLICATION_JSON)
-        .bodyValue(new GroupCreateRequest().name(""))
+        .bodyValue(new GroupCreateRequest().name("").groupId("groupId"))
         .exchange()
         .expectStatus()
         .isBadRequest()
@@ -93,6 +101,125 @@ public class GroupControllerTest extends RestControllerTest {
                 .formatted(GROUP_BASE_URL));
 
     // then
+    verifyNoInteractions(groupServices);
+  }
+
+  @Test
+  void shouldFailOnCreateGroupWithNoGroupId() {
+    // when
+    webClient
+        .post()
+        .uri(GROUP_BASE_URL)
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(new GroupCreateRequest().name("name"))
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectBody()
+        .json(
+            """
+            {
+              "type": "about:blank",
+              "status": 400,
+              "title": "INVALID_ARGUMENT",
+              "detail": "No groupId provided.",
+              "instance": "%s"
+            }"""
+                .formatted(GROUP_BASE_URL));
+
+    // then
+    verifyNoInteractions(groupServices);
+  }
+
+  @Test
+  void shouldFailOnCreateGroupWithEmptyGroupId() {
+    // when
+    webClient
+        .post()
+        .uri(GROUP_BASE_URL)
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(new GroupCreateRequest().name("name").groupId(""))
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectBody()
+        .json(
+            """
+            {
+              "type": "about:blank",
+              "status": 400,
+              "title": "INVALID_ARGUMENT",
+              "detail": "No groupId provided.",
+              "instance": "%s"
+            }"""
+                .formatted(GROUP_BASE_URL));
+
+    // then
+    verifyNoInteractions(groupServices);
+  }
+
+  @Test
+  void shouldFailOnCreateGroupWithTooLongGroupId() {
+    // given
+    final var groupId = "x".repeat(257);
+
+    // when
+    webClient
+        .post()
+        .uri(GROUP_BASE_URL)
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(new GroupCreateRequest().name("name").groupId(groupId))
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectBody()
+        .json(
+            """
+            {
+              "type": "about:blank",
+              "status": 400,
+              "title": "INVALID_ARGUMENT",
+              "detail": "The provided id exceeds the limit of 256 characters.",
+              "instance": "%s"
+            }"""
+                .formatted(GROUP_BASE_URL));
+
+    // then
+    verifyNoInteractions(groupServices);
+  }
+
+  @ParameterizedTest
+  @ValueSource(
+      strings = {
+        "foo~", "foo!", "foo#", "foo$", "foo%", "foo^", "foo&", "foo*", "foo(", "foo)", "foo=",
+        "foo+", "foo{", "foo[", "foo}", "foo]", "foo|", "foo\\", "foo:", "foo;", "foo\"", "foo'",
+        "foo<", "foo>", "foo,", "foo?", "foo/", "foo ", "foo\t", "foo\n", "foo\r"
+      })
+  void shouldRejectGroupCreationWithIllegalCharactersInId(final String groupId) {
+    // when then
+    webClient
+        .post()
+        .uri(GROUP_BASE_URL)
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(new GroupCreateRequest().name("name").groupId(groupId))
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectBody()
+        .json(
+            """
+              {
+                "type": "about:blank",
+                "status": 400,
+                "title": "INVALID_ARGUMENT",
+                "detail": "The provided id contains illegal characters. It must match the pattern '%s'.",
+                "instance": "%s"
+              }"""
+                .formatted(IdentifierPatterns.ID_PATTERN, GROUP_BASE_URL));
     verifyNoInteractions(groupServices);
   }
 

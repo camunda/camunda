@@ -5685,14 +5685,32 @@ components:
     GroupCreateRequest:
       type: "object"
       properties:
+        groupId:
+            type: "string"
+            description: The ID of the new group.
         name:
           type: "string"
           description: The display name of the new group.
+        description:
+          type: "string"
+          description: The description of the new group.
+      required:
+        - groupId
+        - name
     GroupCreateResult:
       type: object
       properties:
         groupKey:
           description: The key of the created group.
+          type: string
+        groupId:
+          description: The ID of the created group.
+          type: string
+        name:
+          description: The display name of the created group.
+          type: string
+        description:
+          description: The description of the created group.
           type: string
     GroupUpdateRequest:
       type: object

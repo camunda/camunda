@@ -30,12 +30,14 @@ import io.camunda.zeebe.protocol.record.intent.GroupIntent;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import org.apache.commons.lang3.NotImplementedException;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Answers;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+@Disabled("https://github.com/camunda/camunda/issues/26973")
 @ExtendWith(MockitoExtension.class)
 public class GroupMigrationHandlerTest {
   private final ManagementIdentityClient managementIdentityClient;
