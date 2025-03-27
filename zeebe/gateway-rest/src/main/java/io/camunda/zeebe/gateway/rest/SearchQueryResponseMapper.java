@@ -67,6 +67,7 @@ import io.camunda.zeebe.gateway.protocol.rest.MappingSearchQueryResult;
 import io.camunda.zeebe.gateway.protocol.rest.MatchedDecisionRuleItem;
 import io.camunda.zeebe.gateway.protocol.rest.OwnerTypeEnum;
 import io.camunda.zeebe.gateway.protocol.rest.PermissionTypeEnum;
+import io.camunda.zeebe.gateway.protocol.rest.ProcessDefinitionFlowNodeStatisticsQueryResult;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessDefinitionFlowNodeStatisticsResult;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessDefinitionResult;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessDefinitionSearchQueryResult;
@@ -118,12 +119,14 @@ public final class SearchQueryResponseMapper {
                 .orElseGet(Collections::emptyList));
   }
 
-  public static List<ProcessDefinitionFlowNodeStatisticsResult>
-      toProcessDefinitionFlowNodeStatisticsResults(
+  public static ProcessDefinitionFlowNodeStatisticsQueryResult
+      toProcessDefinitionFlowNodeStatisticsQueryResult(
           final List<ProcessDefinitionFlowNodeStatisticsEntity> result) {
-    return result.stream()
-        .map(SearchQueryResponseMapper::toProcessDefinitionFlowNodeStatisticsResult)
-        .toList();
+    return new ProcessDefinitionFlowNodeStatisticsQueryResult()
+        .items(
+            result.stream()
+                .map(SearchQueryResponseMapper::toProcessDefinitionFlowNodeStatisticsResult)
+                .toList());
   }
 
   private static ProcessDefinitionFlowNodeStatisticsResult
