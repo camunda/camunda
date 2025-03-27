@@ -584,8 +584,8 @@ public class PassiveRole extends InactiveRole {
     // Append the entries to the log.
     appendEntries(request, future);
 
-    // If a snapshot replication was ongoing, reset it. Otherwise SnapshotReplicationListeners will
-    // wait for ever for the snapshot to be received.
+    // If a snapshot replication was ongoing, reset it. Otherwise, SnapshotReplicationListeners will
+    // wait forever for the snapshot to be received.
     abortPendingSnapshots();
     return future;
   }
@@ -758,7 +758,7 @@ public class PassiveRole extends InactiveRole {
     }
 
     // Set the first commit index.
-    raft.setFirstCommitIndex(request.commitIndex());
+    raft.setFirstCommitIndex(request.commitIndex(), lastLogIndex);
 
     // Update the context commit and global indices.
     final long previousCommitIndex = raft.setCommitIndex(commitIndex);
