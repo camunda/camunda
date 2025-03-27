@@ -102,7 +102,27 @@ public enum UserTaskIntent implements ProcessInstanceRelatedIntent {
    * corrections within the same update transition are discarded, and the user task remains in its
    * prior state.
    */
-  UPDATE_DENIED(21);
+  UPDATE_DENIED(21),
+
+  /**
+   * Represents the `CREATE` command for a user task. This command is intended for internal use by
+   * Zeebe to finalize the creation of a user task after all `creating` task listener jobs have been
+   * completed or any related incidents have been resolved.
+   *
+   * @apiNote The engine manages this command internally. Writing this command directly won't
+   *     trigger user task creation. It shouldn't be used via client APIs.
+   */
+  CREATE(22),
+
+  /**
+   * Represents the `CANCEL` command for a user task. This command is intended for internal use by
+   * Zeebe to finalize the cancellation of a user task after all `canceling` task listener jobs have
+   * been completed or any related incidents have been resolved.
+   *
+   * @apiNote The engine manages this command internally. Writing this command directly won't
+   *     trigger user task cancellation. It shouldn't be used via client APIs.
+   */
+  CANCEL(23);
 
   private final short value;
   private final boolean shouldBanInstance;
@@ -166,6 +186,10 @@ public enum UserTaskIntent implements ProcessInstanceRelatedIntent {
         return CLAIMING;
       case 21:
         return UPDATE_DENIED;
+      case 22:
+        return CREATE;
+      case 23:
+        return CANCEL;
       default:
         return UNKNOWN;
     }
