@@ -224,9 +224,13 @@ public class CamundaMultiDBExtension
   public CamundaMultiDBExtension(final TestStandaloneApplication testApplication) {
     defaultTestApplication = testApplication;
     // resolve active database and exporter type
-    final String property = System.getProperty(PROP_CAMUNDA_IT_DATABASE_TYPE);
-    databaseType =
-        property == null ? DatabaseType.LOCAL : DatabaseType.valueOf(property.toUpperCase());
+    databaseType = currentMultiDbDatabaseType();
+  }
+
+  public static DatabaseType currentMultiDbDatabaseType() {
+    final String property =
+        System.getProperty(CamundaMultiDBExtension.PROP_CAMUNDA_IT_DATABASE_TYPE);
+    return property == null ? DatabaseType.LOCAL : DatabaseType.valueOf(property.toUpperCase());
   }
 
   private void setupTestApplication(final Class<?> testClass) {
