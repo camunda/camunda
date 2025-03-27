@@ -175,6 +175,24 @@ public class TaskListenerBlockedTransitionTest {
   }
 
   @Test
+  public void shouldCreateFirstCreatingTaskListenerJob() {
+    // given
+    final long processInstanceKey =
+        helper.createProcessInstance(
+            helper.createProcessWithCreatingTaskListeners(listenerType + "_creating"));
+
+    // then: expect a job to be activated for the first `creating` listener
+    helper.assertActivatedJob(
+        processInstanceKey,
+        listenerType + "_creating",
+        job -> {
+          assertThat(job.getJobListenerEventType())
+              .describedAs("Expect job to have job listener type 'CREATING'")
+              .isEqualTo(JobListenerEventType.CREATING);
+        });
+  }
+
+  @Test
   public void shouldAssignUserTaskAfterAllAssignmentTaskListenersAreExecuted() {
     // given
     final long processInstanceKey =
@@ -359,9 +377,9 @@ public class TaskListenerBlockedTransitionTest {
 
     final Predicate<Record<?>> isUserTaskOrVariableDocumentWithElementInstanceKey =
         r -> {
-          if (r.getValue() instanceof UserTaskRecord utr) {
+          if (r.getValue() instanceof final UserTaskRecord utr) {
             return utr.getElementInstanceKey() == userTaskElementInstanceKey;
-          } else if (r.getValue() instanceof VariableDocumentRecord vdr) {
+          } else if (r.getValue() instanceof final VariableDocumentRecord vdr) {
             return vdr.getScopeKey() == userTaskElementInstanceKey;
           }
           return false;

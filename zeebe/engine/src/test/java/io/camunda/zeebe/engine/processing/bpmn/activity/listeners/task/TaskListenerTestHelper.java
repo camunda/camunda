@@ -119,6 +119,10 @@ public class TaskListenerTestHelper {
     return createUserTaskWithTaskListeners(ZeebeTaskListenerEventType.completing, listenerTypes);
   }
 
+  BpmnModelInstance createProcessWithCreatingTaskListeners(final String... listenerTypes) {
+    return createUserTaskWithTaskListeners(ZeebeTaskListenerEventType.creating, listenerTypes);
+  }
+
   BpmnModelInstance createUserTaskWithTaskListeners(
       final ZeebeTaskListenerEventType listenerType, final String... listenerTypes) {
     return createProcessWithZeebeUserTask(
