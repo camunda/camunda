@@ -113,8 +113,8 @@ public class LocalStorageDocumentStore implements DocumentStore {
     if (!documentIdIsValid(documentId)) {
       return Either.left(new InvalidInput(generateInvalidDocumentIdMessage(documentId)));
     }
-    final Path documentFilePath = storagePath.resolve(documentId);
-    final Path documentMetaDataFilePath = storagePath.resolve(documentId + METADATA_SUFFIX);
+    final Path documentFilePath = resolveInStorage(documentId);
+    final Path documentMetaDataFilePath = resolveInStorage(documentId + METADATA_SUFFIX);
 
     // remove inconsistent data if it exists (rare occurrence)
     if (fileHandler.fileExists(documentFilePath)
@@ -154,8 +154,8 @@ public class LocalStorageDocumentStore implements DocumentStore {
     if (!documentIdIsValid(documentId)) {
       return Either.left(new InvalidInput(generateInvalidDocumentIdMessage(documentId)));
     }
-    final Path documentPath = storagePath.resolve(documentId);
-    final Path documentMetadataPath = storagePath.resolve(documentId + METADATA_SUFFIX);
+    final Path documentPath = resolveInStorage(documentId);
+    final Path documentMetadataPath = resolveInStorage(documentId + METADATA_SUFFIX);
 
     if (!fileHandler.fileExists(documentPath) || !fileHandler.fileExists(documentMetadataPath)) {
       return Either.left(new DocumentNotFound(documentId));
@@ -175,8 +175,8 @@ public class LocalStorageDocumentStore implements DocumentStore {
   }
 
   private Either<DocumentError, Void> deleteDocumentInternal(final String documentId) {
-    final Path documentPath = storagePath.resolve(documentId);
-    final Path documentMetadataPath = storagePath.resolve(documentId + METADATA_SUFFIX);
+    final Path documentPath = resolveInStorage(documentId);
+    final Path documentMetadataPath = resolveInStorage(documentId + METADATA_SUFFIX);
 
     try {
       fileHandler.delete(documentPath);
@@ -189,7 +189,7 @@ public class LocalStorageDocumentStore implements DocumentStore {
 
   private Either<DocumentError, Void> verifyContentHashInternal(
       final String documentId, final String contentHash) {
-    final Path documentPath = storagePath.resolve(documentId);
+    final Path documentPath = resolveInStorage(documentId);
 
     if (!fileHandler.fileExists(documentPath)) {
       return Either.left(new DocumentNotFound(documentId));
@@ -206,6 +206,16 @@ public class LocalStorageDocumentStore implements DocumentStore {
       return Either.left(new UnknownDocumentError(e));
     }
     return Either.right(null);
+  }
+
+  private Path resolveInStorage(final String fileName) {
+    // Prevent path traversal
+    final var resolved = storagePath.resolve(fileName).normalize();
+    if (!resolved.startsWith(storagePath)) {
+      // Don't provide the actual path in the error message to avoid leaking information
+      throw new IllegalArgumentException("Cannot store %s".formatted(fileName));
+    }
+    return resolved;
   }
 
   private static String getDocumentId(final DocumentCreationRequest request) {
