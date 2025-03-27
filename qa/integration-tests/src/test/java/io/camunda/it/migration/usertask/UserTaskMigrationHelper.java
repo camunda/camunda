@@ -22,7 +22,6 @@ import io.camunda.webapps.schema.descriptors.tasklist.template.TaskTemplate;
 import io.camunda.webapps.schema.entities.tasklist.TaskEntity;
 import io.camunda.webapps.schema.entities.tasklist.TaskEntity.TaskImplementation;
 import io.camunda.webapps.schema.entities.tasklist.TaskJoinRelationship.TaskJoinRelationshipType;
-import io.camunda.webapps.schema.entities.tasklist.TasklistEntity;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.builder.UserTaskBuilder;
 import java.net.URI;
@@ -159,7 +158,7 @@ public abstract class UserTaskMigrationHelper {
                   migrator.getSearchClient().search(req, TaskEntity.class).hits().stream()
                       .findFirst()
                       .map(SearchQueryHit::source)
-                      .map(TasklistEntity::getKey);
+                      .map(TaskEntity::getKey);
 
               if (taskId.isPresent()) {
                 userTaskKey.set(taskId.get());

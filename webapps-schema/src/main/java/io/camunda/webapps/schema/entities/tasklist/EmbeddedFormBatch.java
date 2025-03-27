@@ -7,12 +7,24 @@
  */
 package io.camunda.webapps.schema.entities.tasklist;
 
-import io.camunda.webapps.schema.entities.AbstractExporterEntity;
+import io.camunda.webapps.schema.entities.ExporterEntity;
 import java.util.List;
 
-public class EmbeddedFormBatch extends AbstractExporterEntity<EmbeddedFormBatch> {
+public class EmbeddedFormBatch implements ExporterEntity<EmbeddedFormBatch> {
 
+  private String id;
   private List<FormEntity> forms;
+
+  @Override
+  public String getId() {
+    return id;
+  }
+
+  @Override
+  public EmbeddedFormBatch setId(final String id) {
+    this.id = id;
+    return this;
+  }
 
   public List<FormEntity> getForms() {
     return forms;
