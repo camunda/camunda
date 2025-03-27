@@ -29,7 +29,7 @@ import type {CurrentUser} from '@vzeta/camunda-api-zod-schemas/identity';
 import {
   type TaskFilters,
   useTaskFilters,
-} from 'common/tasks/filters/useTaskFilters';
+} from 'v1/features/tasks/filters/useTaskFilters';
 import {encodeTaskOpenedRef} from 'common/tracking/reftags';
 import {AssigneeTag} from 'v1/Tasks/AssigneeTag';
 import {DateLabel} from './DateLabel';

@@ -13,8 +13,8 @@ import {Header} from './Header';
 import {AuthenticationCheck} from 'common/auth/AuthenticationCheck';
 import {AuthorizationCheck} from 'common/auth/AuthorizationCheck';
 import {pages} from 'common/routing';
-import {OSNotifications} from 'v1/OSNotifications';
-import {C3Provider} from 'v1/C3Provider';
+import {OSNotifications} from './OSNotifications';
+import {C3Provider} from './C3Provider';
 
 const Layout: React.FC = () => {
   return (

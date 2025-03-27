@@ -41,7 +41,8 @@ const C3Provider: React.FC<Props> = ({children}) => {
   const [token, setToken] = useState<string | null>(null);
   useEffect(() => {
     async function init() {
-      if (IS_SAAS) {
+      // TODO: clarify token endpoint for v2
+      if (IS_SAAS && getClientConfig().clientMode === 'v1') {
         setToken(await fetchToken());
       }
     }

@@ -13,7 +13,7 @@ import {tracking} from 'common/tracking';
 import {
   useTaskFilters,
   type TaskFilters,
-} from 'common/tasks/filters/useTaskFilters';
+} from 'v1/features/tasks/filters/useTaskFilters';
 import {t as _t} from 'i18next';
 import {useTranslation} from 'react-i18next';
 import styles from './styles.module.scss';
