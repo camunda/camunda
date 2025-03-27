@@ -21,7 +21,7 @@ env:
 jobs:
   release:
     name: Maven Release
-    runs-on: ubuntu-latest
+    runs-on: macos-latest
     steps:
 # Attempt 1
       - uses: actions/checkout@v4
@@ -38,5 +38,4 @@ jobs:
           git fsck --strict
           git gc
           git tag 8.6.11-test-SNAPSHOT-1
-          git pull --rebase
           git push -v --progress origin tag 8.6.11-test-SNAPSHOT-1
