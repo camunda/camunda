@@ -307,8 +307,7 @@ public final class BpmnUserTaskBehavior {
   }
 
   public void cancelUserTask(final ElementInstance elementInstance) {
-    userTaskCanceling(elementInstance);
-    userTaskCanceled(elementInstance);
+    userTaskCanceling(elementInstance).ifPresent(this::userTaskCanceled);
   }
 
   public Optional<UserTaskRecord> userTaskCanceling(final ElementInstance elementInstance) {
@@ -329,29 +328,9 @@ public final class BpmnUserTaskBehavior {
     return Optional.of(userTask);
   }
 
-  public void userTaskCanceled(final ElementInstance elementInstance) {
-    final long userTaskKey = elementInstance.getUserTaskKey();
-    if (userTaskKey <= 0) {
-      return;
-    }
-    final LifecycleState lifecycleState = userTaskState.getLifecycleState(userTaskKey);
-    if (LifecycleState.CANCELING != lifecycleState) {
-      return;
-    }
-
-    final var currentUserTask = userTaskState.getUserTask(userTaskKey);
-    if (currentUserTask == null) {
-      return;
-    }
-
-    final var intermediateState = userTaskState.getIntermediateState(userTaskKey);
-    if (intermediateState == null) {
-      stateWriter.appendFollowUpEvent(userTaskKey, UserTaskIntent.CANCELED, currentUserTask);
-    } else {
-      final var intermediateRecord = intermediateState.getRecord();
-      intermediateRecord.setDiffAsChangedAttributes(currentUserTask);
-      stateWriter.appendFollowUpEvent(userTaskKey, UserTaskIntent.CANCELED, intermediateRecord);
-    }
+  public void userTaskCanceled(final UserTaskRecord userTaskRecord) {
+    final long userTaskKey = userTaskRecord.getUserTaskKey();
+    stateWriter.appendFollowUpEvent(userTaskKey, UserTaskIntent.CANCELED, userTaskRecord);
   }
 
   public void userTaskCreated(final UserTaskRecord userTaskRecord) {

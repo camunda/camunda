@@ -134,7 +134,7 @@ public final class UserTaskProcessor extends JobWorkerTaskSupportingProcessor<Ex
         // Placeholder for calling task listeners and then finalizing
         return TransitionOutcome.AWAIT;
       } else {
-        userTaskBehavior.userTaskCanceled(elementInstance);
+        userTaskBehavior.userTaskCanceled(userTaskRecord.get());
         return TransitionOutcome.CONTINUE;
       }
     } else {
