@@ -22,8 +22,10 @@ import io.camunda.client.api.command.UpdateGroupCommandStep1;
 import io.camunda.client.api.response.UpdateGroupResponse;
 import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
+import io.camunda.client.impl.response.UpdateGroupResponseImpl;
 import io.camunda.client.protocol.rest.GroupChangeset;
 import io.camunda.client.protocol.rest.GroupUpdateRequest;
+import io.camunda.client.protocol.rest.GroupUpdateResult;
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 import org.apache.hc.client5.http.config.RequestConfig;
@@ -66,8 +68,15 @@ public class UpdateGroupCommandImpl implements UpdateGroupCommandStep1 {
   @Override
   public CamundaFuture<UpdateGroupResponse> send() {
     final HttpCamundaFuture<UpdateGroupResponse> result = new HttpCamundaFuture<>();
-    httpClient.patch(
-        "/groups/" + groupKey, jsonMapper.toJson(request), httpRequestConfig.build(), result);
+    final UpdateGroupResponseImpl response = new UpdateGroupResponseImpl();
+
+    httpClient.put(
+        "/groups/" + groupKey,
+        jsonMapper.toJson(request),
+        httpRequestConfig.build(),
+        GroupUpdateResult.class,
+        response::setResponse,
+        result);
     return result;
   }
 

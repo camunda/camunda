@@ -144,10 +144,12 @@ public class GroupServiceTest {
   public void shouldUpdateGroup() {
     // given
     final var groupKey = Protocol.encodePartitionId(1, 100L);
+    final var groupId = String.valueOf(groupKey);
     final var name = "UpdatedName";
+    final var description = "UpdatedDescription";
 
     // when
-    services.updateGroup(groupKey, name);
+    services.updateGroup(groupId, name, description);
 
     // then
     final BrokerGroupUpdateRequest request = stubbedBrokerClient.getSingleBrokerRequest();
@@ -158,6 +160,7 @@ public class GroupServiceTest {
     final GroupRecord record = request.getRequestWriter();
     assertThat(record).hasName(name);
     assertThat(record).hasGroupKey(groupKey);
+    assertThat(record).hasDescription(description);
   }
 
   @Test

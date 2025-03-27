@@ -45,6 +45,9 @@ public final class GroupRequestValidator {
     return validate(
         violations -> {
           validateGroupName(request.getChangeset().getName(), violations);
+          if (request.getChangeset().getDescription() == null) {
+            violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("description"));
+          }
         });
   }
 

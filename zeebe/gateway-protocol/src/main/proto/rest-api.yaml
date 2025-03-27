@@ -2384,7 +2384,7 @@ paths:
       operationId: getGroup
       summary: Get group (Work-in-Progress)
       description: |
-        Get a group by its key.
+        Get a group by its ID.
 
         This API is in a Work-in-Progress state and will undergo potential breaking changes until
         its release with an upcoming minor release.
@@ -2392,7 +2392,7 @@ paths:
         - name: groupId
           in: path
           required: true
-          description: The group key.
+          description: The group ID.
           schema:
             type: string
       responses:
@@ -2407,20 +2407,20 @@ paths:
         "403":
           $ref: "#/components/responses/Forbidden"
         "404":
-          description: The group with the given key was not found.
+          description: The group with the given ID was not found.
           content:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
         "500":
           $ref: "#/components/responses/InternalServerError"
-    patch:
+    put:
       tags:
         - Group
       operationId: updateGroup
       summary: Update group (Work-in-Progress)
       description: |
-        Update a group with the given key.
+        Update a group with the given ID.
 
         This API is in a Work-in-Progress state and will undergo potential breaking changes until
         its release with an upcoming minor release.
@@ -2428,7 +2428,7 @@ paths:
         - name: groupId
           in: path
           required: true
-          description: The key of the group to update.
+          description: The ID of the group to update.
           schema:
             type: string
       requestBody:
@@ -2438,14 +2438,18 @@ paths:
             schema:
               $ref: "#/components/schemas/GroupUpdateRequest"
       responses:
-        "204":
+        "200":
           description: The group was updated successfully.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GroupUpdateResult"
         "400":
           $ref: "#/components/responses/InvalidData"
         "401":
           $ref: "#/components/responses/Unauthorized"
         "404":
-          description: The group with the groupKey is not found.
+          description: The group with the given ID was not found.
           content:
             application/problem+json:
               schema:
@@ -2475,7 +2479,7 @@ paths:
         "401":
           $ref: "#/components/responses/Unauthorized"
         "404":
-          description: The group with the provided ID was not found.
+          description: The group with the given ID was not found.
           content:
             application/problem+json:
               schema:
@@ -5728,6 +5732,24 @@ components:
         name:
           type: string
           description: The updated display name of the group.
+        description:
+          type: string
+          description: The updated description of the group.
+    GroupUpdateResult:
+      type: object
+      properties:
+        groupId:
+          type: string
+          description: The unique external group ID.
+        name:
+          type: string
+          description: The name of the group.
+        description:
+          type: string
+          description: The description of the group.
+        groupKey:
+          type: string
+          description: The unique system-generated internal group key.
     GroupResult:
       description: Group search response item.
       type: object

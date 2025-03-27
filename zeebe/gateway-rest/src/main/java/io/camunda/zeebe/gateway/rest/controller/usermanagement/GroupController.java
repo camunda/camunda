@@ -25,8 +25,8 @@ import io.camunda.zeebe.gateway.rest.SearchQueryRequestMapper;
 import io.camunda.zeebe.gateway.rest.SearchQueryResponseMapper;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaDeleteMapping;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaGetMapping;
-import io.camunda.zeebe.gateway.rest.annotation.CamundaPatchMapping;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaPostMapping;
+import io.camunda.zeebe.gateway.rest.annotation.CamundaPutMapping;
 import io.camunda.zeebe.gateway.rest.controller.CamundaRestController;
 import io.camunda.zeebe.protocol.record.value.EntityType;
 import java.util.concurrent.CompletableFuture;
@@ -52,10 +52,11 @@ public class GroupController {
         .fold(RestErrorMapper::mapProblemToCompletedResponse, this::createGroup);
   }
 
-  @CamundaPatchMapping(path = "/{groupKey}")
+  @CamundaPutMapping(path = "/{groupId}")
   public CompletableFuture<ResponseEntity<Object>> updateGroup(
-      @PathVariable final long groupKey, @RequestBody final GroupUpdateRequest groupUpdateRequest) {
-    return RequestMapper.toGroupUpdateRequest(groupUpdateRequest, groupKey)
+      @PathVariable final String groupId,
+      @RequestBody final GroupUpdateRequest groupUpdateRequest) {
+    return RequestMapper.toGroupUpdateRequest(groupUpdateRequest, groupId)
         .fold(RestErrorMapper::mapProblemToCompletedResponse, this::updateGroup);
   }
 
@@ -149,10 +150,14 @@ public class GroupController {
 
   public CompletableFuture<ResponseEntity<Object>> updateGroup(
       final UpdateGroupRequest updateGroupRequest) {
-    return RequestMapper.executeServiceMethodWithNoContentResult(
+    return RequestMapper.executeServiceMethod(
         () ->
             groupServices
                 .withAuthentication(RequestMapper.getAuthentication())
-                .updateGroup(updateGroupRequest.groupKey(), updateGroupRequest.name()));
+                .updateGroup(
+                    updateGroupRequest.groupId(),
+                    updateGroupRequest.name(),
+                    updateGroupRequest.description()),
+        ResponseMapper::toGroupUpdateResponse);
   }
 }

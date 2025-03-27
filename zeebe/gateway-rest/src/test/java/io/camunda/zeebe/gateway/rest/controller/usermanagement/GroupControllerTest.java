@@ -224,28 +224,47 @@ public class GroupControllerTest extends RestControllerTest {
   }
 
   @Test
-  void shouldUpdateGroupAndReturnNoContent() {
+  void shouldUpdateGroupAndReturnResponse() {
     // given
     final var groupKey = 111L;
+    final var groupId = "111";
     final var groupName = "updatedName";
-    when(groupServices.updateGroup(groupKey, groupName))
+    final var description = "updatedDescription";
+    when(groupServices.updateGroup(groupId, groupName, description))
         .thenReturn(
             CompletableFuture.completedFuture(
-                new GroupRecord().setEntityKey(222L).setName(groupName)));
+                new GroupRecord()
+                    .setGroupKey(groupKey)
+                    .setGroupId(groupId)
+                    .setName(groupName)
+                    .setDescription(description)));
 
     // when
     webClient
-        .patch()
-        .uri("%s/%s".formatted(GROUP_BASE_URL, groupKey))
+        .put()
+        .uri("%s/%s".formatted(GROUP_BASE_URL, groupId))
         .accept(MediaType.APPLICATION_JSON)
         .contentType(MediaType.APPLICATION_JSON)
-        .bodyValue(new GroupUpdateRequest().changeset(new GroupChangeset().name(groupName)))
+        .bodyValue(
+            new GroupUpdateRequest()
+                .changeset(new GroupChangeset().name(groupName).description(description)))
         .exchange()
         .expectStatus()
-        .isNoContent();
+        .isOk()
+        .expectBody()
+        .json(
+            """
+            {
+              "groupKey": "%d",
+              "groupId": "%s",
+              "name": "%s",
+              "description": "%s"
+            }
+            """
+                .formatted(groupKey, groupId, groupName, description));
 
     // then
-    verify(groupServices, times(1)).updateGroup(groupKey, groupName);
+    verify(groupServices, times(1)).updateGroup(groupId, groupName, description);
   }
 
   @Test
@@ -257,11 +276,13 @@ public class GroupControllerTest extends RestControllerTest {
 
     // when / then
     webClient
-        .patch()
+        .put()
         .uri(uri)
         .accept(MediaType.APPLICATION_JSON)
         .contentType(MediaType.APPLICATION_JSON)
-        .bodyValue(new GroupUpdateRequest().changeset(new GroupChangeset().name(emptyGroupName)))
+        .bodyValue(
+            new GroupUpdateRequest()
+                .changeset(new GroupChangeset().name(emptyGroupName).description("description")))
         .exchange()
         .expectStatus()
         .isBadRequest()
@@ -281,33 +302,65 @@ public class GroupControllerTest extends RestControllerTest {
   }
 
   @Test
-  void shouldReturnErrorOnNonExistingGroupUpdate() {
+  void shouldFailOnUpdateGroupWithoutDescription() {
     // given
     final var groupKey = 111L;
+    final var name = "name";
+    final var uri = "%s/%s".formatted(GROUP_BASE_URL, groupKey);
+
+    // when / then
+    webClient
+        .put()
+        .uri(uri)
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(new GroupUpdateRequest().changeset(new GroupChangeset().name(name)))
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectBody()
+        .json(
+            """
+            {
+              "type": "about:blank",
+              "status": 400,
+              "title": "INVALID_ARGUMENT",
+              "detail": "No description provided.",
+              "instance": "%s"
+            }"""
+                .formatted(uri));
+
+    verifyNoInteractions(groupServices);
+  }
+
+  @Test
+  void shouldReturnErrorOnNonExistingGroupUpdate() {
+    // given
+    final var groupId = "111";
     final var groupName = "newName";
-    final var path = "%s/%s".formatted(GROUP_BASE_URL, groupKey);
-    when(groupServices.updateGroup(groupKey, groupName))
+    final var path = "%s/%s".formatted(GROUP_BASE_URL, groupId);
+    final var description = "updatedDescription";
+    when(groupServices.updateGroup(groupId, groupName, description))
         .thenReturn(
             CompletableFuture.failedFuture(
                 new CamundaBrokerException(
                     new BrokerRejection(
-                        GroupIntent.UPDATE,
-                        groupKey,
-                        RejectionType.NOT_FOUND,
-                        "Group not found"))));
+                        GroupIntent.UPDATE, 1L, RejectionType.NOT_FOUND, "Group not found"))));
 
     // when / then
     webClient
-        .patch()
+        .put()
         .uri(path)
         .accept(MediaType.APPLICATION_JSON)
         .contentType(MediaType.APPLICATION_JSON)
-        .bodyValue(new GroupUpdateRequest().changeset(new GroupChangeset().name(groupName)))
+        .bodyValue(
+            new GroupUpdateRequest()
+                .changeset(new GroupChangeset().name(groupName).description(description)))
         .exchange()
         .expectStatus()
         .isNotFound();
 
-    verify(groupServices, times(1)).updateGroup(groupKey, groupName);
+    verify(groupServices, times(1)).updateGroup(groupId, groupName, description);
   }
 
   @Test
