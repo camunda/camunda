@@ -494,7 +494,7 @@ public class TenantControllerTest extends RestControllerTest {
 
   private static Stream<Arguments> provideAddMemberByIdTestCases() {
     return Stream.of(
-        Arguments.of(EntityType.USER, "users"), Arguments.of(EntityType.MAPPING, "mapping-rules"));
+        Arguments.of(EntityType.USER, "users"), Arguments.of(EntityType.MAPPING, "mappings"));
   }
 
   private static Stream<Arguments> provideRemoveMemberByKeyTestCases() {
@@ -503,6 +503,6 @@ public class TenantControllerTest extends RestControllerTest {
 
   private static Stream<Arguments> provideRemoveMemberByIdTestCases() {
     return Stream.of(
-        Arguments.of(EntityType.USER, "users"), Arguments.of(EntityType.MAPPING, "mapping-rules"));
+        Arguments.of(EntityType.USER, "users"), Arguments.of(EntityType.MAPPING, "mappings"));
   }
 }

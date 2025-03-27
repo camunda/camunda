@@ -565,7 +565,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/UserSearchResult"
 
-  /tenants/{tenantId}/mapping-rules/{mappingId}:
+  /tenants/{tenantId}/mappings/{mappingId}:
     put:
       tags:
         - Tenant
@@ -7617,3 +7617,4 @@ components:
       type: http
       scheme: bearer
       bearerFormat: JWT
+

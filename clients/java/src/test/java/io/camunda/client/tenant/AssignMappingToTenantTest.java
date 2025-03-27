@@ -38,14 +38,14 @@ public class AssignMappingToTenantTest extends ClientRestTest {
     // then
     final String requestPath = RestGatewayService.getLastRequest().getUrl();
     assertThat(requestPath)
-        .isEqualTo(REST_API_PATH + "/tenants/" + TENANT_ID + "/mapping-rules/" + MAPPING_ID);
+        .isEqualTo(REST_API_PATH + "/tenants/" + TENANT_ID + "/mappings/" + MAPPING_ID);
   }
 
   @Test
   void shouldRaiseExceptionOnNotFoundTenant() {
     // given
     gatewayService.errorOnRequest(
-        REST_API_PATH + "/tenants/" + TENANT_ID + "/mapping-rules/" + MAPPING_ID,
+        REST_API_PATH + "/tenants/" + TENANT_ID + "/mappings/" + MAPPING_ID,
         () -> new ProblemDetail().title("Not Found").status(404));
 
     // when / then
@@ -64,7 +64,7 @@ public class AssignMappingToTenantTest extends ClientRestTest {
   void shouldRaiseExceptionOnNotFoundMapping() {
     // given
     gatewayService.errorOnRequest(
-        REST_API_PATH + "/tenants/" + TENANT_ID + "/mapping-rules/" + MAPPING_ID,
+        REST_API_PATH + "/tenants/" + TENANT_ID + "/mappings/" + MAPPING_ID,
         () -> new ProblemDetail().title("Not Found").status(404));
 
     // when / then
@@ -83,7 +83,7 @@ public class AssignMappingToTenantTest extends ClientRestTest {
   void shouldHandleServerError() {
     // given
     gatewayService.errorOnRequest(
-        REST_API_PATH + "/tenants/" + TENANT_ID + "/mapping-rules/" + MAPPING_ID,
+        REST_API_PATH + "/tenants/" + TENANT_ID + "/mappings/" + MAPPING_ID,
         () -> new ProblemDetail().title("Internal Server Error").status(500));
 
     // when / then
@@ -102,7 +102,7 @@ public class AssignMappingToTenantTest extends ClientRestTest {
   void shouldRaiseExceptionOnForbiddenRequest() {
     // given
     gatewayService.errorOnRequest(
-        REST_API_PATH + "/tenants/" + TENANT_ID + "/mapping-rules/" + MAPPING_ID,
+        REST_API_PATH + "/tenants/" + TENANT_ID + "/mappings/" + MAPPING_ID,
         () -> new ProblemDetail().title("Forbidden").status(403));
 
     // when / then
