@@ -8,8 +8,11 @@
 package io.camunda.zeebe.engine.processing.batchoperation;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 import io.camunda.search.clients.SearchClientsProxy;
+import io.camunda.search.entities.ProcessInstanceEntity;
 import io.camunda.search.filter.ProcessInstanceFilter;
 import io.camunda.search.query.ProcessInstanceQuery;
 import io.camunda.search.query.SearchQueryResult;
@@ -98,9 +101,19 @@ public final class CreateBatchOperationTest {
             new ProcessInstanceFilter.Builder().processInstanceKeys(1L, 3L, 8L).build());
 
     // given
-    Mockito.when(
-            searchClientsProxy.searchProcessInstanceKeys(Mockito.any(ProcessInstanceQuery.class)))
-        .thenReturn(new SearchQueryResult<>(1, List.of(1L, 3L, 8L), null, null)); // when
+    final var result =
+        new SearchQueryResult.Builder<ProcessInstanceEntity>()
+            .items(
+                List.of(
+                    mockProcessInstanceEntity(1L),
+                    mockProcessInstanceEntity(2L),
+                    mockProcessInstanceEntity(3L)))
+            .total(3)
+            .build();
+    Mockito.when(searchClientsProxy.searchProcessInstances(Mockito.any(ProcessInstanceQuery.class)))
+        .thenReturn(result);
+
+    // when
     final long batchOperationKey =
         engine
             .batchOperation()
@@ -125,5 +138,11 @@ public final class CreateBatchOperationTest {
 
   private static UnsafeBuffer convertToBuffer(final Object object) {
     return new UnsafeBuffer(MsgPackConverter.convertToMsgPack(object));
+  }
+
+  private ProcessInstanceEntity mockProcessInstanceEntity(final long processInstanceKey) {
+    final var entity = mock(ProcessInstanceEntity.class);
+    when(entity.processInstanceKey()).thenReturn(processInstanceKey);
+    return entity;
   }
 }

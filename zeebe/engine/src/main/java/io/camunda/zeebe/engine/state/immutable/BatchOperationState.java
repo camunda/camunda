@@ -17,7 +17,7 @@ public interface BatchOperationState {
 
   void foreachPendingBatchOperation(BatchOperationVisitor visitor);
 
-  List<Long> getNextEntityKeys(long batchOperationKey, int batchSize);
+  List<Long> getNextItemKeys(long batchOperationKey, int batchSize);
 
   @FunctionalInterface
   interface BatchOperationVisitor {

@@ -82,16 +82,16 @@ public class PersistedBatchOperation extends UnpackedObject implements DbValue {
     return MsgPackConverter.convertToObject(entityFilterProp.getValue(), clazz);
   }
 
-  public long nextBlockKey() {
-    final var nextKey = getMaxBlockKey() + 1;
+  public long nextChunkKey() {
+    final var nextKey = getMaxChunkKey() + 1;
     chunkKeysProp.add().setValue(nextKey);
 
     return nextKey;
   }
 
-  public PersistedBatchOperation removeBlockKey(final Long blockKey) {
+  public PersistedBatchOperation removeChunkKey(final Long chunkKey) {
     final var newKeys =
-        chunkKeysProp.stream().map(LongValue::getValue).filter(k -> !k.equals(blockKey)).toList();
+        chunkKeysProp.stream().map(LongValue::getValue).filter(k -> !k.equals(chunkKey)).toList();
 
     chunkKeysProp.reset();
 
@@ -102,14 +102,14 @@ public class PersistedBatchOperation extends UnpackedObject implements DbValue {
     return this;
   }
 
-  public long getMinBlockKey() {
+  public long getMinChunkKey() {
     return chunkKeysProp.stream()
         .min(Comparator.comparing(LongValue::getValue))
         .map(LongValue::getValue)
         .orElse(-1L);
   }
 
-  public long getMaxBlockKey() {
+  public long getMaxChunkKey() {
     return chunkKeysProp.stream()
         .max(Comparator.comparing(LongValue::getValue))
         .map(LongValue::getValue)

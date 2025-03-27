@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.engine.state.batchoperation;
 
-import static io.camunda.zeebe.engine.state.batchoperation.DbBatchOperationState.MAX_BLOCK_SIZE;
+import static io.camunda.zeebe.engine.state.batchoperation.DbBatchOperationState.MAX_CHUNK_SIZE;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -102,12 +102,12 @@ public class BatchOperationStateTest {
     state.create(batchOperationKey, roleRecord);
 
     // when
-    state.appendKeys(
+    state.appendItemKeys(
         batchOperationKey,
         new BatchOperationChunkRecord()
             .setBatchOperationKey(batchOperationKey)
             .setChunkKey(2L)
-            .setEntityKeys(LongStream.range(0, 99).boxed().toList()));
+            .setItemKeys(LongStream.range(0, 99).boxed().toList()));
 
     // then
     final var pendingKeys = new ArrayList<>();
@@ -122,7 +122,7 @@ public class BatchOperationStateTest {
     final var batchOperationKey = createDefaultBatch(1, 0);
 
     // when
-    final var keys = state.getNextEntityKeys(batchOperationKey, 5);
+    final var keys = state.getNextItemKeys(batchOperationKey, 5);
 
     // then
     assertThat(keys).isEmpty();
@@ -146,16 +146,16 @@ public class BatchOperationStateTest {
         new BatchOperationChunkRecord()
             .setBatchOperationKey(batchOperationKey)
             .setChunkKey(subbatchKey)
-            .setEntityKeys(keys);
-    state.appendKeys(batchOperationKey, subbatchRecord);
+            .setItemKeys(keys);
+    state.appendItemKeys(batchOperationKey, subbatchRecord);
 
     // then
     final var persistedBatchOperation = state.get(batchOperationKey).get();
 
-    assertThat(persistedBatchOperation.getMinBlockKey()).isEqualTo(0);
-    assertThat(persistedBatchOperation.getMaxBlockKey()).isEqualTo(0);
+    assertThat(persistedBatchOperation.getMinChunkKey()).isEqualTo(0);
+    assertThat(persistedBatchOperation.getMaxChunkKey()).isEqualTo(0);
 
-    final var nextKeys = state.getNextEntityKeys(batchOperationKey, 5);
+    final var nextKeys = state.getNextItemKeys(batchOperationKey, 5);
     assertThat(nextKeys).hasSize(5);
     assertThat(nextKeys).containsSequence(List.of(0L, 1L, 2L, 3L, 4L));
   }
@@ -178,16 +178,16 @@ public class BatchOperationStateTest {
         new BatchOperationChunkRecord()
             .setBatchOperationKey(batchOperationKey)
             .setChunkKey(subbatchKey)
-            .setEntityKeys(keys);
-    state.appendKeys(batchOperationKey, subbatchRecord);
+            .setItemKeys(keys);
+    state.appendItemKeys(batchOperationKey, subbatchRecord);
 
     // then
     final var persistedBatchOperation = state.get(batchOperationKey).get();
 
-    assertThat(persistedBatchOperation.getMinBlockKey()).isEqualTo(0);
-    assertThat(persistedBatchOperation.getMaxBlockKey()).isEqualTo(0);
+    assertThat(persistedBatchOperation.getMinChunkKey()).isEqualTo(0);
+    assertThat(persistedBatchOperation.getMaxChunkKey()).isEqualTo(0);
 
-    final var nextKeys = state.getNextEntityKeys(batchOperationKey, 10);
+    final var nextKeys = state.getNextItemKeys(batchOperationKey, 10);
     assertThat(nextKeys).hasSize(5);
     assertThat(nextKeys).containsSequence(List.of(0L, 1L, 2L, 3L, 4L));
   }
@@ -205,19 +205,19 @@ public class BatchOperationStateTest {
 
     // when
     final var subbatchKey = 2L;
-    final var keys = LongStream.range(0, MAX_BLOCK_SIZE * 3 + 1).boxed().toList();
+    final var keys = LongStream.range(0, MAX_CHUNK_SIZE * 3 + 1).boxed().toList();
     final var subbatchRecord =
         new BatchOperationChunkRecord()
             .setBatchOperationKey(batchOperationKey)
             .setChunkKey(subbatchKey)
-            .setEntityKeys(keys);
-    state.appendKeys(batchOperationKey, subbatchRecord);
+            .setItemKeys(keys);
+    state.appendItemKeys(batchOperationKey, subbatchRecord);
 
     // then
     final var persistedBatchOperation = state.get(batchOperationKey).get();
 
-    assertThat(persistedBatchOperation.getMinBlockKey()).isEqualTo(0);
-    assertThat(persistedBatchOperation.getMaxBlockKey()).isEqualTo(3);
+    assertThat(persistedBatchOperation.getMinChunkKey()).isEqualTo(0);
+    assertThat(persistedBatchOperation.getMaxChunkKey()).isEqualTo(3);
   }
 
   @Test
@@ -232,79 +232,78 @@ public class BatchOperationStateTest {
     state.create(batchOperationKey, createRecord);
 
     // when
-    state.appendKeys(
+    state.appendItemKeys(
         batchOperationKey,
         new BatchOperationChunkRecord()
             .setBatchOperationKey(batchOperationKey)
             .setChunkKey(2L)
-            .setEntityKeys(LongStream.range(0, MAX_BLOCK_SIZE - 1).boxed().toList()));
-    state.appendKeys(
+            .setItemKeys(LongStream.range(0, MAX_CHUNK_SIZE - 1).boxed().toList()));
+    state.appendItemKeys(
         batchOperationKey,
         new BatchOperationChunkRecord()
             .setBatchOperationKey(batchOperationKey)
             .setChunkKey(3L)
-            .setEntityKeys(
-                LongStream.range(MAX_BLOCK_SIZE, MAX_BLOCK_SIZE * 2 - 1).boxed().toList()));
-    state.appendKeys(
+            .setItemKeys(
+                LongStream.range(MAX_CHUNK_SIZE, MAX_CHUNK_SIZE * 2 - 1).boxed().toList()));
+    state.appendItemKeys(
         batchOperationKey,
         new BatchOperationChunkRecord()
             .setBatchOperationKey(batchOperationKey)
             .setChunkKey(4L)
-            .setEntityKeys(
-                LongStream.range(MAX_BLOCK_SIZE * 2, MAX_BLOCK_SIZE * 3 - 1).boxed().toList()));
+            .setItemKeys(
+                LongStream.range(MAX_CHUNK_SIZE * 2, MAX_CHUNK_SIZE * 3 - 1).boxed().toList()));
 
     // then
     final var persistedBatchOperation = state.get(batchOperationKey).get();
 
-    assertThat(persistedBatchOperation.getMinBlockKey()).isEqualTo(0);
-    assertThat(persistedBatchOperation.getMaxBlockKey()).isEqualTo(2);
+    assertThat(persistedBatchOperation.getMinChunkKey()).isEqualTo(0);
+    assertThat(persistedBatchOperation.getMaxChunkKey()).isEqualTo(2);
   }
 
   @Test
   void shouldReturnNextNonRemovedItems() {
     // given
-    final var batchOperationKey = createDefaultBatch(1, MAX_BLOCK_SIZE * 3);
+    final var batchOperationKey = createDefaultBatch(1, MAX_CHUNK_SIZE * 3);
 
     // when
-    state.removeKeys(
+    state.removeItemKeys(
         batchOperationKey,
         new BatchOperationExecutionRecord()
             .setBatchOperationKey(batchOperationKey)
-            .setEntityKeys(LongStream.rangeClosed(0, 5).boxed().collect(Collectors.toSet())));
+            .setItemKeys(LongStream.rangeClosed(0, 5).boxed().collect(Collectors.toSet())));
 
     // then
     final var persistedBatchOperation = state.get(batchOperationKey).get();
 
-    assertThat(persistedBatchOperation.getMinBlockKey()).isEqualTo(0);
-    assertThat(persistedBatchOperation.getMaxBlockKey()).isEqualTo(2);
+    assertThat(persistedBatchOperation.getMinChunkKey()).isEqualTo(0);
+    assertThat(persistedBatchOperation.getMaxChunkKey()).isEqualTo(2);
 
-    final var nextKeys = state.getNextEntityKeys(batchOperationKey, 5);
-    assertThat(nextKeys).hasSize(5);
-    assertThat(nextKeys).containsSequence(List.of(6L, 7L, 8L, 9L, 10L));
+    final var nextItemKeys = state.getNextItemKeys(batchOperationKey, 5);
+    assertThat(nextItemKeys).hasSize(5);
+    assertThat(nextItemKeys).containsSequence(List.of(6L, 7L, 8L, 9L, 10L));
   }
 
   @Test
   void shouldRemoveChunkWhenAllItemsHasBeenRemoved() {
     // given
-    final var batchOperationKey = createDefaultBatch(1, MAX_BLOCK_SIZE * 3);
+    final var batchOperationKey = createDefaultBatch(1, MAX_CHUNK_SIZE * 3);
 
     // when
-    state.removeKeys(
+    state.removeItemKeys(
         batchOperationKey,
         new BatchOperationExecutionRecord()
             .setBatchOperationKey(batchOperationKey)
-            .setEntityKeys(
-                LongStream.range(0, MAX_BLOCK_SIZE).boxed().collect(Collectors.toSet())));
+            .setItemKeys(LongStream.range(0, MAX_CHUNK_SIZE).boxed().collect(Collectors.toSet())));
 
     // then
     final var persistedBatchOperation = state.get(batchOperationKey).get();
 
-    assertThat(persistedBatchOperation.getMinBlockKey()).isEqualTo(1);
-    assertThat(persistedBatchOperation.getMaxBlockKey()).isEqualTo(2);
+    assertThat(persistedBatchOperation.getMinChunkKey()).isEqualTo(1);
+    assertThat(persistedBatchOperation.getMaxChunkKey()).isEqualTo(2);
 
-    final var nextKeys = state.getNextEntityKeys(batchOperationKey, 3);
-    assertThat(nextKeys)
-        .containsSequence(List.of(MAX_BLOCK_SIZE, MAX_BLOCK_SIZE + 1L, MAX_BLOCK_SIZE + 2L));
+    final var nextItemKeys = state.getNextItemKeys(batchOperationKey, 3);
+    assertThat(nextItemKeys)
+        .containsSequence(List.of(MAX_CHUNK_SIZE, MAX_CHUNK_SIZE + 1L, MAX_CHUNK_SIZE + 2L));
   }
 
   private long createDefaultBatch(final long batchOperationKey, final long numKeys) {
@@ -314,12 +313,12 @@ public class BatchOperationStateTest {
             .setBatchOperationKey(batchOperationKey)
             .setBatchOperationType(BatchOperationType.PROCESS_CANCELLATION)
             .setEntityFilter(convertToBuffer(new ProcessInstanceFilter.Builder().build())));
-    state.appendKeys(
+    state.appendItemKeys(
         batchOperationKey,
         new BatchOperationChunkRecord()
             .setBatchOperationKey(batchOperationKey)
             .setChunkKey(2L)
-            .setEntityKeys(LongStream.range(0, numKeys).boxed().toList()));
+            .setItemKeys(LongStream.range(0, numKeys).boxed().toList()));
 
     return batchOperationKey;
   }

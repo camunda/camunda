@@ -20,18 +20,18 @@ public final class BatchOperationChunkRecord extends UnifiedRecordValue
 
   public static final String PROP_BATCH_OPERATION_KEY = "batchOperationKey";
   public static final String PROP_CHUNK_KEY = "chunkKey";
-  public static final String PROP_ENTITY_KEY_LIST = "entityKeys";
+  public static final String PROP_ITEM_KEY_LIST = "itemKeys";
 
   private final LongProperty batchOperationKeyProp = new LongProperty(PROP_BATCH_OPERATION_KEY);
   private final LongProperty chunkKeyProp = new LongProperty(PROP_CHUNK_KEY);
-  private final ArrayProperty<LongValue> entityKeysProp =
-      new ArrayProperty<>(PROP_ENTITY_KEY_LIST, LongValue::new);
+  private final ArrayProperty<LongValue> itemKeysProp =
+      new ArrayProperty<>(PROP_ITEM_KEY_LIST, LongValue::new);
 
   public BatchOperationChunkRecord() {
     super(3);
     declareProperty(batchOperationKeyProp)
         .declareProperty(chunkKeyProp)
-        .declareProperty(entityKeysProp);
+        .declareProperty(itemKeysProp);
   }
 
   @Override
@@ -46,13 +46,13 @@ public final class BatchOperationChunkRecord extends UnifiedRecordValue
   }
 
   @Override
-  public List<Long> getEntityKeys() {
-    return entityKeysProp.stream().map(LongValue::getValue).collect(Collectors.toList());
+  public List<Long> getItemKeys() {
+    return itemKeysProp.stream().map(LongValue::getValue).collect(Collectors.toList());
   }
 
-  public BatchOperationChunkRecord setEntityKeys(final List<Long> keys) {
-    entityKeysProp.reset();
-    keys.forEach(key -> entityKeysProp.add().setValue(key));
+  public BatchOperationChunkRecord setItemKeys(final List<Long> keys) {
+    itemKeysProp.reset();
+    keys.forEach(key -> itemKeysProp.add().setValue(key));
     return this;
   }
 
@@ -68,7 +68,7 @@ public final class BatchOperationChunkRecord extends UnifiedRecordValue
 
   public void wrap(final BatchOperationChunkRecord record) {
     setBatchOperationKey(record.getBatchOperationKey());
-    setEntityKeys(record.getEntityKeys());
+    setItemKeys(record.getItemKeys());
     setChunkKey(record.getChunkKey());
   }
 }
