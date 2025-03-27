@@ -19,8 +19,6 @@ import static com.github.tomakehurst.wiremock.client.WireMock.ok;
 import static com.github.tomakehurst.wiremock.client.WireMock.post;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.auth0.jwt.JWT;
-import com.auth0.jwt.algorithms.Algorithm;
 import com.github.tomakehurst.wiremock.core.WireMockConfiguration;
 import com.github.tomakehurst.wiremock.junit5.WireMockExtension;
 import io.camunda.client.CredentialsProvider;
@@ -30,7 +28,6 @@ import io.camunda.spring.client.jobhandling.CamundaClientExecutorService;
 import io.camunda.spring.client.properties.CamundaClientProperties;
 import java.io.IOException;
 import java.nio.file.Paths;
-import java.time.Instant;
 import java.util.HashMap;
 import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
@@ -115,8 +112,7 @@ public class CredentialsProviderSelfManagedWithSSLTest {
   @Test
   void shouldHaveZeebeAuth() throws IOException {
     final Map<String, String> headers = new HashMap<>();
-    final String accessToken =
-        JWT.create().withExpiresAt(Instant.now().plusSeconds(300)).sign(Algorithm.none());
+    final String accessToken = "access-token";
     wm.stubFor(
         post("/auth-server")
             .willReturn(
