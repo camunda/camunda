@@ -129,11 +129,10 @@ public class DbGroupState implements MutableGroupState {
   }
 
   @Override
-  public Optional<Long> getGroupKeyByName(final String groupName) {
-//    this.groupName.wrapString(groupName);
-//    final var groupKey = groupByNameColumnFamily.get(this.groupName);
-//    return Optional.ofNullable(groupKey).map(key -> key.inner().getValue());
-    return Optional.empty();
+  public Optional<PersistedGroup> get(final String groupId) {
+    this.groupId.wrapString(groupId);
+    final var persistedGroup = groupColumnFamily.get(this.groupId);
+    return Optional.ofNullable(persistedGroup);
   }
 
   @Override
