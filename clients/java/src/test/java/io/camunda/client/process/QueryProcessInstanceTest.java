@@ -280,7 +280,7 @@ public class QueryProcessInstanceTest extends ClientRestTest {
   public void shouldConvertProcessInstanceState() {
 
     for (final ProcessInstanceState value : ProcessInstanceState.values()) {
-      final ProcessInstanceStateEnum protocolValue = ProcessInstanceState.toProtocolState(value);
+      final ProcessInstanceStateEnum protocolValue = value.toProtocolState();
       assertThat(protocolValue).isNotNull();
       if (value == ProcessInstanceState.UNKNOWN_ENUM_VALUE) {
         assertThat(protocolValue).isEqualTo(ProcessInstanceStateEnum.UNKNOWN_DEFAULT_OPEN_API);
