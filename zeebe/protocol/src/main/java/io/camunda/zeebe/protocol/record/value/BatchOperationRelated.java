@@ -20,5 +20,5 @@ public interface BatchOperationRelated {
   /**
    * @return the key of the batch operation aka operation reference key
    */
-  Long getBatchOperationKey();
+  long getBatchOperationKey();
 }
