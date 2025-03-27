@@ -116,7 +116,7 @@ public final class UserTaskProcessor extends JobWorkerTaskSupportingProcessor<Ex
   }
 
   @Override
-  protected void onTerminateInternal(
+  protected TransitionOutcome onTerminateInternal(
       final ExecutableUserTask element, final BpmnElementContext context) {
 
     if (element.hasExecutionListeners() || element.hasTaskListeners()) {
@@ -130,18 +130,21 @@ public final class UserTaskProcessor extends JobWorkerTaskSupportingProcessor<Ex
     final Optional<UserTaskRecord> userTaskRecord =
         userTaskBehavior.userTaskCanceling(elementInstance);
     if (userTaskRecord.isPresent()) {
-      // Placeholder for calling task listeners and then finalizing
-      onFinalizeTerminationInternal(element, context);
+      if (element.hasTaskListeners(ZeebeTaskListenerEventType.canceling)) {
+        // Placeholder for calling task listeners and then finalizing
+        return TransitionOutcome.AWAIT;
+      } else {
+        userTaskBehavior.userTaskCanceled(elementInstance);
+        return TransitionOutcome.CONTINUE;
+      }
     } else {
-      onFinalizeTerminationInternal(element, context);
+      return TransitionOutcome.CONTINUE;
     }
   }
 
   @Override
   public void onFinalizeTerminationInternal(
       final ExecutableUserTask element, final BpmnElementContext context) {
-    final var elementInstance = stateBehavior.getElementInstance(context);
-    userTaskBehavior.userTaskCanceled(elementInstance);
 
     final var flowScopeInstance = stateBehavior.getFlowScopeInstance(context);
     eventSubscriptionBehavior

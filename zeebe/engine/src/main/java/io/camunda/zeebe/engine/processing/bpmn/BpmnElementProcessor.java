@@ -136,12 +136,16 @@ public interface BpmnElementProcessor<T extends ExecutableFlowElement> {
    *   <li>clean up the state
    * </ul>
    *
-   * Next step: none.
+   * Next step: trigger {@link BpmnElementProcessor#finalizeTermination(ExecutableFlowElement,
+   * BpmnElementContext)}.
    *
    * @param element the instance of the BPMN element that is executed
    * @param context process instance-related data of the element that is executed
+   * @return TransitionOutcome transition outcome
    */
-  default void onTerminate(final T element, final BpmnElementContext context) {}
+  default TransitionOutcome onTerminate(final T element, final BpmnElementContext context) {
+    return TransitionOutcome.CONTINUE;
+  }
 
   /**
    * Finalizes the termination of the BPMN element. This method is called when the element has
@@ -151,4 +155,16 @@ public interface BpmnElementProcessor<T extends ExecutableFlowElement> {
    * @param context process instance-related data of the element that is executed
    */
   default void finalizeTermination(final T element, final BpmnElementContext context) {}
+
+  /**
+   * Represents the outcome of a BPMN element transition method, indicating whether the next step
+   * (e.g. finalize method) should be invoked immediately or await an external trigger.
+   */
+  enum TransitionOutcome {
+    /** Continue processing by invoking the related finalize transition method immediately. */
+    CONTINUE,
+
+    /** Pause the transition and wait for an external trigger to finalize the step. */
+    AWAIT
+  }
 }
