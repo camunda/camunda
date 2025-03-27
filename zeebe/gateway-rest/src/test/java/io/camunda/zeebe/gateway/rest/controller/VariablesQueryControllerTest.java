@@ -71,12 +71,12 @@ public class VariablesQueryControllerTest extends RestControllerTest {
               ],
               "page": {
                   "totalItems": 1,
-                 "firstSortValues": [
-                     { "value": "f", "type": "string" }
-                   ],
-                   "lastSortValues": [
-                     { "value": "v", "type": "string" }
-                   ]
+              "firstSortValues": [
+                { "value": "\\"f\\"", "type": "string" }
+              ],
+              "lastSortValues": [
+                { "value": "\\"v\\"", "type": "string" }
+              ]
               }
           }""";
 

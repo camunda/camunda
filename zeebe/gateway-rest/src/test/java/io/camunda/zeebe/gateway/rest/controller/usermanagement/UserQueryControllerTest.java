@@ -48,10 +48,12 @@ public class UserQueryControllerTest extends RestControllerTest {
               ],
               "page": {
                   "totalItems": 1,
-                  "firstSortValues": ["f"],
-                  "lastSortValues": [
-                      "v"
-                  ]
+                   "firstSortValues": [
+                         { "value": "\\"f\\"", "type": "string" }
+                   ],
+                   "lastSortValues": [
+                          { "value": "\\"v\\"", "type": "string" }
+                   ]
               }
           }""";
   private static final String USERS_SEARCH_URL = "/v2/users/search";
@@ -239,8 +241,8 @@ public class UserQueryControllerTest extends RestControllerTest {
             """
                 {
                     "page": {
-                        "searchAfter": ["a"],
-                        "searchBefore": ["b"]
+                        "searchAfter": [{"value": "\\"a\\"", "type": "string"}],
+                        "searchBefore": [{"value": "\\"b\\"", "type": "string"}]
                     }
                 }""",
             String.format(
