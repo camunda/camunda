@@ -9,7 +9,7 @@ package io.camunda.exporter.handlers;
 
 import io.camunda.exporter.handlers.UserTaskVariableHandler.UserTaskVariableBatch;
 import io.camunda.exporter.store.BatchRequest;
-import io.camunda.webapps.schema.descriptors.tasklist.template.TaskTemplate;
+import io.camunda.webapps.schema.descriptors.template.TaskTemplate;
 import io.camunda.webapps.schema.entities.AbstractExporterEntity;
 import io.camunda.webapps.schema.entities.usertask.TaskJoinRelationship;
 import io.camunda.webapps.schema.entities.usertask.TaskJoinRelationship.TaskJoinRelationshipType;

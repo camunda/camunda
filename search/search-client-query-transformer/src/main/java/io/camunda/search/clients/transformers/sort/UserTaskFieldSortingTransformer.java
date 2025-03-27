@@ -7,11 +7,11 @@
  */
 package io.camunda.search.clients.transformers.sort;
 
-import static io.camunda.webapps.schema.descriptors.tasklist.template.TaskTemplate.COMPLETION_TIME;
-import static io.camunda.webapps.schema.descriptors.tasklist.template.TaskTemplate.CREATION_TIME;
-import static io.camunda.webapps.schema.descriptors.tasklist.template.TaskTemplate.DUE_DATE;
-import static io.camunda.webapps.schema.descriptors.tasklist.template.TaskTemplate.FOLLOW_UP_DATE;
-import static io.camunda.webapps.schema.descriptors.tasklist.template.TaskTemplate.PRIORITY;
+import static io.camunda.webapps.schema.descriptors.template.TaskTemplate.COMPLETION_TIME;
+import static io.camunda.webapps.schema.descriptors.template.TaskTemplate.CREATION_TIME;
+import static io.camunda.webapps.schema.descriptors.template.TaskTemplate.DUE_DATE;
+import static io.camunda.webapps.schema.descriptors.template.TaskTemplate.FOLLOW_UP_DATE;
+import static io.camunda.webapps.schema.descriptors.template.TaskTemplate.PRIORITY;
 
 public class UserTaskFieldSortingTransformer implements FieldSortingTransformer {
 

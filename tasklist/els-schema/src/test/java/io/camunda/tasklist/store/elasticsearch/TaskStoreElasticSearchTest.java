@@ -22,7 +22,7 @@ import io.camunda.tasklist.CommonUtils;
 import io.camunda.tasklist.queries.TaskQuery;
 import io.camunda.tasklist.tenant.TenantAwareElasticsearchClient;
 import io.camunda.tasklist.views.TaskSearchView;
-import io.camunda.webapps.schema.descriptors.tasklist.template.TaskTemplate;
+import io.camunda.webapps.schema.descriptors.template.TaskTemplate;
 import io.camunda.webapps.schema.entities.usertask.TaskEntity.TaskImplementation;
 import io.camunda.webapps.schema.entities.usertask.TaskState;
 import java.io.IOException;
@@ -63,7 +63,7 @@ class TaskStoreElasticSearchTest {
     "CANCELED,test-tasklist-task-,_alias"
   })
   void getTasksForDifferentStates(
-      TaskState taskState, String expectedIndexPrefix, String expectedIndexSuffix)
+      final TaskState taskState, final String expectedIndexPrefix, final String expectedIndexSuffix)
       throws Exception {
     // Given
     final TaskQuery taskQuery = new TaskQuery().setPageSize(50).setState(taskState);
@@ -123,7 +123,7 @@ class TaskStoreElasticSearchTest {
     assertThat(result).hasSize(1);
   }
 
-  private static String getTaskExampleAsString(TaskState taskState) {
+  private static String getTaskExampleAsString(final TaskState taskState) {
     return "{\n"
         + "  \"id\": \"123456789\",\n"
         + "  \"key\": 123456789,\n"

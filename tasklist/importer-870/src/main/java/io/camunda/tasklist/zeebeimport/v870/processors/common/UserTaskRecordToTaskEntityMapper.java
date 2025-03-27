@@ -13,7 +13,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.tasklist.store.FormStore;
 import io.camunda.tasklist.util.DateUtil;
 import io.camunda.tasklist.zeebeimport.v870.record.Intent;
-import io.camunda.webapps.schema.descriptors.tasklist.template.TaskTemplate;
+import io.camunda.webapps.schema.descriptors.template.TaskTemplate;
 import io.camunda.webapps.schema.entities.usertask.TaskEntity;
 import io.camunda.webapps.schema.entities.usertask.TaskEntity.TaskImplementation;
 import io.camunda.webapps.schema.entities.usertask.TaskState;

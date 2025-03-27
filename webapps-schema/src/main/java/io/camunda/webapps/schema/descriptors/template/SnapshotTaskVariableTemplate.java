@@ -5,15 +5,19 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.webapps.schema.descriptors.tasklist.template;
+package io.camunda.webapps.schema.descriptors.template;
 
+import static io.camunda.webapps.schema.descriptors.ComponentNames.TASK_LIST;
+
+import io.camunda.webapps.schema.descriptors.AbstractTemplateDescriptor;
 import io.camunda.webapps.schema.descriptors.backup.Prio4Backup;
-import io.camunda.webapps.schema.descriptors.tasklist.TasklistTemplateDescriptor;
+import io.camunda.webapps.schema.descriptors.operate.ProcessInstanceDependant;
 import java.util.Optional;
 
-public class DraftTaskVariableTemplate extends TasklistTemplateDescriptor implements Prio4Backup {
+public class SnapshotTaskVariableTemplate extends AbstractTemplateDescriptor
+    implements ProcessInstanceDependant, Prio4Backup {
 
-  public static final String INDEX_NAME = "draft-task-variable";
+  public static final String INDEX_NAME = "task-variable";
   public static final String INDEX_VERSION = "8.3.0";
 
   public static final String ID = "id";
@@ -25,7 +29,7 @@ public class DraftTaskVariableTemplate extends TasklistTemplateDescriptor implem
   public static final String IS_PREVIEW = "isPreview";
   public static final String TENANT_ID = "tenantId";
 
-  public DraftTaskVariableTemplate(final String indexPrefix, final boolean isElasticsearch) {
+  public SnapshotTaskVariableTemplate(final String indexPrefix, final boolean isElasticsearch) {
     super(indexPrefix, isElasticsearch);
   }
 
@@ -42,5 +46,10 @@ public class DraftTaskVariableTemplate extends TasklistTemplateDescriptor implem
   @Override
   public String getVersion() {
     return INDEX_VERSION;
+  }
+
+  @Override
+  public String getComponentName() {
+    return TASK_LIST.toString();
   }
 }
