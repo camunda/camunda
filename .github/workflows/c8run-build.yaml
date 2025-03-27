@@ -175,7 +175,7 @@ jobs:
       - name: Upload message to Slack on failure
         if: ${{ failure() || github.event.inputs.alert_slack == true }}
         env:
-          SLACK_WEBHOOK_URL: ${{ steps.secrets.output.SLACK_DISTRO_BOT_WEBHOOK }}
+          SLACK_WEBHOOK_URL: ${{ steps.secrets.outputs.SLACK_DISTRO_BOT_WEBHOOK }}
         run: |
           curl -X POST -H 'Content-type: application/json' \
           --data '{
@@ -310,7 +310,7 @@ jobs:
       - name: Upload message to Slack on failure
         if: ${{ failure() || github.event.inputs.alert_slack == true }}
         env:
-          SLACK_WEBHOOK_URL: ${{ steps.secrets.output.SLACK_DISTRO_BOT_WEBHOOK }}
+          SLACK_WEBHOOK_URL: ${{ steps.secrets.outputs.SLACK_DISTRO_BOT_WEBHOOK }}
         run: |
           curl -X POST -H 'Content-type: application/json' \
           --data '{
