@@ -22,12 +22,14 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.CamundaClientConfiguration;
+import io.camunda.process.test.impl.client.CamundaManagementClient;
 import io.camunda.process.test.impl.containers.CamundaContainer;
 import io.camunda.process.test.impl.containers.ConnectorsContainer;
 import io.camunda.process.test.impl.runtime.CamundaContainerRuntime;
 import io.camunda.process.test.impl.runtime.CamundaContainerRuntimeBuilder;
 import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.client.ZeebeClientConfiguration;
+import java.lang.reflect.Field;
 import java.net.URI;
 import java.util.Collections;
 import java.util.HashMap;
@@ -40,6 +42,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.jupiter.api.extension.ExtensionContext.Store;
 import org.junit.jupiter.api.extension.TestInstances;
+import org.junit.platform.commons.util.ExceptionUtils;
 import org.mockito.Answers;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -58,6 +61,7 @@ public class JunitExtensionTest {
   @Mock private CamundaContainerRuntime camundaContainerRuntime;
   @Mock private CamundaContainer camundaContainer;
   @Mock private ConnectorsContainer connectorsContainer;
+  @Mock private CamundaManagementClient camundaManagementClient;
 
   @Mock private ExtensionContext extensionContext;
   @Mock private TestInstances testInstances;
@@ -89,6 +93,7 @@ public class JunitExtensionTest {
         new CamundaProcessTestExtension(camundaContainerRuntimeBuilder, NOOP);
 
     // when
+    extension.beforeAll(extensionContext);
     extension.beforeEach(extensionContext);
 
     // then
@@ -113,6 +118,7 @@ public class JunitExtensionTest {
         new CamundaProcessTestExtension(camundaContainerRuntimeBuilder, NOOP);
 
     // when
+    extension.beforeAll(extensionContext);
     extension.beforeEach(extensionContext);
 
     // then
@@ -130,6 +136,7 @@ public class JunitExtensionTest {
         new CamundaProcessTestExtension(camundaContainerRuntimeBuilder, NOOP);
 
     // when
+    extension.beforeAll(extensionContext);
     extension.beforeEach(extensionContext);
 
     // then
@@ -148,6 +155,7 @@ public class JunitExtensionTest {
         new CamundaProcessTestExtension(camundaContainerRuntimeBuilder, NOOP);
 
     // when
+    extension.beforeAll(extensionContext);
     extension.beforeEach(extensionContext);
 
     // then
@@ -166,6 +174,7 @@ public class JunitExtensionTest {
         new CamundaProcessTestExtension(camundaContainerRuntimeBuilder, NOOP);
 
     // when
+    extension.beforeAll(extensionContext);
     extension.beforeEach(extensionContext);
 
     // then
@@ -186,6 +195,7 @@ public class JunitExtensionTest {
         new CamundaProcessTestExtension(camundaContainerRuntimeBuilder, NOOP);
 
     // when
+    extension.beforeAll(extensionContext);
     extension.beforeEach(extensionContext);
 
     // then
@@ -207,8 +217,9 @@ public class JunitExtensionTest {
         new CamundaProcessTestExtension(camundaContainerRuntimeBuilder, NOOP);
 
     // when
+    extension.beforeAll(extensionContext);
     extension.beforeEach(extensionContext);
-    extension.afterEach(extensionContext);
+    extension.afterAll(extensionContext);
 
     // then
     verify(camundaContainerRuntime).start();
@@ -222,6 +233,7 @@ public class JunitExtensionTest {
         new CamundaProcessTestExtension(camundaContainerRuntimeBuilder, NOOP);
 
     // when
+    extension.beforeAll(extensionContext);
     extension.beforeEach(extensionContext);
 
     // then
@@ -248,6 +260,7 @@ public class JunitExtensionTest {
             .withCamundaExposedPort(200);
 
     // when
+    extension.beforeAll(extensionContext);
     extension.beforeEach(extensionContext);
 
     // then
@@ -283,6 +296,7 @@ public class JunitExtensionTest {
             .withConnectorsSecret("secret-2", "2");
 
     // when
+    extension.beforeAll(extensionContext);
     extension.beforeEach(extensionContext);
 
     // then
@@ -306,10 +320,15 @@ public class JunitExtensionTest {
         new CamundaProcessTestExtension(camundaContainerRuntimeBuilder, outputBuilder::append);
 
     // when
+    extension.beforeAll(extensionContext);
     extension.beforeEach(extensionContext);
 
     when(extensionContext.getExecutionException())
         .thenReturn(Optional.of(new AssertionError("test failure (expected)")));
+
+    // CamundaManagementClient will attempt to call purgeCluster() and we need to prevent
+    // it from trying to execute real code (the HTTP call will fail).
+    setManagementClientDummy(extension);
     extension.afterEach(extensionContext);
 
     // then
@@ -324,12 +343,46 @@ public class JunitExtensionTest {
         new CamundaProcessTestExtension(camundaContainerRuntimeBuilder, outputBuilder::append);
 
     // when
+    extension.beforeAll(extensionContext);
     extension.beforeEach(extensionContext);
 
     when(extensionContext.getExecutionException()).thenReturn(Optional.empty());
+
+    // CamundaManagementClient will attempt to call purgeCluster() and we need to prevent
+    // it from trying to execute real code (the HTTP call will fail).
+    setManagementClientDummy(extension);
     extension.afterEach(extensionContext);
 
     // then
     assertThat(outputBuilder.toString()).isEmpty();
+  }
+
+  @Test
+  void shouldPurgeTheClusterInBetweenTests() throws Exception {
+    // given
+    final CamundaProcessTestExtension extension =
+        new CamundaProcessTestExtension(camundaContainerRuntimeBuilder, NOOP);
+
+    // when
+    extension.beforeAll(extensionContext);
+    extension.beforeEach(extensionContext);
+
+    // CamundaManagementClient will attempt to call purgeCluster() and we need to prevent
+    // it from trying to execute real code (the HTTP call will fail).
+    setManagementClientDummy(extension);
+    extension.afterEach(extensionContext);
+
+    // then
+    verify(camundaManagementClient).purgeCluster();
+  }
+
+  private void setManagementClientDummy(final CamundaProcessTestExtension extension) {
+    try {
+      final Field cmcField = extension.getClass().getDeclaredField("camundaManagementClient");
+      cmcField.setAccessible(true);
+      cmcField.set(extension, camundaManagementClient);
+    } catch (final Throwable t) {
+      ExceptionUtils.throwAsUncheckedException(t);
+    }
   }
 }

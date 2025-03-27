@@ -16,25 +16,21 @@
 package io.camunda.process.test.impl.client.purge;
 
 public class MinimalTopologyResponseDto {
-  private MinimalLastChangeDto lastChange;
+  private String lastCompletedChangeId;
 
   public boolean isTopologyChangeCompleted(final long changeId) {
-    if (lastChange == null) {
+    if (lastCompletedChangeId == null) {
       return false;
     }
 
-    if (changeId == lastChange.getId()) {
-      return lastChange.isStatusCompleted();
-    }
-
-    return changeId < lastChange.getId();
+    return changeId <= Long.parseLong(lastCompletedChangeId);
   }
 
-  public MinimalLastChangeDto getLastChange() {
-    return lastChange;
+  public String getLastCompletedChangeId() {
+    return lastCompletedChangeId;
   }
 
-  public void setLastChange(final MinimalLastChangeDto lastChange) {
-    this.lastChange = lastChange;
+  public void setLastCompletedChangeId(final String lastCompletedChangeId) {
+    this.lastCompletedChangeId = lastCompletedChangeId;
   }
 }

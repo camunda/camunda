@@ -18,6 +18,7 @@ package io.camunda.process.test.api;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.JsonMapper;
 import io.camunda.process.test.impl.assertions.CamundaDataSource;
+import io.camunda.process.test.impl.client.CamundaManagementClient;
 import io.camunda.process.test.impl.configuration.CamundaContainerRuntimeConfiguration;
 import io.camunda.process.test.impl.extension.CamundaProcessTestContextImpl;
 import io.camunda.process.test.impl.proxy.CamundaClientProxy;
@@ -43,10 +44,11 @@ import org.springframework.test.context.TestExecutionListener;
 /**
  * A Spring test execution listener that provides the runtime for process tests.
  *
+ * <p>The container runtime starts before any tests have run.
+ *
  * <p>Before each test method:
  *
  * <ul>
- *   <li>Start the runtime
  *   <li>Create a {@link CamundaClient} to inject in the test class
  *   <li>Create a {@link CamundaProcessTestContext} to inject in the test class
  *   <li>Publish a {@link CamundaClientCreatedEvent}
@@ -57,8 +59,10 @@ import org.springframework.test.context.TestExecutionListener;
  * <ul>
  *   <li>Publish a {@link CamundaClientClosingEvent}
  *   <li>Close created {@link CamundaClient}s
- *   <li>Stop the runtime
+ *   <li>Purge the runtime (i.e. delete all data)
  * </ul>
+ *
+ * <p>The container runtime is closed once all tests have run.
  */
 public class CamundaProcessTestExecutionListener implements TestExecutionListener, Ordered {
 
@@ -68,6 +72,8 @@ public class CamundaProcessTestExecutionListener implements TestExecutionListene
 
   private CamundaContainerRuntime containerRuntime;
   private CamundaProcessTestResultCollector processTestResultCollector;
+  private CamundaProcessTestContext camundaProcessTestContext;
+  private CamundaManagementClient camundaManagementClient;
   private CamundaClient client;
   private ZeebeClient zeebeClient;
 
@@ -83,17 +89,26 @@ public class CamundaProcessTestExecutionListener implements TestExecutionListene
   }
 
   @Override
-  public void beforeTestMethod(final TestContext testContext) throws Exception {
+  public void beforeTestClass(final TestContext testContext) {
     // create runtime
     containerRuntime = buildRuntime(testContext);
     containerRuntime.start();
 
-    final CamundaProcessTestContext camundaProcessTestContext =
+    camundaManagementClient =
+        new CamundaManagementClient(
+            containerRuntime.getCamundaContainer().getMonitoringApiAddress(),
+            containerRuntime.getCamundaContainer().getRestApiAddress());
+
+    camundaProcessTestContext =
         new CamundaProcessTestContextImpl(
             containerRuntime.getCamundaContainer(),
             containerRuntime.getConnectorsContainer(),
-            createdClients::add);
+            createdClients::add,
+            camundaManagementClient);
+  }
 
+  @Override
+  public void beforeTestMethod(final TestContext testContext) {
     client = createClient(testContext, camundaProcessTestContext);
     zeebeClient = createZeebeClient(testContext, camundaProcessTestContext);
 
@@ -145,13 +160,19 @@ public class CamundaProcessTestExecutionListener implements TestExecutionListene
         .getBean(CamundaProcessTestContextProxy.class)
         .removeContext();
 
-    // close runtime
-    containerRuntime.close();
+    // purge cluster
+    camundaManagementClient.purgeCluster();
 
     // print test results
     if (isTestFailed(testContext)) {
       processTestResultPrinter.print(testResult);
     }
+  }
+
+  @Override
+  public void afterTestClass(final TestContext testContext) throws Exception {
+    // close runtime
+    containerRuntime.close();
   }
 
   private CamundaContainerRuntime buildRuntime(final TestContext testContext) {
