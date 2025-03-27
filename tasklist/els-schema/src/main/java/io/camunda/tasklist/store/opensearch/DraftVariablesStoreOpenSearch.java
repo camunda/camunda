@@ -17,7 +17,7 @@ import io.camunda.tasklist.store.DraftVariableStore;
 import io.camunda.tasklist.tenant.TenantAwareOpenSearchClient;
 import io.camunda.tasklist.util.OpenSearchUtil;
 import io.camunda.webapps.schema.descriptors.tasklist.template.DraftTaskVariableTemplate;
-import io.camunda.webapps.schema.entities.tasklist.DraftTaskVariableEntity;
+import io.camunda.webapps.schema.entities.usertask.DraftTaskVariableEntity;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.List;

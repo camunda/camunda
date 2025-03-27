@@ -8,8 +8,8 @@
 package io.camunda.tasklist.webapp.dto;
 
 import io.camunda.tasklist.queries.*;
-import io.camunda.webapps.schema.entities.tasklist.TaskEntity.TaskImplementation;
-import io.camunda.webapps.schema.entities.tasklist.TaskState;
+import io.camunda.webapps.schema.entities.usertask.TaskEntity.TaskImplementation;
+import io.camunda.webapps.schema.entities.usertask.TaskState;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;

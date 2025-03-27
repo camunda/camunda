@@ -10,9 +10,9 @@ package io.camunda.exporter.handlers;
 import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.ELEMENT_ACTIVATING;
 
 import io.camunda.exporter.store.BatchRequest;
-import io.camunda.webapps.schema.entities.tasklist.TaskJoinRelationship;
-import io.camunda.webapps.schema.entities.tasklist.TaskJoinRelationship.TaskJoinRelationshipType;
-import io.camunda.webapps.schema.entities.tasklist.TaskProcessInstanceEntity;
+import io.camunda.webapps.schema.entities.usertask.TaskJoinRelationship;
+import io.camunda.webapps.schema.entities.usertask.TaskJoinRelationship.TaskJoinRelationshipType;
+import io.camunda.webapps.schema.entities.usertask.TaskProcessInstanceEntity;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;

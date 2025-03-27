@@ -15,7 +15,7 @@ import io.camunda.tasklist.webapp.api.rest.v1.entities.TaskSearchResponse;
 import io.camunda.tasklist.webapp.dto.TaskDTO;
 import io.camunda.tasklist.webapp.dto.TaskQueryDTO;
 import io.camunda.tasklist.webapp.es.cache.ProcessCache;
-import io.camunda.webapps.schema.entities.tasklist.TaskState;
+import io.camunda.webapps.schema.entities.usertask.TaskState;
 import java.time.OffsetDateTime;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;

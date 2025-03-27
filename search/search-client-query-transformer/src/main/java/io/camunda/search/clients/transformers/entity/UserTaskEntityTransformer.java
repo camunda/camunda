@@ -10,14 +10,14 @@ package io.camunda.search.clients.transformers.entity;
 import io.camunda.search.clients.transformers.ServiceTransformer;
 import io.camunda.search.entities.UserTaskEntity;
 import io.camunda.search.entities.UserTaskEntity.UserTaskState;
-import io.camunda.webapps.schema.entities.tasklist.TaskEntity;
-import io.camunda.webapps.schema.entities.tasklist.TaskState;
+import io.camunda.webapps.schema.entities.usertask.TaskEntity;
+import io.camunda.webapps.schema.entities.usertask.TaskState;
 import java.util.List;
 
 public class UserTaskEntityTransformer implements ServiceTransformer<TaskEntity, UserTaskEntity> {
 
   @Override
-  public UserTaskEntity apply(final io.camunda.webapps.schema.entities.tasklist.TaskEntity source) {
+  public UserTaskEntity apply(final TaskEntity source) {
     return new UserTaskEntity(
         source.getKey(),
         source.getFlowNodeBpmnId(),
