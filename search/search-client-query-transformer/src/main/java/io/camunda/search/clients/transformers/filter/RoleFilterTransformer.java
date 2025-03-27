@@ -16,7 +16,7 @@ import static io.camunda.search.clients.query.SearchQueryBuilders.term;
 import io.camunda.search.clients.query.SearchQuery;
 import io.camunda.search.filter.RoleFilter;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
-import io.camunda.webapps.schema.descriptors.usermanagement.index.RoleIndex;
+import io.camunda.webapps.schema.descriptors.index.RoleIndex;
 import io.camunda.webapps.schema.entities.usermanagement.EntityJoinRelation.IdentityJoinRelationshipType;
 
 public class RoleFilterTransformer extends IndexFilterTransformer<RoleFilter> {

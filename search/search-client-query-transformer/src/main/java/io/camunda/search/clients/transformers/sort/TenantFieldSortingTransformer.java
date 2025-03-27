@@ -7,9 +7,9 @@
  */
 package io.camunda.search.clients.transformers.sort;
 
-import static io.camunda.webapps.schema.descriptors.usermanagement.index.TenantIndex.KEY;
-import static io.camunda.webapps.schema.descriptors.usermanagement.index.TenantIndex.NAME;
-import static io.camunda.webapps.schema.descriptors.usermanagement.index.TenantIndex.TENANT_ID;
+import static io.camunda.webapps.schema.descriptors.index.TenantIndex.KEY;
+import static io.camunda.webapps.schema.descriptors.index.TenantIndex.NAME;
+import static io.camunda.webapps.schema.descriptors.index.TenantIndex.TENANT_ID;
 
 public class TenantFieldSortingTransformer implements FieldSortingTransformer {
 

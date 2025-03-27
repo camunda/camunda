@@ -9,7 +9,7 @@ package io.camunda.exporter.handlers;
 
 import io.camunda.exporter.exceptions.PersistenceException;
 import io.camunda.exporter.store.BatchRequest;
-import io.camunda.webapps.schema.descriptors.usermanagement.index.TenantIndex;
+import io.camunda.webapps.schema.descriptors.index.TenantIndex;
 import io.camunda.webapps.schema.entities.usermanagement.TenantMemberEntity;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;

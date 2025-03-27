@@ -5,12 +5,13 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.webapps.schema.descriptors.usermanagement.index;
+package io.camunda.webapps.schema.descriptors.index;
 
+import io.camunda.webapps.schema.descriptors.AbstractIndexDescriptor;
+import io.camunda.webapps.schema.descriptors.ComponentNames;
 import io.camunda.webapps.schema.descriptors.backup.Prio5Backup;
-import io.camunda.webapps.schema.descriptors.usermanagement.UserManagementIndexDescriptor;
 
-public class PersistentWebSessionIndexDescriptor extends UserManagementIndexDescriptor
+public class PersistentWebSessionIndexDescriptor extends AbstractIndexDescriptor
     implements Prio5Backup {
 
   public static final String INDEX_NAME = "web-session";
@@ -29,5 +30,10 @@ public class PersistentWebSessionIndexDescriptor extends UserManagementIndexDesc
   @Override
   public String getVersion() {
     return INDEX_VERSION;
+  }
+
+  @Override
+  public String getComponentName() {
+    return ComponentNames.CAMUNDA.toString();
   }
 }
