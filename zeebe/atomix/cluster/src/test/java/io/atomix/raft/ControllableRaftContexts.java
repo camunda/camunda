@@ -71,6 +71,7 @@ import java.util.stream.Collectors;
 import org.jmock.lib.concurrent.DeterministicScheduler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.MDC;
 
 /**
  * Uses a DeterministicScheduler and controllable messaging layer to get a deterministic execution
@@ -222,7 +223,7 @@ public final class ControllableRaftContexts {
             memberId,
             m ->
                 (DeterministicSingleThreadContext)
-                    DeterministicSingleThreadContext.createContext());
+                    DeterministicSingleThreadContext.createContext(memberId));
   }
 
   private RaftStorage createStorage(
@@ -382,12 +383,17 @@ public final class ControllableRaftContexts {
   }
 
   public void restart(final MemberId memberId) {
-    raftServers.get(memberId).close();
+    final var raftcontext = raftServers.get(memberId);
+    try (final var ignored = MDC.putCloseable("actor-scheduler", memberId.toString())) {
+      raftServers.get(memberId).close();
+    }
     deterministicExecutors.remove(memberId).close();
     snapshotStores.get(memberId).close();
     MicrometerUtil.close(meterRegistries.get(memberId));
     final var newContext = createRaftContextForMember(random, Integer.parseInt(memberId.id()));
-    newContext.getCluster().bootstrap(raftServers.keySet());
+    try (final var ignored = MDC.putCloseable("actor-scheduler", memberId.toString())) {
+      newContext.getCluster().bootstrap(raftServers.keySet());
+    }
   }
 
   // This is a different from other operations, as it restarts the node and force operations on
@@ -396,7 +402,9 @@ public final class ControllableRaftContexts {
   // of one node at a time.
   public void restartWithDataLoss(final MemberId memberId) {
     LOG.info("Shutting down member {}", memberId.id());
-    raftServers.get(memberId).close();
+    try (final var ignored = MDC.putCloseable("actor-scheduler", memberId.toString())) {
+      raftServers.get(memberId).close();
+    }
     deterministicExecutors.remove(memberId).close();
     MicrometerUtil.close(meterRegistries.get(memberId));
     final var nodeBeforeRestart = raftServers.remove(memberId);
@@ -415,7 +423,9 @@ public final class ControllableRaftContexts {
       throw new UncheckedIOException(e);
     }
     final var newContext = createRaftContextForMember(random, Integer.parseInt(memberId.id()));
-    newContext.getCluster().bootstrap(raftServers.keySet());
+    try (final var ignored = MDC.putCloseable("actor-scheduler", memberId.toString())) {
+      newContext.getCluster().bootstrap(raftServers.keySet());
+    }
 
     raftServers.put(memberId, newContext);
 
