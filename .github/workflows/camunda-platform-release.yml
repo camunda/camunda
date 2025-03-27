@@ -21,7 +21,7 @@ env:
 jobs:
   release:
     name: Maven Release
-    runs-on: macos-latest
+    runs-on: windows-latest
     steps:
 # Attempt 1
       - uses: actions/checkout@v4
