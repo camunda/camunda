@@ -27,151 +27,129 @@ import java.util.Optional;
 
 public class DbGroupState implements MutableGroupState {
 
-  private final DbLong groupKey;
+  private final DbString groupId;
   private final PersistedGroup persistedGroup = new PersistedGroup();
-  private final ColumnFamily<DbLong, PersistedGroup> groupColumnFamily;
+  private final ColumnFamily<DbString, PersistedGroup> groupColumnFamily;
 
-  private final DbForeignKey<DbLong> fkGroupKey;
+  private final DbForeignKey<DbString> fkGroupId;
   private final DbLong entityKey;
-  private final DbCompositeKey<DbForeignKey<DbLong>, DbLong> fkGroupKeyAndEntityKey;
+  private final DbCompositeKey<DbForeignKey<DbString>, DbLong> fkGroupIdAndEntityKey;
   private final EntityTypeValue entityTypeValue = new EntityTypeValue();
-  private final ColumnFamily<DbCompositeKey<DbForeignKey<DbLong>, DbLong>, EntityTypeValue>
+  private final ColumnFamily<DbCompositeKey<DbForeignKey<DbString>, DbLong>, EntityTypeValue>
       entityTypeByGroupColumnFamily;
-
-  private final DbString groupName;
-  private final ColumnFamily<DbString, DbForeignKey<DbLong>> groupByNameColumnFamily;
 
   public DbGroupState(
       final ZeebeDb<ZbColumnFamilies> zeebeDb, final TransactionContext transactionContext) {
 
-    groupKey = new DbLong();
+    groupId = new DbString();
     groupColumnFamily =
         zeebeDb.createColumnFamily(
-            ZbColumnFamilies.GROUPS, transactionContext, groupKey, new PersistedGroup());
+            ZbColumnFamilies.GROUPS, transactionContext, groupId, new PersistedGroup());
 
-    fkGroupKey = new DbForeignKey<>(groupKey, ZbColumnFamilies.GROUPS);
+    fkGroupId = new DbForeignKey<>(groupId, ZbColumnFamilies.GROUPS);
     entityKey = new DbLong();
-    fkGroupKeyAndEntityKey = new DbCompositeKey<>(fkGroupKey, entityKey);
+    fkGroupIdAndEntityKey = new DbCompositeKey<>(fkGroupId, entityKey);
     entityTypeByGroupColumnFamily =
         zeebeDb.createColumnFamily(
             ZbColumnFamilies.ENTITY_BY_GROUP,
             transactionContext,
-            fkGroupKeyAndEntityKey,
+            fkGroupIdAndEntityKey,
             entityTypeValue);
-
-    groupName = new DbString();
-    groupByNameColumnFamily =
-        zeebeDb.createColumnFamily(
-            ZbColumnFamilies.GROUP_BY_NAME, transactionContext, groupName, fkGroupKey);
   }
 
   @Override
   public void create(final long groupKey, final GroupRecord group) {
-    this.groupKey.wrapLong(groupKey);
-    groupName.wrapString(group.getName());
+    groupId.wrapString(String.valueOf(groupKey));
     persistedGroup.wrap(group);
-
-    groupColumnFamily.insert(this.groupKey, persistedGroup);
-    groupByNameColumnFamily.insert(groupName, fkGroupKey);
+    groupColumnFamily.insert(groupId, persistedGroup);
   }
 
   @Override
   public void update(final long groupKey, final GroupRecord group) {
-    this.groupKey.wrapLong(groupKey);
-    final var persistedGroup = groupColumnFamily.get(this.groupKey);
+    groupId.wrapString(String.valueOf(groupKey));
+    final var persistedGroup = groupColumnFamily.get(groupId);
     if (persistedGroup != null) {
-      // remove old record from GROUP_BY_NAME cf
-      groupName.wrapString(persistedGroup.getName());
-      groupByNameColumnFamily.deleteExisting(groupName);
-
-      // add new record to GROUP_BY_NAME cf
-      groupName.wrapString(group.getName());
-      groupByNameColumnFamily.insert(groupName, fkGroupKey);
-
       persistedGroup.copyFrom(group);
-      groupColumnFamily.update(this.groupKey, persistedGroup);
+      groupColumnFamily.update(groupId, persistedGroup);
     }
   }
 
   @Override
   public void addEntity(final long groupKey, final GroupRecord group) {
-    this.groupKey.wrapLong(groupKey);
+    groupId.wrapString(String.valueOf(groupKey));
     entityKey.wrapLong(group.getEntityKey());
     entityTypeValue.setEntityType(group.getEntityType());
-    entityTypeByGroupColumnFamily.insert(fkGroupKeyAndEntityKey, entityTypeValue);
+    entityTypeByGroupColumnFamily.insert(fkGroupIdAndEntityKey, entityTypeValue);
   }
 
   @Override
   public void removeEntity(final long groupKey, final long entityKey) {
-    this.groupKey.wrapLong(groupKey);
+    groupId.wrapString(String.valueOf(groupKey));
     this.entityKey.wrapLong(entityKey);
-    entityTypeByGroupColumnFamily.deleteExisting(fkGroupKeyAndEntityKey);
+    entityTypeByGroupColumnFamily.deleteExisting(fkGroupIdAndEntityKey);
   }
 
   @Override
   public void delete(final long groupKey) {
-    this.groupKey.wrapLong(groupKey);
-
-    // remove record from GROUP_BY_NAME cf
-    groupName.wrapString(persistedGroup.getName());
-    groupByNameColumnFamily.deleteExisting(groupName);
+    groupId.wrapString(String.valueOf(groupKey));
 
     // remove entries from ENTITY_BY_GROUP cf
     entityTypeByGroupColumnFamily.whileEqualPrefix(
-        fkGroupKey,
+        fkGroupId,
         (compositeKey, value) -> {
           entityTypeByGroupColumnFamily.deleteExisting(compositeKey);
         });
 
-    groupColumnFamily.deleteExisting(this.groupKey);
+    groupColumnFamily.deleteExisting(groupId);
   }
 
   @Override
   public void addTenant(final long groupKey, final String tenantId) {
-    this.groupKey.wrapLong(groupKey);
-    final PersistedGroup persistedGroup = groupColumnFamily.get(this.groupKey);
+    groupId.wrapString(String.valueOf(groupKey));
+    final PersistedGroup persistedGroup = groupColumnFamily.get(groupId);
     persistedGroup.addTenantId(tenantId);
-    groupColumnFamily.update(this.groupKey, persistedGroup);
+    groupColumnFamily.update(groupId, persistedGroup);
   }
 
   @Override
   public void removeTenant(final long groupKey, final String tenantId) {
-    this.groupKey.wrapLong(groupKey);
-    final var persistedGroup = groupColumnFamily.get(this.groupKey);
+    groupId.wrapString(String.valueOf(groupKey));
+    final var persistedGroup = groupColumnFamily.get(groupId);
     final List<String> tenantIdsList = persistedGroup.getTenantIdsList();
     tenantIdsList.remove(tenantId);
     persistedGroup.setTenantIdsList(tenantIdsList);
-    groupColumnFamily.update(this.groupKey, persistedGroup);
+    groupColumnFamily.update(groupId, persistedGroup);
   }
 
   @Override
   public Optional<PersistedGroup> get(final long groupKey) {
-    this.groupKey.wrapLong(groupKey);
-    final var persistedGroup = groupColumnFamily.get(this.groupKey);
+    groupId.wrapString(String.valueOf(groupKey));
+    final var persistedGroup = groupColumnFamily.get(groupId);
     return Optional.ofNullable(persistedGroup);
   }
 
   @Override
   public Optional<Long> getGroupKeyByName(final String groupName) {
-    this.groupName.wrapString(groupName);
-    final var groupKey = groupByNameColumnFamily.get(this.groupName);
-    return Optional.ofNullable(groupKey).map(key -> key.inner().getValue());
+//    this.groupName.wrapString(groupName);
+//    final var groupKey = groupByNameColumnFamily.get(this.groupName);
+//    return Optional.ofNullable(groupKey).map(key -> key.inner().getValue());
+    return Optional.empty();
   }
 
   @Override
   public Optional<EntityType> getEntityType(final long groupKey, final long entityKey) {
-    this.groupKey.wrapLong(groupKey);
+    groupId.wrapString(String.valueOf(groupKey));
     this.entityKey.wrapLong(entityKey);
-    final var entityType = entityTypeByGroupColumnFamily.get(fkGroupKeyAndEntityKey);
+    final var entityType = entityTypeByGroupColumnFamily.get(fkGroupIdAndEntityKey);
     return Optional.ofNullable(entityType).map(EntityTypeValue::getEntityType);
   }
 
   @Override
   public Map<EntityType, List<Long>> getEntitiesByType(final long groupKey) {
-    this.groupKey.wrapLong(groupKey);
+    groupId.wrapString(String.valueOf(groupKey));
     final Map<EntityType, List<Long>> entitiesMap = new HashMap<>();
     entityTypeByGroupColumnFamily.whileEqualPrefix(
-        fkGroupKey,
+        fkGroupId,
         (compositeKey, value) -> {
           final var entityType = value.getEntityType();
           final var entityKey = compositeKey.second().getValue();
