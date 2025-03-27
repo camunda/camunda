@@ -14,6 +14,7 @@ import {
   mockStatistics,
   mockResponses as mockProcessesResponses,
   mockOrderProcessInstances,
+  mockStatisticsV2,
 } from '../mocks/processes.mocks';
 import {open} from 'modules/mocks/diagrams';
 import {URL_API_PATTERN} from '../constants';
@@ -37,6 +38,7 @@ test.describe('selections and operations', () => {
         batchOperations: mockBatchOperations,
         processInstances: mockOrderProcessInstances,
         statistics: mockStatistics,
+        statisticsV2: mockStatisticsV2,
         processXml: open('orderProcess.bpmn'),
       }),
     );
@@ -86,6 +88,7 @@ test.describe('selections and operations', () => {
         batchOperations: mockBatchOperations,
         processInstances: mockOrderProcessInstances,
         statistics: mockStatistics,
+        statisticsV2: mockStatisticsV2,
         processXml: open('orderProcess.bpmn'),
       }),
     );
