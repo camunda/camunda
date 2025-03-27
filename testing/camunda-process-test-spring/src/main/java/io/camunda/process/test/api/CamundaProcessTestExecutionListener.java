@@ -59,7 +59,7 @@ import org.springframework.test.context.TestExecutionListener;
  * <ul>
  *   <li>Publish a {@link CamundaClientClosingEvent}
  *   <li>Close created {@link CamundaClient}s
- *   <li>Purge the Zeebe cluster
+ *   <li>Purge the runtime (i.e. delete all data)
  * </ul>
  *
  * <p>The container runtime is closed once all tests have run.
