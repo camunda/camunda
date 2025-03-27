@@ -7,7 +7,8 @@
  */
 
 import {useCallback, useEffect, useRef, useState} from 'react';
-import {useTasks} from 'v1/api/useTasks.query';
+import {useTasks as useV1Tasks} from 'v1/api/useTasks.query';
+import {useTasks as useV2Tasks} from 'v2/api/useTasks.query';
 import {encodeTaskEmptyPageRef} from 'common/tracking/reftags';
 import {
   type NavigateFunction,
@@ -16,11 +17,13 @@ import {
 } from 'react-router-dom';
 import {tracking} from 'common/tracking';
 import {pages} from 'common/routing';
-import type {TaskFilters} from 'common/tasks/filters/useTaskFilters';
+import type {TaskFilters as V1TaskFilters} from 'v1/features/tasks/filters/useTaskFilters';
+import type {TaskFilters as V2TaskFilters} from 'v2/features/tasks/filters/useTaskFilters';
 import {useIsPageBlurred} from 'common/os-notifications/useIsPageBlurred';
 import {useIsOnline} from 'common/os-notifications/useIsOnline';
 import {useInterval} from 'common/os-notifications/useInterval';
 import {t} from 'i18next';
+import {getClientConfig} from 'common/config/getClientConfig';
 
 const FIFTEEN_MINUTES_IN_MS = 15 * 60 * 1000;
 const FILTER = 'assigned-to-me';
@@ -28,7 +31,9 @@ const SORT_BY = 'creation';
 
 type State = 'stopped' | 'focused' | 'blurred' | 'offline';
 
-function taskListWithRefUrl(params: Pick<TaskFilters, 'filter' | 'sortBy'>) {
+function taskListWithRefUrl(
+  params: Pick<V1TaskFilters | V2TaskFilters, 'filter' | 'sortBy'>,
+) {
   return {
     pathname: pages.initial,
     search: new URLSearchParams({
@@ -118,6 +123,9 @@ function useStateMachine(enable: boolean) {
 
   return state;
 }
+
+const useTasks =
+  getClientConfig().clientMode === 'v2' ? useV2Tasks : useV1Tasks;
 
 const OSNotifications: React.FC =
   'Notification' in window

@@ -45,7 +45,7 @@ const C3Provider: React.FC<Props> = ({children}) => {
     async function init() {
       const {organizationId} = getClientConfig();
 
-      if (organizationId !== null) {
+      if (organizationId !== null && getClientConfig().clientMode === 'v1') {
         setToken(await fetchToken());
       }
     }

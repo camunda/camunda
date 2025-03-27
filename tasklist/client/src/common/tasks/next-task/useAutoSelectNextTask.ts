@@ -9,7 +9,7 @@
 import {useNavigate, useLocation} from 'react-router-dom';
 import {pages} from 'common/routing';
 import {encodeTaskOpenedRef} from 'common/tracking/reftags';
-import {useTaskFilters} from 'common/tasks/filters/useTaskFilters';
+import {useTaskFilters} from 'v1/features/tasks/filters/useTaskFilters';
 
 function useAutoSelectNextTask() {
   const {filter, sortBy} = useTaskFilters();

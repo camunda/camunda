@@ -9,7 +9,7 @@
 import {type Mixpanel} from 'mixpanel-browser';
 import {getStage} from 'common/config/getStage';
 import type {CurrentUser} from '@vzeta/camunda-api-zod-schemas/identity';
-import type {TaskFilters} from 'common/tasks/filters/useTaskFilters';
+import type {TaskFilters} from 'v1/features/tasks/filters/useTaskFilters';
 import {getClientConfig} from 'common/config/getClientConfig';
 
 const EVENT_PREFIX = 'tasklist:';

@@ -24,7 +24,7 @@ import type {Task as TaskType, Variable} from 'v1/api/types';
 import {tracking} from 'common/tracking';
 import {notificationsStore} from 'common/notifications/notifications.store';
 import {getStateLocally, storeStateLocally} from 'common/local-storage';
-import {useTaskFilters} from 'common/tasks/filters/useTaskFilters';
+import {useTaskFilters} from 'v1/features/tasks/filters/useTaskFilters';
 import {decodeTaskOpenedRef} from 'common/tracking/reftags';
 import {useTasks} from 'v1/api/useTasks.query';
 import {useAutoSelectNextTask} from 'common/tasks/next-task/useAutoSelectNextTask';

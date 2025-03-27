@@ -16,7 +16,7 @@ import {api} from 'v1/api';
 import {type RequestError, request} from 'common/api/request';
 import type {Task} from 'v1/api/types';
 import {getQueryVariables} from 'v1/api/getQueryVariables';
-import type {TaskFilters} from 'common/tasks/filters/useTaskFilters';
+import type {TaskFilters} from 'v1/features/tasks/filters/useTaskFilters';
 import chunk from 'lodash/chunk';
 import {useCurrentUser} from 'common/api/useCurrentUser.query';
 
