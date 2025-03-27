@@ -7,11 +7,13 @@
  */
 package io.camunda.zeebe.engine.processing.batchoperation;
 
+import static io.camunda.zeebe.engine.processing.batchoperation.BatchOperationExecutionScheduler.CHUNK_SIZE_IN_RECORD;
 import static io.camunda.zeebe.protocol.record.value.BatchOperationType.PROCESS_CANCELLATION;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.*;
 
 import io.camunda.search.clients.SearchClientsProxy;
+import io.camunda.search.entities.ProcessInstanceEntity;
 import io.camunda.search.filter.ProcessInstanceFilter;
 import io.camunda.search.query.ProcessInstanceQuery;
 import io.camunda.search.query.SearchQueryResult;
@@ -29,6 +31,7 @@ import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import java.time.Duration;
 import java.util.List;
 import java.util.function.Supplier;
+import java.util.stream.LongStream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -80,8 +83,15 @@ public class BatchOperationExecutionSchedulerTest {
   public void shouldAppendChunkForBatchOperations() {
     // given
     final var result =
-        new SearchQueryResult.Builder<Long>().items(List.of(1L, 2L, 3L)).total(3).build();
-    when(searchClientsProxy.searchProcessInstanceKeys(queryCaptor.capture())).thenReturn(result);
+        new SearchQueryResult.Builder<ProcessInstanceEntity>()
+            .items(
+                List.of(
+                    mockProcessInstanceEntity(1L),
+                    mockProcessInstanceEntity(2L),
+                    mockProcessInstanceEntity(3L)))
+            .total(3)
+            .build();
+    when(searchClientsProxy.searchProcessInstances(queryCaptor.capture())).thenReturn(result);
 
     // when our scheduler fires
     execute();
@@ -92,15 +102,32 @@ public class BatchOperationExecutionSchedulerTest {
         .appendCommandRecord(
             anyLong(), eq(BatchOperationChunkIntent.CREATE), chunkRecordCaptor.capture());
     final var batchOperationChunkRecord = chunkRecordCaptor.getValue();
-    assertThat(batchOperationChunkRecord.getEntityKeys().size()).isEqualTo(3);
+    assertThat(batchOperationChunkRecord.getItemKeys().size()).isEqualTo(3);
   }
 
   @Test
   public void shouldQueryMultipleTimesIfTotalIsHigher() {
     // given
     final var result =
-        new SearchQueryResult.Builder<Long>().items(List.of(1L, 2L, 3L)).total(6).build();
-    when(searchClientsProxy.searchProcessInstanceKeys(queryCaptor.capture())).thenReturn(result);
+        new SearchQueryResult.Builder<ProcessInstanceEntity>()
+            .items(
+                List.of(
+                    mockProcessInstanceEntity(1L),
+                    mockProcessInstanceEntity(2L),
+                    mockProcessInstanceEntity(3L)))
+            .total(6)
+            .build();
+    final var result2 =
+        new SearchQueryResult.Builder<ProcessInstanceEntity>()
+            .items(
+                List.of(
+                    mockProcessInstanceEntity(4L),
+                    mockProcessInstanceEntity(5L),
+                    mockProcessInstanceEntity(6L)))
+            .total(6)
+            .build();
+    when(searchClientsProxy.searchProcessInstances(queryCaptor.capture()))
+        .thenReturn(result, result2);
 
     // when our scheduler fires
     execute();
@@ -111,27 +138,63 @@ public class BatchOperationExecutionSchedulerTest {
         .appendCommandRecord(
             anyLong(), eq(BatchOperationChunkIntent.CREATE), chunkRecordCaptor.capture());
     final var batchOperationChunkRecord = chunkRecordCaptor.getValue();
-    assertThat(batchOperationChunkRecord.getEntityKeys().size()).isEqualTo(6);
+    assertThat(batchOperationChunkRecord.getItemKeys().size()).isEqualTo(6);
   }
 
   @Test
-  void shouldSkipAlreadyProcessedBatchOperations() {
+  public void shouldCreateMultipleChunks() {
     // given
+    final var queryItems =
+        LongStream.range(0, CHUNK_SIZE_IN_RECORD * 2)
+            .boxed()
+            .map(this::mockProcessInstanceEntity)
+            .toList();
     final var result =
-        new SearchQueryResult.Builder<Long>().items(List.of(1L, 2L, 3L)).total(3).build();
-    when(searchClientsProxy.searchProcessInstanceKeys(queryCaptor.capture())).thenReturn(result);
+        new SearchQueryResult.Builder<ProcessInstanceEntity>()
+            .items(queryItems)
+            .total(queryItems.size())
+            .build();
+    when(searchClientsProxy.searchProcessInstances(queryCaptor.capture())).thenReturn(result);
+
+    // when our scheduler fires
     execute();
 
-    // when we execute it again
-    execute();
-
-    // we should only fetch keys once
-    verify(batchOperationState, times(2)).foreachPendingBatchOperation(any());
-    verify(taskResultBuilder, times(1))
+    // then
+    verify(batchOperationState).foreachPendingBatchOperation(any());
+    verify(taskResultBuilder, times(2))
         .appendCommandRecord(
             anyLong(), eq(BatchOperationChunkIntent.CREATE), chunkRecordCaptor.capture());
-    final var batchOperationChunkRecord = chunkRecordCaptor.getValue();
-    assertThat(batchOperationChunkRecord.getEntityKeys().size()).isEqualTo(3);
+    final var queryItemKeys =
+        queryItems.stream().map(ProcessInstanceEntity::processInstanceKey).toList();
+    var batchOperationChunkRecord = chunkRecordCaptor.getAllValues().get(0);
+    assertThat(batchOperationChunkRecord.getItemKeys().size()).isEqualTo(CHUNK_SIZE_IN_RECORD);
+    assertThat(batchOperationChunkRecord.getItemKeys())
+        .containsExactlyInAnyOrder(
+            queryItemKeys.subList(0, CHUNK_SIZE_IN_RECORD).toArray(Long[]::new));
+    batchOperationChunkRecord = chunkRecordCaptor.getAllValues().get(1);
+    assertThat(batchOperationChunkRecord.getItemKeys().size()).isEqualTo(CHUNK_SIZE_IN_RECORD);
+    assertThat(batchOperationChunkRecord.getItemKeys())
+        .containsExactlyInAnyOrder(
+            queryItemKeys
+                .subList(CHUNK_SIZE_IN_RECORD, CHUNK_SIZE_IN_RECORD * 2)
+                .toArray(Long[]::new));
+  }
+
+  @Test
+  public void shouldRescheduleAtTheEndOfExecution() {
+    // given
+    final var result =
+        new SearchQueryResult.Builder<ProcessInstanceEntity>()
+            .items(List.of(mockProcessInstanceEntity(1L)))
+            .total(1)
+            .build();
+    when(searchClientsProxy.searchProcessInstances(queryCaptor.capture())).thenReturn(result);
+
+    // when our scheduler fires
+    execute();
+
+    // then
+    verify(scheduleService, times(2)).runDelayedAsync(any(), taskCaptor.capture(), any());
   }
 
   /** Bypasses the scheduling mechanism and executes the task directly */
@@ -145,5 +208,11 @@ public class BatchOperationExecutionSchedulerTest {
     when(scheduledTaskStateFactory.get().getBatchOperationState()).thenReturn(batchOperationState);
     when(streamProcessorContext.getScheduleService()).thenReturn(scheduleService);
     when(scheduleService.runDelayedAsync(any(), taskCaptor.capture(), any())).thenReturn(null);
+  }
+
+  private ProcessInstanceEntity mockProcessInstanceEntity(final long processInstanceKey) {
+    final var entity = mock(ProcessInstanceEntity.class);
+    when(entity.processInstanceKey()).thenReturn(processInstanceKey);
+    return entity;
   }
 }
