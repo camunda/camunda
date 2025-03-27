@@ -39,7 +39,7 @@ public final class BatchOperationCreationRecord extends UnifiedRecordValue
   }
 
   @Override
-  public Long getBatchOperationKey() {
+  public long getBatchOperationKey() {
     return batchOperationKeyProp.getValue();
   }
 
