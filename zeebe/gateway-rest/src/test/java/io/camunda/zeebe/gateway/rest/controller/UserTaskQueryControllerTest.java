@@ -85,10 +85,12 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
               ],
               "page": {
                   "totalItems": 1,
-                  "firstSortValues": ["f"],
-                  "lastSortValues": [
-                      "v"
-                  ]
+              "firstSortValues": [
+                { "value": "\\"f\\"", "type": "string" }
+              ],
+              "lastSortValues": [
+                { "value": "\\"v\\"", "type": "string" }
+              ]
               }
           }""";
 
@@ -109,10 +111,12 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
         ],
         "page": {
           "totalItems": 1,
-          "firstSortValues": ["f"],
-          "lastSortValues": [
-            "v"
-          ]
+              "firstSortValues": [
+                { "value": "\\"f\\"", "type": "string" }
+              ],
+              "lastSortValues": [
+                { "value": "\\"v\\"", "type": "string" }
+              ]
         }
       }
       """;
@@ -466,8 +470,8 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
         """
             {
                 "page": {
-                    "searchAfter": ["a"],
-                    "searchBefore": ["b"]
+                    "searchAfter": [{"value": "\\"a\\"", "type": "string"}],
+                    "searchBefore": [{"value": "\\"b\\"", "type": "string"}]
                 }
             }""";
     final var expectedResponse =

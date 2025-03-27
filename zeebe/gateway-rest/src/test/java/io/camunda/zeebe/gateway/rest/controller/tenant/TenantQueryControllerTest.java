@@ -71,8 +71,12 @@ public class TenantQueryControllerTest extends RestControllerTest {
          ],
          "page": {
            "totalItems": %s,
-           "firstSortValues": ["f"],
-           "lastSortValues": ["v"]
+              "firstSortValues": [
+                { "value": "\\"f\\"", "type": "string" }
+              ],
+              "lastSortValues": [
+                { "value": "\\"v\\"", "type": "string" }
+              ]
          }
        }
       """;
