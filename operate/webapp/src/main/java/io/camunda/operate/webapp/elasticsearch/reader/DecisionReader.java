@@ -8,8 +8,8 @@
 package io.camunda.operate.webapp.elasticsearch.reader;
 
 import static io.camunda.operate.util.ElasticsearchUtil.joinWithAnd;
-import static io.camunda.webapps.schema.descriptors.operate.index.DecisionIndex.DECISION_REQUIREMENTS_KEY;
-import static io.camunda.webapps.schema.descriptors.operate.index.DecisionRequirementsIndex.XML;
+import static io.camunda.webapps.schema.descriptors.index.DecisionIndex.DECISION_REQUIREMENTS_KEY;
+import static io.camunda.webapps.schema.descriptors.index.DecisionRequirementsIndex.XML;
 import static org.elasticsearch.index.query.QueryBuilders.*;
 import static org.elasticsearch.search.aggregations.AggregationBuilders.terms;
 import static org.elasticsearch.search.aggregations.AggregationBuilders.topHits;
@@ -21,8 +21,8 @@ import io.camunda.operate.webapp.rest.dto.DecisionRequestDto;
 import io.camunda.operate.webapp.rest.exception.NotFoundException;
 import io.camunda.operate.webapp.security.permission.PermissionsService;
 import io.camunda.security.configuration.SecurityConfiguration;
-import io.camunda.webapps.schema.descriptors.operate.index.DecisionIndex;
-import io.camunda.webapps.schema.descriptors.operate.index.DecisionRequirementsIndex;
+import io.camunda.webapps.schema.descriptors.index.DecisionIndex;
+import io.camunda.webapps.schema.descriptors.index.DecisionRequirementsIndex;
 import io.camunda.webapps.schema.entities.dmn.definition.DecisionDefinitionEntity;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import java.io.IOException;

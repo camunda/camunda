@@ -12,12 +12,12 @@ import static io.camunda.search.clients.query.SearchQueryBuilders.intTerms;
 import static io.camunda.search.clients.query.SearchQueryBuilders.longTerms;
 import static io.camunda.search.clients.query.SearchQueryBuilders.stringTerms;
 import static io.camunda.webapps.schema.descriptors.IndexDescriptor.TENANT_ID;
-import static io.camunda.webapps.schema.descriptors.operate.index.ProcessIndex.BPMN_PROCESS_ID;
-import static io.camunda.webapps.schema.descriptors.operate.index.ProcessIndex.KEY;
-import static io.camunda.webapps.schema.descriptors.operate.index.ProcessIndex.NAME;
-import static io.camunda.webapps.schema.descriptors.operate.index.ProcessIndex.RESOURCE_NAME;
-import static io.camunda.webapps.schema.descriptors.operate.index.ProcessIndex.VERSION;
-import static io.camunda.webapps.schema.descriptors.operate.index.ProcessIndex.VERSION_TAG;
+import static io.camunda.webapps.schema.descriptors.index.ProcessIndex.BPMN_PROCESS_ID;
+import static io.camunda.webapps.schema.descriptors.index.ProcessIndex.KEY;
+import static io.camunda.webapps.schema.descriptors.index.ProcessIndex.NAME;
+import static io.camunda.webapps.schema.descriptors.index.ProcessIndex.RESOURCE_NAME;
+import static io.camunda.webapps.schema.descriptors.index.ProcessIndex.VERSION;
+import static io.camunda.webapps.schema.descriptors.index.ProcessIndex.VERSION_TAG;
 
 import io.camunda.search.clients.query.SearchQuery;
 import io.camunda.search.filter.ProcessDefinitionFilter;

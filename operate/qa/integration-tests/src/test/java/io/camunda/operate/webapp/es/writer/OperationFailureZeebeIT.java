@@ -22,7 +22,7 @@ import io.camunda.operate.webapp.rest.dto.listview.ListViewResponseDto;
 import io.camunda.operate.webapp.rest.dto.listview.ProcessInstanceStateDto;
 import io.camunda.operate.webapp.writer.ProcessInstanceSource;
 import io.camunda.operate.webapp.zeebe.operation.CancelProcessInstanceHandler;
-import io.camunda.webapps.schema.descriptors.operate.template.BatchOperationTemplate;
+import io.camunda.webapps.schema.descriptors.template.BatchOperationTemplate;
 import io.camunda.webapps.schema.entities.operation.OperationType;
 import java.util.Arrays;
 import org.junit.Before;

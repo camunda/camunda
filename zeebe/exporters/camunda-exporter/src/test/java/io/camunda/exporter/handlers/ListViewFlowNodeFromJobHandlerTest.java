@@ -7,12 +7,12 @@
  */
 package io.camunda.exporter.handlers;
 
-import static io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate.JOB_POSITION;
+import static io.camunda.webapps.schema.descriptors.template.ListViewTemplate.JOB_POSITION;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.*;
 
 import io.camunda.exporter.store.BatchRequest;
-import io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate;
+import io.camunda.webapps.schema.descriptors.template.ListViewTemplate;
 import io.camunda.webapps.schema.entities.listview.FlowNodeInstanceForListViewEntity;
 import io.camunda.webapps.schema.entities.listview.ListViewJoinRelation;
 import io.camunda.zeebe.protocol.record.Record;

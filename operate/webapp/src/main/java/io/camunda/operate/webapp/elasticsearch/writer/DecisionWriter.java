@@ -8,9 +8,9 @@
 package io.camunda.operate.webapp.elasticsearch.writer;
 
 import io.camunda.operate.store.DecisionStore;
-import io.camunda.webapps.schema.descriptors.operate.index.DecisionIndex;
-import io.camunda.webapps.schema.descriptors.operate.index.DecisionRequirementsIndex;
-import io.camunda.webapps.schema.descriptors.operate.template.DecisionInstanceTemplate;
+import io.camunda.webapps.schema.descriptors.index.DecisionIndex;
+import io.camunda.webapps.schema.descriptors.index.DecisionRequirementsIndex;
+import io.camunda.webapps.schema.descriptors.template.DecisionInstanceTemplate;
 import java.io.IOException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

@@ -8,18 +8,18 @@
 package io.camunda.search.clients.transformers.sort;
 
 import static io.camunda.webapps.schema.descriptors.IndexDescriptor.TENANT_ID;
-import static io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate.BPMN_PROCESS_ID;
-import static io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate.END_DATE;
-import static io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate.INCIDENT;
-import static io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate.KEY;
-import static io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate.PARENT_FLOW_NODE_INSTANCE_KEY;
-import static io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate.PARENT_PROCESS_INSTANCE_KEY;
-import static io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate.PROCESS_KEY;
-import static io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate.PROCESS_NAME;
-import static io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate.PROCESS_VERSION;
-import static io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate.PROCESS_VERSION_TAG;
-import static io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate.START_DATE;
-import static io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate.STATE;
+import static io.camunda.webapps.schema.descriptors.template.ListViewTemplate.BPMN_PROCESS_ID;
+import static io.camunda.webapps.schema.descriptors.template.ListViewTemplate.END_DATE;
+import static io.camunda.webapps.schema.descriptors.template.ListViewTemplate.INCIDENT;
+import static io.camunda.webapps.schema.descriptors.template.ListViewTemplate.KEY;
+import static io.camunda.webapps.schema.descriptors.template.ListViewTemplate.PARENT_FLOW_NODE_INSTANCE_KEY;
+import static io.camunda.webapps.schema.descriptors.template.ListViewTemplate.PARENT_PROCESS_INSTANCE_KEY;
+import static io.camunda.webapps.schema.descriptors.template.ListViewTemplate.PROCESS_KEY;
+import static io.camunda.webapps.schema.descriptors.template.ListViewTemplate.PROCESS_NAME;
+import static io.camunda.webapps.schema.descriptors.template.ListViewTemplate.PROCESS_VERSION;
+import static io.camunda.webapps.schema.descriptors.template.ListViewTemplate.PROCESS_VERSION_TAG;
+import static io.camunda.webapps.schema.descriptors.template.ListViewTemplate.START_DATE;
+import static io.camunda.webapps.schema.descriptors.template.ListViewTemplate.STATE;
 
 public class ProcessInstanceFieldSortingTransformer implements FieldSortingTransformer {
 

@@ -17,7 +17,7 @@ import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.tenant.TenantAwareElasticsearchClient;
 import io.camunda.operate.util.ElasticsearchUtil;
 import io.camunda.operate.webapp.rest.exception.NotFoundException;
-import io.camunda.webapps.schema.descriptors.operate.template.EventTemplate;
+import io.camunda.webapps.schema.descriptors.template.EventTemplate;
 import io.camunda.webapps.schema.entities.event.EventEntity;
 import java.io.IOException;
 import org.elasticsearch.action.search.SearchRequest;

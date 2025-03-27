@@ -5,13 +5,15 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.webapps.schema.descriptors.operate.index;
+package io.camunda.webapps.schema.descriptors.index;
 
+import static io.camunda.webapps.schema.descriptors.ComponentNames.OPERATE;
+
+import io.camunda.webapps.schema.descriptors.AbstractIndexDescriptor;
 import io.camunda.webapps.schema.descriptors.backup.Prio4Backup;
-import io.camunda.webapps.schema.descriptors.operate.OperateIndexDescriptor;
 import java.util.Optional;
 
-public class DecisionIndex extends OperateIndexDescriptor implements Prio4Backup {
+public class DecisionIndex extends AbstractIndexDescriptor implements Prio4Backup {
 
   public static final String INDEX_NAME = "decision";
   public static final String ID = "id";
@@ -39,5 +41,10 @@ public class DecisionIndex extends OperateIndexDescriptor implements Prio4Backup
   @Override
   public String getVersion() {
     return "8.3.0";
+  }
+
+  @Override
+  public String getComponentName() {
+    return OPERATE.toString();
   }
 }
