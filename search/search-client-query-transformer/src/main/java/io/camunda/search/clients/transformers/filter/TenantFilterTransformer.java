@@ -13,14 +13,14 @@ import static io.camunda.search.clients.query.SearchQueryBuilders.hasParentQuery
 import static io.camunda.search.clients.query.SearchQueryBuilders.matchNone;
 import static io.camunda.search.clients.query.SearchQueryBuilders.stringTerms;
 import static io.camunda.search.clients.query.SearchQueryBuilders.term;
-import static io.camunda.webapps.schema.descriptors.usermanagement.index.TenantIndex.KEY;
-import static io.camunda.webapps.schema.descriptors.usermanagement.index.TenantIndex.NAME;
-import static io.camunda.webapps.schema.descriptors.usermanagement.index.TenantIndex.TENANT_ID;
+import static io.camunda.webapps.schema.descriptors.index.TenantIndex.KEY;
+import static io.camunda.webapps.schema.descriptors.index.TenantIndex.NAME;
+import static io.camunda.webapps.schema.descriptors.index.TenantIndex.TENANT_ID;
 
 import io.camunda.search.clients.query.SearchQuery;
 import io.camunda.search.filter.TenantFilter;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
-import io.camunda.webapps.schema.descriptors.usermanagement.index.TenantIndex;
+import io.camunda.webapps.schema.descriptors.index.TenantIndex;
 import io.camunda.webapps.schema.entities.usermanagement.EntityJoinRelation.IdentityJoinRelationshipType;
 
 public class TenantFilterTransformer extends IndexFilterTransformer<TenantFilter> {

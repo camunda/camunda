@@ -12,7 +12,7 @@ import io.camunda.search.clients.core.SearchGetRequest;
 import io.camunda.search.clients.core.SearchIndexRequest;
 import io.camunda.search.clients.core.SearchQueryRequest;
 import io.camunda.search.entities.PersistentWebSessionEntity;
-import io.camunda.webapps.schema.descriptors.usermanagement.index.PersistentWebSessionIndexDescriptor;
+import io.camunda.webapps.schema.descriptors.index.PersistentWebSessionIndexDescriptor;
 import java.util.List;
 
 public class PersistentWebSessionSearchImpl implements PersistentWebSessionClient {
