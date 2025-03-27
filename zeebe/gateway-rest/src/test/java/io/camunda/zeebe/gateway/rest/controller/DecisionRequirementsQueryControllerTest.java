@@ -56,10 +56,12 @@ public class DecisionRequirementsQueryControllerTest extends RestControllerTest 
               ],
               "page": {
                   "totalItems": 1,
-                  "firstSortValues": ["f"],
-                  "lastSortValues": [
-                      "v"
-                  ]
+              "firstSortValues": [
+                { "value": "\\"f\\"", "type": "string" }
+              ],
+              "lastSortValues": [
+                { "value": "\\"v\\"", "type": "string" }
+              ]
               }
           }""";
   static final SearchQueryResult<DecisionRequirementsEntity> SEARCH_QUERY_RESULT =
