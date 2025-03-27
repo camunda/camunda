@@ -918,30 +918,38 @@ public class OptimizeElasticsearchClient extends DatabaseClient {
           return;
         }
         if (containsNestedDocumentLimitErrorMessage(bulkResponse)) {
-          final Set<String> failedItemIds =
+          final Map<String, List<String>> failedNestedDocLimitItemIdsByIndexName =
               bulkResponse.items().stream()
-                  .filter(b -> b.error() != null && b.error().reason() != null)
+                  .filter(b -> b.error() != null && b.error().reason() != null && b.id() != null)
                   .filter(
                       responseItem ->
                           responseItem.error().reason().contains(NESTED_DOC_LIMIT_MESSAGE))
-                  .map(BulkResponseItem::id)
+                  .collect(
+                      Collectors.groupingBy(
+                          BulkResponseItem::index,
+                          Collectors.mapping(BulkResponseItem::id, Collectors.toList())));
+
+          final Set<String> failedOperationIds =
+              failedNestedDocLimitItemIdsByIndexName.values().stream()
+                  .flatMap(Collection::stream)
                   .collect(Collectors.toSet());
           LOG.warn(
               "There were failures while performing bulk on {} due to the nested document limit being reached."
                   + " Removing {} failed items and retrying",
               itemName,
-              failedItemIds.size());
+              failedOperationIds.size());
+          LOG.debug("Failed operation IDs by Index: {}", failedNestedDocLimitItemIdsByIndexName);
           final List<BulkOperation> bulkOperations = new ArrayList<>(bulkRequest.operations());
           bulkOperations.removeIf(
               request -> {
                 if (request.isCreate()) {
-                  return failedItemIds.contains(request.create().id());
+                  return failedOperationIds.contains(request.create().id());
                 } else if (request.isUpdate()) {
-                  return failedItemIds.contains(request.update().id());
+                  return failedOperationIds.contains(request.update().id());
                 } else if (request.isDelete()) {
-                  return failedItemIds.contains(request.delete().id());
+                  return failedOperationIds.contains(request.delete().id());
                 } else if (request.isIndex()) {
-                  return failedItemIds.contains(request.index().id());
+                  return failedOperationIds.contains(request.index().id());
                 }
                 return false;
               });
