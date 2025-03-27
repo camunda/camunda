@@ -16,7 +16,6 @@ import static io.camunda.it.migration.util.PrefixMigrationITUtils.createCamundaC
 import static io.camunda.it.migration.util.PrefixMigrationITUtils.requestProcessInstanceFromV1;
 import static io.camunda.qa.util.multidb.CamundaMultiDBExtension.currentMultiDbDatabaseType;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatCode;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.dockerjava.api.command.CreateContainerCmd;
@@ -28,6 +27,7 @@ import io.camunda.exporter.schema.config.SearchEngineConfiguration;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.qa.util.cluster.TestSimpleCamundaApplication;
 import io.camunda.qa.util.multidb.CamundaMultiDBExtension.DatabaseType;
+import io.camunda.qa.util.multidb.ElasticOpenSearchSetupHelper;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.qa.util.multidb.MultiDbTestApplication;
 import io.camunda.search.connect.configuration.ConnectConfiguration;
@@ -37,6 +37,7 @@ import io.camunda.zeebe.qa.util.cluster.TestPrefixMigrationApp;
 import java.io.IOException;
 import java.net.http.HttpResponse;
 import java.time.Duration;
+import java.util.Collections;
 import java.util.UUID;
 import org.assertj.core.api.Assertions;
 import org.awaitility.Awaitility;
@@ -53,6 +54,7 @@ import org.testcontainers.utility.DockerImageName;
 public class PrefixMigrationIT {
   private static final String DEFAULT_ES_OS_URL_FOR_MULTI_DB =
       "http://host.testcontainers.internal:9200";
+  private static final int TOTAL_NUMBER_OPERATE_TASKLIST_INDICES_BEFORE_HARMONISATION = 34;
 
   @MultiDbTestApplication(managedLifecycle = false)
   private static final TestSimpleCamundaApplication STANDALONE_CAMUNDA =
@@ -177,15 +179,19 @@ public class PrefixMigrationIT {
 
     schemaManagerContainer.start();
 
+    final var setupHelper =
+        new ElasticOpenSearchSetupHelper(
+            "http://localhost:9200",
+            Collections.nCopies(TOTAL_NUMBER_OPERATE_TASKLIST_INDICES_BEFORE_HARMONISATION, null));
+
+    // validate 34 indices beginning with short UUID exist
+    Awaitility.await("Await schema readiness")
+        .timeout(Duration.ofMinutes(1))
+        .pollInterval(Duration.ofMillis(500))
+        .until(() -> setupHelper.validateSchemaCreation(shortUUID));
+
     // when
-    Awaitility.await("Prefix migration is successful")
-        .atMost(Duration.ofSeconds(30))
-        .pollInterval(Duration.ofSeconds(2))
-        .untilAsserted(
-            () -> {
-              assertThatCode(() -> prefixMigration(oldOperatePrefix, oldTasklistPrefix, newPrefix))
-                  .doesNotThrowAnyException();
-            });
+    prefixMigration(oldOperatePrefix, oldTasklistPrefix, newPrefix);
 
     // then
     final var connectConfig = new ConnectConfiguration();
@@ -206,7 +212,14 @@ public class PrefixMigrationIT {
             SearchEngineConfiguration.of(b -> b),
             new ObjectMapper());
 
-    Assertions.assertThat(schemaManager.isSchemaReadyForUse()).isTrue();
+    Awaitility.await("All indices migrated")
+        .untilAsserted(
+            () -> {
+              Assertions.assertThat(schemaManager.isSchemaReadyForUse()).isTrue();
+            });
+
+    setupHelper.cleanup(shortUUID);
+    setupHelper.close();
   }
 
   @Test
