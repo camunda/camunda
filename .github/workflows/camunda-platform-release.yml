@@ -13,6 +13,7 @@ defaults:
     shell: bash
 
 env:
+  GIT_TRACE: 1
   RELEASE_BRANCH: ${{ inputs.releaseBranch != '' && inputs.releaseBranch || format('release-{0}', inputs.releaseVersion) }}
   RELEASE_VERSION: ${{ inputs.releaseVersion }}
   GH_TOKEN: ${{ github.token }} # needs to be available for the gh CLI tool
@@ -20,7 +21,7 @@ env:
 jobs:
   release:
     name: Maven Release
-    runs-on: gcp-core-16-release
+    runs-on: ubuntu-latest
     steps:
 # Attempt 1
       - uses: actions/checkout@v4
@@ -30,6 +31,11 @@ jobs:
           fetch-tags: true
       - name: Push Git changes
         run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git version
+          git config --list
           git fsck --strict
+          git gc
           git tag 8.6.11-test-SNAPSHOT-1
           git push -v --progress origin tag 8.6.11-test-SNAPSHOT-1
