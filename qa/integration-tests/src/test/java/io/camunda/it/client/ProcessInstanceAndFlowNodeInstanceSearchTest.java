@@ -1055,13 +1055,8 @@ public class ProcessInstanceAndFlowNodeInstanceSearchTest {
     // then
     assertThat(result.items().size()).isEqualTo(1);
     assertThat(result.items().getFirst().getIncidentKey()).isEqualTo(incidentKey);
-  }
-
-  @Test
-  void testFlowNodeInstanceWithIncident() {
-    // then
-    assertThat(flowNodeInstanceWithIncident.getState()).isEqualTo(FlowNodeInstanceState.ACTIVE);
-    assertThat(flowNodeInstanceWithIncident.getIncident()).isEqualTo(true);
+    assertThat(result.items().getFirst().getState()).isEqualTo(FlowNodeInstanceState.ACTIVE);
+    assertThat(result.items().getFirst().getIncident()).isEqualTo(true);
   }
 
   @Test

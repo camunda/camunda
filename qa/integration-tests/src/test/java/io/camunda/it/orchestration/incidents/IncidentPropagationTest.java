@@ -8,12 +8,12 @@
 package io.camunda.it.orchestration.incidents;
 
 import static io.camunda.client.api.search.response.IncidentState.ACTIVE;
-import static io.camunda.it.client.QueryTest.deployResource;
-import static io.camunda.it.client.QueryTest.startProcessInstance;
-import static io.camunda.it.client.QueryTest.waitForProcessInstancesToStart;
-import static io.camunda.it.client.QueryTest.waitForProcessesToBeDeployed;
-import static io.camunda.it.client.QueryTest.waitUntilIncidentsAreActive;
-import static io.camunda.it.client.QueryTest.waitUntilProcessInstanceHasIncidents;
+import static io.camunda.it.util.TestHelper.deployResource;
+import static io.camunda.it.util.TestHelper.startProcessInstance;
+import static io.camunda.it.util.TestHelper.waitForProcessInstancesToStart;
+import static io.camunda.it.util.TestHelper.waitForProcessesToBeDeployed;
+import static io.camunda.it.util.TestHelper.waitUntilIncidentsAreActive;
+import static io.camunda.it.util.TestHelper.waitUntilProcessInstanceHasIncidents;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.client.CamundaClient;
@@ -117,7 +117,7 @@ class IncidentPropagationTest {
   @Test
   void testIncidentsAreActive() {
     // incidents are updated by background task, PENDING state is changed on ACTIVE
-    final List<Incident> incidents = camundaClient.newIncidentQuery().send().join().items();
+    final List<Incident> incidents = camundaClient.newIncidentSearchRequest().send().join().items();
     assertThat(incidents).hasSize(2);
     incidents.forEach(
         incident -> {
@@ -130,7 +130,7 @@ class IncidentPropagationTest {
   void testFlowNodeInstanceInIncidentState() {
     final FlowNodeInstance flowNodeInstance1 =
         camundaClient
-            .newFlownodeInstanceQuery()
+            .newFlownodeInstanceSearchRequest()
             .filter(f -> f.flowNodeId(SERVICE_TASK_ID))
             .send()
             .join()
@@ -141,7 +141,7 @@ class IncidentPropagationTest {
 
     final FlowNodeInstance flowNodeInstance2 =
         camundaClient
-            .newFlownodeInstanceQuery()
+            .newFlownodeInstanceSearchRequest()
             .filter(f -> f.flowNodeId(LAST_CALLED_TASK_ID))
             .send()
             .join()
@@ -155,7 +155,7 @@ class IncidentPropagationTest {
   void testSecondProcessInstanceHasIncident() {
     final ProcessInstance processInstance =
         camundaClient
-            .newProcessInstanceQuery()
+            .newProcessInstanceSearchRequest()
             .filter(f -> f.processDefinitionId(CALLED_PROCESS_ID))
             .send()
             .join()
@@ -169,7 +169,7 @@ class IncidentPropagationTest {
   void testSecondCallActivityHasIncident() {
     final FlowNodeInstance flowNodeInstance =
         camundaClient
-            .newFlownodeInstanceQuery()
+            .newFlownodeInstanceSearchRequest()
             .filter(f -> f.flowNodeId(CALL_ACTIVITY_2_ID))
             .send()
             .join()
@@ -183,7 +183,7 @@ class IncidentPropagationTest {
   void testFirstProcessInstanceHasIncident() {
     final ProcessInstance processInstance =
         camundaClient
-            .newProcessInstanceQuery()
+            .newProcessInstanceSearchRequest()
             .filter(f -> f.processDefinitionId(PARENT_PROCESS_ID))
             .send()
             .join()
@@ -197,7 +197,7 @@ class IncidentPropagationTest {
   void testFirstCallActivityHasIncident() {
     final FlowNodeInstance flowNodeInstance =
         camundaClient
-            .newFlownodeInstanceQuery()
+            .newFlownodeInstanceSearchRequest()
             .filter(f -> f.flowNodeId(CALL_ACTIVITY_1_ID))
             .send()
             .join()

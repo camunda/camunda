@@ -12,6 +12,7 @@ import static io.camunda.it.util.TestHelper.deployResource;
 import static io.camunda.it.util.TestHelper.startProcessInstance;
 import static io.camunda.it.util.TestHelper.waitForProcessInstancesToStart;
 import static io.camunda.it.util.TestHelper.waitForProcessesToBeDeployed;
+import static io.camunda.it.util.TestHelper.waitUntilIncidentsAreActive;
 import static io.camunda.it.util.TestHelper.waitUntilProcessInstanceHasIncidents;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
@@ -39,6 +40,7 @@ import org.junit.jupiter.params.provider.EnumSource;
 class IncidentSearchTest {
 
   private static final List<Process> DEPLOYED_PROCESSES = new ArrayList<>();
+  private static final int amountOfIncidents = 3;
 
   private static CamundaClient camundaClient;
 
@@ -64,7 +66,7 @@ class IncidentSearchTest {
     startProcessInstance(camundaClient, "incident_process_v1");
 
     waitForProcessInstancesToStart(camundaClient, 5);
-    waitUntilProcessInstanceHasIncidents(camundaClient, 3);
+    waitUntilProcessInstanceHasIncidents(camundaClient, amountOfIncidents);
 
     incident = camundaClient.newIncidentSearchRequest().send().join().items().getFirst();
   }
@@ -76,16 +78,14 @@ class IncidentSearchTest {
 
   @Test
   void testIncidentsAreActive() {
-    // incidents are updated by background task, PENDING state is changed on ACTIVE
-    camundaClient
-        .newIncidentQuery()
-        .send()
-        .join()
-        .items()
-        .forEach(
-            incident -> {
-              assertThat(incident.getState()).isEqualTo(ACTIVE);
-            });
+    // given
+    waitUntilIncidentsAreActive(camundaClient, amountOfIncidents);
+
+    // when
+    final List<Incident> incidents = camundaClient.newIncidentSearchRequest().send().join().items();
+
+    // then incidents are updated by background task, PENDING state is changed on ACTIVE
+    assertThat(incidents).extracting(Incident::getState).containsOnly(ACTIVE);
   }
 
   @Test

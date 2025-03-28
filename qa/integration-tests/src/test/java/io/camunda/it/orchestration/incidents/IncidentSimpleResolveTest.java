@@ -8,14 +8,14 @@
 package io.camunda.it.orchestration.incidents;
 
 import static io.camunda.client.api.search.response.ProcessInstanceState.ACTIVE;
-import static io.camunda.it.client.QueryTest.deployResource;
-import static io.camunda.it.client.QueryTest.startProcessInstance;
-import static io.camunda.it.client.QueryTest.waitForProcessInstancesToStart;
-import static io.camunda.it.client.QueryTest.waitForProcessesToBeDeployed;
-import static io.camunda.it.client.QueryTest.waitUntilIncidentIsResolvedOnFlowNodeInstance;
-import static io.camunda.it.client.QueryTest.waitUntilIncidentIsResolvedOnProcessInstance;
-import static io.camunda.it.client.QueryTest.waitUntilIncidentsAreResolved;
-import static io.camunda.it.client.QueryTest.waitUntilProcessInstanceHasIncidents;
+import static io.camunda.it.util.TestHelper.deployResource;
+import static io.camunda.it.util.TestHelper.startProcessInstance;
+import static io.camunda.it.util.TestHelper.waitForProcessInstancesToStart;
+import static io.camunda.it.util.TestHelper.waitForProcessesToBeDeployed;
+import static io.camunda.it.util.TestHelper.waitUntilIncidentIsResolvedOnFlowNodeInstance;
+import static io.camunda.it.util.TestHelper.waitUntilIncidentIsResolvedOnProcessInstance;
+import static io.camunda.it.util.TestHelper.waitUntilIncidentsAreResolved;
+import static io.camunda.it.util.TestHelper.waitUntilProcessInstanceHasIncidents;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.client.CamundaClient;
@@ -70,7 +70,8 @@ public class IncidentSimpleResolveTest {
     waitUntilProcessInstanceHasIncidents(camundaClient, 1);
 
     camundaClient.newUpdateRetriesCommand(jobKey).retries(1).send().join();
-    final Incident incident = camundaClient.newIncidentQuery().send().join().items().getFirst();
+    final Incident incident =
+        camundaClient.newIncidentSearchRequest().send().join().items().getFirst();
     camundaClient.newResolveIncidentCommand(incident.getIncidentKey()).send().join();
 
     waitUntilIncidentIsResolvedOnProcessInstance(camundaClient, 1);
@@ -88,7 +89,7 @@ public class IncidentSimpleResolveTest {
     // when
     final FlowNodeInstance flowNodeInstance =
         camundaClient
-            .newFlownodeInstanceQuery()
+            .newFlownodeInstanceSearchRequest()
             .filter(f -> f.flowNodeId(SERVICE_TASK_ID))
             .page(p -> p.limit(100))
             .sort(s -> s.flowNodeId().asc())
@@ -120,7 +121,7 @@ public class IncidentSimpleResolveTest {
     // when
     final List<Incident> incidents =
         camundaClient
-            .newIncidentQuery()
+            .newIncidentSearchRequest()
             .filter(fn -> fn.state(IncidentState.ACTIVE))
             .send()
             .join()

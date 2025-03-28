@@ -8,14 +8,14 @@
 package io.camunda.it.orchestration.incidents;
 
 import static io.camunda.client.api.search.response.ProcessInstanceState.ACTIVE;
-import static io.camunda.it.client.QueryTest.deployResource;
-import static io.camunda.it.client.QueryTest.startProcessInstance;
-import static io.camunda.it.client.QueryTest.waitForProcessInstancesToStart;
-import static io.camunda.it.client.QueryTest.waitForProcessesToBeDeployed;
-import static io.camunda.it.client.QueryTest.waitUntilFlowNodeInstanceHasIncidents;
-import static io.camunda.it.client.QueryTest.waitUntilIncidentsAreActive;
-import static io.camunda.it.client.QueryTest.waitUntilIncidentsAreResolved;
-import static io.camunda.it.client.QueryTest.waitUntilProcessInstanceHasIncidents;
+import static io.camunda.it.util.TestHelper.deployResource;
+import static io.camunda.it.util.TestHelper.startProcessInstance;
+import static io.camunda.it.util.TestHelper.waitForProcessInstancesToStart;
+import static io.camunda.it.util.TestHelper.waitForProcessesToBeDeployed;
+import static io.camunda.it.util.TestHelper.waitUntilFlowNodeInstanceHasIncidents;
+import static io.camunda.it.util.TestHelper.waitUntilIncidentsAreActive;
+import static io.camunda.it.util.TestHelper.waitUntilIncidentsAreResolved;
+import static io.camunda.it.util.TestHelper.waitUntilProcessInstanceHasIncidents;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.client.CamundaClient;
@@ -53,7 +53,10 @@ public class IncidentFullResolveCallActivityTest {
   private static Process parentProcess;
   private static Process childProcess;
 
-  /** parentProcess -> calledProcess (has incident) -> process (has incident) */
+  /**
+   * Data for the test: 1. parentProcess instance with call activity 2. calledProcess instance with
+   * two resolved incidents on service tasks (no more incidents)
+   */
   @BeforeAll
   static void beforeAll() {
     final BpmnModelInstance testProcess =
@@ -116,7 +119,7 @@ public class IncidentFullResolveCallActivityTest {
           camundaClient.newUpdateRetriesCommand(jobKey).retries(1).send().join();
           final Incident incident =
               camundaClient
-                  .newIncidentQuery()
+                  .newIncidentSearchRequest()
                   .filter(f -> f.jobKey(jobKey))
                   .send()
                   .join()
@@ -139,7 +142,7 @@ public class IncidentFullResolveCallActivityTest {
     // when
     final List<Incident> incidents =
         camundaClient
-            .newIncidentQuery()
+            .newIncidentSearchRequest()
             .filter(fn -> fn.state(IncidentState.ACTIVE))
             .send()
             .join()
@@ -154,7 +157,7 @@ public class IncidentFullResolveCallActivityTest {
     // when
     final FlowNodeInstance flowNodeInstance =
         camundaClient
-            .newFlownodeInstanceQuery()
+            .newFlownodeInstanceSearchRequest()
             .filter(f -> f.flowNodeId(CALL_ACTIVITY_ID))
             .page(p -> p.limit(100))
             .send()
@@ -173,7 +176,7 @@ public class IncidentFullResolveCallActivityTest {
     // when
     final ProcessInstance processInstance =
         camundaClient
-            .newProcessInstanceQuery()
+            .newProcessInstanceSearchRequest()
             .filter(f -> f.processDefinitionKey(parentProcess.getProcessDefinitionKey()))
             .send()
             .join()
@@ -191,7 +194,7 @@ public class IncidentFullResolveCallActivityTest {
     // when
     final FlowNodeInstance flowNodeInstance =
         camundaClient
-            .newFlownodeInstanceQuery()
+            .newFlownodeInstanceSearchRequest()
             .filter(f -> f.flowNodeId(SERVICE_TASK_1_ID))
             .page(p -> p.limit(100))
             .send()
@@ -210,7 +213,7 @@ public class IncidentFullResolveCallActivityTest {
     // when
     final ProcessInstance processInstance =
         camundaClient
-            .newProcessInstanceQuery()
+            .newProcessInstanceSearchRequest()
             .filter(f -> f.processDefinitionKey(childProcess.getProcessDefinitionKey()))
             .send()
             .join()
