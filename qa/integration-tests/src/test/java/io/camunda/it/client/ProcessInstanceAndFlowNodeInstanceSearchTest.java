@@ -27,12 +27,10 @@ import io.camunda.client.api.response.ProcessInstanceEvent;
 import io.camunda.client.api.search.enums.FlowNodeInstanceFilterState;
 import io.camunda.client.api.search.enums.FlowNodeInstanceFilterType;
 import io.camunda.client.api.search.enums.ProcessInstanceState;
+import io.camunda.client.api.search.filter.ProcessInstanceVariableFilterRequest;
+import io.camunda.client.api.search.filter.StringFilterProperty;
 import io.camunda.client.api.search.response.FlowNodeInstance;
 import io.camunda.client.api.search.response.ProcessInstance;
-import io.camunda.client.impl.ResponseMapper;
-import io.camunda.client.protocol.rest.ProcessInstanceStateEnum;
-import io.camunda.client.protocol.rest.ProcessInstanceVariableFilterRequest;
-import io.camunda.client.protocol.rest.StringFilterProperty;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
@@ -451,7 +449,7 @@ public class ProcessInstanceAndFlowNodeInstanceSearchTest {
 
     // then
     assertThat(result.items().size()).isEqualTo(3);
-    assertThat(result.items()).extracting("state").doesNotContain(ProcessInstanceStateEnum.ACTIVE);
+    assertThat(result.items()).extracting("state").doesNotContain(ProcessInstanceState.ACTIVE);
   }
 
   @Test
@@ -547,14 +545,14 @@ public class ProcessInstanceAndFlowNodeInstanceSearchTest {
     final List<ProcessInstanceVariableFilterRequest> variables =
         List.of(
             new ProcessInstanceVariableFilterRequest()
-                .name("xyz")
-                .value(new StringFilterProperty().$eq("\"bar\"")));
+                .setName("xyz")
+                .setValue(new StringFilterProperty().setEq("\"bar\"")));
 
     // when
     final var result =
         camundaClient
             .newProcessInstanceSearchRequest()
-            .filter(f -> f.variables(ResponseMapper.fromProtocolList(variables)))
+            .filter(f -> f.variables(variables))
             .send()
             .join();
     // then
@@ -589,17 +587,17 @@ public class ProcessInstanceAndFlowNodeInstanceSearchTest {
     final List<ProcessInstanceVariableFilterRequest> variables =
         List.of(
             new ProcessInstanceVariableFilterRequest()
-                .name("xyz")
-                .value(new StringFilterProperty().$like("\"ba*\"")),
+                .setName("xyz")
+                .setValue(new StringFilterProperty().setLike("\"ba*\"")),
             new ProcessInstanceVariableFilterRequest()
-                .name("abc")
-                .value(new StringFilterProperty().add$InItem("\"mnp\"")));
+                .setName("abc")
+                .setValue(new StringFilterProperty().addInItem("\"mnp\"")));
 
     // when
     final var result =
         camundaClient
             .newProcessInstanceSearchRequest()
-            .filter(f -> f.variables(ResponseMapper.fromProtocolList(variables)))
+            .filter(f -> f.variables(variables))
             .send()
             .join();
 
@@ -616,17 +614,17 @@ public class ProcessInstanceAndFlowNodeInstanceSearchTest {
     final List<ProcessInstanceVariableFilterRequest> variables =
         List.of(
             new ProcessInstanceVariableFilterRequest()
-                .name("xyz")
-                .value(new StringFilterProperty().$eq("\"bar\"")),
+                .setName("xyz")
+                .setValue(new StringFilterProperty().setEq("\"bar\"")),
             new ProcessInstanceVariableFilterRequest()
-                .name("abc")
-                .value(new StringFilterProperty().add$InItem("\"foo\"")));
+                .setName("abc")
+                .setValue(new StringFilterProperty().addInItem("\"foo\"")));
 
     // when
     final var result =
         camundaClient
             .newProcessInstanceSearchRequest()
-            .filter(f -> f.variables(ResponseMapper.fromProtocolList(variables)))
+            .filter(f -> f.variables(variables))
             .send()
             .join();
 
@@ -641,13 +639,13 @@ public class ProcessInstanceAndFlowNodeInstanceSearchTest {
     final List<ProcessInstanceVariableFilterRequest> variables =
         List.of(
             new ProcessInstanceVariableFilterRequest()
-                .name("xyz")
-                .value(new StringFilterProperty().add$InItem("\"foo\"").add$InItem("\"bar\"")));
+                .setName("xyz")
+                .setValue(new StringFilterProperty().addInItem("\"foo\"").addInItem("\"bar\"")));
     // when
     final var result =
         camundaClient
             .newProcessInstanceSearchRequest()
-            .filter(f -> f.variables(ResponseMapper.fromProtocolList(variables)))
+            .filter(f -> f.variables(variables))
             .send()
             .join();
 
@@ -664,13 +662,13 @@ public class ProcessInstanceAndFlowNodeInstanceSearchTest {
     final List<ProcessInstanceVariableFilterRequest> variables =
         List.of(
             new ProcessInstanceVariableFilterRequest()
-                .name("xyz")
-                .value(new StringFilterProperty().$like("\"fo*\"")));
+                .setName("xyz")
+                .setValue(new StringFilterProperty().setLike("\"fo*\"")));
     // when
     final var result =
         camundaClient
             .newProcessInstanceSearchRequest()
-            .filter(f -> f.variables(ResponseMapper.fromProtocolList(variables)))
+            .filter(f -> f.variables(variables))
             .send()
             .join();
 
