@@ -43,11 +43,12 @@ public class PersistedClusterTopologyTest {
                   g.gatewayConfig()
                       .getCluster()
                       .getMembership()
+                      .setGossipInterval(Duration.ofMillis(100))
                       // Decrease the timeouts for fast convergence of gateway topology. When the
                       // broker is shutdown, the topology update takes at least 10 seconds with
                       // the
                       // default values.
-                      .setSyncInterval(Duration.ofSeconds(1))
+                      .setSyncInterval(Duration.ofMillis(100))
                       .setFailureTimeout(Duration.ofSeconds(5)))
           .build();
 
@@ -61,39 +62,50 @@ public class PersistedClusterTopologyTest {
     ///                      _____________________________
     //     START_EVENT ->   |         service1           |     -------> END_EVENT
     //                      |-----(message catch event)--|                 ^
-    //                                        |          _______________   |
-    //                                        |---------| serviceCatch | --|
-    //                                                  ---------------
+    //                                        |                            |
+    //                                        |----------------------------|
+    //
+
+    final var processDefinition =
+        Bpmn.createExecutableProcess("catch_event")
+            .startEvent()
+            .serviceTask("service1")
+            .zeebeJobType("service1")
+            .boundaryEvent(
+                "boundary_catch",
+                bi ->
+                    bi.message(
+                        bm -> bm.name("catch_event_message").zeebeCorrelationKey("=\"foo\"")))
+            .endEvent()
+            .done();
+
     final var deploymentEvent =
         client
             .newDeployResourceCommand()
-            .addResourceFromClasspath("processes/catch_event.bpmn")
+            .addProcessModel(processDefinition, "catch_event_process.bpmn")
             .send()
             .join();
 
     cluster.shutdown();
 
     // when
-    cluster.setPartitionCount(1);
+    cluster.brokers().forEach((id, b) -> b.brokerConfig().getCluster().setPartitionsCount(1));
     cluster.start();
     cluster.awaitCompleteTopology(
         CLUSTER_SIZE, PARTITION_COUNT, REPLICATION_FACTOR, Duration.ofSeconds(10));
 
-    final var processId =
-        client
-            .newCreateInstanceCommand()
-            .processDefinitionKey(
-                deploymentEvent.getProcesses().getFirst().getProcessDefinitionKey())
-            .send()
-            .join();
+    client
+        .newCreateInstanceCommand()
+        .processDefinitionKey(deploymentEvent.getProcesses().getFirst().getProcessDefinitionKey())
+        .send()
+        .join();
 
-    final var result =
-        client
-            .newPublishMessageCommand()
-            .messageName("catch_event")
-            .correlationKey("11")
-            .send()
-            .join();
+    client
+        .newPublishMessageCommand()
+        .messageName("catch_event_message")
+        .correlationKey("foo")
+        .send()
+        .join();
 
     // then
     // there are no jobs to activate because of the successful message catch event triggered
