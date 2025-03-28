@@ -1,0 +1,31 @@
+name: "C8Run: test slack integration"
+
+on:
+  workflow_dispatch:
+
+jobs:
+  test_slack_alert:
+    name: C8Run test slack alert
+    runs-on: ubuntu-latest
+    timeout-minutes: 1
+    steps:
+      - name: Import Secrets
+        id: secrets
+        uses: hashicorp/vault-action@7709c609789c5e27b757a85817483caadbb5939a # v3.3.0
+        with:
+          url: ${{ secrets.VAULT_ADDR }}
+          method: approle
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secrets: |
+            secret/data/products/distribution/ci SLACK_DISTRO_BOT_WEBHOOK;
+
+      - name: Upload message to Slack on failure
+        env:
+          SLACK_WEBHOOK_URL: ${{ steps.secrets.outputs.SLACK_DISTRO_BOT_WEBHOOK }}
+        run: |
+          curl -X POST -H 'Content-type: application/json' \
+          --data '{
+            "text": "Job *${{ github.job }}* in workflow *${{ github.workflow }}* failed for *${{ github.repository }}*!\nBranch: ${{ github.ref }}\nCommit: ${{ github.sha }}\nRun: <${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|View Run>\nLogs: <${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}/artifacts|View Artifacts>"
+          }' \
+          $SLACK_WEBHOOK_URL
