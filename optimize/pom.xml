@@ -110,6 +110,7 @@
 
     <maven.compiler.target>21</maven.compiler.target>
     <maven.compiler.source>21</maven.compiler.source>
+    <maven.javadoc.skip>true</maven.javadoc.skip>
     <spring-boot.version>3.4.3</spring-boot.version>
   </properties>
 
@@ -333,6 +334,19 @@
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-jar-plugin</artifactId>
           <version>3.4.2</version>
+          <executions>
+            <execution>
+              <id>empty-javadoc-jar</id>
+              <goals>
+                <goal>jar</goal>
+              </goals>
+              <phase>package</phase>
+              <configuration>
+                <classifier>javadoc</classifier>
+                <classesDirectory>${basedir}/javadoc</classesDirectory>
+              </configuration>
+            </execution>
+          </executions>
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
@@ -511,13 +525,11 @@
   </build>
 
   <profiles>
-
     <!-- release profile-->
     <profile>
       <id>release</id>
       <properties>
         <skip.docker>true</skip.docker>
-        <maven.javadoc.skip>true</maven.javadoc.skip>
       </properties>
       <build>
         <plugins>
