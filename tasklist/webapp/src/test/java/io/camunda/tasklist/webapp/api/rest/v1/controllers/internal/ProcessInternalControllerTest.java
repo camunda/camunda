@@ -16,7 +16,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.fasterxml.jackson.core.type.TypeReference;
-import io.camunda.tasklist.enums.DeletionStatus;
 import io.camunda.tasklist.exceptions.NotFoundException;
 import io.camunda.tasklist.property.FeatureFlagProperties;
 import io.camunda.tasklist.property.TasklistProperties;
@@ -41,12 +40,10 @@ import io.camunda.webapps.schema.entities.form.FormEntity;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.junit.jupiter.params.provider.Arguments;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -181,18 +178,6 @@ class ProcessInternalControllerTest {
                       .characterEncoding(StandardCharsets.UTF_8.name()))
               .andDo(print())
               .andExpect(status().is4xxClientError());
-    }
-
-    private static Stream<Arguments> deleteProcessExceptionTestData() {
-      return Stream.of(
-          Arguments.of(
-              DeletionStatus.FAILED,
-              HttpStatus.INTERNAL_SERVER_ERROR,
-              "The deletion of process with processInstanceId: '%s' could not be deleted"),
-          Arguments.of(
-              DeletionStatus.NOT_FOUND,
-              HttpStatus.NOT_FOUND,
-              "The process with processInstanceId: '%s' is not found"));
     }
   }
 

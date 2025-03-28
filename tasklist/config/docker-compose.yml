@@ -25,6 +25,7 @@ services:
       - xpack.security.enabled=false
       - "ES_JAVA_OPTS=-Xms1024m -Xmx1024m"
       - path.repo=/usr/local/els-snapshots
+      - action.destructive_requires_name=false
     ulimits:
       memlock:
         soft: -1
@@ -48,6 +49,7 @@ services:
       - bootstrap.memory_lock=true # along with the memlock settings below, disables swapping
       - "OPENSEARCH_JAVA_OPTS=-Xms1024m -Xmx1024m" # minimum and maximum Java heap size, recommend setting both to 50% of system RAM
       - OPENSEARCH_INITIAL_ADMIN_PASSWORD=yourStrongPassword123!
+      - action.destructive_requires_name=false
     ulimits:
       memlock:
         soft: -1
@@ -353,8 +355,9 @@ services:
       - "JAVA_TOOL_OPTIONS=-Xms512m -Xmx512m"
       - ZEEBE_BROKER_NETWORK_HOST=zeebe-e2e
       - ZEEBE_BROKER_GATEWAY_NETWORK_PORT=26503
-      - ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_INDEX_PREFIX=e2e
+      - ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_CONNECT_INDEXPREFIX=e2e
       - ZEEBE_BROKER_GATEWAY_ENABLE=true
+      - CAMUNDA_DATABASE_INDEXPREFIX=e2e
       #- "JAVA_OPTS=-agentlib:jdwp=transport=dt_socket,address=8000,server=y,suspend=n"
     env_file:
       - envs/.env.database.elasticsearch

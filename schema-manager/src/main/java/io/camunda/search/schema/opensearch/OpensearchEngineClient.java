@@ -561,4 +561,15 @@ public class OpensearchEngineClient implements SearchEngineClient {
       return deserializer.deserialize(parser, mapper);
     }
   }
+
+  @Override
+  public void close() {
+    if (client != null) {
+      try {
+        client._transport().close();
+      } catch (final IOException e) {
+        throw new RuntimeException(e);
+      }
+    }
+  }
 }

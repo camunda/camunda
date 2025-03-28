@@ -5,14 +5,14 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.tasklist.schema.indices;
+package io.camunda.webapps.schema.descriptors.index;
 
 import static io.camunda.webapps.schema.descriptors.ComponentNames.TASK_LIST;
 
 import io.camunda.webapps.schema.descriptors.AbstractIndexDescriptor;
 import io.camunda.webapps.schema.descriptors.backup.Prio5Backup;
 
-public class UserIndex extends AbstractIndexDescriptor implements Prio5Backup {
+public class TasklistUserIndex extends AbstractIndexDescriptor implements Prio5Backup {
 
   public static final String ID = "id";
   public static final String USER_ID = "userId";
@@ -23,7 +23,7 @@ public class UserIndex extends AbstractIndexDescriptor implements Prio5Backup {
   private static final String INDEX_NAME = "user";
   private static final String INDEX_VERSION = "1.4.0";
 
-  public UserIndex(final String indexPrefix, final boolean isElasticsearch) {
+  public TasklistUserIndex(final String indexPrefix, final boolean isElasticsearch) {
     super(indexPrefix, isElasticsearch);
   }
 

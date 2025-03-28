@@ -10,11 +10,12 @@ package io.camunda.search.schema;
 import io.camunda.search.schema.config.IndexConfiguration;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
+import io.camunda.zeebe.util.CloseableSilently;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
-public interface SearchEngineClient {
+public interface SearchEngineClient extends CloseableSilently {
   void createIndex(final IndexDescriptor indexDescriptor, final IndexConfiguration settings);
 
   /**

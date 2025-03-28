@@ -66,10 +66,7 @@ public final class TestSimpleCamundaApplication
         // Tests)
         TestOperateElasticsearchSchemaManager.class,
         TestOperateOpensearchSchemaManager.class,
-        TestTasklistElasticsearchSchemaManager.class,
-        TestTasklistOpensearchSchemaManager.class,
         TestOperateSchemaStartup.class,
-        TestTasklistSchemaStartup.class,
         IndexTemplateDescriptorsConfigurator.class);
 
     brokerProperties = new BrokerBasedProperties();

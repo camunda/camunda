@@ -39,7 +39,7 @@ import org.springframework.context.annotation.DependsOn;
 import org.springframework.stereotype.Component;
 
 @Component
-@DependsOn("tasklistSchemaStartup")
+@DependsOn("searchEngineSchemaInitializer")
 @Conditional(OpenSearchCondition.class)
 public class ImportPositionHolderOpenSearch extends ImportPositionHolderAbstract
     implements ImportPositionHolder {
