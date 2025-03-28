@@ -54,14 +54,14 @@ public class RoleExportHandler implements RdbmsExportHandler<RoleRecordValue> {
           roleWriter.addMember(
               new RoleMemberDbModel.Builder()
                   .roleKey(value.getRoleKey())
-                  .entityKey(value.getEntityKey())
+                  .entityId(value.getEntityId())
                   .entityType(value.getEntityType().name())
                   .build());
       case RoleIntent.ENTITY_REMOVED ->
           roleWriter.removeMember(
               new RoleMemberDbModel.Builder()
                   .roleKey(value.getRoleKey())
-                  .entityKey(value.getEntityKey())
+                  .entityId(value.getEntityId())
                   .entityType(value.getEntityType().name())
                   .build());
       default -> LOG.warn("Unexpected intent {} for role record", record.getIntent());

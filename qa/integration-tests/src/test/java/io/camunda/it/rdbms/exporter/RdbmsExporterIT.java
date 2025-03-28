@@ -402,14 +402,14 @@ class RdbmsExporterIT {
     assertThat(role.get().name()).isEqualTo(roleRecordValue.getName());
 
     // when
-    exporter.export(getRoleRecord(42L, RoleIntent.ENTITY_ADDED, 1337L));
+    exporter.export(getRoleRecord(42L, RoleIntent.ENTITY_ADDED, "roleEntityId"));
 
     // then
     final var updatedRole = rdbmsService.getRoleReader().findOne(roleRecord.getKey()).orElseThrow();
-    assertThat(updatedRole.assignedMemberKeys()).containsExactly(1337L);
+    assertThat(updatedRole.assignedMemberKeys()).containsExactly("roleEntityId");
 
     // when
-    exporter.export(getRoleRecord(42L, RoleIntent.ENTITY_REMOVED, 1337L));
+    exporter.export(getRoleRecord(42L, RoleIntent.ENTITY_REMOVED, "roleEntityId"));
 
     // then
     final var deletedRole = rdbmsService.getRoleReader().findOne(roleRecord.getKey()).orElseThrow();
@@ -559,7 +559,7 @@ class RdbmsExporterIT {
     exporter.export(mappingCreatedRecord);
 
     // then
-    final var mappingId = ((MappingRecordValue) mappingCreatedRecord.getValue()).getId();
+    final var mappingId = ((MappingRecordValue) mappingCreatedRecord.getValue()).getMappingId();
     final var mapping = rdbmsService.getMappingReader().findOne(mappingId);
     assertThat(mapping).isNotNull();
 

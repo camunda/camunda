@@ -43,9 +43,9 @@ const AssignMappingsModal: FC<
 
   const unassignedMappings =
     mappingSearchResults?.items.filter(
-      ({ id }) =>
-        !assignedMappings.some((mapping) => mapping.id === id) &&
-        !selectedMappings.some((mapping) => mapping.id === id),
+      ({ mappingId }) =>
+        !assignedMappings.some((mapping) => mapping.mappingId === mappingId) &&
+        !selectedMappings.some((mapping) => mapping.mappingId === mappingId),
     ) || [];
 
   const onSelectMapping = (mapping: Mapping) => {
@@ -53,10 +53,10 @@ const AssignMappingsModal: FC<
   };
 
   const onUnselectMapping =
-    ({ id }: Mapping) =>
+    ({ mappingId }: Mapping) =>
     () => {
       setSelectedMappings(
-        selectedMappings.filter((mapping) => mapping.id !== id),
+        selectedMappings.filter((mapping) => mapping.mappingId !== mappingId),
       );
     };
 
@@ -68,8 +68,8 @@ const AssignMappingsModal: FC<
     setLoadingAssignMapping(true);
 
     const results = await Promise.all(
-      selectedMappings.map(({ id }) =>
-        callAssignMapping({ id, groupId: group.id }),
+      selectedMappings.map(({ mappingId }) =>
+        callAssignMapping({ mappingId, groupId: group.id }),
       ),
     );
 
@@ -107,13 +107,13 @@ const AssignMappingsModal: FC<
         <SelectedMappings>
           {selectedMappings.map((mapping) => (
             <Tag
-              key={mapping.id}
+              key={mapping.mappingId}
               onClose={onUnselectMapping(mapping)}
               size="md"
               type="blue"
               filter
             >
-              {mapping.id}
+              {mapping.mappingId}
             </Tag>
           ))}
         </SelectedMappings>
@@ -121,7 +121,7 @@ const AssignMappingsModal: FC<
       <DropdownSearch
         autoFocus
         items={unassignedMappings}
-        itemTitle={({ id }) => id}
+        itemTitle={({ mappingId }) => mappingId}
         itemSubTitle={({ name }) => name}
         placeholder={t("searchByMappingId")}
         onSelect={onSelectMapping}

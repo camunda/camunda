@@ -52,13 +52,14 @@ public class RoleServices extends SearchQueryService<RoleServices, RoleQuery, Ro
         .searchRoles(query);
   }
 
-  public SearchQueryResult<RoleEntity> getMemberRoles(final long memberKey, final RoleQuery query) {
+  public SearchQueryResult<RoleEntity> getMemberRoles(
+      final String memberId, final RoleQuery query) {
     return search(
-        query.toBuilder().filter(query.filter().toBuilder().memberKey(memberKey).build()).build());
+        query.toBuilder().filter(query.filter().toBuilder().memberIds(memberId).build()).build());
   }
 
-  public List<RoleEntity> getRolesByMemberKeys(final Set<Long> memberKeys) {
-    return findAll(RoleQuery.of(q -> q.filter(f -> f.memberKeys(memberKeys))));
+  public List<RoleEntity> getRolesByMemberIds(final Set<String> memberIds) {
+    return findAll(RoleQuery.of(q -> q.filter(f -> f.memberIds(memberIds))));
   }
 
   public List<RoleEntity> findAll(final RoleQuery query) {
@@ -111,18 +112,18 @@ public class RoleServices extends SearchQueryService<RoleServices, RoleQuery, Ro
   }
 
   public CompletableFuture<?> addMember(
-      final Long roleKey, final EntityType entityType, final long entityKey) {
+      final Long roleKey, final EntityType entityType, final String entityId) {
     return sendBrokerRequest(
         BrokerRoleEntityRequest.createAddRequest()
             .setRoleKey(roleKey)
-            .setEntity(entityType, entityKey));
+            .setEntity(entityType, entityId));
   }
 
   public CompletableFuture<?> removeMember(
-      final Long roleKey, final EntityType entityType, final long entityKey) {
+      final Long roleKey, final EntityType entityType, final String entityId) {
     return sendBrokerRequest(
         BrokerRoleEntityRequest.createRemoveRequest()
             .setRoleKey(roleKey)
-            .setEntity(entityType, entityKey));
+            .setEntity(entityType, entityId));
   }
 }

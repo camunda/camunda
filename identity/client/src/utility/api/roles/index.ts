@@ -56,17 +56,17 @@ export const getMappingsByRoleId: ApiDefinition<
   GetRoleMappingsParams
 > = ({ roleId }) => apiPost(`${ROLES_ENDPOINT}/${roleId}/mapping-rules/search`);
 
-type AssignRoleMappingParams = GetRoleMappingsParams & { id: string };
+type AssignRoleMappingParams = GetRoleMappingsParams & { mappingId: string };
 export const assignRoleMapping: ApiDefinition<
   undefined,
   AssignRoleMappingParams
-> = ({ roleId, id }) => {
-  return apiPut(`${ROLES_ENDPOINT}/${roleId}/mapping-rules/${id}`);
+> = ({ roleId, mappingId }) => {
+  return apiPut(`${ROLES_ENDPOINT}/${roleId}/mapping-rules/${mappingId}`);
 };
 
 type UnassignRoleMappingParams = AssignRoleMappingParams;
 export const unassignRoleMapping: ApiDefinition<
   undefined,
   UnassignRoleMappingParams
-> = ({ roleId, id }) =>
-  apiDelete(`${ROLES_ENDPOINT}/${roleId}/mapping-rules/${id}`);
+> = ({ roleId, mappingId }) =>
+  apiDelete(`${ROLES_ENDPOINT}/${roleId}/mapping-rules/${mappingId}`);

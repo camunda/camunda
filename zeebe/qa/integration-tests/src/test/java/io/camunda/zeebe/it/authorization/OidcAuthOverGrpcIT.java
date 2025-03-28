@@ -191,7 +191,7 @@ public class OidcAuthOverGrpcIT {
     final var claimValue = UUID.randomUUID().toString();
     defaultMappingClient
         .newCreateMappingCommand()
-        .id(UUID.randomUUID().toString())
+        .mappingId(UUID.randomUUID().toString())
         .claimName(claimName)
         .claimValue(claimValue)
         .name(claimValue)
@@ -221,7 +221,7 @@ public class OidcAuthOverGrpcIT {
     final var processId = Strings.newRandomValidBpmnId();
     defaultMappingClient
         .newCreateMappingCommand()
-        .id(RESTRICTED_USER_ID)
+        .mappingId(RESTRICTED_USER_ID)
         .claimName(USER_ID_CLAIM_NAME)
         .claimValue(RESTRICTED_USER_ID)
         .name(RESTRICTED_USER_ID)

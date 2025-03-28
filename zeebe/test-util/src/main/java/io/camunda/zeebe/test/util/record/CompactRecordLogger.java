@@ -1015,7 +1015,7 @@ public class CompactRecordLogger {
         .append(", Name=")
         .append(formatId(value.getName()))
         .append(", EntityKey=")
-        .append(shortenKey(value.getEntityKey()))
+        .append(formatId(value.getEntityId()))
         .append("]");
 
     return builder.toString();

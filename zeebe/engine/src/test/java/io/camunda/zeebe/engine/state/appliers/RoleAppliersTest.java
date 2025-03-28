@@ -55,10 +55,9 @@ public class RoleAppliersTest {
   @Test
   void shouldAddEntityToRoleWithTypeUser() {
     // given
-    final long entityKey = 1L;
     userState.create(
         new UserRecord()
-            .setUserKey(entityKey)
+            .setUserKey(1L)
             .setUsername("username")
             .setName("Foo")
             .setEmail("foo@bar.com")
@@ -66,39 +65,39 @@ public class RoleAppliersTest {
     final long roleKey = 11L;
     final var roleRecord = new RoleRecord().setRoleKey(roleKey).setName("foo");
     roleState.create(roleRecord);
-    roleRecord.setEntityKey(entityKey).setEntityType(EntityType.USER);
+    roleRecord.setEntityId("username").setEntityType(EntityType.USER);
 
     // when
     roleEntityAddedApplier.applyState(roleKey, roleRecord);
 
     // then
     assertThat(roleState.getEntitiesByType(roleKey).get(EntityType.USER))
-        .containsExactly(entityKey);
-    final var persistedUser = userState.getUser(entityKey).get();
+        .containsExactly("username");
+    final var persistedUser = userState.getUser("username").get();
     assertThat(persistedUser.getRoleKeysList()).containsExactly(roleKey);
   }
 
   @Test
   void shouldAddEntityToRoleWithTypeMapping() {
     // given
-    final long entityKey = 1L;
+    final var entityId = "entityId";
     mappingState.create(
         new MappingRecord()
-            .setMappingKey(entityKey)
+            .setMappingId(entityId)
             .setClaimName("claimName")
             .setClaimValue("claimValue"));
     final long roleKey = 11L;
     final var roleRecord = new RoleRecord().setRoleKey(roleKey).setName("foo");
     roleState.create(roleRecord);
-    roleRecord.setEntityKey(entityKey).setEntityType(EntityType.MAPPING);
+    roleRecord.setEntityId(entityId).setEntityType(EntityType.MAPPING);
 
     // when
     roleEntityAddedApplier.applyState(roleKey, roleRecord);
 
     // then
     assertThat(roleState.getEntitiesByType(roleKey).get(EntityType.MAPPING))
-        .containsExactly(entityKey);
-    final var persistedMapping = mappingState.get(entityKey).get();
+        .containsExactly(entityId);
+    final var persistedMapping = mappingState.get(entityId).get();
     assertThat(persistedMapping.getRoleKeysList()).containsExactly(roleKey);
   }
 
@@ -152,7 +151,7 @@ public class RoleAppliersTest {
     userState.addRole(username, roleKey);
     final var roleRecord = new RoleRecord().setRoleKey(roleKey).setName("foo");
     roleState.create(roleRecord);
-    roleRecord.setEntityKey(userKey).setEntityType(EntityType.USER);
+    roleRecord.setEntityId(username).setEntityType(EntityType.USER);
     roleState.addEntity(roleRecord);
 
     // when
@@ -167,17 +166,17 @@ public class RoleAppliersTest {
   @Test
   void shouldRemoveEntityFromRoleWithTypeMapping() {
     // given
-    final long entityKey = 1L;
+    final var entityId = "entityId";
     mappingState.create(
         new MappingRecord()
-            .setMappingKey(entityKey)
+            .setMappingId(entityId)
             .setClaimName("claimName")
             .setClaimValue("claimValue"));
     final long roleKey = 11L;
-    mappingState.addRole(entityKey, 11L);
+    mappingState.addRole(entityId, 11L);
     final var roleRecord = new RoleRecord().setRoleKey(roleKey).setName("foo");
     roleState.create(roleRecord);
-    roleRecord.setEntityKey(entityKey).setEntityType(EntityType.MAPPING);
+    roleRecord.setEntityId(entityId).setEntityType(EntityType.MAPPING);
     roleState.addEntity(roleRecord);
 
     // when
@@ -185,7 +184,7 @@ public class RoleAppliersTest {
 
     // then
     assertThat(roleState.getEntitiesByType(roleKey)).isEmpty();
-    final var persistedMapping = mappingState.get(entityKey).get();
+    final var persistedMapping = mappingState.get(entityId).get();
     assertThat(persistedMapping.getRoleKeysList()).isEmpty();
   }
 }

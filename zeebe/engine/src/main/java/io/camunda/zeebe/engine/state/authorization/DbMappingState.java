@@ -63,7 +63,7 @@ public class DbMappingState implements MutableMappingState {
   @Override
   public void create(final MappingRecord mappingRecord) {
     final var key = mappingRecord.getMappingKey();
-    final var id = mappingRecord.getId();
+    final var id = mappingRecord.getMappingId();
     final var name = mappingRecord.getName();
     final var claimName = mappingRecord.getClaimName();
     final var value = mappingRecord.getClaimValue();
@@ -76,7 +76,7 @@ public class DbMappingState implements MutableMappingState {
     persistedMapping.setClaimName(claimName);
     persistedMapping.setClaimValue(value);
     persistedMapping.setName(name);
-    persistedMapping.setId(id);
+    persistedMapping.setMappingId(id);
 
     mappingColumnFamily.insert(claim, persistedMapping);
     claimByIdColumnFamily.insert(mappingId, fkClaim);
@@ -85,8 +85,8 @@ public class DbMappingState implements MutableMappingState {
 
   @Override
   public void update(final MappingRecord mappingRecord) {
-    mappingId.wrapString(mappingRecord.getId());
-    get(mappingRecord.getId())
+    mappingId.wrapString(mappingRecord.getMappingId());
+    get(mappingRecord.getMappingId())
         .ifPresentOrElse(
             persistedMapping -> {
               mappingKey.wrapLong(persistedMapping.getMappingKey());
@@ -110,14 +110,14 @@ public class DbMappingState implements MutableMappingState {
               throw new IllegalStateException(
                   String.format(
                       "Expected to update mapping with id '%s', but a mapping with this id does not exist.",
-                      mappingRecord.getId()));
+                      mappingRecord.getMappingId()));
             });
   }
 
   @Override
-  public void addRole(final long mappingKey, final long roleKey) {
-    this.mappingKey.wrapLong(mappingKey);
-    final var fkClaim = claimByKeyColumnFamily.get(this.mappingKey);
+  public void addRole(final String mappingId, final long roleKey) {
+    this.mappingId.wrapString(mappingId);
+    final var fkClaim = claimByIdColumnFamily.get(this.mappingId);
     if (fkClaim != null) {
       final var claim = fkClaim.inner();
       final var persistedMapping = mappingColumnFamily.get(claim);
@@ -151,9 +151,9 @@ public class DbMappingState implements MutableMappingState {
   }
 
   @Override
-  public void removeRole(final long mappingKey, final long roleKey) {
-    this.mappingKey.wrapLong(mappingKey);
-    final var fkClaim = claimByKeyColumnFamily.get(this.mappingKey);
+  public void removeRole(final String mappingId, final long roleKey) {
+    this.mappingId.wrapString(mappingId);
+    final var fkClaim = claimByIdColumnFamily.get(this.mappingId);
     if (fkClaim != null) {
       final var claim = fkClaim.inner();
       final var persistedMapping = mappingColumnFamily.get(claim);

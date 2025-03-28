@@ -34,12 +34,12 @@ public class MappingValidator {
           if (request.getName() == null || request.getName().isBlank()) {
             violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("name"));
           }
-          if (request.getId() == null || request.getId().isBlank()) {
-            violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("id"));
-          } else if (request.getId().length() > MAX_LENGTH) {
-            violations.add(ERROR_MESSAGE_TOO_MANY_CHARACTERS.formatted("id", MAX_LENGTH));
-          } else if (!ID_PATTERN.matcher(request.getId()).matches()) {
-            violations.add(ERROR_MESSAGE_ILLEGAL_CHARACTER.formatted("id", ID_REGEX));
+          if (request.getMappingId() == null || request.getMappingId().isBlank()) {
+            violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("mappingId"));
+          } else if (request.getMappingId().length() > MAX_LENGTH) {
+            violations.add(ERROR_MESSAGE_TOO_MANY_CHARACTERS.formatted("mappingId", MAX_LENGTH));
+          } else if (!ID_PATTERN.matcher(request.getMappingId()).matches()) {
+            violations.add(ERROR_MESSAGE_ILLEGAL_CHARACTER.formatted("mappingId", ID_REGEX));
           }
         });
   }

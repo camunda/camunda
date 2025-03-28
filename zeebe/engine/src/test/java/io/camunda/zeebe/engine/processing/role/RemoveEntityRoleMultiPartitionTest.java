@@ -40,7 +40,7 @@ public class RemoveEntityRoleMultiPartitionTest {
   @Test
   public void shouldDistributeRoleRemoveEntityCommand() {
     // when
-    final var userKey =
+    final var username =
         engine
             .user()
             .newUser("foo")
@@ -48,14 +48,15 @@ public class RemoveEntityRoleMultiPartitionTest {
             .withName("Foo Bar")
             .withPassword("zabraboof")
             .create()
-            .getKey();
+            .getValue()
+            .getUsername();
     final var name = UUID.randomUUID().toString();
     final var roleKey = engine.role().newRole(name).create().getValue().getRoleKey();
-    engine.role().addEntity(roleKey).withEntityKey(userKey).withEntityType(EntityType.USER).add();
+    engine.role().addEntity(roleKey).withEntityId(username).withEntityType(EntityType.USER).add();
     engine
         .role()
         .removeEntity(roleKey)
-        .withEntityKey(userKey)
+        .withEntityId(username)
         .withEntityType(EntityType.USER)
         .remove();
 
@@ -108,7 +109,7 @@ public class RemoveEntityRoleMultiPartitionTest {
   @Test
   public void shouldDistributeInIdentityQueue() {
     // when
-    final var userKey =
+    final var username =
         engine
             .user()
             .newUser("foo")
@@ -116,14 +117,15 @@ public class RemoveEntityRoleMultiPartitionTest {
             .withName("Foo Bar")
             .withPassword("zabraboof")
             .create()
-            .getKey();
+            .getValue()
+            .getUsername();
     final var name = UUID.randomUUID().toString();
     final var roleKey = engine.role().newRole(name).create().getValue().getRoleKey();
-    engine.role().addEntity(roleKey).withEntityKey(userKey).withEntityType(EntityType.USER).add();
+    engine.role().addEntity(roleKey).withEntityId(username).withEntityType(EntityType.USER).add();
     engine
         .role()
         .removeEntity(roleKey)
-        .withEntityKey(userKey)
+        .withEntityId(username)
         .withEntityType(EntityType.USER)
         .remove();
 
@@ -142,7 +144,7 @@ public class RemoveEntityRoleMultiPartitionTest {
     for (int partitionId = 2; partitionId <= PARTITION_COUNT; partitionId++) {
       interceptUserCreateForPartition(partitionId);
     }
-    final var userKey =
+    final var username =
         engine
             .user()
             .newUser("foo")
@@ -150,16 +152,17 @@ public class RemoveEntityRoleMultiPartitionTest {
             .withName("Foo Bar")
             .withPassword("zabraboof")
             .create()
-            .getKey();
+            .getValue()
+            .getUsername();
 
     // when
     final var name = UUID.randomUUID().toString();
     final var roleKey = engine.role().newRole(name).create().getValue().getRoleKey();
-    engine.role().addEntity(roleKey).withEntityKey(userKey).withEntityType(EntityType.USER).add();
+    engine.role().addEntity(roleKey).withEntityId(username).withEntityType(EntityType.USER).add();
     engine
         .role()
         .removeEntity(roleKey)
-        .withEntityKey(userKey)
+        .withEntityId(username)
         .withEntityType(EntityType.USER)
         .remove();
 

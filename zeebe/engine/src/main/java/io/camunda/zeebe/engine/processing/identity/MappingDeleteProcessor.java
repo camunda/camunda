@@ -72,7 +72,7 @@ public class MappingDeleteProcessor implements DistributedTypedRecordProcessor<M
   @Override
   public void processNewCommand(final TypedRecord<MappingRecord> command) {
     final var record = command.getValue();
-    final String id = record.getId();
+    final String id = record.getMappingId();
     final var persistedMappingOptional = mappingState.get(id);
     if (persistedMappingOptional.isEmpty()) {
       final var errorMessage = MAPPING_NOT_FOUND_ERROR_MESSAGE.formatted(id);
@@ -108,7 +108,7 @@ public class MappingDeleteProcessor implements DistributedTypedRecordProcessor<M
   public void processDistributedCommand(final TypedRecord<MappingRecord> command) {
     final var record = command.getValue();
     mappingState
-        .get(record.getId())
+        .get(record.getMappingId())
         .ifPresentOrElse(
             this::deleteMapping,
             () -> {
@@ -122,6 +122,7 @@ public class MappingDeleteProcessor implements DistributedTypedRecordProcessor<M
 
   private void deleteMapping(final PersistedMapping mapping) {
     final var mappingKey = mapping.getMappingKey();
+    final var mappingId = mapping.getMappingId();
     deleteAuthorizations(mappingKey);
     for (final var tenantId : mapping.getTenantIdsList()) {
       final var tenant = tenantState.getTenantById(tenantId).orElseThrow();
@@ -131,7 +132,7 @@ public class MappingDeleteProcessor implements DistributedTypedRecordProcessor<M
           new TenantRecord()
               .setTenantKey(tenant.getTenantKey())
               .setTenantId(tenant.getTenantId())
-              .setEntityId(mapping.getId())
+              .setEntityId(mapping.getMappingId())
               .setEntityType(EntityType.MAPPING));
     }
     for (final var roleKey : mapping.getRoleKeysList()) {
@@ -140,7 +141,7 @@ public class MappingDeleteProcessor implements DistributedTypedRecordProcessor<M
           RoleIntent.ENTITY_REMOVED,
           new RoleRecord()
               .setRoleKey(roleKey)
-              .setEntityKey(mappingKey)
+              .setEntityId(mappingId)
               .setEntityType(EntityType.MAPPING));
     }
     for (final var groupKey : mapping.getGroupKeysList()) {
@@ -155,7 +156,7 @@ public class MappingDeleteProcessor implements DistributedTypedRecordProcessor<M
     stateWriter.appendFollowUpEvent(
         mappingKey,
         MappingIntent.DELETED,
-        new MappingRecord().setMappingKey(mappingKey).setId(mapping.getId()));
+        new MappingRecord().setMappingKey(mappingKey).setMappingId(mapping.getMappingId()));
   }
 
   private void deleteAuthorizations(final long mappingKey) {

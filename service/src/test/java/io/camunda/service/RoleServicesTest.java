@@ -120,10 +120,10 @@ public class RoleServicesTest {
   public void shouldAddUserToRole() {
     // given
     final var roleKey = 100L;
-    final var entityKey = 42;
+    final var entityId = "entityId";
 
     // when
-    services.addMember(roleKey, EntityType.USER, entityKey);
+    services.addMember(roleKey, EntityType.USER, entityId);
 
     // then
     final BrokerRoleEntityRequest request = stubbedBrokerClient.getSingleBrokerRequest();
@@ -131,7 +131,7 @@ public class RoleServicesTest {
     assertThat(request.getValueType()).isEqualTo(ValueType.ROLE);
     final RoleRecord brokerRequestValue = request.getRequestWriter();
     assertThat(brokerRequestValue.getRoleKey()).isEqualTo(roleKey);
-    assertThat(brokerRequestValue.getEntityKey()).isEqualTo(entityKey);
+    assertThat(brokerRequestValue.getEntityId()).isEqualTo(entityId);
     assertThat(brokerRequestValue.getEntityType()).isEqualTo(EntityType.USER);
   }
 
@@ -139,10 +139,10 @@ public class RoleServicesTest {
   public void shouldRemoveUserFromRole() {
     // given
     final var roleKey = 100L;
-    final var entityKey = 42;
+    final var entityId = "entityId";
 
     // when
-    services.removeMember(roleKey, EntityType.USER, entityKey);
+    services.removeMember(roleKey, EntityType.USER, entityId);
 
     // then
     final BrokerRoleEntityRequest request = stubbedBrokerClient.getSingleBrokerRequest();
@@ -150,20 +150,20 @@ public class RoleServicesTest {
     assertThat(request.getValueType()).isEqualTo(ValueType.ROLE);
     final RoleRecord brokerRequestValue = request.getRequestWriter();
     assertThat(brokerRequestValue.getRoleKey()).isEqualTo(roleKey);
-    assertThat(brokerRequestValue.getEntityKey()).isEqualTo(entityKey);
+    assertThat(brokerRequestValue.getEntityId()).isEqualTo(entityId);
     assertThat(brokerRequestValue.getEntityType()).isEqualTo(EntityType.USER);
   }
 
   @Test
-  public void shouldGetAllRolesByMemberKey() {
+  public void shouldGetAllRolesByMemberId() {
     // given
-    final var memberKey = 100L;
+    final var memberId = "memberId";
     final var roleEntity = mock(RoleEntity.class);
-    when(client.findAllRoles(RoleQuery.of(q -> q.filter(f -> f.memberKey(memberKey)))))
+    when(client.findAllRoles(RoleQuery.of(q -> q.filter(f -> f.memberIds(memberId)))))
         .thenReturn(List.of(roleEntity));
 
     // when
-    final var result = services.findAll(RoleQuery.of(q -> q.filter(f -> f.memberKey(memberKey))));
+    final var result = services.findAll(RoleQuery.of(q -> q.filter(f -> f.memberIds(memberId))));
 
     // then
     assertThat(result).isEqualTo(List.of(roleEntity));

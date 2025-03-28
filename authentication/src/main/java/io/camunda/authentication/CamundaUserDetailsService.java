@@ -52,9 +52,8 @@ public class CamundaUserDetailsService implements UserDetailsService {
             .findFirst()
             .orElseThrow(() -> new UsernameNotFoundException(username));
 
-    final Long userKey = storedUser.userKey();
-
-    final var roles = roleServices.findAll(RoleQuery.of(q -> q.filter(f -> f.memberKey(userKey))));
+    final var roles =
+        roleServices.findAll(RoleQuery.of(q -> q.filter(f -> f.memberIds(storedUser.username()))));
 
     final var authorizedApplications =
         authorizationServices.getAuthorizedApplications(
@@ -72,7 +71,7 @@ public class CamundaUserDetailsService implements UserDetailsService {
             .toList();
 
     return aCamundaUser()
-        .withUserKey(userKey)
+        .withUserKey(storedUser.userKey())
         .withName(storedUser.name())
         .withUsername(storedUser.username())
         .withPassword(storedUser.password())

@@ -74,7 +74,8 @@ public class CamundaOidcUserServiceTest {
                 new MappingEntity("test-id-2", 7L, "group", "G1", "group-g1")));
 
     final var roleR1 = new RoleEntity(8L, "Role R1");
-    when(roleServices.getRolesByMemberKeys(Set.of(5L, 7L))).thenReturn(List.of(roleR1));
+    when(roleServices.getRolesByMemberIds(Set.of("test-id", "test-id-2")))
+        .thenReturn(List.of(roleR1));
     when(authorizationServices.getAuthorizedApplications(Set.of("5", "7", "8")))
         .thenReturn(List.of("*"));
 

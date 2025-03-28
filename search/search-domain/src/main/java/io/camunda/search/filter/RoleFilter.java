@@ -10,15 +10,15 @@ package io.camunda.search.filter;
 import io.camunda.util.ObjectBuilder;
 import java.util.Set;
 
-public record RoleFilter(Long roleKey, String name, Set<Long> memberKeys) implements FilterBase {
+public record RoleFilter(Long roleKey, String name, Set<String> memberIds) implements FilterBase {
   public Builder toBuilder() {
-    return new Builder().roleKey(roleKey).name(name).memberKeys(memberKeys);
+    return new Builder().roleKey(roleKey).name(name).memberIds(memberIds);
   }
 
   public static final class Builder implements ObjectBuilder<RoleFilter> {
     private Long roleKey;
     private String name;
-    private Set<Long> memberKeys;
+    private Set<String> memberIds;
 
     public Builder roleKey(final Long value) {
       roleKey = value;
@@ -30,18 +30,18 @@ public record RoleFilter(Long roleKey, String name, Set<Long> memberKeys) implem
       return this;
     }
 
-    public Builder memberKeys(final Set<Long> value) {
-      memberKeys = value;
+    public Builder memberIds(final Set<String> value) {
+      memberIds = value;
       return this;
     }
 
-    public Builder memberKey(final Long... values) {
-      return memberKeys(Set.of(values));
+    public Builder memberIds(final String... values) {
+      return memberIds(Set.of(values));
     }
 
     @Override
     public RoleFilter build() {
-      return new RoleFilter(roleKey, name, memberKeys);
+      return new RoleFilter(roleKey, name, memberIds);
     }
   }
 }
