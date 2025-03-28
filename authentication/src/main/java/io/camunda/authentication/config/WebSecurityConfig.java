@@ -10,11 +10,9 @@ package io.camunda.authentication.config;
 import io.camunda.authentication.CamundaUserDetailsService;
 import io.camunda.authentication.ConditionalOnAuthenticationMethod;
 import io.camunda.authentication.ConditionalOnUnprotectedApi;
-import io.camunda.authentication.filters.TenantRequestAttributeFilter;
 import io.camunda.authentication.filters.WebApplicationAuthorizationCheckFilter;
 import io.camunda.authentication.handler.AuthFailureHandler;
 import io.camunda.authentication.handler.CustomMethodSecurityExpressionHandler;
-import io.camunda.security.configuration.MultiTenancyConfiguration;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.security.entity.AuthenticationMethod;
 import io.camunda.service.AuthorizationServices;
@@ -27,7 +25,6 @@ import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
-import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
@@ -155,12 +152,6 @@ public class WebSecurityConfig {
         .authorizeHttpRequests(
             (authorizeHttpRequests) -> authorizeHttpRequests.anyRequest().denyAll())
         .build();
-  }
-
-  @Bean
-  public FilterRegistrationBean<TenantRequestAttributeFilter>
-      tenantRequestAttributeFilterRegistration(final MultiTenancyConfiguration configuration) {
-    return new FilterRegistrationBean<>(new TenantRequestAttributeFilter(configuration));
   }
 
   @Bean
