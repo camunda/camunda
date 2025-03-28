@@ -110,6 +110,7 @@ public final class PartitionManagerImpl implements PartitionManager, PartitionCh
             listeners,
             partitionRaftListeners,
             topologyManager,
+            partitionDistribution,
             featureFlags);
     managementService =
         new DefaultPartitionManagementService(

@@ -13,6 +13,7 @@ import io.camunda.zeebe.broker.PartitionRaftListener;
 import io.camunda.zeebe.broker.clustering.ClusterServices;
 import io.camunda.zeebe.broker.exporter.repo.ExporterRepository;
 import io.camunda.zeebe.broker.logstreams.state.StatePositionSupplier;
+import io.camunda.zeebe.broker.partitioning.topology.PartitionDistribution;
 import io.camunda.zeebe.broker.partitioning.topology.TopologyManagerImpl;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageMonitor;
@@ -103,6 +104,7 @@ public final class ZeebePartitionFactory {
   private final JobStreamer jobStreamer;
   private final List<PartitionListener> partitionListeners;
   private final TopologyManagerImpl topologyManager;
+  private final PartitionDistribution partitionDistribution;
   private final FeatureFlags featureFlags;
   private final List<PartitionRaftListener> partitionRaftListeners;
 
@@ -119,6 +121,7 @@ public final class ZeebePartitionFactory {
       final List<PartitionListener> partitionListeners,
       final List<PartitionRaftListener> partitionRaftListeners,
       final TopologyManagerImpl topologyManager,
+      final PartitionDistribution partitionDistribution,
       final FeatureFlags featureFlags) {
     this.actorSchedulingService = actorSchedulingService;
     this.brokerCfg = brokerCfg;
@@ -132,6 +135,7 @@ public final class ZeebePartitionFactory {
     this.partitionListeners = partitionListeners;
     this.partitionRaftListeners = partitionRaftListeners;
     this.topologyManager = topologyManager;
+    this.partitionDistribution = partitionDistribution;
     this.featureFlags = featureFlags;
   }
 
@@ -224,7 +228,7 @@ public final class ZeebePartitionFactory {
 
       return EngineProcessors.createEngineProcessors(
           recordProcessorContext,
-          localBroker.getPartitionsCount(),
+          partitionDistribution.partitions().size(),
           subscriptionCommandSender,
           partitionCommandSender,
           featureFlags,
