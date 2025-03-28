@@ -248,7 +248,7 @@ public class ProcessInstanceAndFlowNodeInstanceSearchTest {
     // when
     final var result =
         camundaClient
-            .newProcessInstanceQuery()
+            .newProcessInstanceSearchRequest()
             .filter(f -> f.processInstanceKey(b -> b.nin(processInstanceKeys)))
             .send()
             .join();

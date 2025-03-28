@@ -139,7 +139,7 @@ public class QueryProcessInstanceTest extends ClientRestTest {
   void shouldSearchProcessInstanceByProcessInstanceKeyLongNinFilter() {
     // when
     client
-        .newProcessInstanceQuery()
+        .newProcessInstanceSearchRequest()
         .filter(f -> f.processInstanceKey(b -> b.nin(1L, 10L)))
         .send()
         .join();
