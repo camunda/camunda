@@ -12,15 +12,11 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.authentication.entity.AuthenticationContext;
 import io.camunda.authentication.entity.CamundaOidcUser;
-import io.camunda.search.entities.MappingEntity;
+import io.camunda.authentication.entity.OAuthContext;
 import io.camunda.search.entities.RoleEntity;
-import io.camunda.service.AuthorizationServices;
-import io.camunda.service.GroupServices;
-import io.camunda.service.MappingServices;
-import io.camunda.service.RoleServices;
-import io.camunda.service.TenantServices;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -44,18 +40,12 @@ public class CamundaOidcUserServiceTest {
 
   private CamundaOidcUserService camundaOidcUserService;
 
-  @Mock private MappingServices mappingServices;
-  @Mock private TenantServices tenantServices;
-  @Mock private RoleServices roleServices;
-  @Mock private GroupServices groupServices;
-  @Mock private AuthorizationServices authorizationServices;
+  @Mock private CamundaOAuthPrincipalService camundaOAuthPrincipalService;
 
   @BeforeEach
   public void setUp() throws Exception {
     MockitoAnnotations.openMocks(this).close();
-    camundaOidcUserService =
-        new CamundaOidcUserService(
-            mappingServices, tenantServices, roleServices, groupServices, authorizationServices);
+    camundaOidcUserService = new CamundaOidcUserService(camundaOAuthPrincipalService);
   }
 
   @Test
@@ -67,16 +57,16 @@ public class CamundaOidcUserServiceTest {
             "email", "foo@camunda.test",
             "role", "R1",
             "group", "G1");
-    when(mappingServices.getMatchingMappings(claims))
-        .thenReturn(
-            List.of(
-                new MappingEntity("test-id", 5L, "role", "R1", "role-r1"),
-                new MappingEntity("test-id-2", 7L, "group", "G1", "group-g1")));
 
     final var roleR1 = new RoleEntity(8L, "Role R1");
-    when(roleServices.getRolesByMemberKeys(Set.of(5L, 7L))).thenReturn(List.of(roleR1));
-    when(authorizationServices.getAuthorizedApplications(Set.of("5", "7", "8")))
-        .thenReturn(List.of("*"));
+
+    when(camundaOAuthPrincipalService.loadOAuthContext(claims))
+        .thenReturn(
+            new OAuthContext(
+                Set.of(5L, 7L),
+                Set.of("test-id", "test-id-2"),
+                new AuthenticationContext(
+                    List.of(roleR1), List.of("*"), new ArrayList<>(), new ArrayList<>())));
 
     // when
     final OidcUser oidcUser = camundaOidcUserService.loadUser(createOidcUserRequest(claims));

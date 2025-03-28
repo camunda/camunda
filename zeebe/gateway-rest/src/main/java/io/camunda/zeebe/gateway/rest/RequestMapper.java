@@ -142,7 +142,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.web.multipart.MultipartFile;
 
 public class RequestMapper {
@@ -567,6 +566,7 @@ public class RequestMapper {
     String authenticatedUsername = null;
     final List<Long> authenticatedRoleKeys = new ArrayList<>();
     final List<String> authorizedTenants = TenantAttributeHolder.getTenantIds();
+    final List<String> authorizedMappings = new ArrayList<>();
 
     final var requestAuthentication = SecurityContextHolder.getContext().getAuthentication();
 
@@ -582,18 +582,14 @@ public class RequestMapper {
         if (authenticatedPrincipal instanceof final CamundaUser principal) {
           authenticatedUsername = principal.getUsername();
           claims.put(Authorization.AUTHORIZED_USERNAME, authenticatedUsername);
-        }
-        if (authenticatedPrincipal instanceof final CamundaOAuthPrincipal principal) {
+        } else if (authenticatedPrincipal instanceof final CamundaOAuthPrincipal principal) {
+          authorizedMappings.addAll(principal.getOAuthContext().mappingIds());
+          authorizedMappings.addAll(
+              principal.getOAuthContext().mappingKeys().stream().map(Object::toString).toList());
           principal
               .getClaims()
               .forEach((key, value) -> ClaimTransformer.applyUserClaim(claims, key, value));
         }
-      }
-
-      if (requestAuthentication instanceof final JwtAuthenticationToken jwtAuthenticationToken) {
-        jwtAuthenticationToken
-            .getTokenAttributes()
-            .forEach((key, value) -> ClaimTransformer.applyUserClaim(claims, key, value));
       }
     }
 
@@ -602,6 +598,7 @@ public class RequestMapper {
         .user(authenticatedUsername)
         .roleKeys(authenticatedRoleKeys)
         .tenants(authorizedTenants)
+        .mapping(authorizedMappings)
         .build();
   }
 
