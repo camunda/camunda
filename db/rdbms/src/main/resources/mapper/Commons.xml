@@ -40,6 +40,9 @@
       <when test="operation.operator.name().equals('IN')">
         IN <foreach collection="operation.values" item="value" open="(" separator=", " close=")">#{value}</foreach>
       </when>
+      <when test="operation.operator.name().equals('NOT_IN')">
+        NOT IN <foreach collection="operation.values" item="value" open="(" separator=", " close=")">#{value}</foreach>
+      </when>
       <when test="operation.operator.name().equals('LIKE')">
         LIKE #{operation.value, typeHandler=io.camunda.db.rdbms.sql.typehandler.WildcardTransformingStringTypeHandler}
           ESCAPE ${escapeChar}

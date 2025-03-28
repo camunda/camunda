@@ -17,6 +17,7 @@ public enum Operator {
   LOWER_THAN("lt"),
   LOWER_THAN_EQUALS("lte"),
   IN("in"),
+  NOT_IN("notIn"),
   LIKE("like");
 
   private final String value;

@@ -33,6 +33,7 @@ class DecisionInstanceSearchTest {
 
   private static final String DECISION_DEFINITION_ID_1 = "decision_1";
   private static final String DECISION_DEFINITION_ID_2 = "invoiceAssignApprover";
+  private static final String DECISION_DEFINITION_ID_3 = "invoiceClassification";
   private static CamundaClient camundaClient;
   // evaluated decisions mapped by decision definition id
   private static final Map<String, EvaluateDecisionResponse> EVALUATED_DECISIONS = new HashMap<>();
@@ -148,6 +149,27 @@ class DecisionInstanceSearchTest {
         .isEqualTo(decisionDefinitionKey);
     assertThat(result.items().getFirst().getDecisionInstanceKey())
         .isEqualTo(EVALUATED_DECISIONS.get(DECISION_DEFINITION_ID_1).getDecisionInstanceKey());
+  }
+
+  @Test
+  public void shouldRetrieveDecisionInstanceByDecisionKeyFilterNotIn(
+      final CamundaClient camundaClient) {
+    // when
+    final long decisionDefinitionKey =
+        EVALUATED_DECISIONS.get(DECISION_DEFINITION_ID_1).getDecisionKey();
+    final var result =
+        camundaClient
+            .newDecisionInstanceSearchRequest()
+            .filter(
+                f -> f.decisionDefinitionKey(b -> b.notIn(Long.MAX_VALUE, decisionDefinitionKey)))
+            .send()
+            .join();
+
+    // then
+    assertThat(result.items().size()).isEqualTo(2);
+    assertThat(result.items())
+        .extracting(DecisionInstance::getDecisionDefinitionId)
+        .containsExactlyInAnyOrder(DECISION_DEFINITION_ID_2, DECISION_DEFINITION_ID_3);
   }
 
   @Test

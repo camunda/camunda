@@ -57,4 +57,15 @@ public class BasicLongPropertyImpl implements BasicLongProperty {
   public BasicStringFilterProperty build() {
     return filterProperty;
   }
+
+  @Override
+  public BasicLongProperty notIn(final List<Long> values) {
+    filterProperty.set$NotIn(values.stream().map(String::valueOf).collect(Collectors.toList()));
+    return this;
+  }
+
+  @Override
+  public BasicLongProperty notIn(final Long... value) {
+    return notIn(CollectionUtil.toList(value));
+  }
 }

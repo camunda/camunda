@@ -117,7 +117,7 @@ public class QueryProcessInstanceTest extends ClientRestTest {
   }
 
   @Test
-  void shouldSearchProcessInstanceByProcessInstanceKeyLongFilter() {
+  void shouldSearchProcessInstanceByProcessInstanceKeyLongInFilter() {
     // when
     client
         .newProcessInstanceSearchRequest()
@@ -133,6 +133,25 @@ public class QueryProcessInstanceTest extends ClientRestTest {
     final BasicStringFilterProperty processInstanceKey = filter.getProcessInstanceKey();
     assertThat(processInstanceKey).isNotNull();
     assertThat(processInstanceKey.get$In()).isEqualTo(Arrays.asList("1", "10"));
+  }
+
+  @Test
+  void shouldSearchProcessInstanceByProcessInstanceKeyLongNinFilter() {
+    // when
+    client
+        .newProcessInstanceSearchRequest()
+        .filter(f -> f.processInstanceKey(b -> b.notIn(1L, 10L)))
+        .send()
+        .join();
+
+    // then
+    final ProcessInstanceSearchQuery request =
+        gatewayService.getLastRequest(ProcessInstanceSearchQuery.class);
+    final ProcessInstanceFilter filter = request.getFilter();
+    assertThat(filter).isNotNull();
+    final BasicStringFilterProperty processInstanceKey = filter.getProcessInstanceKey();
+    assertThat(processInstanceKey).isNotNull();
+    assertThat(processInstanceKey.get$NotIn()).isEqualTo(Arrays.asList("1", "10"));
   }
 
   @Test

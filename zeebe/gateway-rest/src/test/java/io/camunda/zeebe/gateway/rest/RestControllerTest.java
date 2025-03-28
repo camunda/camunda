@@ -182,6 +182,12 @@ public abstract class RestControllerTest {
                               stringValues
                                   ? op.values().stream().map(implicitTpl::formatted).toList()
                                   : op.values());
+                      case NOT_IN ->
+                          keyValueTpl.formatted(
+                              "$notIn",
+                              stringValues
+                                  ? op.values().stream().map(implicitTpl::formatted).toList()
+                                  : op.values());
                       case LIKE -> explicitTpl.formatted("$like", op.value());
                     })
             .collect(Collectors.joining(","));
