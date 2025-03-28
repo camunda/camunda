@@ -182,9 +182,9 @@ public abstract class RestControllerTest {
                               stringValues
                                   ? op.values().stream().map(implicitTpl::formatted).toList()
                                   : op.values());
-                      case NIN ->
+                      case NOT_IN ->
                           keyValueTpl.formatted(
-                              "$nin",
+                              "$notIn",
                               stringValues
                                   ? op.values().stream().map(implicitTpl::formatted).toList()
                                   : op.values());

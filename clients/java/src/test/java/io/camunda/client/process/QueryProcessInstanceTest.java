@@ -140,7 +140,7 @@ public class QueryProcessInstanceTest extends ClientRestTest {
     // when
     client
         .newProcessInstanceSearchRequest()
-        .filter(f -> f.processInstanceKey(b -> b.nin(1L, 10L)))
+        .filter(f -> f.processInstanceKey(b -> b.notIn(1L, 10L)))
         .send()
         .join();
 
@@ -151,7 +151,7 @@ public class QueryProcessInstanceTest extends ClientRestTest {
     assertThat(filter).isNotNull();
     final BasicStringFilterProperty processInstanceKey = filter.getProcessInstanceKey();
     assertThat(processInstanceKey).isNotNull();
-    assertThat(processInstanceKey.get$Nin()).isEqualTo(Arrays.asList("1", "10"));
+    assertThat(processInstanceKey.get$NotIn()).isEqualTo(Arrays.asList("1", "10"));
   }
 
   @Test

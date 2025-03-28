@@ -4460,15 +4460,15 @@ components:
           description: Checks for inequality with the provided value.
           type: string
         $exists:
-          description: Checks if the current property exists.¡
+          description: Checks if the current property exists.
           type: boolean
         $in:
           description: Checks if the property matches any of the provided values.
           type: array
           items:
             type: string
-        $nin:
-          description: Checks if the property does not match any of the provided values (i.e., it must match none of them).
+        $notIn:
+          description: Checks if the property matches none of the provided values.
           type: array
           items:
             type: string

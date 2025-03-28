@@ -61,13 +61,13 @@ public class BasicLongPropertyImpl implements BasicLongProperty {
   }
 
   @Override
-  public BasicLongProperty nin(final List<Long> values) {
-    filterProperty.set$Nin(values.stream().map(String::valueOf).collect(Collectors.toList()));
+  public BasicLongProperty notIn(final List<Long> values) {
+    filterProperty.set$NotIn(values.stream().map(String::valueOf).collect(Collectors.toList()));
     return this;
   }
 
   @Override
-  public BasicLongProperty nin(final Long... value) {
-    return nin(CollectionUtil.toList(value));
+  public BasicLongProperty notIn(final Long... value) {
+    return notIn(CollectionUtil.toList(value));
   }
 }
