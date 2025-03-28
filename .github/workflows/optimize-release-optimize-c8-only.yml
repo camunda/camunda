@@ -32,6 +32,9 @@ defaults:
   run:
     shell: bash
 
+env:
+  GH_TOKEN: ${{ github.token }} # needs to be available for the gh CLI tool
+
 jobs:
   build:
     name: Execute Release
@@ -57,6 +60,49 @@ jobs:
           echo "DOCKER_LATEST: ${{ inputs.DOCKER_LATEST }}"
           echo "IS_DRY_RUN: ${{ inputs.IS_DRY_RUN }}"
 
+      - name: Import Secrets
+        id: secrets
+        uses: hashicorp/vault-action@v3.3.0
+        with:
+          url: ${{ secrets.VAULT_ADDR }}
+          method: approle
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secrets: |
+            secret/data/github.com/organizations/camunda MAVEN_CENTRAL_GPG_SIGNING_KEY_PASSPHRASE;
+            secret/data/github.com/organizations/camunda MAVEN_CENTRAL_GPG_SIGNING_KEY_SEC;
+            secret/data/github.com/organizations/camunda MAVEN_CENTRAL_GPG_SIGNING_KEY_PUB;
+            secret/data/github.com/organizations/camunda MAVEN_CENTRAL_DEPLOYMENT_USR;
+            secret/data/github.com/organizations/camunda MAVEN_CENTRAL_DEPLOYMENT_PSW;
+
+      - name: Git User Setup
+        run: |
+          git config --global user.email "github-actions[release]"
+          git config --global user.name "github-actions[release]@users.noreply.github.com"
+
+      - name: Install Maven Central GPG Key
+        # setup-maven supports this as well but needs the key in the armor ascii format,
+        # while we only have it plain bas64 encoded
+        # see https://github.com/actions/setup-java/issues/100#issuecomment-742679976
+        run: |
+          echo -n "${{ steps.secrets.outputs.MAVEN_CENTRAL_GPG_SIGNING_KEY_SEC }}" \
+            | base64 --decode \
+            | gpg -q --allow-secret-key-import --import --no-tty --batch --yes
+          echo -n "${{ steps.secrets.outputs.MAVEN_CENTRAL_GPG_SIGNING_KEY_PUB }}" \
+            | base64 --decode \
+            | gpg -q --import --no-tty --batch --yes
+
+      - name: Setup Github cli
+        # On non-Github hosted runners it may be missing
+        # https://github.com/cli/cli/blob/trunk/docs/install_linux.md#debian-ubuntu-linux-raspberry-pi-os-apt
+        run: |
+          type -p curl >/dev/null || sudo apt install curl -y
+          curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg | sudo dd of=/usr/share/keyrings/githubcli-archive-keyring.gpg \
+          && sudo chmod go+r /usr/share/keyrings/githubcli-archive-keyring.gpg \
+          && echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" | sudo tee /etc/apt/sources.list.d/github-cli.list > /dev/null \
+          && sudo apt update \
+          && sudo apt install gh -y
+
       - name: Setup Maven
         uses: ./.github/actions/setup-build
         with:
@@ -68,6 +114,12 @@ jobs:
           vault-address: ${{ secrets.VAULT_ADDR }}
           vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
           vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+          maven-servers: |
+            [{
+                "id": "central",
+                "username": "${{ steps.secrets.outputs.MAVEN_CENTRAL_DEPLOYMENT_USR }}",
+                "password": "${{ steps.secrets.outputs.MAVEN_CENTRAL_DEPLOYMENT_PSW }}"
+            }]
 
       - name: Is current release major or minor.
         id: release-type
@@ -152,16 +204,10 @@ jobs:
         with:
           work-dir: ./optimize
 
-      - name: Configure GitHub user
-        run: |
-          git config --global user.name "github-actions[release]"
-          git config --global user.email "github-actions[release]@users.noreply.github.com"
-
       - name: Prepare release
         run: |
-          mvn -f optimize \
-            -DpushChanges="${{ github.event.inputs.IS_DRY_RUN != 'true' }}" \
-            -DremoteTagging="${{ github.event.inputs.IS_DRY_RUN != 'true' }}" \
+          ./mvnw -f optimize \
+            -DpushChanges=false \
             -DskipTests=true \
             -DignoreSnapshots=true \
             -Prelease,runAssembly \
@@ -169,14 +215,21 @@ jobs:
             -Dtag=${TAG} \
             -DreleaseVersion="${RELEASE_VERSION}" \
             -DdevelopmentVersion="${DEVELOPMENT_VERSION}" \
-            -Darguments="-Dmaven.deploy.skip=${IS_DRY_RUN} -DskipTests -DskipNexusStagingDeployMojo=${IS_DRY_RUN} -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn -f pom.xml" \
+            -Darguments='-Dgpg.passphrase="${{ steps.secrets.outputs.MAVEN_CENTRAL_GPG_SIGNING_KEY_PASSPHRASE }}" -Dmaven.deploy.skip=${IS_DRY_RUN} -DskipTests -DskipNexusStagingDeployMojo=${IS_DRY_RUN} -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn -f pom.xml' \
             -B \
             --fail-at-end \
             -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn
 
+      - name: Push Git changes
+        if: ${{ env.IS_DRY_RUN == 'false' }}
+        run: |
+          git push --tags
+          git push --all
+
       - name: Perform release
         run: |
           ./mvnw -f optimize \
+            -Dgpg.passphrase="${{ steps.secrets.outputs.MAVEN_CENTRAL_GPG_SIGNING_KEY_PASSPHRASE }}" \
             -DlocalCheckout=true \
             -DskipTests=true \
             -B \
@@ -184,7 +237,7 @@ jobs:
             -Prelease,runAssembly \
             -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn \
             release:perform \
-            -Darguments="-Dmaven.deploy.skip=${IS_DRY_RUN} -DskipTests -DskipNexusStagingDeployMojo=${IS_DRY_RUN} -B --fail-at-end -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn -f pom.xml"
+            -Darguments='-Dgpg.passphrase="${{ steps.secrets.outputs.MAVEN_CENTRAL_GPG_SIGNING_KEY_PASSPHRASE }}" -Dmaven.deploy.skip=${IS_DRY_RUN} -DskipTests -DskipNexusStagingDeployMojo=${IS_DRY_RUN} -B --fail-at-end -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn -f pom.xml'
 
       - name: Remove tag for RC release
         if: env.IS_RC == 'true' || failure()
@@ -309,3 +362,8 @@ jobs:
         uses: ./.github/actions/docker-logs
         with:
           archive_name: deploy-artifacts-docker
+
+      - name: Cleanup Maven Central GPG Key
+        # make sure we always remove the imported signing key to avoid it leaking on runners
+        if: always()
+        run: rm -rf $HOME/.gnupg
