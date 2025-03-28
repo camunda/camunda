@@ -16,6 +16,7 @@
 package io.camunda.client.api.command;
 
 import io.camunda.client.api.response.UpdateGroupResponse;
+import io.camunda.client.api.search.GroupChangeset;
 
 public interface UpdateGroupCommandStep1 extends FinalCommandStep<UpdateGroupResponse> {
 

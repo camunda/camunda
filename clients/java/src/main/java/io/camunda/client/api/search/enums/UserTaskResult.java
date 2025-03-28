@@ -15,10 +15,13 @@
  */
 package io.camunda.client.api.search.enums;
 
-public enum IncidentResultState {
-  ACTIVE,
-  MIGRATED,
-  RESOLVED,
-  PENDING,
-  UNKNOWN_ENUM_VALUE;
+public class UserTaskResult {
+
+  public enum State {
+    CREATED,
+    COMPLETED,
+    CANCELED,
+    FAILED,
+    UNKNOWN_ENUM_VALUE;
+  }
 }

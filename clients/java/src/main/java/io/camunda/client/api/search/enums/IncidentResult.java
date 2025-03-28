@@ -15,9 +15,32 @@
  */
 package io.camunda.client.api.search.enums;
 
-public enum FlowNodeInstanceResultState {
-  ACTIVE,
-  COMPLETED,
-  TERMINATED,
-  UNKNOWN_ENUM_VALUE;
+public class IncidentResult {
+
+  public enum State {
+    ACTIVE,
+    MIGRATED,
+    RESOLVED,
+    PENDING,
+    UNKNOWN_ENUM_VALUE;
+  }
+
+  public enum ErrorType {
+    UNSPECIFIED,
+    UNKNOWN,
+    IO_MAPPING_ERROR,
+    JOB_NO_RETRIES,
+    EXECUTION_LISTENER_NO_RETRIES,
+    TASK_LISTENER_NO_RETRIES,
+    CONDITION_ERROR,
+    EXTRACT_VALUE_ERROR,
+    CALLED_ELEMENT_ERROR,
+    UNHANDLED_ERROR_EVENT,
+    MESSAGE_SIZE_EXCEEDED,
+    CALLED_DECISION_ERROR,
+    DECISION_EVALUATION_ERROR,
+    FORM_NOT_FOUND,
+    RESOURCE_NOT_FOUND,
+    UNKNOWN_ENUM_VALUE;
+  }
 }

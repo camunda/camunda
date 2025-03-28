@@ -58,7 +58,7 @@ public interface IncidentFilter extends SearchRequestFilter {
    * @return the updated filter
    */
   IncidentFilter errorType(
-      final io.camunda.client.api.search.enums.IncidentFilterErrorType errorType);
+      final io.camunda.client.api.search.enums.IncidentFilter.ErrorType errorType);
 
   /**
    * Filters incidents by error message.
@@ -98,7 +98,7 @@ public interface IncidentFilter extends SearchRequestFilter {
    * @param value the state of incident
    * @return the updated filter
    */
-  IncidentFilter state(final io.camunda.client.api.search.enums.IncidentFilterState value);
+  IncidentFilter state(final io.camunda.client.api.search.enums.IncidentFilter.State value);
 
   /**
    * Filters incidents by job key.

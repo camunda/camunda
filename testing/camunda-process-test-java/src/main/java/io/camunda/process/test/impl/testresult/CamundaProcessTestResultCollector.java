@@ -16,8 +16,8 @@
 package io.camunda.process.test.impl.testresult;
 
 import io.camunda.client.api.command.ClientException;
-import io.camunda.client.api.search.enums.FlowNodeInstanceFilterState;
-import io.camunda.client.api.search.enums.IncidentFilterState;
+import io.camunda.client.api.search.enums.FlowNodeInstanceFilter;
+import io.camunda.client.api.search.enums.IncidentFilter;
 import io.camunda.client.api.search.response.FlowNodeInstance;
 import io.camunda.client.api.search.response.Incident;
 import io.camunda.client.api.search.response.ProcessInstance;
@@ -77,7 +77,7 @@ public class CamundaProcessTestResultCollector {
 
   private List<Incident> collectOpenIncidents(final long processInstanceKey) {
     return dataSource.findIncidents(
-        filter -> filter.processInstanceKey(processInstanceKey).state(IncidentFilterState.ACTIVE));
+        filter -> filter.processInstanceKey(processInstanceKey).state(IncidentFilter.State.ACTIVE));
   }
 
   private List<FlowNodeInstance> collectActiveFlowNodeInstances(final long processInstanceKey) {
@@ -85,6 +85,6 @@ public class CamundaProcessTestResultCollector {
         filter ->
             filter
                 .processInstanceKey(processInstanceKey)
-                .state(FlowNodeInstanceFilterState.ACTIVE));
+                .state(FlowNodeInstanceFilter.State.ACTIVE));
   }
 }

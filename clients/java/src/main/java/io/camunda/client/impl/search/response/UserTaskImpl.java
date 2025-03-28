@@ -26,7 +26,7 @@ public class UserTaskImpl implements UserTask {
 
   private final Long userTaskKey;
   private final String name;
-  private final io.camunda.client.api.search.enums.UserTaskResultState state;
+  private final io.camunda.client.api.search.enums.UserTaskResult.State state;
   private final String assignee;
   private final String elementId;
   private final Long elementInstanceKey;
@@ -51,7 +51,7 @@ public class UserTaskImpl implements UserTask {
     name = item.getName();
     state =
         EnumUtil.convert(
-            item.getState(), io.camunda.client.api.search.enums.UserTaskResultState.class);
+            item.getState(), io.camunda.client.api.search.enums.UserTaskResult.State.class);
     assignee = item.getAssignee();
     elementId = item.getElementId();
     elementInstanceKey = ParseUtil.parseLongOrNull(item.getElementInstanceKey());
@@ -83,7 +83,7 @@ public class UserTaskImpl implements UserTask {
   }
 
   @Override
-  public io.camunda.client.api.search.enums.UserTaskResultState getState() {
+  public io.camunda.client.api.search.enums.UserTaskResult.State getState() {
     return state;
   }
 
