@@ -7,7 +7,6 @@
  */
 package io.camunda.zeebe.engine.processing.batchoperation;
 
-import com.google.common.collect.Lists;
 import io.camunda.search.clients.SearchClientsProxy;
 import io.camunda.search.entities.ProcessInstanceEntity;
 import io.camunda.search.filter.ProcessInstanceFilter;
@@ -25,8 +24,8 @@ import io.camunda.zeebe.stream.api.scheduling.TaskResult;
 import io.camunda.zeebe.stream.api.scheduling.TaskResultBuilder;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import java.time.Duration;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.LinkedHashSet;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -97,15 +96,17 @@ public class BatchOperationExecutionScheduler implements StreamProcessorLifecycl
   private void executeBatchOperation(
       final PersistedBatchOperation batchOperation, final TaskResultBuilder taskResultBuilder) {
     final var keys = queryAllKeys(batchOperation);
-
-    Lists.partition(new ArrayList<>(keys), CHUNK_SIZE_IN_RECORD)
-        .forEach(partition -> appendChunk(batchOperation, taskResultBuilder, partition));
+    for (int i = 0; i < keys.size(); i += CHUNK_SIZE_IN_RECORD) {
+      final Set<Long> chunkKeys =
+          keys.stream().skip(i).limit(CHUNK_SIZE_IN_RECORD).collect(Collectors.toSet());
+      appendChunk(batchOperation, taskResultBuilder, chunkKeys);
+    }
   }
 
   private void appendChunk(
       final PersistedBatchOperation batchOperation,
       final TaskResultBuilder taskResultBuilder,
-      final List<Long> keys) {
+      final Set<Long> keys) {
     final var chunkKey = keyGenerator.nextKey();
     final var command = new BatchOperationChunkRecord();
     command.setBatchOperationKey(batchOperation.getKey());
@@ -117,7 +118,7 @@ public class BatchOperationExecutionScheduler implements StreamProcessorLifecycl
     taskResultBuilder.appendCommandRecord(chunkKey, BatchOperationChunkIntent.CREATE, command);
   }
 
-  private List<Long> queryAllKeys(final PersistedBatchOperation batchOperation) {
+  private Set<Long> queryAllKeys(final PersistedBatchOperation batchOperation) {
     return switch (batchOperation.getBatchOperationType()) {
       case PROCESS_CANCELLATION -> queryAllProcessInstanceKeys(batchOperation);
       default ->
@@ -126,11 +127,11 @@ public class BatchOperationExecutionScheduler implements StreamProcessorLifecycl
     };
   }
 
-  private List<Long> queryAllProcessInstanceKeys(final PersistedBatchOperation batchOperation) {
+  private Set<Long> queryAllProcessInstanceKeys(final PersistedBatchOperation batchOperation) {
     final ProcessInstanceFilter filter =
         batchOperation.getEntityFilter(ProcessInstanceFilter.class);
 
-    final var itemKeys = new ArrayList<Long>();
+    final var itemKeys = new LinkedHashSet<Long>();
 
     Object[] searchValues = null;
     while (true) {

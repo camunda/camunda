@@ -17,11 +17,10 @@ import io.camunda.zeebe.db.impl.DbNil;
 import io.camunda.zeebe.engine.state.batchoperation.PersistedBatchOperation.BatchOperationStatus;
 import io.camunda.zeebe.engine.state.mutable.MutableBatchOperationState;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
-import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationChunkRecord;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationCreationRecord;
-import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationExecutionRecord;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -80,14 +79,14 @@ public class DbBatchOperationState implements MutableBatchOperationState {
   }
 
   @Override
-  public void appendItemKeys(final long batchOperationKey, final BatchOperationChunkRecord record) {
+  public void appendItemKeys(final long batchOperationKey, final Set<Long> itemKeys) {
     LOGGER.trace(
         "Appending {} item keys to batch operation with key {}",
-        record.getItemKeys().size(),
-        record.getBatchOperationKey());
+        itemKeys.size(),
+        batchOperationKey);
 
     // First, get the batch operation
-    final var batch = getBatchOperation(record.getBatchOperationKey());
+    final var batch = getBatchOperation(batchOperationKey);
 
     // Second, delete it from the pendingBatchOperationColumnFamily since we are already working on
     // it
@@ -97,7 +96,7 @@ public class DbBatchOperationState implements MutableBatchOperationState {
     var chunk = getOrCreateChunk(batch);
 
     // Fourth, append the keys to the chunk, if the chunk is full, a new one is returned
-    for (final long key : record.getItemKeys()) {
+    for (final long key : itemKeys) {
       chunk = appendKeyToChunk(batch, chunk, key);
     }
 
@@ -106,22 +105,68 @@ public class DbBatchOperationState implements MutableBatchOperationState {
   }
 
   @Override
-  public void removeItemKeys(
-      final long batchOperationKey, final BatchOperationExecutionRecord record) {
+  public void removeItemKeys(final long batchOperationKey, final Set<Long> itemKeys) {
     LOGGER.trace(
         "Removing item keys {} from batch operation with key {}",
-        record.getItemKeys().size(),
-        record.getBatchOperationKey());
+        itemKeys.size(),
+        batchOperationKey);
 
     // First, get the batch operation
-    final var batch = getBatchOperation(record.getBatchOperationKey());
+    final var batch = getBatchOperation(batchOperationKey);
 
     // Second, delete the keys from chunk
     final var chunk = getChunk(batch);
-    chunk.removeItemKeys(record.getItemKeys());
+    chunk.removeItemKeys(itemKeys);
 
     // Finally, update the chunk and batch in the column family
     updateBatchAndChunkAfterRemoval(batch, chunk);
+  }
+
+  @Override
+  public Optional<PersistedBatchOperation> get(final long key) {
+    batchKey.wrapLong(key);
+    return Optional.ofNullable(batchOperationColumnFamily.get(batchKey));
+  }
+
+  @Override
+  public void foreachPendingBatchOperation(final BatchOperationVisitor visitor) {
+    pendingBatchOperationColumnFamily.whileTrue(
+        (key, nil) -> {
+          final var batchOperation = batchOperationColumnFamily.get(key);
+          if (batchOperation != null) {
+            visitor.visit(batchOperation);
+          }
+          return true;
+        });
+  }
+
+  @Override
+  public List<Long> getNextItemKeys(final long batchOperationKey, final int batchSize) {
+    batchKey.wrapLong(batchOperationKey);
+    final var batch = batchOperationColumnFamily.get(batchKey);
+
+    if (batch.getMinChunkKey() == -1) {
+      return List.of();
+    }
+
+    chunkKey.wrapLong(batch.getMinChunkKey());
+    final var chunk = batchOperationChunksColumnFamily.get(fkBatchKeyAndChunkKey);
+    final var chunkKeys = chunk.getItemKeys();
+
+    return chunkKeys.stream().limit(batchSize).toList();
+  }
+
+  private PersistedBatchOperationChunk createNewChunk(final PersistedBatchOperation batch) {
+    final long currentChunkKey;
+    final PersistedBatchOperationChunk batchChunk;
+    currentChunkKey = batch.nextChunkKey();
+    batchChunk = new PersistedBatchOperationChunk();
+    batchChunk.setKey(currentChunkKey).setBatchOperationKey(batch.getKey());
+    chunkKey.wrapLong(batchChunk.getKey());
+
+    batchOperationChunksColumnFamily.insert(fkBatchKeyAndChunkKey, batchChunk);
+
+    return batchChunk;
   }
 
   private PersistedBatchOperation getBatchOperation(final long batchOperationKey) {
@@ -193,52 +238,5 @@ public class DbBatchOperationState implements MutableBatchOperationState {
       batchOperationChunksColumnFamily.update(fkBatchKeyAndChunkKey, chunk);
     }
     batchOperationColumnFamily.update(batchKey, batch);
-  }
-
-  @Override
-  public Optional<PersistedBatchOperation> get(final long key) {
-    batchKey.wrapLong(key);
-    return Optional.ofNullable(batchOperationColumnFamily.get(batchKey));
-  }
-
-  @Override
-  public void foreachPendingBatchOperation(final BatchOperationVisitor visitor) {
-    pendingBatchOperationColumnFamily.whileTrue(
-        (key, nil) -> {
-          final var batchOperation = batchOperationColumnFamily.get(key);
-          if (batchOperation != null) {
-            visitor.visit(batchOperation);
-          }
-          return true;
-        });
-  }
-
-  @Override
-  public List<Long> getNextItemKeys(final long batchOperationKey, final int batchSize) {
-    batchKey.wrapLong(batchOperationKey);
-    final var batch = batchOperationColumnFamily.get(batchKey);
-
-    if (batch.getMinChunkKey() == -1) {
-      return List.of();
-    }
-
-    chunkKey.wrapLong(batch.getMinChunkKey());
-    final var chunk = batchOperationChunksColumnFamily.get(fkBatchKeyAndChunkKey);
-    final var chunkKeys = chunk.getItemKeys();
-
-    return chunkKeys.stream().limit(batchSize).toList();
-  }
-
-  private PersistedBatchOperationChunk createNewChunk(final PersistedBatchOperation batch) {
-    final long currentChunkKey;
-    final PersistedBatchOperationChunk batchChunk;
-    currentChunkKey = batch.nextChunkKey();
-    batchChunk = new PersistedBatchOperationChunk();
-    batchChunk.setKey(currentChunkKey).setBatchOperationKey(batch.getKey());
-    chunkKey.wrapLong(batchChunk.getKey());
-
-    batchOperationChunksColumnFamily.insert(fkBatchKeyAndChunkKey, batchChunk);
-
-    return batchChunk;
   }
 }

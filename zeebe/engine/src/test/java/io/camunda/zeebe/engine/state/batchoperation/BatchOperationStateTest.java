@@ -18,9 +18,7 @@ import io.camunda.zeebe.engine.state.mutable.MutableBatchOperationState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.util.ProcessingStateExtension;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
-import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationChunkRecord;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationCreationRecord;
-import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationExecutionRecord;
 import io.camunda.zeebe.protocol.record.value.BatchOperationType;
 import java.util.ArrayList;
 import java.util.List;
@@ -103,11 +101,7 @@ public class BatchOperationStateTest {
 
     // when
     state.appendItemKeys(
-        batchOperationKey,
-        new BatchOperationChunkRecord()
-            .setBatchOperationKey(batchOperationKey)
-            .setChunkKey(2L)
-            .setItemKeys(LongStream.range(0, 99).boxed().toList()));
+        batchOperationKey, LongStream.range(0, 99).boxed().collect(Collectors.toSet()));
 
     // then
     final var pendingKeys = new ArrayList<>();
@@ -140,14 +134,8 @@ public class BatchOperationStateTest {
     state.create(batchOperationKey, createRecord);
 
     // when
-    final var subbatchKey = 2L;
-    final var keys = LongStream.rangeClosed(0, 10).boxed().toList();
-    final var subbatchRecord =
-        new BatchOperationChunkRecord()
-            .setBatchOperationKey(batchOperationKey)
-            .setChunkKey(subbatchKey)
-            .setItemKeys(keys);
-    state.appendItemKeys(batchOperationKey, subbatchRecord);
+    final var keys = LongStream.rangeClosed(0, 10).boxed().collect(Collectors.toSet());
+    state.appendItemKeys(batchOperationKey, keys);
 
     // then
     final var persistedBatchOperation = state.get(batchOperationKey).get();
@@ -172,14 +160,8 @@ public class BatchOperationStateTest {
     state.create(batchOperationKey, createRecord);
 
     // when
-    final var subbatchKey = 2L;
-    final var keys = LongStream.rangeClosed(0, 4).boxed().toList();
-    final var subbatchRecord =
-        new BatchOperationChunkRecord()
-            .setBatchOperationKey(batchOperationKey)
-            .setChunkKey(subbatchKey)
-            .setItemKeys(keys);
-    state.appendItemKeys(batchOperationKey, subbatchRecord);
+    final var keys = LongStream.rangeClosed(0, 4).boxed().collect(Collectors.toSet());
+    state.appendItemKeys(batchOperationKey, keys);
 
     // then
     final var persistedBatchOperation = state.get(batchOperationKey).get();
@@ -204,14 +186,9 @@ public class BatchOperationStateTest {
     state.create(batchOperationKey, createRecord);
 
     // when
-    final var subbatchKey = 2L;
-    final var keys = LongStream.range(0, MAX_DB_CHUNK_SIZE * 3 + 1).boxed().toList();
-    final var subbatchRecord =
-        new BatchOperationChunkRecord()
-            .setBatchOperationKey(batchOperationKey)
-            .setChunkKey(subbatchKey)
-            .setItemKeys(keys);
-    state.appendItemKeys(batchOperationKey, subbatchRecord);
+    final var keys =
+        LongStream.range(0, MAX_DB_CHUNK_SIZE * 3 + 1).boxed().collect(Collectors.toSet());
+    state.appendItemKeys(batchOperationKey, keys);
 
     // then
     final var persistedBatchOperation = state.get(batchOperationKey).get();
@@ -234,26 +211,17 @@ public class BatchOperationStateTest {
     // when
     state.appendItemKeys(
         batchOperationKey,
-        new BatchOperationChunkRecord()
-            .setBatchOperationKey(batchOperationKey)
-            .setChunkKey(2L)
-            .setItemKeys(LongStream.range(0, MAX_DB_CHUNK_SIZE - 1).boxed().toList()));
+        LongStream.range(0, MAX_DB_CHUNK_SIZE - 1).boxed().collect(Collectors.toSet()));
     state.appendItemKeys(
         batchOperationKey,
-        new BatchOperationChunkRecord()
-            .setBatchOperationKey(batchOperationKey)
-            .setChunkKey(3L)
-            .setItemKeys(
-                LongStream.range(MAX_DB_CHUNK_SIZE, MAX_DB_CHUNK_SIZE * 2 - 1).boxed().toList()));
+        LongStream.range(MAX_DB_CHUNK_SIZE, MAX_DB_CHUNK_SIZE * 2 - 1)
+            .boxed()
+            .collect(Collectors.toSet()));
     state.appendItemKeys(
         batchOperationKey,
-        new BatchOperationChunkRecord()
-            .setBatchOperationKey(batchOperationKey)
-            .setChunkKey(4L)
-            .setItemKeys(
-                LongStream.range(MAX_DB_CHUNK_SIZE * 2, MAX_DB_CHUNK_SIZE * 3 - 1)
-                    .boxed()
-                    .toList()));
+        LongStream.range(MAX_DB_CHUNK_SIZE * 2, MAX_DB_CHUNK_SIZE * 3 - 1)
+            .boxed()
+            .collect(Collectors.toSet()));
 
     // then
     final var persistedBatchOperation = state.get(batchOperationKey).get();
@@ -269,10 +237,7 @@ public class BatchOperationStateTest {
 
     // when
     state.removeItemKeys(
-        batchOperationKey,
-        new BatchOperationExecutionRecord()
-            .setBatchOperationKey(batchOperationKey)
-            .setItemKeys(LongStream.rangeClosed(0, 5).boxed().collect(Collectors.toSet())));
+        batchOperationKey, LongStream.rangeClosed(0, 5).boxed().collect(Collectors.toSet()));
 
     // then
     final var persistedBatchOperation = state.get(batchOperationKey).get();
@@ -293,10 +258,7 @@ public class BatchOperationStateTest {
     // when
     state.removeItemKeys(
         batchOperationKey,
-        new BatchOperationExecutionRecord()
-            .setBatchOperationKey(batchOperationKey)
-            .setItemKeys(
-                LongStream.range(0, MAX_DB_CHUNK_SIZE).boxed().collect(Collectors.toSet())));
+        LongStream.range(0, MAX_DB_CHUNK_SIZE).boxed().collect(Collectors.toSet()));
 
     // then
     final var persistedBatchOperation = state.get(batchOperationKey).get();
@@ -318,11 +280,7 @@ public class BatchOperationStateTest {
             .setBatchOperationType(BatchOperationType.PROCESS_CANCELLATION)
             .setEntityFilter(convertToBuffer(new ProcessInstanceFilter.Builder().build())));
     state.appendItemKeys(
-        batchOperationKey,
-        new BatchOperationChunkRecord()
-            .setBatchOperationKey(batchOperationKey)
-            .setChunkKey(2L)
-            .setItemKeys(LongStream.range(0, numKeys).boxed().toList()));
+        batchOperationKey, LongStream.range(0, numKeys).boxed().collect(Collectors.toSet()));
 
     return batchOperationKey;
   }

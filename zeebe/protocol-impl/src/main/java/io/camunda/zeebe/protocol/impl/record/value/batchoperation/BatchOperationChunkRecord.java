@@ -12,7 +12,7 @@ import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.value.LongValue;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.value.BatchOperationChunkRecordValue;
-import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 public final class BatchOperationChunkRecord extends UnifiedRecordValue
@@ -46,11 +46,11 @@ public final class BatchOperationChunkRecord extends UnifiedRecordValue
   }
 
   @Override
-  public List<Long> getItemKeys() {
-    return itemKeysProp.stream().map(LongValue::getValue).collect(Collectors.toList());
+  public Set<Long> getItemKeys() {
+    return itemKeysProp.stream().map(LongValue::getValue).collect(Collectors.toSet());
   }
 
-  public BatchOperationChunkRecord setItemKeys(final List<Long> keys) {
+  public BatchOperationChunkRecord setItemKeys(final Set<Long> keys) {
     itemKeysProp.reset();
     keys.forEach(key -> itemKeysProp.add().setValue(key));
     return this;
