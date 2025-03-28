@@ -14,9 +14,9 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.tasklist.entities.UserEntity;
 import io.camunda.tasklist.property.TasklistProperties;
-import io.camunda.tasklist.schema.indices.UserIndex;
 import io.camunda.tasklist.util.PayloadUtil;
 import io.camunda.tasklist.zeebe.TasklistServicesAdapter;
+import io.camunda.webapps.schema.descriptors.index.TasklistUserIndex;
 import io.camunda.webapps.schema.descriptors.tasklist.index.FormIndex;
 import io.camunda.webapps.schema.descriptors.tasklist.template.TaskTemplate;
 import jakarta.annotation.PostConstruct;
@@ -37,13 +37,13 @@ import org.springframework.context.annotation.DependsOn;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
-@DependsOn("tasklistSchemaStartup")
+@DependsOn("searchEngineSchemaInitializer")
 public abstract class DevDataGeneratorAbstract implements DataGenerator {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(DevDataGeneratorAbstract.class);
 
   @Autowired protected TasklistProperties tasklistProperties;
-  @Autowired protected UserIndex userIndex;
+  @Autowired protected TasklistUserIndex userIndex;
   protected PasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
 
   @Autowired private TasklistServicesAdapter tasklistServicesAdapter;

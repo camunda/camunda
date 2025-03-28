@@ -25,6 +25,7 @@ services:
       - xpack.security.enabled=false
       - "ES_JAVA_OPTS=-Xms1024m -Xmx1024m"
       - path.repo=/usr/local/els-snapshots
+      - action.destructive_requires_name=false
     ulimits:
       memlock:
         soft: -1
@@ -48,6 +49,7 @@ services:
       - bootstrap.memory_lock=true # along with the memlock settings below, disables swapping
       - "OPENSEARCH_JAVA_OPTS=-Xms1024m -Xmx1024m" # minimum and maximum Java heap size, recommend setting both to 50% of system RAM
       - OPENSEARCH_INITIAL_ADMIN_PASSWORD=yourStrongPassword123!
+      - action.destructive_requires_name=false
     ulimits:
       memlock:
         soft: -1

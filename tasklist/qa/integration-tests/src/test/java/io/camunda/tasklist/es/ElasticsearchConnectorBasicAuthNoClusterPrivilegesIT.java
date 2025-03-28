@@ -57,7 +57,6 @@ import org.testcontainers.elasticsearch.ElasticsearchContainer;
       SearchEngineHealthIndicator.class,
       WebSecurityConfig.class,
       OAuth2WebConfigurer.class,
-      RetryElasticsearchClient.class,
     },
     properties = {
       TasklistProperties.PREFIX + ".importer.startLoadingDataOnStartup = false",

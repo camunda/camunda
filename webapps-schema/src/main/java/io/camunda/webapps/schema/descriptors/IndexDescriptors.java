@@ -7,6 +7,7 @@
  */
 package io.camunda.webapps.schema.descriptors;
 
+import io.camunda.webapps.schema.descriptors.index.TasklistUserIndex;
 import io.camunda.webapps.schema.descriptors.operate.index.DecisionIndex;
 import io.camunda.webapps.schema.descriptors.operate.index.DecisionRequirementsIndex;
 import io.camunda.webapps.schema.descriptors.operate.index.ImportPositionIndex;
@@ -77,6 +78,8 @@ public class IndexDescriptors {
                 new TasklistMetricIndex(indexPrefix, isElasticsearch),
                 new TenantIndex(indexPrefix, isElasticsearch),
                 new UserIndex(indexPrefix, isElasticsearch),
+                // TasklistUserIndex should be deleted once harmonized with
+                new TasklistUserIndex(indexPrefix, isElasticsearch),
                 new VariableTemplate(indexPrefix, isElasticsearch),
                 new MessageTemplate(indexPrefix, isElasticsearch))
             .collect(Collectors.toMap(Object::getClass, Function.identity()));

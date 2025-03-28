@@ -15,8 +15,6 @@ import static org.mockito.BDDMockito.given;
 
 import io.camunda.tasklist.JacksonConfig;
 import io.camunda.tasklist.es.ElasticsearchConnector;
-import io.camunda.tasklist.es.ElasticsearchInternalTask;
-import io.camunda.tasklist.es.RetryElasticsearchClient;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.qa.util.TestUtil;
 import io.camunda.tasklist.util.apps.nobeans.TestApplicationWithNoBeans;
@@ -47,8 +45,6 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
       SearchEngineHealthIndicator.class,
       WebSecurityConfig.class,
       TasklistProfileServiceImpl.class,
-      RetryElasticsearchClient.class,
-      ElasticsearchInternalTask.class,
       TasklistProperties.class,
       ElasticsearchConnector.class,
       JacksonConfig.class
