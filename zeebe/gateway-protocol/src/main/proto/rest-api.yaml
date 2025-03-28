@@ -1353,9 +1353,7 @@ paths:
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/ProcessDefinitionFlowNodeStatisticsResult"
+                $ref: "#/components/schemas/ProcessDefinitionFlowNodeStatisticsQueryResult"
         "400":
           $ref: "#/components/responses/InvalidData"
         "401":
@@ -4623,6 +4621,15 @@ components:
           description: The process instance search filters.
           allOf:
             - $ref: "#/components/schemas/BaseProcessInstanceFilter"
+    ProcessDefinitionFlowNodeStatisticsQueryResult:
+      description: Process definition flow node statistics query response.
+      type: object
+      properties:
+        items:
+          description: The flow node statistics.
+          type: array
+          items:
+            $ref: "#/components/schemas/ProcessDefinitionFlowNodeStatisticsResult"
     ProcessDefinitionFlowNodeStatisticsResult:
       description: Process definition flow node statistics response.
       type: object

@@ -258,7 +258,7 @@ public class ProcessDefinitionQueryControllerTest extends RestControllerTest {
             }""";
     final var response =
         """
-            [
+            {"items":[
               {
                 "flowNodeId": "node1",
                 "active": 1,
@@ -266,7 +266,7 @@ public class ProcessDefinitionQueryControllerTest extends RestControllerTest {
                 "incidents": 1,
                 "completed": 1
               }
-            ]""";
+            ]}""";
 
     // when / then
     webClient
