@@ -1,0 +1,24 @@
+version: 3
+
+project:
+  id: camunda/optimize
+  labels:
+  - optimize
+  policy: Camunda8 Distribution
+  url: https://github.com/camunda/connectors
+
+maven:
+  scope-exclude:
+  - import
+  - provided
+  - system
+  - test
+
+targets:
+  exclude:
+  - type: maven
+    path: ./
+    target: io.camunda.optimize:optimize-qa
+  - type: maven
+    path: ./
+    target: io.camunda.optimize:optimize-schema-integrity-tests
