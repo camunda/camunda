@@ -723,7 +723,7 @@
           <configurationDirectory>config</configurationDirectory>
           <copyConfigurationDirectory>true</copyConfigurationDirectory>
           <extraJvmArguments>-XX:+ExitOnOutOfMemoryError
-            -Dfile.encoding=UTF-8 -Xshare:auto</extraJvmArguments>
+            -Dfile.encoding=UTF-8 -Xshare:auto -Djava.library.path="$BASEDIR/native-libs"</extraJvmArguments>
           <includeConfigurationDirectoryInClasspath>true</includeConfigurationDirectoryInClasspath>
           <platforms>
             <platform>windows</platform>
@@ -857,6 +857,26 @@
             <dep>io.camunda.optimize:optimize-webjar</dep>
           </ignoredUnusedDeclaredDependencies>
         </configuration>
+        <executions>
+          <execution>
+            <id>unpack</id>
+            <goals>
+              <goal>unpack</goal>
+            </goals>
+            <phase>generate-resources</phase>
+            <configuration>
+              <artifactItems>
+                <artifactItem>
+                  <groupId>org.rocksdb</groupId>
+                  <artifactId>rocksdbjni</artifactId>
+                  <version>${version.rocksdbjni}</version>
+                  <includes>*.so,*.dll,</includes>
+                  <outputDirectory>${project.build.directory}/native-libraries</outputDirectory>
+                </artifactItem>
+              </artifactItems>
+            </configuration>
+          </execution>
+        </executions>
       </plugin>
 
       <plugin>

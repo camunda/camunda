@@ -21,6 +21,10 @@
       <directory>${maven.multiModuleProjectDirectory}/licenses</directory>
       <outputDirectory>/</outputDirectory>
     </fileSet>
+    <fileSet>
+      <directory>${project.build.directory}/native-libraries</directory>
+      <outputDirectory>native-libs</outputDirectory>
+    </fileSet>
   </fileSets>
 
   <files>
