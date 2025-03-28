@@ -58,6 +58,12 @@ public final class SearchRequestTransformer
       builder.source(of(value.source()));
     }
 
+    applySearchAggregations(value, builder);
+
+    return builder;
+  }
+
+  private void applySearchAggregations(final SearchQueryRequest value, final Builder builder) {
     final var aggregations = value.aggregations();
     if (aggregations != null && !aggregations.isEmpty()) {
       builder.aggregations(
@@ -71,8 +77,6 @@ public final class SearchRequestTransformer
                               .apply(aggregation)))
               .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue)));
     }
-
-    return builder;
   }
 
   private List<SortOptions> of(final List<SearchSortOptions> values) {
