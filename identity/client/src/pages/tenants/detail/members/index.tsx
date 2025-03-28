@@ -16,6 +16,8 @@ import { useEntityModal } from "src/components/modal";
 import { TrashCan } from "@carbon/react/icons";
 import DeleteModal from "src/pages/tenants/detail/members/DeleteModal";
 import AssignMembersModal from "src/pages/tenants/detail/members/AssignMembersModal";
+import { isOIDC } from "src/configuration";
+import { UserKeys } from "src/utility/api/users";
 
 type MembersProps = {
   tenantId: string;
@@ -78,15 +80,24 @@ const Members: FC<MembersProps> = ({ tenantId }) => {
       </>
     );
 
+  type MembersListHeaders = {
+    header: string;
+    key: UserKeys;
+  }[];
+
+  const membersListHeaders: MembersListHeaders = isOIDC
+    ? [{ header: t("username"), key: "username" }]
+    : [
+        { header: t("username"), key: "username" },
+        { header: t("name"), key: "name" },
+        { header: t("email"), key: "email" },
+      ];
+
   return (
     <>
       <EntityList
         data={users?.items}
-        headers={[
-          { header: t("username"), key: "username" },
-          { header: t("name"), key: "name" },
-          { header: t("email"), key: "email" },
-        ]}
+        headers={membersListHeaders}
         sortProperty="username"
         loading={loading}
         addEntityLabel={t("assignUser")}

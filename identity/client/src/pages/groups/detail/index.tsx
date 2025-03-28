@@ -31,6 +31,7 @@ import {
 import Members from "src/pages/groups/detail/members";
 import Roles from "src/pages/groups/detail/roles";
 import Mappings from "src/pages/groups/detail/mappings";
+import { isOIDC } from "src/configuration";
 
 const Details: FC = () => {
   const navigate = useNavigate();
@@ -119,7 +120,7 @@ const Details: FC = () => {
                         },
                       ]
                     : []),
-                  ...(IS_GROUP_MAPPINGS_SUPPORTED
+                  ...(IS_GROUP_MAPPINGS_SUPPORTED && isOIDC
                     ? [
                         {
                           key: "mappings",
