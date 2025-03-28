@@ -3,26 +3,19 @@ permissions:
   contents: read
 on:
   schedule:
-    - cron: "0 23 * * *" # 11 PM UTC - Run 8.6 tests
-    - cron: "0 0 * * *" # 12 AM UTC - Run 8.7 tests
-    - cron: "0 1 * * *" # 1 AM UTC - Run main branch tests
+    - cron: "0 0 * * *" # Run all tests at midnight UTC
 
 jobs:
   nightly-tests:
+    strategy:
+      matrix:
+        branch: [stable/8.6, stable/8.7, main] # Run all three branches in parallel
     runs-on: ubuntu-latest
     steps:
-      - name: Determine Branch
-        id: set-branch
-        run: |
-          case "${{ github.event.schedule }}" in
-            "0 23 * * *") echo "branch=stable/8.6" >> $GITHUB_ENV ;;
-            "0 0 * * *") echo "branch=stable/8.7" >> $GITHUB_ENV ;;
-            "0 1 * * *") echo "branch=main" >> $GITHUB_ENV ;;
-          esac
-
-      - uses: actions/checkout@v4
+      - name: Checkout Code
+        uses: actions/checkout@v4
         with:
-          ref: ${{ env.branch }}
+          ref: ${{ matrix.branch }}
 
       - name: Start Tasklist and Operate
         run: |
@@ -52,15 +45,15 @@ jobs:
             operate_status=$(curl -s -m 5 http://localhost:8081/operate || echo "Failed")
 
             # Check if tasklist is up (you can adjust this condition based on actual response)
-            if [[ "$response_8080" != "Failed" ]] && [[ "$response_8081" != "Failed" ]]; then
+            if [[ "$tasklist_status" != "Failed" ]] && [[ "$operate_status" != "Failed" ]]; then
               echo "Services are ready!"
               ready=true
               break
             fi
 
             echo "Waiting for services... ($i/90)"
-            echo "Response from 8080: $response_8080"
-            echo "Response from 8081: $response_8081"
+            echo "Response from tasklist: $tasklist_status"
+            echo "Response from operate: $operate_status"
             sleep 10
           done
 
@@ -74,8 +67,8 @@ jobs:
       - name: Print Docker logs before failing
         if: failure()
         run: |
-          docker-compose logs tasklist
-          docker-compose logs operate
+          docker compose logs tasklist
+          docker compose logs operate
         working-directory: qa/core-application-e2e-test-suite/config
 
       - name: Setup Node.js
@@ -102,11 +95,17 @@ jobs:
             secret/data/github.com/organizations/camunda TESTRAIL_QA_EMAIL;
             secret/data/github.com/organizations/camunda TESTRAIL_QA_PSW;
 
+      - name: Install Playwright Browsers
+        shell: bash
+        run: npx playwright install --with-deps chromium
+        working-directory: qa/core-application-e2e-test-suite
+
       - name: Python setup
         if: always()
         uses: actions/setup-python@v5
         with:
           python-version: "3.x"
+          cache: "pip"
 
       - name: Run tests
         shell: bash
@@ -129,7 +128,7 @@ jobs:
           TESTRAIL_USERNAME: ${{ steps.secrets.outputs.TESTRAIL_QA_EMAIL }} # Use the imported secret
           TESTRAIL_KEY: ${{ steps.secrets.outputs.TESTRAIL_QA_PSW }} # Use the imported secret
           JUNIT_RESULTS_FILE: "qa/core-application-e2e-test-suite/test-results/junit-report.xml"
-          BRANCH_NAME: ${{ env.branch }}
+          BRANCH_NAME: ${{ matrix.branch }}
         run: |
           pip install trcli
           trcli -y -h $TESTRAIL_HOST \
