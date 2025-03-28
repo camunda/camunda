@@ -65,7 +65,7 @@ public class GroupCreateProcessor implements DistributedTypedRecordProcessor<Gro
 
     final var record = command.getValue();
     final var groupName = record.getName();
-    final var groupKey = groupState.getGroupKeyByName(groupName);
+    final var groupKey = groupState.get(record.getGroupId());
     if (groupKey.isPresent()) {
       final var errorMessage = GROUP_ALREADY_EXISTS_ERROR_MESSAGE.formatted(groupName);
       rejectionWriter.appendRejection(command, RejectionType.ALREADY_EXISTS, errorMessage);

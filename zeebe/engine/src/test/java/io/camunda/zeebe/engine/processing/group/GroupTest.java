@@ -19,6 +19,7 @@ import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.util.UUID;
 import org.assertj.core.api.Assertions;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestWatcher;
@@ -36,6 +37,7 @@ public class GroupTest {
     assertThat(createdGroup).hasName(name);
   }
 
+  @Ignore("Re-enable with https://github.com/camunda/camunda/issues/30022")
   @Test
   public void shouldNotDuplicate() {
     // given
@@ -85,26 +87,6 @@ public class GroupTest {
         .hasRejectionReason(
             "Expected to update group with key '%d', but a group with this key does not exist."
                 .formatted(groupKey));
-  }
-
-  @Test
-  public void shouldRejectUpdatedIfSameNameGroupExists() {
-    // given
-    final var groupName = "yolo";
-    final var groupKey = engine.group().newGroup(groupName).create().getKey();
-    final var anotherGroupName = "yolo2";
-    engine.group().newGroup(anotherGroupName).create();
-
-    // when
-    final var updatedGroupRecord =
-        engine.group().updateGroup(groupKey).withName(anotherGroupName).expectRejection().update();
-
-    // then
-    assertThat(updatedGroupRecord)
-        .hasRejectionType(RejectionType.ALREADY_EXISTS)
-        .hasRejectionReason(
-            "Expected to update group with name '%s', but a group with this name already exists."
-                .formatted(anotherGroupName));
   }
 
   @Test

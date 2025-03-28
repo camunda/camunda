@@ -171,8 +171,7 @@ public class TenantAddEntityProcessor implements DistributedTypedRecordProcessor
 
   private boolean checkGroupAssignment(
       final String entityId, final TypedRecord<TenantRecord> command, final String tenantId) {
-    // TODO remove the Long parsing once Groups are migrated to work with ids instead of keys
-    final var group = groupState.get(Long.parseLong(entityId));
+    final var group = groupState.get(entityId);
     if (group.isEmpty()) {
       createEntityNotExistRejectCommand(command, entityId, EntityType.GROUP, tenantId);
       return false;
