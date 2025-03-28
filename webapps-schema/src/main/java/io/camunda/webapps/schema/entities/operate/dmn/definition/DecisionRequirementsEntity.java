@@ -7,17 +7,41 @@
  */
 package io.camunda.webapps.schema.entities.operate.dmn.definition;
 
-import io.camunda.webapps.schema.entities.operate.OperateZeebeEntity;
+import io.camunda.webapps.schema.entities.ExporterEntity;
+import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import java.util.Objects;
 
-public class DecisionRequirementsEntity extends OperateZeebeEntity<DecisionRequirementsEntity> {
+public class DecisionRequirementsEntity
+    implements ExporterEntity<DecisionRequirementsEntity>, TenantOwned {
 
+  private String id;
+  private long key;
   private String decisionRequirementsId;
   private String name;
   private int version;
   private String xml;
   private String resourceName;
-  private String tenantId = DEFAULT_TENANT_ID;
+  private String tenantId = DEFAULT_TENANT_IDENTIFIER;
+
+  @Override
+  public String getId() {
+    return id;
+  }
+
+  @Override
+  public DecisionRequirementsEntity setId(final String id) {
+    this.id = id;
+    return this;
+  }
+
+  public long getKey() {
+    return key;
+  }
+
+  public DecisionRequirementsEntity setKey(final long key) {
+    this.key = key;
+    return this;
+  }
 
   public String getDecisionRequirementsId() {
     return decisionRequirementsId;
@@ -64,6 +88,7 @@ public class DecisionRequirementsEntity extends OperateZeebeEntity<DecisionRequi
     return this;
   }
 
+  @Override
   public String getTenantId() {
     return tenantId;
   }
@@ -76,7 +101,7 @@ public class DecisionRequirementsEntity extends OperateZeebeEntity<DecisionRequi
   @Override
   public int hashCode() {
     return Objects.hash(
-        super.hashCode(), decisionRequirementsId, name, version, xml, resourceName, tenantId);
+        id, key, decisionRequirementsId, name, version, xml, resourceName, tenantId);
   }
 
   @Override
@@ -87,11 +112,10 @@ public class DecisionRequirementsEntity extends OperateZeebeEntity<DecisionRequi
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    if (!super.equals(o)) {
-      return false;
-    }
     final DecisionRequirementsEntity that = (DecisionRequirementsEntity) o;
-    return version == that.version
+    return Objects.equals(id, that.id)
+        && key == that.key
+        && version == that.version
         && Objects.equals(decisionRequirementsId, that.decisionRequirementsId)
         && Objects.equals(name, that.name)
         && Objects.equals(xml, that.xml)
