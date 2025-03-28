@@ -11,7 +11,11 @@ import io.atomix.cluster.MemberId;
 import io.atomix.primitive.partition.PartitionMetadata;
 import io.camunda.zeebe.broker.Loggers;
 import io.camunda.zeebe.broker.PartitionRaftListener;
+<<<<<<< HEAD
 import io.camunda.zeebe.protocol.impl.encoding.BrokerInfo;
+=======
+import io.camunda.zeebe.broker.system.partitions.ZeebePartition;
+>>>>>>> 9f146675 (fix: initialize BrokerInfo from ClusterConfiguration instead of configuration)
 import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.health.CriticalComponentsHealthMonitor;
@@ -96,11 +100,18 @@ public final class BrokerHealthCheckService extends Actor implements PartitionRa
   private volatile boolean allPartitionsInstalled = false;
   private volatile boolean brokerStarted = false;
   private final HealthMonitor healthMonitor;
-  private final MemberId nodeId;
 
+<<<<<<< HEAD
   public BrokerHealthCheckService(final BrokerInfo localBroker) {
     nodeId = MemberId.from(String.valueOf(localBroker.getNodeId()));
     healthMonitor = new CriticalComponentsHealthMonitor("Broker-" + nodeId, actor, LOG);
+=======
+  public BrokerHealthCheckService(
+      final MemberId nodeId, final HealthTreeMetrics healthGraphMetrics) {
+    healthMonitor =
+        new CriticalComponentsHealthMonitor(
+            "Broker-" + nodeId, actor, healthGraphMetrics, Optional.empty(), LOG);
+>>>>>>> 9f146675 (fix: initialize BrokerInfo from ClusterConfiguration instead of configuration)
   }
 
   public void registerBootstrapPartitions(final Collection<PartitionMetadata> partitions) {
