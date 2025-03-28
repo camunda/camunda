@@ -11,13 +11,13 @@ import static io.camunda.security.configuration.InitializationConfiguration.DEFA
 import static io.camunda.security.configuration.InitializationConfiguration.DEFAULT_USER_USERNAME;
 
 import io.camunda.client.CamundaClient;
+import io.camunda.client.api.search.enums.OwnerType;
+import io.camunda.client.api.search.enums.ResourceType;
 import io.camunda.client.impl.basicauth.BasicAuthCredentialsProviderBuilder;
 import io.camunda.client.impl.util.EnumUtil;
 import io.camunda.client.protocol.rest.OwnerTypeEnum;
 import io.camunda.client.protocol.rest.PermissionTypeEnum;
 import io.camunda.client.protocol.rest.ResourceTypeEnum;
-import io.camunda.client.wrappers.OwnerType;
-import io.camunda.client.wrappers.ResourceType;
 import io.camunda.search.clients.DocumentBasedSearchClients;
 import io.camunda.search.query.AuthorizationQuery;
 import io.camunda.search.query.SearchQueryResult;
@@ -94,7 +94,8 @@ public class AuthorizationsUtil implements CloseableSilently {
             .resourceType(EnumUtil.convert(permission.resourceType(), ResourceType.class))
             .permissionTypes(
                 EnumUtil.convert(
-                    permission.permissionType(), io.camunda.client.wrappers.PermissionType.class))
+                    permission.permissionType(),
+                    io.camunda.client.api.search.enums.PermissionType.class))
             .send()
             .join();
       }

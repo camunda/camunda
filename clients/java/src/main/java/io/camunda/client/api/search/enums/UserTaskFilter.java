@@ -13,28 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.camunda.client.wrappers;
+package io.camunda.client.api.search.enums;
 
-public class JobChangeset {
+public class UserTaskFilter {
 
-  private Integer retries;
-  private Long timeout;
-
-  public Integer getRetries() {
-    return retries;
-  }
-
-  public JobChangeset setRetries(Integer retries) {
-    this.retries = retries;
-    return this;
-  }
-
-  public Long getTimeout() {
-    return timeout;
-  }
-
-  public JobChangeset setTimeout(Long timeout) {
-    this.timeout = timeout;
-    return this;
+  public enum State {
+    CREATED,
+    COMPLETED,
+    CANCELED,
+    FAILED,
+    UNKNOWN_ENUM_VALUE;
   }
 }

@@ -27,12 +27,12 @@ public class IncidentImpl implements Incident {
   private final Long processDefinitionKey;
   private final String processDefinitionId;
   private final Long processInstanceKey;
-  private final io.camunda.client.wrappers.IncidentResult.ErrorType errorType;
+  private final io.camunda.client.api.search.enums.IncidentResult.ErrorType errorType;
   private final String errorMessage;
   private final String flowNodeId;
   private final Long flowNodeInstanceKey;
   private final String creationTime;
-  private final io.camunda.client.wrappers.IncidentResult.State state;
+  private final io.camunda.client.api.search.enums.IncidentResult.State state;
   private final Long jobKey;
   private final String tenantId;
 
@@ -43,13 +43,14 @@ public class IncidentImpl implements Incident {
     processInstanceKey = ParseUtil.parseLongOrNull(item.getProcessInstanceKey());
     errorType =
         EnumUtil.convert(
-            item.getErrorType(), io.camunda.client.wrappers.IncidentResult.ErrorType.class);
+            item.getErrorType(), io.camunda.client.api.search.enums.IncidentResult.ErrorType.class);
     errorMessage = item.getErrorMessage();
     flowNodeId = item.getFlowNodeId();
     flowNodeInstanceKey = ParseUtil.parseLongOrNull(item.getFlowNodeInstanceKey());
     creationTime = item.getCreationTime();
     state =
-        EnumUtil.convert(item.getState(), io.camunda.client.wrappers.IncidentResult.State.class);
+        EnumUtil.convert(
+            item.getState(), io.camunda.client.api.search.enums.IncidentResult.State.class);
     jobKey = ParseUtil.parseLongOrNull(item.getJobKey());
     tenantId = item.getTenantId();
   }
@@ -75,7 +76,7 @@ public class IncidentImpl implements Incident {
   }
 
   @Override
-  public io.camunda.client.wrappers.IncidentResult.ErrorType getErrorType() {
+  public io.camunda.client.api.search.enums.IncidentResult.ErrorType getErrorType() {
     return errorType;
   }
 
@@ -100,7 +101,7 @@ public class IncidentImpl implements Incident {
   }
 
   @Override
-  public io.camunda.client.wrappers.IncidentResult.State getState() {
+  public io.camunda.client.api.search.enums.IncidentResult.State getState() {
     return state;
   }
 

@@ -13,15 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.camunda.client.wrappers;
+package io.camunda.client.api.search.enums;
 
-public class UserTaskResult {
-
-  public enum State {
-    CREATED,
-    COMPLETED,
-    CANCELED,
-    FAILED,
-    UNKNOWN_ENUM_VALUE;
-  }
+public enum OwnerType {
+  USER,
+  ROLE,
+  GROUP,
+  MAPPING,
+  UNSPECIFIED,
+  UNKNOWN_ENUM_VALUE;
 }

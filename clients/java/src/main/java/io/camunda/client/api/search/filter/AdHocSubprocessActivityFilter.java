@@ -40,5 +40,5 @@ public interface AdHocSubprocessActivityFilter extends SearchRequestFilter {
    *
    * @return the API filter object
    */
-  io.camunda.client.wrappers.AdHocSubprocessActivityFilter getRequestFilter();
+  AdHocSubprocessActivityRequestFilter getRequestFilter();
 }

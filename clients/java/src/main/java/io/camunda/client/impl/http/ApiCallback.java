@@ -16,12 +16,12 @@
 package io.camunda.client.impl.http;
 
 import io.camunda.client.CredentialsProvider.StatusCode;
-import io.camunda.client.ResponseMapper;
 import io.camunda.client.api.command.ClientException;
 import io.camunda.client.api.command.ClientHttpException;
 import io.camunda.client.api.command.MalformedResponseException;
 import io.camunda.client.api.command.ProblemException;
 import io.camunda.client.impl.HttpStatusCode;
+import io.camunda.client.impl.ResponseMapper;
 import io.camunda.client.impl.http.ApiResponseConsumer.ApiResponse;
 import java.nio.charset.StandardCharsets;
 import java.util.concurrent.CompletableFuture;

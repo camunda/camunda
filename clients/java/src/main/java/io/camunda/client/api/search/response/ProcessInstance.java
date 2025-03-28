@@ -15,7 +15,7 @@
  */
 package io.camunda.client.api.search.response;
 
-import io.camunda.client.wrappers.ProcessInstanceState;
+import io.camunda.client.api.search.enums.ProcessInstanceState;
 
 public interface ProcessInstance {
 

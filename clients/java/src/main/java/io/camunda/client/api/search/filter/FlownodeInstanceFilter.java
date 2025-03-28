@@ -15,8 +15,8 @@
  */
 package io.camunda.client.api.search.filter;
 
+import io.camunda.client.api.search.enums.FlowNodeInstanceFilter;
 import io.camunda.client.api.search.request.TypedSearchRequest.SearchRequestFilter;
-import io.camunda.client.wrappers.FlowNodeInstanceFilter;
 
 public interface FlownodeInstanceFilter extends SearchRequestFilter {
 

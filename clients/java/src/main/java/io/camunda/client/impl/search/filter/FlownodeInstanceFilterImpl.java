@@ -15,11 +15,11 @@
  */
 package io.camunda.client.impl.search.filter;
 
+import io.camunda.client.api.search.enums.FlowNodeInstanceFilter;
 import io.camunda.client.api.search.filter.FlownodeInstanceFilter;
 import io.camunda.client.impl.search.request.TypedSearchRequestPropertyProvider;
 import io.camunda.client.impl.util.EnumUtil;
 import io.camunda.client.impl.util.ParseUtil;
-import io.camunda.client.wrappers.FlowNodeInstanceFilter;
 
 public class FlownodeInstanceFilterImpl
     extends TypedSearchRequestPropertyProvider<

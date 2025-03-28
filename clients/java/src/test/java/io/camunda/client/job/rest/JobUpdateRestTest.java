@@ -17,8 +17,8 @@ package io.camunda.client.job.rest;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.client.ResponseMapper;
 import io.camunda.client.api.response.ActivatedJob;
+import io.camunda.client.impl.ResponseMapper;
 import io.camunda.client.protocol.rest.JobChangeset;
 import io.camunda.client.protocol.rest.JobUpdateRequest;
 import io.camunda.client.util.ClientRestTest;

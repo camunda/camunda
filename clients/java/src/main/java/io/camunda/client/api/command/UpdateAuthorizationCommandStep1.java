@@ -16,9 +16,9 @@
 package io.camunda.client.api.command;
 
 import io.camunda.client.api.response.UpdateAuthorizationResponse;
-import io.camunda.client.wrappers.OwnerType;
-import io.camunda.client.wrappers.PermissionType;
-import io.camunda.client.wrappers.ResourceType;
+import io.camunda.client.api.search.enums.OwnerType;
+import io.camunda.client.api.search.enums.PermissionType;
+import io.camunda.client.api.search.enums.ResourceType;
 
 public interface UpdateAuthorizationCommandStep1 {
 

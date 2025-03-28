@@ -15,8 +15,8 @@
  */
 package io.camunda.process.test.utils;
 
+import io.camunda.client.api.search.enums.IncidentResult;
 import io.camunda.client.api.search.response.Incident;
-import io.camunda.client.wrappers.IncidentResult;
 
 public class IncidentBuilder implements Incident {
 

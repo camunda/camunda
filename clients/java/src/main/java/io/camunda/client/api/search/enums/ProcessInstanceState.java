@@ -13,17 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.camunda.client.wrappers;
+package io.camunda.client.api.search.enums;
 
-public class GroupChangeset {
-
-  private String name;
-
-  public String getName() {
-    return name;
-  }
-
-  public void setName(String name) {
-    this.name = name;
-  }
+public enum ProcessInstanceState {
+  ACTIVE,
+  COMPLETED,
+  TERMINATED,
+  UNKNOWN_ENUM_VALUE;
 }

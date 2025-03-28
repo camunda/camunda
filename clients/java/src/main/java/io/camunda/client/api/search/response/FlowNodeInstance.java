@@ -15,7 +15,7 @@
  */
 package io.camunda.client.api.search.response;
 
-import io.camunda.client.wrappers.FlowNodeInstanceResult;
+import io.camunda.client.api.search.enums.FlowNodeInstanceResult;
 
 public interface FlowNodeInstance {
 

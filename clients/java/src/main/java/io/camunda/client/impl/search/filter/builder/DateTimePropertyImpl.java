@@ -15,10 +15,10 @@
  */
 package io.camunda.client.impl.search.filter.builder;
 
-import io.camunda.client.ResponseMapper;
+import io.camunda.client.api.search.filter.DateTimeFilterProperty;
 import io.camunda.client.api.search.filter.builder.DateTimeProperty;
+import io.camunda.client.impl.ResponseMapper;
 import io.camunda.client.impl.util.CollectionUtil;
-import io.camunda.client.wrappers.DateTimeFilterProperty;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.stream.Collectors;

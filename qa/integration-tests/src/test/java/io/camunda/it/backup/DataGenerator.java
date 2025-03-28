@@ -10,11 +10,11 @@ package io.camunda.it.backup;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.client.CamundaClient;
+import io.camunda.client.api.search.enums.ProcessInstanceState;
+import io.camunda.client.api.search.enums.UserTaskFilter;
 import io.camunda.client.api.search.response.ProcessInstance;
 import io.camunda.client.api.search.response.SearchResponse;
 import io.camunda.client.api.search.response.UserTask;
-import io.camunda.client.wrappers.ProcessInstanceState;
-import io.camunda.client.wrappers.UserTaskFilter;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import java.time.Duration;

@@ -15,9 +15,9 @@
  */
 package io.camunda.client.impl.search.filter;
 
-import io.camunda.client.RequestMapper;
 import io.camunda.client.api.search.filter.UserTaskVariableFilter;
 import io.camunda.client.api.search.filter.builder.StringProperty;
+import io.camunda.client.impl.RequestMapper;
 import io.camunda.client.impl.search.filter.builder.StringPropertyImpl;
 import io.camunda.client.impl.search.request.TypedSearchRequestPropertyProvider;
 import io.camunda.client.protocol.rest.VariableUserTaskFilterRequest;

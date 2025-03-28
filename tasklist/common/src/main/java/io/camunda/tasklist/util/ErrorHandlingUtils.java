@@ -8,7 +8,7 @@
 package io.camunda.tasklist.util;
 
 import io.camunda.client.api.command.ProblemException;
-import io.camunda.client.wrappers.ProblemDetail;
+import io.camunda.client.api.search.ProblemDetail;
 import java.util.Objects;
 
 public abstract class ErrorHandlingUtils {

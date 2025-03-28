@@ -69,12 +69,13 @@ public class SearchIncidentTest extends ClientRestTest {
                     .processDefinitionId("complexProcess")
                     .processInstanceKey(3L)
                     .errorType(
-                        io.camunda.client.wrappers.IncidentFilter.ErrorType.CALLED_DECISION_ERROR)
+                        io.camunda.client.api.search.enums.IncidentFilter.ErrorType
+                            .CALLED_DECISION_ERROR)
                     .errorMessage("Can't decide")
                     .flowNodeId("flowNode")
                     .flowNodeInstanceKey(4L)
                     .creationTime("2024-05-23T23:05:00.000+000")
-                    .state(io.camunda.client.wrappers.IncidentFilter.State.ACTIVE)
+                    .state(io.camunda.client.api.search.enums.IncidentFilter.State.ACTIVE)
                     .jobKey(5L)
                     .tenantId("tenant"))
         .send()
@@ -175,8 +176,8 @@ public class SearchIncidentTest extends ClientRestTest {
   @EnumSource(value = ErrorType.class)
   void shouldSearchIncidentByIncidentErrorType(final ErrorType errorType) {
     // given
-    final io.camunda.client.wrappers.IncidentFilter.ErrorType incidentErrorType =
-        io.camunda.client.wrappers.IncidentFilter.ErrorType.valueOf(errorType.name());
+    final io.camunda.client.api.search.enums.IncidentFilter.ErrorType incidentErrorType =
+        io.camunda.client.api.search.enums.IncidentFilter.ErrorType.valueOf(errorType.name());
 
     // when
     client

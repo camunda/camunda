@@ -13,20 +13,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.camunda.client.wrappers;
+package io.camunda.client.api.search.filter;
 
 import java.util.ArrayList;
 import java.util.List;
 
-public class DateTimeFilterProperty {
+public class BasicStringFilterProperty {
 
   private String eq;
   private String neq;
   private Boolean exists;
-  private String gt;
-  private String gte;
-  private String lt;
-  private String lte;
   private List<String> in = new ArrayList<>();
 
   public String getEq() {
@@ -51,38 +47,6 @@ public class DateTimeFilterProperty {
 
   public void setExists(Boolean exists) {
     this.exists = exists;
-  }
-
-  public String getGt() {
-    return gt;
-  }
-
-  public void setGt(String gt) {
-    this.gt = gt;
-  }
-
-  public String getGte() {
-    return gte;
-  }
-
-  public void setGte(String gte) {
-    this.gte = gte;
-  }
-
-  public String getLt() {
-    return lt;
-  }
-
-  public void setLt(String lt) {
-    this.lt = lt;
-  }
-
-  public String getLte() {
-    return lte;
-  }
-
-  public void setLte(String lte) {
-    this.lte = lte;
   }
 
   public List<String> getIn() {

@@ -13,12 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.camunda.client.wrappers;
+package io.camunda.client.api.search;
 
-public class UserTaskVariableFilterRequest {
+public class GroupChangeset {
 
   private String name;
-  private StringFilterProperty value;
 
   public String getName() {
     return name;
@@ -26,13 +25,5 @@ public class UserTaskVariableFilterRequest {
 
   public void setName(String name) {
     this.name = name;
-  }
-
-  public StringFilterProperty getValue() {
-    return value;
-  }
-
-  public void setValue(StringFilterProperty value) {
-    this.value = value;
   }
 }

@@ -10,11 +10,11 @@ package io.camunda.it.orchestration;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.client.CamundaClient;
+import io.camunda.client.api.search.enums.IncidentResult;
 import io.camunda.client.api.search.filter.IncidentFilter;
 import io.camunda.client.api.search.response.FlowNodeInstance;
 import io.camunda.client.api.search.response.Incident;
 import io.camunda.client.api.search.response.ProcessInstance;
-import io.camunda.client.wrappers.IncidentResult;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.test.util.Strings;
@@ -85,7 +85,7 @@ public class IncidentIT {
             client,
             f ->
                 f.processInstanceKey(childInstanceKey)
-                    .state(io.camunda.client.wrappers.IncidentFilter.State.ACTIVE));
+                    .state(io.camunda.client.api.search.enums.IncidentFilter.State.ACTIVE));
 
     // then
     assertIncidentState(client, incidents.getIncidentKey(), IncidentResult.State.ACTIVE);
@@ -108,7 +108,7 @@ public class IncidentIT {
             client,
             f ->
                 f.processInstanceKey(childInstanceKey)
-                    .state(io.camunda.client.wrappers.IncidentFilter.State.ACTIVE));
+                    .state(io.camunda.client.api.search.enums.IncidentFilter.State.ACTIVE));
     client.newResolveIncidentCommand(incident.getIncidentKey()).send().join();
 
     // then
