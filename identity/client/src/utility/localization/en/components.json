@@ -1,10 +1,4 @@
 {
-  "Users": "Users",
-  "Groups": "Groups",
-  "Roles": "Roles",
-  "Tenants": "Tenants",
-  "Mappings": "Mappings",
-  "Authorizations": "Authorizations",
   "users": "Users",
   "groups": "Groups",
   "roles": "Roles",

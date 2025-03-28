@@ -5,8 +5,6 @@
   "toGetStarted": "to get started",
   "createAUser": "Create a user",
   "learnMoreAboutUsers": "Learn more about users",
-  "name": "Name",
-  "email": "Email",
   "editUser": "Edit user",
   "editUserWithName": "Edit user {{username}}",
   "createUser": "Create user",
