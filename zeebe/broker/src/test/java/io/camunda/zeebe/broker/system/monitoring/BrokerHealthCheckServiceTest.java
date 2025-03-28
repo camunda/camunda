@@ -9,18 +9,29 @@ package io.camunda.zeebe.broker.system.monitoring;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.Mockito.mock;
 
+<<<<<<< HEAD
 import io.camunda.zeebe.protocol.impl.encoding.BrokerInfo;
+=======
+import io.atomix.cluster.MemberId;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
+>>>>>>> 9f146675 (fix: initialize BrokerInfo from ClusterConfiguration instead of configuration)
 import org.junit.Test;
 
 public class BrokerHealthCheckServiceTest {
 
+  private final MemberId member = MemberId.from("member-1");
+
   @Test
   public void shouldNotBeReadyHealthyOrStartedBeforePartitionManagerIsRegistered() {
     // given
+<<<<<<< HEAD
     final var brokerInfo = mock(BrokerInfo.class);
     final var healthCheckService = new BrokerHealthCheckService(brokerInfo);
+=======
+    final var healthCheckService =
+        new BrokerHealthCheckService(member, new HealthTreeMetrics(new SimpleMeterRegistry()));
+>>>>>>> 9f146675 (fix: initialize BrokerInfo from ClusterConfiguration instead of configuration)
 
     // when
 
@@ -40,8 +51,13 @@ public class BrokerHealthCheckServiceTest {
   @Test
   public void shouldThrowIllegalStateExceptionIfStatusIsUpdatedBeforePartitionsAreKnown() {
     // given
+<<<<<<< HEAD
     final var brokerInfo = mock(BrokerInfo.class);
     final var healthCheckService = new BrokerHealthCheckService(brokerInfo);
+=======
+    final var healthCheckService =
+        new BrokerHealthCheckService(member, new HealthTreeMetrics(new SimpleMeterRegistry()));
+>>>>>>> 9f146675 (fix: initialize BrokerInfo from ClusterConfiguration instead of configuration)
 
     // when + then
 
