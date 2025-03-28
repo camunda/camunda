@@ -13,17 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.camunda.client.api.search;
+package io.camunda.client.api.search.enums;
 
-public class GroupChangeset {
-
-  private String name;
-
-  public String getName() {
-    return name;
-  }
-
-  public void setName(String name) {
-    this.name = name;
-  }
+public enum UserTaskFilterState {
+  CREATED,
+  COMPLETED,
+  CANCELED,
+  FAILED,
+  UNKNOWN_ENUM_VALUE;
 }
