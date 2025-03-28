@@ -76,7 +76,7 @@ public class DbMappingState implements MutableMappingState {
     persistedMapping.setClaimName(claimName);
     persistedMapping.setClaimValue(value);
     persistedMapping.setName(name);
-    persistedMapping.setId(id);
+    persistedMapping.setMappingId(id);
 
     mappingColumnFamily.insert(claim, persistedMapping);
     claimByIdColumnFamily.insert(mappingId, fkClaim);

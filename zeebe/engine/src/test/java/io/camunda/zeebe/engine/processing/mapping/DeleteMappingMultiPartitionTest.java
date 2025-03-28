@@ -42,7 +42,7 @@ public class DeleteMappingMultiPartitionTest {
     final var claimName = UUID.randomUUID().toString();
     final var claimValue = UUID.randomUUID().toString();
     final var id = UUID.randomUUID().toString();
-    engine.mapping().newMapping(claimName).withClaimValue(claimValue).withId(id).create();
+    engine.mapping().newMapping(claimName).withClaimValue(claimValue).withMappingId(id).create();
     engine.mapping().deleteMapping(id).delete();
 
     // then
@@ -92,7 +92,7 @@ public class DeleteMappingMultiPartitionTest {
     final var claimName = UUID.randomUUID().toString();
     final var claimValue = UUID.randomUUID().toString();
     final var id = UUID.randomUUID().toString();
-    engine.mapping().newMapping(claimName).withClaimValue(claimValue).withId(id).create();
+    engine.mapping().newMapping(claimName).withClaimValue(claimValue).withMappingId(id).create();
     engine.mapping().deleteMapping(id).delete();
 
     // then
@@ -114,7 +114,7 @@ public class DeleteMappingMultiPartitionTest {
     final var claimValue = UUID.randomUUID().toString();
     final var id = UUID.randomUUID().toString();
 
-    engine.mapping().newMapping(claimName).withClaimValue(claimValue).withId(id).create();
+    engine.mapping().newMapping(claimName).withClaimValue(claimValue).withMappingId(id).create();
     engine.mapping().deleteMapping(id).delete();
 
     // Increase time to trigger a redistribution

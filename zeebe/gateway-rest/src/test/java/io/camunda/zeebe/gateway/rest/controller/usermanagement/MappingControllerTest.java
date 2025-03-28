@@ -52,7 +52,7 @@ public class MappingControllerTest extends RestControllerTest {
             .setMappingKey(1L)
             .setClaimName(dto.claimName())
             .setClaimValue(dto.claimValue())
-            .setId(id)
+            .setMappingId(id)
             .setName(dto.name());
 
     when(mappingServices.createMapping(dto))

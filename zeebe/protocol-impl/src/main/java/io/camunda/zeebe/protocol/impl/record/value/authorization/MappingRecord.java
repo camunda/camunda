@@ -75,7 +75,7 @@ public class MappingRecord extends UnifiedRecordValue implements MappingRecordVa
     return BufferUtil.bufferAsString(mappingIdProp.getValue());
   }
 
-  public MappingRecord setId(final String id) {
+  public MappingRecord setMappingId(final String id) {
     mappingIdProp.setValue(id);
     return this;
   }

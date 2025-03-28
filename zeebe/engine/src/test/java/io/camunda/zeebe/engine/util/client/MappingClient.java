@@ -65,8 +65,8 @@ public class MappingClient {
       return this;
     }
 
-    public MappingCreateClient withId(final String id) {
-      mappingRecord.setId(id);
+    public MappingCreateClient withMappingId(final String id) {
+      mappingRecord.setMappingId(id);
       return this;
     }
 
@@ -114,7 +114,7 @@ public class MappingClient {
     public MappingDeleteClient(final CommandWriter writer, final String id) {
       this.writer = writer;
       mappingRecord = new MappingRecord();
-      mappingRecord.setId(id);
+      mappingRecord.setMappingId(id);
     }
 
     public Record<MappingRecordValue> delete() {
@@ -155,7 +155,7 @@ public class MappingClient {
     public MappingUpdateClient(final CommandWriter writer, final String id) {
       this.writer = writer;
       mappingRecord = new MappingRecord();
-      mappingRecord.setId(id);
+      mappingRecord.setMappingId(id);
     }
 
     public Record<MappingRecordValue> update() {

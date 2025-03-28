@@ -74,7 +74,7 @@ public class MappingServices
             .setClaimName(request.claimName())
             .setClaimValue(request.claimValue())
             .setName(request.name())
-            .setId(request.id()));
+            .setMappingId(request.mappingId()));
   }
 
   public CompletableFuture<MappingRecord> updateMapping(final MappingDTO request) {
@@ -83,7 +83,7 @@ public class MappingServices
             .setClaimName(request.claimName())
             .setClaimValue(request.claimValue())
             .setName(request.name())
-            .setId(request.id()));
+            .setMappingId(request.mappingId()));
   }
 
   public MappingEntity getMapping(final Long mappingKey) {
@@ -139,5 +139,5 @@ public class MappingServices
     return Stream.of(String.valueOf(value));
   }
 
-  public record MappingDTO(String claimName, String claimValue, String name, String id) {}
+  public record MappingDTO(String claimName, String claimValue, String name, String mappingId) {}
 }
