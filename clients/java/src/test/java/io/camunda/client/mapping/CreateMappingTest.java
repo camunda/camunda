@@ -27,7 +27,7 @@ public class CreateMappingTest extends ClientRestTest {
   public static final String CLAIM_NAME = "claimName";
   public static final String CLAIM_VALUE = "claimValue";
   public static final String NAME = "mappingName";
-  public static final String ID = "mappingId";
+  public static final String MAPPING_ID = "mappingId";
 
   @Test
   void shouldCreateMapping() {
@@ -37,7 +37,7 @@ public class CreateMappingTest extends ClientRestTest {
         .claimName(CLAIM_NAME)
         .claimValue(CLAIM_VALUE)
         .name(NAME)
-        .id(ID)
+        .mappingId(MAPPING_ID)
         .send()
         .join();
 
@@ -47,7 +47,7 @@ public class CreateMappingTest extends ClientRestTest {
     assertThat(request.getClaimName()).isEqualTo(CLAIM_NAME);
     assertThat(request.getClaimValue()).isEqualTo(CLAIM_VALUE);
     assertThat(request.getName()).isEqualTo(NAME);
-    assertThat(request.getId()).isEqualTo(ID);
+    assertThat(request.getMappingId()).isEqualTo(MAPPING_ID);
   }
 
   @Test

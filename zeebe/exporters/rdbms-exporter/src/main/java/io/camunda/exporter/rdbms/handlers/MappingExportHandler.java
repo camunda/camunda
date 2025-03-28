@@ -38,14 +38,14 @@ public class MappingExportHandler implements RdbmsExportHandler<MappingRecordVal
     if (record.getIntent().equals(MappingIntent.CREATED)) {
       mappingWriter.create(map(record));
     } else if (record.getIntent().equals(MappingIntent.DELETED)) {
-      mappingWriter.delete(record.getValue().getId());
+      mappingWriter.delete(record.getValue().getMappingId());
     }
   }
 
   private MappingDbModel map(final Record<MappingRecordValue> record) {
     final var value = record.getValue();
     return new MappingDbModelBuilder()
-        .mappingId(value.getId())
+        .mappingId(value.getMappingId())
         .mappingKey(value.getMappingKey())
         .claimName(value.getClaimName())
         .claimValue(value.getClaimValue())

@@ -36,7 +36,7 @@ const AddMappingModal: FC<UseModalProps> = ({ open, onClose, onSuccess }) => {
 
   const handleSubmit = async () => {
     const { success } = await apiCall({
-      id: mappingId,
+      mappingId: mappingId,
       name: mappingName,
       claimName,
       claimValue,

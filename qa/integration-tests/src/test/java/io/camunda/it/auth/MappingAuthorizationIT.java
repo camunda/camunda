@@ -113,7 +113,7 @@ class MappingAuthorizationIT {
         .newCreateMappingCommand()
         .claimName(name)
         .claimValue(value)
-        .id(mappingId)
+        .mappingId(mappingId)
         .name(mappingId)
         .send()
         .join();
