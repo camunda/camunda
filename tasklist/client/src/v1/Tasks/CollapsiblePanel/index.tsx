@@ -22,7 +22,7 @@ import {useNavigate, useSearchParams} from 'react-router-dom';
 import {
   useTaskFilters,
   type TaskFilters,
-} from 'common/tasks/filters/useTaskFilters';
+} from 'v1/features/tasks/filters/useTaskFilters';
 import {ControlledNavLink} from './ControlledNavLink';
 import {prepareCustomFiltersParams} from 'common/tasks/filters/prepareCustomFiltersParams';
 import {getStateLocally} from 'common/local-storage';

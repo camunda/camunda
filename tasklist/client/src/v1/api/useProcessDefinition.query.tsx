@@ -24,7 +24,7 @@ function useProcessDefinition(
     queryKey: ['processDefinition', processDefinitionId],
     queryFn: async () => {
       const {response, error} = await request(
-        api.v1.getProcess({processDefinitionId: processDefinitionId!}),
+        api.getProcess({processDefinitionId: processDefinitionId!}),
       );
 
       if (response !== null) {

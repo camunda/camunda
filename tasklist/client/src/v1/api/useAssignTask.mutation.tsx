@@ -47,7 +47,7 @@ function useAssignTask() {
   return useMutation<Task, AssignmentError, Task['id']>({
     mutationFn: async (taskId) => {
       const {response, error: errorResponse} = await request(
-        api.v1.assignTask(taskId),
+        api.assignTask(taskId),
       );
 
       if (response !== null) {

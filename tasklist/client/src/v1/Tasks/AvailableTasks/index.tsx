@@ -10,7 +10,7 @@ import {useEffect, useRef} from 'react';
 import {useTranslation} from 'react-i18next';
 import {Stack} from '@carbon/react';
 import {Search} from '@carbon/react/icons';
-import {useTaskFilters} from 'common/tasks/filters/useTaskFilters';
+import {useTaskFilters} from 'v1/features/tasks/filters/useTaskFilters';
 import type {Task as TaskType} from 'v1/api/types';
 import {useCurrentUser} from 'common/api/useCurrentUser.query';
 import {Task} from './Task';

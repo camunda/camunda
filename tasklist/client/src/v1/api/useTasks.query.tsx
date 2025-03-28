@@ -16,7 +16,7 @@ import {api} from 'v1/api';
 import {type RequestError, request} from 'common/api/request';
 import type {Task} from 'v1/api/types';
 import {getQueryVariables} from 'v1/api/getQueryVariables';
-import type {TaskFilters} from 'common/tasks/filters/useTaskFilters';
+import type {TaskFilters} from 'v1/features/tasks/filters/useTaskFilters';
 import chunk from 'lodash/chunk';
 import {useCurrentUser} from 'common/api/useCurrentUser.query';
 
@@ -59,14 +59,14 @@ function useTasks(
     queryKey: getQueryKey(Object.values(payload)),
     queryFn: async ({pageParam}) => {
       const {response, error} = await request(
-        api.v1.searchTasks({...payload, ...(pageParam as PageParam)}),
+        api.searchTasks({...payload, ...(pageParam as PageParam)}),
       );
 
       if (response !== null) {
         return response.json();
       }
 
-      throw error ?? new Error('Could not fetch tasks');
+      throw error;
     },
     initialPageParam: undefined,
     placeholderData: (previousData) => previousData,

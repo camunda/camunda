@@ -16,7 +16,7 @@ function useStartExternalProcess(
     UseMutationOptions<
       ProcessInstance,
       RequestError | Error,
-      Parameters<typeof api.v1.startExternalProcess>[0]
+      Parameters<typeof api.startExternalProcess>[0]
     >,
     'onError' | 'onSuccess' | 'onMutate'
   > = {},
@@ -24,12 +24,12 @@ function useStartExternalProcess(
   return useMutation<
     ProcessInstance,
     RequestError | Error,
-    Parameters<typeof api.v1.startExternalProcess>[0]
+    Parameters<typeof api.startExternalProcess>[0]
   >({
     ...options,
     mutationFn: async (payload) => {
       const {response, error} = await request(
-        api.v1.startExternalProcess(payload),
+        api.startExternalProcess(payload),
       );
 
       if (response !== null) {

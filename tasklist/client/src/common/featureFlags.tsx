@@ -6,4 +6,6 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-export {};
+const IS_V2_ENABLED = import.meta.env.MODE === 'development';
+
+export {IS_V2_ENABLED};

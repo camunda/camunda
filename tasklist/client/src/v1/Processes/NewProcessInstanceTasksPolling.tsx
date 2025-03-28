@@ -34,7 +34,7 @@ const NewProcessInstanceTasksPolling: React.FC = observer(() => {
       }
 
       const {response, error} = await request(
-        api.v1.searchTasks({
+        api.searchTasks({
           pageSize: 10,
           processInstanceKey: id,
           state: 'CREATED',
