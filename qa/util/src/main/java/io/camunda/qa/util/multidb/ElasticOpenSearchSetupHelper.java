@@ -124,7 +124,7 @@ public class ElasticOpenSearchSetupHelper implements MultiDbSetupHelper {
     try {
       final int count = getCountOfIndicesWithPrefix(endpoint, testPrefix);
       if (expectedDescriptors.size() > count) {
-        LOGGER.debug(
+        LOGGER.info(
             "[{}/{}] indices with prefix {} in secondary storage, retry...",
             count,
             expectedDescriptors.size(),
@@ -134,17 +134,17 @@ public class ElasticOpenSearchSetupHelper implements MultiDbSetupHelper {
 
       final int templateCount = getCountOfIndexTemplatesWithPrefix(endpoint, testPrefix);
       if (templateCount <= 0) {
-        LOGGER.debug("{} templates found for prefix {}, retry...", templateCount, testPrefix);
+        LOGGER.info("{} templates found for prefix {}, retry...", templateCount, testPrefix);
         return false;
       }
 
-      LOGGER.debug(
+      LOGGER.info(
           "Found {} indices and {} index templates. Schema creation validated.",
           count,
           templateCount);
       return true;
     } catch (final IOException | InterruptedException e) {
-      LOGGER.debug("Exception on retrieving schema with prefix {}", testPrefix, e);
+      LOGGER.info("Exception on retrieving schema with prefix {}", testPrefix, e);
     }
     return false;
   }
