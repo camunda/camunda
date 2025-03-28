@@ -187,11 +187,12 @@ public class GroupServiceTest {
   public void shouldAddMemberToGroup() {
     // given
     final var groupKey = Protocol.encodePartitionId(1, 123);
-    final var memberKey = 456L;
+    final var groupId = String.valueOf(groupKey);
+    final var memberId = "456";
     final var memberType = EntityType.USER;
 
     // when
-    services.assignMember(groupKey, memberKey, memberType);
+    services.assignMember(groupId, memberId, memberType);
 
     // then
     final BrokerGroupMemberRequest request = stubbedBrokerClient.getSingleBrokerRequest();
@@ -201,7 +202,7 @@ public class GroupServiceTest {
     assertThat(request.getKey()).isEqualTo(groupKey);
     final GroupRecord record = request.getRequestWriter();
     assertThat(record).hasGroupKey(groupKey);
-    assertThat(record).hasEntityKey(memberKey);
+    assertThat(record).hasEntityKey(Long.parseLong(memberId));
     assertThat(record).hasEntityType(EntityType.USER);
   }
 
@@ -209,11 +210,13 @@ public class GroupServiceTest {
   public void shouldRemoveMemberFromGroup() {
     // given
     final var groupKey = Protocol.encodePartitionId(1, 123L);
+    final var groupId = String.valueOf(groupKey);
     final var memberKey = 456L;
+    final var username = String.valueOf(memberKey);
     final var memberType = EntityType.USER;
 
     // when
-    services.removeMember(groupKey, memberKey, memberType);
+    services.removeMember(groupId, username, memberType);
 
     // then
     final BrokerGroupMemberRequest request = stubbedBrokerClient.getSingleBrokerRequest();

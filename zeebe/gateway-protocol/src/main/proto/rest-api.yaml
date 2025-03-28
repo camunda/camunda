@@ -2484,8 +2484,8 @@ paths:
                 $ref: "#/components/schemas/ProblemDetail"
         "500":
           $ref: "#/components/responses/InternalServerError"
-  /groups/{groupKey}/users/{userKey}:
-    post:
+  /groups/{groupId}/users/{username}:
+    put:
       tags:
         - Group
       operationId: addUserToGroup
@@ -2496,16 +2496,16 @@ paths:
         This API is in a Work-in-Progress state and will undergo potential breaking changes until
         its release with an upcoming minor release.
       parameters:
-        - name: groupKey
+        - name: groupId
           in: path
           required: true
-          description: The group key.
+          description: The group ID.
           schema:
             type: string
-        - name: userKey
+        - name: username
           in: path
           required: true
-          description: The user key.
+          description: The user username.
           schema:
             type: string
       responses:
@@ -2516,13 +2516,13 @@ paths:
         "403":
           $ref: "#/components/responses/Forbidden"
         "404":
-          description: The group or user with the given key was not found.
+          description: The group or user with the given ID or username was not found.
           content:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
         "409":
-          description: The user with the given key is already assigned to the group.
+          description: The user with the given ID is already assigned to the group.
           content:
             application/problem+json:
               schema:
@@ -2540,16 +2540,16 @@ paths:
         This API is in a Work-in-Progress state and will undergo potential breaking changes until
         its release with an upcoming minor release.
       parameters:
-        - name: groupKey
+        - name: groupId
           in: path
           required: true
-          description: The group key.
+          description: The group ID.
           schema:
             type: string
-        - name: userKey
+        - name: username
           in: path
           required: true
-          description: The user key.
+          description: The user username.
           schema:
             type: string
       responses:
@@ -2560,7 +2560,7 @@ paths:
         "403":
           $ref: "#/components/responses/Forbidden"
         "404":
-          description: The group or user with the given key was not found, or the user is not assigned to this group.
+          description: The group or user with the given ID was not found, or the user is not assigned to this group.
           content:
             application/problem+json:
               schema:

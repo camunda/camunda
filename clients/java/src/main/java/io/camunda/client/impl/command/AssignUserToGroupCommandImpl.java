@@ -55,7 +55,7 @@ public class AssignUserToGroupCommandImpl implements AssignUserToGroupCommandSte
   public CamundaFuture<AssignUserToGroupResponse> send() {
     ArgumentUtil.ensureNotNull("userKey", userKey);
     final HttpCamundaFuture<AssignUserToGroupResponse> result = new HttpCamundaFuture<>();
-    httpClient.post(
+    httpClient.put(
         "/groups/" + groupKey + "/users/" + userKey, null, httpRequestConfig.build(), result);
     return result;
   }
