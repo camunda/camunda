@@ -3,7 +3,7 @@
 
   <Appenders>
     <Console name="Console" target="SYSTEM_OUT">
-      <PatternLayout pattern="%d{HH:mm:ss.SSS} [%X{actor-name}] %-5level %logger{36} - %msg%n"/>
+      <PatternLayout pattern="%d{HH:mm:ss.SSS} [%X{actor-name} %X{actor-scheduler}] %-5level %logger{36} - %msg%n"/>
     </Console>
   </Appenders>
 

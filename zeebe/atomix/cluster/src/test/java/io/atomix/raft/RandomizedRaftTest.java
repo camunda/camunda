@@ -32,13 +32,16 @@ import net.jqwik.api.Arbitrary;
 import net.jqwik.api.EdgeCasesMode;
 import net.jqwik.api.ForAll;
 import net.jqwik.api.Property;
+import net.jqwik.api.PropertyDefaults;
 import net.jqwik.api.Provide;
 import net.jqwik.api.ShrinkingMode;
 import net.jqwik.api.lifecycle.AfterTry;
 import net.jqwik.api.lifecycle.BeforeProperty;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.MDC;
 
+@PropertyDefaults(tries = 10, shrinking = ShrinkingMode.OFF, edgeCases = EdgeCasesMode.NONE)
 public class RandomizedRaftTest {
 
   private static final int OPERATION_SIZE = 10000;
@@ -77,7 +80,7 @@ public class RandomizedRaftTest {
     raftDataDirectory = null;
   }
 
-  @Property(tries = 10, shrinking = ShrinkingMode.OFF, edgeCases = EdgeCasesMode.NONE)
+  @Property
   void consistencyTestWithNoSnapshot(
       @ForAll("raftOperations") final List<RaftOperation> raftOperations,
       @ForAll("raftMembers") final List<MemberId> raftMembers,
@@ -87,7 +90,7 @@ public class RandomizedRaftTest {
     consistencyTest(raftOperations, raftMembers, seed);
   }
 
-  @Property(tries = 10, shrinking = ShrinkingMode.OFF, edgeCases = EdgeCasesMode.NONE)
+  @Property
   void consistencyTestWithSnapshot(
       @ForAll("raftOperationsWithSnapshot") final List<RaftOperation> raftOperations,
       @ForAll("raftMembers") final List<MemberId> raftMembers,
@@ -97,7 +100,7 @@ public class RandomizedRaftTest {
     consistencyTest(raftOperations, raftMembers, seed);
   }
 
-  @Property(tries = 10, shrinking = ShrinkingMode.OFF, edgeCases = EdgeCasesMode.NONE)
+  @Property
   void consistencyTestWithRestarts(
       @ForAll("raftOperationsWithRestarts") final List<RaftOperation> raftOperations,
       @ForAll("raftMembers") final List<MemberId> raftMembers,
@@ -107,7 +110,7 @@ public class RandomizedRaftTest {
     consistencyTest(raftOperations, raftMembers, seed);
   }
 
-  @Property(tries = 10, shrinking = ShrinkingMode.OFF, edgeCases = EdgeCasesMode.NONE)
+  @Property
   void consistencyTestWithSnapshotsAndRestarts(
       @ForAll("raftOperationsWithSnapshotsAndRestarts") final List<RaftOperation> raftOperations,
       @ForAll("raftMembers") final List<MemberId> raftMembers,
@@ -117,7 +120,7 @@ public class RandomizedRaftTest {
     consistencyTest(raftOperations, raftMembers, seed);
   }
 
-  @Property(tries = 1, shrinking = ShrinkingMode.OFF, edgeCases = EdgeCasesMode.NONE)
+  @Property(tries = 1)
   void consistencyTestAfterDataLoss(
       @ForAll("raftOperationsWithSnapshotsAndRestartsWithDataLoss")
           final List<RaftOperation> raftOperations,
@@ -128,7 +131,7 @@ public class RandomizedRaftTest {
     consistencyTest(raftOperations, raftMembers, seed);
   }
 
-  @Property(tries = 10, shrinking = ShrinkingMode.OFF, edgeCases = EdgeCasesMode.NONE)
+  @Property
   void livenessTestWithRestarts(
       @ForAll("raftOperationsWithRestarts") final List<RaftOperation> raftOperations,
       @ForAll("raftMembers") final List<MemberId> raftMembers,
@@ -137,7 +140,7 @@ public class RandomizedRaftTest {
     livenessTest(raftOperations, raftMembers, seed);
   }
 
-  @Property(tries = 10, shrinking = ShrinkingMode.OFF, edgeCases = EdgeCasesMode.NONE)
+  @Property
   void livenessTestWithRestartsAndSnapshots(
       @ForAll("raftOperationsWithSnapshotsAndRestarts") final List<RaftOperation> raftOperations,
       @ForAll("raftMembers") final List<MemberId> raftMembers,
@@ -146,7 +149,7 @@ public class RandomizedRaftTest {
     livenessTest(raftOperations, raftMembers, seed);
   }
 
-  @Property(tries = 10, shrinking = ShrinkingMode.OFF, edgeCases = EdgeCasesMode.NONE)
+  @Property
   void livenessTestWithNoSnapshot(
       @ForAll("raftOperations") final List<RaftOperation> raftOperations,
       @ForAll("raftMembers") final List<MemberId> raftMembers,
@@ -156,7 +159,7 @@ public class RandomizedRaftTest {
     livenessTest(raftOperations, raftMembers, seed);
   }
 
-  @Property(tries = 10, shrinking = ShrinkingMode.OFF, edgeCases = EdgeCasesMode.NONE)
+  @Property
   void livenessTestWithSnapshot(
       @ForAll("raftOperationsWithSnapshot") final List<RaftOperation> raftOperations,
       @ForAll("raftMembers") final List<MemberId> raftMembers,
@@ -166,7 +169,7 @@ public class RandomizedRaftTest {
     livenessTest(raftOperations, raftMembers, seed);
   }
 
-  @Property(tries = 10, shrinking = ShrinkingMode.OFF, edgeCases = EdgeCasesMode.NONE)
+  @Property
   void livenessTestWithSnapshotAndSingleRestart(
       @ForAll("raftOperationsWithSnapshot") final List<RaftOperation> raftOperations,
       @ForAll("raftMembers") final List<MemberId> raftMembers,
@@ -196,7 +199,9 @@ public class RandomizedRaftTest {
       step++;
 
       final MemberId member = memberIter.next();
-      LOG.info("{} on {}", operation, member);
+      try (final var ignored = MDC.putCloseable("actor-scheduler", member.toString())) {
+        LOG.info("{} on {}", operation, member);
+      }
       operation.run(raftContexts, member);
       raftContexts.assertAtMostOneLeader();
 
@@ -302,7 +307,7 @@ public class RandomizedRaftTest {
   }
 
   private void setUpRaftNodes(final Random random) throws Exception {
-    // Couldnot make @TempDir annotation work
+    // Could not make @TempDir annotation work
     raftDataDirectory = Files.createTempDirectory(null);
     raftContexts = new ControllableRaftContexts(3);
     raftContexts.setup(raftDataDirectory, random);

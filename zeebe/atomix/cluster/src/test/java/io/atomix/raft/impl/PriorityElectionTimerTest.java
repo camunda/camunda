@@ -17,6 +17,7 @@ package io.atomix.raft.impl;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.atomix.cluster.MemberId;
 import io.atomix.raft.DeterministicSingleThreadContext;
 import java.time.Duration;
 import java.util.List;
@@ -33,7 +34,7 @@ final class PriorityElectionTimerTest {
 
   private final Logger log = LoggerFactory.getLogger(PriorityElectionTimerTest.class);
   private final DeterministicSingleThreadContext threadContext =
-      new DeterministicSingleThreadContext(new DeterministicScheduler());
+      new DeterministicSingleThreadContext(new DeterministicScheduler(), MemberId.from(""));
 
   @AfterEach
   void afterEach() {

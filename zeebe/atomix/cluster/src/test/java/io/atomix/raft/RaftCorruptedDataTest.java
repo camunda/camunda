@@ -17,8 +17,11 @@ import org.awaitility.Awaitility;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.jupiter.api.DisplayName;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class RaftCorruptedDataTest {
+  private static final Logger LOGGER = LoggerFactory.getLogger(RaftCorruptedDataTest.class);
   @Rule public RaftRule raftRule = RaftRule.withBootstrappedNodes(3);
 
   @Test
@@ -33,7 +36,7 @@ public class RaftCorruptedDataTest {
     final var node1 = MemberId.from(servers[1].name());
     final var node2 = MemberId.from(servers[2].name());
 
-    raftRule.appendEntries(100);
+    raftRule.appendEntries(2000);
     raftRule.appendEntries(1);
     Awaitility.await("commitIndex is > 0 on all nodes")
         .until(() -> Arrays.stream(servers).allMatch(s -> s.getContext().getCommitIndex() >= 100));
@@ -59,6 +62,10 @@ public class RaftCorruptedDataTest {
     // wait for the two corrupted nodes to form quorum
     Awaitility.await("corrupted nodes form a quorum")
         .until(() -> server0.isLeader() || server1.isLeader());
+    raftRule.appendEntries(1000);
+    raftRule.takeCompactingSnapshot(server0, 500, 1);
+    raftRule.takeCompactingSnapshot(server1, 500, 1);
+
     // when
     // the node with up-to-date log joins the cluster
     final var server2 = raftRule.createServer(node2);
@@ -67,7 +74,9 @@ public class RaftCorruptedDataTest {
     // trigger bootstrap async
     server2.bootstrap(node0, node1, node2);
 
+    raftRule.appendEntries(1);
+
     // node does not become follower - goes to inactive as it detects that it has longer log
-    Awaitility.await("node becomes INACTIVE").until(() -> server2.getRole().equals(Role.INACTIVE));
+    Awaitility.await("node becomes INACTIVE").until(() -> server2.getRole() == Role.INACTIVE);
   }
 }
