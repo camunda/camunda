@@ -153,17 +153,17 @@ public class MappingServicesTest {
             mockBrokerClient, mock(SecurityContextProvider.class), client, testAuthentication);
 
     final var mappingRecord = new MappingRecord();
-    mappingRecord.setMappingKey(1234L);
+    mappingRecord.setId("id");
     when(mockBrokerClient.sendRequest(any()))
         .thenReturn(CompletableFuture.completedFuture(new BrokerResponse<>(mappingRecord)));
 
     //  when
-    testMappingServices.deleteMapping(1234L);
+    testMappingServices.deleteMapping("id");
 
     // then
     verify(mockBrokerClient).sendRequest(mappingDeleteRequestArgumentCaptor.capture());
     final var request = mappingDeleteRequestArgumentCaptor.getValue();
-    assertThat(request.getRequestWriter().getMappingKey()).isEqualTo(1234L);
+    assertThat(request.getRequestWriter().getId()).isEqualTo("id");
   }
 
   @Test

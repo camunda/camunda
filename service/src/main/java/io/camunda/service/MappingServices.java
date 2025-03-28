@@ -114,8 +114,8 @@ public class MappingServices
         .findFirst();
   }
 
-  public CompletableFuture<MappingRecord> deleteMapping(final long mappingKey) {
-    return sendBrokerRequest(new BrokerMappingDeleteRequest().setMappingKey(mappingKey));
+  public CompletableFuture<MappingRecord> deleteMapping(final String mappingId) {
+    return sendBrokerRequest(new BrokerMappingDeleteRequest().setId(mappingId));
   }
 
   public List<MappingEntity> getMatchingMappings(final Map<String, Object> claims) {
