@@ -66,7 +66,7 @@ public record MappingDbModel(
 
     @Override
     public MappingDbModel build() {
-      return new MappingDbModel(mappingKey, claimName, claimValue, name, mappingId);
+      return new MappingDbModel(mappingId, mappingKey, claimName, claimValue, name);
     }
   }
 }

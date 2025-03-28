@@ -159,7 +159,7 @@ public final class IdentitySetupInitializeProcessor
                     .ifPresentOrElse(
                         persistedMapping -> {
                           mapping.setMappingKey(persistedMapping.getMappingKey());
-                          mapping.setId(persistedMapping.getId());
+                          mapping.setMappingId(persistedMapping.getMappingId());
                           if (assignEntityToRole(
                               role.getRoleKey(),
                               persistedMapping.getMappingKey(),
@@ -176,8 +176,8 @@ public final class IdentitySetupInitializeProcessor
                           final long mappingKey = keyGenerator.nextKey();
                           mapping.setMappingKey(mappingKey);
                           // TODO: Remove null checks after migrating fully to mapping ID #27820
-                          if (mapping.getId() == null || mapping.getId().isBlank()) {
-                            mapping.setId(String.valueOf(mappingKey));
+                          if (mapping.getMappingId() == null || mapping.getMappingId().isBlank()) {
+                            mapping.setMappingId(String.valueOf(mappingKey));
                           }
                           createMapping(mapping, role.getRoleKey(), tenant);
                         }));

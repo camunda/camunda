@@ -72,7 +72,7 @@ public class MappingAppliersTest {
   public void shouldThrowExceptionWhenDeleteNotExistingMapping() {
     // given
     final String id = "id";
-    final var mappingRecord = new MappingRecord().setId(id);
+    final var mappingRecord = new MappingRecord().setMappingId(id);
 
     // when + then
     assertThatThrownBy(
@@ -107,7 +107,7 @@ public class MappingAppliersTest {
   public void shouldThrowExceptionWhenUpdateNotExistingMappingId() {
     // given
     final var mappingRecord = createMapping();
-    mappingRecord.setId(UUID.randomUUID().toString());
+    mappingRecord.setMappingId(UUID.randomUUID().toString());
     // when + then
     assertThatThrownBy(
             () -> mappingUpdatedApplier.applyState(mappingRecord.getMappingKey(), mappingRecord))
@@ -126,11 +126,10 @@ public class MappingAppliersTest {
     final var mappingRecord =
         new MappingRecord()
             .setMappingKey(mappingKey)
-            .setId(mappingId)
+            .setMappingId(mappingId)
             .setClaimName(claimName)
             .setClaimValue(claimValue)
-            .setName(claimName)
-            .setId(UUID.randomUUID().toString());
+            .setName(claimName);
     mappingState.create(mappingRecord);
     // create role
     final long roleKey = 2L;

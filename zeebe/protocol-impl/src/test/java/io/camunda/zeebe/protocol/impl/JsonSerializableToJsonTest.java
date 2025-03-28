@@ -3010,7 +3010,7 @@ final class JsonSerializableToJsonTest {
                     .setMappingKey(1L)
                     .setClaimName("claimName")
                     .setClaimValue("claimValue")
-                    .setId("id1")
+                    .setMappingId("id1")
                     .setName("name"),
         """
       {
@@ -3073,14 +3073,14 @@ final class JsonSerializableToJsonTest {
                     .addMapping(
                         new MappingRecord()
                             .setMappingKey(6)
-                            .setId("id1")
+                            .setMappingId("id1")
                             .setClaimName("claim1")
                             .setClaimValue("value1")
                             .setName("Claim 1"))
                     .addMapping(
                         new MappingRecord()
                             .setMappingKey(7)
-                            .setId("id2")
+                            .setMappingId("id2")
                             .setClaimName("claim2")
                             .setClaimValue("value2")
                             .setName("Claim 2")),

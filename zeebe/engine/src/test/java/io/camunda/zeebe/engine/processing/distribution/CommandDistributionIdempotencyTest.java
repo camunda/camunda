@@ -589,7 +589,7 @@ public class CommandDistributionIdempotencyTest {
                         .withMapping(
                             new MappingRecord()
                                 .setMappingKey(4)
-                                .setId("id")
+                                .setMappingId("id")
                                 .setClaimName("claimName")
                                 .setClaimValue("claimValue"))
                         .initialize()),
@@ -684,7 +684,7 @@ public class CommandDistributionIdempotencyTest {
         .mapping()
         .newMapping(UUID.randomUUID().toString())
         .withClaimValue(UUID.randomUUID().toString())
-        .withId(UUID.randomUUID().toString())
+        .withMappingId(UUID.randomUUID().toString())
         .create();
   }
 

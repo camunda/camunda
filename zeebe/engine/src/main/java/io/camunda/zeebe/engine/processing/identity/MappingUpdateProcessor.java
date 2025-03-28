@@ -82,7 +82,7 @@ public class MappingUpdateProcessor implements DistributedTypedRecordProcessor<M
     final var persistedMappingWithSameClaim =
         mappingState.get(record.getClaimName(), record.getClaimValue());
     if (persistedMappingWithSameClaim.isPresent()
-        && !persistedMappingWithSameClaim.get().getId().equals(mappingId)) {
+        && !persistedMappingWithSameClaim.get().getMappingId().equals(mappingId)) {
       final var errorMessage =
           MAPPING_SAME_CLAIM_ALREADY_EXISTS_ERROR_MESSAGE.formatted(
               record.getClaimName(), record.getClaimValue());

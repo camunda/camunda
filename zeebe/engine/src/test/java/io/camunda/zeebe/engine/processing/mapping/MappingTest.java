@@ -38,7 +38,7 @@ public class MappingTest {
             .mapping()
             .newMapping(claimName)
             .withClaimValue(claimValue)
-            .withId(id)
+            .withMappingId(id)
             .withName(name)
             .create();
 
@@ -82,7 +82,7 @@ public class MappingTest {
     final var claimName = UUID.randomUUID().toString();
     final var claimValue = UUID.randomUUID().toString();
     final var id = UUID.randomUUID().toString();
-    engine.mapping().newMapping(claimName).withClaimValue(claimValue).withId(id).create();
+    engine.mapping().newMapping(claimName).withClaimValue(claimValue).withMappingId(id).create();
 
     // when
     final var duplicatedMappingRecord =
@@ -90,7 +90,7 @@ public class MappingTest {
             .mapping()
             .newMapping(UUID.randomUUID().toString())
             .withClaimValue(UUID.randomUUID().toString())
-            .withId(id)
+            .withMappingId(id)
             .expectRejection()
             .create();
 
@@ -115,7 +115,7 @@ public class MappingTest {
             .newMapping(claimName)
             .withClaimValue(claimValue)
             .withName(name)
-            .withId(id)
+            .withMappingId(id)
             .create()
             .getKey();
 
@@ -183,7 +183,7 @@ public class MappingTest {
             .newMapping(claimName)
             .withClaimValue(claimValue)
             .withName(name)
-            .withId(id)
+            .withMappingId(id)
             .create();
 
     // when
@@ -218,7 +218,7 @@ public class MappingTest {
         .newMapping(claimName)
         .withClaimValue(claimValue)
         .withName(name)
-        .withId(id)
+        .withMappingId(id)
         .create()
         .getValue();
 
