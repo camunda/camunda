@@ -15,13 +15,11 @@
  */
 package io.camunda.client.process;
 
-import static io.camunda.client.api.search.response.ProcessInstanceState.ACTIVE;
+import static io.camunda.client.wrappers.ProcessInstanceState.ACTIVE;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.github.tomakehurst.wiremock.http.RequestMethod;
 import com.github.tomakehurst.wiremock.verification.LoggedRequest;
-import io.camunda.client.api.search.response.ProcessInstanceState;
-import io.camunda.client.impl.search.filter.builder.StringPropertyImpl;
 import io.camunda.client.impl.search.request.SearchRequestSort;
 import io.camunda.client.impl.search.request.SearchRequestSortMapper;
 import io.camunda.client.protocol.rest.*;
@@ -68,10 +66,10 @@ public class QueryProcessInstanceTest extends ClientRestTest {
         Arrays.asList(
             new ProcessInstanceVariableFilterRequest()
                 .name("n1")
-                .value(new StringPropertyImpl().eq("v1").build()),
+                .value(new StringFilterProperty().$eq("v1")),
             new ProcessInstanceVariableFilterRequest()
                 .name("n2")
-                .value(new StringPropertyImpl().eq("v2").build()));
+                .value(new StringFilterProperty().$eq("v2")));
     client
         .newProcessInstanceSearchRequest()
         .filter(
@@ -109,7 +107,8 @@ public class QueryProcessInstanceTest extends ClientRestTest {
     assertThat(filter.getParentFlowNodeInstanceKey().get$Eq()).isEqualTo("30");
     assertThat(filter.getStartDate().get$Eq()).isEqualTo(startDate.toString());
     assertThat(filter.getEndDate().get$Eq()).isEqualTo(endDate.toString());
-    assertThat(filter.getState().get$Eq()).isEqualTo(ProcessInstanceStateEnum.ACTIVE);
+    assertThat(filter.getState().get$Eq())
+        .isEqualTo(io.camunda.client.protocol.rest.ProcessInstanceStateEnum.ACTIVE);
     assertThat(filter.getHasIncident()).isEqualTo(true);
     assertThat(filter.getTenantId().get$Eq()).isEqualTo("tenant");
     assertThat(filter.getVariables()).isEqualTo(variables);
@@ -180,10 +179,10 @@ public class QueryProcessInstanceTest extends ClientRestTest {
         Arrays.asList(
             new ProcessInstanceVariableFilterRequest()
                 .name("n1")
-                .value(new StringPropertyImpl().eq("v1").build()),
+                .value(new StringFilterProperty().$eq("v1")),
             new ProcessInstanceVariableFilterRequest()
                 .name("n2")
-                .value(new StringPropertyImpl().eq("v2").build()));
+                .value(new StringFilterProperty().$eq("v2")));
 
     // when
     client.newProcessInstanceSearchRequest().filter(f -> f.variables(variablesMap)).send().join();
@@ -277,30 +276,6 @@ public class QueryProcessInstanceTest extends ClientRestTest {
     assertThat(pageRequest.getLimit()).isEqualTo(5);
     assertThat(pageRequest.getSearchBefore()).isEqualTo(Collections.singletonList("b"));
     assertThat(pageRequest.getSearchAfter()).isEqualTo(Collections.singletonList("a"));
-  }
-
-  @Test
-  public void shouldConvertProcessInstanceState() {
-
-    for (final ProcessInstanceState value : ProcessInstanceState.values()) {
-      final ProcessInstanceStateEnum protocolValue = ProcessInstanceState.toProtocolState(value);
-      assertThat(protocolValue).isNotNull();
-      if (value == ProcessInstanceState.UNKNOWN_ENUM_VALUE) {
-        assertThat(protocolValue).isEqualTo(ProcessInstanceStateEnum.UNKNOWN_DEFAULT_OPEN_API);
-      } else {
-        assertThat(protocolValue.name()).isEqualTo(value.name());
-      }
-    }
-
-    for (final ProcessInstanceStateEnum protocolValue : ProcessInstanceStateEnum.values()) {
-      final ProcessInstanceState value = ProcessInstanceState.fromProtocolState(protocolValue);
-      assertThat(value).isNotNull();
-      if (protocolValue == ProcessInstanceStateEnum.UNKNOWN_DEFAULT_OPEN_API) {
-        assertThat(value).isEqualTo(ProcessInstanceState.UNKNOWN_ENUM_VALUE);
-      } else {
-        assertThat(value.name()).isEqualTo(protocolValue.name());
-      }
-    }
   }
 
   private void assertSort(
