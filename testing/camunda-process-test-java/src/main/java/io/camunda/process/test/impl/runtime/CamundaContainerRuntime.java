@@ -46,7 +46,7 @@ public class CamundaContainerRuntime implements AutoCloseable {
       "http://" + NETWORK_ALIAS_ELASTICSEARCH + ":" + ContainerRuntimePorts.ELASTICSEARCH_REST_API;
 
   private static final String CAMUNDA_GRPC_API =
-      NETWORK_ALIAS_CAMUNDA + ":" + ContainerRuntimePorts.CAMUNDA_GATEWAY_API;
+      "http://" + NETWORK_ALIAS_CAMUNDA + ":" + ContainerRuntimePorts.CAMUNDA_GATEWAY_API;
   private static final String CAMUNDA_REST_API =
       "http://" + NETWORK_ALIAS_CAMUNDA + ":" + ContainerRuntimePorts.CAMUNDA_REST_API;
 
@@ -98,7 +98,7 @@ public class CamundaContainerRuntime implements AutoCloseable {
                 createContainerJsonLogger(builder.getCamundaLoggerName(), CamundaLogEntry.class))
             .withNetwork(network)
             .withNetworkAliases(NETWORK_ALIAS_CAMUNDA)
-            .withElasticsearchUrl(ELASTICSEARCH_URL)
+            // .withElasticsearchUrl(ELASTICSEARCH_URL)
             .withEnv(builder.getCamundaEnvVars());
 
     builder.getCamundaExposedPorts().forEach(container::addExposedPort);
@@ -129,7 +129,7 @@ public class CamundaContainerRuntime implements AutoCloseable {
 
   public void start() {
     final List<GenericContainer<?>> containers = new ArrayList<>();
-    containers.add(elasticsearchContainer);
+    //    containers.add(elasticsearchContainer);
     containers.add(camundaContainer);
     if (connectorsEnabled) {
       containers.add(connectorsContainer);
@@ -154,7 +154,7 @@ public class CamundaContainerRuntime implements AutoCloseable {
   }
 
   public ElasticsearchContainer getElasticsearchContainer() {
-    return elasticsearchContainer;
+    return null;
   }
 
   public ConnectorsContainer getConnectorsContainer() {
@@ -171,7 +171,7 @@ public class CamundaContainerRuntime implements AutoCloseable {
     }
 
     camundaContainer.stop();
-    elasticsearchContainer.stop();
+    //    elasticsearchContainer.stop();
     network.close();
 
     final Instant endTime = Instant.now();
