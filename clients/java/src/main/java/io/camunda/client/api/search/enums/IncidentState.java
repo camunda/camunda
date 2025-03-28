@@ -15,9 +15,10 @@
  */
 package io.camunda.client.api.search.enums;
 
-public enum FlowNodeInstanceFilterState {
+public enum IncidentState {
   ACTIVE,
-  COMPLETED,
-  TERMINATED,
+  MIGRATED,
+  RESOLVED,
+  PENDING,
   UNKNOWN_ENUM_VALUE;
 }

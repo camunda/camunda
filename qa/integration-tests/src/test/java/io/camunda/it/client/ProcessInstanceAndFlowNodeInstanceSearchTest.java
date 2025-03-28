@@ -24,8 +24,8 @@ import io.camunda.client.CamundaClient;
 import io.camunda.client.api.command.ProblemException;
 import io.camunda.client.api.response.Process;
 import io.camunda.client.api.response.ProcessInstanceEvent;
-import io.camunda.client.api.search.enums.FlowNodeInstanceFilterState;
-import io.camunda.client.api.search.enums.FlowNodeInstanceFilterType;
+import io.camunda.client.api.search.enums.FlowNodeInstanceState;
+import io.camunda.client.api.search.enums.FlowNodeInstanceType;
 import io.camunda.client.api.search.enums.ProcessInstanceState;
 import io.camunda.client.api.search.filter.ProcessInstanceVariableFilterRequest;
 import io.camunda.client.api.search.filter.StringFilterProperty;
@@ -1070,7 +1070,7 @@ public class ProcessInstanceAndFlowNodeInstanceSearchTest {
     final var result =
         camundaClient
             .newFlownodeInstanceSearchRequest()
-            .filter(f -> f.state(FlowNodeInstanceFilterState.valueOf(state.name())))
+            .filter(f -> f.state(FlowNodeInstanceState.valueOf(state.name())))
             .send()
             .join();
 
@@ -1115,7 +1115,7 @@ public class ProcessInstanceAndFlowNodeInstanceSearchTest {
     final var result =
         camundaClient
             .newFlownodeInstanceSearchRequest()
-            .filter(f -> f.type(FlowNodeInstanceFilterType.valueOf(type.name())))
+            .filter(f -> f.type(FlowNodeInstanceType.valueOf(type.name())))
             .send()
             .join();
 

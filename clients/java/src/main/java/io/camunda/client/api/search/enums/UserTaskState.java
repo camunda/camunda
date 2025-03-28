@@ -15,7 +15,7 @@
  */
 package io.camunda.client.api.search.enums;
 
-public enum UserTaskFilterState {
+public enum UserTaskState {
   CREATED,
   COMPLETED,
   CANCELED,

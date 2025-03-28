@@ -15,6 +15,8 @@
  */
 package io.camunda.client.impl.search.response;
 
+import io.camunda.client.api.search.enums.IncidentErrorType;
+import io.camunda.client.api.search.enums.IncidentState;
 import io.camunda.client.api.search.response.Incident;
 import io.camunda.client.impl.util.EnumUtil;
 import io.camunda.client.impl.util.ParseUtil;
@@ -27,12 +29,12 @@ public class IncidentImpl implements Incident {
   private final Long processDefinitionKey;
   private final String processDefinitionId;
   private final Long processInstanceKey;
-  private final io.camunda.client.api.search.enums.IncidentResultErrorType errorType;
+  private final IncidentErrorType errorType;
   private final String errorMessage;
   private final String flowNodeId;
   private final Long flowNodeInstanceKey;
   private final String creationTime;
-  private final io.camunda.client.api.search.enums.IncidentResultState state;
+  private final IncidentState state;
   private final Long jobKey;
   private final String tenantId;
 
@@ -41,16 +43,12 @@ public class IncidentImpl implements Incident {
     processDefinitionKey = ParseUtil.parseLongOrNull(item.getProcessDefinitionKey());
     processDefinitionId = item.getProcessDefinitionId();
     processInstanceKey = ParseUtil.parseLongOrNull(item.getProcessInstanceKey());
-    errorType =
-        EnumUtil.convert(
-            item.getErrorType(), io.camunda.client.api.search.enums.IncidentResultErrorType.class);
+    errorType = EnumUtil.convert(item.getErrorType(), IncidentErrorType.class);
     errorMessage = item.getErrorMessage();
     flowNodeId = item.getFlowNodeId();
     flowNodeInstanceKey = ParseUtil.parseLongOrNull(item.getFlowNodeInstanceKey());
     creationTime = item.getCreationTime();
-    state =
-        EnumUtil.convert(
-            item.getState(), io.camunda.client.api.search.enums.IncidentResultState.class);
+    state = EnumUtil.convert(item.getState(), IncidentState.class);
     jobKey = ParseUtil.parseLongOrNull(item.getJobKey());
     tenantId = item.getTenantId();
   }
@@ -76,7 +74,7 @@ public class IncidentImpl implements Incident {
   }
 
   @Override
-  public io.camunda.client.api.search.enums.IncidentResultErrorType getErrorType() {
+  public IncidentErrorType getErrorType() {
     return errorType;
   }
 
@@ -101,7 +99,7 @@ public class IncidentImpl implements Incident {
   }
 
   @Override
-  public io.camunda.client.api.search.enums.IncidentResultState getState() {
+  public IncidentState getState() {
     return state;
   }
 

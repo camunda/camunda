@@ -19,8 +19,8 @@ import static org.junit.jupiter.api.Assertions.assertThrowsExactly;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.command.ProblemException;
 import io.camunda.client.api.response.Process;
-import io.camunda.client.api.search.enums.IncidentFilterErrorType;
-import io.camunda.client.api.search.enums.IncidentFilterState;
+import io.camunda.client.api.search.enums.IncidentErrorType;
+import io.camunda.client.api.search.enums.IncidentState;
 import io.camunda.client.api.search.response.Incident;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.webapps.schema.entities.operate.ErrorType;
@@ -148,7 +148,7 @@ class IncidentSearchTest {
     final var result =
         camundaClient
             .newIncidentSearchRequest()
-            .filter(f -> f.state(IncidentFilterState.valueOf(state.name())))
+            .filter(f -> f.state(IncidentState.valueOf(state.name())))
             .send()
             .join();
 
@@ -220,7 +220,7 @@ class IncidentSearchTest {
     final var result =
         camundaClient
             .newIncidentSearchRequest()
-            .filter(f -> f.errorType(IncidentFilterErrorType.valueOf(errorType.name())))
+            .filter(f -> f.errorType(IncidentErrorType.valueOf(errorType.name())))
             .send()
             .join();
 
@@ -236,7 +236,7 @@ class IncidentSearchTest {
             () ->
                 camundaClient
                     .newIncidentSearchRequest()
-                    .filter(f -> f.errorType(IncidentFilterErrorType.valueOf(errorType.name())))
+                    .filter(f -> f.errorType(IncidentErrorType.valueOf(errorType.name())))
                     .send()
                     .join())
         .describedAs(
