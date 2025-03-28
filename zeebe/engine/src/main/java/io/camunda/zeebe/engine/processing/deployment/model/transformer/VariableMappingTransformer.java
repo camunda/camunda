@@ -9,6 +9,7 @@ package io.camunda.zeebe.engine.processing.deployment.model.transformer;
 
 import io.camunda.zeebe.el.Expression;
 import io.camunda.zeebe.el.ExpressionLanguage;
+import io.camunda.zeebe.el.impl.NullExpression;
 import io.camunda.zeebe.el.impl.StaticExpression;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeMapping;
 import java.util.ArrayList;
@@ -101,7 +102,10 @@ public final class VariableMappingTransformer {
         .map(
             mapping -> {
               final var source = mapping.getSource();
-              final var sourceExpression = expressionLanguage.parseExpression(source);
+              final var sourceExpression =
+                  source == null
+                      ? new NullExpression()
+                      : expressionLanguage.parseExpression(source);
               return new Mapping(sourceExpression, mapping.getTarget());
             })
         .collect(Collectors.toList());
