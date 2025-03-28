@@ -399,7 +399,6 @@
       <artifactId>jackson-dataformat-yaml</artifactId>
     </dependency>
   </dependencies>
-
   <build>
     <resources>
       <resource>
