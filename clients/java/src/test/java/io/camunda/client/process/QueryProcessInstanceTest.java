@@ -88,7 +88,6 @@ public class QueryProcessInstanceTest extends ClientRestTest {
                     .hasIncident(true)
                     .tenantId("tenant")
                     .variables(variablesMap)
-                    .variables(variables)
                     .errorMessage("Error message"))
         .send()
         .join();

@@ -277,7 +277,7 @@ public class ProcessInstanceFilterImpl
   public ProcessInstanceFilter errorMessage(final Consumer<StringProperty> fn) {
     final StringProperty property = new StringPropertyImpl();
     fn.accept(property);
-    filter.errorMessage(property.build());
+    filter.setErrorMessage(RequestMapper.toProtocolObject(property.build()));
     return this;
   }
 
