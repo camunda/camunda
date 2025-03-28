@@ -119,7 +119,7 @@
     </dependency>
     <dependency>
       <groupId>io.camunda</groupId>
-      <artifactId>camunda-exporter</artifactId>
+      <artifactId>camunda-schema-manager</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>

@@ -12,7 +12,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.beans.factory.config.BeanDefinition.SCOPE_PROTOTYPE;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.camunda.exporter.schema.config.SearchEngineConfiguration;
+import io.camunda.search.schema.config.SearchEngineConfiguration;
 import io.camunda.tasklist.property.TasklistOpenSearchProperties;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.qa.util.TasklistIndexPrefixHolder;

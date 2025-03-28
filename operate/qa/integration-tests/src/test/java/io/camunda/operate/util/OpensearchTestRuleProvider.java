@@ -11,7 +11,6 @@ import static io.camunda.operate.store.opensearch.dsl.RequestDSL.getIndexRequest
 import static io.camunda.operate.util.ThreadUtil.sleepFor;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.exporter.schema.config.SearchEngineConfiguration;
 import io.camunda.operate.conditions.OpensearchCondition;
 import io.camunda.operate.exceptions.PersistenceException;
 import io.camunda.operate.property.OperateOpensearchProperties;
@@ -22,6 +21,7 @@ import io.camunda.operate.store.opensearch.client.sync.RichOpenSearchClient;
 import io.camunda.operate.zeebe.ImportValueType;
 import io.camunda.operate.zeebeimport.RecordsReader;
 import io.camunda.operate.zeebeimport.RecordsReaderHolder;
+import io.camunda.search.schema.config.SearchEngineConfiguration;
 import io.camunda.webapps.schema.descriptors.operate.index.DecisionIndex;
 import io.camunda.webapps.schema.descriptors.operate.index.DecisionRequirementsIndex;
 import io.camunda.webapps.schema.descriptors.operate.index.ProcessIndex;
