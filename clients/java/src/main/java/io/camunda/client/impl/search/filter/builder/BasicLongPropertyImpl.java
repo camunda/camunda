@@ -59,4 +59,15 @@ public class BasicLongPropertyImpl implements BasicLongProperty {
   public BasicStringFilterProperty build() {
     return ResponseMapper.fromProtocolObject(filterProperty);
   }
+
+  @Override
+  public BasicLongProperty nin(final List<Long> values) {
+    filterProperty.set$Nin(values.stream().map(String::valueOf).collect(Collectors.toList()));
+    return this;
+  }
+
+  @Override
+  public BasicLongProperty nin(final Long... value) {
+    return nin(CollectionUtil.toList(value));
+  }
 }

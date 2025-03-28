@@ -238,6 +238,30 @@ public class ProcessInstanceAndFlowNodeInstanceSearchTest {
   }
 
   @Test
+  void shouldQueryProcessInstancesByKeyFilterNotIn() {
+    // given
+    final List<Long> processInstanceKeys =
+        PROCESS_INSTANCES.subList(0, 2).stream()
+            .map(ProcessInstanceEvent::getProcessInstanceKey)
+            .toList();
+
+    // when
+    final var result =
+        camundaClient
+            .newProcessInstanceQuery()
+            .filter(f -> f.processInstanceKey(b -> b.nin(processInstanceKeys)))
+            .send()
+            .join();
+
+    final var numberOfExpectedProcessInstances =
+        (PROCESS_INSTANCES.size() + 1) - 2; // includes 1 child process, minus 2 excluded
+
+    // then
+    assertThat(result.items().size()).isEqualTo(numberOfExpectedProcessInstances);
+    assertThat(result.items()).extracting("processInstanceKey").doesNotContain(processInstanceKeys);
+  }
+
+  @Test
   void shouldQueryProcessInstancesByProcessDefinitionId() {
     // given
     final String bpmnProcessId = "service_tasks_v1";

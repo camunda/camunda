@@ -216,6 +216,20 @@ class VariableSearchTest {
   }
 
   @Test
+  void shouldQueryByProcessInstanceKeyFilterNotIn() {
+    // when
+    final var result =
+        camundaClient
+            .newVariableQuery()
+            .filter(f -> f.processInstanceKey(b -> b.nin(variable.getProcessInstanceKey())))
+            .send()
+            .join();
+
+    // then
+    assertThat(result.items().size()).isEqualTo(0);
+  }
+
+  @Test
   void shouldQueryByTenantId() {
     // when
     final var result =
