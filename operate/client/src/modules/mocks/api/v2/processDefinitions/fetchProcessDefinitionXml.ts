@@ -8,7 +8,17 @@
 
 import {mockXmlGetRequest} from '../../mockRequest';
 
-const mockFetchProcessDefinitionXml = () =>
-  mockXmlGetRequest('/v2/process-definitions/:processDefinitionKey/xml');
+const mockFetchProcessDefinitionXml = (options?: {
+  contextPath?: string;
+  processDefinitionKey?: string;
+}) => {
+  const contextPath = options?.contextPath ?? '';
+  const processDefinitionKey =
+    options?.processDefinitionKey ?? ':processDefinitionKey';
+
+  return mockXmlGetRequest(
+    `${contextPath}/v2/process-definitions/${processDefinitionKey}/xml`,
+  );
+};
 
 export {mockFetchProcessDefinitionXml};

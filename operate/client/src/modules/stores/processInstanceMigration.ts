@@ -32,6 +32,7 @@ type State = {
   selectedTargetFlowNodeId?: string;
   selectedInstancesCount: number;
   batchOperationQuery: BatchOperationQuery | null;
+  sourceProcessDefinitionKey?: string | null;
   targetProcessDefinitionKey: string | null;
   hasPendingRequest: boolean;
 };
@@ -44,6 +45,7 @@ const DEFAULT_STATE: State = {
   selectedInstancesCount: 0,
   batchOperationQuery: null,
   targetProcessDefinitionKey: null,
+  sourceProcessDefinitionKey: null,
   hasPendingRequest: false,
 };
 
@@ -178,6 +180,12 @@ class ProcessInstanceMigration {
     key: State['targetProcessDefinitionKey'],
   ) => {
     this.state.targetProcessDefinitionKey = key;
+  };
+
+  setSourceProcessDefinitionKey = (
+    key: State['sourceProcessDefinitionKey'],
+  ) => {
+    this.state.sourceProcessDefinitionKey = key;
   };
 
   setHasPendingRequest = () => {

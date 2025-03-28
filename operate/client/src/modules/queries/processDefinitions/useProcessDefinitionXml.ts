@@ -10,7 +10,7 @@ import {
   fetchProcessDefinitionXml,
   ProcessDefinitionKey,
 } from 'modules/api/v2/processDefinitions/fetchProcessDefinitionXml';
-import {useQuery} from '@tanstack/react-query';
+import {skipToken, useQuery} from '@tanstack/react-query';
 import {parseDiagramXML} from 'modules/utils/bpmn';
 import {getFlowNodes} from 'modules/utils/flowNodes';
 import {DiagramModel} from 'bpmn-moddle';
@@ -22,7 +22,7 @@ type ParsedXmlData = {
   selectableFlowNodes: BusinessObject[];
 };
 
-function getQueryKey(processDefinitionKey: ProcessDefinitionKey) {
+function getQueryKey(processDefinitionKey?: ProcessDefinitionKey) {
   return ['processDefinitionXml', processDefinitionKey];
 }
 
@@ -36,9 +36,9 @@ async function processDefinitionParser(data: string): Promise<ParsedXmlData> {
 function useProcessDefinitionXml({
   processDefinitionKey,
   select,
-  enabled,
+  enabled = true,
 }: {
-  processDefinitionKey: ProcessDefinitionKey;
+  processDefinitionKey?: ProcessDefinitionKey;
   select?: (data: ParsedXmlData) => ParsedXmlData;
   enabled?: boolean;
 }) {
@@ -46,17 +46,19 @@ function useProcessDefinitionXml({
 
   return useQuery<ParsedXmlData, Error>({
     queryKey,
-    queryFn: async () => {
-      const {response, error} =
-        await fetchProcessDefinitionXml(processDefinitionKey);
+    queryFn:
+      enabled && !!processDefinitionKey
+        ? async () => {
+            const {response, error} =
+              await fetchProcessDefinitionXml(processDefinitionKey);
 
-      if (response !== null) {
-        return processDefinitionParser(response);
-      }
+            if (response !== null) {
+              return processDefinitionParser(response);
+            }
 
-      throw error;
-    },
-    enabled,
+            throw error;
+          }
+        : skipToken,
     select,
   });
 }

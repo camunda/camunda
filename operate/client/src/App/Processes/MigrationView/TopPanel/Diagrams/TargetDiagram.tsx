@@ -38,8 +38,7 @@ const TargetDiagram: React.FC = observer(() => {
     isLoading: isMigrationTargetXmlLoading,
     isError: isMigrationTargetXmlError,
   } = useMigrationTargetXml({
-    processDefinitionKey: selectedTargetProcessId!,
-    enabled: selectedTargetProcessId !== undefined,
+    processDefinitionKey: selectedTargetProcessId,
   });
 
   useEffect(() => {

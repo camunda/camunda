@@ -22,6 +22,8 @@ import {Processes} from '../';
 import {useEffect} from 'react';
 import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
 import {QueryClientProvider} from '@tanstack/react-query';
+import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
+import {open} from 'modules/mocks/diagrams';
 
 jest.mock('App/Processes/ListView', () => {
   const ListView: React.FC = () => {
@@ -90,6 +92,10 @@ describe('MigrationView', () => {
       window.clientConfig = {
         contextPath,
       };
+      mockFetchProcessDefinitionXml({contextPath}).withSuccess(
+        open('orderProcess.bpmn'),
+      );
+      processInstanceMigrationStore.setSourceProcessDefinitionKey('1');
       mockFetchGroupedProcesses(contextPath).withSuccess([]);
 
       const {user} = render(<Processes />, {
@@ -154,6 +160,10 @@ describe('MigrationView', () => {
       window.clientConfig = {
         contextPath,
       };
+      mockFetchProcessDefinitionXml({contextPath}).withSuccess(
+        open('orderProcess.bpmn'),
+      );
+      processInstanceMigrationStore.setSourceProcessDefinitionKey('1');
       mockFetchGroupedProcesses(contextPath).withSuccess([]);
 
       const {user} = render(<Processes />, {

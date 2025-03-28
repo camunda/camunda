@@ -7,7 +7,6 @@
  */
 
 import {makeAutoObservable} from 'mobx';
-import {processXmlStore as processXmlMigrationSourceStore} from 'modules/stores/processXml/processXml.migration.source';
 import {hasType} from 'modules/bpmn-js/utils/hasType';
 import {getEventType} from 'modules/bpmn-js/utils/getEventType';
 import {getEventSubProcessType} from 'modules/bpmn-js/utils/getEventSubProcessType';
@@ -34,15 +33,15 @@ class ProcessInstanceMigrationMappingStore {
   /**
    * Returns an array of source flow nodes which each contains an array of mappable target flow nodes.
    */
-  getMappableFlowNodes(selectableTargetFlowNodes?: BusinessObject[]) {
+  getMappableFlowNodes(
+    selectableSourceFlowNodes?: BusinessObject[],
+    selectableTargetFlowNodes?: BusinessObject[],
+  ) {
     if (!selectableTargetFlowNodes) {
       return [];
     }
 
-    const {selectableFlowNodes: selectableSourceFlowNodes} =
-      processXmlMigrationSourceStore;
-
-    const sourceFlowNodeMappings = selectableSourceFlowNodes.map(
+    const sourceFlowNodeMappings = selectableSourceFlowNodes?.map(
       (sourceFlowNode) => {
         return {
           sourceFlowNode: {id: sourceFlowNode.id, name: sourceFlowNode.name},
@@ -117,7 +116,7 @@ class ProcessInstanceMigrationMappingStore {
       },
     );
 
-    return sourceFlowNodeMappings;
+    return sourceFlowNodeMappings ?? [];
   }
 
   toggleMappedFilter = () => {
