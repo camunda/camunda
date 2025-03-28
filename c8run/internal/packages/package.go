@@ -34,7 +34,7 @@ func Clean(camundaVersion string, elasticsearchVersion string) {
 	}
 }
 
-func downloadAndExtract(filePath, url, extractDir string, authToken string, extractFunc func(string, string) error) error {
+func downloadAndExtract(filePath, url, extractDir string, baseDir string, authToken string, extractFunc func(string, string) error) error {
 	err := archive.DownloadFile(filePath, url, authToken)
 	if err != nil {
 		return fmt.Errorf("downloadAndExtract: failed to download file at url %s\n%w\n%s", url, err, debug.Stack())
@@ -42,7 +42,7 @@ func downloadAndExtract(filePath, url, extractDir string, authToken string, extr
 
 	_, err = os.Stat(extractDir)
 	if errors.Is(err, os.ErrNotExist) {
-		err = extractFunc(filePath, ".")
+		err = extractFunc(filePath, baseDir)
 		if err != nil {
 			return fmt.Errorf("downloadAndExtract: failed to extract from archive at %s\n%w\n%s", filePath, err, debug.Stack())
 		}
@@ -174,9 +174,12 @@ func New(camundaVersion string, elasticsearchVersion string, connectorsVersion s
 	camundaUrl := "https://repository.nexus.camunda.cloud/content/groups/internal/io/camunda/camunda-zeebe/" + camundaVersion + "/camunda-zeebe-" + camundaVersion + pkgName
 	connectorsFilePath := "connector-runtime-bundle-" + connectorsVersion + "-with-dependencies.jar"
 	connectorsUrl := "https://repository.nexus.camunda.cloud/content/groups/internal/io/camunda/connector/connector-runtime-bundle/" + connectorsVersion + "/" + connectorsFilePath
-	composeUrl := "https://github.com/camunda/camunda-platform/archive/refs/tags/" + composeTag + pkgName
-	composeFilePath := composeTag + pkgName
-	composeExtractionPath := "camunda-platform-" + composeTag
+
+        composeUrl := "https://github.com/camunda/camunda-distributions/releases/download/docker-compose-" + composeTag + "/docker-compose-" + composeTag + ".zip"
+	composeFilePath := "docker-compose-" + composeTag + ".zip"
+        // just a file to check to see if it was already extracted
+	composeExtractionPath := "docker-compose-" + composeTag
+
 	authToken := os.Getenv("GH_TOKEN")
 
 
@@ -194,22 +197,22 @@ func New(camundaVersion string, elasticsearchVersion string, connectorsVersion s
 
 	Clean(camundaVersion, elasticsearchVersion)
 
-	err = downloadAndExtract(elasticsearchFilePath, elasticsearchUrl, "elasticsearch-"+elasticsearchVersion, "", extractFunc)
+	err = downloadAndExtract(elasticsearchFilePath, elasticsearchUrl, "elasticsearch-"+elasticsearchVersion, ".", "", extractFunc)
 	if err != nil {
 		return fmt.Errorf("Package "+osType+": failed to fetch elasticsearch: %w\n%s", err, debug.Stack())
 	}
 
-	err = downloadAndExtract(camundaFilePath, camundaUrl, "camunda-zeebe-"+camundaVersion, javaArtifactsToken, extractFunc)
+	err = downloadAndExtract(camundaFilePath, camundaUrl, "camunda-zeebe-"+camundaVersion, ".", javaArtifactsToken, extractFunc)
 	if err != nil {
 		return fmt.Errorf("Package "+osType+": failed to download camunda %w\n%s", err, debug.Stack())
 	}
 
-	err = downloadAndExtract(connectorsFilePath, connectorsUrl, connectorsFilePath, javaArtifactsToken, func(_, _ string) error { return nil })
+	err = downloadAndExtract(connectorsFilePath, connectorsUrl, connectorsFilePath, ".", javaArtifactsToken, func(_, _ string) error { return nil })
 	if err != nil {
 		return fmt.Errorf("Package "+osType+": failed to fetch connectors: %w\n%s", err, debug.Stack())
 	}
 
-	err = downloadAndExtract(composeFilePath, composeUrl, composeExtractionPath, authToken, extractFunc)
+	err = downloadAndExtract(composeFilePath, composeUrl, composeExtractionPath, composeExtractionPath, authToken, archive.UnzipSource)
 	if err != nil {
 		return fmt.Errorf("Package "+osType+": failed to fetch compose release %w\n%s", err, debug.Stack())
 	}
