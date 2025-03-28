@@ -2642,7 +2642,7 @@ paths:
                 $ref: "#/components/schemas/ProblemDetail"
         "500":
           $ref: "#/components/responses/InternalServerError"
-  /mapping-rules/{id}:
+  /mapping-rules/{mappingId}:
     put:
       tags:
         - Mapping rule
@@ -2651,7 +2651,7 @@ paths:
       description: |
         Update a mapping rule
       parameters:
-        - name: id
+        - name: mappingId
           in: path
           required: true
           description: The id of the mapping rule to update.
@@ -2698,7 +2698,7 @@ paths:
         This API is in a Work-in-Progress state and will undergo potential breaking changes until
         its release with an upcoming minor release.
       parameters:
-        - name: id
+        - name: mappingId
           in: path
           required: true
           description: The key of the mapping rule to delete.
