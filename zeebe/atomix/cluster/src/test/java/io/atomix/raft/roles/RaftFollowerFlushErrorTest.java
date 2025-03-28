@@ -11,6 +11,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.atomix.raft.FaultyFlusherConfigurator;
 import io.atomix.raft.RaftRule;
+import io.atomix.raft.RaftServer;
 import io.atomix.raft.RaftServer.Role;
 import java.time.Duration;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -71,11 +72,15 @@ public class RaftFollowerFlushErrorTest {
 
     // all members are still registered
     assertThat(raftRule.getMemberLogs().size()).isEqualTo(MEMBERS);
-    // all members are either LEADER or FOLLOWER
-    assertThat(
-            raftRule.getServers().stream()
-                .filter(s -> s.getRole() == Role.FOLLOWER || s.getRole() == Role.LEADER)
-                .count())
-        .isEqualTo(MEMBERS);
+    Awaitility.await("Until all members are FOLLOWER or LEADER")
+        .untilAsserted(
+            () -> {
+              // all members are either LEADER or FOLLOWER
+              final var roles = raftRule.getServers().stream().map(RaftServer::getRole).toList();
+              assertThat(roles)
+                  .withFailMessage(
+                      String.format("Expected all members to be FOLLOWER or LEADER, got %s", roles))
+                  .allMatch(r -> r == Role.FOLLOWER || r == Role.LEADER);
+            });
   }
 }
