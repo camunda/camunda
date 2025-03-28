@@ -7,11 +7,12 @@
  */
 package io.camunda.search.query;
 
+import io.camunda.search.aggregation.AggregationBase;
 import io.camunda.search.filter.FilterBase;
 import io.camunda.search.page.SearchQueryPage;
 import io.camunda.search.sort.NoSort;
 
-public interface TypedSearchAggregationQuery<F extends FilterBase>
+public interface TypedSearchAggregationQuery<F extends FilterBase, A extends AggregationBase>
     extends TypedSearchQuery<F, NoSort> {
 
   @Override
@@ -23,4 +24,6 @@ public interface TypedSearchAggregationQuery<F extends FilterBase>
   default SearchQueryPage page() {
     return SearchQueryPage.NO_ENTITIES_QUERY;
   }
+
+  A aggregation();
 }
