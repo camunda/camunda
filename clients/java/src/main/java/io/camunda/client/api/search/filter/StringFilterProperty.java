@@ -30,39 +30,49 @@ public class StringFilterProperty {
     return eq;
   }
 
-  public void setEq(String eq) {
+  public StringFilterProperty setEq(String eq) {
     this.eq = eq;
+    return this;
   }
 
   public String getNeq() {
     return neq;
   }
 
-  public void setNeq(String neq) {
+  public StringFilterProperty setNeq(String neq) {
     this.neq = neq;
+    return this;
   }
 
   public Boolean getExists() {
     return exists;
   }
 
-  public void setExists(Boolean exists) {
+  public StringFilterProperty setExists(Boolean exists) {
     this.exists = exists;
+    return this;
   }
 
   public List<String> getIn() {
     return in;
   }
 
-  public void setIn(List<String> in) {
+  public StringFilterProperty setIn(List<String> in) {
     this.in = in;
+    return this;
+  }
+
+  public StringFilterProperty addInItem(String item) {
+    this.in.add(item);
+    return this;
   }
 
   public String getLike() {
     return like;
   }
 
-  public void setLike(String like) {
+  public StringFilterProperty setLike(String like) {
     this.like = like;
+    return this;
   }
 }

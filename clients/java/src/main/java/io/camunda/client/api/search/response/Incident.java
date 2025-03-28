@@ -15,7 +15,8 @@
  */
 package io.camunda.client.api.search.response;
 
-import io.camunda.client.api.search.enums.IncidentResult;
+import io.camunda.client.api.search.enums.IncidentErrorType;
+import io.camunda.client.api.search.enums.IncidentState;
 
 public interface Incident {
 
@@ -27,7 +28,7 @@ public interface Incident {
 
   Long getProcessInstanceKey();
 
-  IncidentResult.ErrorType getErrorType();
+  IncidentErrorType getErrorType();
 
   String getErrorMessage();
 
@@ -37,7 +38,7 @@ public interface Incident {
 
   String getCreationTime();
 
-  IncidentResult.State getState();
+  IncidentState getState();
 
   Long getJobKey();
 

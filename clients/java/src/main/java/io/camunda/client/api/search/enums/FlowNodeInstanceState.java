@@ -15,27 +15,9 @@
  */
 package io.camunda.client.api.search.enums;
 
-public class AdHocSubprocessActivityResult {
-
-  public enum Type {
-    UNSPECIFIED,
-    PROCESS,
-    SUB_PROCESS,
-    EVENT_SUB_PROCESS,
-    INTERMEDIATE_CATCH_EVENT,
-    INTERMEDIATE_THROW_EVENT,
-    BOUNDARY_EVENT,
-    SERVICE_TASK,
-    RECEIVE_TASK,
-    USER_TASK,
-    MANUAL_TASK,
-    TASK,
-    MULTI_INSTANCE_BODY,
-    CALL_ACTIVITY,
-    BUSINESS_RULE_TASK,
-    SCRIPT_TASK,
-    SEND_TASK,
-    UNKNOWN,
-    UNKNOWN_ENUM_VALUE;
-  }
+public enum FlowNodeInstanceState {
+  ACTIVE,
+  COMPLETED,
+  TERMINATED,
+  UNKNOWN_ENUM_VALUE;
 }

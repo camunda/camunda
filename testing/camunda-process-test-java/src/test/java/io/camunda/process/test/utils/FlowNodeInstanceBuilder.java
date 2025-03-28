@@ -15,7 +15,8 @@
  */
 package io.camunda.process.test.utils;
 
-import io.camunda.client.api.search.enums.FlowNodeInstanceResult;
+import io.camunda.client.api.search.enums.FlowNodeInstanceState;
+import io.camunda.client.api.search.enums.FlowNodeInstanceType;
 import io.camunda.client.api.search.response.FlowNodeInstance;
 
 public class FlowNodeInstanceBuilder implements FlowNodeInstance {
@@ -33,9 +34,9 @@ public class FlowNodeInstanceBuilder implements FlowNodeInstance {
   private String endDate;
   private Boolean incident;
   private Long incidentKey;
-  private FlowNodeInstanceResult.State state;
+  private FlowNodeInstanceState state;
   private String tenantId;
-  private FlowNodeInstanceResult.Type type;
+  private FlowNodeInstanceType type;
 
   @Override
   public Long getFlowNodeInstanceKey() {
@@ -88,7 +89,7 @@ public class FlowNodeInstanceBuilder implements FlowNodeInstance {
   }
 
   @Override
-  public FlowNodeInstanceResult.State getState() {
+  public FlowNodeInstanceState getState() {
     return state;
   }
 
@@ -98,11 +99,11 @@ public class FlowNodeInstanceBuilder implements FlowNodeInstance {
   }
 
   @Override
-  public FlowNodeInstanceResult.Type getType() {
+  public FlowNodeInstanceType getType() {
     return type;
   }
 
-  public FlowNodeInstanceBuilder setType(final FlowNodeInstanceResult.Type type) {
+  public FlowNodeInstanceBuilder setType(final FlowNodeInstanceType type) {
     this.type = type;
     return this;
   }
@@ -112,7 +113,7 @@ public class FlowNodeInstanceBuilder implements FlowNodeInstance {
     return this;
   }
 
-  public FlowNodeInstanceBuilder setState(final FlowNodeInstanceResult.State state) {
+  public FlowNodeInstanceBuilder setState(final FlowNodeInstanceState state) {
     this.state = state;
     return this;
   }
@@ -177,21 +178,21 @@ public class FlowNodeInstanceBuilder implements FlowNodeInstance {
         .setFlowNodeId(elementId)
         .setFlowNodeName("element_" + elementId)
         .setProcessInstanceKey(processInstanceKey)
-        .setState(FlowNodeInstanceResult.State.ACTIVE)
+        .setState(FlowNodeInstanceState.ACTIVE)
         .setStartDate(START_DATE);
   }
 
   public static FlowNodeInstanceBuilder newCompletedFlowNodeInstance(
       final String elementId, final long processInstanceKey) {
     return newActiveFlowNodeInstance(elementId, processInstanceKey)
-        .setState(FlowNodeInstanceResult.State.COMPLETED)
+        .setState(FlowNodeInstanceState.COMPLETED)
         .setEndDate(END_DATE);
   }
 
   public static FlowNodeInstanceBuilder newTerminatedFlowNodeInstance(
       final String elementId, final long processInstanceKey) {
     return newActiveFlowNodeInstance(elementId, processInstanceKey)
-        .setState(FlowNodeInstanceResult.State.TERMINATED)
+        .setState(FlowNodeInstanceState.TERMINATED)
         .setEndDate(END_DATE);
   }
 }

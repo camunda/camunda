@@ -19,6 +19,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.github.tomakehurst.wiremock.http.RequestMethod;
 import com.github.tomakehurst.wiremock.verification.LoggedRequest;
+import io.camunda.client.api.search.enums.UserTaskState;
 import io.camunda.client.impl.ResponseMapper;
 import io.camunda.client.protocol.rest.*;
 import io.camunda.client.util.ClientRestTest;
@@ -63,11 +64,7 @@ public final class SearchUserTaskTest extends ClientRestTest {
   @Test
   void shouldSearchUserTaskByState() {
     // when
-    client
-        .newUserTaskSearchRequest()
-        .filter(f -> f.state(io.camunda.client.api.search.enums.UserTaskFilter.State.COMPLETED))
-        .send()
-        .join();
+    client.newUserTaskSearchRequest().filter(f -> f.state(UserTaskState.COMPLETED)).send().join();
 
     // then
     final UserTaskSearchQuery request = gatewayService.getLastRequest(UserTaskSearchQuery.class);

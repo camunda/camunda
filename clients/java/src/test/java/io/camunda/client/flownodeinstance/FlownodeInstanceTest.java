@@ -19,6 +19,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.github.tomakehurst.wiremock.http.RequestMethod;
 import com.github.tomakehurst.wiremock.verification.LoggedRequest;
+import io.camunda.client.api.search.enums.FlowNodeInstanceState;
+import io.camunda.client.api.search.enums.FlowNodeInstanceType;
 import io.camunda.client.impl.search.request.SearchRequestSort;
 import io.camunda.client.impl.search.request.SearchRequestSortMapper;
 import io.camunda.client.protocol.rest.*;
@@ -47,9 +49,8 @@ public class FlownodeInstanceTest extends ClientRestTest {
         .filter(
             f ->
                 f.flowNodeInstanceKey(1L)
-                    .type(
-                        io.camunda.client.api.search.enums.FlowNodeInstanceFilter.Type.SERVICE_TASK)
-                    .state(io.camunda.client.api.search.enums.FlowNodeInstanceFilter.State.ACTIVE)
+                    .type(FlowNodeInstanceType.SERVICE_TASK)
+                    .state(FlowNodeInstanceState.ACTIVE)
                     .processDefinitionKey(2L)
                     .processDefinitionId("complexProcess")
                     .processInstanceKey(3L)

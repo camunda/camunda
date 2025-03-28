@@ -22,7 +22,7 @@ import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.when;
 
 import io.camunda.client.api.command.ClientException;
-import io.camunda.client.api.search.enums.IncidentResult;
+import io.camunda.client.api.search.enums.IncidentErrorType;
 import io.camunda.client.api.search.response.FlowNodeInstance;
 import io.camunda.client.api.search.response.Incident;
 import io.camunda.client.api.search.response.ProcessInstance;
@@ -182,19 +182,17 @@ public class CamundaProcessResultCollectorTest {
         .thenReturn(
             Arrays.asList(
                 IncidentBuilder.newActiveIncident(
-                        IncidentResult.ErrorType.JOB_NO_RETRIES, "No retries left.")
+                        IncidentErrorType.JOB_NO_RETRIES, "No retries left.")
                     .setFlowNodeId("A")
                     .build(),
                 IncidentBuilder.newActiveIncident(
-                        IncidentResult.ErrorType.EXTRACT_VALUE_ERROR,
-                        "Failed to evaluate expression.")
+                        IncidentErrorType.EXTRACT_VALUE_ERROR, "Failed to evaluate expression.")
                     .setFlowNodeId("B")
                     .build()))
         .thenReturn(
             Collections.singletonList(
                 IncidentBuilder.newActiveIncident(
-                        IncidentResult.ErrorType.UNHANDLED_ERROR_EVENT,
-                        "No error catch event found.")
+                        IncidentErrorType.UNHANDLED_ERROR_EVENT, "No error catch event found.")
                     .setFlowNodeId("C")
                     .build()));
 
@@ -208,20 +206,14 @@ public class CamundaProcessResultCollectorTest {
         .hasSize(2)
         .extracting(Incident::getErrorType, Incident::getErrorMessage, Incident::getFlowNodeId)
         .contains(
-            tuple(IncidentResult.ErrorType.JOB_NO_RETRIES, "No retries left.", "A"),
-            tuple(
-                IncidentResult.ErrorType.EXTRACT_VALUE_ERROR,
-                "Failed to evaluate expression.",
-                "B"));
+            tuple(IncidentErrorType.JOB_NO_RETRIES, "No retries left.", "A"),
+            tuple(IncidentErrorType.EXTRACT_VALUE_ERROR, "Failed to evaluate expression.", "B"));
 
     assertThat(result.getProcessInstanceTestResults().get(1).getOpenIncidents())
         .hasSize(1)
         .extracting(Incident::getErrorType, Incident::getErrorMessage, Incident::getFlowNodeId)
         .contains(
-            tuple(
-                IncidentResult.ErrorType.UNHANDLED_ERROR_EVENT,
-                "No error catch event found.",
-                "C"));
+            tuple(IncidentErrorType.UNHANDLED_ERROR_EVENT, "No error catch event found.", "C"));
   }
 
   @Test

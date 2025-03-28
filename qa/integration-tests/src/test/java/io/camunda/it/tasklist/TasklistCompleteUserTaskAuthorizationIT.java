@@ -10,7 +10,7 @@ package io.camunda.it.tasklist;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.client.CamundaClient;
-import io.camunda.client.api.search.enums.UserTaskFilter;
+import io.camunda.client.api.search.enums.UserTaskState;
 import io.camunda.client.protocol.rest.PermissionTypeEnum;
 import io.camunda.client.protocol.rest.ResourceTypeEnum;
 import io.camunda.qa.util.cluster.TestRestTasklistClient;
@@ -274,7 +274,7 @@ public class TasklistCompleteUserTaskAuthorizationIT {
               final var result =
                   adminCamundaClient
                       .newUserTaskSearchRequest()
-                      .filter(f -> f.userTaskKey(userTaskKey).state(UserTaskFilter.State.COMPLETED))
+                      .filter(f -> f.userTaskKey(userTaskKey).state(UserTaskState.COMPLETED))
                       .send()
                       .join();
               assertThat(result.items()).hasSize(1);

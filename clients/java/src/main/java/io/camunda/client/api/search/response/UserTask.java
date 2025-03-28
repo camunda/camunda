@@ -15,7 +15,7 @@
  */
 package io.camunda.client.api.search.response;
 
-import io.camunda.client.api.search.enums.UserTaskResult;
+import io.camunda.client.api.search.enums.UserTaskState;
 import java.util.List;
 import java.util.Map;
 
@@ -27,7 +27,7 @@ public interface UserTask {
   String getName();
 
   /** State of the task */
-  UserTaskResult.State getState();
+  UserTaskState getState();
 
   /** Assignee of the task */
   String getAssignee();

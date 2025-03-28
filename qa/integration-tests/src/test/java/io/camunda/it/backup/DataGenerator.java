@@ -11,7 +11,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.search.enums.ProcessInstanceState;
-import io.camunda.client.api.search.enums.UserTaskFilter;
+import io.camunda.client.api.search.enums.UserTaskState;
 import io.camunda.client.api.search.response.ProcessInstance;
 import io.camunda.client.api.search.response.SearchResponse;
 import io.camunda.client.api.search.response.UserTask;
@@ -136,7 +136,7 @@ public class DataGenerator implements AutoCloseable {
                     final var itemsFromQuery =
                         camundaClient
                             .newUserTaskSearchRequest()
-                            .filter(f -> f.assignee(assignee).state(UserTaskFilter.State.CREATED))
+                            .filter(f -> f.assignee(assignee).state(UserTaskState.CREATED))
                             .send()
                             .join()
                             .items();
