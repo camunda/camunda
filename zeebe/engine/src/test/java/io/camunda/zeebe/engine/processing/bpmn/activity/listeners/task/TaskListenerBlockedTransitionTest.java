@@ -528,6 +528,28 @@ public class TaskListenerBlockedTransitionTest {
   }
 
   @Test
+  public void shouldCreateFirstCancelingTaskListenerJob() {
+    // given
+    final long processInstanceKey =
+        helper.createProcessInstance(
+            helper.createUserTaskWithTaskListeners(
+                ZeebeTaskListenerEventType.canceling, listenerType));
+
+    // when
+    ENGINE.processInstance().withInstanceKey(processInstanceKey).expectTerminating().cancel();
+
+    // then
+    helper.assertActivatedJob(
+        processInstanceKey,
+        listenerType,
+        job ->
+            Assertions.assertThat(job)
+                .describedAs("Expect activated job to be 'CANCELLING' task listener job")
+                .hasJobKind(JobKind.TASK_LISTENER)
+                .hasJobListenerEventType(JobListenerEventType.CANCELING));
+  }
+
+  @Test
   public void shouldCancelTaskListenerJobWhenTerminatingElementInstance() {
     // given
     final long processInstanceKey =
