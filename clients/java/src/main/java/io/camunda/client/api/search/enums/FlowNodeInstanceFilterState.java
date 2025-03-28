@@ -15,13 +15,9 @@
  */
 package io.camunda.client.api.search.enums;
 
-public class UserTaskFilter {
-
-  public enum State {
-    CREATED,
-    COMPLETED,
-    CANCELED,
-    FAILED,
-    UNKNOWN_ENUM_VALUE;
-  }
+public enum FlowNodeInstanceFilterState {
+  ACTIVE,
+  COMPLETED,
+  TERMINATED,
+  UNKNOWN_ENUM_VALUE;
 }

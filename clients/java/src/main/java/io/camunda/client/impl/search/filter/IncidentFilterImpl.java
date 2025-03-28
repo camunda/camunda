@@ -56,7 +56,7 @@ public class IncidentFilterImpl
 
   @Override
   public IncidentFilter errorType(
-      final io.camunda.client.api.search.enums.IncidentFilter.ErrorType errorType) {
+      final io.camunda.client.api.search.enums.IncidentFilterErrorType errorType) {
     filter.errorType(
         EnumUtil.convert(
             errorType, io.camunda.client.protocol.rest.IncidentFilter.ErrorTypeEnum.class));
@@ -88,7 +88,7 @@ public class IncidentFilterImpl
   }
 
   @Override
-  public IncidentFilter state(final io.camunda.client.api.search.enums.IncidentFilter.State value) {
+  public IncidentFilter state(final io.camunda.client.api.search.enums.IncidentFilterState value) {
     filter.setState(
         EnumUtil.convert(value, io.camunda.client.protocol.rest.IncidentFilter.StateEnum.class));
     return this;
