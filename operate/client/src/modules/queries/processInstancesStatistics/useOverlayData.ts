@@ -7,9 +7,9 @@
  */
 
 import {
-  ProcessInstancesStatisticsDto,
-  ProcessInstancesStatisticsRequest,
-} from 'modules/api/v2/processInstances/fetchProcessInstancesStatistics';
+  GetProcessDefinitionStatisticsRequestBody,
+  GetProcessDefinitionStatisticsResponseBody,
+} from '@vzeta/camunda-api-zod-schemas/operate';
 import {OverlayData} from 'modules/bpmn-js/BpmnJS';
 import {
   ACTIVE_BADGE,
@@ -31,7 +31,7 @@ const overlayPositions = {
 };
 
 export function overlayParser(
-  data: ProcessInstancesStatisticsDto[],
+  data: GetProcessDefinitionStatisticsResponseBody,
 ): OverlayData[] {
   const flowNodeStates = flowNodeStatesParser(data);
 
@@ -44,13 +44,15 @@ export function overlayParser(
 }
 
 function useProcessInstancesOverlayData(
-  payload: ProcessInstancesStatisticsRequest,
+  payload: GetProcessDefinitionStatisticsRequestBody,
+  processDefinitionKey?: string,
   enabled?: boolean,
 ) {
   return useQuery(
     useProcessInstancesStatisticsOptions<OverlayData[]>(
       payload,
       overlayParser,
+      processDefinitionKey,
       enabled,
     ),
   );

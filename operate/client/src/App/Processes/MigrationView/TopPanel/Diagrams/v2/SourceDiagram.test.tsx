@@ -13,7 +13,6 @@ import {
   mockProcessStatisticsV2,
   mockProcessXML,
 } from 'modules/testUtils';
-import {processesStore} from 'modules/stores/processes/processes.migration';
 import {SourceDiagram} from './SourceDiagram';
 import {processXmlStore} from 'modules/stores/processXml/processXml.migration.source';
 import {mockFetchProcessInstancesStatistics} from 'modules/mocks/api/v2/processInstances/fetchProcessInstancesStatistics';
@@ -22,13 +21,23 @@ import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
 import {processInstanceMigrationStore} from 'modules/stores/processInstanceMigration';
 import {useEffect} from 'react';
 import {processInstancesSelectionStore} from 'modules/stores/processInstancesSelection';
+import * as filterModule from 'modules/hooks/useProcessInstancesFilters';
 
+jest.mock('modules/hooks/useFilters');
 jest.mock('modules/hooks/useProcessInstancesFilters');
+jest.mock('modules/stores/processes/processes.migration', () => ({
+  processesStore: {
+    getSelectedProcessDetails: () => ({
+      processName: 'New demo process',
+      version: '3',
+    }),
+    getProcessId: () => '123',
+  },
+}));
 
 const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
   useEffect(() => {
     return () => {
-      processesStore.reset();
       processInstanceMigrationStore.reset();
       processInstancesSelectionStore.reset();
       processXmlStore.reset();
@@ -65,6 +74,10 @@ const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
 };
 
 describe('Source Diagram', () => {
+  beforeEach(() => {
+    jest.spyOn(filterModule, 'useProcessInstanceFilters').mockReturnValue({});
+  });
+
   it('should render process name and version', async () => {
     mockFetchGroupedProcesses().withSuccess(groupedProcessesMock);
 
@@ -76,7 +89,6 @@ describe('Source Diagram', () => {
       search: '?active=true&incidents=true&process=demoProcess&version=3',
     }));
 
-    processesStore.fetchProcesses();
     render(<SourceDiagram />, {wrapper: Wrapper});
 
     expect(await screen.findByText('New demo process')).toBeInTheDocument();

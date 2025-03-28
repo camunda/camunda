@@ -6,45 +6,61 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {genericQueryOptions} from 'modules/queries/genericQuery';
+import {fetchProcessInstancesStatistics} from 'modules/api/v2/processInstances/fetchProcessInstancesStatistics';
 import {
-  fetchProcessInstancesStatistics,
-  ProcessInstancesStatisticsDto,
-  ProcessInstancesStatisticsRequest,
-} from 'modules/api/v2/processInstances/fetchProcessInstancesStatistics';
+  GetProcessDefinitionStatisticsRequestBody,
+  GetProcessDefinitionStatisticsResponseBody,
+} from '@vzeta/camunda-api-zod-schemas/operate';
 import {useProcessInstanceFilters} from 'modules/hooks/useProcessInstancesFilters';
-import {UseQueryOptions} from '@tanstack/react-query';
+import {skipToken, UseQueryOptions} from '@tanstack/react-query';
 import {RequestError} from 'modules/request';
 
-function getQueryKey(payload: ProcessInstancesStatisticsRequest) {
+function getQueryKey(payload: GetProcessDefinitionStatisticsRequestBody) {
   return ['processInstancesStatistics', ...Object.values(payload)];
 }
 
 function useProcessInstancesStatisticsOptions<
-  T = ProcessInstancesStatisticsDto[],
+  T = GetProcessDefinitionStatisticsResponseBody,
 >(
-  payload: ProcessInstancesStatisticsRequest,
-  select?: (data: ProcessInstancesStatisticsDto[]) => T,
-  enabled?: boolean,
-): UseQueryOptions<ProcessInstancesStatisticsDto[], RequestError, T> {
+  payload: GetProcessDefinitionStatisticsRequestBody,
+  select?: (data: GetProcessDefinitionStatisticsResponseBody) => T,
+  processDefinitionKey?: string,
+  enabled: boolean = true,
+): UseQueryOptions<
+  GetProcessDefinitionStatisticsResponseBody,
+  RequestError,
+  T
+> {
   const filters = useProcessInstanceFilters();
 
-  return genericQueryOptions<ProcessInstancesStatisticsDto[], T>(
-    getQueryKey(payload),
-    () =>
-      fetchProcessInstancesStatistics({
-        ...payload,
-        ...filters,
-      }),
-    {
-      queryKey: getQueryKey({
-        ...payload,
-        ...filters,
-      }),
-      select,
-      enabled,
+  const combinedFilters = {
+    ...payload,
+    ...filters,
+    filter: {
+      ...payload.filter,
+      ...filters.filter,
     },
-  );
+  };
+
+  return {
+    queryKey: getQueryKey(combinedFilters),
+    queryFn: !!processDefinitionKey
+      ? async () => {
+          const {response, error} = await fetchProcessInstancesStatistics(
+            combinedFilters,
+            processDefinitionKey,
+          );
+
+          if (response !== null) {
+            return response;
+          }
+
+          throw error;
+        }
+      : skipToken,
+    select,
+    enabled: enabled && !!processDefinitionKey,
+  };
 }
 
 export {useProcessInstancesStatisticsOptions};
