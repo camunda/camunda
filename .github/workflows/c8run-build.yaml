@@ -191,7 +191,7 @@ jobs:
             secret/data/products/distribution/ci SLACK_DISTRO_BOT_WEBHOOK;
 
       - name: Upload message to Slack on failure
-        if: failure()
+        if: ${{ failure() && github.event_name == 'schedule' }}
         env:
           SLACK_WEBHOOK_URL: ${{ steps.secrets.outputs.SLACK_DISTRO_BOT_WEBHOOK }}
         run: |
@@ -326,7 +326,7 @@ jobs:
           retention-days: 10
 
       - name: Upload message to Slack on failure
-        if: failure()
+        if: ${{ failure() && github.event_name == 'schedule' }}
         env:
           SLACK_WEBHOOK_URL: ${{ steps.secrets.outputs.SLACK_DISTRO_BOT_WEBHOOK }}
         run: |
