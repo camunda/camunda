@@ -28,7 +28,7 @@ import io.camunda.search.clients.core.SearchQueryRequest;
 import io.camunda.search.clients.core.SearchQueryResponse;
 import io.camunda.search.clients.core.SearchWriteResponse;
 import io.camunda.search.clients.transformers.SearchTransfomer;
-import io.camunda.search.clients.transformers.aggregate.SearchAggregationResult;
+import io.camunda.search.clients.transformers.aggregation.SearchAggregationResult;
 import io.camunda.search.es.transformers.ElasticsearchTransformers;
 import io.camunda.search.es.transformers.aggregator.SearchAggregationResultTransformer;
 import io.camunda.search.es.transformers.search.SearchDeleteRequestTransformer;

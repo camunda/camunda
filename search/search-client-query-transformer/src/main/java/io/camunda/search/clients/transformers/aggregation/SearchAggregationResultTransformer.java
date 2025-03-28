@@ -5,7 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.search.clients.transformers.aggregate;
+package io.camunda.search.clients.transformers.aggregation;
 
 import io.camunda.search.clients.transformers.ServiceTransformer;
 
