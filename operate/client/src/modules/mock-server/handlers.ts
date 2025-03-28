@@ -8,7 +8,7 @@
 
 import {RequestHandler, RestRequest, rest} from 'msw';
 
-const mockStatisticsV2 = [
+const mockEndpoints = [
   rest.post(
     '/v2/process-instances/statistics',
     async (req: RestRequest<any>, res, ctx) => {
@@ -53,8 +53,54 @@ const mockStatisticsV2 = [
       );
     },
   ),
+  rest.get(
+    '/v2/process-instances/:processInstanceKey/statistics/flownode-instances',
+    async (req: RestRequest<any>, res, ctx) => {
+      return res(
+        ctx.json({
+          items: [
+            {
+              flowNodeId: 'Gateway_15jzrqe',
+              active: 0,
+              canceled: 0,
+              incidents: 1,
+              completed: 0,
+            },
+            {
+              flowNodeId: 'exclusiveGateway',
+              active: 0,
+              canceled: 0,
+              incidents: 0,
+              completed: 1,
+            },
+            {
+              flowNodeId: 'alwaysFailingTask',
+              active: 1,
+              canceled: 0,
+              incidents: 0,
+              completed: 0,
+            },
+            {
+              flowNodeId: 'messageCatchEvent',
+              active: 0,
+              canceled: 0,
+              incidents: 1,
+              completed: 0,
+            },
+            {
+              flowNodeId: 'upperTask',
+              active: 1,
+              canceled: 0,
+              incidents: 0,
+              completed: 0,
+            },
+          ],
+        }),
+      );
+    },
+  ),
 ];
 
-const handlers: RequestHandler[] = [...mockStatisticsV2];
+const handlers: RequestHandler[] = [...mockEndpoints];
 
 export {handlers};
