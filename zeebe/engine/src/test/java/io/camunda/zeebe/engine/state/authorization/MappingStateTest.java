@@ -40,7 +40,7 @@ public class MappingStateTest {
     final var mapping =
         new MappingRecord()
             .setMappingKey(key)
-            .setId(id)
+            .setMappingId(id)
             .setClaimName(claimName)
             .setName(name)
             .setClaimValue(claimValue);
@@ -51,7 +51,7 @@ public class MappingStateTest {
     // then
     final var persistedMapping = mappingState.get(key).get();
     assertThat(persistedMapping.getMappingKey()).isEqualTo(key);
-    assertThat(persistedMapping.getId()).isEqualTo(id);
+    assertThat(persistedMapping.getMappingId()).isEqualTo(id);
     assertThat(persistedMapping.getName()).isEqualTo(name);
     assertThat(persistedMapping.getClaimName()).isEqualTo(claimName);
     assertThat(persistedMapping.getClaimValue()).isEqualTo(claimValue);
@@ -80,7 +80,7 @@ public class MappingStateTest {
             .setClaimName(claimName)
             .setClaimValue(claimValue)
             .setName(name)
-            .setId(id);
+            .setMappingId(id);
     mappingState.create(mapping);
 
     // when
@@ -90,7 +90,7 @@ public class MappingStateTest {
     assertThat(retrievedMapping).isPresent();
     assertThat(retrievedMapping.get().getMappingKey()).isEqualTo(key);
     assertThat(retrievedMapping.get().getName()).isEqualTo(name);
-    assertThat(retrievedMapping.get().getId()).isEqualTo(id);
+    assertThat(retrievedMapping.get().getMappingId()).isEqualTo(id);
   }
 
   @Test
@@ -116,7 +116,7 @@ public class MappingStateTest {
             .setClaimName(claimName)
             .setClaimValue(claimValue)
             .setName(name)
-            .setId(id);
+            .setMappingId(id);
     mappingState.create(mapping);
 
     // when
@@ -178,7 +178,7 @@ public class MappingStateTest {
     final String mappingId = Strings.newRandomValidIdentityId();
     final var mapping =
         new MappingRecord()
-            .setId(mappingId)
+            .setMappingId(mappingId)
             .setMappingKey(key)
             .setClaimName(claimName)
             .setClaimValue(claimValue);
@@ -202,7 +202,7 @@ public class MappingStateTest {
     final String mappingId = Strings.newRandomValidIdentityId();
     final var mapping =
         new MappingRecord()
-            .setId(mappingId)
+            .setMappingId(mappingId)
             .setMappingKey(key)
             .setClaimName(claimName)
             .setClaimValue(claimValue);
@@ -227,7 +227,7 @@ public class MappingStateTest {
     final String id = "id";
     final var mapping =
         new MappingRecord()
-            .setId(id)
+            .setMappingId(id)
             .setMappingKey(key)
             .setClaimName(claimName)
             .setClaimValue(claimValue);
@@ -253,7 +253,7 @@ public class MappingStateTest {
     final var mapping =
         new MappingRecord()
             .setMappingKey(key)
-            .setId(id)
+            .setMappingId(id)
             .setName(name)
             .setClaimName(claimName)
             .setClaimValue(claimValue);
@@ -266,7 +266,7 @@ public class MappingStateTest {
     final var updateMapping =
         new MappingRecord()
             .setMappingKey(key)
-            .setId(id)
+            .setMappingId(id)
             .setName(newName)
             .setClaimName(newClaimName)
             .setClaimValue(newClaimValue);
@@ -283,6 +283,6 @@ public class MappingStateTest {
     assertThat(mappingState.get(newClaimName, newClaimValue)).isNotEmpty();
     final var mappingByClaim = mappingState.get(newClaimName, newClaimValue).get();
     assertThat(mappingByClaim.getName()).isEqualTo(newName);
-    assertThat(mappingByClaim.getId()).isEqualTo(id);
+    assertThat(mappingByClaim.getMappingId()).isEqualTo(id);
   }
 }

@@ -52,7 +52,7 @@ public class MappingControllerTest extends RestControllerTest {
             .setMappingKey(1L)
             .setClaimName(dto.claimName())
             .setClaimValue(dto.claimValue())
-            .setId(id)
+            .setMappingId(id)
             .setName(dto.name());
 
     when(mappingServices.createMapping(dto))
@@ -285,7 +285,7 @@ public class MappingControllerTest extends RestControllerTest {
     // given
     final String mappingId = "id";
 
-    final var mappingRecord = new MappingRecord().setId(mappingId);
+    final var mappingRecord = new MappingRecord().setMappingId(mappingId);
 
     when(mappingServices.deleteMapping(mappingId))
         .thenReturn(CompletableFuture.completedFuture(mappingRecord));
@@ -313,7 +313,7 @@ public class MappingControllerTest extends RestControllerTest {
             .setMappingKey(1L)
             .setClaimName(dto.claimName())
             .setClaimValue(dto.claimValue())
-            .setId(id)
+            .setMappingId(id)
             .setName(dto.name());
 
     when(mappingServices.updateMapping(dto))

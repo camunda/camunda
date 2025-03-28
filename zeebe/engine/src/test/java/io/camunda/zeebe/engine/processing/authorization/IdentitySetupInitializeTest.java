@@ -311,12 +311,12 @@ public class IdentitySetupInitializeTest {
     final var role = new RoleRecord().setName(UUID.randomUUID().toString());
     final var mapping1 =
         new MappingRecord()
-            .setId(UUID.randomUUID().toString())
+            .setMappingId(UUID.randomUUID().toString())
             .setClaimName(UUID.randomUUID().toString())
             .setClaimValue(UUID.randomUUID().toString());
     final var mapping2 =
         new MappingRecord()
-            .setId(UUID.randomUUID().toString())
+            .setMappingId(UUID.randomUUID().toString())
             .setClaimName(UUID.randomUUID().toString())
             .setClaimValue(UUID.randomUUID().toString());
 
@@ -343,8 +343,8 @@ public class IdentitySetupInitializeTest {
             tuple(mapping1.getClaimName(), mapping1.getClaimValue()),
             tuple(mapping2.getClaimName(), mapping2.getClaimValue()));
     Assertions.assertThat(createdMappings)
-        .extracting(MappingRecordValue::getId)
-        .containsExactly(mapping1.getId(), mapping2.getId());
+        .extracting(MappingRecordValue::getMappingId)
+        .containsExactly(mapping1.getMappingId(), mapping2.getMappingId());
     Assertions.assertThat(createdMappings)
         .satisfiesExactly(
             m1 ->

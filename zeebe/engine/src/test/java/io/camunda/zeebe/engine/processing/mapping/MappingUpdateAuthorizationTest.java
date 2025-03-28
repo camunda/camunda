@@ -56,7 +56,7 @@ public class MappingUpdateAuthorizationTest {
         .newMapping(claimName)
         .withClaimValue(claimValue)
         .withName(name)
-        .withId(id)
+        .withMappingId(id)
         .create(DEFAULT_USER.getUsername());
 
     // when
@@ -94,7 +94,7 @@ public class MappingUpdateAuthorizationTest {
         .newMapping(claimName)
         .withClaimValue(claimValue)
         .withName(name)
-        .withId(id)
+        .withMappingId(id)
         .create(DEFAULT_USER.getUsername());
 
     // when
@@ -130,7 +130,7 @@ public class MappingUpdateAuthorizationTest {
         .newMapping(claimName)
         .withClaimValue(claimValue)
         .withName(name)
-        .withId(id)
+        .withMappingId(id)
         .create(DEFAULT_USER.getUsername());
 
     // when
