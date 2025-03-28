@@ -19,9 +19,9 @@ import io.camunda.client.RequestMapper;
 import io.camunda.client.api.search.filter.VariableFilter;
 import io.camunda.client.api.search.filter.builder.BasicLongProperty;
 import io.camunda.client.api.search.filter.builder.StringProperty;
-import io.camunda.client.impl.search.TypedSearchRequestPropertyProvider;
 import io.camunda.client.impl.search.filter.builder.BasicLongPropertyImpl;
 import io.camunda.client.impl.search.filter.builder.StringPropertyImpl;
+import io.camunda.client.impl.search.request.TypedSearchRequestPropertyProvider;
 import java.util.function.Consumer;
 
 public class VariableFilterImpl

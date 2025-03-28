@@ -19,8 +19,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.github.tomakehurst.wiremock.http.RequestMethod;
 import com.github.tomakehurst.wiremock.verification.LoggedRequest;
-import io.camunda.client.impl.search.SearchQuerySortRequest;
-import io.camunda.client.impl.search.SearchQuerySortRequestMapper;
+import io.camunda.client.impl.search.request.SearchRequestSort;
+import io.camunda.client.impl.search.request.SearchRequestSortMapper;
 import io.camunda.client.protocol.rest.*;
 import io.camunda.client.util.ClientRestTest;
 import java.util.List;
@@ -31,7 +31,7 @@ public class FlownodeInstanceTest extends ClientRestTest {
   @Test
   void shouldSearchFlownodeInstance() {
     // when
-    client.newFlownodeInstanceQuery().send().join();
+    client.newFlownodeInstanceSearchRequest().send().join();
 
     // then
     final FlowNodeInstanceSearchQuery request =
@@ -43,7 +43,7 @@ public class FlownodeInstanceTest extends ClientRestTest {
   void shouldSearchFlownodeInstanceWithFullFilters() {
     // when
     client
-        .newFlownodeInstanceQuery()
+        .newFlownodeInstanceSearchRequest()
         .filter(
             f ->
                 f.flowNodeInstanceKey(1L)
@@ -78,7 +78,7 @@ public class FlownodeInstanceTest extends ClientRestTest {
   void shouldSearchFlownodeInstanceWithFullSorting() {
     // when
     client
-        .newFlownodeInstanceQuery()
+        .newFlownodeInstanceSearchRequest()
         .sort(
             s ->
                 s.flowNodeInstanceKey()
@@ -106,8 +106,8 @@ public class FlownodeInstanceTest extends ClientRestTest {
     // then
     final FlowNodeInstanceSearchQuery request =
         gatewayService.getLastRequest(FlowNodeInstanceSearchQuery.class);
-    final List<SearchQuerySortRequest> sorts =
-        SearchQuerySortRequestMapper.fromFlowNodeInstanceSearchQuerySortRequest(
+    final List<SearchRequestSort> sorts =
+        SearchRequestSortMapper.fromFlowNodeInstanceSearchQuerySortRequest(
             Objects.requireNonNull(request.getSort()));
     assertThat(sorts.size()).isEqualTo(9);
     assertSort(sorts.get(0), "processDefinitionKey", SortOrderEnum.ASC);
@@ -134,7 +134,7 @@ public class FlownodeInstanceTest extends ClientRestTest {
   }
 
   private void assertSort(
-      final SearchQuerySortRequest sort, final String field, final SortOrderEnum order) {
+      final SearchRequestSort sort, final String field, final SortOrderEnum order) {
     assertThat(sort.getField()).isEqualTo(field);
     assertThat(sort.getOrder()).isEqualTo(order);
   }
