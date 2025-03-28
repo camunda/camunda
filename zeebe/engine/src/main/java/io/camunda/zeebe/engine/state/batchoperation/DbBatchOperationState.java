@@ -69,11 +69,7 @@ public class DbBatchOperationState implements MutableBatchOperationState {
     LOGGER.debug("Creating batch operation with key {}", record.getBatchOperationKey());
     batchKey.wrapLong(record.getBatchOperationKey());
     final var batchOperation = new PersistedBatchOperation();
-    batchOperation
-        .setKey(record.getBatchOperationKey())
-        .setStatus(BatchOperationStatus.CREATED)
-        .setBatchOperationType(record.getBatchOperationType())
-        .setEntityFilter(record.getEntityFilterBuffer());
+    batchOperation.wrap(record).setStatus(BatchOperationStatus.CREATED);
     batchOperationColumnFamily.upsert(batchKey, batchOperation);
     pendingBatchOperationColumnFamily.upsert(batchKey, DbNil.INSTANCE);
   }
@@ -86,22 +82,28 @@ public class DbBatchOperationState implements MutableBatchOperationState {
         batchOperationKey);
 
     // First, get the batch operation
-    final var batch = getBatchOperation(batchOperationKey);
+    final var batch = get(batchOperationKey);
+    if (batch.isEmpty()) {
+      LOGGER.error(
+          "Batch operation with key {} not found, cannot append itemKeys to it.",
+          batchOperationKey);
+      return;
+    }
 
     // Second, delete it from the pendingBatchOperationColumnFamily since we are already working on
     // it
     pendingBatchOperationColumnFamily.deleteIfExists(batchKey);
 
     // Third, get the chunk to append the keys to
-    var chunk = getOrCreateChunk(batch);
+    var chunk = getOrCreateChunk(batch.get());
 
     // Fourth, append the keys to the chunk, if the chunk is full, a new one is returned
     for (final long key : itemKeys) {
-      chunk = appendKeyToChunk(batch, chunk, key);
+      chunk = appendKeyToChunk(batch.get(), chunk, key);
     }
 
     // Finally, update the batch and the chunk in the column family
-    updateChunkAndBatch(chunk, batch);
+    updateChunkAndBatch(chunk, batch.get());
   }
 
   @Override
@@ -112,14 +114,20 @@ public class DbBatchOperationState implements MutableBatchOperationState {
         batchOperationKey);
 
     // First, get the batch operation
-    final var batch = getBatchOperation(batchOperationKey);
+    final var batch = get(batchOperationKey);
+    if (batch.isEmpty()) {
+      LOGGER.error(
+          "Batch operation with key {} not found, cannot remove itemKeys from it.",
+          batchOperationKey);
+      return;
+    }
 
     // Second, delete the keys from chunk
-    final var chunk = getChunk(batch);
+    final var chunk = getMinChunk(batch.get());
     chunk.removeItemKeys(itemKeys);
 
     // Finally, update the chunk and batch in the column family
-    updateBatchAndChunkAfterRemoval(batch, chunk);
+    updateBatchAndChunkAfterRemoval(batch.get(), chunk);
   }
 
   @Override
@@ -142,14 +150,18 @@ public class DbBatchOperationState implements MutableBatchOperationState {
 
   @Override
   public List<Long> getNextItemKeys(final long batchOperationKey, final int batchSize) {
-    batchKey.wrapLong(batchOperationKey);
-    final var batch = batchOperationColumnFamily.get(batchKey);
-
-    if (batch.getMinChunkKey() == -1) {
+    final var batch = get(batchOperationKey);
+    if (batch.isEmpty()) {
+      LOGGER.error(
+          "Batch operation with key {} not found, cannot get next item keys.", batchOperationKey);
       return List.of();
     }
 
-    chunkKey.wrapLong(batch.getMinChunkKey());
+    if (batch.get().getMinChunkKey() == -1) {
+      return List.of();
+    }
+
+    chunkKey.wrapLong(batch.get().getMinChunkKey());
     final var chunk = batchOperationChunksColumnFamily.get(fkBatchKeyAndChunkKey);
     final var chunkKeys = chunk.getItemKeys();
 
@@ -157,10 +169,10 @@ public class DbBatchOperationState implements MutableBatchOperationState {
   }
 
   private PersistedBatchOperationChunk createNewChunk(final PersistedBatchOperation batch) {
-    final long currentChunkKey;
-    final PersistedBatchOperationChunk batchChunk;
-    currentChunkKey = batch.nextChunkKey();
-    batchChunk = new PersistedBatchOperationChunk();
+    final var currentChunkKey = batch.nextChunkKey();
+    batch.addChunkKey(currentChunkKey);
+
+    final var batchChunk = new PersistedBatchOperationChunk();
     batchChunk.setKey(currentChunkKey).setBatchOperationKey(batch.getKey());
     chunkKey.wrapLong(batchChunk.getKey());
 
@@ -169,12 +181,8 @@ public class DbBatchOperationState implements MutableBatchOperationState {
     return batchChunk;
   }
 
-  private PersistedBatchOperation getBatchOperation(final long batchOperationKey) {
-    batchKey.wrapLong(batchOperationKey);
-    return batchOperationColumnFamily.get(batchKey);
-  }
-
-  private PersistedBatchOperationChunk getChunk(final PersistedBatchOperation batch) {
+  /** Returns the chunk for min chunk key */
+  private PersistedBatchOperationChunk getMinChunk(final PersistedBatchOperation batch) {
     chunkKey.wrapLong(batch.getMinChunkKey());
     return batchOperationChunksColumnFamily.get(fkBatchKeyAndChunkKey);
   }

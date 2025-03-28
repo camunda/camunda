@@ -15,6 +15,7 @@ import io.camunda.zeebe.msgpack.property.EnumProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.value.LongValue;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
+import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationCreationRecord;
 import io.camunda.zeebe.protocol.record.value.BatchOperationType;
 import java.util.Comparator;
 import org.agrona.DirectBuffer;
@@ -39,6 +40,13 @@ public class PersistedBatchOperation extends UnpackedObject implements DbValue {
         .declareProperty(statusProp)
         .declareProperty(entityFilterProp)
         .declareProperty(chunkKeysProp);
+  }
+
+  public PersistedBatchOperation wrap(final BatchOperationCreationRecord record) {
+    setKey(record.getBatchOperationKey());
+    setBatchOperationType(record.getBatchOperationType());
+    setEntityFilter(record.getEntityFilterBuffer());
+    return this;
   }
 
   public long getKey() {
@@ -83,10 +91,12 @@ public class PersistedBatchOperation extends UnpackedObject implements DbValue {
   }
 
   public long nextChunkKey() {
-    final var nextKey = getMaxChunkKey() + 1;
-    chunkKeysProp.add().setValue(nextKey);
+    return getMaxChunkKey() + 1;
+  }
 
-    return nextKey;
+  public PersistedBatchOperation addChunkKey(final Long chunkKey) {
+    chunkKeysProp.add().setValue(chunkKey);
+    return this;
   }
 
   public PersistedBatchOperation removeChunkKey(final Long chunkKey) {
