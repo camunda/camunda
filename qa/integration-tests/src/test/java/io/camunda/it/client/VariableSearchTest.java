@@ -220,7 +220,7 @@ class VariableSearchTest {
     // when
     final var result =
         camundaClient
-            .newVariableQuery()
+            .newVariableSearchRequest()
             .filter(f -> f.processInstanceKey(b -> b.nin(variable.getProcessInstanceKey())))
             .send()
             .join();

@@ -159,7 +159,7 @@ class DecisionInstanceSearchTest {
         EVALUATED_DECISIONS.get(DECISION_DEFINITION_ID_1).getDecisionKey();
     final var result =
         camundaClient
-            .newDecisionInstanceQuery()
+            .newDecisionInstanceSearchRequest()
             .filter(f -> f.decisionDefinitionKey(b -> b.nin(Long.MAX_VALUE, decisionDefinitionKey)))
             .send()
             .join();
