@@ -48,8 +48,8 @@ jobs:
             fi
 
             # Check if tasklist page is available (adjust the URL based on your service)
-            response_8080=$(curl -s -m 5 http://localhost:8080/tasklist || echo "Failed")
-            response_8081=$(curl -s -m 5 http://localhost:8081/operate || echo "Failed")
+            tasklist_status=$(curl -s -m 5 http://localhost:8080/tasklist || echo "Failed")
+            operate_status=$(curl -s -m 5 http://localhost:8081/operate || echo "Failed")
 
             # Check if tasklist is up (you can adjust this condition based on actual response)
             if [[ "$response_8080" != "Failed" ]] && [[ "$response_8081" != "Failed" ]]; then
