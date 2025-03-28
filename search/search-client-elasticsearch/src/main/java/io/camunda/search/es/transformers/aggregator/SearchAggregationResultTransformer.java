@@ -15,8 +15,8 @@ import co.elastic.clients.elasticsearch._types.aggregations.SingleBucketAggregat
 import co.elastic.clients.elasticsearch._types.aggregations.StringTermsBucket;
 import co.elastic.clients.elasticsearch.core.SearchResponse;
 import io.camunda.search.clients.transformers.SearchTransfomer;
-import io.camunda.search.clients.transformers.aggregation.SearchAggregationResult;
-import io.camunda.search.clients.transformers.aggregation.SearchAggregationResult.Builder;
+import io.camunda.search.clients.transformers.aggregation.result.SearchAggregationResult;
+import io.camunda.search.clients.transformers.aggregation.result.SearchAggregationResult.Builder;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;

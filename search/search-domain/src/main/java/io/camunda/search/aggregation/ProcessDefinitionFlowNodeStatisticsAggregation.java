@@ -7,8 +7,15 @@
  */
 package io.camunda.search.aggregation;
 
-import io.camunda.search.entities.ProcessDefinitionFlowNodeStatisticsEntity;
-import java.util.List;
+public record ProcessDefinitionFlowNodeStatisticsAggregation() implements AggregationBase {
 
-public record ProcessDefinitionFlowNodeStatisticsAggregation(
-    List<ProcessDefinitionFlowNodeStatisticsEntity> items) {}
+  public static final int AGGREGATION_TERMS_SIZE = 10000;
+  public static final String AGGREGATION_TO_FLOW_NODES = "to-flow-nodes";
+  public static final String AGGREGATION_FILTER_FLOW_NODES = "filter-flow-nodes";
+  public static final String AGGREGATION_GROUP_FLOW_NODES = "group-flow-nodes";
+  public static final String AGGREGATION_GROUP_FILTERS = "group-filters";
+  public static final String AGGREGATION_ACTIVE = "active";
+  public static final String AGGREGATION_COMPLETED = "completed";
+  public static final String AGGREGATION_CANCELED = "canceled";
+  public static final String AGGREGATION_INCIDENTS = "incidents";
+}

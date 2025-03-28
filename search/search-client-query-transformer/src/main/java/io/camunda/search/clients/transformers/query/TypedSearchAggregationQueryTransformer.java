@@ -7,25 +7,35 @@
  */
 package io.camunda.search.clients.transformers.query;
 
+import io.camunda.search.aggregation.AggregationBase;
 import io.camunda.search.clients.aggregator.SearchAggregator;
 import io.camunda.search.clients.core.SearchQueryRequest;
+import io.camunda.search.clients.transformers.ServiceTransformer;
 import io.camunda.search.clients.transformers.ServiceTransformers;
 import io.camunda.search.filter.FilterBase;
-import io.camunda.search.query.TypedSearchQuery;
+import io.camunda.search.query.TypedSearchAggregationQuery;
 import io.camunda.search.sort.NoSort;
 import java.util.List;
 
-public abstract class TypedSearchAggregationQueryTransformer<F extends FilterBase>
-    extends TypedSearchQueryTransformer<F, NoSort> {
+public class TypedSearchAggregationQueryTransformer<F extends FilterBase, A extends AggregationBase>
+    implements ServiceTransformer<TypedSearchAggregationQuery<F, A>, SearchQueryRequest> {
+
+  private final ServiceTransformers transformers;
+  private final TypedSearchQueryTransformer<F, NoSort> typedSearchQueryTransformer;
 
   public TypedSearchAggregationQueryTransformer(final ServiceTransformers transformers) {
-    super(transformers);
+    this.transformers = transformers;
+    typedSearchQueryTransformer = new TypedSearchQueryTransformer<>(transformers);
   }
 
   @Override
-  public SearchQueryRequest apply(final TypedSearchQuery<F, NoSort> query) {
-    return super.apply(query).toBuilder().aggregations(applyAggregations()).build();
+  public SearchQueryRequest apply(final TypedSearchAggregationQuery<F, A> query) {
+    return typedSearchQueryTransformer.apply(query).toBuilder()
+        .aggregations(applyAggregations(query.aggregation()))
+        .build();
   }
 
-  protected abstract List<SearchAggregator> applyAggregations();
+  protected List<SearchAggregator> applyAggregations(final A aggregation) {
+    return transformers.getAggregationTransformer(aggregation.getClass()).apply(aggregation);
+  }
 }
