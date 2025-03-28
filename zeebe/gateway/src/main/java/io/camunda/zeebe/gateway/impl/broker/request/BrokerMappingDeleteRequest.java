@@ -23,7 +23,7 @@ public class BrokerMappingDeleteRequest extends BrokerExecuteCommand<MappingReco
   }
 
   public BrokerMappingDeleteRequest setId(final String mappingId) {
-    requestDto.setId(mappingId);
+    requestDto.setMappingId(mappingId);
     return this;
   }
 
