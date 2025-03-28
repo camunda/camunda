@@ -18,11 +18,11 @@ package io.camunda.client.authorization;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import io.camunda.client.api.search.enums.OwnerType;
+import io.camunda.client.api.search.enums.PermissionType;
+import io.camunda.client.api.search.enums.ResourceType;
 import io.camunda.client.protocol.rest.AuthorizationRequest;
 import io.camunda.client.util.ClientRestTest;
-import io.camunda.client.wrappers.OwnerType;
-import io.camunda.client.wrappers.PermissionType;
-import io.camunda.client.wrappers.ResourceType;
 import org.junit.jupiter.api.Test;
 
 public class UpdateAuthorizationTest extends ClientRestTest {

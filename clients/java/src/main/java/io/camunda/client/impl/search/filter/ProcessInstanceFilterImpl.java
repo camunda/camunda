@@ -15,20 +15,21 @@
  */
 package io.camunda.client.impl.search.filter;
 
-import io.camunda.client.RequestMapper;
+import io.camunda.client.api.search.enums.ProcessInstanceState;
 import io.camunda.client.api.search.filter.ProcessInstanceFilter;
+import io.camunda.client.api.search.filter.ProcessInstanceVariableFilterRequest;
 import io.camunda.client.api.search.filter.builder.BasicLongProperty;
 import io.camunda.client.api.search.filter.builder.DateTimeProperty;
 import io.camunda.client.api.search.filter.builder.IntegerProperty;
 import io.camunda.client.api.search.filter.builder.ProcessInstanceStateProperty;
 import io.camunda.client.api.search.filter.builder.StringProperty;
+import io.camunda.client.impl.RequestMapper;
 import io.camunda.client.impl.search.filter.builder.BasicLongPropertyImpl;
 import io.camunda.client.impl.search.filter.builder.DateTimePropertyImpl;
 import io.camunda.client.impl.search.filter.builder.IntegerPropertyImpl;
 import io.camunda.client.impl.search.filter.builder.ProcessInstanceStatePropertyImpl;
 import io.camunda.client.impl.search.filter.builder.StringPropertyImpl;
 import io.camunda.client.impl.search.request.TypedSearchRequestPropertyProvider;
-import io.camunda.client.wrappers.*;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Map;

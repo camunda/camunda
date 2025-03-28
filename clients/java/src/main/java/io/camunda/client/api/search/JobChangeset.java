@@ -13,26 +13,28 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.camunda.client.wrappers;
+package io.camunda.client.api.search;
 
-public class ProcessInstanceVariableFilterRequest {
+public class JobChangeset {
 
-  private String name;
-  private StringFilterProperty value;
+  private Integer retries;
+  private Long timeout;
 
-  public String getName() {
-    return name;
+  public Integer getRetries() {
+    return retries;
   }
 
-  public void setName(String name) {
-    this.name = name;
+  public JobChangeset setRetries(Integer retries) {
+    this.retries = retries;
+    return this;
   }
 
-  public StringFilterProperty getValue() {
-    return value;
+  public Long getTimeout() {
+    return timeout;
   }
 
-  public void setValue(StringFilterProperty value) {
-    this.value = value;
+  public JobChangeset setTimeout(Long timeout) {
+    this.timeout = timeout;
+    return this;
   }
 }

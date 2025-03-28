@@ -15,10 +15,10 @@
  */
 package io.camunda.client.impl.search.filter.builder;
 
-import io.camunda.client.ResponseMapper;
+import io.camunda.client.api.search.filter.StringFilterProperty;
 import io.camunda.client.api.search.filter.builder.StringProperty;
+import io.camunda.client.impl.ResponseMapper;
 import io.camunda.client.impl.util.CollectionUtil;
-import io.camunda.client.wrappers.StringFilterProperty;
 import java.util.List;
 
 public class StringPropertyImpl implements StringProperty {

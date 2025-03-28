@@ -12,9 +12,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.command.DeployResourceCommandStep1;
 import io.camunda.client.api.response.DeploymentEvent;
+import io.camunda.client.api.search.enums.UserTaskResult;
 import io.camunda.client.api.search.filter.UserTaskFilter;
 import io.camunda.client.api.search.response.UserTask;
-import io.camunda.client.wrappers.UserTaskResult;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
@@ -94,7 +94,7 @@ public class UserTaskIT {
         client,
         f -> {
           f.processInstanceKey(processInstanceId);
-          f.state(io.camunda.client.wrappers.UserTaskFilter.State.COMPLETED);
+          f.state(io.camunda.client.api.search.enums.UserTaskFilter.State.COMPLETED);
         });
 
     userTasks = fetchUserTasks(client, processInstanceId);

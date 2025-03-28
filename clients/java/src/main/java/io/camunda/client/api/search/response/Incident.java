@@ -15,7 +15,7 @@
  */
 package io.camunda.client.api.search.response;
 
-import io.camunda.client.wrappers.IncidentResult;
+import io.camunda.client.api.search.enums.IncidentResult;
 
 public interface Incident {
 

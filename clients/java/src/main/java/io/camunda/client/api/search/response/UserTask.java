@@ -15,7 +15,7 @@
  */
 package io.camunda.client.api.search.response;
 
-import io.camunda.client.wrappers.UserTaskResult;
+import io.camunda.client.api.search.enums.UserTaskResult;
 import java.util.List;
 import java.util.Map;
 

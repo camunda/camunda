@@ -15,8 +15,8 @@
  */
 package io.camunda.process.test.utils;
 
+import io.camunda.client.api.search.enums.ProcessInstanceState;
 import io.camunda.client.api.search.response.ProcessInstance;
-import io.camunda.client.wrappers.ProcessInstanceState;
 
 public class ProcessInstanceBuilder implements ProcessInstance {
 

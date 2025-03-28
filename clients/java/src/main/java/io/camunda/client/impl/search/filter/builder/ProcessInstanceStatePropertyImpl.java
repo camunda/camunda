@@ -15,10 +15,10 @@
  */
 package io.camunda.client.impl.search.filter.builder;
 
+import io.camunda.client.api.search.enums.ProcessInstanceState;
+import io.camunda.client.api.search.filter.ProcessInstanceStateFilterProperty;
 import io.camunda.client.api.search.filter.builder.ProcessInstanceStateProperty;
 import io.camunda.client.impl.util.CollectionUtil;
-import io.camunda.client.wrappers.ProcessInstanceState;
-import io.camunda.client.wrappers.ProcessInstanceStateFilterProperty;
 import java.util.List;
 
 public class ProcessInstanceStatePropertyImpl implements ProcessInstanceStateProperty {

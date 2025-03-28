@@ -13,18 +13,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.camunda.client;
+package io.camunda.client.impl;
 
+import io.camunda.client.api.search.GroupChangeset;
+import io.camunda.client.api.search.JobChangeset;
+import io.camunda.client.api.search.ProblemDetail;
+import io.camunda.client.api.search.filter.*;
+import io.camunda.client.api.search.filter.AdHocSubprocessActivityRequestFilter;
 import io.camunda.client.impl.util.EnumUtil;
 import io.camunda.client.protocol.rest.ProcessInstanceStateEnum;
-import io.camunda.client.wrappers.*;
 import java.util.ArrayList;
 import java.util.List;
 
 public class RequestMapper {
 
   public static io.camunda.client.protocol.rest.AdHocSubprocessActivityFilter toProtocolObject(
-      AdHocSubprocessActivityFilter object) {
+      AdHocSubprocessActivityRequestFilter object) {
     if (object == null) {
       return null;
     }

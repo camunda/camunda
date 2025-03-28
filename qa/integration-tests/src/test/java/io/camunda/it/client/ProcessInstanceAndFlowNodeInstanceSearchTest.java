@@ -7,8 +7,8 @@
  */
 package io.camunda.it.client;
 
-import static io.camunda.client.wrappers.ProcessInstanceState.ACTIVE;
-import static io.camunda.client.wrappers.ProcessInstanceState.COMPLETED;
+import static io.camunda.client.api.search.enums.ProcessInstanceState.ACTIVE;
+import static io.camunda.client.api.search.enums.ProcessInstanceState.COMPLETED;
 import static io.camunda.it.util.TestHelper.assertSorted;
 import static io.camunda.it.util.TestHelper.deployResource;
 import static io.camunda.it.util.TestHelper.startProcessInstance;
@@ -21,18 +21,18 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrowsExactly;
 
 import io.camunda.client.CamundaClient;
-import io.camunda.client.ResponseMapper;
 import io.camunda.client.api.command.ProblemException;
 import io.camunda.client.api.response.Process;
 import io.camunda.client.api.response.ProcessInstanceEvent;
+import io.camunda.client.api.search.enums.FlowNodeInstanceFilter;
+import io.camunda.client.api.search.enums.ProcessInstanceState;
 import io.camunda.client.api.search.response.FlowNodeInstance;
 import io.camunda.client.api.search.response.FlowNodeInstanceState;
 import io.camunda.client.api.search.response.ProcessInstance;
+import io.camunda.client.impl.ResponseMapper;
 import io.camunda.client.protocol.rest.ProcessInstanceStateEnum;
 import io.camunda.client.protocol.rest.ProcessInstanceVariableFilterRequest;
 import io.camunda.client.protocol.rest.StringFilterProperty;
-import io.camunda.client.wrappers.FlowNodeInstanceFilter;
-import io.camunda.client.wrappers.ProcessInstanceState;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;

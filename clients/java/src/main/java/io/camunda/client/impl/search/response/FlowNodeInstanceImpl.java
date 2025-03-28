@@ -33,9 +33,9 @@ public final class FlowNodeInstanceImpl implements FlowNodeInstance {
   private final String endDate;
   private final Boolean incident;
   private final Long incidentKey;
-  private final io.camunda.client.wrappers.FlowNodeInstanceResult.State state;
+  private final io.camunda.client.api.search.enums.FlowNodeInstanceResult.State state;
   private final String tenantId;
-  private final io.camunda.client.wrappers.FlowNodeInstanceResult.Type type;
+  private final io.camunda.client.api.search.enums.FlowNodeInstanceResult.Type type;
 
   public FlowNodeInstanceImpl(final FlowNodeInstanceResult item) {
     flowNodeInstanceKey = ParseUtil.parseLongOrNull(item.getFlowNodeInstanceKey());
@@ -50,11 +50,11 @@ public final class FlowNodeInstanceImpl implements FlowNodeInstance {
     incidentKey = ParseUtil.parseLongOrNull(item.getIncidentKey());
     state =
         EnumUtil.convert(
-            item.getState(), io.camunda.client.wrappers.FlowNodeInstanceResult.State.class);
+            item.getState(), io.camunda.client.api.search.enums.FlowNodeInstanceResult.State.class);
     tenantId = item.getTenantId();
     type =
         EnumUtil.convert(
-            item.getType(), io.camunda.client.wrappers.FlowNodeInstanceResult.Type.class);
+            item.getType(), io.camunda.client.api.search.enums.FlowNodeInstanceResult.Type.class);
   }
 
   @Override
@@ -108,7 +108,7 @@ public final class FlowNodeInstanceImpl implements FlowNodeInstance {
   }
 
   @Override
-  public io.camunda.client.wrappers.FlowNodeInstanceResult.State getState() {
+  public io.camunda.client.api.search.enums.FlowNodeInstanceResult.State getState() {
     return state;
   }
 
@@ -118,7 +118,7 @@ public final class FlowNodeInstanceImpl implements FlowNodeInstance {
   }
 
   @Override
-  public io.camunda.client.wrappers.FlowNodeInstanceResult.Type getType() {
+  public io.camunda.client.api.search.enums.FlowNodeInstanceResult.Type getType() {
     return type;
   }
 

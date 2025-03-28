@@ -15,16 +15,16 @@
  */
 package io.camunda.client.impl.command;
 
-import io.camunda.client.RequestMapper;
 import io.camunda.client.api.CamundaFuture;
 import io.camunda.client.api.JsonMapper;
 import io.camunda.client.api.command.FinalCommandStep;
 import io.camunda.client.api.command.UpdateGroupCommandStep1;
 import io.camunda.client.api.response.UpdateGroupResponse;
+import io.camunda.client.api.search.GroupChangeset;
+import io.camunda.client.impl.RequestMapper;
 import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
 import io.camunda.client.protocol.rest.GroupUpdateRequest;
-import io.camunda.client.wrappers.GroupChangeset;
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 import org.apache.hc.client5.http.config.RequestConfig;

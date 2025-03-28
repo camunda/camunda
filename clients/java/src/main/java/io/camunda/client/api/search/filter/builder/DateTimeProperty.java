@@ -15,7 +15,7 @@
  */
 package io.camunda.client.api.search.filter.builder;
 
-import io.camunda.client.wrappers.DateTimeFilterProperty;
+import io.camunda.client.api.search.filter.DateTimeFilterProperty;
 import java.time.OffsetDateTime;
 
 public interface DateTimeProperty

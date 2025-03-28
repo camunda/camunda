@@ -13,28 +13,26 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.camunda.client.wrappers;
+package io.camunda.client.api.search.filter;
 
-public enum PermissionType {
-  ACCESS,
-  CREATE,
-  CREATE_PROCESS_INSTANCE,
-  CREATE_DECISION_INSTANCE,
-  READ,
-  READ_PROCESS_INSTANCE,
-  READ_USER_TASK,
-  READ_DECISION_INSTANCE,
-  READ_PROCESS_DEFINITION,
-  READ_DECISION_DEFINITION,
-  UPDATE,
-  UPDATE_PROCESS_INSTANCE,
-  UPDATE_USER_TASK,
-  DELETE,
-  DELETE_PROCESS,
-  DELETE_DRD,
-  DELETE_FORM,
-  DELETE_RESOURCE,
-  DELETE_PROCESS_INSTANCE,
-  DELETE_DECISION_INSTANCE,
-  UNKNOWN_ENUM_VALUE;
+public class AdHocSubprocessActivityRequestFilter {
+
+  private String processDefinitionKey;
+  private String adHocSubprocessId;
+
+  public String getProcessDefinitionKey() {
+    return processDefinitionKey;
+  }
+
+  public void setProcessDefinitionKey(String processDefinitionKey) {
+    this.processDefinitionKey = processDefinitionKey;
+  }
+
+  public String getAdHocSubprocessId() {
+    return adHocSubprocessId;
+  }
+
+  public void setAdHocSubprocessId(String adHocSubprocessId) {
+    this.adHocSubprocessId = adHocSubprocessId;
+  }
 }

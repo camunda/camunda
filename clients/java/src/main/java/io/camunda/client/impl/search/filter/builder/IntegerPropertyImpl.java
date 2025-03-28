@@ -15,10 +15,10 @@
  */
 package io.camunda.client.impl.search.filter.builder;
 
-import io.camunda.client.ResponseMapper;
+import io.camunda.client.api.search.filter.IntegerFilterProperty;
 import io.camunda.client.api.search.filter.builder.IntegerProperty;
+import io.camunda.client.impl.ResponseMapper;
 import io.camunda.client.impl.util.CollectionUtil;
-import io.camunda.client.wrappers.IntegerFilterProperty;
 import java.util.List;
 
 public class IntegerPropertyImpl implements IntegerProperty {

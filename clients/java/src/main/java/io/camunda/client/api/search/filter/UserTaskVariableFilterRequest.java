@@ -13,26 +13,26 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.camunda.client.wrappers;
+package io.camunda.client.api.search.filter;
 
-public class AdHocSubprocessActivityFilter {
+public class UserTaskVariableFilterRequest {
 
-  private String processDefinitionKey;
-  private String adHocSubprocessId;
+  private String name;
+  private StringFilterProperty value;
 
-  public String getProcessDefinitionKey() {
-    return processDefinitionKey;
+  public String getName() {
+    return name;
   }
 
-  public void setProcessDefinitionKey(String processDefinitionKey) {
-    this.processDefinitionKey = processDefinitionKey;
+  public void setName(String name) {
+    this.name = name;
   }
 
-  public String getAdHocSubprocessId() {
-    return adHocSubprocessId;
+  public StringFilterProperty getValue() {
+    return value;
   }
 
-  public void setAdHocSubprocessId(String adHocSubprocessId) {
-    this.adHocSubprocessId = adHocSubprocessId;
+  public void setValue(StringFilterProperty value) {
+    this.value = value;
   }
 }

@@ -13,13 +13,26 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.camunda.client.wrappers;
+package io.camunda.client.api.search.filter;
 
-public enum OwnerType {
-  USER,
-  ROLE,
-  GROUP,
-  MAPPING,
-  UNSPECIFIED,
-  UNKNOWN_ENUM_VALUE;
+public class ProcessInstanceVariableFilterRequest {
+
+  private String name;
+  private StringFilterProperty value;
+
+  public String getName() {
+    return name;
+  }
+
+  public void setName(String name) {
+    this.name = name;
+  }
+
+  public StringFilterProperty getValue() {
+    return value;
+  }
+
+  public void setValue(StringFilterProperty value) {
+    this.value = value;
+  }
 }

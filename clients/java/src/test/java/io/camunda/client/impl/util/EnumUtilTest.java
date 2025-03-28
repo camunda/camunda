@@ -17,7 +17,7 @@ package io.camunda.client.impl.util;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.client.wrappers.*;
+import io.camunda.client.api.search.enums.*;
 import org.junit.jupiter.api.Test;
 
 public class EnumUtilTest {

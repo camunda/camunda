@@ -16,12 +16,12 @@
 package io.camunda.process.test.impl.testresult;
 
 import io.camunda.client.api.command.ClientException;
+import io.camunda.client.api.search.enums.FlowNodeInstanceFilter;
+import io.camunda.client.api.search.enums.IncidentFilter;
 import io.camunda.client.api.search.response.FlowNodeInstance;
 import io.camunda.client.api.search.response.Incident;
 import io.camunda.client.api.search.response.ProcessInstance;
 import io.camunda.client.api.search.response.Variable;
-import io.camunda.client.wrappers.FlowNodeInstanceFilter;
-import io.camunda.client.wrappers.IncidentFilter;
 import io.camunda.process.test.impl.assertions.CamundaDataSource;
 import java.util.List;
 import java.util.Map;

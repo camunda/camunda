@@ -15,8 +15,8 @@
  */
 package io.camunda.process.test.utils;
 
+import io.camunda.client.api.search.enums.FlowNodeInstanceResult;
 import io.camunda.client.api.search.response.FlowNodeInstance;
-import io.camunda.client.wrappers.FlowNodeInstanceResult;
 
 public class FlowNodeInstanceBuilder implements FlowNodeInstance {
 

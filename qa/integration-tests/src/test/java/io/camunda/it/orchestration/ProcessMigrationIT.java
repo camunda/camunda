@@ -13,6 +13,7 @@ import static org.awaitility.Awaitility.await;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.command.MigrationPlan;
+import io.camunda.client.api.search.enums.IncidentResult;
 import io.camunda.client.api.search.filter.FlownodeInstanceFilter;
 import io.camunda.client.api.search.filter.IncidentFilter;
 import io.camunda.client.api.search.filter.ProcessDefinitionFilter;
@@ -25,7 +26,6 @@ import io.camunda.client.api.search.response.ProcessDefinition;
 import io.camunda.client.api.search.response.ProcessInstance;
 import io.camunda.client.api.search.response.UserTask;
 import io.camunda.client.api.search.response.Variable;
-import io.camunda.client.wrappers.IncidentResult;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import java.util.List;
 import java.util.Map;

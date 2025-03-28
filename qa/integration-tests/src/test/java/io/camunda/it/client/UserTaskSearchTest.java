@@ -12,13 +12,13 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import io.camunda.client.CamundaClient;
-import io.camunda.client.ResponseMapper;
 import io.camunda.client.api.command.ProblemException;
+import io.camunda.client.api.search.enums.UserTaskFilter;
+import io.camunda.client.api.search.enums.UserTaskResult;
 import io.camunda.client.api.search.response.UserTask;
+import io.camunda.client.impl.ResponseMapper;
 import io.camunda.client.protocol.rest.StringFilterProperty;
 import io.camunda.client.protocol.rest.UserTaskVariableFilterRequest;
-import io.camunda.client.wrappers.UserTaskFilter;
-import io.camunda.client.wrappers.UserTaskResult;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import java.io.InputStream;

@@ -25,14 +25,14 @@ import io.camunda.client.api.command.CreateAuthorizationCommandStep1.CreateAutho
 import io.camunda.client.api.command.CreateAuthorizationCommandStep1.CreateAuthorizationCommandStep6;
 import io.camunda.client.api.command.FinalCommandStep;
 import io.camunda.client.api.response.CreateAuthorizationResponse;
+import io.camunda.client.api.search.enums.OwnerType;
+import io.camunda.client.api.search.enums.PermissionType;
+import io.camunda.client.api.search.enums.ResourceType;
 import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
 import io.camunda.client.impl.response.CreateAuthorizationResponseImpl;
 import io.camunda.client.impl.util.EnumUtil;
 import io.camunda.client.protocol.rest.*;
-import io.camunda.client.wrappers.OwnerType;
-import io.camunda.client.wrappers.PermissionType;
-import io.camunda.client.wrappers.ResourceType;
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.concurrent.TimeUnit;

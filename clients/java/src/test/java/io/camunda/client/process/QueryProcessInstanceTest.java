@@ -15,7 +15,7 @@
  */
 package io.camunda.client.process;
 
-import static io.camunda.client.wrappers.ProcessInstanceState.ACTIVE;
+import static io.camunda.client.api.search.enums.ProcessInstanceState.ACTIVE;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.github.tomakehurst.wiremock.http.RequestMethod;
