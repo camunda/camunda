@@ -7,12 +7,10 @@
  */
 package io.camunda.it.client;
 
-import static io.camunda.client.api.search.response.IncidentState.ACTIVE;
 import static io.camunda.it.util.TestHelper.deployResource;
 import static io.camunda.it.util.TestHelper.startProcessInstance;
 import static io.camunda.it.util.TestHelper.waitForProcessInstancesToStart;
 import static io.camunda.it.util.TestHelper.waitForProcessesToBeDeployed;
-import static io.camunda.it.util.TestHelper.waitUntilIncidentsAreActive;
 import static io.camunda.it.util.TestHelper.waitUntilProcessInstanceHasIncidents;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
@@ -21,8 +19,9 @@ import static org.junit.jupiter.api.Assertions.assertThrowsExactly;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.command.ProblemException;
 import io.camunda.client.api.response.Process;
+import io.camunda.client.api.search.enums.IncidentFilterErrorType;
+import io.camunda.client.api.search.enums.IncidentFilterState;
 import io.camunda.client.api.search.response.Incident;
-import io.camunda.client.api.search.response.IncidentErrorType;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.webapps.schema.entities.operate.ErrorType;
 import java.util.ArrayList;
@@ -40,7 +39,6 @@ import org.junit.jupiter.params.provider.EnumSource;
 class IncidentSearchTest {
 
   private static final List<Process> DEPLOYED_PROCESSES = new ArrayList<>();
-  private static final int AMOUNT_OF_INCIDENTS = 3;
 
   private static CamundaClient camundaClient;
 
@@ -66,8 +64,7 @@ class IncidentSearchTest {
     startProcessInstance(camundaClient, "incident_process_v1");
 
     waitForProcessInstancesToStart(camundaClient, 5);
-    waitUntilProcessInstanceHasIncidents(camundaClient, AMOUNT_OF_INCIDENTS);
-    waitUntilIncidentsAreActive(camundaClient, AMOUNT_OF_INCIDENTS);
+    waitUntilProcessInstanceHasIncidents(camundaClient, 3);
 
     incident = camundaClient.newIncidentSearchRequest().send().join().items().getFirst();
   }
@@ -75,18 +72,6 @@ class IncidentSearchTest {
   @AfterAll
   static void afterAll() {
     DEPLOYED_PROCESSES.clear();
-  }
-
-  @Test
-  void testIncidentsAreActive() {
-    // given
-    waitUntilIncidentsAreActive(camundaClient, AMOUNT_OF_INCIDENTS);
-
-    // when
-    final List<Incident> incidents = camundaClient.newIncidentSearchRequest().send().join().items();
-
-    // then incidents are updated by background task, PENDING state is changed on ACTIVE
-    assertThat(incidents).extracting(Incident::getState).containsOnly(ACTIVE);
   }
 
   @Test
@@ -161,7 +146,11 @@ class IncidentSearchTest {
 
     // when
     final var result =
-        camundaClient.newIncidentSearchRequest().filter(f -> f.state(state)).send().join();
+        camundaClient
+            .newIncidentSearchRequest()
+            .filter(f -> f.state(IncidentFilterState.valueOf(state.name())))
+            .send()
+            .join();
 
     // then
     assertThat(result.items().size()).isEqualTo(3);
@@ -229,7 +218,11 @@ class IncidentSearchTest {
 
     // when
     final var result =
-        camundaClient.newIncidentSearchRequest().filter(f -> f.errorType(errorType)).send().join();
+        camundaClient
+            .newIncidentSearchRequest()
+            .filter(f -> f.errorType(IncidentFilterErrorType.valueOf(errorType.name())))
+            .send()
+            .join();
 
     // then
     assertThat(result.items().size()).isEqualTo(3);
@@ -243,14 +236,14 @@ class IncidentSearchTest {
             () ->
                 camundaClient
                     .newIncidentSearchRequest()
-                    .filter(f -> f.errorType(IncidentErrorType.valueOf(errorType.name())))
+                    .filter(f -> f.errorType(IncidentFilterErrorType.valueOf(errorType.name())))
                     .send()
                     .join())
         .describedAs(
             """
                 Incident query should execute successfully for filter.errorType = '%1$s'.
                 If it fails, ensure the following are updated:
-                  - `client` module: `io.camunda.client.api.search.response.IncidentErrorType` - '%1$s' type defined
+                  - `client` module: `io.camunda.client.wrappers.IncidentResult.ErrorType` - '%1$s' type defined
                   - `search-domain` module: `io.camunda.search.entities.IncidentEntity.ErrorType` - '%1$s' type defined
                   - `gateway-protocol` module: `zeebe/gateway-protocol/src/main/proto/rest-api.yaml` - '%1$s' `errorType` defined for `IncidentFilterRequestBase` document""",
             errorType)

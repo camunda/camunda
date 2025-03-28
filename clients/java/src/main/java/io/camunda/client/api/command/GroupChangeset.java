@@ -13,28 +13,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.camunda.client.api.search;
+package io.camunda.client.api.command;
 
-public class JobChangeset {
+public class GroupChangeset {
 
-  private Integer retries;
-  private Long timeout;
+  private String name;
 
-  public Integer getRetries() {
-    return retries;
+  public String getName() {
+    return name;
   }
 
-  public JobChangeset setRetries(Integer retries) {
-    this.retries = retries;
-    return this;
-  }
-
-  public Long getTimeout() {
-    return timeout;
-  }
-
-  public JobChangeset setTimeout(Long timeout) {
-    this.timeout = timeout;
-    return this;
+  public void setName(String name) {
+    this.name = name;
   }
 }

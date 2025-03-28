@@ -14,7 +14,7 @@ import static org.assertj.core.api.Assertions.tuple;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.response.Process;
-import io.camunda.client.api.search.enums.AdHocSubprocessActivityResult;
+import io.camunda.client.api.search.enums.AdHocSubprocessActivityResultType;
 import io.camunda.client.api.search.response.AdHocSubprocessActivityResponse.AdHocSubprocessActivity;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import org.junit.jupiter.api.Test;
@@ -54,7 +54,7 @@ public class AdHocSubprocessActivitySearchTest {
                 "TestAdHocSubprocess",
                 "TestScriptTask",
                 "test script task",
-                AdHocSubprocessActivityResult.Type.SCRIPT_TASK,
+                AdHocSubprocessActivityResultType.SCRIPT_TASK,
                 "This is a test script task",
                 "<default>"),
             tuple(
@@ -63,7 +63,7 @@ public class AdHocSubprocessActivitySearchTest {
                 "TestAdHocSubprocess",
                 "TestUserTask",
                 "test user task",
-                AdHocSubprocessActivityResult.Type.USER_TASK,
+                AdHocSubprocessActivityResultType.USER_TASK,
                 null,
                 "<default>"));
   }

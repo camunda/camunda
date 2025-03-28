@@ -13,31 +13,23 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.camunda.client.api.search.response;
+package io.camunda.client.api.search.enums;
 
-import io.camunda.client.api.search.enums.AdHocSubprocessActivityResultType;
-import java.util.List;
-
-public interface AdHocSubprocessActivityResponse {
-
-  List<AdHocSubprocessActivity> getItems();
-
-  interface AdHocSubprocessActivity {
-
-    Long getProcessDefinitionKey();
-
-    String getProcessDefinitionId();
-
-    String getAdHocSubprocessId();
-
-    String getElementId();
-
-    String getElementName();
-
-    AdHocSubprocessActivityResultType getType();
-
-    String getDocumentation();
-
-    String getTenantId();
-  }
+public enum IncidentResultErrorType {
+  UNSPECIFIED,
+  UNKNOWN,
+  IO_MAPPING_ERROR,
+  JOB_NO_RETRIES,
+  EXECUTION_LISTENER_NO_RETRIES,
+  TASK_LISTENER_NO_RETRIES,
+  CONDITION_ERROR,
+  EXTRACT_VALUE_ERROR,
+  CALLED_ELEMENT_ERROR,
+  UNHANDLED_ERROR_EVENT,
+  MESSAGE_SIZE_EXCEEDED,
+  CALLED_DECISION_ERROR,
+  DECISION_EVALUATION_ERROR,
+  FORM_NOT_FOUND,
+  RESOURCE_NOT_FOUND,
+  UNKNOWN_ENUM_VALUE;
 }
