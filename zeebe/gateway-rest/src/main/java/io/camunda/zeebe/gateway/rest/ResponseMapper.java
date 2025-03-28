@@ -565,7 +565,7 @@ public final class ResponseMapper {
             .mappingKey(KeyUtil.keyToString(record.getMappingKey()))
             .claimName(record.getClaimName())
             .claimValue(record.getClaimValue())
-            .id(record.getId())
+            .id(record.getMappingId())
             .name(record.getName());
     return new ResponseEntity<>(response, HttpStatus.CREATED);
   }
@@ -576,7 +576,7 @@ public final class ResponseMapper {
             .mappingKey(KeyUtil.keyToString(record.getMappingKey()))
             .claimName(record.getClaimName())
             .claimValue(record.getClaimValue())
-            .id(record.getId())
+            .id(record.getMappingId())
             .name(record.getName());
     return new ResponseEntity<>(response, HttpStatus.OK);
   }
