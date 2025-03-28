@@ -16,6 +16,7 @@
 package io.camunda.client.impl.search.response;
 
 import io.camunda.client.api.search.response.AdHocSubprocessActivityResponse;
+import io.camunda.client.impl.util.EnumUtil;
 import io.camunda.client.protocol.rest.AdHocSubprocessActivityResult;
 import io.camunda.client.protocol.rest.AdHocSubprocessActivitySearchQueryResult;
 import java.util.List;
@@ -44,7 +45,7 @@ public class AdHocSubprocessActivityResponseImpl implements AdHocSubprocessActiv
     private final String adHocSubprocessId;
     private final String elementId;
     private final String elementName;
-    private final AdHocSubprocessActivityType type;
+    private final io.camunda.client.wrappers.AdHocSubprocessActivityResult.Type type;
     private final String documentation;
     private final String tenantId;
 
@@ -54,7 +55,11 @@ public class AdHocSubprocessActivityResponseImpl implements AdHocSubprocessActiv
       adHocSubprocessId = result.getAdHocSubprocessId();
       elementId = result.getElementId();
       elementName = result.getElementName();
-      type = AdHocSubprocessActivityType.fromProtocolType(result.getType());
+      type =
+          EnumUtil.convert(
+              result.getType(),
+              io.camunda.client.wrappers.AdHocSubprocessActivityResult.Type.class);
+
       documentation = result.getDocumentation();
       tenantId = result.getTenantId();
     }
@@ -85,7 +90,7 @@ public class AdHocSubprocessActivityResponseImpl implements AdHocSubprocessActiv
     }
 
     @Override
-    public AdHocSubprocessActivityType getType() {
+    public io.camunda.client.wrappers.AdHocSubprocessActivityResult.Type getType() {
       return type;
     }
 

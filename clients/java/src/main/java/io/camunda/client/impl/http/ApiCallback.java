@@ -16,6 +16,7 @@
 package io.camunda.client.impl.http;
 
 import io.camunda.client.CredentialsProvider.StatusCode;
+import io.camunda.client.ResponseMapper;
 import io.camunda.client.api.command.ClientException;
 import io.camunda.client.api.command.ClientHttpException;
 import io.camunda.client.api.command.MalformedResponseException;
@@ -110,7 +111,8 @@ final class ApiCallback<HttpT, RespT> implements FutureCallback<ApiResponse<Http
       return;
     }
 
-    response.completeExceptionally(new ProblemException(code, reason, body.problem()));
+    response.completeExceptionally(
+        new ProblemException(code, reason, ResponseMapper.fromProtocolObject(body.problem())));
   }
 
   private void handleSuccessResponse(

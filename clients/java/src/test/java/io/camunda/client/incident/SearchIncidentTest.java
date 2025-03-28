@@ -15,14 +15,10 @@
  */
 package io.camunda.client.incident;
 
-import static io.camunda.client.api.search.response.IncidentErrorType.CALLED_DECISION_ERROR;
-import static io.camunda.client.api.search.response.IncidentState.ACTIVE;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.github.tomakehurst.wiremock.http.RequestMethod;
 import com.github.tomakehurst.wiremock.verification.LoggedRequest;
-import io.camunda.client.api.search.response.IncidentErrorType;
-import io.camunda.client.api.search.response.IncidentState;
 import io.camunda.client.impl.search.request.SearchRequestSort;
 import io.camunda.client.impl.search.request.SearchRequestSortMapper;
 import io.camunda.client.protocol.rest.*;
@@ -72,12 +68,13 @@ public class SearchIncidentTest extends ClientRestTest {
                     .processDefinitionKey(2L)
                     .processDefinitionId("complexProcess")
                     .processInstanceKey(3L)
-                    .errorType(CALLED_DECISION_ERROR)
+                    .errorType(
+                        io.camunda.client.wrappers.IncidentFilter.ErrorType.CALLED_DECISION_ERROR)
                     .errorMessage("Can't decide")
                     .flowNodeId("flowNode")
                     .flowNodeInstanceKey(4L)
                     .creationTime("2024-05-23T23:05:00.000+000")
-                    .state(ACTIVE)
+                    .state(io.camunda.client.wrappers.IncidentFilter.State.ACTIVE)
                     .jobKey(5L)
                     .tenantId("tenant"))
         .send()
@@ -170,55 +167,6 @@ public class SearchIncidentTest extends ClientRestTest {
     assertThat(pageRequest.getSearchAfter()).isEqualTo(Arrays.asList("a"));
   }
 
-  @Test
-  public void shouldConvertIncidentState() {
-
-    for (final IncidentState value : IncidentState.values()) {
-      final IncidentFilter.StateEnum protocolValue = IncidentState.toProtocolState(value);
-      assertThat(protocolValue).isNotNull();
-      if (value == IncidentState.UNKNOWN_ENUM_VALUE) {
-        assertThat(protocolValue).isEqualTo(IncidentFilter.StateEnum.UNKNOWN_DEFAULT_OPEN_API);
-      } else {
-        assertThat(protocolValue.name()).isEqualTo(value.name());
-      }
-    }
-
-    for (final IncidentResult.StateEnum protocolValue : IncidentResult.StateEnum.values()) {
-      final IncidentState value = IncidentState.fromProtocolState(protocolValue);
-      assertThat(value).isNotNull();
-      if (protocolValue == IncidentResult.StateEnum.UNKNOWN_DEFAULT_OPEN_API) {
-        assertThat(value).isEqualTo(IncidentState.UNKNOWN_ENUM_VALUE);
-      } else {
-        assertThat(value.name()).isEqualTo(protocolValue.name());
-      }
-    }
-  }
-
-  @Test
-  public void shouldConvertIncidentErrorType() {
-
-    for (final IncidentErrorType value : IncidentErrorType.values()) {
-      final IncidentFilter.ErrorTypeEnum protocolValue =
-          IncidentErrorType.toProtocolErrorType(value);
-      assertThat(protocolValue).isNotNull();
-      if (value == IncidentErrorType.UNKNOWN_ENUM_VALUE) {
-        assertThat(protocolValue).isEqualTo(IncidentFilter.ErrorTypeEnum.UNKNOWN_DEFAULT_OPEN_API);
-      } else {
-        assertThat(protocolValue.name()).isEqualTo(value.name());
-      }
-    }
-
-    for (final IncidentResult.ErrorTypeEnum protocolValue : IncidentResult.ErrorTypeEnum.values()) {
-      final IncidentErrorType value = IncidentErrorType.fromProtocolErrorType(protocolValue);
-      assertThat(value).isNotNull();
-      if (protocolValue == IncidentResult.ErrorTypeEnum.UNKNOWN_DEFAULT_OPEN_API) {
-        assertThat(value).isEqualTo(IncidentErrorType.UNKNOWN_ENUM_VALUE);
-      } else {
-        assertThat(value.name()).isEqualTo(protocolValue.name());
-      }
-    }
-  }
-
   /*
    * This test is parameterized to test all possible values of the Zeebe Protocol ErrorType enum.
    * The goal is to catch any Zeebe Protocol error types not implemented in the Java client.
@@ -227,7 +175,8 @@ public class SearchIncidentTest extends ClientRestTest {
   @EnumSource(value = ErrorType.class)
   void shouldSearchIncidentByIncidentErrorType(final ErrorType errorType) {
     // given
-    final IncidentErrorType incidentErrorType = IncidentErrorType.valueOf(errorType.name());
+    final io.camunda.client.wrappers.IncidentFilter.ErrorType incidentErrorType =
+        io.camunda.client.wrappers.IncidentFilter.ErrorType.valueOf(errorType.name());
 
     // when
     client
