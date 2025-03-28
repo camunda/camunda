@@ -15,14 +15,16 @@ import {
 } from 'modules/testing-library';
 import {BottomPanel} from '.';
 import {open} from 'modules/mocks/diagrams';
-import {elements, Wrapper} from './tests/mocks';
+import {elements, SOURCE_PROCESS_DEFINITION_KEY, Wrapper} from './tests/mocks';
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
+
+const TARGET_PROCESS_DEFINITION_KEY = '2';
 
 jest.mock('modules/stores/processes/processes.migration', () => ({
   processesStore: {
     migrationState: {selectedTargetProcess: {bpmnProcessId: 'orderProcess'}},
     getSelectedProcessDetails: () => ({bpmnProcessId: 'orderProcess'}),
-    selectedTargetProcessId: 'orderProcess',
+    selectedTargetProcessId: TARGET_PROCESS_DEFINITION_KEY,
   },
 }));
 
@@ -83,6 +85,7 @@ const getMatcherFunction = (flowNodeName: string): MatcherFunction => {
 
 describe('MigrationView/BottomPanel', () => {
   it('should render source flow nodes', async () => {
+    mockFetchProcessDefinitionXml().withSuccess(open('instanceMigration.bpmn'));
     mockFetchProcessDefinitionXml().withSuccess(open('instanceMigration.bpmn'));
 
     render(<BottomPanel />, {wrapper: Wrapper});
@@ -235,6 +238,9 @@ describe('MigrationView/BottomPanel', () => {
       mockFetchProcessDefinitionXml().withSuccess(
         open('instanceMigration.bpmn'),
       );
+      mockFetchProcessDefinitionXml().withSuccess(
+        open('instanceMigration.bpmn'),
+      );
 
       const {user} = render(<BottomPanel />, {wrapper: Wrapper});
 
@@ -283,6 +289,9 @@ describe('MigrationView/BottomPanel', () => {
       mockFetchProcessDefinitionXml().withSuccess(
         open('instanceMigration.bpmn'),
       );
+      mockFetchProcessDefinitionXml().withSuccess(
+        open('instanceMigration.bpmn'),
+      );
 
       render(<BottomPanel />, {wrapper: Wrapper});
 
@@ -300,9 +309,14 @@ describe('MigrationView/BottomPanel', () => {
   );
 
   it('should auto-map flow nodes', async () => {
-    mockFetchProcessDefinitionXml().withSuccess(
-      open('instanceMigration_v2.bpmn'),
-    );
+    // source process definition
+    mockFetchProcessDefinitionXml({
+      processDefinitionKey: SOURCE_PROCESS_DEFINITION_KEY,
+    }).withSuccess(open('instanceMigration.bpmn'));
+    // target process definition
+    mockFetchProcessDefinitionXml({
+      processDefinitionKey: TARGET_PROCESS_DEFINITION_KEY,
+    }).withSuccess(open('instanceMigration_v2.bpmn'));
 
     render(<BottomPanel />, {wrapper: Wrapper});
 
@@ -473,9 +487,14 @@ describe('MigrationView/BottomPanel', () => {
   });
 
   it('should add tags for unmapped flow nodes', async () => {
-    mockFetchProcessDefinitionXml().withSuccess(
-      open('instanceMigration_v2.bpmn'),
-    );
+    // source process definition
+    mockFetchProcessDefinitionXml({
+      processDefinitionKey: SOURCE_PROCESS_DEFINITION_KEY,
+    }).withSuccess(open('instanceMigration.bpmn'));
+    // target process definition
+    mockFetchProcessDefinitionXml({
+      processDefinitionKey: TARGET_PROCESS_DEFINITION_KEY,
+    }).withSuccess(open('instanceMigration_v2.bpmn'));
 
     const {user} = render(<BottomPanel />, {wrapper: Wrapper});
 
@@ -642,9 +661,12 @@ describe('MigrationView/BottomPanel', () => {
   });
 
   it('should hide mapped flow nodes', async () => {
-    mockFetchProcessDefinitionXml().withSuccess(
-      open('instanceMigration_v2.bpmn'),
-    );
+    mockFetchProcessDefinitionXml({
+      processDefinitionKey: SOURCE_PROCESS_DEFINITION_KEY,
+    }).withSuccess(open('instanceMigration.bpmn'));
+    mockFetchProcessDefinitionXml({
+      processDefinitionKey: TARGET_PROCESS_DEFINITION_KEY,
+    }).withSuccess(open('instanceMigration_v2.bpmn'));
 
     const {user} = render(<BottomPanel />, {wrapper: Wrapper});
 

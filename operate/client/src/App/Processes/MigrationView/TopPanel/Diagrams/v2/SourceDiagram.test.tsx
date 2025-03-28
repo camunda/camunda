@@ -7,31 +7,25 @@
  */
 
 import {render, screen} from 'modules/testing-library';
-import {mockFetchGroupedProcesses} from 'modules/mocks/api/processes/fetchGroupedProcesses';
-import {
-  groupedProcessesMock,
-  mockProcessStatisticsV2,
-  mockProcessXML,
-} from 'modules/testUtils';
+import {mockProcessStatisticsV2, mockProcessXML} from 'modules/testUtils';
 import {processesStore} from 'modules/stores/processes/processes.migration';
 import {SourceDiagram} from './SourceDiagram';
-import {processXmlStore} from 'modules/stores/processXml/processXml.migration.source';
 import {mockFetchProcessInstancesStatistics} from 'modules/mocks/api/v2/processInstances/fetchProcessInstancesStatistics';
 import {QueryClientProvider} from '@tanstack/react-query';
 import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
 import {processInstanceMigrationStore} from 'modules/stores/processInstanceMigration';
 import {useEffect} from 'react';
 import {processInstancesSelectionStore} from 'modules/stores/processInstancesSelection';
+import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
 
 jest.mock('modules/hooks/useProcessInstancesFilters');
+jest.mock('modules/stores/processes/processes.migration');
 
 const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
   useEffect(() => {
     return () => {
-      processesStore.reset();
       processInstanceMigrationStore.reset();
       processInstancesSelectionStore.reset();
-      processXmlStore.reset();
     };
   });
 
@@ -65,8 +59,17 @@ const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
 };
 
 describe('Source Diagram', () => {
+  beforeEach(() => {
+    // @ts-expect-error
+    processesStore.getSelectedProcessDetails.mockReturnValue({
+      processName: 'New demo process',
+      version: '3',
+      bpmnProcessId: 'demoProcess',
+    });
+  });
+
   it('should render process name and version', async () => {
-    mockFetchGroupedProcesses().withSuccess(groupedProcessesMock);
+    mockFetchProcessDefinitionXml().withSuccess(mockProcessXML);
 
     const originalWindow = {...window};
     const locationSpy = jest.spyOn(window, 'location', 'get');
@@ -76,7 +79,6 @@ describe('Source Diagram', () => {
       search: '?active=true&incidents=true&process=demoProcess&version=3',
     }));
 
-    processesStore.fetchProcesses();
     render(<SourceDiagram />, {wrapper: Wrapper});
 
     expect(await screen.findByText('New demo process')).toBeInTheDocument();
@@ -88,7 +90,8 @@ describe('Source Diagram', () => {
   });
 
   it('should render xml', async () => {
-    processXmlStore.setProcessXml(mockProcessXML);
+    processInstanceMigrationStore.setSourceProcessDefinitionKey('123');
+    mockFetchProcessDefinitionXml().withSuccess(mockProcessXML);
 
     render(<SourceDiagram />, {wrapper: Wrapper});
 
@@ -99,7 +102,8 @@ describe('Source Diagram', () => {
   });
 
   it('should render statistics overlays', async () => {
-    processXmlStore.setProcessXml(mockProcessXML);
+    processInstanceMigrationStore.setSourceProcessDefinitionKey('123');
+    mockFetchProcessDefinitionXml().withSuccess(mockProcessXML);
     processInstancesSelectionStore.setselectedProcessInstanceIds([
       'processInstance1',
     ]);

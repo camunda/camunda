@@ -6,18 +6,24 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {waitFor} from '@testing-library/react';
-import {processXmlStore} from './processXml.migration.source';
-import {mockFetchProcessXML} from 'modules/mocks/api/processes/fetchProcessXML';
+import {renderHook, waitFor} from '@testing-library/react';
+import {QueryClientProvider} from '@tanstack/react-query';
+import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
+import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
+import {useMigrationSourceXml} from './useMigrationSourceXml';
 import {open} from 'modules/mocks/diagrams';
-import {processesStore} from '../processes/processes.migration';
+import {processesStore} from 'modules/stores/processes/processes.migration';
 
 jest.mock('modules/stores/processes/processes.migration');
 
-describe('stores/processXml/processXml.migration.source', () => {
-  afterEach(() => {
-    processXmlStore.reset();
-  });
+describe('useMigrationSourceXml', () => {
+  const wrapper = ({children}: {children: React.ReactNode}) => {
+    return (
+      <QueryClientProvider client={getMockQueryClient()}>
+        {children}
+      </QueryClientProvider>
+    );
+  };
 
   it('should filter selectable flow nodes', async () => {
     // @ts-expect-error
@@ -25,14 +31,23 @@ describe('stores/processXml/processXml.migration.source', () => {
       bpmnProcessId: 'orderProcess',
     });
 
-    mockFetchProcessXML().withSuccess(open('instanceMigration.bpmn'));
+    mockFetchProcessDefinitionXml().withSuccess(open('instanceMigration.bpmn'));
 
-    processXmlStore.fetchProcessXml('1');
-    expect(processXmlStore.state.status).toBe('fetching');
-    await waitFor(() => expect(processXmlStore.state.status).toBe('fetched'));
+    const {result} = renderHook(
+      () =>
+        useMigrationSourceXml({
+          processDefinitionKey: '27589024892748902347',
+          bpmnProcessId: 'orderProcess',
+        }),
+      {
+        wrapper,
+      },
+    );
+
+    await waitFor(() => expect(result.current.data).toBeDefined());
 
     expect(
-      processXmlStore.selectableFlowNodes.map((flowNode) => flowNode.id),
+      result.current.data?.selectableFlowNodes.map((flowNode) => flowNode.id),
     ).toEqual([
       'checkPayment',
       'ExclusiveGateway',
@@ -83,14 +98,25 @@ describe('stores/processXml/processXml.migration.source', () => {
       bpmnProcessId: 'ParticipantMigrationA',
     });
 
-    mockFetchProcessXML().withSuccess(open('ParticipantMigration_v1.bpmn'));
+    mockFetchProcessDefinitionXml().withSuccess(
+      open('ParticipantMigration_v1.bpmn'),
+    );
 
-    processXmlStore.fetchProcessXml('1');
-    expect(processXmlStore.state.status).toBe('fetching');
-    await waitFor(() => expect(processXmlStore.state.status).toBe('fetched'));
+    const {result} = renderHook(
+      () =>
+        useMigrationSourceXml({
+          processDefinitionKey: '27589024892748902347',
+          bpmnProcessId: 'ParticipantMigrationA',
+        }),
+      {
+        wrapper,
+      },
+    );
+
+    await waitFor(() => expect(result.current.data).toBeDefined());
 
     expect(
-      processXmlStore.selectableFlowNodes.map((flowNode) => flowNode.id),
+      result.current.data?.selectableFlowNodes.map((flowNode) => flowNode.id),
     ).toEqual(['TaskA']);
   });
 
@@ -100,14 +126,25 @@ describe('stores/processXml/processXml.migration.source', () => {
       bpmnProcessId: 'ParticipantMigrationB',
     });
 
-    mockFetchProcessXML().withSuccess(open('ParticipantMigration_v1.bpmn'));
+    mockFetchProcessDefinitionXml().withSuccess(
+      open('ParticipantMigration_v1.bpmn'),
+    );
 
-    processXmlStore.fetchProcessXml('1');
-    expect(processXmlStore.state.status).toBe('fetching');
-    await waitFor(() => expect(processXmlStore.state.status).toBe('fetched'));
+    const {result} = renderHook(
+      () =>
+        useMigrationSourceXml({
+          processDefinitionKey: '27589024892748902347',
+          bpmnProcessId: 'ParticipantMigrationB',
+        }),
+      {
+        wrapper,
+      },
+    );
+
+    await waitFor(() => expect(result.current.data).toBeDefined());
 
     expect(
-      processXmlStore.selectableFlowNodes.map((flowNode) => flowNode.id),
+      result.current.data?.selectableFlowNodes.map((flowNode) => flowNode.id),
     ).toEqual(['TaskB']);
   });
 });

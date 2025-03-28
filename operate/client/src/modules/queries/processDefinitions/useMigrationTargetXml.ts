@@ -47,15 +47,13 @@ function migrationTargetXmlParser({
 
 function useMigrationTargetXml({
   processDefinitionKey,
-  enabled,
 }: {
-  processDefinitionKey: string;
-  enabled?: boolean;
+  processDefinitionKey?: string;
 }) {
   return useProcessDefinitionXml({
     processDefinitionKey,
     select: migrationTargetXmlParser,
-    enabled,
+    enabled: !!processDefinitionKey,
   });
 }
 

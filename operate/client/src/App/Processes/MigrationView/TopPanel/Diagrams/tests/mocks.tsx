@@ -9,7 +9,6 @@
 import {useEffect} from 'react';
 import {processInstanceMigrationStore} from 'modules/stores/processInstanceMigration';
 import {processStatisticsStore} from 'modules/stores/processStatistics/processStatistics.migration.source';
-import {processXmlStore as processXmlSourceStore} from 'modules/stores/processXml/processXml.migration.source';
 import {processesStore} from 'modules/stores/processes/processes.list';
 import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
 import {QueryClientProvider} from '@tanstack/react-query';
@@ -23,7 +22,6 @@ const Wrapper = ({children}: Props) => {
     return () => {
       processesStore.reset();
       processInstanceMigrationStore.reset();
-      processXmlSourceStore.reset();
       processStatisticsStore.reset();
     };
   });

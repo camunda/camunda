@@ -15,7 +15,6 @@ import {TopPanel} from './TopPanel';
 import {BottomPanel} from './BottomPanel';
 import {Footer} from './Footer';
 import {PAGE_TITLE} from 'modules/constants';
-import {processXmlStore as processXmlMigrationSourceStore} from 'modules/stores/processXml/processXml.migration.source';
 import {MigrationSummaryNotification} from './MigrationSummaryNotification';
 import {observer} from 'mobx-react';
 
@@ -30,7 +29,6 @@ const MigrationView: React.FC = observer(() => {
 
     return () => {
       processesStore.reset();
-      processXmlMigrationSourceStore.reset();
     };
   }, []);
 

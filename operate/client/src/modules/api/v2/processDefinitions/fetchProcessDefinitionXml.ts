@@ -8,7 +8,7 @@
 
 import {RequestResult, requestWithThrow} from 'modules/request';
 
-type ProcessDefinitionKey = string | undefined;
+type ProcessDefinitionKey = string;
 type ProcessDefinitionXmlDto = string;
 
 const fetchProcessDefinitionXml = async (

@@ -14,7 +14,6 @@ import {Restricted} from 'modules/components/Restricted';
 import {processInstancesSelectionStore} from 'modules/stores/processInstancesSelection';
 import {getProcessInstanceFilters} from 'modules/utils/filter/getProcessInstanceFilters';
 import {processInstanceMigrationStore} from 'modules/stores/processInstanceMigration';
-import {processXmlStore as processXmlMigrationSourceStore} from 'modules/stores/processXml/processXml.migration.source';
 import {processXmlStore} from 'modules/stores/processXml/processXml.list';
 import {processesStore} from 'modules/stores/processes/processes.list';
 import {ModalStateManager} from 'modules/components/ModalStateManager';
@@ -62,7 +61,13 @@ const MigrateAction: React.FC = observer(() => {
   };
 
   const handleSubmit = () => {
-    processXmlMigrationSourceStore.setProcessXml(processXmlStore.state.xml);
+    processInstanceMigrationStore.setSourceProcessDefinitionKey(
+      processesStore.getProcessId({
+        process,
+        tenant,
+        version,
+      }),
+    );
 
     const requestFilterParameters = {
       ...getProcessInstancesRequestFilters(),
