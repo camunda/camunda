@@ -3017,7 +3017,7 @@ final class JsonSerializableToJsonTest {
         "mappingKey": 1,
         "claimName": "claimName",
         "claimValue": "claimValue",
-        "id": "id1",
+        "mappingId": "id1",
         "name": "name"
       }
       """
@@ -3033,7 +3033,7 @@ final class JsonSerializableToJsonTest {
         "mappingKey": -1,
         "claimName": "",
         "claimValue": "",
-        "id": "",
+        "mappingId": "",
         "name": ""
       }
       """
@@ -3121,14 +3121,14 @@ final class JsonSerializableToJsonTest {
         "mappings": [
           {
             "mappingKey": 6,
-            "id": "id1",
+            "mappingId": "id1",
             "claimName": "claim1",
             "claimValue": "value1",
             "name": "Claim 1"
           },
           {
             "mappingKey": 7,
-            "id": "id2",
+            "mappingId": "id2",
             "claimName": "claim2",
             "claimValue": "value2",
             "name": "Claim 2"
