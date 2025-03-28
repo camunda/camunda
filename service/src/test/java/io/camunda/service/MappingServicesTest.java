@@ -153,7 +153,7 @@ public class MappingServicesTest {
             mockBrokerClient, mock(SecurityContextProvider.class), client, testAuthentication);
 
     final var mappingRecord = new MappingRecord();
-    mappingRecord.setId("id");
+    mappingRecord.setMappingId("id");
     when(mockBrokerClient.sendRequest(any()))
         .thenReturn(CompletableFuture.completedFuture(new BrokerResponse<>(mappingRecord)));
 
@@ -163,7 +163,7 @@ public class MappingServicesTest {
     // then
     verify(mockBrokerClient).sendRequest(mappingDeleteRequestArgumentCaptor.capture());
     final var request = mappingDeleteRequestArgumentCaptor.getValue();
-    assertThat(request.getRequestWriter().getId()).isEqualTo("id");
+    assertThat(request.getRequestWriter().getMappingId()).isEqualTo("id");
   }
 
   @Test
