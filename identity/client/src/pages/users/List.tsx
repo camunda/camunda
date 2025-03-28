@@ -41,7 +41,7 @@ const List: FC = () => {
 
   const pageHeader = (
     <PageHeader
-      title={t("Users")}
+      title={t("users")}
       linkText="users"
       linkUrl="/concepts/users/"
     />
