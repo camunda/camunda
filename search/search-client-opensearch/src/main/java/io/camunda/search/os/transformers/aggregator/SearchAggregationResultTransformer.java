@@ -8,8 +8,8 @@
 package io.camunda.search.os.transformers.aggregator;
 
 import io.camunda.search.clients.transformers.SearchTransfomer;
-import io.camunda.search.clients.transformers.aggregation.result.SearchAggregationResult;
-import io.camunda.search.clients.transformers.aggregation.result.SearchAggregationResult.Builder;
+import io.camunda.search.clients.transformers.aggregation.result.AggregationResult;
+import io.camunda.search.clients.transformers.aggregation.result.AggregationResult.Builder;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -23,14 +23,14 @@ import org.opensearch.client.opensearch._types.aggregations.StringTermsBucket;
 import org.opensearch.client.opensearch.core.SearchResponse;
 
 public class SearchAggregationResultTransformer
-    implements SearchTransfomer<SearchResponse<?>, SearchAggregationResult> {
+    implements SearchTransfomer<SearchResponse<?>, AggregationResult> {
 
   @Override
-  public SearchAggregationResult apply(final SearchResponse<?> value) {
+  public AggregationResult apply(final SearchResponse<?> value) {
     return new Builder().aggregations(transformAggregation(value.aggregations())).build();
   }
 
-  private SearchAggregationResult transformSingleBucketAggregate(
+  private AggregationResult transformSingleBucketAggregate(
       final SingleBucketAggregateBase aggregate) {
     return new Builder()
         .docCount(aggregate.docCount())
@@ -38,9 +38,9 @@ public class SearchAggregationResultTransformer
         .build();
   }
 
-  private <B extends MultiBucketBase> SearchAggregationResult transformMultiBucketAggregate(
+  private <B extends MultiBucketBase> AggregationResult transformMultiBucketAggregate(
       final MultiBucketAggregateBase<B> aggregate) {
-    final var map = new HashMap<String, SearchAggregationResult>();
+    final var map = new HashMap<String, AggregationResult>();
     final var buckets = aggregate.buckets();
     if (buckets.isKeyed()) {
       buckets
@@ -77,16 +77,16 @@ public class SearchAggregationResultTransformer
     return new Builder().aggregations(map).build();
   }
 
-  private Map<String, SearchAggregationResult> transformAggregation(
+  private Map<String, AggregationResult> transformAggregation(
       final Map<String, Aggregate> aggregations) {
     if (aggregations.isEmpty()) {
       return null;
     }
 
-    final var result = new HashMap<String, SearchAggregationResult>();
+    final var result = new HashMap<String, AggregationResult>();
     aggregations.forEach(
         (key, aggregate) -> {
-          final SearchAggregationResult res;
+          final AggregationResult res;
           switch (Objects.requireNonNull(aggregate._kind())) {
             case Children -> res = transformSingleBucketAggregate(aggregate.children());
             case Filter -> res = transformSingleBucketAggregate(aggregate.filter());

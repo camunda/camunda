@@ -13,7 +13,7 @@ import co.elastic.clients.json.jackson.JacksonJsonpParser;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.core.JsonParser.Feature;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.camunda.search.clients.transformers.aggregation.result.SearchAggregationResult;
+import io.camunda.search.clients.transformers.aggregation.result.AggregationResult;
 import io.camunda.search.es.transformers.ElasticsearchTransformers;
 import java.io.IOException;
 import java.util.stream.Stream;
@@ -23,7 +23,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
-public class SearchAggregationResultTransformerTest {
+public class AggregationResultTransformerTest {
 
   public static final String RESPONSE_BASE =
       """
@@ -49,8 +49,8 @@ public class SearchAggregationResultTransformerTest {
   public void before() throws IOException {
     transformer =
         (SearchAggregationResultTransformer)
-            transformers.<SearchResponse<?>, SearchAggregationResult>getTransformer(
-                SearchAggregationResult.class);
+            transformers.<SearchResponse<?>, AggregationResult>getTransformer(
+                AggregationResult.class);
   }
 
   private static Stream<Arguments> provideAggregations() {

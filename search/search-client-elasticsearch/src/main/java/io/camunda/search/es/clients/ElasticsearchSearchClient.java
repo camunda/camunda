@@ -28,7 +28,7 @@ import io.camunda.search.clients.core.SearchQueryRequest;
 import io.camunda.search.clients.core.SearchQueryResponse;
 import io.camunda.search.clients.core.SearchWriteResponse;
 import io.camunda.search.clients.transformers.SearchTransfomer;
-import io.camunda.search.clients.transformers.aggregation.result.SearchAggregationResult;
+import io.camunda.search.clients.transformers.aggregation.result.AggregationResult;
 import io.camunda.search.es.transformers.ElasticsearchTransformers;
 import io.camunda.search.es.transformers.aggregator.SearchAggregationResultTransformer;
 import io.camunda.search.es.transformers.search.SearchDeleteRequestTransformer;
@@ -133,7 +133,7 @@ public class ElasticsearchSearchClient
   }
 
   @Override
-  public SearchAggregationResult aggregate(final SearchQueryRequest searchRequest) {
+  public AggregationResult aggregate(final SearchQueryRequest searchRequest) {
     try {
       final var requestTransformer = getSearchRequestTransformer();
       final var request = requestTransformer.apply(searchRequest);
@@ -234,8 +234,8 @@ public class ElasticsearchSearchClient
   }
 
   private SearchAggregationResultTransformer getSearchAggregationResultTransformer() {
-    final SearchTransfomer<SearchResponse<?>, SearchAggregationResult> transformer =
-        transformers.getTransformer(SearchAggregationResult.class);
+    final SearchTransfomer<SearchResponse<?>, AggregationResult> transformer =
+        transformers.getTransformer(AggregationResult.class);
     return (SearchAggregationResultTransformer) transformer;
   }
 

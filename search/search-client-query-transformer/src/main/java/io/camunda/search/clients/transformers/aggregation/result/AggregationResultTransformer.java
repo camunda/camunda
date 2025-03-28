@@ -10,5 +10,5 @@ package io.camunda.search.clients.transformers.aggregation.result;
 import io.camunda.search.aggregation.result.AggregationResultBase;
 import io.camunda.search.clients.transformers.ServiceTransformer;
 
-public interface SearchAggregationResultTransformer<A extends AggregationResultBase>
-    extends ServiceTransformer<SearchAggregationResult, A> {}
+public interface AggregationResultTransformer<A extends AggregationResultBase>
+    extends ServiceTransformer<AggregationResult, A> {}
