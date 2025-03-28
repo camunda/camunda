@@ -158,8 +158,12 @@ public class MappingQueryControllerTest extends RestControllerTest {
              ],
              "page": {
                "totalItems": 3,
-               "firstSortValues": ["f"],
-               "lastSortValues": ["v"]
+            "firstSortValues": [
+              { "value": "\\"f\\"", "type": "string" }
+            ],
+            "lastSortValues": [
+              { "value": "\\"v\\"", "type": "string" }
+            ]
              }
            }""");
 

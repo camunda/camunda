@@ -66,6 +66,8 @@ import io.camunda.zeebe.gateway.protocol.rest.MappingResult;
 import io.camunda.zeebe.gateway.protocol.rest.MappingSearchQueryResult;
 import io.camunda.zeebe.gateway.protocol.rest.MatchedDecisionRuleItem;
 import io.camunda.zeebe.gateway.protocol.rest.OwnerTypeEnum;
+import io.camunda.zeebe.gateway.protocol.rest.PageObject;
+import io.camunda.zeebe.gateway.protocol.rest.PageObject.TypeEnum;
 import io.camunda.zeebe.gateway.protocol.rest.PermissionTypeEnum;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessDefinitionFlowNodeStatisticsQueryResult;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessDefinitionFlowNodeStatisticsResult;
@@ -285,10 +287,35 @@ public final class SearchQueryResponseMapper {
   private static SearchQueryPageResponse toSearchQueryPageResponse(
       final SearchQueryResult<?> result) {
 
-    final List<Object> firstSortValues =
-        ofNullable(result.firstSortValues()).map(Arrays::asList).orElse(emptyList());
-    final List<Object> lastSortValues =
-        ofNullable(result.lastSortValues()).map(Arrays::asList).orElse(emptyList());
+    final List<PageObject> firstSortValues =
+        ofNullable(result.firstSortValues())
+            .map(
+                array ->
+                    Arrays.stream(array)
+                        .map(
+                            obj -> {
+                              final String type = determineValueType(obj);
+                              return new PageObject()
+                                  .value(serializeValueToString(obj))
+                                  .type(TypeEnum.valueOf(type));
+                            })
+                        .collect(Collectors.toList()))
+            .orElse(emptyList());
+
+    final List<PageObject> lastSortValues =
+        ofNullable(result.lastSortValues())
+            .map(
+                array ->
+                    Arrays.stream(array)
+                        .map(
+                            obj -> {
+                              final String type = determineValueType(obj);
+                              return new PageObject()
+                                  .value(serializeValueToString(obj))
+                                  .type(TypeEnum.valueOf(type));
+                            })
+                        .collect(Collectors.toList()))
+            .orElse(emptyList());
 
     return new SearchQueryPageResponse()
         .totalItems(result.total())
@@ -745,6 +772,35 @@ public final class SearchQueryResponseMapper {
       return ProcessInstanceStateEnum.TERMINATED;
     }
     return ProcessInstanceStateEnum.fromValue(value.name());
+  }
+
+  private static String determineValueType(final Object value) {
+    if (value instanceof Boolean) {
+      return TypeEnum.BOOLEAN.name();
+    }
+    if (value instanceof String) {
+      return TypeEnum.STRING.name();
+    }
+    if (value instanceof Integer || value instanceof Long) {
+      return TypeEnum.INT64.name();
+    }
+    if (value instanceof Float || value instanceof Double) {
+      return TypeEnum.FLOAT.name();
+    }
+
+    return TypeEnum.OBJECT.name(); // Fallback
+  }
+
+  private static String serializeValueToString(final Object value) {
+    if (value == null) {
+      return null;
+    }
+
+    if (value instanceof String) {
+      return "\"" + value + "\"";
+    }
+
+    return value.toString();
   }
 
   private record RuleIdentifier(String ruleId, int ruleIndex) {}

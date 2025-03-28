@@ -57,9 +57,11 @@ public class DecisionDefinitionQueryControllerTest extends RestControllerTest {
               ],
               "page": {
                   "totalItems": 1,
-                  "firstSortValues": ["f"],
+                   "firstSortValues": [
+                    { "value": "\\"f\\"", "type": "string" }
+                  ],
                   "lastSortValues": [
-                      "v"
+                    { "value": "\\"v\\"", "type": "string" }
                   ]
               }
           }""";

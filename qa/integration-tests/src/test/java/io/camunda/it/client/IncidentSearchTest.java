@@ -21,6 +21,8 @@ import io.camunda.client.api.command.ProblemException;
 import io.camunda.client.api.response.Process;
 import io.camunda.client.api.search.response.Incident;
 import io.camunda.client.api.search.response.IncidentErrorType;
+import io.camunda.client.protocol.rest.PageObject;
+import io.camunda.client.protocol.rest.PageObject.TypeEnum;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.webapps.schema.entities.operate.ErrorType;
 import java.util.ArrayList;
@@ -511,7 +513,14 @@ class IncidentSearchTest {
     final var resultSearchAfter =
         camundaClient
             .newIncidentSearchRequest()
-            .page(p -> p.limit(2).searchAfter(Collections.singletonList(secondIncidentKey)))
+            .page(
+                p ->
+                    p.limit(2)
+                        .searchAfter(
+                            Collections.singletonList(
+                                new PageObject()
+                                    .value(String.valueOf(secondIncidentKey))
+                                    .type(TypeEnum.INT64))))
             .send()
             .join();
 
@@ -531,7 +540,15 @@ class IncidentSearchTest {
     final var resultSearchBefore =
         camundaClient
             .newIncidentSearchRequest()
-            .page(p -> p.limit(2).searchBefore(Collections.singletonList(secondIncidentKey)))
+            .page(
+                p ->
+                    p.limit(2)
+                        .searchAfter(null)
+                        .searchBefore(
+                            Collections.singletonList(
+                                new PageObject()
+                                    .value(String.valueOf(secondIncidentKey))
+                                    .type(TypeEnum.INT64))))
             .send()
             .join();
 
