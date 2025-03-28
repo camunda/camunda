@@ -10,6 +10,8 @@ package io.camunda.search.clients.transformers.filter;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.search.clients.query.SearchBoolQuery;
+import io.camunda.search.clients.query.SearchHasChildQuery;
+import io.camunda.search.clients.query.SearchMatchQuery;
 import io.camunda.search.clients.query.SearchQueryOption;
 import io.camunda.search.clients.query.SearchRangeQuery;
 import io.camunda.search.clients.query.SearchTermQuery;
@@ -366,6 +368,49 @@ public final class ProcessInstanceQueryTransformerTest extends AbstractTransform
   }
 
   @Test
+  public void shouldQueryByErrorMessage() {
+    // given
+    final String expectedError = "expected error";
+    final ProcessInstanceFilter filter =
+        FilterBuilders.processInstance(
+            f -> f.errorMessageOperations(List.of(Operation.eq(expectedError))));
+
+    // when: transform the filter into a SearchQuery
+    final var searchRequest = transformQuery(filter);
+
+    // then: the overall query should be a SearchBoolQuery with two must clauses.
+    final var queryVariant = searchRequest.queryOption();
+    assertThat(queryVariant).isInstanceOf(SearchBoolQuery.class);
+    final SearchBoolQuery boolQuery = (SearchBoolQuery) queryVariant;
+
+    // Expect two must clauses: one for joinRelation and one for errorMessage.
+    assertThat(boolQuery.must()).hasSize(2);
+
+    // First must clause: joinRelation term query.
+    assertIsSearchTermQuery(
+        boolQuery.must().get(0).queryOption(), "joinRelation", "processInstance");
+
+    // Second must clause: should be a has_child query for errorMessage.
+    assertThat(boolQuery.must().get(1).queryOption())
+        .isInstanceOf(SearchHasChildQuery.class)
+        .satisfies(
+            queryOption -> {
+              // Cast the queryOption to SearchHasChildQuery
+              final SearchHasChildQuery hasChildQuery = (SearchHasChildQuery) queryOption;
+              assertThat(hasChildQuery.type()).isEqualTo("activity");
+              // Assert that the inner query is a match query on "errorMessage" with our
+              // expected value.
+              assertThat(hasChildQuery.query().queryOption())
+                  .isInstanceOfSatisfying(
+                      SearchMatchQuery.class,
+                      (searchMatchQuery) -> {
+                        assertThat(searchMatchQuery.field()).isEqualTo("errorMessage");
+                        assertThat(searchMatchQuery.query()).isEqualTo(expectedError);
+                      });
+            });
+  }
+
+  @Test
   public void shouldCreateDefaultFilter() {
     // given
 
@@ -386,6 +431,7 @@ public final class ProcessInstanceQueryTransformerTest extends AbstractTransform
     assertThat(processInstanceFilter.stateOperations()).isEmpty();
     assertThat(processInstanceFilter.hasIncident()).isNull();
     assertThat(processInstanceFilter.tenantIdOperations()).isEmpty();
+    assertThat(processInstanceFilter.errorMessageOperations()).isEmpty();
   }
 
   private void assertIsSearchTermQuery(
@@ -398,6 +444,19 @@ public final class ProcessInstanceQueryTransformerTest extends AbstractTransform
             (searchTermQuery) -> {
               assertThat(searchTermQuery.field()).isEqualTo(expectedField);
               assertThat(searchTermQuery.value().stringValue()).isEqualTo(expectedValue);
+            });
+  }
+
+  private void assertIsSearchMatchQuery(
+      final SearchQueryOption searchQueryOption,
+      final String expectedField,
+      final String expectedValue) {
+    assertThat(searchQueryOption)
+        .isInstanceOfSatisfying(
+            SearchMatchQuery.class,
+            (searchMatchQuery) -> {
+              assertThat(searchMatchQuery.field()).isEqualTo(expectedField);
+              assertThat(searchMatchQuery.query()).isEqualTo(expectedValue);
             });
   }
 

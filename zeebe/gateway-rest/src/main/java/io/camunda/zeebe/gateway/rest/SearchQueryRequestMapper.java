@@ -648,6 +648,9 @@ public final class SearchQueryRequestMapper {
           builder.variables(either.get());
         }
       }
+      ofNullable(filter.getErrorMessage())
+          .map(mapToOperations(String.class))
+          .ifPresent(builder::errorMessageOperations);
     }
     return validationErrors.isEmpty()
         ? Either.right(builder.build())

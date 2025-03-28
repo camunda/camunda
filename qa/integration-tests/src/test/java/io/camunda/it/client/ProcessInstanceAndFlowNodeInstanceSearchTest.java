@@ -42,9 +42,10 @@ import org.junit.jupiter.api.Test;
 @MultiDbTest
 public class ProcessInstanceAndFlowNodeInstanceSearchTest {
 
+  public static final String EXPECTED_ERROR =
+      "Expected result of the expression 'retriesA' to be 'NUMBER', but was 'STRING'.";
   static final List<Process> DEPLOYED_PROCESSES = new ArrayList<>();
   static final List<ProcessInstanceEvent> PROCESS_INSTANCES = new ArrayList<>();
-
   private static FlowNodeInstance flowNodeInstance;
   private static FlowNodeInstance flowNodeInstanceWithIncident;
   private static CamundaClient camundaClient;
@@ -1198,5 +1199,127 @@ public class ProcessInstanceAndFlowNodeInstanceSearchTest {
     assertThat(resultSearchFrom.items().size()).isEqualTo(2);
     assertThat(resultSearchFrom.items().stream().findFirst().get().getFlowNodeInstanceKey())
         .isEqualTo(thirdKey);
+  }
+
+  @Test
+  void shouldQueryProcessInstancesByErrorMessageEqual() {
+    // when:
+    final var result =
+        camundaClient
+            .newProcessInstanceSearchRequest()
+            .filter(b -> b.errorMessage(f -> f.eq(EXPECTED_ERROR)))
+            .send()
+            .join();
+
+    // then:
+    assertThat(result.items().size()).isEqualTo(1);
+    assertThat(result.items().getFirst().getProcessDefinitionId()).isEqualTo("incident_process_v1");
+  }
+
+  @Test
+  void shouldQueryProcessInstancesByErrorMessageNotEqual() {
+    // when:
+    final var result =
+        camundaClient
+            .newProcessInstanceSearchRequest()
+            .filter(b -> b.errorMessage(f -> f.neq(EXPECTED_ERROR)))
+            .send()
+            .join();
+
+    // then:
+    assertThat(result.items().size()).isEqualTo(0);
+  }
+
+  @Test
+  void shouldQueryProcessInstancesByErrorMessageExists() {
+    // when:
+    final var result =
+        camundaClient
+            .newProcessInstanceSearchRequest()
+            .filter(b -> b.errorMessage(f -> f.exists(true)))
+            .send()
+            .join();
+
+    // then:
+    assertThat(result.items().size()).isEqualTo(1);
+    assertThat(result.items()).extracting("processDefinitionId").contains("incident_process_v1");
+  }
+
+  @Test
+  void shouldQueryProcessInstancesByErrorMessageNotExists() {
+    // when:
+    final var result =
+        camundaClient
+            .newProcessInstanceSearchRequest()
+            .filter(b -> b.errorMessage(f -> f.exists(false)))
+            .send()
+            .join();
+
+    // then:
+    assertThat(result.items().size()).isEqualTo(0);
+  }
+
+  @Test
+  void shouldQueryProcessInstancesByErrorMessageIn() {
+    // when:
+    final var result =
+        camundaClient
+            .newProcessInstanceSearchRequest()
+            .filter(b -> b.errorMessage(f -> f.in(EXPECTED_ERROR, "foo")))
+            .send()
+            .join();
+
+    // then:
+    assertThat(result.items().size()).isEqualTo(1);
+    assertThat(result.items()).extracting("processDefinitionId").contains("incident_process_v1");
+  }
+
+  @Test
+  void shouldQueryProcessInstancesByErrorMessageNotIn() {
+    // when:
+    final var result =
+        camundaClient
+            .newProcessInstanceSearchRequest()
+            .filter(b -> b.errorMessage(f -> f.in("foo", "bar")))
+            .send()
+            .join();
+
+    // then:
+    assertThat(result.items().size()).isEqualTo(0);
+  }
+
+  @Test
+  void shouldQueryProcessInstancesByErrorMessageExistsLike() {
+    // given:
+    final String expectedError = "Expect*";
+
+    // when:
+    final var result =
+        camundaClient
+            .newProcessInstanceSearchRequest()
+            .filter(b -> b.errorMessage(f -> f.like(expectedError)))
+            .send()
+            .join();
+
+    // then:
+    assertThat(result.items().size()).isEqualTo(1);
+    assertThat(result.items()).extracting("processDefinitionId").contains("incident_process_v1");
+  }
+
+  @Test
+  void shouldQueryProcessInstancesByErrorMessageLikeAndIn() {
+    // given:
+    final String expectedError = "Expect*";
+
+    // when:
+    final var result =
+        camundaClient
+            .newProcessInstanceSearchRequest()
+            .filter(b -> b.errorMessage(f -> f.like(expectedError).in("foo", "bar")))
+            .send()
+            .join();
+
+    // then:
+    assertThat(result.items().size()).isEqualTo(0);
   }
 }
