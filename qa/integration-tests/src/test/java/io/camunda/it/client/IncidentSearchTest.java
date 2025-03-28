@@ -67,6 +67,7 @@ class IncidentSearchTest {
 
     waitForProcessInstancesToStart(camundaClient, 5);
     waitUntilProcessInstanceHasIncidents(camundaClient, amountOfIncidents);
+    waitUntilIncidentsAreActive(camundaClient, amountOfIncidents);
 
     incident = camundaClient.newIncidentSearchRequest().send().join().items().getFirst();
   }
