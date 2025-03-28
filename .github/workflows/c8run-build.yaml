@@ -13,14 +13,6 @@ on:
     paths:
       - "c8run/**"
       - ".github/workflows/c8run-build.yaml"
-  workflow_dispatch:
-    inputs:
-      alert_slack:
-        description: Set this to force a message on the slack channel. Useful to debug alert issues on slack. NOTE.. This will always say it failed in the channel
-        required: true
-        default: false
-        type: boolean
-
   schedule:
     # Run at 23:30 UTC every day
     - cron: "30 23 * * *"
@@ -57,6 +49,32 @@ jobs:
         uses: golangci/golangci-lint-action@4696ba8babb6127d732c3c6dde519db15edab9ea # v6.5.1
         with:
           working-directory: ./c8run
+
+  test_slack_alert_env_delete_me:
+    name: Testing slack intergration for alert_slack
+    runs-on: ubuntu-latest
+    timeout-minutes: 1
+    steps:
+      - name: Import Secrets
+        id: secrets
+        uses: hashicorp/vault-action@7709c609789c5e27b757a85817483caadbb5939a # v3.3.0
+        with:
+          url: ${{ secrets.VAULT_ADDR }}
+          method: approle
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secrets: |
+            secret/data/products/distribution/ci SLACK_DISTRO_BOT_WEBHOOK;
+
+      - name: Upload message to Slack on failure
+        env:
+          SLACK_WEBHOOK_URL: ${{ steps.secrets.outputs.SLACK_DISTRO_BOT_WEBHOOK }}
+        run: |
+          curl -X POST -H 'Content-type: application/json' \
+          --data '{
+            "text": "Job *${{ github.job }}* in workflow *${{ github.workflow }}* failed for *${{ github.repository }}*!\nBranch: ${{ github.ref }}\nCommit: ${{ github.sha }}\nRun: <${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|View Run>\nLogs: <${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}/artifacts|View Artifacts>"
+          }' \
+          $SLACK_WEBHOOK_URL
 
   camunda-dist-build:
     name: Build camunda-dist
@@ -173,7 +191,7 @@ jobs:
             secret/data/products/distribution/ci SLACK_DISTRO_BOT_WEBHOOK;
 
       - name: Upload message to Slack on failure
-        if: ${{ failure() || github.event.inputs.alert_slack == true }}
+        if: failure()
         env:
           SLACK_WEBHOOK_URL: ${{ steps.secrets.outputs.SLACK_DISTRO_BOT_WEBHOOK }}
         run: |
@@ -308,7 +326,7 @@ jobs:
           retention-days: 10
 
       - name: Upload message to Slack on failure
-        if: ${{ failure() || github.event.inputs.alert_slack == true }}
+        if: failure()
         env:
           SLACK_WEBHOOK_URL: ${{ steps.secrets.outputs.SLACK_DISTRO_BOT_WEBHOOK }}
         run: |
