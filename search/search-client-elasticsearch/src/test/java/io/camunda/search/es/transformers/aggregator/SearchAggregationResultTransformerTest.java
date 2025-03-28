@@ -13,7 +13,7 @@ import co.elastic.clients.json.jackson.JacksonJsonpParser;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.core.JsonParser.Feature;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.camunda.search.clients.transformers.aggregation.SearchAggregationResult;
+import io.camunda.search.clients.transformers.aggregation.result.SearchAggregationResult;
 import io.camunda.search.es.transformers.ElasticsearchTransformers;
 import java.io.IOException;
 import java.util.stream.Stream;

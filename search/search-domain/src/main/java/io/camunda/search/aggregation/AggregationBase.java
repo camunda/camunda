@@ -5,9 +5,6 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.search.clients.transformers.aggregation;
+package io.camunda.search.aggregation;
 
-import io.camunda.search.clients.transformers.ServiceTransformer;
-
-public interface SearchAggregationResultTransformer<T>
-    extends ServiceTransformer<SearchAggregationResult, T> {}
+public interface AggregationBase {}

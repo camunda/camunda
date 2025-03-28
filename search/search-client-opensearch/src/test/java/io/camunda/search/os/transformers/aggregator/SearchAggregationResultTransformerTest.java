@@ -10,7 +10,7 @@ package io.camunda.search.os.transformers.aggregator;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.core.JsonParser.Feature;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.camunda.search.clients.transformers.aggregation.SearchAggregationResult;
+import io.camunda.search.clients.transformers.aggregation.result.SearchAggregationResult;
 import io.camunda.search.os.transformers.OpensearchTransformers;
 import java.io.IOException;
 import java.util.stream.Stream;

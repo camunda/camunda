@@ -14,7 +14,7 @@ import io.camunda.search.clients.core.SearchGetResponse;
 import io.camunda.search.clients.core.SearchQueryRequest;
 import io.camunda.search.clients.core.SearchQueryRequest.Builder;
 import io.camunda.search.clients.core.SearchQueryResponse;
-import io.camunda.search.clients.transformers.aggregation.SearchAggregationResult;
+import io.camunda.search.clients.transformers.aggregation.result.SearchAggregationResult;
 import io.camunda.util.ObjectBuilder;
 import io.camunda.zeebe.util.CloseableSilently;
 import java.util.List;

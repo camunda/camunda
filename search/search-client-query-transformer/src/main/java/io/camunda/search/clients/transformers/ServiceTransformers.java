@@ -7,12 +7,18 @@
  */
 package io.camunda.search.clients.transformers;
 
+import io.camunda.search.aggregation.AggregationBase;
 import io.camunda.search.aggregation.ProcessDefinitionFlowNodeStatisticsAggregation;
+import io.camunda.search.aggregation.result.AggregationResultBase;
+import io.camunda.search.aggregation.result.ProcessDefinitionFlowNodeStatisticsAggregationResult;
+import io.camunda.search.clients.aggregator.SearchAggregator;
 import io.camunda.search.clients.core.SearchQueryRequest;
 import io.camunda.search.clients.query.SearchQuery;
+import io.camunda.search.clients.transformers.aggregation.AggregationTransformer;
 import io.camunda.search.clients.transformers.aggregation.ProcessDefinitionFlowNodeStatisticsAggregationTransformer;
-import io.camunda.search.clients.transformers.aggregation.SearchAggregationResult;
-import io.camunda.search.clients.transformers.aggregation.SearchAggregationResultTransformer;
+import io.camunda.search.clients.transformers.aggregation.result.ProcessDefinitionFlowNodeStatisticsAggregationResultTransformer;
+import io.camunda.search.clients.transformers.aggregation.result.SearchAggregationResult;
+import io.camunda.search.clients.transformers.aggregation.result.SearchAggregationResultTransformer;
 import io.camunda.search.clients.transformers.entity.AuthorizationEntityTransformer;
 import io.camunda.search.clients.transformers.entity.DecisionDefinitionEntityTransformer;
 import io.camunda.search.clients.transformers.entity.DecisionInstanceEntityTransformer;
@@ -52,7 +58,7 @@ import io.camunda.search.clients.transformers.filter.UserFilterTransformer;
 import io.camunda.search.clients.transformers.filter.UserTaskFilterTransformer;
 import io.camunda.search.clients.transformers.filter.VariableFilterTransformer;
 import io.camunda.search.clients.transformers.filter.VariableValueFilterTransformer;
-import io.camunda.search.clients.transformers.query.ProcessDefinitionFlowNodeStatisticsQueryTransformer;
+import io.camunda.search.clients.transformers.query.TypedSearchAggregationQueryTransformer;
 import io.camunda.search.clients.transformers.query.TypedSearchQueryTransformer;
 import io.camunda.search.clients.transformers.result.DecisionInstanceResultConfigTransformer;
 import io.camunda.search.clients.transformers.result.DecisionRequirementsResultConfigTransformer;
@@ -174,6 +180,7 @@ import io.camunda.webapps.schema.entities.usermanagement.TenantMemberEntity;
 import io.camunda.webapps.schema.entities.usermanagement.UserEntity;
 import io.camunda.webapps.schema.entities.usertask.TaskEntity;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
 
@@ -189,11 +196,14 @@ public final class ServiceTransformers {
     return serviceTransformers;
   }
 
-  public <F extends FilterBase, S extends SortOption>
-      TypedSearchQueryTransformer<F, S> getTypedSearchQueryTransformer(final Class<?> cls) {
-    final ServiceTransformer<TypedSearchQuery<F, S>, SearchQueryRequest> transformer =
-        getTransformer(cls);
-    return (TypedSearchQueryTransformer<F, S>) transformer;
+  public <
+          F extends FilterBase,
+          S extends SortOption,
+          Q extends TypedSearchQuery<F, S>,
+          T extends ServiceTransformer<Q, SearchQueryRequest>>
+      T getTypedSearchQueryTransformer(final Class<?> cls) {
+    final ServiceTransformer<Q, SearchQueryRequest> transformer = getTransformer(cls);
+    return (T) transformer;
   }
 
   public <F extends FilterBase> FilterTransformer<F> getFilterTransformer(final Class<?> cls) {
@@ -201,10 +211,17 @@ public final class ServiceTransformers {
     return (FilterTransformer<F>) transformer;
   }
 
-  public <R> SearchAggregationResultTransformer<R> getSearchAggregationResultTransformer(
-      final Class<R> cls) {
-    final ServiceTransformer<R, SearchAggregationResult> transformer = getTransformer(cls);
-    return (SearchAggregationResultTransformer<R>) transformer;
+  public <A extends AggregationResultBase>
+      SearchAggregationResultTransformer<A> getSearchAggregationResultTransformer(
+          final Class<A> cls) {
+    final ServiceTransformer<SearchAggregationResult, A> transformer = getTransformer(cls);
+    return (SearchAggregationResultTransformer<A>) transformer;
+  }
+
+  public <A extends AggregationBase> AggregationTransformer<A> getAggregationTransformer(
+      final Class<?> cls) {
+    final ServiceTransformer<A, List<SearchAggregator>> transformer = getTransformer(cls);
+    return (AggregationTransformer<A>) transformer;
   }
 
   public FieldSortingTransformer getFieldSortingTransformer(final Class<?> cls) {
@@ -343,9 +360,6 @@ public final class ServiceTransformers {
             indexDescriptors.get(TasklistMetricIndex.class),
             indexDescriptors.get(MetricIndex.class)));
     mappers.put(
-        ProcessDefinitionFlowNodeStatisticsQuery.class,
-        new ProcessDefinitionFlowNodeStatisticsQueryTransformer(mappers));
-    mappers.put(
         ProcessDefinitionStatisticsFilter.class,
         new ProcessDefinitionStatisticsFilterTransformer(
             mappers, indexDescriptors.get(ListViewTemplate.class)));
@@ -360,8 +374,17 @@ public final class ServiceTransformers {
         ProcessInstanceQueryResultConfig.class, new ProcessInstanceResultConfigTransformer());
 
     // aggregation
+    final TypedSearchAggregationQueryTransformer<?, ?> searchAggregationQueryTransformer =
+        new TypedSearchAggregationQueryTransformer<>(mappers);
+    Stream.of(ProcessDefinitionFlowNodeStatisticsQuery.class)
+        .forEach(cls -> mappers.put(cls, searchAggregationQueryTransformer));
     mappers.put(
         ProcessDefinitionFlowNodeStatisticsAggregation.class,
         new ProcessDefinitionFlowNodeStatisticsAggregationTransformer());
+
+    // aggregation result
+    mappers.put(
+        ProcessDefinitionFlowNodeStatisticsAggregationResult.class,
+        new ProcessDefinitionFlowNodeStatisticsAggregationResultTransformer());
   }
 }
