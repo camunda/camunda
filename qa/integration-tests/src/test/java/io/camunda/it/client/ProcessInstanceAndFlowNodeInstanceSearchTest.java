@@ -1206,7 +1206,7 @@ public class ProcessInstanceAndFlowNodeInstanceSearchTest {
     // when:
     final var result =
         camundaClient
-            .newProcessInstanceQuery()
+            .newProcessInstanceSearchRequest()
             .filter(b -> b.errorMessage(f -> f.eq(EXPECTED_ERROR)))
             .send()
             .join();
@@ -1221,7 +1221,7 @@ public class ProcessInstanceAndFlowNodeInstanceSearchTest {
     // when:
     final var result =
         camundaClient
-            .newProcessInstanceQuery()
+            .newProcessInstanceSearchRequest()
             .filter(b -> b.errorMessage(f -> f.neq(EXPECTED_ERROR)))
             .send()
             .join();
@@ -1235,7 +1235,7 @@ public class ProcessInstanceAndFlowNodeInstanceSearchTest {
     // when:
     final var result =
         camundaClient
-            .newProcessInstanceQuery()
+            .newProcessInstanceSearchRequest()
             .filter(b -> b.errorMessage(f -> f.exists(true)))
             .send()
             .join();
@@ -1250,7 +1250,7 @@ public class ProcessInstanceAndFlowNodeInstanceSearchTest {
     // when:
     final var result =
         camundaClient
-            .newProcessInstanceQuery()
+            .newProcessInstanceSearchRequest()
             .filter(b -> b.errorMessage(f -> f.exists(false)))
             .send()
             .join();
@@ -1264,7 +1264,7 @@ public class ProcessInstanceAndFlowNodeInstanceSearchTest {
     // when:
     final var result =
         camundaClient
-            .newProcessInstanceQuery()
+            .newProcessInstanceSearchRequest()
             .filter(b -> b.errorMessage(f -> f.in(EXPECTED_ERROR, "foo")))
             .send()
             .join();
@@ -1279,7 +1279,7 @@ public class ProcessInstanceAndFlowNodeInstanceSearchTest {
     // when:
     final var result =
         camundaClient
-            .newProcessInstanceQuery()
+            .newProcessInstanceSearchRequest()
             .filter(b -> b.errorMessage(f -> f.in("foo", "bar")))
             .send()
             .join();
@@ -1296,7 +1296,7 @@ public class ProcessInstanceAndFlowNodeInstanceSearchTest {
     // when:
     final var result =
         camundaClient
-            .newProcessInstanceQuery()
+            .newProcessInstanceSearchRequest()
             .filter(b -> b.errorMessage(f -> f.like(expectedError)))
             .send()
             .join();
@@ -1314,7 +1314,7 @@ public class ProcessInstanceAndFlowNodeInstanceSearchTest {
     // when:
     final var result =
         camundaClient
-            .newProcessInstanceQuery()
+            .newProcessInstanceSearchRequest()
             .filter(b -> b.errorMessage(f -> f.like(expectedError).in("foo", "bar")))
             .send()
             .join();
