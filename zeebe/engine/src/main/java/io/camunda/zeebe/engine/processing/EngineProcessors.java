@@ -315,7 +315,12 @@ public final class EngineProcessors {
     addResourceFetchProcessors(typedRecordProcessors, writers, processingState, authCheckBehavior);
 
     BatchOperationSetupProcessors.addBatchOperationProcessors(
-        keyGenerator, typedRecordProcessors, writers, commandDistributionBehavior);
+        keyGenerator,
+        typedRecordProcessors,
+        writers,
+        commandDistributionBehavior,
+        scheduledTaskStateFactory,
+        searchClientsProxy);
 
     return typedRecordProcessors;
   }

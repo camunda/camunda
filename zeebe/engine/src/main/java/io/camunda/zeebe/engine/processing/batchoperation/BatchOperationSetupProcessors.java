@@ -7,12 +7,17 @@
  */
 package io.camunda.zeebe.engine.processing.batchoperation;
 
+import io.camunda.search.clients.SearchClientsProxy;
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessors;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
+import io.camunda.zeebe.engine.state.immutable.ScheduledTaskState;
 import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.intent.BatchOperationChunkIntent;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationIntent;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
+import java.time.Duration;
+import java.util.function.Supplier;
 
 public final class BatchOperationSetupProcessors {
 
@@ -20,10 +25,23 @@ public final class BatchOperationSetupProcessors {
       final KeyGenerator keyGenerator,
       final TypedRecordProcessors typedRecordProcessors,
       final Writers writers,
-      final CommandDistributionBehavior commandDistributionBehavior) {
-    typedRecordProcessors.onCommand(
-        ValueType.BATCH_OPERATION_CREATION,
-        BatchOperationIntent.CREATE,
-        new BatchOperationCreateProcessor(writers, keyGenerator, commandDistributionBehavior));
+      final CommandDistributionBehavior commandDistributionBehavior,
+      final Supplier<ScheduledTaskState> scheduledTaskStateFactory,
+      final SearchClientsProxy searchClientsProxy) {
+    typedRecordProcessors
+        .onCommand(
+            ValueType.BATCH_OPERATION_CREATION,
+            BatchOperationIntent.CREATE,
+            new BatchOperationCreateProcessor(writers, keyGenerator, commandDistributionBehavior))
+        .onCommand(
+            ValueType.BATCH_OPERATION_CHUNK,
+            BatchOperationChunkIntent.CREATE,
+            new BatchOperationCreateChunkProcessor(writers))
+        .withListener(
+            new BatchOperationExecutionScheduler(
+                scheduledTaskStateFactory,
+                searchClientsProxy,
+                keyGenerator,
+                Duration.ofMillis(1000)));
   }
 }

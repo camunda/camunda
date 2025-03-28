@@ -19,15 +19,15 @@ public final class BatchOperationExecutionRecord extends UnifiedRecordValue
     implements BatchOperationExecutionRecordValue {
 
   public static final String PROP_BATCH_OPERATION_KEY = "batchOperationKey";
-  public static final String PROP_ENTITY_KEY_LIST = "entitykeys";
+  public static final String PROP_ITEM_KEY_LIST = "itemKeys";
 
   private final LongProperty batchOperationKeyProp = new LongProperty(PROP_BATCH_OPERATION_KEY);
-  private final ArrayProperty<LongValue> entityKeysProp =
-      new ArrayProperty<>(PROP_ENTITY_KEY_LIST, LongValue::new);
+  private final ArrayProperty<LongValue> itemKeysProp =
+      new ArrayProperty<>(PROP_ITEM_KEY_LIST, LongValue::new);
 
   public BatchOperationExecutionRecord() {
     super(2);
-    declareProperty(batchOperationKeyProp).declareProperty(entityKeysProp);
+    declareProperty(batchOperationKeyProp).declareProperty(itemKeysProp);
   }
 
   @Override
@@ -42,18 +42,18 @@ public final class BatchOperationExecutionRecord extends UnifiedRecordValue
   }
 
   @Override
-  public Set<Long> getEntityKeys() {
-    return entityKeysProp.stream().map(LongValue::getValue).collect(Collectors.toSet());
+  public Set<Long> getItemKeys() {
+    return itemKeysProp.stream().map(LongValue::getValue).collect(Collectors.toSet());
   }
 
-  public BatchOperationExecutionRecord setKeys(final Set<Long> keys) {
-    entityKeysProp.reset();
-    keys.forEach(key -> entityKeysProp.add().setValue(key));
+  public BatchOperationExecutionRecord setItemKeys(final Set<Long> keys) {
+    itemKeysProp.reset();
+    keys.forEach(key -> itemKeysProp.add().setValue(key));
     return this;
   }
 
   public BatchOperationExecutionRecord wrap(final BatchOperationExecutionRecord record) {
-    setKeys(record.getEntityKeys());
+    setItemKeys(record.getItemKeys());
     return this;
   }
 }

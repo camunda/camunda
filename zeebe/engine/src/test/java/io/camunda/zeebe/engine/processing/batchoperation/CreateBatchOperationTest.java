@@ -8,19 +8,29 @@
 package io.camunda.zeebe.engine.processing.batchoperation;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
+import io.camunda.search.clients.SearchClientsProxy;
+import io.camunda.search.entities.ProcessInstanceEntity;
+import io.camunda.search.filter.ProcessInstanceFilter;
+import io.camunda.search.query.ProcessInstanceQuery;
+import io.camunda.search.query.SearchQueryResult;
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RejectionType;
+import io.camunda.zeebe.protocol.record.intent.BatchOperationChunkIntent;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationIntent;
 import io.camunda.zeebe.protocol.record.value.BatchOperationType;
 import io.camunda.zeebe.test.util.BrokerClassRuleHelper;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
+import java.util.List;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.Rule;
 import org.junit.Test;
+import org.mockito.Mockito;
 
 public final class CreateBatchOperationTest {
 
@@ -29,8 +39,11 @@ public final class CreateBatchOperationTest {
       new RecordingExporterTestWatcher();
 
   @Rule public final BrokerClassRuleHelper helper = new BrokerClassRuleHelper();
+  private final SearchClientsProxy searchClientsProxy = Mockito.mock(SearchClientsProxy.class);
 
-  @Rule public final EngineRule engine = EngineRule.singlePartition();
+  @Rule
+  public final EngineRule engine =
+      EngineRule.singlePartition().withSearchClientsProxy(searchClientsProxy);
 
   @Test
   public void shouldRejectWithoutFilter() {
@@ -81,16 +94,31 @@ public final class CreateBatchOperationTest {
   }
 
   @Test
-  public void shouldCreateBatchOperation() {
+  public void shouldCreateAndInitBatchOperation() {
     // given
-    final String filter = "{\"processInstanceKeys\":[1,3,8]}";
+    final var filterBuffer =
+        convertToBuffer(
+            new ProcessInstanceFilter.Builder().processInstanceKeys(1L, 3L, 8L).build());
+
+    // given
+    final var result =
+        new SearchQueryResult.Builder<ProcessInstanceEntity>()
+            .items(
+                List.of(
+                    mockProcessInstanceEntity(1L),
+                    mockProcessInstanceEntity(2L),
+                    mockProcessInstanceEntity(3L)))
+            .total(3)
+            .build();
+    Mockito.when(searchClientsProxy.searchProcessInstances(Mockito.any(ProcessInstanceQuery.class)))
+        .thenReturn(result);
 
     // when
     final long batchOperationKey =
         engine
             .batchOperation()
             .ofType(BatchOperationType.PROCESS_CANCELLATION)
-            .withFilter(new UnsafeBuffer(MsgPackConverter.convertToMsgPack(filter)))
+            .withFilter(filterBuffer)
             .create()
             .getValue()
             .getBatchOperationKey();
@@ -101,13 +129,20 @@ public final class CreateBatchOperationTest {
                 .withBatchOperationKey(batchOperationKey))
         .extracting(Record::getIntent)
         .containsSequence(BatchOperationIntent.CREATED);
+
     assertThat(
-            RecordingExporter.batchOperationCreationRecords()
-                .withBatchOperationKey(batchOperationKey)
-                .withIntent(BatchOperationIntent.CREATED)
-                .getFirst()
-                .getValue()
-                .getEntityFilter())
-        .isEqualTo(filter);
+            RecordingExporter.batchOperationChunkRecords().withBatchOperationKey(batchOperationKey))
+        .extracting(Record::getIntent)
+        .containsSequence(BatchOperationChunkIntent.CREATE, BatchOperationChunkIntent.CREATED);
+  }
+
+  private static UnsafeBuffer convertToBuffer(final Object object) {
+    return new UnsafeBuffer(MsgPackConverter.convertToMsgPack(object));
+  }
+
+  private ProcessInstanceEntity mockProcessInstanceEntity(final long processInstanceKey) {
+    final var entity = mock(ProcessInstanceEntity.class);
+    when(entity.processInstanceKey()).thenReturn(processInstanceKey);
+    return entity;
   }
 }
