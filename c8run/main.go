@@ -3,6 +3,13 @@ package main
 import (
 	"flag"
 	"fmt"
+	"os"
+	"os/exec"
+	"path/filepath"
+	"runtime"
+	"strconv"
+	"strings"
+
 	"github.com/camunda/camunda/c8run/internal/health"
 	"github.com/camunda/camunda/c8run/internal/overrides"
 	"github.com/camunda/camunda/c8run/internal/packages"
@@ -10,12 +17,6 @@ import (
 	"github.com/camunda/camunda/c8run/internal/unix"
 	"github.com/camunda/camunda/c8run/internal/windows"
 	"github.com/joho/godotenv"
-	"os"
-	"os/exec"
-	"path/filepath"
-	"runtime"
-	"strconv"
-	"strings"
 )
 
 func stopProcess(c8 types.C8Run, pidfile string) error {
@@ -351,6 +352,18 @@ func main() {
 	}
 }
 
+func printSystemInformation(javaVersion string) {
+	fmt.Println("")
+	fmt.Println("System Version Information")
+	fmt.Println("--------------------------")
+	fmt.Println("Camunda Details:")
+	fmt.Printf("  Version: %s\n", os.Getenv("CAMUNDA_VERSION"))
+	fmt.Println("Java Details:")
+	fmt.Printf("  Version: %s\n", javaVersion)
+	fmt.Println("--------------------------")
+	fmt.Println("")
+}
+
 func startCommand(c8 types.C8Run, settings types.C8RunSettings, processInfo processes, parentDir, javaBinary string, expectedJavaVersion int) {
 	javaVersion := os.Getenv("JAVA_VERSION")
 	var err error
@@ -361,7 +374,8 @@ func startCommand(c8 types.C8Run, settings types.C8RunSettings, processInfo proc
 			os.Exit(1)
 		}
 	}
-	fmt.Print("Java version is " + javaVersion + "\n")
+
+	printSystemInformation(javaVersion)
 
 	versionSplit := strings.Split(javaVersion, ".")
 	if len(versionSplit) == 0 {
@@ -425,7 +439,6 @@ func startCommand(c8 types.C8Run, settings types.C8RunSettings, processInfo proc
 		fmt.Printf("%+v", err)
 		os.Exit(1)
 	}
-
 }
 
 type processes struct {
