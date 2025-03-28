@@ -11,11 +11,11 @@ import io.camunda.webapps.schema.entities.operate.IncidentEntity;
 import io.camunda.webapps.schema.entities.operate.IncidentState;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Stream;
 
 /**
@@ -152,7 +152,7 @@ public interface IncidentUpdateRepository extends AutoCloseable {
       Map<String, DocumentUpdate> flowNodeInstanceRequests,
       Map<String, DocumentUpdate> incidentRequests) {
     public IncidentBulkUpdate() {
-      this(new HashMap<>(), new HashMap<>(), new HashMap<>());
+      this(new ConcurrentHashMap<>(), new ConcurrentHashMap<>(), new ConcurrentHashMap<>());
     }
 
     public Stream<DocumentUpdate> stream() {
