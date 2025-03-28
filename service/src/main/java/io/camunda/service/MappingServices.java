@@ -115,7 +115,7 @@ public class MappingServices
   }
 
   public CompletableFuture<MappingRecord> deleteMapping(final String mappingId) {
-    return sendBrokerRequest(new BrokerMappingDeleteRequest().setId(mappingId));
+    return sendBrokerRequest(new BrokerMappingDeleteRequest().setMappingId(mappingId));
   }
 
   public List<MappingEntity> getMatchingMappings(final Map<String, Object> claims) {
