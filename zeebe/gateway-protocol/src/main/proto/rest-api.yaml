@@ -2647,7 +2647,7 @@ paths:
       tags:
         - Mapping rule
       operationId: updateMappingRule
-      summary: Update mapping rule.
+      summary: Update mapping rule
       description: |
         Update a mapping rule.
       parameters:
