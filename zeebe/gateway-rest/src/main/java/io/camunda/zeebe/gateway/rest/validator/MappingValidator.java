@@ -64,7 +64,7 @@ public class MappingValidator {
 
   private static List<String> validateClaims(final String claimName, final String claimValue) {
     final List<String> violations = new ArrayList<>();
-    if (claimName == null || claimValue.isBlank()) {
+    if (claimName == null || claimName.isBlank()) {
       violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("claimName"));
     }
     if (claimValue == null || claimValue.isBlank()) {
