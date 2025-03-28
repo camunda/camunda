@@ -57,9 +57,8 @@ public class DbRoleState implements MutableRoleState {
 
   @Override
   public void create(final RoleRecord roleRecord) {
-    roleId.wrapString(String.valueOf(roleRecord.getRoleKey()));
-    // TODO introduce wrap method on PersistedRole
-    persistedRole.setRoleKey(roleRecord.getRoleKey()).setName(roleRecord.getName());
+    roleId.wrapString(roleRecord.getRoleId());
+    persistedRole.from(roleRecord);
     roleColumnFamily.insert(roleId, persistedRole);
   }
 
