@@ -12,8 +12,8 @@ import {api} from 'v1/api';
 import {getClientConfig} from 'common/config/getClientConfig';
 import {getStage} from 'common/config/getStage';
 import {useEffect, useState} from 'react';
+import {logger} from 'common/utils/logger';
 
-const IS_SAAS = getClientConfig().organizationId === 'string';
 const STAGE = getStage(window.location.host);
 
 async function fetchToken() {
@@ -21,14 +21,14 @@ async function fetchToken() {
     const response = await fetch(api.v1.getSaasUserToken());
 
     if (!response.ok) {
-      console.error('Failed to fetch user token', response);
+      logger.error('Failed to fetch user token', response);
       return '';
     }
 
     const token = await response.json();
     return token;
   } catch (error) {
-    console.error('Failed to fetch user token', error);
+    logger.error('Failed to fetch user token', error);
     return '';
   }
 }
@@ -39,9 +39,13 @@ type Props = {
 
 const C3Provider: React.FC<Props> = ({children}) => {
   const [token, setToken] = useState<string | null>(null);
+  const {organizationId, clusterId} = getClientConfig();
+
   useEffect(() => {
     async function init() {
-      if (IS_SAAS) {
+      const {organizationId} = getClientConfig();
+
+      if (organizationId !== null) {
         setToken(await fetchToken());
       }
     }
@@ -49,16 +53,16 @@ const C3Provider: React.FC<Props> = ({children}) => {
     init();
   }, []);
 
-  if (token === null) {
+  if (token === null || organizationId === null || clusterId === null) {
     return children;
   }
 
   return (
     <C3UserConfigurationProvider
-      activeOrganizationId={getClientConfig().organizationId ?? ''}
+      activeOrganizationId={organizationId}
       userToken={token}
       getNewUserToken={fetchToken}
-      currentClusterUuid={getClientConfig().clusterId ?? ''}
+      currentClusterUuid={clusterId}
       currentApp="tasklist"
       stage={STAGE === 'unknown' ? 'dev' : STAGE}
       handleTheme
