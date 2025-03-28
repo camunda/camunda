@@ -160,7 +160,8 @@ class DecisionInstanceSearchTest {
     final var result =
         camundaClient
             .newDecisionInstanceSearchRequest()
-            .filter(f -> f.decisionDefinitionKey(b -> b.nin(Long.MAX_VALUE, decisionDefinitionKey)))
+            .filter(
+                f -> f.decisionDefinitionKey(b -> b.notIn(Long.MAX_VALUE, decisionDefinitionKey)))
             .send()
             .join();
 

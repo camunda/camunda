@@ -21,7 +21,7 @@ import java.util.List;
 public interface BasicLongProperty
     extends PropertyBase<Long, BasicStringFilterProperty, BasicLongProperty> {
 
-  BasicLongProperty nin(final List<Long> values);
+  BasicLongProperty notIn(final List<Long> values);
 
-  BasicLongProperty nin(final Long... values);
+  BasicLongProperty notIn(final Long... values);
 }
