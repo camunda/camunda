@@ -50,7 +50,7 @@ public class UserTaskFilterImpl
   }
 
   @Override
-  public UserTaskFilter state(final io.camunda.client.api.search.enums.UserTaskFilterState state) {
+  public UserTaskFilter state(final io.camunda.client.api.search.enums.UserTaskFilter.State state) {
     filter.setState(
         EnumUtil.convert(state, io.camunda.client.protocol.rest.UserTaskFilter.StateEnum.class));
     return this;

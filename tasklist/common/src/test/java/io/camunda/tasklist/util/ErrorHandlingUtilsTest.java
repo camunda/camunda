@@ -10,9 +10,9 @@ package io.camunda.tasklist.util;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
-import io.camunda.client.api.ProblemDetail;
 import io.camunda.client.api.command.ClientException;
 import io.camunda.client.api.command.ProblemException;
+import io.camunda.client.api.search.ProblemDetail;
 import java.net.SocketTimeoutException;
 import org.junit.jupiter.api.Test;
 

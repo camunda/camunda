@@ -22,7 +22,7 @@ import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.when;
 
 import io.camunda.client.api.command.ClientException;
-import io.camunda.client.api.search.enums.IncidentResultErrorType;
+import io.camunda.client.api.search.enums.IncidentResult;
 import io.camunda.client.api.search.response.FlowNodeInstance;
 import io.camunda.client.api.search.response.Incident;
 import io.camunda.client.api.search.response.ProcessInstance;
@@ -182,18 +182,18 @@ public class CamundaProcessResultCollectorTest {
         .thenReturn(
             Arrays.asList(
                 IncidentBuilder.newActiveIncident(
-                        IncidentResultErrorType.JOB_NO_RETRIES, "No retries left.")
+                        IncidentResult.ErrorType.JOB_NO_RETRIES, "No retries left.")
                     .setFlowNodeId("A")
                     .build(),
                 IncidentBuilder.newActiveIncident(
-                        IncidentResultErrorType.EXTRACT_VALUE_ERROR,
+                        IncidentResult.ErrorType.EXTRACT_VALUE_ERROR,
                         "Failed to evaluate expression.")
                     .setFlowNodeId("B")
                     .build()))
         .thenReturn(
             Collections.singletonList(
                 IncidentBuilder.newActiveIncident(
-                        IncidentResultErrorType.UNHANDLED_ERROR_EVENT,
+                        IncidentResult.ErrorType.UNHANDLED_ERROR_EVENT,
                         "No error catch event found.")
                     .setFlowNodeId("C")
                     .build()));
@@ -208,9 +208,9 @@ public class CamundaProcessResultCollectorTest {
         .hasSize(2)
         .extracting(Incident::getErrorType, Incident::getErrorMessage, Incident::getFlowNodeId)
         .contains(
-            tuple(IncidentResultErrorType.JOB_NO_RETRIES, "No retries left.", "A"),
+            tuple(IncidentResult.ErrorType.JOB_NO_RETRIES, "No retries left.", "A"),
             tuple(
-                IncidentResultErrorType.EXTRACT_VALUE_ERROR,
+                IncidentResult.ErrorType.EXTRACT_VALUE_ERROR,
                 "Failed to evaluate expression.",
                 "B"));
 
@@ -219,7 +219,9 @@ public class CamundaProcessResultCollectorTest {
         .extracting(Incident::getErrorType, Incident::getErrorMessage, Incident::getFlowNodeId)
         .contains(
             tuple(
-                IncidentResultErrorType.UNHANDLED_ERROR_EVENT, "No error catch event found.", "C"));
+                IncidentResult.ErrorType.UNHANDLED_ERROR_EVENT,
+                "No error catch event found.",
+                "C"));
   }
 
   @Test

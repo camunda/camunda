@@ -65,7 +65,7 @@ public final class SearchUserTaskTest extends ClientRestTest {
     // when
     client
         .newUserTaskSearchRequest()
-        .filter(f -> f.state(io.camunda.client.api.search.enums.UserTaskFilterState.COMPLETED))
+        .filter(f -> f.state(io.camunda.client.api.search.enums.UserTaskFilter.State.COMPLETED))
         .send()
         .join();
 

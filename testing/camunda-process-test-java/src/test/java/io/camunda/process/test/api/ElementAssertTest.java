@@ -22,7 +22,7 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
 import io.camunda.client.api.response.ProcessInstanceEvent;
-import io.camunda.client.api.search.enums.FlowNodeInstanceFilterState;
+import io.camunda.client.api.search.enums.FlowNodeInstanceFilter;
 import io.camunda.client.api.search.filter.FlownodeInstanceFilter;
 import io.camunda.client.api.search.response.FlowNodeInstance;
 import io.camunda.process.test.api.assertions.ElementSelectors;
@@ -1309,7 +1309,7 @@ public class ElementAssertTest {
 
       flowNodeInstanceFilterCapture.getValue().accept(flownodeInstanceFilter);
       verify(flownodeInstanceFilter).processInstanceKey(PROCESS_INSTANCE_KEY);
-      verify(flownodeInstanceFilter).state(FlowNodeInstanceFilterState.ACTIVE);
+      verify(flownodeInstanceFilter).state(FlowNodeInstanceFilter.State.ACTIVE);
       verify(flownodeInstanceFilter).flowNodeId("A");
       verifyNoMoreInteractions(flownodeInstanceFilter);
     }

@@ -98,7 +98,7 @@ public class AdHocSubprocessActivitySearchTest extends ClientRestTest {
                 AD_HOC_SUBPROCESS_ID,
                 "task1",
                 "Task #1",
-                io.camunda.client.api.search.enums.AdHocSubprocessActivityResultType.SERVICE_TASK,
+                io.camunda.client.api.search.enums.AdHocSubprocessActivityResult.Type.SERVICE_TASK,
                 "The first task in the ad-hoc subprocess",
                 "<default>"),
             tuple(
@@ -107,7 +107,7 @@ public class AdHocSubprocessActivitySearchTest extends ClientRestTest {
                 AD_HOC_SUBPROCESS_ID,
                 "task2",
                 "Task #2",
-                io.camunda.client.api.search.enums.AdHocSubprocessActivityResultType.USER_TASK,
+                io.camunda.client.api.search.enums.AdHocSubprocessActivityResult.Type.USER_TASK,
                 "The second task in the ad-hoc subprocess",
                 "<default>"));
   }
@@ -158,7 +158,7 @@ public class AdHocSubprocessActivitySearchTest extends ClientRestTest {
                 AD_HOC_SUBPROCESS_ID,
                 "unknownTask",
                 "Unknown Task",
-                io.camunda.client.api.search.enums.AdHocSubprocessActivityResultType
+                io.camunda.client.api.search.enums.AdHocSubprocessActivityResult.Type
                     .UNKNOWN_ENUM_VALUE,
                 null,
                 "<default>"));

@@ -48,8 +48,8 @@ public class FlownodeInstanceTest extends ClientRestTest {
             f ->
                 f.flowNodeInstanceKey(1L)
                     .type(
-                        io.camunda.client.api.search.enums.FlowNodeInstanceFilterType.SERVICE_TASK)
-                    .state(io.camunda.client.api.search.enums.FlowNodeInstanceFilterState.ACTIVE)
+                        io.camunda.client.api.search.enums.FlowNodeInstanceFilter.Type.SERVICE_TASK)
+                    .state(io.camunda.client.api.search.enums.FlowNodeInstanceFilter.State.ACTIVE)
                     .processDefinitionKey(2L)
                     .processDefinitionId("complexProcess")
                     .processInstanceKey(3L)
