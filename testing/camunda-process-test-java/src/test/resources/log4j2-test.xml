@@ -18,7 +18,7 @@
     <!-- Hide default logging from Testcontainers -->
     <Logger name="org.testcontainers" level="warn"/>
     <Logger name="tc" level="error"/>
-
+    
   </Loggers>
 
 </Configuration>
