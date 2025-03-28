@@ -10,6 +10,7 @@ package io.camunda.search.es.transformers.search;
 import co.elastic.clients.elasticsearch._types.FieldValue;
 import co.elastic.clients.elasticsearch._types.SortOptions;
 import co.elastic.clients.elasticsearch.core.SearchRequest;
+import co.elastic.clients.elasticsearch.core.SearchRequest.Builder;
 import co.elastic.clients.elasticsearch.core.search.SourceConfig;
 import co.elastic.clients.json.JsonData;
 import io.camunda.search.clients.core.SearchQueryRequest;
@@ -60,6 +61,12 @@ public final class SearchRequestTransformer
       builder.source(of(value.source()));
     }
 
+    applySearchAggregations(value, builder);
+
+    return builder;
+  }
+
+  private void applySearchAggregations(final SearchQueryRequest value, final Builder builder) {
     final var aggregations = value.aggregations();
     if (aggregations != null && !aggregations.isEmpty()) {
       builder.aggregations(
@@ -73,8 +80,6 @@ public final class SearchRequestTransformer
                               .apply(aggregation)))
               .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue)));
     }
-
-    return builder;
   }
 
   private List<SortOptions> of(final List<SearchSortOptions> values) {
