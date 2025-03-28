@@ -38,7 +38,7 @@ import io.camunda.search.clients.query.SearchWildcardQuery;
 import io.camunda.search.clients.source.SearchSourceConfig;
 import io.camunda.search.clients.source.SearchSourceFilter;
 import io.camunda.search.clients.transformers.SearchTransfomer;
-import io.camunda.search.clients.transformers.aggregate.SearchAggregationResult;
+import io.camunda.search.clients.transformers.aggregation.SearchAggregationResult;
 import io.camunda.search.clients.types.TypedValue;
 import io.camunda.search.es.transformers.aggregator.SearchAggregationResultTransformer;
 import io.camunda.search.es.transformers.aggregator.SearchChildrenAggregatorTransformer;

@@ -17,7 +17,7 @@ import static io.camunda.search.clients.query.SearchQueryBuilders.or;
 import static io.camunda.search.clients.query.SearchQueryBuilders.term;
 import static io.camunda.search.query.ProcessDefinitionFlowNodeStatisticsQuery.*;
 
-import io.camunda.search.clients.core.SearchQueryRequest;
+import io.camunda.search.clients.aggregator.SearchAggregator;
 import io.camunda.search.clients.transformers.ServiceTransformers;
 import io.camunda.search.entities.FlowNodeInstanceEntity.FlowNodeState;
 import io.camunda.search.entities.FlowNodeInstanceEntity.FlowNodeType;
@@ -25,9 +25,11 @@ import io.camunda.search.filter.ProcessDefinitionStatisticsFilter;
 import io.camunda.search.query.TypedSearchQuery;
 import io.camunda.search.sort.NoSort;
 import io.camunda.webapps.schema.descriptors.template.ListViewTemplate;
+import io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate;
+import java.util.List;
 
 public class ProcessDefinitionFlowNodeStatisticsQueryTransformer
-    extends TypedSearchQueryTransformer<ProcessDefinitionStatisticsFilter, NoSort> {
+    extends TypedSearchAggregationQueryTransformer<ProcessDefinitionStatisticsFilter> {
 
   public ProcessDefinitionFlowNodeStatisticsQueryTransformer(
       final ServiceTransformers transformers) {
@@ -35,9 +37,7 @@ public class ProcessDefinitionFlowNodeStatisticsQueryTransformer
   }
 
   @Override
-  public SearchQueryRequest apply(
-      final TypedSearchQuery<ProcessDefinitionStatisticsFilter, NoSort> query) {
-
+  protected List<SearchAggregator> applyAggregations() {
     // aggregate filters for active, completed, canceled, incidents
     final var filtersAgg =
         filters()
@@ -90,6 +90,6 @@ public class ProcessDefinitionFlowNodeStatisticsQueryTransformer
             .aggregations(filterFlowNodesAgg)
             .build();
 
-    return super.apply(query).toBuilder().aggregations(toFlowNodesAgg).build();
+    return List.of(toFlowNodesAgg);
   }
 }
