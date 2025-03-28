@@ -16,6 +16,7 @@ import io.camunda.client.api.command.ActivateJobsCommandStep1;
 import io.camunda.client.api.command.UpdateRetriesJobCommandStep1;
 import io.camunda.client.api.command.UpdateTimeoutJobCommandStep1;
 import io.camunda.client.api.response.ActivatedJob;
+import io.camunda.client.impl.ResponseMapper;
 import io.camunda.client.protocol.rest.JobChangeset;
 import io.camunda.zeebe.it.util.ZeebeResourcesHelper;
 import io.camunda.zeebe.model.bpmn.Bpmn;
@@ -150,7 +151,11 @@ public class UpdateJobTest {
     final var initialDeadline = job.getDeadline();
 
     // when
-    client.newUpdateJobCommand(jobKey).update(changeset).send().join();
+    client
+        .newUpdateJobCommand(jobKey)
+        .update(ResponseMapper.fromProtocolObject(changeset))
+        .send()
+        .join();
 
     // then
     assertTimeoutIncreased(initialDeadline, jobKey, true);
@@ -169,7 +174,11 @@ public class UpdateJobTest {
     final var initialDeadline = job.getDeadline();
 
     // when
-    client.newUpdateJobCommand(jobKey).update(changeset).send().join();
+    client
+        .newUpdateJobCommand(jobKey)
+        .update(ResponseMapper.fromProtocolObject(changeset))
+        .send()
+        .join();
 
     // then
     assertRetriesUpdated(jobKey, true, retries);
@@ -190,7 +199,11 @@ public class UpdateJobTest {
     final var initialRetries = job.getRetries();
 
     // when
-    client.newUpdateJobCommand(jobKey).update(changeset).send().join();
+    client
+        .newUpdateJobCommand(jobKey)
+        .update(ResponseMapper.fromProtocolObject(changeset))
+        .send()
+        .join();
 
     // then
     assertTimeoutIncreased(initialDeadline, jobKey, true);
