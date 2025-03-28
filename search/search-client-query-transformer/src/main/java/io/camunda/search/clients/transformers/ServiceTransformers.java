@@ -16,9 +16,9 @@ import io.camunda.search.clients.core.SearchQueryRequest;
 import io.camunda.search.clients.query.SearchQuery;
 import io.camunda.search.clients.transformers.aggregation.AggregationTransformer;
 import io.camunda.search.clients.transformers.aggregation.ProcessDefinitionFlowNodeStatisticsAggregationTransformer;
+import io.camunda.search.clients.transformers.aggregation.result.AggregationResult;
+import io.camunda.search.clients.transformers.aggregation.result.AggregationResultTransformer;
 import io.camunda.search.clients.transformers.aggregation.result.ProcessDefinitionFlowNodeStatisticsAggregationResultTransformer;
-import io.camunda.search.clients.transformers.aggregation.result.SearchAggregationResult;
-import io.camunda.search.clients.transformers.aggregation.result.SearchAggregationResultTransformer;
 import io.camunda.search.clients.transformers.entity.AuthorizationEntityTransformer;
 import io.camunda.search.clients.transformers.entity.DecisionDefinitionEntityTransformer;
 import io.camunda.search.clients.transformers.entity.DecisionInstanceEntityTransformer;
@@ -212,10 +212,9 @@ public final class ServiceTransformers {
   }
 
   public <A extends AggregationResultBase>
-      SearchAggregationResultTransformer<A> getSearchAggregationResultTransformer(
-          final Class<A> cls) {
-    final ServiceTransformer<SearchAggregationResult, A> transformer = getTransformer(cls);
-    return (SearchAggregationResultTransformer<A>) transformer;
+      AggregationResultTransformer<A> getSearchAggregationResultTransformer(final Class<A> cls) {
+    final ServiceTransformer<AggregationResult, A> transformer = getTransformer(cls);
+    return (AggregationResultTransformer<A>) transformer;
   }
 
   public <A extends AggregationBase> AggregationTransformer<A> getAggregationTransformer(

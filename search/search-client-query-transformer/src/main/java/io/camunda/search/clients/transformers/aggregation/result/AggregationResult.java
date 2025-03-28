@@ -10,27 +10,26 @@ package io.camunda.search.clients.transformers.aggregation.result;
 import io.camunda.util.ObjectBuilder;
 import java.util.Map;
 
-public record SearchAggregationResult(
-    Long docCount, Map<String, SearchAggregationResult> aggregations) {
+public record AggregationResult(Long docCount, Map<String, AggregationResult> aggregations) {
 
-  public static final class Builder implements ObjectBuilder<SearchAggregationResult> {
+  public static final class Builder implements ObjectBuilder<AggregationResult> {
 
     private Long docCount;
-    private Map<String, SearchAggregationResult> aggregations;
+    private Map<String, AggregationResult> aggregations;
 
     public Builder docCount(final Long value) {
       docCount = value;
       return this;
     }
 
-    public Builder aggregations(final Map<String, SearchAggregationResult> value) {
+    public Builder aggregations(final Map<String, AggregationResult> value) {
       aggregations = value;
       return this;
     }
 
     @Override
-    public SearchAggregationResult build() {
-      return new SearchAggregationResult(docCount, aggregations);
+    public AggregationResult build() {
+      return new AggregationResult(docCount, aggregations);
     }
   }
 }

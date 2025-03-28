@@ -21,12 +21,10 @@ import io.camunda.search.entities.ProcessDefinitionFlowNodeStatisticsEntity;
 import java.util.ArrayList;
 
 public class ProcessDefinitionFlowNodeStatisticsAggregationResultTransformer
-    implements SearchAggregationResultTransformer<
-        ProcessDefinitionFlowNodeStatisticsAggregationResult> {
+    implements AggregationResultTransformer<ProcessDefinitionFlowNodeStatisticsAggregationResult> {
 
   @Override
-  public ProcessDefinitionFlowNodeStatisticsAggregationResult apply(
-      final SearchAggregationResult value) {
+  public ProcessDefinitionFlowNodeStatisticsAggregationResult apply(final AggregationResult value) {
     final var children = value.aggregations().get(AGGREGATION_TO_FLOW_NODES);
     final var filter = children.aggregations().get(AGGREGATION_FILTER_FLOW_NODES);
     final var group = filter.aggregations().get(AGGREGATION_GROUP_FLOW_NODES);
