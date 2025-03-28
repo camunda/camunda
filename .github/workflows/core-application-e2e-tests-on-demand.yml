@@ -46,19 +46,19 @@ jobs:
             fi
 
             # Check if tasklist page is available (adjust the URL based on your service)
-            response_8080=$(curl -s -m 5 http://localhost:8080/tasklist || echo "Failed")
-            response_8081=$(curl -s -m 5 http://localhost:8081/operate || echo "Failed")
+            tasklist_status=$(curl -s -m 5 http://localhost:8080/tasklist || echo "Failed")
+            operate_status=$(curl -s -m 5 http://localhost:8081/operate || echo "Failed")
 
             # Check if tasklist is up (you can adjust this condition based on actual response)
-            if [[ "$response_8080" != "Failed" ]] && [[ "$response_8081" != "Failed" ]]; then
+            if [[ "$tasklist_status" != "Failed" ]] && [[ "$operate_status" != "Failed" ]]; then
               echo "Services are ready!"
               ready=true
               break
             fi
 
             echo "Waiting for services... ($i/90)"
-            echo "Response from 8080: $response_8080"
-            echo "Response from 8081: $response_8081"
+            echo "Response from tasklist: $tasklist_status"
+            echo "Response from operate: $operate_status"
             sleep 10
           done
 
@@ -72,8 +72,8 @@ jobs:
       - name: Print Docker logs before failing
         if: failure()
         run: |
-          docker-compose logs tasklist
-          docker-compose logs operate
+          docker compose logs tasklist
+          docker compose logs operate
         working-directory: qa/core-application-e2e-test-suite/config
 
       - name: Setup Node.js
@@ -112,6 +112,7 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: "3.x"
+          cache: "pip"
 
       - name: Run tests
         shell: bash
@@ -140,7 +141,7 @@ jobs:
             --project 'Core Application' \
             --username $TESTRAIL_USERNAME \
             --key $TESTRAIL_KEY \
-            parse_junit --title "On Demand Core Application Test Run -  ${{ github.event.inputs.branch }}" \
+            parse_junit --title "On Demand Core Application Test Run Results-  ${{ github.event.inputs.branch }}" \
             --close-run \
             -f $JUNIT_RESULTS_FILE
 
