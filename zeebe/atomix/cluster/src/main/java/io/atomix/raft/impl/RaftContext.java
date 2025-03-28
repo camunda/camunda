@@ -546,8 +546,14 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
    * @param commitIndex The commit index.
    * @return the previous commit index
    */
-  public long setCommitIndex(final long commitIndex) {
+  public long setCommitIndex(long commitIndex) {
     checkArgument(commitIndex >= 0, "commitIndex must be positive");
+
+    // Do not set the commitIndex to be greater than the events we persisted.
+    // In case of a heartbeat, the leader sends its commitIndex which may be greater than what's
+    // persisted in case we failed to persist a previous AppendEntries
+    commitIndex = Math.min(commitIndex, raftLog.getLastIndex());
+
     final long previousCommitIndex = this.commitIndex;
     if (commitIndex > previousCommitIndex) {
       if (isLeader()) {
