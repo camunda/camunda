@@ -810,7 +810,8 @@ public class SchemaManagerIT {
             newPrefix + "-tasklist-metric-8.3.0_",
             newPrefix + "-tasklist-task-8.5.0_",
             newPrefix + "-tasklist-task-variable-8.3.0_",
-            newPrefix + "-tasklist-import-position-8.2.0_");
+            newPrefix + "-tasklist-import-position-8.2.0_",
+            newPrefix + "-tasklist-user-1.4.0_");
   }
 
   private SchemaManager createSchemaManager(

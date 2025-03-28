@@ -17,9 +17,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.tasklist.data.conditionals.ElasticSearchCondition;
 import io.camunda.tasklist.entities.UserEntity;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
-import io.camunda.tasklist.schema.indices.UserIndex;
 import io.camunda.tasklist.util.ElasticsearchUtil;
 import io.camunda.tasklist.webapp.rest.exception.NotFoundApiException;
+import io.camunda.webapps.schema.descriptors.index.TasklistUserIndex;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
@@ -48,14 +48,14 @@ import org.springframework.stereotype.Component;
 
 @Component
 @Profile("!" + SSO_AUTH_PROFILE + " & !" + IDENTITY_AUTH_PROFILE)
-@DependsOn("tasklistSchemaStartup")
+@DependsOn("searchEngineSchemaInitializer")
 @Conditional(ElasticSearchCondition.class)
 public class UserStoreElasticSearch implements UserStore {
   private static final Logger LOGGER = LoggerFactory.getLogger(UserStoreElasticSearch.class);
 
   private static final XContentType XCONTENT_TYPE = XContentType.JSON;
 
-  @Autowired private UserIndex userIndex;
+  @Autowired private TasklistUserIndex userIndex;
 
   @Autowired
   @Qualifier("tasklistEsClient")
@@ -66,12 +66,12 @@ public class UserStoreElasticSearch implements UserStore {
   private ObjectMapper objectMapper;
 
   @Override
-  public UserEntity getByUserId(String userId) {
+  public UserEntity getByUserId(final String userId) {
     final SearchRequest searchRequest =
         new SearchRequest(userIndex.getAlias())
             .source(
                 new SearchSourceBuilder()
-                    .query(QueryBuilders.termQuery(UserIndex.USER_ID, userId)));
+                    .query(QueryBuilders.termQuery(TasklistUserIndex.USER_ID, userId)));
     try {
       final SearchResponse response = esClient.search(searchRequest, RequestOptions.DEFAULT);
       if (response.getHits().getTotalHits().value == 1) {
@@ -84,7 +84,7 @@ public class UserStoreElasticSearch implements UserStore {
         throw new NotFoundApiException(
             String.format("Could not find user with userId '%s'.", userId));
       }
-    } catch (IOException e) {
+    } catch (final IOException e) {
       final String message =
           String.format("Exception occurred, while obtaining the user: %s", e.getMessage());
       throw new TasklistRuntimeException(message, e);
@@ -92,20 +92,20 @@ public class UserStoreElasticSearch implements UserStore {
   }
 
   @Override
-  public void create(UserEntity user) {
+  public void create(final UserEntity user) {
     try {
       final IndexRequest request =
           new IndexRequest(userIndex.getFullQualifiedName())
               .id(user.getId())
               .source(userEntityToJSONString(user), XCONTENT_TYPE);
       esClient.index(request, RequestOptions.DEFAULT);
-    } catch (Exception e) {
+    } catch (final Exception e) {
       LOGGER.error("Could not create user with user id {}", user.getUserId(), e);
     }
   }
 
   @Override
-  public List<UserEntity> getUsersByUserIds(List<String> userIds) {
+  public List<UserEntity> getUsersByUserIds(final List<String> userIds) {
     final ConstantScoreQueryBuilder esQuery =
         constantScoreQuery(idsQuery().addIds(userIds.toArray(String[]::new)));
 
@@ -118,11 +118,13 @@ public class UserStoreElasticSearch implements UserStore {
                         SortBuilders.scriptSort(
                                 getScript(userIds), ScriptSortBuilder.ScriptSortType.NUMBER)
                             .order(SortOrder.ASC))
-                    .fetchSource(new String[] {UserIndex.USER_ID, UserIndex.DISPLAY_NAME}, null));
+                    .fetchSource(
+                        new String[] {TasklistUserIndex.USER_ID, TasklistUserIndex.DISPLAY_NAME},
+                        null));
 
     try {
       return ElasticsearchUtil.scroll(searchRequest, UserEntity.class, objectMapper, esClient);
-    } catch (IOException e) {
+    } catch (final IOException e) {
       final String message =
           String.format("Exception occurred, while obtaining users: %s", e.getMessage());
       throw new TasklistRuntimeException(message, e);
@@ -136,12 +138,12 @@ public class UserStoreElasticSearch implements UserStore {
                 + "def userId = doc['%s'].value;"
                 + "def foundIdx = params.userIds.indexOf(userId);"
                 + "return foundIdx > -1 ? foundIdx: userIdsCount + 1;",
-            UserIndex.USER_ID);
+            TasklistUserIndex.USER_ID);
     return new Script(
         ScriptType.INLINE, Script.DEFAULT_SCRIPT_LANG, scriptCode, Map.of("userIds", userIds));
   }
 
-  protected String userEntityToJSONString(UserEntity aUser) throws JsonProcessingException {
+  protected String userEntityToJSONString(final UserEntity aUser) throws JsonProcessingException {
     return objectMapper.writeValueAsString(aUser);
   }
 }

@@ -7,23 +7,22 @@
  */
 package io.camunda.tasklist.webapp.api.rest.v1.controllers.internal;
 
-import io.camunda.tasklist.es.RetryElasticsearchClient;
-import io.camunda.tasklist.property.TasklistProperties;
-import io.camunda.tasklist.schema.manager.SchemaManager;
+import io.camunda.search.connect.es.ElasticsearchConnector;
+import io.camunda.search.schema.SchemaManager;
+import io.camunda.search.schema.config.SearchEngineConfiguration;
+import io.camunda.search.schema.elasticsearch.ElasticsearchEngineClient;
 import io.camunda.tasklist.webapp.es.cache.ProcessCache;
 import io.camunda.tasklist.webapp.security.TasklistURIs;
-import io.camunda.webapps.schema.descriptors.ComponentNames;
+import io.camunda.webapps.schema.descriptors.IndexDescriptor;
+import io.camunda.webapps.schema.descriptors.IndexDescriptors;
 import io.camunda.webapps.schema.descriptors.operate.index.ProcessIndex;
 import io.camunda.webapps.schema.descriptors.tasklist.index.FormIndex;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import java.io.IOException;
-import java.util.Set;
-import java.util.stream.Collectors;
+import java.util.List;
 import org.elasticsearch.action.admin.indices.delete.DeleteIndexRequest;
-import org.elasticsearch.client.RequestOptions;
-import org.elasticsearch.client.RestHighLevelClient;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Profile;
@@ -39,21 +38,13 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping(value = TasklistURIs.DEV_UTIL_URL_V1, produces = MediaType.APPLICATION_JSON_VALUE)
 public class DevUtilExternalController {
 
-  @Autowired private SchemaManager schemaManager;
-
-  @Autowired
-  @Qualifier("tasklistEsClient")
-  private RestHighLevelClient esClient;
-
-  @Autowired private RetryElasticsearchClient retryElasticsearchClient;
-
   @Autowired private ProcessCache processCache;
 
   @Autowired
   @Qualifier("tasklistProcessIndex")
   private ProcessIndex processIndex;
 
-  @Autowired private TasklistProperties tasklistProperties;
+  @Autowired private SearchEngineConfiguration configuration;
 
   @Autowired private FormIndex formIndex;
 
@@ -69,24 +60,33 @@ public class DevUtilExternalController {
   public ResponseEntity<?> recreateData() throws IOException {
     final DeleteIndexRequest deleteRequest = new DeleteIndexRequest();
 
-    final Set<String> indices =
-        retryElasticsearchClient
-            .getIndexNames(
-                tasklistProperties.getElasticsearch().getIndexPrefix()
-                    + "*"
-                    + ComponentNames.TASK_LIST
-                    + "*")
-            .stream()
-            .filter(
-                f ->
-                    !f.equals(processIndex.getFullQualifiedName())
-                        && !f.equals(formIndex.getFullQualifiedName()))
-            .collect(Collectors.toSet());
+    final var connector = new ElasticsearchConnector(configuration.connect());
+    final IndexDescriptors indexDescriptors =
+        new IndexDescriptors(configuration.connect().getIndexPrefix(), true);
 
-    deleteRequest.indices(indices.toArray(new String[indices.size()]));
-    esClient.indices().delete(deleteRequest, RequestOptions.DEFAULT);
-    processCache.clearCache();
-    schemaManager.createSchema();
+    try (final var elasticsearchClient = connector.createClient()) {
+      final var searchEngineClient =
+          new ElasticsearchEngineClient(elasticsearchClient, connector.objectMapper());
+      final List<String> indicesToDelete =
+          indexDescriptors.indices().stream()
+              .map(IndexDescriptor::getFullQualifiedName)
+              .filter(
+                  f ->
+                      !f.equals(processIndex.getFullQualifiedName())
+                          && !f.equals(formIndex.getFullQualifiedName()))
+              .toList();
+      elasticsearchClient.indices().delete(r -> r.index(indicesToDelete));
+      processCache.clearCache();
+
+      final var schemaManager =
+          new SchemaManager(
+              searchEngineClient,
+              indexDescriptors.indices(),
+              indexDescriptors.templates(),
+              configuration,
+              connector.objectMapper());
+      schemaManager.startup();
+    }
     return ResponseEntity.ok().build();
   }
 }

@@ -85,10 +85,7 @@ public final class TestStandaloneCamunda extends TestSpringApplication<TestStand
         // Tests)
         TestOperateElasticsearchSchemaManager.class,
         TestOperateOpensearchSchemaManager.class,
-        TestTasklistElasticsearchSchemaManager.class,
-        TestTasklistOpensearchSchemaManager.class,
         TestOperateSchemaStartup.class,
-        TestTasklistSchemaStartup.class,
         IndexTemplateDescriptorsConfigurator.class);
 
     brokerProperties = new BrokerBasedProperties();

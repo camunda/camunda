@@ -53,7 +53,7 @@ import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class ElasticsearchEngineClient implements SearchEngineClient {
+public class ElasticsearchEngineClient implements SearchEngineClient, AutoCloseable {
   private static final Logger LOG = LoggerFactory.getLogger(ElasticsearchEngineClient.class);
   private final ElasticsearchClient client;
   private final SearchEngineClientUtils utils;
@@ -523,5 +523,10 @@ public class ElasticsearchEngineClient implements SearchEngineClient {
               + " from classpath.",
           e);
     }
+  }
+
+  @Override
+  public void close() throws IOException {
+    client.close();
   }
 }

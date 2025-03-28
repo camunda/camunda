@@ -7,11 +7,8 @@
  */
 package io.camunda.tasklist.qa.util;
 
-import io.camunda.tasklist.schema.manager.SchemaManager;
-
-public interface TestSchemaManager extends SchemaManager {
-
-  void deleteSchema();
+public interface TestSchemaManager {
+  void createSchema();
 
   void deleteSchemaQuietly();
 }

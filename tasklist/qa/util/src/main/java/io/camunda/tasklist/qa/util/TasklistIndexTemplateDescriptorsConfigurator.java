@@ -10,7 +10,7 @@ package io.camunda.tasklist.qa.util;
 import static io.camunda.tasklist.property.TasklistProperties.ELASTIC_SEARCH;
 
 import io.camunda.tasklist.property.TasklistProperties;
-import io.camunda.tasklist.schema.indices.UserIndex;
+import io.camunda.webapps.schema.descriptors.index.TasklistUserIndex;
 import io.camunda.webapps.schema.descriptors.operate.index.ProcessIndex;
 import io.camunda.webapps.schema.descriptors.operate.template.FlowNodeInstanceTemplate;
 import io.camunda.webapps.schema.descriptors.operate.template.VariableTemplate;
@@ -119,10 +119,11 @@ public class TasklistIndexTemplateDescriptorsConfigurator {
   }
 
   @Bean
-  public UserIndex userIndex(
+  public TasklistUserIndex userIndex(
       final TasklistProperties tasklistProperties,
       final TasklistIndexPrefixHolder indexPrefixHolder) {
-    return new UserIndex(getIndexPrefix(tasklistProperties), isElasticsearch(tasklistProperties)) {
+    return new TasklistUserIndex(
+        getIndexPrefix(tasklistProperties), isElasticsearch(tasklistProperties)) {
       @Override
       public String getIndexPrefix() {
         return indexPrefixHolder.getIndexPrefix();

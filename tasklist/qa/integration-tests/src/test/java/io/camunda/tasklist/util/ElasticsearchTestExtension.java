@@ -19,7 +19,6 @@ import io.camunda.tasklist.property.TasklistElasticsearchProperties;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.qa.util.TasklistIndexPrefixHolder;
 import io.camunda.tasklist.qa.util.TestUtil;
-import io.camunda.tasklist.schema.manager.SchemaManager;
 import io.camunda.tasklist.zeebe.ImportValueType;
 import io.camunda.tasklist.zeebeimport.RecordsReader;
 import io.camunda.tasklist.zeebeimport.RecordsReaderHolder;
@@ -86,7 +85,6 @@ public class ElasticsearchTestExtension
   @Autowired private ZeebeImporter zeebeImporter;
   @Autowired private RecordsReaderHolder recordsReaderHolder;
   private boolean failed = false;
-  @Autowired private SchemaManager elasticsearchSchemaManager;
 
   @Autowired private ObjectMapper objectMapper;
 
@@ -104,8 +102,6 @@ public class ElasticsearchTestExtension
       tasklistProperties.getZeebeElasticsearch().setPrefix(indexPrefix);
       searchEngineConfiguration.connect().setIndexPrefix(indexPrefix);
     }
-    /* Needed for the tasklist-user index */
-    elasticsearchSchemaManager.createSchema();
   }
 
   @Override

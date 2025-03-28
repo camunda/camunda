@@ -41,7 +41,6 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
       SearchEngineHealthIndicator.class,
       WebSecurityConfig.class,
       OAuth2WebConfigurer.class,
-      RetryOpenSearchClient.class,
     },
     properties = {
       TasklistProperties.PREFIX + ".elasticsearch.createSchema = false",

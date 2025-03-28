@@ -57,7 +57,7 @@ import org.opensearch.client.opensearch.indices.put_index_template.IndexTemplate
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class OpensearchEngineClient implements SearchEngineClient {
+public class OpensearchEngineClient implements SearchEngineClient, AutoCloseable {
   private static final Logger LOG = LoggerFactory.getLogger(OpensearchEngineClient.class);
   private static final String OPERATE_DELETE_ARCHIVED_POLICY =
       "/schema/opensearch/create/policy/operate_delete_archived_indices.json";
@@ -560,5 +560,10 @@ public class OpensearchEngineClient implements SearchEngineClient {
     try (final var parser = mapper.jsonProvider().createParser(json)) {
       return deserializer.deserialize(parser, mapper);
     }
+  }
+
+  @Override
+  public void close() throws IOException {
+    client._transport().close();
   }
 }

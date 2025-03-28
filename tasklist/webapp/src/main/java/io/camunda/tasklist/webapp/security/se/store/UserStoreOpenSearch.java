@@ -15,9 +15,9 @@ import static org.elasticsearch.index.query.QueryBuilders.idsQuery;
 import io.camunda.tasklist.data.conditionals.OpenSearchCondition;
 import io.camunda.tasklist.entities.UserEntity;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
-import io.camunda.tasklist.schema.indices.UserIndex;
 import io.camunda.tasklist.util.OpenSearchUtil;
 import io.camunda.tasklist.webapp.rest.exception.NotFoundApiException;
+import io.camunda.webapps.schema.descriptors.index.TasklistUserIndex;
 import java.io.IOException;
 import java.util.List;
 import org.elasticsearch.index.query.ConstantScoreQueryBuilder;
@@ -40,23 +40,26 @@ import org.springframework.stereotype.Component;
 
 @Component
 @Profile("!" + SSO_AUTH_PROFILE + " & !" + IDENTITY_AUTH_PROFILE)
-@DependsOn("tasklistSchemaStartup")
+@DependsOn("searchEngineSchemaInitializer")
 @Conditional(OpenSearchCondition.class)
 public class UserStoreOpenSearch implements UserStore {
   private static final Logger LOGGER = LoggerFactory.getLogger(UserStoreOpenSearch.class);
 
-  @Autowired private UserIndex userIndex;
+  @Autowired private TasklistUserIndex userIndex;
 
   @Autowired
   @Qualifier("tasklistOsClient")
   private OpenSearchClient openSearchClient;
 
   @Override
-  public UserEntity getByUserId(String userId) {
+  public UserEntity getByUserId(final String userId) {
     final SearchRequest searchRequest =
         new SearchRequest.Builder()
             .index(userIndex.getAlias())
-            .query(q -> q.term(t -> t.field(UserIndex.USER_ID).value(v -> v.stringValue(userId))))
+            .query(
+                q ->
+                    q.term(
+                        t -> t.field(TasklistUserIndex.USER_ID).value(v -> v.stringValue(userId))))
             .build();
 
     try {
@@ -72,7 +75,7 @@ public class UserStoreOpenSearch implements UserStore {
           totalHits > 1
               ? String.format("Could not find unique user with userId '%s'.", userId)
               : String.format("Could not find user with userId '%s'.", userId));
-    } catch (IOException e) {
+    } catch (final IOException e) {
       final String message =
           String.format("Exception occurred, while obtaining the user: %s", e.getMessage());
       throw new TasklistRuntimeException(message, e);
@@ -80,7 +83,7 @@ public class UserStoreOpenSearch implements UserStore {
   }
 
   @Override
-  public void create(UserEntity user) {
+  public void create(final UserEntity user) {
     try {
       final IndexRequest<UserEntity> request =
           IndexRequest.of(
@@ -88,13 +91,13 @@ public class UserStoreOpenSearch implements UserStore {
                   builder.index(userIndex.getFullQualifiedName()).id(user.getId()).document(user));
 
       openSearchClient.index(request);
-    } catch (Exception e) {
+    } catch (final Exception e) {
       LOGGER.error("Could not create user with user id {}", user.getUserId(), e);
     }
   }
 
   @Override
-  public List<UserEntity> getUsersByUserIds(List<String> userIds) {
+  public List<UserEntity> getUsersByUserIds(final List<String> userIds) {
     final ConstantScoreQueryBuilder esQuery =
         constantScoreQuery(idsQuery().addIds(userIds.toArray(String[]::new)));
 
@@ -103,11 +106,16 @@ public class UserStoreOpenSearch implements UserStore {
             .index(userIndex.getAlias())
             .query(q -> q.constantScore(qs -> qs.filter(qf -> qf.ids(iq -> iq.values(userIds)))))
             .sort(s -> s.script(getScriptSort(userIds)))
-            .source(s -> s.filter(sf -> sf.includes(UserIndex.USER_ID, UserIndex.DISPLAY_NAME)));
+            .source(
+                s ->
+                    s.filter(
+                        sf ->
+                            sf.includes(
+                                TasklistUserIndex.USER_ID, TasklistUserIndex.DISPLAY_NAME)));
 
     try {
       return OpenSearchUtil.scroll(searchRequest, UserEntity.class, openSearchClient);
-    } catch (IOException e) {
+    } catch (final IOException e) {
       final String message =
           String.format("Exception occurred, while obtaining users: %s", e.getMessage());
       throw new TasklistRuntimeException(message, e);
@@ -121,7 +129,7 @@ public class UserStoreOpenSearch implements UserStore {
                 + "def userId = doc['%s'].value;"
                 + "def foundIdx = params.userIds.indexOf(userId);"
                 + "return foundIdx > -1 ? foundIdx: userIdsCount + 1;",
-            UserIndex.USER_ID);
+            TasklistUserIndex.USER_ID);
     return new ScriptSort.Builder()
         .type(ScriptSortType.Number)
         .script(
