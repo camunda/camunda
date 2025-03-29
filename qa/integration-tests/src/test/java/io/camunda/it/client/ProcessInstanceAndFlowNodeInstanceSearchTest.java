@@ -30,8 +30,6 @@ import io.camunda.client.impl.search.filter.builder.StringPropertyImpl;
 import io.camunda.client.protocol.rest.ProcessInstanceStateEnum;
 import io.camunda.client.protocol.rest.ProcessInstanceVariableFilterRequest;
 import io.camunda.qa.util.multidb.MultiDbTest;
-import io.camunda.search.filter.FilterBuilders;
-import io.camunda.search.filter.Operation;
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
@@ -39,7 +37,6 @@ import java.util.stream.Collectors;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 @MultiDbTest
@@ -1221,7 +1218,7 @@ public class ProcessInstanceAndFlowNodeInstanceSearchTest {
     final var result =
         camundaClient
             .newProcessInstanceSearchRequest()
-            .filter(b -> b.errorMessage(f -> f.eq(EXPECTED_ERROR)))
+            .filter(b -> b.errorMessage(f -> f.eq(INCIDENT_ERROR_MESSAGE_V1)))
             .send()
             .join();
 
@@ -1236,12 +1233,13 @@ public class ProcessInstanceAndFlowNodeInstanceSearchTest {
     final var result =
         camundaClient
             .newProcessInstanceSearchRequest()
-            .filter(b -> b.errorMessage(f -> f.neq(EXPECTED_ERROR)))
+            .filter(b -> b.errorMessage(f -> f.neq(INCIDENT_ERROR_MESSAGE_V1)))
             .send()
             .join();
 
     // then:
-    assertThat(result.items().size()).isEqualTo(0);
+    assertThat(result.items().size()).isEqualTo(1);
+    assertThat(result.items().getFirst().getProcessDefinitionId()).isEqualTo("incident_process_v2");
   }
 
   @Test
@@ -1255,8 +1253,10 @@ public class ProcessInstanceAndFlowNodeInstanceSearchTest {
             .join();
 
     // then:
-    assertThat(result.items().size()).isEqualTo(1);
-    assertThat(result.items()).extracting("processDefinitionId").contains("incident_process_v1");
+    assertThat(result.items().size()).isEqualTo(2);
+    assertThat(result.items())
+        .extracting("processDefinitionId")
+        .containsExactlyInAnyOrder("incident_process_v1", "incident_process_v2");
   }
 
   @Test
@@ -1279,7 +1279,7 @@ public class ProcessInstanceAndFlowNodeInstanceSearchTest {
     final var result =
         camundaClient
             .newProcessInstanceSearchRequest()
-            .filter(b -> b.errorMessage(f -> f.in(EXPECTED_ERROR, "foo")))
+            .filter(b -> b.errorMessage(f -> f.in(INCIDENT_ERROR_MESSAGE_V1, "foo")))
             .send()
             .join();
 
@@ -1316,8 +1316,10 @@ public class ProcessInstanceAndFlowNodeInstanceSearchTest {
             .join();
 
     // then:
-    assertThat(result.items().size()).isEqualTo(1);
-    assertThat(result.items()).extracting("processDefinitionId").contains("incident_process_v1");
+    assertThat(result.items().size()).isEqualTo(2);
+    assertThat(result.items())
+        .extracting("processDefinitionId")
+        .containsExactlyInAnyOrder("incident_process_v1", "incident_process_v2");
   }
 
   @Test
@@ -1337,13 +1339,12 @@ public class ProcessInstanceAndFlowNodeInstanceSearchTest {
     assertThat(result.items().size()).isEqualTo(0);
   }
 
-  @Disabled("Requires implementation on RDBMS")
   @Test
   void shouldQueryProcessInstancesByIncidentErrorHashCode() {
 
     final var result =
         camundaClient
-            .newProcessInstanceQuery()
+            .newProcessInstanceSearchRequest()
             .filter(f -> f.incidentErrorHashCode(INCIDENT_ERROR_HASH_CODE_V2))
             .send()
             .join();

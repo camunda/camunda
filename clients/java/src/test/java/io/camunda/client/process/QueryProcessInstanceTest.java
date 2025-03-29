@@ -91,7 +91,7 @@ public class QueryProcessInstanceTest extends ClientRestTest {
                     .tenantId("tenant")
                     .variables(variablesMap)
                     .variables(variables)
-                    .errorMessage("Error message"))
+                    .errorMessage("Error message")
                     .incidentErrorHashCode(123456789))
         .send()
         .join();

@@ -24,13 +24,13 @@ public record IncidentFilter(
     List<Long> processInstanceKeys,
     List<ErrorType> errorTypes,
     List<String> errorMessages,
+    List<Integer> errorMessageHashes,
     List<String> flowNodeIds,
     List<Long> flowNodeInstanceKeys,
     DateValueFilter creationTime,
     List<IncidentState> states,
     List<Long> jobKeys,
-    List<String> tenantIds,
-    List<Integer> errorMessageHashes)
+    List<String> tenantIds)
     implements FilterBase {
 
   public static final class Builder implements ObjectBuilder<IncidentFilter> {
@@ -41,13 +41,13 @@ public record IncidentFilter(
     private List<Long> processInstanceKeys;
     private List<ErrorType> errorTypes;
     private List<String> errorMessages;
+    private List<Integer> errorMessageHashes;
     private List<String> flowNodeIds;
     private List<Long> flowNodeInstanceKeys;
     private DateValueFilter creationTimeFilter;
     private List<IncidentState> states;
     private List<Long> jobKeys;
     private List<String> tenantIds;
-    private List<Integer> errorMessageHashes;
 
     public Builder incidentKeys(final Long value, final Long... values) {
       return incidentKeys(collectValues(value, values));
@@ -103,6 +103,15 @@ public record IncidentFilter(
       return this;
     }
 
+    public Builder errorMessageHashes(final Integer value, final Integer... values) {
+      return errorMessageHashes(collectValues(value, values));
+    }
+
+    public Builder errorMessageHashes(final List<Integer> values) {
+      errorMessageHashes = addValuesToList(errorMessageHashes, values);
+      return this;
+    }
+
     public Builder creationTime(final DateValueFilter value) {
       creationTimeFilter = value;
       return this;
@@ -153,15 +162,6 @@ public record IncidentFilter(
       return this;
     }
 
-    public Builder errorMessageHashes(final Integer value, final Integer... values) {
-      return errorMessageHashes(collectValues(value, values));
-    }
-
-    public Builder errorMessageHashes(final List<Integer> values) {
-      errorMessageHashes = addValuesToList(errorMessageHashes, values);
-      return this;
-    }
-
     @Override
     public IncidentFilter build() {
       return new IncidentFilter(
@@ -171,13 +171,13 @@ public record IncidentFilter(
           Objects.requireNonNullElse(processInstanceKeys, Collections.emptyList()),
           Objects.requireNonNullElse(errorTypes, Collections.emptyList()),
           Objects.requireNonNullElse(errorMessages, Collections.emptyList()),
+          Objects.requireNonNullElse(errorMessageHashes, Collections.emptyList()),
           Objects.requireNonNullElse(flowNodeIds, Collections.emptyList()),
           Objects.requireNonNullElse(flowNodeInstanceKeys, Collections.emptyList()),
           creationTimeFilter,
           Objects.requireNonNullElse(states, Collections.emptyList()),
           Objects.requireNonNullElse(jobKeys, Collections.emptyList()),
-          Objects.requireNonNullElse(tenantIds, Collections.emptyList()),
-          Objects.requireNonNullElse(errorMessageHashes, Collections.emptyList()));
+          Objects.requireNonNullElse(tenantIds, Collections.emptyList()));
     }
   }
 }
