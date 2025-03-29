@@ -23,6 +23,7 @@ public record IncidentDbModel(
     Long jobKey,
     ErrorType errorType,
     String errorMessage,
+    Integer errorMessageHash,
     OffsetDateTime creationDate,
     IncidentState state,
     String treePath,
@@ -47,6 +48,7 @@ public record IncidentDbModel(
                 .jobKey(jobKey)
                 .errorType(errorType)
                 .errorMessage(errorMessage)
+                .errorMessageHash(errorMessageHash)
                 .creationDate(creationDate)
                 .state(state)
                 .treePath(treePath)
@@ -67,6 +69,7 @@ public record IncidentDbModel(
     private Long jobKey;
     private ErrorType errorType;
     private String errorMessage;
+    private Integer errorMessageHash;
     private OffsetDateTime creationDate;
     private IncidentState state;
     private String treePath;
@@ -119,6 +122,11 @@ public record IncidentDbModel(
       return this;
     }
 
+    public Builder errorMessageHash(final Integer errorMessageHash) {
+      this.errorMessageHash = errorMessageHash;
+      return this;
+    }
+
     public Builder creationDate(final OffsetDateTime creationDate) {
       this.creationDate = creationDate;
       return this;
@@ -161,6 +169,7 @@ public record IncidentDbModel(
           jobKey,
           errorType,
           errorMessage,
+          errorMessageHash,
           creationDate,
           state,
           treePath,

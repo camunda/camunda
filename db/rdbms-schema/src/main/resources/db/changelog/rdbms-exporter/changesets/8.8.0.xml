@@ -209,6 +209,7 @@
       <column name="PROCESS_DEFINITION_ID" type="VARCHAR(255)"/>
       <column name="PROCESS_DEFINITION_KEY" type="BIGINT" />
       <column name="ERROR_MESSAGE" type="VARCHAR(4000)" />
+      <column name="ERROR_MESSAGE_HASH" type="INT" />
       <column name="ERROR_TYPE" type="VARCHAR(100)" />
       <column name="STATE" type="VARCHAR(20)" />
       <column name="CREATION_DATE" type="TIMESTAMP WITH TIME ZONE(3)" />

@@ -25,5 +25,8 @@ public interface IncidentMapper extends HistoryCleanupMapper {
   List<IncidentEntity> search(IncidentDbQuery filter);
 
   record IncidentStateDto(
-      Long incidentKey, IncidentEntity.IncidentState state, String errorMessage) {}
+      Long incidentKey,
+      IncidentEntity.IncidentState state,
+      String errorMessage,
+      Integer errorMessageHash) {}
 }

@@ -32,8 +32,9 @@ public record ProcessInstanceFilter(
     Boolean hasIncident,
     List<Operation<String>> tenantIdOperations,
     List<VariableValueFilter> variableFilters,
+    List<Operation<String>> errorMessageOperations,
     List<Operation<String>> batchOperationIdOperations,
-    List<Operation<String>> errorMessageOperations)
+    List<Integer> incidentErrorHashCodes)
     implements FilterBase {
 
   public Builder toBuilder() {
@@ -71,8 +72,9 @@ public record ProcessInstanceFilter(
     private Boolean hasIncident;
     private List<Operation<String>> tenantIdOperations;
     private List<VariableValueFilter> variableFilters;
-    private List<Operation<String>> batchOperationIdOperations;
     private List<Operation<String>> errorMessageOperations;
+    private List<Operation<String>> batchOperationIdOperations;
+    private List<Integer> incidentErrorHashCodes;
 
     public Builder processInstanceKeyOperations(final List<Operation<Long>> operations) {
       processInstanceKeyOperations = addValuesToList(processInstanceKeyOperations, operations);
@@ -292,6 +294,36 @@ public record ProcessInstanceFilter(
       return this;
     }
 
+    public Builder incidentErrorHashCodes(final Integer value, final Integer... values) {
+      return incidentErrorHashCodes(collectValues(value, values));
+    }
+
+    public Builder incidentErrorHashCodes(final List<Integer> values) {
+      incidentErrorHashCodes = addValuesToList(incidentErrorHashCodes, values);
+      return this;
+    }
+
+    public static Builder from(final ProcessInstanceFilter original) {
+      return new Builder()
+          .processInstanceKeyOperations(original.processInstanceKeyOperations)
+          .processDefinitionIdOperations(original.processDefinitionIdOperations)
+          .processDefinitionNameOperations(original.processDefinitionNameOperations)
+          .processDefinitionVersionOperations(original.processDefinitionVersionOperations)
+          .processDefinitionVersionTagOperations(original.processDefinitionVersionTagOperations)
+          .processDefinitionKeyOperations(original.processDefinitionKeyOperations)
+          .parentProcessInstanceKeyOperations(original.parentProcessInstanceKeyOperations)
+          .parentFlowNodeInstanceKeyOperations(original.parentFlowNodeInstanceKeyOperations)
+          .startDateOperations(original.startDateOperations)
+          .endDateOperations(original.endDateOperations)
+          .stateOperations(original.stateOperations)
+          .hasIncident(original.hasIncident)
+          .variables(original.variableFilters)
+          .tenantIdOperations(original.tenantIdOperations)
+          .batchOperationIdOperations(original.batchOperationIdOperations)
+          .errorMessageOperations(original.errorMessageOperations)
+          .incidentErrorHashCodes(original.incidentErrorHashCodes);
+    }
+
     @Override
     public ProcessInstanceFilter build() {
       return new ProcessInstanceFilter(
@@ -310,8 +342,9 @@ public record ProcessInstanceFilter(
           hasIncident,
           Objects.requireNonNullElse(tenantIdOperations, Collections.emptyList()),
           Objects.requireNonNullElse(variableFilters, Collections.emptyList()),
+          Objects.requireNonNullElse(errorMessageOperations, Collections.emptyList()),
           Objects.requireNonNullElse(batchOperationIdOperations, Collections.emptyList()),
-          Objects.requireNonNullElse(errorMessageOperations, Collections.emptyList()));
+          Objects.requireNonNullElse(incidentErrorHashCodes, Collections.emptyList()));
     }
   }
 }
