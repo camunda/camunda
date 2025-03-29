@@ -42,7 +42,6 @@ import java.util.random.RandomGenerator;
 import java.util.stream.Collectors;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 @MultiDbTest
@@ -1294,7 +1293,8 @@ public class ProcessInstanceAndFlowNodeInstanceSearchTest {
             .join();
 
     // then:
-    assertThat(result.items().size()).isEqualTo(0);
+    assertThat(result.items().size()).isEqualTo(1);
+    assertThat(result.items().getFirst().getProcessDefinitionId()).isEqualTo("incident_process_v2");
   }
 
   @Test
@@ -1308,8 +1308,10 @@ public class ProcessInstanceAndFlowNodeInstanceSearchTest {
             .join();
 
     // then:
-    assertThat(result.items().size()).isEqualTo(1);
-    assertThat(result.items()).extracting("processDefinitionId").contains("incident_process_v1");
+    assertThat(result.items().size()).isEqualTo(2);
+    assertThat(result.items())
+        .extracting("processDefinitionId")
+        .containsExactlyInAnyOrder("incident_process_v1", "incident_process_v2");
   }
 
   @Test
@@ -1369,8 +1371,10 @@ public class ProcessInstanceAndFlowNodeInstanceSearchTest {
             .join();
 
     // then:
-    assertThat(result.items().size()).isEqualTo(1);
-    assertThat(result.items()).extracting("processDefinitionId").contains("incident_process_v1");
+    assertThat(result.items().size()).isEqualTo(2);
+    assertThat(result.items())
+        .extracting("processDefinitionId")
+        .containsExactlyInAnyOrder("incident_process_v1", "incident_process_v2");
   }
 
   @Test
@@ -1390,7 +1394,6 @@ public class ProcessInstanceAndFlowNodeInstanceSearchTest {
     assertThat(result.items().size()).isEqualTo(0);
   }
 
-  @Disabled("Requires implementation on RDBMS")
   @Test
   void shouldQueryProcessInstancesByHasRetriesLeft() {
     // given
