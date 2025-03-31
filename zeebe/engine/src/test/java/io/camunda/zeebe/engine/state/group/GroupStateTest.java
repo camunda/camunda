@@ -50,22 +50,6 @@ public class GroupStateTest {
   }
 
   @Test
-  void shouldReturnKeyForGroupName() {
-    // given
-    final var groupKey = 1L;
-    final var groupName = "group";
-    final var groupRecord = new GroupRecord().setGroupKey(groupKey).setName(groupName);
-    groupState.create(groupKey, groupRecord);
-
-    // when
-    final var key = groupState.getGroupKeyByName(groupName);
-
-    // then
-    assertThat(key.isPresent()).isTrue();
-    assertThat(key.get()).isEqualTo(groupKey);
-  }
-
-  @Test
   void shouldReturnNullIfGroupDoesNotExist() {
     // given
     final var groupKey = 2L;
@@ -75,18 +59,6 @@ public class GroupStateTest {
 
     // then
     assertThat(group.isPresent()).isFalse();
-  }
-
-  @Test
-  void shouldReturnNullIfNameDoesNotExist() {
-    // given
-    final var groupName = "group";
-
-    // when
-    final var key = groupState.getGroupKeyByName(groupName);
-
-    // then
-    assertThat(key.isPresent()).isFalse();
   }
 
   @Test
@@ -109,10 +81,6 @@ public class GroupStateTest {
     final var persistedGroup = group.get();
     assertThat(persistedGroup.getGroupKey()).isEqualTo(groupKey);
     assertThat(persistedGroup.getName()).isEqualTo(updatedGroupName);
-
-    final var groupKeyByName = groupState.getGroupKeyByName(updatedGroupName);
-    assertThat(groupKeyByName.isPresent()).isTrue();
-    assertThat(groupKeyByName.get()).isEqualTo(groupKey);
   }
 
   @Test
@@ -198,9 +166,6 @@ public class GroupStateTest {
     // then
     final var group = groupState.get(groupKey);
     assertThat(group).isEmpty();
-
-    final var groupKeyByName = groupState.getGroupKeyByName(groupName);
-    assertThat(groupKeyByName).isEmpty();
 
     final var entitiesByGroup = groupState.getEntitiesByType(groupKey);
     assertThat(entitiesByGroup).isEmpty();

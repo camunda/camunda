@@ -63,7 +63,6 @@ public class GroupUpdateProcessor implements DistributedTypedRecordProcessor<Gro
       return;
     }
 
-    final var updatedGroupName = record.getName();
     final var authorizationRequest =
         new AuthorizationRequest(command, AuthorizationResourceType.GROUP, PermissionType.UPDATE)
             .addResourceId(persistedRecord.get().getName());
@@ -72,15 +71,6 @@ public class GroupUpdateProcessor implements DistributedTypedRecordProcessor<Gro
       final var rejection = isAuthorized.getLeft();
       rejectionWriter.appendRejection(command, rejection.type(), rejection.reason());
       responseWriter.writeRejectionOnCommand(command, rejection.type(), rejection.reason());
-      return;
-    }
-
-    if (groupState.getGroupKeyByName(updatedGroupName).isPresent()) {
-      final var errorMessage =
-          "Expected to update group with name '%s', but a group with this name already exists."
-              .formatted(updatedGroupName);
-      rejectionWriter.appendRejection(command, RejectionType.ALREADY_EXISTS, errorMessage);
-      responseWriter.writeRejectionOnCommand(command, RejectionType.ALREADY_EXISTS, errorMessage);
       return;
     }
 

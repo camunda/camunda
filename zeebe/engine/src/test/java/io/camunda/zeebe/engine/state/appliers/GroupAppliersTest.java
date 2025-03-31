@@ -225,8 +225,6 @@ public class GroupAppliersTest {
     // the group state is cleaned up
     final var group = groupState.get(groupKey);
     assertThat(group.isPresent()).isFalse();
-    final var groupKeyByName = groupState.getGroupKeyByName(groupName);
-    assertThat(groupKeyByName.isPresent()).isFalse();
     final var entitiesByGroup = groupState.getEntitiesByType(groupKey);
     assertThat(entitiesByGroup).isEmpty();
   }
