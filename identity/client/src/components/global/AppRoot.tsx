@@ -11,7 +11,6 @@ import { FC, ReactNode } from "react";
 import { g10, bodyShort01 } from "@carbon/elements";
 import AppHeader from "src/components/layout/AppHeader";
 import ErrorBoundary from "src/components/global/ErrorBoundary";
-import { NotificationProvider } from "src/components/notifications";
 import { useApi } from "src/utility/api";
 import { getAuthentication } from "src/utility/api/authentication";
 import ForbiddenComponent from "src/pages/forbidden/ForbiddenPage";
@@ -96,10 +95,8 @@ const AppContent: FC<{ children?: ReactNode }> = ({ children }) => {
 const AppRoot: FC<{ children?: ReactNode }> = ({ children }) => (
   <AppRootWrapper>
     <ErrorBoundary>
-      <NotificationProvider>
-        <GlobalStyle />
-        <AppContent>{children}</AppContent>
-      </NotificationProvider>
+      <GlobalStyle />
+      <AppContent>{children}</AppContent>
     </ErrorBoundary>
   </AppRootWrapper>
 );
