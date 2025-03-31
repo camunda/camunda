@@ -14,7 +14,9 @@ import io.camunda.client.CamundaClient;
 import io.camunda.client.api.command.CreateProcessInstanceCommandStep1;
 import io.camunda.client.api.response.DeploymentEvent;
 import io.camunda.client.api.response.ProcessInstanceEvent;
+import io.camunda.client.api.search.response.IncidentState;
 import io.camunda.client.api.search.response.SearchResponse;
+import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
@@ -54,6 +56,17 @@ public final class TestHelper {
     return camundaClient
         .newDeployResourceCommand()
         .addResourceFromClasspath(resourceName)
+        .send()
+        .join();
+  }
+
+  public static DeploymentEvent deployResource(
+      final CamundaClient camundaClient,
+      final BpmnModelInstance processModel,
+      final String resourceName) {
+    return camundaClient
+        .newDeployResourceCommand()
+        .addProcessModel(processModel, resourceName)
         .send()
         .join();
   }
@@ -131,6 +144,74 @@ public final class TestHelper {
                   camundaClient
                       .newProcessInstanceSearchRequest()
                       .filter(f -> f.hasIncident(true))
+                      .send()
+                      .join();
+              assertThat(result.page().totalItems()).isEqualTo(expectedIncidents);
+            });
+  }
+
+  public static void waitUntilIncidentIsResolvedOnProcessInstance(
+      final CamundaClient camundaClient, final int expectedProcessInstances) {
+    Awaitility.await("should wait until incidents are resolved")
+        .atMost(TIMEOUT_DATA_AVAILABILITY)
+        .ignoreExceptions() // Ignore exceptions and continue retrying
+        .untilAsserted(
+            () -> {
+              final var result =
+                  camundaClient
+                      .newProcessInstanceSearchRequest()
+                      .filter(f -> f.hasIncident(false))
+                      .send()
+                      .join();
+              assertThat(result.page().totalItems()).isEqualTo(expectedProcessInstances);
+            });
+  }
+
+  public static void waitUntilIncidentIsResolvedOnFlowNodeInstance(
+      final CamundaClient camundaClient, final int expectedFlowNodeInstances) {
+    Awaitility.await("should wait until incidents are resolved")
+        .atMost(TIMEOUT_DATA_AVAILABILITY)
+        .ignoreExceptions() // Ignore exceptions and continue retrying
+        .untilAsserted(
+            () -> {
+              final var result =
+                  camundaClient
+                      .newFlownodeInstanceSearchRequest()
+                      .filter(f -> f.hasIncident(false))
+                      .send()
+                      .join();
+              assertThat(result.page().totalItems()).isEqualTo(expectedFlowNodeInstances);
+            });
+  }
+
+  public static void waitUntilIncidentsAreActive(
+      final CamundaClient camundaClient, final int expectedIncidents) {
+    Awaitility.await("should wait until incidents are resolved")
+        .atMost(TIMEOUT_DATA_AVAILABILITY)
+        .ignoreExceptions() // Ignore exceptions and continue retrying
+        .untilAsserted(
+            () -> {
+              final var result =
+                  camundaClient
+                      .newIncidentSearchRequest()
+                      .filter(f -> f.state(IncidentState.ACTIVE))
+                      .send()
+                      .join();
+              assertThat(result.page().totalItems()).isEqualTo(expectedIncidents);
+            });
+  }
+
+  public static void waitUntilIncidentsAreResolved(
+      final CamundaClient camundaClient, final int expectedIncidents) {
+    Awaitility.await("should wait until incidents are resolved")
+        .atMost(TIMEOUT_DATA_AVAILABILITY)
+        .ignoreExceptions() // Ignore exceptions and continue retrying
+        .untilAsserted(
+            () -> {
+              final var result =
+                  camundaClient
+                      .newIncidentSearchRequest()
+                      .filter(f -> f.state(IncidentState.RESOLVED))
                       .send()
                       .join();
               assertThat(result.page().totalItems()).isEqualTo(expectedIncidents);
