@@ -30,9 +30,7 @@ import io.camunda.operate.exceptions.PersistenceException;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.schema.templates.VariableTemplate;
 import io.camunda.operate.store.BatchRequest;
-import io.camunda.operate.util.Tuple;
 import io.camunda.zeebe.protocol.record.Record;
-import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.intent.VariableIntent;
 import io.camunda.zeebe.protocol.record.value.VariableRecordValue;
 import java.util.*;
@@ -62,41 +60,37 @@ public class VariableZeebeRecordProcessor {
       final BatchRequest batchRequest,
       final boolean concurrencyMode)
       throws PersistenceException {
-    for (final var variableRecords : variablesGroupedByScopeKey.entrySet()) {
-      final var temporaryVariableCache = new HashMap<String, Tuple<Intent, VariableEntity>>();
-      final var scopedVariables = variableRecords.getValue();
 
-      for (final var scopedVariable : scopedVariables) {
-        if (!shouldProcessVariableRecord(scopedVariable)) {
-          continue;
+    for (final var variableRecords : variablesGroupedByScopeKey.entrySet()) {
+
+      final List<Record<VariableRecordValue>> records = variableRecords.getValue();
+      final var temporaryVariableCache = new HashMap<String, VariableEntity>();
+      final var shouldUpdateValue = new HashMap<String, Boolean>();
+
+      for (final var scopedVariable : records) {
+        final var recordValue = scopedVariable.getValue();
+        final var varId =
+            VariableForListViewEntity.getIdBy(recordValue.getScopeKey(), recordValue.getName());
+        if (temporaryVariableCache.get(varId) == null) {
+          temporaryVariableCache.put(varId, new VariableEntity());
+          shouldUpdateValue.put(varId, false);
         }
-        final var intent = scopedVariable.getIntent();
-        final var variableValue = scopedVariable.getValue();
-        final var variableName = variableValue.getName();
-        final var cachedVariable =
-            temporaryVariableCache.computeIfAbsent(
-                variableName, (k) -> Tuple.of(intent, new VariableEntity()));
-        final var variableEntity = cachedVariable.getRight();
-        processVariableRecord(scopedVariable, variableEntity);
+        processVariableRecord(scopedVariable, temporaryVariableCache.get(varId), shouldUpdateValue);
       }
 
-      for (final var cachedVariable : temporaryVariableCache.values()) {
-        final var initialIntent = cachedVariable.getLeft();
-        final var variableEntity = cachedVariable.getRight();
+      for (final var variableEntity : temporaryVariableCache.values()) {
 
         LOGGER.debug("Variable instance: id {}", variableEntity.getId());
 
         final Map<String, Object> updateFields = new HashMap<>();
         updateFields.put(POSITION, variableEntity.getPosition());
-        if (initialIntent == VariableIntent.MIGRATED) {
-          updateFields.put(PROCESS_DEFINITION_KEY, variableEntity.getProcessDefinitionKey());
-          updateFields.put(BPMN_PROCESS_ID, variableEntity.getBpmnProcessId());
-        } else {
+
+        updateFields.put(PROCESS_DEFINITION_KEY, variableEntity.getProcessDefinitionKey());
+        updateFields.put(BPMN_PROCESS_ID, variableEntity.getBpmnProcessId());
+        if (shouldUpdateValue.get(variableEntity.getId())) {
           updateFields.put(VALUE, variableEntity.getValue());
           updateFields.put(FULL_VALUE, variableEntity.getFullValue());
           updateFields.put(IS_PREVIEW, variableEntity.getIsPreview());
-          updateFields.put(PROCESS_DEFINITION_KEY, variableEntity.getProcessDefinitionKey());
-          updateFields.put(BPMN_PROCESS_ID, variableEntity.getBpmnProcessId());
         }
 
         if (concurrencyMode) {
@@ -151,7 +145,9 @@ public class VariableZeebeRecordProcessor {
   }
 
   private void processVariableRecord(
-      final Record<VariableRecordValue> record, final VariableEntity entity) {
+      final Record<VariableRecordValue> record,
+      final VariableEntity entity,
+      final Map<String, Boolean> shouldUpdateValue) {
     final var recordValue = record.getValue();
 
     entity
@@ -165,19 +161,22 @@ public class VariableZeebeRecordProcessor {
         .setName(recordValue.getName())
         .setTenantId(tenantOrDefault(recordValue.getTenantId()))
         .setPosition(record.getPosition());
-    if (recordValue.getValue().length()
-        > operateProperties.getImporter().getVariableSizeThreshold()) {
-      // store preview
-      entity.setValue(
-          recordValue
-              .getValue()
-              .substring(0, operateProperties.getImporter().getVariableSizeThreshold()));
-      entity.setFullValue(recordValue.getValue());
-      entity.setIsPreview(true);
-    } else {
-      entity.setValue(recordValue.getValue());
-      entity.setFullValue(null);
-      entity.setIsPreview(false);
+    if (!record.getIntent().equals(VariableIntent.MIGRATED)) {
+      shouldUpdateValue.put(entity.getId(), true);
+      if (recordValue.getValue().length()
+          > operateProperties.getImporter().getVariableSizeThreshold()) {
+        // store preview
+        entity.setValue(
+            recordValue
+                .getValue()
+                .substring(0, operateProperties.getImporter().getVariableSizeThreshold()));
+        entity.setFullValue(recordValue.getValue());
+        entity.setIsPreview(true);
+      } else {
+        entity.setValue(recordValue.getValue());
+        entity.setFullValue(null);
+        entity.setIsPreview(false);
+      }
     }
   }
 
