@@ -36,7 +36,7 @@ import java.util.function.Supplier;
 import org.assertj.core.api.Assertions;
 import org.assertj.core.api.InstanceOfAssertFactories;
 import org.awaitility.Awaitility;
-import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
 @MultiDbTest
@@ -49,6 +49,13 @@ public class ClusterPurgeMultiDbIT {
       new TestStandaloneBroker().withUnauthenticatedAccess();
 
   private static final int TIMEOUT = 40;
+
+  @AfterEach
+  void tearDown() {
+    final ClusterActuator actuator = ClusterActuator.of(APPLICATION);
+    final var planChangeResponse = actuator.purge(false);
+    assertThatChangesAreApplied(planChangeResponse);
+  }
 
   @Test
   void shouldPurgeProcessDefinitions() {
@@ -176,7 +183,6 @@ public class ClusterPurgeMultiDbIT {
   }
 
   @RegressionTest("https://github.com/camunda/camunda/issues/29733")
-  @Disabled("Test is flaky, will be fixed in https://github.com/camunda/camunda/pull/30617")
   void shouldPurgeProcessCache() {
     // GIVEN
     final ClusterActuator actuator = ClusterActuator.of(APPLICATION);
@@ -191,6 +197,7 @@ public class ClusterPurgeMultiDbIT {
                 .done());
     final var processInstanceKey1 = startProcess(processDefinitionKey1);
 
+    // Query API so cache is filled
     Awaitility.await("until user task is active")
         .ignoreExceptions()
         .atMost(Duration.ofSeconds(2 * TIMEOUT))
@@ -203,15 +210,6 @@ public class ClusterPurgeMultiDbIT {
                   .extracting(SearchResponse::items)
                   .satisfies(items -> Assertions.assertThat(items).hasSize(1));
             });
-
-    // Query API so cache is filled - we don't care about the result
-    client
-        .newElementInstanceSearchRequest()
-        .filter((f) -> f.processInstanceKey(processInstanceKey1))
-        .sort(sort -> sort.startDate().asc())
-        .send()
-        .join()
-        .items();
 
     // WHEN
     final var planChangeResponse = actuator.purge(false);
@@ -260,7 +258,6 @@ public class ClusterPurgeMultiDbIT {
                       .send()
                       .join()
                       .items();
-
               assertThat((items2.get(1)).getElementName()).isEqualTo("test-task-2");
             });
   }

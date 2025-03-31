@@ -9,8 +9,11 @@ package io.camunda.search.schema.elasticsearch;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.elasticsearch._types.AcknowledgedResponse;
+import co.elastic.clients.elasticsearch._types.Conflicts;
 import co.elastic.clients.elasticsearch._types.ElasticsearchException;
 import co.elastic.clients.elasticsearch._types.HealthStatus;
+import co.elastic.clients.elasticsearch._types.Slices;
+import co.elastic.clients.elasticsearch._types.SlicesCalculation;
 import co.elastic.clients.elasticsearch._types.Time;
 import co.elastic.clients.elasticsearch._types.mapping.Property;
 import co.elastic.clients.elasticsearch._types.mapping.TypeMapping;
@@ -57,6 +60,8 @@ import org.slf4j.LoggerFactory;
 
 public class ElasticsearchEngineClient implements SearchEngineClient {
   private static final Logger LOG = LoggerFactory.getLogger(ElasticsearchEngineClient.class);
+  private static final Slices AUTO_SLICES =
+      Slices.of(slices -> slices.computed(SlicesCalculation.Auto));
   private final ElasticsearchClient client;
   private final SearchEngineClientUtils utils;
   private final ObjectMapper mapper;
@@ -275,7 +280,14 @@ public class ElasticsearchEngineClient implements SearchEngineClient {
   @Override
   public void truncateIndex(final String indexName) {
     final DeleteByQueryRequest deleteByQueryRequest =
-        new DeleteByQueryRequest.Builder().index(indexName).query(q -> q.matchAll(m -> m)).build();
+        new DeleteByQueryRequest.Builder()
+            .waitForCompletion(true)
+            .slices(AUTO_SLICES)
+            .conflicts(Conflicts.Proceed)
+            .index(indexName)
+            .query(q -> q.matchAll(m -> m))
+            .refresh(true)
+            .build();
     try {
       final DeleteByQueryResponse response = client.deleteByQuery(deleteByQueryRequest);
       LOG.debug("Deleted {} documents from index {}", response.deleted(), indexName);
