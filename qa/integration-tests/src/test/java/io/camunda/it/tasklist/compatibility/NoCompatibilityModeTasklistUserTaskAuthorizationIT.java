@@ -101,7 +101,11 @@ public class NoCompatibilityModeTasklistUserTaskAuthorizationIT {
               new Permissions(
                   ResourceTypeEnum.PROCESS_DEFINITION,
                   PermissionTypeEnum.UPDATE_USER_TASK,
-                  List.of(PROCESS_ID_WITH_JOB_BASED_USERTASK))));
+                  List.of(PROCESS_ID_WITH_JOB_BASED_USERTASK)),
+              new Permissions(
+                  ResourceTypeEnum.PROCESS_DEFINITION,
+                  PermissionTypeEnum.UPDATE_USER_TASK,
+                  List.of(PROCESS_WITH_USER_TASK))));
 
   @BeforeAll
   public static void beforeAll(@Authenticated(ADMIN_USER_NAME) final CamundaClient adminClient) {
@@ -238,6 +242,30 @@ public class NoCompatibilityModeTasklistUserTaskAuthorizationIT {
     // then
     assertThat(response).isNotNull();
     assertThat(response.statusCode()).isEqualTo(403);
+  }
+
+  @Test
+  public void shouldBeAuthorizedToAssignUserTask(
+      @Authenticated(ADMIN_USER_NAME) final CamundaClient adminClient,
+      @Authenticated(TEST_USER_NAME_WITH_PERMISSION) final CamundaClient withPermission) {
+    // given (admin) to create instance
+    final var processInstanceKeyWithJobBasedUserTask =
+        createProcessInstance(adminClient, PROCESS_WITH_USER_TASK);
+    final var userTaskKeyWithJobBasedUserTask =
+        awaitJobBasedUserTaskBeingAvailable(processInstanceKeyWithJobBasedUserTask);
+    // given (non-admin) user with permissions to assign task
+
+    // when
+    final var response =
+        tasklistRestClient
+            .withAuthentication(TEST_USER_NAME_WITH_PERMISSION, TEST_USER_PASSWORD)
+            .assignUserTask(userTaskKeyWithJobBasedUserTask, TEST_USER_NAME_WITH_PERMISSION);
+
+    // then
+    assertThat(response).isNotNull();
+    assertThat(response.statusCode()).isEqualTo(200);
+    ensureJobBasedUserTaskAssigneeChanged(
+        processInstanceKeyWithJobBasedUserTask, TEST_USER_NAME_WITH_PERMISSION);
   }
 
   @Test
