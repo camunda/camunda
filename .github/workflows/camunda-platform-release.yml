@@ -19,20 +19,7 @@ env:
   GH_TOKEN: ${{ github.token }} # needs to be available for the gh CLI tool
   GITHUB_TOKEN_USR: ${{ github.token }} # needs to be available for the SCM URL in pom.xml
 permissions:
-  actions: write
-  attestations: write
-  checks: write
   contents: write
-  deployments: write
-  id-token: write
-  issues: write
-  discussions: write
-  packages: write
-  pages: write
-  pull-requests: write
-  repository-projects: write
-  security-events: write
-  statuses: write
   workflows: write
 jobs:
   release:
