@@ -11,17 +11,22 @@ import io.camunda.zeebe.auth.Authorization;
 import io.camunda.zeebe.engine.util.AuthorizationUtil;
 import io.camunda.zeebe.protocol.impl.encoding.AuthInfo;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationCreationRecord;
+import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationExecutionRecord;
 import io.camunda.zeebe.protocol.record.Record;
+import io.camunda.zeebe.protocol.record.intent.BatchOperationExecutionIntent;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceCreationIntent;
 import io.camunda.zeebe.protocol.record.value.BatchOperationCreationRecordValue;
 import io.camunda.zeebe.protocol.record.value.BatchOperationType;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import java.util.Random;
+import java.util.Set;
 import java.util.function.Function;
 import org.agrona.DirectBuffer;
 
 public final class BatchOperationClient {
+
+  private static final int DEFAULT_PARTITION = 1;
 
   private final CommandWriter writer;
 
@@ -29,8 +34,12 @@ public final class BatchOperationClient {
     this.writer = writer;
   }
 
-  public BatchOperationCreationClient ofType(final BatchOperationType type) {
+  public BatchOperationCreationClient newCreation(final BatchOperationType type) {
     return new BatchOperationCreationClient(writer, type);
+  }
+
+  public BatchOperationExecutionClient newExecution(final BatchOperationType type) {
+    return new BatchOperationExecutionClient(writer, type);
   }
 
   public static class BatchOperationCreationClient {
@@ -51,7 +60,6 @@ public final class BatchOperationClient {
                     .withIntent(BatchOperationIntent.CREATE)
                     .withSourceRecordPosition(position)
                     .getFirst();
-    private static final int DEFAULT_PARTITION = 1;
 
     private final CommandWriter writer;
     private final BatchOperationCreationRecord batchOperationCreationRecord;
@@ -100,10 +108,6 @@ public final class BatchOperationClient {
       return resultingRecord;
     }
 
-    public Record<BatchOperationCreationRecordValue> create(final String username) {
-      return create(AuthorizationUtil.getAuthInfo(username));
-    }
-
     public BatchOperationCreationClient expectRejection() {
       expectation = REJECTION_EXPECTATION;
       return this;
@@ -142,6 +146,62 @@ public final class BatchOperationClient {
           .getFirst()
           .getValue()
           .getBatchOperationKey();
+    }
+  }
+
+  public static class BatchOperationExecutionClient {
+
+    private static final Function<Long, Record<BatchOperationCreationRecordValue>>
+        SUCCESS_EXPECTATION =
+            (position) ->
+                RecordingExporter.batchOperationCreationRecords()
+                    .withIntent(BatchOperationExecutionIntent.EXECUTED)
+                    .withSourceRecordPosition(position)
+                    .getFirst();
+
+    private static final Function<Long, Record<BatchOperationCreationRecordValue>>
+        NOOP_EXPECTATION = (position) -> null;
+
+    private final CommandWriter writer;
+    private final BatchOperationExecutionRecord batchOperationExecutionRecord;
+    private final int partition = DEFAULT_PARTITION;
+
+    private final Function<Long, Record<BatchOperationCreationRecordValue>> expectation =
+        SUCCESS_EXPECTATION;
+
+    public BatchOperationExecutionClient(
+        final CommandWriter writer, final BatchOperationType type) {
+      this.writer = writer;
+      batchOperationExecutionRecord = new BatchOperationExecutionRecord();
+    }
+
+    public BatchOperationExecutionClient withBatchOperationKey(final long batchOperationKey) {
+      batchOperationExecutionRecord.setBatchOperationKey(batchOperationKey);
+      return this;
+    }
+
+    public BatchOperationExecutionClient withItemKeys(final Set<Long> items) {
+      batchOperationExecutionRecord.setItemKeys(items);
+      return this;
+    }
+
+    public Record<BatchOperationCreationRecordValue> createCanceled() {
+      return createCanceled(
+          AuthorizationUtil.getAuthInfoWithClaim(Authorization.AUTHORIZED_ANONYMOUS_USER, true));
+    }
+
+    public Record<BatchOperationCreationRecordValue> createCanceled(final AuthInfo authorizations) {
+      final long position =
+          writer.writeCommandOnPartition(
+              partition,
+              r ->
+                  r.intent(BatchOperationExecutionIntent.EXECUTE)
+                      .event(batchOperationExecutionRecord)
+                      .authorizations(authorizations)
+                      .requestId(new Random().nextLong())
+                      .requestStreamId(new Random().nextInt()));
+
+      return NOOP_EXPECTATION.apply(position);
     }
   }
 }

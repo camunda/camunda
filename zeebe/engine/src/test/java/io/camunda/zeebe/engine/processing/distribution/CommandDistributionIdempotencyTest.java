@@ -231,7 +231,7 @@ public class CommandDistributionIdempotencyTest {
                 () ->
                     ENGINE
                         .batchOperation()
-                        .ofType(BatchOperationType.PROCESS_CANCELLATION)
+                        .newCreation(BatchOperationType.PROCESS_CANCELLATION)
                         .withFilter(
                             new UnsafeBuffer(
                                 MsgPackConverter.convertToMsgPack(
