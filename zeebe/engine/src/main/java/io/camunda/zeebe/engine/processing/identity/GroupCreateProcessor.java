@@ -27,7 +27,7 @@ import io.camunda.zeebe.stream.api.state.KeyGenerator;
 public class GroupCreateProcessor implements DistributedTypedRecordProcessor<GroupRecord> {
 
   public static final String GROUP_ALREADY_EXISTS_ERROR_MESSAGE =
-      "Expected to create group with name '%s', but a group with this name already exists.";
+      "Expected to create group with ID '%s', but a group with this ID already exists.";
   private final GroupState groupState;
   private final AuthorizationCheckBehavior authCheckBehavior;
   private final KeyGenerator keyGenerator;
@@ -53,9 +53,20 @@ public class GroupCreateProcessor implements DistributedTypedRecordProcessor<Gro
 
   @Override
   public void processNewCommand(final TypedRecord<GroupRecord> command) {
+    final var record = command.getValue();
+    final var groupId = record.getGroupId();
+    final var persistedGroup = groupState.get(groupId);
+    if (persistedGroup.isPresent()) {
+      final var errorMessage = GROUP_ALREADY_EXISTS_ERROR_MESSAGE.formatted(groupId);
+      rejectionWriter.appendRejection(command, RejectionType.ALREADY_EXISTS, errorMessage);
+      responseWriter.writeRejectionOnCommand(command, RejectionType.ALREADY_EXISTS, errorMessage);
+      return;
+    }
+
     final var authorizationRequest =
         new AuthorizationRequest(command, AuthorizationResourceType.GROUP, PermissionType.CREATE);
     final var isAuthorized = authCheckBehavior.isAuthorized(authorizationRequest);
+
     if (isAuthorized.isLeft()) {
       final var rejection = isAuthorized.getLeft();
       rejectionWriter.appendRejection(command, rejection.type(), rejection.reason());
@@ -63,15 +74,6 @@ public class GroupCreateProcessor implements DistributedTypedRecordProcessor<Gro
       return;
     }
 
-    final var record = command.getValue();
-    final var groupName = record.getName();
-    final var groupKey = groupState.get(record.getGroupId());
-    if (groupKey.isPresent()) {
-      final var errorMessage = GROUP_ALREADY_EXISTS_ERROR_MESSAGE.formatted(groupName);
-      rejectionWriter.appendRejection(command, RejectionType.ALREADY_EXISTS, errorMessage);
-      responseWriter.writeRejectionOnCommand(command, RejectionType.ALREADY_EXISTS, errorMessage);
-      return;
-    }
     final long key = keyGenerator.nextKey();
     record.setGroupKey(key);
 
@@ -88,11 +90,11 @@ public class GroupCreateProcessor implements DistributedTypedRecordProcessor<Gro
   public void processDistributedCommand(final TypedRecord<GroupRecord> command) {
     final var record = command.getValue();
     groupState
-        .get(record.getGroupKey())
+        .get(record.getGroupId())
         .ifPresentOrElse(
             persistedGroup -> {
               final var errorMessage =
-                  GROUP_ALREADY_EXISTS_ERROR_MESSAGE.formatted(persistedGroup.getName());
+                  GROUP_ALREADY_EXISTS_ERROR_MESSAGE.formatted(persistedGroup.getGroupId());
               rejectionWriter.appendRejection(command, RejectionType.ALREADY_EXISTS, errorMessage);
             },
             () -> stateWriter.appendFollowUpEvent(command.getKey(), GroupIntent.CREATED, record));
