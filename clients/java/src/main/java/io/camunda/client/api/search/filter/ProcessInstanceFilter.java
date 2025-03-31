@@ -145,4 +145,7 @@ public interface ProcessInstanceFilter extends SearchRequestFilter {
 
   /** Filter by incidentErrorHashCode */
   ProcessInstanceFilter incidentErrorHashCode(final Integer incidentErrorHashCode);
+
+  /** Filter by or conjunction using {@link ProcessInstanceFilter} consumer */
+  ProcessInstanceFilter or(final List<Consumer<ProcessInstanceFilter>> fns);
 }
