@@ -19,6 +19,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.github.tomakehurst.wiremock.http.RequestMethod;
 import com.github.tomakehurst.wiremock.verification.LoggedRequest;
+import io.camunda.client.api.search.enums.IncidentErrorType;
+import io.camunda.client.api.search.enums.IncidentState;
 import io.camunda.client.impl.search.request.SearchRequestSort;
 import io.camunda.client.impl.search.request.SearchRequestSortMapper;
 import io.camunda.client.protocol.rest.*;
@@ -68,14 +70,12 @@ public class SearchIncidentTest extends ClientRestTest {
                     .processDefinitionKey(2L)
                     .processDefinitionId("complexProcess")
                     .processInstanceKey(3L)
-                    .errorType(
-                        io.camunda.client.api.search.enums.IncidentFilter.ErrorType
-                            .CALLED_DECISION_ERROR)
+                    .errorType(IncidentErrorType.CALLED_DECISION_ERROR)
                     .errorMessage("Can't decide")
                     .flowNodeId("flowNode")
                     .flowNodeInstanceKey(4L)
                     .creationTime("2024-05-23T23:05:00.000+000")
-                    .state(io.camunda.client.api.search.enums.IncidentFilter.State.ACTIVE)
+                    .state(IncidentState.ACTIVE)
                     .jobKey(5L)
                     .tenantId("tenant"))
         .send()
@@ -176,8 +176,7 @@ public class SearchIncidentTest extends ClientRestTest {
   @EnumSource(value = ErrorType.class)
   void shouldSearchIncidentByIncidentErrorType(final ErrorType errorType) {
     // given
-    final io.camunda.client.api.search.enums.IncidentFilter.ErrorType incidentErrorType =
-        io.camunda.client.api.search.enums.IncidentFilter.ErrorType.valueOf(errorType.name());
+    final IncidentErrorType incidentErrorType = IncidentErrorType.valueOf(errorType.name());
 
     // when
     client

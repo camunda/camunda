@@ -15,9 +15,9 @@
  */
 package io.camunda.client.impl;
 
-import io.camunda.client.api.search.GroupChangeset;
-import io.camunda.client.api.search.JobChangeset;
-import io.camunda.client.api.search.ProblemDetail;
+import io.camunda.client.api.ProblemDetail;
+import io.camunda.client.api.command.GroupChangeset;
+import io.camunda.client.api.command.JobChangeset;
 import io.camunda.client.api.search.filter.*;
 import io.camunda.client.api.search.filter.AdHocSubprocessActivityRequestFilter;
 import io.camunda.client.impl.util.EnumUtil;

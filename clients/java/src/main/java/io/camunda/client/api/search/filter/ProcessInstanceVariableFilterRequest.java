@@ -24,15 +24,17 @@ public class ProcessInstanceVariableFilterRequest {
     return name;
   }
 
-  public void setName(String name) {
+  public ProcessInstanceVariableFilterRequest setName(String name) {
     this.name = name;
+    return this;
   }
 
   public StringFilterProperty getValue() {
     return value;
   }
 
-  public void setValue(StringFilterProperty value) {
+  public ProcessInstanceVariableFilterRequest setValue(StringFilterProperty value) {
     this.value = value;
+    return this;
   }
 }

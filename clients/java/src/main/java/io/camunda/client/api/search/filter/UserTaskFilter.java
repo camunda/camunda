@@ -15,6 +15,7 @@
  */
 package io.camunda.client.api.search.filter;
 
+import io.camunda.client.api.search.enums.UserTaskState;
 import io.camunda.client.api.search.filter.builder.DateTimeProperty;
 import io.camunda.client.api.search.filter.builder.IntegerProperty;
 import io.camunda.client.api.search.filter.builder.StringProperty;
@@ -41,7 +42,7 @@ public interface UserTaskFilter extends SearchRequestFilter {
    * @param state the state of the user task
    * @return the updated filter
    */
-  UserTaskFilter state(final io.camunda.client.api.search.enums.UserTaskFilter.State state);
+  UserTaskFilter state(final UserTaskState state);
 
   /**
    * Filters user tasks by the specified assignee.

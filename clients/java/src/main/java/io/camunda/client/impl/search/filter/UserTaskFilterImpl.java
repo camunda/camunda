@@ -15,6 +15,7 @@
  */
 package io.camunda.client.impl.search.filter;
 
+import io.camunda.client.api.search.enums.UserTaskState;
 import io.camunda.client.api.search.filter.UserTaskFilter;
 import io.camunda.client.api.search.filter.UserTaskVariableFilterRequest;
 import io.camunda.client.api.search.filter.builder.DateTimeProperty;
@@ -50,7 +51,7 @@ public class UserTaskFilterImpl
   }
 
   @Override
-  public UserTaskFilter state(final io.camunda.client.api.search.enums.UserTaskFilter.State state) {
+  public UserTaskFilter state(final UserTaskState state) {
     filter.setState(
         EnumUtil.convert(state, io.camunda.client.protocol.rest.UserTaskFilter.StateEnum.class));
     return this;

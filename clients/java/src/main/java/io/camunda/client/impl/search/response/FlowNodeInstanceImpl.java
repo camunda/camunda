@@ -15,6 +15,8 @@
  */
 package io.camunda.client.impl.search.response;
 
+import io.camunda.client.api.search.enums.FlowNodeInstanceState;
+import io.camunda.client.api.search.enums.FlowNodeInstanceType;
 import io.camunda.client.api.search.response.FlowNodeInstance;
 import io.camunda.client.impl.util.EnumUtil;
 import io.camunda.client.impl.util.ParseUtil;
@@ -33,9 +35,9 @@ public final class FlowNodeInstanceImpl implements FlowNodeInstance {
   private final String endDate;
   private final Boolean incident;
   private final Long incidentKey;
-  private final io.camunda.client.api.search.enums.FlowNodeInstanceResult.State state;
+  private final FlowNodeInstanceState state;
   private final String tenantId;
-  private final io.camunda.client.api.search.enums.FlowNodeInstanceResult.Type type;
+  private final FlowNodeInstanceType type;
 
   public FlowNodeInstanceImpl(final FlowNodeInstanceResult item) {
     flowNodeInstanceKey = ParseUtil.parseLongOrNull(item.getFlowNodeInstanceKey());
@@ -48,13 +50,9 @@ public final class FlowNodeInstanceImpl implements FlowNodeInstance {
     endDate = item.getEndDate();
     incident = item.getHasIncident();
     incidentKey = ParseUtil.parseLongOrNull(item.getIncidentKey());
-    state =
-        EnumUtil.convert(
-            item.getState(), io.camunda.client.api.search.enums.FlowNodeInstanceResult.State.class);
+    state = EnumUtil.convert(item.getState(), FlowNodeInstanceState.class);
     tenantId = item.getTenantId();
-    type =
-        EnumUtil.convert(
-            item.getType(), io.camunda.client.api.search.enums.FlowNodeInstanceResult.Type.class);
+    type = EnumUtil.convert(item.getType(), FlowNodeInstanceType.class);
   }
 
   @Override
@@ -108,7 +106,7 @@ public final class FlowNodeInstanceImpl implements FlowNodeInstance {
   }
 
   @Override
-  public io.camunda.client.api.search.enums.FlowNodeInstanceResult.State getState() {
+  public FlowNodeInstanceState getState() {
     return state;
   }
 
@@ -118,7 +116,7 @@ public final class FlowNodeInstanceImpl implements FlowNodeInstance {
   }
 
   @Override
-  public io.camunda.client.api.search.enums.FlowNodeInstanceResult.Type getType() {
+  public FlowNodeInstanceType getType() {
     return type;
   }
 

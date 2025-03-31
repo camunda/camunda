@@ -13,17 +13,26 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.camunda.client.api.search;
+package io.camunda.client.api.search.enums;
 
-public class GroupChangeset {
-
-  private String name;
-
-  public String getName() {
-    return name;
-  }
-
-  public void setName(String name) {
-    this.name = name;
-  }
+public enum AdHocSubprocessActivityResultType {
+  UNSPECIFIED,
+  PROCESS,
+  SUB_PROCESS,
+  EVENT_SUB_PROCESS,
+  INTERMEDIATE_CATCH_EVENT,
+  INTERMEDIATE_THROW_EVENT,
+  BOUNDARY_EVENT,
+  SERVICE_TASK,
+  RECEIVE_TASK,
+  USER_TASK,
+  MANUAL_TASK,
+  TASK,
+  MULTI_INSTANCE_BODY,
+  CALL_ACTIVITY,
+  BUSINESS_RULE_TASK,
+  SCRIPT_TASK,
+  SEND_TASK,
+  UNKNOWN,
+  UNKNOWN_ENUM_VALUE;
 }

@@ -17,7 +17,7 @@ package io.camunda.process.test.impl.testresult;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.client.api.search.enums.IncidentResult;
+import io.camunda.client.api.search.enums.IncidentErrorType;
 import io.camunda.client.api.search.response.ProcessInstance;
 import io.camunda.process.test.utils.FlowNodeInstanceBuilder;
 import io.camunda.process.test.utils.IncidentBuilder;
@@ -154,12 +154,11 @@ public class CamundaProcessResultPrinterTest {
     final ProcessInstanceResult processInstance1 = newProcessInstance(1L, "process-a");
     processInstance1.setOpenIncidents(
         Arrays.asList(
-            IncidentBuilder.newActiveIncident(
-                    IncidentResult.ErrorType.JOB_NO_RETRIES, "No retries left.")
+            IncidentBuilder.newActiveIncident(IncidentErrorType.JOB_NO_RETRIES, "No retries left.")
                 .setFlowNodeId("task-a")
                 .build(),
             IncidentBuilder.newActiveIncident(
-                    IncidentResult.ErrorType.EXTRACT_VALUE_ERROR, "Failed to evaluate expression.")
+                    IncidentErrorType.EXTRACT_VALUE_ERROR, "Failed to evaluate expression.")
                 .setFlowNodeId("task-b")
                 .build()));
 
@@ -167,7 +166,7 @@ public class CamundaProcessResultPrinterTest {
     processInstance2.setOpenIncidents(
         Collections.singletonList(
             IncidentBuilder.newActiveIncident(
-                    IncidentResult.ErrorType.UNHANDLED_ERROR_EVENT, "No error catch event found.")
+                    IncidentErrorType.UNHANDLED_ERROR_EVENT, "No error catch event found.")
                 .setFlowNodeId("task-c")
                 .build()));
 
@@ -271,8 +270,7 @@ public class CamundaProcessResultPrinterTest {
 
     processInstance.setOpenIncidents(
         Collections.singletonList(
-            IncidentBuilder.newActiveIncident(
-                    IncidentResult.ErrorType.JOB_NO_RETRIES, bigIncidentMessage)
+            IncidentBuilder.newActiveIncident(IncidentErrorType.JOB_NO_RETRIES, bigIncidentMessage)
                 .setFlowNodeId("task-a")));
     processTestResult.setProcessInstanceTestResults(Collections.singletonList(processInstance));
 

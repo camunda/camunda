@@ -7,10 +7,12 @@
  */
 package io.camunda.it.client;
 
+import static io.camunda.client.api.search.enums.IncidentState.ACTIVE;
 import static io.camunda.it.util.TestHelper.deployResource;
 import static io.camunda.it.util.TestHelper.startProcessInstance;
 import static io.camunda.it.util.TestHelper.waitForProcessInstancesToStart;
 import static io.camunda.it.util.TestHelper.waitForProcessesToBeDeployed;
+import static io.camunda.it.util.TestHelper.waitUntilIncidentsAreActive;
 import static io.camunda.it.util.TestHelper.waitUntilProcessInstanceHasIncidents;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
@@ -19,7 +21,8 @@ import static org.junit.jupiter.api.Assertions.assertThrowsExactly;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.command.ProblemException;
 import io.camunda.client.api.response.Process;
-import io.camunda.client.api.search.enums.IncidentFilter;
+import io.camunda.client.api.search.enums.IncidentErrorType;
+import io.camunda.client.api.search.enums.IncidentState;
 import io.camunda.client.api.search.response.Incident;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.webapps.schema.entities.operate.ErrorType;
@@ -38,6 +41,7 @@ import org.junit.jupiter.params.provider.EnumSource;
 class IncidentSearchTest {
 
   private static final List<Process> DEPLOYED_PROCESSES = new ArrayList<>();
+  private static final int AMOUNT_OF_INCIDENTS = 3;
 
   private static CamundaClient camundaClient;
 
@@ -63,7 +67,8 @@ class IncidentSearchTest {
     startProcessInstance(camundaClient, "incident_process_v1");
 
     waitForProcessInstancesToStart(camundaClient, 5);
-    waitUntilProcessInstanceHasIncidents(camundaClient, 3);
+    waitUntilProcessInstanceHasIncidents(camundaClient, AMOUNT_OF_INCIDENTS);
+    waitUntilIncidentsAreActive(camundaClient, AMOUNT_OF_INCIDENTS);
 
     incident = camundaClient.newIncidentSearchRequest().send().join().items().getFirst();
   }
@@ -71,6 +76,18 @@ class IncidentSearchTest {
   @AfterAll
   static void afterAll() {
     DEPLOYED_PROCESSES.clear();
+  }
+
+  @Test
+  void testIncidentsAreActive() {
+    // given
+    waitUntilIncidentsAreActive(camundaClient, AMOUNT_OF_INCIDENTS);
+
+    // when
+    final List<Incident> incidents = camundaClient.newIncidentSearchRequest().send().join().items();
+
+    // then incidents are updated by background task, PENDING state is changed on ACTIVE
+    assertThat(incidents).extracting(Incident::getState).containsOnly(ACTIVE);
   }
 
   @Test
@@ -147,7 +164,7 @@ class IncidentSearchTest {
     final var result =
         camundaClient
             .newIncidentSearchRequest()
-            .filter(f -> f.state(IncidentFilter.State.valueOf(state.name())))
+            .filter(f -> f.state(IncidentState.valueOf(state.name())))
             .send()
             .join();
 
@@ -219,7 +236,7 @@ class IncidentSearchTest {
     final var result =
         camundaClient
             .newIncidentSearchRequest()
-            .filter(f -> f.errorType(IncidentFilter.ErrorType.valueOf(errorType.name())))
+            .filter(f -> f.errorType(IncidentErrorType.valueOf(errorType.name())))
             .send()
             .join();
 
@@ -235,7 +252,7 @@ class IncidentSearchTest {
             () ->
                 camundaClient
                     .newIncidentSearchRequest()
-                    .filter(f -> f.errorType(IncidentFilter.ErrorType.valueOf(errorType.name())))
+                    .filter(f -> f.errorType(IncidentErrorType.valueOf(errorType.name())))
                     .send()
                     .join())
         .describedAs(

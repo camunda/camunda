@@ -15,7 +15,8 @@
  */
 package io.camunda.process.test.utils;
 
-import io.camunda.client.api.search.enums.IncidentResult;
+import io.camunda.client.api.search.enums.IncidentErrorType;
+import io.camunda.client.api.search.enums.IncidentState;
 import io.camunda.client.api.search.response.Incident;
 
 public class IncidentBuilder implements Incident {
@@ -24,12 +25,12 @@ public class IncidentBuilder implements Incident {
   private Long processDefinitionKey;
   private String processDefinitionId;
   private Long processInstanceKey;
-  private IncidentResult.ErrorType errorType;
+  private IncidentErrorType errorType;
   private String errorMessage;
   private String flowNodeId;
   private Long flowNodeInstanceKey;
   private String creationTime;
-  private IncidentResult.State state;
+  private IncidentState state;
   private Long jobKey;
   private String tenantId;
 
@@ -54,7 +55,7 @@ public class IncidentBuilder implements Incident {
   }
 
   @Override
-  public IncidentResult.ErrorType getErrorType() {
+  public IncidentErrorType getErrorType() {
     return errorType;
   }
 
@@ -79,7 +80,7 @@ public class IncidentBuilder implements Incident {
   }
 
   @Override
-  public IncidentResult.State getState() {
+  public IncidentState getState() {
     return state;
   }
 
@@ -103,7 +104,7 @@ public class IncidentBuilder implements Incident {
     return this;
   }
 
-  public IncidentBuilder setState(final IncidentResult.State state) {
+  public IncidentBuilder setState(final IncidentState state) {
     this.state = state;
     return this;
   }
@@ -128,7 +129,7 @@ public class IncidentBuilder implements Incident {
     return this;
   }
 
-  public IncidentBuilder setErrorType(final IncidentResult.ErrorType errorType) {
+  public IncidentBuilder setErrorType(final IncidentErrorType errorType) {
     this.errorType = errorType;
     return this;
   }
@@ -158,10 +159,10 @@ public class IncidentBuilder implements Incident {
   }
 
   public static IncidentBuilder newActiveIncident(
-      final IncidentResult.ErrorType errorType, final String errorMessage) {
+      final IncidentErrorType errorType, final String errorMessage) {
     return new IncidentBuilder()
         .setErrorType(errorType)
         .setErrorMessage(errorMessage)
-        .setState(IncidentResult.State.ACTIVE);
+        .setState(IncidentState.ACTIVE);
   }
 }

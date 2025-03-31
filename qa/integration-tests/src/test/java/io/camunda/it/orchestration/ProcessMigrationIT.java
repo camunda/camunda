@@ -13,7 +13,7 @@ import static org.awaitility.Awaitility.await;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.command.MigrationPlan;
-import io.camunda.client.api.search.enums.IncidentResult;
+import io.camunda.client.api.search.enums.IncidentState;
 import io.camunda.client.api.search.filter.FlownodeInstanceFilter;
 import io.camunda.client.api.search.filter.IncidentFilter;
 import io.camunda.client.api.search.filter.ProcessDefinitionFilter;
@@ -124,7 +124,7 @@ public class ProcessMigrationIT {
         i -> {
           assertThat(i.getFlowNodeId()).isEqualTo("taskB2");
           assertThat(i.getProcessDefinitionId()).isEqualTo("migration-process_v2");
-          assertThat(i.getState()).isEqualTo(IncidentResult.State.ACTIVE);
+          assertThat(i.getState()).isEqualTo(IncidentState.ACTIVE);
         });
   }
 
@@ -157,7 +157,7 @@ public class ProcessMigrationIT {
         i -> {
           assertThat(i.getFlowNodeId()).isEqualTo("taskB");
           assertThat(i.getProcessDefinitionId()).isEqualTo("migration-process_v1");
-          assertThat(i.getState()).isEqualTo(IncidentResult.State.RESOLVED);
+          assertThat(i.getState()).isEqualTo(IncidentState.RESOLVED);
         });
   }
 
