@@ -5,7 +5,7 @@
   <parent>
     <groupId>io.camunda.optimize</groupId>
     <artifactId>optimize-qa</artifactId>
-    <version>8.7.0-rc2</version>
+    <version>0.1.0-SNAPSHOT</version>
   </parent>
 
   <artifactId>optimize-schema-integrity-tests</artifactId>
