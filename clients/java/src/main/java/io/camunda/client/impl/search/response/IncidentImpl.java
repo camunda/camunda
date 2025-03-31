@@ -152,39 +152,4 @@ public class IncidentImpl implements Incident {
         && Objects.equals(jobKey, incident.jobKey)
         && Objects.equals(tenantId, incident.tenantId);
   }
-
-  @Override
-  public String toString() {
-    return "IncidentImpl{"
-        + "incidentKey="
-        + incidentKey
-        + ", processDefinitionKey="
-        + processDefinitionKey
-        + ", processDefinitionId='"
-        + processDefinitionId
-        + '\''
-        + ", processInstanceKey="
-        + processInstanceKey
-        + ", errorType="
-        + errorType
-        + ", errorMessage='"
-        + errorMessage
-        + '\''
-        + ", flowNodeId='"
-        + flowNodeId
-        + '\''
-        + ", flowNodeInstanceKey="
-        + flowNodeInstanceKey
-        + ", creationTime='"
-        + creationTime
-        + '\''
-        + ", state="
-        + state
-        + ", jobKey="
-        + jobKey
-        + ", tenantId='"
-        + tenantId
-        + '\''
-        + '}';
-  }
 }

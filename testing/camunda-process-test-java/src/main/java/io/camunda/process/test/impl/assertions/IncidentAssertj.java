@@ -45,7 +45,7 @@ public class IncidentAssertj extends AbstractAssert<ElementAssertj, String> {
         (incidents) ->
             assertThat(incidents)
                 .withFailMessage(
-                    "%s should have zero incidents, but the following incidents were active:\n\n%s",
+                    "%s should have zero incidents, but the following incidents were active:\n%s",
                     actual, collectIncidentReports(incidents))
                 .isEmpty());
   }
@@ -84,6 +84,11 @@ public class IncidentAssertj extends AbstractAssert<ElementAssertj, String> {
   }
 
   private String collectIncidentReports(final List<Incident> incidents) {
-    return incidents.stream().map(Incident::toString).collect(Collectors.joining("\n"));
+    return incidents.stream()
+        .map(
+            i ->
+                String.format(
+                    "\t- '%s' (%s): %s", i.getIncidentKey(), i.getErrorType(), i.getErrorMessage()))
+        .collect(Collectors.joining("\n"));
   }
 }

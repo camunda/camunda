@@ -343,6 +343,7 @@ public class ClusterPurgeMultiDbIT {
         client
             .newCreateInstanceCommand()
             .processDefinitionKey(processDefinitionKey)
+            .variable("await", true)
             .send()
             .join()
             .getProcessInstanceKey();
