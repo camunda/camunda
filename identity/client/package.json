@@ -27,8 +27,7 @@
     "react-router": "7.3.0",
     "react-router-dom": "7.3.0",
     "react-transition-group": "4.4.5",
-    "styled-components": "6.1.13",
-    "zod": "^3.24.2"
+    "styled-components": "6.1.13"
   },
   "devDependencies": {
     "@types/carbon-components-react": "^7.55.13",
