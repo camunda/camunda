@@ -7,21 +7,23 @@
  */
 
 import React, { useCallback, useState } from "react";
+import { useLocation } from "react-router-dom";
+import { Button, Link, PasswordInput, TextInput } from "@carbon/react";
+import { useNotifications } from "src/components/notifications";
 import Page from "src/components/layout/Page.tsx";
 import useTranslate from "src/utility/localization";
-import { Button, Link, PasswordInput, TextInput } from "@carbon/react";
-import "./LoginPage.scss";
 import { login } from "src/utility/auth";
-import { useLocation } from "react-router-dom";
 import { getCopyrightNoticeText } from "src/utility/copyright.ts";
 import CamundaLogo from "src/assets/images/camunda.svg";
 import { useLicense } from "src/utility/license.ts";
+import "src/pages/login/LoginPage.scss";
 
 interface LoginFormProps {
   onSuccess: () => void;
+  onFail: () => void;
 }
 
-const LoginForm: React.FC<LoginFormProps> = ({ onSuccess }) => {
+const LoginForm: React.FC<LoginFormProps> = ({ onSuccess, onFail }) => {
   const { t } = useTranslate();
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
@@ -30,9 +32,11 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSuccess }) => {
     login(username, password).then((success) => {
       if (success) {
         onSuccess();
+      } else {
+        onFail();
       }
     });
-  }, [onSuccess, username, password]);
+  }, [onSuccess, onFail, username, password]);
 
   return (
     <div className="LoginForm">
@@ -86,10 +90,19 @@ export const LoginPage: React.FC = () => {
   const { t, Translate } = useTranslate();
   const location = useLocation();
   const license = useLicense();
+  const { enqueueNotification } = useNotifications();
+
   const redirectUrl = getRedirectUrl(location.search);
   const onSuccess = useCallback(() => {
     window.location.href = redirectUrl ?? "/identity/users";
   }, [redirectUrl]);
+  const onFail = useCallback(() => {
+    enqueueNotification({
+      kind: "error",
+      title: "Login failed",
+      subtitle: "That username and password combination is incorrect.",
+    });
+  }, [enqueueNotification]);
   const hasProductionLicense = license?.isCommercial;
 
   return (
@@ -99,7 +112,7 @@ export const LoginPage: React.FC = () => {
           <CamundaLogo />
           <h1>{t("identity")}</h1>
         </div>
-        <LoginForm onSuccess={onSuccess} />
+        <LoginForm onSuccess={onSuccess} onFail={onFail} />
         {!hasProductionLicense && (
           <div className="license-info">
             <Translate i18nKey="licenseInfo">
