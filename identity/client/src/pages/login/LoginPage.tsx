@@ -27,15 +27,39 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSuccess, onFail }) => {
   const { t } = useTranslate();
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+  const [usernameError, setUsernameError] = useState({
+    hasError: false,
+    errorText: "",
+  });
+  const [passwordError, setPasswordError] = useState({
+    hasError: false,
+    errorText: "",
+  });
 
   const submit = useCallback(() => {
-    login(username, password).then((success) => {
-      if (success) {
-        onSuccess();
-      } else {
-        onFail();
-      }
-    });
+    if (!username) {
+      setUsernameError({
+        hasError: true,
+        errorText: "Username field is required",
+      });
+    }
+
+    if (!password) {
+      setPasswordError({
+        hasError: true,
+        errorText: "Password field is required",
+      });
+    }
+
+    if (username && password) {
+      login(username, password).then((success) => {
+        if (success) {
+          onSuccess();
+        } else {
+          onFail();
+        }
+      });
+    }
   }, [onSuccess, onFail, username, password]);
 
   return (
@@ -45,18 +69,31 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSuccess, onFail }) => {
         name="username"
         value={username}
         onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-          setUsername(e.target.value)
+          setUsername(e.target.value.trim())
         }
         labelText={t("username")}
-        invalid={false}
-        invalidText={undefined}
+        invalid={usernameError.hasError}
+        invalidText={usernameError.errorText}
         placeholder={t("username")}
+        onBlur={({ target }) => {
+          if (target.value.trim().length < 1) {
+            setUsernameError({
+              hasError: true,
+              errorText: "Username field is required",
+            });
+          } else {
+            setUsernameError({
+              hasError: false,
+              errorText: "",
+            });
+          }
+        }}
       />
       <PasswordInput
         id="password"
         name="password"
         onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-          setPassword(e.target.value)
+          setPassword(e.target.value.trim())
         }
         value={password}
         type="password"
@@ -68,9 +105,22 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSuccess, onFail }) => {
           }
         }}
         labelText={t("password")}
-        invalid={false}
-        invalidText={undefined}
+        invalid={passwordError.hasError}
+        invalidText={passwordError.errorText}
         placeholder={t("password")}
+        onBlur={({ target }) => {
+          if (target.value.trim().length < 1) {
+            setPasswordError({
+              hasError: true,
+              errorText: "Password field is required",
+            });
+          } else {
+            setPasswordError({
+              hasError: false,
+              errorText: "",
+            });
+          }
+        }}
       />
       <Button onClick={submit}>{t("login")}</Button>
     </div>
