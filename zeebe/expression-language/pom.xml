@@ -52,6 +52,11 @@
 
     <dependency>
       <groupId>io.camunda</groupId>
+      <artifactId>zeebe-msgpack-core</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
       <artifactId>zeebe-test-util</artifactId>
       <scope>test</scope>
     </dependency>
