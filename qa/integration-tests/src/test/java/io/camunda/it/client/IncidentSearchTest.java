@@ -7,7 +7,7 @@
  */
 package io.camunda.it.client;
 
-import static io.camunda.client.api.search.response.IncidentState.ACTIVE;
+import static io.camunda.client.api.search.enums.IncidentState.ACTIVE;
 import static io.camunda.it.util.TestHelper.deployResource;
 import static io.camunda.it.util.TestHelper.startProcessInstance;
 import static io.camunda.it.util.TestHelper.waitForProcessInstancesToStart;

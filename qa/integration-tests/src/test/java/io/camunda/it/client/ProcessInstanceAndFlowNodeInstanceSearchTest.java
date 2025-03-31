@@ -30,7 +30,6 @@ import io.camunda.client.api.search.enums.ProcessInstanceState;
 import io.camunda.client.api.search.filter.ProcessInstanceVariableFilterRequest;
 import io.camunda.client.api.search.filter.StringFilterProperty;
 import io.camunda.client.api.search.response.FlowNodeInstance;
-import io.camunda.client.api.search.response.FlowNodeInstanceState;
 import io.camunda.client.api.search.response.ProcessInstance;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import java.time.OffsetDateTime;
