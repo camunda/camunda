@@ -28,10 +28,10 @@ public record BatchOperationDbModel(
     private BatchOperationStatus status;
     private String operationType;
     private OffsetDateTime startDate;
-    private OffsetDateTime endDate;
-    private Integer operationsTotalCount;
-    private Integer operationsFailedCount;
-    private Integer operationsCompletedCount;
+    private OffsetDateTime endDate = null;
+    private Integer operationsTotalCount = 0;
+    private Integer operationsFailedCount = 0;
+    private Integer operationsCompletedCount = 0;
 
     public Builder() {}
 
