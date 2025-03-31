@@ -87,7 +87,7 @@ jobs:
             }]
           mirrors: '[{"url": "https://repository.nexus.camunda.cloud/content/groups/internal/", "id": "camunda-nexus", "mirrorOf": "*", "name": "camunda Nexus"}]'
       - name: Build backend
-        run: ./mvnw clean install -B -T1C -DskipChecks -P -docker,skipFrontendBuild -DskipTests=true -B -DskipRemoteStaging=true -Dmaven.deploy.skip=true
+        run: ./mvnw clean install -B -T1C -DskipChecks -P -docker,skipFrontendBuild -DskipTests=true -P!include-optimize -B -DskipRemoteStaging=true -Dmaven.deploy.skip=true
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
         with:
