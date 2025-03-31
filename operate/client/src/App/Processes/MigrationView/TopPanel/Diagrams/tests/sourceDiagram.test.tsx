@@ -8,7 +8,6 @@
 
 import {render, screen} from 'modules/testing-library';
 import {mockProcessStatistics, mockProcessXML} from 'modules/testUtils';
-import {processesStore} from 'modules/stores/processes/processes.migration';
 import {SourceDiagram} from '../SourceDiagram';
 import {processStatisticsStore} from 'modules/stores/processStatistics/processStatistics.migration.source';
 import {mockFetchProcessInstancesStatistics} from 'modules/mocks/api/processInstances/fetchProcessInstancesStatistics';
@@ -16,18 +15,18 @@ import {Wrapper} from './mocks';
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
 import {processInstanceMigrationStore} from 'modules/stores/processInstanceMigration';
 
-jest.mock('modules/stores/processes/processes.migration');
-
-describe('Source Diagram', () => {
-  beforeEach(() => {
-    // @ts-expect-error
-    processesStore.getSelectedProcessDetails.mockReturnValue({
+jest.mock('modules/stores/processes/processes.migration', () => ({
+  processesStore: {
+    getSelectedProcessDetails: () => ({
       processName: 'New demo process',
       version: '3',
       bpmnProcessId: 'demoProcess',
-    });
-  });
+    }),
+    fetchProcesses: jest.fn(),
+  },
+}));
 
+describe('Source Diagram', () => {
   it('should render process name and version', async () => {
     mockFetchProcessDefinitionXml().withSuccess(mockProcessXML);
 
@@ -39,7 +38,6 @@ describe('Source Diagram', () => {
       search: '?active=true&incidents=true&process=demoProcess&version=3',
     }));
 
-    processesStore.fetchProcesses();
     render(<SourceDiagram />, {wrapper: Wrapper});
 
     expect(await screen.findByText('New demo process')).toBeInTheDocument();

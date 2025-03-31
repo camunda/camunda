@@ -8,7 +8,6 @@
 
 import {render, screen} from 'modules/testing-library';
 import {mockProcessStatisticsV2, mockProcessXML} from 'modules/testUtils';
-import {processesStore} from 'modules/stores/processes/processes.migration';
 import {SourceDiagram} from './SourceDiagram';
 import {mockFetchProcessInstancesStatistics} from 'modules/mocks/api/v2/processInstances/fetchProcessInstancesStatistics';
 import {QueryClientProvider} from '@tanstack/react-query';
@@ -19,7 +18,16 @@ import {processInstancesSelectionStore} from 'modules/stores/processInstancesSel
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
 
 jest.mock('modules/hooks/useProcessInstancesFilters');
-jest.mock('modules/stores/processes/processes.migration');
+jest.mock('modules/stores/processes/processes.migration', () => ({
+  processesStore: {
+    getSelectedProcessDetails: () => ({
+      processName: 'New demo process',
+      version: '3',
+      bpmnProcessId: 'demoProcess',
+    }),
+    fetchProcesses: jest.fn(),
+  },
+}));
 
 const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
   useEffect(() => {
@@ -59,15 +67,6 @@ const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
 };
 
 describe('Source Diagram', () => {
-  beforeEach(() => {
-    // @ts-expect-error
-    processesStore.getSelectedProcessDetails.mockReturnValue({
-      processName: 'New demo process',
-      version: '3',
-      bpmnProcessId: 'demoProcess',
-    });
-  });
-
   it('should render process name and version', async () => {
     mockFetchProcessDefinitionXml().withSuccess(mockProcessXML);
 
