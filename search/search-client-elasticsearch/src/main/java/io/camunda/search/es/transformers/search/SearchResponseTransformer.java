@@ -11,7 +11,7 @@ import co.elastic.clients.elasticsearch._types.aggregations.Aggregate;
 import co.elastic.clients.elasticsearch.core.SearchResponse;
 import co.elastic.clients.elasticsearch.core.search.Hit;
 import co.elastic.clients.elasticsearch.core.search.TotalHits;
-import io.camunda.search.clients.aggregator.AggregationResult;
+import io.camunda.search.clients.core.AggregationResult;
 import io.camunda.search.clients.core.SearchQueryHit;
 import io.camunda.search.clients.core.SearchQueryResponse;
 import io.camunda.search.es.transformers.ElasticsearchTransformer;

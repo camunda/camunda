@@ -7,8 +7,8 @@
  */
 package io.camunda.search.os.transformers.aggregator;
 
-import io.camunda.search.clients.aggregator.AggregationResult;
-import io.camunda.search.clients.aggregator.AggregationResult.Builder;
+import io.camunda.search.clients.core.AggregationResult;
+import io.camunda.search.clients.core.AggregationResult.Builder;
 import io.camunda.search.clients.transformers.SearchTransfomer;
 import java.util.HashMap;
 import java.util.List;

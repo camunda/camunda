@@ -7,7 +7,7 @@
  */
 package io.camunda.search.os.transformers.search;
 
-import io.camunda.search.clients.aggregator.AggregationResult;
+import io.camunda.search.clients.core.AggregationResult;
 import io.camunda.search.clients.core.SearchQueryHit;
 import io.camunda.search.clients.core.SearchQueryResponse;
 import io.camunda.search.os.transformers.OpensearchTransformer;

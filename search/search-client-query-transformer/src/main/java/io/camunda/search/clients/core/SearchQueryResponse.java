@@ -7,7 +7,6 @@
  */
 package io.camunda.search.clients.core;
 
-import io.camunda.search.clients.aggregator.AggregationResult;
 import io.camunda.util.ObjectBuilder;
 import java.util.Collections;
 import java.util.List;

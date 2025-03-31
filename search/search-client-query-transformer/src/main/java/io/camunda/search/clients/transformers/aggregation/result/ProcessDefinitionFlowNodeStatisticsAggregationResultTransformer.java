@@ -17,7 +17,7 @@ import static io.camunda.search.aggregation.ProcessDefinitionFlowNodeStatisticsA
 import static io.camunda.search.aggregation.ProcessDefinitionFlowNodeStatisticsAggregation.AGGREGATION_TO_FLOW_NODES;
 
 import io.camunda.search.aggregation.result.ProcessDefinitionFlowNodeStatisticsAggregationResult;
-import io.camunda.search.clients.aggregator.AggregationResult;
+import io.camunda.search.clients.core.AggregationResult;
 import io.camunda.search.entities.ProcessDefinitionFlowNodeStatisticsEntity;
 import java.util.ArrayList;
 import java.util.Map;
