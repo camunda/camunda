@@ -7,17 +7,16 @@
  */
 package io.camunda.it.client;
 
-import static io.camunda.client.api.search.response.UserTaskState.COMPLETED;
-import static io.camunda.client.api.search.response.UserTaskState.CREATED;
 import static io.camunda.qa.util.multidb.CamundaMultiDBExtension.TIMEOUT_DATA_AVAILABILITY;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.command.ProblemException;
+import io.camunda.client.api.search.enums.UserTaskState;
 import io.camunda.client.api.search.response.UserTask;
-import io.camunda.client.api.search.response.UserTaskState;
-import io.camunda.client.impl.search.filter.builder.StringPropertyImpl;
+import io.camunda.client.impl.ResponseMapper;
+import io.camunda.client.protocol.rest.StringFilterProperty;
 import io.camunda.client.protocol.rest.UserTaskVariableFilterRequest;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.zeebe.model.bpmn.Bpmn;
@@ -261,7 +260,10 @@ class UserTaskSearchTest {
             () ->
                 camundaClient
                     .newUserTaskSearchRequest()
-                    .filter(f -> f.processInstanceVariables(List.of(variableValueFilter)))
+                    .filter(
+                        f ->
+                            f.processInstanceVariables(
+                                List.of(ResponseMapper.fromProtocolObject(variableValueFilter))))
                     .send()
                     .join());
     // then
@@ -295,12 +297,15 @@ class UserTaskSearchTest {
     final UserTaskVariableFilterRequest variableValueFilter1 =
         new UserTaskVariableFilterRequest()
             .name("task01")
-            .value(new StringPropertyImpl().like("\"te*\"").build());
+            .value(new StringFilterProperty().$like("\"te*\""));
 
     final var result =
         camundaClient
             .newUserTaskSearchRequest()
-            .filter(f -> f.localVariables(List.of(variableValueFilter1)))
+            .filter(
+                f ->
+                    f.localVariables(
+                        List.of(ResponseMapper.fromProtocolObject(variableValueFilter1))))
             .send()
             .join();
     assertThat(result.items().size()).isEqualTo(1);
@@ -311,12 +316,15 @@ class UserTaskSearchTest {
     final UserTaskVariableFilterRequest variableValueFilter1 =
         new UserTaskVariableFilterRequest()
             .name("task01")
-            .value(new StringPropertyImpl().in("\"test\"").build());
+            .value(new StringFilterProperty().add$InItem("\"test\""));
 
     final var result =
         camundaClient
             .newUserTaskSearchRequest()
-            .filter(f -> f.localVariables(List.of(variableValueFilter1)))
+            .filter(
+                f ->
+                    f.localVariables(
+                        List.of(ResponseMapper.fromProtocolObject(variableValueFilter1))))
             .send()
             .join();
     assertThat(result.items().size()).isEqualTo(1);
@@ -351,14 +359,26 @@ class UserTaskSearchTest {
   @Test
   public void shouldRetrieveTaskByState() {
     final var resultCreated =
-        camundaClient.newUserTaskSearchRequest().filter(f -> f.state(CREATED)).send().join();
+        camundaClient
+            .newUserTaskSearchRequest()
+            .filter(f -> f.state(UserTaskState.CREATED))
+            .send()
+            .join();
     assertThat(resultCreated.items().size()).isEqualTo(7);
-    resultCreated.items().forEach(item -> assertThat(item.getState()).isEqualTo(CREATED));
+    resultCreated
+        .items()
+        .forEach(item -> assertThat(item.getState()).isEqualTo(UserTaskState.CREATED));
 
     final var resultCompleted =
-        camundaClient.newUserTaskSearchRequest().filter(f -> f.state(COMPLETED)).send().join();
+        camundaClient
+            .newUserTaskSearchRequest()
+            .filter(f -> f.state(UserTaskState.COMPLETED))
+            .send()
+            .join();
     assertThat(resultCompleted.items().size()).isEqualTo(1);
-    resultCompleted.items().forEach(item -> assertThat(item.getState()).isEqualTo(COMPLETED));
+    resultCompleted
+        .items()
+        .forEach(item -> assertThat(item.getState()).isEqualTo(UserTaskState.COMPLETED));
   }
 
   @Test
@@ -1384,7 +1404,7 @@ class UserTaskSearchTest {
               final var resultComplete =
                   camundaClient
                       .newUserTaskSearchRequest()
-                      .filter(f -> f.state(COMPLETED))
+                      .filter(f -> f.state(UserTaskState.COMPLETED))
                       .send()
                       .join();
               assertThat(resultComplete.items().size()).isEqualTo(1);

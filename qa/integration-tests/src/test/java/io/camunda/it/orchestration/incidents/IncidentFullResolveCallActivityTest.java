@@ -7,7 +7,6 @@
  */
 package io.camunda.it.orchestration.incidents;
 
-import static io.camunda.client.api.search.response.ProcessInstanceState.ACTIVE;
 import static io.camunda.it.util.TestHelper.deployResource;
 import static io.camunda.it.util.TestHelper.startProcessInstance;
 import static io.camunda.it.util.TestHelper.waitForProcessInstancesToStart;
@@ -20,10 +19,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.response.Process;
+import io.camunda.client.api.search.enums.FlowNodeInstanceState;
+import io.camunda.client.api.search.enums.IncidentState;
+import io.camunda.client.api.search.enums.ProcessInstanceState;
 import io.camunda.client.api.search.response.FlowNodeInstance;
-import io.camunda.client.api.search.response.FlowNodeInstanceState;
 import io.camunda.client.api.search.response.Incident;
-import io.camunda.client.api.search.response.IncidentState;
 import io.camunda.client.api.search.response.ProcessInstance;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.zeebe.model.bpmn.Bpmn;
@@ -185,7 +185,7 @@ public class IncidentFullResolveCallActivityTest {
 
     // then
     assertThat(processInstance).isNotNull();
-    assertThat(processInstance.getState()).isEqualTo(ACTIVE);
+    assertThat(processInstance.getState()).isEqualTo(ProcessInstanceState.ACTIVE);
     assertThat(processInstance.getHasIncident()).isFalse();
   }
 
@@ -222,7 +222,7 @@ public class IncidentFullResolveCallActivityTest {
 
     // then
     assertThat(processInstance).isNotNull();
-    assertThat(processInstance.getState()).isEqualTo(ACTIVE);
+    assertThat(processInstance.getState()).isEqualTo(ProcessInstanceState.ACTIVE);
     assertThat(processInstance.getHasIncident()).isFalse();
   }
 }

@@ -15,6 +15,9 @@
  */
 package io.camunda.client.api.search.response;
 
+import io.camunda.client.api.search.enums.IncidentErrorType;
+import io.camunda.client.api.search.enums.IncidentState;
+
 public interface Incident {
 
   Long getIncidentKey();

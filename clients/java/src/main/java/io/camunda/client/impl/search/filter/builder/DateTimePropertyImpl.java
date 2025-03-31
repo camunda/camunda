@@ -15,15 +15,17 @@
  */
 package io.camunda.client.impl.search.filter.builder;
 
+import io.camunda.client.api.search.filter.DateTimeFilterProperty;
 import io.camunda.client.api.search.filter.builder.DateTimeProperty;
+import io.camunda.client.impl.ResponseMapper;
 import io.camunda.client.impl.util.CollectionUtil;
-import io.camunda.client.protocol.rest.DateTimeFilterProperty;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
 
 public class DateTimePropertyImpl implements DateTimeProperty {
-  private final DateTimeFilterProperty filterProperty = new DateTimeFilterProperty();
+  private final io.camunda.client.protocol.rest.DateTimeFilterProperty filterProperty =
+      new io.camunda.client.protocol.rest.DateTimeFilterProperty();
 
   @Override
   public DateTimeProperty gt(final OffsetDateTime value) {
@@ -81,6 +83,6 @@ public class DateTimePropertyImpl implements DateTimeProperty {
 
   @Override
   public DateTimeFilterProperty build() {
-    return filterProperty;
+    return ResponseMapper.fromProtocolObject(filterProperty);
   }
 }

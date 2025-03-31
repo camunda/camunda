@@ -12,7 +12,7 @@ import static org.assertj.core.api.Assertions.assertThatNoException;
 
 import feign.FeignException.NotFound;
 import io.camunda.client.CamundaClient;
-import io.camunda.client.api.search.response.ProcessInstanceState;
+import io.camunda.client.api.search.enums.ProcessInstanceState;
 import io.camunda.management.backups.StateCode;
 import io.camunda.management.backups.TakeBackupHistoryResponse;
 import io.camunda.qa.util.cluster.HistoryBackupClient;

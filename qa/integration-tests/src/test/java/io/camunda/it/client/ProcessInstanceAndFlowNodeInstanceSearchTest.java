@@ -7,8 +7,8 @@
  */
 package io.camunda.it.client;
 
-import static io.camunda.client.api.search.response.ProcessInstanceState.ACTIVE;
-import static io.camunda.client.api.search.response.ProcessInstanceState.COMPLETED;
+import static io.camunda.client.api.search.enums.ProcessInstanceState.ACTIVE;
+import static io.camunda.client.api.search.enums.ProcessInstanceState.COMPLETED;
 import static io.camunda.it.util.TestHelper.assertSorted;
 import static io.camunda.it.util.TestHelper.deployResource;
 import static io.camunda.it.util.TestHelper.startProcessInstance;
@@ -24,12 +24,13 @@ import io.camunda.client.CamundaClient;
 import io.camunda.client.api.command.ProblemException;
 import io.camunda.client.api.response.Process;
 import io.camunda.client.api.response.ProcessInstanceEvent;
+import io.camunda.client.api.search.enums.FlowNodeInstanceState;
+import io.camunda.client.api.search.enums.FlowNodeInstanceType;
+import io.camunda.client.api.search.enums.ProcessInstanceState;
+import io.camunda.client.api.search.filter.ProcessInstanceVariableFilterRequest;
+import io.camunda.client.api.search.filter.StringFilterProperty;
 import io.camunda.client.api.search.response.FlowNodeInstance;
-import io.camunda.client.api.search.response.FlowNodeInstanceState;
 import io.camunda.client.api.search.response.ProcessInstance;
-import io.camunda.client.impl.search.filter.builder.StringPropertyImpl;
-import io.camunda.client.protocol.rest.ProcessInstanceStateEnum;
-import io.camunda.client.protocol.rest.ProcessInstanceVariableFilterRequest;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
@@ -458,13 +459,13 @@ public class ProcessInstanceAndFlowNodeInstanceSearchTest {
     final var result =
         camundaClient
             .newProcessInstanceSearchRequest()
-            .filter(f -> f.state(b -> b.neq(ProcessInstanceStateEnum.ACTIVE)))
+            .filter(f -> f.state(b -> b.neq(ProcessInstanceState.ACTIVE)))
             .send()
             .join();
 
     // then
     assertThat(result.items().size()).isEqualTo(3);
-    assertThat(result.items()).extracting("state").doesNotContain(ProcessInstanceStateEnum.ACTIVE);
+    assertThat(result.items()).extracting("state").doesNotContain(ProcessInstanceState.ACTIVE);
   }
 
   @Test
@@ -560,8 +561,8 @@ public class ProcessInstanceAndFlowNodeInstanceSearchTest {
     final List<ProcessInstanceVariableFilterRequest> variables =
         List.of(
             new ProcessInstanceVariableFilterRequest()
-                .name("xyz")
-                .value(new StringPropertyImpl().eq("\"bar\"").build()));
+                .setName("xyz")
+                .setValue(new StringFilterProperty().setEq("\"bar\"")));
 
     // when
     final var result =
@@ -570,7 +571,6 @@ public class ProcessInstanceAndFlowNodeInstanceSearchTest {
             .filter(f -> f.variables(variables))
             .send()
             .join();
-
     // then
     assertThat(result.items().size()).isEqualTo(1);
     assertThat(result.items().stream().map(ProcessInstance::getProcessDefinitionId).toList())
@@ -603,11 +603,11 @@ public class ProcessInstanceAndFlowNodeInstanceSearchTest {
     final List<ProcessInstanceVariableFilterRequest> variables =
         List.of(
             new ProcessInstanceVariableFilterRequest()
-                .name("xyz")
-                .value(new StringPropertyImpl().like("\"ba*\"").build()),
+                .setName("xyz")
+                .setValue(new StringFilterProperty().setLike("\"ba*\"")),
             new ProcessInstanceVariableFilterRequest()
-                .name("abc")
-                .value(new StringPropertyImpl().in("\"mnp\"").build()));
+                .setName("abc")
+                .setValue(new StringFilterProperty().addInItem("\"mnp\"")));
 
     // when
     final var result =
@@ -630,11 +630,11 @@ public class ProcessInstanceAndFlowNodeInstanceSearchTest {
     final List<ProcessInstanceVariableFilterRequest> variables =
         List.of(
             new ProcessInstanceVariableFilterRequest()
-                .name("xyz")
-                .value(new StringPropertyImpl().eq("\"bar\"").build()),
+                .setName("xyz")
+                .setValue(new StringFilterProperty().setEq("\"bar\"")),
             new ProcessInstanceVariableFilterRequest()
-                .name("abc")
-                .value(new StringPropertyImpl().in("\"foo\"").build()));
+                .setName("abc")
+                .setValue(new StringFilterProperty().addInItem("\"foo\"")));
 
     // when
     final var result =
@@ -655,8 +655,8 @@ public class ProcessInstanceAndFlowNodeInstanceSearchTest {
     final List<ProcessInstanceVariableFilterRequest> variables =
         List.of(
             new ProcessInstanceVariableFilterRequest()
-                .name("xyz")
-                .value(new StringPropertyImpl().in("\"foo\"", "\"bar\"").build()));
+                .setName("xyz")
+                .setValue(new StringFilterProperty().addInItem("\"foo\"").addInItem("\"bar\"")));
     // when
     final var result =
         camundaClient
@@ -678,8 +678,8 @@ public class ProcessInstanceAndFlowNodeInstanceSearchTest {
     final List<ProcessInstanceVariableFilterRequest> variables =
         List.of(
             new ProcessInstanceVariableFilterRequest()
-                .name("xyz")
-                .value(new StringPropertyImpl().like("\"fo*\"").build()));
+                .setName("xyz")
+                .setValue(new StringFilterProperty().setLike("\"fo*\"")));
     // when
     final var result =
         camundaClient
@@ -1086,7 +1086,11 @@ public class ProcessInstanceAndFlowNodeInstanceSearchTest {
     final var state = flowNodeInstance.getState();
     // when
     final var result =
-        camundaClient.newFlownodeInstanceSearchRequest().filter(f -> f.state(state)).send().join();
+        camundaClient
+            .newFlownodeInstanceSearchRequest()
+            .filter(f -> f.state(FlowNodeInstanceState.valueOf(state.name())))
+            .send()
+            .join();
 
     // then
     assertThat(result.items().size()).isEqualTo(18);
@@ -1127,7 +1131,11 @@ public class ProcessInstanceAndFlowNodeInstanceSearchTest {
     final var type = flowNodeInstance.getType();
     // when
     final var result =
-        camundaClient.newFlownodeInstanceSearchRequest().filter(f -> f.type(type)).send().join();
+        camundaClient
+            .newFlownodeInstanceSearchRequest()
+            .filter(f -> f.type(FlowNodeInstanceType.valueOf(type.name())))
+            .send()
+            .join();
 
     // then
     assertThat(result.items().size()).isEqualTo(3);

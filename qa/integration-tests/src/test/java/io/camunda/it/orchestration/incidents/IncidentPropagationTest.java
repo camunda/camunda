@@ -7,7 +7,6 @@
  */
 package io.camunda.it.orchestration.incidents;
 
-import static io.camunda.client.api.search.response.IncidentState.ACTIVE;
 import static io.camunda.it.util.TestHelper.deployResource;
 import static io.camunda.it.util.TestHelper.startProcessInstance;
 import static io.camunda.it.util.TestHelper.waitForProcessInstancesToStart;
@@ -18,6 +17,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.response.Process;
+import io.camunda.client.api.search.enums.IncidentState;
 import io.camunda.client.api.search.response.FlowNodeInstance;
 import io.camunda.client.api.search.response.Incident;
 import io.camunda.client.api.search.response.ProcessInstance;
@@ -121,7 +121,7 @@ class IncidentPropagationTest {
     assertThat(incidents).hasSize(2);
     incidents.forEach(
         incident -> {
-          assertThat(incident.getState()).isEqualTo(ACTIVE);
+          assertThat(incident.getState()).isEqualTo(IncidentState.ACTIVE);
         });
     assertThat(incidents).extracting(Incident::getErrorMessage).contains(ERROR_MSG_1, ERROR_MSG_2);
   }

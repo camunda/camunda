@@ -17,7 +17,7 @@ package io.camunda.process.test.impl.testresult;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.client.api.search.response.IncidentErrorType;
+import io.camunda.client.api.search.enums.IncidentErrorType;
 import io.camunda.client.api.search.response.ProcessInstance;
 import io.camunda.process.test.utils.FlowNodeInstanceBuilder;
 import io.camunda.process.test.utils.IncidentBuilder;

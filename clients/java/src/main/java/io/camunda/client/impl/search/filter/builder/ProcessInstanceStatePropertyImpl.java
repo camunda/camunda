@@ -15,10 +15,10 @@
  */
 package io.camunda.client.impl.search.filter.builder;
 
+import io.camunda.client.api.search.enums.ProcessInstanceState;
+import io.camunda.client.api.search.filter.ProcessInstanceStateFilterProperty;
 import io.camunda.client.api.search.filter.builder.ProcessInstanceStateProperty;
 import io.camunda.client.impl.util.CollectionUtil;
-import io.camunda.client.protocol.rest.ProcessInstanceStateEnum;
-import io.camunda.client.protocol.rest.ProcessInstanceStateFilterProperty;
 import java.util.List;
 
 public class ProcessInstanceStatePropertyImpl implements ProcessInstanceStateProperty {
@@ -26,20 +26,20 @@ public class ProcessInstanceStatePropertyImpl implements ProcessInstanceStatePro
       new ProcessInstanceStateFilterProperty();
 
   @Override
-  public ProcessInstanceStateProperty eq(final ProcessInstanceStateEnum value) {
-    filterProperty.set$Eq(value);
+  public ProcessInstanceStateProperty eq(final ProcessInstanceState value) {
+    filterProperty.setEq(value);
     return this;
   }
 
   @Override
-  public ProcessInstanceStateProperty neq(final ProcessInstanceStateEnum value) {
-    filterProperty.set$Neq(value);
+  public ProcessInstanceStateProperty neq(final ProcessInstanceState value) {
+    filterProperty.setNeq(value);
     return this;
   }
 
   @Override
   public ProcessInstanceStateProperty exists(final boolean value) {
-    filterProperty.set$Exists(value);
+    filterProperty.setExists(value);
     return this;
   }
 
@@ -49,19 +49,19 @@ public class ProcessInstanceStatePropertyImpl implements ProcessInstanceStatePro
   }
 
   @Override
-  public ProcessInstanceStateProperty in(final List<ProcessInstanceStateEnum> values) {
-    filterProperty.set$In(values);
+  public ProcessInstanceStateProperty in(final List<ProcessInstanceState> values) {
+    filterProperty.setIn(values);
     return this;
   }
 
   @Override
-  public ProcessInstanceStateProperty in(final ProcessInstanceStateEnum... values) {
+  public ProcessInstanceStateProperty in(final ProcessInstanceState... values) {
     return in(CollectionUtil.toList(values));
   }
 
   @Override
   public ProcessInstanceStateProperty like(final String value) {
-    filterProperty.$like(value);
+    filterProperty.setLike(value);
     return this;
   }
 }

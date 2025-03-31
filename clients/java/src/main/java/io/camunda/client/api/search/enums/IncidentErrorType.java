@@ -13,11 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.camunda.client.api.search.response;
-
-import io.camunda.client.impl.util.EnumUtil;
-import io.camunda.client.protocol.rest.IncidentFilter;
-import io.camunda.client.protocol.rest.IncidentResult;
+package io.camunda.client.api.search.enums;
 
 public enum IncidentErrorType {
   UNSPECIFIED,
@@ -36,20 +32,4 @@ public enum IncidentErrorType {
   FORM_NOT_FOUND,
   RESOURCE_NOT_FOUND,
   UNKNOWN_ENUM_VALUE;
-
-  public static IncidentFilter.ErrorTypeEnum toProtocolErrorType(final IncidentErrorType value) {
-    return (value == null) ? null : IncidentFilter.ErrorTypeEnum.fromValue(value.name());
-  }
-
-  public static IncidentErrorType fromProtocolErrorType(final IncidentResult.ErrorTypeEnum value) {
-    if (value == null) {
-      return null;
-    }
-    try {
-      return IncidentErrorType.valueOf(value.name());
-    } catch (final IllegalArgumentException e) {
-      EnumUtil.logUnknownEnumValue(value, "incident error type", values());
-      return UNKNOWN_ENUM_VALUE;
-    }
-  }
 }
