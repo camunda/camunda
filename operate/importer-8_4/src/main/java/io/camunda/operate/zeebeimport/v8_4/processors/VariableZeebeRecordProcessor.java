@@ -172,10 +172,4 @@ public class VariableZeebeRecordProcessor {
       }
     }
   }
-
-  private boolean shouldProcessVariableRecord(final Record<VariableRecordValue> record) {
-    final var intent = record.getIntent().name();
-    // skip variable migrated record as it always has null in value field
-    return !VariableIntent.MIGRATED.name().equals(intent);
-  }
 }
