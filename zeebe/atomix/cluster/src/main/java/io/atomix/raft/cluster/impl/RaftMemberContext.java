@@ -44,7 +44,6 @@ public final class RaftMemberContext {
   private long responseTime;
   private int inFlightAppendCount;
   private boolean appendSucceeded;
-  private long appendTime;
   private boolean configuring;
   private boolean installing;
   private int failures;
@@ -182,7 +181,6 @@ public final class RaftMemberContext {
   /** Starts an append request to the member. */
   public void startAppend() {
     inFlightAppendCount++;
-    appendTime = System.currentTimeMillis();
   }
 
   /** Completes an append request to the member. */
@@ -259,7 +257,6 @@ public final class RaftMemberContext {
         .add("heartbeatTime", heartbeatTime)
         .add("appending", inFlightAppendCount)
         .add("appendSucceeded", appendSucceeded)
-        .add("appendTime", appendTime)
         .add("configuring", configuring)
         .add("installing", installing)
         .add("failures", failures)
