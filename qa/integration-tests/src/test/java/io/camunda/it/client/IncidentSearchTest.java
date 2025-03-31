@@ -40,7 +40,7 @@ import org.junit.jupiter.params.provider.EnumSource;
 class IncidentSearchTest {
 
   private static final List<Process> DEPLOYED_PROCESSES = new ArrayList<>();
-  private static final int amountOfIncidents = 3;
+  private static final int AMOUNT_OF_INCIDENTS = 3;
 
   private static CamundaClient camundaClient;
 
@@ -66,8 +66,8 @@ class IncidentSearchTest {
     startProcessInstance(camundaClient, "incident_process_v1");
 
     waitForProcessInstancesToStart(camundaClient, 5);
-    waitUntilProcessInstanceHasIncidents(camundaClient, amountOfIncidents);
-    waitUntilIncidentsAreActive(camundaClient, amountOfIncidents);
+    waitUntilProcessInstanceHasIncidents(camundaClient, AMOUNT_OF_INCIDENTS);
+    waitUntilIncidentsAreActive(camundaClient, AMOUNT_OF_INCIDENTS);
 
     incident = camundaClient.newIncidentSearchRequest().send().join().items().getFirst();
   }
@@ -80,7 +80,7 @@ class IncidentSearchTest {
   @Test
   void testIncidentsAreActive() {
     // given
-    waitUntilIncidentsAreActive(camundaClient, amountOfIncidents);
+    waitUntilIncidentsAreActive(camundaClient, AMOUNT_OF_INCIDENTS);
 
     // when
     final List<Incident> incidents = camundaClient.newIncidentSearchRequest().send().join().items();
