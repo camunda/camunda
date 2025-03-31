@@ -53,7 +53,6 @@ function useMigrationTargetXml({
   return useProcessDefinitionXml({
     processDefinitionKey,
     select: migrationTargetXmlParser,
-    enabled: !!processDefinitionKey,
   });
 }
 

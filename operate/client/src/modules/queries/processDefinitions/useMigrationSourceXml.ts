@@ -13,7 +13,7 @@ import {isMigratableFlowNode} from 'modules/stores/processXml/utils/isMigratable
 import {hasParentProcess} from 'modules/bpmn-js/utils/hasParentProcess';
 
 const getMigrationSourceXmlParser =
-  (sourceBpmnProcessId: string) =>
+  (sourceBpmnProcessId?: string) =>
   ({
     xml,
     diagramModel,
@@ -52,8 +52,8 @@ function useMigrationSourceXml({
 }) {
   return useProcessDefinitionXml({
     processDefinitionKey,
-    select: getMigrationSourceXmlParser(bpmnProcessId!),
-    enabled: !!bpmnProcessId && !!processDefinitionKey,
+    select: getMigrationSourceXmlParser(bpmnProcessId),
+    enabled: !!bpmnProcessId,
   });
 }
 

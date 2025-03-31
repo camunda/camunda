@@ -19,6 +19,8 @@ import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinit
 describe('Target Diagram', () => {
   it('should set correct targetProcessDefinitionKey', async () => {
     mockFetchGroupedProcesses().withSuccess(groupedProcessesMock);
+
+    // This is mocked twice for source and target process definition xml.
     mockFetchProcessDefinitionXml().withSuccess(mockProcessXML);
     mockFetchProcessDefinitionXml().withSuccess(mockProcessXML);
 
