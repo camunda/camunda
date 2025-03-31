@@ -27,7 +27,6 @@ import io.camunda.zeebe.qa.util.actuator.ClusterActuator;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneApplication;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import io.camunda.zeebe.test.util.asserts.TopologyAssert;
-import io.camunda.zeebe.test.util.junit.RegressionTest;
 import java.time.Duration;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
@@ -36,10 +35,15 @@ import java.util.function.Supplier;
 import org.assertj.core.api.Assertions;
 import org.assertj.core.api.InstanceOfAssertFactories;
 import org.awaitility.Awaitility;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.Test;
 
 @MultiDbTest
 public class ClusterPurgeMultiDbIT {
+
+  private static final org.slf4j.Logger LOGGER =
+      org.slf4j.LoggerFactory.getLogger(ClusterPurgeMultiDbIT.class);
 
   private static CamundaClient client;
 
@@ -47,7 +51,14 @@ public class ClusterPurgeMultiDbIT {
   private static final TestStandaloneApplication<?> APPLICATION =
       new TestStandaloneBroker().withUnauthenticatedAccess();
 
-  private static final int TIMEOUT = 40;
+  private static final int TIMEOUT = 10;
+
+  @AfterEach
+  void tearDown() {
+    final ClusterActuator actuator = ClusterActuator.of(APPLICATION);
+    final var planChangeResponse = actuator.purge(false);
+    assertThatChangesAreApplied(planChangeResponse);
+  }
 
   @Test
   void shouldPurgeProcessDefinitions() {
@@ -174,7 +185,8 @@ public class ClusterPurgeMultiDbIT {
             });
   }
 
-  @RegressionTest("https://github.com/camunda/camunda/issues/29733")
+  //  @RegressionTest("https://github.com/camunda/camunda/issues/29733")
+  @RepeatedTest(50)
   void shouldPurgeProcessCache() {
     // GIVEN
     final ClusterActuator actuator = ClusterActuator.of(APPLICATION);
@@ -258,7 +270,10 @@ public class ClusterPurgeMultiDbIT {
                       .send()
                       .join()
                       .items();
-
+              // This is failing in CI sometimes.
+              if (!items2.isEmpty() && !items2.get(1).getFlowNodeName().equals("test-task-2")) {
+                LOGGER.debug("BUMM");
+              }
               assertThat((items2.get(1)).getFlowNodeName()).isEqualTo("test-task-2");
             });
   }

@@ -29,6 +29,7 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.function.BiConsumer;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.Test;
 import org.mockito.stubbing.Answer;
 import org.springframework.test.util.ReflectionTestUtils;
@@ -182,5 +183,25 @@ class ProcessCacheTest {
     final var cacheMap = getCacheMap();
     assertThat(cacheMap).hasSize(2);
     assertThat(cacheMap.keySet()).containsExactlyInAnyOrder(1L, 3L);
+  }
+
+  @RepeatedTest(50)
+  void shouldClearCache() {
+    // given
+    mockLoad(Tuple.of(1L, new ProcessFlowNode("id3", "Name 3")));
+    processCache = new ProcessCache(configuration, processFlowNodeProvider, brokerTopologyManager);
+    final var firstResult = processCache.getCacheItem(1L);
+    assertThat(firstResult).isNotNull();
+    assertThat(firstResult.getFlowNodeName("id3")).isEqualTo("Name 3");
+
+    // when - read 1 and adding 3
+    processCache.invalidate();
+
+    mockLoad(Tuple.of(1L, new ProcessFlowNode("id3", "Name 2")));
+
+    // then - 2 should be removed
+    //    assertThat(getCacheMap()).hasSize(0);
+    final var secondResult = processCache.getCacheItem(1L);
+    assertThat(secondResult.getFlowNodeName("id3")).isEqualTo("Name 2");
   }
 }

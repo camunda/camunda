@@ -42,12 +42,26 @@ public class ProcessCache {
 
   private final LoadingCache<Long, ProcessCacheItem> cache;
   private final ProcessFlowNodeProvider processFlowNodeProvider;
+  private final GatewayRestConfiguration configuration;
+
+  //  private final BrokerTopologyManager brokerTopologyManager;
 
   public ProcessCache(
       final GatewayRestConfiguration configuration,
       final ProcessFlowNodeProvider processFlowNodeProvider,
       final BrokerTopologyManager brokerTopologyManager) {
+    this.configuration = configuration;
     this.processFlowNodeProvider = processFlowNodeProvider;
+    //    this.brokerTopologyManager = brokerTopologyManager;
+
+    cache = createCache(configuration);
+
+    brokerTopologyManager.addTopologyListener(new ProcessCacheInvalidator(this));
+  }
+
+  private LoadingCache<Long, ProcessCacheItem> createCache(
+      final GatewayRestConfiguration configuration) {
+    final LoadingCache<Long, ProcessCacheItem> cache;
     final var cacheBuilder =
         Caffeine.newBuilder().maximumSize(configuration.getProcessCache().getMaxSize());
     final var expirationIdle = configuration.getProcessCache().getExpirationIdleMillis();
@@ -55,15 +69,16 @@ public class ProcessCache {
       cacheBuilder.expireAfterAccess(expirationIdle, TimeUnit.MILLISECONDS);
     }
     cache = cacheBuilder.build(new ProcessCacheLoader());
-
-    brokerTopologyManager.addTopologyListener(new ProcessCacheInvalidator(this));
+    return cache;
   }
 
   public ProcessCacheItem getCacheItem(final long processDefinitionKey) {
+    //    return new ProcessCacheLoader().load(processDefinitionKey);
     return cache.get(processDefinitionKey);
   }
 
   public Map<Long, ProcessCacheItem> getCacheItems(final Set<Long> processDefinitionKeys) {
+    //    return new ProcessCacheLoader().loadAll(processDefinitionKeys);
     return cache.getAll(processDefinitionKeys);
   }
 
@@ -88,8 +103,27 @@ public class ProcessCache {
   }
 
   public void invalidate() {
+    cache.asMap().clear();
+    cache.asMap().remove(2251799813685268L);
     cache.invalidateAll();
-    LOGGER.debug("Cache invalidated");
+    cache.cleanUp();
+
+    assert cache.estimatedSize() == 0;
+    assert cache.asMap().isEmpty();
+    // Is this really from cache? Maybe the loader loads it again?
+    //    cache.get(2251799813685268L);
+
+    //    LOGGER.debug("XXX Old cache {}", cache);
+    //    cache = createCache(configuration);
+    //    LOGGER.debug("XXX New cache {}", cache);
+    //    cache.get(-2L);
+    //    try {
+    //      Thread.sleep(500);
+    //    } catch (final InterruptedException e) {
+    //      throw new RuntimeException(e);
+    //    }
+    //    final var hit2 = cache.get(2251799813685268L);
+    //    LOGGER.debug("hit1: {}, hit2: {}", hit1, hit2);
   }
 
   private final class ProcessCacheLoader implements CacheLoader<Long, ProcessCacheItem> {
@@ -129,6 +163,7 @@ public class ProcessCache {
     @Override
     public void completedClusterChange() {
       cache.invalidate();
+      LOGGER.debug("Process cache really invalidated");
     }
   }
 }
