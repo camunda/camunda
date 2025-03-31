@@ -127,14 +127,19 @@ public final class UserTaskProcessor extends JobWorkerTaskSupportingProcessor<Ex
     incidentBehavior.resolveIncidents(context);
 
     final var elementInstance = stateBehavior.getElementInstance(context);
-    final Optional<UserTaskRecord> userTaskRecord =
+    final Optional<UserTaskRecord> cancelingUserTask =
         userTaskBehavior.userTaskCanceling(elementInstance);
-    if (userTaskRecord.isPresent()) {
-      if (element.hasTaskListeners(ZeebeTaskListenerEventType.canceling)) {
-        // Placeholder for calling task listeners and then finalizing
+    if (cancelingUserTask.isPresent()) {
+      final var cancelingListeners = element.getTaskListeners(ZeebeTaskListenerEventType.canceling);
+      if (!cancelingListeners.isEmpty()) {
+        jobBehavior.createNewTaskListenerJob(
+            context,
+            cancelingUserTask.get(),
+            cancelingListeners.getFirst(),
+            cancelingUserTask.get().getChangedAttributes());
         return TransitionOutcome.AWAIT;
       } else {
-        userTaskBehavior.userTaskCanceled(userTaskRecord.get());
+        userTaskBehavior.userTaskCanceled(cancelingUserTask.get());
         return TransitionOutcome.CONTINUE;
       }
     } else {
