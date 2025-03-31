@@ -9,6 +9,8 @@ package io.camunda.search.clients.transformers.query;
 
 import static io.camunda.search.clients.core.RequestBuilders.searchRequest;
 
+import io.camunda.search.aggregation.AggregationBase;
+import io.camunda.search.clients.aggregator.SearchAggregator;
 import io.camunda.search.clients.core.SearchQueryRequest;
 import io.camunda.search.clients.query.SearchQuery;
 import io.camunda.search.clients.source.SearchSourceConfig;
@@ -66,6 +68,11 @@ public class TypedSearchQueryTransformer<F extends FilterBase, S extends SortOpt
       builder.source(searchQuerySourceConfig);
     }
 
+    final var aggregation = query.aggregation();
+    if (aggregation != null) {
+      builder.aggregations(toAggregations(aggregation));
+    }
+
     return builder.build();
   }
 
@@ -84,6 +91,10 @@ public class TypedSearchQueryTransformer<F extends FilterBase, S extends SortOpt
 
   private List<String> toIndices(final F filter) {
     return List.of(getFilterTransformer(filter).getIndex().getAlias());
+  }
+
+  protected List<SearchAggregator> toAggregations(final AggregationBase aggregation) {
+    return transformers.getAggregationTransformer(aggregation.getClass()).apply(aggregation);
   }
 
   private List<SearchSortOptions> toSearchSortOptions(final S sort, final boolean reverse) {

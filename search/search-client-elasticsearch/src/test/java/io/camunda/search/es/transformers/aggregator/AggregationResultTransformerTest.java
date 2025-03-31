@@ -13,12 +13,9 @@ import co.elastic.clients.json.jackson.JacksonJsonpParser;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.core.JsonParser.Feature;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.camunda.search.clients.transformers.aggregation.result.AggregationResult;
-import io.camunda.search.es.transformers.ElasticsearchTransformers;
 import java.io.IOException;
 import java.util.stream.Stream;
 import org.assertj.core.api.Assertions;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -42,30 +39,21 @@ public class AggregationResultTransformerTest {
     "aggregations": %s
   }
   """;
-  protected final ElasticsearchTransformers transformers = new ElasticsearchTransformers();
-  private SearchAggregationResultTransformer transformer;
-
-  @BeforeEach
-  public void before() throws IOException {
-    transformer =
-        (SearchAggregationResultTransformer)
-            transformers.<SearchResponse<?>, AggregationResult>getTransformer(
-                AggregationResult.class);
-  }
+  private final SearchAggregationResultTransformer transformer =
+      new SearchAggregationResultTransformer();
 
   private static Stream<Arguments> provideAggregations() {
     return Stream.of(
         // single aggregation
-        Arguments.arguments(
-            "{'children#agg1': {'doc_count': 4}}", "{'aggregations':{'agg1':{'docCount':4}}}"),
+        Arguments.arguments("{'children#agg1': {'doc_count': 4}}", "{'agg1':{'docCount':4}}"),
         // two aggregations
         Arguments.arguments(
             "{'filter#agg1': {'doc_count': 4}, 'children#agg2': {'doc_count': 4}}",
-            "{'aggregations':{'agg2':{'docCount':4},'agg1':{'docCount':4}}}"),
+            "{'agg2':{'docCount':4},'agg1':{'docCount':4}}"),
         // nested aggregations
         Arguments.arguments(
             "{'filter#agg1': {'doc_count': 4, 'children#agg2': {'doc_count': 4}}}",
-            "{'aggregations':{'agg1':{'docCount':4,'aggregations':{'agg2':{'docCount':4}}}}}"),
+            "{'agg1':{'docCount':4,'aggregations':{'agg2':{'docCount':4}}}}"),
         // multiple nested aggregations
         Arguments.arguments(
             """
@@ -106,32 +94,30 @@ public class AggregationResultTransformerTest {
             """,
             """
             {
-              "aggregations": {
-                "to-flow-nodes": {
-                  "docCount": 4,
-                  "aggregations": {
-                    "filter-flow-nodes": {
-                      "docCount": 2,
-                      "aggregations": {
-                        "group-flow-nodes": {
-                          "aggregations": {
-                            "EndEvent": {
-                              "docCount": 2,
-                              "aggregations": {
-                                "group-filters": {
-                                  "aggregations": {
-                                    "canceled": {
-                                      "docCount": 0
-                                    },
-                                    "incidents": {
-                                      "docCount": 0
-                                    },
-                                    "active": {
-                                      "docCount": 0
-                                    },
-                                    "completed": {
-                                      "docCount": 2
-                                    }
+              "to-flow-nodes": {
+                "docCount": 4,
+                "aggregations": {
+                  "filter-flow-nodes": {
+                    "docCount": 2,
+                    "aggregations": {
+                      "group-flow-nodes": {
+                        "aggregations": {
+                          "EndEvent": {
+                            "docCount": 2,
+                            "aggregations": {
+                              "group-filters": {
+                                "aggregations": {
+                                  "canceled": {
+                                    "docCount": 0
+                                  },
+                                  "incidents": {
+                                    "docCount": 0
+                                  },
+                                  "active": {
+                                    "docCount": 0
+                                  },
+                                  "completed": {
+                                    "docCount": 2
                                   }
                                 }
                               }
@@ -162,7 +148,7 @@ public class AggregationResultTransformerTest {
     final var searchResponse = SearchResponse._DESERIALIZER.deserialize(jsonpParser, jsonpMapper);
 
     // when
-    final var result = transformer.apply(searchResponse);
+    final var result = transformer.apply(searchResponse.aggregations());
 
     // then
     final var resultString = objectMapper.writeValueAsString(result);

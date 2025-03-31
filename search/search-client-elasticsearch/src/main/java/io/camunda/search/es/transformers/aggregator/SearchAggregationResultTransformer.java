@@ -13,21 +13,20 @@ import co.elastic.clients.elasticsearch._types.aggregations.MultiBucketAggregate
 import co.elastic.clients.elasticsearch._types.aggregations.MultiBucketBase;
 import co.elastic.clients.elasticsearch._types.aggregations.SingleBucketAggregateBase;
 import co.elastic.clients.elasticsearch._types.aggregations.StringTermsBucket;
-import co.elastic.clients.elasticsearch.core.SearchResponse;
+import io.camunda.search.clients.aggregator.AggregationResult;
+import io.camunda.search.clients.aggregator.AggregationResult.Builder;
 import io.camunda.search.clients.transformers.SearchTransfomer;
-import io.camunda.search.clients.transformers.aggregation.result.AggregationResult;
-import io.camunda.search.clients.transformers.aggregation.result.AggregationResult.Builder;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
 public class SearchAggregationResultTransformer
-    implements SearchTransfomer<SearchResponse<?>, AggregationResult> {
+    implements SearchTransfomer<Map<String, Aggregate>, Map<String, AggregationResult>> {
 
   @Override
-  public AggregationResult apply(final SearchResponse<?> value) {
-    return new Builder().aggregations(transformAggregation(value.aggregations())).build();
+  public Map<String, AggregationResult> apply(final Map<String, Aggregate> value) {
+    return transformAggregation(value);
   }
 
   private AggregationResult transformSingleBucketAggregate(

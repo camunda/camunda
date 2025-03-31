@@ -18,6 +18,7 @@ import io.camunda.search.clients.query.SearchQueryBuilders;
 import io.camunda.search.clients.transformers.ServiceTransformer;
 import io.camunda.search.clients.transformers.ServiceTransformers;
 import io.camunda.search.clients.transformers.query.SearchQueryResultTransformer;
+import io.camunda.search.clients.transformers.query.TypedSearchQueryTransformer;
 import io.camunda.search.filter.FilterBase;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.query.TypedSearchAggregationQuery;
@@ -71,11 +72,12 @@ public final class SearchClientBasedQueryExecutor {
   }
 
   public <F extends FilterBase, A extends AggregationBase, R extends AggregationResultBase>
-      R aggregate(final TypedSearchAggregationQuery<F, A> query, final Class<R> documentClass) {
-    final var searchAggregationResult = executeSearch(query, searchClient::aggregate);
+      R aggregate(final TypedSearchAggregationQuery<F, A> query, final Class<R> resultClass) {
+    final var searchQueryResponse =
+        executeSearch(query, searchRequest -> searchClient.search(searchRequest, Object.class));
     return transformers
-        .getSearchAggregationResultTransformer(documentClass)
-        .apply(searchAggregationResult);
+        .getSearchAggregationResultTransformer(resultClass)
+        .apply(searchQueryResponse.aggregations());
   }
 
   @VisibleForTesting
@@ -110,12 +112,9 @@ public final class SearchClientBasedQueryExecutor {
         .orElse(request);
   }
 
-  private <
-          F extends FilterBase,
-          S extends SortOption,
-          Q extends TypedSearchQuery<F, S>,
-          T extends ServiceTransformer<Q, SearchQueryRequest>>
-      T getSearchQueryRequestTransformer(final TypedSearchQuery<F, S> query) {
+  private <T extends FilterBase, S extends SortOption>
+      TypedSearchQueryTransformer<T, S> getSearchQueryRequestTransformer(
+          final TypedSearchQuery<T, S> query) {
     return transformers.getTypedSearchQueryTransformer(query.getClass());
   }
 

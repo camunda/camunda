@@ -61,7 +61,7 @@ public class ProcessDefinitionFlowNodeStatisticsQueryTransformerTest {
     final var searchRequest = transformQuery(statisticsQuery);
 
     // then
-    assertThat(searchRequest.sort()).isEmpty();
+    assertThat(searchRequest.sort()).isNull();
     assertThat(searchRequest.from()).isZero();
     assertThat(searchRequest.size()).isZero();
 

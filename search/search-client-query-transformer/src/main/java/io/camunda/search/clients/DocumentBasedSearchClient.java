@@ -14,7 +14,6 @@ import io.camunda.search.clients.core.SearchGetResponse;
 import io.camunda.search.clients.core.SearchQueryRequest;
 import io.camunda.search.clients.core.SearchQueryRequest.Builder;
 import io.camunda.search.clients.core.SearchQueryResponse;
-import io.camunda.search.clients.transformers.aggregation.result.AggregationResult;
 import io.camunda.util.ObjectBuilder;
 import io.camunda.zeebe.util.CloseableSilently;
 import java.util.List;
@@ -33,6 +32,4 @@ public interface DocumentBasedSearchClient extends CloseableSilently {
   <T> List<T> findAll(final SearchQueryRequest searchRequest, final Class<T> documentClass);
 
   <T> SearchGetResponse<T> get(final SearchGetRequest getRequest, final Class<T> documentClass);
-
-  AggregationResult aggregate(final SearchQueryRequest searchRequest);
 }

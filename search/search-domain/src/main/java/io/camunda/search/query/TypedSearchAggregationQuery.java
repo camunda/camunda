@@ -24,6 +24,4 @@ public interface TypedSearchAggregationQuery<F extends FilterBase, A extends Agg
   default SearchQueryPage page() {
     return SearchQueryPage.NO_ENTITIES_QUERY;
   }
-
-  A aggregation();
 }

@@ -7,9 +7,9 @@
  */
 package io.camunda.search.os.transformers.aggregator;
 
+import io.camunda.search.clients.aggregator.AggregationResult;
+import io.camunda.search.clients.aggregator.AggregationResult.Builder;
 import io.camunda.search.clients.transformers.SearchTransfomer;
-import io.camunda.search.clients.transformers.aggregation.result.AggregationResult;
-import io.camunda.search.clients.transformers.aggregation.result.AggregationResult.Builder;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -20,14 +20,13 @@ import org.opensearch.client.opensearch._types.aggregations.MultiBucketAggregate
 import org.opensearch.client.opensearch._types.aggregations.MultiBucketBase;
 import org.opensearch.client.opensearch._types.aggregations.SingleBucketAggregateBase;
 import org.opensearch.client.opensearch._types.aggregations.StringTermsBucket;
-import org.opensearch.client.opensearch.core.SearchResponse;
 
 public class SearchAggregationResultTransformer
-    implements SearchTransfomer<SearchResponse<?>, AggregationResult> {
+    implements SearchTransfomer<Map<String, Aggregate>, Map<String, AggregationResult>> {
 
   @Override
-  public AggregationResult apply(final SearchResponse<?> value) {
-    return new Builder().aggregations(transformAggregation(value.aggregations())).build();
+  public Map<String, AggregationResult> apply(final Map<String, Aggregate> value) {
+    return transformAggregation(value);
   }
 
   private AggregationResult transformSingleBucketAggregate(

@@ -28,9 +28,7 @@ import io.camunda.search.clients.core.SearchQueryRequest;
 import io.camunda.search.clients.core.SearchQueryResponse;
 import io.camunda.search.clients.core.SearchWriteResponse;
 import io.camunda.search.clients.transformers.SearchTransfomer;
-import io.camunda.search.clients.transformers.aggregation.result.AggregationResult;
 import io.camunda.search.es.transformers.ElasticsearchTransformers;
-import io.camunda.search.es.transformers.aggregator.SearchAggregationResultTransformer;
 import io.camunda.search.es.transformers.search.SearchDeleteRequestTransformer;
 import io.camunda.search.es.transformers.search.SearchGetRequestTransformer;
 import io.camunda.search.es.transformers.search.SearchGetResponseTransformer;
@@ -133,18 +131,6 @@ public class ElasticsearchSearchClient
   }
 
   @Override
-  public AggregationResult aggregate(final SearchQueryRequest searchRequest) {
-    try {
-      final var requestTransformer = getSearchRequestTransformer();
-      final var request = requestTransformer.apply(searchRequest);
-      final SearchResponse<?> rawSearchResponse = client.search(request, Object.class);
-      return getSearchAggregationResultTransformer().apply(rawSearchResponse);
-    } catch (final IOException | ElasticsearchException e) {
-      throw new CamundaSearchException(ErrorMessages.ERROR_FAILED_AGGREGATE_QUERY, e);
-    }
-  }
-
-  @Override
   public <T> SearchWriteResponse index(final SearchIndexRequest<T> indexRequest) {
     try {
       final SearchIndexRequestTransformer<T> requestTransformer =
@@ -231,12 +217,6 @@ public class ElasticsearchSearchClient
     final SearchTransfomer<WriteResponseBase, SearchWriteResponse> transformer =
         transformers.getTransformer(SearchWriteResponse.class);
     return (SearchWriteResponseTransformer) transformer;
-  }
-
-  private SearchAggregationResultTransformer getSearchAggregationResultTransformer() {
-    final SearchTransfomer<SearchResponse<?>, AggregationResult> transformer =
-        transformers.getTransformer(AggregationResult.class);
-    return (SearchAggregationResultTransformer) transformer;
   }
 
   @Override

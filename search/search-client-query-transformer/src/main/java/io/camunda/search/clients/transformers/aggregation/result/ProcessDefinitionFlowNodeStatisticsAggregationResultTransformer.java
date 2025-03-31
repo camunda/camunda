@@ -17,15 +17,18 @@ import static io.camunda.search.aggregation.ProcessDefinitionFlowNodeStatisticsA
 import static io.camunda.search.aggregation.ProcessDefinitionFlowNodeStatisticsAggregation.AGGREGATION_TO_FLOW_NODES;
 
 import io.camunda.search.aggregation.result.ProcessDefinitionFlowNodeStatisticsAggregationResult;
+import io.camunda.search.clients.aggregator.AggregationResult;
 import io.camunda.search.entities.ProcessDefinitionFlowNodeStatisticsEntity;
 import java.util.ArrayList;
+import java.util.Map;
 
 public class ProcessDefinitionFlowNodeStatisticsAggregationResultTransformer
     implements AggregationResultTransformer<ProcessDefinitionFlowNodeStatisticsAggregationResult> {
 
   @Override
-  public ProcessDefinitionFlowNodeStatisticsAggregationResult apply(final AggregationResult value) {
-    final var children = value.aggregations().get(AGGREGATION_TO_FLOW_NODES);
+  public ProcessDefinitionFlowNodeStatisticsAggregationResult apply(
+      final Map<String, AggregationResult> aggregations) {
+    final var children = aggregations.get(AGGREGATION_TO_FLOW_NODES);
     final var filter = children.aggregations().get(AGGREGATION_FILTER_FLOW_NODES);
     final var group = filter.aggregations().get(AGGREGATION_GROUP_FLOW_NODES);
     final var items = new ArrayList<ProcessDefinitionFlowNodeStatisticsEntity>();
