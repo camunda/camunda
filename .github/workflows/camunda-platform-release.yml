@@ -18,13 +18,13 @@ env:
   RELEASE_VERSION: ${{ inputs.releaseVersion }}
   GH_TOKEN: ${{ github.token }} # needs to be available for the gh CLI tool
   GITHUB_TOKEN_USR: ${{ github.token }} # needs to be available for the SCM URL in pom.xml
-permissions:
-  contents: write
-  workflows: write
 jobs:
   release:
     name: Maven Release
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      workflows: write
     steps:
 #      - uses: actions/checkout@v4
 #        with:
