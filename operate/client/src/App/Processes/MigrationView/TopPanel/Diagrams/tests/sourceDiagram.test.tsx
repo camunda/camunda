@@ -7,22 +7,28 @@
  */
 
 import {render, screen} from 'modules/testing-library';
-import {mockFetchGroupedProcesses} from 'modules/mocks/api/processes/fetchGroupedProcesses';
-import {
-  groupedProcessesMock,
-  mockProcessStatistics,
-  mockProcessXML,
-} from 'modules/testUtils';
-import {processesStore} from 'modules/stores/processes/processes.migration';
+import {mockProcessStatistics, mockProcessXML} from 'modules/testUtils';
 import {SourceDiagram} from '../SourceDiagram';
-import {processXmlStore} from 'modules/stores/processXml/processXml.migration.source';
 import {processStatisticsStore} from 'modules/stores/processStatistics/processStatistics.migration.source';
 import {mockFetchProcessInstancesStatistics} from 'modules/mocks/api/processInstances/fetchProcessInstancesStatistics';
 import {Wrapper} from './mocks';
+import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
+import {processInstanceMigrationStore} from 'modules/stores/processInstanceMigration';
+
+jest.mock('modules/stores/processes/processes.migration', () => ({
+  processesStore: {
+    getSelectedProcessDetails: () => ({
+      processName: 'New demo process',
+      version: '3',
+      bpmnProcessId: 'demoProcess',
+    }),
+    fetchProcesses: jest.fn(),
+  },
+}));
 
 describe('Source Diagram', () => {
   it('should render process name and version', async () => {
-    mockFetchGroupedProcesses().withSuccess(groupedProcessesMock);
+    mockFetchProcessDefinitionXml().withSuccess(mockProcessXML);
 
     const originalWindow = {...window};
     const locationSpy = jest.spyOn(window, 'location', 'get');
@@ -32,7 +38,6 @@ describe('Source Diagram', () => {
       search: '?active=true&incidents=true&process=demoProcess&version=3',
     }));
 
-    processesStore.fetchProcesses();
     render(<SourceDiagram />, {wrapper: Wrapper});
 
     expect(await screen.findByText('New demo process')).toBeInTheDocument();
@@ -44,7 +49,8 @@ describe('Source Diagram', () => {
   });
 
   it('should render xml', async () => {
-    processXmlStore.setProcessXml(mockProcessXML);
+    processInstanceMigrationStore.setSourceProcessDefinitionKey('123');
+    mockFetchProcessDefinitionXml().withSuccess(mockProcessXML);
 
     render(<SourceDiagram />, {wrapper: Wrapper});
 
@@ -55,7 +61,8 @@ describe('Source Diagram', () => {
   });
 
   it('should render statistics overlays', async () => {
-    processXmlStore.setProcessXml(mockProcessXML);
+    processInstanceMigrationStore.setSourceProcessDefinitionKey('123');
+    mockFetchProcessDefinitionXml().withSuccess(mockProcessXML);
     mockFetchProcessInstancesStatistics().withSuccess(mockProcessStatistics);
     processStatisticsStore.fetchProcessStatistics();
 

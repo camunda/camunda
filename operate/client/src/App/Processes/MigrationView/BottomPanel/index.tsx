@@ -11,7 +11,6 @@ import {observer} from 'mobx-react';
 import {SelectItem, Stack, Tag, Toggle} from '@carbon/react';
 
 import {processInstanceMigrationStore} from 'modules/stores/processInstanceMigration';
-import {processXmlStore as processXmlMigrationSourceStore} from 'modules/stores/processXml/processXml.migration.source';
 import {processInstanceMigrationMappingStore} from 'modules/stores/processInstanceMigrationMapping';
 import {ErrorMessage} from 'modules/components/ErrorMessage';
 import {
@@ -26,6 +25,7 @@ import {
   ArrowRight,
   ToggleContainer,
 } from './styled';
+import {useMigrationSourceXml} from 'modules/queries/processDefinitions/useMigrationSourceXml';
 import {useMigrationTargetXml} from 'modules/queries/processDefinitions/useMigrationTargetXml';
 import {processesStore} from 'modules/stores/processes/processes.migration';
 
@@ -40,7 +40,7 @@ const BottomPanel: React.FC = observer(() => {
   const {
     updateFlowNodeMapping,
     clearFlowNodeMapping,
-    state: {flowNodeMapping},
+    state: {flowNodeMapping, sourceProcessDefinitionKey},
   } = processInstanceMigrationStore;
 
   const {
@@ -52,12 +52,28 @@ const BottomPanel: React.FC = observer(() => {
   const {selectedTargetProcessId} = processesStore;
   const isTargetSelected = !!selectedTargetProcessId;
 
-  const {data} = useMigrationTargetXml({
-    processDefinitionKey: selectedTargetProcessId!,
-    enabled: selectedTargetProcessId !== undefined,
+  const {data: sourceData} = useMigrationSourceXml({
+    processDefinitionKey: sourceProcessDefinitionKey ?? undefined,
+    bpmnProcessId: processesStore.getSelectedProcessDetails().bpmnProcessId,
   });
 
-  const mappableFlowNodes = getMappableFlowNodes(data?.selectableFlowNodes);
+  const {data: targetData} = useMigrationTargetXml({
+    processDefinitionKey: selectedTargetProcessId,
+  });
+
+  const mappableFlowNodes = getMappableFlowNodes(
+    sourceData?.selectableFlowNodes,
+    targetData?.selectableFlowNodes,
+  );
+
+  const filteredSourceFlowNodeMappings = mappableFlowNodes.filter(
+    ({sourceFlowNode}) => {
+      return (
+        !isMappedFilterEnabled ||
+        flowNodeMapping[sourceFlowNode.id] === undefined
+      );
+    },
+  );
 
   /**
    * Flow nodes which are contained in both source diagram and target diagram.
@@ -66,13 +82,12 @@ const BottomPanel: React.FC = observer(() => {
    * - the flow node id is contained in source and target diagram
    * - the bpmn type is matching in source and target diagram
    */
-
   const autoMappableFlowNodes = useMemo(() => {
-    if (data === undefined) return [];
+    if (sourceData === undefined || targetData === undefined) return [];
 
-    return processXmlMigrationSourceStore.selectableFlowNodes
+    return sourceData.selectableFlowNodes
       .filter((sourceFlowNode) => {
-        const targetFlowNode = data.selectableFlowNodes.find(
+        const targetFlowNode = targetData.selectableFlowNodes.find(
           (flowNode) => flowNode.id === sourceFlowNode.id,
         );
 
@@ -84,7 +99,7 @@ const BottomPanel: React.FC = observer(() => {
       .map(({id, $type}) => {
         return {id, type: $type};
       });
-  }, [data]);
+  }, [sourceData, targetData]);
 
   /**
    * Returns true if the flow node with flowNodeId is auto-mappable
@@ -97,17 +112,9 @@ const BottomPanel: React.FC = observer(() => {
     );
   };
 
-  const {hasSelectableFlowNodes: hasSelectableSourceFlowNodes} =
-    processXmlMigrationSourceStore;
-
-  const filteredSourceFlowNodeMappings = mappableFlowNodes.filter(
-    ({sourceFlowNode}) => {
-      return (
-        !isMappedFilterEnabled ||
-        flowNodeMapping[sourceFlowNode.id] === undefined
-      );
-    },
-  );
+  const hasSelectableSourceFlowNodes =
+    sourceData?.selectableFlowNodes &&
+    sourceData.selectableFlowNodes.length > 0;
 
   // Automatically map flow nodes with same id and type in source and target diagrams
   useEffect(() => {

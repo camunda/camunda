@@ -8,9 +8,7 @@
 
 import {useEffect} from 'react';
 import {processInstanceMigrationStore} from 'modules/stores/processInstanceMigration';
-import {processXmlStore as processXmlMigrationSourceStore} from 'modules/stores/processXml/processXml.migration.source';
 import {processStatisticsStore} from 'modules/stores/processStatistics/processStatistics.migration.source';
-import {open} from 'modules/mocks/diagrams';
 import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
 import {QueryClientProvider} from '@tanstack/react-query';
 
@@ -221,14 +219,17 @@ type Props = {
   children?: React.ReactNode;
 };
 
+const SOURCE_PROCESS_DEFINITION_KEY = '1';
+
 const Wrapper = ({children}: Props) => {
-  processXmlMigrationSourceStore.setProcessXml(open('instanceMigration.bpmn'));
   processInstanceMigrationStore.enable();
+  processInstanceMigrationStore.setSourceProcessDefinitionKey(
+    SOURCE_PROCESS_DEFINITION_KEY,
+  );
 
   useEffect(() => {
     return () => {
       processInstanceMigrationStore.reset();
-      processXmlMigrationSourceStore.reset();
       processStatisticsStore.reset();
     };
   }, []);
@@ -240,4 +241,4 @@ const Wrapper = ({children}: Props) => {
   );
 };
 
-export {elements, Wrapper};
+export {elements, Wrapper, SOURCE_PROCESS_DEFINITION_KEY};

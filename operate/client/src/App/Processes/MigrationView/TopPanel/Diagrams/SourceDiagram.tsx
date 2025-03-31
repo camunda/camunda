@@ -7,7 +7,6 @@
  */
 
 import {processesStore} from 'modules/stores/processes/processes.migration';
-import {processXmlStore} from 'modules/stores/processXml/processXml.migration.source';
 import {Header} from './Header';
 import {DiagramWrapper} from './styled';
 import {observer} from 'mobx-react';
@@ -17,14 +16,38 @@ import {processInstanceMigrationStore} from 'modules/stores/processInstanceMigra
 import {processStatisticsStore} from 'modules/stores/processStatistics/processStatistics.migration.source';
 import {diagramOverlaysStore} from 'modules/stores/diagramOverlays';
 import {StateOverlay} from 'modules/components/StateOverlay';
+import {useMigrationSourceXml} from 'modules/queries/processDefinitions/useMigrationSourceXml';
 
 const SourceDiagram: React.FC = observer(() => {
-  const {processName, version} = processesStore.getSelectedProcessDetails();
-  const {selectedSourceFlowNodeIds} = processInstanceMigrationStore;
+  const {processName, version, bpmnProcessId} =
+    processesStore.getSelectedProcessDetails();
+  const {
+    selectedSourceFlowNodeIds,
+    state: {sourceProcessDefinitionKey},
+  } = processInstanceMigrationStore;
 
   const statisticsOverlays = diagramOverlaysStore.state.overlays.filter(
     ({type}) => type.match(/^statistics/) !== null,
   );
+
+  const {
+    data,
+    isLoading: isMigrationSourceXmlLoading,
+    isError: isMigrationSourceXmlError,
+  } = useMigrationSourceXml({
+    processDefinitionKey: sourceProcessDefinitionKey ?? undefined,
+    bpmnProcessId,
+  });
+
+  const getStatus = () => {
+    if (isMigrationSourceXmlLoading) {
+      return 'loading';
+    }
+    if (isMigrationSourceXmlError) {
+      return 'error';
+    }
+    return 'content';
+  };
 
   return (
     <DiagramWrapper>
@@ -36,11 +59,13 @@ const SourceDiagram: React.FC = observer(() => {
           processVersion={version ?? ''}
         />
       )}
-      <DiagramShell status="content">
-        {processXmlStore.state.xml !== null && (
+      <DiagramShell status={getStatus()}>
+        {data?.xml !== undefined && (
           <Diagram
-            xml={processXmlStore.state.xml}
-            selectableFlowNodes={processXmlStore.selectableIds}
+            xml={data.xml}
+            selectableFlowNodes={data.selectableFlowNodes.map(
+              (flowNode) => flowNode.id,
+            )}
             selectedFlowNodeIds={selectedSourceFlowNodeIds}
             onFlowNodeSelection={(flowNodeId) => {
               processInstanceMigrationStore.selectSourceFlowNode(flowNodeId);
