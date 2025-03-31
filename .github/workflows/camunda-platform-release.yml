@@ -33,6 +33,7 @@ permissions:
   repository-projects: write
   security-events: write
   statuses: write
+  workflows: write
 jobs:
   release:
     name: Maven Release
