@@ -11,9 +11,11 @@ import io.camunda.search.clients.SearchClientsProxy;
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessors;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
+import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.state.immutable.ScheduledTaskState;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationChunkIntent;
+import io.camunda.zeebe.protocol.record.intent.BatchOperationExecutionIntent;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationIntent;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import java.time.Duration;
@@ -27,7 +29,9 @@ public final class BatchOperationSetupProcessors {
       final Writers writers,
       final CommandDistributionBehavior commandDistributionBehavior,
       final Supplier<ScheduledTaskState> scheduledTaskStateFactory,
-      final SearchClientsProxy searchClientsProxy) {
+      final SearchClientsProxy searchClientsProxy,
+      final ProcessingState processingState,
+      final int partitionId) {
     typedRecordProcessors
         .onCommand(
             ValueType.BATCH_OPERATION_CREATION,
@@ -37,6 +41,10 @@ public final class BatchOperationSetupProcessors {
             ValueType.BATCH_OPERATION_CHUNK,
             BatchOperationChunkIntent.CREATE,
             new BatchOperationCreateChunkProcessor(writers))
+        .onCommand(
+            ValueType.BATCH_OPERATION_EXECUTION,
+            BatchOperationExecutionIntent.EXECUTE,
+            new BatchOperationExecuteProcessor(writers, processingState, partitionId))
         .withListener(
             new BatchOperationExecutionScheduler(
                 scheduledTaskStateFactory,

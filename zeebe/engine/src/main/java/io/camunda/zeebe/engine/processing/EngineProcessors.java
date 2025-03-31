@@ -320,7 +320,9 @@ public final class EngineProcessors {
         writers,
         commandDistributionBehavior,
         scheduledTaskStateFactory,
-        searchClientsProxy);
+        searchClientsProxy,
+        processingState,
+        partitionId);
 
     return typedRecordProcessors;
   }
