@@ -9,10 +9,13 @@ package io.camunda.operate.webapp.security.tenant;
 
 import static io.camunda.webapps.schema.entities.AbstractExporterEntity.DEFAULT_TENANT_ID;
 
-import io.camunda.authentication.tenant.TenantAttributeHolder;
+import io.camunda.authentication.entity.CamundaPrincipal;
 import io.camunda.security.configuration.SecurityConfiguration;
+import io.camunda.service.TenantServices.TenantDTO;
+import java.util.ArrayList;
 import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 import org.springframework.web.context.request.RequestContextHolder;
 
@@ -22,7 +25,17 @@ public class TenantService {
   @Autowired private SecurityConfiguration securityConfiguration;
 
   public List<String> tenantIds() {
-    return TenantAttributeHolder.getTenantIds();
+    final List<String> authenticatedTenantIds = new ArrayList<>();
+    final var requestAuthentication = SecurityContextHolder.getContext().getAuthentication();
+    if (requestAuthentication.getPrincipal()
+        instanceof final CamundaPrincipal authenticatedPrincipal) {
+
+      authenticatedTenantIds.addAll(
+          authenticatedPrincipal.getAuthenticationContext().tenants().stream()
+              .map(TenantDTO::tenantId)
+              .toList());
+    }
+    return authenticatedTenantIds;
   }
 
   public AuthenticatedTenants getAuthenticatedTenants() {

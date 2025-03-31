@@ -17,12 +17,10 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.authentication.entity.CamundaUser;
-import io.camunda.authentication.tenant.TenantAttributeHolder;
 import io.camunda.security.configuration.AuthorizationsConfiguration;
 import io.camunda.security.configuration.MultiTenancyConfiguration;
 import io.camunda.security.configuration.SecurityConfiguration;
@@ -42,13 +40,11 @@ import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.MockedStatic;
 import org.mockito.MockitoAnnotations;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
@@ -82,24 +78,12 @@ class ProcessStoreOpenSearchTest {
   @Mock private AuthorizationChecker authorizationChecker;
   @Mock private TasklistPermissionServices permissionServices;
 
-  private MockedStatic<TenantAttributeHolder> tenantAttributeHolder;
-
   @BeforeEach
   public void setup() {
     MockitoAnnotations.initMocks(this);
     when(securityConfiguration.getMultiTenancy()).thenReturn(new MultiTenancyConfiguration());
     ReflectionTestUtils.setField(
         permissionServices, "securityConfiguration", securityConfiguration);
-
-    tenantAttributeHolder = mockStatic(TenantAttributeHolder.class);
-    tenantAttributeHolder
-        .when(() -> TenantAttributeHolder.getTenantIds())
-        .thenReturn(List.of("<default>"));
-  }
-
-  @AfterEach
-  public void tearDown() {
-    tenantAttributeHolder.close();
   }
 
   // ** Test Get Process by BPMN Process Id ** //

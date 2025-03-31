@@ -7,8 +7,9 @@
  */
 package io.camunda.tasklist;
 
-import io.camunda.authentication.tenant.TenantAttributeHolder;
+import io.camunda.authentication.entity.CamundaPrincipal;
 import io.camunda.operate.webapp.security.UserService;
+import io.camunda.service.TenantServices.TenantDTO;
 import io.camunda.tasklist.webapp.dto.UserDTO;
 import io.camunda.tasklist.webapp.security.AssigneeMigrator;
 import io.camunda.tasklist.webapp.security.AssigneeMigratorNoImpl;
@@ -16,12 +17,14 @@ import io.camunda.tasklist.webapp.security.Permission;
 import io.camunda.tasklist.webapp.security.TasklistProfileService;
 import io.camunda.tasklist.webapp.security.UserReader;
 import io.camunda.tasklist.webapp.security.tenant.TenantService;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 
 /**
  * Temporary configuration required to start Tasklist as part of C8 single application.
@@ -87,7 +90,17 @@ public class TasklistSecurityStubsConfiguration {
     return new TenantService() {
       @Override
       public List<String> tenantsIds() {
-        return TenantAttributeHolder.getTenantIds();
+        final List<String> authenticatedTenantIds = new ArrayList<>();
+        final var requestAuthentication = SecurityContextHolder.getContext().getAuthentication();
+        if (requestAuthentication.getPrincipal()
+            instanceof final CamundaPrincipal authenticatedPrincipal) {
+
+          authenticatedTenantIds.addAll(
+              authenticatedPrincipal.getAuthenticationContext().tenants().stream()
+                  .map(TenantDTO::tenantId)
+                  .toList());
+        }
+        return authenticatedTenantIds;
       }
 
       @Override

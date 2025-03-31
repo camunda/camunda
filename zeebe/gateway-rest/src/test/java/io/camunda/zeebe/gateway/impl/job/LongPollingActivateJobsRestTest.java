@@ -14,14 +14,12 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.atLeast;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
-import io.camunda.authentication.tenant.TenantAttributeHolder;
 import io.camunda.service.JobServices.ActivateJobsRequest;
 import io.camunda.zeebe.broker.client.api.BrokerRejectionException;
 import io.camunda.zeebe.broker.client.api.dto.BrokerError;
@@ -66,7 +64,6 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
-import org.mockito.MockedStatic;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.util.unit.DataSize;
@@ -91,7 +88,6 @@ public class LongPollingActivateJobsRestTest {
   LongPollingActivateJobsHandler<JobActivationResult> handler;
   ActivateJobsStub activateJobsStub;
   FailJobStub failJobStub;
-  MockedStatic<TenantAttributeHolder> tenantAttributeHolderMock;
 
   @BeforeEach
   void setUp() {
@@ -124,14 +120,10 @@ public class LongPollingActivateJobsRestTest {
     activateJobsStub.registerWith(brokerClient);
     failJobStub = spy(new FailJobStub());
     failJobStub.registerWith(brokerClient);
-
-    tenantAttributeHolderMock = mockStatic(TenantAttributeHolder.class);
-    tenantAttributeHolderMock.when(TenantAttributeHolder::getTenantIds).thenReturn(List.of());
   }
 
   @AfterEach
   void tearDown() throws Exception {
-    tenantAttributeHolderMock.close();
     actorScheduler.close();
     actorScheduler = null;
   }
