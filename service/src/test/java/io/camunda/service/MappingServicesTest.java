@@ -153,7 +153,7 @@ public class MappingServicesTest {
             mockBrokerClient, mock(SecurityContextProvider.class), client, testAuthentication);
 
     final var mappingRecord = new MappingRecord();
-    mappingRecord.setId("id");
+    mappingRecord.setMappingId("id");
     when(mockBrokerClient.sendRequest(any()))
         .thenReturn(CompletableFuture.completedFuture(new BrokerResponse<>(mappingRecord)));
 
@@ -163,7 +163,7 @@ public class MappingServicesTest {
     // then
     verify(mockBrokerClient).sendRequest(mappingDeleteRequestArgumentCaptor.capture());
     final var request = mappingDeleteRequestArgumentCaptor.getValue();
-    assertThat(request.getRequestWriter().getId()).isEqualTo("id");
+    assertThat(request.getRequestWriter().getMappingId()).isEqualTo("id");
   }
 
   @Test
@@ -177,13 +177,13 @@ public class MappingServicesTest {
             mockBrokerClient, mock(SecurityContextProvider.class), client, testAuthentication);
 
     final var mappingRecord = new MappingRecord();
-    mappingRecord.setId("id");
+    mappingRecord.setMappingId("id");
     when(mockBrokerClient.sendRequest(any()))
         .thenReturn(CompletableFuture.completedFuture(new BrokerResponse<>(mappingRecord)));
 
     final var mappingDTO =
         new MappingDTO(
-            "newClaimName", "newClaimValue", "newMappingRuleName", mappingRecord.getId());
+            "newClaimName", "newClaimValue", "newMappingRuleName", mappingRecord.getMappingId());
 
     //  when
     testMappingServices.updateMapping(mappingDTO);
@@ -191,7 +191,7 @@ public class MappingServicesTest {
     // then
     verify(mockBrokerClient).sendRequest(mappingUpdateRequestArgumentCaptor.capture());
     final var request = mappingUpdateRequestArgumentCaptor.getValue();
-    assertThat(request.getRequestWriter().getId()).isEqualTo(mappingDTO.id());
+    assertThat(request.getRequestWriter().getMappingId()).isEqualTo(mappingDTO.id());
     assertThat(request.getRequestWriter().getClaimName()).isEqualTo(mappingDTO.claimName());
     assertThat(request.getRequestWriter().getClaimValue()).isEqualTo(mappingDTO.claimValue());
     assertThat(request.getRequestWriter().getName()).isEqualTo(mappingDTO.name());

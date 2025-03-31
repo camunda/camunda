@@ -47,7 +47,7 @@ public class MappingCreatedUpdatedHandler
 
   @Override
   public List<String> generateIds(final Record<MappingRecordValue> record) {
-    return List.of(record.getValue().getId());
+    return List.of(String.valueOf(record.getValue().getMappingId()));
   }
 
   @Override
@@ -60,7 +60,7 @@ public class MappingCreatedUpdatedHandler
     final MappingRecordValue value = record.getValue();
     entity
         .setKey(value.getMappingKey())
-        .setId(value.getId())
+        .setId(value.getMappingId())
         .setClaimName(value.getClaimName())
         .setClaimValue(value.getClaimValue())
         .setName(value.getName());

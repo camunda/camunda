@@ -65,14 +65,14 @@ public class MappingAppliersTest {
     mappingDeletedApplier.applyState(mappingRecord.getMappingKey(), mappingRecord);
 
     // then
-    assertThat(mappingState.get(mappingRecord.getId())).isEmpty();
+    assertThat(mappingState.get(mappingRecord.getMappingId())).isEmpty();
   }
 
   @Test
   public void shouldThrowExceptionWhenDeleteNotExistingMapping() {
     // given
     final String id = "id";
-    final var mappingRecord = new MappingRecord().setId(id);
+    final var mappingRecord = new MappingRecord().setMappingId(id);
 
     // when + then
     assertThatThrownBy(
@@ -96,8 +96,8 @@ public class MappingAppliersTest {
     mappingUpdatedApplier.applyState(mappingRecord.getMappingKey(), mappingRecord);
 
     // then
-    assertThat(mappingState.get(mappingRecord.getId())).isNotEmpty();
-    final var updatedMapping = mappingState.get(mappingRecord.getId()).get();
+    assertThat(mappingState.get(mappingRecord.getMappingId())).isNotEmpty();
+    final var updatedMapping = mappingState.get(mappingRecord.getMappingId()).get();
     assertThat(updatedMapping.getClaimName()).isEqualTo(newClaimName);
     assertThat(updatedMapping.getClaimValue()).isEqualTo(newClaimValue);
     assertThat(updatedMapping.getName()).isEqualTo(newName);
@@ -107,7 +107,7 @@ public class MappingAppliersTest {
   public void shouldThrowExceptionWhenUpdateNotExistingMappingId() {
     // given
     final var mappingRecord = createMapping();
-    mappingRecord.setId(UUID.randomUUID().toString());
+    mappingRecord.setMappingId(UUID.randomUUID().toString());
     // when + then
     assertThatThrownBy(
             () -> mappingUpdatedApplier.applyState(mappingRecord.getMappingKey(), mappingRecord))
@@ -115,7 +115,7 @@ public class MappingAppliersTest {
         .hasMessageContaining(
             String.format(
                 "Expected to update mapping with id '%s', but a mapping with this id does not exist.",
-                mappingRecord.getId()));
+                mappingRecord.getMappingId()));
   }
 
   private MappingRecord createMapping() {
@@ -126,11 +126,10 @@ public class MappingAppliersTest {
     final var mappingRecord =
         new MappingRecord()
             .setMappingKey(mappingKey)
-            .setId(mappingId)
+            .setMappingId(mappingId)
             .setClaimName(claimName)
             .setClaimValue(claimValue)
-            .setName(claimName)
-            .setId(UUID.randomUUID().toString());
+            .setName(claimName);
     mappingState.create(mappingRecord);
     // create role
     final long roleKey = 2L;

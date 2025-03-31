@@ -3010,14 +3010,14 @@ final class JsonSerializableToJsonTest {
                     .setMappingKey(1L)
                     .setClaimName("claimName")
                     .setClaimValue("claimValue")
-                    .setId("id1")
+                    .setMappingId("id1")
                     .setName("name"),
         """
       {
         "mappingKey": 1,
         "claimName": "claimName",
         "claimValue": "claimValue",
-        "id": "id1",
+        "mappingId": "id1",
         "name": "name"
       }
       """
@@ -3033,7 +3033,7 @@ final class JsonSerializableToJsonTest {
         "mappingKey": -1,
         "claimName": "",
         "claimValue": "",
-        "id": "",
+        "mappingId": "",
         "name": ""
       }
       """
@@ -3073,14 +3073,14 @@ final class JsonSerializableToJsonTest {
                     .addMapping(
                         new MappingRecord()
                             .setMappingKey(6)
-                            .setId("id1")
+                            .setMappingId("id1")
                             .setClaimName("claim1")
                             .setClaimValue("value1")
                             .setName("Claim 1"))
                     .addMapping(
                         new MappingRecord()
                             .setMappingKey(7)
-                            .setId("id2")
+                            .setMappingId("id2")
                             .setClaimName("claim2")
                             .setClaimValue("value2")
                             .setName("Claim 2")),
@@ -3121,14 +3121,14 @@ final class JsonSerializableToJsonTest {
         "mappings": [
           {
             "mappingKey": 6,
-            "id": "id1",
+            "mappingId": "id1",
             "claimName": "claim1",
             "claimValue": "value1",
             "name": "Claim 1"
           },
           {
             "mappingKey": 7,
-            "id": "id2",
+            "mappingId": "id2",
             "claimName": "claim2",
             "claimValue": "value2",
             "name": "Claim 2"

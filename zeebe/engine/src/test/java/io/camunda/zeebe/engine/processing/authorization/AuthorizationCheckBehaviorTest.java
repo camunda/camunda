@@ -299,7 +299,11 @@ final class AuthorizationCheckBehaviorTest {
     final var permissionType = PermissionType.CREATE;
     final var resourceId = UUID.randomUUID().toString();
     addPermission(
-        mapping.getId(), AuthorizationOwnerType.MAPPING, resourceType, permissionType, resourceId);
+        mapping.getMappingId(),
+        AuthorizationOwnerType.MAPPING,
+        resourceType,
+        permissionType,
+        resourceId);
     final var command = mockCommandWithMapping(claimName, claimValue);
 
     // when
@@ -399,13 +403,13 @@ final class AuthorizationCheckBehaviorTest {
     final var firstResourceId = UUID.randomUUID().toString();
     final var secondResourceId = UUID.randomUUID().toString();
     addPermission(
-        String.valueOf(firstMapping.getId()),
+        String.valueOf(firstMapping.getMappingId()),
         AuthorizationOwnerType.MAPPING,
         resourceType,
         permissionType,
         firstResourceId);
     addPermission(
-        String.valueOf(secondMapping.getId()),
+        String.valueOf(secondMapping.getMappingId()),
         AuthorizationOwnerType.MAPPING,
         resourceType,
         permissionType,
@@ -449,13 +453,13 @@ final class AuthorizationCheckBehaviorTest {
     final var firstResourceId = UUID.randomUUID().toString();
     final var secondResourceId = UUID.randomUUID().toString();
     addPermission(
-        firstMapping.getId(),
+        firstMapping.getMappingId(),
         AuthorizationOwnerType.MAPPING,
         resourceType,
         permissionType,
         firstResourceId);
     addPermission(
-        secondMapping.getId(),
+        secondMapping.getMappingId(),
         AuthorizationOwnerType.MAPPING,
         resourceType,
         permissionType,
@@ -492,7 +496,11 @@ final class AuthorizationCheckBehaviorTest {
     final var permissionType = PermissionType.CREATE;
     final var resourceId = UUID.randomUUID().toString();
     addPermission(
-        mapping.getId(), AuthorizationOwnerType.MAPPING, resourceType, permissionType, resourceId);
+        mapping.getMappingId(),
+        AuthorizationOwnerType.MAPPING,
+        resourceType,
+        permissionType,
+        resourceId);
     final var command = mockCommandWithMapping(claimName, claimValue);
 
     // when
@@ -619,7 +627,7 @@ final class AuthorizationCheckBehaviorTest {
     final var mapping =
         new MappingRecord()
             .setMappingKey(mappingKey)
-            .setId(Strings.newRandomValidIdentityId())
+            .setMappingId(Strings.newRandomValidIdentityId())
             .setName(Strings.newRandomValidUsername())
             .setClaimName(claimName)
             .setClaimValue(claimValue);

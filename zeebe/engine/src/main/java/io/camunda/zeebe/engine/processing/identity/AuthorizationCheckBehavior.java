@@ -317,7 +317,7 @@ public final class AuthorizationCheckBehavior {
             (mapping, stream) -> {
               getAuthorizedResourceIdentifiersForOwners(
                       AuthorizationOwnerType.MAPPING,
-                      List.of(mapping.getId()),
+                      List.of(mapping.getMappingId()),
                       request.getResourceType(),
                       request.getPermissionType())
                   .forEach(stream);

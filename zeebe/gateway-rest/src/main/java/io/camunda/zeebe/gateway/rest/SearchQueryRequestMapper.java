@@ -671,6 +671,8 @@ public final class SearchQueryRequestMapper {
     if (filter != null) {
       ofNullable(filter.getClaimName()).ifPresent(builder::claimName);
       ofNullable(filter.getClaimValue()).ifPresent(builder::claimValue);
+      ofNullable(filter.getName()).ifPresent(builder::name);
+      ofNullable(filter.getMappingId()).ifPresent(builder::mappingId);
     }
     return builder.build();
   }

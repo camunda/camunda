@@ -77,7 +77,10 @@ public class TenantAppliersTest {
     // given
     final var mappingId = "mappingId";
     mappingState.create(
-        new MappingRecord().setId(mappingId).setClaimName("claimName").setClaimValue("claimValue"));
+        new MappingRecord()
+            .setMappingId(mappingId)
+            .setClaimName("claimName")
+            .setClaimValue("claimValue"));
     final String tenantId = "tenantId";
     final long tenantKey = 11L;
     final var tenantRecord = new TenantRecord().setTenantId(tenantId).setTenantKey(tenantKey);
@@ -157,7 +160,10 @@ public class TenantAppliersTest {
     // given
     final var mappingId = "mappingId";
     mappingState.create(
-        new MappingRecord().setId(mappingId).setClaimName("claimName").setClaimValue("claimValue"));
+        new MappingRecord()
+            .setMappingId(mappingId)
+            .setClaimName("claimName")
+            .setClaimValue("claimValue"));
     final String tenantId = "tenantId";
     final long tenantKey = 11L;
     final var tenantRecord = new TenantRecord().setTenantId(tenantId).setTenantKey(tenantKey);

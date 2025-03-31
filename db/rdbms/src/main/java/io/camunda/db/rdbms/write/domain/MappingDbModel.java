@@ -21,28 +21,23 @@ public record MappingDbModel(
     return builderFunction
         .apply(
             new MappingDbModelBuilder()
-                .mappingId(mappingId)
                 .mappingKey(mappingKey)
                 .claimName(claimName)
                 .claimValue(claimValue)
-                .name(name))
+                .name(name)
+                .mappingId(mappingId))
         .build();
   }
 
   public static class MappingDbModelBuilder implements ObjectBuilder<MappingDbModel> {
 
-    private String mappingId;
     private Long mappingKey;
     private String claimName;
     private String claimValue;
     private String name;
+    private String mappingId;
 
     public MappingDbModelBuilder() {}
-
-    public MappingDbModelBuilder mappingId(final String mappingId) {
-      this.mappingId = mappingId;
-      return this;
-    }
 
     public MappingDbModelBuilder mappingKey(final Long mappingKey) {
       this.mappingKey = mappingKey;
@@ -61,6 +56,11 @@ public record MappingDbModel(
 
     public MappingDbModelBuilder name(final String name) {
       this.name = name;
+      return this;
+    }
+
+    public MappingDbModelBuilder mappingId(final String mappingId) {
+      this.mappingId = mappingId;
       return this;
     }
 
