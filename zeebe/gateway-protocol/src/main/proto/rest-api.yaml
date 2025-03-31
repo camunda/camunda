@@ -5567,7 +5567,7 @@ components:
           description: The name of the mapping.
         mappingId:
           type: string
-          description: The id of the mapping.
+          description: The ID of the mapping.
     CamundaUserResult:
       type: object
       properties:
@@ -5949,7 +5949,7 @@ components:
           description: The name of the mapping.
         mappingId:
           type: string
-          description: The id of the mapping.
+          description: The ID of the mapping.
         mappingKey:
           description: The key of the created mapping rule.
           type: string
