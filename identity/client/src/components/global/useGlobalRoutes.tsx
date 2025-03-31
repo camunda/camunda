@@ -16,7 +16,7 @@ export const useGlobalRoutes = () => {
         {
           path: "/mappings/*",
           key: "/mappings",
-          label: t("Mappings"),
+          label: t("mappings"),
           element: <Mappings />,
         },
       ]
@@ -24,7 +24,7 @@ export const useGlobalRoutes = () => {
         {
           path: "/users/*",
           key: "/users",
-          label: t("Users"),
+          label: t("users"),
           element: <Users />,
         },
       ];
@@ -34,25 +34,25 @@ export const useGlobalRoutes = () => {
     {
       path: "/groups/*",
       key: "/groups",
-      label: t("Groups"),
+      label: t("groups"),
       element: <Groups />,
     },
     {
       path: "/roles/*",
       key: "/roles",
-      label: t("Roles"),
+      label: t("roles"),
       element: <Roles />,
     },
     {
       path: "/tenants/*",
       key: "/tenants",
-      label: t("Tenants"),
+      label: t("tenants"),
       element: <Tenants />,
     },
     {
       path: "/authorizations/*",
       key: "/authorizations",
-      label: t("Authorizations"),
+      label: t("authorizations"),
       element: <Authorizations />,
     },
   ];

@@ -92,7 +92,7 @@ const Details: FC = () => {
                   ? [
                       {
                         key: "groups",
-                        label: t("Groups"),
+                        label: t("groups"),
                         content: <Groups tenantId={tenant.tenantId} />,
                       },
                     ]
