@@ -13,6 +13,7 @@ import io.camunda.zeebe.engine.state.mutable.MutableUserTaskState;
 import io.camunda.zeebe.engine.util.ProcessingStateExtension;
 import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
+import java.util.Random;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -81,5 +82,33 @@ public class UserTaskAssignmentDeniedApplierTest {
     Assertions.assertThat(userTaskState.getLifecycleState(userTaskKey))
         .describedAs("Expect that lifecycle state is reverted to 'CREATED'")
         .isEqualTo(LifecycleState.CREATED);
+  }
+
+  @Test
+  public void shouldCleanUpIntermediateAssigneeIfAssignmentDeniedByTaskListener() {
+    // given
+    final long userTaskKey = new Random().nextLong();
+    final var initialAssignee = "initial";
+
+    final var given = new UserTaskRecord().setAssignee(initialAssignee).setUserTaskKey(userTaskKey);
+
+    // assignee is present in the creating event
+    testSetup.applyEventToState(userTaskKey, UserTaskIntent.CREATING, given);
+
+    // created event is written without assignee
+    testSetup.applyEventToState(userTaskKey, UserTaskIntent.CREATED, given.unsetAssignee());
+    testSetup.applyEventToState(userTaskKey, UserTaskIntent.ASSIGNING, given);
+
+    Assertions.assertThat(userTaskState.getIntermediateAssignee(userTaskKey))
+        .describedAs("Expect that intermediate assignee is stored")
+        .isEqualTo(initialAssignee);
+
+    // when
+    userTaskAssignmentDeniedApplierApplier.applyState(userTaskKey, given);
+
+    // then
+    Assertions.assertThat(userTaskState.getIntermediateAssignee(userTaskKey))
+        .describedAs("Expect that intermediate assignee is not present anymore")
+        .isNull();
   }
 }
