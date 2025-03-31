@@ -39,10 +39,11 @@ public class UpdateGroupMultiPartitionTest {
   public void shouldDistributeGroupUpdateCommand() {
     // given
     final var name = UUID.randomUUID().toString();
-    final var groupRecord = engine.group().newGroup(name).create();
+    final var groupId = "123";
+    final var groupKey = Long.parseLong(groupId);
+    engine.group().newGroup(name).withGroupId(groupId).create();
 
     // when
-    final var groupKey = groupRecord.getKey();
     engine.group().updateGroup(groupKey).withName("updated-" + name).update();
 
     assertThat(
@@ -95,7 +96,9 @@ public class UpdateGroupMultiPartitionTest {
   public void shouldDistributeInIdentityQueue() {
     // when
     final var name = UUID.randomUUID().toString();
-    final var groupKey = engine.group().newGroup(name).create().getKey();
+    final var groupId = "123";
+    final var groupKey = Long.parseLong(groupId);
+    engine.group().newGroup(name).withGroupId(groupId).create();
     engine.group().updateGroup(groupKey).withName(name + "-updated").update();
 
     // then
@@ -113,7 +116,9 @@ public class UpdateGroupMultiPartitionTest {
     for (int partitionId = 2; partitionId <= PARTITION_COUNT; partitionId++) {
       interceptGroupCommandForPartition(partitionId, GroupIntent.CREATE);
     }
-    final var groupKey = engine.group().newGroup(UUID.randomUUID().toString()).create().getKey();
+    final var groupId = "123";
+    final var groupKey = Long.parseLong(groupId);
+    engine.group().newGroup(UUID.randomUUID().toString()).withGroupId(groupId).create().getKey();
 
     // when
     final var name = UUID.randomUUID().toString();

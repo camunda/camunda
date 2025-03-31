@@ -34,9 +34,11 @@ public class GroupStateTest {
   @Test
   void shouldCreateGroup() {
     // given
-    final var groupKey = 1L;
+    final var groupId = "1";
+    final var groupKey = Long.parseLong(groupId);
     final var groupName = "group";
-    final var groupRecord = new GroupRecord().setGroupKey(groupKey).setName(groupName);
+    final var groupRecord =
+        new GroupRecord().setGroupKey(groupKey).setGroupId(groupId).setName(groupName);
 
     // when
     groupState.create(groupKey, groupRecord);
@@ -52,10 +54,10 @@ public class GroupStateTest {
   @Test
   void shouldReturnNullIfGroupDoesNotExist() {
     // given
-    final var groupKey = 2L;
+    final var groupId = "groupId";
 
     // when
-    final var group = groupState.get(groupKey);
+    final var group = groupState.get(groupId);
 
     // then
     assertThat(group.isPresent()).isFalse();
@@ -64,9 +66,11 @@ public class GroupStateTest {
   @Test
   void shouldUpdateGroup() {
     // given
-    final var groupKey = 1L;
+    final var groupId = "1";
+    final var groupKey = Long.parseLong(groupId);
     final var groupName = "group";
-    final var groupRecord = new GroupRecord().setGroupKey(groupKey).setName(groupName);
+    final var groupRecord =
+        new GroupRecord().setGroupKey(groupKey).setGroupId(groupId).setName(groupName);
     groupState.create(groupKey, groupRecord);
 
     final var updatedGroupName = "updatedGroup";
@@ -86,9 +90,11 @@ public class GroupStateTest {
   @Test
   void shouldAddEntity() {
     // given
-    final var groupKey = 1L;
+    final var groupId = "1";
+    final var groupKey = Long.parseLong(groupId);
     final var groupName = "group";
-    final var groupRecord = new GroupRecord().setGroupKey(groupKey).setName(groupName);
+    final var groupRecord =
+        new GroupRecord().setGroupKey(groupKey).setGroupId(groupId).setName(groupName);
     groupState.create(groupKey, groupRecord);
 
     // when
@@ -106,9 +112,11 @@ public class GroupStateTest {
   @Test
   void shouldReturnEntitiesByType() {
     // given
-    final var groupKey = 1L;
+    final var groupId = "1";
+    final var groupKey = Long.parseLong(groupId);
     final var groupName = "group";
-    final var groupRecord = new GroupRecord().setGroupKey(groupKey).setName(groupName);
+    final var groupRecord =
+        new GroupRecord().setGroupKey(groupKey).setGroupId(groupId).setName(groupName);
     groupState.create(groupKey, groupRecord);
     final var userKey = 2L;
     groupRecord.setEntityKey(2L).setEntityType(EntityType.USER);
@@ -129,9 +137,11 @@ public class GroupStateTest {
   @Test
   void shouldRemoveEntity() {
     // given
-    final var groupKey = 1L;
+    final var groupId = "1";
+    final var groupKey = Long.parseLong(groupId);
     final var groupName = "group";
-    final var groupRecord = new GroupRecord().setGroupKey(groupKey).setName(groupName);
+    final var groupRecord =
+        new GroupRecord().setGroupKey(groupKey).setGroupId(groupId).setName(groupName);
     groupState.create(groupKey, groupRecord);
     final var userKey = 2L;
     groupRecord.setEntityKey(userKey).setEntityType(EntityType.USER);
@@ -151,9 +161,11 @@ public class GroupStateTest {
   @Test
   void shouldDeleteGroup() {
     // given
-    final var groupKey = 1L;
+    final var groupId = "1";
+    final var groupKey = Long.parseLong(groupId);
     final var groupName = "group";
-    final var groupRecord = new GroupRecord().setGroupKey(groupKey).setName(groupName);
+    final var groupRecord =
+        new GroupRecord().setGroupKey(groupKey).setGroupId(groupId).setName(groupName);
     groupState.create(groupKey, groupRecord);
     groupRecord.setEntityKey(2L).setEntityType(EntityType.USER);
     groupState.addEntity(groupKey, groupRecord);
@@ -174,10 +186,12 @@ public class GroupStateTest {
   @Test
   void shouldAddTenant() {
     // given
-    final var groupKey = 1L;
+    final var groupId = "1";
+    final var groupKey = Long.parseLong(groupId);
     final var groupName = "group";
     final var tenantId = "tenant1";
-    final var groupRecord = new GroupRecord().setGroupKey(groupKey).setName(groupName);
+    final var groupRecord =
+        new GroupRecord().setGroupKey(groupKey).setGroupId(groupId).setName(groupName);
     groupState.create(groupKey, groupRecord);
 
     // when
@@ -192,13 +206,15 @@ public class GroupStateTest {
   @Test
   void shouldRemoveTenant() {
     // given
-    final var groupKey = 1L;
+    final var groupId = "1";
+    final var groupKey = Long.parseLong(groupId);
     final var groupName = "group";
     final var tenantId1 = "tenant1";
     final var tenantId2 = "tenant2";
 
     // Create a group and add tenants
-    final var groupRecord = new GroupRecord().setGroupKey(groupKey).setName(groupName);
+    final var groupRecord =
+        new GroupRecord().setGroupKey(groupKey).setGroupId(groupId).setName(groupName);
     groupState.create(groupKey, groupRecord);
     groupState.addTenant(groupKey, tenantId1);
     groupState.addTenant(groupKey, tenantId2);

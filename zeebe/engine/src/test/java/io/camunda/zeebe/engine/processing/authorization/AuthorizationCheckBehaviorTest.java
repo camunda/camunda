@@ -601,10 +601,11 @@ final class AuthorizationCheckBehaviorTest {
 
   private long createGroup(final long entityKey, final EntityType entityType) {
     final var groupKey = random.nextLong();
+    final var groupId = String.valueOf(groupKey);
     final var group =
         new GroupRecord()
             .setGroupKey(groupKey)
-            .setGroupId(Strings.newRandomValidIdentityId())
+            .setGroupId(groupId)
             .setName(UUID.randomUUID().toString())
             .setDescription(UUID.randomUUID().toString())
             .setEntityKey(entityKey)

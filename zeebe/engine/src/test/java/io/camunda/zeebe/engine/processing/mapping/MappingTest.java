@@ -235,11 +235,13 @@ public class MappingTest {
     final var claimValue = UUID.randomUUID().toString();
     final var mappingRecord =
         engine.mapping().newMapping(claimName).withClaimValue(claimValue).create();
-    final var group = engine.group().newGroup("group").create();
+    final var groupId = "123";
+    final var groupKey = Long.parseLong(groupId);
+    engine.group().newGroup("group").withGroupId(groupId).create();
     final var role = engine.role().newRole("role").create();
     engine
         .group()
-        .addEntity(group.getKey())
+        .addEntity(groupKey)
         .withEntityKey(mappingRecord.getKey())
         .withEntityType(EntityType.MAPPING)
         .add();
@@ -256,7 +258,7 @@ public class MappingTest {
     // then
     Assertions.assertThat(
             RecordingExporter.groupRecords(GroupIntent.ENTITY_REMOVED)
-                .withGroupKey(group.getKey())
+                .withGroupKey(groupKey)
                 .withEntityKey(mappingRecord.getKey())
                 .exists())
         .isTrue();

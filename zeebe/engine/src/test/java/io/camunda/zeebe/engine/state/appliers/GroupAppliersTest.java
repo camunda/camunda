@@ -55,9 +55,11 @@ public class GroupAppliersTest {
   @Test
   void shouldCreateGroup() {
     // given
-    final var groupKey = 1L;
+    final var groupId = "1";
+    final var groupKey = Long.parseLong(groupId);
     final var groupName = "group";
-    final var groupRecord = new GroupRecord().setGroupKey(groupKey).setName(groupName);
+    final var groupRecord =
+        new GroupRecord().setGroupKey(groupKey).setGroupId(groupId).setName(groupName);
 
     // when
     groupCreatedApplier.applyState(groupKey, groupRecord);
@@ -73,10 +75,12 @@ public class GroupAppliersTest {
   @Test
   void shouldUpdateGroup() {
     // given
-    final var groupKey = 1L;
+    final var groupId = "1";
+    final var groupKey = Long.parseLong(groupId);
     final var groupName = "group";
     final var updatedGroupName = "updatedGroup";
-    final var groupRecord = new GroupRecord().setGroupKey(groupKey).setName(groupName);
+    final var groupRecord =
+        new GroupRecord().setGroupKey(groupKey).setGroupId(groupId).setName(groupName);
     groupState.create(groupKey, groupRecord);
     final var persistedGroup = groupState.get(groupKey);
     assertThat(persistedGroup.isPresent()).isTrue();
@@ -107,10 +111,12 @@ public class GroupAppliersTest {
             .setPassword("password")
             .setEmail("test@example.com");
     userState.create(userRecord);
-    final var groupKey = 2L;
+    final var groupId = "1";
+    final var groupKey = Long.parseLong(groupId);
     final var groupName = "group";
     final var entityType = EntityType.USER;
-    final var groupRecord = new GroupRecord().setGroupKey(groupKey).setName(groupName);
+    final var groupRecord =
+        new GroupRecord().setGroupKey(groupKey).setGroupId(groupId).setName(groupName);
     groupState.create(groupKey, groupRecord);
     groupRecord.setEntityKey(entityKey).setEntityType(entityType);
 
@@ -134,10 +140,12 @@ public class GroupAppliersTest {
             .setClaimName("claimName")
             .setClaimValue("claimValue");
     mappingState.create(mappingRecord);
-    final var groupKey = 2L;
+    final var groupId = "1";
+    final var groupKey = Long.parseLong(groupId);
     final var groupName = "group";
     final var entityType = EntityType.MAPPING;
-    final var groupRecord = new GroupRecord().setGroupKey(groupKey).setName(groupName);
+    final var groupRecord =
+        new GroupRecord().setGroupKey(groupKey).setGroupId(groupId).setName(groupName);
     groupState.create(groupKey, groupRecord);
     groupRecord.setEntityKey(entityKey).setEntityType(entityType);
 
@@ -163,10 +171,12 @@ public class GroupAppliersTest {
             .setPassword("password")
             .setEmail("test@example.com");
     userState.create(userRecord);
-    final var groupKey = 2L;
+    final var groupId = "1";
+    final var groupKey = Long.parseLong(groupId);
     final var groupName = "group";
     final var entityType = EntityType.USER;
-    final var groupRecord = new GroupRecord().setGroupKey(groupKey).setName(groupName);
+    final var groupRecord =
+        new GroupRecord().setGroupKey(groupKey).setGroupId(groupId).setName(groupName);
     groupState.create(groupKey, groupRecord);
     groupRecord.setEntityKey(entityKey).setEntityType(entityType);
     groupEntityAddedApplier.applyState(groupKey, groupRecord);
@@ -191,10 +201,12 @@ public class GroupAppliersTest {
             .setClaimName("claimName")
             .setClaimValue("claimValue");
     mappingState.create(mappingRecord);
-    final var groupKey = 2L;
+    final var groupId = "1";
+    final var groupKey = Long.parseLong(groupId);
     final var groupName = "group";
     final var entityType = EntityType.MAPPING;
-    final var groupRecord = new GroupRecord().setGroupKey(groupKey).setName(groupName);
+    final var groupRecord =
+        new GroupRecord().setGroupKey(groupKey).setGroupId(groupId).setName(groupName);
     groupState.create(groupKey, groupRecord);
     groupRecord.setEntityKey(entityKey).setEntityType(entityType);
     groupEntityAddedApplier.applyState(groupKey, groupRecord);
@@ -212,17 +224,17 @@ public class GroupAppliersTest {
   @Test
   void shouldDeleteGroup() {
     // given
-    // a group
-    final var groupKey = 1L;
+    final var groupId = "1";
+    final var groupKey = Long.parseLong(groupId);
     final var groupName = "group";
-    final var groupRecord = new GroupRecord().setGroupKey(groupKey).setName(groupName);
+    final var groupRecord =
+        new GroupRecord().setGroupKey(groupKey).setGroupId(groupId).setName(groupName);
     groupCreatedApplier.applyState(groupKey, groupRecord);
 
     // when
     groupDeletedApplier.applyState(groupKey, groupRecord);
 
     // then
-    // the group state is cleaned up
     final var group = groupState.get(groupKey);
     assertThat(group.isPresent()).isFalse();
     final var entitiesByGroup = groupState.getEntitiesByType(groupKey);
