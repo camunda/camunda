@@ -237,7 +237,9 @@ public enum ZbColumnFamilies implements EnumValue {
   VARIABLE_DOCUMENT_STATE_BY_SCOPE_KEY(123),
 
   RELATIONS_BY_ENTITY(124),
-  ENTITIES_BY_RELATION(125);
+  ENTITIES_BY_RELATION(125),
+
+  USER_TASK_INTERMEDIATE_ASSIGNEE(126);
 
   private final int value;
 
