@@ -16,7 +16,9 @@ import io.camunda.zeebe.engine.state.batchoperation.PersistedBatchOperation;
 import io.camunda.zeebe.engine.state.immutable.BatchOperationState;
 import io.camunda.zeebe.engine.state.immutable.ScheduledTaskState;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationChunkRecord;
+import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationExecutionRecord;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationChunkIntent;
+import io.camunda.zeebe.protocol.record.intent.BatchOperationExecutionIntent;
 import io.camunda.zeebe.stream.api.ReadonlyStreamProcessorContext;
 import io.camunda.zeebe.stream.api.StreamProcessorLifecycleAware;
 import io.camunda.zeebe.stream.api.scheduling.AsyncTaskGroup;
@@ -101,6 +103,8 @@ public class BatchOperationExecutionScheduler implements StreamProcessorLifecycl
           keys.stream().skip(i).limit(CHUNK_SIZE_IN_RECORD).collect(Collectors.toSet());
       appendChunk(batchOperation, taskResultBuilder, chunkKeys);
     }
+
+    appendExecution(batchOperation, taskResultBuilder);
   }
 
   private void appendChunk(
@@ -116,6 +120,18 @@ public class BatchOperationExecutionScheduler implements StreamProcessorLifecycl
     LOG.debug(
         "Appending batch operation {} subbatch with key {}", batchOperation.getKey(), chunkKey);
     taskResultBuilder.appendCommandRecord(chunkKey, BatchOperationChunkIntent.CREATE, command);
+  }
+
+  private void appendExecution(
+      final PersistedBatchOperation batchOperation, final TaskResultBuilder taskResultBuilder) {
+    final var executionKey = keyGenerator.nextKey();
+    final var batchOperationKey = batchOperation.getKey();
+    final var command = new BatchOperationExecutionRecord();
+    command.setBatchOperationKey(batchOperationKey);
+
+    LOG.debug("Appending batch operation execution {}", batchOperationKey);
+    taskResultBuilder.appendCommandRecord(
+        executionKey, BatchOperationExecutionIntent.EXECUTE, command, batchOperationKey);
   }
 
   private Set<Long> queryAllKeys(final PersistedBatchOperation batchOperation) {
