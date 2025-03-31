@@ -48,7 +48,7 @@ defaults:
 # Define environment variable for concurrency
 env:
   BRANCH_NAME: ${{ inputs.branch }}
-  LIMITS_CPU: ${{ inputs.forkCount }}  # consumed by `maven-surefire-plugin` & `maven-failsafe-plugin` plugins defined in main `pom.xml` file
+  LIMITS_CPU: ${{ inputs.forkCount }} # consumed by `maven-surefire-plugin` & `maven-failsafe-plugin` plugins defined in main `pom.xml` file
 
 jobs:
   integration-tests:
@@ -67,14 +67,14 @@ jobs:
 
       # Setup: import secrets from vault
       - name: Import Secrets
-        id: secrets  # important to refer to it in later steps
+        id: secrets # important to refer to it in later steps
         uses: hashicorp/vault-action@v3
         with:
           url: ${{ secrets.VAULT_ADDR }}
           method: approle
           roleId: ${{ secrets.VAULT_ROLE_ID }}
           secretId: ${{ secrets.VAULT_SECRET_ID }}
-          exportEnv: false  # we rely on step outputs, no need for environment variables
+          exportEnv: false # we rely on step outputs, no need for environment variables
           secrets: |
             secret/data/products/operate/ci/github-actions OPERATE_CI_ALERT_WEBHOOK_URL;
 
@@ -92,7 +92,7 @@ jobs:
       # Build: all Maven artifacts
       - name: Build Maven
         run: |
-          ./mvnw clean install -B -T1C -P -docker,skipFrontendBuild -DskipTests -DskipChecks -DaltStagingDirectory=${{ github.workspace }}/staging-${{ env.BRANCH_NAME }} -DskipRemoteStaging=true -Dmaven.deploy.skip=true
+          ./mvnw clean install -B -T1C -P -docker,skipFrontendBuild -DskipTests -P!include-optimize -DskipChecks -DaltStagingDirectory=${{ github.workspace }}/staging-${{ env.BRANCH_NAME }} -DskipRemoteStaging=true -Dmaven.deploy.skip=true
 
       # Run integration tests in parallel
       - name: Backend - ${{ inputs.test-type }}
