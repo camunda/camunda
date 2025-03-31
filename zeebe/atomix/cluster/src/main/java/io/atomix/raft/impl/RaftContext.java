@@ -940,23 +940,25 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
       if (firstCommitIndex == 0) {
         return;
       }
-      // The previous leader may have crashed before updating the commit index on current leader.
-      // However, the data was already committed if the current leader had already flushed the
-      // message
-      // in its local storage.
-      // However, if the current leader has not received that message, we may be at risk of losing
-      // data.
+
+      // To detect if the current leader has experienced data loss we need to check both its
+      // commitIndex and the lastFlushedIndex:
+      // the previous leader may have already committed lastFlushedIndex before crashing,
+      // but failed to replicate the commit to the new leader.
+      // In this situation, the commitIndex of the leader may be smaller than the one in this node,
+      // but both nodes agree that events <= lastFlushedIndex have been persisted.
       if (firstCommitIndex < commitIndex && lastFlushedIndex < commitIndex) {
         final var errorMessage =
             String.format(
                 """
-                   A majority of nodes has lost committed data: firstCommitIndex(%d), lastflushedIndex(%d) < commitIndex(%d). \
+                   Expected to set first commit position to after restart, but firstCommitIndex(%d), lastflushedIndex(%d) < commitIndex(%d). \
+                   While commitIndex is the last committed index, persisted in the metadata file. \
+                   This means a majority of nodes has lost committed data: \
                    This node will become inactive to avoid overwriting previously committed data, \
                    but the leader have formed a quorum and will continue to commit new events, \
                    creating an inconsistent timeline of events: \
                    THE CLUSTER SHOULD BE STOPPED IMMEDIATELY to further prevent inconsistencies.""",
                 firstCommitIndex, lastFlushedIndex, commitIndex);
-        LOGGER.error(errorMessage);
         throw new RuntimeException(errorMessage);
       }
       this.firstCommitIndex = firstCommitIndex;
