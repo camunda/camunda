@@ -13,6 +13,7 @@ import static io.camunda.util.CollectionUtil.collectValues;
 import io.camunda.util.FilterUtil;
 import io.camunda.util.ObjectBuilder;
 import java.time.OffsetDateTime;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
@@ -33,7 +34,8 @@ public record ProcessInstanceFilter(
     List<Operation<String>> tenantIdOperations,
     List<VariableValueFilter> variableFilters,
     List<Operation<String>> batchOperationIdOperations,
-    List<Operation<String>> errorMessageOperations)
+    List<Operation<String>> errorMessageOperations,
+    List<ProcessInstanceFilter> orOperations)
     implements FilterBase {
 
   public Builder toBuilder() {
@@ -73,6 +75,7 @@ public record ProcessInstanceFilter(
     private List<VariableValueFilter> variableFilters;
     private List<Operation<String>> batchOperationIdOperations;
     private List<Operation<String>> errorMessageOperations;
+    private List<ProcessInstanceFilter> orOperations;
 
     public Builder processInstanceKeyOperations(final List<Operation<Long>> operations) {
       processInstanceKeyOperations = addValuesToList(processInstanceKeyOperations, operations);
@@ -292,6 +295,14 @@ public record ProcessInstanceFilter(
       return this;
     }
 
+    public Builder addOrOperation(final ProcessInstanceFilter orOperation) {
+      if (orOperations == null) {
+        orOperations = new ArrayList<>();
+      }
+      orOperations.add(orOperation);
+      return this;
+    }
+
     @Override
     public ProcessInstanceFilter build() {
       return new ProcessInstanceFilter(
@@ -311,7 +322,8 @@ public record ProcessInstanceFilter(
           Objects.requireNonNullElse(tenantIdOperations, Collections.emptyList()),
           Objects.requireNonNullElse(variableFilters, Collections.emptyList()),
           Objects.requireNonNullElse(batchOperationIdOperations, Collections.emptyList()),
-          Objects.requireNonNullElse(errorMessageOperations, Collections.emptyList()));
+          Objects.requireNonNullElse(errorMessageOperations, Collections.emptyList()),
+          orOperations);
     }
   }
 }

@@ -30,6 +30,7 @@ import io.camunda.client.impl.search.filter.builder.IntegerPropertyImpl;
 import io.camunda.client.impl.search.filter.builder.ProcessInstanceStatePropertyImpl;
 import io.camunda.client.impl.search.filter.builder.StringPropertyImpl;
 import io.camunda.client.impl.search.request.TypedSearchRequestPropertyProvider;
+import io.camunda.client.protocol.rest.ProcessInstanceFilterFields;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Map;
@@ -278,6 +279,40 @@ public class ProcessInstanceFilterImpl
     final StringProperty property = new StringPropertyImpl();
     fn.accept(property);
     filter.setErrorMessage(RequestMapper.toProtocolObject(property.build()));
+    return this;
+  }
+
+  @Override
+  public ProcessInstanceFilter or(final List<Consumer<ProcessInstanceFilter>> fns) {
+    // TODO implement this properly
+    for (final Consumer<ProcessInstanceFilter> fn : fns) {
+      final ProcessInstanceFilterImpl orFilter = new ProcessInstanceFilterImpl();
+      fn.accept(orFilter);
+      final io.camunda.client.protocol.rest.ProcessInstanceFilter protocolFilter =
+          orFilter.getSearchRequestProperty();
+      final ProcessInstanceFilterFields protocolFilterFields = new ProcessInstanceFilterFields();
+      protocolFilterFields.setProcessDefinitionId(protocolFilter.getProcessDefinitionId());
+      protocolFilterFields.setProcessDefinitionName(protocolFilter.getProcessDefinitionName());
+      protocolFilterFields.setProcessDefinitionVersion(
+          protocolFilter.getProcessDefinitionVersion());
+      protocolFilterFields.setProcessDefinitionVersionTag(
+          protocolFilter.getProcessDefinitionVersionTag());
+      protocolFilterFields.setProcessDefinitionKey(protocolFilter.getProcessDefinitionKey());
+      protocolFilterFields.setBatchOperationId(protocolFilter.getBatchOperationId());
+      protocolFilterFields.setErrorMessage(protocolFilter.getErrorMessage());
+      protocolFilterFields.setStartDate(protocolFilter.getStartDate());
+      protocolFilterFields.setEndDate(protocolFilter.getEndDate());
+      protocolFilterFields.setState(protocolFilter.getState());
+      protocolFilterFields.setHasIncident(protocolFilter.getHasIncident());
+      protocolFilterFields.setTenantId(protocolFilter.getTenantId());
+      protocolFilterFields.setVariables(protocolFilter.getVariables());
+      protocolFilterFields.setProcessInstanceKey(protocolFilter.getProcessInstanceKey());
+      protocolFilterFields.setParentProcessInstanceKey(
+          protocolFilter.getParentProcessInstanceKey());
+      protocolFilterFields.setParentFlowNodeInstanceKey(
+          protocolFilter.getParentFlowNodeInstanceKey());
+      filter.add$OrItem(protocolFilterFields);
+    }
     return this;
   }
 

@@ -4551,7 +4551,7 @@ components:
           description: The parent flow node instance key.
           allOf:
             - $ref: "#/components/schemas/BasicStringFilterProperty"
-    ProcessInstanceFilter:
+    ProcessInstanceFilterFields:
       description: Process instance search filter.
       type: object
       allOf:
@@ -4585,6 +4585,17 @@ components:
           description: The error message related to the process.
           allOf:
             - $ref: "#/components/schemas/StringFilterProperty"
+    ProcessInstanceFilter:
+      description: Process instance search filter.
+      allOf:
+        - $ref: "#/components/schemas/ProcessInstanceFilterFields"
+        - type: object
+          properties:
+            $or:
+              description: Filter properties used in 'or' conjunction.
+              type: array
+              items:
+                $ref: "#/components/schemas/ProcessInstanceFilterFields"
     ProcessInstanceVariableFilterRequest:
       description: Process instance variable filter.
       type: object
