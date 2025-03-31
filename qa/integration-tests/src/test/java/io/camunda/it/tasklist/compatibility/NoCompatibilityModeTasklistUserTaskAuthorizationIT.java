@@ -41,7 +41,7 @@ public class NoCompatibilityModeTasklistUserTaskAuthorizationIT {
       new TestSimpleCamundaApplication()
           .withAuthorizationsEnabled()
           .withBasicAuth()
-          .withProperty("camunda.tasklist.zeebe.compatibility.enabled", true);
+          .withProperty("camunda.tasklist.zeebe.compatibility.enabled", false);
 
   private static final String PROCESS_WITH_USER_TASK = "PROCESS_WITH_USER_TASK";
   private static final String PROCESS_WITH_USER_TASK_PRE_ASSIGNED =
