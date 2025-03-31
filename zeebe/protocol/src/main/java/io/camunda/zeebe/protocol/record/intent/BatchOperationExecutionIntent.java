@@ -45,6 +45,12 @@ public enum BatchOperationExecutionIntent implements Intent {
     switch (value) {
       case 0:
         return EXECUTE;
+      case 1:
+        return EXECUTING;
+      case 2:
+        return EXECUTED;
+      case 3:
+        return COMPLETED;
       case 4:
         return CANCEL;
       case 6:
