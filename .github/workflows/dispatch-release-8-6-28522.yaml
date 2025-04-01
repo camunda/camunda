@@ -3,7 +3,10 @@
 #
 name: Repo dispatch Release 8.6 test
 
-on: [push]
+on:
+  push:
+    branches:
+      - 28522-8.6.11-3
 
 jobs:
   run-release:
