@@ -70,32 +70,25 @@ const mockEndpoints = [
         ctx.json({
           items: [
             {
-              flowNodeId: 'Gateway_15jzrqe',
-              active: 0,
-              canceled: 0,
-              incidents: 1,
-              completed: 0,
-            },
-            {
-              flowNodeId: 'exclusiveGateway',
+              flowNodeId: 'inclGatewayFork',
               active: 0,
               canceled: 0,
               incidents: 0,
               completed: 1,
             },
             {
-              flowNodeId: 'alwaysFailingTask',
+              flowNodeId: 'lowerTask',
               active: 1,
               canceled: 0,
               incidents: 0,
               completed: 0,
             },
             {
-              flowNodeId: 'messageCatchEvent',
+              flowNodeId: 'startEvent',
               active: 0,
               canceled: 0,
-              incidents: 1,
-              completed: 0,
+              incidents: 0,
+              completed: 1,
             },
             {
               flowNodeId: 'upperTask',
