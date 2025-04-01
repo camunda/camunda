@@ -87,7 +87,8 @@ public class RoleCreateProcessor implements DistributedTypedRecordProcessor<Role
   public void processDistributedCommand(final TypedRecord<RoleRecord> command) {
     final var record = command.getValue();
     roleState
-        .getRole(record.getRoleId())
+        // TODO replace with roleId (https://github.com/camunda/camunda/issues/30116)
+        .getRole(record.getRoleKey())
         .ifPresentOrElse(
             persistedRole -> {
               final var errorMessage =
