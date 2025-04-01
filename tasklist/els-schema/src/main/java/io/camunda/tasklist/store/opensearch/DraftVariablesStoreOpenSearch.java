@@ -16,7 +16,7 @@ import io.camunda.tasklist.exceptions.TasklistRuntimeException;
 import io.camunda.tasklist.store.DraftVariableStore;
 import io.camunda.tasklist.tenant.TenantAwareOpenSearchClient;
 import io.camunda.tasklist.util.OpenSearchUtil;
-import io.camunda.webapps.schema.descriptors.tasklist.template.DraftTaskVariableTemplate;
+import io.camunda.webapps.schema.descriptors.template.DraftTaskVariableTemplate;
 import io.camunda.webapps.schema.entities.usertask.DraftTaskVariableEntity;
 import java.io.IOException;
 import java.util.Collection;
@@ -56,7 +56,8 @@ public class DraftVariablesStoreOpenSearch implements DraftVariableStore {
   @Autowired private TenantAwareOpenSearchClient tenantAwareClient;
   @Autowired private DraftTaskVariableTemplate draftTaskVariableTemplate;
 
-  public void createOrUpdate(Collection<DraftTaskVariableEntity> draftVariables) {
+  @Override
+  public void createOrUpdate(final Collection<DraftTaskVariableEntity> draftVariables) {
     final BulkRequest.Builder bulkRequest = new BulkRequest.Builder();
     final List<BulkOperation> operations =
         draftVariables.stream().map(this::createUpsertRequest).toList();
@@ -65,25 +66,13 @@ public class DraftVariablesStoreOpenSearch implements DraftVariableStore {
     bulkRequest.refresh(Refresh.WaitFor);
     try {
       OpenSearchUtil.processBulkRequest(osClient, bulkRequest.build());
-    } catch (PersistenceException ex) {
+    } catch (final PersistenceException ex) {
       throw new TasklistRuntimeException(ex);
     }
   }
 
-  private BulkOperation createUpsertRequest(DraftTaskVariableEntity draftVariableEntity) {
-    return new BulkOperation.Builder()
-        .update(
-            UpdateOperation.of(
-                u ->
-                    u.index(draftTaskVariableTemplate.getFullQualifiedName())
-                        .id(draftVariableEntity.getId())
-                        .docAsUpsert(true)
-                        .document(CommonUtils.getJsonObjectFromEntity(draftVariableEntity))
-                        .retryOnConflict(UPDATE_RETRY_COUNT)))
-        .build();
-  }
-
-  public long deleteAllByTaskId(String taskId) {
+  @Override
+  public long deleteAllByTaskId(final String taskId) {
     final DeleteByQueryRequest.Builder request = new DeleteByQueryRequest.Builder();
     request
         .index(draftTaskVariableTemplate.getFullQualifiedName())
@@ -97,7 +86,7 @@ public class DraftVariablesStoreOpenSearch implements DraftVariableStore {
     try {
       final DeleteByQueryResponse response = osClient.deleteByQuery(request.build());
       return response.deleted(); // Return the count of deleted documents
-    } catch (IOException e) {
+    } catch (final IOException e) {
       throw new TasklistRuntimeException(
           String.format(
               "Error preparing the query to delete draft task variable instances for task [%s]",
@@ -106,8 +95,9 @@ public class DraftVariablesStoreOpenSearch implements DraftVariableStore {
     }
   }
 
+  @Override
   public List<DraftTaskVariableEntity> getVariablesByTaskIdAndVariableNames(
-      String taskId, List<String> variableNames) {
+      final String taskId, final List<String> variableNames) {
     try {
 
       final BoolQuery.Builder queryBuilder = new BoolQuery.Builder();
@@ -141,7 +131,7 @@ public class DraftVariablesStoreOpenSearch implements DraftVariableStore {
               .query(q -> q.bool(queryBuilder.build()));
 
       return OpenSearchUtil.scroll(searchRequestBuilder, DraftTaskVariableEntity.class, osClient);
-    } catch (IOException e) {
+    } catch (final IOException e) {
       throw new TasklistRuntimeException(
           String.format(
               "Error executing the query to get draft task variable instances for task [%s] with variable names %s",
@@ -150,7 +140,8 @@ public class DraftVariablesStoreOpenSearch implements DraftVariableStore {
     }
   }
 
-  public Optional<DraftTaskVariableEntity> getById(String variableId) {
+  @Override
+  public Optional<DraftTaskVariableEntity> getById(final String variableId) {
     try {
       final SearchRequest.Builder searchRequest = new SearchRequest.Builder();
       searchRequest.index(draftTaskVariableTemplate.getFullQualifiedName());
@@ -170,7 +161,7 @@ public class DraftVariablesStoreOpenSearch implements DraftVariableStore {
 
       final Hit<DraftTaskVariableEntity> hit = hits.get(0);
       return Optional.of(hit.source());
-    } catch (IOException e) {
+    } catch (final IOException e) {
       LOGGER.error(
           String.format("Error retrieving draft task variable instance with ID [%s]", variableId),
           e);
@@ -179,7 +170,7 @@ public class DraftVariablesStoreOpenSearch implements DraftVariableStore {
   }
 
   @Override
-  public List<String> getDraftVariablesIdsByTaskIds(List<String> taskIds) {
+  public List<String> getDraftVariablesIdsByTaskIds(final List<String> taskIds) {
     final SearchRequest.Builder searchRequest = new SearchRequest.Builder();
     searchRequest
         .index(draftTaskVariableTemplate.getFullQualifiedName())
@@ -199,8 +190,21 @@ public class DraftVariablesStoreOpenSearch implements DraftVariableStore {
 
     try {
       return OpenSearchUtil.scrollIdsToList(searchRequest, osClient);
-    } catch (IOException e) {
+    } catch (final IOException e) {
       throw new TasklistRuntimeException(e.getMessage(), e);
     }
+  }
+
+  private BulkOperation createUpsertRequest(final DraftTaskVariableEntity draftVariableEntity) {
+    return new BulkOperation.Builder()
+        .update(
+            UpdateOperation.of(
+                u ->
+                    u.index(draftTaskVariableTemplate.getFullQualifiedName())
+                        .id(draftVariableEntity.getId())
+                        .docAsUpsert(true)
+                        .document(CommonUtils.getJsonObjectFromEntity(draftVariableEntity))
+                        .retryOnConflict(UPDATE_RETRY_COUNT)))
+        .build();
   }
 }

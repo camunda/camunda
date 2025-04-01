@@ -22,7 +22,6 @@ import io.camunda.tasklist.util.NoSqlHelper;
 import io.camunda.tasklist.util.TasklistZeebeIntegrationTest;
 import io.camunda.webapps.schema.descriptors.AbstractIndexDescriptor;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
-import io.camunda.webapps.schema.descriptors.tasklist.TasklistIndexDescriptor;
 import java.io.IOException;
 import java.lang.reflect.Field;
 import java.nio.file.Files;
@@ -176,7 +175,7 @@ public class OpenSearchSchemaManagementIT extends TasklistZeebeIntegrationTest {
   }
 
   private IndexDescriptor createIndexDescriptor() {
-    return new TasklistIndexDescriptor("", false) {
+    return new AbstractIndexDescriptor("", false) {
       @Override
       public String getFullQualifiedName() {
         return getFullIndexName();
@@ -205,6 +204,11 @@ public class OpenSearchSchemaManagementIT extends TasklistZeebeIntegrationTest {
       @Override
       public String getIndexPrefix() {
         return getIndexPrefixForTest();
+      }
+
+      @Override
+      public String getComponentName() {
+        return TASK_LIST.toString();
       }
 
       @Override

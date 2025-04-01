@@ -7,10 +7,12 @@
  */
 package io.camunda.tasklist.schema.indices;
 
-import io.camunda.webapps.schema.descriptors.backup.Prio5Backup;
-import io.camunda.webapps.schema.descriptors.tasklist.TasklistIndexDescriptor;
+import static io.camunda.webapps.schema.descriptors.ComponentNames.TASK_LIST;
 
-public class UserIndex extends TasklistIndexDescriptor implements Prio5Backup {
+import io.camunda.webapps.schema.descriptors.AbstractIndexDescriptor;
+import io.camunda.webapps.schema.descriptors.backup.Prio5Backup;
+
+public class UserIndex extends AbstractIndexDescriptor implements Prio5Backup {
 
   public static final String ID = "id";
   public static final String USER_ID = "userId";
@@ -33,5 +35,10 @@ public class UserIndex extends TasklistIndexDescriptor implements Prio5Backup {
   @Override
   public String getVersion() {
     return INDEX_VERSION;
+  }
+
+  @Override
+  public String getComponentName() {
+    return TASK_LIST.toString();
   }
 }
