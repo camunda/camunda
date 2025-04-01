@@ -265,6 +265,7 @@ public class RoleControllerTest extends RestControllerTest {
     // given
     final var roleId = "roleId";
     final var roleName = "";
+    final var description = "Updated Role Description";
     final var uri = "%s/%s".formatted(ROLE_BASE_URL, roleId);
 
     // when / then
@@ -273,7 +274,7 @@ public class RoleControllerTest extends RestControllerTest {
         .uri(uri)
         .accept(MediaType.APPLICATION_JSON)
         .contentType(MediaType.APPLICATION_JSON)
-        .bodyValue(new RoleUpdateRequest().name(roleName))
+        .bodyValue(new RoleUpdateRequest().name(roleName).description(description))
         .exchange()
         .expectStatus()
         .isBadRequest()
@@ -319,6 +320,39 @@ public class RoleControllerTest extends RestControllerTest {
         .isNotFound();
 
     verify(roleServices, times(1)).updateRole(request);
+  }
+
+  @Test
+  void updateRoleWithoutDescriptionShouldFail() {
+    // given
+    final var roleId = "roleId";
+    final var roleName = "roleName";
+    final String description = null;
+    final var uri = "%s/%s".formatted(ROLE_BASE_URL, roleId);
+
+    // when / then
+    webClient
+        .put()
+        .uri(uri)
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(new RoleUpdateRequest().name(roleName).description(description))
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectBody()
+        .json(
+            """
+            {
+              "type": "about:blank",
+              "status": 400,
+              "title": "INVALID_ARGUMENT",
+              "detail": "No description provided.",
+              "instance": "%s"
+            }"""
+                .formatted(uri));
+
+    verifyNoInteractions(roleServices);
   }
 
   @Test
