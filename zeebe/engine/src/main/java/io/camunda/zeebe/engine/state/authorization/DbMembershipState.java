@@ -19,6 +19,7 @@ import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.protocol.record.value.EntityType;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.BiConsumer;
 
 public final class DbMembershipState implements MutableMembershipState {
   private final EntityKeyAndRelationKey entityKeyAndRelationKey = new EntityKeyAndRelationKey();
@@ -84,6 +85,28 @@ public final class DbMembershipState implements MutableMembershipState {
     return relationIds;
   }
 
+  @Override
+  public void forEachMember(
+      final RelationType relationType,
+      final String relationId,
+      final BiConsumer<EntityType, String> visitor) {
+    entitiesByRelation.whileEqualPrefix(
+        new RelationKey(relationType, relationId),
+        (key, value) -> {
+          visitor.accept(key.entity().type(), key.entity().id());
+        });
+  }
+
+  @Override
+  public boolean hasRelation(
+      final EntityType entityType,
+      final String entityId,
+      final RelationType relationType,
+      final String relationId) {
+    entityKeyAndRelationKey.setAll(entityType, entityId, relationType, relationId);
+    return relationsByEntity.exists(entityKeyAndRelationKey);
+  }
+
   private static final class EntityKey extends DbCompositeKey<DbEnumValue<EntityType>, DbString> {
     public EntityKey() {
       super(new DbEnumValue<>(EntityType.class), new DbString());
@@ -93,12 +116,25 @@ public final class DbMembershipState implements MutableMembershipState {
       first().setValue(entityType);
       second().wrapString(entityId);
     }
+
+    public String id() {
+      return second().toString();
+    }
+
+    public EntityType type() {
+      return first().getValue();
+    }
   }
 
   private static final class RelationKey
       extends DbCompositeKey<DbEnumValue<RelationType>, DbString> {
     public RelationKey() {
       super(new DbEnumValue<>(RelationType.class), new DbString());
+    }
+
+    public RelationKey(final RelationType relationType, final String relationId) {
+      super(new DbEnumValue<>(RelationType.class), new DbString());
+      setAll(relationType, relationId);
     }
 
     void setAll(final RelationType relationType, final String relationId) {
@@ -154,6 +190,10 @@ public final class DbMembershipState implements MutableMembershipState {
         final String relationId) {
       first().setAll(relationType, relationId);
       second().setAll(entityType, entityId);
+    }
+
+    public EntityKey entity() {
+      return second();
     }
   }
 

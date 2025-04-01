@@ -14,8 +14,11 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
+import io.camunda.zeebe.engine.state.authorization.DbMembershipState.RelationType;
 import io.camunda.zeebe.engine.state.distribution.DistributionQueue;
 import io.camunda.zeebe.engine.state.immutable.MappingState;
+import io.camunda.zeebe.engine.state.immutable.MembershipState;
+import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.state.immutable.RoleState;
 import io.camunda.zeebe.engine.state.immutable.UserState;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.RoleRecord;
@@ -34,6 +37,7 @@ public class RoleAddEntityProcessor implements DistributedTypedRecordProcessor<R
   private final RoleState roleState;
   private final UserState userState;
   private final MappingState mappingState;
+  private final MembershipState membershipState;
   private final AuthorizationCheckBehavior authCheckBehavior;
   private final KeyGenerator keyGenerator;
   private final StateWriter stateWriter;
@@ -42,16 +46,15 @@ public class RoleAddEntityProcessor implements DistributedTypedRecordProcessor<R
   private final CommandDistributionBehavior commandDistributionBehavior;
 
   public RoleAddEntityProcessor(
-      final RoleState roleState,
-      final UserState userState,
-      final MappingState mappingState,
+      final ProcessingState processingState,
       final AuthorizationCheckBehavior authCheckBehavior,
       final KeyGenerator keyGenerator,
       final Writers writers,
       final CommandDistributionBehavior commandDistributionBehavior) {
-    this.roleState = roleState;
-    this.userState = userState;
-    this.mappingState = mappingState;
+    roleState = processingState.getRoleState();
+    userState = processingState.getUserState();
+    mappingState = processingState.getMappingState();
+    membershipState = processingState.getMembershipState();
     this.authCheckBehavior = authCheckBehavior;
     this.keyGenerator = keyGenerator;
     stateWriter = writers.state();
@@ -141,6 +144,14 @@ public class RoleAddEntityProcessor implements DistributedTypedRecordProcessor<R
   }
 
   private boolean isEntityAssigned(final RoleRecord record) {
-    return roleState.getEntityType(record.getRoleKey(), record.getEntityKey()).isPresent();
+    return switch (record.getEntityType()) {
+      case USER ->
+          membershipState.hasRelation(
+              EntityType.USER,
+              Long.toString(record.getEntityKey()),
+              RelationType.ROLE,
+              Long.toString(record.getRoleKey()));
+      default -> roleState.getEntityType(record.getRoleKey(), record.getEntityKey()).isPresent();
+    };
   }
 }

@@ -14,9 +14,11 @@ import io.camunda.zeebe.engine.state.mutable.MutableMembershipState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.util.ProcessingStateExtension;
 import io.camunda.zeebe.protocol.record.value.EntityType;
+import java.util.function.BiConsumer;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mockito;
 
 @ExtendWith(ProcessingStateExtension.class)
 final class DbMembershipStateTest {
@@ -74,5 +76,49 @@ final class DbMembershipStateTest {
     // then
     assertThat(membershipState.getRelations(EntityType.USER, "foo", RelationType.ROLE))
         .containsExactly("baz");
+  }
+
+  @Test
+  void shouldDetectExistingRelation() {
+    // given
+    membershipState.insertRelation(EntityType.USER, "foo", RelationType.ROLE, "bar");
+
+    // when
+    final boolean exists =
+        membershipState.hasRelation(EntityType.USER, "foo", RelationType.ROLE, "bar");
+
+    // then
+    assertThat(exists).isTrue();
+  }
+
+  @Test
+  void shouldDetectNonExistingRelation() {
+    // given
+    membershipState.insertRelation(EntityType.USER, "foo", RelationType.ROLE, "bar");
+
+    // when
+    final boolean exists =
+        membershipState.hasRelation(EntityType.USER, "foo", RelationType.ROLE, "baz");
+
+    // then
+    assertThat(exists).isFalse();
+  }
+
+  @Test
+  void shouldIterateOverRelations() {
+    // given
+    membershipState.insertRelation(EntityType.USER, "foo", RelationType.ROLE, "r1");
+    membershipState.insertRelation(EntityType.USER, "bar", RelationType.ROLE, "r1");
+    membershipState.insertRelation(EntityType.USER, "foo", RelationType.ROLE, "r2");
+    membershipState.insertRelation(EntityType.USER, "bar", RelationType.ROLE, "r3");
+    final var visitor = Mockito.<BiConsumer<EntityType, String>>mock();
+
+    // when
+    membershipState.forEachMember(RelationType.ROLE, "r1", visitor);
+
+    // then
+    Mockito.verify(visitor).accept(EntityType.USER, "foo");
+    Mockito.verify(visitor).accept(EntityType.USER, "bar");
+    Mockito.verifyNoMoreInteractions(visitor);
   }
 }

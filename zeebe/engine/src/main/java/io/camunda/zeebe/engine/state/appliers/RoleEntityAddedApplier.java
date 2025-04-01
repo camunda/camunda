@@ -31,7 +31,6 @@ public class RoleEntityAddedApplier implements TypedEventApplier<RoleIntent, Rol
 
   @Override
   public void applyState(final long key, final RoleRecord value) {
-    roleState.addEntity(value);
     switch (value.getEntityType()) {
       case USER ->
           membershipState.insertRelation(
@@ -41,7 +40,10 @@ public class RoleEntityAddedApplier implements TypedEventApplier<RoleIntent, Rol
               RelationType.ROLE,
               // TODO: Use role id instead of key
               Long.toString(value.getRoleKey()));
-      case MAPPING -> mappingState.addRole(value.getEntityKey(), value.getRoleKey());
+      case MAPPING -> {
+        roleState.addEntity(value);
+        mappingState.addRole(value.getEntityKey(), value.getRoleKey());
+      }
       default ->
           throw new IllegalStateException(
               String.format(

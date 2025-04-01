@@ -76,8 +76,6 @@ public class RoleAppliersTest {
     roleEntityAddedApplier.applyState(roleKey, roleRecord);
 
     // then
-    assertThat(roleState.getEntitiesByType(roleKey).get(EntityType.USER))
-        .containsExactly(entityKey);
     assertThat(
             membershipState.getRelations(
                 EntityType.USER, Long.toString(entityKey), RelationType.ROLE))

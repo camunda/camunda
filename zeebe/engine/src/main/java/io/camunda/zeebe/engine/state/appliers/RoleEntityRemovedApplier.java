@@ -31,7 +31,6 @@ public class RoleEntityRemovedApplier implements TypedEventApplier<RoleIntent, R
 
   @Override
   public void applyState(final long key, final RoleRecord value) {
-    roleState.removeEntity(value.getRoleKey(), value.getEntityKey());
     switch (value.getEntityType()) {
       case USER ->
           membershipState.deleteRelation(
@@ -41,7 +40,10 @@ public class RoleEntityRemovedApplier implements TypedEventApplier<RoleIntent, R
               RelationType.ROLE,
               // TODO: Use role id instead of key
               Long.toString(value.getRoleKey()));
-      case MAPPING -> mappingState.removeRole(value.getEntityKey(), value.getRoleKey());
+      case MAPPING -> {
+        roleState.removeEntity(value.getRoleKey(), value.getEntityKey());
+        mappingState.removeRole(value.getEntityKey(), value.getRoleKey());
+      }
       default ->
           throw new IllegalStateException(
               String.format(
