@@ -17,15 +17,19 @@ import org.agrona.DirectBuffer;
 public class BrokerRoleUpdateRequest extends BrokerExecuteCommand<RoleRecord> {
   private final RoleRecord roleDto = new RoleRecord();
 
-  public BrokerRoleUpdateRequest(final long key) {
+  public BrokerRoleUpdateRequest(final String roleId) {
     super(ValueType.ROLE, RoleIntent.UPDATE);
     setPartitionId(Protocol.DEPLOYMENT_PARTITION);
-    request.setKey(key);
-    roleDto.setRoleKey(key);
+    roleDto.setRoleId(roleId);
   }
 
   public BrokerRoleUpdateRequest setName(final String name) {
     roleDto.setName(name);
+    return this;
+  }
+
+  public BrokerRoleUpdateRequest setDescription(final String description) {
+    roleDto.setDescription(description);
     return this;
   }
 

@@ -41,7 +41,7 @@ public final class RoleRequestValidator {
   }
 
   public static Optional<ProblemDetail> validateUpdateRequest(final RoleUpdateRequest request) {
-    return validate(violations -> validateRoleName(request.getChangeset().getName(), violations));
+    return validate(violations -> validateRoleName(request.getName(), violations));
   }
 
   public static Optional<ProblemDetail> validateCreateRequest(final RoleCreateRequest request) {
