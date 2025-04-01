@@ -11,7 +11,7 @@
   <parent>
     <groupId>io.camunda</groupId>
     <artifactId>migration</artifactId>
-    <version>8.8.0-SNAPSHOT</version>
+    <version>8.8.0-alpha3</version>
     <relativePath>../pom.xml</relativePath>
   </parent>
 
