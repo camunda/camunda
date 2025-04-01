@@ -515,7 +515,11 @@ public final class ResponseMapper {
 
   public static ResponseEntity<Object> toRoleCreateResponse(final RoleRecord roleRecord) {
     final var response =
-        new RoleCreateResult().roleKey(KeyUtil.keyToString(roleRecord.getRoleKey()));
+        new RoleCreateResult()
+            .roleKey(KeyUtil.keyToString(roleRecord.getRoleKey()))
+            .roleId(roleRecord.getRoleId())
+            .name(roleRecord.getName())
+            .description(roleRecord.getDescription());
     return new ResponseEntity<>(response, HttpStatus.CREATED);
   }
 
