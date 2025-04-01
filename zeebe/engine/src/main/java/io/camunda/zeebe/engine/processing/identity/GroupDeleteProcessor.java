@@ -32,7 +32,7 @@ import io.camunda.zeebe.stream.api.state.KeyGenerator;
 public class GroupDeleteProcessor implements DistributedTypedRecordProcessor<GroupRecord> {
 
   private static final String GROUP_NOT_FOUND_ERROR_MESSAGE =
-      "Expected to delete group with key '%s', but a group with this key does not exist.";
+      "Expected to delete group with ID '%s', but a group with this ID does not exist.";
   private final GroupState groupState;
   private final AuthorizationState authorizationState;
   private final AuthorizationCheckBehavior authCheckBehavior;
@@ -61,10 +61,10 @@ public class GroupDeleteProcessor implements DistributedTypedRecordProcessor<Gro
   @Override
   public void processNewCommand(final TypedRecord<GroupRecord> command) {
     final var record = command.getValue();
-    final var groupKey = record.getGroupKey();
-    final var persistedRecord = groupState.get(groupKey);
+    final var groupId = record.getGroupId();
+    final var persistedRecord = groupState.get(groupId);
     if (persistedRecord.isEmpty()) {
-      final var errorMessage = GROUP_NOT_FOUND_ERROR_MESSAGE.formatted(groupKey);
+      final var errorMessage = GROUP_NOT_FOUND_ERROR_MESSAGE.formatted(groupId);
       rejectionWriter.appendRejection(command, RejectionType.NOT_FOUND, errorMessage);
       responseWriter.writeRejectionOnCommand(command, RejectionType.NOT_FOUND, errorMessage);
       return;
@@ -80,7 +80,9 @@ public class GroupDeleteProcessor implements DistributedTypedRecordProcessor<Gro
       responseWriter.writeRejectionOnCommand(command, rejection.type(), rejection.reason());
       return;
     }
-    record.setName(persistedRecord.get().getName());
+    final var persistedGroup = persistedRecord.get();
+    record.setName(persistedGroup.getName());
+    final var groupKey = persistedGroup.getGroupKey();
 
     removeAssignedEntities(record);
     deleteAuthorizations(record);

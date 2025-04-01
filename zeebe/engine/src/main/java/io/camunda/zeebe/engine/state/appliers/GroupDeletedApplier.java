@@ -23,11 +23,8 @@ public class GroupDeletedApplier implements TypedEventApplier<GroupIntent, Group
 
   @Override
   public void applyState(final long key, final GroupRecord value) {
-    // get the record key from the GroupRecord, as the key argument
-    // may belong to the distribution command
-    final var groupKey = value.getGroupKey();
-
+    final var groupId = value.getGroupId();
     // delete group from group state
-    groupState.delete(groupKey);
+    groupState.delete(groupId);
   }
 }
