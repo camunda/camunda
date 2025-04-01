@@ -58,18 +58,17 @@ public class GroupAppliersTest {
     final var groupId = "1";
     final var groupKey = Long.parseLong(groupId);
     final var groupName = "group";
-    final var groupRecord =
-        new GroupRecord().setGroupKey(groupKey).setGroupId(groupId).setName(groupName);
+    final var groupRecord = new GroupRecord().setGroupId(groupId).setName(groupName);
 
     // when
     groupCreatedApplier.applyState(groupKey, groupRecord);
 
     // then
-    final var group = groupState.get(groupKey);
+    final var group = groupState.get(groupId);
     assertThat(group.isPresent()).isTrue();
     final var persistedGroup = group.get();
-    assertThat(persistedGroup.getGroupKey()).isEqualTo(groupKey);
     assertThat(persistedGroup.getName()).isEqualTo(groupName);
+    assertThat(persistedGroup.getGroupId()).isEqualTo(groupId);
   }
 
   @Test
@@ -81,8 +80,8 @@ public class GroupAppliersTest {
     final var updatedGroupName = "updatedGroup";
     final var groupRecord =
         new GroupRecord().setGroupKey(groupKey).setGroupId(groupId).setName(groupName);
-    groupState.create(groupKey, groupRecord);
-    final var persistedGroup = groupState.get(groupKey);
+    groupState.create(groupRecord);
+    final var persistedGroup = groupState.get(groupId);
     assertThat(persistedGroup.isPresent()).isTrue();
     assertThat(persistedGroup.get().getName()).isEqualTo(groupName);
     final var updatedGroupRecord =
@@ -92,7 +91,7 @@ public class GroupAppliersTest {
     groupUpdatedApplier.applyState(groupKey, updatedGroupRecord);
 
     // then
-    final var group = groupState.get(groupKey);
+    final var group = groupState.get(groupId);
     assertThat(group.isPresent()).isTrue();
     final var persistedUpdatedGroup = group.get();
     assertThat(persistedUpdatedGroup.getGroupKey()).isEqualTo(groupKey);
@@ -117,7 +116,7 @@ public class GroupAppliersTest {
     final var entityType = EntityType.USER;
     final var groupRecord =
         new GroupRecord().setGroupKey(groupKey).setGroupId(groupId).setName(groupName);
-    groupState.create(groupKey, groupRecord);
+    groupState.create(groupRecord);
     groupRecord.setEntityKey(entityKey).setEntityType(entityType);
 
     // when
@@ -146,7 +145,7 @@ public class GroupAppliersTest {
     final var entityType = EntityType.MAPPING;
     final var groupRecord =
         new GroupRecord().setGroupKey(groupKey).setGroupId(groupId).setName(groupName);
-    groupState.create(groupKey, groupRecord);
+    groupState.create(groupRecord);
     groupRecord.setEntityKey(entityKey).setEntityType(entityType);
 
     // when
@@ -177,7 +176,7 @@ public class GroupAppliersTest {
     final var entityType = EntityType.USER;
     final var groupRecord =
         new GroupRecord().setGroupKey(groupKey).setGroupId(groupId).setName(groupName);
-    groupState.create(groupKey, groupRecord);
+    groupState.create(groupRecord);
     groupRecord.setEntityKey(entityKey).setEntityType(entityType);
     groupEntityAddedApplier.applyState(groupKey, groupRecord);
 
@@ -207,7 +206,7 @@ public class GroupAppliersTest {
     final var entityType = EntityType.MAPPING;
     final var groupRecord =
         new GroupRecord().setGroupKey(groupKey).setGroupId(groupId).setName(groupName);
-    groupState.create(groupKey, groupRecord);
+    groupState.create(groupRecord);
     groupRecord.setEntityKey(entityKey).setEntityType(entityType);
     groupEntityAddedApplier.applyState(groupKey, groupRecord);
 
@@ -235,7 +234,7 @@ public class GroupAppliersTest {
     groupDeletedApplier.applyState(groupKey, groupRecord);
 
     // then
-    final var group = groupState.get(groupKey);
+    final var group = groupState.get(groupId);
     assertThat(group.isPresent()).isFalse();
     final var entitiesByGroup = groupState.getEntitiesByType(groupKey);
     assertThat(entitiesByGroup).isEmpty();
