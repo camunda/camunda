@@ -49,12 +49,21 @@ if [[ "$returnCode" != 0 ]]; then
    echo "test failed"
    exit 1
 fi
-
 printf "\nTest: test --config flag\n"
 
 PREFIX="$( curl localhost:9600/actuator/configprops | jq '.contexts.Camunda.beans.["io.camunda.tasklist.property.TasklistProperties"].properties.zeebeElasticsearch.prefix' )"
 echo $PREFIX
 if [[ "$PREFIX" != "\"extra-prefix-zeebe-record\"" ]]; then
+   echo "test failed"
+   exit 1
+fi
+
+
+printf "\nTest: connectors api \n"
+
+STATUS="$( curl localhost:8085/actuator/health | jq '.status' )"
+echo $STATUS
+if [[ "$STATUS" != "\"UP\"" ]]; then
    echo "test failed"
    exit 1
 fi
