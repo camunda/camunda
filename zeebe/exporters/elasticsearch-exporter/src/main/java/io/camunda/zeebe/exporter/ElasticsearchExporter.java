@@ -18,6 +18,7 @@ import io.camunda.zeebe.exporter.api.context.Controller;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.util.SemanticVersion;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.io.IOException;
 import java.time.Duration;
@@ -123,18 +124,21 @@ public class ElasticsearchExporter implements Exporter {
 
   @Override
   public void export(final Record<?> record) {
-    if (!indexTemplatesCreated.contains(record.getBrokerVersion())) {
-      createIndexTemplates(record.getBrokerVersion());
 
-      updateRetentionPolicyForExistingIndices();
-    }
+    if (shouldExportRecord(record)) {
+      if (!indexTemplatesCreated.contains(record.getBrokerVersion())) {
+        createIndexTemplates(record.getBrokerVersion());
 
-    final var recordSequence = recordCounters.getNextRecordSequence(record);
-    final var isRecordIndexedToBatch = client.index(record, recordSequence);
-    if (isRecordIndexedToBatch) {
-      recordCounters.updateRecordCounters(record, recordSequence);
+        updateRetentionPolicyForExistingIndices();
+      }
+
+      final var recordSequence = recordCounters.getNextRecordSequence(record);
+      final var isRecordIndexedToBatch = client.index(record, recordSequence);
+      if (isRecordIndexedToBatch) {
+        recordCounters.updateRecordCounters(record, recordSequence);
+      }
+      lastPosition = record.getPosition();
     }
-    lastPosition = record.getPosition();
 
     if (client.shouldFlush()) {
       flush();
@@ -248,115 +252,135 @@ public class ElasticsearchExporter implements Exporter {
 
     if (index.createTemplate) {
       createComponentTemplate();
-
-      if (index.deployment) {
-        createValueIndexTemplate(ValueType.DEPLOYMENT, version);
+      final var semVer = getVersion(version);
+      if (configuration.getIsZeebeRecordsExportEnabled()
+          || (semVer.major() == 8 && semVer.minor() < 8)) {
+        createOptionalIndexTemplates(index, version);
       }
-      if (index.process) {
-        createValueIndexTemplate(ValueType.PROCESS, version);
-      }
-      if (index.error) {
-        createValueIndexTemplate(ValueType.ERROR, version);
-      }
-      if (index.incident) {
-        createValueIndexTemplate(ValueType.INCIDENT, version);
-      }
-      if (index.job) {
-        createValueIndexTemplate(ValueType.JOB, version);
-      }
-      if (index.jobBatch) {
-        createValueIndexTemplate(ValueType.JOB_BATCH, version);
-      }
-      if (index.message) {
-        createValueIndexTemplate(ValueType.MESSAGE, version);
-      }
-      if (index.messageBatch) {
-        createValueIndexTemplate(ValueType.MESSAGE_BATCH, version);
-      }
-      if (index.messageSubscription) {
-        createValueIndexTemplate(ValueType.MESSAGE_SUBSCRIPTION, version);
-      }
-      if (index.variable) {
-        createValueIndexTemplate(ValueType.VARIABLE, version);
-      }
-      if (index.variableDocument) {
-        createValueIndexTemplate(ValueType.VARIABLE_DOCUMENT, version);
-      }
-      if (index.processInstance) {
-        createValueIndexTemplate(ValueType.PROCESS_INSTANCE, version);
-      }
-      if (index.processInstanceBatch) {
-        createValueIndexTemplate(ValueType.PROCESS_INSTANCE_BATCH, version);
-      }
-      if (index.processInstanceCreation) {
-        createValueIndexTemplate(ValueType.PROCESS_INSTANCE_CREATION, version);
-      }
-      if (index.processInstanceModification) {
-        createValueIndexTemplate(ValueType.PROCESS_INSTANCE_MODIFICATION, version);
-      }
-      if (index.processMessageSubscription) {
-        createValueIndexTemplate(ValueType.PROCESS_MESSAGE_SUBSCRIPTION, version);
-      }
-      if (index.adHocSubProcessActivityActivation) {
-        createValueIndexTemplate(ValueType.AD_HOC_SUB_PROCESS_ACTIVITY_ACTIVATION, version);
-      }
-      if (index.decisionRequirements) {
-        createValueIndexTemplate(ValueType.DECISION_REQUIREMENTS, version);
-      }
-      if (index.decision) {
-        createValueIndexTemplate(ValueType.DECISION, version);
-      }
-      if (index.decisionEvaluation) {
-        createValueIndexTemplate(ValueType.DECISION_EVALUATION, version);
-      }
-      if (index.checkpoint) {
-        createValueIndexTemplate(ValueType.CHECKPOINT, version);
-      }
-      if (index.timer) {
-        createValueIndexTemplate(ValueType.TIMER, version);
-      }
-      if (index.messageStartEventSubscription) {
-        createValueIndexTemplate(ValueType.MESSAGE_START_EVENT_SUBSCRIPTION, version);
-      }
-      if (index.processEvent) {
-        createValueIndexTemplate(ValueType.PROCESS_EVENT, version);
-      }
-      if (index.deploymentDistribution) {
-        createValueIndexTemplate(ValueType.DEPLOYMENT_DISTRIBUTION, version);
-      }
-      if (index.escalation) {
-        createValueIndexTemplate(ValueType.ESCALATION, version);
-      }
-      if (index.signal) {
-        createValueIndexTemplate(ValueType.SIGNAL, version);
-      }
-      if (index.signalSubscription) {
-        createValueIndexTemplate(ValueType.SIGNAL_SUBSCRIPTION, version);
-      }
-      if (index.resourceDeletion) {
-        createValueIndexTemplate(ValueType.RESOURCE_DELETION, version);
-      }
-      if (index.commandDistribution) {
-        createValueIndexTemplate(ValueType.COMMAND_DISTRIBUTION, version);
-      }
-      if (index.form) {
-        createValueIndexTemplate(ValueType.FORM, version);
-      }
-      if (index.userTask) {
-        createValueIndexTemplate(ValueType.USER_TASK, version);
-      }
-      if (index.processInstanceMigration) {
-        createValueIndexTemplate(ValueType.PROCESS_INSTANCE_MIGRATION, version);
-      }
-      if (index.compensationSubscription) {
-        createValueIndexTemplate(ValueType.COMPENSATION_SUBSCRIPTION, version);
-      }
-      if (index.messageCorrelation) {
-        createValueIndexTemplate(ValueType.MESSAGE_CORRELATION, version);
-      }
+      createRequiredIndexTemplates(index, version);
     }
 
     indexTemplatesCreated.add(version);
+  }
+
+  private boolean shouldExportRecord(final Record<?> record) {
+    final var recordVersion = getVersion(record.getBrokerVersion());
+    if (configuration.getIsZeebeRecordsExportEnabled()
+        || (recordVersion.major() == 8 && recordVersion.minor() < 8)) {
+      return true;
+    }
+    return configuration.shouldIndexRequiredValueType(record.getValueType());
+  }
+
+  private void createOptionalIndexTemplates(final IndexConfiguration index, final String version) {
+    if (index.error) {
+      createValueIndexTemplate(ValueType.ERROR, version);
+    }
+    if (index.job) {
+      createValueIndexTemplate(ValueType.JOB, version);
+    }
+    if (index.jobBatch) {
+      createValueIndexTemplate(ValueType.JOB_BATCH, version);
+    }
+    if (index.message) {
+      createValueIndexTemplate(ValueType.MESSAGE, version);
+    }
+    if (index.messageBatch) {
+      createValueIndexTemplate(ValueType.MESSAGE_BATCH, version);
+    }
+    if (index.messageSubscription) {
+      createValueIndexTemplate(ValueType.MESSAGE_SUBSCRIPTION, version);
+    }
+    if (index.variableDocument) {
+      createValueIndexTemplate(ValueType.VARIABLE_DOCUMENT, version);
+    }
+    if (index.processInstanceBatch) {
+      createValueIndexTemplate(ValueType.PROCESS_INSTANCE_BATCH, version);
+    }
+    if (index.processInstanceCreation) {
+      createValueIndexTemplate(ValueType.PROCESS_INSTANCE_CREATION, version);
+    }
+    if (index.processInstanceModification) {
+      createValueIndexTemplate(ValueType.PROCESS_INSTANCE_MODIFICATION, version);
+    }
+    if (index.processMessageSubscription) {
+      createValueIndexTemplate(ValueType.PROCESS_MESSAGE_SUBSCRIPTION, version);
+    }
+    if (index.adHocSubProcessActivityActivation) {
+      createValueIndexTemplate(ValueType.AD_HOC_SUB_PROCESS_ACTIVITY_ACTIVATION, version);
+    }
+    if (index.decisionRequirements) {
+      createValueIndexTemplate(ValueType.DECISION_REQUIREMENTS, version);
+    }
+    if (index.decision) {
+      createValueIndexTemplate(ValueType.DECISION, version);
+    }
+    if (index.decisionEvaluation) {
+      createValueIndexTemplate(ValueType.DECISION_EVALUATION, version);
+    }
+    if (index.checkpoint) {
+      createValueIndexTemplate(ValueType.CHECKPOINT, version);
+    }
+    if (index.timer) {
+      createValueIndexTemplate(ValueType.TIMER, version);
+    }
+    if (index.messageStartEventSubscription) {
+      createValueIndexTemplate(ValueType.MESSAGE_START_EVENT_SUBSCRIPTION, version);
+    }
+    if (index.processEvent) {
+      createValueIndexTemplate(ValueType.PROCESS_EVENT, version);
+    }
+    if (index.deploymentDistribution) {
+      createValueIndexTemplate(ValueType.DEPLOYMENT_DISTRIBUTION, version);
+    }
+    if (index.escalation) {
+      createValueIndexTemplate(ValueType.ESCALATION, version);
+    }
+    if (index.signal) {
+      createValueIndexTemplate(ValueType.SIGNAL, version);
+    }
+    if (index.signalSubscription) {
+      createValueIndexTemplate(ValueType.SIGNAL_SUBSCRIPTION, version);
+    }
+    if (index.resourceDeletion) {
+      createValueIndexTemplate(ValueType.RESOURCE_DELETION, version);
+    }
+    if (index.commandDistribution) {
+      createValueIndexTemplate(ValueType.COMMAND_DISTRIBUTION, version);
+    }
+    if (index.form) {
+      createValueIndexTemplate(ValueType.FORM, version);
+    }
+    if (index.processInstanceMigration) {
+      createValueIndexTemplate(ValueType.PROCESS_INSTANCE_MIGRATION, version);
+    }
+    if (index.compensationSubscription) {
+      createValueIndexTemplate(ValueType.COMPENSATION_SUBSCRIPTION, version);
+    }
+    if (index.messageCorrelation) {
+      createValueIndexTemplate(ValueType.MESSAGE_CORRELATION, version);
+    }
+  }
+
+  private void createRequiredIndexTemplates(final IndexConfiguration index, final String version) {
+    if (index.processInstance) {
+      createValueIndexTemplate(ValueType.PROCESS_INSTANCE, version);
+    }
+    if (index.incident) {
+      createValueIndexTemplate(ValueType.INCIDENT, version);
+    }
+    if (index.variable) {
+      createValueIndexTemplate(ValueType.VARIABLE, version);
+    }
+    if (index.deployment) {
+      createValueIndexTemplate(ValueType.DEPLOYMENT, version);
+    }
+    if (index.process) {
+      createValueIndexTemplate(ValueType.PROCESS, version);
+    }
+    if (index.userTask) {
+      createValueIndexTemplate(ValueType.USER_TASK, version);
+    }
   }
 
   private void createIndexLifecycleManagementPolicy() {
@@ -391,6 +415,16 @@ public class ElasticsearchExporter implements Exporter {
     if (!acknowledged) {
       log.warn("Failed to acknowledge the the update of retention policy for existing indices");
     }
+  }
+
+  private SemanticVersion getVersion(final String version) {
+    return SemanticVersion.parse(version)
+        .orElseThrow(
+            () ->
+                new IllegalArgumentException(
+                    "Unsupported record broker version: ["
+                        + version
+                        + "] Must be a semantic version."));
   }
 
   private static class ElasticsearchRecordFilter implements Context.RecordFilter {
