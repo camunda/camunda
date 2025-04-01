@@ -10,6 +10,7 @@ package io.camunda.it.tasklist.compatibility;
 import static io.camunda.client.api.search.response.UserTaskState.COMPLETED;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.protocol.rest.PermissionTypeEnum;
 import io.camunda.client.protocol.rest.ResourceTypeEnum;
@@ -107,7 +108,10 @@ public class NoCompatibilityModeTasklistUserTaskAuthorizationIT {
               new Permissions(
                   ResourceTypeEnum.PROCESS_DEFINITION,
                   PermissionTypeEnum.UPDATE_USER_TASK,
-                  List.of(PROCESS_WITH_USER_TASK)),
+                  List.of(
+                      PROCESS_WITH_USER_TASK,
+                      PROCESS_WITH_USER_TASK_PRE_ASSIGNED,
+                      PROCESS_ID_WITH_JOB_BASED_USERTASK_PRE_ASSIGNED)),
               new Permissions(
                   ResourceTypeEnum.PROCESS_DEFINITION,
                   PermissionTypeEnum.READ_PROCESS_DEFINITION,
@@ -389,6 +393,28 @@ public class NoCompatibilityModeTasklistUserTaskAuthorizationIT {
   }
 
   @Test
+  public void shouldBeAuthorizedToUnassignUserTask(
+      @Authenticated(ADMIN_USER_NAME) final CamundaClient adminClient,
+      @Authenticated(TEST_USER_NAME_WITH_PERMISSION) final CamundaClient withPermission) {
+    // given (admin) to create instance
+    final var processInstanceKeyWithUserTask =
+        createProcessInstance(adminClient, PROCESS_WITH_USER_TASK_PRE_ASSIGNED);
+    final var userTaskKey = awaitJobBasedUserTaskBeingAvailable(processInstanceKeyWithUserTask);
+    // given (non-admin) user with permissions to unassign task
+
+    // when
+    final var response =
+        tasklistRestClient
+            .withAuthentication(TEST_USER_NAME_WITH_PERMISSION, TEST_USER_PASSWORD)
+            .unassignUserTask(userTaskKey);
+
+    // then
+    assertThat(response).isNotNull();
+    assertThat(response.statusCode()).isEqualTo(200);
+    ensureUserTaskIsUnassigned(adminClient, userTaskKey);
+  }
+
+  @Test
   public void shouldNotAssignJobBasedUserTaskWithUnauthorizedUser(
       @Authenticated(ADMIN_USER_NAME) final CamundaClient adminClient,
       @Authenticated(TEST_USER_NAME_NO_PERMISSION) final CamundaClient noPermission) {
@@ -486,6 +512,29 @@ public class NoCompatibilityModeTasklistUserTaskAuthorizationIT {
   }
 
   @Test
+  public void shouldBeAuthorizedToUnassignJobBasedUserTask(
+      @Authenticated(ADMIN_USER_NAME) final CamundaClient adminClient,
+      @Authenticated(TEST_USER_NAME_WITH_PERMISSION) final CamundaClient withPermission) {
+    // given (admin) to create instance
+    final var processInstanceKeyWithJobBasedUserTaskPreAssigned =
+        createProcessInstance(adminClient, PROCESS_ID_WITH_JOB_BASED_USERTASK_PRE_ASSIGNED);
+    final var userTaskKeyWithJobBasedUserTaskPreAssigned =
+        awaitJobBasedUserTaskBeingAvailable(processInstanceKeyWithJobBasedUserTaskPreAssigned);
+    // given (non-admin) user without any authorizations
+
+    // when
+    final var response =
+        tasklistRestClient
+            .withAuthentication(TEST_USER_NAME_WITH_PERMISSION, TEST_USER_PASSWORD)
+            .unassignUserTask(userTaskKeyWithJobBasedUserTaskPreAssigned);
+
+    // then
+    assertThat(response).isNotNull();
+    assertThat(response.statusCode()).isEqualTo(200);
+    ensureJobBasedUserTaskIsUnassigned(processInstanceKeyWithJobBasedUserTaskPreAssigned);
+  }
+
+  @Test
   public void shouldBeAuthorizedToAssignJobBasedUserTask(
       @Authenticated(ADMIN_USER_NAME) final CamundaClient adminClient,
       @Authenticated(TEST_USER_NAME_WITH_PERMISSION) final CamundaClient withPermission) {
@@ -557,18 +606,7 @@ public class NoCompatibilityModeTasklistUserTaskAuthorizationIT {
             .atMost(Duration.ofSeconds(60))
             .ignoreExceptions() // Ignore exceptions and continue retrying
             .until(
-                () -> {
-                  final HttpResponse<String> response =
-                      tasklistRestClient
-                          .withAuthentication(ADMIN_USER_NAME, ADMIN_USER_PASSWORD)
-                          .searchTasks(processInstanceKey);
-
-                  assertThat(response).isNotNull();
-                  assertThat(response.statusCode()).isEqualTo(200);
-
-                  return TestRestTasklistClient.OBJECT_MAPPER.readValue(
-                      response.body(), TaskSearchResponse[].class);
-                },
+                () -> findTasksForProcessInstance(processInstanceKey),
                 (result) -> result.length == 1);
     return Long.parseLong(task[0].getId());
   }
@@ -596,18 +634,7 @@ public class NoCompatibilityModeTasklistUserTaskAuthorizationIT {
         .atMost(Duration.ofSeconds(60))
         .ignoreExceptions() // Ignore exceptions and continue retrying
         .until(
-            () -> {
-              final HttpResponse<String> response =
-                  tasklistRestClient
-                      .withAuthentication(ADMIN_USER_NAME, ADMIN_USER_PASSWORD)
-                      .searchTasks(processInstanceKey);
-
-              assertThat(response).isNotNull();
-              assertThat(response.statusCode()).isEqualTo(200);
-
-              return TestRestTasklistClient.OBJECT_MAPPER.readValue(
-                  response.body(), TaskSearchResponse[].class);
-            },
+            () -> findTasksForProcessInstance(processInstanceKey),
             (result) ->
                 result.length == 1 && result[0].getAssignee().equalsIgnoreCase(newAssignee));
   }
@@ -617,19 +644,31 @@ public class NoCompatibilityModeTasklistUserTaskAuthorizationIT {
         .atMost(Duration.ofSeconds(60))
         .ignoreExceptions() // Ignore exceptions and continue retrying
         .until(
-            () -> {
-              final HttpResponse<String> response =
-                  tasklistRestClient
-                      .withAuthentication(ADMIN_USER_NAME, ADMIN_USER_PASSWORD)
-                      .searchTasks(processInstanceKey);
-
-              assertThat(response).isNotNull();
-              assertThat(response.statusCode()).isEqualTo(200);
-
-              return TestRestTasklistClient.OBJECT_MAPPER.readValue(
-                  response.body(), TaskSearchResponse[].class);
-            },
+            () -> findTasksForProcessInstance(processInstanceKey),
             (result) -> result.length == 1 && result[0].getCompletionDate() != null);
+  }
+
+  public static void ensureJobBasedUserTaskIsUnassigned(final long processInstanceKey) {
+    Awaitility.await("should unassign user task")
+        .atMost(Duration.ofSeconds(60))
+        .ignoreExceptions() // Ignore exceptions and continue retrying
+        .until(
+            () -> findTasksForProcessInstance(processInstanceKey),
+            (result) -> result.length == 1 && result[0].getAssignee() == null);
+  }
+
+  private static TaskSearchResponse[] findTasksForProcessInstance(final long processInstanceKey)
+      throws JsonProcessingException {
+    final HttpResponse<String> response =
+        tasklistRestClient
+            .withAuthentication(ADMIN_USER_NAME, ADMIN_USER_PASSWORD)
+            .searchTasks(processInstanceKey);
+
+    assertThat(response).isNotNull();
+    assertThat(response.statusCode()).isEqualTo(200);
+
+    return TestRestTasklistClient.OBJECT_MAPPER.readValue(
+        response.body(), TaskSearchResponse[].class);
   }
 
   private static int countOfProcessInstances(
@@ -652,5 +691,22 @@ public class NoCompatibilityModeTasklistUserTaskAuthorizationIT {
         .until(
             () -> countOfProcessInstances(adminClient, processDefinitionId),
             (count) -> count >= expectedCount);
+  }
+
+  public static void ensureUserTaskIsUnassigned(
+      final CamundaClient adminClient, final long userTaskKey) {
+    Awaitility.await("should create an user task")
+        .atMost(Duration.ofSeconds(60))
+        .ignoreExceptions() // Ignore exceptions and continue retrying
+        .untilAsserted(
+            () -> {
+              final var result =
+                  adminClient
+                      .newUserTaskSearchRequest()
+                      .filter(f -> f.userTaskKey(userTaskKey).assignee(c -> c.exists(false)))
+                      .send()
+                      .join();
+              assertThat(result.items()).hasSize(1);
+            });
   }
 }
