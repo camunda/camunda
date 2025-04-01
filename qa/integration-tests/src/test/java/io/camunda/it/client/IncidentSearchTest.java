@@ -259,8 +259,8 @@ class IncidentSearchTest {
             """
                 Incident query should execute successfully for filter.errorType = '%1$s'.
                 If it fails, ensure the following are updated:
-                  - `client` module: `io.camunda.client.wrappers.IncidentResult.ErrorType` - '%1$s' type defined
-                  - `search-domain` module: `io.camunda.search.entities.IncidentEntity.ErrorType` - '%1$s' type defined
+                  - `client` module: `io.camunda.client.api.search.enums.IncidentErrorType` - '%1$s' type defined
+                  - `search-domain` module: `io.camunda.client.api.search.enums.IncidentErrorType` - '%1$s' type defined
                   - `gateway-protocol` module: `zeebe/gateway-protocol/src/main/proto/rest-api.yaml` - '%1$s' `errorType` defined for `IncidentFilterRequestBase` document""",
             errorType)
         .doesNotThrowAnyException();
