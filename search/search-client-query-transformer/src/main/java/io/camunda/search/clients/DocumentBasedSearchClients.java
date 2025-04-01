@@ -226,7 +226,7 @@ public class DocumentBasedSearchClients implements SearchClientsProxy, Closeable
                     .page(filter.page())
                     .resultConfig(filter.resultConfig()));
 
-    return getSearchExecutor().search(filter, ProcessInstanceForListViewEntity.class);
+    return getSearchExecutor().search(updatedQuery, ProcessInstanceForListViewEntity.class);
   }
 
   @Override
