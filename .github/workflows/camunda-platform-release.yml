@@ -39,7 +39,7 @@ jobs:
     name: Maven Release
     runs-on: gcp-core-16-release
     outputs:
-      releaseTagRevision: ${{ steps.maven-perform-release.outputs.tagRevision }}
+      releaseTagRevision: f508f35d5b4
       releaseBranch: ${{ env.RELEASE_BRANCH }}
     env:
       DEVELOPMENT_VERSION: ${{ inputs.nextDevelopmentVersion }}
