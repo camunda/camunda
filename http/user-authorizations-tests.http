@@ -61,7 +61,7 @@ Accept: application/json
 # @name test-user-search
 < {%
   import {wait} from "js/wait"
-  wait(2)
+  wait(3)
 %}
 POST {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/users/search
 Authorization: Basic {{BASIC_AUTH_TOKEN}}

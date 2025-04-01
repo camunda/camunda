@@ -1,0 +1,155 @@
+### Create Group
+# @name create-group
+POST {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/groups
+Authorization: Basic {{BASIC_AUTH_TOKEN}}
+Content-Type: application/json
+Accept: application/json
+
+{
+  "groupId": "testGroup1",
+  "name": "TestGroup1"
+}
+
+> {%
+  client.test("Group creation should be successful", function () {
+    client.assert(response.status === 201, "Response status is not 201");
+    client.global.set("GROUP_ID", response.body.groupId);
+  });
+%}
+
+### Create Group with too long id
+# @name create-group-too-long-id
+POST {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/groups
+Authorization: Basic {{BASIC_AUTH_TOKEN}}
+Content-Type: application/json
+Accept: application/json
+
+{
+  "groupId": "000000BCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789ThequickbrownfoxjumpsoverthelazydogmultipleTimestoEnsureThatThisStringReachesExactly257CharactersInLengthWithoutAnyIssueOrTruncationABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789",
+  "name": "TestGroup1"
+}
+
+> {%
+  client.test("Group creation should be unsuccessful", function () {
+    client.assert(response.status === 400, "Response status is not 400");
+    client.assert(response.body.title === "INVALID_ARGUMENT", "Wrong error title");
+    client.assert(response.body.detail === "The provided id exceeds the limit of 256 characters.", "Wrong error message");
+  });
+%}
+
+### Get Group
+# @name get-group
+< {%
+  import {wait} from "js/wait";
+  wait(3);
+%}
+GET {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/groups/{{GROUP_ID}}
+Authorization: Basic {{BASIC_AUTH_TOKEN}}
+Accept: application/json
+
+> {%
+  let expectedGroupId = client.global.get("GROUP_ID");
+
+  client.test("Group retrieval should be successful", function () {
+    client.assert(response.status === 200, "Response status is not 200");
+    client.assert(response.body.groupId === expectedGroupId, "GroupId was not found.");
+  });
+%}
+
+### Update Group
+# @name update-group
+< {%
+  import {wait} from "js/wait";
+  wait(2);
+%}
+PUT {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/groups/{{GROUP_ID}}
+Authorization: Basic {{BASIC_AUTH_TOKEN}}
+Content-Type: application/json
+Accept: application/json
+
+{
+  "name": "TestGroup1 Updated",
+  "description": "An updated test group description."
+}
+
+> {%
+  client.test("Group update should be successful", function () {
+    client.assert(response.status === 200, "Response status is not 200");
+    client.assert(response.body.name === "TestGroup1 Updated", "Name was not updated correctly.");
+    client.assert(response.body.description === "An updated test group description.", "Description was not updated correctly.");
+  });
+%}
+
+### Assign User to Group
+# @name assign-user-to-group
+PUT {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/groups/{{GROUP_ID}}/users/{{USERNAME}}
+Authorization: Basic {{BASIC_AUTH_TOKEN}}
+Accept: application/json
+
+> {%
+  client.test("Group assignment should be successful", function () {
+    client.assert(response.status === 204, "Response status is not 204");
+  });
+%}
+
+### Remove User from Group
+# @name remove-user-from-group
+< {%
+  import {wait} from "js/wait";
+  wait(2);
+%}
+DELETE {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/groups/{{GROUP_ID}}/users/{{USERNAME}}
+Authorization: Basic {{BASIC_AUTH_TOKEN}}
+Accept: application/json
+
+> {%
+  client.test("Group removal should be successful", function () {
+    client.assert(response.status === 204, "Response status is not 204");
+  });
+%}
+
+### Search Groups
+# @name search-groups
+< {%
+  import {wait} from "js/wait";
+  wait(2);
+%}
+POST {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/groups/search
+Authorization: Basic {{BASIC_AUTH_TOKEN}}
+Content-Type: application/json
+Accept: application/json
+
+{
+  "filter": {
+    "groupId": "{{GROUP_ID}}"
+  },
+  "sort": [
+    {
+    "field": "name",
+    "order": "ASC"
+     }
+  ]
+}
+
+> {%
+  client.test("Group search should be successful", function () {
+    client.assert(response.status === 200, "Response status is not 200");
+    client.assert(response.body.items[0].groupId === "testGroup1", "Group was not found");
+  });
+%}
+
+### Delete Group
+# @name delete-group
+< {%
+  import {wait} from "js/wait";
+  wait(3);
+%}
+DELETE {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/groups/{{GROUP_ID}}
+Authorization: Basic {{BASIC_AUTH_TOKEN}}
+Accept: application/json
+
+> {%
+  client.test("Group deletion should be successful", function () {
+    client.assert(response.status === 204, "Response status is not 204");
+  });
+%}
