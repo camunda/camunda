@@ -1224,6 +1224,7 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    *  .newCreateMappingCommand()
    *  .claimName(claimName)
    *  .claimValue(claimValue)
+   *  .mappingId(mappingId)
    *  .name(name)
    *  .send();
    * </pre>

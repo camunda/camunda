@@ -113,7 +113,8 @@ public class MappingServices
   }
 
   public Optional<MappingEntity> findMapping(final String mappingId) {
-    return search(SearchQueryBuilders.mappingSearchQuery().filter(f -> f.id(mappingId)).build())
+    return search(
+            SearchQueryBuilders.mappingSearchQuery().filter(f -> f.mappingId(mappingId)).build())
         .items()
         .stream()
         .findFirst();

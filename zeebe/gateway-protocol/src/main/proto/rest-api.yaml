@@ -2723,7 +2723,7 @@ paths:
       operationId: getMappingRule
       summary: Get a mapping rule (Work-in-Progress)
       description: |
-        Gets the mapping rule with the given key.
+        Gets the mapping rule with the given ID.
 
         This API is in a Work-in-Progress state and will undergo potential breaking changes till
         its release with an upcoming minor release.
@@ -2731,16 +2731,16 @@ paths:
         - name: mappingId
           in: path
           required: true
-          description: The id of the mapping rule to get.
+          description: The ID of the mapping rule to get.
           schema:
             type: string
       responses:
         "200":
-          description: The mapping rule was deleted successfully.
+          description: The mapping rule was returned successfully.
         "401":
           $ref: "#/components/responses/Unauthorized"
         "404":
-          description: The mapping rule with the mappingKey was not found.
+          description: The mapping rule with the mappingId was not found.
           content:
             application/problem+json:
               schema:
