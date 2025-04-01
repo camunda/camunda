@@ -47,48 +47,6 @@ public class ElasticSearchMetadataService
   }
 
   @Override
-  protected void upsertMetadataWithScript(
-      final OptimizeElasticsearchClient esClient,
-      final String schemaVersion,
-      final String newInstallationId,
-      final ScriptData scriptData) {
-    final MetadataDto newMetadataIfAbsent = new MetadataDto(schemaVersion, newInstallationId);
-    try {
-      final UpdateRequest<MetadataDto, ?> request =
-          OptimizeUpdateRequestBuilderES.of(
-              b ->
-                  b.optimizeIndex(esClient, METADATA_INDEX_NAME)
-                      .id(MetadataIndex.ID)
-                      .script(
-                          sb ->
-                              sb.inline(
-                                  ib ->
-                                      ib.lang(ScriptLanguage.Painless)
-                                          .source(scriptData.scriptString())
-                                          .params(
-                                              scriptData.params().entrySet().stream()
-                                                  .collect(
-                                                      Collectors.toMap(
-                                                          Map.Entry::getKey,
-                                                          e -> JsonData.of(e.getValue()))))))
-                      .upsert(newMetadataIfAbsent)
-                      .refresh(Refresh.True)
-                      .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT));
-
-      final UpdateResponse<?> response = esClient.update(request, MetadataDto.class);
-      if (!response.result().equals(Result.Created) && !response.result().equals(Result.Updated)) {
-        String errorMsg =
-            "Metadata information was neither created nor updated. " + ERROR_MESSAGE_REQUEST;
-        log.error(errorMsg);
-        throw new OptimizeRuntimeException(errorMsg);
-      }
-    } catch (IOException e) {
-      log.error(ERROR_MESSAGE_REQUEST, e);
-      throw new OptimizeRuntimeException(ERROR_MESSAGE_REQUEST, e);
-    }
-  }
-
-  @Override
   public Optional<MetadataDto> readMetadata(final OptimizeElasticsearchClient esClient) {
     try {
       final boolean metaDataIndexExists = esClient.exists(METADATA_INDEX_NAME);
@@ -108,9 +66,49 @@ public class ElasticSearchMetadataService
         return Optional.empty();
       }
       return Optional.of(getMetadataResponse.source());
-    } catch (IOException | ElasticsearchException e) {
+    } catch (final IOException | ElasticsearchException e) {
       log.error(ERROR_MESSAGE_READING_METADATA_DOC, e);
       throw new OptimizeRuntimeException(ERROR_MESSAGE_READING_METADATA_DOC, e);
+    }
+  }
+
+  @Override
+  protected void upsertMetadataWithScript(
+      final OptimizeElasticsearchClient esClient,
+      final String schemaVersion,
+      final String newInstallationId,
+      final ScriptData scriptData) {
+    final MetadataDto newMetadataIfAbsent = new MetadataDto(schemaVersion, newInstallationId);
+    try {
+      final UpdateRequest<MetadataDto, ?> request =
+          OptimizeUpdateRequestBuilderES.of(
+              b ->
+                  b.optimizeIndex(esClient, METADATA_INDEX_NAME)
+                      .id(MetadataIndex.ID)
+                      .script(
+                          ib ->
+                              ib.lang(ScriptLanguage.Painless)
+                                  .source(scriptData.scriptString())
+                                  .params(
+                                      scriptData.params().entrySet().stream()
+                                          .collect(
+                                              Collectors.toMap(
+                                                  Map.Entry::getKey,
+                                                  e -> JsonData.of(e.getValue())))))
+                      .upsert(newMetadataIfAbsent)
+                      .refresh(Refresh.True)
+                      .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT));
+
+      final UpdateResponse<?> response = esClient.update(request, MetadataDto.class);
+      if (!response.result().equals(Result.Created) && !response.result().equals(Result.Updated)) {
+        final String errorMsg =
+            "Metadata information was neither created nor updated. " + ERROR_MESSAGE_REQUEST;
+        log.error(errorMsg);
+        throw new OptimizeRuntimeException(errorMsg);
+      }
+    } catch (final IOException e) {
+      log.error(ERROR_MESSAGE_REQUEST, e);
+      throw new OptimizeRuntimeException(ERROR_MESSAGE_REQUEST, e);
     }
   }
 }

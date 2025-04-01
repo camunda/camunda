@@ -205,11 +205,12 @@ public class OptimizeElasticsearchClient extends DatabaseClient {
         if (index != null) {
           final Map analysis = (Map) index.get("analysis");
           if (analysis != null) {
-            Map analyzer = (Map) ((Map) analysis.get("analyzer")).get("is_present_analyzer");
+            final Map analyzer = (Map) ((Map) analysis.get("analyzer")).get("is_present_analyzer");
             if (!List.class.isInstance(analyzer.get("filter"))) {
               analyzer.put("filter", List.of(analyzer.get("filter")));
             }
-            Map lowercaseNgram = (Map) ((Map) analysis.get("analyzer")).get("lowercase_ngram");
+            final Map lowercaseNgram =
+                (Map) ((Map) analysis.get("analyzer")).get("lowercase_ngram");
             if (!List.class.isInstance(lowercaseNgram.get("filter"))) {
               lowercaseNgram.put("filter", List.of(lowercaseNgram.get("filter")));
             }
@@ -365,12 +366,6 @@ public class OptimizeElasticsearchClient extends DatabaseClient {
     esWithTransportOptions().indices().create(request);
   }
 
-  @Override
-  @SneakyThrows
-  public long countWithoutPrefix(final String unprefixedIndex) {
-    return countWithoutPrefix(CountRequest.of(c -> c.index(unprefixedIndex)));
-  }
-
   public long countWithoutPrefix(final CountRequest request)
       throws IOException, InterruptedException {
     final int maxNumberOfRetries = 10;
@@ -479,6 +474,12 @@ public class OptimizeElasticsearchClient extends DatabaseClient {
   }
 
   @Override
+  @SneakyThrows
+  public long countWithoutPrefix(final String unprefixedIndex) {
+    return countWithoutPrefix(CountRequest.of(c -> c.index(unprefixedIndex)));
+  }
+
+  @Override
   public void refresh(final String indexPattern) {
     final RefreshRequest.Builder builder = new RefreshRequest.Builder();
     applyIndexPrefixes(builder, List.of(indexPattern));
@@ -555,17 +556,15 @@ public class OptimizeElasticsearchClient extends DatabaseClient {
                   b.optimizeIndex(this, indexNameService.getOptimizeIndexAliasForIndex(indexName))
                       .id(entityId)
                       .script(
-                          sb ->
-                              sb.inline(
-                                  ib ->
-                                      ib.params(
-                                              script.params().entrySet().stream()
-                                                  .collect(
-                                                      Collectors.toMap(
-                                                          Map.Entry::getKey,
-                                                          e -> JsonData.of(e.getValue()))))
-                                          .source(script.scriptString())
-                                          .lang(ScriptLanguage.Painless)))
+                          ib ->
+                              ib.params(
+                                      script.params().entrySet().stream()
+                                          .collect(
+                                              Collectors.toMap(
+                                                  Map.Entry::getKey,
+                                                  e -> JsonData.of(e.getValue()))))
+                                  .source(script.scriptString())
+                                  .lang(ScriptLanguage.Painless))
                       .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT)),
           Object.class);
     } catch (final IOException e) {
@@ -690,6 +689,11 @@ public class OptimizeElasticsearchClient extends DatabaseClient {
     log.debug("Successfully deleted index [{}].", indexNamesString);
   }
 
+  @Override
+  public void deleteAllIndexes() {
+    deleteIndexByRawIndexNames("_all");
+  }
+
   public final GetAliasResponse getAlias(final GetAliasRequest getAliasesRequest)
       throws IOException {
     return esWithTransportOptions().indices().getAlias(getAliasesRequest);
@@ -716,11 +720,6 @@ public class OptimizeElasticsearchClient extends DatabaseClient {
   public <T> void deleteIndex(final IndexMappingCreator<T> indexMappingCreator) {
     final String indexAlias = indexNameService.getOptimizeIndexAliasForIndex(indexMappingCreator);
     deleteIndex(indexAlias);
-  }
-
-  @Override
-  public void deleteAllIndexes() {
-    deleteIndexByRawIndexNames("_all");
   }
 
   public final CountResponse count(final CountRequest countRequest) throws IOException {
@@ -882,16 +881,13 @@ public class OptimizeElasticsearchClient extends DatabaseClient {
   public static <T> Script createDefaultScriptWithPrimitiveParams(
       final String inlineUpdateScript, final Map<String, T> params) {
     return Script.of(
-        b ->
-            b.inline(
-                i ->
-                    i.lang(ScriptLanguage.Painless)
-                        .source(inlineUpdateScript)
-                        .params(
-                            params.entrySet().stream()
-                                .collect(
-                                    Collectors.toMap(
-                                        Map.Entry::getKey, e -> JsonData.of(e.getValue()))))));
+        i ->
+            i.lang(ScriptLanguage.Painless)
+                .source(inlineUpdateScript)
+                .params(
+                    params.entrySet().stream()
+                        .collect(
+                            Collectors.toMap(Map.Entry::getKey, e -> JsonData.of(e.getValue())))));
   }
 
   public void doBulkRequest(
