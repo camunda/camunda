@@ -38,7 +38,7 @@ public class CamundaProcessTestConnectorsIT {
   private static final String INBOUND_CONNECTOR_ID = "941c5492-ab2b-4305-aa18-ac86991ff4ca";
 
   @RegisterExtension
-  private final CamundaProcessTestExtension extension =
+  private static final CamundaProcessTestExtension EXTENSION =
       new CamundaProcessTestExtension()
           .withConnectorsEnabled(true)
           .withConnectorsSecret(

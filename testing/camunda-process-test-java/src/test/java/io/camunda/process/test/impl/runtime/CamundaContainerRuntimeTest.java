@@ -27,6 +27,7 @@ import io.camunda.process.test.impl.containers.ContainerFactory;
 import java.util.HashMap;
 import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Answers;
@@ -142,9 +143,9 @@ public class CamundaContainerRuntimeTest {
     verify(camundaContainer).withLogConsumer(any());
   }
 
-  // @Test
   // The ES container has been removed in favor of a H2 database solution. However, in the future ES
   // is going to be configurable as part of {@see https://github.com/camunda/camunda/issues/29854}
+  @Disabled
   void shouldConfigureElasticsearchContainer() {
     // given
     final String dockerImageName = "custom-elasticsearch";

@@ -34,12 +34,8 @@ import org.apache.hc.core5.http.ContentType;
 import org.apache.hc.core5.http.io.entity.HttpEntities;
 import org.awaitility.Awaitility;
 import org.awaitility.core.ConditionTimeoutException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class CamundaManagementClient {
-  private static final Logger LOGGER = LoggerFactory.getLogger(CamundaManagementClient.class);
-
   private static final String CLOCK_ENDPOINT = "/actuator/clock";
   private static final String CLOCK_ADD_ENDPOINT = "/actuator/clock/add";
 
