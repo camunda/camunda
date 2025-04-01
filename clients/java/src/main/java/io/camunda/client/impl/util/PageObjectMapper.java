@@ -21,6 +21,9 @@ import java.util.stream.Collectors;
 
 public class PageObjectMapper {
   public static List<PageObject> fromObjectList(final List<Object> values) {
+    if (values == null) {
+      return null;
+    }
     return values.stream().map(PageObjectMapper::fromObject).collect(Collectors.toList());
   }
 
@@ -53,7 +56,7 @@ public class PageObjectMapper {
     final PageObject.TypeEnum type = pageObject.getType();
 
     if (type == PageObject.TypeEnum.STRING) {
-      return rawValue.replaceAll("^\"|\"$", ""); // unescape quotes
+      return rawValue.replaceAll("^\"|\"$", "");
     } else if (type == PageObject.TypeEnum.INT64) {
       return Long.parseLong(rawValue);
     } else if (type == PageObject.TypeEnum.FLOAT) {
@@ -61,7 +64,7 @@ public class PageObjectMapper {
     } else if (type == PageObject.TypeEnum.BOOLEAN) {
       return Boolean.parseBoolean(rawValue);
     } else {
-      return rawValue; // Fallback to raw value
+      return rawValue;
     }
   }
 }

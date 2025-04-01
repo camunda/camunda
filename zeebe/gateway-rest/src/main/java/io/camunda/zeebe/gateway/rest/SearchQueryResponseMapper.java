@@ -789,7 +789,7 @@ public final class SearchQueryResponseMapper {
       return TypeEnum.FLOAT.name();
     }
 
-    return TypeEnum.OBJECT.name(); // Fallback
+    return TypeEnum.OBJECT.name();
   }
 
   private static String serializeValueToString(final Object value) {
