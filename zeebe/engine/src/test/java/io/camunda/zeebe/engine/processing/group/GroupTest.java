@@ -15,6 +15,7 @@ import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.GroupIntent;
 import io.camunda.zeebe.protocol.record.value.EntityType;
+import io.camunda.zeebe.test.util.Strings;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.util.UUID;
@@ -30,17 +31,19 @@ public class GroupTest {
   @Test
   public void shouldCreateGroup() {
     final var name = UUID.randomUUID().toString();
-    final var groupRecord = engine.group().newGroup(name).create();
+    final var groupId = Strings.newRandomValidIdentityId();
+    final var groupRecord = engine.group().newGroup(name).withGroupId(groupId).create();
 
     final var createdGroup = groupRecord.getValue();
     assertThat(createdGroup).hasName(name);
+    assertThat(createdGroup).hasGroupId(groupId);
   }
 
   @Test
   public void shouldNotDuplicate() {
     // given
     final var name = UUID.randomUUID().toString();
-    final var groupId = UUID.randomUUID().toString();
+    final var groupId = Strings.newRandomValidIdentityId();
     final var groupRecord = engine.group().newGroup(name).withGroupId(groupId).create();
 
     // when

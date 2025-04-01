@@ -81,6 +81,7 @@ import io.camunda.zeebe.protocol.record.value.ProcessInstanceMigrationRecordValu
 import io.camunda.zeebe.protocol.record.value.RoleRecordValue;
 import io.camunda.zeebe.protocol.record.value.TenantRecordValue;
 import io.camunda.zeebe.protocol.record.value.UserRecordValue;
+import io.camunda.zeebe.test.util.Strings;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.util.Arrays;
@@ -248,7 +249,10 @@ public class CommandDistributionIdempotencyTest {
           },
           {
             "Group.CREATE is idempotent",
-            new Scenario(ValueType.GROUP, GroupIntent.CREATE, () -> createGroup("123")),
+            new Scenario(
+                ValueType.GROUP,
+                GroupIntent.CREATE,
+                () -> createGroup(Strings.newRandomValidIdentityId())),
             GroupCreateProcessor.class
           },
           {

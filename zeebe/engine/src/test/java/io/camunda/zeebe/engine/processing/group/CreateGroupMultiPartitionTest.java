@@ -19,6 +19,7 @@ import io.camunda.zeebe.protocol.record.intent.CommandDistributionIntent;
 import io.camunda.zeebe.protocol.record.intent.GroupIntent;
 import io.camunda.zeebe.protocol.record.intent.RoleIntent;
 import io.camunda.zeebe.protocol.record.value.CommandDistributionRecordValue;
+import io.camunda.zeebe.test.util.Strings;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.time.Duration;
@@ -40,7 +41,7 @@ public class CreateGroupMultiPartitionTest {
   public void shouldDistributeGroupCreateCommand() {
     // when
     final var name = UUID.randomUUID().toString();
-    final var groupId = UUID.randomUUID().toString();
+    final var groupId = Strings.newRandomValidIdentityId();
     engine.group().newGroup(name).withGroupId(groupId).create();
 
     assertThat(
@@ -86,7 +87,7 @@ public class CreateGroupMultiPartitionTest {
   public void shouldDistributeInIdentityQueue() {
     // when
     final var name = UUID.randomUUID().toString();
-    final var groupId = UUID.randomUUID().toString();
+    final var groupId = Strings.newRandomValidIdentityId();
     engine.group().newGroup(name).withGroupId(groupId).create();
 
     // then
@@ -109,7 +110,7 @@ public class CreateGroupMultiPartitionTest {
 
     // when
     final var name = UUID.randomUUID().toString();
-    final var groupId = UUID.randomUUID().toString();
+    final var groupId = Strings.newRandomValidIdentityId();
     engine.group().newGroup(name).withGroupId(groupId).create();
 
     // Increase time to trigger a redistribution
