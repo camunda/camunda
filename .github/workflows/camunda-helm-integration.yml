@@ -15,6 +15,7 @@ jobs:
     secrets: inherit
     with:
       identifier: camunda-helm-int
+      deployment-ttl: 2d
       camunda-helm-dir: camunda-platform-8.8
       test-enabled: true
       caller-git-ref: main
