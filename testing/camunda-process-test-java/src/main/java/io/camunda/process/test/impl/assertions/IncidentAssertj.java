@@ -23,7 +23,6 @@ import io.camunda.client.api.command.ClientException;
 import io.camunda.client.api.search.enums.IncidentState;
 import io.camunda.client.api.search.filter.IncidentFilter;
 import io.camunda.client.api.search.response.Incident;
-import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
@@ -44,7 +43,7 @@ public class IncidentAssertj extends AbstractAssert<ElementAssertj, String> {
     this.dataSource = dataSource;
   }
 
-  public void hasNoIncidents(final long processInstanceKey) {
+  public void hasNoActiveIncidents(final long processInstanceKey) {
     awaitIncidentAssertion(
         f -> f.processInstanceKey(processInstanceKey),
         (incidents) -> {
@@ -58,7 +57,7 @@ public class IncidentAssertj extends AbstractAssert<ElementAssertj, String> {
         });
   }
 
-  public void hasAnyIncidents(final long processInstanceKey) {
+  public void hasActiveIncidents(final long processInstanceKey) {
     awaitIncidentAssertion(
         f -> f.processInstanceKey(processInstanceKey),
         (incidents) ->
@@ -69,20 +68,8 @@ public class IncidentAssertj extends AbstractAssert<ElementAssertj, String> {
   }
 
   private List<Incident> activeIncidents(final List<Incident> incidents) {
-    return incidentsInState(incidents, ACTIVE_INCIDENT_STATES);
-  }
-
-  private List<Incident> incidentsInState(
-      final List<Incident> incidents, final IncidentState wantedIncidentState) {
-
-    return incidentsInState(incidents, Collections.singletonList(wantedIncidentState));
-  }
-
-  private List<Incident> incidentsInState(
-      final List<Incident> incidents, final List<IncidentState> wantedIncidentStates) {
-
     return incidents.stream()
-        .filter(i -> wantedIncidentStates.contains(i.getState()))
+        .filter(i -> ACTIVE_INCIDENT_STATES.contains(i.getState()))
         .collect(Collectors.toList());
   }
 

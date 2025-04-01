@@ -305,17 +305,17 @@ public interface ProcessInstanceAssert {
   ProcessInstanceAssert hasVariables(Map<String, Object> variables);
 
   /**
-   * Asserts that no active incidents were raised or, if they were, remain unresolved.
+   * Verifies that there are no active incidents (active, pending or migrated) or waits a fixed
+   * duration until all active incidents are resolved.
    *
    * @return the assertion object
    */
-  ProcessInstanceAssert hasNoIncidents();
+  ProcessInstanceAssert hasNoActiveIncidents();
 
   /**
-   * Asserts whether any incidents were raised for this process instance (regardless of whether
-   * these incidents are active or already resolved).
+   * Verifies that at least one incident is active or waits a fixed duration until one is raised.
    *
    * @return the assertion object
    */
-  ProcessInstanceAssert hasAnyIncidents();
+  ProcessInstanceAssert hasActiveIncidents();
 }

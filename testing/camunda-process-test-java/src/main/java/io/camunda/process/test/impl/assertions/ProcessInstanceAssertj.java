@@ -242,14 +242,14 @@ public class ProcessInstanceAssertj
   }
 
   @Override
-  public ProcessInstanceAssert hasNoIncidents() {
-    incidentAssertj.hasNoIncidents(getProcessInstanceKey());
+  public ProcessInstanceAssert hasNoActiveIncidents() {
+    incidentAssertj.hasNoActiveIncidents(getProcessInstanceKey());
     return this;
   }
 
   @Override
-  public ProcessInstanceAssert hasAnyIncidents() {
-    incidentAssertj.hasAnyIncidents(getProcessInstanceKey());
+  public ProcessInstanceAssert hasActiveIncidents() {
+    incidentAssertj.hasActiveIncidents(getProcessInstanceKey());
     return this;
   }
 

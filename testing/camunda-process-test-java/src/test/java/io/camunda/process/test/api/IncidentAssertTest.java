@@ -120,7 +120,7 @@ public class IncidentAssertTest {
       when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
 
       // then
-      CamundaAssert.assertThat(processInstanceEvent).hasNoIncidents();
+      CamundaAssert.assertThat(processInstanceEvent).hasNoActiveIncidents();
     }
 
     @ParameterizedTest(name = "{0}")
@@ -134,7 +134,7 @@ public class IncidentAssertTest {
 
       // then
       Assertions.assertThatThrownBy(
-              () -> CamundaAssert.assertThat(processInstanceEvent).hasNoIncidents())
+              () -> CamundaAssert.assertThat(processInstanceEvent).hasNoActiveIncidents())
           .hasMessage(
               "Process instance [key: %d] should have zero incidents, but the following incidents were active:\n"
                   + "\t- IncidentKey '1' (CONDITION_ERROR): error",
@@ -158,7 +158,7 @@ public class IncidentAssertTest {
 
       // then
       Assertions.assertThatThrownBy(
-              () -> CamundaAssert.assertThat(processInstanceEvent).hasNoIncidents())
+              () -> CamundaAssert.assertThat(processInstanceEvent).hasNoActiveIncidents())
           .hasMessage(
               "Process instance [key: %d] should have zero incidents, but the following incidents were active:\n"
                   + "\t- IncidentKey '1' (CONDITION_ERROR): error1\n"
@@ -179,7 +179,7 @@ public class IncidentAssertTest {
       when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
 
       // then
-      CamundaAssert.assertThat(processInstanceEvent).hasNoIncidents();
+      CamundaAssert.assertThat(processInstanceEvent).hasNoActiveIncidents();
     }
 
     @Test
@@ -195,7 +195,7 @@ public class IncidentAssertTest {
       when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
 
       // then
-      CamundaAssert.assertThat(processInstanceEvent).hasNoIncidents();
+      CamundaAssert.assertThat(processInstanceEvent).hasNoActiveIncidents();
     }
   }
 
@@ -212,7 +212,7 @@ public class IncidentAssertTest {
       when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
 
       // then
-      CamundaAssert.assertThat(processInstanceEvent).hasAnyIncidents();
+      CamundaAssert.assertThat(processInstanceEvent).hasActiveIncidents();
     }
 
     @Test
@@ -225,7 +225,7 @@ public class IncidentAssertTest {
       when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
 
       // then
-      CamundaAssert.assertThat(processInstanceEvent).hasAnyIncidents();
+      CamundaAssert.assertThat(processInstanceEvent).hasActiveIncidents();
     }
 
     @Test
@@ -238,7 +238,7 @@ public class IncidentAssertTest {
 
       // then
       Assertions.assertThatThrownBy(
-              () -> CamundaAssert.assertThat(processInstanceEvent).hasAnyIncidents())
+              () -> CamundaAssert.assertThat(processInstanceEvent).hasActiveIncidents())
           .hasMessage(
               "Process instance [key: %d] should have raised one or more incidents, but none were found",
               PROCESS_INSTANCE_KEY);
@@ -257,7 +257,7 @@ public class IncidentAssertTest {
       when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
 
       // then
-      CamundaAssert.assertThat(processInstanceEvent).hasAnyIncidents();
+      CamundaAssert.assertThat(processInstanceEvent).hasActiveIncidents();
     }
   }
 }
