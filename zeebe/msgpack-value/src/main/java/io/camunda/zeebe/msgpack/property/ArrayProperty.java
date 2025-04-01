@@ -12,6 +12,7 @@ import io.camunda.zeebe.msgpack.value.ArrayValue;
 import io.camunda.zeebe.msgpack.value.BaseValue;
 import io.camunda.zeebe.msgpack.value.ValueArray;
 import java.util.Iterator;
+import java.util.Set;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
@@ -47,6 +48,15 @@ public final class ArrayProperty<T extends BaseValue> extends BaseProperty<Array
   public T add(final int index) {
     try {
       return value.add(index);
+    } catch (final Exception e) {
+      throw new MsgpackPropertyException(getKey(), e);
+    }
+  }
+
+  @Override
+  public void remove(final Set<T> items) {
+    try {
+      value.remove(items);
     } catch (final Exception e) {
       throw new MsgpackPropertyException(getKey(), e);
     }
