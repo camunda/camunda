@@ -5668,9 +5668,18 @@ components:
     RoleCreateRequest:
       type: "object"
       properties:
+        roleId:
+          type: "string"
+          description: The ID of the new role.
         name:
           type: "string"
           description: The display name of the new role.
+        description:
+          type: "string"
+          description: The description of the new role.
+      required:
+        - roleId
+        - name
     RoleCreateResult:
       type: object
       properties:
