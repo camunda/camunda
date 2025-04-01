@@ -59,18 +59,11 @@ public final class BufferUtil {
 
   /** byte-by-byte comparison of two buffers */
   public static boolean contentsEqual(final DirectBuffer buffer1, final DirectBuffer buffer2) {
-
-    if (buffer1.capacity() == buffer2.capacity()) {
-      boolean equal = true;
-
-      for (int i = 0; i < buffer1.capacity() && equal; i++) {
-        equal &= buffer1.getByte(i) == buffer2.getByte(i);
-      }
-
-      return equal;
-    } else {
-      return false;
+    boolean equal = buffer1.capacity() == buffer2.capacity();
+    for (int i = 0; equal && i < buffer1.capacity(); i++) {
+      equal = buffer1.getByte(i) == buffer2.getByte(i);
     }
+    return equal;
   }
 
   public static DirectBuffer createCopy(final BufferWriter writer) {
