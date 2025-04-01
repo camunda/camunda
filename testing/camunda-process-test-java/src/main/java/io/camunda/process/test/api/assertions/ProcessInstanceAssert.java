@@ -305,14 +305,15 @@ public interface ProcessInstanceAssert {
   ProcessInstanceAssert hasVariables(Map<String, Object> variables);
 
   /**
-   * Asserts whether no incidents were raised for this process instance
+   * Asserts that no active incidents were raised or, if they were, remain unresolved.
    *
    * @return the assertion object
    */
   ProcessInstanceAssert hasNoIncidents();
 
   /**
-   * Asserts whether any incidents were raised for this process instance
+   * Asserts whether any incidents were raised for this process instance (regardless of whether
+   * these incidents are active or already resolved).
    *
    * @return the assertion object
    */
