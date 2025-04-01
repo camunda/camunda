@@ -57,7 +57,7 @@ public class RoleController {
         ResponseMapper::toRoleCreateResponse);
   }
 
-  @CamundaPatchMapping(path = "/{roleKey}")
+  @CamundaPutMapping(path = "/{roleId}")
   public CompletableFuture<ResponseEntity<Object>> updateRole(
       @PathVariable final String roleId, @RequestBody final RoleUpdateRequest roleUpdateRequest) {
     return RequestMapper.toRoleUpdateRequest(roleUpdateRequest, roleId)
