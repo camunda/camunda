@@ -148,6 +148,7 @@ services:
       #
       - CAMUNDA_OPERATE_MULTITENANCY_ENABLED=true
       - CAMUNDA_OPERATE_BACKUP_REPOSITORYNAME=test
+      - CAMUNDA_OPERATE_ZEEBE_COMPATIBILITY_ENABLED=true
       # Zeebe with Identity
       - ZEEBE_CLIENT_ID=zeebe
       - ZEEBE_CLIENT_SECRET=zeebeSecret
