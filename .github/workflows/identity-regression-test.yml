@@ -36,8 +36,9 @@ jobs:
       matrix:
         env: [ 'local' ]
         case:
-          - 'identity-regression-test.http'
-          - 'identity-tenant-regression-test.http'
+          - 'user-authorizations-tests.http'
+          - 'tenant-tests.http'
+          - 'group-tests.http'
 
     runs-on: ubuntu-latest
     environment: '${{ matrix.env }}-http-tests'
