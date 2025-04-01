@@ -5686,6 +5686,15 @@ components:
         roleKey:
           description: The key of the created role.
           type: string
+        roleId:
+          description: The ID of the created role.
+          type: string
+        name:
+          description: The display name of the created role.
+          type: string
+        description:
+          description: The description of the created role.
+          type: string
     RoleUpdateRequest:
       type: object
       properties:
