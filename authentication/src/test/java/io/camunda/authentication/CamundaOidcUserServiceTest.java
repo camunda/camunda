@@ -104,6 +104,7 @@ public class CamundaOidcUserServiceTest {
     assertThat(camundaUser.getMappingKeys()).isEqualTo(Set.of(5L, 7L));
     assertThat(camundaUser.getMappingIds()).isEqualTo(Set.of("test-id", "test-id-2"));
     final AuthenticationContext authenticationContext = camundaUser.getAuthenticationContext();
+    assertThat(authenticationContext.username()).isEqualTo("test|foo@camunda.test");
     assertThat(authenticationContext.roles()).containsAll(Set.of(roleR1));
     assertThat(authenticationContext.groups()).isEmpty();
     assertThat(authenticationContext.tenants()).isEmpty();

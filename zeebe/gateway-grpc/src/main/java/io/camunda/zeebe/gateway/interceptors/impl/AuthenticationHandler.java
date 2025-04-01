@@ -9,11 +9,14 @@ package io.camunda.zeebe.gateway.interceptors.impl;
 
 import io.camunda.search.entities.UserEntity;
 import io.camunda.search.query.SearchQueryBuilders;
+import io.camunda.security.configuration.OidcAuthenticationConfiguration;
 import io.camunda.service.UserServices;
+import io.camunda.zeebe.auth.Authorization;
 import io.camunda.zeebe.util.Either;
 import io.grpc.Context;
 import io.grpc.Status;
 import java.util.Base64;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -40,9 +43,14 @@ public sealed interface AuthenticationHandler {
 
     public static final String BEARER_PREFIX = "Bearer ";
     private final JwtDecoder jwtDecoder;
+    private final OidcAuthenticationConfiguration oidcAuthenticationConfiguration;
 
-    public Oidc(final JwtDecoder jwtDecoder) {
+    public Oidc(
+        final JwtDecoder jwtDecoder,
+        final OidcAuthenticationConfiguration oidcAuthenticationConfiguration) {
       this.jwtDecoder = Objects.requireNonNull(jwtDecoder);
+      this.oidcAuthenticationConfiguration =
+          Objects.requireNonNull(oidcAuthenticationConfiguration);
     }
 
     @Override
@@ -63,7 +71,12 @@ public sealed interface AuthenticationHandler {
                 .withCause(e));
       }
 
-      return Either.right(Context.current().withValue(USER_CLAIMS, token.getClaims()));
+      final Map<String, Object> claims = new HashMap<>(token.getClaims());
+      claims.put(
+          Authorization.AUTHORIZED_USERNAME,
+          claims.get(oidcAuthenticationConfiguration.getUsernameClaim()));
+
+      return Either.right(Context.current().withValue(USER_CLAIMS, claims));
     }
   }
 

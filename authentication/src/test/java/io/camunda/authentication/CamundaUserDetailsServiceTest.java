@@ -74,6 +74,7 @@ public class CamundaUserDetailsServiceTest {
     assertThat(user.getUsername()).isEqualTo(TEST_USER_ID);
     assertThat(user.getPassword()).isEqualTo("password1");
     assertThat(user.getEmail()).isEqualTo("email@tested");
+    assertThat(user.getAuthenticationContext().username()).isEqualTo(TEST_USER_ID);
     assertThat(user.getAuthenticationContext().authorizedApplications())
         .containsExactlyInAnyOrder("operate", "identity");
     assertThat(user.getAuthenticationContext().roles()).isEqualTo(List.of(adminRole));

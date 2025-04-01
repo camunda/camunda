@@ -106,7 +106,9 @@ public final class StubbedGateway {
                 ServerInterceptors.intercept(
                     gatewayGrpcService,
                     new AuthenticationInterceptor(
-                        new AuthenticationHandler.Oidc(new FakeJwtDecoder()))));
+                        new AuthenticationHandler.Oidc(
+                            new FakeJwtDecoder(),
+                            securityConfiguration.getAuthentication().getOidc()))));
     server = serverBuilder.build();
     server.start();
   }

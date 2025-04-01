@@ -17,7 +17,9 @@ import com.auth0.jwt.JWT;
 import com.auth0.jwt.algorithms.Algorithm;
 import io.camunda.search.entities.UserEntity;
 import io.camunda.search.query.SearchQueryResult;
+import io.camunda.security.configuration.OidcAuthenticationConfiguration;
 import io.camunda.service.UserServices;
+import io.camunda.zeebe.auth.Authorization;
 import io.camunda.zeebe.gateway.interceptors.impl.AuthenticationHandler.BasicAuth;
 import io.camunda.zeebe.gateway.interceptors.impl.AuthenticationHandler.Oidc;
 import io.grpc.Context;
@@ -174,7 +176,10 @@ public class AuthenticationInterceptorTest {
     final var jwtDecoder = mock(JwtDecoder.class);
     when(jwtDecoder.decode(anyString())).thenReturn(jwt);
 
-    new AuthenticationInterceptor(new Oidc(jwtDecoder))
+    final var oidcAuthenticationConfiguration = new OidcAuthenticationConfiguration();
+    oidcAuthenticationConfiguration.setUsernameClaim("username");
+
+    new AuthenticationInterceptor(new Oidc(jwtDecoder, oidcAuthenticationConfiguration))
         .interceptCall(
             closeStatusCapturingServerCall,
             createAuthHeader(),
@@ -207,14 +212,49 @@ public class AuthenticationInterceptorTest {
     final var jwtDecoder = mock(JwtDecoder.class);
     when(jwtDecoder.decode(anyString())).thenReturn(jwt);
 
+    final var oidcAuthenticationConfiguration = new OidcAuthenticationConfiguration();
+    oidcAuthenticationConfiguration.setUsernameClaim("username");
+
     // when
-    new AuthenticationInterceptor(new Oidc(jwtDecoder))
+    new AuthenticationInterceptor(new Oidc(jwtDecoder, oidcAuthenticationConfiguration))
         .interceptCall(
             closeStatusCapturingServerCall,
             metadata,
             (call, headers) -> {
               // then
               assertUserClaims().containsKey("role").containsKey("foo").containsKey("baz");
+              call.close(Status.OK, headers);
+              return null;
+            });
+  }
+
+  @Test
+  public void addsUsernameInOidcToContext() {
+    // given
+    final Metadata metadata = createAuthHeader();
+    final CloseStatusCapturingServerCall closeStatusCapturingServerCall =
+        new CloseStatusCapturingServerCall();
+
+    // Create a mock JWT with claims
+    final var jwt = mock(org.springframework.security.oauth2.jwt.Jwt.class);
+    final Map<String, Object> claims = Map.of("username", "test-user");
+    when(jwt.getClaims()).thenReturn(claims);
+
+    // Configure the JwtDecoder to return our mock JWT
+    final var jwtDecoder = mock(JwtDecoder.class);
+    when(jwtDecoder.decode(anyString())).thenReturn(jwt);
+
+    final var oidcAuthenticationConfiguration = new OidcAuthenticationConfiguration();
+    oidcAuthenticationConfiguration.setUsernameClaim("username");
+
+    // when
+    new AuthenticationInterceptor(new Oidc(jwtDecoder, oidcAuthenticationConfiguration))
+        .interceptCall(
+            closeStatusCapturingServerCall,
+            metadata,
+            (call, headers) -> {
+              // then
+              assertUserClaims().containsEntry(Authorization.AUTHORIZED_USERNAME, "test-user");
               call.close(Status.OK, headers);
               return null;
             });
