@@ -7,7 +7,7 @@
  */
 package io.camunda.it.tasklist.compatibility;
 
-import static io.camunda.client.api.search.response.UserTaskState.COMPLETED;
+import static io.camunda.client.api.search.enums.UserTaskState.COMPLETED;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
