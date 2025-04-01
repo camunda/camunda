@@ -72,6 +72,70 @@ public class RoleControllerTest extends RestControllerTest {
   }
 
   @Test
+  void createRoleWithoutIdShouldFail() {
+    // given
+    final String roleId = null;
+    final var roleName = "Role name";
+
+    // when
+    webClient
+        .post()
+        .uri(ROLE_BASE_URL)
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(new RoleCreateRequest().roleId(roleId).name(roleName))
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectBody()
+        .json(
+            """
+            {
+              "type": "about:blank",
+              "status": 400,
+              "title": "INVALID_ARGUMENT",
+              "detail": "No roleId provided.",
+              "instance": "%s"
+            }"""
+                .formatted(ROLE_BASE_URL));
+
+    // then
+    verifyNoInteractions(roleServices);
+  }
+
+  @Test
+  void createRoleWithEmptyIdShouldFail() {
+    // given
+    final String roleId = "";
+    final var roleName = "Role name";
+
+    // when
+    webClient
+        .post()
+        .uri(ROLE_BASE_URL)
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(new RoleCreateRequest().roleId(roleId).name(roleName))
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectBody()
+        .json(
+            """
+            {
+              "type": "about:blank",
+              "status": 400,
+              "title": "INVALID_ARGUMENT",
+              "detail": "No roleId provided.",
+              "instance": "%s"
+            }"""
+                .formatted(ROLE_BASE_URL));
+
+    // then
+    verifyNoInteractions(roleServices);
+  }
+
+  @Test
   void createRoleWithEmptyNameShouldFail() {
     // given
     final var roleId = "roleId";
