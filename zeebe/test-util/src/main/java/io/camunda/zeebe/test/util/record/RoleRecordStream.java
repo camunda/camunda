@@ -26,6 +26,10 @@ public class RoleRecordStream extends ExporterRecordStream<RoleRecordValue, Role
     return valueFilter(v -> v.getRoleKey() == roleKey);
   }
 
+  public RoleRecordStream withRoleId(final String roleId) {
+    return valueFilter(v -> v.getRoleId().equals(roleId));
+  }
+
   public RoleRecordStream withName(final String name) {
     return valueFilter(v -> v.getName().equals(name));
   }

@@ -40,8 +40,8 @@ public class CreateRoleMultiPartitionTest {
   @Test
   public void shouldDistributeRoleCreateCommand() {
     // when
-    final var name = UUID.randomUUID().toString();
-    engine.role().newRole(name).create();
+    final var roleId = UUID.randomUUID().toString();
+    engine.role().newRole(roleId).create();
 
     assertThat(
             RecordingExporter.records()
@@ -74,7 +74,7 @@ public class CreateRoleMultiPartitionTest {
     for (int partitionId = 2; partitionId < PARTITION_COUNT; partitionId++) {
       assertThat(
               RecordingExporter.roleRecords()
-                  .withName(name)
+                  .withRoleId(roleId)
                   .withPartitionId(partitionId)
                   .limit(record -> record.getIntent().equals(RoleIntent.CREATED))
                   .collect(Collectors.toList()))
