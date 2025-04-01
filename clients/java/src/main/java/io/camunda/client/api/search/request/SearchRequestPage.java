@@ -15,7 +15,6 @@
  */
 package io.camunda.client.api.search.request;
 
-import io.camunda.client.protocol.rest.PageObject;
 import java.util.List;
 
 public interface SearchRequestPage {
@@ -27,8 +26,8 @@ public interface SearchRequestPage {
   SearchRequestPage limit(final Integer value);
 
   /** Get previous page before the set of values. */
-  SearchRequestPage searchBefore(final List<PageObject> values);
+  SearchRequestPage searchBefore(final List<Object> values);
 
   /** Get next page after the set of values. */
-  SearchRequestPage searchAfter(final List<PageObject> values);
+  SearchRequestPage searchAfter(final List<Object> values);
 }

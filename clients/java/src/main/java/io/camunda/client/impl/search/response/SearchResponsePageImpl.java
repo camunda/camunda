@@ -16,6 +16,7 @@
 package io.camunda.client.impl.search.response;
 
 import io.camunda.client.api.search.response.SearchResponsePage;
+import io.camunda.client.impl.util.PageObjectMapper;
 import io.camunda.client.protocol.rest.PageObject;
 import java.util.List;
 
@@ -40,12 +41,12 @@ public class SearchResponsePageImpl implements SearchResponsePage {
   }
 
   @Override
-  public List<PageObject> firstSortValues() {
-    return firstSortValues;
+  public List<Object> firstSortValues() {
+    return PageObjectMapper.toObjectList(firstSortValues);
   }
 
   @Override
-  public List<PageObject> lastSortValues() {
-    return lastSortValues;
+  public List<Object> lastSortValues() {
+    return PageObjectMapper.toObjectList(lastSortValues);
   }
 }
