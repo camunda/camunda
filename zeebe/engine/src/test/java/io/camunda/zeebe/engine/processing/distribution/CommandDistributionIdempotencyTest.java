@@ -271,13 +271,11 @@ public class CommandDistributionIdempotencyTest {
                 ValueType.GROUP,
                 GroupIntent.UPDATE,
                 () -> {
-                  // TODO: refactor with https://github.com/camunda/camunda/issues/30024
-                  final var groupId = "789";
-                  final var groupKey = Long.parseLong(groupId);
+                  final var groupId = UUID.randomUUID().toString();
                   createGroup(groupId);
                   return ENGINE
                       .group()
-                      .updateGroup(groupKey)
+                      .updateGroup(groupId)
                       .withName(UUID.randomUUID().toString())
                       .update();
                 }),

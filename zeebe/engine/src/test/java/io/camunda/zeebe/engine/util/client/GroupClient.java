@@ -27,8 +27,8 @@ public class GroupClient {
     return new GroupCreateClient(writer, name);
   }
 
-  public GroupUpdateClient updateGroup(final long groupKey) {
-    return new GroupUpdateClient(writer, groupKey);
+  public GroupUpdateClient updateGroup(final String groupId) {
+    return new GroupUpdateClient(writer, groupId);
   }
 
   public GroupAddEntityClient addEntity(final long groupKey) {
@@ -106,10 +106,10 @@ public class GroupClient {
     private final GroupRecord groupRecord;
     private Function<Long, Record<GroupRecordValue>> expectation = SUCCESS_SUPPLIER;
 
-    public GroupUpdateClient(final CommandWriter writer, final long groupKey) {
+    public GroupUpdateClient(final CommandWriter writer, final String groupId) {
       this.writer = writer;
       groupRecord = new GroupRecord();
-      groupRecord.setGroupKey(groupKey);
+      groupRecord.setGroupId(groupId);
     }
 
     public GroupUpdateClient withName(final String name) {
