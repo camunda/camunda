@@ -11,6 +11,7 @@ import io.camunda.authentication.entity.AuthenticationContext;
 import io.camunda.authentication.entity.CamundaOidcUser;
 import io.camunda.search.entities.GroupEntity;
 import io.camunda.search.entities.MappingEntity;
+import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.security.entity.AuthenticationMethod;
 import io.camunda.service.AuthorizationServices;
 import io.camunda.service.GroupServices;
@@ -40,18 +41,21 @@ public class CamundaOidcUserService extends OidcUserService {
   private final RoleServices roleServices;
   private final GroupServices groupServices;
   private final AuthorizationServices authorizationServices;
+  private final SecurityConfiguration securityConfiguration;
 
   public CamundaOidcUserService(
       final MappingServices mappingServices,
       final TenantServices tenantServices,
       final RoleServices roleServices,
       final GroupServices groupServices,
-      final AuthorizationServices authorizationServices) {
+      final AuthorizationServices authorizationServices,
+      final SecurityConfiguration securityConfiguration) {
     this.mappingServices = mappingServices;
     this.tenantServices = tenantServices;
     this.roleServices = roleServices;
     this.groupServices = groupServices;
     this.authorizationServices = authorizationServices;
+    this.securityConfiguration = securityConfiguration;
   }
 
   @Override
@@ -75,6 +79,7 @@ public class CamundaOidcUserService extends OidcUserService {
         mappingKeys,
         mappingIds,
         new AuthenticationContext(
+            getUsernameFromClaims(claims),
             assignedRoles,
             authorizationServices.getAuthorizedApplications(
                 Stream.concat(
@@ -88,5 +93,12 @@ public class CamundaOidcUserService extends OidcUserService {
             groupServices.getGroupsByMemberKeys(mappingKeys).stream()
                 .map(GroupEntity::name)
                 .toList()));
+  }
+
+  private String getUsernameFromClaims(final Map<String, Object> claims) {
+    final var usernameClaimName =
+        securityConfiguration.getAuthentication().getOidc().getUsernameClaim();
+
+    return claims.get(usernameClaimName).toString();
   }
 }
