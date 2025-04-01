@@ -11,6 +11,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.awaitility.Awaitility.await;
 
+import co.elastic.clients.elasticsearch._types.ElasticsearchException;
 import co.elastic.clients.elasticsearch.core.GetResponse;
 import io.camunda.zeebe.exporter.TestClient.ComponentTemplatesDto.ComponentTemplateWrapper;
 import io.camunda.zeebe.exporter.TestClient.IndexSettings;
@@ -32,6 +33,7 @@ import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
 import io.camunda.zeebe.test.util.testcontainers.TestSearchContainers;
 import io.camunda.zeebe.util.VersionUtil;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -85,6 +87,7 @@ final class ElasticsearchExporterIT {
   @BeforeAll
   public void beforeAll() {
     config.url = CONTAINER.getHttpHostAddress();
+    config.setZeebeRecordsExportEnabled(true);
     config.index.setNumberOfShards(1);
     config.index.setNumberOfReplicas(1);
     config.index.createTemplate = true;
@@ -109,7 +112,9 @@ final class ElasticsearchExporterIT {
 
   @BeforeEach
   void cleanup() {
+    config.setZeebeRecordsExportEnabled(true);
     testClient.deleteIndices();
+    exporter.configure(exporterTestContext);
   }
 
   @ParameterizedTest(name = "{0}")
@@ -192,6 +197,7 @@ final class ElasticsearchExporterIT {
   @MethodSource("io.camunda.zeebe.exporter.TestSupport#provideValueTypes")
   void shouldPutIndexTemplate(final ValueType valueType) {
     // assuming
+    testClient.deleteIndexTemplates();
     Assumptions.assumeTrue(
         config.shouldIndexValueType(valueType),
         "no template is created because the exporter is configured filter out records of this type");
@@ -205,7 +211,86 @@ final class ElasticsearchExporterIT {
     export(record);
 
     // then
-    final var template = testClient.getIndexTemplate(valueType);
+    final var template = testClient.getIndexTemplate(valueType, VersionUtil.getVersionLowerCase());
+    assertThat(template)
+        .as("should have created index template for value type %s", valueType)
+        .isPresent()
+        .get()
+        .extracting(IndexTemplateWrapper::name)
+        .isEqualTo(expectedIndexTemplateName);
+  }
+
+  @ParameterizedTest(name = "{0}")
+  @MethodSource("io.camunda.zeebe.exporter.TestSupport#provideValueTypes")
+  void shouldPutOnlyRequiredIndexTemplate(final ValueType valueType) {
+    // assuming
+    testClient.deleteIndexTemplates();
+    Assumptions.assumeTrue(
+        config.shouldIndexValueType(valueType),
+        "no template is created because the exporter is configured filter out records of this type");
+
+    // given
+    config.setZeebeRecordsExportEnabled(false);
+    exporter.configure(exporterTestContext);
+    exporter.open(controller);
+    final var record = generateRecord(valueType);
+    final var expectedIndexTemplateName =
+        indexRouter.indexPrefixForValueType(valueType, VersionUtil.getVersionLowerCase());
+
+    // when - export a single record to enforce installing all index templatesWrapper
+    export(record);
+
+    // then
+    if (valueType == ValueType.PROCESS_INSTANCE
+        || valueType == ValueType.PROCESS
+        || valueType == ValueType.VARIABLE
+        || valueType == ValueType.INCIDENT
+        || valueType == ValueType.USER_TASK
+        || valueType == ValueType.DEPLOYMENT) {
+      final var template =
+          testClient.getIndexTemplate(valueType, VersionUtil.getVersionLowerCase());
+      assertThat(template)
+          .as("should have created index template for value type %s", valueType)
+          .isPresent()
+          .get()
+          .extracting(IndexTemplateWrapper::name)
+          .isEqualTo(expectedIndexTemplateName);
+    } else {
+      assertThatThrownBy(
+              () -> testClient.getIndexTemplate(valueType, VersionUtil.getVersionLowerCase()))
+          .isInstanceOf(UncheckedIOException.class)
+          .hasMessageContaining(
+              "index template matching [%s] not found".formatted(expectedIndexTemplateName));
+    }
+  }
+
+  @ParameterizedTest(name = "{0}")
+  @MethodSource("io.camunda.zeebe.exporter.TestSupport#provideValueTypes")
+  void shouldPutIndexTemplateForPreviousVersion(final ValueType valueType) {
+    // assuming
+    testClient.deleteIndexTemplates();
+    Assumptions.assumeTrue(
+        config.shouldIndexValueType(valueType),
+        "no template is created because the exporter is configured filter out records of this type");
+
+    // given
+    config.setZeebeRecordsExportEnabled(false);
+    exporter.configure(exporterTestContext);
+    exporter.open(controller);
+    final var record =
+        factory.generateRecord(
+            valueType, r -> r.withBrokerVersion(VersionUtil.getPreviousVersion().toLowerCase()));
+
+    final var expectedIndexTemplateName =
+        indexRouter.indexPrefixForValueType(
+            valueType, VersionUtil.getPreviousVersion().toLowerCase());
+
+    // when - export a single record to enforce installing all index templatesWrapper
+    export(record);
+
+    // then
+    final var template =
+        testClient.getIndexTemplate(valueType, VersionUtil.getPreviousVersion().toLowerCase());
     assertThat(template)
         .as("should have created index template for value type %s", valueType)
         .isPresent()
@@ -231,6 +316,68 @@ final class ElasticsearchExporterIT {
         .get()
         .extracting(ComponentTemplateWrapper::name)
         .isEqualTo(config.index.prefix);
+  }
+
+  @ParameterizedTest(name = "{0}")
+  @MethodSource("io.camunda.zeebe.exporter.TestSupport#provideValueTypes")
+  void shouldExportOnlyRequiredRecords(final ValueType valueType) {
+    // given
+    config.setZeebeRecordsExportEnabled(false);
+    exporter.configure(exporterTestContext);
+    exporter.open(controller);
+
+    final var record = generateRecord(valueType);
+
+    // when
+    export(record);
+
+    // then
+    if (valueType == ValueType.PROCESS_INSTANCE
+        || valueType == ValueType.PROCESS
+        || valueType == ValueType.VARIABLE
+        || valueType == ValueType.INCIDENT
+        || valueType == ValueType.USER_TASK
+        || valueType == ValueType.DEPLOYMENT) {
+      final var response = testClient.getExportedDocumentFor(record);
+      assertThat(response)
+          .extracting(
+              GetResponse::index, GetResponse::id, GetResponse::routing, GetResponse::source)
+          .containsExactly(
+              indexRouter.indexFor(record),
+              indexRouter.idFor(record),
+              String.valueOf(record.getPartitionId()),
+              record);
+    } else {
+      assertThatThrownBy(() -> testClient.getExportedDocumentFor(record))
+          .isInstanceOf(ElasticsearchException.class)
+          .hasMessageContaining("no such index [%s]".formatted(indexRouter.indexFor(record)));
+    }
+  }
+
+  @ParameterizedTest(name = "{0}")
+  @MethodSource("io.camunda.zeebe.exporter.TestSupport#provideValueTypes")
+  void shouldExportRecordsOnPreviousVersion(final ValueType valueType) {
+    // given
+    config.setZeebeRecordsExportEnabled(false);
+    exporter.configure(exporterTestContext);
+    exporter.open(controller);
+
+    final var record =
+        factory.generateRecord(
+            valueType, r -> r.withBrokerVersion(VersionUtil.getPreviousVersion().toLowerCase()));
+
+    // when
+    export(record);
+
+    // then
+    final var response = testClient.getExportedDocumentFor(record);
+    assertThat(response)
+        .extracting(GetResponse::index, GetResponse::id, GetResponse::routing, GetResponse::source)
+        .containsExactly(
+            indexRouter.indexFor(record),
+            indexRouter.idFor(record),
+            String.valueOf(record.getPartitionId()),
+            record);
   }
 
   private boolean export(final Record<?> record) {
