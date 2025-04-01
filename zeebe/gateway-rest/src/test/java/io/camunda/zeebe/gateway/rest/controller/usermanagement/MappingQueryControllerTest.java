@@ -43,7 +43,7 @@ public class MappingQueryControllerTest extends RestControllerTest {
   void getMappingShouldReturnOk() {
     // given
     final var mapping = new MappingEntity("id", 100L, "Claim Name", "Claim Value", "Map Name");
-    when(mappingServices.getMapping(mapping.mappingKey())).thenReturn(mapping);
+    when(mappingServices.getMapping(mapping.mappingId())).thenReturn(mapping);
 
     // when
     webClient
