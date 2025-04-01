@@ -14,7 +14,7 @@ jobs:
     uses: camunda/camunda-platform-helm/.github/workflows/test-integration-template.yaml@main
     secrets: inherit
     with:
-      identifier: camunda-helm-int
+      identifier: optimize-test
       deployment-ttl: 2d
       camunda-helm-dir: camunda-platform-8.8
       test-enabled: true
