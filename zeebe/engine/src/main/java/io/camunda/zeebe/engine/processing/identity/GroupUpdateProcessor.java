@@ -52,12 +52,13 @@ public class GroupUpdateProcessor implements DistributedTypedRecordProcessor<Gro
   @Override
   public void processNewCommand(final TypedRecord<GroupRecord> command) {
     final var record = command.getValue();
+    final var groupId = record.getGroupId();
     final var groupKey = record.getGroupKey();
-    final var persistedRecord = groupState.get(groupKey);
+    final var persistedRecord = groupState.get(groupId);
     if (persistedRecord.isEmpty()) {
       final var errorMessage =
-          "Expected to update group with key '%s', but a group with this key does not exist."
-              .formatted(groupKey);
+          "Expected to update group with ID '%s', but a group with this ID does not exist."
+              .formatted(groupId);
       rejectionWriter.appendRejection(command, RejectionType.NOT_FOUND, errorMessage);
       responseWriter.writeRejectionOnCommand(command, RejectionType.NOT_FOUND, errorMessage);
       return;
