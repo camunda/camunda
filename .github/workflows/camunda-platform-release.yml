@@ -102,45 +102,6 @@ jobs:
           vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
           vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
 
-      - name: Maven Perform Release
-        id: maven-perform-release
-        env:
-          SKIP_REPO_DEPLOY: ${{ inputs.dryRun }}
-        run: |
-          # Perform a maven release
-          # https://maven.apache.org/maven-release/maven-release-plugin/perform-mojo.html
-          # https://maven.apache.org/maven-release/maven-release-plugin/usage/perform-release.html
-
-          # -DskipQaBuild=true -P-autoFormat
-          #   In order to disable QA/IT and the auto formatting during the release.
-          #   It is unnecessary to release integration tests, and we don't want to run the auto-formatting unnecessarily.
-          ./mvnw release:perform -B \
-            -Dgpg.passphrase="${{ steps.secrets.outputs.MAVEN_CENTRAL_GPG_SIGNING_KEY_PASSPHRASE }}" \
-            -DlocalCheckout=${{ inputs.dryRun }} \
-            -DskipQaBuild=true \
-            -DskipOptimize \
-            -P-autoFormat \
-            -Darguments='-P-autoFormat -DskipOptimize -DskipQaBuild=true -DskipChecks=true -DskipTests=true -Dskip.fe.build=false -Dspotless.apply.skip=false -Dskip.central.release=${SKIP_REPO_DEPLOY} -Dskip.camunda.release=${SKIP_REPO_DEPLOY} -Dgpg.passphrase="${{ steps.secrets.outputs.MAVEN_CENTRAL_GPG_SIGNING_KEY_PASSPHRASE }}"'
-
-          # switch to the directory to which maven checks out the release tag
-          # see https://maven.apache.org/maven-release/maven-release-plugin/perform-mojo.html#workingDirectory
-          pushd target/checkout
-          export TAG_REVISION=$(git log -n 1 --pretty=format:'%h')
-          echo "tagRevision=${TAG_REVISION}" >> $GITHUB_OUTPUT
-          popd
-      - name: Collect Release artifacts
-        id: release-artifacts
-        run: |
-          ARTIFACT_DIR=$(mktemp -d)
-          cp target/checkout/dist/target/camunda-zeebe-${RELEASE_VERSION}.tar.gz "${ARTIFACT_DIR}/"
-          cp target/checkout/dist/target/camunda-zeebe-${RELEASE_VERSION}.zip "${ARTIFACT_DIR}/"
-          echo "dir=${ARTIFACT_DIR}" >> $GITHUB_OUTPUT
-      - name: Upload Release Artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: release-artifacts-${{ inputs.releaseVersion }}
-          path: ${{ steps.release-artifacts.outputs.dir }}
-          retention-days: 5
       - name: Update Compat Version
         run: |
           if [[ ! "$RELEASE_VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
