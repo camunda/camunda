@@ -109,5 +109,8 @@ public interface MutableProcessingState extends ProcessingState {
   @Override
   MutableBatchOperationState getBatchOperationState();
 
+  @Override
+  MutableMembershipState getMembershipState();
+
   KeyGenerator getKeyGenerator();
 }

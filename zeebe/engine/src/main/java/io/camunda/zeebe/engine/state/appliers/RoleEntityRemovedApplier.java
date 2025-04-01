@@ -8,23 +8,25 @@
 package io.camunda.zeebe.engine.state.appliers;
 
 import io.camunda.zeebe.engine.state.TypedEventApplier;
+import io.camunda.zeebe.engine.state.authorization.DbMembershipState.RelationType;
 import io.camunda.zeebe.engine.state.mutable.MutableMappingState;
+import io.camunda.zeebe.engine.state.mutable.MutableMembershipState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.state.mutable.MutableRoleState;
-import io.camunda.zeebe.engine.state.mutable.MutableUserState;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.RoleRecord;
 import io.camunda.zeebe.protocol.record.intent.RoleIntent;
+import io.camunda.zeebe.protocol.record.value.EntityType;
 
 public class RoleEntityRemovedApplier implements TypedEventApplier<RoleIntent, RoleRecord> {
 
   private final MutableRoleState roleState;
-  private final MutableUserState userState;
   private final MutableMappingState mappingState;
+  private final MutableMembershipState membershipState;
 
   public RoleEntityRemovedApplier(final MutableProcessingState state) {
     roleState = state.getRoleState();
-    userState = state.getUserState();
     mappingState = state.getMappingState();
+    membershipState = state.getMembershipState();
   }
 
   @Override
@@ -32,9 +34,13 @@ public class RoleEntityRemovedApplier implements TypedEventApplier<RoleIntent, R
     roleState.removeEntity(value.getRoleKey(), value.getEntityKey());
     switch (value.getEntityType()) {
       case USER ->
-          userState
-              .getUser(value.getEntityKey())
-              .ifPresent(user -> userState.removeRole(user.getUsername(), value.getRoleKey()));
+          membershipState.deleteRelation(
+              EntityType.USER,
+              // TODO: Use entity id instead of key
+              Long.toString(value.getEntityKey()),
+              RelationType.ROLE,
+              // TODO: Use role id instead of key
+              Long.toString(value.getRoleKey()));
       case MAPPING -> mappingState.removeRole(value.getEntityKey(), value.getRoleKey());
       default ->
           throw new IllegalStateException(

@@ -15,9 +15,12 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
+import io.camunda.zeebe.engine.state.authorization.DbMembershipState.RelationType;
 import io.camunda.zeebe.engine.state.distribution.DistributionQueue;
 import io.camunda.zeebe.engine.state.immutable.AuthorizationState;
+import io.camunda.zeebe.engine.state.immutable.MembershipState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
+import io.camunda.zeebe.engine.state.immutable.RoleState;
 import io.camunda.zeebe.engine.state.immutable.TenantState;
 import io.camunda.zeebe.engine.state.immutable.UserState;
 import io.camunda.zeebe.engine.state.user.PersistedUser;
@@ -52,6 +55,8 @@ public class UserDeleteProcessor implements DistributedTypedRecordProcessor<User
   private final CommandDistributionBehavior distributionBehavior;
   private final AuthorizationCheckBehavior authCheckBehavior;
   private final TenantState tenantState;
+  private final MembershipState membershipState;
+  private final RoleState roleState;
 
   public UserDeleteProcessor(
       final KeyGenerator keyGenerator,
@@ -63,6 +68,8 @@ public class UserDeleteProcessor implements DistributedTypedRecordProcessor<User
     userState = state.getUserState();
     tenantState = state.getTenantState();
     authorizationState = state.getAuthorizationState();
+    roleState = state.getRoleState();
+    membershipState = state.getMembershipState();
     stateWriter = writers.state();
     rejectionWriter = writers.rejection();
     responseWriter = writers.response();
@@ -137,15 +144,23 @@ public class UserDeleteProcessor implements DistributedTypedRecordProcessor<User
               .setEntityType(EntityType.USER));
     }
 
-    for (final var roleKey : user.getRoleKeysList()) {
+    for (final var roleId :
+        membershipState.getRelations(
+            EntityType.USER,
+            // TODO: use the username instead of the userKey
+            Long.toString(userKey),
+            RelationType.ROLE)) {
+      final var role = roleState.getRole(roleId).orElseThrow();
       stateWriter.appendFollowUpEvent(
-          roleKey,
+          role.getRoleKey(),
           RoleIntent.ENTITY_REMOVED,
           new RoleRecord()
-              .setRoleKey(roleKey)
+              .setRoleKey(role.getRoleKey())
+              .setRoleId(roleId)
               .setEntityKey(userKey)
               .setEntityType(EntityType.USER));
     }
+
     for (final var groupKey : user.getGroupKeysList()) {
       stateWriter.appendFollowUpEvent(
           groupKey,
