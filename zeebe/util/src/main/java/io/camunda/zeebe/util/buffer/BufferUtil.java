@@ -31,6 +31,9 @@ public final class BufferUtil {
 
   public static String bufferAsString(
       final DirectBuffer buffer, final int offset, final int length) {
+    if (length == 0) {
+      return "";
+    }
     final byte[] bytes = new byte[length];
 
     buffer.getBytes(offset, bytes);
