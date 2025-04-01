@@ -216,6 +216,7 @@ jobs:
         with:
           name: release-artifacts-${{ inputs.releaseVersion }}
           path: release-artifacts
+          run-id: 14191393894
       - name: Create Artifact Checksums
         id: checksum
         working-directory: ./release-artifacts
@@ -302,6 +303,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: release-artifacts-${{ inputs.releaseVersion }}
+          run-id: 14191393894
       - name: Build Zeebe Docker Image
         uses: ./.github/actions/build-platform-docker
         id: build-zeebe-docker
@@ -381,6 +383,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: release-artifacts-${{ inputs.releaseVersion }}
+          run-id: 14191393894
       - name: Build Operate Docker Image
         uses: ./.github/actions/build-platform-docker
         id: build-operate-docker
@@ -463,6 +466,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: release-artifacts-${{ inputs.releaseVersion }}
+          run-id: 14191393894
       - name: Build Tasklist Docker Image
         uses: ./.github/actions/build-platform-docker
         id: build-tasklist-docker
@@ -545,6 +549,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: release-artifacts-${{ inputs.releaseVersion }}
+          run-id: 14191393894
       - name: Build Camunda Docker Image
         uses: ./.github/actions/build-platform-docker
         id: build-camunda-docker
