@@ -7,7 +7,6 @@
  */
 package io.camunda.zeebe.engine.state.appliers;
 
-import static io.camunda.zeebe.msgpack.value.StringValue.EMPTY_STRING;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.engine.state.immutable.UserTaskState.LifecycleState;
@@ -15,7 +14,6 @@ import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.state.mutable.MutableUserTaskState;
 import io.camunda.zeebe.engine.util.ProcessingStateExtension;
 import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
-import io.camunda.zeebe.protocol.record.Assertions;
 import java.util.Random;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -75,9 +73,9 @@ public class UserTaskCreatingV2ApplierTest {
 
     // then
     // ensure the intermediate state is present without an assignee
-    Assertions.assertThat(userTaskState.getIntermediateState(userTaskKey).getRecord())
-        .describedAs("Expect that intermediate is present and has no assignee")
-        .hasAssignee(EMPTY_STRING);
+    assertThat(userTaskState.getIntermediateState(userTaskKey).getRecord().getAssignee())
+        .describedAs("Expect that intermediate state to be present")
+        .isEmpty();
 
     // ensure the intermediate assignee is stored
     assertThat(userTaskState.getIntermediateAssignee(userTaskKey))
