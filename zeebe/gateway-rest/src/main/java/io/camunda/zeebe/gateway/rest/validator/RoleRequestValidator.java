@@ -40,8 +40,19 @@ public final class RoleRequestValidator {
     }
   }
 
+  public static void validateRoleDescription(
+      final String description, final List<String> violations) {
+    if (description == null) {
+      violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("description"));
+    }
+  }
+
   public static Optional<ProblemDetail> validateUpdateRequest(final RoleUpdateRequest request) {
-    return validate(violations -> validateRoleName(request.getName(), violations));
+    return validate(
+        violations -> {
+          validateRoleName(request.getName(), violations);
+          validateRoleDescription(request.getDescription(), violations);
+        });
   }
 
   public static Optional<ProblemDetail> validateCreateRequest(final RoleCreateRequest request) {
