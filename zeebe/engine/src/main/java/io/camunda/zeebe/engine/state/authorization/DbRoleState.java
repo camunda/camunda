@@ -57,7 +57,8 @@ public class DbRoleState implements MutableRoleState {
 
   @Override
   public void create(final RoleRecord roleRecord) {
-    roleId.wrapString(roleRecord.getRoleId());
+    // TODO replace with roleId (https://github.com/camunda/camunda/issues/30116)
+    roleId.wrapString(String.valueOf(roleRecord.getRoleKey()));
     persistedRole.from(roleRecord);
     roleColumnFamily.insert(roleId, persistedRole);
   }
