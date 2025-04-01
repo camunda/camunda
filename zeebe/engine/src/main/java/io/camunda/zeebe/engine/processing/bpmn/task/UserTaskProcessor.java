@@ -25,6 +25,7 @@ import io.camunda.zeebe.engine.state.immutable.UserTaskState.LifecycleState;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskListenerEventType;
 import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
 import io.camunda.zeebe.util.Either;
+import java.util.Collections;
 import java.util.Optional;
 import org.apache.commons.lang3.StringUtils;
 
@@ -127,14 +128,19 @@ public final class UserTaskProcessor extends JobWorkerTaskSupportingProcessor<Ex
     incidentBehavior.resolveIncidents(context);
 
     final var elementInstance = stateBehavior.getElementInstance(context);
-    final Optional<UserTaskRecord> userTaskRecord =
+    final Optional<UserTaskRecord> cancelingUserTask =
         userTaskBehavior.userTaskCanceling(elementInstance);
-    if (userTaskRecord.isPresent()) {
-      if (element.hasTaskListeners(ZeebeTaskListenerEventType.canceling)) {
-        // Placeholder for calling task listeners and then finalizing
+    if (cancelingUserTask.isPresent()) {
+      final var cancelingListeners = element.getTaskListeners(ZeebeTaskListenerEventType.canceling);
+      if (!cancelingListeners.isEmpty()) {
+        jobBehavior.createNewTaskListenerJob(
+            context,
+            cancelingUserTask.get(),
+            cancelingListeners.getFirst(),
+            Collections.emptyList());
         return TransitionOutcome.AWAIT;
       } else {
-        userTaskBehavior.userTaskCanceled(userTaskRecord.get());
+        userTaskBehavior.userTaskCanceled(cancelingUserTask.get());
         return TransitionOutcome.CONTINUE;
       }
     } else {
@@ -179,10 +185,7 @@ public final class UserTaskProcessor extends JobWorkerTaskSupportingProcessor<Ex
     final var creatingListeners = element.getTaskListeners(ZeebeTaskListenerEventType.creating);
     if (!creatingListeners.isEmpty()) {
       jobBehavior.createNewTaskListenerJob(
-          context,
-          userTaskRecord,
-          creatingListeners.getFirst(),
-          userTaskRecord.getChangedAttributes());
+          context, userTaskRecord, creatingListeners.getFirst(), Collections.emptyList());
       lifecycleState = LifecycleState.CREATING;
     } else {
       userTaskRecord.unsetAssignee();

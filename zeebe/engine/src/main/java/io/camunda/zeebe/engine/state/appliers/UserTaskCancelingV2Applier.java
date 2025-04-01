@@ -32,5 +32,10 @@ public final class UserTaskCancelingV2Applier
 
     // Clean up data that may have been persisted by a previous transition
     variableState.removeVariableDocumentState(value.getElementInstanceKey());
+    userTaskState.deleteIntermediateStateIfExists(key);
+    userTaskState.deleteRecordRequestMetadata(key);
+
+    // Persist new data related to "canceling" user task transition
+    userTaskState.storeIntermediateState(value, LifecycleState.CANCELING);
   }
 }
