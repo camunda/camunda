@@ -17,7 +17,7 @@
 
   <artifactId>camunda-schema-manager</artifactId>
 
-  <name>Camunda Search Schema manager</name>
+  <name>Camunda Schema manager</name>
   <dependencies>
     <dependency>
       <groupId>io.camunda</groupId>
