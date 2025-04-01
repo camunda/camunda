@@ -93,14 +93,14 @@ public class ElasticSearchConfiguration {
   }
 
   @JsonIgnore
-  public Integer getNestedDocumentsLimit() {
-    final Integer values = settings.getIndex().getNestedDocumentsLimit();
+  public Long getNestedDocumentsLimit() {
+    final Long values = settings.getIndex().getNestedDocumentsLimit();
     ensureGreaterThanZero(values);
     return values;
   }
 
   @JsonIgnore
-  public void setNestedDocumentsLimit(final int nestedDocumentLimit) {
+  public void setNestedDocumentsLimit(final long nestedDocumentLimit) {
     settings.getIndex().setNestedDocumentsLimit(nestedDocumentLimit);
   }
 

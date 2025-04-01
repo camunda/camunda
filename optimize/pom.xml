@@ -23,7 +23,7 @@
     <surefire-plugin.version>3.5.2</surefire-plugin.version>
 
     <!-- database config -->
-    <elasticsearch.client.version>8.13.0</elasticsearch.client.version>
+    <elasticsearch.client.version>8.15.5</elasticsearch.client.version>
     <elasticsearch.client.test.version>7.17.28</elasticsearch.client.test.version>
     <opensearch.client.version>2.10.4</opensearch.client.version>
     <awssdk.version>2.28.29</awssdk.version>
