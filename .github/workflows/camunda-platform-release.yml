@@ -1,13 +1,13 @@
 name: Git tag push issue workflow
 on:
   workflow_call:
-#    secrets:
-#      VAULT_ADDR:
-#        required: true
-#      VAULT_ROLE_ID:
-#        required: true
-#      VAULT_SECRET_ID:
-#        required: true
+    secrets:
+      VAULT_ADDR:
+        required: true
+      VAULT_ROLE_ID:
+        required: true
+      VAULT_SECRET_ID:
+        required: true
 defaults:
   run:
     shell: bash
@@ -33,21 +33,13 @@ jobs:
           vault-auth-role-id: ${{ secrets.VAULT_ROLE_ID }}
           vault-auth-secret-id: ${{ secrets.VAULT_SECRET_ID}}
           vault-url: ${{ secrets.VAULT_ADDR }}
-#      - uses: actions/checkout@v4
-#        with:
-#          ref: ${{ env.RELEASE_BRANCH }}
-#          fetch-depth: 0
-#          fetch-tags: true
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.RELEASE_BRANCH }}
+          token: ${{ steps.github-token.outputs.token }}
       - name: Push Git tag
         run: |
           set -x
-          git config --global user.name "github-actions[bot]"
-          git config --global user.email "github-actions[bot]@users.noreply.github.com"
-          git version
-          git config --list
-          cd ~
-          git clone --branch ${{ env.RELEASE_BRANCH }} --single-branch https://x-access-token:${{ steps.github-token.outputs.token }}@github.com/camunda/camunda.git
-          cd camunda
           git tag -d 8.6.11-test-SNAPSHOT-1 || true
           git push -d origin refs/tags/8.6.11-test-SNAPSHOT-1 || true
           git ls-remote --tags origin 8.6.11-test-SNAPSHOT-1
