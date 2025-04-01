@@ -211,12 +211,23 @@ jobs:
 
           # To show the changelog also as step summary
           echo "$changelog" >> $GITHUB_STEP_SUMMARY
-      - name: Download Release Artifacts
-        uses: actions/download-artifact@v4
+
+      - uses: actions/setup-node@v4
         with:
-          name: release-artifacts-${{ inputs.releaseVersion }}
-          path: release-artifacts
-          run-id: 14191393894
+          node-version: 20
+      - run: npm install @actions/artifact@2.1.9
+      - name: download-build-artifact
+        uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea # v7.0.1
+        env:
+          WORKFLOW_RUN_ID: 14191393894
+          ARTIFACT_ID: 2857926797
+          ARTIFACTS_FOLDER: release-artifacts
+        with:
+          script: |
+            const {default: artifactClient} = require('@actions/artifact')
+            const { ARTIFACT_ID, ARTIFACTS_FOLDER, WORKFLOW_RUN_ID } = process.env
+            await artifactClient.downloadArtifact(ARTIFACT_ID, { path: ARTIFACTS_FOLDER, findBy: { workflowRunId: WORKFLOW_RUN_ID } })
+
       - name: Create Artifact Checksums
         id: checksum
         working-directory: ./release-artifacts
@@ -299,11 +310,23 @@ jobs:
         with:
           username: ${{ steps.secrets.outputs.REGISTRY_HUB_DOCKER_COM_USR }}
           password: ${{ steps.secrets.outputs.REGISTRY_HUB_DOCKER_COM_PSW }}
-      - name: Download Release Artifacts
-        uses: actions/download-artifact@v4
+
+      - uses: actions/setup-node@v4
         with:
-          name: release-artifacts-${{ inputs.releaseVersion }}
-          run-id: 14191393894
+          node-version: 20
+      - run: npm install @actions/artifact@2.1.9
+      - name: download-build-artifact
+        uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea # v7.0.1
+        env:
+          WORKFLOW_RUN_ID: 14191393894
+          ARTIFACT_ID: 2857926797
+          ARTIFACTS_FOLDER: release-artifacts
+        with:
+          script: |
+            const {default: artifactClient} = require('@actions/artifact')
+            const { ARTIFACT_ID, ARTIFACTS_FOLDER, WORKFLOW_RUN_ID } = process.env
+            await artifactClient.downloadArtifact(ARTIFACT_ID, { path: ARTIFACTS_FOLDER, findBy: { workflowRunId: WORKFLOW_RUN_ID } })
+
       - name: Build Zeebe Docker Image
         uses: ./.github/actions/build-platform-docker
         id: build-zeebe-docker
@@ -379,11 +402,23 @@ jobs:
         with:
           username: ${{ steps.secrets.outputs.REGISTRY_HUB_DOCKER_COM_USR }}
           password: ${{ steps.secrets.outputs.REGISTRY_HUB_DOCKER_COM_PSW }}
-      - name: Download Release Artifacts
-        uses: actions/download-artifact@v4
+
+      - uses: actions/setup-node@v4
         with:
-          name: release-artifacts-${{ inputs.releaseVersion }}
-          run-id: 14191393894
+          node-version: 20
+      - run: npm install @actions/artifact@2.1.9
+      - name: download-build-artifact
+        uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea # v7.0.1
+        env:
+          WORKFLOW_RUN_ID: 14191393894
+          ARTIFACT_ID: 2857926797
+          ARTIFACTS_FOLDER: release-artifacts
+        with:
+          script: |
+            const {default: artifactClient} = require('@actions/artifact')
+            const { ARTIFACT_ID, ARTIFACTS_FOLDER, WORKFLOW_RUN_ID } = process.env
+            await artifactClient.downloadArtifact(ARTIFACT_ID, { path: ARTIFACTS_FOLDER, findBy: { workflowRunId: WORKFLOW_RUN_ID } })
+
       - name: Build Operate Docker Image
         uses: ./.github/actions/build-platform-docker
         id: build-operate-docker
@@ -462,11 +497,23 @@ jobs:
         with:
           username: ${{ steps.secrets.outputs.REGISTRY_HUB_DOCKER_COM_USR }}
           password: ${{ steps.secrets.outputs.REGISTRY_HUB_DOCKER_COM_PSW }}
-      - name: Download Release Artifacts
-        uses: actions/download-artifact@v4
+
+      - uses: actions/setup-node@v4
         with:
-          name: release-artifacts-${{ inputs.releaseVersion }}
-          run-id: 14191393894
+          node-version: 20
+      - run: npm install @actions/artifact@2.1.9
+      - name: download-build-artifact
+        uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea # v7.0.1
+        env:
+          WORKFLOW_RUN_ID: 14191393894
+          ARTIFACT_ID: 2857926797
+          ARTIFACTS_FOLDER: release-artifacts
+        with:
+          script: |
+            const {default: artifactClient} = require('@actions/artifact')
+            const { ARTIFACT_ID, ARTIFACTS_FOLDER, WORKFLOW_RUN_ID } = process.env
+            await artifactClient.downloadArtifact(ARTIFACT_ID, { path: ARTIFACTS_FOLDER, findBy: { workflowRunId: WORKFLOW_RUN_ID } })
+
       - name: Build Tasklist Docker Image
         uses: ./.github/actions/build-platform-docker
         id: build-tasklist-docker
@@ -545,11 +592,23 @@ jobs:
         with:
           username: ${{ steps.secrets.outputs.REGISTRY_HUB_DOCKER_COM_USR }}
           password: ${{ steps.secrets.outputs.REGISTRY_HUB_DOCKER_COM_PSW }}
-      - name: Download Release Artifacts
-        uses: actions/download-artifact@v4
+
+      - uses: actions/setup-node@v4
         with:
-          name: release-artifacts-${{ inputs.releaseVersion }}
-          run-id: 14191393894
+          node-version: 20
+      - run: npm install @actions/artifact@2.1.9
+      - name: download-build-artifact
+        uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea # v7.0.1
+        env:
+          WORKFLOW_RUN_ID: 14191393894
+          ARTIFACT_ID: 2857926797
+          ARTIFACTS_FOLDER: release-artifacts
+        with:
+          script: |
+            const {default: artifactClient} = require('@actions/artifact')
+            const { ARTIFACT_ID, ARTIFACTS_FOLDER, WORKFLOW_RUN_ID } = process.env
+            await artifactClient.downloadArtifact(ARTIFACT_ID, { path: ARTIFACTS_FOLDER, findBy: { workflowRunId: WORKFLOW_RUN_ID } })
+
       - name: Build Camunda Docker Image
         uses: ./.github/actions/build-platform-docker
         id: build-camunda-docker
