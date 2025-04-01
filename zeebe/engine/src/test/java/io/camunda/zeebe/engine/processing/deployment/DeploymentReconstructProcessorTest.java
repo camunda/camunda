@@ -26,11 +26,14 @@ import io.camunda.zeebe.protocol.impl.record.value.deployment.DecisionRequiremen
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.FormRecord;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.ProcessRecord;
+import io.camunda.zeebe.protocol.record.Record;
+import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
 import io.camunda.zeebe.protocol.record.value.deployment.FormMetadataValue;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.impl.state.DbKeyGenerator;
 import io.camunda.zeebe.util.buffer.BufferUtil;
+import java.util.function.Consumer;
 import org.assertj.core.api.InstanceOfAssertFactories;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -58,9 +61,7 @@ final class DeploymentReconstructProcessorTest {
   @Test
   void shouldEndReconstructionOnEmptyState() {
     // given
-
-    final var command = mock(TypedRecord.class);
-    when(command.getValue()).thenReturn(new DeploymentRecord());
+    final var command = mockedCommand();
 
     // when
     processor.processRecord(command);
@@ -75,8 +76,7 @@ final class DeploymentReconstructProcessorTest {
   @Test
   void shouldIgnoreProcessWithExistingDeployment() {
     // given
-    final var command = mock(TypedRecord.class);
-    when(command.getValue()).thenReturn(new DeploymentRecord());
+    final var command = mockedCommand();
 
     final var deploymentKey = Protocol.encodePartitionId(1, 1);
     final var processKey = Protocol.encodePartitionId(1, 2);
@@ -104,8 +104,7 @@ final class DeploymentReconstructProcessorTest {
   @Test
   void shouldReconstructForSingleProcessWithoutDeploymentKey() {
     // given
-    final var command = mock(TypedRecord.class);
-    when(command.getValue()).thenReturn(new DeploymentRecord());
+    final var command = mockedCommand();
 
     final var processKey = Protocol.encodePartitionId(1, 2);
     state
@@ -124,27 +123,24 @@ final class DeploymentReconstructProcessorTest {
     processor.processRecord(command);
 
     // then
-    assertThat(resultBuilder.getFollowupRecords())
-        .singleElement()
-        .satisfies(
-            record -> {
-              assertThat(record.getIntent()).isEqualTo(DeploymentIntent.RECONSTRUCTED);
-              assertThat(record.getKey()).isEqualTo(processKey);
-              assertThat(record.getValue())
-                  .asInstanceOf(InstanceOfAssertFactories.type(DeploymentRecord.class))
-                  .satisfies(
-                      deploymentRecord -> {
-                        assertThat(deploymentRecord.getProcessesMetadata()).hasSize(1);
-                        assertThat(deploymentRecord.getDeploymentKey()).isEqualTo(processKey);
-                      });
-            });
+    assertEventWithFollowupCommand(
+        record -> {
+          assertThat(record.getIntent()).isEqualTo(DeploymentIntent.RECONSTRUCTED);
+          assertThat(record.getKey()).isEqualTo(processKey);
+          assertThat(record.getValue())
+              .asInstanceOf(InstanceOfAssertFactories.type(DeploymentRecord.class))
+              .satisfies(
+                  deploymentRecord -> {
+                    assertThat(deploymentRecord.getProcessesMetadata()).hasSize(1);
+                    assertThat(deploymentRecord.getDeploymentKey()).isEqualTo(processKey);
+                  });
+        });
   }
 
   @Test
   void shouldReconstructForSingleProcessWithDeploymentKey() {
     // given
-    final var command = mock(TypedRecord.class);
-    when(command.getValue()).thenReturn(new DeploymentRecord());
+    final var command = mockedCommand();
 
     final var deploymentKey = Protocol.encodePartitionId(1, 1);
     final var processKey = Protocol.encodePartitionId(1, 2);
@@ -162,27 +158,24 @@ final class DeploymentReconstructProcessorTest {
     processor.processRecord(command);
 
     // then
-    assertThat(resultBuilder.getFollowupRecords())
-        .singleElement()
-        .satisfies(
-            record -> {
-              assertThat(record.getIntent()).isEqualTo(DeploymentIntent.RECONSTRUCTED);
-              assertThat(record.getKey()).isEqualTo(deploymentKey);
-              assertThat(record.getValue())
-                  .asInstanceOf(InstanceOfAssertFactories.type(DeploymentRecord.class))
-                  .satisfies(
-                      deploymentRecord -> {
-                        assertThat(deploymentRecord.getProcessesMetadata()).hasSize(1);
-                        assertThat(deploymentRecord.getDeploymentKey()).isEqualTo(deploymentKey);
-                      });
-            });
+    assertEventWithFollowupCommand(
+        record -> {
+          assertThat(record.getIntent()).isEqualTo(DeploymentIntent.RECONSTRUCTED);
+          assertThat(record.getKey()).isEqualTo(deploymentKey);
+          assertThat(record.getValue())
+              .asInstanceOf(InstanceOfAssertFactories.type(DeploymentRecord.class))
+              .satisfies(
+                  deploymentRecord -> {
+                    assertThat(deploymentRecord.getProcessesMetadata()).hasSize(1);
+                    assertThat(deploymentRecord.getDeploymentKey()).isEqualTo(deploymentKey);
+                  });
+        });
   }
 
   @Test
   void shouldIncludeAllProcessesOfDeployment() {
     // given
-    final var command = mock(TypedRecord.class);
-    when(command.getValue()).thenReturn(new DeploymentRecord());
+    final var command = mockedCommand();
 
     final var deploymentKey = Protocol.encodePartitionId(1, 1);
     final var processKey1 = Protocol.encodePartitionId(1, 2);
@@ -210,27 +203,24 @@ final class DeploymentReconstructProcessorTest {
     processor.processRecord(command);
 
     // then
-    assertThat(resultBuilder.getFollowupRecords())
-        .singleElement()
-        .satisfies(
-            record -> {
-              assertThat(record.getIntent()).isEqualTo(DeploymentIntent.RECONSTRUCTED);
-              assertThat(record.getKey()).isEqualTo(deploymentKey);
-              assertThat(record.getValue())
-                  .asInstanceOf(InstanceOfAssertFactories.type(DeploymentRecord.class))
-                  .satisfies(
-                      deploymentRecord -> {
-                        assertThat(deploymentRecord.getProcessesMetadata()).hasSize(2);
-                        assertThat(deploymentRecord.getDeploymentKey()).isEqualTo(deploymentKey);
-                      });
-            });
+    assertEventWithFollowupCommand(
+        record -> {
+          assertThat(record.getIntent()).isEqualTo(DeploymentIntent.RECONSTRUCTED);
+          assertThat(record.getKey()).isEqualTo(deploymentKey);
+          assertThat(record.getValue())
+              .asInstanceOf(InstanceOfAssertFactories.type(DeploymentRecord.class))
+              .satisfies(
+                  deploymentRecord -> {
+                    assertThat(deploymentRecord.getProcessesMetadata()).hasSize(2);
+                    assertThat(deploymentRecord.getDeploymentKey()).isEqualTo(deploymentKey);
+                  });
+        });
   }
 
   @Test
   void shouldReconstructForSingleFormWithoutDeploymentKey() {
     // given
-    final var command = mock(TypedRecord.class);
-    when(command.getValue()).thenReturn(new DeploymentRecord());
+    final var command = mockedCommand();
 
     final var formKey = Protocol.encodePartitionId(1, 2);
     state
@@ -246,32 +236,29 @@ final class DeploymentReconstructProcessorTest {
     processor.processRecord(command);
 
     // then
-    assertThat(resultBuilder.getFollowupRecords())
-        .singleElement()
-        .satisfies(
-            record -> {
-              assertThat(record.getIntent()).isEqualTo(DeploymentIntent.RECONSTRUCTED);
-              assertThat(record.getKey()).isEqualTo(formKey);
-              assertThat(record.getValue())
-                  .asInstanceOf(InstanceOfAssertFactories.type(DeploymentRecord.class))
-                  .satisfies(
-                      deploymentRecord -> {
-                        assertThat(deploymentRecord.getFormMetadata())
-                            .singleElement()
-                            .returns(formKey, FormMetadataValue::getFormKey)
-                            .returns("form", FormMetadataValue::getFormId)
-                            .returns("form.form", FormMetadataValue::getResourceName)
-                            .returns(1, FormMetadataValue::getVersion);
-                        assertThat(deploymentRecord.getDeploymentKey()).isEqualTo(formKey);
-                      });
-            });
+    assertEventWithFollowupCommand(
+        record -> {
+          assertThat(record.getIntent()).isEqualTo(DeploymentIntent.RECONSTRUCTED);
+          assertThat(record.getKey()).isEqualTo(formKey);
+          assertThat(record.getValue())
+              .asInstanceOf(InstanceOfAssertFactories.type(DeploymentRecord.class))
+              .satisfies(
+                  deploymentRecord -> {
+                    assertThat(deploymentRecord.getFormMetadata())
+                        .singleElement()
+                        .returns(formKey, FormMetadataValue::getFormKey)
+                        .returns("form", FormMetadataValue::getFormId)
+                        .returns("form.form", FormMetadataValue::getResourceName)
+                        .returns(1, FormMetadataValue::getVersion);
+                    assertThat(deploymentRecord.getDeploymentKey()).isEqualTo(formKey);
+                  });
+        });
   }
 
   @Test
   void shouldReconstructForSingleFormWithDeploymentKey() {
     // given
-    final var command = mock(TypedRecord.class);
-    when(command.getValue()).thenReturn(new DeploymentRecord());
+    final var command = mockedCommand();
 
     final var deploymentKey = Protocol.encodePartitionId(1, 1);
     final var formKey = Protocol.encodePartitionId(1, 2);
@@ -289,27 +276,24 @@ final class DeploymentReconstructProcessorTest {
     processor.processRecord(command);
 
     // then
-    assertThat(resultBuilder.getFollowupRecords())
-        .singleElement()
-        .satisfies(
-            record -> {
-              assertThat(record.getIntent()).isEqualTo(DeploymentIntent.RECONSTRUCTED);
-              assertThat(record.getKey()).isEqualTo(deploymentKey);
-              assertThat(record.getValue())
-                  .asInstanceOf(InstanceOfAssertFactories.type(DeploymentRecord.class))
-                  .satisfies(
-                      deploymentRecord -> {
-                        assertThat(deploymentRecord.getFormMetadata()).hasSize(1);
-                        assertThat(deploymentRecord.getDeploymentKey()).isEqualTo(deploymentKey);
-                      });
-            });
+    assertEventWithFollowupCommand(
+        record -> {
+          assertThat(record.getIntent()).isEqualTo(DeploymentIntent.RECONSTRUCTED);
+          assertThat(record.getKey()).isEqualTo(deploymentKey);
+          assertThat(record.getValue())
+              .asInstanceOf(InstanceOfAssertFactories.type(DeploymentRecord.class))
+              .satisfies(
+                  deploymentRecord -> {
+                    assertThat(deploymentRecord.getFormMetadata()).hasSize(1);
+                    assertThat(deploymentRecord.getDeploymentKey()).isEqualTo(deploymentKey);
+                  });
+        });
   }
 
   @Test
   void shouldIncludeAllFormsOfDeployment() {
     // given
-    final var command = mock(TypedRecord.class);
-    when(command.getValue()).thenReturn(new DeploymentRecord());
+    final var command = mockedCommand();
 
     final var deploymentKey = Protocol.encodePartitionId(1, 1);
     final var formKey1 = Protocol.encodePartitionId(1, 2);
@@ -337,27 +321,24 @@ final class DeploymentReconstructProcessorTest {
     processor.processRecord(command);
 
     // then
-    assertThat(resultBuilder.getFollowupRecords())
-        .singleElement()
-        .satisfies(
-            record -> {
-              assertThat(record.getIntent()).isEqualTo(DeploymentIntent.RECONSTRUCTED);
-              assertThat(record.getKey()).isEqualTo(deploymentKey);
-              assertThat(record.getValue())
-                  .asInstanceOf(InstanceOfAssertFactories.type(DeploymentRecord.class))
-                  .satisfies(
-                      deploymentRecord -> {
-                        assertThat(deploymentRecord.getFormMetadata()).hasSize(2);
-                        assertThat(deploymentRecord.getDeploymentKey()).isEqualTo(deploymentKey);
-                      });
-            });
+    assertEventWithFollowupCommand(
+        record -> {
+          assertThat(record.getIntent()).isEqualTo(DeploymentIntent.RECONSTRUCTED);
+          assertThat(record.getKey()).isEqualTo(deploymentKey);
+          assertThat(record.getValue())
+              .asInstanceOf(InstanceOfAssertFactories.type(DeploymentRecord.class))
+              .satisfies(
+                  deploymentRecord -> {
+                    assertThat(deploymentRecord.getFormMetadata()).hasSize(2);
+                    assertThat(deploymentRecord.getDeploymentKey()).isEqualTo(deploymentKey);
+                  });
+        });
   }
 
   @Test
   void shouldReconstructForSingleDecisionWithoutDeploymentKey() {
     // given
-    final var command = mock(TypedRecord.class);
-    when(command.getValue()).thenReturn(new DeploymentRecord());
+    final var command = mockedCommand();
 
     final var decisionRequirementsKey = Protocol.encodePartitionId(1, 2);
     state
@@ -379,28 +360,25 @@ final class DeploymentReconstructProcessorTest {
     processor.processRecord(command);
 
     // then
-    assertThat(resultBuilder.getFollowupRecords())
-        .singleElement()
-        .satisfies(
-            record -> {
-              assertThat(record.getIntent()).isEqualTo(DeploymentIntent.RECONSTRUCTED);
-              assertThat(record.getKey()).isEqualTo(decisionRequirementsKey);
-              assertThat(record.getValue())
-                  .asInstanceOf(InstanceOfAssertFactories.type(DeploymentRecord.class))
-                  .satisfies(
-                      deploymentRecord -> {
-                        assertThat(deploymentRecord.getDecisionsMetadata()).hasSize(1);
-                        assertThat(deploymentRecord.getDeploymentKey())
-                            .isEqualTo(decisionRequirementsKey);
-                      });
-            });
+    assertEventWithFollowupCommand(
+        record -> {
+          assertThat(record.getIntent()).isEqualTo(DeploymentIntent.RECONSTRUCTED);
+          assertThat(record.getKey()).isEqualTo(decisionRequirementsKey);
+          assertThat(record.getValue())
+              .asInstanceOf(InstanceOfAssertFactories.type(DeploymentRecord.class))
+              .satisfies(
+                  deploymentRecord -> {
+                    assertThat(deploymentRecord.getDecisionsMetadata()).hasSize(1);
+                    assertThat(deploymentRecord.getDeploymentKey())
+                        .isEqualTo(decisionRequirementsKey);
+                  });
+        });
   }
 
   @Test
   void shouldReconstructForSingleDecisionWithDeploymentKey() {
     // given
-    final var command = mock(TypedRecord.class);
-    when(command.getValue()).thenReturn(new DeploymentRecord());
+    final var command = mockedCommand();
 
     final var deploymentKey = Protocol.encodePartitionId(1, 1);
     final var decisionRequirementsKey = Protocol.encodePartitionId(1, 2);
@@ -424,27 +402,24 @@ final class DeploymentReconstructProcessorTest {
     processor.processRecord(command);
 
     // then
-    assertThat(resultBuilder.getFollowupRecords())
-        .singleElement()
-        .satisfies(
-            record -> {
-              assertThat(record.getIntent()).isEqualTo(DeploymentIntent.RECONSTRUCTED);
-              assertThat(record.getKey()).isEqualTo(deploymentKey);
-              assertThat(record.getValue())
-                  .asInstanceOf(InstanceOfAssertFactories.type(DeploymentRecord.class))
-                  .satisfies(
-                      deploymentRecord -> {
-                        assertThat(deploymentRecord.getDecisionsMetadata()).hasSize(1);
-                        assertThat(deploymentRecord.getDeploymentKey()).isEqualTo(deploymentKey);
-                      });
-            });
+    assertEventWithFollowupCommand(
+        record -> {
+          assertThat(record.getIntent()).isEqualTo(DeploymentIntent.RECONSTRUCTED);
+          assertThat(record.getKey()).isEqualTo(deploymentKey);
+          assertThat(record.getValue())
+              .asInstanceOf(InstanceOfAssertFactories.type(DeploymentRecord.class))
+              .satisfies(
+                  deploymentRecord -> {
+                    assertThat(deploymentRecord.getDecisionsMetadata()).hasSize(1);
+                    assertThat(deploymentRecord.getDeploymentKey()).isEqualTo(deploymentKey);
+                  });
+        });
   }
 
   @Test
   void shouldIncludeAllDecisionsOfDeployment() {
     // given
-    final var command = mock(TypedRecord.class);
-    when(command.getValue()).thenReturn(new DeploymentRecord());
+    final var command = mockedCommand();
 
     final var deploymentKey = Protocol.encodePartitionId(1, 1);
     final var decisionRequirementsKey = Protocol.encodePartitionId(1, 2);
@@ -479,19 +454,37 @@ final class DeploymentReconstructProcessorTest {
     processor.processRecord(command);
 
     // then
-    assertThat(resultBuilder.getFollowupRecords())
-        .singleElement()
-        .satisfies(
-            record -> {
-              assertThat(record.getIntent()).isEqualTo(DeploymentIntent.RECONSTRUCTED);
-              assertThat(record.getKey()).isEqualTo(deploymentKey);
-              assertThat(record.getValue())
-                  .asInstanceOf(InstanceOfAssertFactories.type(DeploymentRecord.class))
-                  .satisfies(
-                      deploymentRecord -> {
-                        assertThat(deploymentRecord.getDecisionsMetadata()).hasSize(2);
-                        assertThat(deploymentRecord.getDeploymentKey()).isEqualTo(deploymentKey);
-                      });
-            });
+    assertEventWithFollowupCommand(
+        record -> {
+          assertThat(record.getIntent()).isEqualTo(DeploymentIntent.RECONSTRUCTED);
+          assertThat(record.getKey()).isEqualTo(deploymentKey);
+          assertThat(record.getValue())
+              .asInstanceOf(InstanceOfAssertFactories.type(DeploymentRecord.class))
+              .satisfies(
+                  deploymentRecord -> {
+                    assertThat(deploymentRecord.getDecisionsMetadata()).hasSize(2);
+                    assertThat(deploymentRecord.getDeploymentKey()).isEqualTo(deploymentKey);
+                  });
+        });
+  }
+
+  private TypedRecord<DeploymentRecord> mockedCommand() {
+    final var command = mock(TypedRecord.class);
+    when(command.getValue()).thenReturn(new DeploymentRecord());
+    when(command.getIntent()).thenReturn(DeploymentIntent.RECONSTRUCT);
+    return command;
+  }
+
+  private void assertEventWithFollowupCommand(
+      final Consumer<Record<UnifiedRecordValue>> assertion) {
+    assertThat(resultBuilder.getFollowupRecords()).hasSize(2);
+    final var event = resultBuilder.getFollowupRecords().get(0);
+    assertion.accept(event);
+    assertHasFollowupCommand();
+  }
+
+  private void assertHasFollowupCommand() {
+    final var nextCommand = resultBuilder.getFollowupRecords().get(1);
+    assertThat(nextCommand.getRecordType()).isEqualTo(RecordType.COMMAND);
   }
 }
