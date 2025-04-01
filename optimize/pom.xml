@@ -24,8 +24,8 @@
 
     <!-- DATABASE -->
     <!-- Elasticsearch-->
-    <elasticsearch.client.version>8.13.0</elasticsearch.client.version>
-    <elasticsearch.client.test.version>7.17.24</elasticsearch.client.test.version>
+    <elasticsearch.client.version>8.15.5</elasticsearch.client.version>
+    <elasticsearch.client.test.version>7.17.28</elasticsearch.client.test.version>
 
     <!--The least supported opensearch version we should test against-->
     <opensearch.test.version>2.10.0</opensearch.test.version>

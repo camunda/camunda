@@ -23,7 +23,7 @@ public class DatabaseIndex {
   private String refreshInterval;
 
   @JsonProperty("nested_documents_limit")
-  private Integer nestedDocumentsLimit;
+  private Long nestedDocumentsLimit;
 
   private String prefix;
 }
