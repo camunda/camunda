@@ -13,6 +13,7 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDb;
+import io.camunda.zeebe.engine.processing.deployment.DeploymentReconstructProcessor.ProgressState;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.appliers.EventAppliers;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
@@ -486,5 +487,56 @@ final class DeploymentReconstructProcessorTest {
   private void assertHasFollowupCommand() {
     final var nextCommand = resultBuilder.getFollowupRecords().get(1);
     assertThat(nextCommand.getRecordType()).isEqualTo(RecordType.COMMAND);
+  }
+
+  @Test
+  public void shouldUseRangeQueriesWhenReconstructing() {
+    // given
+    final var command = mock(TypedRecord.class);
+    when(command.getValue()).thenReturn(new DeploymentRecord());
+    final var deploymentKey1 = Protocol.encodePartitionId(1, 1);
+    final var processKey = Protocol.encodePartitionId(1, 2);
+    state
+        .getProcessState()
+        .putProcess(
+            processKey,
+            new ProcessRecord()
+                .setBpmnProcessId("process")
+                .setResourceName("process.bpmn")
+                .setTenantId("tenant-id")
+                .setVersion(1));
+
+    state
+        .getProcessState()
+        .putProcess(
+            processKey,
+            new ProcessRecord()
+                .setBpmnProcessId("process")
+                .setResourceName("process.bpmn")
+                .setTenantId("tenant-id")
+                .setVersion(2));
+    // when
+    processor.processRecord(command);
+
+    // then
+    final var constructed = (DeploymentRecord) resultBuilder.getFollowupRecords().get(0).getValue();
+
+    assertThat(processor.getProgressState())
+        .satisfies(
+            progressState -> {
+              assertThat(progressState).isInstanceOf(ProgressState.Process.class);
+              assertThat(((ProgressState.Process) progressState).identifier())
+                  .satisfies(
+                      identifier -> {
+                        assertThat(identifier.tenantId()).isEqualTo("tenant-id");
+                        final var processDefinitionKey =
+                            constructed.processesMetadata().stream()
+                                .findFirst()
+                                .get()
+                                .getProcessDefinitionKey();
+                        assertThat(identifier.processDefinitionKey())
+                            .isEqualTo(processDefinitionKey);
+                      });
+            });
   }
 }
