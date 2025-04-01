@@ -47,6 +47,7 @@ services:
       - SPRING_PROFILES_ACTIVE=dev-data
       - CAMUNDA_OPERATE_TASKLIST_URL=http://localhost:8082/tasklist
       - CAMUNDA_OPERATE_BACKUP_REPOSITORYNAME=test
+      - CAMUNDA_OPERATE_ZEEBE_COMPATIBILITY_ENABLED=true
       - SERVER_SERVLET_CONTEXT_PATH=/operate
     ports:
       - 8081:8081

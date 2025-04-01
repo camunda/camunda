@@ -153,6 +153,7 @@ services:
       - SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUERURI=http://localhost:18080/auth/realms/camunda-platform
       - SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWKSETURI=http://keycloak:8080/auth/realms/camunda-platform/protocol/openid-connect/certs
       - CAMUNDA_OPERATE_BACKUP_REPOSITORYNAME=test
+      - CAMUNDA_OPERATE_ZEEBE_COMPATIBILITY_ENABLED=true
       - SERVER_SERVLET_CONTEXT_PATH=/operate
       - ZEEBE_CLIENT_ID=zeebe
       - ZEEBE_CLIENT_SECRET=zeebeSecret
