@@ -226,7 +226,7 @@ jobs:
           script: |
             const {default: artifactClient} = require('@actions/artifact')
             const { ARTIFACT_ID, ARTIFACTS_FOLDER, WORKFLOW_RUN_ID } = process.env
-            await artifactClient.downloadArtifact(ARTIFACT_ID, { path: ARTIFACTS_FOLDER, findBy: { workflowRunId: WORKFLOW_RUN_ID } })
+            await artifactClient.downloadArtifact(ARTIFACT_ID, { path: ARTIFACTS_FOLDER, findBy: { workflowRunId: WORKFLOW_RUN_ID, token: GH_TOKEN } })
 
       - name: Create Artifact Checksums
         id: checksum
@@ -325,7 +325,7 @@ jobs:
           script: |
             const {default: artifactClient} = require('@actions/artifact')
             const { ARTIFACT_ID, ARTIFACTS_FOLDER, WORKFLOW_RUN_ID } = process.env
-            await artifactClient.downloadArtifact(ARTIFACT_ID, { path: ARTIFACTS_FOLDER, findBy: { workflowRunId: WORKFLOW_RUN_ID } })
+            await artifactClient.downloadArtifact(ARTIFACT_ID, { path: ARTIFACTS_FOLDER, findBy: { workflowRunId: WORKFLOW_RUN_ID, token: GH_TOKEN } })
 
       - name: Build Zeebe Docker Image
         uses: ./.github/actions/build-platform-docker
@@ -417,7 +417,7 @@ jobs:
           script: |
             const {default: artifactClient} = require('@actions/artifact')
             const { ARTIFACT_ID, ARTIFACTS_FOLDER, WORKFLOW_RUN_ID } = process.env
-            await artifactClient.downloadArtifact(ARTIFACT_ID, { path: ARTIFACTS_FOLDER, findBy: { workflowRunId: WORKFLOW_RUN_ID } })
+            await artifactClient.downloadArtifact(ARTIFACT_ID, { path: ARTIFACTS_FOLDER, findBy: { workflowRunId: WORKFLOW_RUN_ID, token: GH_TOKEN } })
 
       - name: Build Operate Docker Image
         uses: ./.github/actions/build-platform-docker
@@ -512,7 +512,7 @@ jobs:
           script: |
             const {default: artifactClient} = require('@actions/artifact')
             const { ARTIFACT_ID, ARTIFACTS_FOLDER, WORKFLOW_RUN_ID } = process.env
-            await artifactClient.downloadArtifact(ARTIFACT_ID, { path: ARTIFACTS_FOLDER, findBy: { workflowRunId: WORKFLOW_RUN_ID } })
+            await artifactClient.downloadArtifact(ARTIFACT_ID, { path: ARTIFACTS_FOLDER, findBy: { workflowRunId: WORKFLOW_RUN_ID, token: GH_TOKEN } })
 
       - name: Build Tasklist Docker Image
         uses: ./.github/actions/build-platform-docker
@@ -607,7 +607,7 @@ jobs:
           script: |
             const {default: artifactClient} = require('@actions/artifact')
             const { ARTIFACT_ID, ARTIFACTS_FOLDER, WORKFLOW_RUN_ID } = process.env
-            await artifactClient.downloadArtifact(ARTIFACT_ID, { path: ARTIFACTS_FOLDER, findBy: { workflowRunId: WORKFLOW_RUN_ID } })
+            await artifactClient.downloadArtifact(ARTIFACT_ID, { path: ARTIFACTS_FOLDER, findBy: { workflowRunId: WORKFLOW_RUN_ID, token: GH_TOKEN } })
 
       - name: Build Camunda Docker Image
         uses: ./.github/actions/build-platform-docker
