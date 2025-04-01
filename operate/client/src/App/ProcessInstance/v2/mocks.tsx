@@ -42,6 +42,8 @@ import {flowNodeInstanceStore} from 'modules/stores/flowNodeInstance';
 import {processInstanceDetailsStatisticsStore} from 'modules/stores/processInstanceDetailsStatistics';
 import {mockFetchProcess} from 'modules/mocks/api/processes/fetchProcess';
 import {mockProcess} from '../ProcessInstanceHeader/index.setup';
+import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
+import {QueryClientProvider} from '@tanstack/react-query';
 
 const processInstancesMock = createMultiInstanceFlowNodeInstances('4294980768');
 
@@ -108,22 +110,24 @@ function getWrapper(options?: {
     }, []);
 
     return (
-      <HistoryRouter
-        history={createMemoryHistory({
-          initialEntries: [initialPath],
-        })}
-        basename={contextPath ?? ''}
-      >
-        <Routes>
-          <Route path={Paths.processInstance()} element={children} />
-          <Route path={Paths.processes()} element={<>instances page</>} />
-          <Route path={Paths.dashboard()} element={<>dashboard page</>} />
-        </Routes>
-        {selectableFlowNode && (
-          <FlowNodeSelector selectableFlowNode={selectableFlowNode} />
-        )}
-        <LocationLog />
-      </HistoryRouter>
+      <QueryClientProvider client={getMockQueryClient()}>
+        <HistoryRouter
+          history={createMemoryHistory({
+            initialEntries: [initialPath],
+          })}
+          basename={contextPath ?? ''}
+        >
+          <Routes>
+            <Route path={Paths.processInstance()} element={children} />
+            <Route path={Paths.processes()} element={<>instances page</>} />
+            <Route path={Paths.dashboard()} element={<>dashboard page</>} />
+          </Routes>
+          {selectableFlowNode && (
+            <FlowNodeSelector selectableFlowNode={selectableFlowNode} />
+          )}
+          <LocationLog />
+        </HistoryRouter>
+      </QueryClientProvider>
     );
   };
 

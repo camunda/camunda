@@ -21,7 +21,6 @@ import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails
 import {sequenceFlowsStore} from 'modules/stores/sequenceFlows';
 import {incidentsStore} from 'modules/stores/incidents';
 import {flowNodeInstanceStore} from 'modules/stores/flowNodeInstance';
-import {processInstanceDetailsStatisticsStore} from 'modules/stores/processInstanceDetailsStatistics';
 import {mockFetchVariables} from 'modules/mocks/api/processInstances/fetchVariables';
 
 import {Paths} from 'modules/Routes';
@@ -37,7 +36,6 @@ const clearPollingStates = () => {
   processInstanceDetailsStore.isPollRequestRunning = false;
   incidentsStore.isPollRequestRunning = false;
   flowNodeInstanceStore.isPollRequestRunning = false;
-  processInstanceDetailsStatisticsStore.isPollRequestRunning = false;
 };
 
 jest.mock('modules/utils/bpmn');
@@ -244,11 +242,6 @@ describe('ProcessInstance - modification mode', () => {
       'pollInstances',
     );
 
-    const handlePollingProcessInstanceDetailStatisticsSpy = jest.spyOn(
-      processInstanceDetailsStatisticsStore,
-      'handlePolling',
-    );
-
     const {user} = render(<ProcessInstance />, {wrapper: getWrapper()});
     await waitForElementToBeRemoved(
       screen.getByTestId('instance-header-skeleton'),
@@ -265,9 +258,6 @@ describe('ProcessInstance - modification mode', () => {
     expect(handlePollingIncidentsSpy).toHaveBeenCalledTimes(0);
     expect(handlePollingFlowNodeInstanceSpy).toHaveBeenCalledTimes(0);
     expect(handlePollingVariablesSpy).toHaveBeenCalledTimes(0);
-    expect(
-      handlePollingProcessInstanceDetailStatisticsSpy,
-    ).toHaveBeenCalledTimes(0);
 
     clearPollingStates();
     jest.runOnlyPendingTimers();
@@ -276,9 +266,6 @@ describe('ProcessInstance - modification mode', () => {
     expect(handlePollingIncidentsSpy).toHaveBeenCalledTimes(1);
     expect(handlePollingFlowNodeInstanceSpy).toHaveBeenCalledTimes(1);
     expect(handlePollingVariablesSpy).toHaveBeenCalledTimes(1);
-    expect(
-      handlePollingProcessInstanceDetailStatisticsSpy,
-    ).toHaveBeenCalledTimes(1);
 
     await waitFor(() => {
       expect(variablesStore.state.status).toBe('fetched');
@@ -302,9 +289,6 @@ describe('ProcessInstance - modification mode', () => {
     expect(handlePollingIncidentsSpy).toHaveBeenCalledTimes(1);
     expect(handlePollingFlowNodeInstanceSpy).toHaveBeenCalledTimes(1);
     expect(handlePollingVariablesSpy).toHaveBeenCalledTimes(1);
-    expect(
-      handlePollingProcessInstanceDetailStatisticsSpy,
-    ).toHaveBeenCalledTimes(1);
 
     clearPollingStates();
     mockRequests();
@@ -316,9 +300,6 @@ describe('ProcessInstance - modification mode', () => {
     expect(handlePollingIncidentsSpy).toHaveBeenCalledTimes(1);
     expect(handlePollingFlowNodeInstanceSpy).toHaveBeenCalledTimes(1);
     expect(handlePollingVariablesSpy).toHaveBeenCalledTimes(1);
-    expect(
-      handlePollingProcessInstanceDetailStatisticsSpy,
-    ).toHaveBeenCalledTimes(1);
 
     mockRequests();
     await user.click(screen.getByTestId('discard-all-button'));
@@ -336,9 +317,6 @@ describe('ProcessInstance - modification mode', () => {
       expect(handlePollingInstanceDetailsSpy).toHaveBeenCalledTimes(3);
       expect(handlePollingFlowNodeInstanceSpy).toHaveBeenCalledTimes(3);
       expect(handlePollingVariablesSpy).toHaveBeenCalledTimes(3);
-      expect(
-        handlePollingProcessInstanceDetailStatisticsSpy,
-      ).toHaveBeenCalledTimes(3);
     });
 
     await waitForPollingsToBeComplete();
