@@ -8,6 +8,7 @@
 
 import {getFlowElementIds} from 'modules/bpmn-js/utils/getFlowElementIds';
 import {isMultiInstance} from 'modules/bpmn-js/utils/isMultiInstance';
+import {useFlownodeInstancesStatistics} from 'modules/queries/flownodeInstancesStatistics/useFlownodeInstancesStatistics';
 import {
   useTotalRunningInstancesForFlowNodes,
   useTotalRunningInstancesVisibleForFlowNodes,
@@ -18,6 +19,27 @@ import {
 } from 'modules/stores/modifications';
 import {processInstanceDetailsDiagramStore} from 'modules/stores/processInstanceDetailsDiagram';
 import {useMemo} from 'react';
+
+const useWillAllFlowNodesBeCanceled = () => {
+  const {data: statistics} = useFlownodeInstancesStatistics();
+
+  if (
+    modificationsStore.flowNodeModifications.filter(({operation}) =>
+      ['ADD_TOKEN', 'MOVE_TOKEN'].includes(operation),
+    ).length > 0
+  ) {
+    return false;
+  }
+
+  return (
+    statistics?.items.every(
+      ({flowNodeId, active, incidents}) =>
+        (active === 0 && incidents === 0) ||
+        modificationsStore.modificationsByFlowNode[flowNodeId]
+          ?.areAllTokensCanceled,
+    ) || false
+  );
+};
 
 const useModificationsByFlowNode = () => {
   const flowNodeIds = modificationsStore.flowNodeModifications.map(
@@ -158,4 +180,4 @@ const useModificationsByFlowNode = () => {
   }, {});
 };
 
-export {useModificationsByFlowNode};
+export {useModificationsByFlowNode, useWillAllFlowNodesBeCanceled};

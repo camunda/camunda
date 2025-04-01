@@ -11,17 +11,21 @@ import {observer} from 'mobx-react';
 import {flowNodeMetaDataStore} from 'modules/stores/flowNodeMetaData';
 import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
 import {modificationsStore} from 'modules/stores/modifications';
-import {processInstanceDetailsStatisticsStore} from 'modules/stores/processInstanceDetailsStatistics';
 import {VariableFormValues} from 'modules/types/variables';
 import {generateUniqueID} from 'modules/utils/generateUniqueID';
 import {FormRenderProps} from 'react-final-form';
 
 import {AddVariableButton, Form, VariablesContainer} from '../styled';
 import Variables from '../../Variables';
+import {useWillAllFlowNodesBeCanceled} from 'modules/hooks/modifications';
+import {useHasPendingCancelOrMoveModification} from 'modules/hooks/flowNodeSelection';
 
 const VariablesForm: React.FC<
   FormRenderProps<VariableFormValues, Partial<VariableFormValues>>
 > = observer(({handleSubmit, form, values}) => {
+  const willAllFlowNodesBeCanceled = useWillAllFlowNodesBeCanceled();
+  const hasPendingCancelOrMoveModification =
+    useHasPendingCancelOrMoveModification();
   const hasEmptyNewVariable = (values: VariableFormValues) =>
     values.newVariables?.some(
       (variable) =>
@@ -41,13 +45,13 @@ const VariablesForm: React.FC<
     }
 
     if (flowNodeSelectionStore.isRootNodeSelected) {
-      return !processInstanceDetailsStatisticsStore.willAllFlowNodesBeCanceled;
+      return !willAllFlowNodesBeCanceled;
     }
 
     return (
       flowNodeSelectionStore.isPlaceholderSelected ||
       (flowNodeMetaDataStore.isSelectedInstanceRunning &&
-        !flowNodeSelectionStore.hasPendingCancelOrMoveModification)
+        !hasPendingCancelOrMoveModification)
     );
   });
 

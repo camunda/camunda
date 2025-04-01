@@ -19,6 +19,7 @@ import {variablesStore} from 'modules/stores/variables';
 import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
 import {flowNodeMetaDataStore} from 'modules/stores/flowNodeMetaData';
 import {MemoryRouter, Route, Routes} from 'react-router-dom';
+import * as pageParamsModule from 'App/ProcessInstance/useProcessInstancePageParams';
 import {
   createBatchOperation,
   createInstance,
@@ -40,6 +41,10 @@ import * as operationApi from 'modules/api/getOperation';
 import {useEffect, act} from 'react';
 import {Paths} from 'modules/Routes';
 import {notificationsStore} from 'modules/stores/notifications';
+import {QueryClientProvider} from '@tanstack/react-query';
+import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
+import {mockFetchFlownodeInstancesStatistics} from 'modules/mocks/api/v2/flownodeInstances/fetchFlownodeInstancesStatistics';
+import {GetProcessInstanceStatisticsResponseBody} from '@vzeta/camunda-api-zod-schemas/operate';
 
 const getOperationSpy = jest.spyOn(operationApi, 'getOperation');
 
@@ -47,6 +52,11 @@ jest.mock('modules/stores/notifications', () => ({
   notificationsStore: {
     displayNotification: jest.fn(() => () => {}),
   },
+}));
+
+jest.mock('modules/feature-flags', () => ({
+  ...jest.requireActual('modules/feature-flags'),
+  IS_FLOWNODE_INSTANCE_STATISTICS_V2_ENABLED: true,
 }));
 
 const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
@@ -62,11 +72,13 @@ const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
   }, []);
 
   return (
-    <MemoryRouter initialEntries={[Paths.processInstance('1')]}>
-      <Routes>
-        <Route path={Paths.processInstance()} element={children} />
-      </Routes>
-    </MemoryRouter>
+    <QueryClientProvider client={getMockQueryClient()}>
+      <MemoryRouter initialEntries={[Paths.processInstance('1')]}>
+        <Routes>
+          <Route path={Paths.processInstance()} element={children} />
+        </Routes>
+      </MemoryRouter>
+    </QueryClientProvider>
   );
 };
 
@@ -1535,6 +1547,31 @@ describe('VariablePanel', () => {
   });
 
   it('should be readonly if root node is selected and applying modifications will cancel the whole process', async () => {
+    jest
+      .spyOn(pageParamsModule, 'useProcessInstancePageParams')
+      .mockReturnValue({processInstanceId: 'processInstanceId123'});
+    const mockData: GetProcessInstanceStatisticsResponseBody = {
+      items: [
+        {
+          flowNodeId: 'TEST_FLOW_NODE',
+          active: 0,
+          canceled: 0,
+          incidents: 0,
+          completed: 1,
+        },
+        {
+          flowNodeId: 'Activity_0qtp1k6',
+          active: 0,
+          canceled: 0,
+          incidents: 1,
+          completed: 0,
+        },
+      ],
+    };
+    mockFetchFlownodeInstancesStatistics().withSuccess(mockData);
+    mockFetchProcessXML().withSuccess(mockProcessWithInputOutputMappingsXML);
+    await processInstanceDetailsDiagramStore.fetchProcessXml('processId');
+
     mockFetchFlowNodeMetadata().withSuccess({
       ...singleInstanceMetadata,
       flowNodeInstanceId: null,
