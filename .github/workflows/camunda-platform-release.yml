@@ -152,11 +152,11 @@ jobs:
             -DskipTests \
             -Dskip.docker \
             -X \
-            -DwaitBeforeTagging=10 \
+            -DwaitBeforeTagging=0 \
             -P-autoFormat \
             -DpreparationGoals="" \
             -Darguments=''
-#8
+#20
 #      - name: Maven Perform Release
 #        id: maven-perform-release
 #        env:
