@@ -10,8 +10,8 @@ package io.camunda.search.clients.transformers.filter;
 import static io.camunda.search.clients.query.SearchQueryBuilders.and;
 import static io.camunda.search.clients.query.SearchQueryBuilders.term;
 import static io.camunda.search.clients.query.SearchQueryBuilders.variableOperations;
-import static io.camunda.webapps.schema.descriptors.operate.template.VariableTemplate.NAME;
-import static io.camunda.webapps.schema.descriptors.operate.template.VariableTemplate.VALUE;
+import static io.camunda.webapps.schema.descriptors.template.VariableTemplate.NAME;
+import static io.camunda.webapps.schema.descriptors.template.VariableTemplate.VALUE;
 
 import io.camunda.search.clients.query.SearchQuery;
 import io.camunda.search.clients.query.SearchQueryBuilders;

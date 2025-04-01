@@ -18,7 +18,7 @@ import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.util.ElasticsearchUtil;
 import io.camunda.operate.webapp.rest.dto.operation.BatchOperationRequestDto;
 import io.camunda.operate.webapp.security.UserService;
-import io.camunda.webapps.schema.descriptors.operate.template.BatchOperationTemplate;
+import io.camunda.webapps.schema.descriptors.template.BatchOperationTemplate;
 import io.camunda.webapps.schema.entities.operation.BatchOperationEntity;
 import java.io.IOException;
 import java.util.Collections;

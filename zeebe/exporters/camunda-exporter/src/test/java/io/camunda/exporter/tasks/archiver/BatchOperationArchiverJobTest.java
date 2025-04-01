@@ -11,7 +11,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.exporter.metrics.CamundaExporterMetrics;
 import io.camunda.exporter.tasks.archiver.TestRepository.DocumentMove;
-import io.camunda.webapps.schema.descriptors.operate.template.BatchOperationTemplate;
+import io.camunda.webapps.schema.descriptors.template.BatchOperationTemplate;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.time.Duration;
 import java.util.List;

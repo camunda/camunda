@@ -5,14 +5,16 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.webapps.schema.descriptors.operate.template;
+package io.camunda.webapps.schema.descriptors.template;
 
+import static io.camunda.webapps.schema.descriptors.ComponentNames.OPERATE;
+
+import io.camunda.webapps.schema.descriptors.AbstractTemplateDescriptor;
+import io.camunda.webapps.schema.descriptors.ProcessInstanceDependant;
 import io.camunda.webapps.schema.descriptors.backup.Prio4Backup;
-import io.camunda.webapps.schema.descriptors.operate.OperateTemplateDescriptor;
-import io.camunda.webapps.schema.descriptors.operate.ProcessInstanceDependant;
 import java.util.Optional;
 
-public class JobTemplate extends OperateTemplateDescriptor
+public class JobTemplate extends AbstractTemplateDescriptor
     implements ProcessInstanceDependant, Prio4Backup {
 
   public static final String INDEX_NAME = "job";
@@ -58,5 +60,10 @@ public class JobTemplate extends OperateTemplateDescriptor
   @Override
   public String getVersion() {
     return "8.6.0";
+  }
+
+  @Override
+  public String getComponentName() {
+    return OPERATE.toString();
   }
 }

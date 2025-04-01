@@ -22,7 +22,7 @@ import io.camunda.operate.util.TestUtil;
 import io.camunda.operate.webapp.reader.OperationReader;
 import io.camunda.operate.webapp.zeebe.operation.OperationExecutor;
 import io.camunda.operate.webapp.zeebe.operation.OperationHandler;
-import io.camunda.webapps.schema.descriptors.operate.template.OperationTemplate;
+import io.camunda.webapps.schema.descriptors.template.OperationTemplate;
 import io.camunda.webapps.schema.entities.ExporterEntity;
 import io.camunda.webapps.schema.entities.listview.ProcessInstanceForListViewEntity;
 import io.camunda.webapps.schema.entities.listview.ProcessInstanceState;

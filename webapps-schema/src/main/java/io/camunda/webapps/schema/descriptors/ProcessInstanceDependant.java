@@ -5,7 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.webapps.schema.descriptors.operate;
+package io.camunda.webapps.schema.descriptors;
 
 public interface ProcessInstanceDependant {
 

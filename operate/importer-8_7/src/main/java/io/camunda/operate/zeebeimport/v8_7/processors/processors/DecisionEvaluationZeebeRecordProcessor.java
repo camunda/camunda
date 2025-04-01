@@ -13,7 +13,7 @@ import io.camunda.operate.exceptions.PersistenceException;
 import io.camunda.operate.store.BatchRequest;
 import io.camunda.operate.store.MetricsStore;
 import io.camunda.operate.util.DateUtil;
-import io.camunda.webapps.schema.descriptors.operate.template.DecisionInstanceTemplate;
+import io.camunda.webapps.schema.descriptors.template.DecisionInstanceTemplate;
 import io.camunda.webapps.schema.entities.dmn.DecisionInstanceEntity;
 import io.camunda.webapps.schema.entities.dmn.DecisionInstanceInputEntity;
 import io.camunda.webapps.schema.entities.dmn.DecisionInstanceOutputEntity;

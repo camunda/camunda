@@ -19,7 +19,7 @@ import io.camunda.operate.webapp.rest.dto.ListenerDto;
 import io.camunda.operate.webapp.rest.dto.ListenerRequestDto;
 import io.camunda.operate.webapp.rest.dto.ListenerResponseDto;
 import io.camunda.operate.webapp.rest.dto.listview.SortValuesWrapper;
-import io.camunda.webapps.schema.descriptors.operate.template.JobTemplate;
+import io.camunda.webapps.schema.descriptors.template.JobTemplate;
 import io.camunda.webapps.schema.entities.JobEntity;
 import io.camunda.webapps.schema.entities.listener.ListenerType;
 import java.util.Collections;

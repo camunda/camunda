@@ -24,7 +24,7 @@ import io.camunda.search.entities.FlowNodeInstanceEntity.FlowNodeType;
 import io.camunda.search.filter.ProcessDefinitionStatisticsFilter;
 import io.camunda.search.query.TypedSearchQuery;
 import io.camunda.search.sort.NoSort;
-import io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate;
+import io.camunda.webapps.schema.descriptors.template.ListViewTemplate;
 
 public class ProcessDefinitionFlowNodeStatisticsQueryTransformer
     extends TypedSearchQueryTransformer<ProcessDefinitionStatisticsFilter, NoSort> {

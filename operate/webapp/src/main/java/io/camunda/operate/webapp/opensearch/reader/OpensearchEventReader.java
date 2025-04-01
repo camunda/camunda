@@ -15,7 +15,7 @@ import static io.camunda.operate.store.opensearch.dsl.RequestDSL.searchRequestBu
 import io.camunda.operate.conditions.OpensearchCondition;
 import io.camunda.operate.store.opensearch.client.sync.RichOpenSearchClient;
 import io.camunda.operate.webapp.reader.EventReader;
-import io.camunda.webapps.schema.descriptors.operate.template.EventTemplate;
+import io.camunda.webapps.schema.descriptors.template.EventTemplate;
 import io.camunda.webapps.schema.entities.event.EventEntity;
 import org.opensearch.client.opensearch._types.SortOrder;
 import org.springframework.context.annotation.Conditional;

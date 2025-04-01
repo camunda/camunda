@@ -7,14 +7,14 @@
  */
 package io.camunda.operate.webapp.zeebe.operation;
 
-import static io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate.KEY;
-import static io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate.PROCESS_KEY;
+import static io.camunda.webapps.schema.descriptors.template.ListViewTemplate.KEY;
+import static io.camunda.webapps.schema.descriptors.template.ListViewTemplate.PROCESS_KEY;
 
 import io.camunda.operate.exceptions.PersistenceException;
 import io.camunda.operate.store.ProcessStore;
 import io.camunda.operate.util.OperationsManager;
 import io.camunda.operate.webapp.reader.ProcessReader;
-import io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate;
+import io.camunda.webapps.schema.descriptors.template.ListViewTemplate;
 import io.camunda.webapps.schema.entities.listview.ProcessInstanceForListViewEntity;
 import io.camunda.webapps.schema.entities.listview.ProcessInstanceState;
 import io.camunda.webapps.schema.entities.operation.OperationEntity;

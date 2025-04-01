@@ -14,16 +14,16 @@ import static io.camunda.search.clients.query.SearchQueryBuilders.longOperations
 import static io.camunda.search.clients.query.SearchQueryBuilders.stringOperations;
 import static io.camunda.search.clients.query.SearchQueryBuilders.term;
 import static io.camunda.webapps.schema.descriptors.IndexDescriptor.TENANT_ID;
-import static io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate.END_DATE;
-import static io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate.INCIDENT;
-import static io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate.JOIN_RELATION;
-import static io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate.KEY;
-import static io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate.PARENT_FLOW_NODE_INSTANCE_KEY;
-import static io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate.PARENT_PROCESS_INSTANCE_KEY;
-import static io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate.PROCESS_INSTANCE_JOIN_RELATION;
-import static io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate.PROCESS_KEY;
-import static io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate.START_DATE;
-import static io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate.STATE;
+import static io.camunda.webapps.schema.descriptors.template.ListViewTemplate.END_DATE;
+import static io.camunda.webapps.schema.descriptors.template.ListViewTemplate.INCIDENT;
+import static io.camunda.webapps.schema.descriptors.template.ListViewTemplate.JOIN_RELATION;
+import static io.camunda.webapps.schema.descriptors.template.ListViewTemplate.KEY;
+import static io.camunda.webapps.schema.descriptors.template.ListViewTemplate.PARENT_FLOW_NODE_INSTANCE_KEY;
+import static io.camunda.webapps.schema.descriptors.template.ListViewTemplate.PARENT_PROCESS_INSTANCE_KEY;
+import static io.camunda.webapps.schema.descriptors.template.ListViewTemplate.PROCESS_INSTANCE_JOIN_RELATION;
+import static io.camunda.webapps.schema.descriptors.template.ListViewTemplate.PROCESS_KEY;
+import static io.camunda.webapps.schema.descriptors.template.ListViewTemplate.START_DATE;
+import static io.camunda.webapps.schema.descriptors.template.ListViewTemplate.STATE;
 import static java.util.Optional.ofNullable;
 
 import io.camunda.search.clients.query.SearchQuery;

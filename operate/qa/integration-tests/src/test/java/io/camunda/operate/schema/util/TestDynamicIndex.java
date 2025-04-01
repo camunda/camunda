@@ -7,9 +7,11 @@
  */
 package io.camunda.operate.schema.util;
 
-import io.camunda.webapps.schema.descriptors.operate.OperateIndexDescriptor;
+import static io.camunda.webapps.schema.descriptors.ComponentNames.OPERATE;
 
-public class TestDynamicIndex extends OperateIndexDescriptor {
+import io.camunda.webapps.schema.descriptors.AbstractIndexDescriptor;
+
+public class TestDynamicIndex extends AbstractIndexDescriptor {
 
   public TestDynamicIndex(final String indexPrefix, final boolean isElasticsearch) {
     super(indexPrefix, isElasticsearch);
@@ -18,5 +20,10 @@ public class TestDynamicIndex extends OperateIndexDescriptor {
   @Override
   public String getIndexName() {
     return "testdynamicindex";
+  }
+
+  @Override
+  public String getComponentName() {
+    return OPERATE.toString();
   }
 }
