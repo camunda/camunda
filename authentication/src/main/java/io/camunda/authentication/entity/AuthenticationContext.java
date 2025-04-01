@@ -13,6 +13,7 @@ import java.io.Serializable;
 import java.util.List;
 
 public record AuthenticationContext(
+    String username,
     List<RoleEntity> roles,
     List<String> authorizedApplications,
     List<TenantDTO> tenants,
