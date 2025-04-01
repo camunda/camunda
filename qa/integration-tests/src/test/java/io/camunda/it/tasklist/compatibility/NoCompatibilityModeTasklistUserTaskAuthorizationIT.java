@@ -7,6 +7,7 @@
  */
 package io.camunda.it.tasklist.compatibility;
 
+import static io.camunda.client.api.search.response.UserTaskState.COMPLETED;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.client.CamundaClient;
@@ -178,6 +179,34 @@ public class NoCompatibilityModeTasklistUserTaskAuthorizationIT {
   }
 
   @Test
+  public void shouldBeAuthorizedToCompleteUserTask(
+      @Authenticated(ADMIN_USER_NAME) final CamundaClient adminClient,
+      @Authenticated(TEST_USER_NAME_WITH_PERMISSION) final CamundaClient withPermission) {
+    // given (admin) to create instance
+    // create a process instance - with pre-assigned user task
+    final var processInstanceKey = createProcessInstance(adminClient, PROCESS_WITH_USER_TASK);
+    final var userTaskKey = awaitUserTaskBeingAvailable(adminClient, processInstanceKey);
+    // given (non-admin) user without any authorizations
+    final var response =
+        tasklistRestClient
+            .withAuthentication(TEST_USER_NAME_WITH_PERMISSION, TEST_USER_PASSWORD)
+            .assignUserTask(userTaskKey, TEST_USER_NAME_WITH_PERMISSION);
+    assertThat(response.statusCode()).isEqualTo(200);
+    ensureUserTaskAssigneeChanged(processInstanceKey, TEST_USER_NAME_WITH_PERMISSION);
+
+    // when
+    final var completeResponse =
+        tasklistRestClient
+            .withAuthentication(TEST_USER_NAME_WITH_PERMISSION, TEST_USER_PASSWORD)
+            .completeUserTask(userTaskKey);
+
+    // then
+    assertThat(completeResponse).isNotNull();
+    assertThat(completeResponse.statusCode()).isEqualTo(200);
+    ensureUserTaskIsCompleted(adminClient, userTaskKey);
+  }
+
+  @Test
   public void shouldNotUnassignUserTaskWithUnauthorizedUser(
       @Authenticated(ADMIN_USER_NAME) final CamundaClient adminClient,
       @Authenticated(TEST_USER_NAME_NO_PERMISSION) final CamundaClient noPermission) {
@@ -197,6 +226,30 @@ public class NoCompatibilityModeTasklistUserTaskAuthorizationIT {
     // then
     assertThat(response).isNotNull();
     assertThat(response.statusCode()).isEqualTo(403);
+  }
+
+  @Test
+  public void shouldBeAuthorizedToAssignUserTask(
+      @Authenticated(ADMIN_USER_NAME) final CamundaClient adminClient,
+      @Authenticated(TEST_USER_NAME_WITH_PERMISSION) final CamundaClient withPermission) {
+    // given (admin) to create instance
+    final var processInstanceKeyWithJobBasedUserTask =
+        createProcessInstance(adminClient, PROCESS_WITH_USER_TASK);
+    final var userTaskKeyWithJobBasedUserTask =
+        awaitJobBasedUserTaskBeingAvailable(processInstanceKeyWithJobBasedUserTask);
+    // given (non-admin) user with permissions to assign task
+
+    // when
+    final var response =
+        tasklistRestClient
+            .withAuthentication(TEST_USER_NAME_WITH_PERMISSION, TEST_USER_PASSWORD)
+            .assignUserTask(userTaskKeyWithJobBasedUserTask, TEST_USER_NAME_WITH_PERMISSION);
+
+    // then
+    assertThat(response).isNotNull();
+    assertThat(response.statusCode()).isEqualTo(200);
+    ensureUserTaskAssigneeChanged(
+        processInstanceKeyWithJobBasedUserTask, TEST_USER_NAME_WITH_PERMISSION);
   }
 
   @Test
@@ -245,27 +298,33 @@ public class NoCompatibilityModeTasklistUserTaskAuthorizationIT {
   }
 
   @Test
-  public void shouldBeAuthorizedToAssignUserTask(
+  public void shouldBeAuthorizedToCompleteJobBasedUserTask(
       @Authenticated(ADMIN_USER_NAME) final CamundaClient adminClient,
       @Authenticated(TEST_USER_NAME_WITH_PERMISSION) final CamundaClient withPermission) {
     // given (admin) to create instance
     final var processInstanceKeyWithJobBasedUserTask =
-        createProcessInstance(adminClient, PROCESS_WITH_USER_TASK);
+        createProcessInstance(adminClient, PROCESS_ID_WITH_JOB_BASED_USERTASK);
     final var userTaskKeyWithJobBasedUserTask =
         awaitJobBasedUserTaskBeingAvailable(processInstanceKeyWithJobBasedUserTask);
     // given (non-admin) user with permissions to assign task
-
-    // when
     final var response =
         tasklistRestClient
             .withAuthentication(TEST_USER_NAME_WITH_PERMISSION, TEST_USER_PASSWORD)
             .assignUserTask(userTaskKeyWithJobBasedUserTask, TEST_USER_NAME_WITH_PERMISSION);
+    assertThat(response.statusCode()).isEqualTo(200);
+    ensureUserTaskAssigneeChanged(
+        processInstanceKeyWithJobBasedUserTask, TEST_USER_NAME_WITH_PERMISSION);
+
+    // when
+    final var completeResponse =
+        tasklistRestClient
+            .withAuthentication(TEST_USER_NAME_WITH_PERMISSION, TEST_USER_PASSWORD)
+            .completeUserTask(userTaskKeyWithJobBasedUserTask);
 
     // then
-    assertThat(response).isNotNull();
-    assertThat(response.statusCode()).isEqualTo(200);
-    ensureJobBasedUserTaskAssigneeChanged(
-        processInstanceKeyWithJobBasedUserTask, TEST_USER_NAME_WITH_PERMISSION);
+    assertThat(completeResponse).isNotNull();
+    assertThat(completeResponse.statusCode()).isEqualTo(200);
+    ensureJobBasedUserTaskIsCompleted(processInstanceKeyWithJobBasedUserTask);
   }
 
   @Test
@@ -310,7 +369,7 @@ public class NoCompatibilityModeTasklistUserTaskAuthorizationIT {
     // then
     assertThat(response).isNotNull();
     assertThat(response.statusCode()).isEqualTo(200);
-    ensureJobBasedUserTaskAssigneeChanged(
+    ensureUserTaskAssigneeChanged(
         processInstanceKeyWithJobBasedUserTask, TEST_USER_NAME_WITH_PERMISSION);
   }
 
@@ -371,7 +430,24 @@ public class NoCompatibilityModeTasklistUserTaskAuthorizationIT {
     return Long.parseLong(task[0].getId());
   }
 
-  public static void ensureJobBasedUserTaskAssigneeChanged(
+  public static void ensureUserTaskIsCompleted(
+      final CamundaClient camundaClient, final long userTaskKey) {
+    Awaitility.await("should create an user task")
+        .atMost(Duration.ofSeconds(60))
+        .ignoreExceptions() // Ignore exceptions and continue retrying
+        .untilAsserted(
+            () -> {
+              final var result =
+                  camundaClient
+                      .newUserTaskSearchRequest()
+                      .filter(f -> f.userTaskKey(userTaskKey).state(COMPLETED))
+                      .send()
+                      .join();
+              assertThat(result.items()).hasSize(1);
+            });
+  }
+
+  public static void ensureUserTaskAssigneeChanged(
       final long processInstanceKey, final String newAssignee) {
     Awaitility.await("should create a job-based user task")
         .atMost(Duration.ofSeconds(60))
@@ -391,5 +467,25 @@ public class NoCompatibilityModeTasklistUserTaskAuthorizationIT {
             },
             (result) ->
                 result.length == 1 && result[0].getAssignee().equalsIgnoreCase(newAssignee));
+  }
+
+  public static void ensureJobBasedUserTaskIsCompleted(final long processInstanceKey) {
+    Awaitility.await("should complete user task")
+        .atMost(Duration.ofSeconds(60))
+        .ignoreExceptions() // Ignore exceptions and continue retrying
+        .until(
+            () -> {
+              final HttpResponse<String> response =
+                  tasklistRestClient
+                      .withAuthentication(ADMIN_USER_NAME, ADMIN_USER_PASSWORD)
+                      .searchTasks(processInstanceKey);
+
+              assertThat(response).isNotNull();
+              assertThat(response.statusCode()).isEqualTo(200);
+
+              return TestRestTasklistClient.OBJECT_MAPPER.readValue(
+                  response.body(), TaskSearchResponse[].class);
+            },
+            (result) -> result.length == 1 && result[0].getCompletionDate() != null);
   }
 }
