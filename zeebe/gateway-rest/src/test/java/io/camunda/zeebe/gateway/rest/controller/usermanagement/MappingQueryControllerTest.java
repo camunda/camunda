@@ -112,12 +112,9 @@ public class MappingQueryControllerTest extends RestControllerTest {
                 .lastSortValues(new Object[] {"v"})
                 .items(
                     List.of(
-                        new MappingEntity(
-                            "id1", 100L, "Claim Name1", "Claim Value1", "Map Name1"),
-                        new MappingEntity(
-                            "id2", 200L, "Claim Name2", "Claim Value2", "Map Name2"),
-                        new MappingEntity(
-                            "id3", 300L, "Claim Name3", "Claim Value3", "Map Name3")))
+                        new MappingEntity("id1", 100L, "Claim Name1", "Claim Value1", "Map Name1"),
+                        new MappingEntity("id2", 200L, "Claim Name2", "Claim Value2", "Map Name2"),
+                        new MappingEntity("id3", 300L, "Claim Name3", "Claim Value3", "Map Name3")))
                 .build());
 
     // when / then
@@ -175,12 +172,9 @@ public class MappingQueryControllerTest extends RestControllerTest {
                 .total(3)
                 .items(
                     List.of(
-                        new MappingEntity(
-                            "id1", 100L, "Claim Name1", "Claim Value1", "Map Name1"),
-                        new MappingEntity(
-                            "id2", 200L, "Claim Name2", "Claim Value2", "Map Name2"),
-                        new MappingEntity(
-                            "id3", 300L, "Claim Name3", "Claim Value3", "Map Name3")))
+                        new MappingEntity("id1", 100L, "Claim Name1", "Claim Value1", "Map Name1"),
+                        new MappingEntity("id2", 200L, "Claim Name2", "Claim Value2", "Map Name2"),
+                        new MappingEntity("id3", 300L, "Claim Name3", "Claim Value3", "Map Name3")))
                 .build());
 
     // when / then
@@ -217,12 +211,9 @@ public class MappingQueryControllerTest extends RestControllerTest {
                 .total(3)
                 .items(
                     List.of(
-                        new MappingEntity(
-                            "id1", 100L, "Claim Name1", "Claim Value1", "Map Name3"),
-                        new MappingEntity(
-                            "id2", 200L, "Claim Name2", "Claim Value2", "Map Name1"),
-                        new MappingEntity(
-                            "id3", 300L, "Claim Name3", "Claim Value3", "Map Name2")))
+                        new MappingEntity("id1", 100L, "Claim Name1", "Claim Value1", "Map Name3"),
+                        new MappingEntity("id2", 200L, "Claim Name2", "Claim Value2", "Map Name1"),
+                        new MappingEntity("id3", 300L, "Claim Name3", "Claim Value3", "Map Name2")))
                 .build());
 
     // when / then
