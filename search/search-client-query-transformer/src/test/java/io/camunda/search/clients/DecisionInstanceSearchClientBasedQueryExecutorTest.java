@@ -24,6 +24,7 @@ import io.camunda.search.query.DecisionInstanceQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.auth.SecurityContext;
 import io.camunda.webapps.schema.descriptors.IndexDescriptors;
+import io.camunda.webapps.schema.entities.dmn.DecisionType;
 import java.time.OffsetDateTime;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
@@ -54,27 +55,24 @@ class DecisionInstanceSearchClientBasedQueryExecutorTest {
           null,
           null);
 
-  private final io.camunda.webapps.schema.entities.operate.dmn.DecisionInstanceEntity
-      documentEntity =
-          new io.camunda.webapps.schema.entities.operate.dmn.DecisionInstanceEntity()
-              .setKey(123L)
-              .setId("123-1")
-              .setState(
-                  io.camunda.webapps.schema.entities.operate.dmn.DecisionInstanceState.EVALUATED)
-              .setEvaluationDate(OffsetDateTime.parse("2024-06-05T08:29:15.027+00:00"))
-              .setEvaluationFailure("failure")
-              .setProcessDefinitionKey(2251799813688736L)
-              .setProcessInstanceKey(6755399441058457L)
-              .setTenantId("tenantId")
-              .setDecisionId("ddi")
-              .setDecisionDefinitionId("123456")
-              .setDecisionName("ddn")
-              .setDecisionVersion(0)
-              .setDecisionType(
-                  io.camunda.webapps.schema.entities.operate.dmn.DecisionType.DECISION_TABLE)
-              .setResult("result")
-              .setEvaluatedOutputs(null)
-              .setEvaluatedInputs(null);
+  private final io.camunda.webapps.schema.entities.dmn.DecisionInstanceEntity documentEntity =
+      new io.camunda.webapps.schema.entities.dmn.DecisionInstanceEntity()
+          .setKey(123L)
+          .setId("123-1")
+          .setState(io.camunda.webapps.schema.entities.dmn.DecisionInstanceState.EVALUATED)
+          .setEvaluationDate(OffsetDateTime.parse("2024-06-05T08:29:15.027+00:00"))
+          .setEvaluationFailure("failure")
+          .setProcessDefinitionKey(2251799813688736L)
+          .setProcessInstanceKey(6755399441058457L)
+          .setTenantId("tenantId")
+          .setDecisionId("ddi")
+          .setDecisionDefinitionId("123456")
+          .setDecisionName("ddn")
+          .setDecisionVersion(0)
+          .setDecisionType(DecisionType.DECISION_TABLE)
+          .setResult("result")
+          .setEvaluatedOutputs(null)
+          .setEvaluatedInputs(null);
 
   @Mock private DocumentBasedSearchClient searchClient;
   @Mock private AuthorizationQueryStrategy authorizationQueryStrategy;
@@ -103,7 +101,7 @@ class DecisionInstanceSearchClientBasedQueryExecutorTest {
 
     when(searchClient.search(
             any(SearchQueryRequest.class),
-            eq(io.camunda.webapps.schema.entities.operate.dmn.DecisionInstanceEntity.class)))
+            eq(io.camunda.webapps.schema.entities.dmn.DecisionInstanceEntity.class)))
         .thenReturn(decisionInstanceEntityResponse);
     when(authorizationQueryStrategy.applyAuthorizationToQuery(
             any(SearchQueryRequest.class), any(SecurityContext.class), any()))
@@ -112,8 +110,7 @@ class DecisionInstanceSearchClientBasedQueryExecutorTest {
     // When we search
     final SearchQueryResult<DecisionInstanceEntity> searchResult =
         queryExecutor.search(
-            searchAllQuery,
-            io.camunda.webapps.schema.entities.operate.dmn.DecisionInstanceEntity.class);
+            searchAllQuery, io.camunda.webapps.schema.entities.dmn.DecisionInstanceEntity.class);
 
     assertThat(searchResult.total()).isEqualTo(1);
     final List<DecisionInstanceEntity> items = searchResult.items();
@@ -131,7 +128,7 @@ class DecisionInstanceSearchClientBasedQueryExecutorTest {
 
     when(searchClient.findAll(
             any(SearchQueryRequest.class),
-            eq(io.camunda.webapps.schema.entities.operate.dmn.DecisionInstanceEntity.class)))
+            eq(io.camunda.webapps.schema.entities.dmn.DecisionInstanceEntity.class)))
         .thenReturn(decisionInstanceEntityResponse);
     when(authorizationQueryStrategy.applyAuthorizationToQuery(
             any(SearchQueryRequest.class), any(SecurityContext.class), any()))
@@ -140,20 +137,17 @@ class DecisionInstanceSearchClientBasedQueryExecutorTest {
     // When we search
     final List<DecisionInstanceEntity> searchResult =
         queryExecutor.findAll(
-            searchAllQuery,
-            io.camunda.webapps.schema.entities.operate.dmn.DecisionInstanceEntity.class);
+            searchAllQuery, io.camunda.webapps.schema.entities.dmn.DecisionInstanceEntity.class);
 
     assertThat(searchResult).hasSize(1);
     assertThat(searchResult.getFirst()).isEqualTo(domainEntity);
   }
 
-  private SearchQueryResponse<io.camunda.webapps.schema.entities.operate.dmn.DecisionInstanceEntity>
+  private SearchQueryResponse<io.camunda.webapps.schema.entities.dmn.DecisionInstanceEntity>
       createDecisionInstanceEntityResponse(
-          final io.camunda.webapps.schema.entities.operate.dmn.DecisionInstanceEntity
-              documentEntity) {
+          final io.camunda.webapps.schema.entities.dmn.DecisionInstanceEntity documentEntity) {
     final var hit =
-        new SearchQueryHit.Builder<
-                io.camunda.webapps.schema.entities.operate.dmn.DecisionInstanceEntity>()
+        new SearchQueryHit.Builder<io.camunda.webapps.schema.entities.dmn.DecisionInstanceEntity>()
             .id("1000")
             .source(documentEntity)
             .build();

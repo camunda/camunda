@@ -14,7 +14,7 @@ import io.camunda.tasklist.util.OpenSearchUtil;
 import io.camunda.tasklist.zeebeimport.ImportPositionHolder;
 import io.camunda.tasklist.zeebeimport.ImportPositionHolderAbstract;
 import io.camunda.webapps.schema.descriptors.tasklist.index.TasklistImportPositionIndex;
-import io.camunda.webapps.schema.entities.operate.ImportPositionEntity;
+import io.camunda.webapps.schema.entities.ImportPositionEntity;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;

@@ -16,7 +16,7 @@ import io.camunda.tasklist.zeebeimport.util.XMLUtil;
 import io.camunda.tasklist.zeebeimport.v870.record.value.deployment.DeployedProcessImpl;
 import io.camunda.webapps.schema.descriptors.operate.index.ProcessIndex;
 import io.camunda.webapps.schema.descriptors.tasklist.index.FormIndex;
-import io.camunda.webapps.schema.entities.operate.ProcessEntity;
+import io.camunda.webapps.schema.entities.ProcessEntity;
 import io.camunda.webapps.schema.entities.tasklist.FormEntity;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.ProcessIntent;

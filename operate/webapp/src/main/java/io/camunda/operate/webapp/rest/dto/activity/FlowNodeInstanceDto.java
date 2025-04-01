@@ -9,9 +9,9 @@ package io.camunda.operate.webapp.rest.dto.activity;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.operate.webapp.rest.dto.listview.SortValuesWrapper;
-import io.camunda.webapps.schema.entities.operate.FlowNodeInstanceEntity;
-import io.camunda.webapps.schema.entities.operate.FlowNodeState;
-import io.camunda.webapps.schema.entities.operate.FlowNodeType;
+import io.camunda.webapps.schema.entities.flownode.FlowNodeInstanceEntity;
+import io.camunda.webapps.schema.entities.flownode.FlowNodeState;
+import io.camunda.webapps.schema.entities.flownode.FlowNodeType;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -64,7 +64,8 @@ public class FlowNodeInstanceDto {
   }
 
   public static List<FlowNodeInstanceDto> createFrom(
-      List<FlowNodeInstanceEntity> flowNodeInstanceEntities, ObjectMapper objectMapper) {
+      final List<FlowNodeInstanceEntity> flowNodeInstanceEntities,
+      final ObjectMapper objectMapper) {
     if (flowNodeInstanceEntities == null) {
       return new ArrayList<>();
     }
@@ -78,7 +79,7 @@ public class FlowNodeInstanceDto {
     return id;
   }
 
-  public FlowNodeInstanceDto setId(String id) {
+  public FlowNodeInstanceDto setId(final String id) {
     this.id = id;
     return this;
   }
@@ -87,7 +88,7 @@ public class FlowNodeInstanceDto {
     return state;
   }
 
-  public FlowNodeInstanceDto setState(FlowNodeStateDto state) {
+  public FlowNodeInstanceDto setState(final FlowNodeStateDto state) {
     this.state = state;
     return this;
   }
@@ -96,7 +97,7 @@ public class FlowNodeInstanceDto {
     return flowNodeId;
   }
 
-  public FlowNodeInstanceDto setFlowNodeId(String flowNodeId) {
+  public FlowNodeInstanceDto setFlowNodeId(final String flowNodeId) {
     this.flowNodeId = flowNodeId;
     return this;
   }
@@ -105,7 +106,7 @@ public class FlowNodeInstanceDto {
     return startDate;
   }
 
-  public FlowNodeInstanceDto setStartDate(OffsetDateTime startDate) {
+  public FlowNodeInstanceDto setStartDate(final OffsetDateTime startDate) {
     this.startDate = startDate;
     return this;
   }
@@ -114,7 +115,7 @@ public class FlowNodeInstanceDto {
     return endDate;
   }
 
-  public FlowNodeInstanceDto setEndDate(OffsetDateTime endDate) {
+  public FlowNodeInstanceDto setEndDate(final OffsetDateTime endDate) {
     this.endDate = endDate;
     return this;
   }
@@ -123,7 +124,7 @@ public class FlowNodeInstanceDto {
     return type;
   }
 
-  public FlowNodeInstanceDto setType(FlowNodeType type) {
+  public FlowNodeInstanceDto setType(final FlowNodeType type) {
     this.type = type;
     return this;
   }

@@ -57,6 +57,8 @@ import io.camunda.search.query.UserTaskQuery;
 import io.camunda.search.query.VariableQuery;
 import io.camunda.security.auth.SecurityContext;
 import io.camunda.webapps.schema.descriptors.IndexDescriptors;
+import io.camunda.webapps.schema.entities.ProcessEntity;
+import io.camunda.webapps.schema.entities.listview.ProcessInstanceForListViewEntity;
 import io.camunda.zeebe.util.CloseableSilently;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -122,16 +124,14 @@ public class DocumentBasedSearchClients implements SearchClientsProxy, Closeable
     return getSearchExecutor()
         .search(
             filter,
-            io.camunda.webapps.schema.entities.operate.dmn.definition.DecisionDefinitionEntity
-                .class);
+            io.camunda.webapps.schema.entities.dmn.definition.DecisionDefinitionEntity.class);
   }
 
   @Override
   public SearchQueryResult<DecisionInstanceEntity> searchDecisionInstances(
       final DecisionInstanceQuery filter) {
     return getSearchExecutor()
-        .search(
-            filter, io.camunda.webapps.schema.entities.operate.dmn.DecisionInstanceEntity.class);
+        .search(filter, io.camunda.webapps.schema.entities.dmn.DecisionInstanceEntity.class);
   }
 
   @Override
@@ -140,15 +140,14 @@ public class DocumentBasedSearchClients implements SearchClientsProxy, Closeable
     return getSearchExecutor()
         .search(
             filter,
-            io.camunda.webapps.schema.entities.operate.dmn.definition.DecisionRequirementsEntity
-                .class);
+            io.camunda.webapps.schema.entities.dmn.definition.DecisionRequirementsEntity.class);
   }
 
   @Override
   public SearchQueryResult<FlowNodeInstanceEntity> searchFlowNodeInstances(
       final FlowNodeInstanceQuery filter) {
     return getSearchExecutor()
-        .search(filter, io.camunda.webapps.schema.entities.operate.FlowNodeInstanceEntity.class);
+        .search(filter, io.camunda.webapps.schema.entities.flownode.FlowNodeInstanceEntity.class);
   }
 
   @Override
@@ -160,14 +159,13 @@ public class DocumentBasedSearchClients implements SearchClientsProxy, Closeable
   @Override
   public SearchQueryResult<IncidentEntity> searchIncidents(final IncidentQuery filter) {
     return getSearchExecutor()
-        .search(filter, io.camunda.webapps.schema.entities.operate.IncidentEntity.class);
+        .search(filter, io.camunda.webapps.schema.entities.incident.IncidentEntity.class);
   }
 
   @Override
   public SearchQueryResult<ProcessDefinitionEntity> searchProcessDefinitions(
       final ProcessDefinitionQuery filter) {
-    return getSearchExecutor()
-        .search(filter, io.camunda.webapps.schema.entities.operate.ProcessEntity.class);
+    return getSearchExecutor().search(filter, ProcessEntity.class);
   }
 
   @Override
@@ -183,11 +181,7 @@ public class DocumentBasedSearchClients implements SearchClientsProxy, Closeable
   @Override
   public SearchQueryResult<ProcessInstanceEntity> searchProcessInstances(
       final ProcessInstanceQuery filter) {
-    return getSearchExecutor()
-        .search(
-            filter,
-            io.camunda.webapps.schema.entities.operate.listview.ProcessInstanceForListViewEntity
-                .class);
+    return getSearchExecutor().search(filter, ProcessInstanceForListViewEntity.class);
   }
 
   @Override
@@ -245,7 +239,7 @@ public class DocumentBasedSearchClients implements SearchClientsProxy, Closeable
   @Override
   public SearchQueryResult<VariableEntity> searchVariables(final VariableQuery filter) {
     return getSearchExecutor()
-        .search(filter, io.camunda.webapps.schema.entities.operate.VariableEntity.class);
+        .search(filter, io.camunda.webapps.schema.entities.VariableEntity.class);
   }
 
   private SearchClientBasedQueryExecutor getSearchExecutor() {
@@ -292,7 +286,7 @@ public class DocumentBasedSearchClients implements SearchClientsProxy, Closeable
                 transformers,
                 new DocumentAuthorizationQueryStrategy(this),
                 securityContext)
-            .findAll(filter, io.camunda.webapps.schema.entities.operate.UsageMetricsEntity.class);
+            .findAll(filter, io.camunda.webapps.schema.entities.UsageMetricsEntity.class);
     return metrics.stream().map(UsageMetricsEntity::value).distinct().count();
   }
 

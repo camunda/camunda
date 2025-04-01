@@ -47,10 +47,10 @@ import io.camunda.operate.webapp.security.oauth2.IdentityJwt2AuthenticationToken
 import io.camunda.operate.webapp.zeebe.operation.OperationExecutor;
 import io.camunda.operate.zeebeimport.ZeebeImporter;
 import io.camunda.webapps.schema.descriptors.operate.template.FlowNodeInstanceTemplate;
-import io.camunda.webapps.schema.entities.operate.EventType;
-import io.camunda.webapps.schema.entities.operate.FlowNodeInstanceEntity;
-import io.camunda.webapps.schema.entities.operate.FlowNodeState;
-import io.camunda.webapps.schema.entities.operate.FlowNodeType;
+import io.camunda.webapps.schema.entities.event.EventType;
+import io.camunda.webapps.schema.entities.flownode.FlowNodeInstanceEntity;
+import io.camunda.webapps.schema.entities.flownode.FlowNodeState;
+import io.camunda.webapps.schema.entities.flownode.FlowNodeType;
 import io.camunda.webapps.schema.entities.operation.OperationType;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;

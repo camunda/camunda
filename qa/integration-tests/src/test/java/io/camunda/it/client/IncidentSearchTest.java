@@ -25,7 +25,7 @@ import io.camunda.client.api.search.enums.IncidentErrorType;
 import io.camunda.client.api.search.enums.IncidentState;
 import io.camunda.client.api.search.response.Incident;
 import io.camunda.qa.util.multidb.MultiDbTest;
-import io.camunda.webapps.schema.entities.operate.ErrorType;
+import io.camunda.webapps.schema.entities.incident.ErrorType;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;

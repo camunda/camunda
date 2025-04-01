@@ -16,9 +16,9 @@ import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.*;
 import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.ELEMENT_TERMINATED;
 
 import io.camunda.exporter.store.BatchRequest;
-import io.camunda.webapps.schema.entities.operate.FlowNodeState;
-import io.camunda.webapps.schema.entities.operate.FlowNodeType;
-import io.camunda.webapps.schema.entities.operate.listview.FlowNodeInstanceForListViewEntity;
+import io.camunda.webapps.schema.entities.flownode.FlowNodeState;
+import io.camunda.webapps.schema.entities.flownode.FlowNodeType;
+import io.camunda.webapps.schema.entities.listview.FlowNodeInstanceForListViewEntity;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.Intent;

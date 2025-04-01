@@ -13,7 +13,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.*;
 
 import io.camunda.exporter.store.BatchRequest;
-import io.camunda.webapps.schema.entities.operate.listview.FlowNodeInstanceForListViewEntity;
+import io.camunda.webapps.schema.entities.listview.FlowNodeInstanceForListViewEntity;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;

@@ -35,7 +35,7 @@ import io.camunda.tasklist.util.OpenSearchUtil;
 import io.camunda.tasklist.util.SpringContextHolder;
 import io.camunda.tasklist.webapp.permission.TasklistPermissionServices;
 import io.camunda.webapps.schema.descriptors.operate.index.ProcessIndex;
-import io.camunda.webapps.schema.entities.operate.ProcessEntity;
+import io.camunda.webapps.schema.entities.ProcessEntity;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.List;

@@ -15,7 +15,7 @@ import io.camunda.operate.webapp.rest.dto.dmn.DecisionGroupDto;
 import io.camunda.operate.webapp.rest.exception.NotAuthorizedException;
 import io.camunda.operate.webapp.security.permission.PermissionsService;
 import io.camunda.operate.webapp.writer.BatchOperationWriter;
-import io.camunda.webapps.schema.entities.operate.dmn.definition.DecisionDefinitionEntity;
+import io.camunda.webapps.schema.entities.dmn.definition.DecisionDefinitionEntity;
 import io.camunda.webapps.schema.entities.operation.BatchOperationEntity;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.swagger.v3.oas.annotations.Operation;

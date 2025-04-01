@@ -10,8 +10,8 @@ package io.camunda.operate.webapp.zeebe.operation;
 import static io.camunda.webapps.schema.entities.operation.OperationType.CANCEL_PROCESS_INSTANCE;
 
 import io.camunda.operate.webapp.elasticsearch.reader.ProcessInstanceReader;
-import io.camunda.webapps.schema.entities.operate.listview.ProcessInstanceForListViewEntity;
-import io.camunda.webapps.schema.entities.operate.listview.ProcessInstanceState;
+import io.camunda.webapps.schema.entities.listview.ProcessInstanceForListViewEntity;
+import io.camunda.webapps.schema.entities.listview.ProcessInstanceState;
 import io.camunda.webapps.schema.entities.operation.OperationEntity;
 import io.camunda.webapps.schema.entities.operation.OperationType;
 import java.util.Set;

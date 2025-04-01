@@ -7,8 +7,8 @@
  */
 package io.camunda.operate.util.searchrepository;
 
-import io.camunda.webapps.schema.entities.operate.VariableEntity;
-import io.camunda.webapps.schema.entities.operate.listview.ProcessInstanceForListViewEntity;
+import io.camunda.webapps.schema.entities.VariableEntity;
+import io.camunda.webapps.schema.entities.listview.ProcessInstanceForListViewEntity;
 import io.camunda.webapps.schema.entities.operation.BatchOperationEntity;
 import java.io.IOException;
 import java.util.List;

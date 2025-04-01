@@ -17,7 +17,7 @@ import io.camunda.operate.store.SequenceFlowStore;
 import io.camunda.operate.tenant.TenantAwareElasticsearchClient;
 import io.camunda.operate.util.ElasticsearchUtil;
 import io.camunda.webapps.schema.descriptors.operate.template.SequenceFlowTemplate;
-import io.camunda.webapps.schema.entities.operate.SequenceFlowEntity;
+import io.camunda.webapps.schema.entities.SequenceFlowEntity;
 import java.io.IOException;
 import java.util.List;
 import org.elasticsearch.action.search.SearchRequest;

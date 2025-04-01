@@ -16,7 +16,7 @@ import io.camunda.tasklist.util.ElasticsearchUtil;
 import io.camunda.tasklist.zeebeimport.ImportPositionHolder;
 import io.camunda.tasklist.zeebeimport.ImportPositionHolderAbstract;
 import io.camunda.webapps.schema.descriptors.tasklist.index.TasklistImportPositionIndex;
-import io.camunda.webapps.schema.entities.operate.ImportPositionEntity;
+import io.camunda.webapps.schema.entities.ImportPositionEntity;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Iterator;

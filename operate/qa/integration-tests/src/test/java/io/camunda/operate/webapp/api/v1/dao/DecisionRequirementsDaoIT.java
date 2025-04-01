@@ -22,7 +22,7 @@ import io.camunda.operate.webapp.api.v1.entities.Results;
 import io.camunda.operate.webapp.api.v1.exceptions.ResourceNotFoundException;
 import io.camunda.operate.zeebeimport.util.XMLUtil;
 import io.camunda.webapps.schema.descriptors.operate.index.DecisionRequirementsIndex;
-import io.camunda.webapps.schema.entities.operate.dmn.definition.DecisionRequirementsEntity;
+import io.camunda.webapps.schema.entities.dmn.definition.DecisionRequirementsEntity;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;

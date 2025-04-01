@@ -9,8 +9,8 @@ package io.camunda.migration.process.adapter;
 
 import io.camunda.migration.api.MigrationException;
 import io.camunda.webapps.schema.descriptors.operate.index.ProcessIndex;
-import io.camunda.webapps.schema.entities.operate.ImportPositionEntity;
-import io.camunda.webapps.schema.entities.operate.ProcessEntity;
+import io.camunda.webapps.schema.entities.ImportPositionEntity;
+import io.camunda.webapps.schema.entities.ProcessEntity;
 import io.camunda.zeebe.util.VersionUtil;
 import java.io.IOException;
 import java.time.OffsetDateTime;

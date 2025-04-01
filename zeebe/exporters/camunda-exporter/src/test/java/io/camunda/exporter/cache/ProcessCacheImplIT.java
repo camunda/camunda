@@ -18,7 +18,7 @@ import io.camunda.exporter.cache.process.CachedProcessEntity;
 import io.camunda.exporter.cache.process.ElasticSearchProcessCacheLoader;
 import io.camunda.exporter.cache.process.OpenSearchProcessCacheLoader;
 import io.camunda.exporter.utils.SearchDBExtension;
-import io.camunda.webapps.schema.entities.operate.ProcessEntity;
+import io.camunda.webapps.schema.entities.ProcessEntity;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.builder.StartEventBuilder;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;

@@ -15,7 +15,7 @@ import io.camunda.operate.exceptions.PersistenceException;
 import io.camunda.operate.store.BatchRequest;
 import io.camunda.operate.util.DateUtil;
 import io.camunda.webapps.schema.descriptors.operate.template.JobTemplate;
-import io.camunda.webapps.schema.entities.operate.JobEntity;
+import io.camunda.webapps.schema.entities.JobEntity;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
