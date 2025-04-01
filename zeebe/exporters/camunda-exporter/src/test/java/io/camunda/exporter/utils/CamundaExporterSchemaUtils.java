@@ -9,8 +9,8 @@ package io.camunda.exporter.utils;
 
 import io.camunda.exporter.adapters.ClientAdapter;
 import io.camunda.exporter.config.ExporterConfiguration;
-import io.camunda.exporter.schema.SchemaManager;
-import io.camunda.exporter.schema.config.SearchEngineConfiguration;
+import io.camunda.search.schema.SchemaManager;
+import io.camunda.search.schema.config.SearchEngineConfiguration;
 import io.camunda.webapps.schema.descriptors.IndexDescriptors;
 import java.io.IOException;
 

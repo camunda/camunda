@@ -17,7 +17,7 @@ import io.camunda.exporter.cache.TestFormCache;
 import io.camunda.exporter.cache.form.CachedFormEntity;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.exporter.utils.ExporterUtil;
-import io.camunda.exporter.utils.TestObjectMapper;
+import io.camunda.search.test.utils.TestObjectMapper;
 import io.camunda.webapps.schema.descriptors.template.TaskTemplate;
 import io.camunda.webapps.schema.entities.usertask.TaskEntity;
 import io.camunda.webapps.schema.entities.usertask.TaskEntity.TaskImplementation;

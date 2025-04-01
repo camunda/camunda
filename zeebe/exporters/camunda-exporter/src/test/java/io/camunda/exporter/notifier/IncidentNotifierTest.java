@@ -40,7 +40,7 @@ import com.jayway.jsonpath.JsonPath;
 import io.camunda.exporter.cache.ExporterEntityCache;
 import io.camunda.exporter.cache.process.CachedProcessEntity;
 import io.camunda.exporter.config.ExporterConfiguration.IncidentNotifierConfiguration;
-import io.camunda.exporter.utils.TestObjectMapper;
+import io.camunda.search.test.utils.TestObjectMapper;
 import io.camunda.webapps.schema.entities.incident.ErrorType;
 import io.camunda.webapps.schema.entities.incident.IncidentEntity;
 import io.camunda.webapps.schema.entities.incident.IncidentState;

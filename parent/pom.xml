@@ -890,6 +890,18 @@
         <version>${project.version}</version>
       </dependency>
 
+      <dependency>
+        <groupId>io.camunda</groupId>
+        <artifactId>camunda-schema-manager</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>io.camunda</groupId>
+        <artifactId>camunda-search-test-utils</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+
       <!-- camunda java client -->
 
       <dependency>
@@ -1532,7 +1544,6 @@
         <groupId>org.opensearch</groupId>
         <artifactId>opensearch-testcontainers</artifactId>
         <version>${version.opensearch.testcontainers}</version>
-        <scope>test</scope>
       </dependency>
 
       <dependency>
