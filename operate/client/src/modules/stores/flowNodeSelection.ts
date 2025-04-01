@@ -6,14 +6,6 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-/*
- * DEPRECATED: The `flowNodeSelectionStore` is being deprecated and replaced with
- * utility functions and hooks in `flowNodeSelection.ts` as part of the Operate v2 migration.
- *
- * Please avoid adding new functionality to this store and migrate existing logic
- * to the new utils and hooks where possible.
- */
-
 import {IReactionDisposer, makeAutoObservable, when, reaction} from 'mobx';
 import {FlowNodeInstance} from './flowNodeInstance';
 import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
@@ -154,6 +146,13 @@ class FlowNodeSelection {
     );
   }
 
+  /*
+   * DEPRECATED: The `flowNodeSelectionStore.selectedRunningInstanceCount` is being deprecated and replaced with
+   * utility functions and hooks in `flowNodeSelection.ts` as part of the Operate v2 migration.
+   *
+   * Please avoid using / adding new functionality to this, and migrate existing logic
+   * to the new utils and hooks where possible.
+   */
   get selectedRunningInstanceCount() {
     const currentSelection = this.state.selection;
     if (currentSelection === null) {
