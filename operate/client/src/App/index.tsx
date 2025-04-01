@@ -28,6 +28,7 @@ import {createBrowserHistory} from 'history';
 import {ThemeSwitcher} from 'modules/components/ThemeSwitcher';
 import {ForbiddenPage} from 'modules/components/ForbiddenPage';
 import {ReactQueryProvider} from 'modules/react-query/ReactQueryProvider';
+import {IS_FLOWNODE_INSTANCE_STATISTICS_V2_ENABLED} from 'modules/feature-flags';
 
 const CarbonLogin = loadable(() => import('./Login/index'), {
   resolveComponent: (components) => components.Login,
@@ -51,6 +52,13 @@ const CarbonProcesses = loadable(() => import('./Processes/index'), {
 
 const CarbonProcessInstance = loadable(
   () => import('./ProcessInstance/index'),
+  {
+    resolveComponent: (components) => components.ProcessInstance,
+  },
+);
+
+const CarbonProcessInstanceV2 = loadable(
+  () => import('./ProcessInstance/v2/index'),
   {
     resolveComponent: (components) => components.ProcessInstance,
   },
@@ -101,7 +109,13 @@ const App: React.FC = () => {
               <Route path={Paths.processes()} element={<CarbonProcesses />} />
               <Route
                 path={Paths.processInstance()}
-                element={<CarbonProcessInstance />}
+                element={
+                  IS_FLOWNODE_INSTANCE_STATISTICS_V2_ENABLED ? (
+                    <CarbonProcessInstanceV2 />
+                  ) : (
+                    <CarbonProcessInstance />
+                  )
+                }
               />
               <Route path={Paths.decisions()} element={<CarbonDecisions />} />
               <Route
