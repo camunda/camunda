@@ -1,37 +1,25 @@
-name: Camunda Platform Release Workflow
+name: Git tag push issue workflow
 on:
   workflow_call:
-    inputs:
-      releaseBranch:
-        description: 'The branch to perform the release on, defaults to `release-$releaseVersion`'
-        type: string
-        required: false
-        default: ''
-
 defaults:
   run:
     shell: bash
-
 env:
 #  GIT_TRACE: 1
-  RELEASE_BRANCH: ${{ inputs.releaseBranch != '' && inputs.releaseBranch || format('release-{0}', inputs.releaseVersion) }}
-  RELEASE_VERSION: ${{ inputs.releaseVersion }}
+  RELEASE_BRANCH: 28522-8.6.11-3
   GH_TOKEN: ${{ github.token }} # needs to be available for the gh CLI tool
-  GITHUB_TOKEN_USR: ${{ github.token }} # needs to be available for the SCM URL in pom.xml
 jobs:
   release:
     name: Maven Release
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
-      workflows: write
+    permissions: write-all
     steps:
 #      - uses: actions/checkout@v4
 #        with:
 #          ref: ${{ env.RELEASE_BRANCH }}
 #          fetch-depth: 0
 #          fetch-tags: true
-      - name: Push Git changes
+      - name: Push Git tag
         run: |
           set -x
           git config --global user.name "github-actions[bot]"
@@ -41,16 +29,9 @@ jobs:
           cd ~
           git clone --branch ${{ env.RELEASE_BRANCH }} --single-branch https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/camunda/camunda.git
           cd camunda
-          echo git fsck --strict
-          echo git gc
           git tag -d 8.6.11-test-SNAPSHOT-1 || true
           git push -d origin refs/tags/8.6.11-test-SNAPSHOT-1 || true
           git ls-remote --tags origin 8.6.11-test-SNAPSHOT-1
           git tag 8.6.11-test-SNAPSHOT-1
           git push -v --progress origin tag 8.6.11-test-SNAPSHOT-1
-          echo tag_object_response=$(curl -L -v -H "Accept: application/vnd.github+json" -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" -H "X-GitHub-Api-Version: 2022-11-28" https://api.github.com/repos/camunda/camunda/git/tags -d '{"tag":"8.6.11-test-SNAPSHOT-1","message":"test pushing git tag","object":"c832e0a355e2870f803859538ff4cff29fc69c84","type":"commit","tagger":{"name":"github-actions[bot]","email":"github-actions[bot]@users.noreply.github.com","date":"2025-03-31T00:00:00-00:00"}}')
-          echo TAG_OBJECT_SHA=$(echo "$tag_object_response" | grep '"sha":' | head -n 1| awk -F '"' '{print $4}')
-          echo "TAG_OBJECT_SHA: $TAG_OBJECT_SHA"
-          echo curl -L -v -H "Accept: application/vnd.github+json" -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" -H "X-GitHub-Api-Version: 2022-11-28" https://api.github.com/repos/camunda/camunda/git/refs -d '{"ref":"refs/tags/8.6.11-test-SNAPSHOT-1","sha":"'$TAG_OBJECT_SHA'"}'
           git ls-remote --tags origin 8.6.11-test-SNAPSHOT-1
-          echo "Attempt 1"

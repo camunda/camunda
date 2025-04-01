@@ -10,5 +10,5 @@ jobs:
     name: "Release 8.6.11-test"
     uses: ./.github/workflows/camunda-platform-release.yml
     secrets: inherit
-    with:
-      releaseBranch: 28522-8.6.11-3
+#    with:
+#      releaseBranch: 28522-8.6.11-3
