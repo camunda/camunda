@@ -14,7 +14,6 @@ import io.camunda.zeebe.engine.state.mutable.MutableRoleState;
 import io.camunda.zeebe.engine.util.ProcessingStateExtension;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.RoleRecord;
 import io.camunda.zeebe.protocol.record.value.EntityType;
-import io.camunda.zeebe.test.util.Strings;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -34,7 +33,7 @@ public class RoleStateTest {
   void shouldCreateRole() {
     // given
     final var roleKey = 1L;
-    final var roleId = Strings.newRandomValidIdentityId();
+    final var roleId = "1";
     final var roleName = "foo";
     final var roleDescription = "bar";
     final var roleRecord =
