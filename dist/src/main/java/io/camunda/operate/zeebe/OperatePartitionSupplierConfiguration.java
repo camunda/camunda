@@ -8,22 +8,33 @@
 package io.camunda.operate.zeebe;
 
 import io.camunda.client.CamundaClient;
+import io.camunda.operate.util.ConditionalOnOperateCompatibility;
 import io.camunda.webapps.zeebe.PartitionSupplier;
 import io.camunda.webapps.zeebe.PartitionSupplierConfigurer;
 import io.camunda.zeebe.broker.Broker;
+import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.gateway.Gateway;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 @Configuration(proxyBeanMethods = false)
 public class OperatePartitionSupplierConfiguration {
-  @Bean
-  public PartitionSupplier operatePartitionSupplier(
+
+  @Bean("operatePartitionSupplier")
+  @ConditionalOnOperateCompatibility(enabled = "true")
+  public PartitionSupplier operatePartitionSupplierCompatibility(
       @Autowired(required = false) final Broker broker,
       @Autowired(required = false) final Gateway gateway,
-      @Autowired final CamundaClient camundaClient) {
+      @Autowired @Qualifier("operateCamundaClient") final CamundaClient camundaClient) {
     return new PartitionSupplierConfigurer(broker, gateway, camundaClient)
         .createPartitionSupplier();
+  }
+
+  @Bean("operatePartitionSupplier")
+  @ConditionalOnOperateCompatibility(enabled = "false", matchIfMissing = true)
+  public PartitionSupplier operatePartitionSupplier(final BrokerClient brokerClient) {
+    return new PartitionSupplierConfigurer(brokerClient).createPartitionSupplier();
   }
 }
