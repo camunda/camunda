@@ -16,7 +16,7 @@ jobs:
     with:
       identifier: optimize-test
       deployment-ttl: 2d
-      camunda-helm-dir: camunda-platform-8.8
+      camunda-helm-dir: camunda-platform-8.7
       test-enabled: true
       caller-git-ref: main
       extra-values: |
