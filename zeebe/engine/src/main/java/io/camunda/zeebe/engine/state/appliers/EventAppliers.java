@@ -444,6 +444,7 @@ public final class EventAppliers implements EventApplier {
     register(UserTaskIntent.CREATING, new UserTaskCreatingApplier(state));
     register(UserTaskIntent.CREATING, 2, new UserTaskCreatingV2Applier(state));
     register(UserTaskIntent.CREATED, new UserTaskCreatedApplier(state));
+    register(UserTaskIntent.CREATED, 2, new UserTaskCreatedV2Applier(state));
     register(UserTaskIntent.CANCELING, 1, new UserTaskCancelingV1Applier(state));
     register(UserTaskIntent.CANCELING, 2, new UserTaskCancelingV2Applier(state));
     register(UserTaskIntent.CANCELED, new UserTaskCanceledApplier(state));
