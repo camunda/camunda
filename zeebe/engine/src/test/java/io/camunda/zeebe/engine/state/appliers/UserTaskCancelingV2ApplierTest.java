@@ -205,4 +205,35 @@ public class UserTaskCancelingV2ApplierTest {
         .describedAs("Expected record request metadata to be removed on canceling")
         .isEmpty();
   }
+
+  @Test
+  public void shouldClearIntermediateAssigneeOnUserTaskCancelingTransition() {
+    // given
+    final long userTaskKey = new Random().nextLong();
+    final long elementInstanceKey = new Random().nextLong();
+    final String initialAssignee = "initial_assignee";
+
+    final var userTaskRecord =
+        new UserTaskRecord()
+            .setUserTaskKey(userTaskKey)
+            .setAssignee(initialAssignee)
+            .setElementInstanceKey(elementInstanceKey);
+
+    // simulate user task creation
+    testSetup.applyEventToState(userTaskKey, UserTaskIntent.CREATING, userTaskRecord);
+    testSetup.applyEventToState(
+        userTaskKey, UserTaskIntent.CREATED, userTaskRecord.unsetAssignee());
+
+    assertThat(userTaskState.getIntermediateAssignee(userTaskKey))
+        .describedAs("Expect intermediate assignee to be present")
+        .isEqualTo(initialAssignee);
+
+    // when
+    userTaskCancelingApplier.applyState(userTaskKey, userTaskRecord);
+
+    // then
+    assertThat(userTaskState.getIntermediateAssignee(userTaskKey))
+        .describedAs("Expect intermediate assignee to be cleaned up")
+        .isNull();
+  }
 }
