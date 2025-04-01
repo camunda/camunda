@@ -18,6 +18,7 @@ import io.camunda.qa.util.auth.Permissions;
 import io.camunda.qa.util.auth.User;
 import io.camunda.qa.util.auth.UserDefinition;
 import io.camunda.qa.util.cluster.TestRestTasklistClient;
+import io.camunda.qa.util.cluster.TestRestTasklistClient.ProcessDefinitionResponse;
 import io.camunda.qa.util.cluster.TestSimpleCamundaApplication;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.qa.util.multidb.MultiDbTestApplication;
@@ -106,18 +107,115 @@ public class NoCompatibilityModeTasklistUserTaskAuthorizationIT {
               new Permissions(
                   ResourceTypeEnum.PROCESS_DEFINITION,
                   PermissionTypeEnum.UPDATE_USER_TASK,
+                  List.of(PROCESS_WITH_USER_TASK)),
+              new Permissions(
+                  ResourceTypeEnum.PROCESS_DEFINITION,
+                  PermissionTypeEnum.READ_PROCESS_DEFINITION,
+                  List.of(PROCESS_WITH_USER_TASK)),
+              new Permissions(
+                  ResourceTypeEnum.PROCESS_DEFINITION,
+                  PermissionTypeEnum.CREATE_PROCESS_INSTANCE,
                   List.of(PROCESS_WITH_USER_TASK))));
+
+  private static long processWithUserTaskDefinitionKey;
 
   @BeforeAll
   public static void beforeAll(@Authenticated(ADMIN_USER_NAME) final CamundaClient adminClient) {
     tasklistRestClient = STANDALONE_CAMUNDA.newTasklistClient();
 
     // deploy a process as admin user
-    deployResource(adminClient, "process/process_public_start.bpmn");
+    processWithUserTaskDefinitionKey =
+        deployResource(adminClient, "process/process_public_start.bpmn");
     deployResource(adminClient, "process/process_with_assigned_user_task.bpmn");
     // deploy process with a job based user task process
     deployResource(adminClient, "process/process_job_based_user_task.bpmn");
     deployResource(adminClient, "process/process_with_assigned_job_based_user_task.bpmn");
+  }
+
+  @Test
+  public void shouldNotReturnProcessDefinitionWithUnauthorizedUser(
+      @Authenticated(TEST_USER_NAME_NO_PERMISSION) final CamundaClient noPermission) {
+    // given (non-admin) user without any authorizations
+
+    // when
+    final var response =
+        tasklistRestClient
+            .withAuthentication(TEST_USER_NAME_NO_PERMISSION, TEST_USER_PASSWORD)
+            .getProcessDefinition(processWithUserTaskDefinitionKey);
+
+    // then
+    assertThat(response).isNotNull();
+    assertThat(response.statusCode()).isEqualTo(403);
+  }
+
+  @Test
+  public void shouldBeAuthorizedToRetrieveProcessDefinition(
+      @Authenticated(TEST_USER_NAME_WITH_PERMISSION) final CamundaClient withPermission) {
+    // given (non-admin) user without any authorizations
+
+    // when
+    final var response =
+        tasklistRestClient
+            .withAuthentication(TEST_USER_NAME_WITH_PERMISSION, TEST_USER_PASSWORD)
+            .getProcessDefinition(processWithUserTaskDefinitionKey);
+
+    // then
+    assertThat(response).isNotNull();
+    assertThat(response.statusCode()).isEqualTo(200);
+  }
+
+  @Test
+  public void shouldReturnNoDefinitionsWithUnauthorizedUser(
+      @Authenticated(TEST_USER_NAME_NO_PERMISSION) final CamundaClient noPermission) {
+    // given (non-admin) user without any authorizations
+
+    // when
+    final var response =
+        tasklistRestClient
+            .withAuthentication(TEST_USER_NAME_NO_PERMISSION, TEST_USER_PASSWORD)
+            .searchProcessDefinitions();
+
+    // then
+    assertThat(response).isNotNull();
+    assertThat(response).isEmpty();
+  }
+
+  @Test
+  public void shouldBeAuthorizedToRetrieveDefinitionOne(
+      @Authenticated(TEST_USER_NAME_WITH_PERMISSION) final CamundaClient withPermission) {
+    // given (non-admin) user without any authorizations
+
+    // when
+    final var response =
+        tasklistRestClient
+            .withAuthentication(TEST_USER_NAME_WITH_PERMISSION, TEST_USER_PASSWORD)
+            .searchProcessDefinitions();
+
+    // then
+    assertThat(response).isNotNull();
+    assertThat(response.stream().map(ProcessDefinitionResponse::bpmnProcessId))
+        .containsExactly(PROCESS_WITH_USER_TASK);
+  }
+
+  @Test
+  public void shouldBeAuthorizedToRetrieveDefinitions(
+      @Authenticated(ADMIN_USER_NAME) final CamundaClient adminClient) {
+    // given (non-admin) user without any authorizations
+
+    // when
+    final var response =
+        tasklistRestClient
+            .withAuthentication(ADMIN_USER_NAME, ADMIN_USER_PASSWORD)
+            .searchProcessDefinitions();
+
+    // then
+    assertThat(response).isNotNull();
+    assertThat(response.stream().map(ProcessDefinitionResponse::bpmnProcessId))
+        .containsExactlyInAnyOrder(
+            PROCESS_WITH_USER_TASK,
+            PROCESS_WITH_USER_TASK_PRE_ASSIGNED,
+            PROCESS_ID_WITH_JOB_BASED_USERTASK_PRE_ASSIGNED,
+            PROCESS_ID_WITH_JOB_BASED_USERTASK);
   }
 
   @Test
@@ -373,8 +471,15 @@ public class NoCompatibilityModeTasklistUserTaskAuthorizationIT {
         processInstanceKeyWithJobBasedUserTask, TEST_USER_NAME_WITH_PERMISSION);
   }
 
-  private static void deployResource(final CamundaClient camundaClient, final String resource) {
-    camundaClient.newDeployResourceCommand().addResourceFromClasspath(resource).send().join();
+  private static long deployResource(final CamundaClient camundaClient, final String resource) {
+    return camundaClient
+        .newDeployResourceCommand()
+        .addResourceFromClasspath(resource)
+        .send()
+        .join()
+        .getProcesses()
+        .getFirst()
+        .getProcessDefinitionKey();
   }
 
   public static long createProcessInstance(
