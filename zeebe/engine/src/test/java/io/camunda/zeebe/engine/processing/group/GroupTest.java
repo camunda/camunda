@@ -290,23 +290,20 @@ public class GroupTest {
 
   @Test
   public void shouldDeleteGroup() {
-    // TODO: refactor the test with https://github.com/camunda/camunda/issues/30025
     // given
-    final var groupId = "123";
-    final var groupKey = Long.parseLong(groupId);
+    final var groupId = UUID.randomUUID().toString();
     final var name = UUID.randomUUID().toString();
     engine.group().newGroup(name).withGroupId(groupId).create();
 
     // when
-    final var deletedGroup = engine.group().deleteGroup(groupKey).delete().getValue();
+    final var deletedGroup = engine.group().deleteGroup(groupId).delete().getValue();
 
     // then
-    assertThat(deletedGroup).hasGroupKey(groupKey);
+    assertThat(deletedGroup).hasGroupId(groupId);
   }
 
   @Test
   public void shouldDeleteGroupWithAssignedEntities() {
-    // TODO: refactor the test with https://github.com/camunda/camunda/issues/30025
     // given
     final var groupId = "123";
     final var groupKey = Long.parseLong(groupId);
@@ -324,7 +321,8 @@ public class GroupTest {
     engine.group().addEntity(groupKey).withEntityKey(userKey).withEntityType(EntityType.USER).add();
 
     // when
-    final var deletedGroup = engine.group().deleteGroup(groupKey).delete().getValue();
+    final var deletedGroup =
+        engine.group().deleteGroup(groupId).withGroupKey(groupKey).delete().getValue();
 
     // then
     final var groupRecords =
@@ -332,7 +330,7 @@ public class GroupTest {
             .withIntents(GroupIntent.ENTITY_REMOVED, GroupIntent.DELETED)
             .withGroupKey(groupKey)
             .asList();
-    assertThat(deletedGroup).hasGroupKey(groupKey);
+    assertThat(deletedGroup).hasGroupId(groupId);
     assertThat(groupRecords).hasSize(2);
     assertThat(groupRecords)
         .extracting(Record::getIntent)
@@ -341,17 +339,16 @@ public class GroupTest {
 
   @Test
   public void shouldRejectIfGroupIsNotPresentOnDeletion() {
-    // TODO: refactor the test with https://github.com/camunda/camunda/issues/30025
     // when
-    final var notPresentGroupKey = 1L;
+    final var notPresentGroupId = UUID.randomUUID().toString();
     final var notPresentUpdateRecord =
-        engine.group().deleteGroup(notPresentGroupKey).expectRejection().delete();
+        engine.group().deleteGroup(notPresentGroupId).expectRejection().delete();
 
     // then
     assertThat(notPresentUpdateRecord)
         .hasRejectionType(RejectionType.NOT_FOUND)
         .hasRejectionReason(
-            "Expected to delete group with key '%s', but a group with this key does not exist."
-                .formatted(notPresentGroupKey));
+            "Expected to delete group with ID '%s', but a group with this ID does not exist."
+                .formatted(notPresentGroupId));
   }
 }

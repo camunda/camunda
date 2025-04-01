@@ -257,11 +257,9 @@ public class CommandDistributionIdempotencyTest {
                 ValueType.GROUP,
                 GroupIntent.DELETE,
                 () -> {
-                  // TODO: refactor with https://github.com/camunda/camunda/issues/30025
-                  final var groupId = "456";
-                  final var groupKey = Long.parseLong(groupId);
+                  final var groupId = UUID.randomUUID().toString();
                   createGroup(groupId);
-                  return ENGINE.group().deleteGroup(groupKey).delete();
+                  return ENGINE.group().deleteGroup(groupId).delete();
                 }),
             GroupDeleteProcessor.class
           },
