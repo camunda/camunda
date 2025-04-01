@@ -191,7 +191,7 @@ public class MappingServicesTest {
     // then
     verify(mockBrokerClient).sendRequest(mappingUpdateRequestArgumentCaptor.capture());
     final var request = mappingUpdateRequestArgumentCaptor.getValue();
-    assertThat(request.getRequestWriter().getMappingId()).isEqualTo(mappingDTO.id());
+    assertThat(request.getRequestWriter().getMappingId()).isEqualTo(mappingDTO.mappingId());
     assertThat(request.getRequestWriter().getClaimName()).isEqualTo(mappingDTO.claimName());
     assertThat(request.getRequestWriter().getClaimValue()).isEqualTo(mappingDTO.claimValue());
     assertThat(request.getRequestWriter().getName()).isEqualTo(mappingDTO.name());

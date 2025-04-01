@@ -22,7 +22,7 @@ public class BrokerMappingDeleteRequest extends BrokerExecuteCommand<MappingReco
     setPartitionId(Protocol.DEPLOYMENT_PARTITION);
   }
 
-  public BrokerMappingDeleteRequest setId(final String mappingId) {
+  public BrokerMappingDeleteRequest setMappingId(final String mappingId) {
     requestDto.setMappingId(mappingId);
     return this;
   }

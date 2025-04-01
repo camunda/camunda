@@ -18,7 +18,7 @@ export const MAPPINGS_ENDPOINT = "/mapping-rules";
 
 export type Mapping = EntityData & {
   mappingKey: string;
-  id: string;
+  mappingId: string;
   name: string;
   claimName: string;
   claimValue: string;
@@ -35,7 +35,7 @@ export const createMapping: ApiDefinition<undefined, CreateMappingParams> = (
 
 export type UpdateMappingParams = {
   mappingKey: string;
-  id: string;
+  mappingId: string;
   name: string;
   claimName: string;
   claimValue: string;

@@ -91,8 +91,8 @@ public class PersistedMapping extends UnpackedObject implements DbValue {
     return BufferUtil.bufferAsString(mappingIdProp.getValue());
   }
 
-  public PersistedMapping setMappingId(final String id) {
-    mappingIdProp.setValue(id);
+  public PersistedMapping setMappingId(final String mappingId) {
+    mappingIdProp.setValue(mappingId);
     return this;
   }
 

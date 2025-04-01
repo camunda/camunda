@@ -38,7 +38,7 @@ const DeleteModal: FC<RemoveTenantMappingModalProps> = ({
     if (tenant && mapping) {
       const { success } = await callUnassignMapping({
         tenantId: tenant,
-        id: mapping.id,
+        mappingId: mapping.mappingId,
       });
 
       if (success) {

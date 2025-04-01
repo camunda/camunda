@@ -5890,11 +5890,11 @@ components:
       allOf:
         - $ref: "#/components/schemas/MappingRuleCreateUpdateRequest"
       properties:
-        id:
+        mappingId:
           type: string
           description: The unique external id of the mapping.
       required:
-        - id
+        - mappingId
     MappingRuleUpdateRequest:
       type: object
       allOf:
@@ -5911,7 +5911,7 @@ components:
         name:
           type: string
           description: The name of the mapping.
-        id:
+        mappingId:
           type: string
           description: The unique external id of the mapping.
         mappingKey:
