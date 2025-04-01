@@ -29,6 +29,10 @@ defaults:
   run:
     shell: bash
 
+permissions:
+  contents: write
+  actions: write
+
 env:
   RELEASE_BRANCH: ${{ inputs.releaseBranch != '' && inputs.releaseBranch || format('release-{0}', inputs.releaseVersion) }}
   RELEASE_VERSION: ${{ inputs.releaseVersion }}
