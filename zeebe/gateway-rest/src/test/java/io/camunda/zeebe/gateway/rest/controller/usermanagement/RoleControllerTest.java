@@ -15,6 +15,7 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.security.auth.Authentication;
 import io.camunda.service.RoleServices;
+import io.camunda.service.RoleServices.CreateRoleRequest;
 import io.camunda.service.exception.CamundaBrokerException;
 import io.camunda.zeebe.broker.client.api.dto.BrokerRejection;
 import io.camunda.zeebe.gateway.protocol.rest.RoleChangeset;
@@ -46,8 +47,11 @@ public class RoleControllerTest extends RestControllerTest {
   @Test
   void createRoleShouldReturnCreated() {
     // given
+    final var roleId = "testRoleId";
     final var roleName = "Test Role";
-    when(roleServices.createRole(roleName))
+    final var description = "A role used for testing";
+    final var request = new CreateRoleRequest(roleId, roleName, description);
+    when(roleServices.createRole(request))
         .thenReturn(
             CompletableFuture.completedFuture(
                 new RoleRecord().setEntityKey(100L).setName(roleName)));
@@ -58,18 +62,19 @@ public class RoleControllerTest extends RestControllerTest {
         .uri(ROLE_BASE_URL)
         .accept(MediaType.APPLICATION_JSON)
         .contentType(MediaType.APPLICATION_JSON)
-        .bodyValue(new RoleCreateRequest().name(roleName))
+        .bodyValue(new RoleCreateRequest().roleId(roleId).name(roleName).description(description))
         .exchange()
         .expectStatus()
         .isCreated();
 
     // then
-    verify(roleServices, times(1)).createRole(roleName);
+    verify(roleServices, times(1)).createRole(request);
   }
 
   @Test
   void createRoleWithEmptyNameShouldFail() {
     // given
+    final var roleId = "roleId";
     final var roleName = "";
 
     // when
@@ -78,7 +83,7 @@ public class RoleControllerTest extends RestControllerTest {
         .uri(ROLE_BASE_URL)
         .accept(MediaType.APPLICATION_JSON)
         .contentType(MediaType.APPLICATION_JSON)
-        .bodyValue(new RoleCreateRequest().name(roleName))
+        .bodyValue(new RoleCreateRequest().roleId(roleId).name(roleName))
         .exchange()
         .expectStatus()
         .isBadRequest()
