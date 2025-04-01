@@ -54,7 +54,6 @@ export default defineConfig({
     {
       name: 'chromium',
       use: devices['Desktop Chrome'],
-      dependencies: ['chromium-setup'],
       // Specify only tests in the changed folders for the 'chromium' project
       testMatch: changedFolders.includes('chromium')
         ? changedFolders.map((folder) => `**/${folder}/*.spec.ts`)
@@ -63,23 +62,9 @@ export default defineConfig({
     {
       name: 'firefox',
       use: devices['Desktop Firefox'],
-      dependencies: ['firefox-setup'],
     },
     {
       name: 'msedge',
-      use: devices['Desktop Edge'],
-      dependencies: ['edge-setup'],
-    },
-    {
-      name: 'chromium-setup',
-      use: devices['Desktop Chrome'],
-    },
-    {
-      name: 'firefox-setup',
-      use: devices['Desktop Firefox'],
-    },
-    {
-      name: 'edge-setup',
       use: devices['Desktop Edge'],
     },
   ],
