@@ -23,8 +23,18 @@ public class BrokerRoleCreateRequest extends BrokerExecuteCommand<RoleRecord> {
     setPartitionId(Protocol.DEPLOYMENT_PARTITION);
   }
 
+  public BrokerRoleCreateRequest setRoleId(final String roleId) {
+    requestDto.setRoleId(roleId);
+    return this;
+  }
+
   public BrokerRoleCreateRequest setName(final String name) {
     requestDto.setName(name);
+    return this;
+  }
+
+  public BrokerRoleCreateRequest setDescription(final String description) {
+    requestDto.setDescription(description);
     return this;
   }
 
