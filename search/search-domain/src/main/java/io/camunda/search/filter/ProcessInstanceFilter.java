@@ -352,27 +352,6 @@ public record ProcessInstanceFilter(
       return this;
     }
 
-    public static Builder from(final ProcessInstanceFilter original) {
-      return new Builder()
-          .processInstanceKeyOperations(original.processInstanceKeyOperations)
-          .processDefinitionIdOperations(original.processDefinitionIdOperations)
-          .processDefinitionNameOperations(original.processDefinitionNameOperations)
-          .processDefinitionVersionOperations(original.processDefinitionVersionOperations)
-          .processDefinitionVersionTagOperations(original.processDefinitionVersionTagOperations)
-          .processDefinitionKeyOperations(original.processDefinitionKeyOperations)
-          .parentProcessInstanceKeyOperations(original.parentProcessInstanceKeyOperations)
-          .parentFlowNodeInstanceKeyOperations(original.parentFlowNodeInstanceKeyOperations)
-          .startDateOperations(original.startDateOperations)
-          .endDateOperations(original.endDateOperations)
-          .stateOperations(original.stateOperations)
-          .hasIncident(original.hasIncident)
-          .variables(original.variableFilters)
-          .tenantIdOperations(original.tenantIdOperations)
-          .batchOperationIdOperations(original.batchOperationIdOperations)
-          .errorMessageOperations(original.errorMessageOperations)
-          .incidentErrorHashCodes(original.incidentErrorHashCodes);
-    }
-
     @Override
     public ProcessInstanceFilter build() {
       return new ProcessInstanceFilter(

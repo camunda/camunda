@@ -36,7 +36,9 @@ import io.camunda.search.entities.UserTaskEntity;
 import io.camunda.search.entities.VariableEntity;
 import io.camunda.search.filter.FilterBuilders;
 import io.camunda.search.filter.Operation;
+import io.camunda.search.filter.Operator;
 import io.camunda.search.filter.ProcessDefinitionStatisticsFilter;
+import io.camunda.search.filter.ProcessInstanceFilter;
 import io.camunda.search.filter.ProcessInstanceFilter.Builder;
 import io.camunda.search.filter.UsageMetricsFilter;
 import io.camunda.search.query.AuthorizationQuery;
@@ -65,7 +67,9 @@ import io.camunda.webapps.schema.entities.ProcessEntity;
 import io.camunda.webapps.schema.entities.listview.ProcessInstanceForListViewEntity;
 import io.camunda.webapps.schema.entities.usertask.TaskEntity;
 import io.camunda.zeebe.util.CloseableSilently;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 public class DocumentBasedSearchClients implements SearchClientsProxy, CloseableSilently {
@@ -209,12 +213,20 @@ public class DocumentBasedSearchClients implements SearchClientsProxy, Closeable
       return new SearchQueryResult.Builder<ProcessInstanceEntity>().build();
     }
 
-    final var processInstanceKeys =
-        incidentResult.items().stream().map(IncidentEntity::processInstanceKey).toList();
+    final Set<Long> processInstanceKeys = new HashSet<>();
+    incidentResult.items().forEach(i -> processInstanceKeys.add(i.processInstanceKey()));
+
+    for (final var op : originalFilter.processInstanceKeyOperations()) {
+      if (op.operator().equals(Operator.EQUALS)) {
+        processInstanceKeys.add(op.value());
+      } else if (op.operator().equals(Operator.IN)) {
+        processInstanceKeys.addAll(op.values());
+      }
+    }
 
     final var updatedFilter =
-        Builder.from(originalFilter)
-            .processInstanceKeyOperations(Operation.in(processInstanceKeys))
+        builderFrom(originalFilter)
+            .processInstanceKeyOperations(Operation.in(List.copyOf(processInstanceKeys)))
             .hasIncident(true)
             .build();
 
@@ -227,6 +239,26 @@ public class DocumentBasedSearchClients implements SearchClientsProxy, Closeable
                     .resultConfig(filter.resultConfig()));
 
     return getSearchExecutor().search(updatedQuery, ProcessInstanceForListViewEntity.class);
+  }
+
+  private static Builder builderFrom(final ProcessInstanceFilter original) {
+    return new Builder()
+        .processDefinitionIdOperations(original.processDefinitionIdOperations())
+        .processDefinitionNameOperations(original.processDefinitionNameOperations())
+        .processDefinitionVersionOperations(original.processDefinitionVersionOperations())
+        .processDefinitionVersionTagOperations(original.processDefinitionVersionTagOperations())
+        .processDefinitionKeyOperations(original.processDefinitionKeyOperations())
+        .parentProcessInstanceKeyOperations(original.parentProcessInstanceKeyOperations())
+        .parentFlowNodeInstanceKeyOperations(original.parentFlowNodeInstanceKeyOperations())
+        .startDateOperations(original.startDateOperations())
+        .endDateOperations(original.endDateOperations())
+        .stateOperations(original.stateOperations())
+        .hasIncident(original.hasIncident())
+        .variables(original.variableFilters())
+        .tenantIdOperations(original.tenantIdOperations())
+        .batchOperationIdOperations(original.batchOperationIdOperations())
+        .errorMessageOperations(original.errorMessageOperations())
+        .incidentErrorHashCodes(original.incidentErrorHashCodes());
   }
 
   @Override
