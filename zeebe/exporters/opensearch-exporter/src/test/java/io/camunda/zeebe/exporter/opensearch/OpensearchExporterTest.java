@@ -70,13 +70,17 @@ final class OpensearchExporterTest {
   void shouldNotFailOnOpenIfOpensearchIsUnreachable() {
     // given
     final var exporter = new OpensearchExporter();
+    config.setZeebeRecordsExportEnabled(true);
     exporter.configure(context);
 
     // when
     exporter.open(controller);
+    final Record mockRecord = mock(Record.class);
+    when(mockRecord.getValueType()).thenReturn(ValueType.PROCESS_INSTANCE);
+    when(mockRecord.getBrokerVersion()).thenReturn(VersionUtil.getVersionLowerCase());
 
     // then
-    assertThatThrownBy(() -> exporter.export(mock(Record.class)))
+    assertThatThrownBy(() -> exporter.export(mockRecord))
         .isInstanceOf(OpensearchExporterException.class);
   }
 
@@ -91,6 +95,7 @@ final class OpensearchExporterTest {
     // when
     final var recordMock = mock(Record.class);
     when(recordMock.getValueType()).thenReturn(ValueType.PROCESS_INSTANCE);
+    when(recordMock.getBrokerVersion()).thenReturn(VersionUtil.getVersionLowerCase());
     exporter.export(recordMock);
 
     // then
@@ -110,6 +115,7 @@ final class OpensearchExporterTest {
     // when
     final var recordMock = mock(Record.class);
     when(recordMock.getValueType()).thenReturn(ValueType.PROCESS_INSTANCE);
+    when(recordMock.getBrokerVersion()).thenReturn(VersionUtil.getVersionLowerCase());
     exporter.export(recordMock);
 
     // then
@@ -130,6 +136,7 @@ final class OpensearchExporterTest {
     // when
     final var recordMock = mock(Record.class);
     when(recordMock.getValueType()).thenReturn(ValueType.PROCESS_INSTANCE);
+    when(recordMock.getBrokerVersion()).thenReturn(VersionUtil.getVersionLowerCase());
     exporter.export(recordMock);
 
     // then
@@ -226,6 +233,7 @@ final class OpensearchExporterTest {
       // when
       final var recordMock = mock(Record.class);
       when(recordMock.getValueType()).thenReturn(ValueType.PROCESS_INSTANCE);
+      when(recordMock.getBrokerVersion()).thenReturn(VersionUtil.getVersionLowerCase());
       exporter.export(recordMock);
 
       // then
@@ -242,6 +250,7 @@ final class OpensearchExporterTest {
       // when
       final var recordMock = mock(Record.class);
       when(recordMock.getValueType()).thenReturn(ValueType.PROCESS_INSTANCE);
+      when(recordMock.getBrokerVersion()).thenReturn(VersionUtil.getVersionLowerCase());
       exporter.export(recordMock);
 
       // then
@@ -279,10 +288,60 @@ final class OpensearchExporterTest {
       // when
       final var recordMock = mock(Record.class);
       when(recordMock.getValueType()).thenReturn(ValueType.PROCESS_INSTANCE);
+      when(recordMock.getBrokerVersion()).thenReturn(VersionUtil.getVersionLowerCase());
       exporter.export(recordMock);
 
       // then
       verify(client, never()).putIndexTemplate(valueType);
+    }
+
+    @ParameterizedTest(name = "{0}")
+    @MethodSource("io.camunda.zeebe.exporter.opensearch.TestSupport#provideValueTypes")
+    void shouldCreateOnlyRequiredTemplates(final ValueType valueType) {
+      // given
+      config.index.createTemplate = true;
+      config.setZeebeRecordsExportEnabled(false);
+      TestSupport.setIndexingForValueType(config.index, valueType, true);
+      exporter.configure(context);
+      exporter.open(controller);
+
+      // when
+      final var recordMock = mock(Record.class);
+      when(recordMock.getValueType()).thenReturn(valueType);
+      when(recordMock.getBrokerVersion()).thenReturn(VersionUtil.getVersionLowerCase());
+      exporter.export(recordMock);
+
+      // then
+      if (valueType == ValueType.PROCESS_INSTANCE
+          || valueType == ValueType.PROCESS
+          || valueType == ValueType.VARIABLE
+          || valueType == ValueType.USER_TASK
+          || valueType == ValueType.INCIDENT
+          || valueType == ValueType.DEPLOYMENT) {
+        verify(client, times(1)).putIndexTemplate(valueType, VersionUtil.getVersionLowerCase());
+      } else {
+        verify(client, never()).putIndexTemplate(valueType);
+      }
+    }
+
+    @ParameterizedTest(name = "{0}")
+    @MethodSource("io.camunda.zeebe.exporter.opensearch.TestSupport#provideValueTypes")
+    void shouldCreateAllTemplatesOnPreviousVersion(final ValueType valueType) {
+      // given
+      config.index.createTemplate = true;
+      config.setZeebeRecordsExportEnabled(false);
+      TestSupport.setIndexingForValueType(config.index, valueType, true);
+      exporter.configure(context);
+      exporter.open(controller);
+
+      // when
+      final var recordMock = mock(Record.class);
+      when(recordMock.getValueType()).thenReturn(valueType);
+      when(recordMock.getBrokerVersion()).thenReturn(VersionUtil.getPreviousVersion());
+      exporter.export(recordMock);
+
+      // then
+      verify(client, times(1)).putIndexTemplate(valueType, VersionUtil.getPreviousVersion());
     }
   }
 
@@ -298,6 +357,7 @@ final class OpensearchExporterTest {
       // when
       final var recordMock = mock(Record.class);
       when(recordMock.getValueType()).thenReturn(ValueType.PROCESS_INSTANCE);
+      when(recordMock.getBrokerVersion()).thenReturn(VersionUtil.getVersionLowerCase());
 
       exporter.export(recordMock);
       exporter.export(recordMock);
@@ -338,6 +398,7 @@ final class OpensearchExporterTest {
       // given
       final var record =
           ImmutableRecord.builder()
+              .withBrokerVersion(VersionUtil.getVersionLowerCase())
               .withPosition(10L)
               .withValueType(ValueType.PROCESS_INSTANCE)
               .build();
@@ -357,6 +418,7 @@ final class OpensearchExporterTest {
       // given
       final var record =
           ImmutableRecord.builder()
+              .withBrokerVersion(VersionUtil.getVersionLowerCase())
               .withPosition(10L)
               .withValueType(ValueType.PROCESS_INSTANCE)
               .build();
@@ -577,6 +639,7 @@ final class OpensearchExporterTest {
 
     private static Record<?> newRecord(final int partitionId, final ValueType valueType) {
       return ImmutableRecord.builder()
+          .withBrokerVersion(VersionUtil.getVersionLowerCase())
           .withPartitionId(partitionId)
           .withValueType(valueType)
           .build();
