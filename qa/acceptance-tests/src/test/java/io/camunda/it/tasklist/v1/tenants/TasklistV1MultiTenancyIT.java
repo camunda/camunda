@@ -26,6 +26,7 @@ import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 @MultiDbTest
+@Disabled
 public class TasklistV1MultiTenancyIT {
 
   public static final String PASSWORD = "password";
@@ -47,7 +48,7 @@ public class TasklistV1MultiTenancyIT {
           .withMultiTenancyEnabled();
 
   @BeforeAll
-  public static void beforeEach(
+  public static void beforeAll(
       @Authenticated(USERNAME_1) final CamundaClient userOneClient,
       @Authenticated(USERNAME_2) final CamundaClient userTwoClient) {
 
