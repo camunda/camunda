@@ -222,11 +222,12 @@ jobs:
           WORKFLOW_RUN_ID: 14191393894
           ARTIFACT_ID: 2857926797
           ARTIFACTS_FOLDER: release-artifacts
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           script: |
             const {default: artifactClient} = require('@actions/artifact')
-            const { ARTIFACT_ID, ARTIFACTS_FOLDER, WORKFLOW_RUN_ID } = process.env
-            await artifactClient.downloadArtifact(ARTIFACT_ID, { path: ARTIFACTS_FOLDER, findBy: { workflowRunId: WORKFLOW_RUN_ID, token: GH_TOKEN, repositoryOwner: camunda, repositoryName: camunda } })
+            const { ARTIFACT_ID, ARTIFACTS_FOLDER, WORKFLOW_RUN_ID, GH_TOKEN } = process.env
+            await artifactClient.downloadArtifact(ARTIFACT_ID, { path: ARTIFACTS_FOLDER, findBy: { workflowRunId: WORKFLOW_RUN_ID, token: GH_TOKEN, repositoryOwner: "camunda", repositoryName: "camunda" } })
 
       - name: Create Artifact Checksums
         id: checksum
@@ -326,7 +327,7 @@ jobs:
           script: |
             const {default: artifactClient} = require('@actions/artifact')
             const { ARTIFACT_ID, ARTIFACTS_FOLDER, WORKFLOW_RUN_ID, GH_TOKEN } = process.env
-            await artifactClient.downloadArtifact(ARTIFACT_ID, { path: ARTIFACTS_FOLDER, findBy: { workflowRunId: WORKFLOW_RUN_ID, token: GH_TOKEN, repositoryOwner: camunda, repositoryName: camunda } })
+            await artifactClient.downloadArtifact(ARTIFACT_ID, { path: ARTIFACTS_FOLDER, findBy: { workflowRunId: WORKFLOW_RUN_ID, token: GH_TOKEN, repositoryOwner: "camunda", repositoryName: "camunda" } })
 
       - name: Build Zeebe Docker Image
         uses: ./.github/actions/build-platform-docker
@@ -419,7 +420,7 @@ jobs:
           script: |
             const {default: artifactClient} = require('@actions/artifact')
             const { ARTIFACT_ID, ARTIFACTS_FOLDER, WORKFLOW_RUN_ID, GH_TOKEN } = process.env
-            await artifactClient.downloadArtifact(ARTIFACT_ID, { path: ARTIFACTS_FOLDER, findBy: { workflowRunId: WORKFLOW_RUN_ID, token: GH_TOKEN, repositoryOwner: camunda, repositoryName: camunda } })
+            await artifactClient.downloadArtifact(ARTIFACT_ID, { path: ARTIFACTS_FOLDER, findBy: { workflowRunId: WORKFLOW_RUN_ID, token: GH_TOKEN, repositoryOwner: "camunda", repositoryName: "camunda" } })
 
       - name: Build Operate Docker Image
         uses: ./.github/actions/build-platform-docker
@@ -515,7 +516,7 @@ jobs:
           script: |
             const {default: artifactClient} = require('@actions/artifact')
             const { ARTIFACT_ID, ARTIFACTS_FOLDER, WORKFLOW_RUN_ID, GH_TOKEN } = process.env
-            await artifactClient.downloadArtifact(ARTIFACT_ID, { path: ARTIFACTS_FOLDER, findBy: { workflowRunId: WORKFLOW_RUN_ID, token: GH_TOKEN, repositoryOwner: camunda, repositoryName: camunda } })
+            await artifactClient.downloadArtifact(ARTIFACT_ID, { path: ARTIFACTS_FOLDER, findBy: { workflowRunId: WORKFLOW_RUN_ID, token: GH_TOKEN, repositoryOwner: "camunda", repositoryName: "camunda" } })
 
       - name: Build Tasklist Docker Image
         uses: ./.github/actions/build-platform-docker
@@ -611,7 +612,7 @@ jobs:
           script: |
             const {default: artifactClient} = require('@actions/artifact')
             const { ARTIFACT_ID, ARTIFACTS_FOLDER, WORKFLOW_RUN_ID, GH_TOKEN } = process.env
-            await artifactClient.downloadArtifact(ARTIFACT_ID, { path: ARTIFACTS_FOLDER, findBy: { workflowRunId: WORKFLOW_RUN_ID, token: GH_TOKEN, repositoryOwner: camunda, repositoryName: camunda } })
+            await artifactClient.downloadArtifact(ARTIFACT_ID, { path: ARTIFACTS_FOLDER, findBy: { workflowRunId: WORKFLOW_RUN_ID, token: GH_TOKEN, repositoryOwner: "camunda", repositoryName: "camunda" } })
 
       - name: Build Camunda Docker Image
         uses: ./.github/actions/build-platform-docker
