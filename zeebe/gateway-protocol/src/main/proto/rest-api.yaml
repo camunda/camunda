@@ -2202,22 +2202,22 @@ paths:
           $ref: "#/components/responses/Forbidden"
         "500":
           $ref: "#/components/responses/InternalServerError"
-  /roles/{roleKey}:
+  /roles/{roleId}:
     get:
       tags:
         - Role
       operationId: getRole
       summary: Get role (Work-in-Progress)
       description: |
-        Get a role by its key.
+        Get a role by its ID.
 
         This API is in a Work-in-Progress state and will undergo potential breaking changes until
         its release with an upcoming minor release.
       parameters:
-        - name: roleKey
+        - name: roleId
           in: path
           required: true
-          description: The role key.
+          description: The role ID.
           schema:
             type: string
       responses:
@@ -2232,28 +2232,28 @@ paths:
         "403":
           $ref: "#/components/responses/Forbidden"
         "404":
-          description: The role with the given key was not found.
+          description: The role with the given ID was not found.
           content:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
         "500":
           $ref: "#/components/responses/InternalServerError"
-    patch:
+    put:
       tags:
         - Role
       operationId: updateRole
       summary: Update role (Work-in-Progress)
       description: |
-        Update a role with the given key.
+        Update a role with the given ID.
 
         This API is in a Work-in-Progress state and will undergo potential breaking changes until
         its release with an upcoming minor release.
       parameters:
-        - name: roleKey
+        - name: roleId
           in: path
           required: true
-          description: The key of the role to update.
+          description: The ID of the role to update.
           schema:
             type: string
       requestBody:
@@ -2270,7 +2270,7 @@ paths:
         "401":
           $ref: "#/components/responses/Unauthorized"
         "404":
-          description: The role with the roleKey is not found.
+          description: The role with the ID is not found.
           content:
             application/problem+json:
               schema:
@@ -2283,15 +2283,15 @@ paths:
       operationId: deleteRole
       summary: Delete role (Work-in-Progress)
       description: |
-        Deletes the role with the given key.
+        Deletes the role with the given ID.
 
         This API is in a Work-in-Progress state and will undergo potential breaking changes until
         its release with an upcoming minor release.
       parameters:
-        - name: roleKey
+        - name: roleId
           in: path
           required: true
-          description: The key of the role to delete.
+          description: The ID of the role to delete.
           schema:
             type: string
       responses:
@@ -2300,7 +2300,7 @@ paths:
         "401":
           $ref: "#/components/responses/Unauthorized"
         "404":
-          description: The role with the roleKey was not found.
+          description: The role with the ID was not found.
           content:
             application/problem+json:
               schema:
@@ -5731,19 +5731,15 @@ components:
     RoleUpdateRequest:
       type: object
       properties:
-        changeset:
-          description: The set of changed role attributes.
-          allOf:
-            - $ref: "#/components/schemas/RoleChangeset"
-      required:
-        - changeset
-    RoleChangeset:
-      description: A set of changed role attributes.
-      type: object
-      properties:
         name:
-          type: string
-          description: The updated display name of the role.
+          type: "string"
+          description: The display name of the new role.
+        description:
+          type: "string"
+          description: The description of the new role.
+      required:
+        - name
+        - description
     RoleResult:
       description: Role search response item.
       type: object
