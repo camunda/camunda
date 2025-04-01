@@ -321,7 +321,7 @@ jobs:
         env:
           WORKFLOW_RUN_ID: 14191393894
           ARTIFACT_ID: 2857926797
-          ARTIFACTS_FOLDER: release-artifacts
+          ARTIFACTS_FOLDER: /
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           script: |
@@ -414,7 +414,7 @@ jobs:
         env:
           WORKFLOW_RUN_ID: 14191393894
           ARTIFACT_ID: 2857926797
-          ARTIFACTS_FOLDER: release-artifacts
+          ARTIFACTS_FOLDER: /
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           script: |
@@ -510,7 +510,7 @@ jobs:
         env:
           WORKFLOW_RUN_ID: 14191393894
           ARTIFACT_ID: 2857926797
-          ARTIFACTS_FOLDER: release-artifacts
+          ARTIFACTS_FOLDER: /
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           script: |
@@ -606,7 +606,7 @@ jobs:
         env:
           WORKFLOW_RUN_ID: 14191393894
           ARTIFACT_ID: 2857926797
-          ARTIFACTS_FOLDER: release-artifacts
+          ARTIFACTS_FOLDER: /
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           script: |
