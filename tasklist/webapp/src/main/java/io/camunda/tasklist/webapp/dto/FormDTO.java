@@ -7,7 +7,7 @@
  */
 package io.camunda.tasklist.webapp.dto;
 
-import io.camunda.webapps.schema.entities.tasklist.FormEntity;
+import io.camunda.webapps.schema.entities.form.FormEntity;
 import java.util.Objects;
 
 public class FormDTO {

@@ -17,8 +17,8 @@ import io.camunda.tasklist.zeebeimport.v870.processors.common.UserTaskRecordToTa
 import io.camunda.tasklist.zeebeimport.v870.processors.common.UserTaskRecordToVariableEntityMapper;
 import io.camunda.webapps.schema.descriptors.tasklist.template.SnapshotTaskVariableTemplate;
 import io.camunda.webapps.schema.descriptors.tasklist.template.TaskTemplate;
-import io.camunda.webapps.schema.entities.tasklist.SnapshotTaskVariableEntity;
-import io.camunda.webapps.schema.entities.tasklist.TaskEntity;
+import io.camunda.webapps.schema.entities.usertask.SnapshotTaskVariableEntity;
+import io.camunda.webapps.schema.entities.usertask.TaskEntity;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.value.UserTaskRecordValue;
 import java.util.HashMap;

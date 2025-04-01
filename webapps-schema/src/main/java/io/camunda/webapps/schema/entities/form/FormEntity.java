@@ -5,7 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.webapps.schema.entities.tasklist;
+package io.camunda.webapps.schema.entities.form;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.camunda.webapps.schema.entities.ExporterEntity;
