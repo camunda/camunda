@@ -177,30 +177,60 @@ jobs:
 
   java-unit-tests:
     if: needs.detect-changes.outputs.java-code-changes == 'true'
-    needs: [detect-changes]
-    runs-on: gcp-perf-core-16-default
-    timeout-minutes: 30
+    name: "[UT] ${{ matrix.name }}"
+    needs: [ detect-changes ]
+    timeout-minutes: 25
     permissions: {}  # GITHUB_TOKEN unused in this job
+    runs-on: ${{ matrix.runs-on }}
+    strategy:
+      fail-fast: false
+      matrix:
+        group: [ general, zeebe, client ]
+        include:
+          - group: general
+            name: "General Unit Tests"
+            # Here we exclude all modules that are separated in extra jobs below
+            # Example: '[-+]<groupId>:artifactId' -> '-' excludes
+            maven-modules: "'-:zeebe-workflow-engine','-:zeebe-broker','-:camunda-process-test-java','-:zeebe-gateway-rest','-:camunda-client-java','-:zeebe-elasticsearch-exporter','-:zeebe-opensearch-exporter','-:camunda-exporter','-:zeebe-atomix-cluster','-:zeebe-cluster-config'"
+            maven-build-threads: 2
+            maven-test-fork-count: 7
+            runs-on: gcp-perf-core-16-default
+          - group: zeebe
+            name: "Zeebe Big Unit Tests"
+            maven-modules: "':zeebe-workflow-engine',':zeebe-broker',':zeebe-atomix-cluster',':zeebe-cluster-config'"
+            maven-build-threads: 2
+            maven-test-fork-count: 7
+            runs-on: gcp-perf-core-16-default
+          - group: client
+            name: "Camunda API Big Unit Tests"
+            maven-modules: "':camunda-process-test-java',':zeebe-gateway-rest',':camunda-client-java',':zeebe-elasticsearch-exporter',':zeebe-opensearch-exporter',':camunda-exporter'"
+            maven-build-threads: 2
+            maven-test-fork-count: 7
+            runs-on: gcp-perf-core-16-default
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/setup-build
         with:
+          maven-cache-key-modifier: it-${{ matrix.group }}
           vault-address: ${{ secrets.VAULT_ADDR }}
           vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
           vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
       - uses: ./.github/actions/build-zeebe
+        id: build-zeebe
         with:
-          maven-extra-args: -T1C -PskipFrontendBuild
+          maven-extra-args: -T1C -Dquickly
       - name: Create build output log file
         run: echo "BUILD_OUTPUT_FILE_PATH=$(mktemp)" >> $GITHUB_ENV
       - name: Maven Test Build
         # we use the verify goal here as flaky test extraction is bound to the post-integration-test
         # phase of Maven https://maven.apache.org/guides/introduction/introduction-to-the-lifecycle.html#default-lifecycle
         run: >
-          ./mvnw -T2 -B --no-snapshot-updates
+          ./mvnw -B -T ${{ matrix.maven-build-threads }} --no-snapshot-updates
+          -D forkCount=${{ matrix.maven-test-fork-count }}
           -D skipITs -D skipQaBuild=true -D skipChecks -D surefire.rerunFailingTestsCount=3
           -D junitThreadCount=16
           -P skip-random-tests,parallel-tests,extract-flaky-tests,skipFrontendBuild
+          -pl ${{ matrix.maven-modules }}
           verify
           | tee "${BUILD_OUTPUT_FILE_PATH}"
       - name: Analyze Test Runs
@@ -213,12 +243,13 @@ jobs:
         uses: ./.github/actions/collect-test-artifacts
         if: ${{ failure() || cancelled() || steps.analyze-test-run.outputs.flakyTests != '' }}
         with:
-          name: "unit tests"
+          name: "[UT] ${{ matrix.name }}"
       - name: Observe build status
         if: always()
         continue-on-error: true
         uses: ./.github/actions/observe-build-status
         with:
+          job_name: "unit-tests/${{ matrix.group }}"
           build_status: ${{ job.status }}
           user_reason: ${{ (steps.analyze-test-run.outputs.flakyTests != '') && 'flaky-tests' || '' }}
           user_description: ${{ steps.analyze-test-run.outputs.flakyTests }}
@@ -226,6 +257,7 @@ jobs:
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+
 
   elasticsearch-integration-tests:
     if: needs.detect-changes.outputs.java-code-changes == 'true'
