@@ -16,10 +16,10 @@
 package io.camunda.process.test.impl.testresult;
 
 import io.camunda.client.api.command.ClientException;
+import io.camunda.client.api.search.enums.FlowNodeInstanceState;
+import io.camunda.client.api.search.enums.IncidentState;
 import io.camunda.client.api.search.response.FlowNodeInstance;
-import io.camunda.client.api.search.response.FlowNodeInstanceState;
 import io.camunda.client.api.search.response.Incident;
-import io.camunda.client.api.search.response.IncidentState;
 import io.camunda.client.api.search.response.ProcessInstance;
 import io.camunda.client.api.search.response.Variable;
 import io.camunda.process.test.impl.assertions.CamundaDataSource;

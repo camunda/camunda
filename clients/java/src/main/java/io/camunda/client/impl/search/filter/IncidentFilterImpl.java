@@ -15,10 +15,11 @@
  */
 package io.camunda.client.impl.search.filter;
 
+import io.camunda.client.api.search.enums.IncidentErrorType;
+import io.camunda.client.api.search.enums.IncidentState;
 import io.camunda.client.api.search.filter.IncidentFilter;
-import io.camunda.client.api.search.response.IncidentErrorType;
-import io.camunda.client.api.search.response.IncidentState;
 import io.camunda.client.impl.search.request.TypedSearchRequestPropertyProvider;
+import io.camunda.client.impl.util.EnumUtil;
 import io.camunda.client.impl.util.ParseUtil;
 
 public class IncidentFilterImpl
@@ -57,7 +58,9 @@ public class IncidentFilterImpl
 
   @Override
   public IncidentFilter errorType(final IncidentErrorType errorType) {
-    filter.errorType(IncidentErrorType.toProtocolErrorType(errorType));
+    filter.errorType(
+        EnumUtil.convert(
+            errorType, io.camunda.client.protocol.rest.IncidentFilter.ErrorTypeEnum.class));
     return this;
   }
 
@@ -87,7 +90,8 @@ public class IncidentFilterImpl
 
   @Override
   public IncidentFilter state(final IncidentState value) {
-    filter.setState(IncidentState.toProtocolState(value));
+    filter.setState(
+        EnumUtil.convert(value, io.camunda.client.protocol.rest.IncidentFilter.StateEnum.class));
     return this;
   }
 

@@ -15,8 +15,7 @@
  */
 package io.camunda.client.api.search.response;
 
-import io.camunda.client.impl.util.EnumUtil;
-import io.camunda.client.protocol.rest.AdHocSubprocessActivityResult;
+import io.camunda.client.api.search.enums.AdHocSubprocessActivityResultType;
 import java.util.List;
 
 public interface AdHocSubprocessActivityResponse {
@@ -35,46 +34,10 @@ public interface AdHocSubprocessActivityResponse {
 
     String getElementName();
 
-    AdHocSubprocessActivityType getType();
+    AdHocSubprocessActivityResultType getType();
 
     String getDocumentation();
 
     String getTenantId();
-
-    enum AdHocSubprocessActivityType {
-      UNSPECIFIED,
-      PROCESS,
-      SUB_PROCESS,
-      EVENT_SUB_PROCESS,
-      INTERMEDIATE_CATCH_EVENT,
-      INTERMEDIATE_THROW_EVENT,
-      BOUNDARY_EVENT,
-      SERVICE_TASK,
-      RECEIVE_TASK,
-      USER_TASK,
-      MANUAL_TASK,
-      TASK,
-      MULTI_INSTANCE_BODY,
-      CALL_ACTIVITY,
-      BUSINESS_RULE_TASK,
-      SCRIPT_TASK,
-      SEND_TASK,
-      UNKNOWN,
-      UNKNOWN_ENUM_VALUE;
-
-      public static AdHocSubprocessActivityType fromProtocolType(
-          final AdHocSubprocessActivityResult.TypeEnum value) {
-        if (value == null) {
-          return null;
-        }
-
-        try {
-          return AdHocSubprocessActivityType.valueOf(value.name());
-        } catch (final IllegalArgumentException e) {
-          EnumUtil.logUnknownEnumValue(value, "ad-hoc subprocess activity type", values());
-          return UNKNOWN_ENUM_VALUE;
-        }
-      }
-    }
   }
 }

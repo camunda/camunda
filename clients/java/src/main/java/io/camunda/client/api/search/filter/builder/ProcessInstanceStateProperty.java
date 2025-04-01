@@ -15,12 +15,12 @@
  */
 package io.camunda.client.api.search.filter.builder;
 
-import io.camunda.client.protocol.rest.ProcessInstanceStateEnum;
-import io.camunda.client.protocol.rest.ProcessInstanceStateFilterProperty;
+import io.camunda.client.api.search.enums.ProcessInstanceState;
+import io.camunda.client.api.search.filter.ProcessInstanceStateFilterProperty;
 
 public interface ProcessInstanceStateProperty
     extends LikeProperty<
-        ProcessInstanceStateEnum,
+        ProcessInstanceState,
         String,
         ProcessInstanceStateFilterProperty,
         ProcessInstanceStateProperty> {}

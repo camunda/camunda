@@ -7,16 +7,14 @@
  */
 package io.camunda.it.orchestration;
 
-import static io.camunda.client.api.search.response.IncidentState.ACTIVE;
-import static io.camunda.client.api.search.response.IncidentState.RESOLVED;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.client.CamundaClient;
+import io.camunda.client.api.search.enums.IncidentErrorType;
+import io.camunda.client.api.search.enums.IncidentState;
 import io.camunda.client.api.search.filter.IncidentFilter;
 import io.camunda.client.api.search.response.FlowNodeInstance;
 import io.camunda.client.api.search.response.Incident;
-import io.camunda.client.api.search.response.IncidentErrorType;
-import io.camunda.client.api.search.response.IncidentState;
 import io.camunda.client.api.search.response.ProcessInstance;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.zeebe.model.bpmn.Bpmn;
@@ -84,10 +82,11 @@ public class IncidentIT {
 
     // when
     final var incidents =
-        waitForIncident(client, f -> f.processInstanceKey(childInstanceKey).state(ACTIVE));
+        waitForIncident(
+            client, f -> f.processInstanceKey(childInstanceKey).state(IncidentState.ACTIVE));
 
     // then
-    assertIncidentState(client, incidents.getIncidentKey(), ACTIVE);
+    assertIncidentState(client, incidents.getIncidentKey(), IncidentState.ACTIVE);
     assertProcessInstanceIncidentState(client, parentInstanceKey, true);
     assertProcessInstanceIncidentState(client, childInstanceKey, true);
     assertFlowNodeInstanceIncidentState(client, parentInstanceKey, CALL_ACTIVITY_ID, true);
@@ -103,11 +102,12 @@ public class IncidentIT {
 
     // when
     final var incident =
-        waitForIncident(client, f -> f.processInstanceKey(childInstanceKey).state(ACTIVE));
+        waitForIncident(
+            client, f -> f.processInstanceKey(childInstanceKey).state(IncidentState.ACTIVE));
     client.newResolveIncidentCommand(incident.getIncidentKey()).send().join();
 
     // then
-    assertIncidentState(client, incident.getIncidentKey(), RESOLVED);
+    assertIncidentState(client, incident.getIncidentKey(), IncidentState.RESOLVED);
     assertProcessInstanceIncidentState(client, parentInstanceKey, false);
     assertProcessInstanceIncidentState(client, childInstanceKey, false);
     assertFlowNodeInstanceIncidentState(client, parentInstanceKey, CALL_ACTIVITY_ID, false);

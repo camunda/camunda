@@ -15,9 +15,9 @@
  */
 package io.camunda.process.test.utils;
 
+import io.camunda.client.api.search.enums.FlowNodeInstanceState;
+import io.camunda.client.api.search.enums.FlowNodeInstanceType;
 import io.camunda.client.api.search.response.FlowNodeInstance;
-import io.camunda.client.api.search.response.FlowNodeInstanceState;
-import io.camunda.client.api.search.response.FlowNodeInstanceType;
 
 public class FlowNodeInstanceBuilder implements FlowNodeInstance {
 

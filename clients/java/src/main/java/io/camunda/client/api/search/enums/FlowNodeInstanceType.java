@@ -13,11 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.camunda.client.api.search.response;
-
-import io.camunda.client.impl.util.EnumUtil;
-import io.camunda.client.protocol.rest.FlowNodeInstanceFilter;
-import io.camunda.client.protocol.rest.FlowNodeInstanceResult;
+package io.camunda.client.api.search.enums;
 
 public enum FlowNodeInstanceType {
   UNSPECIFIED,
@@ -47,20 +43,4 @@ public enum FlowNodeInstanceType {
   SEND_TASK,
   UNKNOWN,
   UNKNOWN_ENUM_VALUE;
-
-  public static FlowNodeInstanceFilter.TypeEnum toProtocolType(final FlowNodeInstanceType value) {
-    return (value == null) ? null : FlowNodeInstanceFilter.TypeEnum.fromValue(value.name());
-  }
-
-  public static FlowNodeInstanceType fromProtocolType(final FlowNodeInstanceResult.TypeEnum value) {
-    if (value == null) {
-      return null;
-    }
-    try {
-      return FlowNodeInstanceType.valueOf(value.name());
-    } catch (final IllegalArgumentException e) {
-      EnumUtil.logUnknownEnumValue(value, "flow node instance type", values());
-      return UNKNOWN_ENUM_VALUE;
-    }
-  }
 }
