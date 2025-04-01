@@ -235,6 +235,44 @@ public class NoCompatibilityModeTasklistUserTaskAuthorizationIT {
   }
 
   @Test
+  public void shouldBeAuthorizedToCreateInstance(
+      @Authenticated(ADMIN_USER_NAME) final CamundaClient adminClient,
+      @Authenticated(TEST_USER_NAME_WITH_PERMISSION) final CamundaClient withPermission) {
+    // given (non-admin) user with authorizations
+    final int currentCountOfPIs = countOfProcessInstances(adminClient, PROCESS_WITH_USER_TASK);
+
+    // when
+    final var response =
+        tasklistRestClient
+            .withAuthentication(TEST_USER_NAME_WITH_PERMISSION, TEST_USER_PASSWORD)
+            .createProcessInstance(PROCESS_WITH_USER_TASK);
+
+    // then
+    assertThat(response).isNotNull();
+    assertThat(response.statusCode()).isEqualTo(200);
+    ensureProcessInstanceCreated(adminClient, PROCESS_WITH_USER_TASK, currentCountOfPIs + 1);
+  }
+
+  @Test
+  public void shouldCreateProcessInstanceWithoutAuthentication(
+      @Authenticated(ADMIN_USER_NAME) final CamundaClient adminClient,
+      @Authenticated(TEST_USER_NAME_NO_PERMISSION) final CamundaClient noPermission) {
+    // given (non-admin) user without any authorizations
+    final int currentCountOfPIs = countOfProcessInstances(adminClient, PROCESS_WITH_USER_TASK);
+
+    // when
+    final var response =
+        tasklistRestClient
+            .withAuthentication(TEST_USER_NAME_NO_PERMISSION, TEST_USER_PASSWORD)
+            .createProcessInstanceViaPublicForm(PROCESS_WITH_USER_TASK);
+
+    // then
+    assertThat(response).isNotNull();
+    assertThat(response.statusCode()).isEqualTo(200);
+    ensureProcessInstanceCreated(adminClient, PROCESS_WITH_USER_TASK, currentCountOfPIs + 1);
+  }
+
+  @Test
   public void shouldNotAssignUserTaskWithUnauthorizedUser(
       @Authenticated(ADMIN_USER_NAME) final CamundaClient adminClient,
       @Authenticated(TEST_USER_NAME_NO_PERMISSION) final CamundaClient noPermission) {
@@ -592,5 +630,27 @@ public class NoCompatibilityModeTasklistUserTaskAuthorizationIT {
                   response.body(), TaskSearchResponse[].class);
             },
             (result) -> result.length == 1 && result[0].getCompletionDate() != null);
+  }
+
+  private static int countOfProcessInstances(
+      final CamundaClient adminClient, final String processDefinitionId) {
+    return adminClient
+        .newProcessInstanceSearchRequest()
+        .filter(f -> f.processDefinitionId(processDefinitionId))
+        .send()
+        .join()
+        .items()
+        .size();
+  }
+
+  private static void ensureProcessInstanceCreated(
+      final CamundaClient adminClient, final String processDefinitionId, final int expectedCount) {
+    Awaitility.await(
+            "should have started process instance with id %s".formatted(processDefinitionId))
+        .atMost(Duration.ofSeconds(15))
+        .ignoreExceptions() // Ignore exceptions and continue retrying
+        .until(
+            () -> countOfProcessInstances(adminClient, processDefinitionId),
+            (count) -> count >= expectedCount);
   }
 }
