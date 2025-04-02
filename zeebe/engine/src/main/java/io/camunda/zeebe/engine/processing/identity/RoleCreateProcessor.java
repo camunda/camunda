@@ -27,7 +27,7 @@ import io.camunda.zeebe.stream.api.state.KeyGenerator;
 public class RoleCreateProcessor implements DistributedTypedRecordProcessor<RoleRecord> {
 
   private static final String ROLE_ALREADY_EXISTS_ERROR_MESSAGE =
-      "Expected to create role with id '%s', but a role with this id already exists";
+      "Expected to create role with ID '%s', but a role with this ID already exists";
   private final RoleState roleState;
   private final AuthorizationCheckBehavior authCheckBehavior;
   private final KeyGenerator keyGenerator;

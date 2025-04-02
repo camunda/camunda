@@ -53,7 +53,7 @@ public class RoleTest {
     assertThat(duplicatedRoleRecord)
         .hasRejectionType(RejectionType.ALREADY_EXISTS)
         .hasRejectionReason(
-            "Expected to create role with id '%s', but a role with this id already exists"
+            "Expected to create role with ID '%s', but a role with this ID already exists"
                 .formatted(id));
   }
 
