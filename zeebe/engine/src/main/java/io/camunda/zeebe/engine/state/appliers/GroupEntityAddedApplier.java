@@ -29,10 +29,9 @@ public class GroupEntityAddedApplier implements TypedEventApplier<GroupIntent, G
 
   @Override
   public void applyState(final long key, final GroupRecord value) {
-    // get the record key from the GroupRecord, as the key argument
-    // may belong to the distribution command
-    final var groupKey = value.getGroupKey();
-    groupState.addEntity(groupKey, value);
+    // TODO: refactor this with https://github.com/camunda/camunda/issues/30476
+    final var groupKey = Long.parseLong(value.getGroupId());
+    groupState.addEntity(value);
 
     final var entityKey = value.getEntityKey();
     final var entityType = value.getEntityType();
