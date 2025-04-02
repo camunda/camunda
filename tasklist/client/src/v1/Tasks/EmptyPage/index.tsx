@@ -10,7 +10,7 @@ import {Column, Grid, Link} from '@carbon/react';
 import CheckImage from 'common/images/orange-check-mark.svg';
 import {getStateLocally} from 'common/local-storage';
 import {useTasks} from 'v1/api/useTasks.query';
-import {useTaskFilters} from 'common/tasks/filters/useTaskFilters';
+import {useTaskFilters} from 'v1/features/tasks/filters/useTaskFilters';
 import {useEffect} from 'react';
 import {useTranslation, Trans} from 'react-i18next';
 import {decodeTaskEmptyPageRef} from 'common/tracking/reftags';

@@ -18,7 +18,7 @@ const STAGE = getStage(window.location.host);
 
 async function fetchToken() {
   try {
-    const response = await fetch(api.v1.getSaasUserToken());
+    const response = await fetch(api.getSaasUserToken());
 
     if (!response.ok) {
       logger.error('Failed to fetch user token', response);
@@ -45,7 +45,7 @@ const C3Provider: React.FC<Props> = ({children}) => {
     async function init() {
       const {organizationId} = getClientConfig();
 
-      if (organizationId !== null) {
+      if (organizationId !== null && getClientConfig().clientMode === 'v1') {
         setToken(await fetchToken());
       }
     }

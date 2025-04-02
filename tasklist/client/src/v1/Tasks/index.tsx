@@ -11,7 +11,7 @@ import {Outlet, useLocation} from 'react-router-dom';
 import {Stack} from '@carbon/react';
 import {observer} from 'mobx-react-lite';
 import {useTasks} from 'v1/api/useTasks.query';
-import {useTaskFilters} from 'common/tasks/filters/useTaskFilters';
+import {useTaskFilters} from 'v1/features/tasks/filters/useTaskFilters';
 import {useAutoSelectNextTask} from 'common/tasks/next-task/useAutoSelectNextTask';
 import {useTranslation} from 'react-i18next';
 import {autoSelectNextTaskStore} from 'common/tasks/next-task/autoSelectFirstTask';
