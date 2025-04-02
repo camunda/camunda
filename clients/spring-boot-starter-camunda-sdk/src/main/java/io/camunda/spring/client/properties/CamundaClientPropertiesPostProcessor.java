@@ -20,11 +20,11 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.commons.logging.Log;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.env.EnvironmentPostProcessor;
 import org.springframework.boot.env.YamlPropertySourceLoader;
+import org.springframework.boot.logging.DeferredLogFactory;
 import org.springframework.core.env.ConfigurableEnvironment;
 import org.springframework.core.env.EnumerablePropertySource;
 import org.springframework.core.env.MapPropertySource;
@@ -32,11 +32,14 @@ import org.springframework.core.env.PropertySource;
 import org.springframework.core.io.ClassPathResource;
 
 public class CamundaClientPropertiesPostProcessor implements EnvironmentPostProcessor {
-  private static final Logger LOG =
-      LoggerFactory.getLogger(CamundaClientPropertiesPostProcessor.class);
   private static final String OVERRIDE_PREFIX = "camunda.client.worker.override.";
   private static final List<String> LEGACY_OVERRIDE_PREFIX =
       List.of("camunda.client.zeebe.override.", "zeebe.client.worker.override.");
+  private final Log log;
+
+  public CamundaClientPropertiesPostProcessor(final DeferredLogFactory deferredLogFactory) {
+    log = deferredLogFactory.getLog(getClass());
+  }
 
   @Override
   public void postProcessEnvironment(
@@ -62,10 +65,10 @@ public class CamundaClientPropertiesPostProcessor implements EnvironmentPostProc
                         OVERRIDE_PREFIX + normalizedPropertyName.substring(prefix.length());
                     if (!properties.containsKey(newPropertyName)
                         && !environment.containsProperty(newPropertyName)) {
-                      LOG.debug(
-                          "Mapping worker override from '{}' to '{}'",
-                          propertyName,
-                          newPropertyName);
+                      log.debug(
+                          String.format(
+                              "Mapping worker override from '%s' to '%s'",
+                              propertyName, newPropertyName));
                       properties.put(newPropertyName, propertySource.getProperty(propertyName));
                     }
                   }
@@ -96,20 +99,21 @@ public class CamundaClientPropertiesPostProcessor implements EnvironmentPostProc
       final ConfigurableEnvironment environment,
       final CamundaClientLegacyPropertiesMapping property) {
     if (environment.containsProperty(property.getPropertyName())) {
-      LOG.debug(
-          "Property '{}' found, not looking up legacy properties", property.getPropertyName());
+      log.debug(
+          String.format(
+              "Property '%s' found, not looking up legacy properties", property.getPropertyName()));
       return List.of(Objects.requireNonNull(environment.getProperty(property.getPropertyName())));
     }
     for (final String legacyPropertyName : property.getLegacyPropertyNames()) {
       if (environment.containsProperty(legacyPropertyName)) {
-        LOG.warn(
-            "Legacy property '{}' found, setting to '{}'. Please update your setup to use the latest property",
-            legacyPropertyName,
-            property.getPropertyName());
+        log.warn(
+            String.format(
+                "Legacy property '%s' found, setting to '%s'. Please update your setup to use the latest property",
+                legacyPropertyName, property.getPropertyName()));
         return List.of(Objects.requireNonNull(environment.getProperty(legacyPropertyName)));
       }
     }
-    LOG.debug("No property found for '{}'", property.getPropertyName());
+    log.debug(String.format("No property found for '%s'", property.getPropertyName()));
     return List.of();
   }
 
@@ -137,7 +141,7 @@ public class CamundaClientPropertiesPostProcessor implements EnvironmentPostProc
 
   private boolean isImplicitSaas(final ConfigurableEnvironment environment) {
     if (environment.containsProperty("camunda.client.cloud.cluster-id")) {
-      LOG.debug("Cluster id detected, setting implicit saas mode");
+      log.debug("Cluster id detected, setting implicit saas mode");
       return true;
     }
     return false;

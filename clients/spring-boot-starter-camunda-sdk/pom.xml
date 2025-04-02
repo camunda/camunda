@@ -120,14 +120,26 @@
       <groupId>commons-collections</groupId>
       <artifactId>commons-collections</artifactId>
     </dependency>
+
     <dependency>
       <groupId>commons-beanutils</groupId>
       <artifactId>commons-beanutils</artifactId>
     </dependency>
+
     <dependency>
       <groupId>org.springframework</groupId>
       <artifactId>spring-aop</artifactId>
       <scope>provided</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.springframework</groupId>
+      <artifactId>spring-jcl</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>commons-logging</groupId>
+      <artifactId>commons-logging</artifactId>
     </dependency>
 
     <dependency>
@@ -189,6 +201,7 @@
             <dependency>org.springframework.boot:spring-boot-configuration-processor</dependency>
             <dependency>commons-collections:commons-collections</dependency>
             <dependency>ch.qos.logback:logback-classic</dependency>
+            <dependency>commons-logging:commons-logging</dependency>
           </usedDependencies>
         </configuration>
       </plugin>
