@@ -6,38 +6,43 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {
-  ProcessInstancesStatisticsDto,
-  ProcessInstancesStatisticsRequest,
-} from 'modules/api/v2/processInstances/fetchProcessInstancesStatistics';
 import {useProcessInstancesStatisticsOptions} from './useProcessInstancesStatistics';
 import {useQuery} from '@tanstack/react-query';
 import {
   getInstancesCount,
   getProcessInstanceKey,
 } from 'modules/utils/statistics/processInstances';
+import {
+  GetProcessDefinitionStatisticsRequestBody,
+  GetProcessDefinitionStatisticsResponseBody,
+} from '@vzeta/camunda-api-zod-schemas/operate';
 
 function instancesCountParser(
   flowNodeId?: string,
-): (data: ProcessInstancesStatisticsDto[]) => number {
-  return (data: ProcessInstancesStatisticsDto[]) => {
-    return getInstancesCount(data, flowNodeId);
+): (data: GetProcessDefinitionStatisticsResponseBody) => number {
+  return (data: GetProcessDefinitionStatisticsResponseBody) => {
+    return getInstancesCount(data.items, flowNodeId);
   };
 }
 
 function useInstancesCount(
-  payload: ProcessInstancesStatisticsRequest,
+  payload: GetProcessDefinitionStatisticsRequestBody,
+  processDefinitionKey?: string,
   flowNodeId?: string,
 ) {
   const processInstanceKey = getProcessInstanceKey();
-
+  const parsedPayload = {
+    ...payload,
+    filter: {
+      ...payload.filter,
+      processInstanceKey,
+    },
+  };
   return useQuery(
     useProcessInstancesStatisticsOptions<number>(
-      {
-        ...payload,
-        processInstanceKey,
-      },
+      parsedPayload,
       instancesCountParser(flowNodeId),
+      processDefinitionKey,
       !!flowNodeId,
     ),
   );

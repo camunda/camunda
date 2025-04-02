@@ -18,7 +18,6 @@ import {Diagram} from 'modules/components/Diagram';
 import {useEffect} from 'react';
 import {diagramOverlaysStore} from 'modules/stores/diagramOverlays';
 import {ModificationBadgeOverlay} from 'App/ProcessInstance/TopPanel/ModificationBadgeOverlay';
-import {useProcessInstanceFilters} from 'modules/hooks/useProcessInstancesFilters';
 import {processInstancesSelectionStore} from 'modules/stores/processInstancesSelection';
 import {useProcessInstancesFlowNodeStates} from 'modules/queries/processInstancesStatistics/useFlowNodeStates';
 import {useMigrationTargetXml} from 'modules/queries/processDefinitions/useMigrationTargetXml';
@@ -32,7 +31,10 @@ const TargetDiagram: React.FC = observer(() => {
     selectedTargetProcessId,
   } = processesStore;
   const isVersionSelected = selectedTargetVersion !== null;
-  const {isSummaryStep} = processInstanceMigrationStore;
+  const {
+    isSummaryStep,
+    state: {sourceProcessDefinitionKey},
+  } = processInstanceMigrationStore;
   const stateOverlays = diagramOverlaysStore.state.overlays.filter(
     ({type}) => type === OVERLAY_TYPE,
   );
@@ -51,13 +53,13 @@ const TargetDiagram: React.FC = observer(() => {
     );
   }, [selectedTargetProcessId]);
 
-  const processInstanceFilters = useProcessInstanceFilters();
-
   const {data: flowNodeData} = useProcessInstancesFlowNodeStates(
     {
-      ...processInstanceFilters,
-      processInstanceKey: getProcessInstanceKey(),
+      filter: {
+        processInstanceKey: getProcessInstanceKey(),
+      },
     },
+    sourceProcessDefinitionKey!,
     processInstancesSelectionStore.selectedProcessInstanceIds.length > 0,
   );
 

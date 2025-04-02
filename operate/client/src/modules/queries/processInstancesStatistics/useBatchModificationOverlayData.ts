@@ -6,10 +6,6 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {
-  ProcessInstancesStatisticsDto,
-  ProcessInstancesStatisticsRequest,
-} from 'modules/api/v2/processInstances/fetchProcessInstancesStatistics';
 import {MODIFICATIONS} from 'modules/bpmn-js/badgePositions';
 import {useProcessInstancesStatisticsOptions} from './useProcessInstancesStatistics';
 import {OverlayData} from 'modules/bpmn-js/BpmnJS';
@@ -18,15 +14,19 @@ import {
   getProcessInstanceKey,
 } from 'modules/utils/statistics/processInstances';
 import {useQuery} from '@tanstack/react-query';
+import {
+  GetProcessDefinitionStatisticsRequestBody,
+  GetProcessDefinitionStatisticsResponseBody,
+} from '@vzeta/camunda-api-zod-schemas/operate';
 
 function batchModificationOverlayParser(params: {
   sourceFlowNodeId?: string;
   targetFlowNodeId?: string;
-}): (data: ProcessInstancesStatisticsDto[]) => OverlayData[] {
-  return (data: ProcessInstancesStatisticsDto[]): OverlayData[] => {
+}): (data: GetProcessDefinitionStatisticsResponseBody) => OverlayData[] {
+  return (data: GetProcessDefinitionStatisticsResponseBody): OverlayData[] => {
     const {sourceFlowNodeId, targetFlowNodeId} = params;
     if (
-      data.length === 0 ||
+      data.items.length === 0 ||
       targetFlowNodeId === undefined ||
       sourceFlowNodeId === undefined
     ) {
@@ -36,14 +36,16 @@ function batchModificationOverlayParser(params: {
     return [
       {
         payload: {
-          cancelledTokenCount: getInstancesCount(data, sourceFlowNodeId),
+          cancelledTokenCount: getInstancesCount(data.items, sourceFlowNodeId),
         },
         type: 'batchModificationsBadge',
         flowNodeId: sourceFlowNodeId,
         position: MODIFICATIONS,
       },
       {
-        payload: {newTokenCount: getInstancesCount(data, sourceFlowNodeId)},
+        payload: {
+          newTokenCount: getInstancesCount(data.items, sourceFlowNodeId),
+        },
         type: 'batchModificationsBadge',
         flowNodeId: targetFlowNodeId,
         position: MODIFICATIONS,
@@ -53,19 +55,25 @@ function batchModificationOverlayParser(params: {
 }
 
 function useBatchModificationOverlayData(
-  payload: ProcessInstancesStatisticsRequest,
+  payload: GetProcessDefinitionStatisticsRequestBody,
   params: {sourceFlowNodeId?: string; targetFlowNodeId?: string},
-  enabled?: boolean,
+  processDefinitionKey?: string,
+  enabled: boolean = true,
 ) {
   const processInstanceKey = getProcessInstanceKey();
+  const parsedPayload = {
+    ...payload,
+    filter: {
+      ...payload.filter,
+      processInstanceKey,
+    },
+  };
 
   return useQuery(
     useProcessInstancesStatisticsOptions<OverlayData[]>(
-      {
-        ...payload,
-        processInstanceKey,
-      },
+      parsedPayload,
       batchModificationOverlayParser(params),
+      processDefinitionKey,
       enabled,
     ),
   );

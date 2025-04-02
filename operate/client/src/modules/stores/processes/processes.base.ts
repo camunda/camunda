@@ -19,6 +19,7 @@ import {NetworkReconnectionHandler} from '../networkReconnectionHandler';
 import {sortOptions} from 'modules/utils/sortOptions';
 import {DEFAULT_TENANT, PERMISSIONS} from 'modules/constants';
 import {generateProcessKey} from 'modules/utils/generateProcessKey';
+import {Location} from 'react-router-dom';
 
 type Process = ProcessDto & {key: string};
 type State = {
@@ -176,6 +177,14 @@ class ProcessesBase extends NetworkReconnectionHandler {
     return processVersions.find(
       (processVersion) => processVersion.version === parseInt(version),
     )?.id;
+  };
+
+  getProcessIdByLocation = (location: Location) => {
+    const {process, version, tenant} = getProcessInstanceFilters(
+      location.search,
+    );
+
+    return this.getProcessId({process, tenant, version});
   };
 
   resetRetryProcessesFetch = () => {

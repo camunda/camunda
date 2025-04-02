@@ -15,6 +15,7 @@ import {MODIFICATIONS} from 'modules/bpmn-js/badgePositions';
 import * as filterModule from 'modules/hooks/useProcessInstancesFilters';
 
 jest.mock('modules/hooks/useProcessInstancesFilters');
+jest.mock('modules/hooks/useFilters');
 
 describe('useBatchModificationOverlayData', () => {
   const wrapper = ({children}: {children: React.ReactNode}) => (
@@ -32,15 +33,17 @@ describe('useBatchModificationOverlayData', () => {
   });
 
   it('should fetch batch modification overlay data successfully', async () => {
-    const mockData = [
-      {
-        flowNodeId: 'messageCatchEvent',
-        active: 2,
-        canceled: 1,
-        incidents: 3,
-        completed: 4,
-      },
-    ];
+    const mockData = {
+      items: [
+        {
+          flowNodeId: 'messageCatchEvent',
+          active: 2,
+          canceled: 1,
+          incidents: 3,
+          completed: 4,
+        },
+      ],
+    };
     const mockOverlayData = [
       {
         payload: {cancelledTokenCount: 5},
@@ -66,7 +69,7 @@ describe('useBatchModificationOverlayData', () => {
             sourceFlowNodeId: 'messageCatchEvent',
             targetFlowNodeId: 'targetNode',
           },
-          true,
+          'process1',
         ),
       {
         wrapper,
@@ -86,7 +89,7 @@ describe('useBatchModificationOverlayData', () => {
         useBatchModificationOverlayData(
           {},
           {sourceFlowNodeId: 'sourceNode', targetFlowNodeId: 'targetNode'},
-          true,
+          'process1',
         ),
       {
         wrapper,
@@ -108,7 +111,7 @@ describe('useBatchModificationOverlayData', () => {
         useBatchModificationOverlayData(
           {},
           {sourceFlowNodeId: 'sourceNode', targetFlowNodeId: 'targetNode'},
-          true,
+          'process1',
         ),
       {
         wrapper,
@@ -123,14 +126,16 @@ describe('useBatchModificationOverlayData', () => {
   });
 
   it('should handle empty data', async () => {
-    mockFetchProcessInstancesStatistics().withSuccess([]);
+    mockFetchProcessInstancesStatistics().withSuccess({
+      items: [],
+    });
 
     const {result} = renderHook(
       () =>
         useBatchModificationOverlayData(
           {},
           {sourceFlowNodeId: 'sourceNode', targetFlowNodeId: 'targetNode'},
-          true,
+          'process1',
         ),
       {
         wrapper,
@@ -148,7 +153,7 @@ describe('useBatchModificationOverlayData', () => {
         useBatchModificationOverlayData(
           {},
           {sourceFlowNodeId: 'sourceNode', targetFlowNodeId: 'targetNode'},
-          true,
+          'process1',
         ),
       {
         wrapper,
@@ -156,23 +161,5 @@ describe('useBatchModificationOverlayData', () => {
     );
 
     expect(result.current.isLoading).toBe(true);
-  });
-
-  it('should not fetch data when enabled is false', async () => {
-    const {result} = renderHook(
-      () =>
-        useBatchModificationOverlayData(
-          {},
-          {sourceFlowNodeId: 'sourceNode', targetFlowNodeId: 'targetNode'},
-          false,
-        ),
-      {
-        wrapper,
-      },
-    );
-
-    expect(result.current.isLoading).toBe(false);
-    expect(result.current.isFetched).toBe(false);
-    expect(result.current.data).toBeUndefined();
   });
 });

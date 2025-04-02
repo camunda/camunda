@@ -39,7 +39,12 @@ const BatchModificationSummaryModal: React.FC<StateProps> = observer(
     const targetFlowNodeName = targetFlowNodeId
       ? processXmlStore.getFlowNodeName(targetFlowNodeId)
       : undefined;
-    const {data: instancesCount} = useInstancesCount({}, sourceFlowNodeId);
+    const processId = processesStore.getProcessIdByLocation(location);
+    const {data: instancesCount} = useInstancesCount(
+      {},
+      processId,
+      sourceFlowNodeId,
+    );
     const isPrimaryButtonDisabled =
       sourceFlowNodeId === undefined || targetFlowNodeId === null;
     const headers = [

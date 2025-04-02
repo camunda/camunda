@@ -7,23 +7,24 @@
  */
 
 import {ProcessInstanceFilters} from 'modules/utils/filter/shared';
-import {
-  ProcessInstancesStatisticsRequest,
-  ProcessInstanceState,
-} from 'modules/api/v2/processInstances/fetchProcessInstancesStatistics';
+import {ProcessInstanceState} from 'modules/api/v2/processInstances/fetchProcessInstancesStatistics';
 import {useFilters} from 'modules/hooks/useFilters';
-import {getProcessIds} from 'modules/utils/filter';
+import {GetProcessDefinitionStatisticsRequestBody} from '@vzeta/camunda-api-zod-schemas/operate';
+
+const formatToISO = (dateString: string | undefined): string | undefined => {
+  if (!dateString) return undefined;
+  const date = new Date(dateString);
+  return date.toISOString();
+};
 
 function mapFiltersToRequest(
   filters: ProcessInstanceFilters,
-): ProcessInstancesStatisticsRequest {
+): GetProcessDefinitionStatisticsRequestBody {
   const {
     startDateAfter,
     startDateBefore,
     endDateAfter,
     endDateBefore,
-    process,
-    version,
     ids,
     active,
     incidents,
@@ -31,81 +32,75 @@ function mapFiltersToRequest(
     canceled,
     parentInstanceId,
     tenant,
-    retriesLeft,
-    operationId,
-    ...rest
+    variableName,
+    variableValues,
   } = filters;
 
-  const request: ProcessInstancesStatisticsRequest = {
-    ...rest,
-  };
+  const request: GetProcessDefinitionStatisticsRequestBody = {};
+  request.filter = {};
 
   if (startDateAfter || startDateBefore) {
-    request.startDate = {
-      ...(startDateAfter && {$gt: startDateAfter}),
-      ...(startDateBefore && {$lt: startDateBefore}),
+    request.filter.startDate = {
+      ...(startDateAfter && {$gt: formatToISO(startDateAfter)}),
+      ...(startDateBefore && {$lt: formatToISO(startDateBefore)}),
     };
   }
 
   if (endDateAfter || endDateBefore) {
-    request.endDate = {
-      ...(endDateAfter && {$gt: endDateAfter}),
-      ...(endDateBefore && {$lt: endDateBefore}),
+    request.filter.endDate = {
+      ...(endDateAfter && {$gt: formatToISO(endDateAfter)}),
+      ...(endDateBefore && {$lt: formatToISO(endDateBefore)}),
     };
   }
 
-  if (process && version) {
-    const processIds = getProcessIds({
-      process,
-      processVersion: version,
-      tenant,
-    });
-
-    if (processIds.length > 0) {
-      request.processDefinitionKey = {
-        $in: processIds,
-      };
-    }
-  }
-
   if (ids) {
-    request.processInstanceKey = {
+    request.filter.processInstanceKey = {
       $in: ids.split(','),
     };
   }
 
   if (parentInstanceId) {
-    request.parentProcessInstanceKey = parentInstanceId;
+    request.filter.parentProcessInstanceKey = {
+      $eq: parentInstanceId,
+    };
+  }
+
+  if (incidents) {
+    request.filter.hasIncident = true;
   }
 
   if (tenant) {
-    request.tenantId = tenant;
-  }
-
-  if (retriesLeft !== undefined) {
-    request.hasRetriesLeft = retriesLeft;
-  }
-
-  if (operationId) {
-    request.batchOperationKey = operationId;
+    request.filter.tenantId = {
+      $eq: tenant,
+    };
   }
 
   const state: ProcessInstanceState[] = [];
-  if (active) state.push(ProcessInstanceState.RUNNING);
-  if (incidents) state.push(ProcessInstanceState.INCIDENT);
+  if (active) state.push(ProcessInstanceState.ACTIVE);
   if (completed) state.push(ProcessInstanceState.COMPLETED);
-  if (canceled) state.push(ProcessInstanceState.CANCELED);
+  if (canceled) state.push(ProcessInstanceState.TERMINATED);
 
   if (state.length > 0) {
-    request.state = {
+    request.filter.state = {
       $in: state,
     };
+  }
+
+  if (variableName && variableValues) {
+    const variableNames = variableName.split(',');
+    const variableVals = variableValues.split(',');
+    request.filter.variables = variableNames
+      .map((name, index) => ({
+        name,
+        value: variableVals[index] || '',
+      }))
+      .filter((variable) => variable.value !== '');
   }
 
   return request;
 }
 
-function useProcessInstanceFilters(): ProcessInstancesStatisticsRequest {
+function useProcessInstanceFilters(): GetProcessDefinitionStatisticsRequestBody {
   const {getFilters} = useFilters();
   const filters = getFilters();
 

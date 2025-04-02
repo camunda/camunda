@@ -23,10 +23,11 @@ import {TargetDiagram} from './TargetDiagram';
 import {processInstanceMigrationStore} from 'modules/stores/processInstanceMigration';
 import {Wrapper} from '../tests/mocks';
 import * as filterModule from 'modules/hooks/useProcessInstancesFilters';
-import {processInstancesSelectionStore} from 'modules/stores/processInstancesSelection';
 import {mockFetchProcessInstancesStatistics} from 'modules/mocks/api/v2/processInstances/fetchProcessInstancesStatistics';
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
+import {processInstancesSelectionStore} from 'modules/stores/processInstancesSelection';
 
+jest.mock('modules/hooks/useFilters');
 jest.mock('modules/hooks/useProcessInstancesFilters');
 
 describe('Target Diagram', () => {
@@ -170,6 +171,7 @@ describe('Target Diagram', () => {
     mockFetchGroupedProcesses().withSuccess(groupedProcessesMock);
     mockFetchProcessDefinitionXml().withSuccess(mockProcessXML);
     mockFetchProcessInstancesStatistics().withSuccess(mockProcessStatisticsV2);
+    processInstanceMigrationStore.setSourceProcessDefinitionKey('1');
     processInstancesSelectionStore.setselectedProcessInstanceIds(['1']);
     await processesStore.fetchProcesses();
 

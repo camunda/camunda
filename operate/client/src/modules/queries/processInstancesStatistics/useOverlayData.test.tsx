@@ -11,8 +11,11 @@ import {QueryClientProvider} from '@tanstack/react-query';
 import {useProcessInstancesOverlayData} from './useOverlayData';
 import {mockFetchProcessInstancesStatistics} from 'modules/mocks/api/v2/processInstances/fetchProcessInstancesStatistics';
 import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
+import {useFilters} from 'modules/hooks/useFilters';
 import * as filterModule from 'modules/hooks/useProcessInstancesFilters';
+import {ProcessInstanceFilters} from 'modules/utils/filter/shared';
 
+jest.mock('modules/hooks/useFilters');
 jest.mock('modules/hooks/useProcessInstancesFilters');
 
 describe('useProcessInstancesOverlayStatistics', () => {
@@ -22,8 +25,15 @@ describe('useProcessInstancesOverlayStatistics', () => {
     </QueryClientProvider>
   );
 
+  const mockFilters: ProcessInstanceFilters = {
+    flowNodeId: 'messageCatchEvent',
+  };
+
   beforeEach(() => {
     jest.spyOn(filterModule, 'useProcessInstanceFilters').mockReturnValue({});
+    (useFilters as jest.Mock).mockReturnValue({
+      getFilters: () => mockFilters,
+    });
   });
 
   afterEach(() => {
@@ -91,11 +101,16 @@ describe('useProcessInstancesOverlayStatistics', () => {
       },
     ];
 
-    mockFetchProcessInstancesStatistics().withSuccess(mockData);
-
-    const {result} = renderHook(() => useProcessInstancesOverlayData({}), {
-      wrapper,
+    mockFetchProcessInstancesStatistics().withSuccess({
+      items: mockData,
     });
+
+    const {result} = renderHook(
+      () => useProcessInstancesOverlayData({}, 'process1'),
+      {
+        wrapper,
+      },
+    );
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
@@ -105,9 +120,12 @@ describe('useProcessInstancesOverlayStatistics', () => {
   it('should handle server error while fetching process instances overlay statistics', async () => {
     mockFetchProcessInstancesStatistics().withServerError();
 
-    const {result} = renderHook(() => useProcessInstancesOverlayData({}), {
-      wrapper,
-    });
+    const {result} = renderHook(
+      () => useProcessInstancesOverlayData({}, 'process1'),
+      {
+        wrapper,
+      },
+    );
 
     await waitFor(() => expect(result.current.isError).toBe(true));
 
@@ -119,9 +137,12 @@ describe('useProcessInstancesOverlayStatistics', () => {
   it('should handle network error while fetching process instances overlay statistics', async () => {
     mockFetchProcessInstancesStatistics().withNetworkError();
 
-    const {result} = renderHook(() => useProcessInstancesOverlayData({}), {
-      wrapper,
-    });
+    const {result} = renderHook(
+      () => useProcessInstancesOverlayData({}, 'process1'),
+      {
+        wrapper,
+      },
+    );
 
     await waitFor(() => expect(result.current.isError).toBe(true));
 
@@ -131,11 +152,16 @@ describe('useProcessInstancesOverlayStatistics', () => {
   });
 
   it('should handle empty data', async () => {
-    mockFetchProcessInstancesStatistics().withSuccess([]);
-
-    const {result} = renderHook(() => useProcessInstancesOverlayData({}), {
-      wrapper,
+    mockFetchProcessInstancesStatistics().withSuccess({
+      items: [],
     });
+
+    const {result} = renderHook(
+      () => useProcessInstancesOverlayData({}, 'process1'),
+      {
+        wrapper,
+      },
+    );
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
@@ -143,20 +169,33 @@ describe('useProcessInstancesOverlayStatistics', () => {
   });
 
   it('should handle loading state', async () => {
-    const {result} = renderHook(() => useProcessInstancesOverlayData({}), {
-      wrapper,
-    });
+    const {result} = renderHook(
+      () => useProcessInstancesOverlayData({}, 'process1'),
+      {
+        wrapper,
+      },
+    );
 
     expect(result.current.isLoading).toBe(true);
   });
 
   it('should not fetch data when enabled is false', async () => {
     const {result} = renderHook(
-      () => useProcessInstancesOverlayData({}, false),
+      () => useProcessInstancesOverlayData({}, 'process1', false),
       {
         wrapper,
       },
     );
+
+    expect(result.current.isLoading).toBe(false);
+    expect(result.current.isFetched).toBe(false);
+    expect(result.current.data).toBeUndefined();
+  });
+
+  it('should not fetch data when processDefinitionKey is undefined', async () => {
+    const {result} = renderHook(() => useProcessInstancesOverlayData({}), {
+      wrapper,
+    });
 
     expect(result.current.isLoading).toBe(false);
     expect(result.current.isFetched).toBe(false);
