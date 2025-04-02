@@ -99,6 +99,18 @@
   <select id="flowNodeStatistics"
     parameterType="io.camunda.search.filter.ProcessDefinitionStatisticsFilter"
     resultMap="io.camunda.db.rdbms.sql.ProcessDefinitionMapper.flowNodeStatisticsResultMap">
+    <bind name="filter" value="_parameter" />
+    SELECT
+      res.FLOW_NODE_ID,
+      SUM(CASE WHEN res.COUNT_ACTIVE > 0 THEN 1 ELSE 0 END)    AS COUNT_ACTIVE,
+      SUM(CASE WHEN res.COUNT_CANCELED > 0 THEN 1 ELSE 0 END)  AS COUNT_CANCELED,
+      SUM(CASE WHEN res.COUNT_COMPLETED > 0 THEN 1 ELSE 0 END) AS COUNT_COMPLETED,
+      SUM(CASE WHEN res.COUNT_INCIDENTs > 0 THEN 1 ELSE 0 END) AS COUNT_INCIDENTS
+    FROM (<include refid="io.camunda.db.rdbms.sql.ProcessDefinitionMapper.statisticsSubSelect"/>) res
+    GROUP BY res.FLOW_NODE_ID
+  </select>
+
+  <sql id="statisticsSubSelect">
     SELECT
       fni.FLOW_NODE_ID,
       SUM(CASE WHEN fni.STATE = 'ACTIVE' AND
@@ -117,9 +129,13 @@
       JOIN ${prefix}PROCESS_INSTANCE pi ON (pd.PROCESS_DEFINITION_KEY = pi.PROCESS_DEFINITION_KEY)
       JOIN ${prefix}FLOW_NODE_INSTANCE fni ON (pi.PROCESS_INSTANCE_KEY = fni.PROCESS_INSTANCE_KEY)
 
-    <bind name="filter" value="_parameter" />
     WHERE pd.PROCESS_DEFINITION_KEY = #{filter.processDefinitionKey}
       AND (fni.STATE != 'COMPLETED' OR fni.TYPE = 'END_EVENT')
+    <include refid="io.camunda.db.rdbms.sql.ProcessDefinitionMapper.statisticsSearchFilter"/>
+    GROUP BY pi.PROCESS_INSTANCE_KEY, fni.FLOW_NODE_ID
+  </sql>
+
+  <sql id="statisticsSearchFilter">
     <!-- basic filters -->
     <if test="filter.processInstanceKeyOperations != null and !filter.processInstanceKeyOperations.isEmpty()">
       <foreach collection="filter.processInstanceKeyOperations" item="operation">
@@ -186,9 +202,7 @@
         )
       </foreach>
     </if>
-
-    GROUP BY fni.FLOW_NODE_ID
-  </select>
+  </sql>
 
   <resultMap id="flowNodeStatisticsResultMap"
     type="io.camunda.search.entities.ProcessDefinitionFlowNodeStatisticsEntity">
