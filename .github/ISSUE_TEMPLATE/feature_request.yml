@@ -22,22 +22,18 @@ body:
     id: user-story
     attributes:
       label: User Story
-      description: Please describe the problem you are trying to solve
+      description: |
+          - Please describe the problem you are trying to solve (add screenshots or gifs for illustration if possible)
+          - Explain why this suggestion would be beneficial for the users.
     validations:
       required: true
   - type: textarea
     id: design
     attributes:
       label: Design
-      description: Please describe the solution you would like to see implemented
+      description: Please describe the solution you would like to see implemented (add screenshots or gifs for illustration if possible)
     validations:
       required: true
-  - type: textarea
-    id: functional-requirements
-    attributes:
-      label: Functional requirements
-    validations:
-      required: false
   - type: textarea
     id: technical-requirements
     attributes:
@@ -64,21 +60,5 @@ body:
     attributes:
       label: Links
       description: Add the support ticket- or other links here if applicable.
-    validations:
-      required: false
-  - type: textarea
-    id: breakdown
-    attributes:
-      label: Breakdown
-    validations:
-      required: false
-  - type: textarea
-    id: additional-context
-    attributes:
-      label: Additional context
-      description: | 
-       - Include screenshots or animated gifs to illustrate your suggestion. Use tools like LICEcap for macOS and Windows, or byzanz for Linux.
-       - Provide any other context or information that might help us understand your suggestion.
-       - Explain why this suggestion would be beneficial for the users.
     validations:
       required: false
