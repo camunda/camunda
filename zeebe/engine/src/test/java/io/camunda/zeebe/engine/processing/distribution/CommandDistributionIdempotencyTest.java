@@ -11,6 +11,7 @@ import static io.camunda.zeebe.engine.processing.processinstance.migration.Migra
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
 
+import io.camunda.search.filter.ProcessInstanceFilter;
 import io.camunda.zeebe.engine.processing.batchoperation.BatchOperationCreateProcessor;
 import io.camunda.zeebe.engine.processing.clock.ClockProcessor;
 import io.camunda.zeebe.engine.processing.deployment.DeploymentCreateProcessor;
@@ -43,6 +44,7 @@ import io.camunda.zeebe.engine.processing.tenant.TenantUpdateProcessor;
 import io.camunda.zeebe.engine.processing.user.UserCreateProcessor;
 import io.camunda.zeebe.engine.processing.user.UserDeleteProcessor;
 import io.camunda.zeebe.engine.processing.user.UserUpdateProcessor;
+import io.camunda.zeebe.engine.search.NoopSearchClientsProxy;
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.engine.util.TestInterPartitionCommandSender.CommandInterceptor;
 import io.camunda.zeebe.model.bpmn.Bpmn;
@@ -111,7 +113,10 @@ import org.junit.runners.Parameterized.Parameters;
 
 @RunWith(Parameterized.class)
 public class CommandDistributionIdempotencyTest {
-  @ClassRule public static final EngineRule ENGINE = EngineRule.multiplePartition(2);
+
+  @ClassRule
+  public static final EngineRule ENGINE =
+      EngineRule.multiplePartition(2).withSearchClientsProxy(new NoopSearchClientsProxy());
 
   private static final Set<Class<?>> DISTRIBUTING_PROCESSORS =
       new HashSet<>(
@@ -215,7 +220,7 @@ public class CommandDistributionIdempotencyTest {
 
                   return ENGINE.authorization().updateAuthorization(key).update();
                 }),
-            BatchOperationCreateProcessor.class
+            AuthorizationUpdateProcessor.class
           },
           {
             "BatchOperation.CREATE is idempotent",
@@ -229,9 +234,11 @@ public class CommandDistributionIdempotencyTest {
                         .withFilter(
                             new UnsafeBuffer(
                                 MsgPackConverter.convertToMsgPack(
-                                    "{\"processInstanceKeys\": [1, 2, 3]}")))
+                                    new ProcessInstanceFilter.Builder()
+                                        .processInstanceKeys(1L, 3L, 8L)
+                                        .build())))
                         .create()),
-            AuthorizationUpdateProcessor.class
+            BatchOperationCreateProcessor.class
           },
           {
             "Clock.RESET is idempotent",
