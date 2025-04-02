@@ -12,7 +12,7 @@ on:
       DEVELOPMENT_VERSION:
         required: true
         description: "Next development version"
-        default: "8.7.0-SNAPSHOT"
+        default: "0.1.0-SNAPSHOT"
       BRANCH:
         required: true
         description: "The branch used for the release checkout"
@@ -120,7 +120,7 @@ jobs:
         run: |
           {
             echo "DOCKER_LATEST=${{ github.event.inputs.DOCKER_LATEST || true}}"
-            echo "DEVELOPMENT_VERSION=${{ github.event.inputs.DEVELOPMENT_VERSION || '8.7.0-SNAPSHOT' }}"
+            echo "DEVELOPMENT_VERSION=${{ github.event.inputs.DEVELOPMENT_VERSION || '0.1.0-SNAPSHOT' }}"
             echo "RELEASE_VERSION=${{ github.event.inputs.RELEASE_VERSION || '0.0.0' }}"
             echo "BRANCH=${{ github.event.inputs.BRANCH || github.ref_name }}"
             echo "REVISION=${{ steps.define-values.outputs.git_commit_hash }}"
