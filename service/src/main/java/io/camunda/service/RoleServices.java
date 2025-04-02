@@ -113,8 +113,8 @@ public class RoleServices extends SearchQueryService<RoleServices, RoleQuery, Ro
         .findFirst();
   }
 
-  public CompletableFuture<RoleRecord> deleteRole(final long roleKey) {
-    return sendBrokerRequest(new BrokerRoleDeleteRequest(roleKey));
+  public CompletableFuture<RoleRecord> deleteRole(final String roleId) {
+    return sendBrokerRequest(new BrokerRoleDeleteRequest(roleId));
   }
 
   public CompletableFuture<?> addMember(
